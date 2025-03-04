@@ -13,6 +13,7 @@ from dipy.align.bundlemin import (
 from dipy.core.geometry import compose_matrix, compose_transformations, decompose_matrix
 from dipy.core.optimize import Optimizer
 from dipy.segment.clustering import qbx_and_merge
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import (
     Streamlines,
     center_streamlines,
@@ -42,7 +43,8 @@ logger = logging.getLogger(__name__)
 
 
 class StreamlineDistanceMetric(metaclass=abc.ABCMeta):
-    def __init__(self, num_threads=None):
+    @warning_for_keywords()
+    def __init__(self, *, num_threads=None):
         """An abstract class for the metric used for streamline registration.
 
         If the two sets of streamlines match exactly then method ``distance``
@@ -54,8 +56,8 @@ class StreamlineDistanceMetric(metaclass=abc.ABCMeta):
             Number of threads to be used for OpenMP parallelization. If None
             (default) the value of OMP_NUM_THREADS environment variable is used
             if it is set, otherwise all available threads are used. If < 0 the
-            maximal number of threads minus |num_threads + 1| is used (enter -1
-            to use as many threads as possible). 0 raises an error. Only
+            maximal number of threads minus $|num_threads + 1|$ is used (enter
+            -1 to use as many threads as possible). 0 raises an error. Only
             metrics using OpenMP will use this variable.
 
         """
@@ -74,9 +76,11 @@ class StreamlineDistanceMetric(metaclass=abc.ABCMeta):
 
 
 class BundleMinDistanceMetric(StreamlineDistanceMetric):
-    """Bundle-based Minimum Distance aka BMD
+    """Bundle-based Minimum Distance aka BMD.
 
     This is the cost function used by the StreamlineLinearRegistration.
+
+    See :footcite:p:`Garyfallidis2014b` for further details about the metric.
 
     Methods
     -------
@@ -85,9 +89,7 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
 
     References
     ----------
-    .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
-                        bundle alignment for group comparisons", ISMRM,
-                        2014.
+    .. footbibliography::
     """
 
     def setup(self, static, moving):
@@ -132,7 +134,7 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
             self.static_centered_pts,
             self.moving_centered_pts,
             self.block_size,
-            self.num_threads,
+            num_threads=self.num_threads,
         )
 
 
@@ -300,8 +302,10 @@ class JointBundleMinDistanceMetric(StreamlineDistanceMetric):
 
 
 class StreamlineLinearRegistration:
+    @warning_for_keywords()
     def __init__(
         self,
+        *,
         metric=None,
         x0="rigid",
         method="L-BFGS-B",
@@ -311,7 +315,9 @@ class StreamlineLinearRegistration:
         evolution=False,
         num_threads=None,
     ):
-        r"""Linear registration of 2 sets of streamlines [Garyfallidis15]_.
+        r"""Linear registration of 2 sets of streamlines.
+
+        See :footcite:p:`Garyfallidis2015` for further details about the method.
 
         Parameters
         ----------
@@ -325,10 +331,10 @@ class StreamlineLinearRegistration:
 
             If 1D array with:
                 a) 6 elements then only rigid registration is performed with
-                the 3 first elements for translation and 3 for rotation.
+                   the 3 first elements for translation and 3 for rotation.
                 b) 7 elements also isotropic scaling is performed (similarity).
                 c) 12 elements then translation, rotation (in degrees),
-                scaling and shearing is performed (affine).
+                   scaling and shearing is performed (affine).
 
                 Here is an example of x0 with 12 elements:
                 ``x0=np.array([0, 10, 0, 40, 0, 0, 2., 1.5, 1, 0.1, -0.5, 0])``
@@ -353,50 +359,38 @@ class StreamlineLinearRegistration:
                     ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])``
 
         method : str,
-            'L_BFGS_B' or 'Powell' optimizers can be used. Default is
-            'L_BFGS_B'.
+            'L_BFGS_B' or 'Powell' optimizers can be used.
 
         bounds : list of tuples or None,
             If method == 'L_BFGS_B' then we can use bounded optimization.
             For example for the six parameters of rigid rotation we can set
-            the bounds = [(-30, 30), (-30, 30), (-30, 30),
-                          (-45, 45), (-45, 45), (-45, 45)]
+            the bounds = [(-30, 30), (-30, 30), (-30, 30), (-45, 45), (-45, 45), (-45, 45)]
             That means that we have set the bounds for the three translations
             and three rotation axes (in degrees).
 
         verbose : bool, optional.
             If True, if True then information about the optimization is shown.
-            Default: False.
 
         options : None or dict,
             Extra options to be used with the selected method.
 
         evolution : boolean
             If True save the transformation for each iteration of the
-            optimizer. Default is False. Supported only with Scipy >= 0.11.
+            optimizer. Supported only with Scipy >= 0.11.
 
         num_threads : int, optional
             Number of threads to be used for OpenMP parallelization. If None
             (default) the value of OMP_NUM_THREADS environment variable is used
             if it is set, otherwise all available threads are used. If < 0 the
-            maximal number of threads minus |num_threads + 1| is used (enter -1
-            to use as many threads as possible). 0 raises an error. Only
+            maximal number of threads minus $|num_threads + 1|$ is used (enter
+            -1 to use as many threads as possible). 0 raises an error. Only
             metrics using OpenMP will use this variable.
 
         References
         ----------
-        .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-           registration of white-matter fascicles in the space of streamlines",
-           NeuroImage, 117, 124--140, 2015
+        .. footbibliography::
 
-        .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
-           bundle alignment for group comparisons", ISMRM, 2014.
-
-        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-           bundles using local and global streamline-based
-           registration and clustering, Neuroimage, 2017.
-
-        """
+        """  # noqa: E501
         self.x0 = self._set_x0(x0)
         self.metric = metric
 
@@ -411,7 +405,8 @@ class StreamlineLinearRegistration:
         self.options = options
         self.evolution = evolution
 
-    def optimize(self, static, moving, mat=None):
+    @warning_for_keywords()
+    def optimize(self, static, moving, *, mat=None):
         """Find the minimum of the provided metric.
 
         Parameters
@@ -577,7 +572,7 @@ class StreamlineRegistrationMap:
 
         Parameters
         ----------
-        matrix : array,
+        matopt : array,
             4x4 affine matrix which transforms the moving to the static
             streamlines
 
@@ -587,7 +582,7 @@ class StreamlineRegistrationMap:
         fopt : float,
             final value of the metric
 
-        matrix_history : array
+        matopt_history : array
             All transformation matrices created during the optimization
 
         funcs : int,
@@ -691,7 +686,8 @@ class JointStreamlineRegistrationMap:
         return static, moving
 
 
-def bundle_sum_distance(t, static, moving, num_threads=None):
+@warning_for_keywords()
+def bundle_sum_distance(t, static, moving, *, num_threads=None):
     """MDF distance optimization function (SUM).
 
     We minimize the distance between moving streamlines as they align
@@ -773,7 +769,8 @@ def bundle_min_distance(t, static, moving):
     )
 
 
-def bundle_min_distance_fast(t, static, moving, block_size, num_threads=None):
+@warning_for_keywords()
+def bundle_min_distance_fast(t, static, moving, block_size, *, num_threads=None):
     """MDF-based pairwise distance optimization function (MIN).
 
     We minimize the distance between moving streamlines as they align
@@ -808,7 +805,7 @@ def bundle_min_distance_fast(t, static, moving, block_size, num_threads=None):
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used
         if it is set, otherwise all available threads are used. If < 0 the
-        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        maximal number of threads minus $|num_threads + 1|$ is used (enter -1 to
         use as many threads as possible). 0 raises an error.
 
     Returns
@@ -832,7 +829,9 @@ def bundle_min_distance_fast(t, static, moving, block_size, num_threads=None):
     rows = static.shape[0] // block_size
     cols = moving.shape[0] // block_size
 
-    return _bundle_minimum_distance(static, moving, rows, cols, block_size, num_threads)
+    return _bundle_minimum_distance(
+        static, moving, rows, cols, block_size, num_threads=num_threads
+    )
 
 
 def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
@@ -891,32 +890,37 @@ def remove_clusters_by_size(clusters, min_size=0):
     return centroids
 
 
+@warning_for_keywords()
 def progressive_slr(
     static,
     moving,
     metric,
     x0,
     bounds,
+    *,
     method="L-BFGS-B",
     verbose=False,
     num_threads=None,
 ):
     """Progressive SLR.
 
-    This is an utility function that allows for example to do affine
+    This is a utility function that allows for example to do affine
     registration using Streamline-based Linear Registration (SLR)
-    [Garyfallidis15]_ by starting with translation first, then rigid,
-    then similarity, scaling and finally affine.
+    :footcite:p:`Garyfallidis2015` by starting with translation first,
+    then rigid, then similarity, scaling and finally affine.
 
     Similarly, if for example, you want to perform rigid then you start with
-    translation first. This progressive strategy can helps with finding the
+    translation first. This progressive strategy can help with finding the
     optimal parameters of the final transformation.
 
     Parameters
     ----------
     static : Streamlines
+        Static streamlines.
     moving : Streamlines
+        Moving streamlines.
     metric : StreamlineDistanceMetric
+        Distance metric for registration optimization.
     x0 : string
         Could be any of 'translation', 'rigid', 'similarity', 'scaling',
         'affine'
@@ -926,20 +930,18 @@ def progressive_slr(
     method : string
         L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
     verbose :  bool, optional.
-        If True, log messages. Default:
+        If True, log messages.
     num_threads : int, optional
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used
         if it is set, otherwise all available threads are used. If < 0 the
-        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        maximal number of threads minus $|num_threads + 1|$ is used (enter -1 to
         use as many threads as possible). 0 raises an error. Only metrics
         using OpenMP will use this variable.
 
     References
     ----------
-    .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-        registration of white-matter fascicles in the space of streamlines",
-        NeuroImage, 117, 124--140, 2015
+    .. footbibliography::
 
     """
     if verbose:
@@ -1019,9 +1021,11 @@ def progressive_slr(
     return slm
 
 
+@warning_for_keywords()
 def slr_with_qbx(
     static,
     moving,
+    *,
     x0="affine",
     rm_small_clusters=50,
     maxiter=100,
@@ -1040,13 +1044,18 @@ def slr_with_qbx(
     For efficiency, we apply the registration on cluster centroids and remove
     small clusters.
 
+    See :footcite:p:`Garyfallidis2014b`, :footcite:p:`Garyfallidis2015` and
+    :footcite:p:`Garyfallidis2018` for details about the methods involved.
+
     Parameters
     ----------
     static : Streamlines
-    moving : Streamlines
+        Fixed or reference set of streamlines.
+    moving : streamlines
+        Moving streamlines.
 
     x0 : str, optional.
-        rigid, similarity or affine transformation model (default affine)
+        rigid, similarity or affine transformation model
 
     rm_small_clusters : int, optional
         Remove clusters that have less than `rm_small_clusters`
@@ -1056,26 +1065,24 @@ def slr_with_qbx(
 
     select_random : int, optional.
         If not, None selects a random number of streamlines to apply clustering
-        Default None.
 
     verbose : bool, optional
-        If True, logs information about optimization. Default: False
+        If True, logs information about optimization.
 
     greater_than : int, optional
-            Keep streamlines that have length greater than
-            this value (default 50)
+        Keep streamlines that have length greater than this value.
 
     less_than : int, optional
-            Keep streamlines have length less than this value (default 250)
+        Keep streamlines have length less than this value.
 
     qbx_thr : variable int
-            Thresholds for QuickBundlesX (default [40, 30, 20, 15])
+        Thresholds for QuickBundlesX.
 
     nb_pts : int, optional
-            Number of points for discretizing each streamline (default 20)
+        Number of points for discretizing each streamline.
 
     progressive : boolean, optional
-            (default True)
+       True to enable progressive registration.
 
     rng : np.random.Generator
         If None creates random generator in function.
@@ -1084,7 +1091,7 @@ def slr_with_qbx(
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used
         if it is set, otherwise all available threads are used. If < 0 the
-        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        maximal number of threads minus $|num_threads + 1|$ is used (enter -1 to
         use as many threads as possible). 0 raises an error. Only metrics
         using OpenMP will use this variable.
 
@@ -1092,18 +1099,12 @@ def slr_with_qbx(
     -----
     The order of operations is the following. First short or long streamlines
     are removed. Second, the tractogram or a random selection of the tractogram
-    is clustered with QuickBundles. Then SLR [Garyfallidis15]_ is applied.
+    is clustered with QuickBundles. Then SLR :footcite:p:`Garyfallidis2015` is
+    applied.
 
     References
     ----------
-    .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-    registration of white-matter fascicles in the space of streamlines",
-    NeuroImage, 117, 124--140, 2015
-    .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
-            bundle alignment for group comparisons", ISMRM, 2014.
-    .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-    bundles using local and global streamline-based registration and
-    clustering, Neuroimage, 2017.
+    .. footbibliography::
 
     """
     if rng is None:
@@ -1132,7 +1133,7 @@ def slr_with_qbx(
     else:
         rstreamlines1 = streamlines1
 
-    rstreamlines1 = set_number_of_points(rstreamlines1, nb_pts)
+    rstreamlines1 = set_number_of_points(rstreamlines1, nb_points=nb_pts)
 
     rstreamlines1._data.astype("f4")
 
@@ -1146,7 +1147,7 @@ def slr_with_qbx(
     else:
         rstreamlines2 = streamlines2
 
-    rstreamlines2 = set_number_of_points(rstreamlines2, nb_pts)
+    rstreamlines2 = set_number_of_points(rstreamlines2, nb_points=nb_pts)
     rstreamlines2._data.astype("f4")
 
     cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr, rng=rng)
@@ -1203,8 +1204,10 @@ def slr_with_qbx(
 whole_brain_slr = slr_with_qbx
 
 
+@warning_for_keywords()
 def groupwise_slr(
     bundles,
+    *,
     x0="affine",
     tol=0,
     max_iter=20,
@@ -1214,12 +1217,15 @@ def groupwise_slr(
     verbose=False,
     rng=None,
 ):
-    """Function to perform unbiased groupwise bundle registration.
+    """Function to perform unbiased groupwise bundle registration
 
     All bundles are moved to the same space by iteratively applying halfway
     streamline linear registration in pairs. With each iteration, bundles get
     closer to each other until the procedure converges and there is no more
     improvement.
+
+    See :footcite:p:`Garyfallidis2014b`, :footcite:p:`Garyfallidis2015` and
+    :footcite:p:`Garyfallidis2018`.
 
     Parameters
     ----------
@@ -1227,43 +1233,36 @@ def groupwise_slr(
         List with streamlines of the bundles to be registered.
 
     x0 : str, optional
-        rigid, similarity or affine transformation model. Default: affine.
+        rigid, similarity or affine transformation model.
 
     tol : float, optional
-        Tolerance value to be used to assume convergence. Default: 0.
+        Tolerance value to be used to assume convergence.
 
     max_iter : int, optional
         Maximum number of iterations. Depending on the number of bundles to be
-        registered this may need to be larger. Default: 20.
+        registered this may need to be larger.
 
     qbx_thr : variable int, optional
         Thresholds for Quickbundles used for clustering streamlines and reduce
         computational time. If None, no clustering is performed. Higher values
-        cluster streamlines into a smaller number of centroids. Default: [4].
+        cluster streamlines into a smaller number of centroids.
 
     nb_pts : int, optional
-        Number of points for discretizing each streamline. Default: 20.
+        Number of points for discretizing each streamline.
 
     select_random : int, optional
         Maximum number of streamlines for each bundle. If None, all the
-        streamlines are used. Default: 10000.
+        streamlines are used.
 
     verbose : bool, optional
-        If True, logs information. Default: False.
+        If True, logs information.
 
     rng : np.random.Generator
-        If None, creates random generator in function. Default: None.
+        If None, creates random generator in function.
 
     References
     ----------
-    .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-    registration of white-matter fascicles in the space of streamlines",
-    NeuroImage, 117, 124--140, 2015
-    .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
-            bundle alignment for group comparisons", ISMRM, 2014.
-    .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-    bundles using local and global streamline-based registration and
-    clustering, Neuroimage, 2017.
+    .. footbibliography::
 
     """
 
@@ -1307,10 +1306,10 @@ def groupwise_slr(
 
         if select_random is not None:
             bundles[i] = select_random_set_of_streamlines(
-                bundles[i], select_random, rng
+                bundles[i], select_random, rng=rng
             )
 
-        bundles[i] = set_number_of_points(bundles[i], nb_pts)
+        bundles[i] = set_number_of_points(bundles[i], nb_points=nb_pts)
 
         bundle, shift = center_streamlines(bundles[i])
         aff_list.append(compose_matrix44(-shift))
@@ -1369,7 +1368,7 @@ def groupwise_slr(
                 logging.info("Registration converged {d_improve} < {tol}")
             break
 
-        pairs, excluded = get_unique_pairs(n_bundle, pairs)
+        pairs, excluded = get_unique_pairs(n_bundle, pairs=pairs)
 
     # Move bundles just once at the end
     for i, aff in enumerate(aff_list):
@@ -1378,7 +1377,8 @@ def groupwise_slr(
     return bundles, aff_list, d
 
 
-def get_unique_pairs(n_bundle, pairs=None):
+@warning_for_keywords()
+def get_unique_pairs(n_bundle, *, pairs=None):
     """Make unique pairs from n_bundle bundles.
 
     The function allows to input a previous pairs assignment so that the new
@@ -1434,7 +1434,8 @@ def _threshold(x, th):
     return np.maximum(np.minimum(x, th), -th)
 
 
-def compose_matrix44(t, dtype=np.double):
+@warning_for_keywords()
+def compose_matrix44(t, *, dtype=np.double):
     """Compose a 4x4 transformation matrix.
 
     Parameters
@@ -1478,7 +1479,8 @@ def compose_matrix44(t, dtype=np.double):
     return compose_matrix(scale=scale, shear=shear, angles=angles, translate=translate)
 
 
-def decompose_matrix44(mat, size=12):
+@warning_for_keywords()
+def decompose_matrix44(mat, *, size=12):
     """Given a 4x4 homogeneous matrix return the parameter vector.
 
     Parameters

@@ -23,22 +23,22 @@ is left to right (tail to nose), the $y$ axis is from the left wing tip
 to the right wing tip (going away from the screen), and the $z$ axis is
 from bottom to top:
 
-.. image:: images/spitfire_0.png
+.. image:: /_static/spitfire_0.png
 
 Imagine we wanted to do a slight roll with the left wing tilting down
 (rotation about $x$) like this:
 
-.. image:: images/spitfire_x.png
+.. image:: /_static/spitfire_x.png
 
 followed by a violent pitch so we are pointing straight up (rotation
 around $y$ axis):
 
-.. image:: images/spitfire_y.png
+.. image:: /_static/spitfire_y.png
 
 Now we'd like to do a turn of the nose towards the viewer (and the tail
 away from the viewer):
 
-.. image:: images/spitfire_hoped.png
+.. image:: /_static/spitfire_hoped.png
 
 But, wait, let's go back over that again.  Look at the result of the
 rotation around the $y$ axis.  Notice that the $x$ axis, as was, is now

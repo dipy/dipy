@@ -3,8 +3,11 @@
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
 
+from dipy.testing.decorators import warning_for_keywords
 
-def adjacency_calc(img_shape, mask=None, cutoff=1.99):
+
+@warning_for_keywords()
+def adjacency_calc(img_shape, *, mask=None, cutoff=1.99):
     """Create adjacency list for voxels, accounting for the mask.
 
     Parameters

@@ -8,9 +8,19 @@ import warnings
 
 from libc.math cimport floor
 
+from scipy.interpolate import Rbf, RBFInterpolator
+
 from dipy.align.fused_types cimport floating, number
+from dipy.utils.deprecator import deprecate_with_version
 
 
+@deprecate_with_version(
+    "dipy.core.interpolation.interp_rbf is deprecated, "
+    "Please use "
+    "dipy.core.interpolation.rbf_interpolation instead",
+    since="1.10.0",
+    until="1.12.0",
+)
 def interp_rbf(data, sphere_origin, sphere_target,
                function='multiquadric', epsilon=None, smooth=0.1,
                norm="angle"):
@@ -47,11 +57,9 @@ def interp_rbf(data, sphere_origin, sphere_target,
 
     See Also
     --------
-    scipy.interpolate.Rbf
+    scipy.interpolate.RBFInterpolator
 
     """
-    from scipy.interpolate import Rbf
-
     def angle(x1, x2):
         xx = np.arccos(np.clip((x1 * x2).sum(axis=0), -1, 1))
         return np.nan_to_num(xx)
@@ -83,6 +91,53 @@ def interp_rbf(data, sphere_origin, sphere_target,
     rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
                **kwargs)
     return rbfi(sphere_target.x, sphere_target.y, sphere_target.z)
+
+
+def rbf_interpolation(data, sphere_origin, sphere_target, *,
+                      function='multiquadric', epsilon=None, smoothing=0.1):
+    """Interpolate `data` on the sphere, using radial basis functions,
+    where `data` can be scalar- (1D), vector- (2D), or tensor-valued (3D and beyond).
+
+    Parameters
+    ----------
+    data : (..., N) ndarray
+        Values of the spherical function evaluated at the N positions specified by `sphere_origin`.
+    sphere_origin : Sphere
+        N positions on the unit sphere where the spherical function is evaluated.
+    sphere_target : Sphere
+        M positions on the unit sphere where the spherical function is interpolated.
+
+    function: str, optional
+        Radial basis function.
+        Possible values: {'linear', 'thin_plate_spline', 'cubic', 'quintic',
+        'multiquadric', 'inverse_multiquadric', 'inverse_quadratic', 'gaussian'}.
+    epsilon : float, optional
+        Radial basis function spread parameter.
+        Defaults to 1 when `function` is 'linear', 'thin_plate_spline', 'cubic', or 'quintic'.
+        Otherwise, `epsilon` must be specified.
+    smoothing : float, optional
+        Smoothing parameter. When `smoothing` is 0, the interpolation is exact.
+        As `smoothing` increases, the interpolation approaches a least-squares fit of `data`
+        using the supplied radial basis function. Default: 0.
+
+    Returns
+    -------
+    v : (..., M) ndarray
+        Interpolated values of the spherical function at M positions specified by `sphere_target`.
+
+    See Also
+    --------
+    scipy.interpolate.RBFInterpolator
+
+    """
+    last_dim_idx = data.ndim - 1
+    if not data.shape[last_dim_idx] == sphere_origin.vertices.shape[0]:
+        raise ValueError("The last dimension of `data` must be equal to the number of "
+                         "vertices in `sphere_origin`.")
+
+    rbfi = RBFInterpolator(sphere_origin.vertices, np.moveaxis(data, last_dim_idx, 0),
+                           smoothing=smoothing, kernel=function, epsilon=epsilon)
+    return np.moveaxis(rbfi(sphere_target.vertices), 0, last_dim_idx)
 
 
 @cython.cdivision(True)
@@ -1126,7 +1181,7 @@ class TriLinearInterpolator(Interpolator):
                              "of a 3d voxel")
 
     def __getitem__(self, index):
-        index = np.array(index, copy=False, dtype="float")
+        index = np.asarray(index, dtype="float")
         try:
             return trilinear_interp(self.data, index, self.voxel_size)
         except IndexError:

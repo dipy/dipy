@@ -2,6 +2,8 @@ import warnings
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
+
 
 def check_img_shapes(images):
     """Check if the images have same shapes. It also provides details about the
@@ -150,39 +152,14 @@ def _unpack_data(data, return_size=3):
     return result
 
 
-def is_binary_image(data):
-    """Check if an image is binary image.
-
-    Parameters
-    ----------
-    data : ndarray
-
-    Returns
-    -------
-    boolean
-        Whether the image is binary or not
-    """
-
-    sample_cube_size = int(max(data.shape) / 10.0)
-    sample_cube = [sample_cube_size] * data.ndim
-
-    for idx, dim in enumerate(data.shape):
-        if dim < sample_cube[idx]:
-            data = np.take(data, np.arange(stop=dim), axis=idx)
-        else:
-            start = int(dim / 2) - int(sample_cube[idx] / 2)
-            stop = int(dim / 2) + int(sample_cube[idx] / 2)
-            data = np.take(data, np.arange(start=start, stop=stop), axis=idx)
-
-    return np.unique(data).shape[0] <= 2
-
-
-def check_peak_size(pams, ref_img_shape=None, sync_imgs=False):
+@warning_for_keywords()
+def check_peak_size(pams, *, ref_img_shape=None, sync_imgs=False):
     """Check shape of peaks.
 
     Parameters
     ----------
     pams : PeaksAndMetrics
+        Peaks and metrics.
     ref_img_shape : tuple, optional
         3D shape of the image, by default None.
     sync_imgs : bool, optional

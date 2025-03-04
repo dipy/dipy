@@ -371,13 +371,25 @@ def test_warping_2d():
 
             # Test bilinear interpolation
             expected = map_coordinates(circle, W, order=1)
-            warped = vfu.warp_2d(circle, dcopy, A, B, C, np.array(sh, dtype=np.int32))
+            warped = vfu.warp_2d(
+                circle,
+                dcopy,
+                affine_idx_in=A,
+                affine_idx_out=B,
+                affine_disp=C,
+                out_shape=np.array(sh, dtype=np.int32),
+            )
             assert_array_almost_equal(warped, expected)
 
             # Test nearest neighbor interpolation
             expected = map_coordinates(circle, W, order=0)
             warped = vfu.warp_2d_nn(
-                circle, dcopy, A, B, C, np.array(sh, dtype=np.int32)
+                circle,
+                dcopy,
+                affine_idx_in=A,
+                affine_idx_out=B,
+                affine_disp=C,
+                out_shape=np.array(sh, dtype=np.int32),
             )
             assert_array_almost_equal(warped, expected)
 
@@ -386,13 +398,67 @@ def test_warping_2d():
     inval = np.zeros((2, 2), dtype=np.float64)
     sh = np.array(sh, dtype=np.int32)
     # Exceptions from warp_2d
-    assert_raises(ValueError, vfu.warp_2d, circle, d, inval, val, val, sh)
-    assert_raises(ValueError, vfu.warp_2d, circle, d, val, inval, val, sh)
-    assert_raises(ValueError, vfu.warp_2d, circle, d, val, val, inval, sh)
+    assert_raises(
+        ValueError,
+        vfu.warp_2d,
+        circle,
+        d,
+        affine_idx_in=inval,
+        affine_idx_out=val,
+        affine_disp=val,
+        out_shape=sh,
+    )
+    assert_raises(
+        ValueError,
+        vfu.warp_2d,
+        circle,
+        d,
+        affine_idx_in=val,
+        affine_idx_out=inval,
+        affine_disp=val,
+        out_shape=sh,
+    )
+    assert_raises(
+        ValueError,
+        vfu.warp_2d,
+        circle,
+        d,
+        affine_idx_in=val,
+        affine_idx_out=val,
+        affine_disp=inval,
+        out_shape=sh,
+    )
     # Exceptions from warp_2d_nn
-    assert_raises(ValueError, vfu.warp_2d_nn, circle, d, inval, val, val, sh)
-    assert_raises(ValueError, vfu.warp_2d_nn, circle, d, val, inval, val, sh)
-    assert_raises(ValueError, vfu.warp_2d_nn, circle, d, val, val, inval, sh)
+    assert_raises(
+        ValueError,
+        vfu.warp_2d_nn,
+        circle,
+        d,
+        affine_idx_in=inval,
+        affine_idx_out=val,
+        affine_disp=val,
+        out_shape=sh,
+    )
+    assert_raises(
+        ValueError,
+        vfu.warp_2d_nn,
+        circle,
+        d,
+        affine_idx_in=val,
+        affine_idx_out=inval,
+        affine_disp=val,
+        out_shape=sh,
+    )
+    assert_raises(
+        ValueError,
+        vfu.warp_2d_nn,
+        circle,
+        d,
+        affine_idx_in=val,
+        affine_idx_out=val,
+        affine_disp=inval,
+        out_shape=sh,
+    )
 
 
 def test_warping_3d():
@@ -478,13 +544,25 @@ def test_warping_3d():
 
             # Test bilinear interpolation
             expected = map_coordinates(sphere, W, order=1)
-            warped = vfu.warp_3d(sphere, dcopy, A, B, C, np.array(sh, dtype=np.int32))
+            warped = vfu.warp_3d(
+                sphere,
+                dcopy,
+                affine_idx_in=A,
+                affine_idx_out=B,
+                affine_disp=C,
+                out_shape=np.array(sh, dtype=np.int32),
+            )
             assert_array_almost_equal(warped, expected, decimal=5)
 
             # Test nearest neighbor interpolation
             expected = map_coordinates(sphere, W, order=0)
             warped = vfu.warp_3d_nn(
-                sphere, dcopy, A, B, C, np.array(sh, dtype=np.int32)
+                sphere,
+                dcopy,
+                affine_idx_in=A,
+                affine_idx_out=B,
+                affine_disp=C,
+                out_shape=np.array(sh, dtype=np.int32),
             )
             assert_array_almost_equal(warped, expected, decimal=5)
 
@@ -493,13 +571,67 @@ def test_warping_3d():
     inval = np.zeros((3, 3), dtype=np.float64)
     sh = np.array(sh, dtype=np.int32)
     # Exceptions from warp_3d
-    assert_raises(ValueError, vfu.warp_3d, sphere, d, inval, val, val, sh)
-    assert_raises(ValueError, vfu.warp_3d, sphere, d, val, inval, val, sh)
-    assert_raises(ValueError, vfu.warp_3d, sphere, d, val, val, inval, sh)
+    assert_raises(
+        ValueError,
+        vfu.warp_3d,
+        sphere,
+        d,
+        affine_idx_in=inval,
+        affine_idx_out=val,
+        affine_disp=val,
+        out_shape=sh,
+    )
+    assert_raises(
+        ValueError,
+        vfu.warp_3d,
+        sphere,
+        d,
+        affine_idx_in=val,
+        affine_idx_out=inval,
+        affine_disp=val,
+        out_shape=sh,
+    )
+    assert_raises(
+        ValueError,
+        vfu.warp_3d,
+        sphere,
+        d,
+        affine_idx_in=val,
+        affine_idx_out=val,
+        affine_disp=inval,
+        out_shape=sh,
+    )
     # Exceptions from warp_3d_nn
-    assert_raises(ValueError, vfu.warp_3d_nn, sphere, d, inval, val, val, sh)
-    assert_raises(ValueError, vfu.warp_3d_nn, sphere, d, val, inval, val, sh)
-    assert_raises(ValueError, vfu.warp_3d_nn, sphere, d, val, val, inval, sh)
+    assert_raises(
+        ValueError,
+        vfu.warp_3d_nn,
+        sphere,
+        d,
+        affine_idx_in=inval,
+        affine_idx_out=val,
+        affine_disp=val,
+        out_shape=sh,
+    )
+    assert_raises(
+        ValueError,
+        vfu.warp_3d_nn,
+        sphere,
+        d,
+        affine_idx_in=val,
+        affine_idx_out=inval,
+        affine_disp=val,
+        out_shape=sh,
+    )
+    assert_raises(
+        ValueError,
+        vfu.warp_3d_nn,
+        sphere,
+        d,
+        affine_idx_in=val,
+        affine_idx_out=val,
+        affine_disp=inval,
+        out_shape=sh,
+    )
 
 
 def test_affine_transforms_2d():
@@ -546,25 +678,25 @@ def test_affine_transforms_2d():
 
             expected = map_coordinates(circle, Y, order=1)
             warped = vfu.transform_2d_affine(
-                circle, np.array(d_shape, dtype=np.int32), gt_affine
+                circle, np.array(d_shape, dtype=np.int32), affine=gt_affine
             )
             assert_array_almost_equal(warped, expected)
 
             # Test affine warping with nearest-neighbor interpolation
             expected = map_coordinates(circle, Y, order=0)
             warped = vfu.transform_2d_affine_nn(
-                circle, np.array(d_shape, dtype=np.int32), gt_affine
+                circle, np.array(d_shape, dtype=np.int32), affine=gt_affine
             )
             assert_array_almost_equal(warped, expected)
 
     # Test the affine = None case
     warped = vfu.transform_2d_affine(
-        circle, np.array(codomain_shape, dtype=np.int32), None
+        circle, np.array(codomain_shape, dtype=np.int32), affine=None
     )
     assert_array_equal(warped, circle)
 
     warped = vfu.transform_2d_affine_nn(
-        circle, np.array(codomain_shape, dtype=np.int32), None
+        circle, np.array(codomain_shape, dtype=np.int32), affine=None
     )
     assert_array_equal(warped, circle)
 
@@ -574,11 +706,15 @@ def test_affine_transforms_2d():
     invalid_nan[1, 1] = np.nan
     shape = np.array(codomain_shape, dtype=np.int32)
     # Exceptions from transform_2d
-    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
-    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid_nan)
+    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, affine=invalid)
+    assert_raises(
+        ValueError, vfu.transform_2d_affine, circle, shape, affine=invalid_nan
+    )
     # Exceptions from transform_2d_nn
-    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid)
-    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, invalid_nan)
+    assert_raises(ValueError, vfu.transform_2d_affine_nn, circle, shape, affine=invalid)
+    assert_raises(
+        ValueError, vfu.transform_2d_affine_nn, circle, shape, affine=invalid_nan
+    )
 
 
 def test_affine_transforms_3d():
@@ -635,25 +771,25 @@ def test_affine_transforms_3d():
 
             expected = map_coordinates(sphere, Y, order=1)
             transformed = vfu.transform_3d_affine(
-                sphere, np.array(d_shape, dtype=np.int32), gt_affine
+                sphere, np.array(d_shape, dtype=np.int32), affine=gt_affine
             )
             assert_array_almost_equal(transformed, expected)
 
             # Test affine transform with nearest-neighbor interpolation
             expected = map_coordinates(sphere, Y, order=0)
             transformed = vfu.transform_3d_affine_nn(
-                sphere, np.array(d_shape, dtype=np.int32), gt_affine
+                sphere, np.array(d_shape, dtype=np.int32), affine=gt_affine
             )
             assert_array_almost_equal(transformed, expected)
 
     # Test the affine = None case
     transformed = vfu.transform_3d_affine(
-        sphere, np.array(codomain_shape, dtype=np.int32), None
+        sphere, np.array(codomain_shape, dtype=np.int32), affine=None
     )
     assert_array_equal(transformed, sphere)
 
     transformed = vfu.transform_3d_affine_nn(
-        sphere, np.array(codomain_shape, dtype=np.int32), None
+        sphere, np.array(codomain_shape, dtype=np.int32), affine=None
     )
     assert_array_equal(transformed, sphere)
 
@@ -663,11 +799,15 @@ def test_affine_transforms_3d():
     invalid_nan[1, 1] = np.nan
     shape = np.array(codomain_shape, dtype=np.int32)
     # Exceptions from transform_3d_affine
-    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid_nan)
+    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, affine=invalid)
+    assert_raises(
+        ValueError, vfu.transform_3d_affine, sphere, shape, affine=invalid_nan
+    )
     # Exceptions from transform_3d_affine_nn
-    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid)
-    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, invalid_nan)
+    assert_raises(ValueError, vfu.transform_3d_affine_nn, sphere, shape, affine=invalid)
+    assert_raises(
+        ValueError, vfu.transform_3d_affine_nn, sphere, shape, affine=invalid_nan
+    )
 
 
 @set_random_number_generator(8315759)
@@ -742,13 +882,25 @@ def test_compose_vector_fields_2d(rng):
         )
         # apply the implementation under test
         warped = np.array(
-            vfu.warp_2d(moving_image, composition, None, premult_index, premult_disp)
+            vfu.warp_2d(
+                moving_image,
+                composition,
+                affine_idx_in=None,
+                affine_idx_out=premult_index,
+                affine_disp=premult_disp,
+            )
         )
         assert_array_almost_equal(warped, expected)
 
         # test also using nearest neighbor interpolation
         warped = np.array(
-            vfu.warp_2d_nn(moving_image, composition, None, premult_index, premult_disp)
+            vfu.warp_2d_nn(
+                moving_image,
+                composition,
+                affine_idx_in=None,
+                affine_idx_out=premult_index,
+                affine_disp=premult_disp,
+            )
         )
         assert_array_almost_equal(warped, expected)
 
@@ -764,13 +916,25 @@ def test_compose_vector_fields_2d(rng):
         )
         # apply the implementation under test
         warped = np.array(
-            vfu.warp_2d(moving_image, composition, None, premult_index, premult_disp)
+            vfu.warp_2d(
+                moving_image,
+                composition,
+                affine_idx_in=None,
+                affine_idx_out=premult_index,
+                affine_disp=premult_disp,
+            )
         )
         assert_array_almost_equal(warped, expected)
 
         # test also using nearest neighbor interpolation
         warped = np.array(
-            vfu.warp_2d_nn(moving_image, composition, None, premult_index, premult_disp)
+            vfu.warp_2d_nn(
+                moving_image,
+                composition,
+                affine_idx_in=None,
+                affine_idx_out=premult_index,
+                affine_disp=premult_disp,
+            )
         )
         assert_array_almost_equal(warped, expected)
 
@@ -900,13 +1064,25 @@ def test_compose_vector_fields_3d(rng):
         )
         # apply the implementation under test
         warped = np.array(
-            vfu.warp_3d(moving_image, composition, None, premult_index, premult_disp)
+            vfu.warp_3d(
+                moving_image,
+                composition,
+                affine_idx_in=None,
+                affine_idx_out=premult_index,
+                affine_disp=premult_disp,
+            )
         )
         assert_array_almost_equal(warped, expected)
 
         # test also using nearest neighbor interpolation
         warped = np.array(
-            vfu.warp_3d_nn(moving_image, composition, None, premult_index, premult_disp)
+            vfu.warp_3d_nn(
+                moving_image,
+                composition,
+                affine_idx_in=None,
+                affine_idx_out=premult_index,
+                affine_disp=premult_disp,
+            )
         )
         assert_array_almost_equal(warped, expected)
 
@@ -922,13 +1098,25 @@ def test_compose_vector_fields_3d(rng):
         )
         # apply the implementation under test
         warped = np.array(
-            vfu.warp_3d(moving_image, composition, None, premult_index, premult_disp)
+            vfu.warp_3d(
+                moving_image,
+                composition,
+                affine_idx_in=None,
+                affine_idx_out=premult_index,
+                affine_disp=premult_disp,
+            )
         )
         assert_array_almost_equal(warped, expected)
 
         # test also using nearest neighbor interpolation
         warped = np.array(
-            vfu.warp_3d_nn(moving_image, composition, None, premult_index, premult_disp)
+            vfu.warp_3d_nn(
+                moving_image,
+                composition,
+                affine_idx_in=None,
+                affine_idx_out=premult_index,
+                affine_disp=premult_disp,
+            )
         )
         assert_array_almost_equal(warped, expected)
 
@@ -1017,7 +1205,7 @@ def test_invert_vector_field_2d():
                 dcopy, gt_affine_inv, np.array([s, s]), 40, 1e-7
             )
 
-            mapping = imwarp.DiffeomorphicMap(2, (nr, nc), gt_affine)
+            mapping = imwarp.DiffeomorphicMap(2, (nr, nc), disp_grid2world=gt_affine)
             mapping.forward = dcopy
             mapping.backward = inv_approx
             residual, stats = mapping.compute_inversion_error()
@@ -1035,7 +1223,7 @@ def test_invert_vector_field_2d():
         spacing,
         40,
         1e-7,
-        None,
+        start=None,
     )
 
 
@@ -1089,7 +1277,7 @@ def test_invert_vector_field_3d():
                 dcopy, gt_affine_inv, np.array([s, s, s]) * 0.5, 40, 1e-7
             )
 
-            mapping = imwarp.DiffeomorphicMap(3, (nr, nc), gt_affine)
+            mapping = imwarp.DiffeomorphicMap(3, (nr, nc), disp_grid2world=gt_affine)
             mapping.forward = dcopy
             mapping.backward = inv_approx
             residual, stats = mapping.compute_inversion_error()
@@ -1107,7 +1295,7 @@ def test_invert_vector_field_3d():
         spacing,
         40,
         1e-7,
-        None,
+        start=None,
     )
 
 

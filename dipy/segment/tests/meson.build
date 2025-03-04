@@ -10,6 +10,8 @@ python_sources = [
   'test_mrf.py',
   'test_qbx.py',
   'test_quickbundles.py',
+  'test_tissue.py',
+  'test_utils.py',
   ]
 
 

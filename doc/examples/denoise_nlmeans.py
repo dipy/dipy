@@ -3,9 +3,10 @@
 Denoise images using Non-Local Means (NLMEANS)
 ==============================================
 
-Using the non-local means filter [Coupe08]_ and [Coupe11]_ and  you can denoise
-3D or 4D images and boost the SNR of your datasets. You can also decide between
-modeling the noise as Gaussian or Rician (default).
+Using the non-local means filter :footcite:p:`Coupe2008` and
+:footcite:p:`Coupe2012` and you can denoise 3D or 4D images and boost the SNR of
+your datasets. You can also decide between modeling the noise as Gaussian or
+Rician (default).
 
 We start by loading the necessary modules
 """
@@ -23,7 +24,7 @@ from dipy.io.image import load_nifti, save_nifti
 ###############################################################################
 # Then, let's fetch and load a T1 data from Stanford University
 
-t1_fname = get_fnames("stanford_t1")
+t1_fname = get_fnames(name="stanford_t1")
 data, affine = load_nifti(t1_fname)
 
 mask = data > 1500
@@ -85,12 +86,5 @@ save_nifti("denoised.nii.gz", den, affine)
 # References
 # ----------
 #
-# .. [Coupe08] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann,
-#    C. Barillot, "An Optimized Blockwise Non Local Means Denoising Filter
-#    for 3D Magnetic Resonance Images", IEEE Transactions on Medical Imaging,
-#    27(4):425-441, 2008
+# .. footbibliography::
 #
-# .. [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-#     "Adaptive Multiresolution Non-Local Means Filter for 3D MR Image
-#     Denoising" IET Image Processing, Institution of Engineering and
-#     Technology, 2011

@@ -31,6 +31,15 @@ cdef class EuDXDirectionGetter(DirectionGetter):
         self.qa_thr = 0.0239
         self.ang_thr = 60
         self.total_weight = .5
+        self.sphere = None
+        self.peak_indices = None
+        self.peak_values = None
+        self.peak_dirs = None
+        self.gfa = None
+        self.qa = None
+        self.shm_coeff = None
+        self.B = None
+        self.odf = None
 
     def _initialize(self):
         """First time that a PAM instance is used as a direction getter,
@@ -41,8 +50,9 @@ cdef class EuDXDirectionGetter(DirectionGetter):
             raise ValueError(msg)
         self._qa = np.ascontiguousarray(self.peak_values, dtype=np.double)
         self._ind = np.ascontiguousarray(self.peak_indices, dtype=np.double)
-        self._odf_vertices = np.array(self.sphere.vertices, copy=False,
-                                      dtype=np.double, order='C')
+        self._odf_vertices = np.asarray(
+            self.sphere.vertices, dtype=np.double, order='C'
+        )
 
         self.initialized = True
 

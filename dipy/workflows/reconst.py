@@ -7,11 +7,12 @@ import nibabel as nib
 import numpy as np
 
 from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
+from dipy.core.ndindex import ndindex
 from dipy.data import default_sphere, get_sphere
-from dipy.direction.peaks import peaks_from_model
+from dipy.direction.peaks import peak_directions, peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
-from dipy.io.peaks import peaks_to_niftis, save_peaks
+from dipy.io.peaks import niftis_to_pam, pam_to_niftis, save_pam, tensor_to_pam
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst import mapmri
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
@@ -31,6 +32,7 @@ from dipy.reconst.dti import (
 from dipy.reconst.ivim import IvimModel
 from dipy.reconst.rumba import RumbaSDModel
 from dipy.reconst.shm import CsaOdfModel
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.workflows.workflow import Workflow
 
@@ -54,6 +56,12 @@ class ReconstMAPMRIFlow(Workflow):
         save_metrics=(),
         laplacian_weighting=0.05,
         radial_order=6,
+        sphere_name=None,
+        relative_peak_threshold=0.5,
+        min_separation_angle=25,
+        npeaks=5,
+        normalize_peaks=False,
+        extract_pam_values=False,
         out_dir="",
         out_rtop="rtop.nii.gz",
         out_lapnorm="lapnorm.nii.gz",
@@ -64,6 +72,10 @@ class ReconstMAPMRIFlow(Workflow):
         out_ng="ng.nii.gz",
         out_perng="perng.nii.gz",
         out_parng="parng.nii.gz",
+        out_pam="mapmri_peaks.pam5",
+        out_peaks_dir="mapmri_peaks_dirs.nii.gz",
+        out_peaks_values="mapmri_peaks_values.nii.gz",
+        out_peaks_indices="mapmri_peaks_indices.nii.gz",
     ):
         """Workflow for fitting the MAPMRI model (with optional Laplacian
         regularization). Generates rtop, lapnorm, msd, qiv, rtap, rtpp,
@@ -110,6 +122,20 @@ class ReconstMAPMRIFlow(Workflow):
             and both model types.
         radial_order : unsigned int, optional
             Even value used to set the order of the basis.
+        sphere_name : string, optional
+            Sphere name on which to reconstruct the fODFs.
+        relative_peak_threshold : float, optional
+            Only return peaks greater than ``relative_peak_threshold * m``
+            where m is the largest peak.
+        min_separation_angle : float, optional
+            The minimum distance between directions. If two peaks are too close
+            only the larger of the two is returned.
+        npeaks : int, optional
+            Maximum number of peaks found.
+        normalize_peaks : bool, optional
+            If true, all peak values are calculated relative to `max(odf)`.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
         out_dir : string, optional
             Output directory. (default: current directory)
         out_rtop : string, optional
@@ -130,6 +156,15 @@ class ReconstMAPMRIFlow(Workflow):
             Name of the Non-Gaussianity perpendicular to be saved.
         out_parng : string, optional
             Name of the Non-Gaussianity parallel to be saved.
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+
         """
         io_it = self.get_io_iterator()
         for (
@@ -145,6 +180,10 @@ class ReconstMAPMRIFlow(Workflow):
             out_ng,
             out_perng,
             out_parng,
+            opam,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
         ) in io_it:
             logging.info(f"Computing MAPMRI metrics for {dwi}")
             data, affine = load_nifti(dwi)
@@ -181,91 +220,85 @@ class ReconstMAPMRIFlow(Workflow):
                     "parng",
                 ]
 
-            if laplacian and positivity:
-                map_model_aniso = mapmri.MapmriModel(
-                    gtab,
-                    radial_order=radial_order,
-                    laplacian_regularization=True,
-                    laplacian_weighting=laplacian_weighting,
-                    positivity_constraint=True,
-                    bval_threshold=bval_threshold,
-                )
+            kwargs = {
+                "laplacian_regularization": laplacian,
+                "positivity_constraint": positivity,
+            }
+            map_model_aniso = mapmri.MapmriModel(
+                gtab,
+                radial_order=radial_order,
+                laplacian_weighting=laplacian_weighting,
+                bval_threshold=bval_threshold,
+                **kwargs,
+            )
+            mapfit_aniso = map_model_aniso.fit(data)
 
-                mapfit_aniso = map_model_aniso.fit(data)
-
-            elif positivity:
-                map_model_aniso = mapmri.MapmriModel(
-                    gtab,
-                    radial_order=radial_order,
-                    laplacian_regularization=False,
-                    positivity_constraint=True,
-                    bval_threshold=bval_threshold,
-                )
-                mapfit_aniso = map_model_aniso.fit(data)
-
-            elif laplacian:
-                map_model_aniso = mapmri.MapmriModel(
-                    gtab,
-                    radial_order=radial_order,
-                    laplacian_regularization=True,
-                    laplacian_weighting=laplacian_weighting,
-                    bval_threshold=bval_threshold,
-                )
-                mapfit_aniso = map_model_aniso.fit(data)
-
-            else:
-                map_model_aniso = mapmri.MapmriModel(
-                    gtab,
-                    radial_order=radial_order,
-                    laplacian_regularization=False,
-                    positivity_constraint=False,
-                    bval_threshold=bval_threshold,
-                )
-                mapfit_aniso = map_model_aniso.fit(data)
-
-            # for name, fname, func in [('rtop', out_rtop, mapfit_aniso.rtop),
-            #                           ]:
-            #     if name in save_metrics:
-            #         r = func()
-            #         save_nifti(fname, r.astype(np.float32), affine)
-
-            if "rtop" in save_metrics:
-                r = mapfit_aniso.rtop()
-                save_nifti(out_rtop, r.astype(np.float32), affine)
-
-            if "laplacian_signal" in save_metrics:
-                ll = mapfit_aniso.norm_of_laplacian_signal()
-                save_nifti(out_lapnorm, ll.astype(np.float32), affine)
-
-            if "msd" in save_metrics:
-                m = mapfit_aniso.msd()
-                save_nifti(out_msd, m.astype(np.float32), affine)
-
-            if "qiv" in save_metrics:
-                q = mapfit_aniso.qiv()
-                save_nifti(out_qiv, q.astype(np.float32), affine)
-
-            if "rtap" in save_metrics:
-                r = mapfit_aniso.rtap()
-                save_nifti(out_rtap, r.astype(np.float32), affine)
-
-            if "rtpp" in save_metrics:
-                r = mapfit_aniso.rtpp()
-                save_nifti(out_rtpp, r.astype(np.float32), affine)
-
-            if "ng" in save_metrics:
-                n = mapfit_aniso.ng()
-                save_nifti(out_ng, n.astype(np.float32), affine)
-
-            if "perng" in save_metrics:
-                n = mapfit_aniso.ng_perpendicular()
-                save_nifti(out_perng, n.astype(np.float32), affine)
-
-            if "parng" in save_metrics:
-                n = mapfit_aniso.ng_parallel()
-                save_nifti(out_parng, n.astype(np.float32), affine)
+            for name, fname, func in [
+                ("rtop", out_rtop, mapfit_aniso.rtop),
+                (
+                    "laplacian_signal",
+                    out_lapnorm,
+                    mapfit_aniso.norm_of_laplacian_signal,
+                ),
+                ("msd", out_msd, mapfit_aniso.msd),
+                ("qiv", out_qiv, mapfit_aniso.qiv),
+                ("rtap", out_rtap, mapfit_aniso.rtap),
+                ("rtpp", out_rtpp, mapfit_aniso.rtpp),
+                ("ng", out_ng, mapfit_aniso.ng),
+                ("perng", out_perng, mapfit_aniso.ng_perpendicular),
+                ("parng", out_parng, mapfit_aniso.ng_parallel),
+            ]:
+                if name in save_metrics:
+                    r = func()
+                    save_nifti(fname, r.astype(np.float32), affine)
 
             logging.info(f"MAPMRI saved in {os.path.abspath(out_dir)}")
+
+            sphere = default_sphere
+            if sphere_name:
+                sphere = get_sphere(sphere_name)
+
+            shape = data.shape[:-1]
+            peak_dirs = np.zeros((shape + (npeaks, 3)))
+            peak_values = np.zeros((shape + (npeaks,)))
+            peak_indices = np.zeros((shape + (npeaks,)), dtype=np.int32)
+            peak_indices.fill(-1)
+
+            odf = mapfit_aniso.odf(sphere)
+            for idx in ndindex(shape):
+                # Get peaks of odf
+                direction, pk, ind = peak_directions(
+                    odf[idx],
+                    sphere,
+                    relative_peak_threshold=relative_peak_threshold,
+                    min_separation_angle=min_separation_angle,
+                )
+
+                # Calculate peak metrics
+                if pk.shape[0] != 0:
+                    n = min(npeaks, pk.shape[0])
+
+                    peak_dirs[idx][:n] = direction[:n]
+                    peak_indices[idx][:n] = ind[:n]
+                    peak_values[idx][:n] = pk[:n]
+
+                    if normalize_peaks:
+                        peak_values[idx][:n] /= pk[0]
+                        peak_dirs[idx] *= peak_values[idx][:, None]
+
+            pam = niftis_to_pam(
+                affine, peak_dirs, peak_values, peak_indices, odf=odf, sphere=sphere
+            )
+            save_pam(opam, pam)
+
+            if extract_pam_values:
+                pam_to_niftis(
+                    pam,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    reshape_dirs=True,
+                )
 
 
 class ReconstDtiFlow(Workflow):
@@ -282,8 +315,11 @@ class ReconstDtiFlow(Workflow):
         fit_method="WLS",
         b0_threshold=50,
         bvecs_tol=0.01,
+        npeaks=1,
         sigma=None,
         save_metrics=None,
+        nifti_tensor=True,
+        extract_pam_values=False,
         out_dir="",
         out_tensor="tensors.nii.gz",
         out_fa="fa.nii.gz",
@@ -295,22 +331,19 @@ class ReconstDtiFlow(Workflow):
         out_mode="mode.nii.gz",
         out_evec="evecs.nii.gz",
         out_eval="evals.nii.gz",
-        nifti_tensor=True,
-        extract_pam_values=False,
-        parallel=False,
-        num_processes=None,
         out_pam="peaks.pam5",
-        out_shm="shm.nii.gz",
         out_peaks_dir="peaks_dirs.nii.gz",
         out_peaks_values="peaks_values.nii.gz",
         out_peaks_indices="peaks_indices.nii.gz",
-        out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+        out_qa="qa.nii.gz",
     ):
-        """Workflow for tensor reconstruction and for computing DTI metrics.
-        using Weighted Least-Squares.
-        Performs a tensor reconstruction on the files by 'globing'
-        ``input_files`` and saves the DTI metrics in a directory specified by
-        ``out_dir``.
+        """Workflow for tensor reconstruction and for computing DTI metrics
+        using Weighted  Least-Squares.
+
+        Performs a tensor reconstruction :footcite:p:`Basser1994b`,
+        :footcite:p:`Basser1996` on the files by 'globing' ``input_files`` and
+        saves the DTI metrics in a directory specified by ``out_dir``.
 
         Parameters
         ----------
@@ -328,22 +361,34 @@ class ReconstDtiFlow(Workflow):
             multiple masks at once.
         fit_method : string, optional
             can be one of the following:
-            'WLS' for weighted least squares
-            'LS' or 'OLS' for ordinary least squares
+            'WLS' for weighted least squares :footcite:p:`Chung2006`
+            'LS' or 'OLS' for ordinary least squares :footcite:p:`Chung2006`
             'NLLS' for non-linear least-squares
             'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting
+            :footcite:p:`Chang2005`.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
             Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
+        npeaks : int, optional
+            Number of peaks/eigen vectors to save in each voxel. DTI generates
+            3 eigen values and eigen vectors. The principal eigenvector is
+            saved by default.
         sigma : float, optional
-            An estimate of the variance. [5]_ recommend to use
-            1.5267 * std(background_noise), where background_noise is estimated
-            from some part of the image known to contain no signal (only noise)
-            b-vectors are unit vectors.
+            An estimate of the variance. :footcite:t:`Chang2005` recommend to
+            use 1.5267 * std(background_noise), where background_noise is
+            estimated from some part of the image known to contain no signal
+            (only noise) b-vectors are unit vectors.
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
+        nifti_tensor : bool, optional
+            Whether the tensor is saved in the standard Nifti format or in an
+            alternate format that is used by other software (e.g., FSL): a
+            4-dimensional volume (shape (i, j, k, 6)) with
+            Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
         out_dir : string, optional
             Output directory. (default current directory)
         out_tensor : string, optional
@@ -373,54 +418,22 @@ class ReconstDtiFlow(Workflow):
             Name of the eigenvectors volume to be saved.
         out_eval : string, optional
             Name of the eigenvalues to be saved.
-        nifti_tensor : bool, optional
-            Whether the tensor is saved in the standard Nifti format or in an
-            alternate format
-            that is used by other software (e.g., FSL): a
-            4-dimensional volume (shape (i, j, k, 6)) with
-            Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension.
-        extract_pam_values : bool, optional
-            Save or not to save pam volumes as single nifti files.
-        parallel : bool, optional
-            Whether to use parallelization in peak-finding during the
-            calibration procedure.
-        num_processes : int, optional
-            If `parallel` is True, the number of subprocesses to use
-            (default multiprocessing.cpu_count()). If < 0 the maximal number
-            of cores minus ``num_processes + 1`` is used (enter -1 to use as
-            many cores as possible). 0 raises an error.
         out_pam : string, optional
             Name of the peaks volume to be saved.
-        out_shm : string, optional
-            Name of the spherical harmonics volume to be saved.
         out_peaks_dir : string, optional
             Name of the peaks directions volume to be saved.
         out_peaks_values : string, optional
             Name of the peaks values volume to be saved.
         out_peaks_indices : string, optional
             Name of the peaks indices volume to be saved.
-        out_gfa : string, optional
-            Name of the generalized FA volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
 
         References
         ----------
-        .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
-           the effective self-diffusion tensor from the NMR spin echo. J Magn
-           Reson B 103, 247-254.
-
-        .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and
-           physiological features of tissues elucidated by quantitative
-           diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
-
-        .. [3] Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
-           estimation of tensors by outlier rejection. MRM 53: 1088-1095
-
-        .. [4] hung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
-           approaches for estimation of uncertainties of DTI parameters.
-           NeuroImage 33, 531-541.
-
-        .. [5] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust
-           estimation of tensors by outlier rejection. MRM, 53: 1088-95.
+        .. footbibliography::
 
         """
         save_metrics = save_metrics or []
@@ -443,11 +456,11 @@ class ReconstDtiFlow(Workflow):
             oevecs,
             oevals,
             opam,
-            oshm,
             opeaks_dir,
             opeaks_values,
             opeaks_indices,
-            ogfa,
+            osphere,
+            oqa,
         ) in io_it:
             logging.info(f"Computing DTI metrics for {dwi}")
             data, affine = load_nifti(dwi)
@@ -464,10 +477,10 @@ class ReconstDtiFlow(Workflow):
                 mask,
                 bval,
                 bvec,
-                b0_threshold,
-                bvecs_tol,
-                fit_method,
-                optional_args,
+                b0_threshold=b0_threshold,
+                bvecs_tol=bvecs_tol,
+                fit_method=fit_method,
+                optional_args=optional_args,
             )
 
             if not save_metrics:
@@ -540,32 +553,25 @@ class ReconstDtiFlow(Workflow):
                 for metric in save_metrics:
                     logging.info(self.last_generated_outputs[f"out_{metric}"])
 
-            # save peaks
-            peaks_dti = peaks_from_model(
-                model=tenmodel,
-                data=data,
+            pam = tensor_to_pam(
+                tenfit.evals.astype(np.float32),
+                tenfit.evecs.astype(np.float32),
+                affine,
                 sphere=default_sphere,
-                relative_peak_threshold=0.5,
-                min_separation_angle=25,
-                mask=mask,
-                return_sh=True,
-                sh_order_max=8,
-                normalize_peaks=True,
-                parallel=parallel,
-                num_processes=num_processes,
+                generate_peaks_indices=False,
+                npeaks=npeaks,
             )
-            peaks_dti.affine = affine
 
-            save_peaks(opam, peaks_dti)
+            save_pam(opam, pam)
 
             if extract_pam_values:
-                peaks_to_niftis(
-                    peaks_dti,
-                    oshm,
-                    opeaks_dir,
-                    opeaks_values,
-                    opeaks_indices,
-                    ogfa,
+                pam_to_niftis(
+                    pam,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    fname_sphere=osphere,
+                    fname_qa=oqa,
                     reshape_dirs=True,
                 )
 
@@ -582,10 +588,12 @@ class ReconstDtiFlow(Workflow):
     ):
         logging.info("Tensor estimation...")
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
-        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol)
+        gtab = gradient_table(
+            bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+        )
 
         tenmodel = TensorModel(gtab, fit_method=fit_method, **optional_args)
-        tenfit = tenmodel.fit(data, mask)
+        tenfit = tenmodel.fit(data, mask=mask)
 
         return tenfit, tenmodel, gtab
 
@@ -607,6 +615,10 @@ class ReconstDsiFlow(Workflow):
         r_step=0.2,
         filter_width=32,
         normalize_peaks=False,
+        sphere_name=None,
+        relative_peak_threshold=0.5,
+        min_separation_angle=25,
+        sh_order_max=8,
         extract_pam_values=False,
         parallel=False,
         num_processes=None,
@@ -617,6 +629,9 @@ class ReconstDsiFlow(Workflow):
         out_peaks_values="peaks_values.nii.gz",
         out_peaks_indices="peaks_indices.nii.gz",
         out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
     ):
         """Diffusion Spectrum Imaging (DSI) reconstruction workflow.
 
@@ -649,6 +664,16 @@ class ReconstDsiFlow(Workflow):
             Strength of the hanning filter
         normalize_peaks : bool, optional
             Whether to normalize the peaks
+        sphere_name : string, optional
+            Sphere name on which to reconstruct the fODFs.
+        relative_peak_threshold : float, optional
+            Only return peaks greater than ``relative_peak_threshold * m``
+            where m is the largest peak.
+        min_separation_angle : float, optional
+            The minimum distance between directions. If two peaks are too close
+            only the larger of the two is returned.
+        sh_order_max : int, optional
+            Spherical harmonics order (l) used in the DKI fit.
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
         parallel : bool, optional
@@ -673,6 +698,12 @@ class ReconstDsiFlow(Workflow):
             Name of the peaks indices volume to be saved.
         out_gfa : string, optional
             Name of the generalized FA volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
         """
         io_it = self.get_io_iterator()
 
@@ -687,12 +718,15 @@ class ReconstDsiFlow(Workflow):
             opeaks_values,
             opeaks_indices,
             ogfa,
+            osphere,
+            ob,
+            oqa,
         ) in io_it:
             logging.info(f"Computing DSI Model for {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
-            gtab = gradient_table(bvals, bvecs)
+            gtab = gradient_table(bvals, bvecs=bvecs)
             mask = load_nifti_data(mask).astype(bool)
 
             dsi_model = DiffusionSpectrumModel(
@@ -706,34 +740,39 @@ class ReconstDsiFlow(Workflow):
             )
 
             peaks_sphere = default_sphere
+            if sphere_name is not None:
+                peaks_sphere = get_sphere(name=sphere_name)
 
             peaks_dsi = peaks_from_model(
                 model=dsi_model,
                 data=data,
                 sphere=peaks_sphere,
-                relative_peak_threshold=0.5,
-                min_separation_angle=25,
+                relative_peak_threshold=relative_peak_threshold,
+                min_separation_angle=min_separation_angle,
                 mask=mask,
                 return_sh=True,
-                sh_order_max=8,
+                sh_order_max=sh_order_max,
                 normalize_peaks=normalize_peaks,
                 parallel=parallel,
                 num_processes=num_processes,
             )
             peaks_dsi.affine = affine
 
-            save_peaks(opam, peaks_dsi)
+            save_pam(opam, peaks_dsi)
 
             logging.info("DSI computation completed.")
 
             if extract_pam_values:
-                peaks_to_niftis(
+                pam_to_niftis(
                     peaks_dsi,
-                    oshm,
-                    opeaks_dir,
-                    opeaks_values,
-                    opeaks_indices,
-                    ogfa,
+                    fname_shm=oshm,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    fname_gfa=ogfa,
+                    fname_sphere=osphere,
+                    fname_b=ob,
+                    fname_qa=oqa,
                     reshape_dirs=True,
                 )
 
@@ -757,10 +796,12 @@ class ReconstCSDFlow(Workflow):
         roi_radii=10,
         fa_thr=0.7,
         frf=None,
-        extract_pam_values=False,
-        sh_order=8,
-        odf_to_sh_order=8,
+        sphere_name=None,
+        relative_peak_threshold=0.5,
+        min_separation_angle=25,
+        sh_order_max=8,
         parallel=False,
+        extract_pam_values=False,
         num_processes=None,
         out_dir="",
         out_pam="peaks.pam5",
@@ -769,8 +810,13 @@ class ReconstCSDFlow(Workflow):
         out_peaks_values="peaks_values.nii.gz",
         out_peaks_indices="peaks_indices.nii.gz",
         out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
     ):
-        """Constrained spherical deconvolution
+        """Constrained spherical deconvolution.
+
+        See :footcite:p:`Tournier2007` for further details about the method.
 
         Parameters
         ----------
@@ -802,16 +848,21 @@ class ReconstCSDFlow(Workflow):
             (from the command line) or [15, 4, 4] from a Python script to be
             converted to float and multiplied by 10**-4 . If None
             the fiber response function will be computed automatically.
-        extract_pam_values : bool, optional
-            Save or not to save pam volumes as single nifti files.
-        sh_order : int, optional
+        sphere_name : string, optional
+            Sphere name on which to reconstruct the fODFs.
+        relative_peak_threshold : float, optional
+            Only return peaks greater than ``relative_peak_threshold * m``
+            where m is the largest peak.
+        min_separation_angle : float, optional
+            The minimum distance between directions. If two peaks are too close
+            only the larger of the two is returned.
+        sh_order_max : int, optional
             Spherical harmonics order (l) used in the CSA fit.
-        odf_to_sh_order : int, optional
-            Spherical harmonics order (l) used for peak_from_model to compress
-            the ODF to spherical harmonics coefficients.
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
             calibration procedure.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
             (default multiprocessing.cpu_count()). If < 0 the maximal number
@@ -831,13 +882,17 @@ class ReconstCSDFlow(Workflow):
             Name of the peaks indices volume to be saved.
         out_gfa : string, optional
             Name of the generalized FA volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
 
 
         References
         ----------
-        .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of
-           the fibre orientation distribution in diffusion MRI: Non-negativity
-           constrained super-resolved spherical deconvolution.
+        .. footbibliography::
         """
         io_it = self.get_io_iterator()
 
@@ -852,6 +907,9 @@ class ReconstCSDFlow(Workflow):
             opeaks_values,
             opeaks_indices,
             ogfa,
+            osphere,
+            ob,
+            oqa,
         ) in io_it:
             logging.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
@@ -869,11 +927,11 @@ class ReconstCSDFlow(Workflow):
                         stacklevel=2,
                     )
             gtab = gradient_table(
-                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
             )
             mask_vol = load_nifti_data(maskfile).astype(bool)
 
-            n_params = ((sh_order + 1) * (sh_order + 2)) / 2
+            n_params = ((sh_order_max + 1) * (sh_order_max + 2)) / 2
             if data.shape[-1] < n_params:
                 raise ValueError(
                     f"You need at least {n_params} unique DWI volumes to "
@@ -913,39 +971,44 @@ class ReconstCSDFlow(Workflow):
             logging.info(f"Ratio for smallest to largest eigen value is {ratio}")
 
             peaks_sphere = default_sphere
+            if sphere_name is not None:
+                peaks_sphere = get_sphere(name=sphere_name)
 
             logging.info("CSD computation started.")
             csd_model = ConstrainedSphericalDeconvModel(
-                gtab, response, sh_order_max=sh_order
+                gtab, response, sh_order_max=sh_order_max
             )
 
             peaks_csd = peaks_from_model(
                 model=csd_model,
                 data=data,
                 sphere=peaks_sphere,
-                relative_peak_threshold=0.5,
-                min_separation_angle=25,
+                relative_peak_threshold=relative_peak_threshold,
+                min_separation_angle=min_separation_angle,
                 mask=mask_vol,
                 return_sh=True,
-                sh_order_max=sh_order,
+                sh_order_max=sh_order_max,
                 normalize_peaks=True,
                 parallel=parallel,
                 num_processes=num_processes,
             )
             peaks_csd.affine = affine
 
-            save_peaks(opam, peaks_csd)
+            save_pam(opam, peaks_csd)
 
             logging.info("CSD computation completed.")
 
             if extract_pam_values:
-                peaks_to_niftis(
+                pam_to_niftis(
                     peaks_csd,
-                    oshm,
-                    opeaks_dir,
-                    opeaks_values,
-                    opeaks_indices,
-                    ogfa,
+                    fname_shm=oshm,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    fname_gfa=ogfa,
+                    fname_sphere=osphere,
+                    fname_b=ob,
+                    fname_qa=oqa,
                     reshape_dirs=True,
                 )
 
@@ -963,18 +1026,21 @@ class ReconstCSAFlow(Workflow):
     def get_short_name(cls):
         return "csa"
 
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
-        sh_order=6,
-        odf_to_sh_order=8,
         b0_threshold=50.0,
         bvecs_tol=0.01,
-        extract_pam_values=False,
+        sphere_name=None,
+        relative_peak_threshold=0.5,
+        min_separation_angle=25,
+        sh_order_max=8,
         parallel=False,
+        extract_pam_values=False,
         num_processes=None,
         out_dir="",
         out_pam="peaks.pam5",
@@ -982,9 +1048,14 @@ class ReconstCSAFlow(Workflow):
         out_peaks_dir="peaks_dirs.nii.gz",
         out_peaks_values="peaks_values.nii.gz",
         out_peaks_indices="peaks_indices.nii.gz",
+        out_sphere="sphere.txt",
         out_gfa="gfa.nii.gz",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
     ):
         """Constant Solid Angle.
+
+        See :footcite:p:`Aganj2009` for further details about the method.
 
         Parameters
         ----------
@@ -1000,20 +1071,25 @@ class ReconstCSAFlow(Workflow):
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
-        sh_order : int, optional
-            Spherical harmonics order (l) used in the CSA fit.
-        odf_to_sh_order : int, optional
-            Spherical harmonics order (l) used for peak_from_model to compress
-            the ODF to spherical harmonics coefficients.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
             Threshold used so that norm(bvec)=1.
-        extract_pam_values : bool, optional
-            Whether or not to save pam volumes as single nifti files.
+        sphere_name : string, optional
+            Sphere name on which to reconstruct the fODFs.
+        relative_peak_threshold : float, optional
+            Only return peaks greater than ``relative_peak_threshold * m``
+            where m is the largest peak.
+        min_separation_angle : float, optional
+            The minimum distance between directions. If two peaks are too close
+            only the larger of the two is returned.
+        sh_order_max : int, optional
+            Spherical harmonics order (l) used in the CSA fit.
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
             calibration procedure.
+        extract_pam_values : bool, optional
+            Whether or not to save pam volumes as single nifti files.
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
             (default multiprocessing.cpu_count()). If < 0 the maximal number
@@ -1031,13 +1107,18 @@ class ReconstCSAFlow(Workflow):
             Name of the peaks values volume to be saved.
         out_peaks_indices : string, optional
             Name of the peaks indices volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
         out_gfa : string, optional
             Name of the generalized FA volume to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
 
         References
         ----------
-        .. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging
-           with Solid Angle Consideration.
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()
@@ -1052,7 +1133,10 @@ class ReconstCSAFlow(Workflow):
             opeaks_dir,
             opeaks_values,
             opeaks_indices,
+            osphere,
             ogfa,
+            ob,
+            oqa,
         ) in io_it:
             logging.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
@@ -1069,43 +1153,48 @@ class ReconstCSAFlow(Workflow):
                         stacklevel=2,
                     )
             gtab = gradient_table(
-                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
             )
             mask_vol = load_nifti_data(maskfile).astype(bool)
 
             peaks_sphere = default_sphere
+            if sphere_name is not None:
+                peaks_sphere = get_sphere(name=sphere_name)
 
             logging.info(f"Starting CSA computations {dwi}")
 
-            csa_model = CsaOdfModel(gtab, sh_order)
+            csa_model = CsaOdfModel(gtab, sh_order_max)
 
             peaks_csa = peaks_from_model(
                 model=csa_model,
                 data=data,
                 sphere=peaks_sphere,
-                relative_peak_threshold=0.5,
-                min_separation_angle=25,
+                relative_peak_threshold=relative_peak_threshold,
+                min_separation_angle=min_separation_angle,
                 mask=mask_vol,
                 return_sh=True,
-                sh_order_max=odf_to_sh_order,
+                sh_order_max=sh_order_max,
                 normalize_peaks=True,
                 parallel=parallel,
                 num_processes=num_processes,
             )
             peaks_csa.affine = affine
 
-            save_peaks(opam, peaks_csa)
+            save_pam(opam, peaks_csa)
 
             logging.info(f"Finished CSA {dwi}")
 
             if extract_pam_values:
-                peaks_to_niftis(
+                pam_to_niftis(
                     peaks_csa,
-                    oshm,
-                    opeaks_dir,
-                    opeaks_values,
-                    opeaks_indices,
-                    ogfa,
+                    fname_shm=oshm,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    fname_sphere=osphere,
+                    fname_gfa=ogfa,
+                    fname_b=ob,
+                    fname_qa=oqa,
                     reshape_dirs=True,
                 )
 
@@ -1133,6 +1222,8 @@ class ReconstDkiFlow(Workflow):
         b0_threshold=50.0,
         sigma=None,
         save_metrics=None,
+        extract_pam_values=False,
+        npeaks=5,
         out_dir="",
         out_dt_tensor="dti_tensors.nii.gz",
         out_fa="fa.nii.gz",
@@ -1148,20 +1239,18 @@ class ReconstDkiFlow(Workflow):
         out_mk="mk.nii.gz",
         out_ak="ak.nii.gz",
         out_rk="rk.nii.gz",
-        extract_pam_values=False,
-        parallel=False,
-        num_processes=None,
         out_pam="peaks.pam5",
-        out_shm="shm.nii.gz",
         out_peaks_dir="peaks_dirs.nii.gz",
         out_peaks_values="peaks_values.nii.gz",
         out_peaks_indices="peaks_indices.nii.gz",
-        out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
     ):
         """Workflow for Diffusion Kurtosis reconstruction and for computing
-        DKI metrics. Performs a DKI reconstruction on the files by 'globing'
-        ``input_files`` and saves the DKI metrics in a directory specified by
-        ``out_dir``.
+        DKI metrics.
+
+        Performs a DKI reconstruction :footcite:p:`Tabesh2011`,
+        :footcite:p:`Jensen2005` on the files by 'globing' ``input_files`` and
+        saves the DKI metrics in a directory specified by ``out_dir``.
 
         Parameters
         ----------
@@ -1184,12 +1273,17 @@ class ReconstDkiFlow(Workflow):
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         sigma : float, optional
-            An estimate of the variance. [3]_ recommend to use
-            1.5267 * std(background_noise), where background_noise is estimated
-            from some part of the image known to contain no signal (only noise)
+            An estimate of the variance. :footcite:t:`Chang2005` recommend to
+            use 1.5267 * std(background_noise), where background_noise is
+            estimated from some part of the image known to contain no signal
+            (only noise)
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
+        npeaks : int, optional
+            Number of peaks to fit in each voxel.
         out_dir : string, optional
             Output directory. (default current directory)
         out_dt_tensor : string, optional
@@ -1220,42 +1314,20 @@ class ReconstDkiFlow(Workflow):
             Name of the axial kurtosis to be saved.
         out_rk : string, optional
             Name of the radial kurtosis to be saved.
-        extract_pam_values : bool, optional
-            Save or not to save pam volumes as single nifti files.
-        parallel : bool, optional
-            Whether to use parallelization in peak-finding during the
-            calibration procedure.
-        num_processes : int, optional
-            If `parallel` is True, the number of subprocesses to use
-            (default multiprocessing.cpu_count()). If < 0 the maximal number
-            of cores minus ``num_processes + 1`` is used (enter -1 to use as
-            many cores as possible). 0 raises an error.
         out_pam : string, optional
             Name of the peaks volume to be saved.
-        out_shm : string, optional
-            Name of the spherical harmonics volume to be saved.
         out_peaks_dir : string, optional
             Name of the peaks directions volume to be saved.
         out_peaks_values : string, optional
             Name of the peaks values volume to be saved.
         out_peaks_indices : string, optional
             Name of the peaks indices volume to be saved.
-        out_gfa : string, optional
-            Name of the generalized FA volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
 
         References
         ----------
-        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
-
-        .. [2] Jensen, Jens H., Joseph A. Helpern, Anita Ramani, Hanzhang Lu,
-           and Kyle Kaczynski. 2005. Diffusional Kurtosis Imaging: The
-           Quantification of Non-Gaussian Water Diffusion by Means of Magnetic
-           Resonance Imaging. MRM 53 (6):1432-40.
-
-        .. [3] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust
-           estimation of tensors by outlier rejection. MRM, 53: 1088-95.
+        .. footbibliography::
 
         """
         save_metrics = save_metrics or []
@@ -1282,11 +1354,10 @@ class ReconstDkiFlow(Workflow):
             oak,
             ork,
             opam,
-            oshm,
             opeaks_dir,
             opeaks_values,
             opeaks_indices,
-            ogfa,
+            osphere,
         ) in io_it:
             logging.info(f"Computing DKI metrics for {dwi}")
             data, affine = load_nifti(dwi)
@@ -1303,8 +1374,8 @@ class ReconstDkiFlow(Workflow):
                 mask,
                 bval,
                 bvec,
-                b0_threshold,
-                fit_method,
+                b0_threshold=b0_threshold,
+                fit_method=fit_method,
                 optional_args=optional_args,
             )
 
@@ -1384,32 +1455,24 @@ class ReconstDkiFlow(Workflow):
 
             logging.info(f"DKI metrics saved in {os.path.dirname(oevals)}")
 
-            # save peaks
-            peaks_dki = peaks_from_model(
-                model=dkmodel,
-                data=data,
+            pam = tensor_to_pam(
+                dkfit.evals.astype(np.float32),
+                dkfit.evecs.astype(np.float32),
+                affine,
                 sphere=default_sphere,
-                relative_peak_threshold=0.5,
-                min_separation_angle=25,
-                mask=mask,
-                return_sh=True,
-                sh_order_max=8,
-                normalize_peaks=True,
-                parallel=parallel,
-                num_processes=num_processes,
+                generate_peaks_indices=False,
+                npeaks=npeaks,
             )
-            peaks_dki.affine = affine
 
-            save_peaks(opam, peaks_dki)
+            save_pam(opam, pam)
 
             if extract_pam_values:
-                peaks_to_niftis(
-                    peaks_dki,
-                    oshm,
-                    opeaks_dir,
-                    opeaks_values,
-                    opeaks_indices,
-                    ogfa,
+                pam_to_niftis(
+                    pam,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    fname_sphere=osphere,
                     reshape_dirs=True,
                 )
 
@@ -1436,9 +1499,9 @@ class ReconstDkiFlow(Workflow):
                     stacklevel=2,
                 )
 
-        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
+        gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
         dkmodel = DiffusionKurtosisModel(gtab, fit_method=fit_method, **optional_args)
-        dkfit = dkmodel.fit(data, mask)
+        dkfit = dkmodel.fit(data, mask=mask)
 
         return dkfit, dkmodel, gtab
 
@@ -1465,9 +1528,11 @@ class ReconstIvimFlow(Workflow):
         out_D="D.nii.gz",
     ):
         """Workflow for Intra-voxel Incoherent Motion reconstruction and for
-        computing IVIM metrics. Performs a IVIM reconstruction on the files
-        by 'globing' ``input_files`` and saves the IVIM metrics in a directory
-        specified by ``out_dir``.
+        computing IVIM metrics.
+
+        Performs a IVIM reconstruction :footcite:p:`LeBihan1988`,
+        :footcite:p:`Stejskal1965` on the files by 'globing' ``input_files`` and
+        saves the IVIM metrics in a directory specified by ``out_dir``.
 
         Parameters
         ----------
@@ -1507,15 +1572,7 @@ class ReconstIvimFlow(Workflow):
 
         References
         ----------
-        .. [Stejskal65] Stejskal, E. O.; Tanner, J. E. (1 January 1965).
-                        "Spin Diffusion Measurements: Spin Echoes in the
-                        Presence of a Time-Dependent Field Gradient". The
-                        Journal of Chemical Physics 42 (1): 288.
-                        Bibcode: 1965JChPh..42..288S. doi:10.1063/1.1695690.
-
-        .. [LeBihan84] Le Bihan, Denis, et al. "Separation of diffusion
-                       and perfusion in intravoxel incoherent motion MR
-                       imaging." Radiology 168.2 (1988): 497-505.
+        .. footbibliography::
         """
         save_metrics = save_metrics or []
 
@@ -1537,7 +1594,9 @@ class ReconstIvimFlow(Workflow):
             if mask is not None:
                 mask = load_nifti_data(mask).astype(bool)
 
-            ivimfit, _ = self.get_fitted_ivim(data, mask, bval, bvec, b0_threshold)
+            ivimfit, _ = self.get_fitted_ivim(
+                data, mask, bval, bvec, b0_threshold=b0_threshold
+            )
 
             if not save_metrics:
                 save_metrics = ["S0_predicted", "perfusion_fraction", "D_star", "D"]
@@ -1562,7 +1621,8 @@ class ReconstIvimFlow(Workflow):
 
             logging.info(f"IVIM metrics saved in {os.path.dirname(oD)}")
 
-    def get_fitted_ivim(self, data, mask, bval, bvec, b0_threshold=50):
+    @warning_for_keywords()
+    def get_fitted_ivim(self, data, mask, bval, bvec, *, b0_threshold=50):
         logging.info("Intra-Voxel Incoherent Motion Estimation...")
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         # If all b-values are smaller or equal to the b0 threshold, it is
@@ -1576,9 +1636,9 @@ class ReconstIvimFlow(Workflow):
                     stacklevel=2,
                 )
 
-        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
+        gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
         ivimmodel = IvimModel(gtab)
-        ivimfit = ivimmodel.fit(data, mask)
+        ivimfit = ivimmodel.fit(data, mask=mask)
 
         return ivimfit, gtab
 
@@ -1588,13 +1648,14 @@ class ReconstRUMBAFlow(Workflow):
     def get_short_name(cls):
         return "rumba"
 
-    @deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+    @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     def run(
         self,
         input_files,
         bvalues_files,
         bvectors_files,
         mask_files,
+        *,
         b0_threshold=50.0,
         bvecs_tol=0.01,
         roi_center=None,
@@ -1602,7 +1663,6 @@ class ReconstRUMBAFlow(Workflow):
         fa_thr=0.7,
         extract_pam_values=False,
         sh_order_max=8,
-        odf_to_sh_order=8,
         parallel=True,
         num_processes=None,
         gm_response=0.8e-3,
@@ -1617,7 +1677,6 @@ class ReconstRUMBAFlow(Workflow):
         verbose=False,
         relative_peak_threshold=0.5,
         min_separation_angle=25,
-        npeaks=5,
         out_dir="",
         out_pam="peaks.pam5",
         out_shm="shm.nii.gz",
@@ -1625,12 +1684,16 @@ class ReconstRUMBAFlow(Workflow):
         out_peaks_values="peaks_values.nii.gz",
         out_peaks_indices="peaks_indices.nii.gz",
         out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
     ):
         """Reconstruct the fiber local orientations using the Robust and
-        Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD) [1]_ model. The
-        fiber response function (FRF) is computed using the single-shell,
+        Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD) model.
+
+        The fiber response function (FRF) is computed using the single-shell,
         single-tissue model, and the voxel-wise fitting procedure is used for
-        RUMBA-SD.
+        RUMBA-SD :footcite:p:`CanalesRodriguez2015`.
 
         Parameters
         ----------
@@ -1653,17 +1716,14 @@ class ReconstRUMBAFlow(Workflow):
         roi_center : variable int, optional
             Center of ROI in data. If center is None, it is assumed that it is
             the center of the volume with shape `data.shape[:3]`.
-        roi_radii : int or array-like, optional
+        roi_radii : variable int, optional
             radii of cuboid ROI in voxels.
         fa_thr : float, optional
             FA threshold to compute the WM response function.
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
         sh_order : int, optional
-            Spherical harmonics order (l) used in the CSA fit.
-        odf_to_sh_order : int, optional
-            Spherical harmonics order (l) used for peak_from_model to compress
-            the ODF to spherical harmonics coefficients.
+            Spherical harmonics order (l) used in the RUMBA fit.
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
             calibration procedure.
@@ -1712,8 +1772,6 @@ class ReconstRUMBAFlow(Workflow):
         min_separation_angle : float, optional
             The minimum distance between directions. If two peaks are too close
             only the larger of the two is returned.
-        npeaks : int, optional
-            Maximum number of peaks returned for a given voxel.
         out_dir : string, optional
             Output directory. (default current directory)
         out_pam : string, optional
@@ -1728,17 +1786,16 @@ class ReconstRUMBAFlow(Workflow):
             Name of the peaks indices volume to be saved.
         out_gfa : string, optional
             Name of the generalized FA volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
 
         References
         ----------
-        .. [1] Canales-Rodríguez, E. J., Daducci, A., Sotiropoulos, S. N.,
-               Caruyer, E., Aja-Fernández, S., Radua, J., Mendizabal, J. M. Y.,
-               Iturria-Medina, Y., Melie-García, L., Alemán-Gómez, Y.,
-               Thiran, J.-P., Sarró, S., Pomarol-Clotet, E., & Salvador, R.
-               (2015). Spherical Deconvolution of Multichannel Diffusion MRI
-               Data with Non-Gaussian Noise Models and Spatial Regularization.
-               PLOS ONE, 10(10), e0138910.
-               https://doi.org/10.1371/journal.pone.0138910
+        .. footbibliography::
         """
 
         io_it = self.get_io_iterator()
@@ -1754,6 +1811,9 @@ class ReconstRUMBAFlow(Workflow):
             opeaks_values,
             opeaks_indices,
             ogfa,
+            osphere,
+            ob,
+            oqa,
         ) in io_it:
             # Read the data
             logging.info(f"Loading {dwi}")
@@ -1775,10 +1835,10 @@ class ReconstRUMBAFlow(Workflow):
                     )
 
             gtab = gradient_table(
-                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
             )
 
-            sphere = get_sphere(sphere_name)
+            sphere = get_sphere(name=sphere_name)
 
             # Compute the FRF
             wm_response, _ = auto_response_ssst(
@@ -1819,16 +1879,19 @@ class ReconstRUMBAFlow(Workflow):
 
             rumba_peaks.affine = affine
 
-            save_peaks(opam, rumba_peaks)
+            save_pam(opam, rumba_peaks)
 
             if extract_pam_values:
-                peaks_to_niftis(
+                pam_to_niftis(
                     rumba_peaks,
-                    oshm,
-                    opeaks_dir,
-                    opeaks_values,
-                    opeaks_indices,
-                    ogfa,
+                    fname_shm=oshm,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    fname_gfa=ogfa,
+                    fname_sphere=osphere,
+                    fname_b=ob,
+                    fname_qa=oqa,
                     reshape_dirs=True,
                 )
 

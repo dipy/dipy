@@ -7,16 +7,17 @@ Evaluating the results of tractography algorithms is one of the biggest
 challenges for diffusion MRI. One proposal for evaluation of tractography
 results is to use a forward model that predicts the signal from each of a set
 of streamlines, and then fit a linear model to these simultaneous predictions
-[Pestilli2014]_.
+:footcite:p:`Pestilli2014`.
 
 We will use streamlines generated using probabilistic tracking on CSA
 peaks. For brevity, we will include in this example only streamlines going
 through the corpus callosum connecting left to right superior frontal
 cortex. The process of tracking and finding these streamlines is fully
-demonstrated in the :ref:`streamline_tools` example. If this example has been
-run, we can read the streamlines from file. Otherwise, we'll run that example
-first, by importing it. This provides us with all of the variables that were
-created in that example:
+demonstrated in the
+:ref:`sphx_glr_examples_built_streamline_analysis_streamline_tools.py` example.
+If this example has been run, we can read the streamlines from file. Otherwise,
+we'll run that example first, by importing it. This provides us with all of the
+variables that were created in that example:
 
 """
 
@@ -37,20 +38,21 @@ from dipy.io.streamline import load_trk
 import dipy.tracking.life as life
 from dipy.viz import actor, colormap as cmap, window
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
-t1_fname = get_fnames("stanford_t1")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
+t1_fname = get_fnames(name="stanford_t1")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 t1_data = load_nifti_data(t1_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 cc_slice = labels == 2
 
 # Let's now fetch a set of streamlines from the Stanford HARDI dataset.
-# Those streamlines were generated during the :ref:`streamline_tools` example.
+# Those streamlines were generated during the
+# :ref:`sphx_glr_examples_built_streamline_analysis_streamline_tools.py` example.
 # Read the candidates from file in voxel space:
 
 streamlines_files = fetch_stanford_tracks()
@@ -72,7 +74,7 @@ candidate_sl = candidate_sl_sft.streamlines
 interactive = False
 
 candidate_streamlines_actor = actor.streamtube(
-    candidate_sl, cmap.line_colors(candidate_sl)
+    candidate_sl, colors=cmap.line_colors(candidate_sl)
 )
 cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1.0, 1.0, 0.0), opacity=0.5)
 
@@ -88,7 +90,7 @@ scene.add(candidate_streamlines_actor)
 scene.add(cc_ROI_actor)
 scene.add(vol_actor)
 scene.add(vol_actor2)
-window.record(scene, n_frames=1, out_path="life_candidates.png", size=(800, 800))
+window.record(scene=scene, n_frames=1, out_path="life_candidates.png", size=(800, 800))
 if interactive:
     window.show(scene)
 
@@ -135,7 +137,7 @@ fiber_model = life.FiberModel(gtab)
 # the voxels. The  expected contributions of the streamline are calculated
 # using a forward model, where each node of the streamline is modeled as a
 # cylindrical fiber compartment with Gaussian diffusion, using the diffusion
-# tensor model. See [Pestilli2014]_ for more detail on the model, and
+# tensor model. See :footcite:p:`Pestilli2014` for more detail on the model, and
 # variations of this model.
 
 fiber_fit = fiber_model.fit(data, candidate_sl, affine=np.eye(4))
@@ -162,12 +164,12 @@ fig.savefig("beta_histogram.png")
 # We use $\beta$ to filter out these redundant streamlines, and generate an
 # optimized group of streamlines:
 
-optimized_sl = [np.row_stack(candidate_sl)[np.where(fiber_fit.beta > 0)[0]]]
+optimized_sl = [np.vstack(candidate_sl)[np.where(fiber_fit.beta > 0)[0]]]
 scene = window.Scene()
-scene.add(actor.streamtube(optimized_sl, cmap.line_colors(optimized_sl)))
+scene.add(actor.streamtube(optimized_sl, colors=cmap.line_colors(optimized_sl)))
 scene.add(cc_ROI_actor)
 scene.add(vol_actor)
-window.record(scene, n_frames=1, out_path="life_optimized.png", size=(800, 800))
+window.record(scene=scene, n_frames=1, out_path="life_optimized.png", size=(800, 800))
 if interactive:
     window.show(scene)
 
@@ -334,6 +336,5 @@ fig.savefig("spatial_errors.png")
 # References
 # ----------
 #
-# .. [Pestilli2014] Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell
-#    B.A. (2014). Validation and statistical inference in living connectomes.
-#    Nature Methods 11: 1058-1063. doi:10.1038/nmeth.3098
+# .. footbibliography::
+#

@@ -1,5 +1,3 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 """Test scripts
 
 Run scripts and check outputs
@@ -69,7 +67,7 @@ def assert_image_shape_affine(filename, shape, affine):
 
 def test_dipy_fit_tensor_again():
     with TemporaryDirectory():
-        dwi, bval, bvec = get_fnames("small_25")
+        dwi, bval, bvec = get_fnames(name="small_25")
         # Copy data to tmp directory
         shutil.copyfile(dwi, "small_25.nii.gz")
         shutil.copyfile(bval, "small_25.bval")
@@ -91,7 +89,7 @@ def test_dipy_fit_tensor_again():
         assert_image_shape_affine("small_25_rd.nii.gz", shape, affine)
 
     with TemporaryDirectory():
-        dwi, bval, bvec = get_fnames("small_25")
+        dwi, bval, bvec = get_fnames(name="small_25")
         # Copy data to tmp directory
         shutil.copyfile(dwi, "small_25.nii.gz")
         shutil.copyfile(bval, "small_25.bval")
@@ -122,7 +120,7 @@ def test_dipy_fit_tensor_again():
 @pytest.mark.skipif(no_mpl)
 def test_qb_commandline():
     with TemporaryDirectory():
-        tracks_file = get_fnames('fornix')
+        tracks_file = get_fnames(name='fornix')
         cmd = ["dipy_quickbundles", tracks_file, '--pkl_file', 'mypickle.pkl',
                '--out_file', 'tracks300.trk']
         out = run_command(cmd)
@@ -136,7 +134,7 @@ def test_qb_commandline_output_path_handling():
         os.mkdir('output')
 
         os.chdir('work')
-        tracks_file = get_fnames('fornix')
+        tracks_file = get_fnames(name='fornix')
 
         # Need to specify an output directory with a "../" style path
         # to trigger old bug.

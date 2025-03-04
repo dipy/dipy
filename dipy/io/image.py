@@ -2,8 +2,11 @@ import nibabel as nib
 import numpy as np
 from packaging.version import Version
 
+from dipy.testing.decorators import warning_for_keywords
 
-def load_nifti_data(fname, as_ndarray=True):
+
+@warning_for_keywords()
+def load_nifti_data(fname, *, as_ndarray=True):
     """Load only the data array from a nifti file.
 
     Parameters
@@ -13,7 +16,7 @@ def load_nifti_data(fname, as_ndarray=True):
     as_ndarray: bool, optional
         convert nibabel ArrayProxy to a numpy.ndarray.
         If you want to save memory and delay this casting, just turn this
-        option to False (default: True)
+        option to False.
 
     Returns
     -------
@@ -28,8 +31,14 @@ def load_nifti_data(fname, as_ndarray=True):
     return np.asanyarray(img.dataobj) if as_ndarray else img.dataobj
 
 
+@warning_for_keywords()
 def load_nifti(
-    fname, return_img=False, return_voxsize=False, return_coords=False, as_ndarray=True
+    fname,
+    *,
+    return_img=False,
+    return_voxsize=False,
+    return_coords=False,
+    as_ndarray=True,
 ):
     """Load data and other information from a nifti file.
 
@@ -39,18 +48,18 @@ def load_nifti(
         Full path to a nifti file.
 
     return_img : bool, optional
-        Whether to return the nibabel nifti img object. Default: False
+        Whether to return the nibabel nifti img object.
 
     return_voxsize: bool, optional
-        Whether to return the nifti header zooms. Default: False
+        Whether to return the nifti header zooms.
 
     return_coords : bool, optional
-        Whether to return the nifti header aff2axcodes. Default: False
+        Whether to return the nifti header aff2axcodes.
 
     as_ndarray: bool, optional
         convert nibabel ArrayProxy to a numpy.ndarray.
         If you want to save memory and delay this casting, just turn this
-        option to False (default: True)
+        option to False.
 
     Returns
     -------
@@ -78,7 +87,8 @@ def load_nifti(
     return tuple(ret_val)
 
 
-def save_nifti(fname, data, affine, hdr=None, dtype=None):
+@warning_for_keywords()
+def save_nifti(fname, data, affine, *, hdr=None, dtype=None):
     """Save a data array into a nifti file.
 
     Parameters

@@ -254,7 +254,7 @@ def test_ndbincount():
     bc = ndbincount(x, weights=weights)
     check(expected)
     # raises an error if shape is too small
-    npt.assert_raises(ValueError, ndbincount, x, None, (2, 2))
+    npt.assert_raises(ValueError, ndbincount, x, weights=None, shape=(2, 2))
 
 
 def test_reduce_labels():

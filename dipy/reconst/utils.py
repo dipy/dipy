@@ -13,11 +13,14 @@ def dki_design_matrix(gtab):
     -------
     B : array (N, 22)
         Design matrix or B matrix for the DKI model
-        B[j, :] = (Bxx, Bxy, Byy, Bxz, Byz, Bzz,
-                   Bxxxx, Byyyy, Bzzzz, Bxxxy, Bxxxz,
-                   Bxyyy, Byyyz, Bxzzz, Byzzz, Bxxyy,
-                   Bxxzz, Byyzz, Bxxyz, Bxyyz, Bxyzz,
-                   BlogS0)
+
+        .. math::
+
+           B[j, :] = (Bxx, Bxy, Byy, Bxz, Byz, Bzz,
+                      Bxxxx, Byyyy, Bzzzz, Bxxxy, Bxxxz,
+                      Bxyyy, Byyyz, Bxzzz, Byzzz, Bxxyy,
+                      Bxxzz, Byyzz, Bxxyz, Bxyyz, Bxyzz,
+                      BlogS0)
 
     """
     b = gtab.bvals

@@ -3,7 +3,7 @@ name = "dipy"
 description = "Diffusion MRI Imaging in Python"
 license = {file = "LICENSE"}
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [{ name = "DIPY developers", email = "dipy@python.org" }]
 maintainers = [
     {name = "Eleftherios Garyfallidis", email="neuroimaging@python.org"},
@@ -23,9 +23,9 @@ classifiers = [
     'License :: OSI Approved :: BSD License',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3 :: Only',
     "Topic :: Software Development :: Libraries",
     'Topic :: Scientific/Engineering',
@@ -35,7 +35,7 @@ classifiers = [
     'Operating System :: Unix',
     'Operating System :: MacOS',
 ]
-dynamic = ['version']
+version = "1.11.0.dev0"
 dependencies = [
     "numpy>=1.22.4",
     "scipy>=1.8",
@@ -68,6 +68,7 @@ dipy_fit_dti = "dipy.workflows.cli:run"
 dipy_fit_dsi = "dipy.workflows.cli:run"
 dipy_fit_ivim = "dipy.workflows.cli:run"
 dipy_fit_mapmri = "dipy.workflows.cli:run"
+dipy_math = "dipy.workflows.cli:run"
 dipy_mask = "dipy.workflows.cli:run"
 dipy_gibbs_ringing = "dipy.workflows.cli:run"
 dipy_horizon = "dipy.workflows.cli:run"
@@ -85,22 +86,25 @@ dipy_slr = "dipy.workflows.cli:run"
 dipy_concatenate_tractograms = "dipy.workflows.cli:run"
 dipy_convert_tractogram = "dipy.workflows.cli:run"
 dipy_convert_tensors = "dipy.workflows.cli:run"
+dipy_nifti2pam = "dipy.workflows.cli:run"
+dipy_pam2nifti = "dipy.workflows.cli:run"
+dipy_tensor2pam = "dipy.workflows.cli:run"
 
 [project.optional-dependencies]
-all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
+all = ["dipy[dev,doc,style,test, viz, ml, extra, benchmark]"]
 style = ["ruff", "pre-commit"]
 viz = ["fury>=0.10.0", "matplotlib"]
-test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
-ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow"]
+test = ["pytest", "coverage", "coveralls", "codecov"]
+ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow>=2.18.0", "torch"]
 dev = [
     # Also update [build-system] -> requires
     'meson-python>=0.13',
     'wheel',
-    'setuptools>=67',
+    'setuptools~=69.5',
     'packaging>=21',
     'ninja',
     'Cython>=0.29.35',
-    'numpy>=1.22',
+    'numpy>=1.22.4',
     # Developer UI
     'spin>=0.5',
     'build',
@@ -109,20 +113,26 @@ dev = [
 extra = ["dipy[viz, ml]",
          "cvxpy",
          "scikit-image",
-         "boto3"
+         "boto3",
+         "numexpr"
         ]
 
 doc = [
     "numpydoc",
-    "sphinx ~= 5.3",
+    "sphinx>=7.2.6",
     "texext",
     "tomli; python_version < \"3.11\"",
     "sphinxcontrib-bibtex",
     "sphinx_design",
     "sphinx-gallery>=0.10.0",
     "tomli>=2.0.1",
-    "grg-sphinx-theme>=0.2.0",
+    "grg-sphinx-theme>=0.4.0",
     "Jinja2"
+]
+benchmark = [
+    "asv",
+    "pyperf",
+    "virtualenv",
 ]
 
 
@@ -137,16 +147,17 @@ tracker = "https://github.com/dipy/dipy/issues"
 build-backend = "mesonpy"
 requires = [
     "meson-python>=0.13.1",
-    "Cython>=0.29.35",
+    "Cython>=3.0.4",
     "packaging>21.0",
     "wheel",
-    "numpy==1.19.5; python_version=='3.8' and platform_python_implementation != 'PyPy'",
-    "numpy==1.22.4; python_version=='3.9' and platform_python_implementation != 'PyPy'",
-    "numpy==1.22.4; python_version=='3.10' and platform_system=='Windows' and platform_python_implementation != 'PyPy'",
-    "numpy==1.22.4; python_version=='3.10' and platform_system != 'Windows' and platform_python_implementation != 'PyPy'",
-    "numpy==1.23.3; python_version=='3.11' and platform_python_implementation != 'PyPy'",
-    "numpy>=1.26.0b1; python_version>='3.12'",
-    "numpy; python_version>='3.8' and platform_python_implementation=='PyPy'",
+    # numpy requirement for wheel builds for distribution on PyPI - building
+    # against 2.x yields wheels that are also compatible with numpy 1.x at
+    # runtime.
+    # Note that building against numpy 1.x works fine too - users and
+    # redistributors can do this by installing the numpy version they like and
+    # disabling build isolation.
+    "numpy>=2.0.0rc1; python_version>='3.10' and platform_python_implementation!='PyPy'",
+    "numpy; python_version>='3.10' and platform_python_implementation=='PyPy'",
 ]
 
 [tool.spin]

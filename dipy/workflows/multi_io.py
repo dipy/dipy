@@ -5,6 +5,7 @@ import os
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.workflows.base import get_args_default
 
 
@@ -25,8 +26,9 @@ def slash_to_under(dir_str):
     return "".join(dir_str.replace("/", "_"))
 
 
+@warning_for_keywords()
 def connect_output_paths(
-    inputs, out_dir, out_files, output_strategy="absolute", mix_names=True
+    inputs, out_dir, out_files, *, output_strategy="absolute", mix_names=True
 ):
     """Generate a list of output files paths based on input files and
     output strategies.
@@ -120,8 +122,15 @@ def basename_without_extension(fname):
     return result
 
 
+@warning_for_keywords()
 def io_iterator(
-    inputs, out_dir, fnames, output_strategy="absolute", mix_names=False, out_keys=None
+    inputs,
+    out_dir,
+    fnames,
+    *,
+    output_strategy="absolute",
+    mix_names=False,
+    out_keys=None,
 ):
     """Create an IOIterator from the parameters.
 
@@ -156,7 +165,8 @@ def io_iterator(
     return io_it
 
 
-def io_iterator_(frame, fnc, output_strategy="absolute", mix_names=False):
+@warning_for_keywords()
+def _io_iterator(frame, fnc, *, output_strategy="absolute", mix_names=False):
     """Create an IOIterator using introspection.
 
     Parameters
@@ -165,9 +175,9 @@ def io_iterator_(frame, fnc, output_strategy="absolute", mix_names=False):
         Contains the info about the current local variables values.
     fnc : function
         The function to inspect
-    output_strategy : string
+    output_strategy : string, optional
         Controls the behavior of the IOIterator for output paths.
-    mix_names : bool
+    mix_names : bool, optional
         Whether or not to append a mix of input names at the beginning.
 
     Returns
@@ -175,9 +185,18 @@ def io_iterator_(frame, fnc, output_strategy="absolute", mix_names=False):
         Properly instantiated IOIterator object.
 
     """
+
+    # Create a new object that does not contain the ``self`` dict item
+    def _selfless_dict(_values):
+        return {key: val for key, val in _values.items() if key != "self"}
+
     args, _, _, values = inspect.getargvalues(frame)
     args.remove("self")
-    del values["self"]
+    # Create a new object that does not contain the ``self`` dict item from the
+    # provided copy of the local symbol table returned by ``getargvalues``.
+    # Avoids attempting to remove it from the object returned by
+    # ``getargvalues``.
+    values = _selfless_dict(values)
 
     spargs, defaults = get_args_default(fnc)
 
@@ -203,7 +222,12 @@ def io_iterator_(frame, fnc, output_strategy="absolute", mix_names=False):
             outputs.append(values[arv])
 
     return io_iterator(
-        inputs, out_dir, outputs, output_strategy, mix_names, out_keys=out_keys
+        inputs,
+        out_dir,
+        outputs,
+        output_strategy=output_strategy,
+        mix_names=mix_names,
+        out_keys=out_keys,
     )
 
 
@@ -216,7 +240,8 @@ class IOIterator:
     inputs.
     """
 
-    def __init__(self, output_strategy="absolute", mix_names=False):
+    @warning_for_keywords()
+    def __init__(self, *, output_strategy="absolute", mix_names=False):
         self.output_strategy = output_strategy
         self.mix_names = mix_names
         self.inputs = []
@@ -247,8 +272,8 @@ class IOIterator:
                 self.inputs,
                 self.out_dir,
                 self.out_fnames,
-                self.output_strategy,
-                self.mix_names,
+                output_strategy=self.output_strategy,
+                mix_names=self.mix_names,
             )
 
             self.create_directories()

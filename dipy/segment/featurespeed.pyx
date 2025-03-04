@@ -188,14 +188,15 @@ cdef class IdentityFeature(CythonFeature):
 
 
 cdef class ResampleFeature(CythonFeature):
-    """ Extracts features from a sequential datum.
+    """Extract features from a sequential datum.
 
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions).
 
     The features being extracted are the points of the sequence once resampled.
     This is useful for metrics requiring a constant number of points for all
-     streamlines.
+    streamlines.
+
     """
     def __init__(ResampleFeature self, cnp.npy_intp nb_points):
         super(ResampleFeature, self).__init__(is_order_invariant=False)
@@ -214,7 +215,7 @@ cdef class ResampleFeature(CythonFeature):
 
 
 cdef class CenterOfMassFeature(CythonFeature):
-    """ Extracts features from a sequential datum.
+    """Extract features from a sequential datum.
 
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions).
@@ -249,13 +250,14 @@ cdef class CenterOfMassFeature(CythonFeature):
 
 
 cdef class MidpointFeature(CythonFeature):
-    """ Extracts features from a sequential datum.
+    r"""Extract features from a sequential datum.
 
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions).
 
     The feature being extracted consists of one N-dimensional point representing
-    the middle point of the sequence (i.e. `nb_points//2`th point).
+    the middle point of the sequence (i.e. `nb_points//2` th point).
+
     """
     def __init__(MidpointFeature self):
         super(MidpointFeature, self).__init__(is_order_invariant=False)

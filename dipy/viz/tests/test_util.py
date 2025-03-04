@@ -10,7 +10,6 @@ from dipy.viz.horizon.util import (
     check_img_dtype,
     check_img_shapes,
     check_peak_size,
-    is_binary_image,
     show_ellipsis,
     unpack_surface,
 )
@@ -128,16 +127,6 @@ def test_show_ellipsis():
 
 
 @set_random_number_generator()
-def test_is_binary_image(rng):
-    data = 255 * rng.random((197, 233, 189))
-    npt.assert_equal(False, is_binary_image(data))
-
-    data = rng.integers(0, 1, size=(10, 20, 100, 200))
-
-    npt.assert_equal(True, is_binary_image(data))
-
-
-@set_random_number_generator()
 def test_unpack_surface(rng):
     vertices = rng.random((100, 4))
     faces = rng.integers(0, 100, size=(100, 3))
@@ -168,13 +157,23 @@ def test_check_peak_size(rng):
 
     npt.assert_equal(True, check_peak_size([pam]))
     npt.assert_equal(True, check_peak_size([pam, pam]))
-    npt.assert_equal(False, check_peak_size([pam], (100, 100, 1), True))
-    npt.assert_equal(False, check_peak_size([pam], (100, 100, 100), False))
+    npt.assert_equal(
+        False, check_peak_size([pam], ref_img_shape=(100, 100, 1), sync_imgs=True)
+    )
+    npt.assert_equal(
+        False, check_peak_size([pam], ref_img_shape=(100, 100, 100), sync_imgs=False)
+    )
 
     pam1 = PeaksAndMetrics()
     peak_dirs_1 = rng.random((100, 100, 50, 10, 6))
     pam1.peak_dirs = peak_dirs_1
 
     npt.assert_equal(False, check_peak_size([pam, pam1]))
-    npt.assert_equal(False, check_peak_size([pam, pam1], (100, 100, 100), True))
-    npt.assert_equal(False, check_peak_size([pam, pam1], (100, 100, 100), False))
+    npt.assert_equal(
+        False,
+        check_peak_size([pam, pam1], ref_img_shape=(100, 100, 100), sync_imgs=True),
+    )
+    npt.assert_equal(
+        False,
+        check_peak_size([pam, pam1], ref_img_shape=(100, 100, 100), sync_imgs=False),
+    )

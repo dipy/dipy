@@ -8,11 +8,11 @@ from dipy.reconst.dti import TensorModel
 from dipy.sims.phantom import orbital_phantom
 from dipy.testing.decorators import set_random_number_generator
 
-fimg, fbvals, fbvecs = get_fnames("small_64D")
+fimg, fbvals, fbvecs = get_fnames(name="small_64D")
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 bvecs[np.isnan(bvecs)] = 0
 
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 
 def f(t):
@@ -29,7 +29,7 @@ def test_phantom():
     N = 50
 
     vol = orbital_phantom(
-        gtab,
+        gtab=gtab,
         func=f,
         t=np.linspace(0, 2 * np.pi, N),
         datashape=(10, 10, 10, len(bvals)),
@@ -73,10 +73,10 @@ def test_add_noise(rng):
         "rng": rng,
     }
 
-    vol = orbital_phantom(gtab, **options)
+    vol = orbital_phantom(gtab=gtab, **options)
 
     for snr in [10, 20, 30, 50]:
-        vol_noise = orbital_phantom(gtab, snr=snr, **options)
+        vol_noise = orbital_phantom(gtab=gtab, snr=snr, **options)
 
         sigma = S0 / snr
 

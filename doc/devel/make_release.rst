@@ -22,7 +22,7 @@ Release checklist
 * Generate, Review and update the release notes. Run the following command from
   the root directory of DIPY::
 
-    python tools/github_stats.py 1.7.0 > doc/release_notes/release1.8.rst
+    python3 tools/github_stats.py 1.7.0 > doc/release_notes/release1.8.rst
 
   where ``1.7.0`` was the last release tag name.
 
@@ -66,7 +66,7 @@ Release checklist
 
     make distclean
     git clean -fxd
-    python -m build  or  pip install --no-build-isolation  -e .
+    python3 -m build  or  pip install --no-build-isolation  -e .
 
 * Make sure all tests pass on your local machine (from the ``<dipy root>`` directory)::
 
@@ -110,17 +110,15 @@ version number, so you might want to make the release commit on your local
 machine, push to `dipy pypi`_, review, fix, rebase, until all is good.  Then and only
 then do you push to upstream on github.
 
-* Make the release commit.  Edit :file:`dipy/meson.build` and
-  :file:`dipy/tools/version_utils.py`` to get the correct version number
-  (set version: in the former, and ISRELEASED = True in the latter) and commit
-  it with a message like REL: set version to <version-number>.
+* Make the release commit.  Edit :file:`pyproject.toml` and to get the correct version
+  number and commit it with a message like REL: set version to <version-number>.
   Don’t push this commit to the DIPY_ repo yet.;
 
 * Finally tag the release locally with git tag <v1.x.y>. Continue with building
   release artifacts (next section). Only push the release commit to the DIPY_
   repo once you have built the sdists and docs successfully.
   Then continue with building wheels. Only push the release tag to the repo once
-   all wheels have been built successfully on `DIPY Github Actions`_.
+  all wheels have been built successfully on `DIPY Github Actions`_.
 
 * For the wheel build / upload, follow the `wheel builder README`_
   instructions again.  Edit the ``.github/workflows/wheel.yml`` files (if

@@ -1,6 +1,7 @@
 import numpy as np
 
 from dipy.denoise import nlmeans_block
+from dipy.testing.decorators import warning_for_keywords
 
 """
  Functions for Wavelet Transforms in 3D domain
@@ -159,7 +160,8 @@ def sfb3D_A(lo, hi, sf, d):
     return y
 
 
-def sfb3D(lo, hi, sf1, sf2=None, sf3=None):
+@warning_for_keywords()
+def sfb3D(lo, hi, sf1, *, sf2=None, sf3=None):
     """3D Synthesis Filter Bank
 
     Parameters
@@ -202,7 +204,8 @@ def sfb3D(lo, hi, sf1, sf2=None, sf3=None):
     return y
 
 
-def afb3D(x, af1, af2=None, af3=None):
+@warning_for_keywords()
+def afb3D(x, af1, *, af2=None, af3=None):
     """3D Analysis Filter Bank
 
     Parameters
@@ -265,7 +268,7 @@ def dwt3D(x, J, af):
 
     w = [None] * (J + 1)
     for k in range(J):
-        x, w[k] = afb3D(x, af, af, af)
+        x, w[k] = afb3D(x, af, af2=af, af3=af)
     w[J] = x
     return w
 
@@ -291,5 +294,5 @@ def idwt3D(w, J, sf):
 
     y = w[J]
     for k in range(J)[::-1]:
-        y = sfb3D(y, w[k], sf, sf, sf)
+        y = sfb3D(y, w[k], sf, sf2=sf, sf3=sf)
     return y

@@ -27,7 +27,6 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
     directions more than ``max_angle`` degrees from the incoming direction are
     set to 0 and the result is normalized.
     """
-
     def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
         """Direction getter from a pmf generator.
 
@@ -57,7 +56,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
 
         """
         PmfGenDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                       pmf_threshold, **kwargs)
+                                       pmf_threshold=pmf_threshold, **kwargs)
         # The vertices need to be in a contiguous array
         self.vertices = self.sphere.vertices.copy()
 
@@ -128,10 +127,9 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
     """Return direction of a sphere with the highest probability mass
     function (pmf).
     """
-
     def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                              pmf_threshold, **kwargs)
+                                              pmf_threshold=pmf_threshold, **kwargs)
 
     cdef int get_direction_c(self, double[::1] point, double[::1] direction):
         """Find direction with the highest pmf to updates ``direction`` array

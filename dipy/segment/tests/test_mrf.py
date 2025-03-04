@@ -10,7 +10,7 @@ from dipy.testing.decorators import set_random_number_generator
 
 def create_image():
     # Load a coronal slice from a T1-weighted MRI
-    fname = get_fnames("t1_coronal_slice")
+    fname = get_fnames(name="t1_coronal_slice")
     single_slice = np.load(fname)
 
     # Stack a few copies to form a 3D volume
@@ -374,7 +374,7 @@ def test_icm_square(rng):
         initial_segmentation = final_segmentation_2
 
     difference_map = np.abs(final_segmentation_1 - final_segmentation_2)
-    npt.assert_(np.abs(np.sum(difference_map)) != 0)
+    npt.assert_(not np.isclose(np.abs(np.sum(difference_map)), 0))
 
 
 def test_classify():
@@ -397,13 +397,15 @@ def test_classify():
     npt.assert_(seg_final.min() == 0.0)
 
     # Second we test it with just changing the tolerance
-    seg_init, seg_final, PVE = imgseg.classify(image, nclasses, beta, tolerance)
+    seg_init, seg_final, PVE = imgseg.classify(
+        image, nclasses, beta, tolerance=tolerance
+    )
 
     npt.assert_(seg_final.max() == nclasses)
     npt.assert_(seg_final.min() == 0.0)
 
     # Third we test it with just the iterations
-    seg_init, seg_final, PVE = imgseg.classify(image, nclasses, beta, max_iter)
+    seg_init, seg_final, PVE = imgseg.classify(image, nclasses, beta, max_iter=max_iter)
 
     npt.assert_(seg_final.max() == nclasses)
     npt.assert_(seg_final.min() == 0.0)
@@ -411,7 +413,9 @@ def test_classify():
     # Next we test saving the history of accumulated energies from ICM
     imgseg = TissueClassifierHMRF(save_history=True)
 
-    seg_init, seg_final, PVE = imgseg.classify(200 * image, nclasses, beta, tolerance)
+    seg_init, seg_final, PVE = imgseg.classify(
+        200 * image, nclasses, beta, tolerance=tolerance
+    )
 
     npt.assert_(seg_final.max() == nclasses)
     npt.assert_(seg_final.min() == 0.0)

@@ -24,7 +24,26 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
-* 1.9.0 (Friday, March 8, 2023)
+* 1.10.0 (Friday, December 12, 2024)
+
+- NF: Patch2Self3 - Large improvements of self-supervised denoising method added.
+- NF: Fiber density and spread from ODF using Bingham distributions method added.
+- NF: Iteratively reweighted least squares for robust fitting of diffusion models added.
+- NF: NDC - Neighboring DWI Correlation quality metric added.
+- NF: DAM - tissue classification method added.
+- NF: New Parallel Backends (Ray, joblib, Dask) for fitting reconstruction methods added.
+- RF: Deprecation of Tensorflow support. PyTorch support is now the default.
+- Transition to Keyword-only arguments (PEP 3102).
+- Zero-warnings policy (CIs, Compilation, doc generation) adopted.
+- Adoption of ruff for automatic style enforcement.
+- Transition to using f-strings.
+- Citation system updated. It is more uniform and robust.
+- Multiple Workflows updated.
+- Multiple DIPY Horizon features updated.
+- Large documentation update.
+- Closed 250 issues and merged 185 pull requests.
+
+* 1.9.0 (Friday, March 8, 2024)
 
 - Numpy 2.0.0 support.
 - DeepN4 novel DL-based N4 Bias Correction method added.

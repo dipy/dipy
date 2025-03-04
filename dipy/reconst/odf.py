@@ -1,6 +1,7 @@
 import numpy as np
 
 from dipy.reconst.base import ReconstFit, ReconstModel
+from dipy.testing.decorators import warning_for_keywords
 
 # Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
 # .base
@@ -45,7 +46,9 @@ def gfa(samples):
 
     Notes
     -----
-    The GFA is defined as [1]_ ::
+    The GFA is defined as :footcite:p:`CohenAdad2011`:
+
+    .. math::
 
         \sqrt{\frac{n \sum_i{(\Psi_i - <\Psi>)^2}}{(n-1) \sum{\Psi_i ^ 2}}}
 
@@ -53,9 +56,9 @@ def gfa(samples):
     the unit sphere and angle brackets denote average over the samples on the
     sphere.
 
-    .. [1] Quality assessment of High Angular Resolution Diffusion Imaging
-           data using bootstrap on Q-ball reconstruction. J. Cohen Adad, M.
-           Descoteaux, L.L. Wald. JMRI 33: 1194-1208.
+    References
+    ----------
+    .. footbibliography::
     """
     diff = samples - samples.mean(-1)[..., None]
     n = samples.shape[-1]
@@ -67,7 +70,8 @@ def gfa(samples):
     return result.squeeze()
 
 
-def minmax_normalize(samples, out=None):
+@warning_for_keywords()
+def minmax_normalize(samples, *, out=None):
     """Min-max normalization of a function evaluated on the unit sphere
 
     Normalizes samples to ``(samples - min(samples)) / (max(samples) -

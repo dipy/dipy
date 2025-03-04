@@ -4,7 +4,7 @@ from warnings import warn
 import numpy as np
 
 from dipy.io.image import load_nifti
-from dipy.io.peaks import load_peaks
+from dipy.io.peaks import load_pam
 from dipy.io.streamline import load_tractogram
 from dipy.io.surface import load_gifti, load_pial
 from dipy.io.utils import create_nifti_header
@@ -53,12 +53,15 @@ class HorizonFlow(Workflow):
     ):
         """Interactive medical visualization - Invert the Horizon!
 
+        See :footcite:p:`Garyfallidis2019` for further details about Horizon.
+
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
         files .nii or .nii.gz. Cluster streamlines on loading.
 
         Parameters
         ----------
         input_files : variable string
+            Filenames.
         cluster : bool, optional
             Enable QuickBundlesX clustering.
         rgb : bool, optional
@@ -121,11 +124,7 @@ class HorizonFlow(Workflow):
 
         References
         ----------
-        .. [Horizon_ISMRM19] Garyfallidis E., M-A. Cote, B.Q. Chandio,
-            S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,
-            S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
-            adaptive visualization, Proceedings of: International Society of
-            Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+        .. footbibliography::
         """
         super(HorizonFlow, self).__init__(force=True)
         verbose = True
@@ -218,7 +217,7 @@ class HorizonFlow(Workflow):
                     warn(f"{fname} does not have any surface geometry.", stacklevel=2)
 
             if ends(".pam5"):
-                pam = load_peaks(fname)
+                pam = load_pam(fname)
                 pams.append(pam)
 
                 if verbose:

@@ -1,16 +1,20 @@
+from dipy.testing.decorators import warning_for_keywords
 from dipy.workflows.workflow import Workflow
 
 
 class CombinedWorkflow(Workflow):
+    @warning_for_keywords()
     def __init__(
-        self, output_strategy="append", mix_names=False, force=False, skip=False
+        self, *, output_strategy="append", mix_names=False, force=False, skip=False
     ):
         """Workflow that combines multiple workflows.
         The workflow combined together are referred as sub flows in this class.
         """
 
         self._optionals = {}
-        super(CombinedWorkflow, self).__init__(output_strategy, mix_names, force, skip)
+        super(CombinedWorkflow, self).__init__(
+            output_strategy=output_strategy, mix_names=mix_names, force=force, skip=skip
+        )
 
     def get_sub_runs(self):
         """Returns a list of tuples

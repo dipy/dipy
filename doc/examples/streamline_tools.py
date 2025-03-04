@@ -1,6 +1,4 @@
 """
-.. _streamline_tools:
-
 =========================================================
 Connectivity Matrices, ROI Intersections and Density Maps
 =========================================================
@@ -44,15 +42,15 @@ from dipy.viz import actor, colormap as cmap, window
 # same space as the T1. We'll use the ``get_fnames`` function to download the
 # files we need and set the file names to variables.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
-t1_fname = get_fnames("stanford_t1")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
+t1_fname = get_fnames(name="stanford_t1")
 
-data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+data, _, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 t1_data = load_nifti_data(t1_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # We've loaded an image called ``labels_img`` which is a map of tissue types
@@ -75,10 +73,11 @@ csapeaks = peaks.peaks_from_model(
 )
 
 ###############################################################################
-# Now we can use EuDX to track all of the white matter. To keep things
-# reasonably fast we use ``density=1`` which will result in 1 seeds per voxel.
-# The stopping criterion, determining when the tracking stops, is set to stop
-# when the tracking exits the white matter.
+# Now we can use EuDX to track all of the white matter. We define an identity
+# matrix for the affine transformation [#]_ of the seeding locations. To keep
+# things reasonably fast we use ``density=1`` which will result in 1 seeds per
+# voxel. The stopping criterion, determining when the tracking stops, is set to
+# stop when the tracking exits the white matter.
 
 affine = np.eye(4)
 seeds = utils.seeds_from_mask(white_matter, affine, density=1)
@@ -120,7 +119,9 @@ interactive = False
 
 # Make display objects
 color = cmap.line_colors(cc_streamlines)
-cc_streamlines_actor = actor.line(cc_streamlines, cmap.line_colors(cc_streamlines))
+cc_streamlines_actor = actor.line(
+    cc_streamlines, colors=cmap.line_colors(cc_streamlines)
+)
 cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1.0, 1.0, 0.0), opacity=0.5)
 
 vol_actor = actor.slicer(t1_data)
@@ -137,12 +138,14 @@ scene.add(cc_streamlines_actor)
 scene.add(cc_ROI_actor)
 
 # Save figures
-window.record(scene, n_frames=1, out_path="corpuscallosum_axial.png", size=(800, 800))
+window.record(
+    scene=scene, n_frames=1, out_path="corpuscallosum_axial.png", size=(800, 800)
+)
 if interactive:
     window.show(scene)
 scene.set_camera(position=[-1, 0, 0], focal_point=[0, 0, 0], view_up=[0, 0, 1])
 window.record(
-    scene, n_frames=1, out_path="corpuscallosum_sagittal.png", size=(800, 800)
+    scene=scene, n_frames=1, out_path="corpuscallosum_sagittal.png", size=(800, 800)
 )
 if interactive:
     window.show(scene)
@@ -236,12 +239,11 @@ save_trk(sft, "lr-superiorfrontal.trk")
 #
 # .. [#] The image `aparc-reduced.nii.gz`, which we load as ``labels_img``, is
 #        a modified version of label map `aparc+aseg.mgz` created by
-#        `FreeSurfer <https://surfer.nmr.mgh.harvard.edu/>`_. The corpus
-#        callosum region is a combination of the FreeSurfer labels 251-255.
-#        The remaining FreeSurfer labels were re-mapped and reduced so that
-#        they lie between 0 and 88. To see the FreeSurfer region, label and
-#        name, represented by each value, see `label_info.txt` in
-#        `~/.dipy/stanford_hardi`.
+#        FreeSurfer_. The corpus  callosum region is a combination of the
+#        FreeSurfer labels 251-255. The remaining FreeSurfer labels were
+#        re-mapped and reduced so that they lie between 0 and 88. To see the
+#        FreeSurfer region, label and name, represented by each value, see
+#        `label_info.txt` in `~/.dipy/stanford_hardi`.
 # .. [#] An affine transformation is a mapping between two coordinate systems
 #        that can represent scaling, rotation, shear, translation and
 #        reflection. Affine transformations are often represented using a 4x4

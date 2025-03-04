@@ -1,12 +1,16 @@
-"""Cross-validation analysis of diffusion models."""
+"""
+Cross-validation analysis of diffusion models.
+"""
 
 import numpy as np
 
 import dipy.core.gradients as gt
+from dipy.testing.decorators import warning_for_keywords
 
 
-def coeff_of_determination(data, model, axis=-1):
-    """Calculate the coefficient of determination for a model prediction,
+@warning_for_keywords()
+def coeff_of_determination(data, model, *, axis=-1):
+    r"""Calculate the coefficient of determination for a model prediction,
     relative to data.
 
     Parameters
@@ -16,7 +20,7 @@ def coeff_of_determination(data, model, axis=-1):
     model : ndarray
         The predictions of a model for this data. Same shape as the data.
     axis: int, optional
-        The axis along which different samples are laid out (default: -1).
+        The axis along which different samples are laid out.
 
     Returns
     -------
@@ -54,7 +58,9 @@ def coeff_of_determination(data, model, axis=-1):
 def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     """Perform k-fold cross-validation.
 
-    It generate out-of-sample predictions for each measurement.
+    It generates out-of-sample predictions for each measurement.
+
+    See :footcite:p:`Rokem2014` for further details about the method.
 
     Parameters
     ----------
@@ -90,9 +96,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
 
     References
     ----------
-    .. [1] Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A.,
-       Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at
-       multiple b-values with cross-validation. ISMRM 2014.
+    .. footbibliography::
 
     """
     _ = model_kwargs.pop("rng", np.random.default_rng())
@@ -130,11 +134,11 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
 
         this_gtab = gtgt(
             np.hstack([gtab.bvals[gtab.b0s_mask], nz_bval[fold_mask]]),
-            np.concatenate([gtab.bvecs[gtab.b0s_mask], nz_bvec[fold_mask]]),
+            bvecs=np.concatenate([gtab.bvecs[gtab.b0s_mask], nz_bvec[fold_mask]]),
         )
         left_out_gtab = gtgt(
             np.hstack([gtab.bvals[gtab.b0s_mask], nz_bval[~fold_mask]]),
-            np.concatenate([gtab.bvecs[gtab.b0s_mask], nz_bvec[~fold_mask]]),
+            bvecs=np.concatenate([gtab.bvecs[gtab.b0s_mask], nz_bvec[~fold_mask]]),
         )
         this_model = model.__class__(this_gtab, *model_args, **model_kwargs)
         this_fit = this_model.fit(this_data, mask=mask)
@@ -143,7 +147,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
             err_str += "do not have an implementation of model prediction"
             err_str += " and do not support cross-validation"
             raise ValueError(err_str)
-        this_predict = S0[..., None] * this_fit.predict(left_out_gtab, S0=1)
+        this_predict = S0[..., None] * this_fit.predict(gtab=left_out_gtab, S0=1)
 
         idx_to_assign = np.where(~gtab.b0s_mask)[0][~fold_mask]
         prediction[..., idx_to_assign] = this_predict[..., np.sum(gtab.b0s_mask) :]

@@ -18,7 +18,7 @@ from dipy.workflows.tracking import LocalFiberTrackingPAMFlow, PFTrackingPAMFlow
 
 def test_particle_filtering_tracking_workflows():
     with TemporaryDirectory() as out_dir:
-        dwi_path, bval_path, bvec_path = get_fnames("small_64D")
+        dwi_path, bval_path, bvec_path = get_fnames(name="small_64D")
         volume, affine = load_nifti(dwi_path)
 
         # Create some mask
@@ -128,7 +128,9 @@ def test_particle_filtering_tracking_workflows():
                 message=descoteaux07_legacy_msg,
                 category=PendingDeprecationWarning,
             )
-            pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path)
+            pf_track_pam.run(
+                pam_path, wm_path, gm_path, csf_path, seeds_path, out_dir=out_dir
+            )
         tractogram_path = pf_track_pam.last_generated_outputs["out_tractogram"]
         assert_false(is_tractogram_empty(tractogram_path))
 
@@ -142,7 +144,13 @@ def test_particle_filtering_tracking_workflows():
                 category=PendingDeprecationWarning,
             )
             pf_track_pam.run(
-                pam_path, wm_path, gm_path, csf_path, seeds_path, save_seeds=True
+                pam_path,
+                wm_path,
+                gm_path,
+                csf_path,
+                seeds_path,
+                save_seeds=True,
+                out_dir=out_dir,
             )
         tractogram_path = pf_track_pam.last_generated_outputs["out_tractogram"]
         assert_true(tractogram_has_seeds(tractogram_path))
@@ -151,7 +159,7 @@ def test_particle_filtering_tracking_workflows():
 
 def test_local_fiber_tracking_workflow():
     with TemporaryDirectory() as out_dir:
-        data_path, bval_path, bvec_path = get_fnames("small_64D")
+        data_path, bval_path, bvec_path = get_fnames(name="small_64D")
         volume, affine = load_nifti(data_path)
         mask = np.ones_like(volume[:, :, :, 0], dtype=np.uint8)
         mask_path = join(out_dir, "tmp_mask.nii.gz")
@@ -189,14 +197,16 @@ def test_local_fiber_tracking_workflow():
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
         assert_equal(lf_track_pam.get_short_name(), "track_local")
-        lf_track_pam.run(pam_path, gfa_path, seeds_path)
+        lf_track_pam.run(pam_path, gfa_path, seeds_path, out_dir=out_dir)
         tractogram_path = lf_track_pam.last_generated_outputs["out_tractogram"]
         assert_false(is_tractogram_empty(tractogram_path))
 
         # Test tracking with binary stopping criterion
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
-        lf_track_pam.run(pam_path, mask_path, seeds_path, use_binary_mask=True)
+        lf_track_pam.run(
+            pam_path, mask_path, seeds_path, use_binary_mask=True, out_dir=out_dir
+        )
 
         tractogram_path = lf_track_pam.last_generated_outputs["out_tractogram"]
         assert_false(is_tractogram_empty(tractogram_path))
@@ -204,7 +214,9 @@ def test_local_fiber_tracking_workflow():
         # Test tracking with pam with sh
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
-        lf_track_pam.run(pam_path, gfa_path, seeds_path, tracking_method="eudx")
+        lf_track_pam.run(
+            pam_path, gfa_path, seeds_path, tracking_method="eudx", out_dir=out_dir
+        )
         tractogram_path = lf_track_pam.last_generated_outputs["out_tractogram"]
         assert_false(is_tractogram_empty(tractogram_path))
 
@@ -218,7 +230,11 @@ def test_local_fiber_tracking_workflow():
                 category=PendingDeprecationWarning,
             )
             lf_track_pam.run(
-                pam_path, gfa_path, seeds_path, tracking_method="deterministic"
+                pam_path,
+                gfa_path,
+                seeds_path,
+                tracking_method="deterministic",
+                out_dir=out_dir,
             )
         tractogram_path = lf_track_pam.last_generated_outputs["out_tractogram"]
         assert_false(is_tractogram_empty(tractogram_path))
@@ -233,7 +249,11 @@ def test_local_fiber_tracking_workflow():
                 category=PendingDeprecationWarning,
             )
             lf_track_pam.run(
-                pam_path, gfa_path, seeds_path, tracking_method="probabilistic"
+                pam_path,
+                gfa_path,
+                seeds_path,
+                tracking_method="probabilistic",
+                out_dir=out_dir,
             )
         tractogram_path = lf_track_pam.last_generated_outputs["out_tractogram"]
         assert_false(is_tractogram_empty(tractogram_path))
@@ -248,7 +268,11 @@ def test_local_fiber_tracking_workflow():
                 category=PendingDeprecationWarning,
             )
             lf_track_pam.run(
-                pam_path, gfa_path, seeds_path, tracking_method="closestpeaks"
+                pam_path,
+                gfa_path,
+                seeds_path,
+                tracking_method="closestpeaks",
+                out_dir=out_dir,
             )
         tractogram_path = lf_track_pam.last_generated_outputs["out_tractogram"]
         assert_false(is_tractogram_empty(tractogram_path))
@@ -268,6 +292,7 @@ def test_local_fiber_tracking_workflow():
                 seeds_path,
                 tracking_method="deterministic",
                 save_seeds=True,
+                out_dir=out_dir,
             )
         tractogram_path = lf_track_pam.last_generated_outputs["out_tractogram"]
         assert_true(tractogram_has_seeds(tractogram_path))

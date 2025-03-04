@@ -57,6 +57,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 from dipy.core.geometry import dist_to_corner
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking import metrics
 
 # Import helper functions shared with vox2track
@@ -107,10 +108,12 @@ def density_map(streamlines, affine, vol_dims):
     return counts
 
 
+@warning_for_keywords()
 def connectivity_matrix(
     streamlines,
     affine,
     label_volume,
+    *,
     inclusive=False,
     symmetric=True,
     return_mapping=False,
@@ -215,7 +218,8 @@ def connectivity_matrix(
         return matrix
 
 
-def ndbincount(x, weights=None, shape=None):
+@warning_for_keywords()
+def ndbincount(x, *, weights=None, shape=None):
     """Like bincount, but for nd-indices.
 
     Parameters
@@ -341,7 +345,8 @@ def subsegment(streamlines, max_segment_length):
         yield output_sl
 
 
-def seeds_from_mask(mask, affine, density=(1, 1, 1)):
+@warning_for_keywords()
+def seeds_from_mask(mask, affine, *, density=(1, 1, 1)):
     """Create seeds for fiber tracking from a binary mask.
 
     Seeds points are placed evenly distributed in all voxels of ``mask`` which
@@ -375,11 +380,13 @@ def seeds_from_mask(mask, affine, density=(1, 1, 1)):
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
-    >>> seeds_from_mask(mask, np.eye(4), [1,1,1])
+    >>> seeds_from_mask(mask, np.eye(4), density=[1,1,1])
     array([[ 0.,  0.,  0.]])
 
     """
-    mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
+    mask = np.asarray(mask, dtype=bool)
+    if mask.ndim < 1:
+        mask = np.reshape(mask, (3,))
     if mask.ndim != 3:
         raise ValueError("mask cannot be more than 3d")
 
@@ -412,8 +419,9 @@ def seeds_from_mask(mask, affine, density=(1, 1, 1)):
     return seeds
 
 
+@warning_for_keywords()
 def random_seeds_from_mask(
-    mask, affine, seeds_count=1, seed_count_per_voxel=True, random_seed=None
+    mask, affine, *, seeds_count=1, seed_count_per_voxel=True, random_seed=None
 ):
     """Create randomly placed seeds for fiber tracking from a binary mask.
 
@@ -477,7 +485,9 @@ def random_seeds_from_mask(
            [-0.41435083, -0.26318949,  0.30127447]])
 
     """
-    mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
+    mask = np.asarray(mask, dtype=bool)
+    if mask.ndim < 1:
+        mask = np.reshape(mask, (3,))
     if mask.ndim != 3:
         raise ValueError("mask cannot be more than 3d")
 
@@ -542,7 +552,8 @@ def _with_initialize(generator):
 
 
 @_with_initialize
-def target(streamlines, affine, target_mask, include=True):
+@warning_for_keywords()
+def target(streamlines, affine, target_mask, *, include=True):
     """Filter streamlines based on whether or not they pass through an ROI.
 
     Parameters
@@ -592,13 +603,17 @@ def target(streamlines, affine, target_mask, include=True):
 
 
 @_with_initialize
-def target_line_based(streamlines, affine, target_mask, include=True):
+@warning_for_keywords()
+def target_line_based(streamlines, affine, target_mask, *, include=True):
     """Filter streamlines based on whether or not they pass through a ROI,
     using a line-based algorithm. Mostly used as a replacement of `target`
     for compressed streamlines.
 
     This function never returns single-point streamlines, whatever the
     value of `include`.
+
+    See :footcite:`Bresenham1965` and :footcite:p:`Houde2015` for further
+    details about the method.
 
     Parameters
     ----------
@@ -622,10 +637,7 @@ def target_line_based(streamlines, affine, target_mask, include=True):
 
     References
     ----------
-    [Bresenham5] Bresenham, Jack Elton. "Algorithm for computer control of a
-                 digital plotter", IBM Systems Journal, vol 4, no. 1, 1965.
-    [Houde15] Houde et al. How to avoid biased streamlines-based metrics for
-              streamlines with variable step sizes, ISMRM 2015.
+    .. footbibliography::
 
     See Also
     --------
@@ -643,7 +655,8 @@ def target_line_based(streamlines, affine, target_mask, include=True):
         yield streamlines[idx]
 
 
-def streamline_near_roi(streamline, roi_coords, tol, mode="any"):
+@warning_for_keywords()
+def streamline_near_roi(streamline, roi_coords, tol, *, mode="any"):
     """Is a streamline near an ROI.
 
     Implements the inner loops of the :func:`near_roi` function.
@@ -698,7 +711,8 @@ def streamline_near_roi(streamline, roi_coords, tol, mode="any"):
         return np.all(np.min(dist, -1) <= tol)
 
 
-def near_roi(streamlines, affine, region_of_interest, tol=None, mode="any"):
+@warning_for_keywords()
+def near_roi(streamlines, affine, region_of_interest, *, tol=None, mode="any"):
     """Provide filtering criteria for a set of streamlines based on whether
     they fall within a tolerance distance from an ROI.
 
@@ -784,7 +798,8 @@ def length(streamlines):
     return map(metrics.length, streamlines)
 
 
-def unique_rows(in_array, dtype="f4"):
+@warning_for_keywords()
+def unique_rows(in_array, *, dtype="f4"):
     """Find the unique rows in an array.
 
     Parameters
@@ -817,7 +832,8 @@ def unique_rows(in_array, dtype="f4"):
 
 
 @_with_initialize
-def transform_tracking_output(tracking_output, affine, save_seeds=False):
+@warning_for_keywords()
+def transform_tracking_output(tracking_output, affine, *, save_seeds=False):
     """Apply a linear transformation, given by affine, to streamlines.
 
     Parameters
@@ -830,6 +846,7 @@ def transform_tracking_output(tracking_output, affine, save_seeds=False):
         The voxel_to_rasmm matrix, typically from a NIFTI file.
     save_seeds : bool, optional
         If set, seeds associated to streamlines will be also moved and returned
+
     Returns
     -------
     streamlines : generator
@@ -919,7 +936,8 @@ except AttributeError:
     minimum_at = _min_at
 
 
-def path_length(streamlines, affine, aoi, fill_value=-1):
+@warning_for_keywords()
+def path_length(streamlines, affine, aoi, *, fill_value=-1):
     """Compute the shortest path, along any streamline, between aoi and
     each voxel.
 
@@ -992,6 +1010,8 @@ def _as_segments(streamline, break_points):
 def max_angle_from_curvature(min_radius_curvature, step_size):
     """Get the maximum deviation angle from the minimum radius curvature.
 
+    See :footcite:p:`Tournier2012` for further details about the method.
+
     Parameters
     ----------
     min_radius_curvature: float
@@ -1007,8 +1027,7 @@ def max_angle_from_curvature(min_radius_curvature, step_size):
 
     References
     ----------
-    For more information:
-    https://onlinelibrary.wiley.com/doi/full/10.1002/ima.22005
+    .. footbibliography::
 
     """
     max_angle = 2.0 * np.arcsin(step_size / (2.0 * min_radius_curvature))
@@ -1022,6 +1041,8 @@ def max_angle_from_curvature(min_radius_curvature, step_size):
 
 def min_radius_curvature_from_angle(max_angle, step_size):
     """Get minimum radius of curvature from a deviation angle.
+
+    See :footcite:p:`Tournier2012` for further details about the method.
 
     Parameters
     ----------
@@ -1039,8 +1060,7 @@ def min_radius_curvature_from_angle(max_angle, step_size):
 
     References
     ----------
-    More information:
-    https://onlinelibrary.wiley.com/doi/full/10.1002/ima.22005
+    .. footbibliography::
 
     """
     if np.isnan(max_angle) or max_angle > np.pi / 2 or max_angle <= 0:

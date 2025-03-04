@@ -3,6 +3,7 @@ import warnings
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 fury, has_fury, setup_module = optional_package("fury", min_version="0.9.0")
@@ -54,9 +55,7 @@ class PeakActor(Actor):
         Peak values. The shape of the array should be (X, Y, Z, D).
     affine : array, optional
         4x4 transformation array from native coordinates to world coordinates.
-    colors : None or string ('rgb_standard') or tuple (3D or 4D) or
-             array/ndarray (N, 3 or 4) or array/ndarray (K, 3 or 4) or
-             array/ndarray(N, ) or array/ndarray (K, )
+    colors : None or string ('rgb_standard') or tuple (3D or 4D) or array/ndarray (N, 3 or 4) or (K, 3 or 4) or (N, ) or (K, )
         If None a standard orientation colormap is used for every line.
         If one tuple of color is used. Then all streamlines will have the same
         color.
@@ -69,21 +68,22 @@ class PeakActor(Actor):
         If an array (K,) is given, where K is the number of lines then these
         are considered as the values to be used by the colormap.
     lookup_colormap : vtkLookupTable, optional
-        Add a default lookup table to the colormap. Default is None which calls
-        :func:`fury.actor.colormap_lookup_table`.
+        Add a default lookup table to the colormap. Look at
+        :func:`fury.actor.colormap_lookup_table` for more information.
     linewidth : float, optional
-        Line thickness. Default is 1.
+        Line thickness.
     symmetric: bool, optional
         If True, peaks are drawn for both peaks_dirs and -peaks_dirs. Else,
-        peaks are only drawn for directions given by peaks_dirs. Default is
-        True.
+        peaks are only drawn for directions given by peaks_dirs.
 
-    """
+    """  # noqa: E501
 
+    @warning_for_keywords()
     def __init__(
         self,
         directions,
         indices,
+        *,
         values=None,
         affine=None,
         colors=None,
@@ -293,8 +293,10 @@ class PeakActor(Actor):
         return self.__min_centers
 
 
+@warning_for_keywords()
 def peak(
     peaks_dirs,
+    *,
     peaks_values=None,
     mask=None,
     affine=None,
@@ -303,7 +305,7 @@ def peak(
     lookup_colormap=None,
     symmetric=True,
 ):
-    """Visualize peak directions as given from ``peaks_from_model``.
+    """Visualize peak directions as given from ``peaks_from_model`` function.
 
     Parameters
     ----------
@@ -319,8 +321,8 @@ def peak(
         Default None. If None then every peak gets an orientation color
         in similarity to a DEC map.
     lookup_colormap : vtkLookupTable, optional
-        Add a default lookup table to the colormap. Default is None which calls
-        :func:`fury.actor.colormap_lookup_table`.
+        Add a default lookup table to the colormap. Look at
+        :func:`fury.actor.colormap_lookup_table` for more information.
     linewidth : float, optional
         Line thickness. Default is 1.
     symmetric : bool, optional
@@ -397,7 +399,8 @@ def peak(
     )
 
 
-def _peaks_colors_from_points(points, colors=None, points_per_line=2):
+@warning_for_keywords()
+def _peaks_colors_from_points(points, *, colors=None, points_per_line=2):
     """Return a VTK scalar array containing colors information for each one of
     the peaks according to the policy defined by the parameter colors.
 
@@ -467,7 +470,8 @@ def _peaks_colors_from_points(points, colors=None, points_per_line=2):
     return color_array, colors_are_scalars, global_opacity
 
 
-def _points_to_vtk_cells(points, points_per_line=2):
+@warning_for_keywords()
+def _points_to_vtk_cells(points, *, points_per_line=2):
     """Return the VTK cell array for the peaks given the set of points
     coordinates.
 

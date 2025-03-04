@@ -7,7 +7,8 @@ This page lists available metrics that can be used by the tractography
 clustering framework. For every metric a brief description is provided
 explaining: what it does, when it's useful and how to use it. If you are not
 familiar with the tractography clustering framework, check this tutorial
-:ref:`clustering-framework`.
+:ref:`clustering-framework`. See :footcite:p:`Garyfallidis2012a` for more
+information on the metrics.
 
 .. contents:: Available Metrics
     :local:
@@ -40,7 +41,7 @@ def get_streamlines():
     from dipy.data import get_fnames
     from dipy.io.streamline import load_tractogram
 
-    fname = get_fnames("fornix")
+    fname = get_fnames(name="fornix")
     fornix = load_tractogram(fname, "same", bbox_valid_check=False)
 
     return fornix.streamlines
@@ -143,8 +144,8 @@ for cluster, color in zip(clusters, colormap):
 scene = window.Scene()
 scene.clear()
 scene.SetBackground(0, 0, 0)
-scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path="cosine_metric.png", size=(600, 600))
+scene.add(actor.streamtube(streamlines, colors=colormap_full))
+window.record(scene=scene, out_path="cosine_metric.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -157,6 +158,5 @@ if interactive:
 # References
 # ----------
 #
-# .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-#    tractography simplification, Frontiers in Neuroscience, vol 6, no 175,
-#    2012.
+# .. footbibliography::
+#

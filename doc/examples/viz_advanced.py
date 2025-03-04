@@ -4,8 +4,8 @@ Advanced interactive visualization
 ==================================
 
 In DIPY_ we created a thin interface to access many of the capabilities
-available in the FURY 3D visualization library but tailored to the
-needs of structural and diffusion imaging.
+available in the FURY 3D visualization library :footcite:p:`Garyfallidis2021`
+but tailored to the needs of structural and diffusion imaging.
 
 Let's start by importing the necessary modules.
 """
@@ -45,7 +45,9 @@ fetch_bundles_2_subjects()
 # ``af left`` (left arcuate fasciculus) and maps, e.g. FA for a specific
 # subject.
 
-res = read_bundles_2_subjects("subj_1", ["t1", "fa"], ["af.left", "cst.right", "cc_1"])
+res = read_bundles_2_subjects(
+    subj_id="subj_1", metrics=["t1", "fa"], bundles=["af.left", "cst.right", "cc_1"]
+)
 
 ###############################################################################
 # We will use 3 bundles, FA and the affine transformation that brings the voxel
@@ -86,7 +88,7 @@ stream_actor = actor.line(streamlines)
 if not world_coords:
     image_actor_z = actor.slicer(data, affine=np.eye(4))
 else:
-    image_actor_z = actor.slicer(data, affine)
+    image_actor_z = actor.slicer(data, affine=affine)
 
 ###############################################################################
 # We can also change also the opacity of the slicer.
@@ -121,7 +123,7 @@ scene.add(image_actor_y)
 # ``show``. The more appropriate way is to use them with the ``ShowManager``
 # object which allows accessing the pipeline in different areas. Here is how:
 
-show_m = window.ShowManager(scene, size=(1200, 900))
+show_m = window.ShowManager(scene=scene, size=(1200, 900))
 show_m.initialize()
 
 ###############################################################################
@@ -268,7 +270,10 @@ if interactive:
 
 else:
     window.record(
-        scene, out_path="bundles_and_3_slices.png", size=(1200, 900), reset_camera=False
+        scene=scene,
+        out_path="bundles_and_3_slices.png",
+        size=(1200, 900),
+        reset_camera=False,
     )
 
 ###############################################################################
@@ -282,9 +287,5 @@ del show_m
 # References
 # ----------
 #
-# .. [Garyfallidis2021] Garyfallidis, Eleftherios, Serge Koudoro, Javier Guaje,
-#     Marc-Alexandre Côté, Soham Biswas, David Reagan, Nasim Anousheh,
-#     Filipi Silva, Geoffrey Fox, and Fury Contributors.
-#     "FURY: advanced scientific visualization." Journal of Open Source
-#     Software 6 no. 64 (2021): 3384.
-#     https://doi.org/10.21105/joss.03384
+# .. footbibliography::
+#

@@ -28,7 +28,7 @@ answer it yourself and contribute to the documentation!
 .. dropdown:: How do I convert my Spherical Harmonics from MRTRIX3 to DIPY?
    :animate: fade-in-slide-down
 
-   *Available from DIPY 1.9.0+. See `this thread <https://github.com/dipy/dipy/discussions/2959#discussioncomment-7481675>`_ for more information.
+   Available from DIPY 1.9.0+. See `this thread <https://github.com/dipy/dipy/discussions/2959#discussioncomment-7481675>`_ for more information.
 
    .. code-block:: Python
 
@@ -38,7 +38,7 @@ answer it yourself and contribute to the documentation!
 .. dropdown:: How do I convert my tensors from FSL to DIPY  or MRTRIX3 to DIPY?
    :animate: fade-in-slide-down
 
-   *Available with DIPY 1.9.0+
+   Available with DIPY 1.9.0+
 
    .. code-block:: Python
 
@@ -52,6 +52,36 @@ answer it yourself and contribute to the documentation!
         # convert from MRTRIX3 to DIPY
         otensor = convert_tensors(data, 'mrtrix', 'dipy')
         save_nifti(otensor, data, affine, image.header)
+
+
+.. dropdown:: How do I save/read the output fields from the Symmetric Diffeomorphic Registration?
+   :animate: fade-in-slide-down
+
+   The mapping fields is saved in a Nifti file. The data in the file is organized with
+   shape (X, Y, Z, 3, 2), such that the forward mapping in each voxel is in
+   `data[i, j, k, :, 0]` and the backward mapping in each voxel is in
+   `data[i, j, k, :, 1]`.
+
+   The output fields from the Symmetric Diffeomorphic Registration can be saved and
+   read using the functions `write_mapping` and `read_mapping` respectively.
+
+   .. code-block:: Python
+
+        from dipy.align import read_mapping, write_mapping
+        from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
+
+        # Load your static and moving images and setup the registration parameters.
+        # Then apply the registration
+
+        sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
+        mapping = sdr.optimize(static, moving)
+
+        # Save the mapping
+        write_mapping(mapping,'outputField.nii.gz')
+
+        # If you need to read the mapping back
+        mapping = read_mapping('outputField.nii.gz', static_filename, moving_filename)
+
 
 
 

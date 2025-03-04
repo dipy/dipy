@@ -4,16 +4,16 @@
 
 """
 Implementation of the Parallel Transport Tractography (PTT) algorithm by
-Aydogan et al., (2021). PTT Default parameter values are slightly different
-then in Trekker to optimise performances. The rejection sampling
+:footcite:t:`Aydogan2021`. PTT Default parameter values are slightly different
+than in Trekker to optimise performances. The rejection sampling
 algorithm also uses fewer samples to estimate the maximum of the posterior, and
 fewer tries to obtain a suitable propagation candidate. Moreover, the initial
 tangent direction in this implementation is always obtained from the voxel-wise
 peaks.
 
-Aydogan DB, Shi Y. Parallel Transport Tractography. IEEE Trans
-    Med Imaging. 2021 Feb;40(2):635-647. doi: 10.1109/TMI.2020.3034038.
-    Epub 2021 Feb 2. PMID: 33104507; PMCID: PMC7931442.
+References
+----------
+.. footbibliography::
 """
 
 cimport numpy as cnp
@@ -126,7 +126,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.rejection_sampling_nbr_sample = 10 # Adaptively set in Trekker.
 
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                       pmf_threshold, **kwargs)
+                                       pmf_threshold=pmf_threshold, **kwargs)
 
 
     cdef void initialize_candidate(self, double[:] init_dir):

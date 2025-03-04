@@ -19,14 +19,12 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst.csdeconv import (
     ConstrainedSDTModel,
     ConstrainedSphericalDeconvModel,
-    auto_response,
     auto_response_ssst,
     forward_sdeconv_mat,
     mask_for_response_ssst,
     odf_deconv,
     odf_sh_to_sharp,
     recursive_response,
-    response_from_mask,
     response_from_mask_ssst,
 )
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
@@ -48,20 +46,19 @@ from dipy.sims.voxel import (
 )
 from dipy.testing import assert_greater, assert_greater_equal
 from dipy.testing.decorators import set_random_number_generator
-from dipy.utils.deprecator import ExpiredDeprecationError
 
 
 def get_test_data():
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     evals_list = [
         np.array([1.7e-3, 0.4e-3, 0.4e-3]),
         np.array([4.0e-4, 4.0e-4, 4.0e-4]),
         np.array([3.0e-3, 3.0e-3, 3.0e-3]),
     ]
     s0 = [0.8, 1, 4]
-    signals = [single_tensor(gtab, x[0], x[1]) for x in zip(s0, evals_list)]
+    signals = [single_tensor(gtab, x[0], evals=x[1]) for x in zip(s0, evals_list)]
     tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]
     data = [signals[tissue] for tissue in tissues]
     data = np.asarray(data).reshape((3, 3, 1, len(signals[0])))
@@ -74,24 +71,6 @@ def get_test_data():
     return gtab, data, mask, response, fa
 
 
-def test_auto_response_deprecated():
-    gtab, data, _, _, _ = get_test_data()
-    npt.assert_raises(
-        ExpiredDeprecationError,
-        auto_response,
-        gtab,
-        data,
-        roi_center=None,
-        roi_radius=1,
-        fa_thr=0.7,
-    )
-
-
-def test_response_from_mask_deprecated():
-    gtab, data, mask, _, _ = get_test_data()
-    npt.assert_raises(ExpiredDeprecationError, response_from_mask, gtab, data, mask)
-
-
 def test_recursive_response_calibration():
     """
     Test the recursive response calibration method.
@@ -99,12 +78,12 @@ def test_recursive_response_calibration():
     SNR = 100
     S0 = 1
 
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     sphere = default_sphere
 
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     evals = np.array([0.0015, 0.0003, 0.0003])
     evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
@@ -113,16 +92,16 @@ def test_recursive_response_calibration():
     where_dwi = lazy_index(~gtab.b0s_mask)
 
     S_cross, _ = multi_tensor(
-        gtab, mevals, S0, angles=angles, fractions=[50, 50], snr=SNR
+        gtab, mevals, S0=S0, angles=angles, fractions=[50, 50], snr=SNR
     )
 
-    S_single = single_tensor(gtab, S0, evals, evecs, snr=SNR)
+    S_single = single_tensor(gtab, S0, evals=evals, evecs=evecs, snr=SNR)
 
     data = np.concatenate((np.tile(S_cross, (8, 1)), np.tile(S_single, (2, 1))), axis=0)
 
     odf_gt_cross = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
 
-    odf_gt_single = single_tensor_odf(sphere.vertices, evals, evecs)
+    odf_gt_single = single_tensor_odf(sphere.vertices, evals=evals, evecs=evecs)
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -266,19 +245,19 @@ def test_csdeconv():
     SNR = 100
     S0 = 1
 
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs, b0_threshold=0)
+    gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=0)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
 
     angles = [(0, 0), (60, 0)]
 
     S, sticks = multi_tensor(
-        gtab, mevals, S0, angles=angles, fractions=[50, 50], snr=SNR
+        gtab, mevals, S0=S0, angles=angles, fractions=[50, 50], snr=SNR
     )
 
-    sphere = get_sphere("symmetric362")
+    sphere = get_sphere(name="symmetric362")
     odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
     with warnings.catch_warnings():
@@ -331,7 +310,7 @@ def test_csdeconv():
     for s in sticks:
         mevecs += [all_tensor_evecs(s).T]
 
-    S2 = single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
+    S2 = single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
     big_S = np.zeros((10, 10, 10, len(S2)))
     big_S[:] = S2
 
@@ -350,15 +329,15 @@ def test_odfdeconv():
     SNR = 100
     S0 = 1
 
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
 
     angles = [(0, 0), (90, 0)]
-    S, _ = multi_tensor(gtab, mevals, S0, angles=angles, fractions=[50, 50], snr=SNR)
+    S, _ = multi_tensor(gtab, mevals, S0=S0, angles=angles, fractions=[50, 50], snr=SNR)
 
-    sphere = get_sphere("symmetric362")
+    sphere = get_sphere(name="symmetric362")
 
     odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
 
@@ -372,7 +351,7 @@ def test_odfdeconv():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        csd = ConstrainedSDTModel(gtab, ratio, None)
+        csd = ConstrainedSDTModel(gtab, ratio, reg_sphere=None)
 
     csd_fit = csd.fit(S)
     with warnings.catch_warnings():
@@ -425,13 +404,13 @@ def test_odfdeconv():
 def test_odf_sh_to_sharp():
     SNR = None
     S0 = 1
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
 
     S, _ = multi_tensor(
-        gtab, mevals, S0, angles=[(10, 0), (100, 0)], fractions=[50, 50], snr=SNR
+        gtab, mevals, S0=S0, angles=[(10, 0), (100, 0)], fractions=[50, 50], snr=SNR
     )
 
     sphere = default_sphere
@@ -515,17 +494,17 @@ def test_r2_term_odf_sharp():
     S0 = 1
     angle = 45  # 45 degrees is a very tight angle to disentangle
 
-    _, fbvals, fbvecs = get_fnames("small_64D")  # get_fnames('small_64D')
+    _, fbvals, fbvecs = get_fnames(name="small_64D")  # get_fnames('small_64D')
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     sphere = default_sphere
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
 
     angles = [(0, 0), (angle, 0)]
 
-    S, _ = multi_tensor(gtab, mevals, S0, angles=angles, fractions=[50, 50], snr=SNR)
+    S, _ = multi_tensor(gtab, mevals, S0=S0, angles=angles, fractions=[50, 50], snr=SNR)
 
     odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     with warnings.catch_warnings():
@@ -597,12 +576,12 @@ def test_csd_predict(rng):
     """
     SNR = 100
     S0 = 1
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
     angles = [(0, 0), (60, 0)]
-    S, _ = multi_tensor(gtab, mevals, S0, angles=angles, fractions=[50, 50], snr=SNR)
+    S, _ = multi_tensor(gtab, mevals, S0=S0, angles=angles, fractions=[50, 50], snr=SNR)
     sphere = small_sphere
     multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
@@ -677,9 +656,9 @@ def test_csd_predict_multi(rng):
 
     """
     S0 = 123.0
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -707,17 +686,17 @@ def test_csd_predict_multi(rng):
 def test_sphere_scaling_csdmodel():
     """Check that mirroring regularization sphere does not change the result of
     the model"""
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
 
     angles = [(0, 0), (60, 0)]
 
     S, _ = multi_tensor(
-        gtab, mevals, 100.0, angles=angles, fractions=[50, 50], snr=None
+        gtab, mevals, S0=100.0, angles=angles, fractions=[50, 50], snr=None
     )
 
     hemi = small_sphere
@@ -749,9 +728,9 @@ def test_default_lambda_csdmodel():
     sphere = default_sphere
 
     # Create gradient table
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     # Some response function
     response = (np.array([0.0015, 0.0003, 0.0003]), 100)
@@ -784,9 +763,9 @@ def test_default_lambda_csdmodel():
 
 def test_csd_superres():
     """Check the quality of csdfit with high SH order."""
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     # img, gtab = read_stanford_hardi()
     evals = np.array([[1.5, 0.3, 0.3]]) * [[1.0], [1.0]] / 1000.0
@@ -811,7 +790,7 @@ def test_csd_superres():
 
     fit16 = model16.fit(S)
 
-    sphere = HemiSphere.from_sphere(get_sphere("symmetric724"))
+    sphere = HemiSphere.from_sphere(get_sphere(name="symmetric724"))
     # print local_maxima(fit16.odf(default_sphere), default_sphere.edges)
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -836,9 +815,9 @@ def test_csd_superres():
 
 def test_csd_convergence():
     """Check existence of `convergence` keyword in CSD model"""
-    _, fbvals, fbvecs = get_fnames("small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     evals = np.array([[1.5, 0.3, 0.3]]) * [[1.0], [1.0]] / 1000.0
     S, sticks = multi_tensor(gtab, evals, snr=None, fractions=[55.0, 45.0])

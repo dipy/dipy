@@ -5,17 +5,15 @@ from platform import architecture
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 
-def WichmannHill2006(ix=100001, iy=200002, iz=300003, it=400004):
-    """Wichmann Hill (2006) random number generator.
 
-    B.A. Wichmann, I.D. Hill, Generating good pseudo-random numbers,
-    Computational Statistics & Data Analysis, Volume 51, Issue 3, 1
-    December 2006, Pages 1614-1622, ISSN 0167-9473, DOI:
-    10.1016/j.csda.2006.05.019.
-    (https://www.sciencedirect.com/science/article/abs/pii/S0167947306001836)
-    for advice on generating many sequences for use together, and on
-    alternative algorithms and codes
+@warning_for_keywords()
+def WichmannHill2006(*, ix=100001, iy=200002, iz=300003, it=400004):
+    """Wichmann Hill random number generator.
+
+    See :footcite:p:`Wichmann2006` for advice on generating many sequences for
+    use together, and on alternative algorithms and codes
 
     Parameters
     ----------
@@ -32,6 +30,10 @@ def WichmannHill2006(ix=100001, iy=200002, iz=300003, it=400004):
     -------
     r_number : float
         pseudo-random number uniformly distributed between [0-1]
+
+    References
+    ----------
+    .. footbibliography::
 
     Examples
     --------
@@ -73,7 +75,8 @@ def WichmannHill2006(ix=100001, iy=200002, iz=300003, it=400004):
     return W - floor(W)
 
 
-def WichmannHill1982(ix=100001, iy=200002, iz=300003):
+@warning_for_keywords()
+def WichmannHill1982(*, ix=100001, iy=200002, iz=300003):
     """Algorithm AS 183 Appl. Statist. (1982) vol.31, no.2.
 
     Returns a pseudo-random number rectangularly distributed
@@ -133,7 +136,8 @@ def WichmannHill1982(ix=100001, iy=200002, iz=300003):
     )
 
 
-def LEcuyer(s1=100001, s2=200002):
+@warning_for_keywords()
+def LEcuyer(*, s1=100001, s2=200002):
     """Return a LEcuyer random number generator.
 
     Generate uniformly distributed random numbers using the 32-bit

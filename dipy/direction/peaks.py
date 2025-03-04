@@ -2,6 +2,7 @@ from itertools import repeat
 import multiprocessing as mp
 from os import path
 import tempfile
+import warnings
 
 import numpy as np
 import scipy.optimize as opt
@@ -10,6 +11,7 @@ from dipy.core.interpolation import trilinear_interpolate4d
 from dipy.core.ndindex import ndindex
 from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
+from dipy.reconst.dirspeed import peak_directions
 from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
 from dipy.reconst.odf import gfa
 from dipy.reconst.recspeed import (
@@ -18,12 +20,15 @@ from dipy.reconst.recspeed import (
     search_descending,
 )
 from dipy.reconst.shm import sh_to_sf_matrix
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.multiproc import determine_num_processes
 
 
+@warning_for_keywords()
 def peak_directions_nl(
     sphere_eval,
+    *,
     relative_peak_threshold=0.25,
     min_separation_angle=25,
     sphere=default_sphere,
@@ -93,80 +98,6 @@ def peak_directions_nl(
     )
     values = values[idx]
     return directions, values
-
-
-def peak_directions(
-    odf, sphere, relative_peak_threshold=0.5, min_separation_angle=25, is_symmetric=True
-):
-    """Get the directions of odf peaks.
-
-    Peaks are defined as points on the odf that are greater than at least one
-    neighbor and greater than or equal to all neighbors. Peaks are sorted in
-    descending order by their values then filtered based on their relative size
-    and spacing on the sphere. An odf may have 0 peaks, for example if the odf
-    is perfectly isotropic.
-
-    Parameters
-    ----------
-    odf : 1d ndarray
-        The odf function evaluated on the vertices of `sphere`
-    sphere : Sphere
-        The Sphere providing discrete directions for evaluation.
-    relative_peak_threshold : float in [0., 1.]
-        Only peaks greater than ``min + relative_peak_threshold * scale`` are
-        kept, where ``min = max(0, odf.min())`` and
-        ``scale = odf.max() - min``.
-    min_separation_angle : float in [0, 90]
-        The minimum distance between directions. If two peaks are too close
-        only the larger of the two is returned.
-    is_symmetric : bool, optional
-        If True, v is considered equal to -v.
-
-    Returns
-    -------
-    directions : (N, 3) ndarray
-        N vertices for sphere, one for each peak
-    values : (N,) ndarray
-        peak values
-    indices : (N,) ndarray
-        peak indices of the directions on the sphere
-
-    Notes
-    -----
-    If the odf has any negative values, they will be clipped to zeros.
-
-    """
-    values, indices = local_maxima(odf, sphere.edges)
-
-    # If there is only one peak return
-    n = len(values)
-    if n == 0 or (values[0] < 0.0):
-        return np.zeros((0, 3)), np.zeros(0), np.zeros(0, dtype=int)
-    elif n == 1:
-        return sphere.vertices[indices], values, indices
-
-    odf_min = np.min(odf)
-    odf_min = max(odf_min, 0.0)
-    # because of the relative threshold this algorithm will give the same peaks
-    # as if we divide (values - odf_min) with (odf_max - odf_min) or not so
-    # here we skip the division to increase speed
-    values_norm = values - odf_min
-
-    # Remove small peaks
-    n = search_descending(values_norm, relative_peak_threshold)
-    indices = indices[:n]
-    directions = sphere.vertices[indices]
-
-    # Remove peaks too close together
-    directions, uniq = remove_similar_vertices(
-        directions,
-        min_separation_angle,
-        return_index=True,
-        remove_antipodal=is_symmetric,
-    )
-    values = values[uniq]
-    indices = indices[uniq]
-    return directions, values, indices
 
 
 def _pam_from_attrs(
@@ -420,29 +351,31 @@ def _peaks_from_model_parallel_sub(args):
         sphere,
         relative_peak_threshold,
         min_separation_angle,
-        mask,
-        return_odf,
-        return_sh,
-        gfa_thr,
-        normalize_peaks,
-        sh_order,
-        sh_basis_type,
-        legacy,
-        npeaks,
-        B,
-        invB,
+        mask=mask,
+        return_odf=return_odf,
+        return_sh=return_sh,
+        gfa_thr=gfa_thr,
+        normalize_peaks=normalize_peaks,
+        sh_order_max=sh_order,
+        sh_basis_type=sh_basis_type,
+        legacy=legacy,
+        npeaks=npeaks,
+        B=B,
+        invB=invB,
         parallel=False,
         num_processes=None,
     )
 
 
-@deprecated_params("sh_order", "sh_order_max", since="1.9", until="2.0")
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+@warning_for_keywords()
 def peaks_from_model(
     model,
     data,
     sphere,
     relative_peak_threshold,
     min_separation_angle,
+    *,
     mask=None,
     return_odf=False,
     return_sh=True,
@@ -491,8 +424,9 @@ def peaks_from_model(
         SH coefficients (default 8).
     sh_basis_type : {None, 'tournier07', 'descoteaux07'}
         ``None`` for the default DIPY basis,
-        ``tournier07`` for the Tournier 2007 [2]_ basis, and
-        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis
+        ``tournier07`` for the Tournier 2007 :footcite:p:Tournier2007` basis,
+        and ``descoteaux07`` for the Descoteaux 2007 :footcite:p:Descoteaux2007`
+        basis
         (``None`` defaults to ``descoteaux07``).
     legacy: bool, optional
         True to use a legacy basis definition for backward compatibility
@@ -523,18 +457,16 @@ def peaks_from_model(
 
     References
     ----------
-    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
-           Regularized, Fast, and Robust Analytical Q-ball Imaging.
-           Magn. Reson. Med. 2007;58:497-510.
-    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
-           of the fibre orientation distribution in diffusion MRI:
-           Non-negativity constrained super-resolved spherical deconvolution.
-           NeuroImage. 2007;35(4):1459-1472.
+    .. footbibliography::
 
     """
     if return_sh and (B is None or invB is None):
         B, invB = sh_to_sf_matrix(
-            sphere, sh_order_max, sh_basis_type, return_inv=True, legacy=legacy
+            sphere,
+            sh_order_max=sh_order_max,
+            basis_type=sh_basis_type,
+            return_inv=True,
+            legacy=legacy,
         )
 
     num_processes = determine_num_processes(num_processes)
@@ -591,7 +523,7 @@ def peaks_from_model(
         if not mask[idx]:
             continue
 
-        odf = model.fit(data[idx]).odf(sphere)
+        odf = model.fit(data[idx]).odf(sphere=sphere)
 
         if return_sh:
             shm_coeff[idx] = np.dot(odf, invB)
@@ -606,7 +538,10 @@ def peaks_from_model(
 
         # Get peaks of odf
         direction, pk, ind = peak_directions(
-            odf, sphere, relative_peak_threshold, min_separation_angle
+            odf,
+            sphere,
+            relative_peak_threshold=relative_peak_threshold,
+            min_separation_angle=min_separation_angle,
         )
 
         # Calculate peak metrics
@@ -667,6 +602,7 @@ def peaks_from_positions(
     sphere,
     affine,
     *,
+    pmf_gen=None,
     relative_peak_threshold=0.5,
     min_separation_angle=25,
     is_symmetric=True,
@@ -687,6 +623,9 @@ def peaks_from_positions(
         of the odfs.
     affine : array (4, 4)
         The mapping between voxel indices and the point space for positions.
+    pmf_gen : PmfGen
+        Probability mass function generator from voxel orientation information. Replaces
+        ``odfs`` and ``sphere`` when used.
     relative_peak_threshold : float, optional
         Only peaks greater than ``min + relative_peak_threshold * scale`` are
         kept, where ``min = max(0, odf.min())`` and
@@ -706,6 +645,16 @@ def peaks_from_positions(
     peaks_arr : array (N, npeaks, 3)
     """
 
+    if pmf_gen is not None and (odfs is not None or sphere is not None):
+        msg = (
+            "``odfs`` and ``sphere`` arguments will be ignored in favor of ``pmf_gen``."
+        )
+        warnings.warn(msg, stacklevel=2)
+
+    if pmf_gen is not None:
+        # use the sphere data from the pmf_gen
+        sphere = pmf_gen.get_sphere()
+
     inv_affine = np.linalg.inv(affine)
     vox_positions = np.dot(positions, inv_affine[:3, :3].T.copy())
     vox_positions += inv_affine[:3, 3]
@@ -716,9 +665,16 @@ def peaks_from_positions(
         vox_positions = vox_positions.astype(float)
 
     for i, s in enumerate(vox_positions):
-        odf = trilinear_interpolate4d(odfs, s)
+        if pmf_gen:
+            odf = pmf_gen.get_pmf(s)
+        else:
+            odf = trilinear_interpolate4d(odfs, s)
         peaks, _, _ = peak_directions(
-            odf, sphere, relative_peak_threshold, min_separation_angle, is_symmetric
+            odf,
+            sphere,
+            relative_peak_threshold=relative_peak_threshold,
+            min_separation_angle=min_separation_angle,
+            is_symmetric=is_symmetric,
         )
         nbr_peaks = min(npeaks, peaks.shape[0])
         peaks_arr[i, :nbr_peaks, :] = peaks[:nbr_peaks, :]

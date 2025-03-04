@@ -15,7 +15,7 @@ Before you start, make sure you have ASV and installed:
     pip install virtualenv
 
 Getting Started 🏃‍♂️
-------------------
+---------------------
 
 DIPY Benchmarking is as easy as a piece of 🍰 with ASV. You don't need to install a development version of DIPY into your current Python environment. ASV manages virtual environments and builds DIPY automatically.
 
@@ -100,7 +100,7 @@ TBD
 Writing Benchmarks ✏️
 ---------------------
 
-See `ASV documentation<https://asv.readthedocs.io/>`__ for basics on how to write benchmarks.
+See `ASV documentation <https://asv.readthedocs.io/>`__ for basics on how to write benchmarks.
 
 Things to consider:
 

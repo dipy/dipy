@@ -10,7 +10,7 @@ from dipy.workflows.mask import MaskFlow
 
 def test_mask():
     with TemporaryDirectory() as out_dir:
-        data_path, _, _ = get_fnames("small_25")
+        data_path, _, _ = get_fnames(name="small_25")
         volume, affine = load_nifti(data_path)
 
         mask_flow = MaskFlow()

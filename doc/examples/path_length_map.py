@@ -9,7 +9,7 @@ The Path Length Map is a volume in which each voxel's value is the shortest
 distance along a streamline to a given region of interest (ROI). This map can
 be used to anisotropically modify radiation therapy treatment contours based
 on a tractography model of the local white matter anatomy, as described in
-[Jordan_2018_plm]_, by executing this tutorial with the gross tumor volume
+:footcite:p:`Jordan2019`, by executing this tutorial with the gross tumor volume
 (GTV) as the ROI.
 
 .. note::
@@ -43,14 +43,14 @@ from dipy.viz import actor, colormap as cmap, window
 # :ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py`
 # and the Visualization of ROI Surface Rendered with Streamlines Tutorials.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 white_matter = (labels == 1) | (labels == 2)
 
@@ -83,11 +83,11 @@ streamlines = Streamlines(streamlines)
 # Visualize the streamlines and the Path Length Map base ROI
 # (in this case also the seed ROI)
 
-streamlines_actor = actor.line(streamlines, cmap.line_colors(streamlines))
+streamlines_actor = actor.line(streamlines, colors=cmap.line_colors(streamlines))
 surface_opacity = 0.5
 surface_color = [0, 1, 1]
 seedroi_actor = actor.contour_from_roi(
-    seed_mask, affine, surface_color, surface_opacity
+    seed_mask, affine=affine, color=surface_color, opacity=surface_opacity
 )
 
 scene = window.Scene()
@@ -102,7 +102,7 @@ interactive = False
 if interactive:
     window.show(scene)
 
-window.record(scene, n_frames=1, out_path="plm_roi_sls.png", size=(800, 800))
+window.record(scene=scene, n_frames=1, out_path="plm_roi_sls.png", size=(800, 800))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -132,7 +132,7 @@ wmpl = path_length(streamlines, affine, path_length_map_base_roi)
 save_nifti("example_cc_path_length_map.nii.gz", wmpl.astype(np.float32), affine)
 
 # get the T1 to show anatomical context of the WMPL
-t1_fname = get_fnames("stanford_t1")
+t1_fname = get_fnames(name="stanford_t1")
 t1_data = load_nifti_data(t1_fname)
 
 
@@ -180,6 +180,5 @@ fig.savefig("Path_Length_Map.png")
 # References
 # ----------
 #
-# .. [Jordan_2018_plm] Jordan K. et al., "An Open-Source Tool for Anisotropic
-# Radiation Therapy Planning in Neuro-oncology Using DW-MRI Tractography",
-# PREPRINT (biorxiv), 2018.
+# .. footbibliography::
+#

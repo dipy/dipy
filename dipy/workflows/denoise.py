@@ -32,14 +32,18 @@ class Patch2SelfFlow(Workflow):
         b0_denoising=True,
         clip_negative_vals=False,
         shift_intensity=True,
+        ver=3,
         out_dir="",
         out_denoised="dwi_patch2self.nii.gz",
     ):
         """Workflow for Patch2Self denoising method.
 
-        It applies patch2self denoising on each file found by 'globing'
-        ``input_file`` and ``bval_file``. It saves the results in a directory
-        specified by ``out_dir``.
+        See :footcite:p:`Fadnavis2020` for further details about the method.
+        See :footcite:p:`Fadnavis2024` for further details about the new method.
+
+        It applies patch2self denoising :footcite:p:`Fadnavis2020` on each file
+        found by 'globing' ``input_file`` and ``bval_file``. It saves the
+        results in a directory specified by ``out_dir``.
 
         Parameters
         ----------
@@ -74,6 +78,8 @@ class Patch2SelfFlow(Workflow):
         shift_intensity : bool, optional
             Shifts the distribution of intensities per volume to give
             non-negative values
+        ver : int, optional
+            Version of the Patch2Self algorithm to use between  1 or 3.
         out_dir : string, optional
             Output directory (default current directory)
         out_denoised : string, optional
@@ -82,9 +88,7 @@ class Patch2SelfFlow(Workflow):
 
         References
         ----------
-        .. [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
-                    Denoising Diffusion MRI with Self-supervised Learning,
-                    Advances in Neural Information Processing Systems 33 (2020)
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()
@@ -98,7 +102,7 @@ class Patch2SelfFlow(Workflow):
                 logging.info("Denoising %s", fpath)
                 data, affine, image = load_nifti(fpath, return_img=True)
                 bvals = np.loadtxt(bvalpath)
-
+                extra_args = {"patch_radius": patch_radius} if ver == 1 else {}
                 denoised_data = patch2self(
                     data,
                     bvals,
@@ -106,12 +110,13 @@ class Patch2SelfFlow(Workflow):
                     b0_threshold=b0_threshold,
                     alpha=alpha,
                     verbose=verbose,
-                    patch_radius=patch_radius,
                     b0_denoising=b0_denoising,
                     clip_negative_vals=clip_negative_vals,
                     shift_intensity=shift_intensity,
+                    version=ver,
+                    **extra_args,
                 )
-                save_nifti(odenoised, denoised_data, affine, image.header)
+                save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 
                 logging.info("Denoised volumes saved as %s", odenoised)
 
@@ -133,9 +138,9 @@ class NLMeansFlow(Workflow):
     ):
         """Workflow wrapping the nlmeans denoising method.
 
-        It applies nlmeans denoise on each file found by 'globing'
-        ``input_files`` and saves the results in a directory specified by
-        ``out_dir``.
+        It applies nlmeans denoise :footcite:p:`Descoteaux2008a` on each file
+        found by 'globing' ``input_files`` and saves the results in a directory
+        specified by ``out_dir``.
 
         Parameters
         ----------
@@ -158,10 +163,7 @@ class NLMeansFlow(Workflow):
 
         References
         ----------
-        .. [Descoteaux08] Descoteaux, Maxime and Wiest-Daesslé, Nicolas and
-        Prima, Sylvain and Barillot, Christian and Deriche, Rachid.
-        Impact of Rician Adapted Non-Local Means Filtering on
-        HARDI, MICCAI 2008
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()
@@ -185,7 +187,7 @@ class NLMeansFlow(Workflow):
                     block_radius=block_radius,
                     rician=rician,
                 )
-                save_nifti(odenoised, denoised_data, affine, image.header)
+                save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 
                 logging.info("Denoised volume saved as %s", odenoised)
 
@@ -211,6 +213,8 @@ class LPCAFlow(Workflow):
     ):
         r"""Workflow wrapping LPCA denoising method.
 
+        See :footcite:p:`Veraart2016a` for further details about the method.
+
         Parameters
         ----------
         input_files : string
@@ -224,8 +228,8 @@ class LPCAFlow(Workflow):
             multiple bvectors files at once.
         sigma : float, optional
             Standard deviation of the noise estimated from the data.
-            Default 0: it means sigma value estimation with the Manjon2013
-            algorithm [3]_.
+            0 means sigma value estimation following the algorithm in
+            :footcite:t:`Manjon2013`.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
@@ -245,14 +249,14 @@ class LPCAFlow(Workflow):
             Thresholding of PCA eigenvalues is done by nulling out eigenvalues
             that are smaller than:
 
-            .. math ::
+            .. math::
 
                     \tau = (\tau_{factor} \sigma)^2
 
-            \tau_{factor} can be change to adjust the relationship between the
-            noise standard deviation and the threshold \tau. If \tau_{factor}
-            is set to None, it will be automatically calculated using the
-            Marcenko-Pastur distribution [2]_.
+            $\tau_{factor}$ can be change to adjust the relationship between the
+            noise standard deviation and the threshold $\tau$. If
+            $\tau_{factor}$ is set to None, it will be automatically calculated
+            using the Marcenko-Pastur distribution :footcite:p`Veraart2016b`.
         out_dir : string, optional
             Output directory. (default current directory)
         out_denoised : string, optional
@@ -260,20 +264,7 @@ class LPCAFlow(Workflow):
 
         References
         ----------
-        .. [1] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
-        Fieremans E, 2016. Denoising of Diffusion MRI using random
-        matrix theory. Neuroimage 142:394-406.
-        doi: 10.1016/j.neuroimage.2016.08.016
-
-        .. [2] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
-        mapping using random matrix theory. Magnetic Resonance in
-        Medicine.
-        doi: 10.1002/mrm.26059.
-
-        .. [3] Manjon JV, Coupe P, Concha L, Buades A, Collins DL (2013)
-        Diffusion Weighted Image Denoising Using Overcomplete Local
-        PCA. PLoS ONE 8(9): e73021.
-        https://doi.org/10.1371/journal.pone.0073021
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()
@@ -287,7 +278,7 @@ class LPCAFlow(Workflow):
                 logging.info("Estimating sigma")
                 bvals, bvecs = read_bvals_bvecs(bval, bvec)
                 gtab = gradient_table(
-                    bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+                    bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
                 )
                 sigma = pca_noise_estimate(data, gtab, correct_bias=True, smooth=3)
                 logging.debug("Found sigma %s", sigma)
@@ -299,7 +290,7 @@ class LPCAFlow(Workflow):
                 pca_method=pca_method,
                 tau_factor=tau_factor,
             )
-            save_nifti(odenoised, denoised_data, affine, image.header)
+            save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 
             logging.info("Denoised volume saved as %s", odenoised)
 
@@ -321,6 +312,8 @@ class MPPCAFlow(Workflow):
     ):
         r"""Workflow wrapping Marcenko-Pastur PCA denoising method.
 
+        See :footcite:p:`Veraart2016a` for further details about the method.
+
         Parameters
         ----------
         input_files : string
@@ -338,7 +331,7 @@ class MPPCAFlow(Workflow):
             be more accurate.
         return_sigma : bool, optional
             If true, a noise standard deviation estimate based on the
-            Marcenko-Pastur distribution is returned [2]_.
+            Marcenko-Pastur distribution is returned :footcite:p:`Veraart2016b`.
         out_dir : string, optional
             Output directory. (default current directory)
         out_denoised : string, optional
@@ -348,14 +341,7 @@ class MPPCAFlow(Workflow):
 
         References
         ----------
-        .. [1] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
-        Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
-        theory. Neuroimage 142:394-406.
-        doi: 10.1016/j.neuroimage.2016.08.016
-
-        .. [2] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
-        mapping using random matrix theory. Magnetic Resonance in Medicine.
-        doi: 10.1002/mrm.26059.
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()
@@ -373,10 +359,10 @@ class MPPCAFlow(Workflow):
                 return_sigma=True,
             )
 
-            save_nifti(odenoised, denoised_data, affine, image.header)
+            save_nifti(odenoised, denoised_data, affine, hdr=image.header)
             logging.info("Denoised volume saved as %s", odenoised)
             if return_sigma:
-                save_nifti(osigma, sigma, affine, image.header)
+                save_nifti(osigma, sigma, affine, hdr=image.header)
                 logging.info("Sigma volume saved as %s", osigma)
 
 
@@ -395,6 +381,9 @@ class GibbsRingingFlow(Workflow):
         out_unring="dwi_unring.nii.gz",
     ):
         r"""Workflow for applying Gibbs Ringing method.
+
+        See :footcite:p:`Kellner2016` and :footcite:p:`NetoHenriques2018` for
+        further details about the method.
 
         Parameters
         ----------
@@ -419,13 +408,7 @@ class GibbsRingingFlow(Workflow):
 
         References
         ----------
-        .. [1] Neto Henriques, R., 2018. Advanced Methods for Diffusion MRI
-        Data Analysis and their Application to the Healthy Ageing Brain
-        (Doctoral thesis). https://doi.org/10.17863/CAM.29356
-
-        .. [2] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing
-        artifact removal based on local subvoxel-shifts. Magn Reson Med. 2016
-        doi: 10.1002/mrm.26054.
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()
@@ -440,5 +423,5 @@ class GibbsRingingFlow(Workflow):
                 num_processes=num_processes,
             )
 
-            save_nifti(ounring, unring_data, affine, image.header)
+            save_nifti(ounring, unring_data, affine, hdr=image.header)
             logging.info("Denoised volume saved as %s", ounring)

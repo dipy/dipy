@@ -1,12 +1,11 @@
 """
-.. _reconst_sfm:
+===================================================
+Reconstruction with the Sparse Fascicle Model (SFM)
+===================================================
 
-==============================================
-Reconstruction with the Sparse Fascicle Model
-==============================================
-
-In this example, we will use the Sparse Fascicle Model (SFM) [Rokem2015]_, to
-reconstruct the fiber Orientation Distribution Function (fODF) in every voxel.
+In this example, we will use the Sparse Fascicle Model (SFM)
+:footcite:p:`Rokem2015`, to reconstruct the fiber Orientation Distribution
+Function (fODF) in every voxel.
 
 First, we import the modules we will use in this example:
 """
@@ -28,11 +27,11 @@ from dipy.viz import actor, window
 # run this example. The data will be stored for subsequent runs, and for use
 # with other examples.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames(name="stanford_hardi")
 data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 # Enables/disables interactive visualization
 interactive = False
@@ -40,8 +39,9 @@ interactive = False
 ###############################################################################
 # Reconstruction of the fiber ODF in each voxel guides subsequent tracking
 # steps. Here, the model is the Sparse Fascicle Model, described in
-# [Rokem2014]_. This model reconstructs the diffusion signal as a combination
-# of the signals from different fascicles. This model can be written as:
+# :footcite:p:`Rokem2015`. This model reconstructs the diffusion signal as a
+# combination of the signals from different fascicles. This model can be written
+# as:
 #
 # .. math::
 #
@@ -57,7 +57,7 @@ interactive = False
 # (e.g. in corpus callosum).
 #
 # Sparsity constraints on the fiber ODF ($\beta$) are set through the Elastic
-# Net algorithm [Zou2005]_.
+# Net algorithm :footcite:p:`Zou2005`.
 #
 # Elastic Net optimizes the following cost function:
 #
@@ -120,7 +120,7 @@ fodf_spheres = actor.odf_slicer(sf_odf, sphere=sphere, scale=0.8, colormap="plas
 scene = window.Scene()
 scene.add(fodf_spheres)
 
-window.record(scene, out_path="sf_odfs.png", size=(1000, 1000))
+window.record(scene=scene, out_path="sf_odfs.png", size=(1000, 1000))
 if interactive:
     window.show(scene)
 
@@ -138,10 +138,10 @@ sf_peaks = dpp.peaks_from_model(
 
 
 scene.clear()
-fodf_peaks = actor.peak_slicer(sf_peaks.peak_dirs, sf_peaks.peak_values)
+fodf_peaks = actor.peak_slicer(sf_peaks.peak_dirs, peaks_values=sf_peaks.peak_values)
 scene.add(fodf_peaks)
 
-window.record(scene, out_path="sf_peaks.png", size=(1000, 1000))
+window.record(scene=scene, out_path="sf_peaks.png", size=(1000, 1000))
 if interactive:
     window.show(scene)
 
@@ -151,7 +151,7 @@ if interactive:
 fodf_spheres.GetProperty().SetOpacity(0.4)
 scene.add(fodf_spheres)
 
-window.record(scene, out_path="sf_both.png", size=(1000, 1000))
+window.record(scene=scene, out_path="sf_both.png", size=(1000, 1000))
 if interactive:
     window.show(scene)
 
@@ -161,15 +161,11 @@ if interactive:
 # SFM Peaks and ODFs.
 #
 #
-# To see how to use this information in tracking, proceed to :ref:`sfm-track`.
+# To see how to use this information in tracking, proceed to
+# :ref:`sphx_glr_examples_built_fiber_tracking_tracking_sfm.py`.
 #
 # References
 # ----------
 #
-# .. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
-#    N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-#    (2015). Evaluating the accuracy of diffusion MRI models in white
-#    matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
+# .. footbibliography::
 #
-# .. [Zou2005] Zou H, Hastie T (2005). Regularization and variable
-#    selection via the elastic net. J R Stat Soc B:301-320

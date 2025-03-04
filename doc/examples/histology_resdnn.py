@@ -5,7 +5,8 @@ Local reconstruction using the Histological ResDNN
 
 A data-driven approach to modeling the non-linear mapping between observed
 DW-MRI signals and ground truth structures using sequential deep neural network
-regression with residual block deep neural network (ResDNN) [1, 2].
+regression with residual block deep neural network (ResDNN)
+:footcite:p:`Nath2018`, :footcite:p:`Nath2019`.
 
 Training was performed on two 3-D histology datasets of squirrel monkey brains
 and validated on a third. A second validation was performed on HCP datasets.
@@ -33,11 +34,11 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 # is fetched and a gradient table is constructed from bvals/bvecs.
 
 # Fetch DWI and GTAB
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 data, affine = load_nifti(hardi_fname)
 data = np.squeeze(data)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # To accelerate computation, a brain mask must be computed. The resulting mask
@@ -69,7 +70,7 @@ save_nifti("predicted_sh.nii.gz", predicted_sh, affine)
 # added as actors and a mid-coronal slice is selected.
 
 interactive = False
-sphere = get_sphere("repulsion724")
+sphere = get_sphere(name="repulsion724")
 B, invB = sh_to_sf_matrix(
     sphere, sh_order_max=8, basis_type=resdnn_model.basis_type, smooth=0.0006
 )
@@ -119,7 +120,9 @@ scene.zoom(camera["zoom_factor"])
 if interactive:
     window.show(scene, reset_camera=False)
 
-window.record(scene, out_path="pred_fODF.png", size=(1000, 1000), reset_camera=False)
+window.record(
+    scene=scene, out_path="pred_fODF.png", size=(1000, 1000), reset_camera=False
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -130,13 +133,6 @@ window.record(scene, out_path="pred_fODF.png", size=(1000, 1000), reset_camera=F
 #
 # References
 # ----------
-# ..  [1] Nath, V., Schilling, K. G., Parvathaneni, P., Hansen,
-#     C. B., Hainline, A. E., Huo, Y., ... & Stepniewska, I. (2019).
-#     Deep learning reveals untapped information for local white-matter
-#     fiber reconstruction in diffusion-weighted MRI.
-#     Magnetic resonance imaging, 62, 220-227.
-# ..  [2] Nath, V., Schilling, K. G., Hansen, C. B., Parvathaneni,
-#     P., Hainline, A. E., Bermudez, C., ... & Stępniewska, I. (2019).
-#     Deep learning captures more accurate diffusion fiber orientations
-#     distributions than constrained spherical deconvolution.
-#     arXiv preprint arXiv:1911.07927.
+#
+# .. footbibliography::
+#

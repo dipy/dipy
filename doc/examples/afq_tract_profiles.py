@@ -10,9 +10,9 @@ volume, using the coordinates along the length of a bundle. These are called
 One of the challenges of extracting tract profiles is that some of the
 streamlines in a bundle may diverge significantly from the bundle in some
 locations. To overcome this challenge, we will use a strategy similar to that
-described in [Yeatman2012]_: We will weight the contribution of each streamline
-to the bundle profile based on how far this streamline is from the mean
-trajectory of the bundle at that location.
+described in :footcite:p:`Yeatman2012`: We will weight the contribution of each
+streamline to the bundle profile based on how far this streamline is from the
+mean trajectory of the bundle at that location.
 
 """
 
@@ -32,9 +32,10 @@ import dipy.tracking.streamline as dts
 
 ###############################################################################
 # To demonstrate this, we will use data from the Healthy Brain Network (HBN)
-# study [Alexander2017]_ that has already been processed [RichieHalford2022]_.
-# For this demonstration, we will use only the left arcuate fasciculus (ARC)
-# and the left corticospinal tract (CST) from the subject NDARAA948VFH.
+# study :footcite:p:`Alexander2017` that has already been processed
+# :footcite:p:`RichieHalford2022`. For this demonstration, we will use only the
+# left arcuate fasciculus (ARC) and the left corticospinal tract (CST) from the
+# subject NDARAA948VFH.
 
 subject = "NDARAA948VFH"
 session = "HBNsiteRU"
@@ -63,8 +64,8 @@ arc_l_file = op.join(
     "-RASMM_model-CSD_desc-prob-afq-ARC_L_tractography.trk",
 )
 
-cst_l = load_trk(cst_l_file, "same", bbox_valid_check=False).streamlines
-arc_l = load_trk(arc_l_file, "same", bbox_valid_check=False).streamlines
+cst_l = load_trk(cst_l_file, reference="same", bbox_valid_check=False).streamlines
+arc_l = load_trk(arc_l_file, reference="same", bbox_valid_check=False).streamlines
 
 ###############################################################################
 # In the next step, we need to make sure that all the streamlines in each
@@ -73,7 +74,7 @@ arc_l = load_trk(arc_l_file, "same", bbox_valid_check=False).streamlines
 # streamline. This is so that when we later extract values from a volume,
 # we will not have different streamlines going in opposite directions.
 #
-# To orient all the streamlines in each bundles, we will create standard
+# To orient all the streamlines in each bundle, we will create standard
 # streamlines, by finding the centroids of the left ARC and CST bundle models.
 #
 # The advantage of using the model bundles is that we can use the same
@@ -82,8 +83,12 @@ arc_l = load_trk(arc_l_file, "same", bbox_valid_check=False).streamlines
 
 model_arc_l_file, model_cst_l_file = get_two_hcp842_bundles()
 
-model_arc_l = load_trk(model_arc_l_file, "same", bbox_valid_check=False).streamlines
-model_cst_l = load_trk(model_cst_l_file, "same", bbox_valid_check=False).streamlines
+model_arc_l = load_trk(
+    model_arc_l_file, reference="same", bbox_valid_check=False
+).streamlines
+model_cst_l = load_trk(
+    model_cst_l_file, reference="same", bbox_valid_check=False
+).streamlines
 
 
 feature = ResampleFeature(nb_points=100)
@@ -92,9 +97,9 @@ metric = AveragePointwiseEuclideanMetric(feature)
 ###############################################################################
 # Since we are going to include all of the streamlines in the single cluster
 # from the streamlines, we set the threshold to `np.inf`. We pull out the
-# centroid as the standard.
+# centroid as the standard using QuickBundles :footcite:p:`Garyfallidis2012a`.
 
-qb = QuickBundles(np.inf, metric=metric)
+qb = QuickBundles(threshold=np.inf, metric=metric)
 
 cluster_cst_l = qb.cluster(model_cst_l)
 standard_cst_l = cluster_cst_l.centroids[0]
@@ -136,9 +141,9 @@ w_arc_l = dsa.gaussian_weights(oriented_arc_l)
 ###############################################################################
 # And then use the weights to calculate the tract profiles for each bundle
 
-profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, fa_affine, weights=w_cst_l)
+profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, affine=fa_affine, weights=w_cst_l)
 
-profile_af_l = dsa.afq_profile(fa, oriented_arc_l, fa_affine, weights=w_arc_l)
+profile_af_l = dsa.afq_profile(fa, oriented_arc_l, affine=fa_affine, weights=w_arc_l)
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
 
@@ -159,23 +164,5 @@ fig.savefig("tract_profiles")
 # References
 # ----------
 #
-# .. [Yeatman2012] Yeatman, Jason D., Robert F. Dougherty, Nathaniel J. Myall,
-#     Brian A. Wandell, and Heidi M. Feldman. 2012. "Tract Profiles of White
-#     Matter Properties: Automating Fiber-Tract Quantification" PloS One 7
-#     (11): e49790.
+# .. footbibliography::
 #
-# .. [Alexander2017] Alexander LM, Escalera J, Ai L, et al. An open resource
-#     for transdiagnostic research in pediatric mental health and learning
-#     disorders. Sci Data. 2017;4:170181.
-#
-# .. [RichieHalford2022] Richie-Halford A, Cieslak M, Ai L, et al. An
-#     analysis-ready and quality controlled resource for pediatric brain
-#     white-matter research. Scientific Data. 2022;9(1):1-27.
-#
-# .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter bundles
-#    using local and global streamline-based registration and clustering,
-#    Neuroimage, 2017.
-#
-# .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-#    tractography simplification, Frontiers in Neuroscience, vol 6, no 175,
-#    2012.

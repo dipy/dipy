@@ -1,6 +1,7 @@
 import numpy as np
 
 from dipy.segment.clustering import qbx_and_merge
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import length
 from dipy.utils.optpkg import optional_package
 
@@ -13,7 +14,8 @@ if has_fury:
 
 
 class ClustersVisualizer:
-    def __init__(self, show_manager, scene, tractograms, enable_callbacks=True):
+    @warning_for_keywords()
+    def __init__(self, show_manager, scene, tractograms, *, enable_callbacks=True):
         # TODO: Avoid passing the entire show manager to the visualizer
         self.__show_man = show_manager
         self.__scene = scene
@@ -103,7 +105,7 @@ class ClustersVisualizer:
         print("Building cluster actors\n")
         for idx, cent in enumerate(centroids):
             centroid_actor = actor.streamtube(
-                [cent], colors, linewidth=linewidths[idx], lod=False
+                [cent], colors=colors, linewidth=linewidths[idx], lod=False
             )
             self.__scene.add(centroid_actor)
 

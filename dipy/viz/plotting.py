@@ -6,14 +6,17 @@ from warnings import warn
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
 
+@warning_for_keywords()
 def compare_maps(
     fits,
     maps,
+    *,
     transpose=None,
     fit_labels=None,
     map_labels=None,
@@ -127,11 +130,13 @@ def compare_maps(
         plt.show()
 
 
+@warning_for_keywords()
 def compare_qti_maps(
     gt,
     fit1,
     fit2,
     mask,
+    *,
     maps=("fa", "ufa"),
     fitname=("QTI", "QTI+"),
     xlimits=([0, 1], [0.4, 1.5]),
@@ -263,3 +268,50 @@ def bundle_shape_profile(x, shape_profile, std):
     plt.title("Bundle Shape Profile")
     plt.legend(loc=2)
     plt.show()
+
+
+def image_mosaic(
+    images, *, ax_labels=None, ax_kwargs=None, figsize=None, filename=None
+):
+    """
+    Draw a mosaic of 2D images using pyplot.imshow(). A colorbar is drawn
+    beside each image.
+
+    Parameters
+    ----------
+    images: list of ndarray
+        Images to render.
+    ax_labels: list of str, optional
+        Label for each image.
+    ax_kwargs: list of dictionaries, optional
+        keyword arguments passed to imshow for each image. One dictionary per
+        image.
+    figsize: tuple of ints, optional
+        Figure size.
+    filename: str, optional
+        When given, figure is saved to disk under this name.
+
+    Returns
+    -------
+    fig: pyplot.Figure
+        The figure.
+    ax: pyplot.Axes or array of Axes
+        The subplots for each image.
+    """
+    fig, ax = plt.subplots(1, len(images), figsize=figsize)
+
+    aximages = []
+    for it, (im, axe, kw) in enumerate(zip(images, ax, ax_kwargs)):
+        aximages.append(axe.imshow(im, **kw))
+        if ax_labels is not None:
+            axe.set_title(ax_labels[it])
+
+    for it, aximage in enumerate(aximages):
+        fig.colorbar(aximage, ax=ax[it])
+
+    if filename is not None:
+        plt.savefig(filename)
+    else:
+        plt.show()
+
+    return fig, ax

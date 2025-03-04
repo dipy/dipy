@@ -9,7 +9,7 @@ Gaussian distribution and a Markov Random Field (MRF) is used to model the
 a priori probability of context-dependent patterns of different tissue
 types of the brain. Expectation Maximization and Iterated Conditional
 Modes are used to find the optimal solution. Similar algorithms have been
-proposed by Zhang et al. [Zhang2001]_ and Avants et al. [Avants2011]_ available
+proposed by :footcite:t:`Zhang2001` and :footcite:p:`Avants2011` available
 in FAST-FSL and ANTS-atropos, respectively.
 
 Here we will use a T1-weighted image, that has been previously skull-stripped
@@ -28,7 +28,7 @@ from dipy.segment.tissue import TissueClassifierHMRF
 ###############################################################################
 # First we fetch the T1 volume from the Syn dataset and determine its shape.
 
-t1_fname, _, _ = get_fnames("tissue_data")
+t1_fname, _, _ = get_fnames(name="tissue_data")
 t1 = load_nifti_data(t1_fname)
 print(f"t1.shape {t1.shape}")
 
@@ -135,11 +135,6 @@ plt.show()
 #
 # References
 # ----------
-# .. [Zhang2001] Zhang, Y., Brady, M. and Smith, S. Segmentation of Brain MR
-#    Images Through a Hidden Markov Random Field Model and the
-#    Expectation-Maximization Algorithm IEEE Transactions on Medical Imaging,
-#    20(1): 45-56, 2001
 #
-# .. [Avants2011] Avants, B. B., Tustison, N. J., Wu, J., Cook, P. A. and Gee,
-#    J. C. An open source multivariate framework for n-tissue segmentation with
-#    evaluation on public data. Neuroinformatics, 9(4): 381-400, 2011.
+# .. footbibliography::
+#

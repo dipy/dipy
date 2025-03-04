@@ -22,6 +22,8 @@ class EVACPlusFlow(Workflow):
     ):
         """Extract brain using EVAC+.
 
+        See :footcite:p:`Park2024` for further details about EVAC+.
+
         Parameters
         ----------
         input_files : string
@@ -38,10 +40,7 @@ class EVACPlusFlow(Workflow):
 
         References
         ----------
-        ..  [Park2022] Park, J.S., Fadnavis, S., & Garyfallidis, E. (2022).
-        EVAC+: Multi-scale V-net with Deep Feature
-        CRF Layers for Brain Extraction.
-
+        .. footbibliography::
         """
         io_it = self.get_io_iterator()
         empty_flag = True
@@ -53,7 +52,7 @@ class EVACPlusFlow(Workflow):
                 fpath, return_img=True, return_voxsize=True
             )
             evac = EVACPlus()
-            mask_volume = evac.predict(data, affine, voxsize)
+            mask_volume = evac.predict(data, affine, voxsize=voxsize)
             masked_volume = mask_volume * data
 
             save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
@@ -61,7 +60,7 @@ class EVACPlusFlow(Workflow):
             logging.info(f"Mask saved as {mask_out_path}")
 
             if save_masked:
-                save_nifti(masked_out_path, masked_volume, affine, img.header)
+                save_nifti(masked_out_path, masked_volume, affine, hdr=img.header)
 
                 logging.info(f"Masked volume saved as {masked_out_path}")
             empty_flag = False

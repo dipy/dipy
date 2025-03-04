@@ -27,13 +27,13 @@ from dipy.viz import actor, colormap as cmap, window
 # description of these steps, please refer to the CSA Probabilistic Tracking
 # Tutorial.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 white_matter = (labels == 1) | (labels == 2)
 
@@ -61,7 +61,7 @@ streamlines = Streamlines(streamlines)
 ###############################################################################
 # We will create a streamline actor from the streamlines.
 
-streamlines_actor = actor.line(streamlines, cmap.line_colors(streamlines))
+streamlines_actor = actor.line(streamlines, colors=cmap.line_colors(streamlines))
 
 ###############################################################################
 # Next, we create a surface actor from the corpus callosum seed ROI. We
@@ -73,7 +73,7 @@ surface_opacity = 0.5
 surface_color = [0, 1, 1]
 
 seedroi_actor = actor.contour_from_roi(
-    seed_mask, affine, surface_color, surface_opacity
+    seed_mask, affine=affine, color=surface_color, opacity=surface_opacity
 )
 
 ###############################################################################
@@ -92,7 +92,7 @@ interactive = False
 if interactive:
     window.show(scene)
 
-window.record(scene, out_path="contour_from_roi_tutorial.png", size=(1200, 900))
+window.record(scene=scene, out_path="contour_from_roi_tutorial.png", size=(1200, 900))
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

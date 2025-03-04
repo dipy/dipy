@@ -28,15 +28,15 @@ def setup_module():
     global bvecs, gtab, params_single, params_multi, MKgt_multi
     global bvals_3s, MDgt_multi, S0gt_multi, MKgt, MDgt
 
-    fimg, fbvals, fbvecs = get_fnames("small_64D")
+    fimg, fbvals, fbvecs = get_fnames(name="small_64D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     bvals = round_bvals(bvals)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
 
     # 2 shells for techniques that requires multishell data
     bvals_3s = np.concatenate((bvals, bvals * 1.5, bvals * 2), axis=0)
     bvecs_3s = np.concatenate((bvecs, bvecs, bvecs), axis=0)
-    gtab_3s = gradient_table(bvals_3s, bvecs_3s)
+    gtab_3s = gradient_table(bvals_3s, bvecs=bvecs_3s)
 
     # Simulation 1. Spherical kurtosis tensor - MSK and MSD from the MSDKI
     # model should be equal to the MK and MD of the DKI tensor for cases of
@@ -129,7 +129,7 @@ def test_msdki_predict():
 
     # SO volume
     dkiF = dkiM.fit(DWI)
-    pred_multi = dkiF.predict(gtab_3s, 100 * np.ones(DWI.shape[:-1]))
+    pred_multi = dkiF.predict(gtab_3s, S0=100 * np.ones(DWI.shape[:-1]))
     assert_array_almost_equal(pred_multi[:, :, 0, :], DWI[:, :, 0, :])
 
 
@@ -285,7 +285,7 @@ def test_smt2_metrics():
 
     # Check if awf_from_msk when mask is given
     mask = MKgt_multi > 0
-    AWF = awf_from_msk(MKgt_multi, mask)
+    AWF = awf_from_msk(MKgt_multi, mask=mask)
     assert_array_almost_equal(AWF, AWFgt)
 
 

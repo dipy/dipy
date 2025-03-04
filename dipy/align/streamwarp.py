@@ -9,8 +9,12 @@ from dipy.align.streamlinear import slr_with_qbx
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
 from dipy.stats.analysis import assignment_map
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import Streamlines, length, unlist_streamlines
+from dipy.utils.optpkg import optional_package
 from dipy.viz.plotting import bundle_shape_profile
+
+pd, have_pd, _ = optional_package("pandas")
 
 
 def average_bundle_length(bundle):
@@ -56,35 +60,39 @@ def find_missing(lst, cb):
     return [x for x in range(0, len(cb)) if x not in lst]
 
 
-def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15, affine=True):
+@warning_for_keywords()
+def bundlewarp(
+    static, moving, *, dist=None, alpha=0.5, beta=20, max_iter=15, affine=True
+):
     """Register two bundles using nonlinear method.
+
+     See :footcite:p:`Chandio2023` for further details about the method.
 
     Parameters
     ----------
     static : Streamlines
-        Reference/fixed bundle
+        Reference/fixed bundle.
 
     moving : Streamlines
-        Target bundle that will be moved/registered to match the static bundle
+        Target bundle that will be moved/registered to match the static bundle.
 
-    dist : float, optional.
-        Precomputed distance matrix (default None)
+    dist : float, optional
+        Precomputed distance matrix.
 
     alpha : float, optional
         Represents the trade-off between regularizing the deformation and
         having points match very closely. Lower value of alpha means high
-        deformations (default 0.3)
+        deformations.
 
     beta : int, optional
         Represents the strength of the interaction between points
-        Gaussian kernel size (default 20)
+        Gaussian kernel size.
 
     max_iter : int, optional
-        Maximum number of iterations for deformation process in ml-CPD method
-        (default 15)
+        Maximum number of iterations for deformation process in ml-CPD method.
 
     affine : boolean, optional
-        If False, use rigid registration as starting point (default True)
+        If False, use rigid registration as starting point.
 
     Returns
     -------
@@ -105,8 +113,7 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15, affin
 
     References
     ----------
-    .. [Chandio2023] Chandio et al. "BundleWarp, streamline-based nonlinear
-            registration of white matter tracts." bioRxiv (2023): 2023-01.
+    .. footbibliography::
 
     """
     if alpha <= 0.01:
@@ -185,6 +192,8 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15, affin
         deformed_bundle.append(ty)
         warp.append(pr)
 
+    warp = pd.DataFrame(warp, columns=["gaussian_kernel", "transforms"])
+
     # Returns deformed bundle, affinely moved bundle, distance matrix,
     # streamline correspondences, and warp field
     return deformed_bundle, moving_aligned, dist, matched_pairs, warp
@@ -210,6 +219,12 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
     directions : List
         Unitary vector directions
     colors : List
+        Colors for bundle warping field vectors. Colors follow the convention
+        used in DTI-derived maps (e.g. color FA) :footcite:p:`Pajevic1999`.
+
+    References
+    ----------
+    .. footbibliography::
     """
     points_aligned, _ = unlist_streamlines(moving_aligned)
     points_deformed, _ = unlist_streamlines(deformed_bundle)
@@ -227,8 +242,9 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
     return offsets, directions, colors
 
 
+@warning_for_keywords()
 def bundlewarp_shape_analysis(
-    moving_aligned, deformed_bundle, no_disks=10, plotting=False
+    moving_aligned, deformed_bundle, *, no_disks=10, plotting=False
 ):
     """Calculate bundle shape difference profile.
 

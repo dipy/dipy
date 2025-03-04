@@ -2,15 +2,16 @@ from functools import partial
 import multiprocessing as mp
 
 import numpy as np
-import scipy
 import scipy.fft
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.multiproc import determine_num_processes
 
 _fft = scipy.fft
 
 
-def _image_tv(x, axis=0, n_points=3):
+@warning_for_keywords()
+def _image_tv(x, *, axis=0, n_points=3):
     """Computes total variation (TV) of matrix x across a given axis and
     along two directions.
 
@@ -60,7 +61,8 @@ def _image_tv(x, axis=0, n_points=3):
         return ptv.T, ntv.T
 
 
-def _gibbs_removal_1d(x, axis=0, n_points=3):
+@warning_for_keywords()
+def _gibbs_removal_1d(x, *, axis=0, n_points=3):
     """Suppresses Gibbs ringing along a given axis using fourier sub-shifts.
 
     Parameters
@@ -143,7 +145,9 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
 
 def _weights(shape):
     """Computes the weights necessary to combine two images processed by
-    the 1D Gibbs removal procedure along two different axes [1]_.
+    the 1D Gibbs removal procedure along two different axes.
+
+    See :footcite:p:`Kellner2016` for further details about the method.
 
     Parameters
     ----------
@@ -159,9 +163,7 @@ def _weights(shape):
 
     References
     ----------
-    .. [1] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
-           removal based on local subvoxel-shifts. Magn Reson Med. 2016
-           doi: 10.1002/mrm.26054.
+    .. footbibliography::
 
     """
     G0 = np.zeros(shape)
@@ -185,8 +187,10 @@ def _weights(shape):
     return G0, G1
 
 
-def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
-    """Suppress Gibbs ringing of a 2D image.
+@warning_for_keywords()
+def _gibbs_removal_2d(image, *, n_points=3, G0=None, G1=None):
+    """Suppress Gibbs ringing of a 2D image :footcite:p:`Kellner2016`,
+    :footcite:p:`NetoHenriques2018`.
 
     Parameters
     ----------
@@ -195,10 +199,10 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     n_points : int, optional
         Number of neighbours to access local TV (see note). Default is
         set to 3.
-    G0 : 2D ndarray, optional.
+    G0 : 2D ndarray, optional
         Weights for the image corrected along axis 0. If not given, the
         function estimates them using the function :func:`_weights`.
-    G1 : 2D ndarray
+    G1 : 2D ndarray, optional
         Weights for the image corrected along axis 1. If not given, the
         function estimates them using the function :func:`_weights`.
 
@@ -217,16 +221,10 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
 
     References
     ----------
-    Please cite the following articles
-    .. [1] Neto Henriques, R., 2018. Advanced Methods for Diffusion MRI Data
-           Analysis and their Application to the Healthy Ageing Brain
-           (Doctoral thesis). https://doi.org/10.17863/CAM.29356
-    .. [2] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
-           removal based on local subvoxel-shifts. Magn Reson Med. 2016
-           doi: 10.1002/mrm.26054.
+    .. footbibliography::
 
     """
-    if np.any(G0) is None or np.any(G1) is None:
+    if G0 is None or G1 is None:
         G0, G1 = _weights(image.shape)
 
     img_c1 = _gibbs_removal_1d(image, axis=1, n_points=n_points)
@@ -239,8 +237,12 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     return imagec
 
 
-def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_processes=1):
+@warning_for_keywords()
+def gibbs_removal(vol, *, slice_axis=2, n_points=3, inplace=True, num_processes=1):
     """Suppresses Gibbs ringing artefacts of images volumes.
+
+    See :footcite:p:`Kellner2016` and :footcite:p:`NetoHenriques2018` for
+    further details about the method.
 
     Parameters
     ----------
@@ -248,14 +250,11 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_processes=1):
         Matrix containing one volume (3D) or multiple (4D) volumes of images.
     slice_axis : int (0, 1, or 2)
         Data axis corresponding to the number of acquired slices.
-        Default is set to the third axis.
     n_points : int, optional
         Number of neighbour points to access local TV (see note).
-        Default is set to 3.
     inplace : bool, optional
         If True, the input data is replaced with results. Otherwise, returns
         a new array.
-        Default is set to True.
     num_processes : int or None, optional
         Split the calculation to a pool of children processes. This only
         applies to 3D or 4D `data` arrays. Default is 1. If < 0 the maximal
@@ -275,13 +274,7 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_processes=1):
 
     References
     ----------
-    Please cite the following articles
-    .. [1] Neto Henriques, R., 2018. Advanced Methods for Diffusion MRI Data
-           Analysis and their Application to the Healthy Ageing Brain
-           (Doctoral thesis). https://doi.org/10.17863/CAM.29356
-    .. [2] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
-           removal based on local subvoxel-shifts. Magn Reson Med. 2016
-           doi: 10.1002/mrm.26054.
+    .. footbibliography::
 
     """
     nd = vol.ndim
@@ -327,13 +320,19 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_processes=1):
     if nd == 2:
         vol[:, :] = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
     else:
-        mp.set_start_method("spawn", force=True)
-        pool = mp.Pool(num_processes)
+        if num_processes == 1:
+            for i in range(shap[0]):
+                vol[i, :, :] = _gibbs_removal_2d(
+                    vol[i, :, :], n_points=n_points, G0=G0, G1=G1
+                )
+        else:
+            mp.set_start_method("spawn", force=True)
+            pool = mp.Pool(num_processes)
 
-        partial_func = partial(_gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1)
-        vol[:, :, :] = pool.map(partial_func, vol)
-        pool.close()
-        pool.join()
+            partial_func = partial(_gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1)
+            vol[:, :, :] = pool.map(partial_func, vol)
+            pool.close()
+            pool.join()
 
     # Reshape data to original format
     if nd == 3:

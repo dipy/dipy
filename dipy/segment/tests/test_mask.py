@@ -86,7 +86,7 @@ def test_bounding_box():
 
 
 def test_median_otsu():
-    fname = get_fnames("S0_10")
+    fname = get_fnames(name="S0_10")
     data = load_nifti_data(fname)
     data = np.squeeze(data.astype("f8"))
     dummy_mask = data > data.mean()

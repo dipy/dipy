@@ -49,7 +49,7 @@ def get_streamlines():
     from dipy.io.streamline import load_tractogram
     from dipy.tracking.streamline import Streamlines
 
-    fname = get_fnames("fornix")
+    fname = get_fnames(name="fornix")
     fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 
     streamlines = Streamlines(fornix)
@@ -71,7 +71,7 @@ def get_streamlines():
 # since it will require less computation (i.e. no resampling). However, it
 # highly depends on the number of points streamlines have. By default,
 # QuickBundles resamples streamlines so that they have 12 points each
-# [Garyfallidis12]_.
+# :footcite:p:`Garyfallidis2012a`.
 #
 # *Unless stated otherwise, it is the default feature used by `Metric` objects
 # in the clustering framework.*
@@ -103,12 +103,12 @@ print("Cluster sizes:", list(map(len, clusters)))
 #
 # **When:** The QuickBundles algorithm requires streamlines to have the same
 # number of points. By default, QuickBundles uses `ResampleFeature` to resample
-# streamlines so that they have 12 points each [Garyfallidis12]_. If you want
-# to use a different number of points for the resampling, you should provide
-# your own instance of `ResampleFeature` (see following example).
+# streamlines so that they have 12 points each :footcite:p:`Garyfallidis2012a`.
+# If you want to use a different number of points for the resampling, you should
+# provide your own instance of `ResampleFeature` (see following example).
 #
 # **Note:** Resampling streamlines has an impact on clustering results both in
-# term of speed and quality. Setting the number of points too low will result
+# terms of speed and quality. Setting the number of points too low will result
 # in a loss of information about the shape of the streamlines. On the contrary,
 # setting the number of points too high will slow down the clustering process.
 
@@ -166,9 +166,11 @@ for cluster, color in zip(clusters, colormap):
 scene = window.Scene()
 scene.clear()
 scene.SetBackground(0, 0, 0)
-scene.add(actor.streamtube(streamlines, window.colors.white, opacity=0.05))
+scene.add(actor.streamtube(streamlines, colors=window.colors.white, opacity=0.05))
 scene.add(actor.point(centers[:, 0, :], colormap_full, point_radius=0.2))
-window.record(scene, n_frames=1, out_path="center_of_mass_feature.png", size=(600, 600))
+window.record(
+    scene=scene, n_frames=1, out_path="center_of_mass_feature.png", size=(600, 600)
+)
 if interactive:
     window.show(scene)
 
@@ -214,8 +216,8 @@ scene = window.Scene()
 scene.clear()
 scene.SetBackground(0, 0, 0)
 scene.add(actor.point(midpoints[:, 0, :], colormap_full, point_radius=0.2))
-scene.add(actor.streamtube(streamlines, window.colors.white, opacity=0.05))
-window.record(scene, n_frames=1, out_path="midpoint_feature.png", size=(600, 600))
+scene.add(actor.streamtube(streamlines, colors=window.colors.white, opacity=0.05))
+window.record(scene=scene, n_frames=1, out_path="midpoint_feature.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -255,8 +257,8 @@ for cluster, color in zip(clusters, colormap):
 scene = window.Scene()
 scene.clear()
 scene.SetBackground(0, 0, 0)
-scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path="arclength_feature.png", size=(600, 600))
+scene.add(actor.streamtube(streamlines, colors=colormap_full))
+window.record(scene=scene, out_path="arclength_feature.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -300,8 +302,8 @@ for cluster, color in zip(clusters, colormap):
 scene = window.Scene()
 scene.clear()
 scene.SetBackground(0, 0, 0)
-scene.add(actor.streamtube(streamlines, colormap_full))
-window.record(scene, out_path="vector_of_endpoints_feature.png", size=(600, 600))
+scene.add(actor.streamtube(streamlines, colors=colormap_full))
+window.record(scene=scene, out_path="vector_of_endpoints_feature.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -313,6 +315,6 @@ if interactive:
 #
 # References
 # ----------
-# .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-#    tractography simplification, Frontiers in Neuroscience, vol 6, no 175,
-#    2012.
+#
+# .. footbibliography::
+#

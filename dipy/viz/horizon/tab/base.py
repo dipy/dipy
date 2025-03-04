@@ -5,6 +5,7 @@ import warnings
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.util import show_ellipsis
 
@@ -111,12 +112,14 @@ class TabManager:
         Underlying FURY TabUI object.
     """
 
+    @warning_for_keywords()
     def __init__(
         self,
         tabs,
         win_size,
         on_tab_changed,
         add_to_scene,
+        *,
         remove_from_scene,
         sync_slices=False,
         sync_volumes=False,
@@ -344,7 +347,8 @@ class TabManager:
         return self._tab_ui
 
 
-def build_label(text, font_size=16, bold=False):
+@warning_for_keywords()
+def build_label(text, *, font_size=16, bold=False):
     """Simple utility function to build labels.
 
     Parameters
@@ -373,9 +377,11 @@ def build_label(text, font_size=16, bold=False):
     return HorizonUIElement(True, text, label)
 
 
+@warning_for_keywords()
 def build_slider(
     initial_value,
     max_value,
+    *,
     min_value=0,
     length=450,
     line_width=3,
@@ -428,10 +434,15 @@ def build_slider(
         Size of label text to display with slider
     label_style_bold : bool, optional
         Is label should have bold style.
+    is_double_slider : bool, optional
+        True if the slider allows to adjust two values.
 
-    Return
-    ------
-    (label: HorizonUIElement, element(slider): HorizonUIElement)
+    Returns
+    -------
+    label : HorizonUIElement
+        Slider label.
+    HorizonUIElement
+        Slider.
     """
 
     if is_double_slider and "ratio" in text_template:
@@ -480,10 +491,12 @@ def build_slider(
         slider.handles[0].color = (1.0, 0.5, 0.0)
         slider.handles[1].color = (1.0, 0.5, 0.0)
 
-    return (slider_label, HorizonUIElement(True, initial_value, slider))
+    return slider_label, HorizonUIElement(True, initial_value, slider)
 
 
+@warning_for_keywords()
 def build_checkbox(
+    *,
     labels=None,
     checked_labels=None,
     padding=1,
@@ -531,7 +544,9 @@ def build_checkbox(
     return HorizonUIElement(True, checked_labels, checkboxes)
 
 
+@warning_for_keywords()
 def build_radio_button(
+    *,
     labels=None,
     checked_labels=None,
     padding=1,
@@ -579,7 +594,9 @@ def build_radio_button(
     return HorizonUIElement(True, checked_labels, radio)
 
 
+@warning_for_keywords()
 def build_switcher(
+    *,
     items=None,
     label="",
     initial_selection=0,

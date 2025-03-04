@@ -1,14 +1,12 @@
 """
-.. _sfm-track:
-
 =======================================
 Tracking with the Sparse Fascicle Model
 =======================================
 
 Tracking requires a per-voxel model. Here, the model is the Sparse Fascicle
-Model (SFM), described in [Rokem2015]_. This model reconstructs the diffusion
-signal as a combination of the signals from different fascicles (see also
-:ref:`sphx_glr_examples_built_reconstruction_reconst_sfm.py`).
+Model (SFM), described in :footcite:p:`Rokem2015`. This model reconstructs the
+diffusion signal as a combination of the signals from different fascicles (see
+also :ref:`sphx_glr_examples_built_reconstruction_reconst_sfm.py`).
 """
 
 from numpy.linalg import inv
@@ -38,18 +36,17 @@ interactive = False
 ###############################################################################
 # To begin, we read the Stanford HARDI data set into memory:
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
-label_fname = get_fnames("stanford_labels")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
+label_fname = get_fnames(name="stanford_labels")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
-# This data set provides a label map (generated using `FreeSurfer
-# <https://surfer.nmr.mgh.harvard.edu/>`_), in which the white matter voxels
-# are labeled as either 1 or 2:
+# This data set provides a label map (generated using FreeSurfer_, in which the
+# white matter voxels are labeled as either 1 or 2:
 
 white_matter = (labels == 1) | (labels == 2)
 
@@ -120,7 +117,7 @@ streamlines = Streamlines(streamline_generator)
 # Next, we will create a visualization of these streamlines, relative to this
 # subject's T1-weighted anatomy:
 
-t1_fname = get_fnames("stanford_t1")
+t1_fname = get_fnames(name="stanford_t1")
 t1_data, t1_aff = load_nifti(t1_fname)
 color = colormap.line_colors(streamlines)
 
@@ -135,22 +132,22 @@ plot_streamlines = select_random_set_of_streamlines(streamlines, 900)
 if has_fury:
     streamlines_actor = actor.streamtube(
         list(transform_streamlines(plot_streamlines, inv(t1_aff))),
-        colormap.line_colors(streamlines),
+        colors=colormap.line_colors(streamlines),
         linewidth=0.1,
     )
 
     vol_actor = actor.slicer(t1_data)
 
-    vol_actor.display(40, None, None)
+    vol_actor.display(x=40)
     vol_actor2 = vol_actor.copy()
-    vol_actor2.display(None, None, 35)
+    vol_actor2.display(z=35)
 
     scene = window.Scene()
     scene.add(streamlines_actor)
     scene.add(vol_actor)
     scene.add(vol_actor2)
 
-    window.record(scene, out_path="tractogram_sfm.png", size=(800, 800))
+    window.record(scene=scene, out_path="tractogram_sfm.png", size=(800, 800))
     if interactive:
         window.show(scene)
 
@@ -170,7 +167,5 @@ save_trk(sft, "tractogram_sfm_detr.trk")
 # References
 # ----------
 #
-# .. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
-#    N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell (2015).
-#    Evaluating the accuracy of diffusion MRI models in white matter. PLoS
-#    ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
+# .. footbibliography::
+#

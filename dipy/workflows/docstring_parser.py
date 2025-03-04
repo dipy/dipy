@@ -15,7 +15,7 @@ met:
     the documentation and/or other materials provided with the
     distribution.
 
-THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR
 IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
@@ -32,12 +32,15 @@ import re
 import textwrap
 from warnings import warn
 
+from dipy.testing.decorators import warning_for_keywords
+
 
 class Reader:
     """A line-based string reader."""
 
     def __init__(self, data):
         """
+
         Parameters
         ----------
         data : str
@@ -115,7 +118,8 @@ def dedent_lines(lines):
 
 
 class NumpyDocString:
-    def __init__(self, docstring, config=None):
+    @warning_for_keywords()
+    def __init__(self, docstring, *, config=None):
         docstring = textwrap.dedent(docstring).split("\n")
 
         self._doc = Reader(docstring)

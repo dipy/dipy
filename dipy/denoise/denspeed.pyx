@@ -13,6 +13,7 @@ from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
 
 
+
 def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
                block_radius=5, rician=True, num_threads=None):
     """ Non-local means for denoising 3D images
@@ -35,7 +36,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
         Number of threads to be used for OpenMP parallelization. If None
         (default) the value of OMP_NUM_THREADS environment variable is used
         if it is set, otherwise all available threads are used. If < 0 the
-        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        maximal number of threads minus $|num_threads + 1|$ is used (enter -1 to
         use as many threads as possible). 0 raises an error.
 
     Returns

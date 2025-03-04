@@ -11,14 +11,14 @@ from dipy.tracking.streamlinespeed import compress_streamlines
 
 class BenchStreamlines:
     def setup(self):
-        rng = np.random.RandomState(42)
+        rng = np.random.default_rng(42)
         nb_streamlines = 20000
         min_nb_points = 2
         max_nb_points = 100
 
         def generate_streamlines(nb_streamlines, min_nb_points, max_nb_points, rng):
             streamlines = [
-                rng.rand(*(rng.randint(min_nb_points, max_nb_points), 3))
+                rng.random((rng.integers(min_nb_points, max_nb_points), 3))
                 for _ in range(nb_streamlines)
             ]
             return streamlines
@@ -31,18 +31,18 @@ class BenchStreamlines:
         )
         self.data["streamlines_arrseq"] = Streamlines(self.data["streamlines"])
 
-        fname = get_fnames("fornix")
+        fname = get_fnames(name="fornix")
         fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 
         self.fornix_streamlines = Streamlines(fornix)
 
     def time_set_number_of_points(self):
         streamlines = self.data["streamlines"]
-        set_number_of_points(streamlines, 50)
+        set_number_of_points(streamlines, nb_points=50)
 
     def time_set_number_of_points_arrseq(self):
         streamlines = self.data["streamlines_arrseq"]
-        set_number_of_points(streamlines, 50)
+        set_number_of_points(streamlines, nb_points=50)
 
     def time_length(self):
         streamlines = self.data["streamlines"]

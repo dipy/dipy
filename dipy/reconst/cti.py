@@ -16,6 +16,7 @@ from dipy.reconst.dti import (
 )
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.utils import cti_design_matrix as design_matrix
+from dipy.testing.decorators import warning_for_keywords
 
 
 def from_qte_to_cti(C):
@@ -68,7 +69,8 @@ def multi_gaussian_k_from_c(ccti, MD):
     ----------
     ccti: array(..., 21)
         Covariance Tensor Elements with no hidden factors.
-    MD: Mean Diffusivity (MD) of a diffusion tensor.
+    MD : ndarray
+        Mean Diffusivity (MD) of a diffusion tensor.
 
     Returns
     -------
@@ -104,13 +106,13 @@ def split_cti_params(cti_params):
 
     Parameters
     ----------
-        params: numpy.ndarray (..., 48)
+    cti_params: numpy.ndarray (..., 48)
         All parameters estimated from the correlation tensor model.
         Parameters are ordered as follows:
 
             1. Three diffusion tensor's eigenvalues
             2. Three lines of the eigenvector matrix each containing the
-            first, second and third coordinates of the eigenvector
+               first, second and third coordinates of the eigenvector
             3. Fifteen elements of the kurtosis tensor
             4. Twenty-One elements of the covariance tensor
 
@@ -134,26 +136,29 @@ def split_cti_params(cti_params):
     return evals, evecs, kt, ct
 
 
-def cti_prediction(cti_params, gtab1, gtab2, S0=1):
+@warning_for_keywords()
+def cti_prediction(cti_params, gtab1, gtab2, *, S0=1):
     """Predict a signal given correlation tensor imaging parameters.
 
     Parameters
     ----------
     cti_params: numpy.ndarray (..., 48)
-    All parameters estimated from the correlation tensor model.
-    Parameters are ordered as follows:
-        1. Three diffusion tensor's eigenvalues
-        2. Three lines of the eigenvector matrix each containing the
-        first, second and third coordinates of the eigenvector
-        3. Fifteen elements of the kurtosis tensor
-        4. Twenty-One elements of the covariance tensor
+        All parameters estimated from the correlation tensor model.
+        Parameters are ordered as follows:
+
+            1. Three diffusion tensor's eigenvalues
+            2. Three lines of the eigenvector matrix each containing the
+               first, second and third coordinates of the eigenvector
+            3. Fifteen elements of the kurtosis tensor
+            4. Twenty-One elements of the covariance tensor
+
     gtab1: dipy.core.gradients.GradientTable
         A GradientTable class instance for first DDE diffusion epoch
 
     gtab2: dipy.core.gradients.GradientTable
         A GradientTable class instance for second DDE diffusion epoch
 
-    S0 : float or ndarray (optional)
+    S0 : float or ndarray, optional
         The non diffusion-weighted signal in every voxel, or across all
         voxels. Default: 1
 
@@ -195,8 +200,10 @@ def cti_prediction(cti_params, gtab1, gtab2, S0=1):
 class CorrelationTensorModel(ReconstModel):
     """Class for the Correlation Tensor Model"""
 
-    def __init__(self, gtab1, gtab2, fit_method="WLS", *args, **kwargs):
-        """Correlation Tensor Imaging Model [1]
+    def __init__(self, gtab1, gtab2, *args, fit_method="WLS", **kwargs):
+        """Correlation Tensor Imaging Model.
+
+        See :footcite:p:`NetoHenriques2020` for further details about the model.
 
         Parameters
         ----------
@@ -205,9 +212,15 @@ class CorrelationTensorModel(ReconstModel):
         gtab2: dipy.core.gradients.GradientTable
             A GradientTable class instance for second DDE diffusion epoch
         fit_method : str or callable, optional
-        args, kwargs :
-            arguments and key-word arguments passed to the fit_method.
+            Fitting method.
+        *args
+            Variable length argument list passed to the :func:`fit` method.
+        **kwargs
+            Arbitrary keyword arguments passed to the :func:`fit` method.
 
+        References
+        ----------
+        .. footbibliography::
         """
         self.gtab1 = gtab1
         self.gtab2 = gtab2
@@ -243,7 +256,8 @@ class CorrelationTensorModel(ReconstModel):
         self.weights = fit_method in {"WLS", "WLLS", "UWLLS"}
 
     @multi_voxel_fit
-    def fit(self, data, mask=None):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None):
         """Fit method of the CTI model class.
 
         Parameters
@@ -267,27 +281,29 @@ class CorrelationTensorModel(ReconstModel):
 
         return CorrelationTensorFit(self, params)
 
-    def predict(self, cti_params, S0=1):
+    @warning_for_keywords()
+    def predict(self, cti_params, *, S0=1):
         """Predict a signal for the CTI model class instance given parameters
 
         Parameters
         ----------
         cti_params: numpy.ndarray (..., 48)
-        All parameters estimated from the correlation tensor model.
-        Parameters are ordered as follows:
+            All parameters estimated from the correlation tensor model.
+            Parameters are ordered as follows:
 
-            1. Three diffusion tensor's eigenvalues
-            2. Three lines of the eigenvector matrix each containing the
-            first, second and third coordinates of the eigenvector
-            3. Fifteen elements of the kurtosis tensor
-            4. Twenty-One elements of the covariance tensor
+                1. Three diffusion tensor's eigenvalues
+                2. Three lines of the eigenvector matrix each containing the
+                   first, second and third coordinates of the eigenvector
+                3. Fifteen elements of the kurtosis tensor
+                4. Twenty-One elements of the covariance tensor
+
         gtab1: dipy.core.gradients.GradientTable
             A GradientTable class instance for first DDE diffusion epoch
         gtab2: dipy.core.gradients.GradientTable
             A GradientTable class instance for second DDE diffusion epoch
-        S0 : float or ndarray (optional)
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
-            voxels. Default: 1
+            voxels.
 
         Returns
         -------
@@ -295,7 +311,7 @@ class CorrelationTensorModel(ReconstModel):
             Predicted signal based on the CTI model
         """
 
-        return cti_prediction(cti_params, self.gtab1, self.gtab2, S0)
+        return cti_prediction(cti_params, self.gtab1, self.gtab2, S0=S0)
 
 
 class CorrelationTensorFit(DiffusionKurtosisFit):
@@ -311,6 +327,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         model_params : ndarray (x, y, z, 48) or (n, 48)
             All parameters estimated from the diffusion kurtosis model.
             Parameters are ordered as follows:
+
                 1) Three diffusion tensor's eigenvalues
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector
@@ -328,26 +345,18 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         """
         return self.model_params[..., 27:48]
 
-    def predict(self, gtab1, gtab2, S0=1):
+    @warning_for_keywords()
+    def predict(self, gtab1, gtab2, *, S0=1):
         """Given a CTI model fit, predict the signal on the vertices of a
         gradient table
 
-        Parameters:
-        -----------
-        params: numpy.ndarray (...,43)
-                All parameters estimated from the correlation tensor model.
-                Parameters are ordered as follows:
-
-                1. Three diffusion tensor's eigenvalues
-                2. Three lines of the eigenvector matrix each containing the
-                first, second and third coordinates of the eigenvector
-                3. Fifteen elements of the kurtosis tensor
-                4. Twenty-One elements of the covariance tensor
+        Parameters
+        ----------
         gtab1: dipy.core.gradients.GradientTable
             A GradientTable class instance for first DDE diffusion epoch
         gtab2: dipy.core.gradients.GradientTable
             A GradientTable class instance for second DDE diffusion epoch
-        S0 : float or ndarray (optional)
+        S0 : float or ndarray, optional
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
 
@@ -356,31 +365,29 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         S : numpy.ndarray
             Predicted signal based on the CTI model
         """
-        return cti_prediction(self.model_params, gtab1, gtab2, S0)
+        return cti_prediction(self.model_params, gtab1, gtab2, S0=S0)
 
     @property
     def K_aniso(self):
-        r"""Returns the anisotropic Source of Kurtosis (K_aniso)
+        r"""Returns the anisotropic Source of Kurtosis ($K_{aniso}$)
 
-            Notes
-            -----
-            The K_aniso is defined as[1]_:
+        Notes
+        -----
+        The $K_{aniso}$ is defined as :footcite:p:`NetoHenriques2020`:
 
-            :math::
+        .. math::
 
             \[K_{aniso} = \frac{6}{5} \cdot \frac{\langle V_{\lambda}(D_c)
-                                                  \rangle}{\overline{D}^2}\]
+                                              \rangle}{\overline{D}^2}\]
 
-        where: $K_{aniso}$ is the anisotropic kurtosis,
-            $\langle V_{\lambda}(D_c) \rangle$ represents the mean of the
-            variance of eigenvalues of the diffusion tensor,
-            $\overline{D}$ is the mean of the diffusion tensor.
+        where $K_{aniso}$ is the anisotropic kurtosis,
+        $\langle V_{\lambda}(D_c) \rangle$ represents the mean of the variance
+        of eigenvalues of the diffusion tensor, $\overline{D}$ is the mean of
+        the diffusion tensor.
 
         References
         ----------
-        .. [1]  [NetoHe2020] Henriques, R.N., Jespersen, S.N., Shemesh, N., 2020.
-                Correlation tensor magnetic resonance imaging. Neuroimage 211.
-                doi: 10.1016/j.neuroimage.2020.116605
+        .. footbibliography::
         """
         C = self.ct
         D = self.quadratic_form
@@ -422,19 +429,19 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
     @property
     def K_iso(self):
-        r"""Returns the isotropic Source of Kurtosis (K_iso)
+        r"""Returns the isotropic Source of Kurtosis ($K_{iso}$)
 
         Notes
         -----
-        The K_iso is defined as :
+        The $K_{iso}$ is defined as :
 
-        :math::
-            $$ K_{\text{iso}} = 3 \cdot \frac{V(\overline{D}^c)}{\overline{D}^2} $$
+        .. math::
 
-        where: $ K_{\text{iso}} $ is the isotropic kurtosis,
-            \(V({\overline{D}^c})\) represents the variance of the diffusion
-            tensor raised to the power c,
-            \(\overline{D}\) is the mean of the diffusion tensor.
+            K_{\text{iso}} = 3 \cdot \frac{V(\overline{D}^c)}{\overline{D}^2}
+
+        where: $K_{\text{iso}}$ is the isotropic kurtosis, $V({\overline{D}^c})$
+        represents the variance of the diffusion tensor raised to the power $c$,
+        $\overline{D}$ is the mean of the diffusion tensor.
 
         """
         C = self.ct
@@ -463,9 +470,9 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
 
             Notes
             -----
-            $K_total$ is defined as :
+            $K_{total}$ is defined as:
 
-            :math::
+            .. math::
                 \[\Psi = \frac{2}{5} \cdot \frac{D_{11}^2 + D_{22}^2 + D_{33}^2
                                                  + 2D_{12}^2 + 2D_{13}^2 +
                                                  2D_{23}^2{\overline{D}^2} -
@@ -475,12 +482,11 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
                                                       + 2W_{1133} + 2W_{2233})\
                   ]
 
-            where \(\Psi\) is a variable representing a part of the total
-            excess kurtosis,
-            \(D_{ij}\) are elements of the diffusion tensor,
-            \(\overline{D}\) is the mean of the diffusion tensor.
-            \{\overline{W}} is the mean kurtosis,
-            \(W_{ijkl}\) are elements of the kurtosis tensor.
+            where $\Psi$ is a variable representing a part of the total
+            excess kurtosis, $D_{ij}$ are elements of the diffusion tensor,
+            $\overline{D}$ is the mean of the diffusion tensor. $\overline{W}$
+            is the mean kurtosis, $W_{ijkl}$ are elements of the kurtosis
+            tensor.
         """
 
         mean_K = self.mkt()
@@ -514,7 +520,8 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
         return micro_K
 
 
-def params_to_cti_params(result, min_diffusivity=0):
+@warning_for_keywords()
+def params_to_cti_params(result, *, min_diffusivity=0):
     # Extracting the diffusion tensor parameters from solution
     DT_elements = result[:6]
     evals, evecs = decompose_tensor(
@@ -535,8 +542,9 @@ def params_to_cti_params(result, min_diffusivity=0):
     return cti_params
 
 
+@warning_for_keywords()
 def ls_fit_cti(
-    design_matrix, data, inverse_design_matrix, weights=True, min_diffusivity=0
+    design_matrix, data, inverse_design_matrix, *, weights=True, min_diffusivity=0
 ):
     r"""Compute the diffusion kurtosis and covariance tensors using an
     ordinary or weighted linear least squares approach
@@ -551,7 +559,7 @@ def ls_fit_cti(
     inverse_design_matrix : array (43, g)
         Inverse of the design matrix.
     weights : bool, optional
-        Parameter indicating whether weights are used. Default: True.
+        Parameter indicating whether weights are used.
     min_diffusivity : float, optional
         Because negative eigenvalues are not physical and small eigenvalues,
         much smaller than the diffusion weighting, cause quite a lot of noise
@@ -561,13 +569,14 @@ def ls_fit_cti(
     Returns
     -------
     cti_params : array (48)
-    All parameters estimated from the diffusion kurtosis model for all N
-    voxels. Parameters are ordered as follows:
-        1) Three diffusion tensor eigenvalues.
-        2) Three blocks of three elements, containing the first second and
-            third coordinates of the diffusion tensor eigenvectors.
-        3) Fifteen elements of the kurtosis tensor.
-        4) Twenty One elements of the covariance tensor.
+        All parameters estimated from the diffusion kurtosis model for all N
+        voxels. Parameters are ordered as follows:
+
+            1) Three diffusion tensor eigenvalues.
+            2) Three blocks of three elements, containing the first second and
+                third coordinates of the diffusion tensor eigenvectors.
+            3) Fifteen elements of the kurtosis tensor.
+            4) Twenty One elements of the covariance tensor.
 
     """
     A = design_matrix

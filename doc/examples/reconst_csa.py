@@ -3,8 +3,8 @@
 Reconstruct with Constant Solid Angle (Q-Ball)
 ==============================================
 
-We show how to apply a Constant Solid Angle ODF (Q-Ball) model from Aganj et
-al. [Aganj2010]_ to your datasets.
+We show how to apply a Constant Solid Angle ODF (Q-Ball) model from
+:footcite:t:`Aganj2010` to your datasets.
 
 First import the necessary modules:
 """
@@ -24,12 +24,12 @@ from dipy.viz import actor, window
 # Download and read the data for this tutorial and load the raw diffusion data
 # and the affine.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames("stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 
 data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # img contains a nibabel Nifti1Image object (data) and gtab contains a
@@ -46,7 +46,7 @@ maskdata, mask = median_otsu(
 )
 
 ###############################################################################
-# We instantiate our CSA model with spherical harmonic order (l) of 4
+# We instantiate our CSA model with spherical harmonic order ($l$) of 4
 
 csamodel = CsaOdfModel(gtab, 4)
 
@@ -105,7 +105,7 @@ csa_odfs_actor.display(z=0)
 
 scene.add(csa_odfs_actor)
 print("Saving illustration as csa_odfs.png")
-window.record(scene, n_frames=1, out_path="csa_odfs.png", size=(600, 600))
+window.record(scene=scene, n_frames=1, out_path="csa_odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -118,7 +118,5 @@ if interactive:
 # References
 # ----------
 #
-# .. [Aganj2010] Aganj I, Lenglet C, Sapiro G, Yacoub E, Ugurbil K, Harel N.
-#    "Reconstruction of the orientation distribution function in single- and
-#    multiple-shell q-ball imaging within constant solid angle", Magnetic
-#    Resonance in Medicine. 2010 Aug;64(2):554-66. doi: 10.1002/mrm.22365
+# .. footbibliography::
+#

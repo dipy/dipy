@@ -1,23 +1,21 @@
 """
-
-.. _reconst-mcsd:
-
 ================================================
 Reconstruction with Multi-Shell Multi-Tissue CSD
 ================================================
 
 This example shows how to use Multi-Shell Multi-Tissue Constrained Spherical
-Deconvolution (MSMT-CSD) introduced by Tournier et al. [Jeurissen2014]_. This
+Deconvolution (MSMT-CSD) introduced by :footcite:t:`Jeurissen2014`. This
 tutorial goes through the steps involved in implementing the method.
 
 This method provides improved White Matter(WM), Grey Matter (GM), and
 Cerebrospinal fluid (CSF) volume fraction maps, which is otherwise
 overestimated in the standard CSD (SSST-CSD). This is done by using b-value
 dependencies of the different tissue types to estimate ODFs. This method thus
-extends the SSST-CSD introduced in [Tournier2007]_.
+extends the SSST-CSD introduced in :footcite:p:`Tournier2007`.
 
 The reconstruction of the fiber orientation distribution function
 (fODF) in MSMT-CSD involves the following steps:
+
     1. Generate a mask using Median Otsu (optional step)
     2. Denoise the data using MP-PCA (optional step)
     3. Generate  Anisotropic Powermap (if T1 unavailable)
@@ -50,19 +48,19 @@ from dipy.segment.mask import median_otsu
 from dipy.segment.tissue import TissueClassifierHMRF
 from dipy.viz import actor, window
 
-sphere = get_sphere("symmetric724")
+sphere = get_sphere(name="symmetric724")
 
 ###############################################################################
 # For this example, we use fetch to download a multi-shell dataset which was
 # kindly provided by Hansen and Jespersen (more details about the data are
-# provided in their paper [Hansen2016]_). The total size of the downloaded
-# data is 192 MBytes, however you only need to fetch it once.
+# provided in their paper :footcite:p:`Hansen2016a`). The total size of the
+# downloaded data is 192 MBytes, however you only need to fetch it once.
 
-fraw, fbval, fbvec, t1_fname = get_fnames("cfin_multib")
+fraw, fbval, fbvec, t1_fname = get_fnames(name="cfin_multib")
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # For the sake of simplicity, we only select two non-zero b-values for this
@@ -78,7 +76,7 @@ data = data[..., sel_b]
 # The gradient table is also selected to have the selected b-values (0, 1000
 # and 2000)
 
-gtab = gradient_table(bvals[sel_b], bvecs[sel_b])
+gtab = gradient_table(bvals[sel_b], bvecs=bvecs[sel_b])
 
 ###############################################################################
 # We make use of the ``median_otsu`` method to generate the mask for the data
@@ -100,7 +98,8 @@ denoised_arr = mppca(data, mask=mask, patch_radius=2)
 # in the rest of the steps in the tutorial.
 #
 # As for the next step, we generate the anisotropic powermap introduced by
-# [DellAcqua2014]_. To do so, we make use of the Q-ball Model as follows:
+# :footcite:t:`DellAcqua2014`. To do so, we make use of the Q-ball Model as
+# follows:
 
 qball_model = shm.QballModel(gtab, 8)
 
@@ -320,7 +319,7 @@ scene.add(fodf_spheres)
 scene.reset_camera_tight()
 
 print("Saving illustration as msdodf.png")
-window.record(scene, out_path="msdodf.png", size=(600, 600))
+window.record(scene=scene, out_path="msdodf.png", size=(600, 600))
 
 if interactive:
     window.show(scene)
@@ -334,22 +333,5 @@ if interactive:
 # References
 # ----------
 #
-# .. [Jeurissen2014] B. Jeurissen, et al., "Multi-tissue constrained spherical
-#                     deconvolution for improved analysis of multi-shell
-#                     diffusion MRI data." NeuroImage 103 (2014): 411-426.
+# .. footbibliography::
 #
-# .. [Tournier2007] J-D. Tournier, F. Calamante and A. Connelly, "Robust
-#                     determination of the fibre orientation distribution in
-#                     diffusion MRI: Non-negativity constrained super-resolved
-#                     spherical deconvolution", Neuroimage, vol. 35, no. 4,
-#                     pp. 1459-1472, (2007).
-#
-# .. [Hansen2016] B. Hansen and SN. Jespersen, " Data for evaluation of fast
-#                     kurtosis strategies, b-value optimization and exploration
-#                     of diffusion MRI contrast", Scientific Data 3: 160072
-#                     doi:10.1038/sdata.2016.72, (2016)
-#
-# .. [DellAcqua2014] F. Dell'Acqua, et. al., "Anisotropic Power Maps: A
-#                     diffusion contrast to reveal low anisotropy tissues from
-#                     HARDI data", Proceedings of International Society for
-#                     Magnetic Resonance in Medicine. Milan, Italy, (2014).

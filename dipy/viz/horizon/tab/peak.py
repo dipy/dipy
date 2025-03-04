@@ -2,6 +2,7 @@ from functools import partial
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 from dipy.viz.horizon.tab import (
     HorizonTab,
     build_checkbox,
@@ -119,8 +120,8 @@ class PeaksTab(HorizonTab):
 
         self._view_modes = ["Cross section", "Range"]
         self._view_mode_toggler = build_radio_button(
-            self._view_modes,
-            [self._view_modes[0]],
+            labels=self._view_modes,
+            checked_labels=[self._view_modes[0]],
             padding=1.5,
             on_change=self._toggle_view_mode,
         )
@@ -180,7 +181,8 @@ class PeaksTab(HorizonTab):
             self._range_z.selected_value[1],
         )
 
-    def _change_slice(self, slider, selected_slice, sync_slice=False):
+    @warning_for_keywords()
+    def _change_slice(self, slider, selected_slice, *, sync_slice=False):
         """Update the slice value of peaks actor by adjusting the slider. Only
         usable in Cross Section view mode.
 

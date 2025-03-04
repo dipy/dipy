@@ -1,20 +1,20 @@
 """
-========================================================================
-Reconstruction of the diffusion signal with the correlation tensor model
-========================================================================
+==============================================================================
+Reconstruction of the diffusion signal with the correlation tensor model (CTI)
+==============================================================================
 
 Correlation Tensor MRI (CTI) is a method that uses double diffusion
 encoding data to resolve sources of kurtosis. It is similar to the Q-space
 Trajectory Imaging method
 (see :ref:`sphx_glr_examples_built_reconstruction_reconst_qti.py`)
-[NetoHe2020]_. However, in addition to the kurtosis sources associated with
-diffusion variance across compartments (``K_aniso`` and ``K_iso``, which
-are related to microscopic anisotropy and the variance of the mean
-diffusivities of compartments, respectively), CTI also measures K_micro.
+:footcite:p:`NetoHenriques2020`. However, in addition to the kurtosis sources
+associated with diffusion variance across compartments (``K_aniso`` and
+``K_iso``, which are related to microscopic anisotropy and the variance of the
+mean diffusivities of compartments, respectively), CTI also measures K_micro.
 This quantifies non-Gaussian diffusion effects that deviate from the multiple
 Gaussian component tissue representation, such as restricted diffusion,
 exchange, and structural disorder in compartments like cross-sectional
-variance [NovelloL2022]_ [AlvesR2022]_.
+variance :footcite:p:`Novello2022`, :footcite:p:`Alves2022`.
 
 Although the CorrelationTensorModel and the DiffusionKurtosisTensorFit may
 share some similarities, they have significantly different representations for
@@ -74,7 +74,7 @@ import dipy.reconst.cti as cti
 # The users should also ensure that the data is formatted correctly for the
 # CTI analysis they are performing.
 
-fdata, fbvals1, fbvecs1, fbvals2, fbvecs2, fmask = get_fnames("cti_rat1")
+fdata, fbvals1, fbvecs1, fbvals2, fbvecs2, fmask = get_fnames(name="cti_rat1")
 data, affine = load_nifti(fdata)
 bvals1, bvecs1 = read_bvals_bvecs(fbvals1, fbvecs1)
 bvals2, bvecs2 = read_bvals_bvecs(fbvals2, fbvecs2)
@@ -89,8 +89,8 @@ bvals2, bvecs2 = read_bvals_bvecs(fbvals2, fbvecs2)
 # define the b-values and b-vectors for each diffusion epoch in separate
 # gradient tables, as done in the above line of code.
 
-gtab1 = gradient_table(bvals1, bvecs1)
-gtab2 = gradient_table(bvals2, bvecs2)
+gtab1 = gradient_table(bvals1, bvecs=bvecs1)
+gtab2 = gradient_table(bvals2, bvecs=bvecs2)
 
 ###############################################################################
 # Before fitting the data, we perform some data pre-processing. We first
@@ -165,18 +165,6 @@ plt.show()
 ###############################################################################
 # References
 # ----------
-# .. [NetoHe2020] Henriques, R.N., Jespersen, S.N., Shemesh, N., 2020.
-#     Correlation tensor magnetic resonance imaging. Neuroimage 211.
-#     doi: 10.1016/j.neuroimage.2020.116605
-# .. [NovelloL2022] Novello, L., Henriques, R.N., Ianus, A., Feiweier, T.,
-#     Shemesh, N., Jovicich, J. 2022.
-#     In vivo Correlation Tensor MRI reveals microscopic kurtosis in the human
-#     brain on a clinical 3T scanner. Neuroimage 254: 119137
-#     doi: 10.1016/j.neuroimage.2022.119137
-# .. [AlvesR2022] Alves, R., Henriques, R.N., Kerkelä, L., Chavarrías C.,
-# Jespersen, S.N., Shemesh, N.
-#     2022. Correlation Tensor MRI deciphers underlying kurtosis sources in
-#     stroke, Neuroimage 247: 118833. doi: 10.1016/j.neuroimage.2021.118833
-# .. [NetHe2021] Henriques, R.N., Jespersen, S.N., Shemesh, N., 2021.
-# Evidence for microscopic kurtosis in neural tissue revealed by correlation
-# tensor MRI. Magn. Reson. Med. 1-20. doi: 10.1002/mrm.28938
+#
+# .. footbibliography::
+#

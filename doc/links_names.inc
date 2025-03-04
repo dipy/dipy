@@ -40,6 +40,7 @@
 .. _`Sphinx reST`: https://sphinx.pocoo.org/rest.html
 .. _reST: https://docutils.sourceforge.net/rst.html
 .. _docutils: https://docutils.sourceforge.net
+.. _sphinxcontrib-bibtex: https://pypi.org/project/sphinxcontrib-bibtex/
 
 .. Licenses
 .. _GPL: https://www.gnu.org/licenses/gpl.html
@@ -82,6 +83,7 @@
 
 .. Scientific Python practices
 .. _`Scientific Python`: https://scientific-python.org/
+.. _`Scientific Python SPECS`: https://scientific-python.org/specs
 .. _`SPEC 0 — Minimum Supported Versions`: https://scientific-python.org/specs/spec-0000/
 
 .. Other python projects
@@ -195,5 +197,8 @@
 .. _`wikipedia shear matrix`: https://en.wikipedia.org/wiki/Shear_matrix
 .. _`wikipedia reflection`: https://en.wikipedia.org/wiki/Reflection_(mathematics)
 .. _`wikipedia direction cosine`: https://en.wikipedia.org/wiki/Direction_cosine
+
+.. Bibliography management
+.. _bibtex: https://www.bibtex.org/
 
 .. vim:syntax=rst

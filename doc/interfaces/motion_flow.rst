@@ -17,7 +17,7 @@ Motion Correction
 During a dMRI acquisition, the subject motion inevitable. This motion implies
 a misalignment between N volumes on a dMRI dataset. A common way to solve this
 issue is to perform a registration on each acquired volume to a
-reference b = 0. [JenkinsonSmith01]_
+reference b = 0 :footcite:p:`Jenkinson2001`.
 
 This preprocessing is an highly recommended step that should be executed before
 any dMRI dataset analysis.
@@ -47,8 +47,8 @@ and write the artefact-free result to the ``motion_output`` directory.
 In case no output directory is specified, the corrected output volume
 is saved to the current directory by default.
 
+----------
 References
 ----------
-.. [JenkinsonSmith01] Jenkinson, M., Smith, S., 2001. A global optimisation
-   method for robust affine registration of brain images. Med Image Anal 5
-   (2), 143–56.
+
+.. footbibliography::

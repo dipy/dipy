@@ -20,6 +20,8 @@ from warnings import warn
 
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
+
 
 def gaussian_kernel(X, beta, Y=None):
     if Y is None:
@@ -66,7 +68,8 @@ def initialize_sigma2(X, Y):
     return np.sum(err) / (D * M * N)
 
 
-def lowrankQS(G, beta, num_eig, eig_fgt=False):
+@warning_for_keywords()
+def lowrankQS(G, beta, num_eig, *, eig_fgt=False):
     """Calculate eigenvectors and eigenvalues of gaussian matrix G.
 
     !!!
@@ -188,6 +191,7 @@ class DeformableRegistration:
         self,
         X,
         Y,
+        *args,
         sigma2=None,
         alpha=None,
         beta=None,
@@ -196,7 +200,6 @@ class DeformableRegistration:
         max_iterations=None,
         tolerance=None,
         w=None,
-        *args,
         **kwargs,
     ):
         if not isinstance(X, np.ndarray) or X.ndim != 2:
@@ -281,7 +284,8 @@ class DeformableRegistration:
             self.S = np.diag(self.S)
             self.E = 0.0
 
-    def register(self, callback=lambda **kwargs: None):
+    @warning_for_keywords()
+    def register(self, *, callback=lambda **kwargs: None):
         """
         Perform the EM registration.
 
@@ -357,7 +361,8 @@ class DeformableRegistration:
                 np.matmul(QtW.T, np.matmul(self.S, QtW))
             )
 
-    def transform_point_cloud(self, Y=None):
+    @warning_for_keywords()
+    def transform_point_cloud(self, *, Y=None):
         """Update a point cloud using the new estimate of the deformable
         transformation.
 

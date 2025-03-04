@@ -8,7 +8,7 @@ from dipy.direction import (
     ProbabilisticDirectionGetter,
 )
 from dipy.io.image import load_nifti
-from dipy.io.peaks import load_peaks
+from dipy.io.peaks import load_pam
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
 from dipy.tracking import utils
@@ -152,6 +152,9 @@ class LocalFiberTrackingPAMFlow(Workflow):
 
         This workflow use a saved peaks and metrics (PAM) file as input.
 
+        See :footcite:p:`Garyfallidis2012b` and :footcite:p:`Amirbekian2016`
+        for further details about the method.
+
         Parameters
         ----------
         pam_files : string
@@ -199,8 +202,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
 
         References
         ----------
-        Garyfallidis, University of Cambridge, PhD thesis 2012.
-        Amirbekian, University of California San Francisco, PhD thesis 2017.
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()
@@ -208,7 +210,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         for pams_path, stopping_path, seeding_path, out_tract in io_it:
             logging.info(f"Local tracking on {pams_path}")
 
-            pam = load_peaks(pams_path, verbose=False)
+            pam = load_pam(pams_path, verbose=False)
             dg = self._get_direction_getter(
                 tracking_method, pam, pmf_threshold=pmf_threshold, max_angle=max_angle
             )
@@ -252,7 +254,9 @@ class PFTrackingPAMFlow(Workflow):
     ):
         """Workflow for Particle Filtering Tracking.
 
-        This workflow use a saved peaks and metrics (PAM) file as input.
+        This workflow uses a saved peaks and metrics (PAM) file as input.
+
+        See :footcite:p:`Girard2014` for further details about the method.
 
         Parameters
         ----------
@@ -306,9 +310,7 @@ class PFTrackingPAMFlow(Workflow):
 
         References
         ----------
-        Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M. Towards
-        quantitative connectivity analysis: reducing tractography biases.
-        NeuroImage, 98, 266-278, 2014.
+        .. footbibliography::
 
         """
         io_it = self.get_io_iterator()
@@ -316,7 +318,7 @@ class PFTrackingPAMFlow(Workflow):
         for pams_path, wm_path, gm_path, csf_path, seeding_path, out_tract in io_it:
             logging.info(f"Particle Filtering tracking on {pams_path}")
 
-            pam = load_peaks(pams_path, verbose=False)
+            pam = load_pam(pams_path, verbose=False)
 
             wm, affine, voxel_size = load_nifti(wm_path, return_voxsize=True)
             gm, _ = load_nifti(gm_path)

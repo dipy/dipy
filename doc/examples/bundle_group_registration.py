@@ -5,13 +5,14 @@ Groupwise Bundle Registration
 
 This example explains how to coregister a set of bundles to a common space that
 is not biased by any specific bundle. This is useful when we want to align all
-the bundles but do not have a target reference space defined by an atlas.
+the bundles but do not have a target reference space defined by an atlas
+:footcite:p:`RomeroBascones2022`.
 
 How it works
 ============
 
 The bundle groupwise registration framework in DIPY relies on streamline linear
-registration (SLR) [Garyfallidis15]_ and an iterative process.
+registration (SLR) :footcite:p:`Garyfallidis2015` and an iterative process.
 
 In each iteration, bundles are shuffled and matched in pairs. Then, each pair
 of bundles are simultaneously moved to a common space in between both.
@@ -25,7 +26,7 @@ ends.
 
 To reduce computational time, by default both registration and distance
 computation are performed on streamline centroids (obtained with Quickbundles)
-[Garyfallidis12]_.
+:footcite:p:`Garyfallidis2012a`.
 
 Example
 =======
@@ -108,12 +109,5 @@ show_bundles(
 # References
 # ----------
 #
-# .. [Garyfallidis15] Garyfallidis et al., "Robust and efficient linear
-#                     registration of white-matter fascicles in the space of
-#                     streamlines", Neuroimage, 117:124-140, 2015.
-# .. [Garyfallidis12] Garyfallidis E. et al., "QuickBundles a method for
-#                     tractography simplification", Frontiers in Neuroscience,
-#                     vol 6, no 175, 2012.
-# .. [RomeroBascones22] Romero-Bascones D. et al., "BundleAtlasing: unbiased
-#                     population-specific atlasing of bundles in streamline
-#                     space", ISMRM, 2022.
+# .. footbibliography::
+#

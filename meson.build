@@ -1,7 +1,7 @@
 project(
   'dipy',
   'c', 'cpp', 'cython',
-  version: '1.10.0dev',
+  version: run_command(['tools/gitversion.py'], check: true).stdout().strip(),
   license: 'BSD-3',
   meson_version: '>= 1.1.0',
   default_options: [

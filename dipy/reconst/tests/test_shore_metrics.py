@@ -98,7 +98,7 @@ def test_shore_metrics():
 
     # compare the shore pdf with the ground truth multi_tensor pdf
 
-    sphere = get_sphere("symmetric724")
+    sphere = get_sphere(name="symmetric724")
     v = sphere.vertices
     radius = 10e-3
     with warnings.catch_warnings():

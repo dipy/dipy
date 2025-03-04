@@ -29,14 +29,15 @@ def dollars_to_math(source):
     # don't change these, since they're probably coming from a nested
     # math environment.  So for each match, we replace it with a temporary
     # string, and later on we substitute the original back.
-    global _data
     _data = {}
+
     def repl(matchobj):
-        global _data
+        nonlocal _data
         s = matchobj.group(0)
         t = f"___XXX_REPL_{len(_data)}___"
         _data[t] = s
         return t
+
     s = re.sub(r"({[^{}$]*\$[^{}$]*\$[^{}]*})", repl, s)
     # matches $...$
     dollars = re.compile(r"(?<!\$)(?<!\\)\$([^\$]+?)\$")
@@ -62,3 +63,7 @@ def mathdollar_docstrings(app, what, name, obj, options, lines):
 def setup(app):
     app.connect("source-read", process_dollars)
     app.connect('autodoc-process-docstring', mathdollar_docstrings)
+    metadata = {"parallel_read_safe": True,
+                "parallel_write_safe": True,
+                }
+    return metadata

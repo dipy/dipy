@@ -3,7 +3,7 @@
 # the setup.py file, this Makefile is just meant as a command
 # convenience/reminder while doing development.
 
-PYTHON ?= python
+PYTHON ?= python3
 PKGDIR=dipy
 DOCSRC_DIR=doc
 DOCDIR=${PKGDIR}/${DOCSRC_DIR}
@@ -82,11 +82,8 @@ source-release: clean
 	$(PYTHON) -m build --sdist --wheel .
 
 binary-release: clean
-	$(PYTHON) setup_egg.py bdist_egg
-
-build-stamp-source:
-	$(PYTHON) -c 'import cythexts; cythexts.build_stamp_source()'
+	$(PYTHON) -m build --wheel .
 
 # Checks to see if local files pass formatting rules
 format:
-	python -m pycodestyle dipy
+	$(PYTHON) -m pycodestyle dipy

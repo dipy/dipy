@@ -90,16 +90,24 @@ Quick links
 Highlights
 **********
 
-**DIPY 1.9.0** is now available. New features include:
+**DIPY 1.10.0** is now available. New features include:
 
-- Numpy 2.0.0 support.
-- DeepN4 novel DL-based N4 Bias Correction method added.
-- Multiple Workflows added.
-- Large update of DIPY Horizon features.
-- Pytest for Cython files(*.pyx) added.
+- NF: Patch2Self3 - Large improvements of self-supervised denoising method added.
+- NF: Fiber density and spread from ODF using Bingham distributions method added.
+- NF: Iteratively reweighted least squares for robust fitting of diffusion models added.
+- NF: NDC - Neighboring DWI Correlation quality metric added.
+- NF: DAM - tissue classification method added.
+- NF: New Parallel Backends (Ray, joblib, Dask) for fitting reconstruction methods added.
+- RF: Deprecation of Tensorflow support. PyTorch support is now the default.
+- Transition to Keyword-only arguments (PEP 3102).
+- Zero-warnings policy (CIs, Compilation, doc generation) adopted.
+- Adoption of ruff for automatic style enforcement.
+- Transition to using f-strings.
+- Citation system updated. It is more uniform and robust.
+- Multiple Workflows updated.
+- Multiple DIPY Horizon features updated.
 - Large documentation update.
-- Support of Python 3.8 removed.
-- Closed 142 issues and merged 60 pull requests.
+- Closed 250 issues and merged 185 pull requests.
 
 
 See :ref:`Older Highlights <old_highlights>`.
@@ -107,9 +115,10 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
+- :doc:`DIPY 1.10.0 <release_notes/release1.10>` released December 12, 2024.
 - :doc:`DIPY 1.9.0 <release_notes/release1.9>` released March 8, 2024.
 - :doc:`DIPY 1.8.0 <release_notes/release1.8>` released December 13, 2023.
-- :doc:`DIPY 1.7.0 <release_notes/release1.7>` released April 23, 2023.
+
 
 
 See some of our :ref:`Past Announcements <old_news>`
@@ -127,13 +136,17 @@ See some of our :ref:`Past Announcements <old_news>`
    theory/index
    reference/index
    reference_cmd/index
+   recipes
    api_changes
    stateoftheart
    old_highlights
    old_news
    glossary
+   developers
+   gimbal_lock
    faq
    cite
+   subscribe
 
 .. Main content will be displayed using the jinja template
 

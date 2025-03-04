@@ -72,12 +72,12 @@ readme = """
 Reconstruction
 --------------
 
-Below, an overview of all reconstruction models available on DIPY.
+Below, an overview of all reconstruction models available in DIPY.
 
 .. note::
     Some reconstruction models do not have a tutorial yet
 
-.. include:: ../reconstruction_models_list.rst
+.. include:: ../../reconstruction_models_list.rst
 
 
 """
@@ -111,6 +111,7 @@ files = [
     "reconst_qti.py",
     "reconst_qtiplus.py",
     "histology_resdnn.py",
+    "reconst_bingham.py"
 ]
 
 [contextual_enhancement]
@@ -130,6 +131,8 @@ files = [
 readme = """
 Fiber Tracking
 --------------
+
+.. include:: ../../tractography_methods_list.rst
 
 """
 position = 13
@@ -231,6 +234,7 @@ enable = true
 files = [
     "reconst_csa_parallel.py",
     "reconst_csd_parallel.py",
+    "tracking_fast_tractography.py",
 ]
 
 [file_formats]
@@ -263,7 +267,7 @@ files = [
 [workflows]
 readme = """
 Workflows
---------
+---------
 
 """
 position = 37

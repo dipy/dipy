@@ -46,19 +46,19 @@ def simulated_bundle(no_streamlines=10, waves=False, no_pts=12):
             pts = np.vstack((np.cos(t), t, i * np.ones(t.shape))).T
         else:
             pts = np.vstack((np.zeros(t.shape), t, i * np.ones(t.shape))).T
-        pts = set_number_of_points(pts, no_pts)
+        pts = set_number_of_points(pts, nb_points=no_pts)
         bundle.append(pts)
 
     return bundle
 
 
 def fornix_streamlines(no_pts=12):
-    fname = get_fnames("fornix")
+    fname = get_fnames(name="fornix")
 
     fornix = load_tractogram(fname, "same", bbox_valid_check=False).streamlines
 
     fornix_streamlines = Streamlines(fornix)
-    streamlines = set_number_of_points(fornix_streamlines, no_pts)
+    streamlines = set_number_of_points(fornix_streamlines, nb_points=no_pts)
     return streamlines
 
 
@@ -99,7 +99,7 @@ def test_rigid_real_bundles():
 
     bundle_sum_distance = BundleSumDistanceMatrixMetric()
     srr = StreamlineLinearRegistration(
-        bundle_sum_distance, x0=np.zeros(6), method="Powell"
+        metric=bundle_sum_distance, x0=np.zeros(6), method="Powell"
     )
     new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
 
@@ -107,7 +107,7 @@ def test_rigid_real_bundles():
 
     bundle_min_distance = BundleMinDistanceMatrixMetric()
     srr = StreamlineLinearRegistration(
-        bundle_min_distance, x0=np.zeros(6), method="Powell"
+        metric=bundle_min_distance, x0=np.zeros(6), method="Powell"
     )
     new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
 
@@ -138,8 +138,8 @@ def test_rigid_partial_real_bundles():
     moving_back = srm.transform(moved)
     print(srm.matrix)
 
-    static_center = set_number_of_points(static_center, 100)
-    moving_center = set_number_of_points(moving_back, 100)
+    static_center = set_number_of_points(static_center, nb_points=100)
+    moving_center = set_number_of_points(moving_back, nb_points=100)
 
     vol = np.zeros((100, 100, 100))
     spts = np.concatenate(static_center, axis=0)
@@ -301,7 +301,7 @@ def test_openmp_locks(rng):
 def test_from_to_rigid():
     t = np.array([10, 2, 3, 0.1, 20.0, 30.0])
     mat = compose_matrix44(t)
-    vec = decompose_matrix44(mat, 6)
+    vec = decompose_matrix44(mat, size=6)
 
     assert_array_almost_equal(t, vec)
 
@@ -310,7 +310,7 @@ def test_from_to_rigid():
     mat = np.eye(4)
     mat[0, 0] = -1
 
-    vec = decompose_matrix44(mat, 6)
+    vec = decompose_matrix44(mat, size=6)
 
     assert_array_almost_equal(-t, vec)
 
@@ -420,7 +420,7 @@ def test_vectorize_streamlines():
     cingulum_bundles = two_cingulum_bundles()
 
     cb_subj1 = cingulum_bundles[0]
-    cb_subj1 = set_number_of_points(cb_subj1, 10)
+    cb_subj1 = set_number_of_points(cb_subj1, nb_points=10)
     cb_subj1_pts_no = np.array([s.shape[0] for s in cb_subj1])
 
     assert_equal(np.all(cb_subj1_pts_no == 10), True)
@@ -462,19 +462,19 @@ def test_compose_decompose_matrix44(rng):
         mat = compose_matrix44(x0[:12])
         assert_array_almost_equal(x0[:12], decompose_matrix44(mat, size=12))
 
-    assert_raises(ValueError, decompose_matrix44, mat, 20)
+    assert_raises(ValueError, decompose_matrix44, mat, size=20)
 
 
 def test_cascade_of_optimizations_and_threading():
     cingulum_bundles = two_cingulum_bundles()
 
     cb1 = cingulum_bundles[0]
-    cb1 = set_number_of_points(cb1, 20)
+    cb1 = set_number_of_points(cb1, nb_points=20)
 
     test_x0 = np.array([10, 4, 3, 0, 20, 10, 1.5, 1.5, 1.5, 0.0, 0.2, 0])
 
     cb2 = transform_streamlines(cingulum_bundles[0], compose_matrix44(test_x0))
-    cb2 = set_number_of_points(cb2, 20)
+    cb2 = set_number_of_points(cb2, nb_points=20)
 
     print("first rigid")
     slr = StreamlineLinearRegistration(x0=6, num_threads=1)
@@ -482,13 +482,13 @@ def test_cascade_of_optimizations_and_threading():
 
     print("then similarity")
     slr2 = StreamlineLinearRegistration(x0=7, num_threads=2)
-    slm2 = slr2.optimize(cb1, cb2, slm.matrix)
+    slm2 = slr2.optimize(cb1, cb2, mat=slm.matrix)
 
     print("then affine")
     slr3 = StreamlineLinearRegistration(
         x0=12, options={"maxiter": 50}, num_threads=None
     )
-    slm3 = slr3.optimize(cb1, cb2, slm2.matrix)
+    slm3 = slr3.optimize(cb1, cb2, mat=slm2.matrix)
 
     assert_(slm2.fopt < slm.fopt)
     assert_(slm3.fopt < slm2.fopt)
@@ -515,7 +515,7 @@ def test_get_unique_pairs():
     assert_equal(isinstance(exclude, (int, np.int64, np.int32)), True)
 
     # Iterative case
-    new_pairs, new_exclude = get_unique_pairs(5, pairs)
+    new_pairs, new_exclude = get_unique_pairs(5, pairs=pairs)
     assert_equal(len(np.unique(pairs)), 4)
     assert_equal(exclude != new_exclude, True)
 

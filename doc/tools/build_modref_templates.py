@@ -71,13 +71,28 @@ if __name__ == '__main__':
                                         r'^\.utils.*',
                                         r'\.stats\.resampling.*$',
                                         r'\.info.*$',
-                                        r'\.pkg_info.*$',
                                         r'\.__config__.*$',
                                         ]
     docwriter.object_skip_patterns += [
         r'.*FetcherError.*$',
         r'.*urlopen.*',
         r'.*add_callback.*',
+        r'.*Logger.*',
+        r'.*logger.*',
+        # Global variable. Must be enable in the future when using Typing.
+        r'.*hemi_icosahedron.*',
+        r'.*unit_octahedron.*',
+        r'.*unit_icosahedron.*',
+        r'.*default_sphere.*',
+        r'.*small_sphere.*',
+        r'.*icosahedron_faces.*',
+        r'.*icosahedron_vertices.*',
+        r'.*octahedron_faces.*',
+        r'.*octahedron_vertices.*',
+        r'.*diffusion_evals.*',
+        r'.*DATA_DIR.*',
+        r'.*RegistrationStages.*',
+        r'.*VerbosityLevels.*',
     ]
     docwriter.write_api_docs(outdir)
     docwriter.write_index(outdir, 'index', relative_to=outdir)

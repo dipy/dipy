@@ -59,9 +59,6 @@ jobs:
         python-version: ${{fromJSON(inputs.python-version) }}
         os: ${{fromJSON(inputs.runs-on) }}
         install-type: ${{fromJSON(inputs.install-type) }}
-        exclude:
-          - os: macos-14
-            python-version: 3.9
     env:
       DEPENDS: ${{ inputs.depends }}
       EXTRA_DEPENDS: ${{ inputs.extra-depends }}
@@ -96,6 +93,15 @@ jobs:
         python-version: ${{ matrix.python-version }}
         channels: defaults, conda-forge
         use-only-tar-bz2: true
+    - name: Install HDF5 and pytables on macOS
+      if: ${{ (runner.os == 'macOS')  &&  (env.EXTRA_DEPENDS != '')  &&  (env.INSTALL_TYPE == 'pip') }}
+      run: |
+        pip install cython
+        brew install hdf5
+        brew install c-blosc
+        export HDF5_DIR=/opt/homebrew/opt/hdf5
+        export BLOSC_DIR=/opt/homebrew/opt/c-blosc
+        pip install tables
     - name: Install Dependencies
       run: |
         if [ "${{ inputs.use-pre }}" == "true" ]; then
@@ -127,11 +133,11 @@ jobs:
           tools/ci/run_tests.sh
         fi
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       if: ${{ fromJSON(env.COVERAGE) }}
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        directory: for_testing
+        directory: for_testing_results
         files: coverage.xml
         fail_ci_if_error: true
         flags: unittests

@@ -1,5 +1,6 @@
 python_sources = [
   '__init__.py',
+  'test_bingham.py',
   'test_cache.py',
   'test_cross_validation.py',
   'test_csdeconv.py',
@@ -32,6 +33,7 @@ python_sources = [
   'test_shore_odf.py',
   'test_utils.py',
   'test_vec_val_vect.py',
+  'test_weights_method.py',
   ]
 
 

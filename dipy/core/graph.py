@@ -1,5 +1,7 @@
 """A simple graph class"""
 
+from dipy.testing.decorators import warning_for_keywords
+
 
 class Graph:
     """A simple graph class"""
@@ -18,10 +20,10 @@ class Graph:
         --------
         >>> from dipy.core.graph import Graph
         >>> g=Graph()
-        >>> g.add_node('a',5)
-        >>> g.add_node('b',6)
-        >>> g.add_node('c',10)
-        >>> g.add_node('d',11)
+        >>> g.add_node('a', attr=5)
+        >>> g.add_node('b', attr=6)
+        >>> g.add_node('c', attr=10)
+        >>> g.add_node('d', attr=11)
         >>> g.add_edge('a','b')
         >>> g.add_edge('b','c')
         >>> g.add_edge('c','d')
@@ -35,12 +37,14 @@ class Graph:
         self.pred = {}
         self.succ = {}
 
-    def add_node(self, n, attr=None):
+    @warning_for_keywords()
+    def add_node(self, n, *, attr=None):
         self.succ[n] = {}
         self.pred[n] = {}
         self.node[n] = attr
 
-    def add_edge(self, n, m, ws=True, wp=True):
+    @warning_for_keywords()
+    def add_edge(self, n, m, *, ws=True, wp=True):
         self.succ[n][m] = ws
         self.pred[m][n] = wp
 
@@ -62,7 +66,8 @@ class Graph:
     def down_short(self, n):
         return self.shortest_path(self.succ, n)
 
-    def all_paths(self, graph, start, end=None, path=None):
+    @warning_for_keywords()
+    def all_paths(self, graph, start, *, end=None, path=None):
         path = path or []
         path = path + [start]
         if start == end or graph[start] == {}:
@@ -72,12 +77,13 @@ class Graph:
         paths = []
         for node in graph[start]:
             if node not in path:
-                newpaths = self.all_paths(graph, node, end, path)
+                newpaths = self.all_paths(graph, node, end=end, path=path)
                 for newpath in newpaths:
                     paths.append(newpath)
         return paths
 
-    def shortest_path(self, graph, start, end=None, path=None):
+    @warning_for_keywords()
+    def shortest_path(self, graph, start, *, end=None, path=None):
         path = path or []
         path = path + [start]
         if graph[start] == {} or start == end:
@@ -87,7 +93,7 @@ class Graph:
         shortest = None
         for node in graph[start]:
             if node not in path:
-                newpath = self.shortest_path(graph, node, end, path)
+                newpath = self.shortest_path(graph, node, end=end, path=path)
                 if newpath:
                     if not shortest or len(newpath) < len(shortest):
                         shortest = newpath

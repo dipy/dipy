@@ -3,8 +3,7 @@
 import numpy as np
 from scipy.interpolate import splev, splprep
 
-from dipy.tracking.streamline import set_number_of_points
-from dipy.utils.deprecator import deprecate_with_version
+from dipy.testing.decorators import warning_for_keywords
 
 
 def winding(xyz):
@@ -40,7 +39,8 @@ def winding(xyz):
     return np.rad2deg(turn)
 
 
-def length(xyz, along=False):
+@warning_for_keywords()
+def length(xyz, *, along=False):
     """Euclidean length of track line
 
     This will give length in mm if tracks are expressed in world coordinates.
@@ -160,36 +160,6 @@ def midpoint(xyz):
     return Lambda * xyz[ind] + (1 - Lambda) * xyz[ind - 1]
 
 
-@deprecate_with_version(
-    "dipy.tracking.metrics.downsample is deprecated, "
-    "Please use "
-    "dipy.tracking.streamline.set_number_of_points instead",
-    since="1.2",
-    until="1.4",
-)
-def downsample(xyz, n_pols=3):
-    """downsample for a specific number of points along the streamline
-    Uses the length of the curve. It works in a similar fashion to
-    midpoint and arbitrarypoint but it also reduces the number of segments
-    of a streamline.
-
-    Parameters
-    ----------
-    xyz : array-like shape (N,3)
-       array representing x,y,z of N points in a streamlines
-    n_pol : int
-       integer representing number of points (poles) we need along the curve.
-
-    Returns
-    -------
-    xyz2 : array shape (M,3)
-       array representing x,y,z of M points that where extrapolated. M
-       should be equal to n_pols
-
-    """
-    return set_number_of_points(xyz, n_pols)
-
-
 def center_of_mass(xyz):
     """Center of mass of streamline
 
@@ -222,7 +192,8 @@ def center_of_mass(xyz):
     return np.mean(xyz, axis=0)
 
 
-def magn(xyz, n=1):
+@warning_for_keywords()
+def magn(xyz, *, n=1):
     """magnitude of vector"""
     mag = np.sum(xyz**2, axis=1) ** 0.5
     imag = np.where(mag == 0)
@@ -298,15 +269,15 @@ def frenet_serret(xyz):
     dxyz = np.gradient(xyz)[0]
     ddxyz = np.gradient(dxyz)[0]
     # Tangent
-    T = np.divide(dxyz, magn(dxyz, 3))
+    T = np.divide(dxyz, magn(dxyz, n=3))
     # Derivative of Tangent
     dT = np.gradient(T)[0]
     # Normal
-    N = np.divide(dT, magn(dT, 3))
+    N = np.divide(dT, magn(dT, n=3))
     # Binormal
     B = np.cross(T, N)
     # Curvature
-    k = magn(np.cross(dxyz, ddxyz), 1) / (magn(dxyz, 1) ** 3)
+    k = magn(np.cross(dxyz, ddxyz), n=1) / (magn(dxyz, n=1) ** 3)
     # Torsion
     # (In matlab was t=dot(-B,N,2))
     t = np.sum(-B * N, axis=1)
@@ -354,7 +325,7 @@ def mean_curvature(xyz):
     ddxyz = np.gradient(dxyz)[0]
 
     # Curvature
-    k = magn(np.cross(dxyz, ddxyz), 1) / (magn(dxyz, 1) ** 3)
+    k = magn(np.cross(dxyz, ddxyz), n=1) / (magn(dxyz, n=1) ** 3)
 
     return np.mean(k)
 
@@ -419,7 +390,8 @@ def generate_combinations(items, n):
                 yield [items[i]] + cc
 
 
-def longest_track_bundle(bundle, sort=False):
+@warning_for_keywords()
+def longest_track_bundle(bundle, *, sort=False):
     """Return longest track or length sorted track indices in `bundle`
 
     If `sort` == True, return the indices of the sorted tracks in the
@@ -447,7 +419,7 @@ def longest_track_bundle(bundle, sort=False):
     >>> longest_track_bundle(bundle)
     array([[0, 0, 0],
            [4, 4, 4]])
-    >>> longest_track_bundle(bundle, True) #doctest: +ELLIPSIS
+    >>> longest_track_bundle(bundle, sort=True) #doctest: +ELLIPSIS
     array([0, 1]...)
 
     """
@@ -604,7 +576,8 @@ def inside_sphere_points(xyz, center, radius):
     return xyz[(np.sqrt(np.sum((xyz - center) ** 2, axis=1)) <= radius)]
 
 
-def spline(xyz, s=3, k=2, nest=-1):
+@warning_for_keywords()
+def spline(xyz, *, s=3, k=2, nest=-1):
     """Generate B-splines as documented in
     https://scipy-cookbook.readthedocs.io/items/Interpolation.html
 
@@ -659,7 +632,7 @@ def spline(xyz, s=3, k=2, nest=-1):
     >>> y+= np.random.normal(scale=0.1, size=y.shape)
     >>> z+= np.random.normal(scale=0.1, size=z.shape)
     >>> xyz=np.vstack((x,y,z)).T
-    >>> xyzn=spline(xyz,3,2,-1)
+    >>> xyzn=spline(xyz,s=3,k=2,nest=-1)
     >>> len(xyzn) > len(xyz)
     True
 

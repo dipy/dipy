@@ -1,6 +1,7 @@
 import numpy as np
 
 from dipy.core.geometry import cart_distance
+from dipy.testing.decorators import warning_for_keywords
 
 
 def find_qspace_neighbors(gtab):
@@ -29,7 +30,7 @@ def find_qspace_neighbors(gtab):
     >>> import numpy as np
     >>> gtab = gradient_table(
     ...     np.array([0, 1000, 1000, 2000]),
-    ...     np.array([
+    ...     bvecs=np.array([
     ...         [1, 0, 0],
     ...         [1, 0, 0],
     ...         [0.99, 0.0001, 0.0001],
@@ -65,12 +66,13 @@ def find_qspace_neighbors(gtab):
     return dwi_neighbors
 
 
-def neighboring_dwi_correlation(dwi_data, gtab, mask=None):
+@warning_for_keywords()
+def neighboring_dwi_correlation(dwi_data, gtab, *, mask=None):
     """Calculate the Neighboring DWI Correlation (NDC) from dMRI data.
 
     Using a mask is highly recommended, otherwise the FOV will influence the
-    correlations. According to [Yeh2019], an NDC less than 0.4 indicates a
-    low quality image.
+    correlations. According to :footcite:t:`Yeh2019`, an NDC less than 0.4
+    indicates a low quality image.
 
     Parameters
     ----------
@@ -79,7 +81,7 @@ def neighboring_dwi_correlation(dwi_data, gtab, mask=None):
     gtab : dipy.core.gradients.GradientTable
         Gradient table.
     mask : 3D ndarray, optional
-        optional mask of voxels to include in the NDC calculation
+        Mask of voxels to include in the NDC calculation
 
     Returns
     -------
@@ -88,10 +90,7 @@ def neighboring_dwi_correlation(dwi_data, gtab, mask=None):
 
     References
     ----------
-
-    .. [Yeh2019] Yeh, Fang-Cheng, et al. "Differential tractography as a
-                 track-based biomarker for neuronal injury."
-                 NeuroImage 202 (2019): 116131.
+    .. footbibliography::
 
     """
 

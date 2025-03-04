@@ -8,13 +8,24 @@ import warnings
 import numpy as np
 import trx.trx_file_memmap as tmm
 
+from dipy.core.sphere import Sphere
+from dipy.data import get_sphere
 from dipy.io.image import load_nifti, save_nifti
+from dipy.io.peaks import (
+    load_pam,
+    niftis_to_pam,
+    pam_to_niftis,
+    tensor_to_pam,
+)
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.reconst.utils import convert_tensors
 from dipy.tracking.streamlinespeed import length
+from dipy.utils.optpkg import optional_package
 from dipy.utils.tractogram import concatenate_tractogram
 from dipy.workflows.workflow import Workflow
+
+ne, have_ne, _ = optional_package("numexpr")
 
 
 class IoInfoFlow(Workflow):
@@ -292,6 +303,7 @@ class SplitFlow(Workflow):
         input_files : variable string
             Any number of Nifti1 files
         vol_idx : int, optional
+            Index of the 3D volume to extract.
         out_dir : string, optional
             Output directory. (default current directory)
         out_split : string, optional
@@ -307,7 +319,7 @@ class SplitFlow(Workflow):
                 logging.info("Splitting and extracting 1st b0")
 
             split_vol = data[..., vol_idx]
-            save_nifti(osplit, split_vol, affine, image.header)
+            save_nifti(osplit, split_vol, affine, hdr=image.header)
 
             logging.info(f"Split volume saved as {osplit}")
 
@@ -435,7 +447,7 @@ class ConvertSHFlow(Workflow):
         for in_file, out_file in io_it:
             data, affine, image = load_nifti(in_file, return_img=True)
             data = convert_sh_descoteaux_tournier(data)
-            save_nifti(out_file, data, affine, image.header)
+            save_nifti(out_file, data, affine, hdr=image.header)
 
 
 class ConvertTensorsFlow(Workflow):
@@ -474,7 +486,7 @@ class ConvertTensorsFlow(Workflow):
             logging.info(f"Converting {fpath}")
             data, affine, image = load_nifti(fpath, return_img=True)
             data = convert_tensors(data, from_format, to_format)
-            save_nifti(otensor, data, affine, image.header)
+            save_nifti(otensor, data, affine, hdr=image.header)
 
 
 class ConvertTractogramFlow(Workflow):
@@ -555,3 +567,336 @@ class ConvertTractogramFlow(Workflow):
                     )
                 tmm.save(trx, otracks)
                 trx.close()
+
+
+class NiftisToPamFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "niftis_to_pam"
+
+    def run(
+        self,
+        peaks_dir_files,
+        peaks_values_files,
+        peaks_indices_files,
+        shm_files=None,
+        gfa_files=None,
+        sphere_files=None,
+        default_sphere_name="repulsion724",
+        out_dir="",
+        out_pam="peaks.pam5",
+    ):
+        """Convert multiple nifti files to a single pam5 file.
+
+        Parameters
+        ----------
+        peaks_dir_files : string
+            Path to the input peaks directions volume. This path may contain
+            wildcards to process multiple inputs at once.
+        peaks_values_files : string
+            Path to the input peaks values volume. This path may contain
+            wildcards to process multiple inputs at once.
+        peaks_indices_files : string
+            Path to the input peaks indices volume. This path may contain
+            wildcards to process multiple inputs at once.
+        shm_files : string, optional
+            Path to the input spherical harmonics volume. This path may
+            contain wildcards to process multiple inputs at once.
+        gfa_files : string, optional
+            Path to the input generalized FA volume. This path may contain
+            wildcards to process multiple inputs at once.
+        sphere_files : string, optional
+            Path to the input sphere vertices. This path may contain
+            wildcards to process multiple inputs at once. If it is not define,
+            default_sphere option will be used.
+        default_sphere_name : string, optional
+            Specify default sphere to use for spherical harmonics
+            representation. This option can be superseded by
+            sphere_files option. Possible options: ['symmetric362', 'symmetric642',
+            'symmetric724', 'repulsion724', 'repulsion100', 'repulsion200'].
+        out_dir : string, optional
+            Output directory (default input file directory).
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+
+        """
+        io_it = self.get_io_iterator()
+
+        msg = f"pam5 files saved in {out_dir or 'current directory'}"
+
+        for fpeak_dirs, fpeak_values, fpeak_indices, opam in io_it:
+            logging.info("Converting nifti files to pam5")
+            peak_dirs, affine = load_nifti(fpeak_dirs)
+            peak_values, _ = load_nifti(fpeak_values)
+            peak_indices, _ = load_nifti(fpeak_indices)
+
+            if sphere_files:
+                xyz = np.loadtxt(sphere_files)
+                sphere = Sphere(xyz=xyz)
+            else:
+                sphere = get_sphere(name=default_sphere_name)
+
+            niftis_to_pam(
+                affine=affine,
+                peak_dirs=peak_dirs,
+                sphere=sphere,
+                peak_values=peak_values,
+                peak_indices=peak_indices,
+                pam_file=opam,
+            )
+            logging.info(msg.replace("pam5", opam))
+
+
+class TensorToPamFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "tensor_to_niftis"
+
+    def run(
+        self,
+        evals_files,
+        evecs_files,
+        sphere_files=None,
+        default_sphere_name="repulsion724",
+        out_dir="",
+        out_pam="peaks.pam5",
+    ):
+        """Convert multiple tensor files(evals, evecs) to pam5 files.
+
+        Parameters
+        ----------
+        evals_files : string
+            Path to the input eigen values volumes. This path may contain
+            wildcards to process multiple inputs at once.
+        evecs_files : string
+            Path to the input eigen vectors volumes. This path may contain
+            wildcards to process multiple inputs at once.
+        sphere_files : string, optional
+            Path to the input sphere vertices. This path may contain
+            wildcards to process multiple inputs at once. If it is not define,
+            default_sphere option will be used.
+        default_sphere_name : string, optional
+            Specify default sphere to use for spherical harmonics
+            representation. This option can be superseded by sphere_files
+            option. Possible options: ['symmetric362', 'symmetric642',
+            'symmetric724', 'repulsion724', 'repulsion100', 'repulsion200'].
+        out_dir : string, optional
+            Output directory (default input file directory).
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+
+        """
+        io_it = self.get_io_iterator()
+
+        msg = f"pam5 files saved in {out_dir or 'current directory'}"
+
+        for fevals, fevecs, opam in io_it:
+            logging.info("Converting tensor files to pam5...")
+            evals, affine = load_nifti(fevals)
+            evecs, _ = load_nifti(fevecs)
+
+            if sphere_files:
+                xyz = np.loadtxt(sphere_files)
+                sphere = Sphere(xyz=xyz)
+            else:
+                sphere = get_sphere(name=default_sphere_name)
+
+            tensor_to_pam(evals, evecs, affine, sphere=sphere, pam_file=opam)
+            logging.info(msg.replace("pam5", opam))
+
+
+class PamToNiftisFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "pam_to_niftis"
+
+    def run(
+        self,
+        pam_files,
+        out_dir="",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_shm="shm.nii.gz",
+        out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
+    ):
+        """Convert pam5 files to multiple nifti files.
+
+        Parameters
+        ----------
+        pam_files : string
+            Path to the input peaks volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        out_dir : string, optional
+            Output directory (default input file directory).
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved.
+        out_gfa : string, optional
+            Generalized FA volume name to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy file to be saved.
+
+        """
+        io_it = self.get_io_iterator()
+
+        msg = f"Nifti files saved in {out_dir or 'current directory'}"
+        for (
+            ipam,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            oshm,
+            ogfa,
+            osphere,
+            ob,
+            oqa,
+        ) in io_it:
+            logging.info("Converting %s file to niftis...", ipam)
+            pam = load_pam(ipam)
+            pam_to_niftis(
+                pam,
+                fname_peaks_dir=opeaks_dir,
+                fname_shm=oshm,
+                fname_peaks_values=opeaks_values,
+                fname_peaks_indices=opeaks_indices,
+                fname_sphere=osphere,
+                fname_gfa=ogfa,
+                fname_b=ob,
+                fname_qa=oqa,
+            )
+            logging.info(msg)
+
+
+class MathFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "math_flow"
+
+    def run(
+        self, operation, input_files, dtype=None, out_dir="", out_file="math_out.nii.gz"
+    ):
+        """Perform mathematical operations on volume input files.
+
+        This workflow allows the user to perform mathematical operations on
+        multiple input files. e.g. to add two volumes together, subtract one:
+        ``dipy_math "vol1 + vol2 - vol3" t1.nii.gz t1_a.nii.gz t1_b.nii.gz``
+        The input files must be in Nifti format and have the same shape.
+
+        Parameters
+        ----------
+        operation : string
+            Mathematical operation to perform. supported operators are:
+                - Bitwise operators (and, or, not, xor): ``&, |, ~, ^``
+                - Comparison operators: ``<, <=, ==, !=, >=, >``
+                - Unary arithmetic operators: ``-``
+                - Binary arithmetic operators: ``+, -, *, /, **, %, <<, >>``
+            Supported functions are:
+                - ``where(bool, number1, number2) -> number``: number1 if the bool
+                  condition is true, number2 otherwise.
+                - ``{sin,cos,tan}(float|complex) -> float|complex``: trigonometric sine,
+                  cosine or tangent.
+                - ``{arcsin,arccos,arctan}(float|complex) -> float|complex``:
+                  trigonometric inverse sine, cosine or tangent.
+                - ``arctan2(float1, float2) -> float``: trigonometric inverse tangent of
+                  float1/float2.
+                - ``{sinh,cosh,tanh}(float|complex) -> float|complex``: hyperbolic
+                  sine, cosine or tangent.
+                - ``{arcsinh,arccosh,arctanh}(float|complex) -> float|complex``:
+                  hyperbolic inverse sine, cosine or tangent.
+                - ``{log,log10,log1p}(float|complex) -> float|complex``: natural,
+                  base-10 and log(1+x) logarithms.
+                - ``{exp,expm1}(float|complex) -> float|complex``: exponential and
+                  exponential minus one.
+                - ``sqrt(float|complex) -> float|complex``: square root.
+                - ``abs(float|complex) -> float|complex``: absolute value.
+                - ``conj(complex) -> complex``: conjugate value.
+                - ``{real,imag}(complex) -> float``: real or imaginary part of complex.
+                - ``complex(float, float) -> complex``: complex from real and imaginary
+                  parts.
+                - ``contains(np.str, np.str) -> bool``: returns True for every string
+                  in op1 that contains op2.
+        input_files : variable string
+            Any number of Nifti1 files
+        dtype : string, optional
+            Data type of the resulting file.
+        out_dir : string, optional
+            Output directory
+        out_file : string, optional
+            Name of the resulting file to be saved.
+        """
+        vol_dict = {}
+        ref_affine = None
+        ref_shape = None
+        info_msg = ""
+        have_errors = False
+        for i, fname in enumerate(input_files, start=1):
+            if not os.path.isfile(fname):
+                logging.error(f"Input file {fname} does not exist.")
+                raise SystemExit()
+
+            if not (fname.endswith(".nii.gz") or fname.endswith(".nii")):
+                msg = (
+                    f"Wrong volume type: {fname}. Only Nifti files are supported"
+                    " (*.nii or *.nii.gz)."
+                )
+                logging.error(msg)
+                raise SystemExit()
+
+            data, affine = load_nifti(fname)
+            vol_dict[f"vol{i}"] = data
+            info_msg += f"{fname}:\n- vol index: {i}\n- shape: {data.shape}"
+            info_msg += f"\n- affine:\n{affine}\n"
+            if ref_affine is None:
+                ref_affine = affine
+                ref_shape = data.shape
+                continue
+
+            have_errors = (
+                have_errors
+                or not np.all(np.isclose(ref_affine, affine, rtol=1e-05, atol=1e-08))
+                or not np.array_equal(ref_shape, data.shape)
+            )
+
+        if have_errors:
+            logging.warning(info_msg)
+            msg = "All input files must have the same shape and affine matrix."
+            logging.error(msg)
+            raise SystemExit()
+
+        try:
+            res = ne.evaluate(operation, local_dict=vol_dict)
+        except KeyError as e:
+            msg = (
+                f"Impossible key {e} in the operation. You have {len(input_files)}"
+                f" volumes available with the following keys: {list(vol_dict.keys())}"
+            )
+            logging.error(msg)
+            raise SystemExit() from e
+
+        if dtype:
+            try:
+                res = res.astype(dtype)
+            except TypeError as e:
+                msg = (
+                    f"Impossible to cast to {dtype}. Check possible numpy type here:"
+                    "https://numpy.org/doc/stable/reference/arrays.interface.html"
+                )
+                logging.error(msg)
+                raise SystemExit() from e
+
+        out_fname = os.path.join(out_dir, out_file)
+        logging.info(f"Saving result to {out_fname}")
+        save_nifti(out_fname, res, affine)

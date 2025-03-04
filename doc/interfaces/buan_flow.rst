@@ -4,16 +4,16 @@
 BUndle ANalytics (BUAN) framework
 =================================
 
-This tutorial walks through the steps for reproducing Bundle Analytics [Chandio20]_
-results on Parkinson's Progression Markers Initiative (PPMI) [Marek11]_ data derivatives.
-Bundle Analytics is a framework for comparing bundle profiles and shapes of
-different groups. In this example, we will be comparing healthy controls and
-patients with parkinson's disease. We will be using PPMI data derivatives generated
-using DIPY [Garyfallidis14]_.
+This tutorial walks through the steps for reproducing Bundle Analytics :footcite:p:`Chandio2020a`
+results on Parkinson's Progression Markers Initiative (PPMI) :footcite:p:`Marek2011`
+data derivatives. Bundle Analytics is a framework for comparing bundle
+profiles and shapes of different groups. In this example, we will be comparing
+healthy controls and patients with parkinson's disease. We will be using PPMI
+data derivatives generated using DIPY :footcite:p:`Garyfallidis2014a`.
 
 
-First we need to download streamline atlas [Yeh18]_ with 30 white matter bundles
-in MNI space from
+First we need to download streamline atlas :footcite:p:`Yeh2018` with 30 white
+matter bundles in MNI space from
 
     `<https://figshare.com/articles/Atlas_of_30_Human_Brain_Bundles_in_MNI_space/12089652>`_
 
@@ -25,9 +25,9 @@ from the link below
 
 .. note::
 
-    If you prefer to run experiments on the complete dataset to reproduce the paper [Chandio20]_
-    results please see the "Reproducing results on larger dataset" section at end of
-    the page for more information.
+    If you prefer to run experiments on the complete dataset to reproduce the paper
+    :footcite:p:`Chandio2020a` results please see the "Reproducing results on larger
+    dataset" section at end of the page for more information.
 
 There are two parts of Bundle Analytics group comparison framework,
 bundle profile analysis and bundle shape similarity analysis.
@@ -275,28 +275,8 @@ For more information about each command line, you can go to
 
 If you are using any of these commands do cite the relevant papers.
 
-.. [Chandio20] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-    Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
-    Bundle analytics, a computational framework for investigating the
-    shapes and profiles of brain pathways across populations.
-    Sci Rep 10, 17149 (2020)
+----------
+References
+----------
 
-.. [Marek11] Marek, Kenneth and Jennings, Danna and Lasch, Shirley and Siderowf,
-    Andrew and Tanner, Caroline and Simuni, Tanya and Coffey, Chris and Kieburtz,
-    Karl and Flagg, Emily and Chowdhury, Sohini and others.
-    The parkinson progression marker initiative (PPMI).
-    Progress in neurobiology, 2011.
-
-.. [Garyfallidis14] Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem,
-    S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith.
-    "DIPY, a library for the analysis of diffusion MRI data".
-    Frontiers in Neuroinformatics, 1-18, 2014.
-
-.. [Yeh18] Yeh F.C., Panesar S., Fernandes D., Meola A., Yoshino M.,
-    Fernandez-Miranda J.C., Vettel J.M., Verstynen T.
-    Population-averaged atlas of the macroscale human structural
-    connectome and its network topology.
-    Neuroimage, 2018.
-
-
-
+.. footbibliography::

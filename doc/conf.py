@@ -9,10 +9,11 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-from datetime import datetime
+import datetime
 import os
 import re
 import sys
+import time
 
 # Doc generation depends on being able to import dipy
 try:
@@ -31,23 +32,37 @@ sys.path.append(os.path.abspath("sphinxext"))
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.coverage",
     "sphinx.ext.doctest",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.todo",
-    "sphinx.ext.coverage",
     "sphinx.ext.mathjax",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.todo",
     "sphinx.ext.ifconfig",
-    "sphinx.ext.autosummary",
-    "prepare_gallery",
     "math_dollar",  # has to go before numpydoc
+    "numpydoc",
+    "prepare_gallery",
     "sphinx_gallery.gen_gallery",
-    # 'numpydoc',
+    "sphinxcontrib.bibtex",
     "github",
     "sphinx_design",
 ]
 
 numpydoc_show_class_members = True
 numpydoc_class_members_toctree = False
+numpydoc_show_inherited_class_members = {
+    "dipy.viz.horizon.visualizer.peak.PeakActor": False
+}
+
+autodoc_skip_members = [
+    "docstring_addendum",
+]
+
+# Sphinx extension for BibTeX style citations.
+# https://github.com/mcmtroffaes/sphinxcontrib-bibtex
+bibtex_bibfiles = ["references.bib"]
+# bibtex_default_style = 'plain'
 
 # ghissue config
 github_project_url = "https://github.com/dipy/dipy"
@@ -64,10 +79,15 @@ source_suffix = ".rst"
 # The master toctree document.
 master_doc = "index"
 
+build_date = datetime.datetime.fromtimestamp(
+    int(os.environ.get("SOURCE_DATE_EPOCH", time.time())),
+    tz=datetime.timezone.utc,
+)
+
 # General information about the project.
 project = "dipy"
 copyright = (
-    f"Copyright 2008-{datetime.now().year},DIPY developers."
+    f"Copyright 2008-{build_date.year},DIPY developers."
     f" Created using Grg Sphinx Theme and PyData Sphinx Theme."
 )
 
@@ -99,7 +119,13 @@ release = version
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
-exclude_patterns = ["_build", "examples", "examples_revamped"]
+exclude_patterns = [
+    "_build",
+    "examples",
+    "examples_revamped",
+    "reconstruction_models_list.rst",
+    "tractography_methods_list.rst",
+]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 # default_role = None
@@ -544,3 +570,12 @@ sphinx_gallery_conf = {
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"python": ("https://docs.python.org/3/", None)}
+
+
+def setup(app):
+    def skip_doc_element(app, what, name, obj, would_skip, options):
+        if name in autodoc_skip_members:
+            return True
+        return would_skip
+
+    app.connect("autodoc-skip-member", skip_doc_element)

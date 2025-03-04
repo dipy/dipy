@@ -9,6 +9,7 @@ from scipy.spatial.distance import cdist
 
 from dipy.core.geometry import dist_to_corner
 from dipy.core.interpolation import interpolate_scalar_3d, interpolate_vector_3d
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.distances import bundles_distances_mdf
 from dipy.tracking.streamlinespeed import length, set_number_of_points
 import dipy.tracking.utils as ut
@@ -20,11 +21,14 @@ def unlist_streamlines(streamlines):
     Parameters
     ----------
     streamlines: sequence
+        Streamlines.
 
     Returns
     -------
     points : array
+        Streamlines' points.
     offsets : array
+        Streamlines' offsets.
 
     """
 
@@ -48,11 +52,14 @@ def relist_streamlines(points, offsets):
     Parameters
     ----------
     points : array
+        Streamlines' points.
     offsets : array
+        Streamlines' offsets.
 
     Returns
     -------
     streamlines: sequence
+        Streamlines.
     """
 
     streamlines = [points[0 : offsets[0]]]
@@ -132,7 +139,8 @@ def deform_streamlines(
     return new_streamlines
 
 
-def transform_streamlines(streamlines, mat, in_place=False):
+@warning_for_keywords()
+def transform_streamlines(streamlines, mat, *, in_place=False):
     """Apply affine transformation to streamlines
 
     Parameters
@@ -170,7 +178,8 @@ def transform_streamlines(streamlines, mat, in_place=False):
     return [apply_affine(mat, s) for s in streamlines]
 
 
-def select_random_set_of_streamlines(streamlines, select, rng=None):
+@warning_for_keywords()
+def select_random_set_of_streamlines(streamlines, select, *, rng=None):
     """Select a random set of streamlines
 
     Parameters
@@ -182,7 +191,7 @@ def select_random_set_of_streamlines(streamlines, select, rng=None):
         Number of streamlines to select. If there are less streamlines
         than ``select`` then ``select=len(streamlines)``.
 
-    rng : RandomState
+    rng : np.random.Generator
         Default None.
 
     Returns
@@ -195,14 +204,15 @@ def select_random_set_of_streamlines(streamlines, select, rng=None):
     """
     len_s = len(streamlines)
     if rng is None:
-        rng = np.random.RandomState()
+        rng = np.random.default_rng()
     index = rng.choice(len_s, min(select, len_s), replace=False)
     if isinstance(streamlines, Streamlines):
         return streamlines[index]
     return [streamlines[i] for i in index]
 
 
-def select_by_rois(streamlines, affine, rois, include, mode=None, tol=None):
+@warning_for_keywords()
+def select_by_rois(streamlines, affine, rois, include, *, mode=None, tol=None):
     """Select streamlines based on logical relations with several regions of
     interest (ROIs). For example, select streamlines that pass near ROI1,
     but only if they do not pass near ROI2.
@@ -326,7 +336,10 @@ def select_by_rois(streamlines, affine, rois, include, mode=None, tol=None):
             yield sl
 
 
-def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1, override=False):
+@warning_for_keywords()
+def cluster_confidence(
+    streamlines, *, max_mdf=5, subsample=12, power=1, override=False
+):
     """Computes the cluster confidence index (cci), which is an
     estimation of the support a set of streamlines gives to
     a particular pathway.
@@ -336,8 +349,8 @@ def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1, override=F
     in a bundle of 100 streamlines that follow similar
     pathways has a high cci.
 
-    See: Jordan et al. 2017
-    (Based on streamline MDF distance from Garyfallidis et al. 2012)
+    See :footcite:p:`Jordan2018` (based on the streamline MDF distance from
+    :footcite:t:`Garyfallidis2012a`).
 
     Parameters
     ----------
@@ -368,13 +381,7 @@ def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1, override=F
 
     References
     ----------
-    [Jordan17] Jordan K. Et al., Cluster Confidence Index: A Streamline-Wise
-    Pathway Reproducibility Metric for Diffusion-Weighted MRI Tractography,
-    Journal of Neuroimaging, vol 28, no 1, 2017.
-
-    [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-    tractography simplification, Frontiers in Neuroscience,
-    vol 6, no 175, 2012.
+    .. footbibliography::
 
     """
 
@@ -388,7 +395,7 @@ def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1, override=F
         )
 
     # calculate the pairwise MDF distance between all streamlines in dataset
-    subsamp_sls = set_number_of_points(streamlines, subsample)
+    subsamp_sls = set_number_of_points(streamlines, nb_points=subsample)
 
     cci_score_mtrx = np.zeros([len(subsamp_sls)])
 
@@ -444,7 +451,10 @@ def _orient_by_roi_list(out, roi1, roi2):
     return out
 
 
-def orient_by_rois(streamlines, affine, roi1, roi2, in_place=False, as_generator=False):
+@warning_for_keywords()
+def orient_by_rois(
+    streamlines, affine, roi1, roi2, *, in_place=False, as_generator=False
+):
     """Orient a set of streamlines according to a pair of ROIs
 
     Parameters
@@ -462,9 +472,8 @@ def orient_by_rois(streamlines, affine, roi1, roi2, in_place=False, as_generator
         Whether to make the change in-place in the original list
         (and return a reference to the list), or to make a copy of the list
         and return this copy, with the relevant streamlines reoriented.
-        Default: False.
     as_generator : bool
-        Whether to return a generator as output. Default: False
+        Whether to return a generator as output.
 
     Returns
     -------
@@ -544,8 +553,9 @@ def _orient_by_sl_list(out, std_array, fgarray):
     return out
 
 
+@warning_for_keywords()
 def orient_by_streamline(
-    streamlines, standard, n_points=12, in_place=False, as_generator=False
+    streamlines, standard, *, n_points=12, in_place=False, as_generator=False
 ):
     """
     Orient a bundle of streamlines to a standard streamline.
@@ -563,9 +573,8 @@ def orient_by_streamline(
         Whether to make the change in-place in the original input
         (and return a reference), or to make a copy of the list
         and return this copy, with the relevant streamlines reoriented.
-        Default: False.
     as_generator : bool
-        Whether to return a generator as output. Default: False
+        Whether to return a generator as output.
 
     Returns
     -------
@@ -574,8 +583,8 @@ def orient_by_streamline(
 
     """
     # Start by resampling, so that distance calculation is easy:
-    fgarray = set_number_of_points(streamlines, n_points)
-    std_array = set_number_of_points([standard], n_points)
+    fgarray = set_number_of_points(streamlines, nb_points=n_points)
+    std_array = set_number_of_points([standard], nb_points=n_points)
 
     if as_generator:
         if in_place:
@@ -597,7 +606,8 @@ def orient_by_streamline(
     return _orient_by_sl_list(out, std_array, fgarray)
 
 
-def _extract_vals(data, streamlines, affine, threedvec=False):
+@warning_for_keywords()
+def _extract_vals(data, streamlines, affine, *, threedvec=False):
     """
     Helper function for use with `values_from_volume`.
 

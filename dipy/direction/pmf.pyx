@@ -20,14 +20,17 @@ cdef class PmfGen:
                  double[:, :, :, :] data,
                  object sphere):
         self.data = np.asarray(data, dtype=float, order='C')
-        self.sphere = sphere
         self.vertices = np.asarray(sphere.vertices, dtype=float)
         self.pmf = np.zeros(self.vertices.shape[0])
+        self.sphere = sphere
 
     def get_pmf(self, double[::1] point, double[:] out=None):
         if out is None:
             out = self.pmf
         return <double[:len(self.vertices)]>self.get_pmf_c(&point[0], &out[0])
+
+    def get_sphere(self):
+        return self.sphere
 
     cdef double* get_pmf_c(self, double* point, double* out) noexcept nogil:
         pass
@@ -66,8 +69,6 @@ cdef class SimplePmfGen(PmfGen):
                  double[:, :, :, :] pmf_array,
                  object sphere):
         PmfGen.__init__(self, pmf_array, sphere)
-        if np.min(pmf_array) < 0:
-            raise ValueError("pmf should not have negative values.")
         if not pmf_array.shape[3] == sphere.vertices.shape[0]:
             raise ValueError("pmf should have the same number of values as the"
                              + " number of vertices of sphere.")

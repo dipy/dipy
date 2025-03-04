@@ -7,9 +7,11 @@ import dipy.sims.voxel as vox
 
 # import scipy.stats as stats
 from dipy.sims.voxel import diffusion_evals, single_tensor
+from dipy.testing.decorators import warning_for_keywords
 
 
-def add_noise(vol, snr=1.0, S0=None, noise_type="rician", rng=None):
+@warning_for_keywords()
+def add_noise(vol, *, snr=1.0, S0=None, noise_type="rician", rng=None):
     """Add noise of specified distribution to a 4D array.
 
     Parameters
@@ -20,14 +22,13 @@ def add_noise(vol, snr=1.0, S0=None, noise_type="rician", rng=None):
     snr : float, optional
         The desired signal-to-noise ratio.  (See notes below.)
     S0 : float, optional
-        Reference signal for specifying `snr` (defaults to 1).
+        Reference signal for specifying `snr`.
     noise_type : string, optional
         The distribution of noise added. Can be either 'gaussian' for Gaussian
         distributed noise, 'rician' for Rice-distributed noise (default) or
         'rayleigh' for a Rayleigh distribution.
     rng : numpy.random.Generator class, optional
         Numpy's random generator for setting seed values when needed.
-        Default is None.
 
     Returns
     -------
@@ -36,16 +37,14 @@ def add_noise(vol, snr=1.0, S0=None, noise_type="rician", rng=None):
 
     Notes
     -----
-    SNR is defined here, following [1]_, as ``S0 / sigma``, where ``sigma`` is
-    the standard deviation of the two Gaussian distributions forming the real
-    and imaginary components of the Rician noise distribution (see [2]_).
+    SNR is defined here, following :footcite:p:`Descoteaux2007`, as
+    ``S0 / sigma``, where ``sigma`` is the standard deviation of the two
+    Gaussian distributions forming the real and imaginary components of the
+    Rician noise distribution (see :footcite:p:`Gudbjartsson1995`).
 
     References
     ----------
-    .. [1] Descoteaux, Angelino, Fitzgibbons and Deriche (2007) Regularized,
-           fast and robust q-ball imaging. MRM, 58: 497-510
-    .. [2] Gudbjartson and Patz (2008). The Rician distribution of noisy MRI
-           data. MRM 34: 910-914.
+    .. footbibliography::
 
     Examples
     --------
@@ -83,7 +82,9 @@ def diff2eigenvectors(dx, dy, dz):
     return eigs, R
 
 
+@warning_for_keywords()
 def orbital_phantom(
+    *,
     gtab=None,
     evals=diffusion_evals,
     func=None,
@@ -163,8 +164,8 @@ def orbital_phantom(
         radii = np.linspace(0.2, 2, 6)
 
     if gtab is None:
-        fimg, fbvals, fbvecs = get_fnames("small_64D")
-        gtab = gradient_table(fbvals, fbvecs)
+        fimg, fbvals, fbvecs = get_fnames(name="small_64D")
+        gtab = gradient_table(fbvals, bvecs=fbvecs)
 
     if func is None:
         x = np.sin(t)
@@ -192,7 +193,7 @@ def orbital_phantom(
 
     for i in range(len(dx)):
         evecs, R = diff2eigenvectors(dx[i], dy[i], dz[i])
-        S = single_tensor(gtab, S0, evals, evecs, snr=None)
+        S = single_tensor(gtab, S0, evals=evals, evecs=evecs, snr=None)
 
         vol[int(x[i]), int(y[i]), int(z[i]), :] += S
 
@@ -209,7 +210,7 @@ def orbital_phantom(
     vol *= S0
 
     if snr is not None:
-        vol = add_noise(vol, snr, S0=S0, noise_type="rician", rng=rng)
+        vol = add_noise(vol, snr=snr, S0=S0, noise_type="rician", rng=rng)
 
     return vol
 

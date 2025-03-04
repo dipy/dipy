@@ -12,6 +12,7 @@ cimport cython
 cimport numpy as cnp
 from warnings import warn
 
+
 # Try to get the SVD through direct API to lapack:
 try:
     from scipy.linalg.lapack import sgesvd as svd
@@ -28,14 +29,14 @@ except ImportError:
 @cython.cdivision(True)
 def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
                        smooth=2, images_as_samples=False):
-    """ PCA based local noise estimation.
+    """PCA based local noise estimation.
 
     Parameters
     ----------
-    data: 4D array
+    data : 4D array
         the input dMRI data. The first 3 dimension must have size >= 2 *
         patch_radius + 1 or size = 1.
-    gtab: gradient table object
+    gtab : gradient table object
         gradient information for the data gives us the bvals and bvecs of
         diffusion data, which is needed here to select between the noise
         estimation methods.
@@ -44,13 +45,13 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
         voxels). Default: 1 (estimate noise in blocks of 3x3x3 voxels).
     correct_bias : bool
         Whether to correct for bias due to Rician noise. This is an
-        implementation of equation 8 in [1]_.
+        implementation of equation 8 in :footcite:p:`Manjon2013`.
     smooth : int
         Radius of a Gaussian smoothing filter to apply to the noise estimate
         before returning. Default: 2.
     images_as_samples : bool, optional
-        Whether to use images as rows (samples) for PCA (algorithm in [1]_) or
-        to use images as columns (features).
+        Whether to use images as rows (samples) for PCA (algorithm in
+        :footcite:p:`Manjon2013`) or to use images as columns (features).
 
     Returns
     -------
@@ -59,19 +60,18 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
 
     Notes
     -----
-        In [1]_, images are used as samples, so voxels are features, therefore
-        eigenvectors are image-shaped. However, [1]_ is not clear on how to use
-        these eigenvectors to determine the noise level, so here eigenvalues
-        (variance over samples explained by eigenvectors) are used to scale
-        the eigenvectors. Use images_as_samples=True to use this algorithm.
-        Alternatively, voxels can be used as samples using
-        images_as_samples=False. This is not the canonical algorithm of [1]_.
+    In :footcite:p:`Manjon2013`, images are used as samples, so voxels are
+    features, therefore eigenvectors are image-shaped. However,
+    :footcite:t:`Manjon2013` is not clear on how to use these eigenvectors
+    to determine the noise level, so here eigenvalues (variance over samples
+    explained by eigenvectors) are used to scale the eigenvectors. Use
+    images_as_samples=True to use this algorithm. Alternatively, voxels can
+    be used as samples using images_as_samples=False. This is not the
+    canonical algorithm of :footcite:t:`Manjon2013`.
 
     References
     ----------
-    .. [1] Manjon JV, Coupe P, Concha L, Buades A, Collins DL "Diffusion
-           Weighted Image Denoising Using Overcomplete Local PCA". PLoS ONE
-           8(9): e73021. doi:10.1371/journal.pone.0073021.
+    .. footbibliography::
     """
     # first identify the number of the b0 images
     K = gtab.b0s_mask[gtab.b0s_mask].size

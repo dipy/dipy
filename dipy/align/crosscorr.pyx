@@ -131,12 +131,13 @@ cdef inline void _update_factors(double[:, :, :, :] factors,
 def precompute_cc_factors_3d(floating[:, :, :] static,
                              floating[:, :, :] moving,
                              cnp.npy_intp radius, num_threads=None):
-    r"""Precomputations to quickly compute the gradient of the CC Metric
+    """Precomputations to quickly compute the gradient of the CC Metric.
 
     Pre-computes the separate terms of the cross correlation metric and image
     norms at each voxel considering a neighborhood of the given radius to
     efficiently compute the gradient of the metric with respect to the
-    deformation field [Ocegueda2016]_ [Avants2008]_ [Avants2011]_.
+    deformation field :footcite:p:`Ocegueda2016`, :footcite:p:`Avants2008`,
+    :footcite:p:`Avants2009`.
 
     Parameters
     ----------
@@ -150,26 +151,18 @@ def precompute_cc_factors_3d(floating[:, :, :] static,
     Returns
     -------
     factors : array, shape (S, R, C, 5)
-        the precomputed cross correlation terms:
-        factors[:,:,:,0] : static minus its mean value along the neighborhood
-        factors[:,:,:,1] : moving minus its mean value along the neighborhood
-        factors[:,:,:,2] : sum of the pointwise products of static and moving
-                           along the neighborhood
-        factors[:,:,:,3] : sum of sq. values of static along the neighborhood
-        factors[:,:,:,4] : sum of sq. values of moving along the neighborhood
+        the precomputed cross correlation terms::
+
+            - factors[:,:,:,0] : static minus its mean value along the neighborhood
+            - factors[:,:,:,1] : moving minus its mean value along the neighborhood
+            - factors[:,:,:,2] : sum of the pointwise products of static and moving
+              along the neighborhood
+            - factors[:,:,:,3] : sum of sq. values of static along the neighborhood
+            - factors[:,:,:,4] : sum of sq. values of moving along the neighborhood
 
     References
     ----------
-    .. [Ocegueda2016]_ Ocegueda, O., Dalmau, O., Garyfallidis, E., Descoteaux,
-        M., & Rivera, M. (2016). On the computation of integrals over
-        fixed-size rectangles of arbitrary dimension, Pattern Recognition
-        Letters. doi:10.1016/j.patrec.2016.05.008
-    .. [Avants2008]_ Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C.
-        (2008). Symmetric Diffeomorphic Image Registration with
-        Cross-Correlation: Evaluating Automated Labeling of Elderly and
-        Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
-    .. [Avants2011]_ Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-        Normalization Tools (ANTS), 1-35.
+    .. footbibliography::
     """
     cdef:
         cnp.npy_intp ns = static.shape[0]
@@ -295,7 +288,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static,
 @cython.cdivision(True)
 def precompute_cc_factors_3d_test(floating[:, :, :] static,
                                   floating[:, :, :] moving, int radius):
-    r"""Precomputations to quickly compute the gradient of the CC Metric
+    """Precomputations to quickly compute the gradient of the CC Metric.
 
     This version of precompute_cc_factors_3d is for testing purposes, it
     directly computes the local cross-correlation factors without any
@@ -355,11 +348,12 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static,
 def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
                                floating[:, :, :, :] factors,
                                cnp.npy_intp radius):
-    r"""Gradient of the CC Metric w.r.t. the forward transformation
+    """Gradient of the CC Metric w.r.t. the forward transformation.
 
     Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) [Avants2008]_ w.r.t. the displacement associated to
-    the moving volume ('forward' step) as in [Avants2011]_
+    registration (SyN) :footcite:p:`Avants2008` w.r.t. the displacement
+    associated to the moving volume ('forward' step) as in
+    :footcite:t:`Avants2009`.
 
     Parameters
     ----------
@@ -382,12 +376,7 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
 
     References
     ----------
-    .. [Avants2008]_ Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C.
-        (2008). Symmetric Diffeomorphic Image Registration with
-        Cross-Correlation: Evaluating Automated Labeling of Elderly and
-        Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
-    .. [Avants2011]_ Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-        Normalization Tools (ANTS), 1-35.
+    .. footbibliography::
     """
     cdef:
         cnp.npy_intp ns = grad_static.shape[0]
@@ -427,11 +416,12 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
 def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
                                 floating[:, :, :, :] factors,
                                 cnp.npy_intp radius):
-    r"""Gradient of the CC Metric w.r.t. the backward transformation
+    """Gradient of the CC Metric w.r.t. the backward transformation.
 
     Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) [Avants08]_ w.r.t. the displacement associated to
-    the static volume ('backward' step) as in [Avants11]_
+    registration (SyN) :footcite:p:`Avants2008`. w.r.t. the displacement
+    associated to the static volume ('backward' step) as in
+    :footcite:t:`Avants2009`.
 
     Parameters
     ----------
@@ -454,12 +444,7 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
 
     References
     ----------
-    [Avants08]_ Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2008)
-               Symmetric Diffeomorphic Image Registration with
-               Cross-Correlation: Evaluating Automated Labeling of Elderly and
-               Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
-    [Avants11]_ Avants, B. B., Tustison, N., & Song, G. (2011).
-               Advanced Normalization Tools (ANTS), 1-35.
+    .. footbibliography::
     """
     ftype = np.asarray(grad_moving).dtype
     cdef:
@@ -500,12 +485,12 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
 @cython.cdivision(True)
 def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                              cnp.npy_intp radius):
-    r"""Precomputations to quickly compute the gradient of the CC Metric
+    """Precomputations to quickly compute the gradient of the CC Metric.
 
     Pre-computes the separate terms of the cross correlation metric
-    [Avants2008]_ and image norms at each voxel considering a neighborhood of
-    the given radius to efficiently [Avants2011]_ compute the gradient of the
-    metric with respect to the deformation field.
+    :footcite:p:`Avants2008` and image norms at each voxel considering a
+    neighborhood of the given radius to efficiently compute the gradient of the
+    metric with respect to the deformation field :footcite:p:`Avants2009`.
 
     Parameters
     ----------
@@ -519,22 +504,18 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
     Returns
     -------
     factors : array, shape (R, C, 5)
-        the precomputed cross correlation terms:
-        factors[:,:,0] : static minus its mean value along the neighborhood
-        factors[:,:,1] : moving minus its mean value along the neighborhood
-        factors[:,:,2] : sum of the pointwise products of static and moving
-                           along the neighborhood
-        factors[:,:,3] : sum of sq. values of static along the neighborhood
-        factors[:,:,4] : sum of sq. values of moving along the neighborhood
+        the precomputed cross correlation terms::
+
+            - factors[:,:,0] : static minus its mean value along the neighborhood
+            - factors[:,:,1] : moving minus its mean value along the neighborhood
+            - factors[:,:,2] : sum of the pointwise products of static and moving
+              along the neighborhood
+            - factors[:,:,3] : sum of sq. values of static along the neighborhood
+            - factors[:,:,4] : sum of sq. values of moving along the neighborhood
 
     References
     ----------
-    .. [Avants2008]_ Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C.
-        (2008). Symmetric Diffeomorphic Image Registration with
-        Cross-Correlation: Evaluating Automated Labeling of Elderly and
-        Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
-    .. [Avants2011]_ Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-        Normalization Tools (ANTS), 1-35.
+    .. footbibliography::
     """
     ftype = np.asarray(static).dtype
     cdef:
@@ -620,7 +601,7 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
 @cython.cdivision(True)
 def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
                                   cnp.npy_intp radius):
-    r"""Precomputations to quickly compute the gradient of the CC Metric
+    """Precomputations to quickly compute the gradient of the CC Metric.
 
     This version of precompute_cc_factors_2d is for testing purposes, it
     directly computes the local cross-correlation without any optimization.
@@ -674,11 +655,12 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
 def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                                floating[:, :, :] factors,
                                cnp.npy_intp radius):
-    r"""Gradient of the CC Metric w.r.t. the forward transformation
+    """Gradient of the CC Metric w.r.t. the forward transformation.
 
     Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) [Avants2008]_ w.r.t. the displacement associated to
-    the moving image ('backward' step) as in [Avants2011]_
+    registration (SyN) :footcite:p:`Avants2008` w.r.t. the displacement
+    associated to the moving image ('backward' step) as in
+    :footcite:t:`Avants2009`.
 
     Parameters
     ----------
@@ -704,12 +686,7 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
 
     References
     ----------
-    .. [Avants2008]_ Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C.
-        (2008). Symmetric Diffeomorphic Image Registration with
-        Cross-Correlation: Evaluating Automated Labeling of Elderly and
-        Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
-    .. [Avants2011]_ Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-        Normalization Tools (ANTS), 1-35.
+    .. footbibliography::
     """
     cdef:
         cnp.npy_intp nr = grad_static.shape[0]
@@ -747,11 +724,12 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
 def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
                                 floating[:, :, :] factors,
                                 cnp.npy_intp radius):
-    r"""Gradient of the CC Metric w.r.t. the backward transformation
+    """Gradient of the CC Metric w.r.t. the backward transformation.
 
     Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) [Avants2008]_ w.r.t. the displacement associated to
-    the static image ('forward' step) as in [Avants2011]_
+    registration (SyN) :footcite:p:`Avants2008` w.r.t. the displacement
+    associated to the static image ('forward' step) as in
+    :footcite:t:`Avants2009`.
 
     Parameters
     ----------
@@ -770,12 +748,7 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
 
     References
     ----------
-    .. [Avants2008]_ Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C.
-        (2008). Symmetric Diffeomorphic Image Registration with
-        Cross-Correlation: Evaluating Automated Labeling of Elderly and
-        Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
-    .. [Avants2011]_ Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-        Normalization Tools (ANTS), 1-35.
+    .. footbibliography::
     """
     ftype = np.asarray(grad_moving).dtype
     cdef:

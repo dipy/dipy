@@ -6,6 +6,7 @@
 cdef extern from "dpy_math.h" nogil:
     int dpy_rint(double)
 
+from dipy.utils.fast_numpy cimport random, RNGState, random_float
 from dipy.core.interpolation cimport trilinear_interpolate4d_c
 
 import numpy as np
@@ -17,7 +18,7 @@ cdef class StoppingCriterion:
 
         return self.check_point_c(&point[0])
 
-    cdef StreamlineStatus check_point_c(self, double* point):
+    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
          pass
 
 
@@ -31,7 +32,7 @@ cdef class BinaryStoppingCriterion(StoppingCriterion):
         self.interp_out_view = self.interp_out_double
         self.mask = (mask > 0).astype('uint8')
 
-    cdef StreamlineStatus check_point_c(self, double* point):
+    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
         cdef:
             unsigned char result
             int err
@@ -55,20 +56,13 @@ cdef class BinaryStoppingCriterion(StoppingCriterion):
 
 
 cdef class ThresholdStoppingCriterion(StoppingCriterion):
-    """
-    # Declarations from stopping_criterion.pxd below
-    cdef:
-        double threshold, interp_out_double[1]
-        double[:]  interp_out_view = interp_out_view
-        double[:, :, :] metric_map
-    """
 
     def __cinit__(self, metric_map, double threshold):
         self.interp_out_view = self.interp_out_double
         self.metric_map = np.asarray(metric_map, 'float64')
         self.threshold = threshold
 
-    cdef StreamlineStatus check_point_c(self, double* point):
+    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
         cdef:
             double result
             int err
@@ -114,8 +108,7 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
 
     @classmethod
     def from_pve(cls, wm_map, gm_map, csf_map, **kw):
-        """AnatomicalStoppingCriterion from partial volume fraction (PVE)
-        maps.
+        """AnatomicalStoppingCriterion from partial volume fraction (PVE) maps.
 
         Parameters
         ----------
@@ -165,24 +158,19 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
 
 
 cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
-    r"""
-    Anatomically-Constrained Tractography (ACT) stopping criterion from [1]_.
+    """Anatomically-Constrained Tractography (ACT) stopping criterion.
+
+    See :footcite:p:`Smith2012` for further details about the method.
+
     This implements the use of partial volume fraction (PVE) maps to
-    determine when the tracking stops. The proposed ([1]_) method that
-    cuts streamlines going through subcortical gray matter regions is
-    not implemented here. The backtracking technique for
+    determine when the tracking stops. The proposed method
+    :footcite:p:`Smith2012` that cuts streamlines going through subcortical gray
+    matter regions is not implemented here. The backtracking technique for
     streamlines reaching INVALIDPOINT is not implemented either.
-    cdef:
-        double interp_out_double[1]
-        double[:]  interp_out_view = interp_out_view
-        double[:, :, :] include_map, exclude_map
 
     References
     ----------
-    .. [1] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
-    "Anatomically-constrained tractography: Improved diffusion MRI
-    streamlines tractography through effective use of anatomical
-    information." NeuroImage, 63(3), 1924-1938, 2012.
+    .. footbibliography::
     """
 
     def __cinit__(self, include_map, exclude_map):
@@ -190,7 +178,7 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
         self.include_map = np.asarray(include_map, 'float64')
         self.exclude_map = np.asarray(exclude_map, 'float64')
 
-    cdef StreamlineStatus check_point_c(self, double* point):
+    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
         cdef:
             double include_result, exclude_result
             int include_err, exclude_err
@@ -226,9 +214,10 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
 
 cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
     r"""
-    Continuous map criterion (CMC) stopping criterion from [1]_.
+    Continuous map criterion (CMC) stopping criterion.
+
     This implements the use of partial volume fraction (PVE) maps to
-    determine when the tracking stops.
+    determine when the tracking stops :footcite:p:`Girard2014`.
 
     cdef:
         double interp_out_double[1]
@@ -240,9 +229,7 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
 
     References
     ----------
-    .. [1] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
-    "Towards quantitative connectivity analysis: reducing tractography biases."
-    NeuroImage, 98, 266-278, 2014.
+    .. footbibliography::
     """
 
     def __cinit__(self, include_map, exclude_map, step_size, average_voxel_size):
@@ -250,10 +237,11 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
         self.average_voxel_size = average_voxel_size
         self.correction_factor = step_size / average_voxel_size
 
-    cdef StreamlineStatus check_point_c(self, double* point):
+    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
         cdef:
             double include_result, exclude_result
             int include_err, exclude_err
+            double p
 
         include_err = trilinear_interpolate4d_c(self.include_map[..., None],
                                                 point,
@@ -278,20 +266,30 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
             raise RuntimeError("Unexpected interpolation error " +
                                "(exclude_map - code:%i)" % exclude_err)
 
-        rng = np.random.default_rng()
+        # rng = np.random.default_rng()
+
         # test if the tracking continues
         if include_result + exclude_result <= 0:
             return TRACKPOINT
         num = max(0, (1 - include_result - exclude_result))
         den = num + include_result + exclude_result
         p = (num / den) ** self.correction_factor
-        if rng.random() < p:
-            return TRACKPOINT
+        if rng != NULL:
+            if random_float(rng) < p:
+                return TRACKPOINT
 
-        # test if the tracking stopped in the include tissue map
-        p = (include_result / (include_result + exclude_result))
-        if rng.random() < p:
-            return ENDPOINT
+            # test if the tracking stopped in the include tissue map
+            p = (include_result / (include_result + exclude_result))
+            if random_float(rng) < p:
+                return ENDPOINT
+        else:
+            if random() < p:
+                return TRACKPOINT
+
+            # test if the tracking stopped in the include tissue map
+            p = (include_result / (include_result + exclude_result))
+            if random() < p:
+                return ENDPOINT
 
         # the tracking stopped in the exclude tissue map
         return INVALIDPOINT

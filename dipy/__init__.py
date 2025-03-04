@@ -35,21 +35,27 @@ Utilities
 
 """
 
-import sys
-
 from dipy.version import version as __version__
-
-# Plumb in version etc info stuff
-from .pkg_info import get_pkg_info as _get_pkg_info
 
 
 def get_info():
     from os.path import dirname
+    import sys
 
-    return _get_pkg_info(dirname(__file__))
+    import numpy
 
+    import dipy
 
-del sys
+    return {
+        "pkg_path": dirname(__file__),
+        "commit_hash": dipy.version.git_revision,
+        "sys_version": sys.version,
+        "sys_executable": sys.executable,
+        "sys_platform": sys.platform,
+        "np_version": numpy.__version__,
+        "dipy_version": dipy.__version__,
+    }
+
 
 submodules = [
     "align",

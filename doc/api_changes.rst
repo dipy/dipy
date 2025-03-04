@@ -6,7 +6,31 @@ Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
 DIPY 1.10.0 changes
-------------------
+-------------------
+
+**General**
+
+- PEP 3102 (Keyword-only arguments) has been implemented in the codebase. This means
+  that all the functions/classes that have keyword-only arguments will raise a warning
+  if the user tries to call them with positional arguments.
+
+- Standardized the symbols for the spherical harmonic concepts of order and phase
+  factor with ``l_value`` and ``m_value``, respectively. In case these are arrays,
+  we use ``l_values`` and ``m_values`` to be more informative of the type of the
+  variable. For a spherical harmonic 𝑌ℓ𝑚, ℓ is referred to as the order and 𝑚 as
+  phase factor. The parameter ``sh_order`` in the codebase became ``sh_order_max``.
+
+
+**Align**
+
+- The `alpha` parameter in the BundleWarp method has been updated to provide better
+  result for the bundle warping. The default value of `alpha` has been changed
+  from 0.3 to 0.5.
+
+**IO**
+
+- The ``dipy.io.peaks.save_peaks`` and ``dipy.io.peaks.load_peaks`` functions have been deprecated.
+  Please Use the ``dipy.io.peaks.save_pam`` and ``dipy.io.peaks.load_pam`` functions instead.
 
 **Reconstruction**
 
@@ -16,8 +40,18 @@ DIPY 1.10.0 changes
   switched to the new default solver, Clarabel.
 
 **Workflows**
+
 - The `vol_idx` parameter datatype from ``dipy_median_otsu`` has been changed from `variable int` to `str`.
   this change allows user to provide a range of values for the `vol_idx` parameter. e.g: `--vol_idx 0,1,2` or `--vol_idx 4,5,12-20,22`.
+
+- The `odf_to_sh_order` parameter has been removed from multiple workflows. The parameter
+  was not being used and was causing confusion with the `sh_order_order` parameter.
+
+**NN**
+
+- A new backend has been added: PyTorch. This backend is becoming the default backend
+  for the `NN` module. Tensorflow backend is still available but deprecated.
+
 
 DIPY 1.9.0 changes
 ------------------
@@ -40,6 +74,7 @@ DIPY 1.8.0 changes
 - Change in ``dipy.core.gradients``, function ``reorient_bvecs`` now requires the affine to have a shape of (4, 4, n) or (3, 3, n)
 
 **Direction**
+
 - Change in ``dipy.direction.bootstrap_direction_getter``.
     - The parent class was changes from ``PmfGenDirectionGetter`` to ``DirectionGetter``. The ``BootPmfGen`` functions were merged in ``BootDirectionGetter``.
     - The class constructor parameter `pmfgen` was removed. Parameters `data`, `model` and `sh_order=0` were added.

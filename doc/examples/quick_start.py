@@ -108,7 +108,7 @@ bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 # acquisition specific parameters, e.g. b-values, b-vectors, timings and
 # others. To create this object you can use the function ``gradient_table``.
 
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # Finally, you can use ``gtab`` (the GradientTable object) to show some
@@ -125,6 +125,12 @@ print(gtab.bvals)
 # Or, for example the 10 first b-vectors using:
 
 print(gtab.bvecs[:10, :])
+
+###############################################################################
+# You can get the number of gradients (including the number of b0 values)
+# calling ``len`` on the ``GradientTable`` instance:
+
+print(len(gtab))
 
 ###############################################################################
 # ``gtab``  can be used to tell what part of the data is the S0 volumes

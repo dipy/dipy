@@ -5,7 +5,8 @@ Crossing invariant fiber response function with FORECAST model
 
 We show how to obtain a voxel specific response function in the form of
 axially symmetric tensor and the fODF using the FORECAST model from
-[Anderson2005]_ , [Kaden2016]_ and [Zucchelli2017]_.
+:footcite:p:`Anderson2005`, :footcite:p:`Kaden2016a` and
+:footcite:p:`Zucchelli2017`.
 
 First import the necessary modules:
 """
@@ -25,8 +26,8 @@ from dipy.viz import actor, window
 # Download and read the data for this tutorial. Our implementation of FORECAST
 # requires multi-shell `data.fetch_hbn()` provides data that was acquired using
 # b-values of 1000 and 2000 as part of the Healthy Brain Network study
-# [Alexander2017]_ and was preprocessed and quality controlled in the HBN-POD2
-# dataset [RichieHalford2022]_.
+# :footcite:p:`Alexander2017` and was preprocessed and quality controlled in the
+# HBN-POD2 dataset :footcite:p:`RichieHalford2022`.
 
 data_path = fetch_hbn(["NDARAA948VFH"])[1]
 dwi_path = op.join(
@@ -45,7 +46,7 @@ gtab = gradient_table(
         dwi_path,
         "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval",
     ),
-    op.join(
+    bvecs=op.join(
         dwi_path,
         "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec",
     ),
@@ -82,12 +83,12 @@ fm = ForecastModel(gtab, sh_order_max=6, dec_alg="CSD")
 ###############################################################################
 # Fit the FORECAST to the data
 
-f_fit = fm.fit(data_small, mask_small)
+f_fit = fm.fit(data_small, mask=mask_small)
 
 ###############################################################################
-# Calculate the crossing invariant tensor indices [Kaden2016]_ : the parallel
-# diffusivity, the perpendicular diffusivity, the fractional anisotropy and
-# the mean diffusivity.
+# Calculate the crossing invariant tensor indices :footcite:p:`Kaden2016a`: the
+# parallel diffusivity, the perpendicular diffusivity, the fractional anisotropy
+# and the mean diffusivity.
 
 d_par = f_fit.dpar
 d_perp = f_fit.dperp
@@ -132,7 +133,7 @@ plt.savefig("FORECAST_indices.png", dpi=300, bbox_inches="tight")
 #
 # Load an ODF reconstruction sphere
 
-sphere = get_sphere("repulsion724")
+sphere = get_sphere(name="repulsion724")
 
 ###############################################################################
 # Compute the fODFs.
@@ -148,7 +149,7 @@ odf_actor = actor.odf_slicer(
 )
 scene = window.Scene()
 scene.add(odf_actor)
-window.record(scene, out_path="fODFs.png", size=(600, 600), magnification=4)
+window.record(scene=scene, out_path="fODFs.png", size=(600, 600), magnification=4)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -159,22 +160,5 @@ window.record(scene, out_path="fODFs.png", size=(600, 600), magnification=4)
 # References
 # ----------
 #
-# .. [Anderson2005] Anderson A. W., "Measurement of Fiber Orientation
-#        Distributions Using High Angular Resolution Diffusion Imaging",
-#        Magnetic Resonance in Medicine, 2005.
+# .. footbibliography::
 #
-# .. [Kaden2016] Kaden E. et al., "Quantitative Mapping of the Per-Axon
-#        Diffusion Coefficients in Brain White Matter", Magnetic Resonance
-#        in Medicine, 2016.
-#
-# .. [Zucchelli2017] Zucchelli E. et al., "A generalized SMT-based framework
-#        for Diffusion MRI microstructural model estimation", MICCAI Workshop
-#        on Computational DIFFUSION MRI (CDMRI), 2017.
-#
-# .. [Alexander2017] Alexander LM, Escalera J, Ai L, et al. An open resource
-#        for transdiagnostic research in pediatric mental health and learning
-#        disorders. Sci Data. 2017;4:170181.
-#
-# .. [RichieHalford2022] Richie-Halford A, Cieslak M, Ai L, et al. An
-#        analysis-ready and quality controlled resource for pediatric brain
-#        white-matter research. Scientific Data. 2022;9(1):1-27.

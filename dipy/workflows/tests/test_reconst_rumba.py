@@ -25,7 +25,7 @@ def test_reconst_rumba():
 
 def reconst_flow_core(flow):
     with TemporaryDirectory() as out_dir:
-        data_path, bval_path, bvec_path = get_fnames("small_64D")
+        data_path, bval_path, bvec_path = get_fnames(name="small_64D")
         volume, affine = load_nifti(data_path)
         mask = np.ones_like(volume[:, :, :, 0])
         mask_path = pjoin(out_dir, "tmp_mask.nii.gz")

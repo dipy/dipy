@@ -23,14 +23,16 @@ from dipy.data.fetcher import (
     fetch_disco3_dataset,
     fetch_disco_dataset,
     fetch_evac_test,
-    fetch_evac_weights,
+    fetch_evac_tf_weights,
+    fetch_evac_torch_weights,
     fetch_gold_standard_io,
     fetch_hbn,
     fetch_isbi2013_2shell,
     fetch_ivim,
     fetch_mni_template,
     fetch_ptt_minimal_dataset,
-    fetch_resdnn_weights,
+    fetch_resdnn_tf_weights,
+    fetch_resdnn_torch_weights,
     fetch_scil_b0,
     fetch_sherbrooke_3shell,
     fetch_stanford_hardi,
@@ -70,6 +72,7 @@ from dipy.data.fetcher import (
     read_tissue_data,
 )
 from dipy.io.image import load_nifti
+from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import relist_streamlines
 from dipy.utils.arrfuncs import as_native_array
 
@@ -86,14 +89,16 @@ __all__ = [
     "fetch_disco3_dataset",
     "fetch_disco_dataset",
     "fetch_evac_test",
-    "fetch_evac_weights",
+    "fetch_evac_tf_weights",
+    "fetch_evac_torch_weights",
     "fetch_gold_standard_io",
     "fetch_hbn",
     "fetch_isbi2013_2shell",
     "fetch_ivim",
     "fetch_mni_template",
     "fetch_ptt_minimal_dataset",
-    "fetch_resdnn_weights",
+    "fetch_resdnn_tf_weights",
+    "fetch_resdnn_torch_weights",
     "fetch_scil_b0",
     "fetch_sherbrooke_3shell",
     "fetch_stanford_hardi",
@@ -153,7 +158,8 @@ class DataError(Exception):
     pass
 
 
-def get_sim_voxels(name="fib1"):
+@warning_for_keywords()
+def get_sim_voxels(*, name="fib1"):
     """provide some simulated voxel data
 
     Parameters
@@ -169,7 +175,7 @@ def get_sim_voxels(name="fib1"):
     Examples
     --------
     >>> from dipy.data import get_sim_voxels
-    >>> sv=get_sim_voxels('fib1')
+    >>> sv=get_sim_voxels(name='fib1')
     >>> sv['data'].shape == (100, 102)
     True
     >>> sv['fibres']
@@ -180,7 +186,7 @@ def get_sim_voxels(name="fib1"):
     True
     >>> sv['snr']
     '60'
-    >>> sv2=get_sim_voxels('fib2')
+    >>> sv2=get_sim_voxels(name='fib2')
     >>> sv2['fibres']
     '2'
     >>> sv2['snr']
@@ -200,7 +206,8 @@ def get_sim_voxels(name="fib1"):
     return loads_compat(gzip.open(fname, "rb").read())
 
 
-def get_skeleton(name="C1"):
+@warning_for_keywords()
+def get_skeleton(*, name="C1"):
     """Provide skeletons generated from Local Skeleton Clustering (LSC).
 
     Parameters
@@ -214,7 +221,7 @@ def get_skeleton(name="C1"):
     Examples
     --------
     >>> from dipy.data import get_skeleton
-    >>> C=get_skeleton('C1')
+    >>> C=get_skeleton(name='C1')
     >>> len(C.keys())
     117
     >>> for c in C: break
@@ -229,7 +236,8 @@ def get_skeleton(name="C1"):
     return loads_compat(gzip.open(fname, "rb").read())
 
 
-def get_sphere(name="symmetric362"):
+@warning_for_keywords()
+def get_sphere(*, name="symmetric362"):
     """provide triangulated spheres
 
     Parameters
@@ -251,13 +259,13 @@ def get_sphere(name="symmetric362"):
     --------
     >>> import numpy as np
     >>> from dipy.data import get_sphere
-    >>> sphere = get_sphere('symmetric362')
+    >>> sphere = get_sphere(name="symmetric362")
     >>> verts, faces = sphere.vertices, sphere.faces
     >>> verts.shape == (362, 3)
     True
     >>> faces.shape == (720, 3)
     True
-    >>> verts, faces = get_sphere('not a sphere name') #doctest: +IGNORE_EXCEPTION_DETAIL
+    >>> verts, faces = get_sphere(name="not a sphere name") #doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     DataError: No sphere called "not a sphere name"
@@ -274,8 +282,8 @@ def get_sphere(name="symmetric362"):
     )
 
 
-default_sphere = HemiSphere.from_sphere(get_sphere("repulsion724"))
-small_sphere = HemiSphere.from_sphere(get_sphere("symmetric362"))
+default_sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
+small_sphere = HemiSphere.from_sphere(get_sphere(name="symmetric362"))
 
 
 def _gradient_from_file(filename):
@@ -297,18 +305,18 @@ get_gtab_taiwan_dsi = _gradient_from_file("gtab_taiwan_dsi.txt")
 
 
 def dsi_voxels():
-    fimg, fbvals, fbvecs = get_fnames("small_101D")
+    fimg, fbvals, fbvecs = get_fnames(name="small_101D")
     bvals = np.loadtxt(fbvals)
     bvecs = np.loadtxt(fbvecs).T
     data, _ = load_nifti(fimg)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
     return data, gtab
 
 
 def dsi_deconv_voxels():
     from dipy.sims.voxel import sticks_and_ball
 
-    gtab = gradient_table(np.loadtxt(get_fnames("dsi515btable")))
+    gtab = gradient_table(np.loadtxt(get_fnames(name="dsi515btable")))
     data = np.zeros((2, 2, 2, 515))
     for ix in range(2):
         for iy in range(2):
@@ -385,7 +393,7 @@ def get_cmap(name):
 
 
 def two_cingulum_bundles():
-    fname = get_fnames("cb_2")
+    fname = get_fnames(name="cb_2")
     res = np.load(fname)
     cb1 = relist_streamlines(res["points"], res["offsets"])
     cb2 = relist_streamlines(res["points2"], res["offsets2"])
@@ -398,9 +406,11 @@ def matlab_life_results():
     return matlab_rmse, matlab_weights
 
 
-def load_sdp_constraints(model_name, order=None):
-    """Import semidefinite programming constraint matrices for different models,
-    generated as described for example in [1]_.
+@warning_for_keywords()
+def load_sdp_constraints(model_name, *, order=None):
+    """Import semidefinite programming constraint matrices for different models.
+
+    Generated as described for example in :footcite:p:`DelaHaije2020`.
 
     Parameters
     ----------
@@ -422,9 +432,7 @@ def load_sdp_constraints(model_name, order=None):
 
     References
     ----------
-    .. [1] Dela Haije et al. "Enforcing necessary non-negativity constraints
-           for common diffusion MRI models using sum of squares programming".
-           NeuroImage 209, 2020, 116405.
+    .. footbibliography::
 
     """
 

@@ -35,8 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
-Utilities to support special Python descriptors [1,2], in particular the use of
-a useful pattern for properties we call 'one time properties'.  These are
+Utilities to support special Python descriptors [1]_, [2]_ in particular the use
+of a useful pattern for properties we call 'one time properties'.  These are
 object attributes which are declared as properties, but become regular
 attributes once they've been read the first time.  They can thus be evaluated
 later in the object's life cycle, but once evaluated they become normal, static
@@ -48,11 +48,12 @@ to their 'untriggered' state.
 
 References
 ----------
-[1] How-To Guide for Descriptors, Raymond
-Hettinger. http://users.rcn.com/python/download/Descriptor.htm
+.. [1] How-To Guide for Descriptors, Raymond
+   Hettinger. http://users.rcn.com/python/download/Descriptor.htm
 
-[2] Python data model, https://docs.python.org/reference/datamodel.html
+.. [2] Python data model, https://docs.python.org/reference/datamodel.html
 """
+
 
 # ----------------------------------------------------------------------------
 # Classes and Functions

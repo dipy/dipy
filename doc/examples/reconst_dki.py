@@ -1,31 +1,31 @@
 """
-=====================================================================
-Reconstruction of the diffusion signal with the kurtosis tensor model
-=====================================================================
+===========================================================================
+Reconstruction of the diffusion signal with the kurtosis tensor model (DKI)
+===========================================================================
 
 Diffusional Kurtosis Imaging (DKI) is an expansion of the Diffusion Tensor
 Imaging (DTI) model
 (see :ref:`sphx_glr_examples_built_reconstruction_reconst_dti.py`). In
 addition to the Diffusion Tensor (DT), DKI quantifies the degree to which water
 diffusion in biological tissues is non-Gaussian using the Kurtosis Tensor (KT)
-[Jensen2005]_.
+:footcite:p:`Jensen2005`.
 
-Measurements of non-Gaussian diffusion from DKI are
-of interest because they were shown to provide extra information about
-microstructural alterations in both health and disease (for a review see our
-paper [Henriq2021]_). Moreover, in contrast to DTI, DKI can provide metrics
-of tissue microscopic heterogeneity that are less sensitive to confounding
-effects in the orientation of tissue components, thus providing better
-characterization in general white matter configurations (including regions
-of fibers crossing, fanning, and/or dispersing) and gray matter [NetoHe2015]_,
-[Henriq2021]_.
-Although DKI aims primarily to quantify the degree of non-Gaussian diffusion
-without establishing concrete biophysical assumptions, DKI can also be related
-to microstructural models to infer specific biophysical parameters (e.g., the
+Measurements of non-Gaussian diffusion from DKI are of interest because they
+were shown to provide extra information about microstructural alterations in
+both health and disease (for a review see our
+paper :footcite:p:`NetoHenriques2021a`). Moreover, in contrast to DTI, DKI can
+provide metrics of tissue microscopic heterogeneity that are less sensitive to
+confounding effects in the orientation of tissue components, thus providing
+better characterization in general white matter configurations (including
+regions of fibers crossing, fanning, and/or dispersing) and gray matter
+:footcite:p:`NetoHenriques2015`, :footcite:p:`NetoHenriques2021a`. Although DKI
+aims primarily to quantify the degree of non-Gaussian diffusion without
+establishing concrete biophysical assumptions, DKI can also be related to
+microstructural models to infer specific biophysical parameters (e.g., the
 density of axonal fibers) - this aspect will be more closely explored in
 :ref:sphx_glr_examples_built_reconstruction_reconst_dki_micro.py. For
 additional information on DKI and its practical implementation within DIPY,
-refer to [Henriq2021]_.
+refer to :footcite:p:`NetoHenriques2021a`.
 
 Below, we introduce a concise theoretical background of DKI and demonstrate
 its fitting process using DIPY. We'll also guide you through the fitting
@@ -102,14 +102,14 @@ from dipy.viz.plotting import compare_maps
 # DKI requires multi-shell data, i.e. data acquired from more than one
 # non-zero b-value. Here, we use fetch to download a multi-shell dataset which
 # was kindly provided by Hansen and Jespersen (more details about the data are
-# provided in their paper [Hansen2016]_). The total size of the downloaded
-# data is 192 MBytes, however you only need to fetch it once.
+# provided in their paper :footcite:p:`Hansen2016a`). The total size of the
+# downloaded data is 192 MBytes, however you only need to fetch it once.
 
-fraw, fbval, fbvec, t1_fname = get_fnames("cfin_multib")
+fraw, fbval, fbvec, t1_fname = get_fnames(name="cfin_multib")
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-gtab = gradient_table(bvals, bvecs)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # Function ``get_fnames`` downloads and outputs the paths of the data,
@@ -131,7 +131,7 @@ bval_sel[bvals == 1000] = 1
 bval_sel[bvals == 2000] = 1
 
 data = data[..., bval_sel == 1]
-gtab = gradient_table(bvals[bval_sel == 1], bvecs[bval_sel == 1])
+gtab = gradient_table(bvals[bval_sel == 1], bvecs=bvecs[bval_sel == 1])
 
 ###############################################################################
 # Before fitting the data, we perform some data pre-processing. We first
@@ -144,17 +144,17 @@ datamask, mask = median_otsu(
 
 ###############################################################################
 # Since the diffusion kurtosis model involves the estimation of a large number
-# of parameters [TaxCMW2015]_ and since the non-Gaussian components of the
-# diffusion signal are more sensitive to artifacts [NetoHe2012]_,
-# [Tabesh2011]_, it might be favorable to suppress the effects of noise and
-# artifacts before diffusion kurtosis fitting. In this example, the effects of
-# noise are suppressed using the Marcenko-Pastur (MP)-PCA algorithm (for more
-# information, see
+# of parameters :footcite:p:`Tax2015` and since the non-Gaussian components of
+# the diffusion signal are more sensitive to artifacts
+# :footcite:p:`NetoHenriques2012`, :footcite:p:`Tabesh2011`, it might be
+# favorable to suppress the effects of noise and artifacts before diffusion
+# kurtosis fitting. In this example, the effects of noise are suppressed using
+# the Marcenko-Pastur (MP)-PCA algorithm (for more information, see
 # :ref:sphx_glr_examples_built_preprocessing_denoise_mppca.py). Processing
 # MP-PCA may take a while - for illustration purposes, you can skip this step.
 # However, note that if you don't denoise your data, DKI reconstructions may
 # be corrupted by a large percentage of implausible DKI estimates (see below
-# for more information on this issue)."
+# for more information on this issue).
 
 data = mppca(data, patch_radius=[3, 3, 3])
 
@@ -185,8 +185,8 @@ dkifit = dkimodel.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
 # and should be analogous; however, theoretically, the diffusion statistics
 # from the kurtosis model are expected to have better accuracy, since DKI's
 # diffusion tensor are decoupled from higher order terms effects
-# [Veraar2011]_, [Henriq2021]_. Below we compare the FA, MD, AD, and RD,
-# computed from both DTI and DKI.
+# :footcite:p:`Veraart2011`, :footcite:p:`NetoHenriques2021a`. Below we compare
+# the FA, MD, AD, and RD, computed from both DTI and DKI.
 
 tenmodel = dti.TensorModel(gtab)
 tenfit = tenmodel.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
@@ -212,7 +212,8 @@ compare_maps(
 #
 # DTI's diffusion estimates present lower values than DKI's estimates,
 # showing that DTI's diffusion measurements are underestimated by higher
-# order effects (for detailed discussion on this see [Henriq2021]_.
+# order effects (for detailed discussion on this see
+# :footcite:p:`NetoHenriques2021a`.
 #
 # In addition to the standard diffusion statistics, the DiffusionKurtosisFit
 # instance can be used to estimate the non-Gaussian measures of mean kurtosis
@@ -249,21 +250,21 @@ compare_maps(
 # the  RK map above). These negative kurtosis values are artifactual and might
 # be induced by:
 # 1) low radial diffusivities of aligned white matter - since it is very hard
-# to capture non-Gaussian information in radial direction due to it's low
+# to capture non-Gaussian information in radial direction due to its low
 # diffusion decays, radial kurtosis estimates (and consequently the mean
 # kurtosis estimates) might have low robustness and tendency to exhibit
-# negative values [NetoHe2012]_, [Tabesh2011]_;
+# negative values :footcite:p:`NetoHenriques2012`, :footcite:p:`Tabesh2011`;
 # 2) Gibbs artifacts - MRI images might be corrupted by signal oscillation
 # artifact between tissue's edges if an inadequate number of high frequencies
 # of the k-space is sampled. These oscillations might have different signs on
 # images acquired with different diffusion-weighted and inducing negative
-# biases in kurtosis parametric maps [Perron2015]_, [NetoHe2018]_.
-# 3) Underestimation of b0 signals - Due to physiological or noise artifacts,
-# the signals acquired at b-value=0 may be artifactually lower than the
-# diffusion-weighted signals acquired for the different b-values. In this
-# case, the log diffusion-weighted signal decay may appear to be concave
-# rather than showing to be convex (as one would typically expect), leading
-# to negative kurtosis value estimates.
+# biases in kurtosis parametric maps :footcite:p:`Perrone2015`,
+# :footcite:p:`NetoHenriques2018`. 3) Underestimation of b0 signals - Due to
+# physiological or noise artifacts, the signals acquired at b-value=0 may be
+# artifactually lower than the diffusion-weighted signals acquired for the
+# different b-values. In this case, the log diffusion-weighted signal decay may
+# appear to be concave rather than showing to be convex (as one would typically
+# expect), leading to negative kurtosis value estimates.
 #
 # Given the above, one can try to suppress the 'Black' voxel / holes in DKI
 # metrics by:
@@ -284,7 +285,7 @@ compare_maps(
 # the mean kurtosis tensor (MKT) and radial tensor kurtosis (RTK) metrics (see
 # below).
 # 4) constrained optimization to ensure that the fitted parameters
-# are physically plausible [DelaHa2020]_ (see below).
+# are physically plausible :footcite:p:`DelaHaije2020` (see below).
 #
 # Alternative DKI metrics
 # =======================
@@ -293,13 +294,14 @@ compare_maps(
 # above, alternative metrics can be computed from DKI, e.g.:
 # 1) the mean kurtosis tensor (MKT) - defined as the trace of the kurtosis
 # tensor - is a quantity that provides a contrast similar to the standard MK
-# but it is more robust to noise artifacts [Hansen2013]_, [Henriq2021]_.
-# 2) the radial tensor kurtosis (RTK) provides an alternative definition to
-# standard radial kurtosis (RK) that, as MKT, is more robust to noise
-# artifacts [Hansen2017]_.
+# but it is more robust to noise artifacts :footcite:p:`Hansen2013`,
+# :footcite:p:`NetoHenriques2021a`. 2) the radial tensor kurtosis (RTK) provides
+# an alternative definition to standard radial kurtosis (RK) that, as MKT, is
+# more robust to noise artifacts :footcite:p:`Hansen2013`.
 # 3) the kurtosis fractional anisotropy (KFA) that quantifies the anisotropy of
-# the kurtosis tensor [GlennR2015]_, which provides different information than
-# the FA measures from the diffusion tensor.
+# the kurtosis tensor :footcite:p:`Glenn2015`, which provides different
+# information than the FA measures from the diffusion tensor.
+#
 # These measures are computed and illustrated below:
 
 compare_maps(
@@ -327,12 +329,12 @@ compare_maps(
 # constraints with the option `fit_method='CLS'` (for ordinary least squares)
 # or with `fit_method='CWLS'` (for weighted least squares). Constrained fitting
 # takes more time than unconstrained fitting, but is generally recommended to
-# prevent physically unplausible parameter estimates [DelaHa2020]_. For
-# performance purposes it is recommended to use the MOSEK solver
-# (https://www.mosek.com/) by setting ``cvxpy_solver='MOSEK'``. Different
-# solvers can differ greatly in terms of runtime and solution accuracy, and in
-# some cases solvers may show warnings about convergence or recommended option
-# settings.
+# prevent physically implausible parameter estimates
+# :footcite:p:`DelaHaije2020`. For performance purposes it is recommended to use
+# the MOSEK solver (https://www.mosek.com/) by setting ``cvxpy_solver='MOSEK'``.
+# Different solvers can differ greatly in terms of runtime and solution
+# accuracy, and in some cases solvers may show warnings about convergence or
+# recommended option settings.
 #
 # .. note::
 #    In certain atypical scenarios, the DKI+ constraints could potentially be
@@ -365,61 +367,6 @@ compare_maps(
 #
 # References
 # ----------
-# .. [Jensen2005] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K (2005).
-#                 Diffusional Kurtosis Imaging: The Quantification of
-#                 Non_Gaussian Water Diffusion by Means of Magnetic Resonance
-#                 Imaging. Magnetic Resonance in Medicine 53: 1432-1440
-# .. [Henriq2021] Henriques RN, Correia MM, Marrale M, Huber E, Kruper J,
-#                 Koudoro S, Yeatman JD, Garyfallidis E, Rokem A (2021).
-#                  Diffusional Kurtosis Imaging in the Diffusion Imaging in
-#                  Python Project. Frontiers in Human Neuroscience 15: 675433.
-# .. [Jensen2010] Jensen JH, Helpern JA (2010). MRI quantification of
-#                 non-Gaussian water diffusion by kurtosis analysis. NMR in
-#                 Biomedicine 23(7): 698-710
-# .. [Fierem2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
-#                 characterization with diffusion kurtosis imaging. NeuroImage
-#                 58: 177-188
-# .. [Veraar2011] Veraart J, Poot DH, Van Hecke W, Blockx I, Van der Linden A,
-#                 Verhoye M, Sijbers J (2011). More Accurate Estimation of
-#                 Diffusion Tensor Parameters Using Diffusion Kurtosis Imaging.
-#                 Magnetic Resonance in Medicine 65(1): 138-145
-# .. [NetoHe2012] Neto Henriques R, Ferreira H, Correia M, (2012). Diffusion
-#                 kurtosis imaging of the healthy human brain. Master
-#                 Dissertation Bachelor and Master Programin Biomedical
-#                 Engineering and Biophysics, Faculty of Sciences.
-#                 https://repositorio.ul.pt/bitstream/10451/8511/1/ulfc104137_tm_Rafael_Henriques.pdf
-# .. [Tabesh2011] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A.,
-#                 (2011). Estimation of tensors and tensor-derived measures in
-#                 diffusional kurtosis imaging. Magn Reson Med. 65(3), 823-836
-# .. [Hansen2013] Hansen B, Lund TE, Sangill R, and Jespersen SN (2013).
-#                 Experimentally and computationally393fast method for
-#                 estimation of a mean kurtosis. Magnetic Resonance in
-#                 Medicine 69, 1754–1760.394 doi:10.1002/mrm.24743
-# .. [Hansen2017] Hansen B, Shemesh N, and Jespersen SN (2017). Fast Imaging
-#                 of Mean, Axial, and radial diffusion kurtosis. Neuroimage
-#                 142:381-392 doi:10.1016/j.neuroimage.2016.08.022
-# .. [GlennR2015] Glenn GR, Helpern JA, Tabesh A, Jensen JH (2015).
-#                 Quantitative assessment of diffusional387kurtosis anisotropy.
-#                 NMR in Biomedicine28, 448–459. doi:10.1002/nbm.3271
-# .. [NetoHe2015] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
-#                 Exploring the 3D geometry of the diffusion kurtosis tensor -
-#                 Impact on the development of robust tractography procedures
-#                 and novel biomarkers, NeuroImage 111: 85-99
-# .. [Perron2015] Perrone D, Aelterman J, Pižurica A, Jeurissen B, Philips W,
-#                 Leemans A, (2015). The effect of Gibbs ringing artifacts on
-#                 measures derived from diffusion MRI. Neuroimage 120, 441-455.
-#                 https://doi.org/10.1016/j.neuroimage.2015.06.068.
-# .. [TaxCMW2015] Tax CMW, Otte WM, Viergever MA, Dijkhuizen RM, Leemans A
-#                 (2014). REKINDLE: Robust extraction of kurtosis INDices with
-#                 linear estimation. Magnetic Resonance in Medicine 73(2):
-#                 794-808.
-# .. [Hansen2016] Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
-#                 kurtosis strategies, b-value optimization and exploration of
-#                 diffusion MRI contrast. Scientific Data 3: 160072
-#                 doi:10.1038/sdata.2016.72
-# .. [NetoHe2018] Neto Henriques R (2018). Advanced Methods for Diffusion MRI
-#                 Data Analysis and their Application to the Healthy Ageing
-#                 Brain (Doctoral thesis). https://doi.org/10.17863/CAM.29356
-# .. [DelaHa2020] Dela Haije et al. "Enforcing necessary non-negativity
-#                 constraints for common diffusion MRI models using sum of
-#                 squares programming". NeuroImage 209, 2020, 116405.
+#
+# .. footbibliography::
+#

@@ -283,6 +283,7 @@ endif
 _cython_tree = [
   fs.copyfile('__init__.py'),
   fs.copyfile('../src/conditional_omp.h'),
+  fs.copyfile('../src/ctime.pxd'),
   fs.copyfile('../src/cythonutils.h'),
   fs.copyfile('../src/dpy_math.h'),
   fs.copyfile('../src/safe_openmp.pxd'),
@@ -299,16 +300,26 @@ inc_local = include_directories('.')
 # ------------------------------------------------------------------------
 dipy_dir = py3.get_install_dir() / 'dipy'
 
-generate_version = custom_target(
-  'generate-version',
-  install: true,
-  build_always_stale: true,
-  build_by_default: true,
-  output: 'version.py',
-  input: '../tools/version_utils.py',
-  command: [py3, '@INPUT@', '--source-root', '@SOURCE_ROOT@'],
-  install_dir: dipy_dir
+meson.add_dist_script(
+   ['../tools/gitversion.py', '--meson-dist', '--write', 'dipy/version.py']
 )
+
+if not fs.exists('version.py')
+  generate_version = custom_target(
+    'generate-version',
+    install: true,
+    build_always_stale: true,
+    build_by_default: true,
+    output: 'version.py',
+    input: '../tools/gitversion.py',
+    command: ['../tools/gitversion.py', '--meson-dist', '--write', 'dipy/version.py'],
+    install_dir: dipy_dir,
+    install_tag: 'python-runtime',
+  )
+else
+  # When building from sdist, version.py exists and should be included
+  py3.install_sources(['version.py'], subdir : 'dipy')
+endif
 
 # ------------------------------------------------------------------------
 # Include Python Sources
@@ -316,7 +327,7 @@ generate_version = custom_target(
 python_sources = [
   '__init__.py',
   'conftest.py',
-  'pkg_info.py'
+  'py.typed'
 ]
 
 py3.install_sources(
