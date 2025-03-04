@@ -8,8 +8,15 @@ import warnings
 import numpy as np
 import trx.trx_file_memmap as tmm
 
+from dipy.core.gradients import (
+    extract_b0,
+    extract_dwi_shell,
+    gradient_table,
+    mask_non_weighted_bvals,
+)
 from dipy.core.sphere import Sphere
 from dipy.data import get_sphere
+from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.peaks import (
     load_pam,
@@ -23,6 +30,7 @@ from dipy.reconst.utils import convert_tensors
 from dipy.tracking.streamlinespeed import length
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tractogram import concatenate_tractogram
+from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
 ne, have_ne, _ = optional_package("numexpr")
@@ -322,6 +330,245 @@ class SplitFlow(Workflow):
             save_nifti(osplit, split_vol, affine, hdr=image.header)
 
             logging.info(f"Split volume saved as {osplit}")
+
+
+class ExtractB0Flow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "extract_b0"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        b0_threshold=50,
+        group_contiguous_b0=False,
+        strategy="mean",
+        out_dir="",
+        out_b0="b0.nii.gz",
+    ):
+        """Extract on or multiple b0 volume from the input 4D file.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        group_contiguous_b0 : bool, optional
+            If True, each contiguous b0 volumes are grouped together.
+        strategy : str, optional
+            The extraction strategy, of either:
+
+                - first: select the first b0 found.
+                - all: select them all.
+                - mean: average them.
+
+            When used in conjunction with the batch parameter set to True, the
+            strategy is applied individually on each continuous set found.
+        out_dir : string, optional
+            Output directory.
+        out_b0 : string, optional
+            Name of the resulting b0 volume.
+
+        """
+        io_it = self.get_io_iterator()
+        for dwi, bval, ob0 in io_it:
+            logging.info("Extracting b0 from {0}".format(dwi))
+            data, affine, image = load_nifti(dwi, return_img=True)
+
+            bvals, bvecs = read_bvals_bvecs(bval, None)
+            # If all b-values are smaller or equal to the b0 threshold, it is
+            # assumed that no thresholding is requested
+            if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+                if b0_threshold < bvals.min():
+                    warnings.warn(
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
+                        stacklevel=2,
+                    )
+            gtab = gradient_table(bvals, b0_threshold=b0_threshold)
+            b0s_result = extract_b0(
+                data,
+                gtab.b0s_mask,
+                group_contiguous_b0=group_contiguous_b0,
+                strategy=strategy,
+            )
+
+            if b0s_result.ndim == 3:
+                save_nifti(ob0, b0s_result, affine, hdr=image.header)
+                logging.info("b0 saved as {0}".format(ob0))
+            elif b0s_result.ndim == 4:
+                for i in range(b0s_result.shape[-1]):
+                    save_nifti(
+                        ob0.replace(".nii", f"_{i}.nii"),
+                        b0s_result[..., i],
+                        affine,
+                        hdr=image.header,
+                    )
+                    logging.info(
+                        "b0 saved as {0}".format(ob0.replace(".nii", f"_{i}.nii"))
+                    )
+            else:
+                logging.error("No b0 volumes found")
+
+
+class ExtractShellFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "extract_shell"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        bvals_to_extract=None,
+        b0_threshold=50,
+        bvecs_tol=0.01,
+        tol=20,
+        group_shells=True,
+        out_dir="",
+        out_shell="shell.nii.gz",
+    ):
+        """Extract shells from the input 4D file.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        bvals_to_extract : string, optional
+            List of b-values to extract. You can provide a single b-values or a range
+            of b-values separated by a dash. For example, to extract b-values 0, 1,
+            and 2, you can use '0-2'. You can also provide a list of b-values separated
+            by a comma. For example, to extract b-values 0, 1, 2, 8, 10, 11 and 12,
+            you can use '0-2,8,10-12'.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
+        tol : int, optional
+            Tolerance range for b-value selection. A value of 20 means volumes with
+            b-values within ±20 units of the specified b-values will be extracted.
+        group_shells : bool, optional
+            If True, extracted volumes are grouped into a single array. If False,
+            returns a list of separate volumes.
+        out_dir : string, optional
+            Output directory.
+        out_shell : string, optional
+            Name of the resulting shell volume.
+
+        """
+        io_it = self.get_io_iterator()
+        if bvals_to_extract is None:
+            logging.error(
+                "Please provide a list of b-values to extract."
+                " e.g: --bvals_to_extract 1000 2000 3000"
+            )
+            sys.exit(1)
+
+        bvals_to_extract = handle_vol_idx(bvals_to_extract)
+
+        for dwi, bval, bvec, oshell in io_it:
+            logging.info("Extracting shell from {0}".format(dwi))
+            data, affine, image = load_nifti(dwi, return_img=True)
+
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+            # If all b-values are smaller or equal to the b0 threshold, it is
+            # assumed that no thresholding is requested
+            if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+                if b0_threshold < bvals.min():
+                    warnings.warn(
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
+                        stacklevel=2,
+                    )
+            gtab = gradient_table(
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
+            indices, shell_data, output_bvals, output_bvecs = extract_dwi_shell(
+                data,
+                gtab,
+                bvals_to_extract,
+                tol=tol,
+                group_shells=group_shells,
+            )
+
+            for i, shell in enumerate(shell_data):
+                shell_value = np.unique(output_bvals[i]).astype(int).astype(str)
+                shell_value = "_".join(shell_value.tolist())
+                save_nifti(
+                    oshell.replace(".nii", f"_{shell_value}.nii"),
+                    shell,
+                    affine,
+                    hdr=image.header,
+                )
+                logging.info(
+                    "b0 saved as {0}".format(
+                        oshell.replace(".nii", f"_{shell_value}.nii")
+                    )
+                )
+
+
+class ExtractVolumeFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "extract_volume"
+
+    def run(
+        self, input_files, vol_idx=0, grouped=True, out_dir="", out_vol="volume.nii.gz"
+    ):
+        """Extracts the required volume from the input 4D file.
+
+        Parameters
+        ----------
+        input_files : string
+            Any number of Nifti1 files
+        vol_idx : string, optional
+            Indexes of the 3D volume to extract. Index start from 0. You can provide
+            a single index or a range of indexes separated by a dash. For example,
+            to extract volumes 0, 1, and 2, you can use '0-2'. You can also provide
+            a list of indexes separated by a comma. For example, to extract volumes
+            0, 1, 2, 8, 10, 11 and 12 , you can use '0-2,8,10-12'.
+        grouped : bool, optional
+            If True, extracted volumes are grouped into a single array. If False,
+            save a list of separate volumes.
+        out_dir : string, optional
+            Output directory.
+        out_vol : string, optional
+            Name of the resulting volume.
+
+        """
+        io_it = self.get_io_iterator()
+        vol_idx = handle_vol_idx(vol_idx)
+
+        for fpath, ovol in io_it:
+            logging.info("Extracting volume from {0}".format(fpath))
+            data, affine, image = load_nifti(fpath, return_img=True)
+
+            if grouped:
+                split_vol = data[..., vol_idx]
+                save_nifti(ovol, split_vol, affine, hdr=image.header)
+                logging.info("Volume saved as {0}".format(ovol))
+            else:
+                for i in vol_idx:
+                    fname = ovol.replace(".nii", f"_{i}.nii")
+                    split_vol = data[..., i]
+                    save_nifti(fname, split_vol, affine, hdr=image.header)
+                    logging.info("Volume saved as {0}".format(fname))
 
 
 class ConcatenateTractogramFlow(Workflow):
