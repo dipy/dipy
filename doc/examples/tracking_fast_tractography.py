@@ -42,6 +42,7 @@ from dipy.viz import actor, colormap, has_fury, window
 interactive = False
 
 print("Downloading data...")
+
 ###############################################################################
 # Prepare the synthetic DiSCo data for fast tracking. The ground-truth
 # connectome will be use to evaluate tractography performances.
@@ -75,13 +76,14 @@ plt.imshow(GT_connectome, origin="lower", cmap="viridis", interpolation="nearest
 plt.axis("off")
 plt.savefig("connectome_ground_truth.png")
 plt.close()
+
 ###############################################################################
 #
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # DiSCo ground-truth trajectories (left) and connectivity matrix (right).
-
-###############################################################################
+#
+#
 
 # Tracking mask, seed positions and initial directions
 mask_fname = fnames[disco1_fnames.index("highRes_DiSCo1_mask.nii.gz")]
@@ -104,13 +106,14 @@ plt.axis("off")
 plt.title("Tracking Mask")
 plt.savefig("tracking_mask.png")
 plt.close()
+
 ###############################################################################
 #
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # DiSCo seeding (left) and tracking (right) masks.
-
-###############################################################################
+#
+#
 
 # Compute ODFs
 data_fname = fnames[disco1_fnames.index("highRes_DiSCo1_DWI_RicianNoise-snr10.nii.gz")]
@@ -138,12 +141,14 @@ if has_fury:
     window.record(scene=scene, out_path="GT_odfs.png", size=(600, 600))
     if interactive:
         window.show(scene)
+
 ###############################################################################
 #
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # DiSCo ground-truth ODFs.
-###############################################################################
+#
+#
 
 # Perform fast deterministic tractography using 1 thread (cpu)
 print("Running fast Deterministic Tractography...")
@@ -181,8 +186,8 @@ plt.close()
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # DiSCo Deterministic tractogram and corresponding connectome.
-###############################################################################
-
+#
+#
 # Perform fast probabilistic tractography using 4 threads (cpus)
 
 print("Running fast Probabilistic Tractography...")
@@ -219,7 +224,8 @@ plt.close()
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # DiSCo Probabilistic tractogram and corresponding connectome.
-###############################################################################
+#
+#
 
 # Perform fast parallel transport tractography tractography using all threads (cpus)
 print("Running fast Parallel Transport Tractography...")
@@ -253,4 +259,5 @@ plt.close()
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # DiSCo PTT tractogram and corresponding connectome.
-###############################################################################
+#
+#
