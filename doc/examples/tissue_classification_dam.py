@@ -13,17 +13,16 @@ median otsu, denoising with Patch2Self, and then perform tissue classification.
 Let's start by loading the necessary modules:
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
-from dipy.segment.tissue import dam_classifier
-from dipy.segment.mask import median_otsu
+
 from dipy.core.gradients import gradient_table
-from dipy.io.image import load_nifti
-from dipy.io.gradients import read_bvals_bvecs
 from dipy.data import get_fnames
 from dipy.denoise.patch2self import patch2self
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
+from dipy.segment.mask import median_otsu
+from dipy.segment.tissue import dam_classifier
 from dipy.viz.plotting import image_mosaic
-
 
 ###############################################################################
 # First we fetch the diffusion image, bvalues and bvectors from the cfin dataset.
