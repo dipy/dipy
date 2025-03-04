@@ -13,6 +13,8 @@ median otsu, denoising with Patch2Self, and then perform tissue classification.
 Let's start by loading the necessary modules:
 """
 
+import numpy as np
+import matplotlib.pyplot as plt
 from dipy.segment.tissue import dam_classifier
 from dipy.segment.mask import median_otsu
 from dipy.core.gradients import gradient_table
@@ -20,8 +22,8 @@ from dipy.io.image import load_nifti
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.data import get_fnames
 from dipy.denoise.patch2self import patch2self
-import numpy as np
-import matplotlib.pyplot as plt
+from dipy.viz.plotting import image_mosaic
+
 
 ###############################################################################
 # First we fetch the diffusion image, bvalues and bvectors from the cfin dataset.
@@ -52,21 +54,18 @@ wm_mask, gm_mask = dam_classifier(denoised_arr, bvals, wm_threshold=0.7)
 ###############################################################################
 # Now we can visualize the WM and GM masks.
 
-plt.figure(figsize=(10, 5))
-plt.subplot(1, 3, 1)
-plt.imshow(data[:, :, data.shape[2] // 2, 0], cmap="gray")
-plt.title("DWI (b0)")
-plt.axis("off")
+images = [
+    data[:, :, data.shape[2] // 2, 0],  # DWI (b0)
+    wm_mask[:, :, data.shape[2] // 2],  # White Matter Mask
+    gm_mask[:, :, data.shape[2] // 2],  # Grey Matter Mask
+]
 
-plt.subplot(1, 3, 2)
-plt.imshow(wm_mask[:, :, data.shape[2] // 2], cmap="gray")
-plt.title("White Matter Mask")
-plt.axis("off")
+ax_labels = ["DWI (b0)", "White Matter Mask", "Grey Matter Mask"]
+ax_kwargs = [{"cmap": "gray"} for _ in images]
 
-plt.subplot(1, 3, 3)
-plt.imshow(gm_mask[:, :, data.shape[2] // 2], cmap="gray")
-plt.title("Grey Matter Mask")
-plt.axis("off")
+fig, ax = image_mosaic(
+    images, ax_labels=ax_labels, ax_kwargs=ax_kwargs, figsize=(10, 5)
+)
 
 plt.show()
 
