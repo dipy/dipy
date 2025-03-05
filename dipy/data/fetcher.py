@@ -247,7 +247,7 @@ def _make_fetcher(
     data_size=None,
     msg=None,
     unzip=False,
-    use_headers=False,
+    use_headers=True,
 ):
     """Create a new fetcher
 
