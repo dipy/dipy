@@ -1,7 +1,6 @@
 import warnings
 
 import numpy as np
-from scipy import stats
 
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
