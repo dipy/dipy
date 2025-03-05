@@ -316,6 +316,9 @@ class SlicesTab(HorizonTab):
                 self._volume.obj.value = self._volume.selected_value
             else:
                 intensities_range = self._visualizer.intensities_range
+                print(intensities_range)
+                print(self._visualizer.volume_min)
+                print(self._visualizer.volume_max)
 
                 # Updating the colormap
                 self._intensities.selected_value[0] = intensities_range[0]
@@ -323,7 +326,8 @@ class SlicesTab(HorizonTab):
                 self._update_colormap()
 
                 # Updating intensities slider
-                self._intensities.obj.initial_values = intensities_range
+                self._intensities.obj.left_disk_value = intensities_range[0]
+                self._intensities.obj.right_disk_value = intensities_range[1]
                 self._intensities.obj.min_value = self._visualizer.volume_min
                 self._intensities.obj.max_value = self._visualizer.volume_max
                 self._intensities.obj.update(0)
