@@ -172,19 +172,29 @@ class SlicesVisualizer:
         self._picked_voxel_actor = actor.dot(pnt, colors=(0.9, 0.4, 0.0), dot_size=10)
         self._scene.add(self._picked_voxel_actor)
 
+    def _adaptive_percentile(self, vol_data, percentile, idx):
+        value_range = np.percentile(vol_data, percentile)
+
+        if np.sum(np.diff(value_range)) == 0:
+            warnings.warn(
+                f"The selected intensity range have no contrast for Volume N°{idx}."
+                "The selection intensities will be ignored.",
+                stacklevel=2,
+            )
+            value_range = np.percentile(vol_data, [0, 100])
+
+        return value_range
+
     def change_volume(self, prev_idx, next_idx, intensities, visible_slices):
         vol_data = self._data[..., prev_idx]
-        # NOTE: Supported only in latests versions of scipy
-        # percs = stats.percentileofscore(np.ravel(vol_data), intensities)
-        perc_0 = stats.percentileofscore(np.ravel(vol_data), intensities[0])
-        perc_1 = stats.percentileofscore(np.ravel(vol_data), intensities[1])
+        value_range = self._vol_max - self._vol_min
+        percentile = (intensities - self._vol_min) * 100 / value_range
         vol_data = self._data[..., next_idx]
-        value_range = np.percentile(vol_data, [perc_0, perc_1])
-        if np.sum(np.diff(self._int_range)) == 0:
+        value_range = self._adaptive_percentile(vol_data, percentile, next_idx)
+        if np.sum(np.diff(value_range)) == 0:
             return False
 
         self._int_range = value_range
-
         self._vol_max = np.max(vol_data)
         self._vol_min = np.min(vol_data)
 
