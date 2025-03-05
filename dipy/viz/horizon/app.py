@@ -53,6 +53,13 @@ HELP_MESSAGE = """
 >> o: hide/show this panel
 """
 
+SHORTCUT_MESSAGE = """
+>> Shift + Drag: move visualization.
+>> Ctrl/Cmd + Drag: rotate visualization.
+>> Ctrl/Cmd + R: realign visualization.
+>> o: hide/show this panel
+"""
+
 
 class Horizon:
     @warning_for_keywords()
@@ -213,6 +220,7 @@ class Horizon:
         self.__tab_mgr = None
 
         self.__help_visible = True
+        self._shortcut_help_visible = True
 
         # TODO: Move to another class/module
         self.__hide_centroids = True
@@ -280,18 +288,27 @@ class Horizon:
 
     def __key_press_events(self, obj, event):
         key = obj.GetKeySym()
+        if key in ("r", "R") and obj.GetControlKey():
+            self._scene.reset_camera_tight()
+            self.show_m.render()
+        if key in ("o", "O"):
+            if self._shortcut_help_visible:
+                self._scene.rm(*self.shortcut_panel.actors)
+                self._shortcut_help_visible = False
+            else:
+                self._scene.add(*self.shortcut_panel.actors)
+                self._shortcut_help_visible = True
+            self.show_m.render()
         # TODO: Move to another class/module
         if self.cluster:
             # retract help panel
             if key in ("o", "O"):
-                panel_size = self.help_panel._get_size()
                 if self.__help_visible:
-                    new_pos = np.array(self.__win_size) - 10
+                    self._scene.rm(*self.help_panel.actors)
                     self.__help_visible = False
                 else:
-                    new_pos = np.array(self.__win_size) - panel_size - 5
+                    self._scene.add(*self.help_panel.actors)
                     self.__help_visible = True
-                self.help_panel._set_position(new_pos)
                 self.show_m.render()
             if key in ("a", "A"):
                 self.__show_all()
@@ -516,6 +533,17 @@ class Horizon:
                     ClustersTab(self.__clusters_visualizer, self.cluster_thr)
                 )
 
+        text_block = build_label(SHORTCUT_MESSAGE, font_size=18)
+
+        self.shortcut_panel = ui.Panel2D(
+            size=(380, 115),
+            position=(5, 960),
+            color=(0.8, 0.8, 1.0),
+            opacity=0.2,
+            align="left",
+        )
+        self.shortcut_panel.add_element(text_block.obj, coords=(0.02, 0.01))
+        scene.add(self.shortcut_panel)
         sync_slices = sync_vol = False
         self.images = check_img_dtype(self.images)
         if len(self.images) > 0:
