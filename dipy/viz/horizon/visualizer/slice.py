@@ -35,8 +35,11 @@ class SlicesVisualizer:
 
         self._slice_actors = [None] * 3
 
-        self._data_ndim = data.ndim
-        self._data_shape = data.shape
+        if len(self._data.shape) == 4 and self._data.shape[-1]:
+            self._data = self._data[:, :, :, 0]
+
+        self._data_ndim = self._data.ndim
+        self._data_shape = self._data.shape
         self._rgb = False
         self._percentiles = percentiles
 
