@@ -240,7 +240,7 @@ class FetchFlow(Workflow):
         data_names : variable string
             Any number of Nifti1, bvals or bvecs files.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
 
         """
         if out_dir:
@@ -313,7 +313,7 @@ class SplitFlow(Workflow):
         vol_idx : int, optional
             Index of the 3D volume to extract.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_split : string, optional
             Name of the resulting split volume
 
@@ -612,7 +612,7 @@ class ConcatenateTractogramFlow(Workflow):
             element in trx_list (Note: delete_groups must be set to True as
             well)
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_extension : string, optional
             Extension of the resulting tractogram
         out_tractogram : string, optional
@@ -723,7 +723,7 @@ class ConvertTensorsFlow(Workflow):
             Format of the output tensor files. Valid options are 'dipy',
             'mrtrix', 'ants', 'fsl'.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_tensor : string, optional
             Name of the resulting tensor file
 
@@ -764,7 +764,7 @@ class ConvertTractogramFlow(Workflow):
         offsets_dtype : string, optional
             Data type of the tractogram offsets, used for vtk files.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_tractogram : string, optional
             Name of the resulting tractogram
 

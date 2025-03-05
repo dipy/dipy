@@ -32,7 +32,7 @@ class EVACPlusFlow(Workflow):
         save_masked : bool, optional
             Save mask.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_mask : string, optional
             Name of the mask volume to be saved.
         out_masked : string, optional
