@@ -226,7 +226,7 @@ class Horizon:
         self.__hide_centroids = True
         self.__select_all = False
 
-        self.__win_size = (0, 0)
+        self._win_size = (0, 0)
 
     # TODO: Move to another class/module
     def __expand(self):
@@ -424,17 +424,18 @@ class Horizon:
             self.__select_all = True
         self.show_m.render()
 
-    def __win_callback(self, obj, event):
-        if self.__win_size != obj.GetSize():
-            self.__win_size = obj.GetSize()
+    def __win_callback(self, obj, _event):
+        if self._win_size != obj.GetSize():
+            self._win_size = obj.GetSize()
             if len(self.__tabs) > 0:
-                self.__tab_mgr.reposition(self.__win_size)
+                self.__tab_mgr.reposition(self._win_size)
+            panel_size = self.shortcut_panel._get_size()
+            self.shortcut_panel._set_position(
+                (5, self._win_size[1] - panel_size[1] - 5)
+            )
             if self.cluster:
-                if self.__help_visible:
-                    panel_size = self.help_panel._get_size()
-                    new_pos = np.array(self.__win_size) - panel_size - 5
-                else:
-                    new_pos = np.array(self.__win_size) - 10
+                panel_size = self.help_panel._get_size()
+                new_pos = np.array(self._win_size) - panel_size - 5
                 self.help_panel._set_position(new_pos)
 
     def build_scene(self):
@@ -463,6 +464,7 @@ class Horizon:
 
     def build_show(self, scene):
         self._scene = scene
+        self._win_size = self._scene.GetSize()
 
         title = f"Horizon {horizon_version}"
         self.show_m = window.ShowManager(
@@ -615,8 +617,6 @@ class Horizon:
                 surf_viz = SurfaceVisualizer((vertices, faces), scene, color)
                 surf_tab = SurfaceTab(surf_viz, title, fname)
                 self.__tabs.append(surf_tab)
-
-        self.__win_size = scene.GetSize()
 
         if len(self.__tabs) > 0:
             self.__tab_mgr = TabManager(
