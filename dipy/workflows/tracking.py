@@ -173,20 +173,19 @@ class LocalFiberTrackingPAMFlow(Workflow):
             tracking has to stop.
         seed_density : int, optional
             Number of seeds per dimension inside voxel.
-             For example, seed_density of 2 means 8 regularly distributed
-             points in the voxel. And seed density of 1 means 1 point at the
-             center of the voxel.
+            For example, seed_density of 2 means 8 regularly distributed
+            points in the voxel. And seed density of 1 means 1 point at the
+            center of the voxel.
         step_size : float, optional
             Step size (in mm) used for tracking.
         tracking_method : string, optional
-            Select direction getter strategy :
-             - "eudx" (Uses the peaks saved in the pam_files)
-             - "deterministic" or "det" for a deterministic tracking
-               (Uses the sh saved in the pam_files, default)
-             - "probabilistic" or "prob" for a Probabilistic tracking
-               (Uses the sh saved in the pam_files)
-             - "closestpeaks" or "cp" for a ClosestPeaks tracking
-               (Uses the sh saved in the pam_files)
+            Select direction getter strategy:
+                - "eudx" (Uses the peaks saved in the pam_files)
+                - "deterministic" or "det" for a deterministic tracking
+                - "probabilistic" or "prob" for a Probabilistic tracking
+                - "closestpeaks" or "cp" for a ClosestPeaks tracking
+
+            By default, the sh coefficients saved in the pam_files are used.
         pmf_threshold : float, optional
             Threshold for ODF functions.
         max_angle : float, optional
@@ -276,9 +275,9 @@ class PFTrackingPAMFlow(Workflow):
             Step size (in mm) used for tracking.
         seed_density : int, optional
             Number of seeds per dimension inside voxel.
-             For example, seed_density of 2 means 8 regularly distributed
-             points in the voxel. And seed density of 1 means 1 point at the
-             center of the voxel.
+            For example, seed_density of 2 means 8 regularly distributed
+            points in the voxel. And seed density of 1 means 1 point at the
+            center of the voxel.
         pmf_threshold : float, optional
             Threshold for ODF functions.
         max_angle : float, optional

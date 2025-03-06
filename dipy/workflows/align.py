@@ -334,10 +334,9 @@ class ImageRegistrationFlow(Workflow):
             sequence.
         sigmas : variable floats, optional
             Custom smoothing parameter to build the scale space (one parameter
-             for each scale).
+            for each scale).
         factors : variable floats, optional
-            Custom scale factors to build the scale space (one factor for each
-             scale).
+            Custom scale factors to build the scale space (one factor for each scale).
         progressive : boolean, optional
             Enable/Disable the progressive registration.
         save_metric : boolean, optional
@@ -607,8 +606,7 @@ class SynRegistrationFlow(Workflow):
         moving_image_files : string
             Path to the moving image file.
         prealign_file : string, optional
-            The text file containing pre alignment information via an
-             affine matrix.
+            The text file containing pre alignment information via an affine matrix.
         inv_static : boolean, optional
             Apply the inverse mapping to the static image.
         level_iters : variable int, optional
@@ -655,27 +653,27 @@ class SynRegistrationFlow(Workflow):
             'demons' for SSD.
         step_length : float, optional
             the length of the maximum displacement vector of the update
-             displacement field at each iteration.
+            displacement field at each iteration.
         ss_sigma_factor : float, optional
             parameter of the scale-space smoothing kernel. For example, the
-             std. dev. of the kernel will be factor*(2^i) in the isotropic case
-             where i = 0, 1, ..., n_scales is the scale.
+            std. dev. of the kernel will be factor*(2^i) in the isotropic case
+            where i = 0, 1, ..., n_scales is the scale.
         opt_tol : float, optional
             the optimization will stop when the estimated derivative of the
-             energy profile w.r.t. time falls below this threshold.
+            energy profile w.r.t. time falls below this threshold.
         inv_iter : int, optional
             the number of iterations to be performed by the displacement field
-             inversion algorithm.
+            inversion algorithm.
         inv_tol : float, optional
             the displacement field inversion algorithm will stop iterating
-             when the inversion error falls below this threshold.
+            when the inversion error falls below this threshold.
         out_dir : string, optional
             Directory to save the transformed files.
         out_warped : string, optional
             Name of the warped file.
         out_inv_static : string, optional
             Name of the file to save the static image after applying the
-             inverse mapping.
+            inverse mapping.
         out_field : string, optional
             Name of the file to save the diffeomorphic map.
 
