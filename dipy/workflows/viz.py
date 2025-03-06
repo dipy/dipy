@@ -118,7 +118,7 @@ class HorizonFlow(Workflow):
             with 1 or 3 values and should be between [0-1]. For example, a
             value of (1, 0, 0) would mean the red color.
         out_dir : str, optional
-            Output directory. (default current directory)
+            Output directory.
         out_stealth_png : str, optional
             Filename of saved picture.
 

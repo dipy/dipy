@@ -64,7 +64,7 @@ class MedianOtsuFlow(Workflow):
             Whether to remove potential holes or islands.
             Useful for solving minor errors.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_mask : string, optional
             Name of the mask volume to be saved.
         out_masked : string, optional
@@ -176,7 +176,7 @@ class RecoBundlesFlow(Workflow):
             Don't enable Refine local Streamline-based Linear
             Registration.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_recognized_transf : string, optional
             Recognized bundle in the space of the model bundle.
         out_recognized_labels : string, optional
@@ -340,7 +340,7 @@ class LabelsBundlesFlow(Workflow):
         labels_files : string
             The path of model bundle files.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_bundle : string, optional
             Recognized bundle in the space of the model bundle.
 

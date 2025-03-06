@@ -137,7 +137,7 @@ class ReconstMAPMRIFlow(Workflow):
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
         out_dir : string, optional
-            Output directory. (default: current directory)
+            Output directory.
         out_rtop : string, optional
             Name of the rtop to be saved.
         out_lapnorm : string, optional
@@ -390,7 +390,7 @@ class ReconstDtiFlow(Workflow):
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_tensor : string, optional
             Name of the tensors volume to be saved.
             Per default, this will be saved following the nifti standard:
@@ -685,7 +685,7 @@ class ReconstDsiFlow(Workflow):
             of cores minus ``num_processes + 1`` is used (enter -1 to use as
             many cores as possible). 0 raises an error.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
         out_shm : string, optional
@@ -869,7 +869,7 @@ class ReconstCSDFlow(Workflow):
             of cores minus ``num_processes + 1`` is used (enter -1 to use as
             many cores as possible). 0 raises an error.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
         out_shm : string, optional
@@ -1096,7 +1096,7 @@ class ReconstCSAFlow(Workflow):
             of cores minus ``num_processes + 1`` is used (enter -1 to use as
             many cores as possible). 0 raises an error.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
         out_shm : string, optional
@@ -1285,7 +1285,7 @@ class ReconstDkiFlow(Workflow):
         npeaks : int, optional
             Number of peaks to fit in each voxel.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_dt_tensor : string, optional
             Name of the tensors volume to be saved.
         out_dk_tensor : string, optional
@@ -1560,7 +1560,7 @@ class ReconstIvimFlow(Workflow):
             List of metrics to save.
             Possible values: S0_predicted, perfusion_fraction, D_star, D
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_S0_predicted : string, optional
             Name of the S0 signal estimated to be saved.
         out_perfusion_fraction : string, optional
@@ -1773,7 +1773,7 @@ class ReconstRUMBAFlow(Workflow):
             The minimum distance between directions. If two peaks are too close
             only the larger of the two is returned.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
         out_shm : string, optional
