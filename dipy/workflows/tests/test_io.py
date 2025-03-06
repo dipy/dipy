@@ -429,12 +429,15 @@ def test_extract_b0_flow():
         fdata, fbval, fbvec = get_fnames(name="small_25")
         data, affine = load_nifti(fdata)
         b0_data = data[..., 0]
-        b0_path = pjoin(out_dir, "b0.nii.gz")
+        b0_path = pjoin(out_dir, "b0_expected.nii.gz")
         save_nifti(b0_path, b0_data, affine)
 
         extract_b0_flow = ExtractB0Flow()
-        extract_b0_flow.run(fdata, fbval, out_dir=out_dir)
-        npt.assert_equal(extract_b0_flow.last_generated_outputs["out_b0"], b0_path)
+        extract_b0_flow.run(fdata, fbval, out_dir=out_dir, strategy="first")
+        npt.assert_equal(
+            extract_b0_flow.last_generated_outputs["out_b0"],
+            pjoin(out_dir, "b0.nii.gz"),
+        )
         res, _ = load_nifti(extract_b0_flow.last_generated_outputs["out_b0"])
         npt.assert_array_equal(res, b0_data)
 

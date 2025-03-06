@@ -392,7 +392,11 @@ class ExtractB0Flow(Workflow):
                         f"first b0 value ({bvals.min()}).",
                         stacklevel=2,
                     )
-            gtab = gradient_table(bvals, b0_threshold=b0_threshold)
+
+            bvecs = np.random.randn(bvals.shape[0], 3)
+            norms = np.linalg.norm(bvecs, axis=1, keepdims=True)
+            bvecs = bvecs / norms
+            gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
             b0s_result = extract_b0(
                 data,
                 gtab.b0s_mask,
