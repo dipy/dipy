@@ -181,7 +181,7 @@ class SlicesVisualizer:
         if np.sum(np.diff(value_range)) == 0:
             warnings.warn(
                 f"The selected intensity range have no contrast for Volume N°{idx}."
-                "The selection intensities will be ignored.",
+                "The selection of intensities will be ignored and changed to default.",
                 stacklevel=2,
             )
             value_range = np.asarray((np.min(vol_data), np.max(vol_data)))
