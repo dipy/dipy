@@ -54,9 +54,9 @@ HELP_MESSAGE = """
 """
 
 SHORTCUT_MESSAGE = """
->> Shift + Drag: move visualization.
->> Ctrl/Cmd + Drag: rotate visualization.
->> Ctrl/Cmd + R: realign visualization.
+>> shift + drag: move
+>> ctrl/cmd + drag: rotate
+>> ctrl/cmd + r: reset
 >> o: hide/show this panel
 """
 
@@ -538,7 +538,7 @@ class Horizon:
         text_block = build_label(SHORTCUT_MESSAGE, font_size=18)
 
         self.shortcut_panel = ui.Panel2D(
-            size=(380, 115),
+            size=(260, 115),
             position=(5, 960),
             color=(0.8, 0.8, 1.0),
             opacity=0.2,
