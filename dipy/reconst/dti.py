@@ -1369,6 +1369,9 @@ def iter_fit_tensor(*, step=1e4):
             if extra:
                 for key in extra:
                     extra[key] = extra[key].reshape(shape + (-1,))
+            else:
+                # Make sure extra is None if there is no extra
+                extra = None
 
             if return_S0_hat:
                 return (
@@ -1813,6 +1816,9 @@ def nlls_fit_tensor(
 
     # Flatten for the iteration over voxels:
     flat_data = data.reshape((-1, data.shape[-1]))
+    weights = weights.reshape((-1, weights.shape[-1])) if weights is not None else None
+    if weights is not None:
+        assert weights.shape == flat_data.shape, "Weights shape mismatch"
 
     if init_params is None:
         # Use the OLS method parameters as the starting point for nlls
