@@ -17,7 +17,7 @@ def track(method, **kwargs):
     """This tests that the number of streamlines equals the number of seeds
     when return_all=True.
     """
-    fnames = get_fnames(name="disco1")
+    fnames = get_fnames(name="disco1", include_optional=True)
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
     sh = nib.load(fnames[20]).get_fdata()
     fODFs = sh_to_sf(sh, sphere, sh_order_max=12, basis_type="tournier07", legacy=False)

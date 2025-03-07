@@ -63,8 +63,8 @@ labels, affine, labels_img = load_nifti(labels_fname, return_img=True)
 labels = labels.astype(int)
 
 print("Loading data...")
-
-GT_streams = load_tractogram(fnames[39], reference=labels_img).streamlines
+tracks_fname = fnames[disco1_fnames.index("DiSCo1_Strands_Trajectories.tck")]
+GT_streams = load_tractogram(tracks_fname, reference=labels_img).streamlines
 if has_fury:
     scene = window.Scene()
     scene.add(actor.line(GT_streams, colors=colormap.line_colors(GT_streams)))

@@ -104,7 +104,11 @@ def _log(msg):
 
 @warning_for_keywords()
 def copyfileobj_withprogress(fsrc, fdst, total_length, *, length=16 * 1024):
-    for _ in tqdm(range(0, int(total_length), length), unit=" MB"):
+    for _ in tqdm(
+        range(0, int(total_length), length),
+        unit=" MB",
+        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt}{unit} [{elapsed}]",
+    ):
         buf = fsrc.read(length)
         if not buf:
             break
@@ -243,6 +247,7 @@ def _make_fetcher(
     local_fnames,
     *,
     md5_list=None,
+    optional_fnames=None,
     doc="",
     data_size=None,
     msg=None,
@@ -267,6 +272,8 @@ def _make_fetcher(
     md5_list : list of strings, optional
         The md5 checksums of the files. Used to verify the content of the
         files. Default: None, skipping checking md5.
+    optional_fnames : str, optional
+        The name of the optional file to be saved on the local filesystem.
     doc : str, optional.
         Documentation of the fetcher.
     data_size : str, optional.
@@ -287,14 +294,18 @@ def _make_fetcher(
         A function that, when called, fetches data according to the designated
         inputs
     """
+    optional_fnames = optional_fnames or []
 
-    def fetcher():
+    def fetcher(*, include_optional=False):
         files = {}
         for (
             i,
             (f, n),
         ) in enumerate(zip(remote_fnames, local_fnames)):
+            if n in optional_fnames and not include_optional:
+                continue
             files[n] = (baseurl + f, md5_list[i] if md5_list is not None else None)
+
         fetch_data(files, folder, data_size=data_size, use_headers=use_headers)
 
         if msg is not None:
@@ -1135,6 +1146,41 @@ fetch_disco1_dataset = _make_fetcher(
         "e475641a08ebafeecb79a21e618d7081",
         "8c2a338606c0cb7de6e34b8317f59cd6",
     ],
+    optional_fnames=[
+        "DiSCo_gradients_fsl.bvecs",
+        "DiSCo_gradients_mrtrix.b",
+        "DiSCo_gradients.scheme",
+        "highRes_DiSCo1_DWI.nii.gz",
+        "lowRes_DiSCo1_DWI_RicianNoise-snr40.nii.gz",
+        "lowRes_DiSCo1_ROIs.nii.gz",
+        "lowRes_DiSCo1_mask.nii.gz",
+        "lowRes_DiSCo1_DWI_RicianNoise-snr50.nii.gz",
+        "lowRes_DiSCo1_ROIs-mask.nii.gz",
+        "lowRes_DiSCo1_DWI_Intra.nii.gz",
+        "lowRes_DiSCo1_Strand_Bundle_Count.nii.gz",
+        "lowRes_DiSCo1_Strand_Count.nii.gz",
+        "lowRes_DiSCo1_Strand_Intra_Volume_Fraction.nii.gz",
+        "lowRes_DiSCo1_DWI_RicianNoise-snr30.nii.gz",
+        "lowRes_DiSCo1_DWI_RicianNoise-snr20.nii.gz",
+        "lowRes_DiSCo1_DWI.nii.gz",
+        "lowRes_DiSCo1_Strand_ODFs.nii.gz",
+        "lowRes_DiSCo1_Strand_Average_Diameter.nii.gz",
+        "lowRes_DiSCo1_DWI_RicianNoise-snr10.nii.gz",
+        "highRes_DiSCo1_Strand_ODFs.nii.gz",
+        "highRes_DiSCo1_DWI_RicianNoise-snr50.nii.gz",
+        "highRes_DiSCo1_DWI_RicianNoise-snr40.nii.gz",
+        "highRes_DiSCo1_Strand_Bundle_Count.nii.gz",
+        "highRes_DiSCo1_DWI_RicianNoise-snr20.nii.gz",
+        "highRes_DiSCo1_DWI_RicianNoise-snr30.nii.gz",
+        "highRes_DiSCo1_Strand_Average_Diameter.nii.gz",
+        "highRes_DiSCo1_Strand_Streamline_Count.nii.gz",
+        "highRes_DiSCo1_DWI_Intra.nii.gz",
+        "highRes_DiSCo1_Strand_Intra_Volume_Fraction.nii.gz",
+        "DiSCo1_Connectivity_Matrix_Strands_Count.txt",
+        "DiSCo1_Strands_ROIs_Pairs.txt",
+        "DiSCo1_Strands_Diameters.txt",
+        "DiSCo1_Strands_Trajectories.trk",
+    ],
     doc=(
         "Download DISCO 1 dataset: The Diffusion-Simulated Connectivity "
         "Dataset. DOI: 10.17632/fgf86jdfg6.3"
@@ -1276,6 +1322,41 @@ fetch_disco2_dataset = _make_fetcher(
         "4e774e280cc57b1336e4fa9e479ee4ee",
         "cc5442ea2ff2ddfcd1330016e2a68399",
         "7f276c0276561df13c86008776faf6b2",
+    ],
+    optional_fnames=[
+        "DiSCo_gradients_fsl.bvecs",
+        "DiSCo_gradients_mrtrix.b",
+        "DiSCo_gradients.scheme",
+        "lowRes_DiSCo2_DWI_RicianNoise-snr50.nii.gz",
+        "lowRes_DiSCo2_Strand_Average_Diameter.nii.gz",
+        "lowRes_DiSCo2_DWI_RicianNoise-snr40.nii.gz",
+        "lowRes_DiSCo2_DWI.nii.gz",
+        "lowRes_DiSCo2_ROIs.nii.gz",
+        "lowRes_DiSCo2_mask.nii.gz",
+        "lowRes_DiSCo2_DWI_Intra.nii.gz",
+        "lowRes_DiSCo2_ROIs-mask.nii.gz",
+        "lowRes_DiSCo2_Strand_Count.nii.gz",
+        "lowRes_DiSCo2_DWI_RicianNoise-snr20.nii.gz",
+        "lowRes_DiSCo2_DWI_RicianNoise-snr30.nii.gz",
+        "lowRes_DiSCo2_Strand_Intra_Volume_Fraction.nii.gz",
+        "lowRes_DiSCo2_DWI_RicianNoise-snr10.nii.gz",
+        "lowRes_DiSCo2_Strand_ODFs.nii.gz",
+        "lowRes_DiSCo2_Strand_Bundle_Count.nii.gz",
+        "highRes_DiSCo2_DWI_RicianNoise-snr40.nii.gz",
+        "highRes_DiSCo2_DWI_RicianNoise-snr50.nii.gz",
+        "highRes_DiSCo2_Strand_ODFs.nii.gz",
+        "highRes_DiSCo2_Strand_Count.nii.gz",
+        "highRes_DiSCo2_Strand_Average_Diameter.nii.gz",
+        "highRes_DiSCo2_DWI_RicianNoise-snr30.nii.gz",
+        "highRes_DiSCo2_DWI_Intra.nii.gz",
+        "highRes_DiSCo2_DWI_RicianNoise-snr20.nii.gz",
+        "highRes_DiSCo2_Strand_Bundle_Count.nii.gz",
+        "highRes_DiSCo2_Strand_Intra_Volume_Fraction.nii.gz",
+        "highRes_DiSCo2_DWI.nii.gz",
+        "DiSCo2_Strands_Diameters.txt",
+        "DiSCo2_Connectivity_Matrix_Strands_Count.txt",
+        "DiSCo2_Strands_ROIs_Pairs.txt",
+        "DiSCo2_Strands_Trajectories.trk",
     ],
     doc=(
         "Download DISCO 2 dataset: The Diffusion-Simulated Connectivity "
@@ -1419,6 +1500,41 @@ fetch_disco3_dataset = _make_fetcher(
         "47c300fcb48b882c124d69086b224956",
         "9e47185ae517f6f35daa1aa16c51ba45",
     ],
+    optional_fnames=[
+        "DiSCo_gradients_fsl.bvecs",
+        "DiSCo_gradients_mrtrix.b",
+        "DiSCo_gradients.scheme",
+        "lowRes_DiSCo3_Strand_ODFs.nii.gz",
+        "lowRes_DiSCo3_DWI_RicianNoise-snr10.nii.gz",
+        "lowRes_DiSCo3_Strand_Intra_Volume_Fraction.nii.gz",
+        "lowRes_DiSCo3_DWI_RicianNoise-snr30.nii.gz",
+        "lowRes_DiSCo3_DWI_RicianNoise-snr20.nii.gz",
+        "lowRes_DiSCo3_Strand_Average_Diameter.nii.gz",
+        "lowRes_DiSCo3_DWI_Intra.nii.gz",
+        "lowRes_DiSCo3_Strand_Count.nii.gz",
+        "lowRes_DiSCo3_DWI.nii.gz",
+        "lowRes_DiSCo3_Strand_Bundle_Count.nii.gz",
+        "lowRes_DiSCo3_ROIs-mask.nii.gz",
+        "lowRes_DiSCo3_DWI_RicianNoise-snr40.nii.gz",
+        "lowRes_DiSCo3_mask.nii.gz",
+        "lowRes_DiSCo3_DWI_RicianNoise-snr50.nii.gz",
+        "lowRes_DiSCo3_ROIs.nii.gz",
+        "highRes_DiSCo3_Strand_Average_Diameter.nii.gz",
+        "highRes_DiSCo3_Strand_Count.nii.gz",
+        "highRes_DiSCo3_DWI_RicianNoise-snr20.nii.gz",
+        "highRes_DiSCo3_DWI_RicianNoise-snr30.nii.gz",
+        "highRes_DiSCo3_Strand_Intra_Volume_Fraction.nii.gz",
+        "highRes_DiSCo3_Strand_Bundle_Count.nii.gz",
+        "highRes_DiSCo3_DWI_Intra.nii.gz",
+        "highRes_DiSCo3_DWI_RicianNoise-snr50.nii.gz",
+        "highRes_DiSCo3_Strand_ODFs.nii.gz",
+        "highRes_DiSCo3_DWI_RicianNoise-snr40.nii.gz",
+        "highRes_DiSCo3_DWI.nii.gz",
+        "DiSCo3_Strands_ROIs_Pairs.txt",
+        "DiSCo3_Connectivity_Matrix_Strands_Count.txt",
+        "DiSCo3_Strands_Diameters.txt",
+        "DiSCo3_Strands_Trajectories.trk",
+    ],
     doc=(
         "Download DISCO 3 dataset: The Diffusion-Simulated Connectivity "
         "Dataset. DOI: 10.17632/fgf86jdfg6.3"
@@ -1428,7 +1544,7 @@ fetch_disco3_dataset = _make_fetcher(
 )
 
 
-def fetch_disco_dataset():
+def fetch_disco_dataset(*, include_optional=False):
     """Download All DISCO datasets.
 
     Notes
@@ -1436,9 +1552,9 @@ def fetch_disco_dataset():
     see DOI: 10.17632/fgf86jdfg6.3
 
     """
-    files_1, folder_1 = fetch_disco1_dataset()
-    files_2, folder_2 = fetch_disco2_dataset()
-    files_3, folder_3 = fetch_disco3_dataset()
+    files_1, folder_1 = fetch_disco1_dataset(include_optional=include_optional)
+    files_2, folder_2 = fetch_disco2_dataset(include_optional=include_optional)
+    files_3, folder_3 = fetch_disco3_dataset(include_optional=include_optional)
 
     all_path = (
         [pjoin(folder_1, f) for f in files_1]
@@ -1450,7 +1566,7 @@ def fetch_disco_dataset():
 
 
 @warning_for_keywords()
-def get_fnames(*, name="small_64D"):
+def get_fnames(*, name="small_64D", include_optional=False):
     """Provide full paths to example or test datasets.
 
     Parameters
@@ -1471,6 +1587,8 @@ def get_fnames(*, name="small_64D"):
         - 'reg_c' small 2D image used for validating registration
         - 'reg_o' small 2D image used for validation registration
         - 'cb_2' two vectorized cingulum bundles
+    include_optional : bool, optional
+        If True, include optional datasets.
 
     Returns
     -------
@@ -1728,7 +1846,7 @@ def get_fnames(*, name="small_64D"):
         return filepath_dix, points_data, streamlines_data
     if name in ["disco", "disco1", "disco2", "disco3"]:
         local_fetcher = globals().get(f"fetch_{name}_dataset")
-        files, folder = local_fetcher()
+        files, folder = local_fetcher(include_optional=include_optional)
         return [pjoin(folder, f) for f in files]
 
 
@@ -1950,7 +2068,7 @@ def read_syn_data():
     return t1, b0
 
 
-def fetch_tissue_data():
+def fetch_tissue_data(*, include_optional=False):
     """Download images to be used for tissue classification"""
 
     t1 = "https://ndownloader.figshare.com/files/6965969"
@@ -2129,7 +2247,7 @@ fetch_mni_template.__doc__ += mni_notes
 
 
 @warning_for_keywords()
-def fetch_cenir_multib(*, with_raw=False):
+def fetch_cenir_multib(*, with_raw=False, **kwargs):
     """Fetch 'HCP-like' data, collected at multiple b-values.
 
     Parameters
@@ -2627,8 +2745,10 @@ def to_bids_description(
         json.dump(kwargs, outfile)
 
 
+@warning_for_keywords()
 def fetch_hcp(
     subjects,
+    *,
     hcp_bucket="hcp-openaccess",
     profile_name="hcp",
     path=None,

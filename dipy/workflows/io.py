@@ -230,7 +230,7 @@ class FetchFlow(Workflow):
         else:
             return importlib.import_module(module_path)
 
-    def run(self, data_names, out_dir=""):
+    def run(self, data_names, include_optional=False, out_dir=""):
         """Download files to folder and check their md5 checksums.
 
         To see all available datasets, please type "list" in data_names.
@@ -239,6 +239,8 @@ class FetchFlow(Workflow):
         ----------
         data_names : variable string
             Any number of Nifti1, bvals or bvecs files.
+        include_optional : bool, optional
+            Include optional datasets.
         out_dir : string, optional
             Output directory.
 
@@ -256,11 +258,11 @@ class FetchFlow(Workflow):
                 logging.info("------------------------------------------")
                 logging.info(f"Fetching at {name}")
                 logging.info("------------------------------------------")
-                fetcher_function()
+                fetcher_function(include_optional=include_optional)
 
         elif "list" in data_names:
             logging.info(
-                "Please, select between the following data names: "
+                "Please, select between the following data names: \n"
                 f"{', '.join(available_data.keys())}"
             )
 
@@ -274,7 +276,7 @@ class FetchFlow(Workflow):
                 logging.info("------------------------------------------")
                 logging.info(f"Fetching at {data_name}")
                 logging.info("------------------------------------------")
-                available_data[data_name]()
+                available_data[data_name](include_optional=include_optional)
 
             nb_success = len(data_names) - len(skipped_names)
             print("\n")
