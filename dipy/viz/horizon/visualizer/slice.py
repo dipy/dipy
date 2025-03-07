@@ -35,7 +35,7 @@ class SlicesVisualizer:
 
         self._slice_actors = [None] * 3
 
-        if len(self._data.shape) == 4 and self._data.shape[-1]:
+        if len(self._data.shape) == 4 and self._data.shape[-1] == 1:
             self._data = self._data[:, :, :, 0]
 
         self._data_ndim = self._data.ndim
@@ -174,8 +174,9 @@ class SlicesVisualizer:
         self._picked_voxel_actor = actor.dot(pnt, colors=(0.9, 0.4, 0.0), dot_size=10)
         self._scene.add(self._picked_voxel_actor)
 
-    def _adaptive_percentile(self, vol_data, percentile, idx):
-        value_range = np.percentile(vol_data, percentile)
+    def _adaptive_percentile(self, vol_data, intensity_ratios, idx):
+        value_range = np.percentile(np.ravel(vol_data), intensity_ratios * 100)
+        default_range = False
 
         if np.sum(np.diff(value_range)) == 0:
             warnings.warn(
@@ -183,18 +184,18 @@ class SlicesVisualizer:
                 "The selection intensities will be ignored.",
                 stacklevel=2,
             )
-            value_range = np.percentile(vol_data, [0, 100])
+            value_range = np.asarray((np.min(vol_data), np.max(vol_data)))
+            default_range = True
 
-        return value_range
+        return (value_range, default_range)
 
-    def change_volume(self, prev_idx, next_idx, intensities, visible_slices):
-        vol_data = self._data[..., prev_idx]
-        value_range = self._vol_max - self._vol_min
-        percentile = (intensities - self._vol_min) * 100 / value_range
+    def change_volume(self, next_idx, intensity_ratios, visible_slices):
         vol_data = self._data[..., next_idx]
-        value_range = self._adaptive_percentile(vol_data, percentile, next_idx)
+        value_range, default_range = self._adaptive_percentile(
+            vol_data, intensity_ratios, next_idx
+        )
         if np.sum(np.diff(value_range)) == 0:
-            return False
+            return False, default_range
 
         self._int_range = value_range
         self._vol_max = np.max(vol_data)
@@ -207,7 +208,7 @@ class SlicesVisualizer:
 
         self._add_slice_actors_to_scene(visible_slices)
 
-        return True
+        return True, default_range
 
     def register_picker_callback(self, callback):
         self._picker_callback = callback
