@@ -2797,7 +2797,7 @@ def fetch_hcp(
     AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXX
 
     The keys are credentials that you can get from HCP
-    (see https://wiki.humanconnectome.org/display/PublicData/How+To+Connect+to+Connectome+Data+via+AWS)
+    (see https://wiki.humanconnectome.org/docs/How%20to%20Get%20Access%20to%20the%20HCP%20OpenAccess%20Amazon%20S3%20Bucket.md)
 
     Local filenames are changed to match our expected conventions.
 
