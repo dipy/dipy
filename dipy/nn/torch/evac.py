@@ -1,7 +1,5 @@
 #!/usr/bin/python
-"""
-Class and helper functions for fitting the EVAC+ model.
-"""
+"""Class and helper functions for fitting the EVAC+ model."""
 
 import logging
 
@@ -48,8 +46,7 @@ logger = logging.getLogger("EVAC+")
 
 
 def prepare_img(image):
-    """
-    Function to prepare image for model input
+    """Function to prepare image for model input
     Specific to EVAC+
 
     Parameters
@@ -312,8 +309,7 @@ class Model(Module):
 
 
 class EVACPlus:
-    """
-    This class is intended for the EVAC+ model.
+    """This class is intended for the EVAC+ model.
 
     The EVAC+ model :footcite:p:`Park2024` is a deep learning neural network for
     brain extraction. It uses a V-net architecture combined with
@@ -327,7 +323,8 @@ class EVACPlus:
 
     @doctest_skip_parser
     def __init__(self, *, verbose=False):
-        """
+        """Model initialization
+
         The model was pre-trained for usage on
         brain extraction of T1 images.
 
@@ -339,7 +336,6 @@ class EVACPlus:
         verbose : bool, optional
             Whether to show information about the processing.
         """
-
         if not have_torch:
             raise torch()
 
@@ -349,15 +345,15 @@ class EVACPlus:
         # EVAC+ network load
 
         self.model = self.init_model()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = self.model.to(self.device)
         self.fetch_default_weights()
 
     def init_model(self, model_scale=16):
         return Model(model_scale)
 
     def fetch_default_weights(self):
-        """
-        Load the model pre-training weights to use for the fitting.
-
+        """Load the model pre-training weights to use for the fitting.
         While the user can load different weights, the function
         is mainly intended for the class function 'predict'.
         """
@@ -365,8 +361,7 @@ class EVACPlus:
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
-        """
-        Load the custom pre-training weights to use for the fitting.
+        """Load the custom pre-training weights to use for the fitting.
 
         Parameters
         ----------
@@ -374,7 +369,13 @@ class EVACPlus:
             Path to the file containing the weights (pth, saved by Pytorch)
         """
         try:
-            self.model.load_state_dict(torch.load(weights_path, weights_only=True))
+            self.model.load_state_dict(
+                torch.load(
+                    weights_path,
+                    weights_only=True,
+                    map_location=self.device,
+                )
+            )
             self.model.eval()
         except ValueError as e:
             raise ValueError(
@@ -383,8 +384,7 @@ class EVACPlus:
             ) from e
 
     def __predict(self, x_test):
-        """
-        Internal prediction function
+        """Internal prediction function
 
         Parameters
         ----------
@@ -396,7 +396,6 @@ class EVACPlus:
         np.ndarray (batch, ...)
             Predicted brain mask
         """
-
         return self.model(*x_test)[:, 0].detach().numpy()
 
     @deprecated_params(
@@ -413,8 +412,7 @@ class EVACPlus:
         return_prob=False,
         finalize_mask=True,
     ):
-        """
-        Wrapper function to facilitate prediction of larger dataset.
+        """Wrapper function to facilitate prediction of larger dataset.
 
         Parameters
         ----------
@@ -453,9 +451,7 @@ class EVACPlus:
         affine : np.ndarray (...) or (batch, ...)
             affine matrix of mask
             only if return_affine is True
-
         """
-
         voxsize = np.array(voxsize)
         affine = np.array(affine)
 
