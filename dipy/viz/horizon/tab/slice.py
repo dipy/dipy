@@ -296,13 +296,9 @@ class SlicesTab(HorizonTab):
                 self._slice_y.selected_value,
                 self._slice_z.selected_value,
             )
-            valid_vol = self._visualizer.change_volume(
-                self._volume.selected_value,
+            valid_vol, default_range = self._visualizer.change_volume(
                 value,
-                [
-                    self._intensities.selected_value[0],
-                    self._intensities.selected_value[1],
-                ],
+                np.asarray(self._intensities.obj._ratio),
                 visible_slices,
             )
             self._register_visualize_partials()
@@ -323,7 +319,9 @@ class SlicesTab(HorizonTab):
                 self._update_colormap()
 
                 # Updating intensities slider
-                self._intensities.obj.initial_values = intensities_range
+                if default_range:
+                    self._intensities.obj.left_disk_value = self._visualizer.volume_min
+                    self._intensities.obj.right_disk_value = self._visualizer.volume_max
                 self._intensities.obj.min_value = self._visualizer.volume_min
                 self._intensities.obj.max_value = self._visualizer.volume_max
                 self._intensities.obj.update(0)
