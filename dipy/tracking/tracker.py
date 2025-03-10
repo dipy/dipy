@@ -125,7 +125,7 @@ def probabilistic_tracking(
     Parameters
     ----------
     seed_positions : ndarray
-        Seed positions.
+        Seed positions in world space.
     sc : StoppingCriterion
         Stopping criterion.
     affine : ndarray
@@ -238,7 +238,7 @@ def deterministic_tracking(
     Parameters
     ----------
     seed_positions : ndarray
-        Seed positions.
+        Seed positions in world space.
     sc : StoppingCriterion
         Stopping criterion.
     affine : ndarray
@@ -355,7 +355,7 @@ def ptt_tracking(
     Parameters
     ----------
     seed_positions : ndarray
-        Seed positions.
+        Seed positions in world space.
     sc : StoppingCriterion
         Stopping criterion.
     affine : ndarray
