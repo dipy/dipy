@@ -85,6 +85,10 @@ def generate_tractogram(double[:,::1] seed_positions,
     lin_T = affine[:3, :3].T.copy()
     offset = affine[:3, 3].copy()
 
+    inv_affine = np.linalg.inv(affine)
+    seed_positions = np.dot(seed_positions, inv_affine[:3, :3].T.copy())
+    seed_positions += inv_affine[:3, 3]
+
     seed_start = 0
     seed_end = _plen
     while seed_start < _len:
