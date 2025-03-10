@@ -386,6 +386,9 @@ class SparseFascicleModel(ReconstModel, Cache):
             implement other fits to the aspects of the data that depend on
             b-value, but not on direction.
 
+        seed : int, optional
+            Seed for the random number generator.
+
         Notes
         -----
         This is an implementation of the SFM, described in

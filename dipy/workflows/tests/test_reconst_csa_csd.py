@@ -12,7 +12,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.peaks import load_pam
 from dipy.reconst.shm import descoteaux07_legacy_msg, sph_harm_ind_list
-from dipy.workflows.reconst import ReconstCSAFlow, ReconstCSDFlow
+from dipy.workflows.reconst import ReconstCSDFlow, ReconstQBallBaseFlow, ReconstSDTFlow
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -24,7 +24,27 @@ def test_reconst_csa():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        reconst_flow_core(ReconstCSAFlow)
+        reconst_flow_core(ReconstQBallBaseFlow)
+
+
+def test_reconst_opdt():
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        reconst_flow_core(ReconstQBallBaseFlow, method="opdt")
+
+
+def test_reconst_qball():
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        reconst_flow_core(ReconstQBallBaseFlow, method="qball")
 
 
 def test_reconst_csd():
@@ -37,7 +57,17 @@ def test_reconst_csd():
         reconst_flow_core(ReconstCSDFlow)
 
 
-def reconst_flow_core(flow):
+def test_reconst_sdt():
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        reconst_flow_core(ReconstSDTFlow)
+
+
+def reconst_flow_core(flow, **kwargs):
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_fnames(name="small_64D")
         volume, affine = load_nifti(data_path)
@@ -55,6 +85,7 @@ def reconst_flow_core(flow):
                 sh_order_max=sh_order,
                 out_dir=out_dir,
                 extract_pam_values=True,
+                **kwargs,
             )
 
             gfa_path = reconst_flow.last_generated_outputs["out_gfa"]
@@ -114,6 +145,7 @@ def reconst_flow_core(flow):
                     mask_path,
                     out_dir=out_dir,
                     frf=[15, 5, 5],
+                    **kwargs,
                 )
                 reconst_flow = flow()
                 reconst_flow._force_overwrite = True
@@ -124,6 +156,7 @@ def reconst_flow_core(flow):
                     mask_path,
                     out_dir=out_dir,
                     frf="15, 5, 5",
+                    **kwargs,
                 )
                 reconst_flow = flow()
                 reconst_flow._force_overwrite = True
@@ -134,6 +167,7 @@ def reconst_flow_core(flow):
                     mask_path,
                     out_dir=out_dir,
                     frf=None,
+                    **kwargs,
                 )
                 reconst_flow2 = flow()
                 reconst_flow2._force_overwrite = True
@@ -145,6 +179,7 @@ def reconst_flow_core(flow):
                     out_dir=out_dir,
                     frf=None,
                     roi_center=[5, 5, 5],
+                    **kwargs,
                 )
             else:
                 with npt.assert_raises(BaseException):
@@ -157,17 +192,21 @@ def reconst_flow_core(flow):
                         mask_path,
                         out_dir=out_dir,
                         extract_pam_values=True,
+                        **kwargs,
                     )
 
             # test parallel implementation
-            reconst_flow = flow()
-            reconst_flow._force_overwrite = True
-            reconst_flow.run(
-                data_path,
-                bval_path,
-                bvec_path,
-                mask_path,
-                out_dir=out_dir,
-                parallel=True,
-                num_processes=2,
-            )
+            # Avoid SDT for now, as it is quite slow, something to introspect
+            if flow.get_short_name() != "sdt":
+                reconst_flow = flow()
+                reconst_flow._force_overwrite = True
+                reconst_flow.run(
+                    data_path,
+                    bval_path,
+                    bvec_path,
+                    mask_path,
+                    out_dir=out_dir,
+                    parallel=True,
+                    num_processes=2,
+                    **kwargs,
+                )
