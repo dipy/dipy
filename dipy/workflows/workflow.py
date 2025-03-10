@@ -56,6 +56,38 @@ class Workflow:
         else:
             return []
 
+    def update_flat_outputs(self, new_flat_outputs, io_it):
+        """Update the flat outputs with new values.
+
+        This method is useful when a workflow needs to update the flat_outputs
+        with new values that were generated in the run method.
+
+        Parameters
+        ----------
+        new_flat_outputs : list
+            List of new values to update the flat_outputs.
+        io_it : IOIterator
+            The IOIterator object that was returned by get_io_iterator.
+        """
+        if len(new_flat_outputs) != len(self.flat_outputs):
+            raise ValueError(
+                "The new flat outputs must have the same length as the "
+                "current flat outputs."
+            )
+        self.flat_outputs = new_flat_outputs
+        if io_it.outputs:
+            size = len(io_it.outputs[-1])
+            io_it.outputs = [
+                self.flat_outputs[i : i + size]
+                for i in range(0, len(self.flat_outputs), size)
+            ]
+
+        if io_it.out_keys:
+            self.last_generated_outputs = dict(zip(io_it.out_keys, self.flat_outputs))
+        else:
+            self.last_generated_outputs = self.flat_outputs
+        self.manage_output_overwrite()
+
     def manage_output_overwrite(self):
         """Check if a file will be overwritten upon processing the inputs.
 
