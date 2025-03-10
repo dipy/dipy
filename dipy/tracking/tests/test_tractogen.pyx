@@ -32,7 +32,7 @@ def generate_disco_streamlines(params, *, nbr_seeds=1000, nbr_threads=0, sphere=
     using the fast tracking module with the input tracking params
     """
     # fetch the disco data
-    fnames = get_fnames(name="disco1")
+    fnames = get_fnames(name="disco1", include_optional=True)
 
     # prepare ODFs
     if sphere is None:
@@ -71,7 +71,7 @@ def get_disco_performances(streamlines):
     Return the streamlines connectivity performance compared to the GT DiSCo connectom.
     """
     # fetch the disco data
-    fnames = get_fnames(name="disco1")
+    fnames = get_fnames(name="disco1", include_optional=True)
 
     # prepare the GT connectome data
     GT_connectome = np.loadtxt(fnames[35])
@@ -191,7 +191,7 @@ def test_return_all():
     """
 
 
-    fnames = get_fnames(name="disco1")
+    fnames = get_fnames(name="disco1", include_optional=True)
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
     sh = nib.load(fnames[20]).get_fdata()
     fODFs = sh_to_sf(sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False)
@@ -248,7 +248,7 @@ def test_return_all():
 def test_max_min_length():
     """This tests that the returned streamlines respect the length criterion.
     """
-    fnames = get_fnames(name="disco1")
+    fnames = get_fnames(name="disco1", include_optional=True)
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
     sh = nib.load(fnames[20]).get_fdata()
     fODFs = sh_to_sf(
@@ -293,7 +293,7 @@ def test_max_min_length():
 def test_buffer_frac():
     """This tests that the buffer fraction for generate tractogram plays well.
     """
-    fnames = get_fnames(name="disco1")
+    fnames = get_fnames(name="disco1", include_optional=True)
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
     sh = nib.load(fnames[20]).get_fdata()
     fODFs = sh_to_sf(
