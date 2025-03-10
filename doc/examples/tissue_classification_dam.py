@@ -37,7 +37,7 @@ gtab = gradient_table(bvals, bvecs=bvecs)
 # skull-strip the data and obtain a binary mask. We can then use the mask to
 # denoise the data using the Patch2Self algorithm.
 b0_mask, mask = median_otsu(data, median_radius=2, numpass=1, vol_idx=[0, 1])
-denoised_arr = patch2self(data, bvals=bvals, b0_denoising=False)
+denoised_arr = patch2self(b0_mask, bvals=bvals, b0_denoising=False)
 
 ###############################################################################
 # Now we can use the DAM classifier to classify the voxels into WM and GM.
