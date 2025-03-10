@@ -15,6 +15,7 @@ cli_flows = {
     "dipy_buan_profiles": ("dipy.workflows.stats", "BundleAnalysisTractometryFlow"),
     "dipy_bundlewarp": ("dipy.workflows.align", "BundleWarpFlow"),
     "dipy_correct_motion": ("dipy.workflows.align", "MotionCorrectionFlow"),
+    "dipy_correct_biasfield": ("dipy.workflows.nn", "BiasFieldCorrectionFlow"),
     "dipy_concatenate_tractograms": ("dipy.workflows.io", "ConcatenateTractogramFlow"),
     "dipy_convert_tractogram": ("dipy.workflows.io", "ConvertTractogramFlow"),
     "dipy_convert_tensors": ("dipy.workflows.io", "ConvertTensorsFlow"),
