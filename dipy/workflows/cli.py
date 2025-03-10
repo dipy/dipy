@@ -14,6 +14,7 @@ cli_flows = {
     "dipy_buan_shapes": ("dipy.workflows.stats", "BundleShapeAnalysis"),
     "dipy_buan_profiles": ("dipy.workflows.stats", "BundleAnalysisTractometryFlow"),
     "dipy_bundlewarp": ("dipy.workflows.align", "BundleWarpFlow"),
+    "dipy_classify_tissue": ("dipy.workflows.segment", "ClassifyTissueFlow"),
     "dipy_correct_motion": ("dipy.workflows.align", "MotionCorrectionFlow"),
     "dipy_concatenate_tractograms": ("dipy.workflows.io", "ConcatenateTractogramFlow"),
     "dipy_convert_tractogram": ("dipy.workflows.io", "ConvertTractogramFlow"),
