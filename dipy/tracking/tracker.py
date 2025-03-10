@@ -85,6 +85,11 @@ def generic_tracking(
             seeds_positions, peaks, max_cross=1
         )
 
+    # set the seeds in image space
+    inv_affine = np.linalg.inv(affine)
+    seeds_positions = np.dot(seeds_positions, inv_affine[:3, :3].T.copy())
+    seeds_positions += inv_affine[:3, 3]
+
     return generate_tractogram(
         seeds_positions,
         seeds_directions,
