@@ -10,8 +10,8 @@ from dipy.tracking.utils import seeds_directions_pairs
 
 
 def generic_tracking(
-    seeds_positions,
-    seeds_directions,
+    seed_positions,
+    seed_directions,
     sc,
     params,
     *,
@@ -67,27 +67,27 @@ def generic_tracking(
         np.asarray(selected_pmf["value"], dtype=float), sphere, **kwargs
     )
 
-    if seeds_directions is not None:
-        if not isinstance(seeds_directions, (np.ndarray, list)):
-            raise ValueError("seeds_directions should be a numpy array or a list.")
-        elif isinstance(seeds_directions, list):
-            seeds_directions = np.array(seeds_directions)
+    if seed_directions is not None:
+        if not isinstance(seed_directions, (np.ndarray, list)):
+            raise ValueError("seed_directions should be a numpy array or a list.")
+        elif isinstance(seed_directions, list):
+            seed_directions = np.array(seed_directions)
 
-        if not np.array_equal(seeds_directions.shape, seeds_positions.shape):
+        if not np.array_equal(seed_directions.shape, seed_positions.shape):
             raise ValueError(
-                "seeds_directions and seeds_positions should have the same shape."
+                "seed_directions and seed_positions should have the same shape."
             )
     else:
         peaks = peaks_from_positions(
-            seeds_positions, None, None, npeaks=1, affine=affine, pmf_gen=pmf_gen
+            seed_positions, None, None, npeaks=1, affine=affine, pmf_gen=pmf_gen
         )
-        seeds_positions, seeds_directions = seeds_directions_pairs(
-            seeds_positions, peaks, max_cross=1
+        seed_positions, seed_directions = seeds_directions_pairs(
+            seed_positions, peaks, max_cross=1
         )
 
     return generate_tractogram(
-        seeds_positions,
-        seeds_directions,
+        seed_positions,
+        seed_directions,
         sc,
         params,
         pmf_gen,
@@ -98,11 +98,11 @@ def generic_tracking(
 
 
 def probabilistic_tracking(
-    seeds_positions,
+    seed_positions,
     sc,
     affine,
     *,
-    seeds_directions=None,
+    seed_directions=None,
     sh=None,
     peaks=None,
     sf=None,
@@ -124,14 +124,14 @@ def probabilistic_tracking(
 
     Parameters
     ----------
-    seeds_positions : ndarray
-        Seeds positions.
+    seed_positions : ndarray
+        Seed positions.
     sc : StoppingCriterion
         Stopping criterion.
     affine : ndarray
         Affine matrix.
-    seeds_directions : ndarray, optional
-        Seeds directions.
+    seed_directions : ndarray, optional
+        Seed directions.
     sh : ndarray, optional
        Spherical Harmonics (SH).
     peaks : ndarray, optional
@@ -194,8 +194,8 @@ def probabilistic_tracking(
     )
 
     return generic_tracking(
-        seeds_positions,
-        seeds_directions,
+        seed_positions,
+        seed_directions,
         sc,
         params,
         affine=affine,
@@ -211,11 +211,11 @@ def probabilistic_tracking(
 
 
 def deterministic_tracking(
-    seeds_positions,
+    seed_positions,
     sc,
     affine,
     *,
-    seeds_directions=None,
+    seed_directions=None,
     sh=None,
     peaks=None,
     sf=None,
@@ -237,14 +237,14 @@ def deterministic_tracking(
 
     Parameters
     ----------
-    seeds_positions : ndarray
-        Seeds positions.
+    seed_positions : ndarray
+        Seed positions.
     sc : StoppingCriterion
         Stopping criterion.
     affine : ndarray
         Affine matrix.
-    seeds_directions : ndarray, optional
-        Seeds directions.
+    seed_directions : ndarray, optional
+        Seed directions.
     sh : ndarray, optional
         Spherical Harmonics (SH).
     peaks : ndarray, optional
@@ -306,8 +306,8 @@ def deterministic_tracking(
         return_all=return_all,
     )
     return generic_tracking(
-        seeds_positions,
-        seeds_directions,
+        seed_positions,
+        seed_directions,
         sc,
         params,
         affine=affine,
@@ -323,11 +323,11 @@ def deterministic_tracking(
 
 
 def ptt_tracking(
-    seeds_positions,
+    seed_positions,
     sc,
     affine,
     *,
-    seeds_directions=None,
+    seed_directions=None,
     sh=None,
     peaks=None,
     sf=None,
@@ -354,14 +354,14 @@ def ptt_tracking(
 
     Parameters
     ----------
-    seeds_positions : ndarray
-        Seeds positions.
+    seed_positions : ndarray
+        Seed positions.
     sc : StoppingCriterion
         Stopping criterion.
     affine : ndarray
         Affine matrix.
-    seeds_directions : ndarray, optional
-        Seeds directions.
+    seed_directions : ndarray, optional
+        Seed directions.
     sh : ndarray, optional
         Spherical Harmonics (SH) data.
     peaks : ndarray, optional
@@ -438,8 +438,8 @@ def ptt_tracking(
         return_all=return_all,
     )
     return generic_tracking(
-        seeds_positions,
-        seeds_directions,
+        seed_positions,
+        seed_directions,
         sc,
         params,
         affine=affine,
