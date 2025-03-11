@@ -29,9 +29,9 @@ class Patch2SelfFlow(Workflow):
         alpha=1.0,
         verbose=False,
         patch_radius=0,
-        b0_denoising=True,
+        skip_b0_denoising=False,
         clip_negative_vals=False,
-        shift_intensity=True,
+        skip_shift_intensity=False,
         ver=3,
         out_dir="",
         out_denoised="dwi_patch2self.nii.gz",
@@ -71,13 +71,13 @@ class Patch2SelfFlow(Workflow):
             Show progress of Patch2Self and time taken.
         patch_radius : variable int, optional
             The radius of the local patch to be taken around each voxel
-        b0_denoising : bool, optional
-            Skips denoising b0 volumes if set to False.
+        skip_b0_denoising : bool, optional
+            Skips denoising b0 volumes if set to True.
         clip_negative_vals : bool, optional
             Sets negative values after denoising to 0 using `np.clip`.
-        shift_intensity : bool, optional
-            Shifts the distribution of intensities per volume to give
-            non-negative values
+        skip_shift_intensity : bool, optional
+            Skips shifting the distribution of intensities per volume to give
+            non-negative values if set to True.
         ver : int, optional
             Version of the Patch2Self algorithm to use between  1 or 3.
         out_dir : string, optional
@@ -91,6 +91,8 @@ class Patch2SelfFlow(Workflow):
         .. footbibliography::
 
         """
+        b0_denoising = not skip_b0_denoising
+        shift_intensity = not skip_shift_intensity
         io_it = self.get_io_iterator()
         if isinstance(patch_radius, list) and len(patch_radius) == 1:
             patch_radius = int(patch_radius[0])
