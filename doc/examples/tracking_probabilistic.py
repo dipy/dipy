@@ -61,7 +61,7 @@ csd_fit = csd_model.fit(data, mask=white_matter)
 # distribution of small fiber bundles within each voxel. We can use this
 # distribution for probabilistic fiber tracking. One way to do this is to
 # represent the FOD using a discrete sphere. This discrete FOD can be used by
-#  ``probabilistic_tracking`` as a PMF (sf or spherical function) for sampling
+# ``probabilistic_tracking`` as a PMF (sf or spherical function) for sampling
 # tracking directions.
 
 fod = csd_fit.odf(default_sphere)
