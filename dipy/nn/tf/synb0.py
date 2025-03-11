@@ -130,7 +130,7 @@ class Synb0:
     """
     This class is intended for the Synb0 model.
 
-    Synb0 :footcite:p:`Schilling2019`, :footcite:p:`Schilling2020` uses a neural
+    Synb0 :footcite:p:`Schilling2019a`, :footcite:p:`Schilling2020` uses a neural
     network to synthesize a b0 volume for distortion correction in DWI images.
 
     The model is the deep learning part of the Synb0-Disco

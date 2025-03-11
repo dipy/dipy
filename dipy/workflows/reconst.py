@@ -12,7 +12,13 @@ from dipy.data import default_sphere, get_sphere
 from dipy.direction.peaks import peak_directions, peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
-from dipy.io.peaks import niftis_to_pam, pam_to_niftis, save_pam, tensor_to_pam
+from dipy.io.peaks import (
+    load_pam,
+    niftis_to_pam,
+    pam_to_niftis,
+    save_pam,
+    tensor_to_pam,
+)
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst import mapmri
 from dipy.reconst.csdeconv import (
@@ -39,6 +45,7 @@ from dipy.reconst.ivim import IvimModel
 from dipy.reconst.rumba import RumbaSDModel
 from dipy.reconst.sfm import SparseFascicleModel
 from dipy.reconst.shm import CsaOdfModel, OpdtModel, QballModel
+from dipy.reconst.utils import compute_coherence_table_for_gradient_transforms
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.workflows.workflow import Workflow
@@ -2822,3 +2829,98 @@ class ReconstForecastFlow(Workflow):
             logging.info(msg)
 
             return io_it
+
+
+class CorrectBvecsFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "correct_bvecs"
+
+    def run(
+        self,
+        bvectors_files,
+        fa_files,
+        peaks_files,
+        mask_files,
+        fa_thr=0.2,
+        nb_flips=None,
+        angle_thr=None,
+        out_dir="",
+        out_bvecs="corrected_bvecs.txt",
+    ):
+        """Correct bvecs files by flipping the x, y, z components if necessary.
+
+        See :footcite:p:`Schilling2019b` for further details about the method.
+
+        Parameters
+        ----------
+        bvecs_files : string
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        fa_files : string
+            Path to the Fractional Anisotropy (FA) files. This path may contain
+            wildcards to use multiple FA files at once.
+        peaks_files : string
+            Path to the peaks files. It can be an ``*.pam5`` or a nifti file. This path
+            may contain wildcards to use multiple peak files at once.
+        mask_files : string
+            Path to the mask files. This path may contain wildcards to use
+            multiple mask files at once.
+        fa_thr : float, optional
+            FA threshold. Voxel with FA lower than this value will not be considered.
+        nb_flips : int, optional
+            Number of flips to consider for each permutation.
+        angle_threshold : float, optional
+            Maximum angle for considering directions coherent.
+        out_dir : string, optional
+            Output directory.
+        out_bvecs : string, optional
+            Name of the resulting bvecs file.
+
+        References
+        ----------
+        .. footbibliography::
+
+        """
+        nb_flips = nb_flips or 4
+        angle_thr = angle_thr or np.pi / 6.0
+
+        io_it = self.get_io_iterator()
+        for fbvecs, ffa, fpeak, fmask, obvecs in io_it:
+            logging.info(f"Correcting {fbvecs}")
+
+            _, bvecs = read_bvals_bvecs(None, fbvecs)
+            mask = load_nifti_data(fmask)
+            fa = load_nifti_data(ffa)
+            fa[np.logical_not(mask)] = 0
+            fa[fa < fa_thr] = 0
+
+            if fpeak.endswith(".pam5"):
+                pam = load_pam(fpeak)
+                peaks = pam.peak_dirs
+            elif fpeak.endswith(".nii.gz"):
+                peaks = load_nifti_data(fpeak)
+            else:
+                raise ValueError("Peaks file must be a *.pam5 or a nifti file.")
+
+            if peaks.ndim == 5:
+                peaks = np.squeeze(peaks[..., 0, :])
+
+            peaks[np.logical_not(mask)] = 0
+            peaks[fa < fa_thr] = 0
+
+            coherence, transform = compute_coherence_table_for_gradient_transforms(
+                peaks, fa, nb_flips=nb_flips, angle_threshold=angle_thr
+            )
+
+            best_t = transform[np.argmax(coherence)]
+            if (best_t == np.eye(3)).all():
+                logging.info("Original b-vectors are already correct.")
+                correct_bvecs = bvecs
+            else:
+                logging.info(
+                    "Applying correction to b-vectors. " f"Transform is: \n{best_t}."
+                )
+                correct_bvecs = np.dot(bvecs, best_t.T)
+
+            np.savetxt(obvecs, correct_bvecs.T, "%.8f")
