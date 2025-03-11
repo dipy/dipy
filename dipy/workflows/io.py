@@ -205,7 +205,6 @@ class FetchFlow(Workflow):
                 for name, func in getmembers(fetcher_module, isfunction)
                 if name.lower().startswith("fetch_")
                 and func is not fetcher_module.fetch_data
-                if name.lower() not in ["fetch_hbn", "fetch_hcp"]
             }
         )
 
@@ -230,7 +229,19 @@ class FetchFlow(Workflow):
         else:
             return importlib.import_module(module_path)
 
-    def run(self, data_names, include_optional=False, out_dir=""):
+    def run(
+        self,
+        data_names,
+        subjects=None,
+        include_optional=False,
+        include_afq=False,
+        hcp_bucket="hcp-openaccess",
+        hcp_profile_name="hcp",
+        hcp_study="HCP_1200",
+        hcp_aws_access_key_id=None,
+        hcp_aws_secret_access_key=None,
+        out_dir="",
+    ):
         """Download files to folder and check their md5 checksums.
 
         To see all available datasets, please type "list" in data_names.
@@ -239,8 +250,25 @@ class FetchFlow(Workflow):
         ----------
         data_names : variable string
             Any number of Nifti1, bvals or bvecs files.
+        subjects : variable string, optional
+            Identifiers of the subjects to download. Used only by the HBN & HCP dataset.
+            For example with HBN dataset: --subject NDARAA948VFH NDAREK918EC2
         include_optional : bool, optional
             Include optional datasets.
+        include_afq : bool, optional
+            Whether to include pyAFQ derivatives. Used only by the HBN dataset.
+        hcp_bucket : string, optional
+            The name of the HCP S3 bucket.
+        hcp_profile_name : string, optional
+            The name of the AWS profile used for access.
+        hcp_study : string, optional
+            Which HCP study to grab.
+        hcp_aws_access_key_id : string, optional
+            AWS credentials to HCP AWS S3. Will only be used if `profile_name` is
+            set to False.
+        hcp_aws_secret_access_key : string, optional
+            AWS credentials to HCP AWS S3. Will only be used if `profile_name` is
+            set to False.
         out_dir : string, optional
             Output directory.
 
@@ -254,7 +282,12 @@ class FetchFlow(Workflow):
         data_names = [name.lower() for name in data_names]
 
         if "all" in data_names:
+            logging.warning("Skipping HCP and HBN datasets.")
+            available_data.pop("hcp", None)
+            available_data.pop("hbn", None)
             for name, fetcher_function in available_data.items():
+                if name in ["hcp", "hbn"]:
+                    continue
                 logging.info("------------------------------------------")
                 logging.info(f"Fetching at {name}")
                 logging.info("------------------------------------------")
@@ -276,7 +309,41 @@ class FetchFlow(Workflow):
                 logging.info("------------------------------------------")
                 logging.info(f"Fetching at {data_name}")
                 logging.info("------------------------------------------")
-                available_data[data_name](include_optional=include_optional)
+                if data_name == "hcp":
+                    if not subjects:
+                        logging.error(
+                            "Please provide the subjects to download the HCP dataset."
+                        )
+                        continue
+                    try:
+                        available_data[data_name](
+                            subjects=subjects,
+                            bucket=hcp_bucket,
+                            profile_name=hcp_profile_name,
+                            study=hcp_study,
+                            aws_access_key_id=hcp_aws_access_key_id,
+                            aws_secret_access_key=hcp_aws_secret_access_key,
+                        )
+                    except Exception as e:
+                        logging.error(
+                            f"Error while fetching HCP dataset: {str(e)}", exc_info=True
+                        )
+                elif data_name == "hbn":
+                    if not subjects:
+                        logging.error(
+                            "Please provide the subjects to download the HBN dataset."
+                        )
+                        continue
+                    try:
+                        available_data[data_name](
+                            subjects=subjects, include_afq=include_afq
+                        )
+                    except Exception as e:
+                        logging.error(
+                            f"Error while fetching HBN dataset: {str(e)}", exc_info=True
+                        )
+                else:
+                    available_data[data_name](include_optional=include_optional)
 
             nb_success = len(data_names) - len(skipped_names)
             print("\n")

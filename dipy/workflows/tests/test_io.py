@@ -108,7 +108,7 @@ def test_io_fetch_fetcher_datanames():
     else:
         fetcher_module = importlib.import_module(module_path)
 
-    ignored_fetchers = ["fetch_hbn", "fetch_hcp", "fetch_data"]
+    ignored_fetchers = ["fetch_data"]
     fetcher_list = {
         name.replace("fetch_", ""): func
         for name, func in getmembers(fetcher_module, isfunction)
