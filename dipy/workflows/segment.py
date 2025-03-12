@@ -387,7 +387,7 @@ class ClassifyTissueFlow(Workflow):
         wm_threshold=0.5,
         b0_threshold=50,
         low_signal_threshold=50,
-        nclass=3,
+        nclass=None,
         beta=0.1,
         tolerance=1e-05,
         max_iter=100,
@@ -420,7 +420,7 @@ class ClassifyTissueFlow(Workflow):
         low_signal_threshold : float, optional
             The threshold below which a voxel is considered to have low signal.
             Used only for 'dam' method.
-        nclasses : int, optional
+        nclass : int, optional
             Number of desired classes. Used only for 'hmrf' method.
         beta : float, optional
             Smoothing parameter, the higher this number the smoother the
@@ -481,6 +481,13 @@ class ClassifyTissueFlow(Workflow):
             data, affine = load_nifti(fpath)
 
             if method.lower() == "hmrf":
+                if nclass is None:
+                    logging.error(
+                        "Number of classes is required for 'hmrf' method. "
+                        "For example, Use '--nclass 4' to specify the number of "
+                        "classes."
+                    )
+                    sys.exit(1)
                 classifier = TissueClassifierHMRF()
                 _, segmentation_final, PVE = classifier.classify(
                     data, nclass, beta, tolerance=tolerance, max_iter=max_iter

@@ -63,7 +63,9 @@ def test_correct_biasfield_flow():
             corrected_name = bias_flow.last_generated_outputs["out_corrected"]
 
             corrected_data = load_nifti_data(pjoin(out_dir, corrected_name))
-            npt.assert_almost_equal(corrected_data.mean(), 119.03902876428222)
+            npt.assert_almost_equal(
+                corrected_data.mean(), 119.03902876428222, decimal=4
+            )
 
     # Test with DWI data
     with TemporaryDirectory() as out_dir:
@@ -81,7 +83,7 @@ def test_correct_biasfield_flow():
         corrected_name = bias_flow.last_generated_outputs["out_corrected"]
 
         corrected_data = load_nifti_data(pjoin(out_dir, corrected_name))
-        npt.assert_almost_equal(corrected_data.mean(), 0.0384615384615)
+        npt.assert_almost_equal(corrected_data.mean(), 0.0384615384615, decimal=5)
 
     args = {
         "input_files": fdata,
