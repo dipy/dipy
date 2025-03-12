@@ -115,7 +115,7 @@ def _fit_denoising_model(train, vol_idx, model, alpha):
     """
     if isinstance(model, str):
         if model.lower() == "ols":
-            model_instance = linear_model.Ridge(copy_X=False, alpha=0)
+            model_instance = linear_model.Ridge(copy_X=False, alpha=1e-10)
         elif model.lower() == "ridge":
             model_instance = linear_model.Ridge(copy_X=False, alpha=alpha)
         elif model.lower() == "lasso":
