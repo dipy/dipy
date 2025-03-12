@@ -1122,7 +1122,7 @@ class MathFlow(Workflow):
                 - Bitwise operators (and, or, not, xor): ``&, |, ~, ^``
                 - Comparison operators: ``<, <=, ==, !=, >=, >``
                 - Unary arithmetic operators: ``-``
-                - Binary arithmetic operators: ``+, -, *, /, **, %, <<, >>``
+                - Binary arithmetic operators: ``+, -, *, /, **, <<, >>``
             Supported functions are:
                 - ``where(bool, number1, number2) -> number``: number1 if the bool
                   condition is true, number2 otherwise.
