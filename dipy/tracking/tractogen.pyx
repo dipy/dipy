@@ -43,7 +43,8 @@ def generate_tractogram(double[:,::1] seed_positions,
                         PmfGen pmf_gen,
                         affine,
                         int nbr_threads=0,
-                        float buffer_frac=1.0):
+                        float buffer_frac=1.0,
+                        bint save_seeds=0):
     """Generate a tractogram from a set of seed points and directions.
 
     Parameters
@@ -64,11 +65,15 @@ def generate_tractogram(double[:,::1] seed_positions,
         Number of threads to use for streamline generation.
     buffer_frac : float, optional
         Fraction of the seed points to process in each iteration.
+    save_seeds : bool, optional
+        If True, return seeds alongside streamlines
 
     Yields
     ------
     streamlines : Streamlines
         Streamlines generated from the seed points.
+    seeds : ndarray, optional
+        seed points associated with the generated streamlines.
 
     """
     cdef:
@@ -110,7 +115,10 @@ def generate_tractogram(double[:,::1] seed_positions,
                      and length_arr[i] <= params.max_len)):
                 s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
                 track = s.copy().reshape((-1,3))
-                yield np.dot(track, lin_T) + offset
+                if save_seeds:
+                    yield np.dot(track, lin_T) + offset, np.dot(seed_positions[seed_start + i], lin_T) + offset
+                else:
+                    yield np.dot(track, lin_T) + offset
             free(streamlines_arr[i])
 
         free(streamlines_arr)

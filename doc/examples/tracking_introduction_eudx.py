@@ -33,9 +33,9 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
 from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking import utils
-from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tracker import eudx_tracking
 from dipy.viz import actor, colormap, has_fury, window
 
 ###############################################################################
@@ -154,15 +154,15 @@ seed_mask = labels == 2
 seeds = utils.seeds_from_mask(seed_mask, affine, density=[2, 2, 2])
 
 ###############################################################################
-# Finally, we can bring it all together using ``LocalTracking``, using
+# Finally, we can bring it all together using ``eudx_tracking``, using
 # the EuDX algorithm :footcite:p:`Garyfallidis2012b`. ``EuDX`` is a fast
 # algorithm that we use here to generate streamlines. This algorithm is what is
 # used here and the default option when providing the output of peaks directly
-# in LocalTracking.
+# in eudx_tracking.
 
-# Initialization of LocalTracking. The computation happens in the next step.
-streamlines_generator = LocalTracking(
-    csa_peaks, stopping_criterion, seeds, affine=affine, step_size=0.5
+# Initialization of eudx_tracking. The computation happens in the next step.
+streamlines_generator = eudx_tracking(
+    seeds, stopping_criterion, affine, step_size=0.5, pam=csa_peaks
 )
 # Generate streamlines object
 streamlines = Streamlines(streamlines_generator)
