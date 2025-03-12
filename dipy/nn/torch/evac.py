@@ -322,7 +322,7 @@ class EVACPlus:
     """
 
     @doctest_skip_parser
-    def __init__(self, *, verbose=False):
+    def __init__(self, *, verbose=False, use_cuda=False):
         """Model initialization
 
         The model was pre-trained for usage on
@@ -335,6 +335,9 @@ class EVACPlus:
         ----------
         verbose : bool, optional
             Whether to show information about the processing.
+        use_cuda : bool, optional
+            Whether to use GPU for processing.
+            If False or no CUDA is detected, CPU will be used.
         """
         if not have_torch:
             raise torch()
@@ -345,7 +348,10 @@ class EVACPlus:
         # EVAC+ network load
 
         self.model = self.init_model()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if use_cuda and torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        else:
+            self.device = torch.device("cpu")
         self.model = self.model.to(self.device)
         self.fetch_default_weights()
 

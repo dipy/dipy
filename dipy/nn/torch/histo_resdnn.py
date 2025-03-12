@@ -72,7 +72,9 @@ class HistoResDNN:
     """
 
     @doctest_skip_parser
-    def __init__(self, *, sh_order_max=8, basis_type="tournier07", verbose=False):
+    def __init__(
+        self, *, sh_order_max=8, basis_type="tournier07", verbose=False, use_cuda=False
+    ):
         """Model initialization
 
         The model was re-trained for usage with a different basis function
@@ -99,6 +101,9 @@ class HistoResDNN:
             ``tournier07`` (default) or ``descoteaux07``.
         verbose : bool, optional
             Whether to show information about the processing.
+        use_cuda : bool, optional
+            Whether to use GPU for processing.
+            If False or no CUDA is detected, CPU will be used.
 
         References
         ----------
@@ -124,7 +129,10 @@ class HistoResDNN:
         # ResDNN Network Flow
         num_hidden = self.sh_size
         self.model = DenseModel(self.sh_size, num_hidden).type(torch.float64)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if use_cuda and torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        else:
+            self.device = torch.device("cpu")
         self.model = self.model.to(self.device)
 
     def fetch_default_weights(self):

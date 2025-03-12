@@ -172,7 +172,7 @@ class DeepN4:
     """
 
     @doctest_skip_parser
-    def __init__(self, *, verbose=False):
+    def __init__(self, *, verbose=False, use_cuda=False):
         """Model initialization
 
         To obtain the pre-trained model, use fetch_default_weights() like:
@@ -186,6 +186,9 @@ class DeepN4:
         ----------
         verbose : bool, optional
             Whether to show information about the processing.
+        use_cuda : bool, optional
+            Whether to use GPU for processing.
+            If False or no CUDA is detected, CPU will be used.
         """
         if not have_torch:
             raise torch()
@@ -196,7 +199,10 @@ class DeepN4:
         # DeepN4 network load
 
         self.model = UNet3D(1, 1)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if use_cuda and torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        else:
+            self.device = torch.device("cpu")
         self.model = self.model.to(self.device)
 
     def fetch_default_weights(self):
