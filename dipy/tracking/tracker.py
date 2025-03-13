@@ -148,9 +148,9 @@ def probabilistic_tracking(
     sf : ndarray, optional
         Spherical Function (SF).
     min_len : int, optional
-        Minimum length (Nb points) of the streamlines.
+        Minimum length (mm) of the streamlines.
     max_len : int, optional
-        Maximum length (Nb points) of the streamlines.
+        Maximum length (mm) of the streamlines.
     step_size : float, optional
         Step size of the tracking.
     voxel_size : ndarray, optional
@@ -265,9 +265,9 @@ def deterministic_tracking(
     sf : ndarray, optional
         Spherical Function (SF).
     min_len : int, optional
-        Minimum length (nb points) of the streamlines.
+        Minimum length (mm) of the streamlines.
     max_len : int, optional
-        Maximum length (nb points) of the streamlines.
+        Maximum length (mm) of the streamlines.
     step_size : float, optional
         Step size of the tracking.
     voxel_size : ndarray, optional
@@ -386,9 +386,9 @@ def ptt_tracking(
     sf : ndarray, optional
         Spherical Function (SF).
     min_len : int, optional
-        Minimum length of the streamlines.
+        Minimum length (mm) of the streamlines.
     max_len : int, optional
-        Maximum length of the streamlines.
+        Maximum length (mm) of the streamlines.
     step_size : float, optional
         Step size of the tracking.
     voxel_size : ndarray, optional
