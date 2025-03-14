@@ -168,6 +168,7 @@ def test_classify_tissue_flow():
         npt.assert_raises(SystemExit, flow.run, data_path)
         npt.assert_raises(SystemExit, flow.run, data_path, method="random")
         npt.assert_raises(SystemExit, flow.run, data_path, method="dam")
+        npt.assert_raises(SystemExit, flow.run, data_path, method="hmrf")
 
     if has_sklearn:
         with TemporaryDirectory() as out_dir:
