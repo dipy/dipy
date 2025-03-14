@@ -1,3 +1,4 @@
+import logging
 from warnings import warn
 
 import numpy as np
@@ -387,14 +388,14 @@ class Horizon:
                 c = cluster_actors[bundle]["cluster"]
                 indices = tractogram_clusters[t][c]
                 saving_streamlines.extend(Streamlines(indices))
-        print("Saving result in tmp.trk")
+        logging.info("Saving result in tmp.trk")
 
         # Using the header of the first of the tractograms
         sft_new = StatefulTractogram(
             saving_streamlines, self.tractograms[0], Space.RASMM
         )
         save_tractogram(sft_new, "tmp.trk", bbox_valid_check=False)
-        print("Saved!")
+        logging.info("Saved!")
 
     # TODO: Move to another class/module
     def __show_all(self):
@@ -574,6 +575,7 @@ class Horizon:
                         affine=affine,
                         world_coords=self.world_coords,
                         rgb=self.rgb,
+                        fname=fname,
                     )
                     self.__tabs.append(
                         SlicesTab(
@@ -701,7 +703,7 @@ class Horizon:
             self.show_m.render()
 
         def right_click_cluster_callback(obj, event):
-            print("Cluster Area Selected")
+            logging.info("Cluster Area Selected")
             self.show_m.render()
 
         for cl in self.cla:

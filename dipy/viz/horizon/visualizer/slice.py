@@ -1,3 +1,5 @@
+import logging
+from pathlib import Path
 import warnings
 
 import numpy as np
@@ -24,6 +26,7 @@ class SlicesVisualizer:
         world_coords=False,
         percentiles=(0, 100),
         rgb=False,
+        fname=None,
     ):
         self._interactor = interactor
         self._scene = scene
@@ -64,10 +67,16 @@ class SlicesVisualizer:
         self._vol_min = np.min(vol_data)
 
         self._resliced_vol = None
-
-        print(f"Original shape: {self._data_shape}")
+        np.set_printoptions(3, suppress=True)
+        fname = Path(fname).name
+        logging.info(f"-------------------{len(fname) * '-'}")
+        logging.info(f"Applying affine to {fname}")
+        logging.info(f"-------------------{len(fname) * '-'}")
+        logging.info(f"Affine Native to RAS matrix \n{affine}")
+        logging.info(f"Original shape: {self._data_shape}")
         self._create_and_resize_actors(vol_data, self._int_range)
-        print(f"Resized to RAS shape: {self._data_shape}")
+        logging.info(f"Resized to RAS shape: {self._data_shape} \n")
+        np.set_printoptions()
 
         self._sel_slices = np.rint(np.asarray(self._data_shape[:3]) / 2).astype(int)
 
