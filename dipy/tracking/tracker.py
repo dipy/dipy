@@ -335,7 +335,7 @@ def ptt_tracking(
     max_len=500,
     step_size=0.5,
     voxel_size=None,
-    max_angle=20,
+    max_angle=10,
     pmf_threshold=0.1,
     probe_length=1.5,
     probe_radius=0,
