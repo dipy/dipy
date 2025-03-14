@@ -1,3 +1,4 @@
+import logging
 from os.path import join as pjoin
 from warnings import warn
 
@@ -177,9 +178,7 @@ class HorizonFlow(Workflow):
             fname = input_output[0]
 
             if verbose:
-                print("Loading file ...")
-                print(fname)
-                print("\n")
+                logging.info(f"Loading file ... \n {fname}\n")
 
             fl = fname.lower()
             ends = fl.endswith
@@ -195,11 +194,6 @@ class HorizonFlow(Workflow):
             if ends(".nii.gz") or ends(".nii"):
                 data, affine = load_nifti(fname)
                 images.append((data, affine, fname))
-                if verbose:
-                    print("Affine to RAS")
-                    np.set_printoptions(3, suppress=True)
-                    print(affine)
-                    np.set_printoptions()
 
             if ends(".pial"):
                 surface = load_pial(fname)
@@ -221,16 +215,14 @@ class HorizonFlow(Workflow):
                 pams.append(pam)
 
                 if verbose:
-                    print("Peak_dirs shape")
-                    print(pam.peak_dirs.shape)
+                    logging.info(f"Peak_dirs shape \n {pam.peak_dirs.shape}\n")
 
             if ends(".npy"):
                 data = np.load(fname)
                 numpy_files.append(data)
 
                 if verbose:
-                    print("numpy array length")
-                    print(len(data))
+                    logging.info(f"numpy array length \n {len(data)}\n")
 
         if buan:
             bundle_colors = []
@@ -272,8 +264,7 @@ class HorizonFlow(Workflow):
             roi_colors *= 3
         elif len(roi_colors) != 3:
             raise ValueError(
-                "You need 3 values to set up ROI color. "
-                "e.g. --roi_colors 0.5 0.5 0.5"
+                "You need 3 values to set up ROI color. e.g. --roi_colors 0.5 0.5 0.5"
             )
 
         order_transparent = not disable_order_transparency
