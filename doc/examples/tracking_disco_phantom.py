@@ -1,12 +1,10 @@
 """
-===========================================
-An introduction to the Fast Tracking Module
-===========================================
+=================================
+Tractography on the DiSCo Phantom
+=================================
 
-The fast tracking module allow to run tractography on multiple CPU cores.
-
-Current implemented algorithms are probabilistic, deterministic and parallel
-transport tractography (PTT).
+This example compares probabilistic, deterministic and parallel
+transport tractography (PTT) algorithms.
 
 See
 :ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py`
@@ -44,7 +42,7 @@ interactive = False
 print("Downloading data...")
 
 ###############################################################################
-# Prepare the synthetic DiSCo data for fast tracking. The ground-truth
+# Prepare the synthetic DiSCo data for tractography. The ground-truth
 # connectome will be use to evaluate tractography performances.
 fnames = get_fnames(name="disco1")
 disco1_fnames = [os.path.basename(f) for f in fnames]
@@ -150,21 +148,21 @@ if has_fury:
 #
 #
 
-# Perform fast deterministic tractography using 1 thread (cpu)
-print("Running fast Deterministic Tractography...")
+# Perform deterministic tractography using 1 thread (cpu)
+print("Running Deterministic Tractography...")
 streamline_generator = deterministic_tracking(
     seeds, sc, affine, sf=ODFs, nbr_threads=1, random_seed=42, sphere=default_sphere
 )
 
 det_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(det_streams, labels_img, Space.RASMM)
-save_trk(sft, "tractogram_fast_deterministic.trk")
+save_trk(sft, "tractogram_disco_deterministic.trk")
 
 if has_fury:
     scene = window.Scene()
     scene.add(actor.line(det_streams, colors=colormap.line_colors(det_streams)))
     window.record(
-        scene=scene, out_path="tractogram_fast_deterministic.png", size=(800, 800)
+        scene=scene, out_path="tractogram_disco_deterministic.png", size=(800, 800)
     )
     if interactive:
         window.show(scene)
@@ -174,7 +172,7 @@ connectome = connectivity_matrix(det_streams, affine, labels)[1:, 1:]
 r, _ = pearsonr(
     GT_connectome[connectome_mask].flatten(), connectome[connectome_mask].flatten()
 )
-print("DiSCo ground-truth correlation (fast deterministic tractography): ", r)
+print("DiSCo ground-truth correlation (deterministic tractography): ", r)
 
 plt.imshow(connectome, origin="lower", cmap="viridis", interpolation="nearest")
 plt.axis("off")
@@ -188,21 +186,21 @@ plt.close()
 # DiSCo Deterministic tractogram and corresponding connectome.
 #
 #
-# Perform fast probabilistic tractography using 4 threads (cpus)
+# Perform probabilistic tractography using 4 threads (cpus)
 
-print("Running fast Probabilistic Tractography...")
+print("Running Probabilistic Tractography...")
 streamline_generator = probabilistic_tracking(
     seeds, sc, affine, sf=ODFs, nbr_threads=4, random_seed=42, sphere=default_sphere
 )
 prob_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(prob_streams, labels_img, Space.RASMM)
-save_trk(sft, "tractogram_fast_probabilistic.trk")
+save_trk(sft, "tractogram_disco_probabilistic.trk")
 
 if has_fury:
     scene = window.Scene()
     scene.add(actor.line(prob_streams, colors=colormap.line_colors(prob_streams)))
     window.record(
-        scene=scene, out_path="tractogram_fast_probabilistic.png", size=(800, 800)
+        scene=scene, out_path="tractogram_disco_probabilistic.png", size=(800, 800)
     )
     if interactive:
         window.show(scene)
@@ -212,7 +210,7 @@ connectome = connectivity_matrix(prob_streams, affine, labels)[1:, 1:]
 r, _ = pearsonr(
     GT_connectome[connectome_mask].flatten(), connectome[connectome_mask].flatten()
 )
-print("DiSCo ground-truth correlation (fast probabilistic tractography): ", r)
+print("DiSCo ground-truth correlation (probabilistic tractography): ", r)
 
 plt.imshow(connectome, origin="lower", cmap="viridis", interpolation="nearest")
 plt.axis("off")
@@ -227,19 +225,26 @@ plt.close()
 #
 #
 
-# Perform fast parallel transport tractography tractography using all threads (cpus)
-print("Running fast Parallel Transport Tractography...")
+# Perform parallel transport tractography tractography using all threads (cpus)
+print("Running Parallel Transport Tractography...")
 streamline_generator = ptt_tracking(
-    seeds, sc, affine, sf=ODFs, nbr_threads=0, random_seed=42, sphere=default_sphere
+    seeds,
+    sc,
+    affine,
+    sf=ODFs,
+    nbr_threads=0,
+    random_seed=42,
+    sphere=default_sphere,
+    max_angle=20,
 )
 ptt_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(ptt_streams, labels_img, Space.RASMM)
-save_trk(sft, "tractogram_fast_ptt.trk")
+save_trk(sft, "tractogram_disco_ptt.trk")
 
 if has_fury:
     scene = window.Scene()
     scene.add(actor.line(ptt_streams, colors=colormap.line_colors(ptt_streams)))
-    window.record(scene=scene, out_path="tractogram_fast_ptt.png", size=(800, 800))
+    window.record(scene=scene, out_path="tractogram_disco_ptt.png", size=(800, 800))
     if interactive:
         window.show(scene)
 
@@ -248,7 +253,7 @@ connectome = connectivity_matrix(ptt_streams, affine, labels)[1:, 1:]
 r, _ = pearsonr(
     GT_connectome[connectome_mask].flatten(), connectome[connectome_mask].flatten()
 )
-print("DiSCo ground-truth correlation (fast PTT tractography): ", r)
+print("DiSCo ground-truth correlation (PTT tractography): ", r)
 plt.imshow(connectome, origin="lower", cmap="viridis", interpolation="nearest")
 plt.axis("off")
 plt.savefig("connectome_ptt.png")
