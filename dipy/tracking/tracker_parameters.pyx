@@ -74,8 +74,8 @@ cdef class TrackerParameters:
                  data_support_exponent=None, random_seed=None):
         cdef cnp.npy_intp i
 
-        self.max_len = max_len
-        self.min_len = min_len
+        self.max_nbr_pts = int(max_len/step_size)
+        self.min_nbr_pts = int(min_len/step_size)
         self.return_all = return_all
         self.random_seed = random_seed
         self.step_size = step_size
