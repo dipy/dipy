@@ -20,7 +20,6 @@ from numpy.linalg import inv
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, small_sphere
-from dipy.direction import ProbabilisticDirectionGetter
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -28,9 +27,9 @@ from dipy.io.streamline import save_trk
 from dipy.reconst.csdeconv import auto_response_ssst
 from dipy.reconst.rumba import RumbaSDModel
 from dipy.tracking import utils
-from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines, transform_streamlines
+from dipy.tracking.tracker import probabilistic_tracking
 from dipy.viz import actor, colormap, window
 
 # Enables/disables interactive visualization
@@ -110,9 +109,14 @@ plt.savefig("f_wm_tracking_mask.png")
 # must be strictly non-negative; RUMBA-SD already adheres to this constraint
 # so no further manipulation of the fODFs is necessary.
 
-prob_dg = ProbabilisticDirectionGetter.from_pmf(odf, max_angle=30.0, sphere=sphere)
-streamline_generator = LocalTracking(
-    prob_dg, stopping_criterion, seeds, affine, step_size=0.5
+streamline_generator = probabilistic_tracking(
+    seeds,
+    stopping_criterion,
+    affine,
+    step_size=0.5,
+    max_angle=30.0,
+    sphere=sphere,
+    sf=odf,
 )
 streamlines = Streamlines(streamline_generator)
 
