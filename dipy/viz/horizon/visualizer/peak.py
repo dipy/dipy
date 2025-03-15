@@ -93,6 +93,17 @@ class PeakActor(Actor):
     ):
         if affine is not None:
             w_pos = apply_affine(affine, np.asarray(indices).T)
+            ratio_size = np.abs(np.diag(affine)[:3])
+            cuboid_points = generate_cuboid((0, 0, 0), directions.shape[:3])
+            affine_cuboid_points = apply_affine(affine, cuboid_points)
+            w_pos_min = np.min(affine_cuboid_points, axis=0)
+            max_size = (
+                (
+                    np.max(affine_cuboid_points, axis=0)
+                    - np.min(affine_cuboid_points, axis=0)
+                )
+                / ratio_size
+            ).astype(np.int32)
 
         valid_dirs = directions[indices]
 
@@ -128,8 +139,16 @@ class PeakActor(Actor):
                 diff = point_e - point_i
                 points_array[line_count * pnts_per_line, :] = point_e
                 points_array[line_count * pnts_per_line + 1, :] = point_i
-                centers_array[line_count * pnts_per_line, :] = center
-                centers_array[line_count * pnts_per_line + 1, :] = center
+                if affine is None:
+                    centers_array[line_count * pnts_per_line, :] = center
+                    centers_array[line_count * pnts_per_line + 1, :] = center
+                else:
+                    centers_array[line_count * pnts_per_line, :] = (
+                        xyz - w_pos_min
+                    ) / ratio_size
+                    centers_array[line_count * pnts_per_line + 1, :] = (
+                        xyz - w_pos_min
+                    ) / ratio_size
                 diffs_array[line_count * pnts_per_line, :] = diff
                 diffs_array[line_count * pnts_per_line + 1, :] = diff
                 line_count += 1
@@ -220,7 +239,10 @@ class PeakActor(Actor):
             self.GetProperty().SetOpacity(self.__global_opacity)
 
         self.__min_centers = np.zeros(shape=(3,))
-        self.__max_centers = np.array(directions.shape[:3])
+        if affine is None:
+            self.__max_centers = np.asarray(directions.shape[:3])
+        else:
+            self.__max_centers = max_size
 
         self.__is_range = True
         self.__low_ranges = self.__min_centers
@@ -514,6 +536,25 @@ def _points_to_vtk_cells(points, *, points_per_line=2):
 
     cell_array.SetNumberOfCells(num_cells)
     return cell_array
+
+
+def generate_cuboid(min_point, max_point):
+    """Generate 8 corner points of a cuboid from min and max coordinates."""
+    x_min, y_min, z_min = min_point
+    x_max, y_max, z_max = max_point
+
+    return np.array(
+        [
+            [x_min, y_min, z_min],
+            [x_min, y_min, z_max],
+            [x_min, y_max, z_min],
+            [x_min, y_max, z_max],
+            [x_max, y_min, z_min],
+            [x_max, y_min, z_max],
+            [x_max, y_max, z_min],
+            [x_max, y_max, z_max],
+        ]
+    )
 
 
 class PeaksVisualizer:
