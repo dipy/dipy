@@ -68,7 +68,7 @@ class SlicesVisualizer:
 
         self._resliced_vol = None
         np.set_printoptions(3, suppress=True)
-        fname = Path(fname).name
+        fname = "" if fname is None else Path(fname).name
         logging.info(f"-------------------{len(fname) * '-'}")
         logging.info(f"Applying affine to {fname}")
         logging.info(f"-------------------{len(fname) * '-'}")
