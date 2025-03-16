@@ -2,6 +2,7 @@ import importlib
 from inspect import getmembers, isfunction
 import logging
 import os
+import re
 import sys
 import warnings
 
@@ -1106,8 +1107,39 @@ class MathFlow(Workflow):
     def get_short_name(cls):
         return "math_flow"
 
+    def broadcast_arrays(self, vol_dict, operation):
+        variables = re.findall(r"\b\w+\b", operation)
+        variables = [var for var in variables if var in vol_dict]
+
+        shapes = [vol_dict[var].shape for var in variables]
+        max_dims = max(len(shape) for shape in shapes)
+
+        for var in variables:
+            shape = vol_dict[var].shape
+            if len(shape) < max_dims:
+                new_shape = shape + (1,) * (max_dims - len(shape))
+                vol_dict[var] = vol_dict[var].reshape(new_shape)
+
+        updated_shapes = [vol_dict[var].shape for var in variables]
+        try:
+            broadcast_shape = np.broadcast_shapes(*updated_shapes)
+        except ValueError as e:
+            raise ValueError(f"Shape mismatch after adding dimensions: {e}") from e
+
+        for var in variables:
+            if vol_dict[var].shape != broadcast_shape:
+                vol_dict[var] = np.broadcast_to(vol_dict[var], broadcast_shape)
+
+        return vol_dict
+
     def run(
-        self, operation, input_files, dtype=None, out_dir="", out_file="math_out.nii.gz"
+        self,
+        operation,
+        input_files,
+        dtype=None,
+        disable_check=False,
+        out_dir="",
+        out_file="math_out.nii.gz",
     ):
         """Perform mathematical operations on volume input files.
 
@@ -1153,6 +1185,9 @@ class MathFlow(Workflow):
             Any number of Nifti1 files
         dtype : string, optional
             Data type of the resulting file.
+        disable_check : bool, optional
+            If True, the workflow will not check if all input files have the same
+            shape and affine matrix.
         out_dir : string, optional
             Output directory
         out_file : string, optional
@@ -1193,11 +1228,14 @@ class MathFlow(Workflow):
 
         if have_errors:
             logging.warning(info_msg)
-            msg = "All input files must have the same shape and affine matrix."
-            logging.error(msg)
-            raise SystemExit()
+            if not disable_check:
+                msg = "All input files must have the same shape and affine matrix."
+                logging.error(msg)
+                raise SystemExit()
 
         try:
+            if disable_check:
+                vol_dict = self.broadcast_arrays(vol_dict, operation)
             res = ne.evaluate(operation, local_dict=vol_dict)
         except KeyError as e:
             msg = (
