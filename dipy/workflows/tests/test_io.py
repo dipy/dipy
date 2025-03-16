@@ -378,6 +378,17 @@ def test_math():
                 if kwarg:
                     npt.assert_equal(out_data.dtype, np.dtype(kwarg["dtype"]))
 
+            data_3d = np.ones(data.shape[:-1]) * 15
+            data_3d_path = pjoin(out_dir, "data_3d.nii.gz")
+            save_nifti(data_3d_path, data_3d, np.eye(4))
+            math_flow = MathFlow()
+            math_flow.run(
+                "vol1*vol2",
+                [data_path_a, data_3d_path],
+                disable_check=True,
+                out_dir=out_dir,
+            )
+
         else:
             math_flow = MathFlow()
             npt.assert_raises(TripWireError, math_flow.run, "vol1*3", [data_path_a])
