@@ -3,7 +3,7 @@
 Tracking with Robust Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)
 ============================================================================
 
-Here, we demonstrate fiber tracking using a probabilistic direction getter
+Here, we demonstrate fiber tracking using a probabilistic tracker
 and RUMBA-SD, a model introduced in :footcite:p:`CanalesRodriguez2015`. This
 model adapts Richardson-Lucy deconvolution by assuming Rician or Noncentral Chi
 noise instead of Gaussian, which more accurately reflects the noise from MRI
