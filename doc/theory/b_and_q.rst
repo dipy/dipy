@@ -81,8 +81,8 @@ follows. If we fill out the symmetric B-matrix as:
 .. math::
 
    \mathbf{B} = \begin{pmatrix}
-                 b_{xx} & b_{yx} & b_{yz}\\
-                 b_{xy} & b_{yy} & b_{xz}\\
+                 b_{xx} & b_{xy} & b_{xz}\\
+                 b_{xy} & b_{yy} & b_{yz}\\
                  b_{xz} & b_{yz} & b_{zz}
                  \end{pmatrix}
 

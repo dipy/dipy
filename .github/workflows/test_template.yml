@@ -102,7 +102,6 @@ jobs:
         export HDF5_DIR=/opt/homebrew/opt/hdf5
         export BLOSC_DIR=/opt/homebrew/opt/c-blosc
         pip install tables
-
     - name: Install Dependencies
       run: |
         if [ "${{ inputs.use-pre }}" == "true" ]; then

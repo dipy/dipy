@@ -51,7 +51,6 @@ def test_default_weights_batch(monkeypatch):
         with warnings.catch_warnings():
             msg = ".*uses TensorFlow.*install PyTorch.*"
             warnings.filterwarnings("ignore", message=msg, category=DeprecationWarning)
-            importlib.reload(sys.modules["dipy.nn"])
             dipy_nn = importlib.reload(sys.modules["dipy.nn"])
             evac = dipy_nn.evac
 
@@ -72,7 +71,6 @@ def test_T1_error(monkeypatch):
         with warnings.catch_warnings():
             msg = ".*uses TensorFlow.*install PyTorch.*"
             warnings.filterwarnings("ignore", message=msg, category=DeprecationWarning)
-            importlib.reload(sys.modules["dipy.nn"])
             dipy_nn = importlib.reload(sys.modules["dipy.nn"])
             evac = dipy_nn.evac
 

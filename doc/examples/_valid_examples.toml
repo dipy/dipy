@@ -204,6 +204,7 @@ files = [
     "segment_clustering_metrics.py",
     "segment_extending_clustering_framework.py",
     "segment_quickbundles.py",
+    "tissue_classification_dam.py",
     "tissue_classification.py",
     "brain_extraction_dwi.py",
     "fast_streamline_search.py",
@@ -234,6 +235,7 @@ enable = true
 files = [
     "reconst_csa_parallel.py",
     "reconst_csd_parallel.py",
+    "tracking_disco_phantom.py",
 ]
 
 [file_formats]

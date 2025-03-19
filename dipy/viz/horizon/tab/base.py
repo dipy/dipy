@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+import logging
 from typing import Any
 import warnings
 
@@ -162,7 +163,7 @@ class TabManager:
                 "Images are of different dimensions, "
                 + "synchronization of slices will not work"
             )
-            warnings.warn(msg, stacklevel=2)
+            logging.warning(msg)
 
         for tab_id, tab in enumerate(tabs):
             self._tab_ui.tabs[tab_id].title_font_size = 18

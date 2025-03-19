@@ -115,7 +115,7 @@ def _fit_denoising_model(train, vol_idx, model, alpha):
     """
     if isinstance(model, str):
         if model.lower() == "ols":
-            model_instance = linear_model.LinearRegression(copy_X=False)
+            model_instance = linear_model.Ridge(copy_X=False, alpha=1e-10)
         elif model.lower() == "ridge":
             model_instance = linear_model.Ridge(copy_X=False, alpha=alpha)
         elif model.lower() == "lasso":
@@ -206,15 +206,11 @@ def vol_denoise(
     )
     b0_idx = b0_idx
     dwi_idx = dwi_idx
-    if data_b0s.shape[0] == 1 or not b0_denoising:
+    if data_b0s.shape[0] == 1:
+        b0_denoising = False
+    if not b0_denoising:
         if verbose:
             print("b0 denoising skipped....")
-        for i in range(data_b0s.shape[0]):
-            full_result[..., i] = data_tmp[..., b0_counter].reshape(
-                data_shape[0], data_shape[1], data_shape[2]
-            )
-            b0_counter += 1
-            idx_counter += 1
     for vol_idx in tqdm(
         range(data_shape[-1]), desc="Fitting and Denoising", leave=False
     ):
@@ -241,6 +237,12 @@ def vol_denoise(
                 del b_fit_coef
                 del b_matrix
                 del result
+            else:
+                full_result[..., idx_counter] = data_tmp[..., b0_counter].reshape(
+                    data_shape[0], data_shape[1], data_shape[2]
+                )
+                b0_counter += 1
+                idx_counter += 1
         else:
             dwi_fit, _ = _fit_denoising_model(data_dwi, dwi_counter, model, alpha)
             b_matrix = np.zeros(data_tmp.shape[-1])

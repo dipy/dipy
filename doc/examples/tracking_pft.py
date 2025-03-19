@@ -28,16 +28,15 @@ import numpy as np
 
 from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere, get_fnames
-from dipy.direction import ProbabilisticDirectionGetter
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.tracking import utils
-from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
 from dipy.tracking.stopping_criterion import CmcStoppingCriterion
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tracker import pft_tracking, probabilistic_tracking
 from dipy.viz import actor, colormap, has_fury, window
 
 # Enables/disables interactive visualization
@@ -61,10 +60,6 @@ shape = labels.shape
 response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 csd_fit = csd_model.fit(data, mask=pve_wm_data)
-
-dg = ProbabilisticDirectionGetter.from_shcoeff(
-    csd_fit.shm_coeff, max_angle=20.0, sphere=default_sphere, sh_to_pmf=True
-)
 
 seed_mask = labels == 2
 seed_mask[pve_wm_data < 0.5] = 0
@@ -111,20 +106,21 @@ cmc_criterion = CmcStoppingCriterion.from_pve(
 # tractography at the WM-GM interface or in the sub-cortical GM. It allows
 # streamlines to exit the seeding voxels until they reach the deep white
 # matter where WM_pve > `min_wm_pve_before_stopping`.
-
-pft_streamline_gen = ParticleFilteringTracking(
-    dg,
-    cmc_criterion,
+pft_streamline_gen = pft_tracking(
     seeds,
+    cmc_criterion,
     affine,
     max_cross=1,
     step_size=step_size,
-    maxlen=1000,
+    max_len=1000,
     pft_back_tracking_dist=2,
     pft_front_tracking_dist=1,
     particle_count=15,
     return_all=False,
     min_wm_pve_before_stopping=1,
+    max_angle=20.0,
+    sphere=default_sphere,
+    sh=csd_fit.shm_coeff,
 )
 streamlines = Streamlines(pft_streamline_gen)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
@@ -143,15 +139,16 @@ if has_fury:
 # Corpus Callosum using particle filtering tractography
 
 # Local Probabilistic Tractography
-prob_streamline_generator = LocalTracking(
-    dg,
-    cmc_criterion,
+prob_streamline_generator = probabilistic_tracking(
     seeds,
+    cmc_criterion,
     affine,
-    max_cross=1,
     step_size=step_size,
-    maxlen=1000,
+    max_len=1000,
     return_all=False,
+    sh=csd_fit.shm_coeff,
+    max_angle=20.0,
+    sphere=default_sphere,
 )
 streamlines = Streamlines(prob_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)

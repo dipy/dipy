@@ -1,10 +1,7 @@
-import warnings
-
 import numpy as np
 import numpy.testing as npt
 
 from dipy.direction.peaks import PeaksAndMetrics
-from dipy.testing import check_for_warnings
 from dipy.testing.decorators import set_random_number_generator
 from dipy.viz.horizon.util import (
     check_img_dtype,
@@ -88,30 +85,21 @@ def test_check_img_dtype(rng):
     images = [
         (data, affine),
     ]
-
-    with warnings.catch_warnings(record=True) as l_warns:
-        npt.assert_equal(check_img_dtype(images)[0][0].dtype, np.int32)
-        check_for_warnings(l_warns, "int64 is not supported, falling back to int32")
+    npt.assert_equal(check_img_dtype(images)[0][0].dtype, np.int32)
+    assert len(check_img_dtype(images)) == 1
 
     data = rng.random((5, 5, 5)).astype(np.float16)
     images = [
         (data, affine),
     ]
-
-    with warnings.catch_warnings(record=True) as l_warns:
-        npt.assert_equal(check_img_dtype(images)[0][0].dtype, np.float32)
-        check_for_warnings(l_warns, "float16 is not supported, falling back to float32")
+    npt.assert_equal(check_img_dtype(images)[0][0].dtype, np.float32)
+    assert len(check_img_dtype(images)) == 1
 
     data = rng.random((5, 5, 5)).astype(np.bool_)
     images = [
         (data, affine),
     ]
-
-    with warnings.catch_warnings(record=True) as l_warns:
-        check_img_dtype(images)
-        check_for_warnings(
-            l_warns, "skipping image 1, passed image is not in numerical format"
-        )
+    assert len(check_img_dtype(images)) == 0
 
 
 def test_show_ellipsis():
