@@ -509,7 +509,7 @@ class ClassifyTissueFlow(Workflow):
                     b0_threshold=b0_threshold,
                     low_signal_threshold=low_signal_threshold,
                 )
-                result = np.zeros(wm_mask.shape)
+                result = np.zeros(wm_mask.shape, dtype=np.int32)
                 result[wm_mask] = 1
                 result[gm_mask] = 2
                 save_nifti(tissue_out_path, result, affine)

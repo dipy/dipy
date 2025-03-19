@@ -52,7 +52,7 @@ class Patch2SelfFlow(Workflow):
             process multiple inputs at once.
         bval_files : string
             bval file associated with the diffusion data.
-        model : string, or initialized linear model object.
+        model : string, or initialized linear model object, optional
             This will determine the algorithm used to solve the set of linear
             equations underlying this model. If it is a string it needs to be
             one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
@@ -62,7 +62,6 @@ class Patch2SelfFlow(Workflow):
             `sklearn.linear_model.LinearRegression`,
             `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
             and other objects that inherit from `sklearn.base.RegressorMixin`.
-            Default: 'ols'.
         b0_threshold : int, optional
             Threshold for considering volumes as b0.
         alpha : float, optional
@@ -84,7 +83,6 @@ class Patch2SelfFlow(Workflow):
             Output directory.
         out_denoised : string, optional
             Name of the resulting denoised volume
-            (default: dwi_patch2self.nii.gz)
 
         References
         ----------
