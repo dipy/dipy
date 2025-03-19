@@ -183,5 +183,5 @@ if has_fury:
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Corpus Callosum using probabilistic tractography from SH
+# Corpus Callosum using probabilistic tracker from SH
 # (peaks_from_model)

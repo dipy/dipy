@@ -5,7 +5,7 @@ Using Various Stopping Criterion for Tractography
 The stopping criterion determines if the tracking stops or continues at each
 tracking position. The tracking stops when it reaches an ending region
 (e.g. low FA, gray matter or corticospinal fluid regions) or exits the image
-boundaries. The tracking also stops if the direction getter has no direction
+boundaries. The tracking also stops if the tracker has no direction
 to follow.
 
 Each stopping criterion determines if the stopping is 'valid' or
@@ -21,8 +21,8 @@ This example is an extension of the
 :ref:`sphx_glr_examples_built_fiber_tracking_tracking_deterministic.py`
 example. We begin by loading the data, creating a seeding mask from white
 matter voxels of the corpus callosum, fitting a Constrained Spherical
-Deconvolution (CSD) reconstruction model and creating the maximum
-deterministic direction getter.
+Deconvolution (CSD) reconstruction model and creating the
+deterministic tracker.
 """
 
 import matplotlib.pyplot as plt

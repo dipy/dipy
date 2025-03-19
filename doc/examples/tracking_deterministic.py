@@ -93,4 +93,4 @@ if has_fury:
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Corpus Callosum using deterministic maximum direction getter
+# Corpus Callosum using deterministic tracker
