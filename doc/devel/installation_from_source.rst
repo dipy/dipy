@@ -27,7 +27,7 @@ Install from source (all operating systems - recommended)
 
 Change directory into the *DIPY source root directory*.
 
-To clean your directory from temporary file, use::
+To clean temporary files from your directory, use::
 
     git clean -fxd
 
