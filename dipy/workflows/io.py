@@ -48,17 +48,18 @@ class IoInfoFlow(Workflow):
         Parameters
         ----------
         input_files : variable string
-            Any number of Nifti1, bvals or bvecs files.
+            Any number of NIfTI, bvals, bvecs or tractography data files.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
-            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
-            b-vectors are unit vectors.
+            Threshold used to check that
+            :math:`norm(\text{bvec}) = 1 \\pm \text{bvecs_tol}` b-vectors are
+            unit vectors.
         bshell_thr : float, optional
             Threshold for distinguishing b-values in different shells.
         reference : string, optional
-            Reference anatomy for tck/vtk/fib/dpy file.
-            support (.nii or .nii.gz).
+            Reference anatomy for ``*.tck``, ``*.vtk``/``*.vtp``, ``*.fib``, and
+            ``*.dpy`` tractography files.
 
         """
         np.set_printoptions(3, suppress=True)
