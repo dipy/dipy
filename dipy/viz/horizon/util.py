@@ -121,6 +121,25 @@ def unpack_image(img):
     return _unpack_data(img)
 
 
+def unpack_pams(pams):
+    """Unpack provided pams data.
+
+    Standard way to handle different value pams.
+
+    Parameters
+    ----------
+    pams : tuple or object
+        An image can contain either data or (data, fname).
+
+    Returns
+    -------
+    tuple
+        If pam with data it will convert to (data, None).
+        Otherwise it will be passed as it is.
+    """
+    return _unpack_data(pams, return_size=2)
+
+
 def unpack_surface(surface):
     """Unpack surface data.
 
@@ -145,11 +164,14 @@ def unpack_surface(surface):
 
 
 def _unpack_data(data, return_size=3):
-    result = [*data]
+    if not isinstance(data, tuple):
+        data = (data, None)
     if len(data) < return_size:
+        result = [*data]
         result += (return_size - len(data)) * [None]
+        return result
 
-    return result
+    return data
 
 
 @warning_for_keywords()
@@ -170,9 +192,9 @@ def check_peak_size(pams, *, ref_img_shape=None, sync_imgs=False):
     bool
         If the peaks are aligned with images and other peaks.
     """
-    base_shape = pams[0].peak_dirs.shape[:3]
+    base_shape = pams[0][0].peak_dirs.shape[:3]
 
-    for pam in pams:
+    for pam, _ in pams:
         if pam.peak_dirs.shape[:3] != base_shape:
             return False
 

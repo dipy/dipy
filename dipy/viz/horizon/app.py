@@ -600,12 +600,13 @@ class Horizon:
                 )
             else:
                 sync_peaks = check_peak_size(self.pams)
-            for pam in self.pams:
+            for idx, (pam, fname) in enumerate(self.pams):
+                title = f"Peaks {idx + 1}"
                 peak_viz = PeaksVisualizer(
-                    (pam.peak_dirs, pam.affine), self.world_coords
+                    (pam.peak_dirs, pam.affine), self.world_coords, fname
                 )
                 scene.add(peak_viz.actors[0])
-                self.__tabs.append(PeaksTab(peak_viz.actors[0]))
+                self.__tabs.append(PeaksTab(peak_viz.actors[0], title, fname))
 
         if len(self._surfaces) > 0:
             for idx, surface in enumerate(self._surfaces):

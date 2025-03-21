@@ -1,8 +1,9 @@
 from functools import partial
+from pathlib import Path
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.testing.decorators import is_macOS, warning_for_keywords
 from dipy.viz.horizon.tab import (
     HorizonTab,
     build_checkbox,
@@ -13,19 +14,23 @@ from dipy.viz.horizon.tab import (
 
 
 class PeaksTab(HorizonTab):
-    def __init__(self, peak_actor):
+    def __init__(self, peak_actor, title, fname):
         """Initialize Interaction tab for peaks visualization.
 
         Parameters
         ----------
         peak_actor : PeaksActor
             Horizon PeaksActor visualize peaks.
+        title : str
+            Title of the tab.
+        fname : str
+            Filename of the peaks file.
         """
         super().__init__()
 
         self._actor = peak_actor
-        self._name = "Peaks"
-
+        self._name = title
+        self._file_name = Path(fname or title).name
         self._tab_id = 0
 
         self._actor_toggle = build_checkbox(
@@ -126,6 +131,9 @@ class PeaksTab(HorizonTab):
             on_change=self._toggle_view_mode,
         )
 
+        self._file_label = build_label(text="Filename")
+        self._file_name_label = build_label(text=self._file_name)
+
         self._register_elements(
             self._opacity_label,
             self._opacity,
@@ -144,6 +152,8 @@ class PeaksTab(HorizonTab):
             self._range_z,
             self._view_mode_label,
             self._view_mode_toggler,
+            self._file_label,
+            self._file_name_label,
         )
 
     def _change_opacity(self, slider):
@@ -334,9 +344,16 @@ class PeaksTab(HorizonTab):
 
         x_pos = 0.52
         self._view_mode_label.position = (x_pos, 0.85)
+        self._file_label.position = (x_pos, 0.28)
 
         x_pos = 0.62
         self._view_mode_toggler.position = (x_pos, 0.80)
+        self._file_name_label.position = (x_pos, 0.28)
+
+        if is_macOS:
+            self._file_name_label.size = (800, "auto")
+        else:
+            self._file_name_label.size = (400, "auto")
 
         cross_section = self._actor.cross_section
         self._actor.display_cross_section(
