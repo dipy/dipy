@@ -63,9 +63,10 @@ ax_labels = ["DWI (b0)", "White Matter Mask", "Grey Matter Mask"]
 ax_kwargs = [{"cmap": "gray"} for _ in images]
 
 fig, ax = image_mosaic(
-    images, ax_labels=ax_labels, ax_kwargs=ax_kwargs, figsize=(10, 5)
+    images, ax_labels=ax_labels, ax_kwargs=ax_kwargs, figsize=(20, 5)
 )
-
+plt.subplots_adjust(wspace=2.0)
+fig.savefig("tissue_classification_dam.png")
 plt.show()
 
 ###############################################################################
