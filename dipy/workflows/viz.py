@@ -212,10 +212,7 @@ class HorizonFlow(Workflow):
 
             if ends(".pam5"):
                 pam = load_pam(fname)
-                pams.append(pam)
-
-                if verbose:
-                    logging.info(f"Peak_dirs shape \n {pam.peak_dirs.shape}\n")
+                pams.append((pam, fname))
 
             if ends(".npy"):
                 data = np.load(fname)
