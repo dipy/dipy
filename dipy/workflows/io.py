@@ -350,8 +350,8 @@ class FetchFlow(Workflow):
             print("\n")
             logging.info(f"Fetched {nb_success} / {len(data_names)} Files ")
             if skipped_names:
-                logging.warn(f"Skipped data name(s): {' '.join(skipped_names)}")
-                logging.warn(
+                logging.warning(f"Skipped data name(s): {' '.join(skipped_names)}")
+                logging.warning(
                     "Please, select between the following data names: "
                     f"{', '.join(available_data.keys())}"
                 )
