@@ -180,8 +180,8 @@ def check_peak_size(pams, *, ref_img_shape=None, sync_imgs=False):
 
     Parameters
     ----------
-    pams : PeaksAndMetrics
-        Peaks and metrics.
+    pams : tuple
+        (PeaksAndMetrics, fname).
     ref_img_shape : tuple, optional
         3D shape of the image, by default None.
     sync_imgs : bool, optional

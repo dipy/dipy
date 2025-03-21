@@ -25,6 +25,7 @@ from dipy.viz.horizon.util import (
     check_img_shapes,
     check_peak_size,
     unpack_image,
+    unpack_pams,
     unpack_surface,
 )
 from dipy.viz.horizon.visualizer import (
@@ -592,6 +593,15 @@ class Horizon:
 
         sync_peaks = False
         if len(self.pams) > 0:
+            for idx, f_pam in enumerate(self.pams):
+                title = f"Peaks {idx + 1}"
+                pam, fname = unpack_pams(f_pam)
+                peak_viz = PeaksVisualizer(
+                    (pam.peak_dirs, pam.affine), self.world_coords, fname
+                )
+                scene.add(peak_viz.actors[0])
+                self.__tabs.append(PeaksTab(peak_viz.actors[0], title, fname))
+                self.pams[idx] = (pam, fname)
             if self.images:
                 sync_peaks = check_peak_size(
                     self.pams,
@@ -600,13 +610,6 @@ class Horizon:
                 )
             else:
                 sync_peaks = check_peak_size(self.pams)
-            for idx, (pam, fname) in enumerate(self.pams):
-                title = f"Peaks {idx + 1}"
-                peak_viz = PeaksVisualizer(
-                    (pam.peak_dirs, pam.affine), self.world_coords, fname
-                )
-                scene.add(peak_viz.actors[0])
-                self.__tabs.append(PeaksTab(peak_viz.actors[0], title, fname))
 
         if len(self._surfaces) > 0:
             for idx, surface in enumerate(self._surfaces):

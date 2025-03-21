@@ -143,25 +143,31 @@ def test_check_peak_size(rng):
     pam = PeaksAndMetrics()
     pam.peak_dirs = peak_dirs
 
-    npt.assert_equal(True, check_peak_size([pam]))
-    npt.assert_equal(True, check_peak_size([pam, pam]))
+    npt.assert_equal(True, check_peak_size([(pam, None)]))
+    npt.assert_equal(True, check_peak_size([(pam, None), (pam, None)]))
     npt.assert_equal(
-        False, check_peak_size([pam], ref_img_shape=(100, 100, 1), sync_imgs=True)
+        False,
+        check_peak_size([(pam, None)], ref_img_shape=(100, 100, 1), sync_imgs=True),
     )
     npt.assert_equal(
-        False, check_peak_size([pam], ref_img_shape=(100, 100, 100), sync_imgs=False)
+        False,
+        check_peak_size([(pam, None)], ref_img_shape=(100, 100, 100), sync_imgs=False),
     )
 
     pam1 = PeaksAndMetrics()
     peak_dirs_1 = rng.random((100, 100, 50, 10, 6))
     pam1.peak_dirs = peak_dirs_1
 
-    npt.assert_equal(False, check_peak_size([pam, pam1]))
+    npt.assert_equal(False, check_peak_size([(pam, None), (pam1, None)]))
     npt.assert_equal(
         False,
-        check_peak_size([pam, pam1], ref_img_shape=(100, 100, 100), sync_imgs=True),
+        check_peak_size(
+            [(pam, None), (pam1, None)], ref_img_shape=(100, 100, 100), sync_imgs=True
+        ),
     )
     npt.assert_equal(
         False,
-        check_peak_size([pam, pam1], ref_img_shape=(100, 100, 100), sync_imgs=False),
+        check_peak_size(
+            [(pam, None), (pam1, None)], ref_img_shape=(100, 100, 100), sync_imgs=False
+        ),
     )

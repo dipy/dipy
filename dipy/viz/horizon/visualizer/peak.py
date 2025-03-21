@@ -535,6 +535,11 @@ class PeaksVisualizer:
             logging.info(f"Resized to RAS shape: {self._data_shape} \n")
             np.set_printoptions()
         else:
+            logging.info(f"------------{len(fname) * '-'}")
+            logging.info(f"Visualizing {fname}")
+            logging.info(f"------------{len(fname) * '-'}")
+            self._data_shape = self._peak_dirs.shape[:3]
+            logging.info(f"Original shape: {self._data_shape}")
             self._peak_actor = peak(self._peak_dirs)
 
     @property
