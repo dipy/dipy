@@ -4,7 +4,7 @@ from dipy.atlasing.bundles import compute_atlas_bundle
 from dipy.workflows.workflow import Workflow
 
 
-class DiscreteBundleAtlasFlow(Workflow):
+class BundleAtlasFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return "bdaf"
@@ -27,10 +27,10 @@ class DiscreteBundleAtlasFlow(Workflow):
         comb_method="rlap",
         skip_pairs=False,
     ):
-        """Workflow of discrete bundle atlas generation.
+        """Workflow of bundle atlas generation.
 
-        Given several segmented bundles as input, compute the atlas by
-        combining the bundles pairwise.
+        Given several segmented bundles as input, computes individual atlases for
+        each white matter tract by combining the bundles pairwise.
 
         Parameters
         ----------

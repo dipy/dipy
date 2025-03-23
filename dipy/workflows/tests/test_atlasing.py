@@ -8,7 +8,7 @@ import pytest
 
 from dipy.data import get_fnames
 from dipy.utils.optpkg import optional_package
-from dipy.workflows.atlasing import DiscreteBundleAtlasFlow
+from dipy.workflows.atlasing import BundleAtlasFlow
 
 _, has_fury, _ = optional_package("fury")
 
@@ -20,7 +20,7 @@ def test_discrete_bundle_atlas():
         with zipfile.ZipFile(example_tracts, "r") as zip_ref:
             zip_ref.extractall(in_dir)
 
-        flow = DiscreteBundleAtlasFlow()
+        flow = BundleAtlasFlow()
 
         # Check that final output was generated with default version
         with TemporaryDirectory() as out_dir:
