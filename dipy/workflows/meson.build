@@ -1,6 +1,7 @@
 python_sources = [
     '__init__.py',
     'align.py',
+    'atlasing.py',
     'base.py',
     'cli.py',
     'combined_workflow.py',
