@@ -67,16 +67,23 @@ class SlicesVisualizer:
         self._vol_min = np.min(vol_data)
 
         self._resliced_vol = None
-        np.set_printoptions(3, suppress=True)
-        fname = "" if fname is None else Path(fname).name
-        logging.info(f"-------------------{len(fname) * '-'}")
-        logging.info(f"Applying affine to {fname}")
-        logging.info(f"-------------------{len(fname) * '-'}")
-        logging.info(f"Affine Native to RAS matrix \n{affine}")
-        logging.info(f"Original shape: {self._data_shape}")
-        self._create_and_resize_actors(vol_data, self._int_range)
-        logging.info(f"Resized to RAS shape: {self._data_shape} \n")
-        np.set_printoptions()
+        if world_coords:
+            np.set_printoptions(3, suppress=True)
+            fname = "" if fname is None else Path(fname).name
+            logging.info(f"-------------------{len(fname) * '-'}")
+            logging.info(f"Applying affine to {fname}")
+            logging.info(f"-------------------{len(fname) * '-'}")
+            logging.info(f"Affine Native to RAS matrix \n{affine}")
+            logging.info(f"Original shape: {self._data_shape}")
+            self._create_and_resize_actors(vol_data, self._int_range)
+            logging.info(f"Resized to RAS shape: {self._data_shape} \n")
+            np.set_printoptions()
+        else:
+            logging.info(f"------------{len(fname) * '-'}")
+            logging.info(f"Visualizing {fname}")
+            logging.info(f"------------{len(fname) * '-'}")
+            logging.info(f"Original shape: {self._data_shape}")
+            self._create_and_resize_actors(vol_data, self._int_range)
 
         self._sel_slices = np.rint(np.asarray(self._data_shape[:3]) / 2).astype(int)
 

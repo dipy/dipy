@@ -1,4 +1,6 @@
+import logging
 from os.path import join as pjoin
+from pathlib import Path
 import warnings
 
 import numpy as np
@@ -517,11 +519,27 @@ def _points_to_vtk_cells(points, *, points_per_line=2):
 
 
 class PeaksVisualizer:
-    def __init__(self, pam, world_coords):
+    def __init__(self, pam, world_coords, fname):
         self._peak_dirs, self._affine = pam
         if world_coords:
+            np.set_printoptions(3, suppress=True)
+            fname = Path(fname).name if fname is not None else ""
+            logging.info(f"-------------------{len(fname) * '-'}")
+            logging.info(f"Applying affine to {fname}")
+            logging.info(f"-------------------{len(fname) * '-'}")
+            logging.info(f"Affine Native to RAS matrix \n{self._affine}")
+            self._data_shape = self._peak_dirs.shape[:3]
+            logging.info(f"Original shape: {self._data_shape}")
             self._peak_actor = peak(self._peak_dirs, affine=self._affine)
+            self._data_shape = tuple(self._peak_actor.max_centers)
+            logging.info(f"Resized to RAS shape: {self._data_shape} \n")
+            np.set_printoptions()
         else:
+            logging.info(f"------------{len(fname) * '-'}")
+            logging.info(f"Visualizing {fname}")
+            logging.info(f"------------{len(fname) * '-'}")
+            self._data_shape = self._peak_dirs.shape[:3]
+            logging.info(f"Original shape: {self._data_shape}")
             self._peak_actor = peak(self._peak_dirs)
 
     @property
