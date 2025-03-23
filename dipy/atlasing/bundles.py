@@ -1,5 +1,5 @@
-"""Atlasing module: utilities to compute population-specific population-specific
-streamline-based bundle atlases.
+"""Atlasing module: utilities to compute population-specific streamline-based bundle
+atlases.
 
 Available functions:
     get_pairwise_tree: computes the matching pairs for a given number of bundles.
@@ -7,8 +7,8 @@ Available functions:
     combine_bundle: combines two bundles into a single one using different
     streamline combination methods.
 
-    compute_bundle_atlas: given a list of input bundles computes the population
-    atlas.
+    compute_bundle_atlas: given a list of input bundles computes individual
+    atlases for each white matter tract.
 """
 
 import logging
@@ -50,9 +50,10 @@ logger = logging.getLogger(__name__)
 def get_pairwise_tree(n_bundle, seed=None):
     """Pairwise tree structure calculation.
 
-    Constructs a pairwise tree by randomly matching a set of bundles in pairs.
-    The computed bundle structure is intended to be used for atlasing, where the
-    bundles are combined until a single bundle (atlas) is obtained.
+    Constructs a pairwise tree by randomly matching the indexes of a given
+    number of bundles. The computed index structure is intended to be used for
+    atlasing, where the bundles are combined in pairs until a single bundle
+    (atlas) is obtained.
 
     Parameters
     ----------
@@ -66,23 +67,21 @@ def get_pairwise_tree(n_bundle, seed=None):
     matched_pairs : list of array
         Each element in list is an array of (N x 2) with the indexes of the
         N items to be matched in a certain level.
-    single : list of array
-        Index of the items not combined at a certain level when the number of
+    unpaired : list of array
+        Indexes of the items not combined at a certain level when the number of
         items to be matched is odd. When it is even this value is set to None.
     n_pair : list of int
         Number of pairwise matches at each level of the tree.
     """
     if not isinstance(n_bundle, int):
-        raise TypeError(
-            f"n_bundle {n_bundle} is {type(n_bundle)} but must be an integer > 1"
-        )
+        raise TypeError(f"n_bundle must be an integer and not {type(n_bundle)}")
     if n_bundle <= 1:
-        raise ValueError(f"You provided a n_bundle input {n_bundle} that is not > 1")
+        raise ValueError(f"n_bundle must be greater than 1 but is {n_bundle}")
 
     np.random.seed(seed)
 
     matched_pairs = []
-    single = []
+    unpaired = []
     n_pair = []
 
     while n_bundle > 1:
@@ -90,16 +89,16 @@ def get_pairwise_tree(n_bundle, seed=None):
         index = np.arange(n_bundle)
         # Compute the number of pairs
         n_pair.append(np.floor(n_bundle / 2).astype("int"))
-        # Shuffle the bundles
+        # Shuffle the indexes
         index = np.random.permutation(n_bundle)
-        # If n_bundle is odd duplicate one of the others
+        # If n_bundle is odd do not pair one of the bundles
         if np.mod(n_bundle, 2) == 1:
-            # avoid removing again a bundle twice (index == 0)
-            single_idx = np.random.randint(1, n_bundle)
-            index = np.delete(index, np.where(index == single_idx))
-            single.append(single_idx)
+            # avoid removing again an item twice (index == 0)
+            unpaired_idx = np.random.randint(1, n_bundle)
+            index = np.delete(index, np.where(index == unpaired_idx))
+            unpaired.append(unpaired_idx)
         else:
-            single.append(None)
+            unpaired.append(None)
         # Generate pairwise index matrix
         index = np.reshape(index, (n_pair[-1], 2))
         # Update bundle number
@@ -107,7 +106,7 @@ def get_pairwise_tree(n_bundle, seed=None):
 
         matched_pairs.append(index)
 
-    return matched_pairs, single, n_pair
+    return matched_pairs, unpaired, n_pair
 
 
 def select_streamlines(bundle1, bundle2, n_out, strategy="weighted", rng=None):
@@ -404,7 +403,7 @@ def compute_atlas_bundle(
         raise ValueError("There are duplicated subjects names.")
 
     logger.info(str(len(subjects)) + " subjects to be processed:")
-    logger.info(subjects)
+    logger.debug(subjects)
 
     # Get bundle names (from first subject folder or from tsv file)
     if bundle_names is None:
@@ -505,7 +504,7 @@ def compute_atlas_bundle(
         logger.info("Bundle preprocessing finished")
 
         # Compute pairwise registration tree-structure
-        tree, alone, n_reg = get_pairwise_tree(n_item=len(file_list))
+        tree, unpaired, n_reg = get_pairwise_tree(n_bundle=len(file_list))
 
         # Go through all tree steps
         for i_step, pairs in enumerate(tree):
@@ -517,11 +516,11 @@ def compute_atlas_bundle(
 
             # A lonely bundle goes to the next level
             has_lonely = 0
-            if alone[i_step] is not None:
+            if unpaired[i_step] is not None:
                 has_lonely = 1
 
-                file_prev = file_list[alone[i_step]]
-                file_new = f"{step_dir}/bundle_0_prev_{alone[i_step]}"
+                file_prev = file_list[unpaired[i_step]]
+                file_new = f"{step_dir}/bundle_0_prev_{unpaired[i_step]}"
                 new_file_list.append(file_new)
                 copyfile(f"{file_prev}.trk", f"{file_new}.trk")
                 if save_temp and has_fury:
@@ -592,6 +591,7 @@ def compute_atlas_bundle(
     if not save_temp:
         rmtree(temp_dir)
 
+    atlas_merged = None
     if merge_out:
         atlas_merged = np.concatenate(atlas)
         file = f"{out_dir}/whole_brain.trk"
@@ -599,5 +599,4 @@ def compute_atlas_bundle(
             atlas_merged, reference=header, space=Space.RASMM
         )
         save_trk(new_tractogram, file, bbox_valid_check=False)
-        return atlas, atlas_merged
-    return atlas
+    return atlas, atlas_merged

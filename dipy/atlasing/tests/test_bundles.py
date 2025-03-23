@@ -33,7 +33,7 @@ _, has_fury, _ = optional_package("fury")
 
 
 def test_pairwise_tree():
-    # Test n_bundles error
+    # Test n_bundle error
     assert_raises(ValueError, get_pairwise_tree, n_bundle=1)
     assert_raises(TypeError, get_pairwise_tree, n_bundle=2.7182)
 
@@ -44,13 +44,13 @@ def test_pairwise_tree():
     correct_n_pair = [[1], [2, 1], [2, 1, 1], [7, 4, 2, 1], [10, 5, 3, 1, 1]]
 
     for i, n_bundle in enumerate(n_bundle_list):
-        matching, alone, n_pair = get_pairwise_tree(n_bundle)
+        matching, unpaired, n_pair = get_pairwise_tree(n_bundle)
         assert_equal(len(n_pair), correct_n_step[i])
         assert_equal(len(matching), correct_n_step[i])
-        assert_equal(len(alone), correct_n_step[i])
+        assert_equal(len(unpaired), correct_n_step[i])
         assert_equal(n_pair, [match.shape[0] for match in matching])
         assert_equal(n_pair, correct_n_pair[i])
-        assert_equal(alone.count(0), 0)  # lonely bundle is never the first
+        assert_equal(unpaired.count(0), 0)  # lonely bundle is never the first
         assert_equal(
             [len(np.unique(a)) == a.size for a in matching], [True] * len(matching)
         )
@@ -199,7 +199,7 @@ def test_compute_atlas_bundle():
 
         # Test default functionality
         with tempfile.TemporaryDirectory() as out_dir:
-            atlas = compute_atlas_bundle(in_dir=in_dir, out_dir=out_dir)
+            atlas, _ = compute_atlas_bundle(in_dir=in_dir, out_dir=out_dir)
 
             assert_equal(len(atlas), 3)
             assert_equal(os.path.isfile(f"{out_dir}/AF_L.trk"), True)
