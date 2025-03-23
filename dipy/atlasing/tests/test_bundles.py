@@ -11,6 +11,7 @@ from dipy.atlasing.bundles import (
     combine_bundles,
     compute_atlas_bundle,
     get_pairwise_tree,
+    select_streamlines,
 )
 from dipy.data import get_fnames
 from dipy.io.streamline import (
@@ -54,6 +55,51 @@ def test_pairwise_tree():
         assert_equal(
             [len(np.unique(a)) == a.size for a in matching], [True] * len(matching)
         )
+
+
+def test_select_streamlines():
+    # Create sample streamlines
+    ns1 = 20
+    ns2 = 10
+
+    bundle1 = Streamlines(np.ones((ns1, 3)))
+    bundle2 = Streamlines(np.zeros((ns2, 3)))
+
+    # Test weighted strategy with list input
+    result = select_streamlines(bundle1, bundle2, n_out=15, strategy="weighted")
+    assert_equal(len(result), 15)
+    n_stream_ones = np.any(result, axis=1).sum()
+    n_stream_zeros = (~np.any(result, axis=1)).sum()
+    assert_equal(n_stream_ones, 10)
+    assert_equal(n_stream_zeros, 5)
+
+    # Test random strategy with list input
+    result = select_streamlines(bundle1, bundle2, n_out=4, strategy="random")
+    assert_equal(len(result), 4)
+
+    # Test error cases
+    with assert_raises(TypeError):
+        select_streamlines(bundle1, bundle2, n_out=None)
+
+    with assert_raises(ValueError):
+        select_streamlines(bundle1, bundle2, n_out=2, strategy="invalid")
+
+    # Test edge cases
+    # When n_out is larger than total streamlines
+    result = select_streamlines(bundle1, bundle2, n_out=10, strategy="weighted")
+    assert_equal(len(result), 10)
+
+    # Test with fixed random seed for reproducibility
+    rng = np.random.RandomState(42)
+    result1 = select_streamlines(
+        bundle1, bundle2, n_out=3, strategy="weighted", rng=rng
+    )
+    rng = np.random.RandomState(42)
+    result2 = select_streamlines(
+        bundle1, bundle2, n_out=3, strategy="weighted", rng=rng
+    )
+    for s1, s2 in zip(result1, result2):
+        assert_equal(s1, s2)
 
 
 def test_combine_bundles():
