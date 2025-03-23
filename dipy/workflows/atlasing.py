@@ -63,7 +63,7 @@ class DiscreteBundleAtlasFlow(Workflow):
             If True the intermediate results of each tree level are saved in a
             temp folder in trk and png formats. Default is False.
         n_stream_min : int, optional
-            Bundles with less than ``n_stream_min`` streamlines wont be
+            Bundles with less than ``n_stream_min`` streamlines won't be
             processed. Default is 10.
         n_stream_max : int, optional
             Bundles with more than ``n_stream_max`` streamlines are cropped to

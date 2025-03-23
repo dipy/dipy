@@ -19,10 +19,6 @@ pd, have_pd, _ = optional_package("pandas")
 if have_pd:
     import pandas as pd
 
-_, have_fury, _ = optional_package("fury")
-if have_fury:
-    from dipy.viz import actor, window
-
 
 def nifti1_symmat(image_data, *args, **kwargs):
     """Returns a Nifti1Image with a symmetric matrix intent
@@ -489,70 +485,3 @@ def read_img_arr_or_path(data, *, affine=None):
             affine = data.affine
         data = data.get_fdata()
     return data, affine
-
-
-def show_bundles(bundles, fname, colors=None, opacity=None, linewidth=None):
-    """Save bundle renderization.
-
-    Renders the the input bundles and saves them to the fname file.
-
-    Parameters
-    ----------
-    bundles : list
-        Bundles to be rendered.
-    fname : str
-        File to save renderization image.
-    colors : list, optional
-        Colors of each bundle. If None, then random colors are used.
-    opacity : list, optional
-        Use a single numeric value to control the opacity of all streamlines.
-        Alternatively, provide a list to use different values for each bundle.
-        Default is 0.1.
-    linewidth : list or float, optional
-        Use a single numeric value to control the width of all streamlines.
-        Alternatively, provide a list to use different values for each bundle.
-        Default is 1.
-
-    Returns
-    -------
-    None.
-
-    """
-    n_bundle = len(bundles)
-
-    if colors is None:
-        colors = list(np.random.rand(n_bundle, 3))
-
-    if linewidth is None:
-        linewidth = list(np.repeat(0.1, n_bundle))
-    elif isinstance(linewidth, (int, float)):
-        linewidth = list(np.repeat(linewidth, n_bundle))
-
-    if opacity is None:
-        opacity = list(np.repeat(1, n_bundle))
-    elif isinstance(opacity, (int, float)):
-        opacity = list(np.repeat(opacity, n_bundle))
-
-    scene = window.Scene()
-    scene.SetBackground(1, 1, 1)
-    scene.set_camera((0, 0, 300), (12, 18, 40), (0, 1, 0))
-    for i, bundle in enumerate(bundles):
-        lines_actor = actor.streamtube(
-            bundle, colors[i], opacity=opacity[i], linewidth=linewidth[i]
-        )
-
-        # Guess the optimal visualization angle based on coordinates
-        coords, _ = dipy.tracking.streamline.unlist_streamlines(bundle)
-        in_left = len(np.where(coords[:, 0] < 0)[0]) / coords.shape[0]
-        in_right = len(np.where(coords[:, 0] > 0)[0]) / coords.shape[0]
-        if abs(in_left - in_right) < 0.2:
-            rY, rZ = 0, 0
-        elif in_left > in_right:
-            rY, rZ = 90, 90
-        else:
-            rY, rZ = -90, -90
-        lines_actor.RotateZ(rZ)
-        lines_actor.RotateY(rY)
-
-        scene.add(lines_actor)
-    window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
