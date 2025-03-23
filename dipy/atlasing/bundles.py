@@ -1,7 +1,8 @@
-"""Atlasing module: utilities to compute population specific bundle atlases.
+"""Atlasing module: utilities to compute population-specific population-specific
+streamline-based bundle atlases.
 
 Available functions:
-    get_pairwise_tree: computes the matching pairs for a given number of items.
+    get_pairwise_tree: computes the matching pairs for a given number of bundles.
 
     combine_bundle: combines two bundles into a single one using different
     streamline combination methods.
@@ -37,28 +38,26 @@ from dipy.tracking.streamline import (
     unlist_streamlines,
 )
 from dipy.utils.optpkg import optional_package
+from dipy.viz.streamline import show_bundles
 
 pd, has_pd, _ = optional_package("pandas")
 _, has_fury, _ = optional_package("fury")
 
-if has_fury:
-    from dipy.io.utils import show_bundles
 
 logger = logging.getLogger(__name__)
 
 
-def get_pairwise_tree(n_item, seed=None):
+def get_pairwise_tree(n_bundle, seed=None):
     """Pairwise tree structure calculation.
 
-    Constructs a pairwise tree by randomly matching the indexes of a given
-    number of items. The computed index structure is intended to be used for
-    atlasing, where the items (e.g. bundles) are combined in pairs until a
-    single item (atlas) is obtained.
+    Constructs a pairwise tree by randomly matching a set of bundles in pairs.
+    The computed bundle structure is intended to be used for atlasing, where the
+    bundles are combined until a single bundle (atlas) is obtained.
 
     Parameters
     ----------
-    n_item : int
-        Number of items to be matched.
+    n_bundle : int
+        Number of bundles to be matched.
     seed : float, optional
         Seed for reproducibility. Default is None.
 
@@ -67,56 +66,97 @@ def get_pairwise_tree(n_item, seed=None):
     matched_pairs : list of array
         Each element in list is an array of (N x 2) with the indexes of the
         N items to be matched in a certain level.
-    alone : list of array
+    single : list of array
         Index of the items not combined at a certain level when the number of
         items to be matched is odd. When it is even this value is set to None.
-    n_reg : list of int
-        Number of pairwise registrations at each level of the tree.
+    n_pair : list of int
+        Number of pairwise matches at each level of the tree.
     """
-    if type(n_item) != int:
+    if not isinstance(n_bundle, int):
         raise TypeError(
-            "You provided a n_item input {n_item} of type \
-                        {type(n_item)} but it must be an integer > 1"
+            f"n_bundle {n_bundle} is {type(n_bundle)} but must be an integer > 1"
         )
-    if n_item <= 1:
-        raise ValueError(
-            "You provided a n_item input {n_item} that is not > \
-                         1"
-        )
+    if n_bundle <= 1:
+        raise ValueError(f"You provided a n_bundle input {n_bundle} that is not > 1")
 
     np.random.seed(seed)
 
     matched_pairs = []
-    alone = []
-    n_reg = []
+    single = []
+    n_pair = []
 
-    while n_item > 1:
+    while n_bundle > 1:
         # Define indexes
-        index = np.arange(n_item)
-        # Compute the number of registration pairs
-        n_reg.append(np.floor(n_item / 2).astype("int"))
-        # Shuffle the items
-        index = np.random.permutation(n_item)
-        # If n_item is odd duplicate one of the others
-        if np.mod(n_item, 2) == 1:
-            # avoid removing again an item twice (index == 0)
-            lonely = np.random.randint(1, n_item)
-            index = np.delete(index, np.where(index == lonely))
-            alone.append(lonely)
+        index = np.arange(n_bundle)
+        # Compute the number of pairs
+        n_pair.append(np.floor(n_bundle / 2).astype("int"))
+        # Shuffle the bundles
+        index = np.random.permutation(n_bundle)
+        # If n_bundle is odd duplicate one of the others
+        if np.mod(n_bundle, 2) == 1:
+            # avoid removing again a bundle twice (index == 0)
+            single_idx = np.random.randint(1, n_bundle)
+            index = np.delete(index, np.where(index == single_idx))
+            single.append(single_idx)
         else:
-            alone.append(None)
-        # Generate pairwise registration matrix
-        index = np.reshape(index, (n_reg[-1], 2))
-        # Update item number
-        n_item = np.ceil(n_item / 2).astype("int")
-        # Save matched pairs
+            single.append(None)
+        # Generate pairwise index matrix
+        index = np.reshape(index, (n_pair[-1], 2))
+        # Update bundle number
+        n_bundle = np.ceil(n_bundle / 2).astype("int")
+
         matched_pairs.append(index)
 
-    return matched_pairs, alone, n_reg
+    return matched_pairs, single, n_pair
+
+
+def select_streamlines(bundle1, bundle2, n_out, strategy="weighted", rng=None):
+    """Select and combine streamlines from two bundles."""
+    n1 = len(bundle1)
+    n2 = len(bundle2)
+
+    if n_out is None:
+        raise TypeError("n_out must be a numeric value")
+
+    if strategy == "weighted":
+        ns1 = np.round(n1 / (n1 + n2) * n_out).astype("int")
+        ns2 = n_out - ns1
+
+        bundle1 = select_random_set_of_streamlines(bundle1, ns1, rng=rng)
+        bundle2 = select_random_set_of_streamlines(bundle2, ns2, rng=rng)
+
+        if ns1 > 0 and ns2 > 0:
+            if isinstance(bundle1, list):
+                return np.concatenate((bundle1, bundle2))
+            else:
+                bundle1.extend(bundle2)
+                return bundle1
+        elif ns1 > 0 and ns2 == 0:
+            return bundle1
+        elif ns1 == 0 and ns2 > 0:
+            return bundle2
+        else:
+            raise ValueError("Not enough streamlines sampled")
+
+    elif strategy == "random":
+        if isinstance(bundle1, list):
+            bundles = np.concatenate((bundle1, bundle2))
+        else:
+            bundles = bundle1.copy()
+            bundles.extend(bundle2)
+
+        return select_random_set_of_streamlines(bundles, n_out, rng=rng)
+    else:
+        raise ValueError("Invalid streamline selection strategy.")
 
 
 def combine_bundles(
-    bundle1, bundle2, comb_method="rlap", distance="mdf", n_stream=2000
+    bundle1,
+    bundle2,
+    comb_method="rlap",
+    distance="mdf",
+    n_stream="mean",
+    d_max=1000.0,
 ):
     """Combine two bundles.
 
@@ -139,7 +179,10 @@ def combine_bundles(
         start and end points.
     n_stream : int, optional
         Number of streamlines to be selected when comb_method='random_pick'.
-        Default is 2000.
+        Default is 'mean'.
+    d_max : float, optional
+        Maximum distance to allow averaging. Higher numbers result in smoother atlases.
+        Default is 1000.
 
     Returns
     -------
@@ -147,10 +190,9 @@ def combine_bundles(
         Streamline coordinates of the combined bundle as a list of 2D ndarrays
         of shape[-1]==3.
     """
-    # If random_pick just merge all streamlines and pick n_stream randomly
-    if comb_method == "random_pick":
-        bundles = np.concatenate((bundle1, bundle2))
-        return select_random_set_of_streamlines(bundles, n_stream)
+
+    if comb_method not in ["rlap", "random_pick"]:
+        raise ValueError("Invalid streamline combination method")
 
     # Set as bundle 1 the bundle with less streamlines
     if len(bundle2) < len(bundle1):
@@ -158,64 +200,88 @@ def combine_bundles(
         bundle1 = bundle2
         bundle2 = aux
 
-    # Reorient all streamlines at once based on centroid
+    n_stream1 = len(bundle1)
+    n_stream2 = len(bundle2)
+
+    if n_stream1 == 0:
+        logger.info("Bundle 1 is empty. Returning bundle 2.")
+        return bundle2
+
+    if isinstance(n_stream, int):
+        n_stream = np.min([n_stream, n_stream2])
+    else:
+        if n_stream == "min":
+            n_stream = np.min([n_stream1, n_stream2])
+        elif n_stream == "mean":
+            n_stream = np.round(np.mean([n_stream1, n_stream2])).astype(int)
+        elif n_stream == "max":
+            n_stream = np.max([n_stream1, n_stream2])
+        else:
+            raise ValueError("n_stream must be ['min','mean','max'] or an int")
+
+    # If random_pick just merge all streamlines and pick n_stream randomly
+    if comb_method == "random_pick":
+        return select_streamlines(bundle1, bundle2, n_stream, "weighted")
+
+    # Reorientation based on centroid
     bundle1 = orient_by_streamline(bundle1, bundle1[0])
     qb = QuickBundles(threshold=50.0)
-    centroid = qb.cluster(bundle1).centroids[0]
+    centroid = qb.cluster(bundle2).centroids[0]
 
     bundle1 = orient_by_streamline(bundle1, centroid)
     bundle2 = orient_by_streamline(bundle2, centroid)
 
-    # Compute distance matrix (cost)
-    def distance_matrix_mdf_start_end(bundle_1, bundle_2):
-        bundle_1 = set_number_of_points(bundle_1, 2)
-        bundle_2 = set_number_of_points(bundle_2, 2)
-        return distance_matrix_mdf(bundle_1, bundle_2)
+    # Step 1: streamline matching based on RLAP
+    combined = []
 
     if distance == "mdf":
-        distance = distance_matrix_mdf
+        cost = distance_matrix_mdf(bundle1, bundle2)
     elif distance == "mdf_se":
-        distance = distance_matrix_mdf_start_end
+        bundle1_se = set_number_of_points(bundle1, 2)
+        bundle2_se = set_number_of_points(bundle2, 2)
+        cost = distance_matrix_mdf(bundle1_se, bundle2_se)
     else:
-        raise ValueError(f"You provided a distance input {distance}, but the \
-                         possible options are: 'mdf' or 'mdf_se'")
+        raise ValueError("Incorrect distance metric")
 
-    cost = distance(bundle1, bundle2)
-
-    # Match and average n1 streamlines based on RLAP
     matched_pairs = np.asarray(linear_sum_assignment(cost)).T
 
-    combined = []
+    unmatched = np.setdiff1d(np.arange(n_stream2), matched_pairs[:, 1])
+
+    # Step 2: streamline combination
+    outliers1 = []
+    outliers2 = []
     for ind1, ind2 in matched_pairs:
         stream1 = bundle1[ind1]
         stream2 = bundle2[ind2]
 
+        # Discard too distant streamline pairs
+        if cost[ind1, ind2] > d_max:
+            outliers1.append(ind1)
+            outliers2.append(ind2)
+            continue
+
         stream_mean = np.mean([stream1, stream2], axis=0)
         combined.append(stream_mean)
+    n_combined = len(combined)
 
-    if comb_method == "rlap":
-        return combined
+    logger.info(f"Discarded {len(outliers1)}/{n_stream1} streamlines as outliers.")
 
-    # Go through n2-n1 unmatched streamlines
-    ind2_matched = matched_pairs[:, 1]
-    ind2_unmatched = np.setdiff1d(np.arange(len(bundle2)), ind2_matched)
+    # Step 3: remaining streamlines
+    if n_combined > n_stream:
+        combined = select_random_set_of_streamlines(combined, n_stream)
+    elif n_combined < n_stream:
+        n_extra = n_stream - n_combined
 
-    if comb_method == "rlap_closest":
-        for ind2 in ind2_unmatched:
-            ind1 = np.argmin(cost[:, ind2])
+        remain1 = bundle1[outliers1] if len(outliers1) > 0 else []
+        remain2 = bundle2[np.hstack((unmatched, outliers2)).astype("int").tolist()]
 
-            stream1 = bundle1[ind1]
-            stream2 = bundle2[ind2]
+        extra = select_streamlines(remain1, remain2, n_extra, "weighted")
+        extra = list(extra)  # matrix to list
 
-            stream_mean = np.mean([stream1, stream2], axis=0)
-            combined.append(stream_mean)
-    elif comb_method == "rlap_keep":
-        for ind2 in ind2_unmatched:
-            combined.append(bundle2[ind2])
-    else:
-        raise ValueError(f"You provided a bundle combination method \
-                         {comb_method}, but the possible options are \
-                         'random_pick', 'rlap', 'rlap_keep' or 'rlap_closest'")
+        combined = [*combined, *extra]
+
+        logger.info(f"Added extra {n_extra} streamlines")
+
     return combined
 
 
@@ -271,7 +337,7 @@ def compute_atlas_bundle(
         If True the intermediate results of each tree level are saved in a temp
         folder in trk and png formats. Default is False.
     n_stream_min : int, optional
-        Bundles with less than ``n_stream_min`` streamlines wont be processed.
+        Bundles with less than ``n_stream_min`` streamlines won't be processed.
         Default is 10.
     n_stream_max : int, optional
         Bundles with more than ``n_stream_max`` streamlines are cropped to have
@@ -294,39 +360,24 @@ def compute_atlas_bundle(
     atlas_merged : Streamlines
         A single bundle containing all the computed atlas bundles together.
     """
-    if type(in_dir) != str:
-        raise TypeError(
-            "Provided in_dir input {in_dir} is of type \
-                        {type(in_dir)} but it must be a string"
-        )
-    if type(mid_path) != str:
-        raise TypeError(
-            "Provided mid_path input {mid_path} is of type \
-                        {type(mid_path)} but it must be a string"
-        )
-    if type(n_point) != int:
-        raise TypeError(
-            "Provided n_point input {n_point} is of type \
-                        {type(n_point)} but it must be an integer"
-        )
-    if isdir(in_dir) is False:
-        raise ValueError("Provided input directory {in_dir} does not exist")
+    if not isinstance(in_dir, str):
+        raise TypeError(f"in_dir {in_dir} is {type(in_dir)} but must be a string")
+    if not isinstance(mid_path, str):
+        raise TypeError(f"mid_path {mid_path} is {type(mid_path)} but must be a string")
+    if not isinstance(n_point, int):
+        raise TypeError(f"n_point {n_point} is {type(n_point)} but must be an integer")
+    if not isdir(in_dir):
+        raise ValueError(f"in_dir {in_dir} does not exist")
     if out_dir is None:
         out_dir = getcwd()
-    if isdir(out_dir) is False:
-        raise ValueError("Provided output directory {out_dir} does not exist")
+    if not isdir(out_dir):
+        raise ValueError(f"out_dir {out_dir} does not exist")
     if n_stream_min < 1:
-        raise ValueError(
-            "Provided n_stream_min input {n_stream_min) is not \
-                         >= 1"
-        )
+        raise ValueError(f"n_stream_min {n_stream_min} is not >= 1")
     if n_stream_max < 1:
-        raise ValueError(
-            "Provided n_stream_max input {n_stream_max} is not \
-                         >= 1"
-        )
+        raise ValueError(f"n_stream_max {n_stream_max} is not >= 1")
     if n_point < 2:
-        raise ValueError("Provided n_point input {n_point} is not >= 2")
+        raise ValueError(f"n_point {n_point} is not >= 2")
 
     logger.info("Input directory:" + in_dir)
     logger.info("Output directory:" + out_dir)
@@ -334,10 +385,7 @@ def compute_atlas_bundle(
     # Create temporary folder
     temp_dir = join(out_dir, "temp")
     if isdir(temp_dir):
-        logger.warning(
-            "There is already a temp folder in out_dir {out_dir}. \
-                       Deleting."
-        )
+        logger.warning(f"There is already a temp folder in out_dir {out_dir}. Deleting")
         rmtree(temp_dir)
     mkdir(temp_dir)
 
@@ -363,10 +411,7 @@ def compute_atlas_bundle(
         bundle_dir = join(in_dir, subjects[0], mid_path)
         logger.info("Retrieving bundle names from " + bundle_dir)
         if isdir(bundle_dir) is False:
-            raise ValueError(
-                "Path to subject bundles {bundle_dir} does not \
-                             exist"
-            )
+            raise ValueError(f"Path to subject bundles {bundle_dir} does not exist")
 
         files = listdir(bundle_dir)
         trk_files = [file for file in files if file.endswith(".trk")]
@@ -427,8 +472,9 @@ def compute_atlas_bundle(
 
             n_stream = len(streamlines)
             if n_stream < n_stream_min:
-                logger.warning(f"{file} has {n_stream} streamlines (< \
-                               {n_stream_min}). Discarded.")
+                logger.warning(
+                    f"{file} has {n_stream} streamlines (< {n_stream_min}). Discarded"
+                )
                 continue
             elif n_stream > n_stream_max:
                 streamlines = select_random_set_of_streamlines(
@@ -454,7 +500,7 @@ def compute_atlas_bundle(
             )
             save_trk(new_tractogram, f"{file}.trk", bbox_valid_check=False)
             if save_temp and has_fury:
-                show_bundles([streamlines], f"{file}.png")
+                show_bundles([streamlines], interactive=False, save_as=f"{file}.png")
 
         logger.info("Bundle preprocessing finished")
 
@@ -463,7 +509,7 @@ def compute_atlas_bundle(
 
         # Go through all tree steps
         for i_step, pairs in enumerate(tree):
-            new_file_list = list()
+            new_file_list = []
 
             # Create step folder
             step_dir = join(temp_dir, bundle, "step_" + str(i_step + 1))
@@ -487,7 +533,8 @@ def compute_atlas_bundle(
                 j = pair[1]
 
                 logger.info(
-                    f"step:{i_step+1}/{len(tree)}" + f" pair:{index+1}/{n_reg[i_step]}"
+                    f"step:{i_step + 1}/{len(tree)}"
+                    + f" pair:{index + 1}/{n_reg[i_step]}"
                 )
 
                 file = file_list[i] + ".trk"
@@ -513,13 +560,13 @@ def compute_atlas_bundle(
                 points, offsets = unlist_streamlines(moving)
                 moving = relist_streamlines(points, offsets)
 
-                # Randomly skip steps if speciffied to get a sharper results
+                # Randomly skip steps if specified to get sharper results
                 if skip_pairs and np.random.choice([True, False], 1)[0]:
                     combined = combine_bundles(static, aligned, "random_pick", distance)
                 else:
                     combined = combine_bundles(static, aligned, comb_method, distance)
 
-                file = f"{step_dir}/bundle_{index+has_lonely}_prev_{i}_{j}"
+                file = f"{step_dir}/bundle_{index + has_lonely}_prev_{i}_{j}"
                 new_file_list.append(file)
                 new_tractogram = StatefulTractogram(
                     Streamlines(combined), reference=header, space=Space.RASMM
@@ -528,10 +575,15 @@ def compute_atlas_bundle(
                 if save_temp and has_fury:
                     show_bundles(
                         [static, moving, aligned],
-                        f"{file}_reg.png",
+                        interactive=False,
                         colors=[(0, 0, 1), (1, 0, 0), (0, 1, 0)],
+                        save_as=f"{file}_reg.png",
                     )
-                    show_bundles([Streamlines(combined)], f"{file}.png")
+                    show_bundles(
+                        [Streamlines(combined)],
+                        interactive=False,
+                        save_as=f"{file}.png",
+                    )
 
             file_list = new_file_list
         save_trk(new_tractogram, f"{out_dir}/{bundle}.trk", bbox_valid_check=False)
