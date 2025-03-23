@@ -110,7 +110,37 @@ def get_pairwise_tree(n_bundle, seed=None):
 
 
 def select_streamlines(bundle1, bundle2, n_out, strategy="weighted", rng=None):
-    """Select and combine streamlines from two bundles."""
+    """Select and combine streamlines from two bundles.
+
+    Parameters
+    ----------
+    bundle1 : list or Streamlines
+        First bundle of streamlines to select from.
+    bundle2 : list or Streamlines
+        Second bundle of streamlines to select from.
+    n_out : int
+        Number of streamlines to select in total.
+    strategy : {'weighted', 'random'}, optional
+        Strategy to use when selecting streamlines:
+        - 'weighted': Select streamlines proportionally to bundle sizes
+        - 'random': Randomly select from combined bundles
+        Default is 'weighted'.
+    rng : RandomState or None, optional
+        Random number generator to use for streamline selection.
+        Default is None.
+
+    Returns
+    -------
+    list or Streamlines
+        Selected streamlines combined from both bundles.
+
+    Notes
+    -----
+    For the 'weighted' strategy, the number of streamlines selected from each
+    bundle is proportional to their original sizes. For example, if bundle1 has
+    20 streamlines and bundle2 has 10, and n_out=15, then 10 streamlines will
+    be selected from bundle1 and 5 from bundle2.
+    """
     n1 = len(bundle1)
     n2 = len(bundle2)
 
@@ -118,7 +148,7 @@ def select_streamlines(bundle1, bundle2, n_out, strategy="weighted", rng=None):
         raise TypeError("n_out must be a numeric value")
 
     if strategy == "weighted":
-        ns1 = np.round(n1 / (n1 + n2) * n_out).astype("int")
+        ns1 = np.round(n1 / (n1 + n2) * n_out).astype(int)
         ns2 = n_out - ns1
 
         bundle1 = select_random_set_of_streamlines(bundle1, ns1, rng=rng)
