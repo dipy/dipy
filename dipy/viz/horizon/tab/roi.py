@@ -46,6 +46,21 @@ class ROIsTab(HorizonTab):
         for contour in self._actors:
             contour.GetProperty().SetOpacity(opacity)
 
+    def _toggle_actors(self, checkbox):
+        """Toggle the opacity of the ROIs actor and slider.
+
+        Parameters
+        ----------
+        checkbox : CheckBox2D
+            FURY checkbox UI element.
+        """
+        if "" in checkbox.checked_labels:
+            self.show(self._opacity_slider.obj)
+        else:
+            self.hide(self._opacity_slider.obj)
+
+        super()._toggle_actors(checkbox)
+
     def build(self, tab_id):
         """Position the elements in the tab.
 

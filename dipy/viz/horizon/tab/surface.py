@@ -59,6 +59,21 @@ class SurfaceTab(HorizonTab):
         for actor in self.actors:
             actor.GetProperty().SetOpacity(self._surface_opacity.selected_value)
 
+    def _toggle_actors(self, checkbox):
+        """Toggle the opacity of the surface actor and slider.
+
+        Parameters
+        ----------
+        checkbox : CheckBox2D
+            FURY checkbox UI element.
+        """
+        if "" in checkbox.checked_labels:
+            self.show(self._surface_opacity.obj)
+        else:
+            self.hide(self._surface_opacity.obj)
+
+        super()._toggle_actors(checkbox)
+
     def build(self, tab_id):
         """Build all the elements under the tab.
 
