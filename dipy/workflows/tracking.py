@@ -81,9 +81,9 @@ class LocalFiberTrackingPAMFlow(Workflow):
             points in the voxel. And seed density of 1 means 1 point at the
             center of the voxel.
         minlen : int, optional
-            Minimum length (nb points) of the streamlines.
+            Minimum length (mm) of the streamlines.
         maxlen : int, optional
-            Maximum length (nb points) of the streamlines.
+            Maximum length (mm) of the streamlines.
         step_size : float, optional
             Step size (in mm) used for tracking.
         tracking_method : string, optional
