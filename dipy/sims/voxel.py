@@ -725,7 +725,7 @@ def dki_signal(gtab, dt, kt, *, S0=150, snr=None):
 
 @warning_for_keywords()
 def single_tensor_odf(r, *, evals=None, evecs=None):
-    """Simulated ODF with a single tensor.
+    """Simulate a Single-Tensor ODF.
 
     See :footcite:p:`Aganj2010` for further details.
 
@@ -844,7 +844,7 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
 
 @warning_for_keywords()
 def single_tensor_rtop(*, evals=None, tau=1.0 / (4 * np.pi**2)):
-    """Simulate a Single-Tensor rtop.
+    """Simulate a Single-Tensor RTOP.
 
     See :footcite:p:`Cheng2012` for further details.
 
@@ -875,7 +875,7 @@ def single_tensor_rtop(*, evals=None, tau=1.0 / (4 * np.pi**2)):
 
 @warning_for_keywords()
 def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
-    """Simulate a Multi-Tensor rtop.
+    """Simulate a Multi-Tensor RTOP.
 
     See :footcite:p:`Cheng2012` for further details.
 
@@ -913,7 +913,7 @@ def multi_tensor_rtop(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
 
 @warning_for_keywords()
 def single_tensor_pdf(r, *, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
-    """Simulated ODF with a single tensor.
+    """Simulate a Single-Tensor PDF.
 
     See :footcite:p:`Cheng2012` for further details.
 
@@ -965,7 +965,7 @@ def single_tensor_pdf(r, *, evals=None, evecs=None, tau=1 / (4 * np.pi**2)):
 
 @warning_for_keywords()
 def multi_tensor_pdf(pdf_points, mevals, angles, fractions, *, tau=1 / (4 * np.pi**2)):
-    """Simulate a Multi-Tensor ODF.
+    """Simulate a Multi-Tensor PDF.
 
     See :footcite:p:`Cheng2012` for further details.
 
@@ -1013,7 +1013,7 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions, *, tau=1 / (4 * np.p
 
 @warning_for_keywords()
 def single_tensor_msd(*, evals=None, tau=1 / (4 * np.pi**2)):
-    """Simulate a Multi-Tensor rtop.
+    """Simulate a Single-Tensor MSD.
 
     See :footcite:p:`Cheng2012` for further details.
 
@@ -1044,7 +1044,7 @@ def single_tensor_msd(*, evals=None, tau=1 / (4 * np.pi**2)):
 
 @warning_for_keywords()
 def multi_tensor_msd(mf, *, mevals=None, tau=1 / (4 * np.pi**2)):
-    """Simulate a Multi-Tensor rtop.
+    """Simulate a Multi-Tensor MSD.
 
     See :footcite:p:`Cheng2012` for further details.
 
