@@ -11,6 +11,7 @@ Available functions:
     atlases for each white matter tract.
 """
 
+from datetime import datetime
 import logging
 from os import getcwd, listdir, makedirs, mkdir
 from os.path import isdir, join, splitext
@@ -20,22 +21,20 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 
 from dipy.align.bundlemin import distance_matrix_mdf
-from dipy.align.streamlinear import slr_with_qbx
+from dipy.align.streamlinear import StreamlineLinearRegistration
 from dipy.io.streamline import (
     Space,
     StatefulTractogram,
     create_tractogram_header,
-    load_tractogram,
+    load_trk,
     save_trk,
 )
-from dipy.segment.clustering import QuickBundles
+from dipy.segment.clustering import QuickBundles, qbx_and_merge
 from dipy.tracking.streamline import (
     Streamlines,
     orient_by_streamline,
-    relist_streamlines,
     select_random_set_of_streamlines,
     set_number_of_points,
-    unlist_streamlines,
 )
 from dipy.utils.optpkg import optional_package
 from dipy.viz.streamline import show_bundles
@@ -314,22 +313,65 @@ def combine_bundles(
     return combined
 
 
+def _load_bundle(file, return_header=False):
+    """Load a tractography bundle from a .trk file.
+
+    Parameters
+    ----------
+    file : str
+        Path to the .trk file containing the bundle.
+    return_header : bool, optional
+        If True, returns both the bundle and header information.
+        Default is False.
+
+    Returns
+    -------
+    bundle : Streamlines or StatefulTractogram
+        The loaded streamlines. If the file contains streamlines, returns them
+        as a Streamlines object after unlisting and relisting. If empty, returns
+        the original StatefulTractogram object.
+    header : TrkFile
+        Only returned if return_header is True. Contains the tractogram header
+        information including space attributes.
+
+    Notes
+    -----
+    This is a private function used internally by the atlasing module to load
+    and process bundle files consistently.
+    """
+    bundle_obj = load_trk(file, reference="same", bbox_valid_check=False)
+
+    if len(bundle_obj.streamlines) > 0:
+        bundle = list(bundle_obj.streamlines)
+    else:
+        bundle = bundle_obj
+
+    if return_header:
+        header = create_tractogram_header(file, *bundle_obj.space_attributes)
+        return bundle, header
+
+    return bundle
+
+
 def compute_atlas_bundle(
     in_dir,
     subjects=None,
     group=None,
     mid_path="",
     bundle_names=None,
-    model_bundle_dir=None,
     out_dir=None,
     merge_out=False,
     save_temp=False,
     n_stream_min=10,
     n_stream_max=5000,
     n_point=20,
+    reg_method="hslr",
+    x0="affine",
     distance="mdf",
     comb_method="rlap",
     skip_pairs=False,
+    d_max=1000.0,
+    qbx_thr=5,
 ):
     """Compute a population specific bundle atlas.
 
@@ -349,14 +391,11 @@ def compute_atlas_bundle(
         has a ``group`` column. If None, all subjects are processed.
     mid_path : str, optional
         Intermediate path between ``in_dir`` and bundle files. Default is ''.
-    bundle_names : str, optional
-        Path to a tsv file with the names of the bundles to be processed. If
-        None, all trk files of the first subject will be considered as
-        bundle_names.
-    model_bundle_dir : str, optional
-        Directory with model bundles to be used as a reference to move all
-        bundles to a common space. If None, bundles are assumed to be in the
-        same space and no registration is performed.
+    bundle_names : str or list of str, optional
+        If a string, it is interpreted as the path to a tsv file with the names
+        of the bundles to be processed. If a list of strings, it is interpreted
+        as the names of the bundles to be processed. If None, all trk files of
+        the first subject will be considered as bundle_names.
     out_dir : str, optional
         Output directory. If None, the current working directory is used.
     merge_out : boolean, optional
@@ -378,9 +417,16 @@ def compute_atlas_bundle(
         'mdf_se' distance uses only start/end points of streamlines.
     comb_method : str, optional
         Method used to combine each bundle pair. Default is 'rlap'.
+    reg_method : str, optional
+        Registration method to be used. Default is 'hslr'.
     skip_pairs : boolean, optional
         If true bundle combination steps are randomly skipped. This helps to
         obtain a sharper result. Default is False.
+    d_max : float, optional
+        Maximum distance to allow averaging. Higher numbers result in smoother atlases.
+        Default is 1000.
+    qbx_thr : float, optional
+        Threshold for QuickBundles clustering. Default is 5.
 
     Returns
     -------
@@ -412,11 +458,9 @@ def compute_atlas_bundle(
     logger.info("Output directory:" + out_dir)
 
     # Create temporary folder
-    temp_dir = join(out_dir, "temp")
-    if isdir(temp_dir):
-        logger.warning(f"There is already a temp folder in out_dir {out_dir}. Deleting")
-        rmtree(temp_dir)
-    mkdir(temp_dir)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    temp_dir = join(out_dir, f"dipy_atlas_temp_results_{timestamp}")
+    makedirs(temp_dir, exist_ok=True)
 
     # Get subjects (from in_dir or a BIDS-like participants.tsv file)
     if subjects is None:
@@ -424,15 +468,13 @@ def compute_atlas_bundle(
         subjects = [file for file in files if isdir(join(in_dir, file))]
     else:
         df = pd.read_csv(subjects, delimiter="\t", dtype="object")
-        if group is None:
-            subjects = list(df.participant)
-        else:
-            subjects = list(df.loc[df.group == group].participant)
-    subjects.sort()  # necessary?
+        if group is not None:
+            df = df[df.group == group]
+        subjects = df.participant.tolist()
     if len(set(subjects)) < len(subjects):
         raise ValueError("There are duplicated subjects names.")
 
-    logger.info(str(len(subjects)) + " subjects to be processed:")
+    logger.info(f"Number of subjects to be processed: {len(subjects)}")
     logger.debug(subjects)
 
     # Get bundle names (from first subject folder or from tsv file)
@@ -445,10 +487,10 @@ def compute_atlas_bundle(
         files = listdir(bundle_dir)
         trk_files = [file for file in files if file.endswith(".trk")]
         bundle_names = [splitext(file)[0] for file in trk_files]
-    else:
+    elif not isinstance(bundle_names, list):
         df = pd.read_csv(bundle_names, delimiter="\t", dtype="object")
         bundle_names = list(df.iloc[:, 0])
-    bundle_names.sort()  # necessary?
+
     if len(set(bundle_names)) < len(bundle_names):
         raise ValueError("Bundle names cannot be duplicated")
 
@@ -461,22 +503,8 @@ def compute_atlas_bundle(
             file = join(in_dir, sub, mid_path, bundle + ".trk")
             bundle_files[(sub, bundle)] = file
 
-    # Get model bundle list
-    if model_bundle_dir is None:
-        model_bundles = None
-    else:
-        files = listdir(model_bundle_dir)
-        trk_files = [file for file in files if file.endswith(".trk")]
-        model_bundle_list = [splitext(file)[0] for file in trk_files]
-
-        if not all(x in model_bundle_list for x in bundle_names):
-            raise ValueError("Not all the specified bundles have a model")
-        model_bundles = {}
-        for bundle in bundle_names:
-            model_bundles[bundle] = join(model_bundle_dir, bundle + ".trk")
-
     # Atlas building starts
-    logger.info("Atlasing building started")
+    logger.info("Atlas building started")
     atlas = []
     for bundle in bundle_names:
         logger.info("Processing bundle: " + bundle)
@@ -484,43 +512,21 @@ def compute_atlas_bundle(
         step_dir = join(temp_dir, bundle, "step_0")
         makedirs(step_dir)
 
-        # Load model bundle if required
-        if model_bundles is not None:
-            file = model_bundles[bundle]
-            bundle_obj = load_tractogram(file, reference="same", bbox_valid_check=False)
-            model_bundle = bundle_obj.streamlines
-            header_model = create_tractogram_header(file, *bundle_obj.space_attributes)
-
         # Preprocess all bundles and save them as trk
         file_list = []
         for i, sub in enumerate(subjects):
             file = bundle_files[(sub, bundle)]
-            bundle_obj = load_tractogram(file, reference="same", bbox_valid_check=False)
-            streamlines = bundle_obj.streamlines
-            header = create_tractogram_header(file, *bundle_obj.space_attributes)
+            streamlines, header = _load_bundle(file, return_header=True)
 
             n_stream = len(streamlines)
             if n_stream < n_stream_min:
                 logger.warning(
-                    f"{file} has {n_stream} streamlines (< {n_stream_min}). Discarded"
+                    f"Discarding {file}: has {n_stream} streamlines (< {n_stream_min})"
                 )
                 continue
-            elif n_stream > n_stream_max:
-                streamlines = select_random_set_of_streamlines(
-                    streamlines, n_stream_max
-                )
 
+            streamlines = select_random_set_of_streamlines(streamlines, n_stream_max)
             streamlines = set_number_of_points(streamlines, n_point)
-
-            if model_bundles is not None:
-                streamlines, _, _, _ = slr_with_qbx(
-                    static=model_bundle,
-                    moving=streamlines,
-                    x0="affine",
-                    rm_small_clusters=1,
-                    qbx_thr=[5],
-                )
-                header = header_model
 
             file = f"{step_dir}/bundle_{i}_prev_{sub}"
             file_list.append(file)
@@ -529,7 +535,13 @@ def compute_atlas_bundle(
             )
             save_trk(new_tractogram, f"{file}.trk", bbox_valid_check=False)
             if save_temp and has_fury:
-                show_bundles([streamlines], interactive=False, save_as=f"{file}.png")
+                for view in ["sagittal", "axial", "coronal"]:
+                    show_bundles(
+                        [streamlines],
+                        interactive=False,
+                        save_as=f"{file}_{view}.png",
+                        view=view,
+                    )
 
         logger.info("Bundle preprocessing finished")
 
@@ -544,17 +556,19 @@ def compute_atlas_bundle(
             step_dir = join(temp_dir, bundle, "step_" + str(i_step + 1))
             mkdir(step_dir)
 
-            # A lonely bundle goes to the next level
-            has_lonely = 0
+            # An unpaired bundle goes to the next level
+            has_unpaired = 0
             if unpaired[i_step] is not None:
-                has_lonely = 1
+                has_unpaired = 1
 
                 file_prev = file_list[unpaired[i_step]]
                 file_new = f"{step_dir}/bundle_0_prev_{unpaired[i_step]}"
                 new_file_list.append(file_new)
                 copyfile(f"{file_prev}.trk", f"{file_new}.trk")
+
                 if save_temp and has_fury:
-                    copyfile(f"{file_prev}.png", f"{file_new}.png")
+                    for view in ["sagittal", "axial", "coronal"]:
+                        copyfile(f"{file_prev}_{view}.png", f"{file_new}_{view}.png")
 
             # Register and combine each pair of bundles
             for index, pair in enumerate(pairs):
@@ -566,53 +580,67 @@ def compute_atlas_bundle(
                     + f" pair:{index + 1}/{n_reg[i_step]}"
                 )
 
-                file = file_list[i] + ".trk"
-                bundle_obj = load_tractogram(
-                    file, reference="same", bbox_valid_check=False
-                )
-                static = bundle_obj.streamlines
-                header = create_tractogram_header(file, *bundle_obj.space_attributes)
+                static, header = _load_bundle(file_list[i] + ".trk", return_header=True)
+                moving = _load_bundle(file_list[j] + ".trk")
 
-                file = file_list[j] + ".trk"
-                moving = load_tractogram(
-                    file, reference="same", bbox_valid_check=False
-                ).streamlines
+                moving_centroids = qbx_and_merge(moving, thresholds=[qbx_thr]).centroids
+                static_centroids = qbx_and_merge(static, thresholds=[qbx_thr]).centroids
 
-                aligned, _, _, _ = slr_with_qbx(
-                    static, moving, x0="affine", rm_small_clusters=1, qbx_thr=[5]
-                )
+                if reg_method == "slr":
+                    slr = StreamlineLinearRegistration(x0=x0)
+                    srm = slr.optimize(static=static_centroids, moving=moving_centroids)
+                    aligned = srm.transform(moving)
 
-                points, offsets = unlist_streamlines(static)
-                static = relist_streamlines(points, offsets)
-                points, offsets = unlist_streamlines(aligned)
-                aligned = relist_streamlines(points, offsets)
-                points, offsets = unlist_streamlines(moving)
-                moving = relist_streamlines(points, offsets)
+                elif reg_method == "hslr":
+                    hslr = StreamlineLinearRegistration(x0=x0, halfway=True)
+                    srm = hslr.optimize(moving_centroids, static_centroids)
+                    [aligned, static] = srm.transform(moving, static)
 
-                # Randomly skip steps if specified to get sharper results
+                static = Streamlines(static)
+                aligned = Streamlines(aligned)
+
+                # Randomly skip steps if speciffied to get sharper results
                 if skip_pairs and np.random.choice([True, False], 1)[0]:
-                    combined = combine_bundles(static, aligned, "random_pick", distance)
+                    combined = combine_bundles(
+                        static,
+                        aligned,
+                        "random_pick",
+                        distance,
+                        n_stream=n_stream_max,
+                        d_max=d_max,
+                    )
                 else:
-                    combined = combine_bundles(static, aligned, comb_method, distance)
+                    combined = combine_bundles(
+                        static,
+                        aligned,
+                        comb_method,
+                        distance,
+                        n_stream=n_stream_max,
+                        d_max=d_max,
+                    )
 
-                file = f"{step_dir}/bundle_{index + has_lonely}_prev_{i}_{j}"
+                file = f"{step_dir}/bundle_{index + has_unpaired}_prev_{i}_{j}"
                 new_file_list.append(file)
                 new_tractogram = StatefulTractogram(
                     Streamlines(combined), reference=header, space=Space.RASMM
                 )
                 save_trk(new_tractogram, file + ".trk", bbox_valid_check=False)
                 if save_temp and has_fury:
-                    show_bundles(
-                        [static, moving, aligned],
-                        interactive=False,
-                        colors=[(0, 0, 1), (1, 0, 0), (0, 1, 0)],
-                        save_as=f"{file}_reg.png",
-                    )
-                    show_bundles(
-                        [Streamlines(combined)],
-                        interactive=False,
-                        save_as=f"{file}.png",
-                    )
+                    for view in ["sagittal", "axial", "coronal"]:
+                        show_bundles(
+                            [static, aligned, combined],
+                            interactive=False,
+                            colors=[(1, 0, 0), (0, 1, 0), (0, 0, 1)],
+                            save_as=f"{file}_{view}_parents.png",
+                            view=view,
+                        )
+                        show_bundles(
+                            [Streamlines(combined)],
+                            interactive=False,
+                            colors=[(0, 0, 1)],
+                            save_as=f"{file}_{view}.png",
+                            view=view,
+                        )
 
             file_list = new_file_list
         save_trk(new_tractogram, f"{out_dir}/{bundle}.trk", bbox_valid_check=False)
@@ -629,4 +657,5 @@ def compute_atlas_bundle(
             atlas_merged, reference=header, space=Space.RASMM
         )
         save_trk(new_tractogram, file, bbox_valid_check=False)
+
     return atlas, atlas_merged

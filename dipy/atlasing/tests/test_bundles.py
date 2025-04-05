@@ -190,8 +190,7 @@ def test_combine_bundles():
             assert_equal(len(combined), 38)
 
 
-# @pytest.mark.skipif(not has_pandas or not has_fury, reason="Requires Pandas and Fury")
-@pytest.mark.skip(reason="Skipping test_compute_atlas_bundle")
+@pytest.mark.skipif(not has_pandas or not has_fury, reason="Requires Pandas and Fury")
 def test_compute_atlas_bundle():
     example_tracts = get_fnames(name="minimal_bundles")
 
@@ -211,37 +210,39 @@ def test_compute_atlas_bundle():
         assert_raises(ValueError, compute_atlas_bundle, in_dir=in_dir, n_stream_min=0)
         assert_raises(ValueError, compute_atlas_bundle, in_dir=in_dir, n_point=0)
 
-        # Test wrong mid_path
-        assert_raises(
-            ValueError, compute_atlas_bundle, in_dir=in_dir, mid_path="fake_path"
-        )
+        with tempfile.TemporaryDirectory() as out_dir:
+            # Test wrong mid_path
+            assert_raises(
+                ValueError,
+                compute_atlas_bundle,
+                in_dir=in_dir,
+                mid_path="fake_path",
+                out_dir=out_dir,
+            )
 
-        # Test bundle duplications
-        df = pd.DataFrame(["AF_L", "AF_L"], columns=["bundle"])
-        fname = os.path.join(in_dir, "bundles.tsv")
-        df.to_csv(fname, sep="\t", index=False)
-        assert_raises(
-            ValueError, compute_atlas_bundle, in_dir=in_dir, bundle_names=fname
-        )
+            # Test bundle duplications
+            df = pd.DataFrame(["AF_L", "AF_L"], columns=["bundle"])
+            fname = os.path.join(in_dir, "bundles.tsv")
+            df.to_csv(fname, sep="\t", index=False)
+            assert_raises(
+                ValueError,
+                compute_atlas_bundle,
+                in_dir=in_dir,
+                out_dir=out_dir,
+                bundle_names=fname,
+            )
 
-        # Test bundle names and model bundle list mismatch
-        df = pd.DataFrame(["AF_L", "AF_R"], columns=["bundle"])
-        fname = os.path.join(in_dir, "bundles.tsv")
-        df.to_csv(fname, sep="\t", index=False)
-        model_bundle_dir = os.path.join(in_dir, "sub_1")  # Use first subject as model
-        assert_raises(
-            ValueError,
-            compute_atlas_bundle,
-            in_dir=in_dir,
-            bundle_names=fname,
-            model_bundle_dir=model_bundle_dir,
-        )
-
-        # Test subject duplications
-        df = pd.DataFrame({"participant": ["sub_1", "sub_2", "sub_2", "sub_4"]})
-        fname = os.path.join(in_dir, "participants.tsv")
-        df.to_csv(fname, sep="\t", index=False)
-        assert_raises(ValueError, compute_atlas_bundle, in_dir=in_dir, subjects=fname)
+            # Test subject duplications
+            df = pd.DataFrame({"participant": ["sub_1", "sub_2", "sub_2", "sub_4"]})
+            fname = os.path.join(in_dir, "participants.tsv")
+            df.to_csv(fname, sep="\t", index=False)
+            assert_raises(
+                ValueError,
+                compute_atlas_bundle,
+                in_dir=in_dir,
+                out_dir=out_dir,
+                subjects=fname,
+            )
 
         # Test default functionality
         with tempfile.TemporaryDirectory() as out_dir:
@@ -275,16 +276,12 @@ def test_compute_atlas_bundle():
         save_trk(new_tractogram, file, bbox_valid_check=False)
 
         with tempfile.TemporaryDirectory() as out_dir:
-            # temp folder to be removed by the function
-            os.mkdir(f"{out_dir}/temp")
-
             atlas, atlas_merged = compute_atlas_bundle(
                 in_dir=in_dir,
                 subjects=subjects,
                 group="control",
                 out_dir=out_dir,
                 bundle_names=bundle_names,
-                model_bundle_dir=model_bundle_dir,
                 save_temp=True,
                 merge_out=True,
                 skip_pairs=True,
@@ -298,14 +295,16 @@ def test_compute_atlas_bundle():
             assert_equal(os.path.isfile(f"{out_dir}/CC_ForcepsMajor.trk"), True)
             assert_equal(os.path.isfile(f"{out_dir}/whole_brain.trk"), True)
 
-            assert_equal(os.path.isdir(f"{out_dir}/temp"), True)
+            # Find temp folder (starts by dipy_atlas_temp...)
+            outputs = os.listdir(out_dir)
+            temp_folder = [x for x in outputs if x.startswith("dipy_atlas_temp")][0]
 
-            temp_files = os.listdir(f"{out_dir}/temp/AF_L/step_0")
+            temp_files = os.listdir(f"{out_dir}/{temp_folder}/AF_L/step_0")
             trk_files = [file for file in temp_files if file.endswith(".trk")]
             png_files = [file for file in temp_files if file.endswith(".png")]
 
             assert_equal(len(trk_files), 3)  # 4 controls - 1 discarded
-            assert_equal(len(png_files), 3)
+            assert_equal(len(png_files), 9)  # three views * three bundles
 
 
 if __name__ == "__main__":

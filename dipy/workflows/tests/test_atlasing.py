@@ -1,8 +1,8 @@
 from os import listdir
 from os.path import isfile, join
+import tempfile
 import zipfile
 
-from nibabel.tmpdirs import TemporaryDirectory
 from numpy.testing import assert_equal
 import pytest
 
@@ -15,15 +15,15 @@ _, has_fury, _ = optional_package("fury")
 
 @pytest.mark.skipif(not has_fury, reason="Requires Fury")
 def test_discrete_bundle_atlas():
-    with TemporaryDirectory() as in_dir:
-        example_tracts = get_fnames("minimal_bundles")
+    with tempfile.TemporaryDirectory() as in_dir:
+        example_tracts = get_fnames(name="minimal_bundles")
         with zipfile.ZipFile(example_tracts, "r") as zip_ref:
             zip_ref.extractall(in_dir)
 
         flow = BundleAtlasFlow()
 
         # Check that final output was generated with default version
-        with TemporaryDirectory() as out_dir:
+        with tempfile.TemporaryDirectory() as out_dir:
             flow.run(in_dir, out_dir=out_dir)
 
             assert_equal(isfile(join(out_dir, "AF_L.trk")), True)
@@ -31,7 +31,7 @@ def test_discrete_bundle_atlas():
             assert_equal(isfile(join(out_dir, "CC_ForcepsMajor.trk")), True)
 
         # Check additional outputs (whole brain tractogram and temporary files)
-        with TemporaryDirectory() as out_dir:
+        with tempfile.TemporaryDirectory() as out_dir:
             flow.run(in_dir, out_dir=out_dir, save_temp=True, merge_out=True)
 
             assert_equal(isfile(join(out_dir, "AF_L.trk")), True)

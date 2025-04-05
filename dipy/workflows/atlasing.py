@@ -16,16 +16,19 @@ class BundleAtlasFlow(Workflow):
         group=None,
         mid_path="",
         bundle_names=None,
-        model_bundle_dir=None,
         out_dir=None,
         merge_out=False,
         save_temp=False,
         n_stream_min=10,
         n_stream_max=5000,
         n_point=20,
+        reg_method="hslr",
+        x0="affine",
         distance="mdf",
         comb_method="rlap",
         skip_pairs=False,
+        d_max=1000,
+        qbx_thr=5,
     ):
         """Workflow of bundle atlas generation.
 
@@ -46,14 +49,13 @@ class BundleAtlasFlow(Workflow):
         mid_path : str, optional
             Intermediate path between ``in_dir`` and bundle files. Default is
             ''.
-        bundle_names : str, optional
+        bundle_names : str or list of str, optional
             Path to a tsv file with the names of the bundles to be processed.
-            If None, all trk files of the first subject will be considered as
-            bundle_names.
-        model_bundle_dir : str, optional
-            Directory with model bundles to be used as a reference to move all
-            bundles to a common space. If None, bundles are assumed to be in
-            the same space and no registration is performed.
+            If a string, it is interpreted as the path to a tsv file with the
+            names of the bundles to be processed. If a list of strings, it is
+            interpreted as the names of the bundles to be processed. If None,
+            all trk files of the first subject will be considered as bundle
+            names.
         out_dir : str, optional
             Output directory. If None, the current working directory is used.
         merge_out : boolean, optional
@@ -70,6 +72,10 @@ class BundleAtlasFlow(Workflow):
             have that number and speed up the computation. Default is 5000.
         n_point : int, optional
             All streamlines are set to have ``n_point`` points. Default is 20.
+        reg_method : str, optional
+            Registration method to be used ('slr' or 'hslr'). Default is 'hslr'.
+        x0 : str, optional
+            Transformation type for registration. Default is 'affine'.
         distance : str, optional
             Distance metric to be used to combine bundles. Default is 'mdf'.
             The 'mdf_se' distance uses only start/end points of streamlines.
@@ -78,42 +84,31 @@ class BundleAtlasFlow(Workflow):
         skip_pairs : boolean, optional
             If true bundle combination steps are randomly skipped. This helps
             to obtain a sharper result. Default is False.
+        d_max : float, optional
+            Maximum distance to allow averaging. Higher numbers result in smoother
+            atlases. Default is 1000.
+        qbx_thr : float, optional
+            Threshold for QuickBundles clustering. Default is 5.
         """
         logging.info("workflow running")
 
-        if merge_out:
-            _, _ = compute_atlas_bundle(
-                in_dir=in_dir,
-                subjects=subjects,
-                group=group,
-                mid_path=mid_path,
-                bundle_names=bundle_names,
-                model_bundle_dir=model_bundle_dir,
-                out_dir=out_dir,
-                merge_out=merge_out,
-                save_temp=save_temp,
-                n_stream_min=n_stream_min,
-                n_stream_max=n_stream_max,
-                n_point=n_point,
-                distance=distance,
-                comb_method=comb_method,
-                skip_pairs=skip_pairs,
-            )
-        else:
-            _ = compute_atlas_bundle(
-                in_dir=in_dir,
-                subjects=subjects,
-                group=group,
-                mid_path=mid_path,
-                bundle_names=bundle_names,
-                model_bundle_dir=model_bundle_dir,
-                out_dir=out_dir,
-                merge_out=merge_out,
-                save_temp=save_temp,
-                n_stream_min=n_stream_min,
-                n_stream_max=n_stream_max,
-                n_point=n_point,
-                distance=distance,
-                comb_method=comb_method,
-                skip_pairs=skip_pairs,
-            )
+        _, _ = compute_atlas_bundle(
+            in_dir=in_dir,
+            subjects=subjects,
+            group=group,
+            mid_path=mid_path,
+            bundle_names=bundle_names,
+            out_dir=out_dir,
+            merge_out=merge_out,
+            save_temp=save_temp,
+            n_stream_min=n_stream_min,
+            n_stream_max=n_stream_max,
+            n_point=n_point,
+            reg_method=reg_method,
+            x0=x0,
+            distance=distance,
+            comb_method=comb_method,
+            skip_pairs=skip_pairs,
+            d_max=d_max,
+            qbx_thr=qbx_thr,
+        )
