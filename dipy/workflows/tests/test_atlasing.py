@@ -26,9 +26,13 @@ def test_discrete_bundle_atlas():
         with tempfile.TemporaryDirectory() as out_dir:
             flow.run(in_dir, out_dir=out_dir)
 
-            assert_equal(isfile(join(out_dir, "AF_L.trk")), True)
-            assert_equal(isfile(join(out_dir, "CST_R.trk")), True)
-            assert_equal(isfile(join(out_dir, "CC_ForcepsMajor.trk")), True)
+            outputs = os.listdir(out_dir)
+            out_dir_name = [x for x in outputs if x.startswith("bundle_atlasing")][0]
+            out_dir_trk = os.path.join(out_dir, out_dir_name)
+
+            assert_equal(isfile(join(out_dir_trk, "AF_L.trk")), True)
+            assert_equal(isfile(join(out_dir_trk, "CST_R.trk")), True)
+            assert_equal(isfile(join(out_dir_trk, "CC_ForcepsMajor.trk")), True)
 
         # Check additional outputs (whole brain tractogram and temporary files)
 
@@ -36,14 +40,16 @@ def test_discrete_bundle_atlas():
             flow.run(in_dir, out_dir=out_dir, save_temp=True, merge_out=True)
 
             outputs = os.listdir(out_dir)
-            temp_folder = [x for x in outputs if x.startswith("dipy_atlas_temp")][0]
+            out_dir_name = [x for x in outputs if x.startswith("bundle_atlasing")][0]
+            out_dir_trk = os.path.join(out_dir, out_dir_name)
+            temp_dir = os.path.join(out_dir_trk, "temp")
 
-            assert_equal(isfile(join(out_dir, "AF_L.trk")), True)
-            assert_equal(isfile(join(out_dir, "CST_R.trk")), True)
-            assert_equal(isfile(join(out_dir, "CC_ForcepsMajor.trk")), True)
-            assert_equal(isfile(join(out_dir, "whole_brain.trk")), True)
+            assert_equal(isfile(join(out_dir_trk, "AF_L.trk")), True)
+            assert_equal(isfile(join(out_dir_trk, "CST_R.trk")), True)
+            assert_equal(isfile(join(out_dir_trk, "CC_ForcepsMajor.trk")), True)
+            assert_equal(isfile(join(out_dir_trk, "whole_brain.trk")), True)
 
-            temp_files = os.listdir(join(out_dir, temp_folder, "AF_L", "step_0"))
+            temp_files = os.listdir(join(temp_dir, "AF_L", "step_0"))
             trk_files = [file for file in temp_files if file.endswith(".trk")]
             png_files = [file for file in temp_files if file.endswith(".png")]
 
