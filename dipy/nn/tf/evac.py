@@ -1,7 +1,5 @@
 #!/usr/bin/python
-"""
-Class and helper functions for fitting the EVAC+ model.
-"""
+"""Class and helper functions for fitting the EVAC+ model."""
 
 import logging
 
@@ -20,7 +18,7 @@ from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 if have_tf:
     from tensorflow.keras.layers import (
         Add,
@@ -55,8 +53,7 @@ logger = logging.getLogger("EVAC+")
 
 
 def prepare_img(image):
-    """
-    Function to prepare image for model input
+    """Function to prepare image for model input
     Specific to EVAC+
 
     Parameters
@@ -157,8 +154,7 @@ class ChannelSum(Layer):
 
 @warning_for_keywords()
 def init_model(*, model_scale=16):
-    """
-    Function to create model for EVAC+
+    """Function to create model for EVAC+
 
     Parameters
     ----------
@@ -291,8 +287,7 @@ def init_model(*, model_scale=16):
 
 
 class EVACPlus:
-    """
-    This class is intended for the EVAC+ model.
+    """This class is intended for the EVAC+ model.
 
     The EVAC+ model :footcite:p:`Park2024` is a deep learning neural network for
     brain extraction. It uses a V-net architecture combined with
@@ -307,7 +302,8 @@ class EVACPlus:
     @doctest_skip_parser
     @warning_for_keywords()
     def __init__(self, *, verbose=False):
-        """
+        """Model initialization
+
         The model was pre-trained for usage on
         brain extraction of T1 images.
 
@@ -319,7 +315,6 @@ class EVACPlus:
         verbose : bool, optional
             Whether to show information about the processing.
         """
-
         if not have_tf:
             raise tf()
 
@@ -332,8 +327,7 @@ class EVACPlus:
         self.fetch_default_weights()
 
     def fetch_default_weights(self):
-        """
-        Load the model pre-training weights to use for the fitting.
+        """Load the model pre-training weights to use for the fitting.
         While the user can load different weights, the function
         is mainly intended for the class function 'predict'.
         """
@@ -342,8 +336,7 @@ class EVACPlus:
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
-        """
-        Load the custom pre-training weights to use for the fitting.
+        """Load the custom pre-training weights to use for the fitting.
 
         Parameters
         ----------
@@ -359,8 +352,7 @@ class EVACPlus:
             ) from e
 
     def __predict(self, x_test):
-        """
-        Internal prediction function
+        """Internal prediction function
 
         Parameters
         ----------
@@ -372,7 +364,6 @@ class EVACPlus:
         np.ndarray (batch, ...)
             Predicted brain mask
         """
-
         return self.model.predict(x_test)
 
     @deprecated_params(
@@ -389,16 +380,15 @@ class EVACPlus:
         return_prob=False,
         finalize_mask=True,
     ):
-        """
-        Wrapper function to facilitate prediction of larger dataset.
+        """Wrapper function to facilitate prediction of larger dataset.
 
         Parameters
         ----------
         T1 : np.ndarray or list of np.ndarray
             For a single image, input should be a 3D array.
             If multiple images, it should be a a list or tuple.
+            or list of np.ndarrays with len of batch_size
         affine : np.ndarray (4, 4) or (batch, 4, 4)
-            or list of np.ndarrays with len of batch
             Affine matrix for the T1 image. Should have
             batch dimension if T1 has one.
         voxsize : np.ndarray or list or tuple, optional
@@ -429,9 +419,7 @@ class EVACPlus:
         affine : np.ndarray (...) or (batch, ...)
             affine matrix of mask
             only if return_affine is True
-
         """
-
         voxsize = np.array(voxsize)
         affine = np.array(affine)
 

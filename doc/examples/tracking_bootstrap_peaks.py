@@ -17,7 +17,6 @@ tutorial.
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, small_sphere
-from dipy.direction import BootDirectionGetter, ClosestPeakDirectionGetter
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -25,9 +24,9 @@ from dipy.io.streamline import save_trk
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking import utils
-from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tracker import bootstrap_tracking, closestpeak_tracking
 from dipy.viz import actor, colormap, has_fury, window
 
 # Enables/disables interactive visualization
@@ -67,12 +66,15 @@ stopping_criterion = ThresholdStoppingCriterion(gfa, 0.25)
 #
 # Example #1: Bootstrap direction getter with CSD Model
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-boot_dg_csd = BootDirectionGetter.from_data(
-    data, csd_model, max_angle=30.0, sphere=small_sphere
-)
-boot_streamline_generator = LocalTracking(
-    boot_dg_csd, stopping_criterion, seeds, affine, step_size=0.5
+boot_streamline_generator = bootstrap_tracking(
+    seeds,
+    stopping_criterion,
+    affine,
+    step_size=0.5,
+    data=data,
+    model=csd_model,
+    max_angle=30.0,
+    sphere=small_sphere,
 )
 streamlines = Streamlines(boot_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
@@ -101,9 +103,14 @@ if has_fury:
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 pmf = csd_fit.odf(small_sphere).clip(min=0)
-peak_dg = ClosestPeakDirectionGetter.from_pmf(pmf, max_angle=30.0, sphere=small_sphere)
-peak_streamline_generator = LocalTracking(
-    peak_dg, stopping_criterion, seeds, affine, step_size=0.5
+peak_streamline_generator = closestpeak_tracking(
+    seeds,
+    stopping_criterion,
+    affine,
+    step_size=0.5,
+    sf=pmf,
+    max_angle=30.0,
+    sphere=small_sphere,
 )
 streamlines = Streamlines(peak_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)

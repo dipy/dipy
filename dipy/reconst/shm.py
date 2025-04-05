@@ -30,6 +30,7 @@ from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.compatibility import check_max_version
 from dipy.utils.deprecator import deprecate_with_version, deprecated_params
 
 descoteaux07_legacy_msg = (
@@ -232,7 +233,20 @@ def spherical_harmonics(m_values, l_values, theta, phi, *, use_scipy=True):
     both parameters is the same as ours, with ``l >= 0`` and ``|m| <= l``.
     """
     if use_scipy:
-        return sps.sph_harm(m_values, l_values, theta, phi, dtype=complex)
+        if check_max_version("scipy", "1.15.0", strict=True):
+            return sps.sph_harm(m_values, l_values, theta, phi).astype(complex)
+        else:
+            degree = (
+                l_values.astype(int)
+                if isinstance(l_values, np.ndarray)
+                else int(l_values)
+            )
+            order = (
+                m_values.astype(int)
+                if isinstance(m_values, np.ndarray)
+                else int(m_values)
+            )
+            return sps.sph_harm_y(degree, order, phi, theta).astype(complex)
 
     x = np.cos(phi)
     val = sps.lpmv(m_values, l_values, x).astype(complex)
@@ -896,6 +910,13 @@ class QballBaseModel(SphHarmModel):
 
         """
         SphHarmModel.__init__(self, gtab)
+
+        lpn = (
+            sps.lpn
+            if check_max_version("scipy", "1.15.0", strict=True)
+            else sps.legendre_p_all
+        )
+
         self._where_b0s = lazy_index(gtab.b0s_mask)
         self._where_dwi = lazy_index(~gtab.b0s_mask)
         self.assume_normed = assume_normed
@@ -906,7 +927,7 @@ class QballBaseModel(SphHarmModel):
             sh_order_max, theta[:, None], phi[:, None]
         )
         L = -l_values * (l_values + 1)
-        legendre0 = sps.lpn(sh_order_max, 0)[0]
+        legendre0 = lpn(sh_order_max, 0)[0]
         F = legendre0[l_values]
         self.sh_order_max = sh_order_max
         self.B = B

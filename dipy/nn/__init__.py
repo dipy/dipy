@@ -9,7 +9,7 @@ from dipy.utils.optpkg import optional_package
 def _load_backend():
     """Dynamically load the preferred backend based on the environment variable."""
     preferred_backend = os.getenv("DIPY_NN_BACKEND", "torch").lower()
-    tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+    tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
     torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 
     __all__ = []
@@ -17,14 +17,23 @@ def _load_backend():
     if (have_torch and (preferred_backend == "torch" or not have_tf)) or (
         not have_tf and not have_torch
     ):
+        import dipy.nn.torch.deepn4 as deepn4_module
         import dipy.nn.torch.evac as evac_module
         import dipy.nn.torch.histo_resdnn as histo_resdnn_module
 
         sys.modules["dipy.nn.evac"] = evac_module
         sys.modules["dipy.nn.histo_resdnn"] = histo_resdnn_module
-        globals().update({"evac": evac_module, "histo_resdnn": histo_resdnn_module})
+        sys.modules["dipy.nn.deepn4"] = deepn4_module
 
-        __all__ += ["evac", "histo_resdnn"]
+        globals().update(
+            {
+                "evac": evac_module,
+                "histo_resdnn": histo_resdnn_module,
+                "deepn4": deepn4_module,
+            }
+        )
+
+        __all__ += ["evac", "histo_resdnn", "deepn4"]
 
     elif have_tf:
         import dipy.nn.tf.cnn_1d_denoising as cnn_1d_denoising_module

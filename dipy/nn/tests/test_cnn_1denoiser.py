@@ -8,7 +8,7 @@ import pytest
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 sklearn, have_sklearn, _ = optional_package("sklearn.model_selection")
 original_backend = os.environ.get("DIPY_NN_BACKEND")
 cnnden_mod = None

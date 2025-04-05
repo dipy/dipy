@@ -12,6 +12,8 @@ from dipy.core.gradients import (
     b0_threshold_update_slicing_message,
     btens_to_params,
     check_multi_b,
+    extract_b0,
+    extract_dwi_shell,
     generate_bvecs,
     get_bval_indices,
     gradient_table,
@@ -1008,3 +1010,74 @@ def test_gradient_table_len():
         obt_grad_count1 = gtab.__len__()
         obt_grad_count2 = len(gtab)
         assert exp_grad_count == obt_grad_count1 == obt_grad_count2
+
+
+def test_extract_b0():
+    dwi = np.random.rand(10, 10, 10, 5).astype(np.float32)
+    b0_mask = np.array([True, False, True, True, False])
+    expected_first = dwi[..., 0]
+    expected_mean = np.mean(dwi[..., [0, 2, 3]], axis=-1)
+    expected_all = dwi[..., [0, 2, 3]]
+
+    # Test extracting all b0 volumes
+    result_all = extract_b0(dwi, b0_mask, strategy="all")
+    npt.assert_equal(result_all.shape[-1], np.sum(b0_mask))
+    npt.assert_array_equal(result_all, expected_all)
+
+    # Test extracting first b0 volume
+    result_first = extract_b0(dwi, b0_mask, strategy="first")
+    npt.assert_equal(result_first.shape, dwi.shape[:-1])
+    npt.assert_array_equal(result_first, expected_first)
+
+    # Test extracting mean b0 volume
+    result_mean = extract_b0(dwi, b0_mask, strategy="mean")
+    npt.assert_equal(result_mean.shape, dwi.shape[:-1])
+    npt.assert_almost_equal(result_mean, expected_mean)
+
+    # Test contiguous grouping
+    result_grouped = extract_b0(dwi, b0_mask, group_contiguous_b0=True, strategy="mean")
+    npt.assert_equal(result_grouped.shape[-1], 2)  # 2 groups expected
+    npt.assert_almost_equal(result_grouped[..., 0], result_first)
+    npt.assert_almost_equal(result_grouped[..., 1], dwi[..., 2:4].mean(axis=-1))
+
+    npt.assert_raises(ValueError, extract_b0, dwi, b0_mask, strategy="max")
+    npt.assert_raises(ValueError, extract_b0, dwi[..., 0], b0_mask)
+    npt.assert_raises(ValueError, extract_b0, dwi, b0_mask[:, None])
+    npt.assert_raises(ValueError, extract_b0, dwi, b0_mask[:-1])
+
+
+def test_extract_dwi_shell():
+    class MockGradientTable:
+        def __init__(self, bvals, bvecs):
+            self.bvals = np.array(bvals)
+            self.bvecs = np.array(bvecs)
+
+    dwi = np.random.rand(10, 10, 10, 6).astype(np.float32)
+    gtab = MockGradientTable([0, 1000, 2000, 2005, 3000, 4000], np.random.rand(6, 3))
+
+    # Test grouped shell extraction
+    indices, shell_data, output_bvals, output_bvecs = extract_dwi_shell(
+        dwi, gtab, bvals_to_extract=[2000], tol=10
+    )
+    expected_indices = np.array([2, 3])
+    expected_data = dwi[..., expected_indices]
+    expected_bvals = np.array([2000, 2005])
+    expected_bvecs = gtab.bvecs[expected_indices]
+
+    npt.assert_array_equal(indices[0], expected_indices)
+    npt.assert_array_equal(shell_data[0], expected_data)
+    npt.assert_array_equal(output_bvals[0], expected_bvals)
+    npt.assert_array_equal(output_bvecs[0], expected_bvecs)
+
+    # Test ungrouped shell extraction
+    indices, shell_data_list, output_bvals, output_bvecs = extract_dwi_shell(
+        dwi, gtab, bvals_to_extract=[2000], tol=10, group_shells=False
+    )
+
+    npt.assert_array_equal(indices[0], expected_indices)
+    npt.assert_array_equal(shell_data_list[0], dwi[..., 2:4])
+    npt.assert_array_equal(output_bvals[0], expected_bvals)
+    npt.assert_array_equal(output_bvecs[0], expected_bvecs)
+
+    npt.assert_raises(ValueError, extract_dwi_shell, dwi, gtab, bvals_to_extract=[5000])
+    npt.assert_warns(UserWarning, extract_dwi_shell, dwi, gtab, bvals_to_extract=[])

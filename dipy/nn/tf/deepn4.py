@@ -1,7 +1,5 @@
 #!/usr/bin/python
-"""
-Class and helper functions for fitting the DeepN4 model.
-"""
+"""Class and helper functions for fitting the DeepN4 model."""
 
 import logging
 
@@ -13,7 +11,7 @@ from dipy.nn.utils import normalize, recover_img, set_logger_level, transform_im
 from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow")
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 if have_tf:
     from tensorflow.keras.layers import (
         Concatenate,
@@ -53,7 +51,7 @@ class EncoderBlock(Layer):
             out_channels, kernel_size, strides=strides, padding=padding, use_bias=False
         )
         self.instnorm = GroupNormalization(
-            groups=-1, axis=-1, center=False, scale=False
+            groups=-1, axis=-1, epsilon=1e-05, center=False, scale=False
         )
         self.activation = LeakyReLU(0.01)
 
@@ -72,7 +70,7 @@ class DecoderBlock(Layer):
             out_channels, kernel_size, strides=strides, padding=padding, use_bias=False
         )
         self.instnorm = GroupNormalization(
-            groups=-1, axis=-1, center=False, scale=False
+            groups=-1, axis=-1, epsilon=1e-05, center=False, scale=False
         )
         self.activation = LeakyReLU(0.01)
 
@@ -133,8 +131,7 @@ def UNet3D(input_shape):
 
 
 class DeepN4:
-    """
-    This class is intended for the DeepN4 model.
+    """This class is intended for the DeepN4 model.
 
     The DeepN4 model :footcite:p:`Kanakaraj2024` predicts the bias field for
     magnetic field inhomogeneity correction on T1-weighted images.
@@ -147,7 +144,7 @@ class DeepN4:
     @warning_for_keywords()
     @doctest_skip_parser
     def __init__(self, *, verbose=False):
-        r"""
+        """Model initialization
 
         To obtain the pre-trained model, use fetch_default_weights() like:
         >>> deepn4_model = DeepN4() # skip if not have_tf
@@ -161,7 +158,6 @@ class DeepN4:
         verbose : bool, optional
             Whether to show information about the processing.
         """
-
         if not have_tf:
             raise tf()
 
@@ -173,16 +169,12 @@ class DeepN4:
         self.model = UNet3D(input_shape=(128, 128, 128, 1))
 
     def fetch_default_weights(self):
-        """
-        Load the model pre-training weights to use for the fitting.
-        """
-        fetch_model_weights_path = get_fnames(name="deepn4_default_weights")
+        """Load the model pre-training weights to use for the fitting."""
+        fetch_model_weights_path = get_fnames(name="deepn4_default_tf_weights")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
-        """
-        Load the custom pre-training weights to use for the fitting.
-        get_fnames('deepn4_default_weights').
+        """Load the custom pre-training weights to use for the fitting.
 
         Parameters
         ----------
@@ -198,8 +190,7 @@ class DeepN4:
             ) from e
 
     def __predict(self, x_test):
-        """
-        Internal prediction function
+        """Internal prediction function
         Predict bias field from input T1 signal
 
         Parameters
@@ -212,8 +203,7 @@ class DeepN4:
         np.ndarray (128, 128, 128)
             Predicted bias field
         """
-
-        return self.model.predict(x_test)
+        return self.model.predict(x_test)[..., 0]
 
     def pad(self, img, sz):
         tmp = np.zeros((sz, sz, sz))
@@ -273,22 +263,27 @@ class DeepN4:
             in_max,
         )
 
-    def predict(self, img, img_affine, *, voxsize=(1, 1, 1)):
+    def predict(self, img, img_affine, *, voxsize=(1, 1, 1), threshold=0.5):
         """Wrapper function to facilitate prediction of larger dataset.
         The function will mask, normalize, split, predict and 're-assemble'
         the data as a volume.
 
         Parameters
         ----------
-        input_file : string
-            Path to the T1 scan
+        img : np.ndarray
+            T1 image to predict and apply bias field
+        img_affine : np.ndarray (4, 4)
+            Affine matrix for the T1 image
+        voxsize : np.ndarray or list or tuple (3,), optional
+            voxel size of the T1 image.
+        threshold : float, optional
+            Threshold for cleaning the final correction field
 
         Returns
         -------
         final_corrected : np.ndarray (x, y, z)
             Predicted bias corrected image.
             The volume has matching shape to the input data
-
         """
         # Preprocess input data (resample, normalize, and pad)
         resampled_T1, inv_affine, mid_shape, offset_array, scale, crop_vs, pad_vs = (
@@ -323,8 +318,7 @@ class DeepN4:
         )
 
         # Correct the image
-        THRESHOLD = 0.5
-        below_threshold_mask = np.abs(upsample_final_field) < THRESHOLD
+        below_threshold_mask = np.abs(upsample_final_field) < threshold
         with np.errstate(divide="ignore", invalid="ignore"):
             final_corrected = np.where(
                 below_threshold_mask, 0, img / upsample_final_field

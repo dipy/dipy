@@ -59,9 +59,6 @@ jobs:
         python-version: ${{fromJSON(inputs.python-version) }}
         os: ${{fromJSON(inputs.runs-on) }}
         install-type: ${{fromJSON(inputs.install-type) }}
-        exclude:
-          - os: macos-14
-            python-version: 3.9
     env:
       DEPENDS: ${{ inputs.depends }}
       EXTRA_DEPENDS: ${{ inputs.extra-depends }}
@@ -105,7 +102,6 @@ jobs:
         export HDF5_DIR=/opt/homebrew/opt/hdf5
         export BLOSC_DIR=/opt/homebrew/opt/c-blosc
         pip install tables
-
     - name: Install Dependencies
       run: |
         if [ "${{ inputs.use-pre }}" == "true" ]; then
