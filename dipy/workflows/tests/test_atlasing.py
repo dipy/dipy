@@ -1,4 +1,4 @@
-from os import listdir
+import os
 from os.path import isfile, join
 import tempfile
 import zipfile
@@ -31,17 +31,21 @@ def test_discrete_bundle_atlas():
             assert_equal(isfile(join(out_dir, "CC_ForcepsMajor.trk")), True)
 
         # Check additional outputs (whole brain tractogram and temporary files)
+
         with tempfile.TemporaryDirectory() as out_dir:
             flow.run(in_dir, out_dir=out_dir, save_temp=True, merge_out=True)
+
+            outputs = os.listdir(out_dir)
+            temp_folder = [x for x in outputs if x.startswith("dipy_atlas_temp")][0]
 
             assert_equal(isfile(join(out_dir, "AF_L.trk")), True)
             assert_equal(isfile(join(out_dir, "CST_R.trk")), True)
             assert_equal(isfile(join(out_dir, "CC_ForcepsMajor.trk")), True)
             assert_equal(isfile(join(out_dir, "whole_brain.trk")), True)
 
-            temp_files = listdir(join(out_dir, "temp", "AF_L", "step_0"))
+            temp_files = os.listdir(join(out_dir, temp_folder, "AF_L", "step_0"))
             trk_files = [file for file in temp_files if file.endswith(".trk")]
             png_files = [file for file in temp_files if file.endswith(".png")]
 
             assert_equal(len(trk_files), 5)
-            assert_equal(len(png_files), 5)
+            assert_equal(len(png_files), 15)
