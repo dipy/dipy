@@ -248,11 +248,15 @@ def test_compute_atlas_bundle():
         with tempfile.TemporaryDirectory() as out_dir:
             atlas, _ = compute_atlas_bundle(in_dir=in_dir, out_dir=out_dir)
 
+            outputs = os.listdir(out_dir)
+            out_dir_name = [x for x in outputs if x.startswith("bundle_atlasing")][0]
+            out_dir_trk = os.path.join(out_dir, out_dir_name)
+
             assert_equal(len(atlas), 3)
-            assert_equal(os.path.isfile(f"{out_dir}/AF_L.trk"), True)
-            assert_equal(os.path.isfile(f"{out_dir}/CST_R.trk"), True)
-            assert_equal(os.path.isfile(f"{out_dir}/CC_ForcepsMajor.trk"), True)
-            assert_equal(os.path.isdir(f"{out_dir}/temp"), False)
+            assert_equal(os.path.isfile(f"{out_dir_trk}/AF_L.trk"), True)
+            assert_equal(os.path.isfile(f"{out_dir_trk}/CST_R.trk"), True)
+            assert_equal(os.path.isfile(f"{out_dir_trk}/CC_ForcepsMajor.trk"), True)
+            assert_equal(os.path.isdir(f"{out_dir_trk}/temp"), False)
 
         # Test specific functionalities
 
@@ -289,17 +293,18 @@ def test_compute_atlas_bundle():
                 n_stream_max=10,
             )
 
+            outputs = os.listdir(out_dir)
+            out_dir_name = [x for x in outputs if x.startswith("bundle_atlasing")][0]
+            out_dir_trk = os.path.join(out_dir, out_dir_name)
+            temp_dir = os.path.join(out_dir_trk, "temp")
+
             assert_equal(len(atlas), 2)
             assert_equal(len(atlas_merged), len(np.concatenate(atlas)))
-            assert_equal(os.path.isfile(f"{out_dir}/AF_L.trk"), True)
-            assert_equal(os.path.isfile(f"{out_dir}/CC_ForcepsMajor.trk"), True)
-            assert_equal(os.path.isfile(f"{out_dir}/whole_brain.trk"), True)
+            assert_equal(os.path.isfile(f"{out_dir_trk}/AF_L.trk"), True)
+            assert_equal(os.path.isfile(f"{out_dir_trk}/CC_ForcepsMajor.trk"), True)
+            assert_equal(os.path.isfile(f"{out_dir_trk}/whole_brain.trk"), True)
 
-            # Find temp folder (starts by dipy_atlas_temp...)
-            outputs = os.listdir(out_dir)
-            temp_folder = [x for x in outputs if x.startswith("dipy_atlas_temp")][0]
-
-            temp_files = os.listdir(f"{out_dir}/{temp_folder}/AF_L/step_0")
+            temp_files = os.listdir(f"{temp_dir}/AF_L/step_0")
             trk_files = [file for file in temp_files if file.endswith(".trk")]
             png_files = [file for file in temp_files if file.endswith(".png")]
 

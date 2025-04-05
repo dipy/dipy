@@ -459,7 +459,9 @@ def compute_atlas_bundle(
 
     # Create temporary folder
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    temp_dir = join(out_dir, f"dipy_atlas_temp_results_{timestamp}")
+    out_dir = join(out_dir, f"bundle_atlasing_{timestamp}")
+    temp_dir = join(out_dir, "temp")
+    makedirs(out_dir, exist_ok=True)
     makedirs(temp_dir, exist_ok=True)
 
     # Get subjects (from in_dir or a BIDS-like participants.tsv file)
