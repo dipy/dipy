@@ -14,7 +14,6 @@ from dipy.utils.optpkg import optional_package
 
 matplotlib, has_mpl, setup_module = optional_package("matplotlib")
 plt, _, _ = optional_package("matplotlib.pyplot")
-mpl_tri, _, _ = optional_package("matplotlib.tri")
 bm, has_basemap, _ = optional_package("mpl_toolkits.basemap")
 
 
@@ -81,9 +80,7 @@ def sph_project(
     basemap_args.setdefault("lon_0", 0)
     basemap_args.setdefault("resolution", "c")
 
-    from mpl_toolkits.basemap import Basemap
-
-    m = Basemap(**basemap_args)
+    m = bm.Basemap(**basemap_args)
     if boundary:
         m.drawmapboundary()
 

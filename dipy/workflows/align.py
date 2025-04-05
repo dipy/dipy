@@ -93,7 +93,7 @@ class ResliceFlow(Workflow):
             number of cores minus ``num_processes + 1`` is used (enter -1 to
             use as many cores as possible). 0 raises an error.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_resliced : string, optional
             Name of the resliced dataset to be saved.
         """
@@ -179,7 +179,7 @@ class SlrWithQbxFlow(Workflow):
         progressive : boolean, optional
             True to enable progressive registration.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_moved : string, optional
             Filename of moved tractogram.
         out_affine : string, optional
@@ -313,69 +313,51 @@ class ImageRegistrationFlow(Workflow):
         ----------
         static_image_files : string
             Path to the static image file.
-
         moving_image_files : string
             Path to the moving image file.
-
         transform : string, optional
             ``'com'``: center of mass; ``'trans'``: translation; ``'rigid'``:
             rigid body; ``'rigid_isoscaling'``: rigid body + isotropic scaling,
             ``'rigid_scaling'``: rigid body + scaling; ``'affine'``: full affine
             including translation, rotation, shearing and scaling.
-
         nbins : int, optional
             Number of bins to discretize the joint and marginal PDF.
-
         sampling_prop : int, optional
             Number ([0-100]) of voxels for calculating the PDF. None implies all
             voxels.
-
         metric : string, optional
             Similarity metric for gathering mutual information.
-
         level_iters : variable int, optional
             The number of iterations at each scale of the scale space.
             `level_iters[0]` corresponds to the coarsest scale,
             `level_iters[-1]` the finest, where n is the length of the
             sequence.
-
         sigmas : variable floats, optional
             Custom smoothing parameter to build the scale space (one parameter
-             for each scale).
-
+            for each scale).
         factors : variable floats, optional
-            Custom scale factors to build the scale space (one factor for each
-             scale).
-
+            Custom scale factors to build the scale space (one factor for each scale).
         progressive : boolean, optional
             Enable/Disable the progressive registration.
-
         save_metric : boolean, optional
             If true, quality assessment metric are saved in
             'quality_metric.txt'.
-
         static_vol_idx : str, optional
             1D array representing indices of ``axis=-1`` of a 4D
             `static` input volume. From the command line use something like
             `3 4 5 6`. From script use something like `[3, 4, 5, 6]`. This
             input is required for 4D volumes.
-
         moving_vol_idx : str, optional
             1D array representing indices of ``axis=-1`` of a 4D
             `moving` input volume. From the command line use something like
             `3 4 5 6`. From script use something like `[3, 4, 5, 6]`. This
             input is required for 4D volumes.
-
         out_dir : string, optional
             Directory to save the transformed image and the affine matrix
-             (default current directory).
-
         out_moved : string, optional
             Name for the saved transformed image.
-
         out_affine : string, optional
             Name for the saved affine matrix.
-
         out_quality : string, optional
             Name of the file containing the saved quality metric.
         """
@@ -500,24 +482,19 @@ class ApplyTransformFlow(Workflow):
         ----------
         static_image_files : string
             Path of the static image file.
-
         moving_image_files : string
             Path of the moving image(s). It can be a single image or a
             folder containing multiple images.
-
         transform_map_file : string
             For the affine case, it should be a text(``*.txt``) file containing
             the affine matrix. For the diffeomorphic case,
             it should be a nifti file containing the mapping displacement
             field in each voxel with this shape (x, y, z, 3, 2).
-
         transform_type : string, optional
             Select the transformation type to apply between 'affine' or
             'diffeomorphic'.
-
         out_dir : string, optional
-            Directory to save the transformed files (default current directory).
-
+            Directory to save the transformed files.
         out_file : string, optional
             Name of the transformed file.
             It is recommended to use the flag --mix-names to
@@ -626,41 +603,31 @@ class SynRegistrationFlow(Workflow):
         ----------
         static_image_files : string
             Path of the static image file.
-
         moving_image_files : string
             Path to the moving image file.
-
         prealign_file : string, optional
-            The text file containing pre alignment information via an
-             affine matrix.
-
+            The text file containing pre alignment information via an affine matrix.
         inv_static : boolean, optional
             Apply the inverse mapping to the static image.
-
         level_iters : variable int, optional
             The number of iterations at each level of the gaussian pyramid.
-
         metric : string, optional
             The metric to be used.
             metric available: cc (Cross Correlation), ssd (Sum Squared
             Difference), em (Expectation-Maximization).
-
         mopt_sigma_diff : float, optional
             Metric option applied on Cross correlation (CC).
             The standard deviation of the Gaussian smoothing kernel to be
             applied to the update field at each iteration.
-
         mopt_radius : int, optional
             Metric option applied on Cross correlation (CC).
             the radius of the squared (cubic) neighborhood at each voxel to
             be considered to compute the cross correlation.
-
         mopt_smooth : float, optional
             Metric option applied on Sum Squared Difference (SSD) and
             Expectation Maximization (EM). Smoothness parameter, the
             larger the value the smoother the deformation field.
             (default 1.0 for EM, 4.0 for SSD)
-
         mopt_inner_iter : int, optional
             Metric option applied on Sum Squared Difference (SSD) and
             Expectation Maximization (EM). This is number of iterations to be
@@ -668,18 +635,15 @@ class SynRegistrationFlow(Workflow):
             optimization algorithm (this is not the number of steps per
             Gaussian Pyramid level, that parameter must be set for the
             optimizer, not the metric). Default 5 for EM, 10 for SSD.
-
         mopt_q_levels : int, optional
             Metric option applied on Expectation Maximization (EM).
             Number of quantization levels (Default: 256 for EM)
-
         mopt_double_gradient : bool, optional
             Metric option applied on Expectation Maximization (EM).
             if True, the gradient of the expected static image under the moving
             modality will be added to the gradient of the moving image,
             similarly, the gradient of the expected moving image under the
             static modality will be added to the gradient of the static image.
-
         mopt_step_type : string, optional
             Metric option applied on Sum Squared Difference (SSD) and
             Expectation Maximization (EM). The optimization schedule to be
@@ -687,38 +651,29 @@ class SynRegistrationFlow(Workflow):
             (not used if Demons Step is selected). Possible value:
             ('gauss_newton', 'demons'). default: 'gauss_newton' for EM,
             'demons' for SSD.
-
         step_length : float, optional
             the length of the maximum displacement vector of the update
-             displacement field at each iteration.
-
+            displacement field at each iteration.
         ss_sigma_factor : float, optional
             parameter of the scale-space smoothing kernel. For example, the
-             std. dev. of the kernel will be factor*(2^i) in the isotropic case
-             where i = 0, 1, ..., n_scales is the scale.
-
+            std. dev. of the kernel will be factor*(2^i) in the isotropic case
+            where i = 0, 1, ..., n_scales is the scale.
         opt_tol : float, optional
             the optimization will stop when the estimated derivative of the
-             energy profile w.r.t. time falls below this threshold.
-
+            energy profile w.r.t. time falls below this threshold.
         inv_iter : int, optional
             the number of iterations to be performed by the displacement field
-             inversion algorithm.
-
+            inversion algorithm.
         inv_tol : float, optional
             the displacement field inversion algorithm will stop iterating
-             when the inversion error falls below this threshold.
-
+            when the inversion error falls below this threshold.
         out_dir : string, optional
-            Directory to save the transformed files (default current directory).
-
+            Directory to save the transformed files.
         out_warped : string, optional
             Name of the warped file.
-
         out_inv_static : string, optional
             Name of the file to save the static image after applying the
-             inverse mapping.
-
+            inverse mapping.
         out_field : string, optional
             Name of the file to save the diffeomorphic map.
 
@@ -882,8 +837,7 @@ class MotionCorrectionFlow(Workflow):
             Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
             b-vectors are unit vectors
         out_dir : string, optional
-            Directory to save the transformed image and the affine matrix
-             (default current directory).
+            Directory to save the transformed image and the affine matrix.
         out_moved : string, optional
             Name for the saved transformed image.
         out_affine : string, optional
@@ -977,7 +931,7 @@ class BundleWarpFlow(Workflow):
         affine : boolean, optional
             If False, use rigid registration as starting point. (default True)
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_linear_moved : string, optional
             Filename of linearly moved bundle.
         out_nonlinear_moved : string, optional

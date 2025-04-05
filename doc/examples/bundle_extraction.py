@@ -70,7 +70,7 @@ moved, transform, qb_centroids1, qb_centroids2 = whole_brain_slr(
     x0="affine",
     verbose=True,
     progressive=True,
-    rng=np.random.RandomState(1984),
+    rng=np.random.default_rng(1984),
 )
 
 
@@ -166,7 +166,7 @@ if interactive:
 #
 # Model Arcuate Fasciculus Left bundle
 
-rb = RecoBundles(moved, verbose=True, rng=np.random.RandomState(2001))
+rb = RecoBundles(moved, verbose=True, rng=np.random.default_rng(2001))
 
 recognized_af_l, af_l_labels = rb.recognize(
     model_bundle=model_af_l,

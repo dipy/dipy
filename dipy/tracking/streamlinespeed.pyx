@@ -579,7 +579,7 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
     >>> from dipy.tracking.streamlinespeed import compress_streamlines
     >>> import numpy as np
     >>> # One streamline: a wiggling line
-    >>> rng = np.random.RandomState(42)
+    >>> rng = np.random.default_rng(42)
     >>> streamline = np.linspace(0, 10, 100*3).reshape((100, 3))
     >>> streamline += 0.2 * rng.rand(100, 3)
     >>> c_streamline = compress_streamlines(streamline, tol_error=0.2)

@@ -8,7 +8,7 @@ import pytest
 
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 original_backend = os.environ.get("DIPY_NN_BACKEND")
 model_mod = None
 

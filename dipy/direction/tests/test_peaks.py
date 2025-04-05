@@ -11,6 +11,7 @@ from numpy.testing import (
     assert_array_equal,
     assert_equal,
     assert_raises,
+    assert_warns,
 )
 
 from dipy.core.gradients import GradientTable, gradient_table
@@ -25,6 +26,7 @@ from dipy.direction.peaks import (
     peaks_from_positions,
     reshape_peaks_for_visualization,
 )
+from dipy.direction.pmf import SHCoeffPmfGen, SimplePmfGen
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst.odf import OdfFit, OdfModel, gfa
 from dipy.reconst.shm import CsaOdfModel, descoteaux07_legacy_msg, tournier07_legacy_msg
@@ -832,13 +834,13 @@ def test_peaks_from_positions():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        model = CsaOdfModel(gtab, 4)
+        model = CsaOdfModel(gtab, 8)
         pam = peaks_from_model(
             model,
             data,
             default_sphere,
             return_odf=True,
-            return_sh=False,
+            return_sh=True,
             legacy=True,
             npeaks=npeaks,
             relative_peak_threshold=thresh,
@@ -887,6 +889,76 @@ def test_peaks_from_positions():
     )
     peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
     assert_array_almost_equal(pam.peak_dirs, peaks)
+
+    # test the peaks at each voxel using SimplePmfGen
+    pmf_gen = SimplePmfGen(pam.odf, default_sphere)
+    peaks = peaks_from_positions(
+        positions,
+        odfs=None,
+        sphere=None,
+        affine=affine,
+        pmf_gen=pmf_gen,
+        relative_peak_threshold=thresh,
+        min_separation_angle=min_angle,
+        npeaks=npeaks,
+    )
+    peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
+    assert_array_almost_equal(pam.peak_dirs, peaks, decimal=3)
+
+    # test the peaks at each voxel using SHCoeffPmfGen
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        pmf_gen = SHCoeffPmfGen(
+            pam.shm_coeff, default_sphere, basis_type="descoteaux07"
+        )
+    peaks = peaks_from_positions(
+        positions,
+        odfs=None,
+        sphere=None,
+        affine=affine,
+        pmf_gen=pmf_gen,
+        relative_peak_threshold=thresh,
+        min_separation_angle=min_angle,
+        npeaks=npeaks,
+    )
+    peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
+    assert_array_almost_equal(pam.peak_dirs, peaks, decimal=3)
+
+    # test the peaks with a full sphere
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        pam_full_sphere = peaks_from_model(
+            model,
+            data,
+            get_sphere(name="symmetric362"),
+            return_odf=True,
+            return_sh=True,
+            legacy=True,
+            npeaks=npeaks,
+            relative_peak_threshold=thresh,
+            min_separation_angle=min_angle,
+        )
+    pmf_gen = SimplePmfGen(pam_full_sphere.odf, get_sphere(name="symmetric362"))
+    peaks = peaks_from_positions(
+        positions,
+        odfs=None,
+        sphere=None,
+        affine=affine,
+        pmf_gen=pmf_gen,
+        relative_peak_threshold=thresh,
+        min_separation_angle=min_angle,
+        npeaks=npeaks,
+    )
+    peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
+    assert_array_almost_equal(pam_full_sphere.peak_dirs, peaks, decimal=3)
 
     # test the peaks extraction at the mid point between 2 voxels
     odfs = [pam.odf[0, 0, 0], pam.odf[0, 0, 0]]
@@ -954,4 +1026,18 @@ def test_peaks_from_positions():
         pam.odf,
         default_sphere,
         affine,
+    )
+
+    # test a warning is thrown when odfs and pmf_gen arguments are used
+    assert_warns(
+        UserWarning,
+        peaks_from_positions,
+        positions,
+        pam.odf,
+        default_sphere,
+        affine,
+        pmf_gen=pmf_gen,
+        relative_peak_threshold=thresh,
+        min_separation_angle=min_angle,
+        npeaks=npeaks,
     )

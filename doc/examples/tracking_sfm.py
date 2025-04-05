@@ -21,13 +21,13 @@ from dipy.io.streamline import save_trk
 from dipy.reconst import sfm
 from dipy.reconst.csdeconv import auto_response_ssst
 from dipy.tracking import utils
-from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import (
     Streamlines,
     select_random_set_of_streamlines,
     transform_streamlines,
 )
+from dipy.tracking.tracker import eudx_tracking
 from dipy.viz import actor, colormap, has_fury, window
 
 # Enables/disables interactive visualization
@@ -81,7 +81,7 @@ pnm = peaks_from_model(
     min_separation_angle=25,
     mask=white_matter,
     parallel=True,
-    num_processes=2,
+    num_processes=1,
 )
 
 ###############################################################################
@@ -108,8 +108,8 @@ seeds = seeds[:1000]
 # We now have the necessary components to construct a tracking pipeline and
 # execute the tracking
 
-streamline_generator = LocalTracking(
-    pnm, stopping_criterion, seeds, affine, step_size=0.5
+streamline_generator = eudx_tracking(
+    seeds, stopping_criterion, affine, pam=pnm, step_size=0.5
 )
 streamlines = Streamlines(streamline_generator)
 

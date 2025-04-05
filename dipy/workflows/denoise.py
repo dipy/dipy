@@ -29,9 +29,9 @@ class Patch2SelfFlow(Workflow):
         alpha=1.0,
         verbose=False,
         patch_radius=0,
-        b0_denoising=True,
+        skip_b0_denoising=False,
         clip_negative_vals=False,
-        shift_intensity=True,
+        skip_shift_intensity=False,
         ver=3,
         out_dir="",
         out_denoised="dwi_patch2self.nii.gz",
@@ -52,7 +52,7 @@ class Patch2SelfFlow(Workflow):
             process multiple inputs at once.
         bval_files : string
             bval file associated with the diffusion data.
-        model : string, or initialized linear model object.
+        model : string, or initialized linear model object, optional
             This will determine the algorithm used to solve the set of linear
             equations underlying this model. If it is a string it needs to be
             one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
@@ -62,7 +62,6 @@ class Patch2SelfFlow(Workflow):
             `sklearn.linear_model.LinearRegression`,
             `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
             and other objects that inherit from `sklearn.base.RegressorMixin`.
-            Default: 'ols'.
         b0_threshold : int, optional
             Threshold for considering volumes as b0.
         alpha : float, optional
@@ -71,26 +70,27 @@ class Patch2SelfFlow(Workflow):
             Show progress of Patch2Self and time taken.
         patch_radius : variable int, optional
             The radius of the local patch to be taken around each voxel
-        b0_denoising : bool, optional
-            Skips denoising b0 volumes if set to False.
+        skip_b0_denoising : bool, optional
+            Skips denoising b0 volumes if set to True.
         clip_negative_vals : bool, optional
             Sets negative values after denoising to 0 using `np.clip`.
-        shift_intensity : bool, optional
-            Shifts the distribution of intensities per volume to give
-            non-negative values
+        skip_shift_intensity : bool, optional
+            Skips shifting the distribution of intensities per volume to give
+            non-negative values if set to True.
         ver : int, optional
             Version of the Patch2Self algorithm to use between  1 or 3.
         out_dir : string, optional
-            Output directory (default current directory)
+            Output directory.
         out_denoised : string, optional
             Name of the resulting denoised volume
-            (default: dwi_patch2self.nii.gz)
 
         References
         ----------
         .. footbibliography::
 
         """
+        b0_denoising = not skip_b0_denoising
+        shift_intensity = not skip_shift_intensity
         io_it = self.get_io_iterator()
         if isinstance(patch_radius, list) and len(patch_radius) == 1:
             patch_radius = int(patch_radius[0])
@@ -157,7 +157,7 @@ class NLMeansFlow(Workflow):
             If True the noise is estimated as Rician, otherwise Gaussian noise
             is assumed.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_denoised : string, optional
             Name of the resulting denoised volume.
 
@@ -258,7 +258,7 @@ class LPCAFlow(Workflow):
             $\tau_{factor}$ is set to None, it will be automatically calculated
             using the Marcenko-Pastur distribution :footcite:p`Veraart2016b`.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_denoised : string, optional
             Name of the resulting denoised volume.
 
@@ -333,7 +333,7 @@ class MPPCAFlow(Workflow):
             If true, a noise standard deviation estimate based on the
             Marcenko-Pastur distribution is returned :footcite:p:`Veraart2016b`.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_denoised : string, optional
             Name of the resulting denoised volume.
         out_sigma : string, optional
@@ -402,7 +402,7 @@ class GibbsRingingFlow(Workflow):
             number of cores minus ``num_processes + 1`` is used (enter -1 to
             use as many cores as possible). 0 raises an error.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_unring : string, optional
             Name of the resulting denoised volume.
 

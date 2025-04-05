@@ -1,22 +1,43 @@
-# A type of -*- python -*- file
-""" Track propagation performance functions
-"""
+# cython: boundscheck=False
+# cython: initializedcheck=False
+# cython: wraparound=False
+# cython: Nonecheck=False
+
+"""Track propagation performance functions."""
 
 # cython: profile=True
 # cython: embedsignature=True
 
 cimport cython
+from cython.parallel import prange
 
 import numpy as np
 cimport numpy as cnp
 
 from dipy.core.interpolation cimport _trilinear_interpolation_iso, offset
+from dipy.direction.pmf cimport PmfGen
+from dipy.utils.fast_numpy cimport (
+    copy_point,
+    cross,
+    cumsum,
+    norm,
+    normalize,
+    random_float,
+    random_perpendicular_vector,
+    random_point_within_circle,
+    RNGState,
+    where_to_insert,
+)
+from dipy.tracking.tractogen cimport prepare_pmf
+from dipy.tracking.tracker_parameters cimport (TrackerParameters, TrackerStatus,
+                                               SUCCESS, FAIL)
+
+from libc.stdlib cimport malloc, free
+from libc.math cimport M_PI, pow, sin, cos, fabs
+from libc.stdio cimport printf
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double x)
-    float fabs(float x)
-    double cos(double x)
-    double sin(double x)
     float acos(float x )
     double sqrt(double x)
     double DPY_PI
@@ -389,3 +410,544 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
 
     # Return track for the current seed point and ref
     return tmp_track
+
+
+cdef int initialize_ptt(TrackerParameters params,
+                        double* stream_data,
+                        PmfGen pmf_gen,
+                        double* seed_point,
+                        double* seed_direction,
+                        RNGState* rng) noexcept nogil:
+        """Sample an initial curve by rejection sampling.
+
+        Parameters
+        ----------
+        params : TrackerParameters
+            PTT tracking parameters.
+        stream_data : double*
+            Streamline data persitant across tracking steps.
+        pmf_gen : PmfGen
+            Orientation data.
+        seed_point : double[3]
+            Initial point
+        seed_direction : double[3]
+            Initial direction
+        rng : RNGState*
+            Random number generator state. (Threadsafe)
+
+        Returns
+        -------
+        status : int
+            Returns 0 if the initialization was successful, or
+            1 otherwise.
+        """
+        cdef double data_support = 0
+        cdef double max_posterior = 0
+        cdef int tries
+
+        # position
+        stream_data[19] = seed_point[0]
+        stream_data[20] = seed_point[1]
+        stream_data[21] = seed_point[2]
+
+        for tries in range(params.ptt.rejection_sampling_nbr_sample):
+            initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction, rng)
+            data_support = calculate_ptt_data_support(params, stream_data, pmf_gen)
+            if data_support > max_posterior:
+                max_posterior = data_support
+
+        # Compensation for underestimation of max posterior estimate
+        max_posterior = pow(2.0 * max_posterior, params.ptt.data_support_exponent)
+
+        # Initialization is successful if a suitable candidate can be sampled
+        # within the trial limit
+        for tries in range(params.ptt.rejection_sampling_max_try):
+            initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction, rng)
+            if (random_float(rng) * max_posterior <= calculate_ptt_data_support(params, stream_data, pmf_gen)):
+                stream_data[22] = stream_data[23] # last_val = last_val_cand
+                return 0
+        return 1
+
+
+cdef void initialize_ptt_candidate(TrackerParameters params,
+                                   double* stream_data,
+                                   PmfGen pmf_gen,
+                                   double* init_dir,
+                                   RNGState* rng) noexcept nogil:
+    """
+    Initialize the parallel transport frame.
+
+    After initial position is set, a parallel transport frame is set using
+    the initial direction (a walking frame, i.e., 3 orthonormal vectors,
+    plus 2 scalars, i.e. k1 and k2).
+
+    A point and parallel transport frame parametrizes a curve that is named
+    the "probe". Using probe parameters (probe_length, probe_radius,
+    probe_quality, probe_count), a short fiber bundle segment is modelled.
+
+    Parameters
+    ----------
+    params : TrackerParameters
+        PTT tracking parameters.
+    stream_data : double*
+        Streamline data persitant across tracking steps.
+    pmf_gen : PmfGen
+        Orientation data.
+    init_dir : double[3]
+        Initial tracking direction (tangent)
+    rng : RNGState*
+        Random number generator state. (Threadsafe)
+
+    Returns
+    -------
+
+    """
+    cdef double[3] position
+    cdef int count
+    cdef int i
+    cdef double* pmf
+
+    # Initialize Frame
+    stream_data[1] = init_dir[0]
+    stream_data[2] = init_dir[1]
+    stream_data[3] = init_dir[2]
+    random_perpendicular_vector(&stream_data[7],
+                                &stream_data[1],
+                                rng)  # frame2, frame0
+    cross(&stream_data[4],
+          &stream_data[7],
+          &stream_data[1])  # frame1, frame2, frame0
+    stream_data[24], stream_data[25] = \
+        random_point_within_circle(params.max_curvature, rng)
+
+    stream_data[22] = 0  # last_val
+
+    if params.ptt.probe_count == 1:
+        stream_data[22] = pmf_gen.get_pmf_value_c(&stream_data[19],
+                                                  &stream_data[1])  # position, frame[0]
+    else:
+        for count in range(params.ptt.probe_count):
+            for i in range(3):
+                position[i] = (stream_data[19 + i]
+                              + stream_data[4 + i]
+                              * params.ptt.probe_radius
+                              * cos(count * params.ptt.angular_separation)
+                              * params.inv_voxel_size[i]
+                              + stream_data[7 + i]
+                              * params.ptt.probe_radius
+                              * sin(count * params.ptt.angular_separation)
+                              * params.inv_voxel_size[i])
+
+            stream_data[22] += pmf_gen.get_pmf_value_c(&stream_data[19],
+                                                       &stream_data[1])
+
+
+cdef void prepare_ptt_propagator(TrackerParameters params,
+                                 double* stream_data,
+                                 double arclength) noexcept nogil:
+    """Prepare the propagator.
+
+    The propagator used for transporting the moving frame forward.
+
+    Parameters
+    ----------
+    params : TrackerParameters
+        PTT tracking parameters.
+    stream_data : double*
+        Streamline data persitant across tracking steps.
+    arclength : double
+        Arclenth, which is equivalent to step size along the arc
+
+    """
+    cdef double tmp_arclength
+    stream_data[10] = arclength  # propagator[0]
+
+    if (fabs(stream_data[24]) < params.ptt.k_small
+        and fabs(stream_data[25]) < params.ptt.k_small):
+        stream_data[11] = 0
+        stream_data[12] = 0
+        stream_data[13] = 1
+        stream_data[14] = 0
+        stream_data[15] = 0
+        stream_data[16] = 0
+        stream_data[17] = 0
+        stream_data[18] = 1
+    else:
+        if fabs(stream_data[24]) < params.ptt.k_small:  # k1
+            stream_data[24] = params.ptt.k_small
+        if fabs(stream_data[25]) < params.ptt.k_small:  # k2
+            stream_data[25] = params.ptt.k_small
+
+        tmp_arclength  = arclength * arclength / 2.0
+
+        # stream_data[10:18] -> propagator
+        stream_data[11] = stream_data[24] * tmp_arclength
+        stream_data[12] = stream_data[25] * tmp_arclength
+        stream_data[13] = (1 - stream_data[25]
+                          * stream_data[25] * tmp_arclength
+                          - stream_data[24] * stream_data[24]
+                          * tmp_arclength)
+        stream_data[14] = stream_data[24] * arclength
+        stream_data[15] = stream_data[25] * arclength
+        stream_data[16] = -stream_data[25] * arclength
+        stream_data[17] = (-stream_data[24] * stream_data[25]
+                          * tmp_arclength)
+        stream_data[18] = (1 - stream_data[25] * stream_data[25]
+                          * tmp_arclength)
+
+
+cdef double calculate_ptt_data_support(TrackerParameters params,
+                                       double* stream_data,
+                                       PmfGen pmf_gen) noexcept nogil:
+    """Calculates data support for the candidate probe.
+
+    Parameters
+    ----------
+    params : TrackerParameters
+        PTT tracking parameters.
+    stream_data : double*
+        Streamline data persitant across tracking steps.
+    pmf_gen : PmfGen
+        Orientation data.
+    """
+
+    cdef double fod_amp
+    cdef double[3] position
+    cdef double[3][3] frame
+    cdef double[3] tangent
+    cdef double[3] normal
+    cdef double[3] binormal
+    cdef double[3] new_position
+    cdef double likelihood
+    cdef int c, i, j, q
+    cdef double* pmf
+
+    prepare_ptt_propagator(params, stream_data, params.ptt.probe_step_size)
+
+    for i in range(3):
+        position[i] = stream_data[19+i]
+        for j in range(3):
+            frame[i][j] = stream_data[1 + i * 3 + j]
+
+    likelihood = stream_data[22]
+    for q in range(1, params.ptt.probe_quality):
+        for i in range(3):
+            # stream_data[10:18] : propagator
+            position[i] = \
+                (stream_data[10] * frame[0][i] * params.voxel_size[i]
+                + stream_data[11] * frame[1][i] * params.voxel_size[i]
+                + stream_data[12] * frame[2][i] * params.voxel_size[i]
+                + position[i])
+            tangent[i] = (stream_data[13] * frame[0][i]
+                         + stream_data[14] * frame[1][i]
+                         + stream_data[15] * frame[2][i])
+        normalize(&tangent[0])
+
+        if q < (params.ptt.probe_quality - 1):
+            for i in range(3):
+                binormal[i] = (stream_data[16] * frame[0][i]
+                              + stream_data[17] * frame[1][i]
+                              + stream_data[18] * frame[2][i])
+            cross(&normal[0], &binormal[0], &tangent[0])
+
+            copy_point(&tangent[0], &frame[0][0])
+            copy_point(&normal[0], &frame[1][0])
+            copy_point(&binormal[0], &frame[2][0])
+        if params.ptt.probe_count == 1:
+            fod_amp = pmf_gen.get_pmf_value_c(position, tangent)
+            fod_amp = fod_amp if fod_amp > params.sh.pmf_threshold else 0
+            stream_data[23] = fod_amp  # last_val_cand
+            likelihood += stream_data[23]  # last_val_cand
+        else:
+            stream_data[23] = 0  # last_val_cand
+            if q == params.ptt.probe_quality - 1:
+                for i in range(3):
+                    binormal[i] = (stream_data[16] * frame[0][i]
+                                  + stream_data[17] * frame[1][i]
+                                  + stream_data[18] * frame[2][i])
+                cross(&normal[0], &binormal[0], &tangent[0])
+
+            for c in range(params.ptt.probe_count):
+                for i in range(3):
+                    new_position[i] = (position[i]
+                                      + normal[i] * params.ptt.probe_radius
+                                      * cos(c * params.ptt.angular_separation)
+                                      * params.inv_voxel_size[i]
+                                      + binormal[i] * params.ptt.probe_radius
+                                      * sin(c * params.ptt.angular_separation)
+                                      * params.inv_voxel_size[i])
+                fod_amp = pmf_gen.get_pmf_value_c(new_position, tangent)
+                fod_amp = fod_amp if fod_amp > params.sh.pmf_threshold else 0
+                stream_data[23] += fod_amp  # last_val_cand
+
+            likelihood += stream_data[23]  # last_val_cand
+
+    likelihood *= params.ptt.probe_normalizer
+    if params.ptt.data_support_exponent != 1:
+        likelihood = pow(likelihood, params.ptt.data_support_exponent)
+
+    return likelihood
+
+
+cdef TrackerStatus deterministic_propagator(double* point,
+                                            double* direction,
+                                            TrackerParameters params,
+                                            double* stream_data,
+                                            PmfGen pmf_gen,
+                                            RNGState* rng) noexcept nogil:
+    """
+    Propagate the position by step_size amount.
+
+    The propagation use the direction of a sphere with the highest probability
+    mass function (pmf).
+
+    Parameters
+    ----------
+    point : double[3]
+        Current tracking position.
+    direction : double[3]
+        Previous tracking direction.
+    params : TrackerParameters
+        Deterministic Tractography parameters.
+    stream_data : double*
+        Streamline data persitant across tracking steps.
+    pmf_gen : PmfGen
+        Orientation data.
+    rng : RNGState*
+        Random number generator state. (thread safe)
+
+    Returns
+    -------
+    status : TrackerStatus
+        Returns SUCCESS if the propagation was successful, or
+        FAIL otherwise.
+    """
+    cdef:
+        cnp.npy_intp i, max_idx
+        double max_value=0
+        double* newdir
+        double* pmf
+        double cos_sim
+        cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
+
+    if norm(direction) == 0:
+        return FAIL
+    normalize(direction)
+
+    pmf = <double*> malloc(len_pmf * sizeof(double))
+    prepare_pmf(pmf, point, pmf_gen, params.sh.pmf_threshold, len_pmf)
+
+    for i in range(len_pmf):
+        cos_sim = pmf_gen.vertices[i][0] * direction[0] \
+                + pmf_gen.vertices[i][1] * direction[1] \
+                + pmf_gen.vertices[i][2] * direction[2]
+        if cos_sim < 0:
+            cos_sim = cos_sim * -1
+        if cos_sim > params.cos_similarity and pmf[i] > max_value:
+            max_idx = i
+            max_value = pmf[i]
+
+    if max_value <= 0:
+        free(pmf)
+        return FAIL
+
+    newdir = &pmf_gen.vertices[max_idx][0]
+    # Update direction
+    if (direction[0] * newdir[0]
+        + direction[1] * newdir[1]
+        + direction[2] * newdir[2] > 0):
+        copy_point(newdir, direction)
+    else:
+        copy_point(newdir, direction)
+        direction[0] = direction[0] * -1
+        direction[1] = direction[1] * -1
+        direction[2] = direction[2] * -1
+    free(pmf)
+    return SUCCESS
+
+
+cdef TrackerStatus probabilistic_propagator(double* point,
+                                            double* direction,
+                                            TrackerParameters params,
+                                            double* stream_data,
+                                            PmfGen pmf_gen,
+                                            RNGState* rng) noexcept nogil:
+    """
+    Propagates the position by step_size amount. The propagation use randomly samples
+    direction of a sphere based on probability mass function (pmf).
+
+    Parameters
+    ----------
+    point : double[3]
+        Current tracking position.
+    direction : double[3]
+        Previous tracking direction.
+    params : TrackerParameters
+        Parallel Transport Tractography (PTT) parameters.
+    stream_data : double*
+        Streamline data persitant across tracking steps.
+    pmf_gen : PmfGen
+        Orientation data.
+    rng : RNGState*
+        Random number generator state. (thread safe)
+
+    Returns
+    -------
+    status : TrackerStatus
+        Returns SUCCESS if the propagation was successful, or
+        FAIL otherwise.
+    """
+
+    cdef:
+        cnp.npy_intp i, idx
+        double* newdir
+        double* pmf
+        double last_cdf, cos_sim
+        cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
+
+
+    if norm(direction) == 0:
+        return FAIL
+    normalize(direction)
+
+    pmf = <double*> malloc(len_pmf * sizeof(double))
+    prepare_pmf(pmf, point, pmf_gen, params.sh.pmf_threshold, len_pmf)
+
+    for i in range(len_pmf):
+        cos_sim = pmf_gen.vertices[i][0] * direction[0] \
+                + pmf_gen.vertices[i][1] * direction[1] \
+                + pmf_gen.vertices[i][2] * direction[2]
+        if cos_sim < 0:
+            cos_sim = cos_sim * -1
+        if cos_sim < params.cos_similarity:
+            pmf[i] = 0
+
+    cumsum(pmf, pmf, len_pmf)
+    last_cdf = pmf[len_pmf - 1]
+    if last_cdf == 0:
+        free(pmf)
+        return FAIL
+
+    idx = where_to_insert(pmf, random_float(rng) * last_cdf, len_pmf)
+    newdir = &pmf_gen.vertices[idx][0]
+    # Update direction
+    if (direction[0] * newdir[0]
+        + direction[1] * newdir[1]
+        + direction[2] * newdir[2] > 0):
+        copy_point(newdir, direction)
+    else:
+        copy_point(newdir, direction)
+        direction[0] = direction[0] * -1
+        direction[1] = direction[1] * -1
+        direction[2] = direction[2] * -1
+    free(pmf)
+    return SUCCESS
+
+
+cdef TrackerStatus parallel_transport_propagator(double* point,
+                                              double* direction,
+                                              TrackerParameters params,
+                                              double* stream_data,
+                                              PmfGen pmf_gen,
+                                              RNGState* rng) noexcept nogil:
+    """
+    Propagates the position by step_size amount. The propagation is using
+    the parameters of the last candidate curve. Then, randomly generate
+    curve parametrization from the current position. The walking frame
+    is the same, only the k1 and k2 parameters are randomly picked.
+    Rejection sampling is used to pick the next curve using the data
+    support (likelihood).
+
+    stream_data:
+        0    : initialized
+        1-10 : frame1,2,3
+        10-19: propagator
+        19-22: position
+        22   : last_val
+        23   : last_val_cand
+        24   : k1
+        25   : k2
+
+    Parameters
+    ----------
+    point : double[3]
+        Current tracking position.
+    direction : double[3]
+        Previous tracking direction.
+    params : TrackerParameters
+        Parallel Transport Tractography (PTT) parameters.
+    stream_data : double*
+        Streamline data persitant across tracking steps.
+    pmf_gen : PmfGen
+        Orientation data.
+    rng : RNGState*
+        Random number generator state. (thread safe)
+
+    Returns
+    -------
+    status : TrackerStatus
+        Returns SUCCESS if the propagation was successful, or
+        FAIL otherwise.
+    """
+
+    cdef double max_posterior = 0
+    cdef double data_support = 0
+    cdef double[3] tangent
+    cdef int tries
+    cdef int i
+
+    if stream_data[0] == 0:
+        initialize_ptt(params, stream_data, pmf_gen, point, direction, rng)
+        stream_data[0] = 1  # initialized
+
+    prepare_ptt_propagator(params, stream_data, params.step_size)
+
+    for i in range(3):
+        #  position
+        stream_data[19 + i] = (stream_data[10] * stream_data[1 + i]
+                               * params.inv_voxel_size[i]
+                               + stream_data[11] * stream_data[4 + i]
+                               * params.inv_voxel_size[i]
+                               + stream_data[12] * stream_data[7 + i]
+                               * params.inv_voxel_size[i]
+                               + stream_data[19 + i])
+        tangent[i] = (stream_data[13] * stream_data[1 + i]
+                      + stream_data[14] * stream_data[4 + i]
+                      + stream_data[15] * stream_data[7 + i])
+        stream_data[7 + i] = \
+            (stream_data[16] * stream_data[1 + i]
+            + stream_data[17] * stream_data[4 + i]
+            + stream_data[18] * stream_data[7 + i])
+    normalize(&tangent[0])
+    cross(&stream_data[4], &stream_data[7], &tangent[0])  # frame1, frame2
+    normalize(&stream_data[4])  # frame1
+    cross(&stream_data[7], &tangent[0], &stream_data[4])  # frame2, tangent, frame1
+    stream_data[1] = tangent[0]
+    stream_data[2] = tangent[1]
+    stream_data[3] = tangent[2]
+
+    for tries in range(params.ptt.rejection_sampling_nbr_sample):
+        # k1, k2
+        stream_data[24], stream_data[25] = \
+            random_point_within_circle(params.max_curvature, rng)
+        data_support = calculate_ptt_data_support(params, stream_data, pmf_gen)
+        if data_support > max_posterior:
+            max_posterior = data_support
+
+    # Compensation for underestimation of max posterior estimate
+    max_posterior = pow(2.0 * max_posterior, params.ptt.data_support_exponent)
+
+
+    for tries in range(params.ptt.rejection_sampling_max_try):
+        # k1, k2
+        stream_data[24], stream_data[25] = \
+            random_point_within_circle(params.max_curvature, rng)
+        if random_float(rng) * max_posterior < calculate_ptt_data_support(params, stream_data, pmf_gen):
+            stream_data[22] = stream_data[23] # last_val = last_val_cand
+            # Propagation is successful if a suitable candidate can be sampled
+            # within the trial limit
+            # update the point and return
+            copy_point(&stream_data[19], point)
+            return SUCCESS
+
+    return FAIL

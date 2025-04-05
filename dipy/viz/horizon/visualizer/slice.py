@@ -1,7 +1,8 @@
+import logging
+from pathlib import Path
 import warnings
 
 import numpy as np
-from scipy import stats
 
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
@@ -25,6 +26,7 @@ class SlicesVisualizer:
         world_coords=False,
         percentiles=(0, 100),
         rgb=False,
+        fname=None,
     ):
         self._interactor = interactor
         self._scene = scene
@@ -36,8 +38,11 @@ class SlicesVisualizer:
 
         self._slice_actors = [None] * 3
 
-        self._data_ndim = data.ndim
-        self._data_shape = data.shape
+        if len(self._data.shape) == 4 and self._data.shape[-1] == 1:
+            self._data = self._data[:, :, :, 0]
+
+        self._data_ndim = self._data.ndim
+        self._data_shape = self._data.shape
         self._rgb = False
         self._percentiles = percentiles
 
@@ -62,10 +67,16 @@ class SlicesVisualizer:
         self._vol_min = np.min(vol_data)
 
         self._resliced_vol = None
-
-        print(f"Original shape: {self._data_shape}")
+        np.set_printoptions(3, suppress=True)
+        fname = "" if fname is None else Path(fname).name
+        logging.info(f"-------------------{len(fname) * '-'}")
+        logging.info(f"Applying affine to {fname}")
+        logging.info(f"-------------------{len(fname) * '-'}")
+        logging.info(f"Affine Native to RAS matrix \n{affine}")
+        logging.info(f"Original shape: {self._data_shape}")
         self._create_and_resize_actors(vol_data, self._int_range)
-        print(f"Resized to RAS shape: {self._data_shape}")
+        logging.info(f"Resized to RAS shape: {self._data_shape} \n")
+        np.set_printoptions()
 
         self._sel_slices = np.rint(np.asarray(self._data_shape[:3]) / 2).astype(int)
 
@@ -172,19 +183,30 @@ class SlicesVisualizer:
         self._picked_voxel_actor = actor.dot(pnt, colors=(0.9, 0.4, 0.0), dot_size=10)
         self._scene.add(self._picked_voxel_actor)
 
-    def change_volume(self, prev_idx, next_idx, intensities, visible_slices):
-        vol_data = self._data[..., prev_idx]
-        # NOTE: Supported only in latests versions of scipy
-        # percs = stats.percentileofscore(np.ravel(vol_data), intensities)
-        perc_0 = stats.percentileofscore(np.ravel(vol_data), intensities[0])
-        perc_1 = stats.percentileofscore(np.ravel(vol_data), intensities[1])
+    def _adaptive_percentile(self, vol_data, intensity_ratios, idx):
+        value_range = np.percentile(np.ravel(vol_data), intensity_ratios * 100)
+        default_range = False
+
+        if np.sum(np.diff(value_range)) == 0:
+            warnings.warn(
+                f"The selected intensity range have no contrast for Volume N°{idx}."
+                "The selection of intensities will be ignored and changed to default.",
+                stacklevel=2,
+            )
+            value_range = np.asarray((np.min(vol_data), np.max(vol_data)))
+            default_range = True
+
+        return (value_range, default_range)
+
+    def change_volume(self, next_idx, intensity_ratios, visible_slices):
         vol_data = self._data[..., next_idx]
-        value_range = np.percentile(vol_data, [perc_0, perc_1])
-        if np.sum(np.diff(self._int_range)) == 0:
-            return False
+        value_range, default_range = self._adaptive_percentile(
+            vol_data, intensity_ratios, next_idx
+        )
+        if np.sum(np.diff(value_range)) == 0:
+            return False, default_range
 
         self._int_range = value_range
-
         self._vol_max = np.max(vol_data)
         self._vol_min = np.min(vol_data)
 
@@ -195,7 +217,7 @@ class SlicesVisualizer:
 
         self._add_slice_actors_to_scene(visible_slices)
 
-        return True
+        return True, default_range
 
     def register_picker_callback(self, callback):
         self._picker_callback = callback

@@ -18,6 +18,9 @@ from dipy.data.fetcher import (
     fetch_bundles_2_subjects,
     fetch_cenir_multib,
     fetch_cfin_multib,
+    fetch_deepn4_test,
+    fetch_deepn4_tf_weights,
+    fetch_deepn4_torch_weights,
     fetch_disco1_dataset,
     fetch_disco2_dataset,
     fetch_disco3_dataset,
@@ -27,6 +30,7 @@ from dipy.data.fetcher import (
     fetch_evac_torch_weights,
     fetch_gold_standard_io,
     fetch_hbn,
+    fetch_hcp,
     fetch_isbi2013_2shell,
     fetch_ivim,
     fetch_mni_template,
@@ -84,6 +88,9 @@ __all__ = [
     "fetch_bundles_2_subjects",
     "fetch_cenir_multib",
     "fetch_cfin_multib",
+    "fetch_deepn4_test",
+    "fetch_deepn4_tf_weights",
+    "fetch_deepn4_torch_weights",
     "fetch_disco1_dataset",
     "fetch_disco2_dataset",
     "fetch_disco3_dataset",
@@ -93,6 +100,7 @@ __all__ = [
     "fetch_evac_torch_weights",
     "fetch_gold_standard_io",
     "fetch_hbn",
+    "fetch_hcp",
     "fetch_isbi2013_2shell",
     "fetch_ivim",
     "fetch_mni_template",
@@ -439,7 +447,10 @@ def load_sdp_constraints(model_name, *, order=None):
     file = model_name + "_constraint"
     if order is not None:
         file += f"_{str(order)}"
+    if order is None:
+        file += "_SC"
     file += ".npz"
+
     path = pjoin(DATA_DIR, file)
 
     if not exists(path):

@@ -19,7 +19,7 @@ from dipy.utils.optpkg import optional_package
 fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
 
 if has_fury:
-    from fury import window
+    from fury import io, window
 
     from dipy.viz.horizon.app import horizon
 
@@ -215,15 +215,13 @@ def test_horizon_wrong_dtype_images():
     data = np.random.rand(197, 233, 189).astype(np.bool_)
     images = [(data, affine)]
     with TemporaryDirectory() as out_dir:
-        with warnings.catch_warnings(record=True) as l_warns:
-            horizon(
-                images=images,
-                interactive=False,
-                out_png=pjoin(out_dir, "wrong-dtype.png"),
-            )
-            check_for_warnings(
-                l_warns, "skipping image 1, passed image is not in numerical format"
-            )
+        horizon(
+            images=images,
+            interactive=False,
+            out_png=pjoin(out_dir, "wrong-dtype.png"),
+        )
+        # Asserting the image will not get added and the image will be black.
+        assert len(np.unique(io.load_image(pjoin(out_dir, "wrong-dtype.png")))) == 1
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")

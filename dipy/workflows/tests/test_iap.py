@@ -4,7 +4,11 @@ from tempfile import TemporaryDirectory
 
 import numpy.testing as npt
 
-from dipy.workflows.base import IntrospectiveArgumentParser, none_or_dtype
+from dipy.workflows.base import (
+    IntrospectiveArgumentParser,
+    add_default_args_to_docstring,
+    none_or_dtype,
+)
 from dipy.workflows.flow_runner import run_flow
 from dipy.workflows.tests.workflow_tests_utils import (
     DummyCombinedWorkflow,
@@ -221,3 +225,108 @@ def inputs_from_results(results, keys=None, optional=False):
         inputs.append(str(result))
 
     return inputs
+
+
+def test_add_default_args_to_docstring():
+    # --- Test 1: Adds default values correctly ---
+    def func1(a, b=10, c="hello"):
+        """Sample function."""
+        pass
+
+    npds1 = {"Parameters": [("a", "int", []), ("b", "int", []), ("c", "str", [])]}
+    add_default_args_to_docstring(npds1, func1)
+    assert npds1["Parameters"][1][2] == ["(default: 10)"]
+    assert npds1["Parameters"][2][2] == ["(default: hello)"]
+
+    # --- Test 2: Ignores non-default parameters ---
+    def func2(x, y):
+        """Function without defaults."""
+        pass
+
+    npds2 = {"Parameters": [("x", "int", []), ("y", "int", [])]}
+
+    add_default_args_to_docstring(npds2, func2)
+
+    assert npds2["Parameters"][0][2] == []
+    assert npds2["Parameters"][1][2] == []
+
+    # --- Test 3: Handles 'out_dir' special case ---
+    def func3(out_dir="."):
+        """Handles out_dir default properly."""
+        pass
+
+    npds3 = {"Parameters": [("out_dir", "str", [])]}
+
+    add_default_args_to_docstring(npds3, func3)
+
+    assert npds3["Parameters"][0][2] == ["(default:  current directory)"]
+
+    # --- Test 4: Handles empty docstring parameters ---
+    def func4(a=42):
+        """Function with an empty parameter list in docstring."""
+        pass
+
+    npds4 = {"Parameters": []}  # No parameters in docstring
+
+    add_default_args_to_docstring(npds4, func4)
+
+    assert npds4["Parameters"] == []  # Should remain unchanged
+
+    # --- Test 5: Missing parameter in docstring ---
+    def func5(a=42, b="test"):
+        """Function with some missing parameters in docstring."""
+        pass
+
+    npds5 = {
+        "Parameters": [
+            ("a", "int", [])  # 'b' is missing
+        ]
+    }
+
+    add_default_args_to_docstring(npds5, func5)
+
+    assert npds5["Parameters"][0][2] == ["(default: 42)"]  # Only 'a' updated
+    assert len(npds5["Parameters"]) == 1  # 'b' should not be added automatically
+
+    # --- Test 6: Handles multi-line parameter descriptions ---
+    def func6(alpha=0.5, beta=0.3):
+        """Function with multi-line parameter descriptions.
+
+        Parameters
+        ----------
+        alpha : float
+            Learning rate parameter.
+            This value controls step size.
+        beta : float
+            Another parameter with
+            multiple lines of description.
+        """
+        pass
+
+    npds6 = {
+        "Parameters": [
+            (
+                "alpha",
+                "float",
+                ["Learning rate parameter.", "This value controls step size."],
+            ),
+            (
+                "beta",
+                "float",
+                ["Another parameter with", "multiple lines of description."],
+            ),
+        ]
+    }
+
+    add_default_args_to_docstring(npds6, func6)
+
+    assert npds6["Parameters"][0][2] == [
+        "Learning rate parameter.",
+        "This value controls step size.",
+        "(default: 0.5)",
+    ]
+    assert npds6["Parameters"][1][2] == [
+        "Another parameter with",
+        "multiple lines of description.",
+        "(default: 0.3)",
+    ]

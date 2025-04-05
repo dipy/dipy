@@ -62,7 +62,7 @@ class SNRinCCFlow(Workflow):
             Threshold for bounding box, values separated with commas for ex.
             [0.6,1,0,0.1,0,0.1].
         out_dir : string, optional
-            Where the resulting file will be saved. (default current directory)
+            Where the resulting file will be saved.
         out_file : string, optional
             Name of the result file to be saved.
         out_mask_cc : string, optional
@@ -215,7 +215,7 @@ def buan_bundle_profiles(
     no_disks : integer, optional
         Number of disks used for dividing bundle into disks.
     out_dir : string, optional
-        Output directory. (default current directory)
+        Output directory.
 
     References
     ----------
@@ -333,20 +333,16 @@ class BundleAnalysisTractometryFlow(Workflow):
 
         Parameters
         ----------
-
         model_bundle_folder : string
             Path to the input model bundle files. This path may
             contain wildcards to process multiple inputs at once.
-
         subject_folder : string
             Path to the input subject folder. This path may contain
             wildcards to process multiple inputs at once.
-
         no_disks : integer, optional
             Number of disks used for dividing bundle into disks.
-
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
 
         References
         ----------
@@ -498,16 +494,13 @@ class LinearMixedModelsFlow(Workflow):
 
         Parameters
         ----------
-
         h5_files : string
             Path to the input metric files. This path may
             contain wildcards to process multiple inputs at once.
-
         no_disks : integer, optional
             Number of disks used for dividing bundle into disks.
-
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
 
         """
 
@@ -568,19 +561,15 @@ class BundleShapeAnalysis(Workflow):
 
         Parameters
         ----------
-
         subject_folder : string
             Path to the input subject folder. This path may contain
             wildcards to process multiple inputs at once.
-
         clust_thr : variable float, optional
             list of bundle clustering thresholds used in QuickBundlesX.
-
         threshold : float, optional
             Bundle shape similarity threshold.
-
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
 
         References
         ----------

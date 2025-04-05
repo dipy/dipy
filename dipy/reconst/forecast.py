@@ -189,7 +189,13 @@ class ForecastModel(OdfModel, Cache):
     @multi_voxel_fit
     def fit(self, data, **kwargs):
         data_b0 = data[self.b0s_mask].mean()
-        data_single_b0 = np.r_[data_b0, data[~self.b0s_mask]] / data_b0
+        data_single_b0 = np.r_[data_b0, data[~self.b0s_mask]]
+        data_single_b0 = np.divide(
+            data_single_b0,
+            data_b0,
+            out=np.zeros_like(data_single_b0),
+            where=data_b0 != 0,
+        )
 
         # calculates the mean signal at each b_values
         means = find_signal_means(

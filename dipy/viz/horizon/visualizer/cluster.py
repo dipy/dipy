@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 
 from dipy.segment.clustering import qbx_and_merge
@@ -84,11 +86,11 @@ class ClustersVisualizer:
         if self.__first_time:
             self.__tractogram_colors.append(colors)
 
-        print(f"\nClustering threshold {thr}")
+        logging.info(f"Clustering threshold {thr}")
         clusters = qbx_and_merge(streamlines, [40, 30, 25, 20, thr])
         self.__tractogram_clusters[tract_idx] = clusters
         centroids = clusters.centroids
-        print(f"Total number of centroids = {len(centroids)}")
+        logging.info(f"Total number of centroids = {len(centroids)}")
 
         lengths = [length(c) for c in centroids]
         self.__lengths.extend(lengths)
@@ -99,10 +101,10 @@ class ClustersVisualizer:
         sizes = np.array(sizes)
         linewidths = np.interp(sizes, [np.min(sizes), np.max(sizes)], [0.1, 2.0])
 
-        print(f"Minimum number of streamlines in cluster {np.min(sizes)}")
-        print(f"Maximum number of streamlines in cluster {np.max(sizes)}")
+        logging.info(f"Minimum number of streamlines in cluster {np.min(sizes)}")
+        logging.info(f"Maximum number of streamlines in cluster {np.max(sizes)}")
 
-        print("Building cluster actors\n")
+        logging.info("Building cluster actors\n")
         for idx, cent in enumerate(centroids):
             centroid_actor = actor.streamtube(
                 [cent], colors=colors, linewidth=linewidths[idx], lod=False

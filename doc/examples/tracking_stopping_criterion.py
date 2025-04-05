@@ -30,7 +30,6 @@ import numpy as np
 
 from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere, get_fnames
-from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -38,13 +37,13 @@ from dipy.io.streamline import save_trk
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.tracking import utils
-from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import (
     ActStoppingCriterion,
     BinaryStoppingCriterion,
     ThresholdStoppingCriterion,
 )
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tracker import deterministic_tracking
 from dipy.viz import actor, colormap, has_fury, window
 
 # Enables/disables interactive visualization
@@ -68,10 +67,6 @@ seeds = utils.seeds_from_mask(seed_mask, affine, density=2)
 response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 csd_fit = csd_model.fit(data, mask=white_matter)
-
-dg = DeterministicMaximumDirectionGetter.from_shcoeff(
-    csd_fit.shm_coeff, max_angle=30.0, sphere=default_sphere
-)
 
 ###############################################################################
 # Threshold Stopping Criterion
@@ -125,8 +120,15 @@ fig.savefig("threshold_fa.png")
 #
 # Thresholded fractional anisotropy map.
 
-streamline_generator = LocalTracking(
-    dg, threshold_criterion, seeds, affine, step_size=0.5, return_all=True
+streamline_generator = deterministic_tracking(
+    seeds,
+    threshold_criterion,
+    affine,
+    step_size=0.5,
+    return_all=True,
+    sh=csd_fit.shm_coeff,
+    max_angle=30.0,
+    sphere=default_sphere,
 )
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
@@ -193,8 +195,15 @@ fig.savefig("white_matter_mask.png")
 #
 # White matter binary mask.
 
-streamline_generator = LocalTracking(
-    dg, binary_criterion, seeds, affine, step_size=0.5, return_all=True
+streamline_generator = deterministic_tracking(
+    seeds,
+    binary_criterion,
+    affine,
+    step_size=0.5,
+    return_all=True,
+    sh=csd_fit.shm_coeff,
+    max_angle=30.0,
+    sphere=default_sphere,
 )
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
@@ -291,8 +300,15 @@ fig.savefig("act_maps.png")
 #
 # Include (left) and exclude (right) maps for ACT.
 
-streamline_generator = LocalTracking(
-    dg, act_criterion, seeds, affine, step_size=0.5, return_all=True
+streamline_generator = deterministic_tracking(
+    seeds,
+    act_criterion,
+    affine,
+    step_size=0.5,
+    return_all=True,
+    sh=csd_fit.shm_coeff,
+    max_angle=30.0,
+    sphere=default_sphere,
 )
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
@@ -313,8 +329,15 @@ if has_fury:
 # Corpus Callosum using deterministic tractography with ACT stopping
 #  criterion.
 
-streamline_generator = LocalTracking(
-    dg, act_criterion, seeds, affine, step_size=0.5, return_all=False
+streamline_generator = deterministic_tracking(
+    seeds,
+    act_criterion,
+    affine,
+    step_size=0.5,
+    return_all=False,
+    sh=csd_fit.shm_coeff,
+    max_angle=30.0,
+    sphere=default_sphere,
 )
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)

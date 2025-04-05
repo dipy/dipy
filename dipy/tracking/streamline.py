@@ -191,7 +191,7 @@ def select_random_set_of_streamlines(streamlines, select, *, rng=None):
         Number of streamlines to select. If there are less streamlines
         than ``select`` then ``select=len(streamlines)``.
 
-    rng : RandomState
+    rng : np.random.Generator
         Default None.
 
     Returns
@@ -204,7 +204,7 @@ def select_random_set_of_streamlines(streamlines, select, *, rng=None):
     """
     len_s = len(streamlines)
     if rng is None:
-        rng = np.random.RandomState()
+        rng = np.random.default_rng()
     index = rng.choice(len_s, min(select, len_s), replace=False)
     if isinstance(streamlines, Streamlines):
         return streamlines[index]

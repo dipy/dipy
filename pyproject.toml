@@ -3,7 +3,7 @@ name = "dipy"
 description = "Diffusion MRI Imaging in Python"
 license = {file = "LICENSE"}
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [{ name = "DIPY developers", email = "dipy@python.org" }]
 maintainers = [
     {name = "Eleftherios Garyfallidis", email="neuroimaging@python.org"},
@@ -23,9 +23,9 @@ classifiers = [
     'License :: OSI Approved :: BSD License',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3 :: Only',
     "Topic :: Software Development :: Libraries",
     'Topic :: Scientific/Engineering',
@@ -35,7 +35,7 @@ classifiers = [
     'Operating System :: Unix',
     'Operating System :: MacOS',
 ]
-version = "1.11.0.dev0"
+version = "1.12.0.dev0"
 dependencies = [
     "numpy>=1.22.4",
     "scipy>=1.8",
@@ -43,7 +43,7 @@ dependencies = [
     "h5py>=3.1.0",
     "packaging>=21",
     "tqdm>=4.30.0",
-    "trx-python>=0.2.9",
+    "trx-python>=0.3.0",
 ]
 
 [project.scripts]
@@ -54,6 +54,8 @@ dipy_buan_shapes = "dipy.workflows.cli:run"
 dipy_buan_profiles = "dipy.workflows.cli:run"
 dipy_buan_lmm = "dipy.workflows.cli:run"
 dipy_bundlewarp = "dipy.workflows.cli:run"
+dipy_classify_tissue = "dipy.workflows.cli:run"
+dipy_correct_biasfield = "dipy.workflows.cli:run"
 dipy_correct_motion = "dipy.workflows.cli:run"
 dipy_denoise_nlmeans = "dipy.workflows.cli:run"
 dipy_denoise_lpca = "dipy.workflows.cli:run"
@@ -64,14 +66,25 @@ dipy_fetch = "dipy.workflows.cli:run"
 dipy_fit_csa = "dipy.workflows.cli:run"
 dipy_fit_csd = "dipy.workflows.cli:run"
 dipy_fit_dki = "dipy.workflows.cli:run"
-dipy_fit_dti = "dipy.workflows.cli:run"
 dipy_fit_dsi = "dipy.workflows.cli:run"
+dipy_fit_dsid = "dipy.workflows.cli:run"
+dipy_fit_dti = "dipy.workflows.cli:run"
+dipy_fit_forecast = "dipy.workflows.cli:run"
+dipy_fit_gqi = "dipy.workflows.cli:run"
 dipy_fit_ivim = "dipy.workflows.cli:run"
 dipy_fit_mapmri = "dipy.workflows.cli:run"
+dipy_fit_opdt = "dipy.workflows.cli:run"
+dipy_fit_qball = "dipy.workflows.cli:run"
+dipy_fit_sdt = "dipy.workflows.cli:run"
+dipy_fit_sfm = "dipy.workflows.cli:run"
+dipy_math = "dipy.workflows.cli:run"
 dipy_mask = "dipy.workflows.cli:run"
 dipy_gibbs_ringing = "dipy.workflows.cli:run"
 dipy_horizon = "dipy.workflows.cli:run"
 dipy_info = "dipy.workflows.cli:run"
+dipy_extract_b0 = "dipy.workflows.cli:run"
+dipy_extract_shell = "dipy.workflows.cli:run"
+dipy_extract_volume = "dipy.workflows.cli:run"
 dipy_labelsbundles = "dipy.workflows.cli:run"
 dipy_median_otsu = "dipy.workflows.cli:run"
 dipy_recobundles = "dipy.workflows.cli:run"
@@ -85,16 +98,17 @@ dipy_slr = "dipy.workflows.cli:run"
 dipy_concatenate_tractograms = "dipy.workflows.cli:run"
 dipy_convert_tractogram = "dipy.workflows.cli:run"
 dipy_convert_tensors = "dipy.workflows.cli:run"
+dipy_convert_sh = "dipy.workflows.cli:run"
 dipy_nifti2pam = "dipy.workflows.cli:run"
 dipy_pam2nifti = "dipy.workflows.cli:run"
 dipy_tensor2pam = "dipy.workflows.cli:run"
 
 [project.optional-dependencies]
-all = ["dipy[dev,doc,style,test, viz, ml, extra]"]
+all = ["dipy[dev,doc,style,test, viz, ml, extra, benchmark]"]
 style = ["ruff", "pre-commit"]
 viz = ["fury>=0.10.0", "matplotlib"]
-test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
-ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow", "torch"]
+test = ["pytest", "coverage", "coveralls", "codecov"]
+ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow>=2.18.0", "torch"]
 dev = [
     # Also update [build-system] -> requires
     'meson-python>=0.13',
@@ -112,7 +126,8 @@ dev = [
 extra = ["dipy[viz, ml]",
          "cvxpy",
          "scikit-image",
-         "boto3"
+         "boto3",
+         "numexpr"
         ]
 
 doc = [
@@ -126,6 +141,11 @@ doc = [
     "tomli>=2.0.1",
     "grg-sphinx-theme>=0.4.0",
     "Jinja2"
+]
+benchmark = [
+    "asv",
+    "pyperf",
+    "virtualenv",
 ]
 
 
@@ -149,8 +169,8 @@ requires = [
     # Note that building against numpy 1.x works fine too - users and
     # redistributors can do this by installing the numpy version they like and
     # disabling build isolation.
-    "numpy>=2.0.0rc1; python_version>='3.9' and platform_python_implementation!='PyPy'",
-    "numpy; python_version>='3.9' and platform_python_implementation=='PyPy'",
+    "numpy>=2.0.0rc1; python_version>='3.10' and platform_python_implementation!='PyPy'",
+    "numpy; python_version>='3.10' and platform_python_implementation=='PyPy'",
 ]
 
 [tool.spin]

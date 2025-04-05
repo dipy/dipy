@@ -69,7 +69,7 @@ readme = """
 Reconstruction
 --------------
 
-Below, an overview of all reconstruction models available on DIPY.
+Below, an overview of all reconstruction models available in DIPY.
 
 .. note::
     Some reconstruction models do not have a tutorial yet
@@ -125,6 +125,8 @@ files = ["contextual_enhancement.py", "fiber_to_bundle_coherence.py"]
 readme = """
 Fiber Tracking
 --------------
+
+.. include:: ../../tractography_methods_list.rst
 
 """
 position = 13
@@ -197,6 +199,7 @@ files = [
     "segment_clustering_metrics.py",
     "segment_extending_clustering_framework.py",
     "segment_quickbundles.py",
+    "tissue_classification_dam.py",
     "tissue_classification.py",
     "brain_extraction_dwi.py",
     "fast_streamline_search.py",
@@ -220,7 +223,11 @@ Multiprocessing
 """
 position = 29
 enable = true
-files = ["reconst_csa_parallel.py", "reconst_csd_parallel.py"]
+files = [
+    "reconst_csa_parallel.py",
+    "reconst_csd_parallel.py",
+    "tracking_disco_phantom.py",
+]
 
 [file_formats]
 readme = """

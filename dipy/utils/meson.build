@@ -26,6 +26,7 @@ endforeach
 python_sources = [
   '__init__.py',
   'arrfuncs.py',
+  'compatibility.py',
   'convert.py',
   'deprecator.py',
   'multiproc.py',

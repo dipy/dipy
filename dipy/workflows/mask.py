@@ -25,7 +25,7 @@ class MaskFlow(Workflow):
         ub : float, optional
             Upper bound value.
         out_dir : string, optional
-           Output directory. (default current directory)
+           Output directory.
         out_mask : string, optional
            Name of the masked file.
         """

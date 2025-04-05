@@ -21,7 +21,7 @@ import os.path as op
 import matplotlib.pyplot as plt
 import numpy as np
 
-from dipy.data.fetcher import fetch_hbn, get_two_hcp842_bundles
+from dipy.data import fetch_hbn, get_two_hcp842_bundles
 from dipy.io.image import load_nifti
 from dipy.io.streamline import load_trk
 from dipy.segment.clustering import QuickBundles

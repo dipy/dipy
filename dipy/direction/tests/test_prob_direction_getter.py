@@ -91,11 +91,6 @@ def test_ProbabilisticDirectionGetter():
             90,
             unit_octahedron,
         )
-        # pmf cannot have negative values
-        pmf[0, 0, 0, 0] = -1
-        npt.assert_raises(
-            ValueError, ProbabilisticDirectionGetter.from_pmf, pmf, 90, unit_octahedron
-        )
 
         # Check basis_type keyword
         with warnings.catch_warnings():

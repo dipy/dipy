@@ -197,16 +197,28 @@ def test_local_fiber_tracking_workflow():
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
         assert_equal(lf_track_pam.get_short_name(), "track_local")
-        lf_track_pam.run(pam_path, gfa_path, seeds_path, out_dir=out_dir)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning,
+            )
+            lf_track_pam.run(pam_path, gfa_path, seeds_path, out_dir=out_dir)
         tractogram_path = lf_track_pam.last_generated_outputs["out_tractogram"]
         assert_false(is_tractogram_empty(tractogram_path))
 
         # Test tracking with binary stopping criterion
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
-        lf_track_pam.run(
-            pam_path, mask_path, seeds_path, use_binary_mask=True, out_dir=out_dir
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning,
+            )
+            lf_track_pam.run(
+                pam_path, mask_path, seeds_path, use_binary_mask=True, out_dir=out_dir
+            )
 
         tractogram_path = lf_track_pam.last_generated_outputs["out_tractogram"]
         assert_false(is_tractogram_empty(tractogram_path))

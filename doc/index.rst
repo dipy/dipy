@@ -90,24 +90,17 @@ Quick links
 Highlights
 **********
 
-**DIPY 1.10.0** is now available. New features include:
+**DIPY 1.11.0** is now available. New features include:
 
-- NF: Patch2Self3 - Large improvements of self-supervised denoising method added.
-- NF: Fiber density and spread from ODF using Bingham distributions method added.
-- NF: Iteratively reweighted least squares for robust fitting of diffusion models added.
-- NF: NDC - Neighboring DWI Correlation quality metric added.
-- NF: DAM - tissue classification method added.
-- NF: New Parallel Backends (Ray, joblib, Dask) for fitting reconstruction methods added.
-- RF: Deprecation of Tensorflow support. PyTorch support is now the default.
-- Transition to Keyword-only arguments (PEP 3102).
-- Zero-warnings policy (CIs, Compilation, doc generation) adopted.
-- Adoption of ruff for automatic style enforcement.
-- Transition to using f-strings.
-- Citation system updated. It is more uniform and robust.
-- Multiple Workflows updated.
-- Multiple DIPY Horizon features updated.
-- Large documentation update.
-- Closed 250 issues and merged 185 pull requests.
+- NF: Refactoring of the tracking API.
+- Deprecation of Tensorflow backend in favor of PyTorch.
+- Performance improvements of multiple functionalities.
+- DIPY Horizon improvements and minor features added.
+- Added support for Python 3.13.
+- Drop support for Python 3.9.
+- Multiple Workflows updated and added (15 workflows).
+- Documentation update.
+- Closed 73 issues and merged 47 pull requests.
 
 
 See :ref:`Older Highlights <old_highlights>`.
@@ -115,9 +108,9 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
+- :doc:`DIPY 1.11.0 <release_notes/release1.11>` released March 15, 2025.
 - :doc:`DIPY 1.10.0 <release_notes/release1.10>` released December 12, 2024.
 - :doc:`DIPY 1.9.0 <release_notes/release1.9>` released March 8, 2024.
-- :doc:`DIPY 1.8.0 <release_notes/release1.8>` released December 13, 2023.
 
 
 

@@ -4,6 +4,32 @@ import inspect
 from dipy.workflows.docstring_parser import NumpyDocString
 
 
+def add_default_args_to_docstring(npds, func):
+    """Add default arguments to the docstring of a function.
+
+    Parameters
+    ----------
+    npds : list
+        List of parameters from the docstring.
+    func : function
+        Function to inspect.
+    """
+    signature = inspect.signature(func)
+    defaults = {
+        param.name: param.default
+        for param in signature.parameters.values()
+        if param.default is not param.empty
+    }
+    if defaults.get("out_dir") in ["", " ", "."]:
+        defaults["out_dir"] = " current directory"
+
+    for i, param in enumerate(npds["Parameters"]):
+        if param[0] not in defaults:
+            continue
+        param[2].append(f"(default: {defaults[param[0]]})")
+        npds["Parameters"][i] = (param[0], param[1], param[2])
+
+
 def get_args_default(func):
     sig_object = inspect.signature(func)
     params = sig_object.parameters.values()
@@ -116,6 +142,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
         doc = inspect.getdoc(workflow.run)
         npds = NumpyDocString(doc)
+        add_default_args_to_docstring(npds, workflow.run)
         self.doc = npds["Parameters"]
         self.description = (
             f"{' '.join(npds['Summary'])}\n\n{' '.join(npds['Extended Summary'])}"

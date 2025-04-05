@@ -18,7 +18,7 @@ from dipy.testing.decorators import warning_for_keywords
 
 @warning_for_keywords()
 def save_tractogram(sft, filename, *, bbox_valid_check=True):
-    """Save the stateful tractogram in any format (trk/tck/vtk/vtp/fib/dpy)
+    """Save the stateful tractogram in any format (trx/trk/tck/vtk/vtp/fib/dpy)
 
     Parameters
     ----------
@@ -103,7 +103,7 @@ def load_tractogram(
     bbox_valid_check=True,
     trk_header_check=True,
 ):
-    """Load the stateful tractogram from any format (trk/tck/vtk/vtp/fib/dpy)
+    """Load the stateful tractogram from any format (trx/trk/tck/vtk/vtp/fib/dpy)
 
     Parameters
     ----------

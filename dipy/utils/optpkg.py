@@ -91,8 +91,10 @@ def optional_package(name, *, trip_msg=None, min_version=None):
             trip_msg = (
                 f"We need at least version {min_version} of "
                 f"package {name}, but ``import {name}`` "
-                f"found version {pkg.__version__}"
+                f"found version {current_version}."
             )
+            if current_version == "0.0.0":
+                trip_msg += "Your installation might be incomplete or corrupted."
 
     if trip_msg is None:
         trip_msg = (

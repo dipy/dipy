@@ -25,8 +25,10 @@ def test_check_md5():
 
 def test_make_fetcher():
     symmetric362 = SPHERE_FILES["symmetric362"]
+    symmetric642 = SPHERE_FILES["symmetric642"]
     with tempfile.TemporaryDirectory() as tmpdir:
         stored_md5 = fetcher._get_file_md5(symmetric362)
+        stored_md5_642 = fetcher._get_file_md5(symmetric642)
 
         # create local HTTP Server
         testfile_folder = op.split(symmetric362)[0] + os.sep
@@ -46,9 +48,10 @@ def test_make_fetcher():
             "sphere_fetcher",
             tmpdir,
             testfile_url,
-            [op.sep + op.split(symmetric362)[-1]],
-            ["sphere_name"],
-            md5_list=[stored_md5],
+            [op.sep + op.split(symmetric362)[-1], op.sep + op.split(symmetric642)[-1]],
+            ["sphere_name", "sphere_name2"],
+            md5_list=[stored_md5, stored_md5_642],
+            optional_fnames=["sphere_name2"],
         )
 
         try:
@@ -59,8 +62,24 @@ def test_make_fetcher():
             server.shutdown()
 
         assert op.isfile(op.join(tmpdir, "sphere_name"))
+        assert not op.isfile(op.join(tmpdir, "sphere_name2"))
         npt.assert_equal(
             fetcher._get_file_md5(op.join(tmpdir, "sphere_name")), stored_md5
+        )
+        try:
+            sphere_fetcher(include_optional=True)
+        except Exception as e:
+            print(e)
+            # stop local HTTP Server
+            server.shutdown()
+
+        assert op.isfile(op.join(tmpdir, "sphere_name"))
+        assert op.isfile(op.join(tmpdir, "sphere_name2"))
+        npt.assert_equal(
+            fetcher._get_file_md5(op.join(tmpdir, "sphere_name")), stored_md5
+        )
+        npt.assert_equal(
+            fetcher._get_file_md5(op.join(tmpdir, "sphere_name2")), stored_md5_642
         )
 
         # stop local HTTP Server

@@ -4,6 +4,25 @@
 Older Highlights
 ****************
 
+**DIPY 1.10.0** is now available. New features include:
+
+- NF: Patch2Self3 - Large improvements of self-supervised denoising method added.
+- NF: Fiber density and spread from ODF using Bingham distributions method added.
+- NF: Iteratively reweighted least squares for robust fitting of diffusion models added.
+- NF: NDC - Neighboring DWI Correlation quality metric added.
+- NF: DAM - DWI-based tissue classification method added.
+- NF: New Parallel Backends (Ray, joblib, Dask) for fitting reconstruction methods added.
+- RF: Deprecation of Tensorflow support. PyTorch support is now the default.
+- Transition to Keyword-only arguments (PEP 3102).
+- Zero-warnings policy (CIs, Compilation, doc generation) adopted.
+- Adoption of ruff for automatic style enforcement.
+- Transition to using f-strings.
+- Citation system updated. It is more uniform and robust.
+- Multiple Workflows updated.
+- Multiple DIPY Horizon features updated.
+- Large documentation update.
+- Closed 250 issues and merged 185 pull requests.
+
 **DIPY 1.9.0** is now available. New features include:
 
 - Numpy 2.0.0 support.
@@ -28,22 +47,6 @@ Older Highlights
 - Improved warnings for optional dependencies.
 - Large documentation update. New theme/design integration.
 - Closed 197 issues and merged 130 pull requests.
-
-**DIPY 1.7.0** is now available. New features include:
-
-- NF: BundleWarp - Streamline-based nonlinear registration method for bundles added.
-- NF: DKI+ - Diffusion Kurtosis modeling with advanced constraints added.
-- NF: Synb0 - Synthetic b0 creation added using deep learning added.
-- NF: New Parallel Transport Tractography (PTT) added.
-- NF: Fast Streamline Search algorithm added.
-- NF: New denoising methods based on 1D CNN added.
-- Handle Asymmetric Spherical Functions.
-- Large update of DIPY Horizon features.
-- Multiple Workflows updated
-- Large codebase cleaning.
-- Large documentation update. Integration of Sphinx-Gallery.
-- Closed 53 issues and merged 34 pull requests.
-
 
 **DIPY 1.7.0** is now available. New features include:
 

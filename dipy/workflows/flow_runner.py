@@ -19,7 +19,7 @@ def get_level(lvl):
         return logging.INFO
 
 
-def run_flow(flow):
+def run_flow(flow, *, extra_args=None):
     """Wraps the process of building an argparser that reflects the workflow
     that we want to run along with some generic parameters like logging,
     force and output strategies. The resulting parameters are then fed to
@@ -79,6 +79,11 @@ def run_flow(flow):
         default="",
         help="Log file to be saved.",
     )
+
+    # Add predefined arguments to the parser
+    if extra_args and isinstance(extra_args, dict):
+        for key, value in extra_args.items():
+            parser.add_argument(f"--{key}", **value)
 
     args = parser.get_flow_args()
 

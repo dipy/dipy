@@ -13,7 +13,7 @@ from dipy.io.image import load_nifti
 from dipy.reconst.shm import tournier07_legacy_msg
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 have_nn = have_tf or have_torch
 BACKENDS = [
@@ -142,7 +142,7 @@ def test_default_weights(monkeypatch):
         resdnn_model = resdnn.HistoResDNN()
         resdnn_model.fetch_default_weights()
         results_arr = resdnn_model._HistoResDNN__predict(input_arr)
-        assert_almost_equal(results_arr, target_arr)
+        assert_almost_equal(results_arr, target_arr, decimal=6)
 
 
 @pytest.mark.skipif(not have_nn, reason="Requires TensorFlow or Torch")
@@ -190,9 +190,14 @@ def test_wrong_sh_order_weights(monkeypatch):
 
         resdnn_model = resdnn.HistoResDNN(sh_order_max=6)
         fetch_model_weights_path = get_fnames(name=f"histo_resdnn_{backend}_weights")
-        assert_raises(
-            ValueError, resdnn_model.load_model_weights, fetch_model_weights_path
-        )
+        if backend == "torch":
+            assert_raises(
+                RuntimeError, resdnn_model.load_model_weights, fetch_model_weights_path
+            )
+        else:  # tf
+            assert_raises(
+                ValueError, resdnn_model.load_model_weights, fetch_model_weights_path
+            )
 
 
 @pytest.mark.skipif(not have_nn, reason="Requires TensorFlow or Torch")

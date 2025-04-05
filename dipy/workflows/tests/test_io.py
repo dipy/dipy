@@ -3,11 +3,13 @@ from inspect import getmembers, isfunction
 import logging
 import os
 from os.path import join as pjoin
+import shutil
 import sys
 from tempfile import TemporaryDirectory, mkstemp
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 import dipy.core.gradients as grad
 from dipy.data import default_sphere, get_fnames
@@ -20,18 +22,26 @@ from dipy.io.utils import nifti1_symmat
 from dipy.reconst import dti, utils as reconst_utils
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.testing import assert_true
+from dipy.utils.optpkg import optional_package
+from dipy.utils.tripwire import TripWireError
 from dipy.workflows.io import (
     ConcatenateTractogramFlow,
     ConvertSHFlow,
     ConvertTensorsFlow,
     ConvertTractogramFlow,
+    ExtractB0Flow,
+    ExtractShellFlow,
+    ExtractVolumeFlow,
     FetchFlow,
     IoInfoFlow,
+    MathFlow,
     NiftisToPamFlow,
     PamToNiftisFlow,
     SplitFlow,
     TensorToPamFlow,
 )
+
+ne, have_ne, _ = optional_package("numexpr")
 
 fname_log = mkstemp()[1]
 
@@ -98,7 +108,7 @@ def test_io_fetch_fetcher_datanames():
     else:
         fetcher_module = importlib.import_module(module_path)
 
-    ignored_fetchers = ["fetch_hbn", "fetch_hcp", "fetch_data"]
+    ignored_fetchers = ["fetch_data"]
     fetcher_list = {
         name.replace("fetch_", ""): func
         for name, func in getmembers(fetcher_module, isfunction)
@@ -342,3 +352,140 @@ def test_pam_to_niftis_flow():
         assert_true(os.path.isfile(flow.last_generated_outputs["out_shm"]))
         assert_true(os.path.isfile(flow.last_generated_outputs["out_gfa"]))
         assert_true(os.path.isfile(flow.last_generated_outputs["out_sphere"]))
+
+
+def test_math():
+    with TemporaryDirectory() as out_dir:
+        data_path, _, _ = get_fnames(name="small_101D")
+        data_path_a = pjoin(out_dir, "data_a.nii.gz")
+        data_path_b = pjoin(out_dir, "data_b.nii.gz")
+        shutil.copy(data_path, data_path_a)
+        shutil.copy(data_path, data_path_b)
+
+        data, _ = load_nifti(data_path)
+        operations = ["vol1*3", "vol1+vol2+vol3", "5*vol1-vol2-vol3", "vol3*2 + vol2"]
+        kwargs = [{"dtype": "i"}, {"dtype": "float32"}, {}, {}]
+
+        if have_ne:
+            for op, kwarg in zip(operations, kwargs):
+                math_flow = MathFlow()
+                math_flow.run(
+                    op, [data_path_a, data_path_b, data_path], out_dir=out_dir, **kwarg
+                )
+                out_path = pjoin(out_dir, "math_out.nii.gz")
+                out_data, _ = load_nifti(out_path)
+                npt.assert_array_equal(out_data, data * 3)
+                if kwarg:
+                    npt.assert_equal(out_data.dtype, np.dtype(kwarg["dtype"]))
+
+        else:
+            math_flow = MathFlow()
+            npt.assert_raises(TripWireError, math_flow.run, "vol1*3", [data_path_a])
+
+
+@pytest.mark.skipif(not have_ne, reason="numexpr not installed")
+def test_math_error():
+    with TemporaryDirectory() as out_dir:
+        data_path, _, _ = get_fnames(name="small_101D")
+        data_path_2, _, _ = get_fnames(name="small_64D")
+        data_path_a = pjoin(out_dir, "data_a.nii.gz")
+        data_path_b = pjoin(out_dir, "data_b.gz")
+        data_path_c = pjoin(out_dir, "data_c.nii")
+        shutil.copy(data_path, data_path_a)
+        shutil.copy(data_path, data_path_b)
+
+        math_flow = MathFlow()
+        npt.assert_raises(
+            SyntaxError, math_flow.run, "vol1*", [data_path_a], out_dir=out_dir
+        )
+        npt.assert_raises(
+            SystemExit,
+            math_flow.run,
+            "vol1*2",
+            [data_path_a],
+            dtype="k",
+            out_dir=out_dir,
+        )
+        npt.assert_raises(
+            SystemExit, math_flow.run, "vol1*2", [data_path_b], out_dir=out_dir
+        )
+        npt.assert_raises(
+            SystemExit, math_flow.run, "vol1*2", [data_path_c], out_dir=out_dir
+        )
+        npt.assert_raises(
+            SystemExit, math_flow.run, "vol1*vol3", [data_path_a], out_dir=out_dir
+        )
+        npt.assert_raises(
+            SystemExit,
+            math_flow.run,
+            "vol1*vol2",
+            [data_path, data_path_2],
+            out_dir=out_dir,
+        )
+
+
+def test_extract_b0_flow():
+    with TemporaryDirectory() as out_dir:
+        fdata, fbval, fbvec = get_fnames(name="small_25")
+        data, affine = load_nifti(fdata)
+        b0_data = data[..., 0]
+        b0_path = pjoin(out_dir, "b0_expected.nii.gz")
+        save_nifti(b0_path, b0_data, affine)
+
+        extract_b0_flow = ExtractB0Flow()
+        extract_b0_flow.run(fdata, fbval, out_dir=out_dir, strategy="first")
+        npt.assert_equal(
+            extract_b0_flow.last_generated_outputs["out_b0"],
+            pjoin(out_dir, "b0.nii.gz"),
+        )
+        res, _ = load_nifti(extract_b0_flow.last_generated_outputs["out_b0"])
+        npt.assert_array_equal(res, b0_data)
+
+
+def test_extract_shell_flow():
+    with TemporaryDirectory() as out_dir:
+        fdata, fbval, fbvec = get_fnames(name="small_25")
+        data, affine = load_nifti(fdata)
+
+        extract_shell_flow = ExtractShellFlow()
+        extract_shell_flow.run(
+            fdata, fbval, fbvec, bvals_to_extract="2000", out_dir=out_dir
+        )
+        res, _ = load_nifti(pjoin(out_dir, "shell_2000.nii.gz"))
+        npt.assert_array_equal(res, data[..., 1:])
+
+        extract_shell_flow._force_overwrite = True
+        extract_shell_flow.run(
+            fdata,
+            fbval,
+            fbvec,
+            bvals_to_extract="0, 2000",
+            group_shells=False,
+            out_dir=out_dir,
+        )
+        npt.assert_equal(os.path.isfile(pjoin(out_dir, "shell_0.nii.gz")), True)
+        npt.assert_equal(os.path.isfile(pjoin(out_dir, "shell_2000.nii.gz")), True)
+        res0, _ = load_nifti(pjoin(out_dir, "shell_0.nii.gz"))
+        res2000, _ = load_nifti(pjoin(out_dir, "shell_2000.nii.gz"))
+        npt.assert_array_equal(np.squeeze(res0), data[..., 0])
+        npt.assert_array_equal(res2000[..., 9], data[..., 10])
+
+
+def test_extract_volume_flow():
+    with TemporaryDirectory() as out_dir:
+        fdata, _, _ = get_fnames(name="small_25")
+        data, affine = load_nifti(fdata)
+
+        extract_volume_flow = ExtractVolumeFlow()
+        extract_volume_flow.run(fdata, vol_idx="0-3,5", out_dir=out_dir)
+        res, _ = load_nifti(extract_volume_flow.last_generated_outputs["out_vol"])
+        npt.assert_equal(res.shape[-1], 5)
+
+        extract_volume_flow._force_overwrite = True
+        extract_volume_flow.run(fdata, vol_idx="0-3,5", grouped=False, out_dir=out_dir)
+        npt.assert_equal(os.path.isfile(pjoin(out_dir, "volume_2.nii.gz")), True)
+        npt.assert_equal(os.path.isfile(pjoin(out_dir, "volume_5.nii.gz")), True)
+        res2, _ = load_nifti(pjoin(out_dir, "volume_2.nii.gz"))
+        res5, _ = load_nifti(pjoin(out_dir, "volume_5.nii.gz"))
+        npt.assert_array_equal(res2, data[..., 2])
+        npt.assert_array_equal(res5, data[..., 5])

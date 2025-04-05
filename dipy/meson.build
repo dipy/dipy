@@ -283,6 +283,7 @@ endif
 _cython_tree = [
   fs.copyfile('__init__.py'),
   fs.copyfile('../src/conditional_omp.h'),
+  fs.copyfile('../src/ctime.pxd'),
   fs.copyfile('../src/cythonutils.h'),
   fs.copyfile('../src/dpy_math.h'),
   fs.copyfile('../src/safe_openmp.pxd'),
@@ -325,7 +326,8 @@ endif
 # ------------------------------------------------------------------------
 python_sources = [
   '__init__.py',
-  'conftest.py'
+  'conftest.py',
+  'py.typed'
 ]
 
 py3.install_sources(

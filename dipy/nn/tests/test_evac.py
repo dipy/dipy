@@ -9,7 +9,7 @@ import pytest
 from dipy.data import get_fnames
 from dipy.utils.optpkg import optional_package
 
-tf, have_tf, _ = optional_package("tensorflow", min_version="2.0.0")
+tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 have_nn = have_tf or have_torch
 BACKENDS = [
@@ -51,7 +51,6 @@ def test_default_weights_batch(monkeypatch):
         with warnings.catch_warnings():
             msg = ".*uses TensorFlow.*install PyTorch.*"
             warnings.filterwarnings("ignore", message=msg, category=DeprecationWarning)
-            importlib.reload(sys.modules["dipy.nn"])
             dipy_nn = importlib.reload(sys.modules["dipy.nn"])
             evac = dipy_nn.evac
 
@@ -72,7 +71,6 @@ def test_T1_error(monkeypatch):
         with warnings.catch_warnings():
             msg = ".*uses TensorFlow.*install PyTorch.*"
             warnings.filterwarnings("ignore", message=msg, category=DeprecationWarning)
-            importlib.reload(sys.modules["dipy.nn"])
             dipy_nn = importlib.reload(sys.modules["dipy.nn"])
             evac = dipy_nn.evac
 

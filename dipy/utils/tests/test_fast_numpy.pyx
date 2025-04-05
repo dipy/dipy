@@ -1,11 +1,20 @@
 import timeit
 
+cimport numpy as cnp
 import numpy as np
 from numpy.testing import (assert_, assert_almost_equal, assert_raises,
                             assert_array_equal)
-from dipy.utils.fast_numpy import random, seed, random_point_within_circle
-from dipy.utils.fast_numpy cimport (norm, normalize, dot, cross, random_vector,
-                                    random_perpendicular_vector)
+from dipy.utils.fast_numpy import random, seed
+from dipy.utils.fast_numpy cimport (
+    cross,
+    dot,
+    norm,
+    normalize,
+    random_vector,
+    random_perpendicular_vector, take,
+    random_point_within_circle,
+    take,
+)
 
 
 def test_norm():
@@ -101,7 +110,6 @@ def test_random_perpendicular_vector():
         assert_almost_equal(np.dot(vec, test), 0)
 
 
-
 def test_random():
     # Test that random numbers are between 0 and 1 and that the mean is 0.5.
     for _ in range(10):
@@ -125,3 +133,13 @@ def test_random_point_within_circle():
     for r in np.arange(0, 5, 0.2):
         pts = random_point_within_circle(r)
         assert_(np.linalg.norm(pts) <= r)
+
+
+def test_take():
+    # Test that the take function is equal to numpy.take
+    cdef int n_indices = 5
+    cdef double[:] odf = np.random.random(10)
+    cdef cnp.npy_intp[:] indices = np.random.randint(0, 10, n_indices, dtype=np.intp)
+    cdef double[:] values_out = np.zeros(n_indices, dtype=float)
+    take(&odf[0], &indices[0], n_indices, &values_out[0])
+    assert_array_equal(values_out, np.take(odf, indices))
