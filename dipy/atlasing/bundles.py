@@ -599,7 +599,7 @@ def compute_atlas_bundle(
                 static = Streamlines(static)
                 aligned = Streamlines(aligned)
 
-                # Randomly skip steps if speciffied to get sharper results
+                # Randomly skip steps if specified to get sharper results
                 if skip_pairs and np.random.choice([True, False], 1)[0]:
                     combined = combine_bundles(
                         static,
