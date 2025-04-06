@@ -171,17 +171,22 @@ show_bundles(
 #
 # The smoothness of the atlasing procedure can be controlled by the following
 # parameters:
-#  * ``d_max``: it is the maximum distance between streamlines to be averaged.
+#
+#  - ``d_max``: it is the maximum distance between streamlines to be averaged.
 #    Smaller values result in less smooth atlases that preserve more sharp features.
-#  * ``skip_pairs``: if True, the combination of random bundle pairs is skipped thus
+#
+#  - ``skip_pairs``: if True, the combination of random bundle pairs is skipped thus
 #    reducing the amount of averaging and resulting in sharper atlases.
 #
 # The speed of the atlasing procedure can be controlled by the following parameters:
-#  * ``n_stream_max``: Maximum number of streamlines per bundle. Bundles with more than
+#
+#  - ``n_stream_max``: Maximum number of streamlines per bundle. Bundles with more than
 #    ``n_stream_max`` streamlines are downsampled to ``n_stream_max`` by randomly
 #    selecting streamlines.
-#  * ``n_point``: number of points per streamline.
-#  * ``qbx_thr``: threshold used by Quickbundles clustering before registration.
+#
+#  - ``n_point``: number of points per streamline.
+#
+#  - ``qbx_thr``: threshold used by Quickbundles clustering before registration.
 #
 # Setting ``merge_out=True`` will merge the output atlases into a single bundle that
 # will be returned as the second output argument.
