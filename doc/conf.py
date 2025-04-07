@@ -170,7 +170,11 @@ html_theme_options = {
     },
     "check_switcher": False,
     "show_version_warning_banner": True,
-    "navbar_end": ["search-field.html", "version-switcher", "navbar-icon-links.html"],
+    "navbar_end": [
+        "search-button-field.html",
+        "version-switcher",
+        "navbar-icon-links.html",
+    ],
     "secondary_sidebar_items": ["page-toc"],
     "show_toc_level": 1,
     "navbar_center": ["components/navbar-links.html"],
