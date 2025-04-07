@@ -1256,6 +1256,8 @@ class MathFlow(Workflow):
                 logging.error(msg)
                 raise SystemExit() from e
 
+        if res.dtype == bool:
+            res = res.astype(np.uint8)
         out_fname = os.path.join(out_dir, out_file)
         logging.info(f"Saving result to {out_fname}")
         save_nifti(out_fname, res, affine)
