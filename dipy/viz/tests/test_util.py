@@ -8,6 +8,7 @@ from dipy.viz.horizon.util import (
     check_img_shapes,
     check_peak_size,
     show_ellipsis,
+    unpack_pams,
     unpack_surface,
 )
 
@@ -171,3 +172,34 @@ def test_check_peak_size(rng):
             [(pam, None), (pam1, None)], ref_img_shape=(100, 100, 100), sync_imgs=False
         ),
     )
+
+
+@set_random_number_generator()
+def test_unpack_pams(rng):
+    # Test with a non-tuple object (single data array)
+    pam_data = rng.random((10, 10))
+    result = unpack_pams(pam_data)
+    npt.assert_equal(len(result), 2)
+    npt.assert_equal(result[0], pam_data)
+    npt.assert_equal(result[1], None)
+
+    # Test with a tuple of length 1
+    pam_tuple_1 = (pam_data,)
+    result = unpack_pams(pam_tuple_1)
+    npt.assert_equal(len(result), 2)
+    npt.assert_equal(result[0], pam_data)
+    npt.assert_equal(result[1], None)
+
+    # Test with a complete tuple of length 2
+    filename = "test_file.pam"
+    pam_tuple_2 = (pam_data, filename)
+    result = unpack_pams(pam_tuple_2)
+    npt.assert_equal(len(result), 2)
+    npt.assert_equal(result[0], pam_data)
+    npt.assert_equal(result[1], filename)
+
+    # Test with a tuple of length greater than 2
+    pam_tuple_3 = (pam_data, filename, "extra_item")
+    result = unpack_pams(pam_tuple_3)
+    npt.assert_equal(result, pam_tuple_3)
+    npt.assert_equal(len(result), 3)
