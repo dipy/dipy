@@ -210,4 +210,7 @@ filterwarnings = [
     "ignore:Implementing implicit namespace packages.*:DeprecationWarning",
     "ignore:Deprecated call to `pkg_resources.*:DeprecationWarning",
     "ignore:pkg_resources is deprecated as an API.*:DeprecationWarning",
+    # CVXPY. see #2770 in the CVXPY repo
+    "ignore:\"polish\" is deprecated. Please use \"polishing\".*:DeprecationWarning",
+    "ignore:The default value of raise_error will change.*:PendingDeprecationWarning",
 ]
