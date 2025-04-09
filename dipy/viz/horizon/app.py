@@ -24,8 +24,7 @@ from dipy.viz.horizon.util import (
     check_img_dtype,
     check_img_shapes,
     check_peak_size,
-    unpack_image,
-    unpack_pams,
+    unpack_data,
     unpack_surface,
 )
 from dipy.viz.horizon.visualizer import (
@@ -558,7 +557,7 @@ class Horizon:
             sync_slices, sync_vol = check_img_shapes(self.images)
             for img in self.images:
                 title = f"Image {img_count + 1}"
-                data, affine, fname = unpack_image(img)
+                data, affine, fname = unpack_data(img, return_size=3)
                 self.vox2ras = affine
                 if self.__roi_images:
                     if "rois" in self.random_colors:
@@ -595,7 +594,7 @@ class Horizon:
         if len(self.pams) > 0:
             for idx, f_pam in enumerate(self.pams):
                 title = f"Peaks {idx + 1}"
-                pam, fname = unpack_pams(f_pam)
+                pam, fname = unpack_data(f_pam, return_size=2)
                 peak_viz = PeaksVisualizer(
                     (pam.peak_dirs, pam.affine), self.world_coords, fname
                 )

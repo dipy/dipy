@@ -115,6 +115,15 @@ jobs:
         brew install llvm
         brew install libomp
         echo "CC=clang" >> $GITHUB_ENV
+    - name: Restore cached data
+      uses: actions/cache@v4
+      with:
+        path: ~/.dipy
+        key: dipy-${{ hashFiles('**/dipy/data/*') }}
+        restore-keys: |
+          ${{ runner.os }}-dipy-
+          dipy-${{ hashFiles('**/dipy/data/*') }}
+          dipy-${{ hashFiles('**/dipy/data/*') }}-
     - name: Install DIPY
       run: |
         if [ "${{ inputs.use-pre }}" == "true" ]; then

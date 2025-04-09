@@ -263,7 +263,6 @@ class PeaksTab(HorizonTab):
                 visibility[2],
             )
 
-    @warning_for_keywords()
     def _update_slice_visibility(self, checkboxes, selected_slice, *, visibility=None):
         if checkboxes is not None and "" in checkboxes.checked_labels:
             visibility = True

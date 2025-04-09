@@ -11,7 +11,7 @@ from dipy.viz.horizon.tab.peak import PeaksTab
 from dipy.viz.horizon.visualizer.peak import PeaksVisualizer
 
 fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
-skip_it = use_xvfb == "skip"
+skip_it = use_xvfb == "skip" or not has_fury
 
 
 @pytest.fixture
@@ -48,7 +48,7 @@ def slider():
     return MockSlider()
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_init_params(peak_actor):
     """Test initialization of PeaksTab."""
     tab = PeaksTab(peak_actor, "Peaks 1", "mock_peaks")
@@ -58,7 +58,7 @@ def test_init_params(peak_actor):
     assert tab._file_name == "mock_peaks"
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_init_no_file_name(peak_actor):
     """Test initialization of PeaksTab without file name."""
     tab = PeaksTab(peak_actor, "Peaks 1", None)
@@ -68,7 +68,7 @@ def test_init_no_file_name(peak_actor):
     assert tab._file_name == "Peaks 1"
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_init_ui_element_creation(peak_actor):
     """Test UI element creation in PeaksTab."""
     tab = PeaksTab(peak_actor, "Peaks 1", "mock_peaks")
@@ -95,7 +95,7 @@ def test_init_ui_element_creation(peak_actor):
     assert tab._file_name_label is not None
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_update_ui_elements_position(peak_actor):
     """Test updating UI elements position in PeaksTab."""
     tab = PeaksTab(peak_actor, "Peaks 1", "mock_peaks")
@@ -139,7 +139,7 @@ def test_update_ui_elements_position(peak_actor):
     assert tab._file_name_label.position == (x_pos, 0.28)
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_update_slices(peak_actor):
     """Test updating slices in PeaksTab when synced."""
     tab = PeaksTab(peak_actor, "Peaks 1", "mock_peaks")
@@ -152,7 +152,7 @@ def test_update_slices(peak_actor):
     assert tab._slice_z.obj.value == 2
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_on_tab_selected(peak_actor):
     """Test on_tab_selected method in PeaksTab."""
     tab = PeaksTab(peak_actor, "Peaks 1", "mock_peaks")
@@ -171,7 +171,7 @@ def test_on_tab_selected(peak_actor):
         mock_show_range.assert_called_once()
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_change_opcity(peak_actor, slider):
     """Test change_opacity method in PeaksTab."""
     tab = PeaksTab(peak_actor, "Peaks 1", "mock_peaks")
@@ -182,7 +182,7 @@ def test_change_opcity(peak_actor, slider):
     assert tab._actor.global_opacity == 0.5
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_change_range(peak_actor, slider):
     """Test change_range method in PeaksTab."""
     tab = PeaksTab(peak_actor, "Peaks 1", "mock_peaks")
@@ -197,7 +197,7 @@ def test_change_range(peak_actor, slider):
     assert selected_range.selected_value == (10, 90)
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_change_slice(peak_actor, slider):
     """Test change_slice method in PeaksTab."""
     tab = PeaksTab(peak_actor, "Peaks 1", "mock_peaks")
@@ -218,7 +218,7 @@ def test_change_slice(peak_actor, slider):
         assert selected_slice.selected_value == 10
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_update_slice_visibility(peak_actor, slider):
     """Test update_slice_visibility method in PeaksTab."""
     tab = PeaksTab(peak_actor, "Peaks 1", "mock_peaks")
