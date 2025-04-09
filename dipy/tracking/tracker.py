@@ -516,9 +516,9 @@ def closestpeak_tracking(
     sf : ndarray, optional
         Spherical Function (SF).
     min_len : int, optional
-        Minimum length (nb points) of the streamlines.
+        Minimum length (mm) of the streamlines.
     max_len : int, optional
-        Maximum length (nb points) of the streamlines.
+        Maximum length (mm) of the streamlines.
     step_size : float, optional
         Step size of the tracking.
     voxel_size : ndarray, optional
@@ -575,6 +575,10 @@ def closestpeak_tracking(
         )
     else:
         raise ValueError("SH or SF should be defined. Not implemented yet for peaks.")
+
+    # convert length in mm to number of points
+    min_len = int(min_len / step_size)
+    max_len = int(max_len / step_size)
 
     return LocalTracking(
         dg,
@@ -638,9 +642,9 @@ def bootstrap_tracking(
     sf : ndarray, optional
         Spherical Function (SF).
     min_len : int, optional
-        Minimum length (nb points) of the streamlines.
+        Minimum length (mm) of the streamlines.
     max_len : int, optional
-        Maximum length (nb points) of the streamlines.
+        Maximum length (mm) of the streamlines.
     step_size : float, optional
         Step size of the tracking.
     voxel_size : ndarray, optional
@@ -689,6 +693,11 @@ def bootstrap_tracking(
         model,
         max_angle=max_angle,
     )
+
+    # convert length in mm to number of points
+    min_len = int(min_len / step_size)
+    max_len = int(max_len / step_size)
+
     return LocalTracking(
         dg,
         sc,
@@ -748,9 +757,9 @@ def eudx_tracking(
     pam : PeakAndMetrics, optional
         Peaks and Metrics object
     min_len : int, optional
-        Minimum length (nb points) of the streamlines.
+        Minimum length (mm) of the streamlines.
     max_len : int, optional
-        Maximum length (nb points) of the streamlines.
+        Maximum length (mm) of the streamlines.
     step_size : float, optional
         Step size of the tracking.
     voxel_size : ndarray, optional
@@ -793,6 +802,10 @@ def eudx_tracking(
     sphere = sphere if sphere is not None else default_sphere
     if pam is None:
         raise ValueError("PAM should be defined.")
+
+    # convert length in mm to number of points
+    min_len = int(min_len / step_size)
+    max_len = int(max_len / step_size)
 
     return LocalTracking(
         pam,
@@ -863,9 +876,9 @@ def pft_tracking(
     max_cross : int, optional
         Maximum number of crossing fibers.
     min_len : int, optional
-        Minimum length (nb points) of the streamlines.
+        Minimum length (mm) of the streamlines.
     max_len : int, optional
-        Maximum length (nb points) of the streamlines.
+        Maximum length (mm) of the streamlines.
     step_size : float, optional
         Step size of the tracking.
     voxel_size : ndarray, optional
@@ -941,6 +954,10 @@ def pft_tracking(
     else:
         msg = "SH, SF or PAM should be defined. Not implemented yet for peaks."
         raise ValueError(msg)
+
+    # convert length in mm to number of points
+    min_len = int(min_len / step_size)
+    max_len = int(max_len / step_size)
 
     return ParticleFilteringTracking(
         dg,
