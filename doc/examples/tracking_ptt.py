@@ -74,7 +74,7 @@ if has_fury:
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Corpus Callosum using ptt direction getter from PMF
+# Corpus Callosum using ptt direction tracker from PMF
 #
 #
 #

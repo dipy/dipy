@@ -1,12 +1,12 @@
 """
 ====================================================
-Bootstrap and Closest Peak Direction Getters Example
+Bootstrap and Closest Peak Tracker Example
 ====================================================
 
-This example shows how choices in direction-getter impact fiber
-tracking results by demonstrating the bootstrap direction getter (a type of
+This example shows how choices in tracker impact fiber
+tracking results by demonstrating the bootstrap tracker (a type of
 probabilistic tracking, as described in :footcite:p:`Berman2008` and the closest
-peak direction getter (a type of deterministic tracking)
+peak tracker (a type of deterministic tracking)
 :footcite:p:`Amirbekian2016`.
 
 This example is an extension of the
@@ -61,10 +61,10 @@ gfa = csa_model.fit(data, mask=white_matter).gfa
 stopping_criterion = ThresholdStoppingCriterion(gfa, 0.25)
 
 ###############################################################################
-# Next, we need to set up our two direction getters
+# Next, we need to set up our two trackers
 #
 #
-# Example #1: Bootstrap direction getter with CSD Model
+# Example #1: Bootstrap tracker with CSD Model
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 boot_streamline_generator = bootstrap_tracking(
     seeds,
@@ -90,7 +90,7 @@ if has_fury:
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Corpus Callosum Bootstrap Probabilistic Direction Getter
+# Corpus Callosum Bootstrap Probabilistic Tracker
 #
 #
 # We have created a bootstrapped probabilistic set of streamlines. If you
@@ -99,7 +99,7 @@ if has_fury:
 #
 #
 #
-# Example #2: Closest peak direction getter with CSD Model
+# Example #2: Closest peak tracker with CSD Model
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 pmf = csd_fit.odf(small_sphere).clip(min=0)
@@ -128,10 +128,10 @@ if has_fury:
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Corpus Callosum Closest Peak Deterministic Direction Getter
+# Corpus Callosum Closest Peak Tracker
 #
 #
-# We have created a set of streamlines using the closest peak direction getter,
+# We have created a set of streamlines using the closest peak tracker,
 # which is a type of deterministic tracking. If you repeat the fiber tracking
 # (keeping all inputs the same) you will get exactly the same set of
 # streamlines.
