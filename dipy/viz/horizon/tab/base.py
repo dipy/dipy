@@ -76,6 +76,11 @@ class HorizonTab(ABC):
         if hasattr(self, "_actor_toggle"):
             self._toggle_actors(self._actor_toggle.obj)
 
+    def on_slice_change(self, _x_value, _y_value, _z_value):  # noqa: B027
+        """Assign in TabManager if require to update something while the slice
+        changes."""
+        pass
+
     @property
     @abstractmethod
     def name(self):
@@ -84,7 +89,7 @@ class HorizonTab(ABC):
     @property
     @abstractmethod
     def actors(self):
-        """Name of the tab."""
+        """List of actors associated with the tab."""
 
     @property
     def tab_id(self):
