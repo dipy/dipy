@@ -24,7 +24,7 @@ from dipy.viz.horizon.util import (
     check_img_dtype,
     check_img_shapes,
     check_peak_size,
-    unpack_image,
+    unpack_data,
     unpack_surface,
 )
 from dipy.viz.horizon.visualizer import (
@@ -557,7 +557,7 @@ class Horizon:
             sync_slices, sync_vol = check_img_shapes(self.images)
             for img in self.images:
                 title = f"Image {img_count + 1}"
-                data, affine, fname = unpack_image(img)
+                data, affine, fname = unpack_data(img, return_size=3)
                 self.vox2ras = affine
                 if self.__roi_images and data.ndim == 3:
                     if "rois" in self.random_colors:
@@ -592,6 +592,15 @@ class Horizon:
 
         sync_peaks = False
         if len(self.pams) > 0:
+            for idx, f_pam in enumerate(self.pams):
+                title = f"Peaks {idx + 1}"
+                pam, fname = unpack_data(f_pam, return_size=2)
+                peak_viz = PeaksVisualizer(
+                    (pam.peak_dirs, pam.affine), self.world_coords, fname
+                )
+                scene.add(peak_viz.actors[0])
+                self.__tabs.append(PeaksTab(peak_viz.actors[0], title, fname))
+                self.pams[idx] = (pam, fname)
             if self.images:
                 sync_peaks = check_peak_size(
                     self.pams,
@@ -600,12 +609,6 @@ class Horizon:
                 )
             else:
                 sync_peaks = check_peak_size(self.pams)
-            for pam in self.pams:
-                peak_viz = PeaksVisualizer(
-                    (pam.peak_dirs, pam.affine), self.world_coords
-                )
-                scene.add(peak_viz.actors[0])
-                self.__tabs.append(PeaksTab(peak_viz.actors[0]))
 
         if len(self._surfaces) > 0:
             for idx, surface in enumerate(self._surfaces):

@@ -454,6 +454,7 @@ def test_wls_and_ls_fit():
         design_matrix, YN, return_lower_triangular=True, weights=pred_s**1
     )
     npt.assert_raises(AssertionError, npt.assert_array_equal, D_w, D_W)
+
     # Test that wls implementation is correct, by comparison with result here
     W = np.diag(pred_s.squeeze() ** 2)
     AT_W = np.dot(design_matrix.T, W)
@@ -461,6 +462,20 @@ def test_wls_and_ls_fit():
     AT_W_LS = np.dot(AT_W, np.log(YN).squeeze())
     result = np.dot(inv_AT_W_A, AT_W_LS)
     npt.assert_almost_equal(D_w.squeeze(), result)
+
+    # force use of iter_fit_tensor without making a large test
+    D_o, extra = ols_fit_tensor(
+        design_matrix,
+        np.repeat(YN, repeats=1e4 + 1, axis=0),
+        return_lower_triangular=True,
+    )
+    assert extra is None, "OLS fit should not return extra information"
+    D_w, extra = wls_fit_tensor(
+        design_matrix,
+        np.repeat(YN, repeats=1e4 + 1, axis=0),
+        return_lower_triangular=True,
+    )
+    assert extra is None, "WLS fit should not return extra information"
 
 
 def test_rwls_rnlls_irls_fit():
@@ -481,7 +496,8 @@ def test_rwls_rnlls_irls_fit():
     npt.assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
-    YN = Y + 1 * np.random.normal(size=Y.shape)  # error, or weights irrelevant
+    noise = 1 * np.random.normal(size=Y.shape)
+    YN = Y + noise  # error, or weights irrelevant
     YN[0, -1] *= 10  # note 1D array!
 
     for a, ar in zip(["WLS", "NLLS"], ["RWLS", "RNLLS"]):
@@ -552,6 +568,12 @@ def test_rwls_rnlls_irls_fit():
     # force use of iter_fit_tensor without making a large test
     model = TensorModel(gtab, fit_method="RWLS", return_S0_hat=True, num_iter=10)
     tensor_est_R2 = model.fit(np.repeat(YN, repeats=1e4 + 1, axis=0))
+
+    # test if error is raised if weights has incorrect shape
+    model = TensorModel(
+        gtab, fit_method="NLLS", weights=np.array([[1.0, 1.0], [0.0, 1.0]])
+    )
+    npt.assert_raises(AssertionError, model.fit, YN)
 
 
 def test_masked_array_with_tensor():

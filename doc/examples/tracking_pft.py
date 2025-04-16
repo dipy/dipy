@@ -20,8 +20,7 @@ This example is an extension of
 :ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py` and
 :ref:`sphx_glr_examples_built_fiber_tracking_tracking_stopping_criterion.py`
 examples. We begin by loading the data, fitting a Constrained Spherical
-Deconvolution (CSD) reconstruction model, creating the probabilistic direction
-getter and defining the seeds.
+Deconvolution (CSD) reconstruction model, and defining the seeds.
 """
 
 import numpy as np
@@ -112,7 +111,6 @@ pft_streamline_gen = pft_tracking(
     affine,
     max_cross=1,
     step_size=step_size,
-    max_len=1000,
     pft_back_tracking_dist=2,
     pft_front_tracking_dist=1,
     particle_count=15,
@@ -144,7 +142,6 @@ prob_streamline_generator = probabilistic_tracking(
     cmc_criterion,
     affine,
     step_size=step_size,
-    max_len=1000,
     return_all=False,
     sh=csd_fit.shm_coeff,
     max_angle=20.0,

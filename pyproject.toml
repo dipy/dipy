@@ -210,4 +210,9 @@ filterwarnings = [
     "ignore:Implementing implicit namespace packages.*:DeprecationWarning",
     "ignore:Deprecated call to `pkg_resources.*:DeprecationWarning",
     "ignore:pkg_resources is deprecated as an API.*:DeprecationWarning",
+    # CVXPY. see #2770 in the CVXPY repo
+    "ignore:\"polish\" is deprecated. Please use \"polishing\".*:DeprecationWarning",
+    "ignore:The default value of raise_error will change.*:PendingDeprecationWarning",
+    # Joblib:loky issue. see https://github.com/joblib/joblib/blob/71c2ce7f1b8bebc804ff8e9eb77571bb486ed34d/CHANGES.rst?plain=1#L79
+    "ignore:.*is multi-threaded, use of fork.{2} may lead to deadlocks in the child.*:DeprecationWarning",
 ]
