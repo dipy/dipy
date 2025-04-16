@@ -11,6 +11,7 @@ except Exception:
 from dipy.reconst.dti import color_fa, fractional_anisotropy
 from dipy.segment.utils import remove_holes_and_islands
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import deprecated_params
 
 
 def multi_median(data, median_radius, numpass):
@@ -126,6 +127,7 @@ def crop(vol, mins, maxs):
     return vol[tuple(slice(i, j) for i, j in zip(mins, maxs))]
 
 
+@deprecated_params("autocrop", since="1.11.0", until="1.13.0")
 @warning_for_keywords()
 def median_otsu(
     input_volume,
@@ -160,6 +162,9 @@ def median_otsu(
     numpass: int, optional
         Number of pass of the median filter.
     autocrop: bool, optional
+        .. deprecated:: 1.11.0
+           This parameter is deprecated and will be removed in 1.13.0.
+
         if True, the masked input_volume will also be cropped using the
         bounding box defined by the masked data. Should be on if DWI is
         upsampled to 1x1x1 resolution.

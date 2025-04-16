@@ -91,7 +91,7 @@ def test_median_otsu():
     data = np.squeeze(data.astype("f8"))
     dummy_mask = data > data.mean()
     data_masked, mask = median_otsu(
-        data, median_radius=3, numpass=2, autocrop=False, vol_idx=None, dilate=None
+        data, median_radius=3, numpass=2, vol_idx=None, dilate=None
     )
     assert_equal(mask.sum() < dummy_mask.sum(), True)
     data2 = np.zeros(data.shape + (2,))
@@ -99,18 +99,14 @@ def test_median_otsu():
     data2[..., 1] = data
 
     data2_masked, mask2 = median_otsu(
-        data2, median_radius=3, numpass=2, autocrop=False, vol_idx=[0, 1], dilate=None
+        data2, median_radius=3, numpass=2, vol_idx=[0, 1], dilate=None
     )
     assert_almost_equal(mask.sum(), mask2.sum())
 
-    _, mask3 = median_otsu(
-        data2, median_radius=3, numpass=2, autocrop=False, vol_idx=[0, 1], dilate=1
-    )
+    _, mask3 = median_otsu(data2, median_radius=3, numpass=2, vol_idx=[0, 1], dilate=1)
     assert_equal(mask2.sum() < mask3.sum(), True)
 
-    _, mask4 = median_otsu(
-        data2, median_radius=3, numpass=2, autocrop=False, vol_idx=[0, 1], dilate=2
-    )
+    _, mask4 = median_otsu(data2, median_radius=3, numpass=2, vol_idx=[0, 1], dilate=2)
     assert_equal(mask3.sum() < mask4.sum(), True)
 
     # For 4D volumes, can't call without vol_idx input:
