@@ -152,8 +152,10 @@ def test_update_slices(peak_actor):
     assert tab._slice_z.obj.value == 2
 
 
+@patch.object(HorizonTab, "show")
+@patch.object(HorizonTab, "hide")
 @pytest.mark.skipif(skip_it, reason="Needs xvfb")
-def test_on_tab_selected(peak_actor):
+def test_on_tab_selected(_m_show, _m_hide, peak_actor):
     """Test on_tab_selected method in PeaksTab."""
     tab = PeaksTab(peak_actor, "Peaks 1", "mock_peaks")
     tab.build(0)
@@ -228,3 +230,24 @@ def test_update_slice_visibility(peak_actor, slider):
     tab._update_slice_visibility(tab._slice_x_toggle.obj, selected_slice)
     assert selected_slice.visibility is True
     assert selected_slice.obj.visibility is True
+
+
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
+def test_toggle_actors(peak_actor):
+    """Test toggle_actors method in PeaksTab."""
+    tab = PeaksTab(peak_actor, "Peaks 1", "mock_peaks")
+    tab.build(0)
+
+    tab._actor_toggle.obj.checked_labels = [""]
+
+    with patch.object(HorizonTab, "show") as mock_show:
+        tab._toggle_actors(tab._actor_toggle.obj)
+        mock_show.assert_called_with(*tab.actors)
+        assert mock_show.call_count == 2
+
+    tab._actor_toggle.obj.checked_labels = []
+
+    with patch.object(HorizonTab, "hide") as mock_hide:
+        tab._toggle_actors(tab._actor_toggle.obj)
+        mock_hide.assert_called_with(*tab.actors)
+        assert mock_hide.call_count == 2

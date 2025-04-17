@@ -33,8 +33,6 @@ class HorizonTab(ABC):
 
     def __init__(self):
         self._elements = []
-        self.hide = lambda *args: None
-        self.show = lambda *args: None
 
     @abstractmethod
     def build(self, tab_id):
@@ -80,6 +78,26 @@ class HorizonTab(ABC):
         """Assign in TabManager if require to update something while the slice
         changes."""
         pass
+
+    def show(*args):
+        """Show elements in the scene.
+
+        Parameters
+        ----------
+        *args : HorizonUIElement or FURY actors
+            Elements to be hidden.
+        """
+        raise NotImplementedError("This method should be implemented in TabManager.")
+
+    def hide(*args):
+        """Hide elements from the scene.
+
+        Parameters
+        ----------
+        *args : HorizonUIElement or FURY actors
+            Elements to be hidden.
+        """
+        raise NotImplementedError("This method should be implemented in TabManager.")
 
     @property
     @abstractmethod
