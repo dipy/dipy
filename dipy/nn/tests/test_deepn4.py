@@ -3,10 +3,10 @@ import sys
 import warnings
 
 import numpy as np
-from numpy.testing import assert_almost_equal
 import pytest
 
 from dipy.data import get_fnames
+from dipy.testing import assert_percent_almost_equal
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
@@ -22,9 +22,10 @@ BACKENDS = [
 @pytest.mark.skipif(not have_nn, reason="Requires TensorFlow or Torch")
 def test_default_weights(monkeypatch):
     file_names = get_fnames(name="deepn4_test_data")
-    input_arr = np.load(file_names[0])["img"]
-    input_affine_arr = np.load(file_names[0])["affine"]
-    target_arr = np.load(file_names[1])["corr"]
+    data = np.load(file_names)
+    input_arr = data["input"]
+    input_affine_arr = np.eye(4)
+    target_arr = data["output"]
 
     for backend in BACKENDS:
         monkeypatch.setenv("DIPY_NN_BACKEND", backend)
@@ -37,4 +38,4 @@ def test_default_weights(monkeypatch):
         deepn4_model = deepn4_mod.DeepN4()
         deepn4_model.fetch_default_weights()
         results_arr = deepn4_model.predict(input_arr, input_affine_arr)
-        assert_almost_equal(results_arr / 100, target_arr / 100, decimal=1)
+        assert_percent_almost_equal(results_arr, target_arr, decimal=3, percent=0.95)
