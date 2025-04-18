@@ -13,6 +13,7 @@ from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.segment.mask import median_otsu
 from dipy.segment.tests.test_mrf import create_image
 from dipy.tracking.streamline import Streamlines, set_number_of_points
+from dipy.utils.deprecator import ArgsDeprecationWarning
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.segment import (
     ClassifyTissueFlow,
@@ -31,23 +32,22 @@ def test_median_otsu_flow():
         save_masked = True
         median_radius = 3
         numpass = 3
-        autocrop = False
         vol_idx = "0,"
         dilate = 0
         finalize_mask = False
 
         mo_flow = MedianOtsuFlow()
-        mo_flow.run(
-            data_path,
-            out_dir=out_dir,
-            save_masked=save_masked,
-            median_radius=median_radius,
-            numpass=numpass,
-            autocrop=autocrop,
-            vol_idx=vol_idx,
-            dilate=dilate,
-            finalize_mask=finalize_mask,
-        )
+        with npt.assert_warns(ArgsDeprecationWarning):
+            mo_flow.run(
+                data_path,
+                out_dir=out_dir,
+                save_masked=save_masked,
+                median_radius=median_radius,
+                numpass=numpass,
+                vol_idx=vol_idx,
+                dilate=dilate,
+                finalize_mask=finalize_mask,
+            )
 
         mask_name = mo_flow.last_generated_outputs["out_mask"]
         masked_name = mo_flow.last_generated_outputs["out_masked"]
@@ -60,7 +60,6 @@ def test_median_otsu_flow():
             vol_idx=vol_idx,
             median_radius=median_radius,
             numpass=numpass,
-            autocrop=autocrop,
             dilate=dilate,
         )
 

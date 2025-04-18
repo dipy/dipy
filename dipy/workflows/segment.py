@@ -13,6 +13,7 @@ from dipy.segment.bundles import RecoBundles
 from dipy.segment.mask import median_otsu
 from dipy.segment.tissue import TissueClassifierHMRF, dam_classifier
 from dipy.tracking import Streamlines
+from dipy.utils.deprecator import deprecated_params
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
@@ -22,6 +23,9 @@ class MedianOtsuFlow(Workflow):
     def get_short_name(cls):
         return "medotsu"
 
+    @deprecated_params(
+        ["autocrop", "save_masked", "out_masked"], since="1.11.0", until="1.13.0"
+    )
     def run(
         self,
         input_files,
@@ -48,16 +52,22 @@ class MedianOtsuFlow(Workflow):
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         save_masked : bool, optional
+            .. deprecated:: 1.11.0
+               This parameter is deprecated and will be removed in 1.13.0.
+
             Save mask.
         median_radius : int, optional
             Radius (in voxels) of the applied median filter.
         numpass : int, optional
             Number of pass of the median filter.
         autocrop : bool, optional
-            If True, the masked input_volumes will also be cropped using the
-            bounding box defined by the masked data. For example, if diffusion
-            images are of 1x1x1 (mm^3) or higher resolution auto-cropping could
-            reduce their size in memory and speed up some of the analysis.
+            .. deprecated:: 1.11.0
+               This parameter is deprecated and will be removed in 1.13.0.
+
+            If True, the mask is cropped to the bounding box of the
+            non-zero elements. This is useful for large 3D volumes
+            (e.g. 4D volumes) where the mask is not the same size as
+            the input volume.
         vol_idx : str, optional
             1D array representing indices of ``axis=-1`` of a 4D
             `input_volume`. From the command line use something like
@@ -72,6 +82,9 @@ class MedianOtsuFlow(Workflow):
         out_mask : string, optional
             Name of the mask volume to be saved.
         out_masked : string, optional
+            .. deprecated:: 1.11.0
+               This parameter is deprecated and will be removed in 1.13.0.
+
             Name of the masked volume to be saved.
         """
         io_it = self.get_io_iterator()
@@ -86,9 +99,9 @@ class MedianOtsuFlow(Workflow):
                 vol_idx=vol_idx,
                 median_radius=median_radius,
                 numpass=numpass,
-                autocrop=autocrop,
                 dilate=dilate,
                 finalize_mask=finalize_mask,
+                autocrop=autocrop,
             )
 
             save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
