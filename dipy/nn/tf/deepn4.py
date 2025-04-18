@@ -286,8 +286,13 @@ class DeepN4:
             The volume has matching shape to the input data
         """
         # Preprocess input data (resample, normalize, and pad)
-        resampled_T1, inv_affine, mid_shape, offset_array, scale, crop_vs, pad_vs = (
-            transform_img(img, img_affine, voxsize=voxsize)
+        resampled_T1, params = transform_img(
+            img,
+            img_affine,
+            voxsize=voxsize,
+            ratio=2,
+            init_shape=(256, 256, 256),
+            target_voxsize=(1, 1, 1),
         )
         (in_features, lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ, in_max) = (
             self.load_resample(resampled_T1)
@@ -305,17 +310,7 @@ class DeepN4:
         )
         final_field[rx:rX, ry:rY, rz:rZ] = field[lx:lX, ly:lY, lz:lZ]
         final_fields = gaussian_filter(final_field, sigma=3)
-        upsample_final_field = recover_img(
-            final_fields,
-            inv_affine,
-            mid_shape,
-            img.shape,
-            offset_array,
-            voxsize,
-            scale,
-            crop_vs,
-            pad_vs,
-        )
+        upsample_final_field, _ = recover_img(final_fields, params)
 
         # Correct the image
         below_threshold_mask = np.abs(upsample_final_field) < threshold
