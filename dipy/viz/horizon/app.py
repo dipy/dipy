@@ -559,7 +559,7 @@ class Horizon:
                 title = f"Image {img_count + 1}"
                 data, affine, fname = unpack_data(img, return_size=3)
                 self.vox2ras = affine
-                if self.__roi_images:
+                if self.__roi_images and data.ndim == 3:
                     if "rois" in self.random_colors:
                         roi_color = next(self.color_gen)
                     roi_actor = actor.contour_from_roi(
