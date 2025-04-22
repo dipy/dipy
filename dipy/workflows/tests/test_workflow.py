@@ -6,6 +6,7 @@ import time
 import numpy.testing as npt
 
 from dipy.data import get_fnames
+from dipy.utils.deprecator import ArgsDeprecationWarning
 from dipy.workflows.segment import MedianOtsuFlow
 from dipy.workflows.workflow import Workflow
 
@@ -16,7 +17,8 @@ def test_force_overwrite():
         mo_flow = MedianOtsuFlow(output_strategy="absolute")
 
         # Generate the first results
-        mo_flow.run(data_path, out_dir=out_dir, vol_idx=[0])
+        with npt.assert_warns(ArgsDeprecationWarning):
+            mo_flow.run(data_path, out_dir=out_dir, vol_idx=[0])
         mask_file = mo_flow.last_generated_outputs["out_mask"]
         first_time = os.path.getmtime(mask_file)
 
@@ -31,7 +33,8 @@ def test_force_overwrite():
         # Make sure that at least one second elapsed, so that time-stamp is
         # different (sometimes measured in whole seconds)
         time.sleep(1)
-        mo_flow.run(data_path, out_dir=out_dir, vol_idx=[0])
+        with npt.assert_warns(ArgsDeprecationWarning):
+            mo_flow.run(data_path, out_dir=out_dir, vol_idx=[0])
         mask_file = mo_flow.last_generated_outputs["out_mask"]
         third_time = os.path.getmtime(mask_file)
         assert third_time != second_time
