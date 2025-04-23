@@ -127,6 +127,55 @@ def test_threshold_stopping_criterion(rng):
 
 
 @set_random_number_generator()
+def test_threshold_stopping_criterion_reproducibility(rng):
+    tissue_map = rng.random((4, 4, 4))
+
+    # Instantiate once
+    ttc1 = ThresholdStoppingCriterion(tissue_map.astype("float32"), 0.5)
+
+    # Instantiate again
+    ttc2 = ThresholdStoppingCriterion(tissue_map.astype("float32"), 0.5)
+
+    # Assert identical outputs
+
+    # Test voxel center
+    for ind in ndindex(tissue_map.shape):
+        pts = np.array(ind, dtype="float64")
+        assert ttc1.check_point(pts) == ttc2.check_point(pts)
+
+    # Test random points in voxel
+    inds = [
+        [0, 1.4, 2.2],
+        [0, 2.3, 2.3],
+        [0, 2.2, 1.3],
+        [0, 0.9, 2.2],
+        [0, 2.8, 1.1],
+        [0, 1.1, 3.3],
+        [0, 2.1, 1.9],
+        [0, 3.1, 3.1],
+        [0, 0.1, 0.1],
+        [0, 0.9, 0.5],
+        [0, 0.9, 0.5],
+        [0, 2.9, 0.1],
+    ]
+    for pts in inds:
+        pts = np.array(pts, dtype="float64")
+        assert ttc1.check_point(pts) == ttc2.check_point(pts)
+
+    # Test outside points
+    outside_pts = [
+        [100, 100, 100],
+        [0, -1, 1],
+        [0, 10, 2],
+        [0, 0.5, -0.51],
+        [0, -0.51, 0.1],
+    ]
+    for pts in outside_pts:
+        pts = np.array(pts, dtype="float64")
+        assert ttc1.check_point(pts) == ttc2.check_point(pts)
+
+
+@set_random_number_generator()
 def test_act_stopping_criterion(rng):
     """This tests that the act stopping criterion returns expected
     streamline statuses.
