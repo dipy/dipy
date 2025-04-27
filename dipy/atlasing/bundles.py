@@ -22,6 +22,7 @@ from scipy.optimize import linear_sum_assignment
 
 from dipy.align.bundlemin import distance_matrix_mdf
 from dipy.align.streamlinear import StreamlineLinearRegistration
+from dipy.align.streamwarp import bundlewarp
 from dipy.io.streamline import (
     Space,
     StatefulTractogram,
@@ -372,6 +373,7 @@ def compute_atlas_bundle(
     skip_pairs=False,
     d_max=1000.0,
     qbx_thr=5,
+    alpha=0.5,
 ):
     """Compute a population specific bundle atlas.
 
@@ -418,7 +420,8 @@ def compute_atlas_bundle(
     comb_method : str, optional
         Method used to combine each bundle pair. Default is 'rlap'.
     reg_method : str, optional
-        Registration method to be used. Default is 'hslr'.
+        Registration method to be used ('slr', 'hslr', 'bundlewarp').
+        Default is 'hslr'.
     skip_pairs : boolean, optional
         If true bundle combination steps are randomly skipped. This helps to
         obtain a sharper result. Default is False.
@@ -427,6 +430,9 @@ def compute_atlas_bundle(
         Default is 1000.
     qbx_thr : float, optional
         Threshold for QuickBundles clustering. Default is 5.
+    alpha : float, optional
+        Controls deformation strength of bundlewarp. Lower values allow more
+        deformation. Only used if reg_method is 'bundlewarp'. Default is 0.5.
 
     Returns
     -------
@@ -453,6 +459,8 @@ def compute_atlas_bundle(
         raise ValueError(f"n_stream_max {n_stream_max} is not >= 1")
     if n_point < 2:
         raise ValueError(f"n_point {n_point} is not >= 2")
+    if reg_method not in ["slr", "hslr", "bundlewarp"]:
+        raise ValueError("reg_method value not supported")
 
     logger.info("Input directory:" + in_dir)
     logger.info("Output directory:" + out_dir)
@@ -585,21 +593,32 @@ def compute_atlas_bundle(
                 static, header = _load_bundle(file_list[i] + ".trk", return_header=True)
                 moving = _load_bundle(file_list[j] + ".trk")
 
-                moving_centroids = qbx_and_merge(moving, thresholds=[qbx_thr]).centroids
-                static_centroids = qbx_and_merge(static, thresholds=[qbx_thr]).centroids
+                if reg_method in ["slr", "hslr"]:
+                    # BundleWarp does not work with clusters
+                    moving_clusters = qbx_and_merge(moving, thresholds=[qbx_thr])
+                    static_clusters = qbx_and_merge(static, thresholds=[qbx_thr])
+                    moving_centroids = moving_clusters.centroids
+                    static_centroids = static_clusters.centroids
 
-                if reg_method == "slr":
-                    slr = StreamlineLinearRegistration(x0=x0)
-                    srm = slr.optimize(static=static_centroids, moving=moving_centroids)
-                    aligned = srm.transform(moving)
+                    if reg_method == "slr":
+                        slr = StreamlineLinearRegistration(x0=x0)
+                        srm = slr.optimize(
+                            static=static_centroids, moving=moving_centroids
+                        )
+                        aligned = srm.transform(moving)
 
-                elif reg_method == "hslr":
-                    hslr = StreamlineLinearRegistration(x0=x0, halfway=True)
-                    srm = hslr.optimize(moving_centroids, static_centroids)
-                    [aligned, static] = srm.transform(moving, static)
+                    elif reg_method == "hslr":
+                        hslr = StreamlineLinearRegistration(x0=x0, halfway=True)
+                        srm = hslr.optimize(moving_centroids, static_centroids)
+                        [aligned, static] = srm.transform(moving, static)
 
-                static = Streamlines(static)
-                aligned = Streamlines(aligned)
+                    static = Streamlines(static)
+                    aligned = Streamlines(aligned)
+
+                elif reg_method == "bundlewarp":
+                    static, aligned, _, _, _ = bundlewarp(
+                        Streamlines(static), Streamlines(moving), alpha=alpha
+                    )
 
                 # Randomly skip steps if specified to get sharper results
                 if skip_pairs and np.random.choice([True, False], 1)[0]:

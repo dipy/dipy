@@ -29,6 +29,7 @@ class BundleAtlasFlow(Workflow):
         skip_pairs=False,
         d_max=1000,
         qbx_thr=5,
+        alpha=0.5,
     ):
         """Workflow of bundle atlas generation.
 
@@ -89,6 +90,8 @@ class BundleAtlasFlow(Workflow):
             atlases. Default is 1000.
         qbx_thr : float, optional
             Threshold for QuickBundles clustering. Default is 5.
+        alpha : float, optional
+            Parameter for BundleWarp registration. Default is 0.5.
         """
         logging.info("workflow running")
 
@@ -111,4 +114,5 @@ class BundleAtlasFlow(Workflow):
             skip_pairs=skip_pairs,
             d_max=d_max,
             qbx_thr=qbx_thr,
+            alpha=alpha,
         )
