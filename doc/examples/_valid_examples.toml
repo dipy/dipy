@@ -26,8 +26,8 @@ Examples
    :depth: 2
 
 """
-position = 0   # it should always be 0
-enable = true  # it should always be true
+position = 0 # it should always be 0
+enable = true # it should always be true
 files = []
 
 [quick_start]
@@ -38,10 +38,7 @@ Quick Start
 """
 position = 1
 enable = true
-files = [
-    "quick_start.py",
-    "tracking_introduction_eudx.py",
-]
+files = ["quick_start.py", "tracking_introduction_eudx.py"]
 
 
 [preprocessing]
@@ -111,7 +108,7 @@ files = [
     "reconst_qti.py",
     "reconst_qtiplus.py",
     "histology_resdnn.py",
-    "reconst_bingham.py"
+    "reconst_bingham.py",
 ]
 
 [contextual_enhancement]
@@ -122,10 +119,7 @@ Contextual Enhancement
 """
 position = 10
 enable = true
-files = [
-    "contextual_enhancement.py",
-    "fiber_to_bundle_coherence.py",
-]
+files = ["contextual_enhancement.py", "fiber_to_bundle_coherence.py"]
 
 [fiber_tracking]
 readme = """
@@ -167,6 +161,7 @@ files = [
     "streamline_tools.py",
     "bundle_assignment_maps.py",
     "bundle_shape_similarity.py",
+    "bundle_atlasing.py",
 ]
 
 
@@ -218,11 +213,7 @@ Simulation
 """
 position = 26
 enable = true
-files = [
-    "simulate_dki.py",
-    "simulate_multi_tensor.py",
-    "reconst_dsid.py",
-]
+files = ["simulate_dki.py", "simulate_multi_tensor.py", "reconst_dsid.py"]
 
 [Multiprocessing]
 readme = """
@@ -246,9 +237,7 @@ File Formats
 """
 position = 32
 enable = true
-files = [
-    "streamline_formats.py",
-]
+files = ["streamline_formats.py"]
 
 [visualization]
 readme = """
@@ -273,7 +262,4 @@ Workflows
 """
 position = 37
 enable = true
-files = [
-    "combined_workflow_creation.py",
-    "workflow_creation.py",
-]
+files = ["combined_workflow_creation.py", "workflow_creation.py"]
