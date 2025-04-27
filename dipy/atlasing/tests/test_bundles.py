@@ -311,6 +311,16 @@ def test_compute_atlas_bundle():
             assert_equal(len(trk_files), 3)  # 4 controls - 1 discarded
             assert_equal(len(png_files), 9)  # three views * three bundles
 
-
-if __name__ == "__main__":
-    test_combine_bundles()
+        # Check BundleWarp and SLR also work
+        with tempfile.TemporaryDirectory() as out_dir:
+            atlas, atlas_merged = compute_atlas_bundle(
+                in_dir=in_dir,
+                subjects=subjects,
+                group="control",
+                out_dir=out_dir,
+                bundle_names=bundle_names,
+                save_temp=False,
+                n_stream_min=5,
+                n_stream_max=10,
+                reg_method="bundlewarp",
+            )
