@@ -25,7 +25,7 @@ def save_tractogram(
     to_space=Space.RASMM,
     to_origin=Origin.NIFTI,
 ):
-    """Save the stateful tractogram in any format (trk/tck/vtk/vtp/fib/dpy)
+    """Save the stateful tractogram in any format (trx/trk/tck/vtk/vtp/fib/dpy)
 
     Parameters
     ----------
