@@ -1343,3 +1343,141 @@ def _check_ornt(ornt):
     if tuple(uniq) not in {(-1, 1), (-1,), (1,)}:
         print(tuple(uniq))
         return True
+
+
+def extract_b0(dwi, b0_mask, *, group_contiguous_b0=False, strategy="mean"):
+    """Extract a set of b0 volumes from a dwi dataset.
+
+    Parameters
+    ----------
+    dwi: ndarray
+        4D diffusion-weighted imaging data (X, Y, Z, N), where N is the number of
+        volumes.
+    b0_mask: ndarray of bool
+        Mask over the time dimension (4th) identifying b0 volumes.
+    group_contiguous_b0: bool, optional
+        If True, each contiguous b0 volumes are grouped together.
+    strategy: str, optional
+        The extraction strategy, of either:
+
+            - first: select the first b0 found.
+            - all: select them all.
+            - mean: average them.
+
+        When used in conjunction with the batch parameter set to True, the strategy
+        is applied individually on each continuous set found.
+
+    Returns
+    -------
+    b0_data : ndarray
+        Extracted b0 volumes.
+    """
+    if not isinstance(b0_mask, np.ndarray) or b0_mask.ndim != 1 or 0 in b0_mask.shape:
+        raise ValueError("b0_mask must be a boolean array.")
+
+    if not isinstance(dwi, np.ndarray) or dwi.ndim != 4:
+        raise ValueError("dwi must be a 4D numpy array.")
+
+    if dwi.shape[-1] != b0_mask.shape[0]:
+        raise ValueError("The last dimension of dwi must match the length of b0_mask.")
+
+    strategy = strategy.lower()
+    if strategy not in ["first", "all", "mean"]:
+        raise ValueError(
+            "Invalid strategy: {}. Valid strategies are: " "first, all, mean.".format(
+                strategy
+            )
+        )
+
+    if group_contiguous_b0:
+        b0_indices = np.where(b0_mask)[0]
+        groups = np.split(b0_indices, np.where(np.diff(b0_indices) > 1)[0] + 1)
+        grouped_b0 = []
+        for group in groups:
+            group_data = dwi[..., group - b0_indices[0]]
+            if strategy == "first":
+                grouped_b0.append(group_data[..., 0])
+            elif strategy == "mean":
+                grouped_b0.append(np.mean(group_data, axis=-1))
+            else:  # "all"
+                grouped_b0.append(group_data)
+        return np.stack(grouped_b0, axis=-1)
+
+    b0_data = dwi[..., b0_mask]
+    if strategy == "first":
+        return b0_data[..., 0]
+    elif strategy == "mean":
+        return np.mean(b0_data, axis=-1)
+
+    return b0_data
+
+
+def extract_dwi_shell(dwi, gtab, bvals_to_extract, *, tol=20, group_shells=True):
+    """Extract diffusion-weighted imaging (DWI) volumes based on b-value shells.
+
+    Parameters
+    ----------
+    dwi : ndarray
+        4D diffusion-weighted imaging data (X, Y, Z, N), where N is the number of
+        volumes.
+    gtab : GradientTable
+        The gradient table associated with the DWI dataset.
+    bvals_to_extract : list of int
+        List of b-values to extract. If None, all b-values are included.
+    tol : int, optional
+        Tolerance range for b-value selection. A value of 20 means volumes with b-values
+        within ±20 units of the specified b-values will be extracted.
+    group_shells : bool, optional
+        If True, extracted volumes are grouped into a single array. If False,
+        returns a list of separate volumes.
+
+    Returns
+    -------
+    indices : ndarray
+        Indices of the extracted volumes corresponding to the specified b-values.
+    shell_data : ndarray or list of ndarrays
+        Extracted DWI volumes, grouped if `group_shells=True`, otherwise returned as
+        a list.
+    output_bvals : ndarray
+        The b-values of the selected volumes.
+    output_bvecs : ndarray
+        The b-vectors of the selected volumes.
+    """
+    bvals = gtab.bvals
+    bvecs = gtab.bvecs
+
+    if not bvals_to_extract:
+        warn(
+            "No b-values specified. All b-values will be included.",
+            UserWarning,
+            stacklevel=2,
+        )
+
+    mask = (
+        np.ones_like(bvals, dtype=bool)
+        if not bvals_to_extract
+        else np.any(np.abs(bvals[:, None] - np.array(bvals_to_extract)) <= tol, axis=1)
+    )
+
+    indices = np.where(mask)[0]
+
+    if not indices.size and bvals_to_extract:
+        raise ValueError("No volumes found with the specified b-values.")
+
+    shell_data, output_bvals, output_bvecs, output_indices = [], [], [], []
+    if group_shells:
+        shell_data.append(dwi[..., indices])
+        output_indices.append(indices)
+        output_bvals.append(bvals[indices])
+        output_bvecs.append(bvecs[indices])
+    else:
+        for i in bvals_to_extract:
+            selected_indices = indices[
+                (bvals[indices] >= i - tol) & (bvals[indices] <= i + tol)
+            ]
+            output_indices.append(selected_indices)
+            output_bvals.append(bvals[selected_indices])
+            output_bvecs.append(bvecs[selected_indices])
+            shell_data.append(dwi[..., selected_indices])
+
+    return output_indices, shell_data, output_bvals, output_bvecs

@@ -2,6 +2,7 @@ python_sources = [
   '__init__.py',
   'evac.py',
   'histo_resdnn.py',
+  'deepn4.py',
   ]
 
 

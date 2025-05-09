@@ -1,4 +1,4 @@
-import warnings
+import logging
 
 import numpy as np
 
@@ -27,7 +27,7 @@ def check_img_shapes(images):
 
     volumed_data_shapes = []
     for img in images:
-        data, _, _ = unpack_image(img)
+        data, _, _ = unpack_data(img, return_size=3)
         data_shape = data.shape[:3]
         if data.ndim == 4:
             volumed_data_shapes.append(data.shape[3])
@@ -57,22 +57,22 @@ def check_img_dtype(images):
     valid_images = []
 
     for idx, img in enumerate(images):
-        data, affine, fname = unpack_image(img)
+        data, affine, fname = unpack_data(img, return_size=3)
         if np.issubdtype(data.dtype, np.integer):
             if data.dtype != np.int32:
                 msg = f"{data.dtype} is not supported, falling back to int32"
-                warnings.warn(msg, stacklevel=2)
+                logging.warning(msg)
                 img = (data.astype(np.int32), affine, fname)
             valid_images.append(img)
         elif np.issubdtype(data.dtype, np.floating):
             if data.dtype != np.float64 and data.dtype != np.float32:
                 msg = f"{data.dtype} is not supported, falling back to float32"
-                warnings.warn(msg, stacklevel=2)
+                logging.warning(msg)
                 img = (data.astype(np.float32), affine, fname)
             valid_images.append(img)
         else:
             msg = f"skipping image {idx + 1}, passed image is not in numerical format"
-            warnings.warn(msg, stacklevel=2)
+            logging.warning(msg)
 
     return valid_images
 
@@ -102,25 +102,6 @@ def show_ellipsis(text, text_size, available_size):
     return text
 
 
-def unpack_image(img):
-    """Unpack provided image data.
-
-    Standard way to handle different value images.
-
-    Parameters
-    ----------
-    img : tuple
-        An image can contain either (data, affine) or (data, affine, fname).
-
-    Returns
-    -------
-    tuple
-        If img with (data, affine) it will convert to (data, affine, None).
-        Otherwise it will be passed as it is.
-    """
-    return _unpack_data(img)
-
-
 def unpack_surface(surface):
     """Unpack surface data.
 
@@ -135,7 +116,7 @@ def unpack_surface(surface):
         If surface with (vertices, faces) it will convert to (vertices, faces,
         None). Otherwise it will be passed as it is.
     """
-    data = _unpack_data(surface)
+    data = unpack_data(surface)
 
     if data[0].shape[-1] != 3:
         raise ValueError(f"Vertices do not have correct shape: {data[0].shape}")
@@ -144,12 +125,15 @@ def unpack_surface(surface):
     return data
 
 
-def _unpack_data(data, return_size=3):
-    result = [*data]
+def unpack_data(data, *, return_size=3):
+    if not isinstance(data, tuple):
+        data = (data, None)
     if len(data) < return_size:
+        result = [*data]
         result += (return_size - len(data)) * [None]
+        return result
 
-    return result
+    return data
 
 
 @warning_for_keywords()
@@ -158,8 +142,8 @@ def check_peak_size(pams, *, ref_img_shape=None, sync_imgs=False):
 
     Parameters
     ----------
-    pams : PeaksAndMetrics
-        Peaks and metrics.
+    pams : tuple
+        (PeaksAndMetrics, fname).
     ref_img_shape : tuple, optional
         3D shape of the image, by default None.
     sync_imgs : bool, optional
@@ -170,9 +154,10 @@ def check_peak_size(pams, *, ref_img_shape=None, sync_imgs=False):
     bool
         If the peaks are aligned with images and other peaks.
     """
-    base_shape = pams[0].peak_dirs.shape[:3]
+    base_data = unpack_data(pams[0], return_size=2)
+    base_shape = base_data[0].peak_dirs.shape[:3]
 
-    for pam in pams:
+    for pam, _ in pams:
         if pam.peak_dirs.shape[:3] != base_shape:
             return False
 

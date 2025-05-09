@@ -1,8 +1,13 @@
 cython_sources = [
+  'dirspeed',
   'eudx_direction_getter',
   'quick_squash',
   'recspeed',
   'vec_val_sum',
+  ]
+
+cython_headers = [
+  'recspeed.pxd',
   ]
 
 foreach ext: cython_sources
@@ -48,7 +53,7 @@ python_sources = ['__init__.py',
   ]
 
 py3.install_sources(
-  python_sources,
+  python_sources + cython_headers,
   pure: false,
   subdir: 'dipy/reconst'
 )

@@ -136,7 +136,7 @@ def load_tractogram(
     from_origin=None,
     trk_header_check=True,
 ):
-    """Load the stateful tractogram from any format (trk/tck/vtk/vtp/fib/dpy)
+    """Load the stateful tractogram from any format (trx/trk/tck/vtk/vtp/fib/dpy)
 
     Parameters
     ----------

@@ -1,16 +1,14 @@
-import warnings
-
 import numpy as np
 import numpy.testing as npt
 
 from dipy.direction.peaks import PeaksAndMetrics
-from dipy.testing import check_for_warnings
 from dipy.testing.decorators import set_random_number_generator
 from dipy.viz.horizon.util import (
     check_img_dtype,
     check_img_shapes,
     check_peak_size,
     show_ellipsis,
+    unpack_data,
     unpack_surface,
 )
 
@@ -88,30 +86,21 @@ def test_check_img_dtype(rng):
     images = [
         (data, affine),
     ]
-
-    with warnings.catch_warnings(record=True) as l_warns:
-        npt.assert_equal(check_img_dtype(images)[0][0].dtype, np.int32)
-        check_for_warnings(l_warns, "int64 is not supported, falling back to int32")
+    npt.assert_equal(check_img_dtype(images)[0][0].dtype, np.int32)
+    assert len(check_img_dtype(images)) == 1
 
     data = rng.random((5, 5, 5)).astype(np.float16)
     images = [
         (data, affine),
     ]
-
-    with warnings.catch_warnings(record=True) as l_warns:
-        npt.assert_equal(check_img_dtype(images)[0][0].dtype, np.float32)
-        check_for_warnings(l_warns, "float16 is not supported, falling back to float32")
+    npt.assert_equal(check_img_dtype(images)[0][0].dtype, np.float32)
+    assert len(check_img_dtype(images)) == 1
 
     data = rng.random((5, 5, 5)).astype(np.bool_)
     images = [
         (data, affine),
     ]
-
-    with warnings.catch_warnings(record=True) as l_warns:
-        check_img_dtype(images)
-        check_for_warnings(
-            l_warns, "skipping image 1, passed image is not in numerical format"
-        )
+    assert len(check_img_dtype(images)) == 0
 
 
 def test_show_ellipsis():
@@ -155,25 +144,63 @@ def test_check_peak_size(rng):
     pam = PeaksAndMetrics()
     pam.peak_dirs = peak_dirs
 
-    npt.assert_equal(True, check_peak_size([pam]))
-    npt.assert_equal(True, check_peak_size([pam, pam]))
+    npt.assert_equal(True, check_peak_size([(pam, None)]))
+    npt.assert_equal(True, check_peak_size([(pam, None), (pam, None)]))
     npt.assert_equal(
-        False, check_peak_size([pam], ref_img_shape=(100, 100, 1), sync_imgs=True)
+        False,
+        check_peak_size([(pam, None)], ref_img_shape=(100, 100, 1), sync_imgs=True),
     )
     npt.assert_equal(
-        False, check_peak_size([pam], ref_img_shape=(100, 100, 100), sync_imgs=False)
+        False,
+        check_peak_size([(pam, None)], ref_img_shape=(100, 100, 100), sync_imgs=False),
     )
 
     pam1 = PeaksAndMetrics()
     peak_dirs_1 = rng.random((100, 100, 50, 10, 6))
     pam1.peak_dirs = peak_dirs_1
 
-    npt.assert_equal(False, check_peak_size([pam, pam1]))
+    npt.assert_equal(False, check_peak_size([(pam, None), (pam1, None)]))
     npt.assert_equal(
         False,
-        check_peak_size([pam, pam1], ref_img_shape=(100, 100, 100), sync_imgs=True),
+        check_peak_size(
+            [(pam, None), (pam1, None)], ref_img_shape=(100, 100, 100), sync_imgs=True
+        ),
     )
     npt.assert_equal(
         False,
-        check_peak_size([pam, pam1], ref_img_shape=(100, 100, 100), sync_imgs=False),
+        check_peak_size(
+            [(pam, None), (pam1, None)], ref_img_shape=(100, 100, 100), sync_imgs=False
+        ),
     )
+
+
+@set_random_number_generator()
+def test_unpack_data(rng):
+    # Test with a non-tuple object (single data array)
+    pam_data = rng.random((10, 10))
+    result = unpack_data(pam_data, return_size=2)
+    npt.assert_equal(len(result), 2)
+    npt.assert_equal(result[0], pam_data)
+    npt.assert_equal(result[1], None)
+
+    # Test with a tuple of length 1
+    pam_tuple_1 = (pam_data,)
+    result = unpack_data(pam_tuple_1, return_size=3)
+    npt.assert_equal(len(result), 3)
+    npt.assert_equal(result[0], pam_data)
+    npt.assert_equal(result[1], None)
+    npt.assert_equal(result[2], None)
+
+    # Test with a complete tuple of length 2
+    filename = "test_file.pam"
+    pam_tuple_2 = (pam_data, filename)
+    result = unpack_data(pam_tuple_2, return_size=2)
+    npt.assert_equal(len(result), 2)
+    npt.assert_equal(result[0], pam_data)
+    npt.assert_equal(result[1], filename)
+
+    # Test with a tuple of length greater than 2
+    pam_tuple_3 = (pam_data, filename, "extra_item")
+    result = unpack_data(pam_tuple_3, return_size=3)
+    npt.assert_equal(result, pam_tuple_3)
+    npt.assert_equal(len(result), 3)

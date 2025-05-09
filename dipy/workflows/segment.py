@@ -1,13 +1,17 @@
 import logging
+import os
+import sys
 from time import time
 
 import numpy as np
 
+from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.segment.bundles import RecoBundles
 from dipy.segment.mask import median_otsu
+from dipy.segment.tissue import TissueClassifierHMRF, dam_classifier
 from dipy.tracking import Streamlines
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
@@ -64,7 +68,7 @@ class MedianOtsuFlow(Workflow):
             Whether to remove potential holes or islands.
             Useful for solving minor errors.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_mask : string, optional
             Name of the mask volume to be saved.
         out_masked : string, optional
@@ -176,7 +180,7 @@ class RecoBundlesFlow(Workflow):
             Don't enable Refine local Streamline-based Linear
             Registration.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_recognized_transf : string, optional
             Recognized bundle in the space of the model bundle.
         out_recognized_labels : string, optional
@@ -340,7 +344,7 @@ class LabelsBundlesFlow(Workflow):
         labels_files : string
             The path of model bundle files.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_bundle : string, optional
             Recognized bundle in the space of the model bundle.
 
@@ -368,3 +372,151 @@ class LabelsBundlesFlow(Workflow):
             new_sft = StatefulTractogram(bundle, sft, Space.RASMM)
             save_tractogram(new_sft, out_bundle, bbox_valid_check=False)
             logging.info(out_bundle)
+
+
+class ClassifyTissueFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "extracttissue"
+
+    def run(
+        self,
+        input_files,
+        bvals_file=None,
+        method=None,
+        wm_threshold=0.5,
+        b0_threshold=50,
+        low_signal_threshold=50,
+        nclass=None,
+        beta=0.1,
+        tolerance=1e-05,
+        max_iter=100,
+        out_dir="",
+        out_tissue="tissue_classified.nii.gz",
+        out_pve="tissue_classified_pve.nii.gz",
+    ):
+        """Extract tissue from a volume.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvals_file : string, optional
+            Path to the b-values file. Required for 'dam' method.
+        method : string, optional
+            Method to use for tissue extraction. Options are:
+                - 'hmrf': Markov Random Fields modeling approach.
+                - 'dam': Directional Average Maps, proposed by :footcite:p:`Cheng2020`.
+
+            'hmrf' method is recommended for T1w images, while 'dam' method is
+            recommended for DWI Multishell images (single shell are not recommended).
+        wm_threshold : float, optional
+            The threshold below which a voxel is considered white matter. For data like
+            HCP, threshold of 0.5 proves to be a good choice. For data like cfin, higher
+            threshold values like 0.7 or 0.8 are more suitable. Used for 'dam' method.
+        b0_threshold : float, optional
+            The intensity threshold for a b=0 image. used only for 'dam' method.
+        low_signal_threshold : float, optional
+            The threshold below which a voxel is considered to have low signal.
+            Used only for 'dam' method.
+        nclass : int, optional
+            Number of desired classes. Used only for 'hmrf' method.
+        beta : float, optional
+            Smoothing parameter, the higher this number the smoother the
+            output will be. Used only for 'hmrf' method.
+        tolerance : float, optional
+            Value that defines the percentage of change tolerated to
+            prevent the ICM loop to stop. Default is 1e-05.
+            If you want tolerance check to be disabled put 'tolerance = 0'.
+            Used only for 'hmrf' method.
+        max_iter : int, optional
+            Fixed number of desired iterations. Default is 100.
+            This parameter defines the maximum number of iterations the
+            algorithm will perform. The loop may terminate early if the
+            change in energy sum between iterations falls below the
+            threshold defined by `tolerance`. However, if `tolerance` is
+            explicitly set to 0, this early stopping mechanism is disabled,
+            and the algorithm will run for the specified number of
+            iterations unless another stopping criterion is met.
+            Used only for 'hmrf' method.
+        out_dir : string, optional
+            Output directory.
+        out_tissue : string, optional
+            Name of the tissue volume to be saved.
+        out_pve : string, optional
+            Name of the pve volume to be saved.
+
+        REFERENCES
+        ----------
+        .. footbibliography::
+
+        """
+        io_it = self.get_io_iterator()
+
+        if not method or method.lower() not in ["hmrf", "dam"]:
+            logging.error(
+                f"Unknown method '{method}' for tissue extraction. "
+                "Choose '--method hmrf' (for T1w) or '--method dam' (for DWI)"
+            )
+            sys.exit(1)
+
+        prefix = "t1" if method.lower() == "hmrf" else "dwi"
+        for i, name in enumerate(self.flat_outputs):
+            if name.endswith("tissue_classified.nii.gz"):
+                self.flat_outputs[i] = name.replace(
+                    "tissue_classified.nii.gz", f"{prefix}_tissue_classified.nii.gz"
+                )
+            if name.endswith("tissue_classified_pve.nii.gz"):
+                self.flat_outputs[i] = name.replace(
+                    "tissue_classified_pve.nii.gz",
+                    f"{prefix}_tissue_classified_pve.nii.gz",
+                )
+
+        self.update_flat_outputs(self.flat_outputs, io_it)
+
+        for fpath, tissue_out_path, opve in io_it:
+            logging.info(f"Extracting tissue from {fpath}")
+
+            data, affine = load_nifti(fpath)
+
+            if method.lower() == "hmrf":
+                if nclass is None:
+                    logging.error(
+                        "Number of classes is required for 'hmrf' method. "
+                        "For example, Use '--nclass 4' to specify the number of "
+                        "classes."
+                    )
+                    sys.exit(1)
+                classifier = TissueClassifierHMRF()
+                _, segmentation_final, PVE = classifier.classify(
+                    data, nclass, beta, tolerance=tolerance, max_iter=max_iter
+                )
+
+                save_nifti(tissue_out_path, segmentation_final, affine)
+                save_nifti(opve, PVE, affine)
+
+            elif method.lower() == "dam":
+                if bvals_file is None or not os.path.isfile(bvals_file):
+                    logging.error("'--bvals filename' is required for 'dam' method")
+                    sys.exit(1)
+
+                bvals, _ = read_bvals_bvecs(bvals_file, None)
+                wm_mask, gm_mask = dam_classifier(
+                    data,
+                    bvals,
+                    wm_threshold=wm_threshold,
+                    b0_threshold=b0_threshold,
+                    low_signal_threshold=low_signal_threshold,
+                )
+                result = np.zeros(wm_mask.shape, dtype=np.int32)
+                result[wm_mask] = 1
+                result[gm_mask] = 2
+                save_nifti(tissue_out_path, result, affine)
+                save_nifti(
+                    opve, np.stack([wm_mask, gm_mask], axis=-1).astype(np.int32), affine
+                )
+
+            logging.info(f"Tissue saved as {tissue_out_path} and PVE as {opve}")
+
+        return io_it

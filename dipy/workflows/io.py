@@ -2,14 +2,22 @@ import importlib
 from inspect import getmembers, isfunction
 import logging
 import os
+import re
 import sys
 import warnings
 
 import numpy as np
 import trx.trx_file_memmap as tmm
 
+from dipy.core.gradients import (
+    extract_b0,
+    extract_dwi_shell,
+    gradient_table,
+    mask_non_weighted_bvals,
+)
 from dipy.core.sphere import Sphere
 from dipy.data import get_sphere
+from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.peaks import (
     load_pam,
@@ -23,6 +31,7 @@ from dipy.reconst.utils import convert_tensors
 from dipy.tracking.streamlinespeed import length
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tractogram import concatenate_tractogram
+from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
 ne, have_ne, _ = optional_package("numexpr")
@@ -48,17 +57,18 @@ class IoInfoFlow(Workflow):
         Parameters
         ----------
         input_files : variable string
-            Any number of Nifti1, bvals or bvecs files.
+            Any number of NIfTI, bvals, bvecs or tractography data files.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
-            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
-            b-vectors are unit vectors.
+            Threshold used to check that
+            :math:`norm(\text{bvec}) = 1 \\pm \text{bvecs_tol}` b-vectors are
+            unit vectors.
         bshell_thr : float, optional
             Threshold for distinguishing b-values in different shells.
         reference : string, optional
-            Reference anatomy for tck/vtk/fib/dpy file.
-            support (.nii or .nii.gz).
+            Reference anatomy for ``*.tck``, ``*.vtk``/``*.vtp``, ``*.fib``, and
+            ``*.dpy`` tractography files.
 
         """
         np.set_printoptions(3, suppress=True)
@@ -197,7 +207,6 @@ class FetchFlow(Workflow):
                 for name, func in getmembers(fetcher_module, isfunction)
                 if name.lower().startswith("fetch_")
                 and func is not fetcher_module.fetch_data
-                if name.lower() not in ["fetch_hbn", "fetch_hcp"]
             }
         )
 
@@ -222,7 +231,19 @@ class FetchFlow(Workflow):
         else:
             return importlib.import_module(module_path)
 
-    def run(self, data_names, out_dir=""):
+    def run(
+        self,
+        data_names,
+        subjects=None,
+        include_optional=False,
+        include_afq=False,
+        hcp_bucket="hcp-openaccess",
+        hcp_profile_name="hcp",
+        hcp_study="HCP_1200",
+        hcp_aws_access_key_id=None,
+        hcp_aws_secret_access_key=None,
+        out_dir="",
+    ):
         """Download files to folder and check their md5 checksums.
 
         To see all available datasets, please type "list" in data_names.
@@ -231,8 +252,27 @@ class FetchFlow(Workflow):
         ----------
         data_names : variable string
             Any number of Nifti1, bvals or bvecs files.
+        subjects : variable string, optional
+            Identifiers of the subjects to download. Used only by the HBN & HCP dataset.
+            For example with HBN dataset: --subject NDARAA948VFH NDAREK918EC2
+        include_optional : bool, optional
+            Include optional datasets.
+        include_afq : bool, optional
+            Whether to include pyAFQ derivatives. Used only by the HBN dataset.
+        hcp_bucket : string, optional
+            The name of the HCP S3 bucket.
+        hcp_profile_name : string, optional
+            The name of the AWS profile used for access.
+        hcp_study : string, optional
+            Which HCP study to grab.
+        hcp_aws_access_key_id : string, optional
+            AWS credentials to HCP AWS S3. Will only be used if `profile_name` is
+            set to False.
+        hcp_aws_secret_access_key : string, optional
+            AWS credentials to HCP AWS S3. Will only be used if `profile_name` is
+            set to False.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
 
         """
         if out_dir:
@@ -244,15 +284,20 @@ class FetchFlow(Workflow):
         data_names = [name.lower() for name in data_names]
 
         if "all" in data_names:
+            logging.warning("Skipping HCP and HBN datasets.")
+            available_data.pop("hcp", None)
+            available_data.pop("hbn", None)
             for name, fetcher_function in available_data.items():
+                if name in ["hcp", "hbn"]:
+                    continue
                 logging.info("------------------------------------------")
                 logging.info(f"Fetching at {name}")
                 logging.info("------------------------------------------")
-                fetcher_function()
+                fetcher_function(include_optional=include_optional)
 
         elif "list" in data_names:
             logging.info(
-                "Please, select between the following data names: "
+                "Please, select between the following data names: \n"
                 f"{', '.join(available_data.keys())}"
             )
 
@@ -266,14 +311,48 @@ class FetchFlow(Workflow):
                 logging.info("------------------------------------------")
                 logging.info(f"Fetching at {data_name}")
                 logging.info("------------------------------------------")
-                available_data[data_name]()
+                if data_name == "hcp":
+                    if not subjects:
+                        logging.error(
+                            "Please provide the subjects to download the HCP dataset."
+                        )
+                        continue
+                    try:
+                        available_data[data_name](
+                            subjects=subjects,
+                            bucket=hcp_bucket,
+                            profile_name=hcp_profile_name,
+                            study=hcp_study,
+                            aws_access_key_id=hcp_aws_access_key_id,
+                            aws_secret_access_key=hcp_aws_secret_access_key,
+                        )
+                    except Exception as e:
+                        logging.error(
+                            f"Error while fetching HCP dataset: {str(e)}", exc_info=True
+                        )
+                elif data_name == "hbn":
+                    if not subjects:
+                        logging.error(
+                            "Please provide the subjects to download the HBN dataset."
+                        )
+                        continue
+                    try:
+                        available_data[data_name](
+                            subjects=subjects, include_afq=include_afq
+                        )
+                    except Exception as e:
+                        logging.error(
+                            f"Error while fetching HBN dataset: {str(e)}", exc_info=True
+                        )
+                else:
+                    available_data[data_name](include_optional=include_optional)
 
             nb_success = len(data_names) - len(skipped_names)
             print("\n")
             logging.info(f"Fetched {nb_success} / {len(data_names)} Files ")
             if skipped_names:
-                logging.warn(f"Skipped data name(s): {' '.join(skipped_names)}")
-                logging.warn(
+                logging.warning(f"Skipped data name(s): {' '.join(skipped_names)}")
+                logging.warning(
                     "Please, select between the following data names: "
                     f"{', '.join(available_data.keys())}"
                 )
@@ -305,7 +384,7 @@ class SplitFlow(Workflow):
         vol_idx : int, optional
             Index of the 3D volume to extract.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_split : string, optional
             Name of the resulting split volume
 
@@ -322,6 +401,249 @@ class SplitFlow(Workflow):
             save_nifti(osplit, split_vol, affine, hdr=image.header)
 
             logging.info(f"Split volume saved as {osplit}")
+
+
+class ExtractB0Flow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "extract_b0"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        b0_threshold=50,
+        group_contiguous_b0=False,
+        strategy="mean",
+        out_dir="",
+        out_b0="b0.nii.gz",
+    ):
+        """Extract on or multiple b0 volume from the input 4D file.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        group_contiguous_b0 : bool, optional
+            If True, each contiguous b0 volumes are grouped together.
+        strategy : str, optional
+            The extraction strategy, of either:
+
+                - first: select the first b0 found.
+                - all: select them all.
+                - mean: average them.
+
+            When used in conjunction with the batch parameter set to True, the
+            strategy is applied individually on each continuous set found.
+        out_dir : string, optional
+            Output directory.
+        out_b0 : string, optional
+            Name of the resulting b0 volume.
+
+        """
+        io_it = self.get_io_iterator()
+        for dwi, bval, ob0 in io_it:
+            logging.info("Extracting b0 from {0}".format(dwi))
+            data, affine, image = load_nifti(dwi, return_img=True)
+
+            bvals, bvecs = read_bvals_bvecs(bval, None)
+            # If all b-values are smaller or equal to the b0 threshold, it is
+            # assumed that no thresholding is requested
+            if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+                if b0_threshold < bvals.min():
+                    warnings.warn(
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
+                        stacklevel=2,
+                    )
+
+            bvecs = np.random.randn(bvals.shape[0], 3)
+            norms = np.linalg.norm(bvecs, axis=1, keepdims=True)
+            bvecs = bvecs / norms
+            gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
+            b0s_result = extract_b0(
+                data,
+                gtab.b0s_mask,
+                group_contiguous_b0=group_contiguous_b0,
+                strategy=strategy,
+            )
+
+            if b0s_result.ndim == 3:
+                save_nifti(ob0, b0s_result, affine, hdr=image.header)
+                logging.info("b0 saved as {0}".format(ob0))
+            elif b0s_result.ndim == 4:
+                for i in range(b0s_result.shape[-1]):
+                    save_nifti(
+                        ob0.replace(".nii", f"_{i}.nii"),
+                        b0s_result[..., i],
+                        affine,
+                        hdr=image.header,
+                    )
+                    logging.info(
+                        "b0 saved as {0}".format(ob0.replace(".nii", f"_{i}.nii"))
+                    )
+            else:
+                logging.error("No b0 volumes found")
+
+
+class ExtractShellFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "extract_shell"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        bvals_to_extract=None,
+        b0_threshold=50,
+        bvecs_tol=0.01,
+        tol=20,
+        group_shells=True,
+        out_dir="",
+        out_shell="shell.nii.gz",
+    ):
+        """Extract shells from the input 4D file.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        bvals_to_extract : string, optional
+            List of b-values to extract. You can provide a single b-values or a range
+            of b-values separated by a dash. For example, to extract b-values 0, 1,
+            and 2, you can use '0-2'. You can also provide a list of b-values separated
+            by a comma. For example, to extract b-values 0, 1, 2, 8, 10, 11 and 12,
+            you can use '0-2,8,10-12'.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
+        tol : int, optional
+            Tolerance range for b-value selection. A value of 20 means volumes with
+            b-values within ±20 units of the specified b-values will be extracted.
+        group_shells : bool, optional
+            If True, extracted volumes are grouped into a single array. If False,
+            returns a list of separate volumes.
+        out_dir : string, optional
+            Output directory.
+        out_shell : string, optional
+            Name of the resulting shell volume.
+
+        """
+        io_it = self.get_io_iterator()
+        if bvals_to_extract is None:
+            logging.error(
+                "Please provide a list of b-values to extract."
+                " e.g: --bvals_to_extract 1000 2000 3000"
+            )
+            sys.exit(1)
+
+        bvals_to_extract = handle_vol_idx(bvals_to_extract)
+
+        for dwi, bval, bvec, oshell in io_it:
+            logging.info("Extracting shell from {0}".format(dwi))
+            data, affine, image = load_nifti(dwi, return_img=True)
+
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+            # If all b-values are smaller or equal to the b0 threshold, it is
+            # assumed that no thresholding is requested
+            if any(mask_non_weighted_bvals(bvals, b0_threshold)):
+                if b0_threshold < bvals.min():
+                    warnings.warn(
+                        f"b0_threshold (value: {b0_threshold}) is too low, "
+                        "increase your b0_threshold. It should be higher than the "
+                        f"first b0 value ({bvals.min()}).",
+                        stacklevel=2,
+                    )
+            gtab = gradient_table(
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
+            indices, shell_data, output_bvals, output_bvecs = extract_dwi_shell(
+                data,
+                gtab,
+                bvals_to_extract,
+                tol=tol,
+                group_shells=group_shells,
+            )
+
+            for i, shell in enumerate(shell_data):
+                shell_value = np.unique(output_bvals[i]).astype(int).astype(str)
+                shell_value = "_".join(shell_value.tolist())
+                save_nifti(
+                    oshell.replace(".nii", f"_{shell_value}.nii"),
+                    shell,
+                    affine,
+                    hdr=image.header,
+                )
+                logging.info(
+                    "b0 saved as {0}".format(
+                        oshell.replace(".nii", f"_{shell_value}.nii")
+                    )
+                )
+
+
+class ExtractVolumeFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "extract_volume"
+
+    def run(
+        self, input_files, vol_idx=0, grouped=True, out_dir="", out_vol="volume.nii.gz"
+    ):
+        """Extracts the required volume from the input 4D file.
+
+        Parameters
+        ----------
+        input_files : string
+            Any number of Nifti1 files
+        vol_idx : string, optional
+            Indexes of the 3D volume to extract. Index start from 0. You can provide
+            a single index or a range of indexes separated by a dash. For example,
+            to extract volumes 0, 1, and 2, you can use '0-2'. You can also provide
+            a list of indexes separated by a comma. For example, to extract volumes
+            0, 1, 2, 8, 10, 11 and 12 , you can use '0-2,8,10-12'.
+        grouped : bool, optional
+            If True, extracted volumes are grouped into a single array. If False,
+            save a list of separate volumes.
+        out_dir : string, optional
+            Output directory.
+        out_vol : string, optional
+            Name of the resulting volume.
+
+        """
+        io_it = self.get_io_iterator()
+        vol_idx = handle_vol_idx(vol_idx)
+
+        for fpath, ovol in io_it:
+            logging.info("Extracting volume from {0}".format(fpath))
+            data, affine, image = load_nifti(fpath, return_img=True)
+
+            if grouped:
+                split_vol = data[..., vol_idx]
+                save_nifti(ovol, split_vol, affine, hdr=image.header)
+                logging.info("Volume saved as {0}".format(ovol))
+            else:
+                for i in vol_idx:
+                    fname = ovol.replace(".nii", f"_{i}.nii")
+                    split_vol = data[..., i]
+                    save_nifti(fname, split_vol, affine, hdr=image.header)
+                    logging.info("Volume saved as {0}".format(fname))
 
 
 class ConcatenateTractogramFlow(Workflow):
@@ -365,7 +687,7 @@ class ConcatenateTractogramFlow(Workflow):
             element in trx_list (Note: delete_groups must be set to True as
             well)
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_extension : string, optional
             Extension of the resulting tractogram
         out_tractogram : string, optional
@@ -476,7 +798,7 @@ class ConvertTensorsFlow(Workflow):
             Format of the output tensor files. Valid options are 'dipy',
             'mrtrix', 'ants', 'fsl'.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_tensor : string, optional
             Name of the resulting tensor file
 
@@ -517,7 +839,7 @@ class ConvertTractogramFlow(Workflow):
         offsets_dtype : string, optional
             Data type of the tractogram offsets, used for vtk files.
         out_dir : string, optional
-            Output directory. (default current directory)
+            Output directory.
         out_tractogram : string, optional
             Name of the resulting tractogram
 
@@ -785,8 +1107,39 @@ class MathFlow(Workflow):
     def get_short_name(cls):
         return "math_flow"
 
+    def broadcast_arrays(self, vol_dict, operation):
+        variables = re.findall(r"\b\w+\b", operation)
+        variables = [var for var in variables if var in vol_dict]
+
+        shapes = [vol_dict[var].shape for var in variables]
+        max_dims = max(len(shape) for shape in shapes)
+
+        for var in variables:
+            shape = vol_dict[var].shape
+            if len(shape) < max_dims:
+                new_shape = shape + (1,) * (max_dims - len(shape))
+                vol_dict[var] = vol_dict[var].reshape(new_shape)
+
+        updated_shapes = [vol_dict[var].shape for var in variables]
+        try:
+            broadcast_shape = np.broadcast_shapes(*updated_shapes)
+        except ValueError as e:
+            raise ValueError(f"Shape mismatch after adding dimensions: {e}") from e
+
+        for var in variables:
+            if vol_dict[var].shape != broadcast_shape:
+                vol_dict[var] = np.broadcast_to(vol_dict[var], broadcast_shape)
+
+        return vol_dict
+
     def run(
-        self, operation, input_files, dtype=None, out_dir="", out_file="math_out.nii.gz"
+        self,
+        operation,
+        input_files,
+        dtype=None,
+        disable_check=False,
+        out_dir="",
+        out_file="math_out.nii.gz",
     ):
         """Perform mathematical operations on volume input files.
 
@@ -802,7 +1155,7 @@ class MathFlow(Workflow):
                 - Bitwise operators (and, or, not, xor): ``&, |, ~, ^``
                 - Comparison operators: ``<, <=, ==, !=, >=, >``
                 - Unary arithmetic operators: ``-``
-                - Binary arithmetic operators: ``+, -, *, /, **, %, <<, >>``
+                - Binary arithmetic operators: ``+, -, *, /, **, <<, >>``
             Supported functions are:
                 - ``where(bool, number1, number2) -> number``: number1 if the bool
                   condition is true, number2 otherwise.
@@ -832,6 +1185,9 @@ class MathFlow(Workflow):
             Any number of Nifti1 files
         dtype : string, optional
             Data type of the resulting file.
+        disable_check : bool, optional
+            If True, the workflow will not check if all input files have the same
+            shape and affine matrix.
         out_dir : string, optional
             Output directory
         out_file : string, optional
@@ -872,11 +1228,14 @@ class MathFlow(Workflow):
 
         if have_errors:
             logging.warning(info_msg)
-            msg = "All input files must have the same shape and affine matrix."
-            logging.error(msg)
-            raise SystemExit()
+            if not disable_check:
+                msg = "All input files must have the same shape and affine matrix."
+                logging.error(msg)
+                raise SystemExit()
 
         try:
+            if disable_check:
+                vol_dict = self.broadcast_arrays(vol_dict, operation)
             res = ne.evaluate(operation, local_dict=vol_dict)
         except KeyError as e:
             msg = (
@@ -897,6 +1256,8 @@ class MathFlow(Workflow):
                 logging.error(msg)
                 raise SystemExit() from e
 
+        if res.dtype == bool:
+            res = res.astype(np.uint8)
         out_fname = os.path.join(out_dir, out_file)
         logging.info(f"Saving result to {out_fname}")
         save_nifti(out_fname, res, affine)

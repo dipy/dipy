@@ -1,3 +1,4 @@
+import logging
 from warnings import warn
 
 import numpy as np
@@ -23,7 +24,7 @@ from dipy.viz.horizon.util import (
     check_img_dtype,
     check_img_shapes,
     check_peak_size,
-    unpack_image,
+    unpack_data,
     unpack_surface,
 )
 from dipy.viz.horizon.visualizer import (
@@ -50,6 +51,13 @@ HELP_MESSAGE = """
 >> a: select all centroids
 >> s: save in file
 >> y: new window
+>> o: hide/show this panel
+"""
+
+SHORTCUT_MESSAGE = """
+>> shift + drag: move
+>> ctrl/cmd + drag: rotate
+>> ctrl/cmd + r: reset
 >> o: hide/show this panel
 """
 
@@ -213,12 +221,13 @@ class Horizon:
         self.__tab_mgr = None
 
         self.__help_visible = True
+        self._shortcut_help_visible = True
 
         # TODO: Move to another class/module
         self.__hide_centroids = True
         self.__select_all = False
 
-        self.__win_size = (0, 0)
+        self._win_size = (0, 0)
 
     # TODO: Move to another class/module
     def __expand(self):
@@ -280,18 +289,27 @@ class Horizon:
 
     def __key_press_events(self, obj, event):
         key = obj.GetKeySym()
+        if key in ("r", "R") and obj.GetControlKey():
+            self._scene.reset_camera_tight()
+            self.show_m.render()
+        if key in ("o", "O"):
+            if self._shortcut_help_visible:
+                self._scene.rm(*self.shortcut_panel.actors)
+                self._shortcut_help_visible = False
+            else:
+                self._scene.add(*self.shortcut_panel.actors)
+                self._shortcut_help_visible = True
+            self.show_m.render()
         # TODO: Move to another class/module
         if self.cluster:
             # retract help panel
             if key in ("o", "O"):
-                panel_size = self.help_panel._get_size()
                 if self.__help_visible:
-                    new_pos = np.array(self.__win_size) - 10
+                    self._scene.rm(*self.help_panel.actors)
                     self.__help_visible = False
                 else:
-                    new_pos = np.array(self.__win_size) - panel_size - 5
+                    self._scene.add(*self.help_panel.actors)
                     self.__help_visible = True
-                self.help_panel._set_position(new_pos)
                 self.show_m.render()
             if key in ("a", "A"):
                 self.__show_all()
@@ -370,14 +388,14 @@ class Horizon:
                 c = cluster_actors[bundle]["cluster"]
                 indices = tractogram_clusters[t][c]
                 saving_streamlines.extend(Streamlines(indices))
-        print("Saving result in tmp.trk")
+        logging.info("Saving result in tmp.trk")
 
         # Using the header of the first of the tractograms
         sft_new = StatefulTractogram(
             saving_streamlines, self.tractograms[0], Space.RASMM
         )
         save_tractogram(sft_new, "tmp.trk", bbox_valid_check=False)
-        print("Saved!")
+        logging.info("Saved!")
 
     # TODO: Move to another class/module
     def __show_all(self):
@@ -407,17 +425,18 @@ class Horizon:
             self.__select_all = True
         self.show_m.render()
 
-    def __win_callback(self, obj, event):
-        if self.__win_size != obj.GetSize():
-            self.__win_size = obj.GetSize()
+    def __win_callback(self, obj, _event):
+        if self._win_size != obj.GetSize():
+            self._win_size = obj.GetSize()
             if len(self.__tabs) > 0:
-                self.__tab_mgr.reposition(self.__win_size)
+                self.__tab_mgr.reposition(self._win_size)
+            panel_size = self.shortcut_panel._get_size()
+            self.shortcut_panel._set_position(
+                (5, self._win_size[1] - panel_size[1] - 5)
+            )
             if self.cluster:
-                if self.__help_visible:
-                    panel_size = self.help_panel._get_size()
-                    new_pos = np.array(self.__win_size) - panel_size - 5
-                else:
-                    new_pos = np.array(self.__win_size) - 10
+                panel_size = self.help_panel._get_size()
+                new_pos = np.array(self._win_size) - panel_size - 5
                 self.help_panel._set_position(new_pos)
 
     def build_scene(self):
@@ -446,6 +465,7 @@ class Horizon:
 
     def build_show(self, scene):
         self._scene = scene
+        self._win_size = self._scene.GetSize()
 
         title = f"Horizon {horizon_version}"
         self.show_m = window.ShowManager(
@@ -516,6 +536,17 @@ class Horizon:
                     ClustersTab(self.__clusters_visualizer, self.cluster_thr)
                 )
 
+        text_block = build_label(SHORTCUT_MESSAGE, font_size=18)
+
+        self.shortcut_panel = ui.Panel2D(
+            size=(260, 115),
+            position=(5, 960),
+            color=(0.8, 0.8, 1.0),
+            opacity=0.2,
+            align="left",
+        )
+        self.shortcut_panel.add_element(text_block.obj, coords=(0.02, 0.01))
+        scene.add(self.shortcut_panel)
         sync_slices = sync_vol = False
         self.images = check_img_dtype(self.images)
         if len(self.images) > 0:
@@ -526,9 +557,9 @@ class Horizon:
             sync_slices, sync_vol = check_img_shapes(self.images)
             for img in self.images:
                 title = f"Image {img_count + 1}"
-                data, affine, fname = unpack_image(img)
+                data, affine, fname = unpack_data(img, return_size=3)
                 self.vox2ras = affine
-                if self.__roi_images:
+                if self.__roi_images and data.ndim == 3:
                     if "rois" in self.random_colors:
                         roi_color = next(self.color_gen)
                     roi_actor = actor.contour_from_roi(
@@ -544,6 +575,7 @@ class Horizon:
                         affine=affine,
                         world_coords=self.world_coords,
                         rgb=self.rgb,
+                        fname=fname,
                     )
                     self.__tabs.append(
                         SlicesTab(
@@ -560,6 +592,15 @@ class Horizon:
 
         sync_peaks = False
         if len(self.pams) > 0:
+            for idx, f_pam in enumerate(self.pams):
+                title = f"Peaks {idx + 1}"
+                pam, fname = unpack_data(f_pam, return_size=2)
+                peak_viz = PeaksVisualizer(
+                    (pam.peak_dirs, pam.affine), self.world_coords, fname
+                )
+                scene.add(peak_viz.actors[0])
+                self.__tabs.append(PeaksTab(peak_viz.actors[0], title, fname))
+                self.pams[idx] = (pam, fname)
             if self.images:
                 sync_peaks = check_peak_size(
                     self.pams,
@@ -568,12 +609,6 @@ class Horizon:
                 )
             else:
                 sync_peaks = check_peak_size(self.pams)
-            for pam in self.pams:
-                peak_viz = PeaksVisualizer(
-                    (pam.peak_dirs, pam.affine), self.world_coords
-                )
-                scene.add(peak_viz.actors[0])
-                self.__tabs.append(PeaksTab(peak_viz.actors[0]))
 
         if len(self._surfaces) > 0:
             for idx, surface in enumerate(self._surfaces):
@@ -587,8 +622,6 @@ class Horizon:
                 surf_viz = SurfaceVisualizer((vertices, faces), scene, color)
                 surf_tab = SurfaceTab(surf_viz, title, fname)
                 self.__tabs.append(surf_tab)
-
-        self.__win_size = scene.GetSize()
 
         if len(self.__tabs) > 0:
             self.__tab_mgr = TabManager(
@@ -673,7 +706,7 @@ class Horizon:
             self.show_m.render()
 
         def right_click_cluster_callback(obj, event):
-            print("Cluster Area Selected")
+            logging.info("Cluster Area Selected")
             self.show_m.render()
 
         for cl in self.cla:
