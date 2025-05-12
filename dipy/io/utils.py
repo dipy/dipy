@@ -283,7 +283,7 @@ def split_name_with_gz(filename):
 
 
 def get_reference_info(reference):
-    """Will compare the spatial attribute of 2 references.
+    """Get the spatial attributes of the given data file.
 
     Parameters
     ----------
@@ -374,7 +374,7 @@ def get_reference_info(reference):
 
 
 def is_header_compatible(reference_1, reference_2):
-    """Will compare the spatial attribute of 2 references
+    """Compare the spatial attributes of the data in the input files.
 
     Parameters
     ----------
@@ -388,7 +388,7 @@ def is_header_compatible(reference_1, reference_2):
     Returns
     -------
     output : bool
-        Does all the spatial attribute match
+        ``True`` if all spatial attributes match, ``False`` otherwise.
     """
 
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = get_reference_info(

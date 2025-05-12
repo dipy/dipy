@@ -304,8 +304,8 @@ def patch2self(
         Array of the bvals from the DWI acquisition
     patch_radius : int or array of shape (3,), optional
         The radius of the local patch to be taken around each voxel (in
-        voxels). Default: 0 (denoise in blocks of 1x1x1 voxels).
-    model : string, or sklearn.base.RegressorMixin
+        voxels).
+    model : string, or sklearn.base.RegressorMixin, optional
         This will determine the algorithm used to solve the set of linear
         equations underlying this model. If it is a string it needs to be
         one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
@@ -333,9 +333,9 @@ def patch2self(
         non-negative values.
     tmp_dir : str, optional
         The directory to save the temporary files. If None, the temporary
-        files are saved in the system's default temporary directory. Default: None.
+        files are saved in the system's default temporary directory.
     version : int, optional
-        Version 1 or 3 of Patch2Self to use. Default: 3
+        Version 1 or 3 of Patch2Self to use.
 
     Returns
     -------
