@@ -18,7 +18,7 @@ from dipy.tracking.propspeed cimport (
     parallel_transport_propagator,
 )
 
-from dipy.tracking.tracker_parameters import generate_tracking_parameters, FAIL
+from dipy.tracking.tracker_parameters import generate_tracking_parameters, TrackerStatus
 from dipy.tracking.tests.test_tractogen import get_fast_tracking_performances
 from dipy.utils.fast_numpy cimport RNGState, seed_rng
 
@@ -70,7 +70,7 @@ def test_tracker_deterministic():
                                           &stream_data[0],
                                           sh_pmf_gen,
                                           &rng)
-        npt.assert_equal(status, FAIL)
+        npt.assert_equal(status, TrackerStatus.FAIL)
 
         # Test using SF pmf
         status = deterministic_propagator(&point[0],
@@ -79,7 +79,7 @@ def test_tracker_deterministic():
                                           &stream_data[0],
                                           sf_pmf_gen,
                                           &rng)
-        npt.assert_equal(status, FAIL)
+        npt.assert_equal(status, TrackerStatus.FAIL)
 
 
 def test_deterministic_performances():
@@ -142,7 +142,7 @@ def test_tracker_probabilistic():
                                           &stream_data[0],
                                           sh_pmf_gen,
                                           &rng)
-        npt.assert_equal(status, FAIL)
+        npt.assert_equal(status, TrackerStatus.FAIL)
 
         # Test using SF pmf
         status = probabilistic_propagator(&point[0],
@@ -151,7 +151,7 @@ def test_tracker_probabilistic():
                                           &stream_data[0],
                                           sf_pmf_gen,
                                           &rng)
-        npt.assert_equal(status, FAIL)
+        npt.assert_equal(status, TrackerStatus.FAIL)
 
 
 def test_probabilistic_performances():
@@ -215,7 +215,7 @@ def test_tracker_ptt():
                                                &stream_data[0],
                                                sh_pmf_gen,
                                                &rng)
-        npt.assert_equal(status, FAIL)
+        npt.assert_equal(status, TrackerStatus.FAIL)
 
         # Test using SF pmf
         status = parallel_transport_propagator(&point[0],
@@ -224,7 +224,7 @@ def test_tracker_ptt():
                                                &stream_data[0],
                                                sf_pmf_gen,
                                                &rng)
-        npt.assert_equal(status, FAIL)
+        npt.assert_equal(status, TrackerStatus.FAIL)
 
 
 def test_ptt_performances():

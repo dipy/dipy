@@ -24,9 +24,8 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                VALIDSTREAMLIME,
                                                INVALIDSTREAMLIME)
 from dipy.tracking.tracker_parameters cimport (TrackerParameters,
-                                               func_ptr,
-                                               SUCCESS,
-                                               FAIL)
+                                               TrackerStatus,
+                                               func_ptr)
 
 from nibabel.streamlines import ArraySequence as Streamlines
 
@@ -256,7 +255,7 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     memset(stream_data, 0, 100 * sizeof(double))
     status_forward = TRACKPOINT
     for i in range(1, params.max_nbr_pts):
-        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng) == FAIL:
+        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng) == TrackerStatus.FAIL:
             break
         # update position
         for j in range(3):
@@ -290,7 +289,7 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
 
     status_backward = TRACKPOINT
     for i in range(1, params.max_nbr_pts):
-        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng) == FAIL:
+        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng) == TrackerStatus.FAIL:
             break
         # update position
         for j in range(3):
