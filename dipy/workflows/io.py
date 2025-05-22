@@ -320,7 +320,7 @@ class FetchFlow(Workflow):
                     try:
                         available_data[data_name](
                             subjects=subjects,
-                            bucket=hcp_bucket,
+                            hcp_bucket=hcp_bucket,
                             profile_name=hcp_profile_name,
                             study=hcp_study,
                             aws_access_key_id=hcp_aws_access_key_id,
