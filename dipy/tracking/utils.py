@@ -116,6 +116,7 @@ def connectivity_matrix(
     *,
     inclusive=False,
     symmetric=True,
+    discard_stream_size=0,
     return_mapping=False,
     mapping_as_streamlines=False,
 ):
@@ -137,6 +138,11 @@ def connectivity_matrix(
     symmetric : bool, True by default
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
+    discard_stream_size : int, 0 by default
+        If the length of a streamline is less than or equal to this value, it
+        will not be included in the connectivity matrix. When 0, no filtering
+        is applied. This is useful for ignoring very short streamlines that 
+        are likely to be noise.
     return_mapping : bool, False by default
         If True, a mapping is returned which maps matrix indices to
         streamlines.
@@ -174,6 +180,10 @@ def connectivity_matrix(
 
     if inclusive:
         for i, sl in enumerate(streamlines):
+            # Only process if streamline length is above threshold
+            if discard_stream_size > 0 and len(sl) <= discard_stream_size:
+                continue
+                
             sl = _to_voxel_coordinates(sl, lin_T, offset)
             x, y, z = sl.T
             if symmetric:
@@ -192,7 +202,21 @@ def connectivity_matrix(
                         mapping[comb].append(i)
 
     else:
-        streamlines_end = np.array([sl[0 :: len(sl) - 1] for sl in streamlines])
+        # Filter streamlines if discard_stream_size > 0
+        if discard_stream_size > 0:
+            filtered_streamlines = []
+            orig_indices = []
+            for i, sl in enumerate(streamlines):
+                if len(sl) > discard_stream_size:
+                    filtered_streamlines.append(sl)
+                    orig_indices.append(i)
+            working_streamlines = filtered_streamlines
+        else:
+            working_streamlines = streamlines
+            orig_indices = list(range(len(streamlines)))
+        
+        # Use the filtered streamlines for endpoint extraction
+        streamlines_end = np.array([sl[0 :: len(sl) - 1] for sl in working_streamlines])
         streamlines_end = _to_voxel_coordinates(streamlines_end, lin_T, offset)
         x, y, z = streamlines_end.T
         if symmetric:
@@ -204,10 +228,10 @@ def connectivity_matrix(
         if return_mapping:
             if mapping_as_streamlines:
                 for i, (a, b) in enumerate(end_labels.T):
-                    mapping[a, b].append(streamlines[i])
+                    mapping[a, b].append(working_streamlines[i])
             else:
                 for i, (a, b) in enumerate(end_labels.T):
-                    mapping[a, b].append(i)
+                    mapping[a, b].append(orig_indices[i])
 
     if symmetric:
         matrix = np.maximum(matrix, matrix.T)
