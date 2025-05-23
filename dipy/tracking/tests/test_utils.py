@@ -13,6 +13,7 @@ from dipy.tracking.utils import (
     _min_at,
     connectivity_matrix,
     density_map,
+    get_filtered_streamlines,
     length,
     max_angle_from_curvature,
     min_radius_curvature_from_angle,
@@ -594,6 +595,28 @@ def test_random_seeds_from_mask(rng):
         mask, np.eye(4), seeds_count=500, seed_count_per_voxel=False, random_seed=0
     )[:150]
     assert_true(np.all(seeds_nt_150 == seeds_nt_500))
+
+
+def test_get_filtered_streamlines():
+    s1 = np.array([[0, 0, 0]])  # length 1
+    s2 = np.array([[0, 0, 0], [1, 1, 1]])  # length 2
+    s3 = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])  # length 3
+
+    streamlines = [s1, s2, s3]
+
+    # len=1 should keep s2 and s3 (length > 1)
+    result = get_filtered_streamlines(streamlines, len=1)
+    assert len(result) == 2
+    assert all(s.shape[0] > 1 for s in result)
+
+    # len=2 should keep only s3 (length > 2)
+    result = get_filtered_streamlines(streamlines, len=2)
+    assert len(result) == 1
+    assert result[0].shape[0] > 2
+
+    # len=3 should keep nothing (length > 3)
+    result = get_filtered_streamlines(streamlines, len=3)
+    assert len(result) == 0
 
 
 def test_connectivity_matrix_shape():
