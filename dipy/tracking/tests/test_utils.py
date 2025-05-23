@@ -231,6 +231,59 @@ def test_connectivity_matrix():
     npt.assert_equal(matrix[4, 3], matrix[4, 3])
 
 
+def test_connectivity_matrix_with_generator():
+    """Test connectivity_matrix works with generator inputs."""
+    label_volume = np.array([[[3, 0, 0], [0, 0, 5], [0, 0, 4]]])
+    streamlines = [
+        np.array([[0, 0, 0], [0, 1, 2], [0, 2, 2]], "float"),
+        np.array([[0, 0, 0], [0, 1, 1], [0, 2, 2]], "float"),
+        np.array([[0, 2, 2], [0, 1, 1], [0, 0, 0]], "float"),
+    ]
+
+    # Create a generator version of streamlines
+    def streamline_generator():
+        for sl in streamlines:
+            yield sl
+
+    # Test that generator input works
+    matrix = connectivity_matrix(
+        streamline_generator(), np.eye(4), label_volume, symmetric=False
+    )
+    expected = np.zeros((6, 6), "int")
+    expected[3, 4] = 2
+    expected[4, 3] = 1
+    npt.assert_array_equal(matrix, expected)
+
+    # Test with discard_stream_size parameter
+    matrix = connectivity_matrix(
+        streamline_generator(),
+        np.eye(4),
+        label_volume,
+        symmetric=False,
+        discard_stream_size=1,
+    )
+    npt.assert_array_equal(matrix, expected)
+
+    # Test inclusive mode with generator
+    expected_inclusive = np.zeros((6, 6), "int")
+    expected_inclusive[3, 4] = 2
+    expected_inclusive[4, 3] = 1
+    expected_inclusive[3, 5] = 1
+    expected_inclusive[5, 4] = 1
+    expected_inclusive[0, 3:5] = 1
+    expected_inclusive[3:5, 0] = 1
+
+    matrix = connectivity_matrix(
+        streamline_generator(),
+        np.eye(4),
+        label_volume,
+        symmetric=False,
+        inclusive=True,
+        discard_stream_size=1,
+    )
+    npt.assert_array_equal(matrix, expected_inclusive)
+
+
 def test_ndbincount():
     def check(expected):
         npt.assert_equal(bc[0, 0], expected[0])
