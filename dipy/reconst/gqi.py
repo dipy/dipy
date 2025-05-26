@@ -79,24 +79,20 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         return GeneralizedQSamplingFit(self, data)
 
     @warning_for_keywords()
-    def predict(self, gtab, sphere=None, sphere_recursion=5):
+    def predict(self, odf, gtab, sphere):
         """
         Predict a signal for this TensorModel class instance given parameters.
 
         Parameters
         ----------
+        odf : ndarray
+            Map of ODFs
         gtab : ndarray
             Orientations where signal will be simulated
+        sphere : :obj:`~dipy.core.sphere.Sphere`
+            A sphere object, must be the same used for calculating the ODFs.
 
         """
-
-        if sphere is None:
-            from dipy.core.subdivide_octahedron import create_unit_sphere
-
-            sphere = create_unit_sphere(recursion_level=sphere_recursion)
-
-        if (odf := self.cache_get("odf", key=sphere)) is None:
-            raise RuntimeError("GQI must be fitted on this sphere first.")
 
         return odf_prediction(odf, gtab, self.Lambda, sphere, method=self.method)
 
@@ -123,9 +119,6 @@ class GeneralizedQSamplingFit(OdfFit):
     def odf(self, sphere):
         """Calculates the discrete ODF for a given discrete sphere."""
 
-        if (odf := self.model.cache_get("odf", key=sphere)) is not None:
-            return odf
-
         self.gqi_vector = self.model.cache_get("gqi_vector", key=sphere)
         if self.gqi_vector is None:
             self.gqi_vector = gqi_kernel(
@@ -136,15 +129,11 @@ class GeneralizedQSamplingFit(OdfFit):
             )
             self.model.cache_set("gqi_vector", sphere, self.gqi_vector)
 
-        odf = np.dot(self.data, self.gqi_vector)
-        self.model.cache_set("odf", sphere, odf)
-
-        return odf
+        return np.dot(self.data, self.gqi_vector)
 
 
 @warning_for_keywords()
 def gqi_kernel(gtab, param_lambda, sphere, method="gqi2"):
-
     # 0.01506 = 6*D where D is the free water diffusion coefficient
     # l_values sqrt(6 D tau) D free water diffusion coefficient and
     # tau included in the b-value
@@ -153,24 +142,14 @@ def gqi_kernel(gtab, param_lambda, sphere, method="gqi2"):
 
     if method == "gqi2":
         H = squared_radial_component
-        return np.real(
-            H(
-                np.dot(b_vector, sphere.vertices.T)
-                * param_lambda
-            )
-        )
+        return np.real(H(np.dot(b_vector, sphere.vertices.T) * param_lambda))
     elif method == "standard":
         return np.real(
-            np.sinc(
-                np.dot(b_vector, sphere.vertices.T)
-                * param_lambda
-                / np.pi
-            )
+            np.sinc(np.dot(b_vector, sphere.vertices.T) * param_lambda / np.pi)
         )
 
     raise NotImplementedError(
-        f'GQI model "{method}" unknown.'
-        'Supported methods are "gqi2" and "standard".'
+        f'GQI model "{method}" unknown. Supported methods are "gqi2" and "standard".'
     )
 
 
