@@ -21,6 +21,10 @@ class OdfModel(ReconstModel):
         """To be implemented by specific odf models"""
         raise NotImplementedError("To be implemented in sub classes")
 
+    def predict(self, odf, gtab, sphere):
+        """To be implemented by specific odf models"""
+        raise NotImplementedError("To be implemented in sub classes")
+
 
 class OdfFit(ReconstFit):
     def odf(self, sphere):
