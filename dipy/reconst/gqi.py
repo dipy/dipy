@@ -72,18 +72,33 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         self.method = method
         self.Lambda = sampling_length
         self.normalize_peaks = normalize_peaks
-        # 0.01506 = 6*D where D is the free water diffusion coefficient
-        # l_values sqrt(6 D tau) D free water diffusion coefficient and
-        # tau included in the b-value
-        scaling = np.sqrt(self.gtab.bvals * 0.01506)
-        tmp = np.tile(scaling, (3, 1))
-        gradsT = self.gtab.bvecs.T
-        b_vector = gradsT * tmp  # element-wise product
-        self.b_vector = b_vector.T
+        self.gtab = gtab
 
     @multi_voxel_fit
     def fit(self, data, **kwargs):
         return GeneralizedQSamplingFit(self, data)
+
+    @warning_for_keywords()
+    def predict(self, gtab, sphere=None, sphere_recursion=5):
+        """
+        Predict a signal for this TensorModel class instance given parameters.
+
+        Parameters
+        ----------
+        gtab : ndarray
+            Orientations where signal will be simulated
+
+        """
+
+        if sphere is None:
+            from dipy.core.subdivide_octahedron import create_unit_sphere
+
+            sphere = create_unit_sphere(recursion_level=sphere_recursion)
+
+        if (odf := self.cache_get("odf", key=sphere)) is None:
+            raise RuntimeError("GQI must be fitted on this sphere first.")
+
+        return odf_prediction(odf, gtab, self.Lambda, sphere, method=self.method)
 
 
 class GeneralizedQSamplingFit(OdfFit):
@@ -107,28 +122,56 @@ class GeneralizedQSamplingFit(OdfFit):
 
     def odf(self, sphere):
         """Calculates the discrete ODF for a given discrete sphere."""
+
+        if (odf := self.model.cache_get("odf", key=sphere)) is not None:
+            return odf
+
         self.gqi_vector = self.model.cache_get("gqi_vector", key=sphere)
         if self.gqi_vector is None:
-            if self.model.method == "gqi2":
-                H = squared_radial_component
-                # print self.gqi_vector.shape
-                self.gqi_vector = np.real(
-                    H(
-                        np.dot(self.model.b_vector, sphere.vertices.T)
-                        * self.model.Lambda
-                    )
-                )
-            if self.model.method == "standard":
-                self.gqi_vector = np.real(
-                    np.sinc(
-                        np.dot(self.model.b_vector, sphere.vertices.T)
-                        * self.model.Lambda
-                        / np.pi
-                    )
-                )
+            self.gqi_vector = gqi_kernel(
+                sphere,
+                self.model.Lambda,
+                self.model.gtab,
+                method=self.model.method,
+            )
             self.model.cache_set("gqi_vector", sphere, self.gqi_vector)
 
-        return np.dot(self.data, self.gqi_vector)
+        odf = np.dot(self.data, self.gqi_vector)
+        self.model.cache_set("odf", sphere, odf)
+
+        return odf
+
+
+@warning_for_keywords()
+def gqi_kernel(gtab, param_lambda, sphere, method="gqi2"):
+
+    # 0.01506 = 6*D where D is the free water diffusion coefficient
+    # l_values sqrt(6 D tau) D free water diffusion coefficient and
+    # tau included in the b-value
+    scaling = np.sqrt(gtab.bvals * 0.01506)
+    b_vector = gtab.bvecs * scaling[:, None]
+
+    if method == "gqi2":
+        H = squared_radial_component
+        return np.real(
+            H(
+                np.dot(b_vector, sphere.vertices.T)
+                * param_lambda
+            )
+        )
+    elif method == "standard":
+        return np.real(
+            np.sinc(
+                np.dot(b_vector, sphere.vertices.T)
+                * param_lambda
+                / np.pi
+            )
+        )
+
+    raise NotImplementedError(
+        f'GQI model "{method}" unknown.'
+        'Supported methods are "gqi2" and "standard".'
+    )
 
 
 @warning_for_keywords()
@@ -299,3 +342,32 @@ def triple_odf_maxima(vertices, odf, width):
     indmax3, odfmax3 = patch_maximum(vertices, odf, cross12, 2*width)
     """
     return [(indmax1, odfmax1), (indmax2, odfmax2), (indmax3, odfmax3)]
+
+
+def odf_prediction(odf, gtab, param_lambda, sphere, method="gqi2"):
+    r"""
+    Predict a signal given the ODF.
+
+    Parameters
+    ----------
+    odf : ndarray
+        ODF parameters.
+
+    gtab : a GradientTable class instance
+        The gradient table for this prediction
+
+    Notes
+    -----
+    The predicted signal is given by:
+
+    .. math::
+
+        S(\theta, b) = K_{ii}^{-1} \cdot ODF
+
+    where $K_{ii}^{-1}$, is the inverse of the gQI kernels for the direction(s) $ii$
+    given by ``gtab``.
+
+    """
+    gqi_vector = gqi_kernel(gtab, param_lambda, sphere, method=method)
+
+    return np.dot(gqi_vector.T, odf)
