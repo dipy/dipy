@@ -348,7 +348,7 @@ class FetchFlow(Workflow):
                     available_data[data_name](include_optional=include_optional)
 
             nb_success = len(data_names) - len(skipped_names)
-            print("\n")
+            logging.info("\n")
             logging.info(f"Fetched {nb_success} / {len(data_names)} Files ")
             if skipped_names:
                 logging.warning(f"Skipped data name(s): {' '.join(skipped_names)}")
