@@ -78,15 +78,14 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
     def fit(self, data, **kwargs):
         return GeneralizedQSamplingFit(self, data)
 
-    @warning_for_keywords()
     def predict(self, odf, gtab, sphere):
         """
-        Predict a signal for this TensorModel class instance given parameters.
+        Predict a signal for this GeneralizedQSamplingModel class instance given parameters.
 
         Parameters
         ----------
         odf : ndarray
-            Map of ODFs
+            Map of ODFs.
         gtab : ndarray
             Orientations where signal will be simulated
         sphere : :obj:`~dipy.core.sphere.Sphere`
@@ -132,7 +131,6 @@ class GeneralizedQSamplingFit(OdfFit):
         return np.dot(self.data, self.gqi_vector)
 
 
-@warning_for_keywords()
 def gqi_kernel(gtab, param_lambda, sphere, method="gqi2"):
     # 0.01506 = 6*D where D is the free water diffusion coefficient
     # l_values sqrt(6 D tau) D free water diffusion coefficient and
@@ -332,7 +330,7 @@ def odf_prediction(odf, gtab, param_lambda, sphere, method="gqi2"):
     odf : ndarray
         ODF parameters.
 
-    gtab : a GradientTable class instance
+    gtab : GradientTable
         The gradient table for this prediction
 
     Notes
@@ -343,7 +341,7 @@ def odf_prediction(odf, gtab, param_lambda, sphere, method="gqi2"):
 
         S(\theta, b) = K_{ii}^{-1} \cdot ODF
 
-    where $K_{ii}^{-1}$, is the inverse of the gQI kernels for the direction(s) $ii$
+    where $K_{ii}^{-1}$, is the inverse of the GQI kernels for the direction(s) $ii$
     given by ``gtab``.
 
     """
