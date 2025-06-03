@@ -29,7 +29,6 @@ cdef class BinaryStoppingCriterion(StoppingCriterion):
     """
 
     def __cinit__(self, mask):
-        self.interp_out_view = self.interp_out_double
         self.mask = (mask > 0).astype('uint8')
 
     cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
@@ -58,7 +57,6 @@ cdef class BinaryStoppingCriterion(StoppingCriterion):
 cdef class ThresholdStoppingCriterion(StoppingCriterion):
 
     def __cinit__(self, metric_map, double threshold):
-        self.interp_out_view = self.interp_out_double
         self.metric_map = np.asarray(metric_map, 'float64')
         self.threshold = threshold
 
@@ -66,10 +64,11 @@ cdef class ThresholdStoppingCriterion(StoppingCriterion):
         cdef:
             double result
             int err
+            double interp_out_double[1]
 
         err = trilinear_interpolate4d_c(self.metric_map[..., None],
                                         point,
-                                        &self.interp_out_view[0])
+                                        &interp_out_double[0])
         if err == -1:
             return OUTSIDEIMAGE
         elif err != 0:
@@ -77,7 +76,7 @@ cdef class ThresholdStoppingCriterion(StoppingCriterion):
             raise RuntimeError(
                 "Unexpected interpolation error (code:%i)" % err)
 
-        result = self.interp_out_view[0]
+        result = interp_out_double[0]
 
         if result > self.threshold:
             return TRACKPOINT
@@ -96,13 +95,10 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
     brain (e.g. through the brain stem).
 
     cdef:
-        double interp_out_double[1]
-        double[:]  interp_out_view = interp_out_view
         double[:, :, :] include_map, exclude_map
 
     """
     def __cinit__(self, include_map, exclude_map, *args, **kw):
-        self.interp_out_view = self.interp_out_double
         self.include_map = np.asarray(include_map, 'float64')
         self.exclude_map = np.asarray(exclude_map, 'float64')
 
@@ -135,12 +131,15 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
         return self.get_exclude_c(&point[0])
 
     cdef get_exclude_c(self, double* point):
+        cdef:
+            double interp_out_double[1]
+
         exclude_err = trilinear_interpolate4d_c(self.exclude_map[..., None],
                                                 point,
-                                                &self.interp_out_view[0])
+                                                &interp_out_double[0])
         if exclude_err != 0:
             return 0
-        return self.interp_out_view[0]
+        return interp_out_double[0]
 
     cpdef double get_include(self, double[::1] point):
         if point.shape[0] != 3:
@@ -149,12 +148,15 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
         return self.get_include_c(&point[0])
 
     cdef get_include_c(self, double* point):
+        cdef:
+            double interp_out_double[1]
+
         include_err = trilinear_interpolate4d_c(self.include_map[..., None],
                                                 point,
-                                                &self.interp_out_view[0])
+                                                &interp_out_double[0])
         if include_err != 0:
             return 0
-        return self.interp_out_view[0]
+        return interp_out_double[0]
 
 
 cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
@@ -174,7 +176,6 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
     """
 
     def __cinit__(self, include_map, exclude_map):
-        self.interp_out_view = self.interp_out_double
         self.include_map = np.asarray(include_map, 'float64')
         self.exclude_map = np.asarray(exclude_map, 'float64')
 
@@ -182,16 +183,17 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
         cdef:
             double include_result, exclude_result
             int include_err, exclude_err
+            double interp_out_double[1]
 
         include_err = trilinear_interpolate4d_c(self.include_map[..., None],
                                                 point,
-                                                &self.interp_out_view[0])
-        include_result = self.interp_out_view[0]
+                                                &interp_out_double[0])
+        include_result = interp_out_double[0]
 
         exclude_err = trilinear_interpolate4d_c(self.exclude_map[..., None],
                                                 point,
-                                                &self.interp_out_view[0])
-        exclude_result = self.interp_out_view[0]
+                                                &interp_out_double[0])
+        exclude_result = interp_out_double[0]
 
         if include_err == -1 or exclude_err == -1:
             return OUTSIDEIMAGE
@@ -220,8 +222,6 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
     determine when the tracking stops :footcite:p:`Girard2014`.
 
     cdef:
-        double interp_out_double[1]
-        double[:]  interp_out_view = interp_out_view
         double[:, :, :] include_map, exclude_map
         double step_size
         double average_voxel_size
@@ -242,16 +242,17 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
             double include_result, exclude_result
             int include_err, exclude_err
             double p
+            double interp_out_double[1]
 
         include_err = trilinear_interpolate4d_c(self.include_map[..., None],
                                                 point,
-                                                &self.interp_out_view[0])
-        include_result = self.interp_out_view[0]
+                                                &interp_out_double[0])
+        include_result = interp_out_double[0]
 
         exclude_err = trilinear_interpolate4d_c(self.exclude_map[..., None],
                                                 point,
-                                                &self.interp_out_view[0])
-        exclude_result = self.interp_out_view[0]
+                                                &interp_out_double[0])
+        exclude_result = interp_out_double[0]
 
         if include_err == -1 or exclude_err == -1:
             return OUTSIDEIMAGE
