@@ -1,3 +1,4 @@
+import enum
 import importlib
 from inspect import getmembers, isfunction
 import logging
@@ -35,6 +36,316 @@ from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
 ne, have_ne, _ = optional_package("numexpr")
+
+
+class StatsPropertyName(enum.Enum):
+    """Statistical data property names."""
+
+    MIN = "min"
+    MAX = "max"
+    MEDIAN = "median"
+    MEAN = "mean"
+    STD_DEV = "std dev"
+
+
+class PercentilePropertyName(enum.Enum):
+    """Percentile data property names."""
+
+    PERCENTILE_2 = "2nd percentile"
+    PERCENTILE_98 = "98th percentile"
+
+
+class VolumetricPropertyName(enum.Enum):
+    """Volumetric data property names."""
+
+    AFFINE = "Affine matrix"
+    VOXEL_ORDER = "Voxel order"
+    DATA_TYPE = "Data type"
+    DIMENSIONS = "Dimensions"
+    VOXEL_SIZE = "Voxel size"
+
+
+class BvalPropertyName(enum.Enum):
+    """b-value data property names."""
+
+    B0_THRESHOLD = "b0 threshold"
+    B_VALUES = "b-values"
+    NUMBER_B0s = "Number of b0s"
+    NUMBER_B_VALUES = "Total number of b-values"
+    NUMBER_SHELLS = "Number of gradient shells"
+
+
+class BvecPropertyName(enum.Enum):
+    """b-vector data property names."""
+
+    B_VECTORS = "b-vectors"
+    B_VECTORS_SHAPE = "Shape of b-vectors on disk"
+    NUMBER_NONUNIT_B_VECTORS = "Total number of non-unit b-vectors"
+    NUMBER_UNIT_B_VECTORS = "Total number of unit b-vectors"
+
+
+class TractographyPropertyName(enum.Enum):
+    """Tractography data property names."""
+
+    DPP_KEYS = "Data per point keys"
+    DPS_KEYS = "Data per streamline keys"
+    LENGTH_MM = "Length (mm)"
+    LENGTH_NUM_PTS = "Length (nb points)"
+    NUM_STRML = "Number of streamlines"
+    ORIGIN = "Origin"
+    SPACE = "Space"
+    STEP_SIZE = "Step size (mm)"
+
+
+def _print_property_information(prop, val, alignment_space):
+    """Print a property, value pair left-aligned at the given width.
+
+    Parameters
+    ----------
+    prop : str
+        Name of the property.
+    val : scalar, str, ndarray, list
+        Value to be property.
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    """
+
+    logging.info(f"{prop + ':':<{alignment_space}}{val}")
+
+
+def _print_stats_information(data, alignment_space, tab):
+    """Print statistical information left-aligned at the given width.
+
+    Prints minimum, maximum, median, mean and standard deviation values of
+    the given data indented by ``tab`` number of whitespaces.
+
+    Parameters
+    ----------
+    data : ndarray
+        Name of the piece of information.
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    tab : str
+        Whitespace characters corresponding to a tab character for the
+        indentation.
+    """
+
+    logging.info(f"{tab + 'min:':<{alignment_space}}{np.min(data)}")
+    logging.info(f"{tab + 'max:':<{alignment_space}}{np.max(data)}")
+    logging.info(f"{tab + 'median:':<{alignment_space}}{np.median(data)}")
+    logging.info(f"{tab + 'mean:':<{alignment_space}}{np.mean(data)}")
+    logging.info(f"{tab + 'std dev:':<{alignment_space}}{np.std(data)}")
+
+
+def _print_volumetric_information(data, affine, vox_sz, affcodes, alignment_space, tab):
+    """Print volumetric information.
+
+    Parameters
+    ----------
+    data : ndarray
+        Data whose properties are to be printed.
+    affine : ndarray
+        Affine matrix.
+    vox_sz : tuple
+        Voxel size.
+    affcodes : tuple
+        Voxel order (anatomical coordinate system).
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    tab : str
+        Whitespace characters corresponding to a tab character for the
+        indentation.
+    """
+
+    def _print_voxel_information(_name, _data, _alignment_space, _tab):
+        """Print voxel information.
+
+        Parameters
+        ----------
+        _name : str
+           Name of the information piece.
+        _data : ndarray
+            Data whose properties are to be printed.
+        _alignment_space : int
+            Character width for the property, value pair alignment.
+        _tab : str
+            Whitespace characters corresponding to a tab character
+            for the indentation.
+        """
+
+        logging.info(f"{_name}:")
+        _print_stats_information(_data, _alignment_space, _tab)
+        _print_property_information(
+            _tab + PercentilePropertyName.PERCENTILE_2.value,
+            np.percentile(_data, 2),
+            _alignment_space,
+        )
+        _print_property_information(
+            _tab + PercentilePropertyName.PERCENTILE_98.value,
+            np.percentile(_data, 98),
+            _alignment_space,
+        )
+
+    _print_property_information(
+        VolumetricPropertyName.DIMENSIONS.value, data.shape, alignment_space
+    )
+    _print_property_information(
+        VolumetricPropertyName.DATA_TYPE.value, data.dtype, alignment_space
+    )
+
+    if data.ndim == 3:
+        _print_voxel_information("Data", data, alignment_space, tab)
+    if data.ndim == 4:
+        _print_voxel_information("Data (0th vol)", data[..., 0], alignment_space, tab)
+
+    _print_property_information(
+        VolumetricPropertyName.VOXEL_ORDER.value,
+        "".join(affcodes),
+        alignment_space,
+    )
+    logging.info(f"Affine matrix:\n{affine}")
+    _print_property_information(
+        VolumetricPropertyName.VOXEL_SIZE.value,
+        tuple(map(float, vox_sz)),
+        alignment_space,
+    )
+
+    if np.sum(np.abs(np.diff(vox_sz))) > 0.1:
+        msg = "Voxel size is not isotropic. Please reslice.\n"
+        logging.warning(msg, stacklevel=2)
+
+
+def _print_bval_data_information(bvals, b0_threshold, bshell_thr, alignment_space):
+    """Print b-value information.
+
+    Parameters
+    ----------
+    bvals : ndarray
+        b-values.
+    b0_threshold : float
+        b0 threshold.
+    bshell_thr : float
+        Threshold value to determine shells.
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    """
+
+    logging.info(f"{BvalPropertyName.B_VALUES.value}:\n{bvals}")
+    _print_property_information(
+        BvalPropertyName.NUMBER_B_VALUES.value, len(bvals), alignment_space
+    )
+    shells = np.sum(np.diff(np.sort(bvals)) > bshell_thr)
+    _print_property_information(
+        BvalPropertyName.NUMBER_SHELLS.value, shells, alignment_space
+    )
+    num_b0s = np.sum(bvals <= b0_threshold)
+    logging.info(
+        f"{BvalPropertyName.NUMBER_B0s.value + ':':<{alignment_space}}{num_b0s}"
+        f" ({BvalPropertyName.B0_THRESHOLD.value}: {b0_threshold})"
+    )
+
+
+def _print_bvec_data_information(bvecs, bvecs_tol, alignment_space):
+    """Print b-vector information.
+
+    Parameters
+    ----------
+    bvecs : ndarray
+        b-vectors.
+    bvecs_tol : float
+        Threshold used to check that
+        :math:`norm(\text{bvec}) = 1 \\pm \text{bvecs_tol}` b-vectors are
+        unit vectors.
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    """
+
+    _print_property_information(
+        BvecPropertyName.B_VECTORS_SHAPE.value, bvecs.shape, alignment_space
+    )
+    rows, cols = bvecs.shape
+    if rows < cols:
+        bvecs = bvecs.T
+    logging.info(f"{BvecPropertyName.B_VECTORS.value}\n{bvecs}")
+    norms = np.array([np.linalg.norm(bvec) for bvec in bvecs])
+    res = np.where((norms <= 1 + bvecs_tol) & (norms >= 1 - bvecs_tol))
+    ncl1 = np.sum(norms < 1 - bvecs_tol)
+    _print_property_information(
+        BvecPropertyName.NUMBER_UNIT_B_VECTORS.value, len(res[0]), alignment_space
+    )
+    _print_property_information(
+        BvecPropertyName.NUMBER_NONUNIT_B_VECTORS.value, ncl1, alignment_space
+    )
+
+
+def _print_tractography_information(
+    sft, lengths_mm, lengths, step_size, alignment_space, tab
+):
+    """Print tractogram information.
+
+    Parameters
+    ----------
+    sft : StatefulTractogram
+       Tractogram.
+    lengths_mm : list
+        Length of the streamlines in millimeters.
+    lengths : list
+        Length of the streamlines in number of points.
+    step_size : ndarray
+        Step sizes.
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    tab : str
+        Whitespace characters corresponding to a tab character for the
+        indentation.
+    """
+
+    _print_property_information(
+        TractographyPropertyName.NUM_STRML.value, len(sft), alignment_space
+    )
+    logging.info(f"{TractographyPropertyName.LENGTH_MM.value}:")
+    _print_stats_information(lengths_mm, alignment_space, tab)
+    logging.info(f"{TractographyPropertyName.LENGTH_NUM_PTS.value}:")
+    _print_stats_information(lengths, alignment_space, tab)
+    logging.info(f"{TractographyPropertyName.STEP_SIZE.value}:")
+    _print_stats_information(step_size, alignment_space, tab)
+    _print_property_information(
+        TractographyPropertyName.DPP_KEYS.value,
+        list(sft.data_per_point.keys()),
+        alignment_space,
+    )
+    _print_property_information(
+        TractographyPropertyName.DPS_KEYS.value,
+        list(sft.data_per_streamline.keys()),
+        alignment_space,
+    )
+    logging.info(f"Affine matrix:\n{sft.affine}")
+    _print_property_information(
+        VolumetricPropertyName.DIMENSIONS.value,
+        tuple(map(int, sft.dimensions)),
+        alignment_space,
+    )
+    _print_property_information(
+        VolumetricPropertyName.DATA_TYPE.value,
+        sft.streamlines.get_data().dtype,
+        alignment_space,
+    )
+    _print_property_information(
+        TractographyPropertyName.ORIGIN.value, sft.origin, alignment_space
+    )
+    _print_property_information(
+        TractographyPropertyName.SPACE.value, sft.space, alignment_space
+    )
+    _print_property_information(
+        VolumetricPropertyName.VOXEL_ORDER.value,
+        sft.voxel_order,
+        alignment_space,
+    )
+    _print_property_information(
+        VolumetricPropertyName.VOXEL_SIZE.value,
+        tuple(map(float, sft.voxel_sizes)),
+        alignment_space,
+    )
 
 
 class IoInfoFlow(Workflow):
@@ -75,6 +386,17 @@ class IoInfoFlow(Workflow):
 
         io_it = self.get_io_iterator()
 
+        vol_property_length = (
+            len(max([item.value for item in VolumetricPropertyName], key=len)) + 2
+        )
+        stats_property_length = (
+            len(max([item.value for item in StatsPropertyName], key=len)) + 2
+        )
+        pctl_property_length = (
+            len(max([item.value for item in PercentilePropertyName], key=len)) + 2
+        )
+        tab = "\t".expandtabs(4)
+
         for input_path in io_it:
             mult_ = len(input_path)
             logging.info(f"-----------{mult_ * '-'}")
@@ -88,62 +410,61 @@ class IoInfoFlow(Workflow):
                 data, affine, img, vox_sz, affcodes = load_nifti(
                     input_path, return_img=True, return_voxsize=True, return_coords=True
                 )
-                logging.info(f"Data size {data.shape}")
-                logging.info(f"Data type {data.dtype}")
-
-                if data.ndim == 3:
-                    logging.info(
-                        f"Data min {data.min()} max {data.max()} avg {data.mean()}"
+                apply_tab_offset = bool(
+                    max(
+                        range(3),
+                        key=lambda i: [
+                            vol_property_length,
+                            stats_property_length,
+                            pctl_property_length,
+                        ][i],
                     )
-                    logging.info(
-                        f"2nd percentile {np.percentile(data, 2)} "
-                        f"98th percentile {np.percentile(data, 98)}"
+                )
+                _print_volumetric_information(
+                    data,
+                    affine,
+                    vox_sz,
+                    affcodes,
+                    max(
+                        vol_property_length, stats_property_length, pctl_property_length
                     )
-                if data.ndim == 4:
-                    logging.info(
-                        f"Data min {data[..., 0].min()} "
-                        f"max {data[..., 0].max()} "
-                        f"avg {data[..., 0].mean()} of vol 0"
-                    )
-                    msg = (
-                        f"2nd percentile {np.percentile(data[..., 0], 2)} "
-                        f"98th percentile {np.percentile(data[..., 0], 98)} "
-                        f"of vol 0"
-                    )
-                    logging.info(msg)
-                logging.info(f"Native coordinate system {''.join(affcodes)}")
-                logging.info(f"Affine Native to RAS matrix \n{affine}")
-                logging.info(f"Voxel size {np.array(vox_sz)}")
-                if np.sum(np.abs(np.diff(vox_sz))) > 0.1:
-                    msg = "Voxel size is not isotropic. Please reslice.\n"
-                    logging.warning(msg, stacklevel=2)
+                    + apply_tab_offset * len(tab),
+                    tab,
+                )
 
             if os.path.basename(input_path).lower().find("bval") > -1:
+                bval_property_length = (
+                    len(max([item.value for item in BvalPropertyName], key=len)) + 2
+                )
+
                 bvals = np.loadtxt(input_path)
-                logging.info(f"b-values \n{bvals}")
-                logging.info(f"Total number of b-values {len(bvals)}")
-                shells = np.sum(np.diff(np.sort(bvals)) > bshell_thr)
-                logging.info(f"Number of gradient shells {shells}")
-                logging.info(
-                    f"Number of b0s {np.sum(bvals <= b0_threshold)} "
-                    f"(b0_thr {b0_threshold})\n"
+                _print_bval_data_information(
+                    bvals, b0_threshold, bshell_thr, bval_property_length
                 )
 
             if os.path.basename(input_path).lower().find("bvec") > -1:
+                bvec_property_length = (
+                    len(max([item.value for item in BvecPropertyName], key=len)) + 2
+                )
+
                 bvecs = np.loadtxt(input_path)
-                logging.info(f"Bvectors shape on disk is {bvecs.shape}")
-                rows, cols = bvecs.shape
-                if rows < cols:
-                    bvecs = bvecs.T
-                logging.info(f"Bvectors are \n{bvecs}")
-                norms = np.array([np.linalg.norm(bvec) for bvec in bvecs])
-                res = np.where((norms <= 1 + bvecs_tol) & (norms >= 1 - bvecs_tol))
-                ncl1 = np.sum(norms < 1 - bvecs_tol)
-                logging.info(f"Total number of unit bvectors {len(res[0])}")
-                logging.info(f"Total number of non-unit bvectors {ncl1}\n")
+                _print_bvec_data_information(bvecs, bvecs_tol, bvec_property_length)
 
             if extension in [".trk", ".tck", ".trx", ".vtk", ".vtp", ".fib", ".dpy"]:
-                sft = None
+                tractogr_property_length = (
+                    len(max([item.value for item in TractographyPropertyName], key=len))
+                    + 2
+                )
+                apply_tab_offset = not bool(
+                    max(
+                        range(3),
+                        key=lambda i: [
+                            stats_property_length,
+                            vol_property_length,
+                            tractogr_property_length,
+                        ][i],
+                    )
+                )
                 if extension in [".trk", ".trx"]:
                     sft = load_tractogram(input_path, "same", bbox_valid_check=False)
                 else:
@@ -169,25 +490,18 @@ class IoInfoFlow(Workflow):
                     steps += [np.sqrt(np.sum(np.diff(streamline, axis=0) ** 2, axis=1))]
                 steps = np.hstack(steps)
 
-                logging.info(f"Number of streamlines: {len(sft)}")
-                logging.info(f"min_length_mm: {float(np.min(lengths_mm))}")
-                logging.info(f"mean_length_mm: {float(np.mean(lengths_mm))}")
-                logging.info(f"max_length_mm: {float(np.max(lengths_mm))}")
-                logging.info(f"std_length_mm: {float(np.std(lengths_mm))}")
-                logging.info(f"min_length_nb_points: {float(np.min(lengths))}")
-                logging.info("mean_length_nb_points: " f"{float(np.mean(lengths))}")
-                logging.info(f"max_length_nb_points: {float(np.max(lengths))}")
-                logging.info(f"std_length_nb_points: {float(np.std(lengths))}")
-                logging.info(f"min_step_size: {float(np.min(steps))}")
-                logging.info(f"mean_step_size: {float(np.mean(steps))}")
-                logging.info(f"max_step_size: {float(np.max(steps))}")
-                logging.info(f"std_step_size: {float(np.std(steps))}")
-                logging.info(
-                    "data_per_point_keys: " f"{list(sft.data_per_point.keys())}"
-                )
-                logging.info(
-                    "data_per_streamline_keys: "
-                    f"{list(sft.data_per_streamline.keys())}"
+                _print_tractography_information(
+                    sft,
+                    lengths_mm,
+                    lengths,
+                    steps,
+                    max(
+                        vol_property_length,
+                        stats_property_length,
+                        tractogr_property_length,
+                    )
+                    + apply_tab_offset * len(tab),
+                    tab,
                 )
 
         np.set_printoptions()
