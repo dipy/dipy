@@ -147,6 +147,16 @@ class IoInfoFlow(Workflow):
                 if extension in [".trk", ".trx"]:
                     sft = load_tractogram(input_path, "same", bbox_valid_check=False)
                 else:
+                    if not reference or not os.path.exists(reference):
+                        msg = (
+                            "No reference provided. It is needed for tck, fib, dpy or "
+                            "vtk files to load properly. Please provide a reference, "
+                            "Nifti or Trk file using the option "
+                            "--reference my_files.nii.gz ."
+                        )
+                        logging.error(msg, stacklevel=2)
+                        sys.exit(1)
+
                     sft = load_tractogram(input_path, reference, bbox_valid_check=False)
 
                 lengths_mm = list(length(sft.streamlines))
