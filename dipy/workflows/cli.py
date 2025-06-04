@@ -11,6 +11,7 @@ cli_flows = {
     "dipy_align_syn": ("dipy.workflows.align", "SynRegistrationFlow"),
     "dipy_apply_transform": ("dipy.workflows.align", "ApplyTransformFlow"),
     "dipy_buan_lmm": ("dipy.workflows.stats", "LinearMixedModelsFlow"),
+    "dipy_buan_fosr": ("dipy.workflows.stats", "FOSR"),
     "dipy_buan_shapes": ("dipy.workflows.stats", "BundleShapeAnalysis"),
     "dipy_buan_profiles": ("dipy.workflows.stats", "BundleAnalysisTractometryFlow"),
     "dipy_bundlewarp": ("dipy.workflows.align", "BundleWarpFlow"),
@@ -109,6 +110,15 @@ def run():
             }
         }
     elif script_name == "dipy_fit_qball":
+        extra_args = {
+            "method": {
+                "action": "store",
+                "dest": "method",
+                "metavar": "string",
+                "default": "qball",
+            }
+        }
+    elif script_name == "dipy_buan_fosr":
         extra_args = {
             "method": {
                 "action": "store",
