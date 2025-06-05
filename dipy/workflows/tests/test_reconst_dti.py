@@ -79,7 +79,7 @@ def reconst_flow_core(flow, extra_args=None, extra_kwargs=None):
             assert_equal(tensor_data.shape[-1], 6)
             assert_equal(tensor_data.shape[:-1], volume.shape[:-1])
 
-        for out_name in ["out_ga", "out_md", "out_ad", "out_rd", "out_mode"]:
+        for out_name in ["out_ga", "out_md", "out_ad", "out_rd", "out_mode", "out_s0"]:
             out_path = dti_flow.last_generated_outputs[out_name]
             out_data = load_nifti_data(out_path)
             assert_equal(out_data.shape, volume.shape[:-1])

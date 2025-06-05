@@ -344,6 +344,7 @@ class ReconstDtiFlow(Workflow):
         out_peaks_indices="peaks_indices.nii.gz",
         out_sphere="sphere.txt",
         out_qa="qa.nii.gz",
+        out_s0="s0.nii.gz",
     ):
         """Workflow for tensor reconstruction and for computing DTI metrics
         using Weighted  Least-Squares.
@@ -388,7 +389,7 @@ class ReconstDtiFlow(Workflow):
             (only noise) b-vectors are unit vectors.
         save_metrics : variable string, optional
             List of metrics to save.
-            Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
+            Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval, s0
         nifti_tensor : bool, optional
             Whether the tensor is saved in the standard Nifti format or in an
             alternate format that is used by other software (e.g., FSL): a
@@ -437,6 +438,8 @@ class ReconstDtiFlow(Workflow):
             Sphere vertices name to be saved.
         out_qa : string, optional
             Name of the Quantitative Anisotropy to be saved.
+        out_s0 : string, optional
+            Name of the S0 estimate to be saved.
 
         References
         ----------
@@ -468,6 +471,7 @@ class ReconstDtiFlow(Workflow):
             opeaks_indices,
             osphere,
             oqa,
+            os0,
         ) in io_it:
             logging.info(f"Computing DTI metrics for {dwi}")
             data, affine = load_nifti(dwi)
@@ -478,6 +482,8 @@ class ReconstDtiFlow(Workflow):
             optional_args = {}
             if fit_method in ["RT", "restore", "RESTORE", "NLLS"]:
                 optional_args["sigma"] = sigma
+            if "s0" in save_metrics or not save_metrics:
+                optional_args["return_S0_hat"] = True
 
             tenfit, tenmodel, _ = self.get_fitted_tensor(
                 data,
@@ -502,6 +508,7 @@ class ReconstDtiFlow(Workflow):
                     "evec",
                     "eval",
                     "tensor",
+                    "s0",
                 ]
 
             FA = fractional_anisotropy(tenfit.evals)
@@ -553,6 +560,17 @@ class ReconstDtiFlow(Workflow):
 
             if "eval" in save_metrics:
                 save_nifti(oevals, tenfit.evals.astype(np.float32), affine)
+
+            if "s0" in save_metrics:
+                if hasattr(tenfit, "S0_hat"):
+                    save_nifti(os0, tenfit.S0_hat.astype(np.float32), affine)
+                else:
+                    warn(
+                        "S0 estimate not available for this fit method. "
+                        "Please use a different fit method or set "
+                        "`return_S0_hat=True`.",
+                        stacklevel=2,
+                    )
 
             if save_metrics:
                 msg = f"DTI metrics saved to {os.path.abspath(out_dir)}"
