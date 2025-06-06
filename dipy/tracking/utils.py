@@ -108,6 +108,28 @@ def density_map(streamlines, affine, vol_dims):
     return counts
 
 
+def discard_streamlines_by_size(streamlines, *, length_threshold=1):
+    """Filter streamlines based on their length.
+
+    Parameters
+    ----------
+    streamlines : ArraySequence
+        A sequence of streamlines.
+    length_threshold : int, optional
+        The minimum number of points a streamline must have to be included
+        in the result. Default is 1.
+
+    Returns
+    -------
+    filtered_streamlines : ArraySequence
+        An ArraySequence of streamlines that have more points than the specified
+        `length_threshold`.
+    """
+    lengths = np.array([s.shape[0] for s in streamlines])
+    res_mask = lengths > length_threshold
+    return streamlines[res_mask].copy()
+
+
 @warning_for_keywords()
 def connectivity_matrix(
     streamlines,
@@ -192,6 +214,9 @@ def connectivity_matrix(
                         mapping[comb].append(i)
 
     else:
+        streamlines = discard_streamlines_by_size(
+            streamlines, length_threshold=1
+        )
         streamlines_end = np.array([sl[0 :: len(sl) - 1] for sl in streamlines])
         streamlines_end = _to_voxel_coordinates(streamlines_end, lin_T, offset)
         x, y, z = streamlines_end.T

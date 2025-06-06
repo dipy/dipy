@@ -13,6 +13,7 @@ from dipy.tracking.utils import (
     _min_at,
     connectivity_matrix,
     density_map,
+    discard_streamlines_by_size,
     length,
     max_angle_from_curvature,
     min_radius_curvature_from_angle,
@@ -29,7 +30,7 @@ from dipy.tracking.utils import (
     unique_rows,
 )
 from dipy.tracking.vox2track import streamline_mapping
-
+from nibabel.streamlines import ArraySequence
 
 def make_streamlines(return_seeds=False):
     streamlines = [
@@ -594,6 +595,33 @@ def test_random_seeds_from_mask(rng):
         mask, np.eye(4), seeds_count=500, seed_count_per_voxel=False, random_seed=0
     )[:150]
     assert_true(np.all(seeds_nt_150 == seeds_nt_500))
+
+
+def test_discard_streamlines_by_size():
+    s1 = np.array([[0, 0, 0]])                      # length 1
+    s2 = np.array([[0, 0, 0], [1, 1, 1]])           # length 2
+    s3 = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]]) # length 3
+
+    streamlines = ArraySequence([s1, s2, s3])
+
+    # Case 1: length_threshold=1 should keep s2 and s3 (length > 1)
+    result = discard_streamlines_by_size(streamlines, length_threshold=1)
+    assert isinstance(result, ArraySequence)
+    assert len(result) == 2
+    # Check that both returned streamlines really have length > 1:
+    returned_lengths = sorted([sl.shape[0] for sl in result])
+    assert returned_lengths == [2, 3]
+
+    # Case 2: length_threshold=2 should keep only s3 (length > 2)
+    result = discard_streamlines_by_size(streamlines, length_threshold=2)
+    assert isinstance(result, ArraySequence)
+    assert len(result) == 1
+    assert result[0].shape[0] == 3  # only the streamline of length 3 remains
+
+    # Case 3: length_threshold=3 should keep nothing (length > 3)
+    result = discard_streamlines_by_size(streamlines, length_threshold=3)
+    assert isinstance(result, ArraySequence)
+    assert len(result) == 0
 
 
 def test_connectivity_matrix_shape():
