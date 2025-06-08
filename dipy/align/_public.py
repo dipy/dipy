@@ -40,25 +40,6 @@ from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points
 from dipy.tracking.utils import transform_tracking_output
 
-__all__ = [
-    "syn_registration",
-    "register_dwi_to_template",
-    "write_mapping",
-    "read_mapping",
-    "resample",
-    "center_of_mass",
-    "translation",
-    "rigid_isoscaling",
-    "rigid_scaling",
-    "rigid",
-    "affine",
-    "motion_correction",
-    "affine_registration",
-    "register_series",
-    "register_dwi_series",
-    "streamline_registration",
-]
-
 # Global dicts for choosing metrics for registration:
 syn_metric_dict = {"CC": CCMetric, "EM": EMMetric, "SSD": SSDMetric}
 

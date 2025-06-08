@@ -6,7 +6,8 @@ from numpy.testing import (
     assert_raises,
 )
 
-from dipy.align import expectmax as em, floating
+from dipy.align import expectmax as em
+from dipy.align.utils import floating
 from dipy.testing.decorators import set_random_number_generator
 
 

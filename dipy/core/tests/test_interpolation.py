@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as npt
 from scipy.ndimage import map_coordinates
 
-from dipy.align import floating
+from dipy.align.utils import floating
 from dipy.core.interpolation import (
     NearestNeighborInterpolator,
     OutsideImage,

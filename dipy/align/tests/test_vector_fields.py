@@ -9,9 +9,10 @@ from numpy.testing import (
 )
 from scipy.ndimage import map_coordinates
 
-from dipy.align import floating, imwarp, vector_fields as vfu
+from dipy.align import imwarp, vector_fields as vfu
 from dipy.align.parzenhist import sample_domain_regular
 from dipy.align.transforms import regtransforms
+from dipy.align.utils import floating
 from dipy.core import geometry
 from dipy.testing.decorators import set_random_number_generator
 
