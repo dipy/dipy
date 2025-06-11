@@ -164,6 +164,9 @@ We can use ``dipy_median_otsu`` to build a brain mask for the diffusion data::
 
     dipy_median_otsu dwi.nii --median_radius 2 --numpass 1 --vol_idx 10-50 --out_dir out_work
 
+In case of holes in the mask, or minor errors, add the option ``--finalize_mask`` to
+apply a final step to the mask, which will remove small holes and fill in small gaps.
+
 Visualize the mask using ``dipy_horizon``::
 
     dipy_horizon out_work/brain_mask.nii.gz
