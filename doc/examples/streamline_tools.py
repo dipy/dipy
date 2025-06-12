@@ -47,14 +47,14 @@ label_fname = get_fnames(name="stanford_labels")
 t1_fname = get_fnames(name="stanford_t1")
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
-labels, affine_label = load_nifti(label_fname)
+labels, labels_affine = load_nifti(label_fname)
 t1_data, t1_affine = load_nifti(t1_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
 # .. note::
-#    Affine, affine_label and t1_affine are the same in this example, so we can
+#    Affine, labels_affine and t1_affine are the same in this example, so we can
 #    use any of them for the affine transformation [#]_. If it was not the
 #    case, we would need to transform the streamlines to the space of the
 #    labels or the T1 image.
