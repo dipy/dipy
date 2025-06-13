@@ -29,7 +29,6 @@ from dipy.tracking.utils import (
     unique_rows,
 )
 from dipy.tracking.vox2track import streamline_mapping
-from nibabel.streamlines import ArraySequence
 
 def make_streamlines(return_seeds=False):
     streamlines = [
