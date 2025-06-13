@@ -19,8 +19,7 @@ from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
 
 if have_fury:
-    import vtk
-    import vtk.util.numpy_support as ns
+    pass
 
 logger = logging.getLogger("StatefulSurface")
 logger.setLevel(level=logging.INFO)
@@ -121,7 +120,6 @@ class StatefulSurface:
                     "Faces must be a 2D array with shape (M, 3), "
                     f"got {self._faces.shape} instead."
                 )
-
 
         if isinstance(reference, type(self)):
             logger.warning(

@@ -35,7 +35,8 @@ def setup_module():
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_empty_change_space():
     sfs = StatefulSurface(
-        [], [],
+        [],
+        [],
         FILEPATH_DIX["naf_mni_masked.nii.gz"],
         space=Space.RASMM,
         origin=Origin.NIFTI,
@@ -53,7 +54,8 @@ def test_empty_change_space():
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_empty_change_origin():
     sfs = StatefulSurface(
-        [], [],
+        [],
+        [],
         FILEPATH_DIX["naf_mni_masked.nii.gz"],
         space=Space.RASMM,
         origin=Origin.NIFTI,
@@ -189,7 +191,8 @@ def test_out_of_grid(value, is_out_of_grid):
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_invalid_empty():
     sfs = StatefulSurface(
-        [], [],
+        [],
+        [],
         FILEPATH_DIX["naf_mni_masked.nii.gz"],
         space=Space.RASMM,
         origin=Origin.NIFTI,
