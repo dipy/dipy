@@ -210,11 +210,11 @@ def connectivity_matrix(
 
         if return_mapping:
             if mapping_as_streamlines:
-                for new_i, (a, b) in enumerate(end_labels.T):
-                    mapping[a, b].append(filtered_streamlines[new_i])
+                for i, (a, b) in enumerate(end_labels.T):
+                    mapping[a, b].append(filtered_streamlines[i])
             else:
-                for new_i, (a, b) in enumerate(end_labels.T):
-                    mapping[a, b].append(orig_indices[new_i])
+                for i, (a, b) in enumerate(end_labels.T):
+                    mapping[a, b].append(orig_indices[i])
 
     if symmetric:
         matrix = np.maximum(matrix, matrix.T)
