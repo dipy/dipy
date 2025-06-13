@@ -114,9 +114,9 @@ def connectivity_matrix(
     affine,
     label_volume,
     *,
-    discard_stream_size=1,
     inclusive=False,
     symmetric=True,
+    discard_stream_size=1,
     return_mapping=False,
     mapping_as_streamlines=False,
 ):
@@ -138,6 +138,10 @@ def connectivity_matrix(
     symmetric : bool, True by default
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
+    discard_stream_size : int, 1 by default
+        If the length of a streamline is less than or equal to this value, it
+        will not be included in the connectivity matrix. This is useful for
+        ignoring very short streamlines that are likely to be noise.
     return_mapping : bool, False by default
         If True, a mapping is returned which maps matrix indices to
         streamlines.
