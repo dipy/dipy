@@ -13,11 +13,7 @@ from dipy.io.utils import (
     is_header_compatible,
     is_reference_info_valid,
 )
-from dipy.io.vtk import (
-    convert_to_polydata,
-    get_polydata_triangles,
-    get_polydata_vertices,
-)
+from dipy.io.vtk import convert_to_polydata
 from dipy.utils.optpkg import optional_package
 
 fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
@@ -51,7 +47,8 @@ class StatefulSurface:
 
     def __init__(
         self,
-        data,
+        vertices,
+        faces,
         reference,
         space,
         *,
@@ -63,8 +60,13 @@ class StatefulSurface:
 
         Parameters
         ----------
-        data : tuple of (vertices, faces) as np.ndarray or polydata
-            Mesh data to be represented
+        vertices : ndarray
+            Vertices of the surface, shape (N, 3) where N is the number of
+            points on the surface.
+        faces : ndarray
+            Faces of the surface, shape (M, 3) where M is the number of
+            triangles on the surface. Each face is defined by 3 indices
+            corresponding to the vertices.
         reference : Nifti or Trk filename, Nifti1Image or TrkFile,
             Nifti1Header, trk.header (dict) or another Stateful Surface
             Reference that provides the spatial attributes.
@@ -85,6 +87,7 @@ class StatefulSurface:
             and all data_per_point keys.
 
         Notes
+        -----
         Very important to respect the convention, verify that surface
         match the reference and are effectively in the right space.
 
@@ -103,27 +106,22 @@ class StatefulSurface:
             dtype_dict = {"vertices": np.float64, "faces": np.uint32}
         self.dtype_dict = dtype_dict
 
-        if have_fury and isinstance(data, vtk.vtkPolyData):
-            self._vertices = get_polydata_vertices(
-                data, dtype=self.dtype_dict["vertices"]
-            )
-            self._faces = get_polydata_triangles(data, dtype=self.dtype_dict["faces"])
+        self._vertices = np.array(vertices, dtype=self.dtype_dict["vertices"])
+        self._faces = np.array(faces, dtype=self.dtype_dict["faces"])
 
-            point_data = data.GetPointData()
-            scalar_names = [
-                point_data.GetArrayName(i)
-                for i in range(point_data.GetNumberOfArrays())
-            ]
-            if scalar_names:
-                for name in scalar_names:
-                    scalar = data.GetPointData().GetScalars(name)
-                    if name in self.data_per_point:
-                        logger.warning(
-                            f"Scalar {name} already in data_per_point, overwriting"
-                        )
-                    self.data_per_point[name] = ns.vtk_to_numpy(scalar)
-        else:
-            self._vertices, self._faces = np.array(data[0]), np.array(data[1])
+        # Verify that vertices and faces are in the right format (if not empty)
+        if self._vertices.size != 0 or self._faces.size != 0:
+            if self._vertices.ndim != 2 or self._vertices.shape[1] != 3:
+                raise ValueError(
+                    "Vertices must be a 2D array with shape (N, 3), "
+                    f"got {self._vertices.shape} instead."
+                )
+            if self._faces.ndim != 2 or self._faces.shape[1] != 3:
+                raise ValueError(
+                    "Faces must be a 2D array with shape (M, 3), "
+                    f"got {self._faces.shape} instead."
+                )
+
 
         if isinstance(reference, type(self)):
             logger.warning(
@@ -195,24 +193,29 @@ class StatefulSurface:
         return are_sfs_compatible
 
     @staticmethod
-    def from_sfs(data, sfs, *, data_per_point=None):
+    def from_sfs(vertices, sfs, *, faces=None, data_per_point=None):
         """Create an instance of `StatefulSurface` from another instance
         of `StatefulSurface`.
 
         Parameters
         ----------
-        data : tuple of (vertices, faces) as np.ndarray or polydata
-            Mesh data to be represented
+        vertices : ndarray
+            Vertices of the new StatefulSurface.
         sfs : StatefulSurface,
             The other StatefulSurface to copy the space_attribute AND
             state from.
+        faces : ndarray, optional
+            Faces of the new StatefulSurface. If None, the faces of the
+            original StatefulSurface will be used.
         data_per_point : dict, optional
             Dictionary in which each key has X items.
             X being the number of points on the surface.
         -----
         """
+        faces = faces if faces is not None else sfs.faces
         new_sfs = StatefulSurface(
-            data,
+            vertices,
+            faces,
             sfs.space_attributes,
             sfs.space,
             origin=sfs.origin,
