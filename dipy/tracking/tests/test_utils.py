@@ -30,6 +30,7 @@ from dipy.tracking.utils import (
 )
 from dipy.tracking.vox2track import streamline_mapping
 
+
 def make_streamlines(return_seeds=False):
     streamlines = [
         np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2], [5, 10, 12]], "float"),
