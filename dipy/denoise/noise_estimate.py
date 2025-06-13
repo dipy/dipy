@@ -249,7 +249,8 @@ def _piesno_3D(
     lambda_plus = _inv_nchi_cdf(N, K, 1 - alpha / 2)
 
     for sigma_init in phi:
-        s = sum_m2 / (2 * K * sigma_init**2)
+        denominator = 2 * K * sigma_init**2
+        s = (sum_m2 / denominator) if denominator != 0 else np.zeros_like(sum_m2)
         found_idx = np.sum(
             np.logical_and(lambda_minus <= s, s <= lambda_plus), dtype=np.int16
         )
