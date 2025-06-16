@@ -22,6 +22,14 @@ from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.workflow import Workflow
 
+from scipy.stats import norm
+import numpy as np
+import pandas as pd
+import os
+import matplotlib.pyplot as plt
+
+from dipy.stats.fosr import get_covariates, fosr
+
 pd, have_pd, _ = optional_package("pandas")
 smf, have_smf, _ = optional_package("statsmodels.formula.api")
 matplt, have_matplotlib, _ = optional_package("matplotlib")
@@ -543,6 +551,53 @@ class LinearMixedModelsFlow(Workflow):
 
             save_file = os.path.join(out_dir, save_name + ".png")
             self.save_lmm_plot(save_file, file_name, bundle_name, x, y)
+
+class FOSRFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "fosr"
+            
+    @warning_for_keywords()
+    def run(self, hd5_dir, *, no_disks=100, out_dir=""):
+        """Workflow of Functional on Scalar Regression models.
+
+        Applies functional on Scalar Regression models on bundles of subjects.
+
+        Parameters
+        ----------
+        h5_files : string
+            Path to the input metric files. This path may
+            contain wildcards to process multiple inputs at once.
+        no_disks : integer, optional
+            Number of disks used for dividing bundle into disks.
+        out_dir : string, optional
+            Output directory.
+        """
+        # TODO - remove the below hard coded value
+        # hd5_dir = './bundle_profiles'
+        h5_list = os.listdir(hd5_dir)
+        std_error_list = []
+        for hd_file in h5_list:
+            print("Running fosr for ", hd_file)
+            df = pd.read_hdf(os.path.join(hd5_dir,hd_file))
+            X,Y = get_covariates(df)
+    
+    
+            print("Getting the shape of X", X.shape)
+            print("Getting the shape of Y", Y.shape)
+
+            fosr_output = fosr(Y = Y, X = X) 
+
+            beta_1 = fosr_output["est.func"][:,0]
+            std_error = fosr_output["se.func"][:,0]
+            std_error_list.append(np.array(std_error))
+
+            beta_1_lower = beta_1 - 1.96*std_error
+            beta_1_upper = beta_1 + 1.96*std_error
+
+            z_scores = (beta_1/std_error)
+
+            p_values = norm.sf(abs(z_scores)) * 2
 
 
 class BundleShapeAnalysis(Workflow):
