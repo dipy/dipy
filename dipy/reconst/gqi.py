@@ -9,6 +9,8 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.testing.decorators import warning_for_keywords
 
+INVERSE_LAMBDA = 1e-6
+
 
 class GeneralizedQSamplingModel(OdfModel, Cache):
     @warning_for_keywords()
@@ -80,7 +82,7 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
 
     def predict(self, odf, gtab, sphere):
         """
-        Predict a signal for this GeneralizedQSamplingModel class instance given parameters.
+        Predict a signal for this GeneralizedQSamplingModel instance given parameters.
 
         Parameters
         ----------
@@ -118,12 +120,14 @@ class GeneralizedQSamplingFit(OdfFit):
     def odf(self, sphere):
         """Calculates the discrete ODF for a given discrete sphere."""
 
+        # The gQI vector has shape (n_orientations, n_vertices)
         self.gqi_vector = self.model.cache_get("gqi_vector", key=sphere)
+
         if self.gqi_vector is None:
             self.gqi_vector = gqi_kernel(
-                sphere,
-                self.model.Lambda,
                 self.model.gtab,
+                self.model.Lambda,
+                sphere,
                 method=self.model.method,
             )
             self.model.cache_set("gqi_vector", sphere, self.gqi_vector)
@@ -346,5 +350,8 @@ def odf_prediction(odf, gtab, param_lambda, sphere, method="gqi2"):
 
     """
     gqi_vector = gqi_kernel(gtab, param_lambda, sphere, method=method)
-
-    return np.dot(gqi_vector.T, odf)
+    k_inverse = 1.0 / gqi_vector
+    # k_inverse = np.linalg.inv(
+    #     gqi_vector.T @ gqi_vector + INVERSE_LAMBDA * np.eye(gqi_vector.shape[1])
+    # )
+    return np.dot(odf, k_inverse.T)
