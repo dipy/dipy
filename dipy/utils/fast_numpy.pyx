@@ -1,6 +1,8 @@
 # cython: boundscheck=False
 # cython: initializedcheck=False
 # cython: wraparound=False
+# cython: cdivision=True
+
 from libc.stdio cimport printf
 cimport numpy as cnp
 
