@@ -764,7 +764,6 @@ class StatefulTractogram:
         if self._space == Space.RASMM:
             if self._tractogram.streamlines._data.size > 0:
                 flip_affine = np.diag([-1, -1, 1, 1])
-                print(self._tractogram.streamlines._data[0], "a")
                 self._tractogram.apply_affine(flip_affine)
             self._space = Space.LPSMM
             logger.debug("Moved vertices from lpsmm to rasmm.")

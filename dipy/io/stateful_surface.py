@@ -18,9 +18,6 @@ from dipy.utils.optpkg import optional_package
 
 fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
 
-if have_fury:
-    pass
-
 logger = logging.getLogger("StatefulSurface")
 logger.setLevel(level=logging.INFO)
 
@@ -41,7 +38,7 @@ class StatefulSurface:
     """Class for stateful representation of meshes and lines
     Object designed to be identical no matter the file format
     (gii, vtk, ply, stl, obj, pial). Facilitate transformation between space
-    and data manipulation for each streamline / point.
+    and data manipulation for each streamline / vertex.
     """
 
     def __init__(
@@ -52,7 +49,7 @@ class StatefulSurface:
         space,
         *,
         origin=Origin.NIFTI,
-        data_per_point=None,
+        data_per_vertex=None,
         dtype_dict=None,
     ):
         """Create a strict, state-aware, robust surface
@@ -78,19 +75,19 @@ class StatefulSurface:
         origin : Enum (dipy.io.utils.Origin), optional
             Current origin in which the surface are (center or corner)
             After loading with nibabel the origin is CENTER
-        data_per_point : dict, optional
+        data_per_vertex : dict, optional
             Dictionary in which each key has X items.
             X being the number of points on the surface.
         dtype_dict : dict, optional
             Dictionary containing the desired datatype for vertices, faces
-            and all data_per_point keys.
+            and all data_per_vertex keys.
 
         Notes
         -----
         Very important to respect the convention, verify that surface
         match the reference and are effectively in the right space.
 
-        Any change to the number of surface's points, data_per_point
+        Any change to the number of surface's vertices, data_per_vertex
         requires verification.
 
         In a case of manipulation not allowed by this object, use Nibabel
@@ -100,7 +97,7 @@ class StatefulSurface:
         self.fs_metadata = None
         self.gii_header = None
 
-        self.data_per_point = {} if data_per_point is None else data_per_point
+        self.data_per_vertex = {} if data_per_vertex is None else data_per_vertex
         if dtype_dict is None:
             dtype_dict = {"vertices": np.float64, "faces": np.uint32}
         self.dtype_dict = dtype_dict
@@ -170,7 +167,7 @@ class StatefulSurface:
     @staticmethod
     def are_compatible(sfs_1, sfs_2):
         """Compatibility verification of two StatefulSurface to ensure space,
-        origin, data_per_point consistency"""
+        origin, data_per_vertex consistency"""
 
         are_sfs_compatible = True
         if not is_header_compatible(sfs_1, sfs_2):
@@ -185,13 +182,13 @@ class StatefulSurface:
             are_sfs_compatible = False
 
         if sfs_1.get_data_per_point_keys() != sfs_2.get_data_per_point_keys():
-            logger.warning("Inconsistent data_per_point between both sfs.")
+            logger.warning("Inconsistent data_per_vertex between both sfs.")
             are_sfs_compatible = False
 
         return are_sfs_compatible
 
     @staticmethod
-    def from_sfs(vertices, sfs, *, faces=None, data_per_point=None):
+    def from_sfs(vertices, sfs, *, faces=None, data_per_vertex=None):
         """Create an instance of `StatefulSurface` from another instance
         of `StatefulSurface`.
 
@@ -205,7 +202,7 @@ class StatefulSurface:
         faces : ndarray, optional
             Faces of the new StatefulSurface. If None, the faces of the
             original StatefulSurface will be used.
-        data_per_point : dict, optional
+        data_per_vertex : dict, optional
             Dictionary in which each key has X items.
             X being the number of points on the surface.
         -----
@@ -217,7 +214,7 @@ class StatefulSurface:
             sfs.space_attributes,
             sfs.space,
             origin=sfs.origin,
-            data_per_point=data_per_point,
+            data_per_vertex=data_per_vertex,
         )
         new_sfs.dtype_dict = sfs.dtype_dict
         return new_sfs
@@ -255,17 +252,17 @@ class StatefulSurface:
         if not self.are_compatible(self, other):
             return False
 
-        points_equal = np.allclose(self._vertices, other.vertices, rtol=1e-3)
+        vertices_equal = np.allclose(self._vertices, other.vertices, rtol=1e-3)
         faces_equal = np.allclose(self._faces, other.faces, rtol=1e-3)
 
-        if not points_equal or not faces_equal:
+        if not vertices_equal or not faces_equal:
             return False
 
         dpp_equal = True
-        for key in self.data_per_point:
+        for key in self.data_per_vertex:
             dpp_equal = dpp_equal and np.allclose(
-                self.data_per_point[key].get_data(),
-                other.data_per_point[key].get_data(),
+                self.data_per_vertex[key].get_data(),
+                other.data_per_vertex[key].get_data(),
                 rtol=1e-3,
             )
         if not dpp_equal:
@@ -298,11 +295,11 @@ class StatefulSurface:
             "vertices": self._vertices.dtype,
             "faces": self._faces.dtype,
         }
-        if self.data_per_point is not None:
+        if self.data_per_vertex is not None:
             dtype_dict["dpp"] = {}
-            for key in self.data_per_point.keys():
-                if key in self.data_per_point:
-                    dtype_dict["dpp"][key] = self.data_per_point[key].dtype
+            for key in self.data_per_vertex.keys():
+                if key in self.data_per_vertex:
+                    dtype_dict["dpp"][key] = self.data_per_vertex[key].dtype
 
         return OrderedDict(dtype_dict)
 
@@ -375,10 +372,10 @@ class StatefulSurface:
         if "dpp" not in dtype_dict:
             dtype_dict["dpp"] = {}
 
-        for key in self.data_per_point:
+        for key in self.data_per_vertex:
             if key in dtype_dict["dpp"]:
                 dtype_to_use = dtype_dict["dpp"][key]
-                self.data_per_point[key] = self.data_per_point[key].astype(dtype_to_use)
+                self.data_per_vertex[key] = self.data_per_vertex[key].astype(dtype_to_use)
 
     def get_vertices_copy(self):
         """Safe getter for vertices (for slicing)"""
@@ -399,13 +396,13 @@ class StatefulSurface:
         self._vertices = data
 
     @property
-    def data_per_point(self):
-        """Getter for data_per_point"""
+    def data_per_vertex(self):
+        """Getter for data_per_vertex"""
         return self._data_per_point
 
-    @data_per_point.setter
-    def data_per_point(self, data):
-        """Modify point data . Creating a new object would be less risky.
+    @data_per_vertex.setter
+    def data_per_vertex(self, data):
+        """Modify vertex data . Creating a new object would be less risky.
 
         Parameters
         ----------
@@ -417,8 +414,8 @@ class StatefulSurface:
         logger.warning("Data_per_point has been modified.")
 
     def get_data_per_point_keys(self):
-        """Return a list of the data_per_point attribute names"""
-        return list(set(self.data_per_point.keys()))
+        """Return a list of the data_per_vertex attribute names"""
+        return list(set(self.data_per_vertex.keys()))
 
     def to_vox(self):
         """Safe function to transform vertices and update state"""

@@ -102,7 +102,7 @@ def load_surface(
 
     timer = time.time()
     metadata = None
-    data_per_point = None
+    data_per_vertex = None
     if ext == ".gii" or ext == ".gii.gz":
         data = load_gifti(fname)
         if gifti_in_freesurfer:
@@ -113,18 +113,18 @@ def load_surface(
         data = load_polydata(fname)
         vertices = get_polydata_vertices(data)
         faces = get_polydata_triangles(data)
-        point_data = data.GetPointData()
+        vertex_data = data.GetPointData()
         scalar_names = [
-            point_data.GetArrayName(i) for i in range(point_data.GetNumberOfArrays())
+            vertex_data.GetArrayName(i) for i in range(vertex_data.GetNumberOfArrays())
         ]
         if scalar_names:
             for name in scalar_names:
                 scalar = data.GetPointData().GetScalars(name)
-                if name in data_per_point:
+                if name in data_per_vertex:
                     logging.warning(
-                        f"Scalar {name} already in data_per_point, overwriting"
+                        f"Scalar {name} already in data_per_vertex, overwriting"
                     )
-                data_per_point[name] = ns.vtk_to_numpy(scalar)
+                data_per_vertex[name] = ns.vtk_to_numpy(scalar)
     else:
         data = load_pial(fname, return_meta=True)
         data, metadata = data[0:2], data[2]
@@ -147,7 +147,7 @@ def load_surface(
         reference,
         space=from_space,
         origin=from_origin,
-        data_per_point=data_per_point,
+        data_per_vertex=data_per_vertex,
     )
     if isinstance(metadata, dict):
         sfs.fs_metadata = metadata
@@ -238,22 +238,22 @@ def save_surface(
         sfs.to_space(to_space)
         sfs.to_origin(to_origin)
 
-        if sfs.data_per_point is not None:
+        if sfs.data_per_vertex is not None:
             # Check if rgb, colors, colors, etc. are available
             color_array_name = None
             for key in ["rgb", "colors", "color"]:
-                if key in sfs.data_per_point:
+                if key in sfs.data_per_vertex:
                     color_array_name = key
                     break
-                if key.upper() in sfs.data_per_point:
+                if key.upper() in sfs.data_per_vertex:
                     color_array_name = key.upper()
                     break
 
         polydata = sfs.get_polydata()
         if color_array_name is not None:
-            color_array = sfs.data_per_point[color_array_name]
+            color_array = sfs.data_per_vertex[color_array_name]
             if len(color_array) != polydata.GetNumberOfPoints():
-                raise ValueError("Array length does not match number of points.")
+                raise ValueError("Array length does not match number of vertices.")
             vtk_array = ns.numpy_to_vtk(
                 np.array(color_array), deep=True, array_type=vtk.VTK_UNSIGNED_CHAR
             )
