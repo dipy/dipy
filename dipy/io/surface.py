@@ -46,7 +46,7 @@ def load_surface(
         trk.header (dict), or 'same' if the input is a trk file.
         Reference that provides the spatial attribute.
         Typically a nifti-related object from the native diffusion used for
-        streamlines generation
+        surface generation
     to_space : Enum (dipy.io.utils.Space), optional
         Space to which the surface will be transformed after loading
     to_origin : Enum (dipy.io.utils.Origin), optional
@@ -155,7 +155,7 @@ def load_surface(
         sfs.gii_header = metadata
 
     logging.debug(
-        "Load %s with %s streamlines in %s seconds.",
+        "Load %s with %s vertices in %s seconds.",
         fname,
         len(sfs),
         round(time.time() - timer, 3),
@@ -165,9 +165,8 @@ def load_surface(
         raise ValueError(
             "Bounding box is not valid in voxel space, cannot "
             "load a valid file if some coordinates are invalid.\n"
-            "Please set bbox_valid_check to False and then use "
-            "the function remove_invalid_streamlines to discard "
-            "invalid streamlines."
+            "Please set bbox_valid_check to False and be careful if processing "
+            "the surface/vertices further."
         )
 
     sfs.to_space(to_space)
