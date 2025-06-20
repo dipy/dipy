@@ -181,7 +181,7 @@ class StatefulSurface:
             logger.warning("Inconsistent origin between both sfs.")
             are_sfs_compatible = False
 
-        if sfs_1.get_data_per_point_keys() != sfs_2.get_data_per_point_keys():
+        if sfs_1.get_data_per_vertex_keys() != sfs_2.get_data_per_vertex_keys():
             logger.warning("Inconsistent data_per_vertex between both sfs.")
             are_sfs_compatible = False
 
@@ -234,14 +234,14 @@ class StatefulSurface:
         text += f"\nvoxel_order: {self._voxel_order}"
 
         text += f"\nface_count: {self._get_face_count()}"
-        text += f"\npoint_count: {self._get_point_count()}"
-        text += f"\ndata_per_point keys: {self.get_data_per_point_keys()}"
+        text += f"\nvertex_count: {self._get_vertex_count()}"
+        text += f"\ndata_per_vertex keys: {self.get_data_per_vertex_keys()}"
 
         return text
 
     def __len__(self):
         """Define the length of the object"""
-        return self._get_point_count()
+        return self._get_vertex_count()
 
     def __getitem__(self, key):
         # TODO: implement slicing if make sense
@@ -382,7 +382,7 @@ class StatefulSurface:
         return self._vertices.copy()
 
     def get_polydata(self):
-        return convert_to_polydata(self._vertices, self._faces, self._data_per_point)
+        return convert_to_polydata(self._vertices, self._faces, self._data_per_vertex)
 
     @vertices.setter
     def vertices(self, data):
@@ -398,7 +398,7 @@ class StatefulSurface:
     @property
     def data_per_vertex(self):
         """Getter for data_per_vertex"""
-        return self._data_per_point
+        return self._data_per_vertex
 
     @data_per_vertex.setter
     def data_per_vertex(self, data):
@@ -410,10 +410,10 @@ class StatefulSurface:
             Dictionary in which each key has X items.
             X being the number of points on the surface.
         """
-        self._data_per_point = data
-        logger.warning("Data_per_point has been modified.")
+        self._data_per_vertex = data
+        logger.warning("data_per_vertex has been modified.")
 
-    def get_data_per_point_keys(self):
+    def get_data_per_vertex_keys(self):
         """Return a list of the data_per_vertex attribute names"""
         return list(set(self.data_per_vertex.keys()))
 
@@ -558,7 +558,7 @@ class StatefulSurface:
         """Safe getter for the number of faces"""
         return len(self._faces)
 
-    def _get_point_count(self):
+    def _get_vertex_count(self):
         """Safe getter for the number of vertices"""
         return len(self._vertices)
 
