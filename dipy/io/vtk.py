@@ -45,7 +45,8 @@ def load_polydata(file_name):
 
 @warning_for_keywords()
 def save_polydata(
-    polydata, file_name, *, binary=False, color_array_name=None, legacy_vtk_format=False
+    polydata, file_name, *, binary=False, color_array_name=None,
+    legacy_vtk_format=False
 ):
     """Save a vtk polydata to a supported format file.
 

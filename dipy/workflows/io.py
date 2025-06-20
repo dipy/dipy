@@ -475,7 +475,8 @@ class IoInfoFlow(Workflow):
                             "Nifti or Trk file using the option "
                             "--reference my_files.nii.gz ."
                         )
-                        raise IOError(msg)
+                        logging.error(msg, stacklevel=2)
+                        sys.exit(1)
 
                     sft = load_tractogram(input_path, reference, bbox_valid_check=False)
 
