@@ -1,9 +1,10 @@
+# cython: cdivision=True
 import timeit
 
 cimport numpy as cnp
 import numpy as np
 from numpy.testing import (assert_, assert_almost_equal, assert_raises,
-                            assert_array_equal)
+                            assert_array_equal, assert_array_almost_equal)
 from dipy.utils.fast_numpy import random, seed
 from dipy.utils.fast_numpy cimport (
     cross,
@@ -59,32 +60,32 @@ def test_dot():
     assert_(time_dot < time_npdot)
 
 
-# TODO: Check why this test fails
-# def test_cross():
-#     # Test that cross is faster and equal to numpy.cross.
-#     cdef double[:] vec1
-#     cdef double[:] vec2
-#     cdef double[:] out
-#     out = np.zeros(3, dtype=float)
-#     for _ in range(10):
-#         vec1 = np.random.random(3)
-#         vec2 = np.random.random(3)
-#         cross(&out[0], &vec1[0], &vec2[0])
-#         assert_array_equal(out, np.cross(vec1, vec2))
+def test_cross():
+    # Test that cross is faster and equal to numpy.cross.
+    cdef double[:] vec1
+    cdef double[:] vec2
+    cdef double[:] out
+    out = np.zeros(3, dtype=np.double)
+    for i in range(10):
+        vec1 = np.random.random(3).astype(np.double)
+        vec2 = np.random.random(3).astype(np.double)
+        out2 = np.cross(vec1, vec2).astype(np.double)
+        cross(&out[0], &vec1[0], &vec2[0])
+        assert_array_almost_equal(out, out2, decimal=14)
 
-#     vec1 = np.random.random(3)
-#     vec2 = np.random.random(3)
+    vec1 = np.random.random(3)
+    vec2 = np.random.random(3)
 
-#     def __cross():
-#         cross(&out[0], &vec1[0], &vec2[0])
+    def __cross():
+        cross(&out[0], &vec1[0], &vec2[0])
 
-#     def __npcross():
-#         np.cross(vec1, vec2)
+    def __npcross():
+        np.cross(vec1, vec2)
 
-#     number = 10000
-#     time_cross = timeit.timeit(__cross, number=number)
-#     time_npcross = timeit.timeit(__npcross, number=number)
-#     assert_(time_cross < time_npcross)
+    number = 10000
+    time_cross = timeit.timeit(__cross, number=number)
+    time_npcross = timeit.timeit(__npcross, number=number)
+    assert_(time_cross < time_npcross)
 
 
 def test_random_vector():
