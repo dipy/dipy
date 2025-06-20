@@ -364,7 +364,7 @@ def save_pial(fname, vertices, faces, *, metadata=None):
         Vertices.
     faces : ndarray
         Faces.
-    metadata : dict
+    metadata : dict, optional
         Key-value pairs to encode at the end of the file.
     """
     nib.freesurfer.write_geometry(fname, vertices, faces, volume_info=metadata)
@@ -377,6 +377,10 @@ def load_gifti(fname, *, return_header=False):
     ----------
     fname : str
         Absolute path of the file.
+
+    return_header : bool, optional
+        Whether to read the header of the file or not, by default False.
+        If True, returns a tuple with vertices, faces and header.
 
     Returns
     -------
@@ -411,8 +415,6 @@ def save_gifti(fname, vertices, faces, *, header=None):
         Vertices.
     faces : ndarray
         Faces.
-    header : nib.filebasedimages.FileBasedHeader
-        Valid header for the gifti file, typically loaded from a reference GII
     """
     vert = nib.gifti.GiftiDataArray(
         vertices,
@@ -436,7 +438,7 @@ def apply_freesurfer_transform(vertices, reference, *, inv=False):
         Vertices to transform.
     reference : str
         Reference file to get the transform from.
-    inv : bool
+    inv : bool, optional
         True if loading the surface, False if saving the surface.
     """
 

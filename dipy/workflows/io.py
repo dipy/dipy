@@ -476,7 +476,6 @@ class IoInfoFlow(Workflow):
                             "--reference my_files.nii.gz ."
                         )
                         raise IOError(msg)
-                        # sys.exit(1)
 
                     sft = load_tractogram(input_path, reference, bbox_valid_check=False)
 

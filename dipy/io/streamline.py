@@ -157,10 +157,10 @@ def load_tractogram(
         Verification for negative voxel coordinates or values above the
         volume dimensions. Default is True, to enforce valid file.
     from_space : Enum (dipy.io.utils.Space)
-        Space to which the surface was transformed before saving.
+        Space to which the tractogram was transformed before saving.
         Help for software compatibility. If None, assumes RASMM.
     from_origin : Enum (dipy.io.utils.Origin)
-        Origin to which the surface was transformed before saving.
+        Origin to which the tractogram was transformed before saving.
         Help for software compatibility. If None, assumes NIFTI.
     gifti_in_freesurfer : bool
     trk_header_check : bool
