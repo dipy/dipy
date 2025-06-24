@@ -11,6 +11,7 @@ from dipy.core.onetime import auto_attr
 from dipy.core.sphere import Sphere
 from dipy.data import get_sphere
 from dipy.reconst.csdeconv import AxSymShResponse
+from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.reconst.shm import lazy_index, normalize_data
 from dipy.segment.mask import bounding_box, crop
@@ -166,16 +167,36 @@ class RumbaSDModel(OdfModel):
         else:
             self.sphere = sphere
 
-        if voxelwise:
-            self.fit = self._voxelwise_fit
-        else:
-            self.fit = self._global_fit
-
         # Fitting parameters
         self.kernel = None
 
+    def fit(self, data, *, mask=None, **kwargs):
+        """
+        Fit fODF and GM/CSF volume fractions.
+
+        Parameters
+        ----------
+        data : ndarray (x, y, z, N) or ([x, y, z], N)
+            Signal values for each voxel. Must be 4D for global fit and 2D for
+            voxelwise fit.
+        mask : ndarray (x, y, z), optional
+            Binary mask specifying voxels of interest with 1; results will only
+            be fit at these voxels (0 elsewhere). If `None`, fits all voxels.
+            Default: None.
+
+        Returns
+        -------
+        model_fit : RumbaFit
+            Fit object storing model parameters.
+
+        """
+        if self.voxelwise:
+            return self._voxelwise_fit(data, mask=mask, **kwargs)
+        else:
+            return self._global_fit(data, mask=mask, **kwargs)
+
     @warning_for_keywords()
-    def _global_fit(self, data, *, mask=None):
+    def _global_fit(self, data, *, mask=None, **kwargs):
         """
         Fit fODF and GM/CSF volume fractions globally.
 
@@ -248,7 +269,8 @@ class RumbaSDModel(OdfModel):
         return model_fit
 
     @warning_for_keywords()
-    def _voxelwise_fit(self, data, *, mask=None):
+    @multi_voxel_fit
+    def _voxelwise_fit(self, data, *, mask=None, **kwargs):
         """
         Fit fODF and GM/CSF volume fractions voxelwise.
 
@@ -267,17 +289,6 @@ class RumbaSDModel(OdfModel):
             Fit object storing model parameters.
 
         """
-
-        if mask is None:  # default mask includes all voxels
-            mask = np.ones(data.shape[:-1])
-
-        if data.shape[:-1] != mask.shape:
-            raise ValueError(
-                "Mask shape should match first dimensions of "
-                + f"data, but data dimensions are f{data.shape} "
-                + f"while mask dimensions are f{mask.shape}"
-            )
-
         self.kernel = generate_kernel(
             self.gtab,
             self.sphere,
@@ -286,29 +297,31 @@ class RumbaSDModel(OdfModel):
             self.csf_response,
         )
 
-        model_params = np.zeros(data.shape[:-1] + (len(self.sphere.vertices) + 2,))
+        # Normalize data to mean b0 image
+        vox_data = normalize_data(data, self.where_b0s, min_signal=_EPS)
+        # Rearrange data to match corrected gradient table
+        vox_data = np.concatenate(([1], vox_data[self.where_dwi]))
+        vox_data[vox_data > 1] = 1  # clip values between 0 and 1
 
-        for ijk in np.ndindex(data.shape[:-1]):
-            if mask[ijk]:
-                vox_data = data[ijk]
-                # Normalize data to mean b0 image
-                vox_data = normalize_data(vox_data, self.where_b0s, min_signal=_EPS)
-                # Rearrange data to match corrected gradient table
-                vox_data = np.concatenate(([1], vox_data[self.where_dwi]))
-                vox_data[vox_data > 1] = 1  # clip values between 0 and 1
+        # Fitting
+        model_param = rumba_deconv(
+            vox_data,
+            self.kernel,
+            n_iter=self.n_iter,
+            recon_type=self.recon_type,
+            n_coils=self.n_coils,
+        )
+        model_params = np.zeros(
+            (
+                1,
+                1,
+                1,
+                len(self.sphere.vertices) + 2,
+            )
+        )
+        model_params[0, 0, 0, ...] = model_param
 
-                # Fitting
-                model_param = rumba_deconv(
-                    vox_data,
-                    self.kernel,
-                    n_iter=self.n_iter,
-                    recon_type=self.recon_type,
-                    n_coils=self.n_coils,
-                )
-
-                model_params[ijk] = model_param
-
-        model_fit = RumbaFit(self, model_params)
+        model_fit = RumbaFit(self, model_param)
         return model_fit
 
 
