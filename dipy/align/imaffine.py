@@ -180,7 +180,7 @@ class AffineMap:
             affine = np.array(affine)
         except Exception as e:
             raise TypeError(
-                "Input must be type ndarray, or be convertible" " to one."
+                "Input must be type ndarray, or be convertible to one."
             ) from e
 
         if len(affine.shape) != _number_dim_affine_matrix:
@@ -203,7 +203,7 @@ class AffineMap:
         # Last row, last column in matrix must be 1.0!
         if affine[-1, -1] != 1.0:
             raise AffineInvalidValuesError(
-                "Last row, last column in matrix" " is not 1.0!"
+                "Last row, last column in matrix is not 1.0!"
             )
 
         # making a copy to insulate it from changes outside object
