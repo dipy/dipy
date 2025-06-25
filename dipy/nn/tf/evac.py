@@ -446,28 +446,22 @@ class EVACPlus:
             batch_size = 1
 
         input_data = np.zeros((128, 128, 128, len(T1)))
-        affines = np.zeros((len(T1), 4, 4))
-        mid_shapes = np.zeros((len(T1), 3)).astype(int)
-        offset_arrays = np.zeros((len(T1), 4, 4)).astype(int)
-        scales = np.zeros(len(T1))
-        crop_vss = np.zeros((len(T1), 3, 2))
-        pad_vss = np.zeros((len(T1), 3, 2))
+        params_list = []
 
         # Normalize the data.
         n_T1 = np.zeros(T1.shape)
         for i, T1_img in enumerate(T1):
             n_T1[i] = normalize(T1_img, new_min=0, new_max=1)
-            t_img, t_affine, mid_shape, offset_array, scale, crop_vs, pad_vs = (
-                transform_img(n_T1[i], affine[i], voxsize=voxsize[i])
+            t_img, params = transform_img(
+                n_T1[i],
+                affine[i],
+                voxsize=voxsize[i],
+                ratio=2,
+                init_shape=(256, 256, 256),
+                target_voxsize=(1, 1, 1),
             )
             input_data[..., i] = t_img
-            affines[i] = t_affine
-            mid_shapes[i] = mid_shape
-            offset_arrays[i] = offset_array
-            scales[i] = scale
-            crop_vss[i] = crop_vs
-            pad_vss[i] = pad_vs
-
+            params_list.append(params)
         # Prediction stage
         prediction = np.zeros((len(T1), 128, 128, 128), dtype=np.float32)
         for batch_idx in range(batch_size, len(T1) + 1, batch_size):
@@ -483,17 +477,7 @@ class EVACPlus:
 
         output_mask = []
         for i in range(len(T1)):
-            output = recover_img(
-                prediction[i],
-                affines[i],
-                mid_shapes[i],
-                n_T1[i].shape,
-                offset_arrays[i],
-                voxsize=voxsize[i],
-                scale=scales[i],
-                crop_vs=crop_vss[i],
-                pad_vs=pad_vss[i],
-            )
+            output, _ = recover_img(prediction[i], params_list[i])
             if not return_prob:
                 output = np.where(output >= 0.5, 1, 0)
                 if finalize_mask:
