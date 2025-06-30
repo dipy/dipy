@@ -28,7 +28,7 @@ from dipy.direction import peaks
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst import shm
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
@@ -239,7 +239,7 @@ lr_sf_trk = Streamlines(lr_superiorfrontal_track)
 
 # Save streamlines
 sft = StatefulTractogram(lr_sf_trk, hardi_img, Space.RASMM)
-save_trk(sft, "lr-superiorfrontal.trk")
+save_tractogram(sft, "lr-superiorfrontal.trx")
 
 ###############################################################################
 # .. rubric:: Footnotes

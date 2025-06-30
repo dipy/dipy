@@ -49,7 +49,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         random_seed=1,
         seed_buffer_fraction=1.0,
         out_dir="",
-        out_tractogram="tractogram.trk",
+        out_tractogram="out_tractogram.trx",
     ):
         """Workflow for Local Fiber Tracking.
 
@@ -292,7 +292,7 @@ class PFTrackingPAMFlow(Workflow):
         random_seed=1,
         seed_buffer_fraction=1.0,
         out_dir="",
-        out_tractogram="tractogram.trk",
+        out_tractogram="tractogram.trx",
     ):
         """Workflow for Particle Filtering Tracking.
 

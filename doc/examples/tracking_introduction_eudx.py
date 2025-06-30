@@ -30,7 +30,7 @@ from dipy.direction import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking import utils
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
@@ -201,7 +201,7 @@ if has_fury:
 # loaded into other software for visualization or further analysis.
 
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_EuDX.trk", streamlines)
+save_tractogram(sft, "tractogram_EuDX.trx")
 
 ###############################################################################
 # References
