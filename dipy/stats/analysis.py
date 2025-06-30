@@ -317,3 +317,71 @@ def afq_profile(
         return profile_stat(values, weights=weights, axis=0)
     else:
         return profile_stat(values, axis=0)
+    
+
+def get_covariates(df):
+    Y = []
+    X = []
+
+    unique_subjects = df['subject'].unique()
+    unique_disk = df['disk'].unique()
+
+    no_disk = len(unique_disk)
+
+    for sub in unique_subjects:
+        sub_df = df[df['subject']==sub]
+        unique_streamline = sub_df['streamline'].unique()
+        len_streamlines = len(unique_streamline)
+        group = sub_df['group'].unique()[0]
+        gender = None
+        if 'gender' in sub_df.columns:
+            gender = sub_df['gender'].unique()[0]
+        print("For subject {} I have {} unique streamlines and group is {}".format(sub, len_streamlines, group))
+        if(group==0):
+            # continue
+            sub_X = np.zeros((len_streamlines,1))
+        elif(group==1):
+            sub_X = np.ones((len_streamlines,1))
+        else:
+            print("For subject {} I have a invalid group which is {}".format(sub, group))
+        if(gender != None):
+            if(gender == "Female"):
+                zero_column = np.zeros((len_streamlines, 1))
+                sub_X = np.hstack((sub_X, zero_column))
+            elif(gender == "Male"):
+                one_column = np.ones((len_streamlines, 1))
+                sub_X = np.hstack((sub_X, one_column))
+        if 'age' in sub_df.columns:
+            age = sub_df['age'].unique()[0]
+            age_column = age*np.ones((len_streamlines, 1))
+            sub_X = np.hstack((sub_X, age_column))
+        if(len(X)==0):
+            X = sub_X
+        else:
+            X = np.append(X, sub_X, axis=0)
+        sub_Y = np.zeros((len_streamlines,no_disk))
+        count_Y = np.zeros((len_streamlines,no_disk))
+
+        for index, row in sub_df.iterrows():
+            x = row['streamline']
+            y = row['disk']-1
+            sub_Y[x][y] += row['fa']
+            count_Y[x][y] +=1
+        for i in range(len_streamlines):
+            for j in range(no_disk):
+                if(count_Y[i][j]>0):
+                    sub_Y[i][j] = sub_Y[i][j]/count_Y[i][j]
+        if(len(Y)==0):
+            Y = sub_Y
+        else:
+            Y = np.vstack((Y, sub_Y))
+        print("Printing X rows {}. Printing Y rows {}".format(X.shape[0],Y.shape[0]))
+        
+
+    selected_indices = np.random.choice(X.shape[0], min(X.shape[0],12000), replace=False)
+    X = np.array(X[selected_indices])
+    Y = np.array(Y[selected_indices])
+    ones_column = np.ones((X.shape[0], 1))
+    X = np.hstack((X, ones_column))
+    print("Printing X rows {}. Printing Y rows {}".format(X.shape[0],Y.shape[0]))
+    return X,Y

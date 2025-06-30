@@ -2,7 +2,6 @@ import numpy as np
 
 import statsmodels.api as sm
 
-from skfda import FDataGrid
 from skfda.representation.basis import BSplineBasis
 
 from skfda.misc.regularization import compute_penalty_matrix
@@ -13,11 +12,114 @@ from skfda.representation import FDataBasis
 
 import gc
 
-from scipy.sparse import diags
 import scipy.sparse as sp
+import pandas as pd
 
-from dipy.stats.gam import gam
+"""
+Fits a Generalized Additive Model (GAM) using Gaussian GLM and returns model coefficients,
+covariance estimates, and intermediate matrices useful for inference.
 
+Parameters:
+----------
+y : np.ndarray
+    Response variable vector (dependent variable), shape (n_samples,).
+
+Xmat : np.ndarray
+    Design matrix of predictor variables (independent variables), shape (n_samples, n_features).
+
+gam_method : str or None, optional
+    Method used to fit the GAM (e.g., 'REML', 'GCV'). Currently not implemented in this function.
+
+S : list of np.ndarray
+    List of smoothing (penalty) matrices, one per term. Required when `labda` is not provided.
+
+C : any or None, optional
+    Constraint matrix or related structure. Currently not implemented in this function.
+
+labda : list or None, optional
+    List of smoothing parameters (λ) corresponding to each smoothing matrix in `S`. If `None`,
+    default estimation is triggered (not fully implemented in this stub).
+
+Returns:
+-------
+dict
+    A dictionary with the following keys:
+        - 'gam': Fitted GLM model object from statsmodels.
+        - 'coefficients': Estimated model coefficients after applying transformation Z.
+        - 'Vp': Transformed covariance matrix of the coefficients.
+        - 'GinvXT': Generalized inverse of X transpose, multiplied by transformation Z.
+        - 'cov_params': Raw covariance matrix of model parameters.
+        - 'Z': Identity matrix used as a transformation (placeholder for now).
+"""
+def gam(y, Xmat, gam_method = None, S = None, C = None, labda = None):
+
+    # stopifnot( is.null(lambda) | length(lambda)==n.p ) - write the python version of it but now labda is NULL
+    n_p = len(S)
+
+    if C is not None:
+        print("Need to implement")
+    else:
+        Z = np.eye(Xmat.shape[1])
+        Xmat_copy = Xmat
+        if labda is None:
+            S_copy = list(list(S)) ## Need to verify this and make this proper
+            
+    ## comment the next lines if you don't want statsmodel's fit
+    data =pd.DataFrame(Xmat)
+    data['Y'] = y.reshape(-1,1)
+    endog = data['Y']
+    exog = data.drop(columns=['Y'])
+    glm = sm.GLM(endog, exog, family = sm.families.Gaussian())
+    alpha = 0.1
+    L1_wt = 0
+    fitobj = glm.fit(alpha=alpha, L1_wt=L1_wt)
+    cov_params = fitobj.cov_params().values
+    GinvXT = Z@np.linalg.solve(Xmat.T @ Xmat, Xmat.T)
+
+    return {
+        'gam': fitobj,
+        'coefficients': Z@fitobj.params.values,
+        'Vp': Z@cov_params@Z.T,
+        'GinvXT': GinvXT,
+        'cov_params': cov_params,
+        'Z': Z
+    }
+
+"""
+Constructs the covariate matrix X and response matrix Y from a DataFrame of subject-level
+diffusion imaging data, incorporating group, gender, age, and fractional anisotropy (FA) values.
+
+Parameters:
+----------
+df : pandas.DataFrame
+    Input DataFrame containing columns:
+    - 'subject': Subject identifier
+    - 'streamline': Streamline index (within each subject)
+    - 'disk': Disk index (used to organize response columns)
+    - 'fa': Fractional anisotropy value for each streamline-disk combination
+    - 'group': Binary group label (0 or 1)
+    - 'gender' (optional): 'Male' or 'Female' — if present, used to create a binary column
+    - 'age' (optional): Age of subject — if present, used as a numeric covariate
+
+Returns:
+-------
+X : np.ndarray
+    Covariate matrix of shape (n_samples, n_features), with features including:
+    - Group (0 or 1)
+    - Gender (1 if Male, 0 if Female; added only if gender column exists)
+    - Age (added only if age column exists)
+    - Intercept term (final column of 1s)
+
+Y : np.ndarray
+    Response matrix of shape (n_samples, n_disks), where each row contains the averaged FA values
+    across disks for each streamline within a subject.
+
+Notes:
+------
+- The function ensures equal sampling across subjects by computing per-streamline averages.
+- Final output is subsampled to at most 12,000 rows for efficiency.
+- Prints diagnostic information about data shape during processing.
+"""
 def get_covariates(df):
     Y = []
     X = []
@@ -32,6 +134,7 @@ def get_covariates(df):
         unique_streamline = sub_df['streamline'].unique()
         len_streamlines = len(unique_streamline)
         group = sub_df['group'].unique()[0]
+        gender = None
         if 'gender' in sub_df.columns:
             gender = sub_df['gender'].unique()[0]
         print("For subject {} I have {} unique streamlines and group is {}".format(sub, len_streamlines, group))
@@ -42,12 +145,13 @@ def get_covariates(df):
             sub_X = np.ones((len_streamlines,1))
         else:
             print("For subject {} I have a invalid group which is {}".format(sub, group))
-        if(gender == "Female"):
-            zero_column = np.zeros((len_streamlines, 1))
-            sub_X = np.hstack((sub_X, zero_column))
-        elif(gender == "Male"):
-            one_column = np.ones((len_streamlines, 1))
-            sub_X = np.hstack((sub_X, one_column))
+        if(gender != None):
+            if(gender == "Female"):
+                zero_column = np.zeros((len_streamlines, 1))
+                sub_X = np.hstack((sub_X, zero_column))
+            elif(gender == "Male"):
+                one_column = np.ones((len_streamlines, 1))
+                sub_X = np.hstack((sub_X, one_column))
         if 'age' in sub_df.columns:
             age = sub_df['age'].unique()[0]
             age_column = age*np.ones((len_streamlines, 1))
@@ -83,7 +187,96 @@ def get_covariates(df):
     print("Printing X rows {}. Printing Y rows {}".format(X.shape[0],Y.shape[0]))
     return X,Y
 
-def fosr(self,formula=None, Y=None, fdobj=None, data=None, X=None, con = None, argvals = None, method = "OLS", gam_method = "REML", cov_method = "naive", labda = None, nbasis=15, norder=4, pen_order=2, multi_sp = False, pve=.99, max_iter = 1, maxlam = None, cv1 = False, scale = False):
+"""
+Fits a Function-on-Scalar Regression (FoSR) model using basis expansion (B-splines)
+and optionally penalized smoothing through GAM. Supports estimation using Ordinary Least Squares (OLS)
+or penalized approaches like REML.
+
+Parameters:
+----------
+formula : str or None
+    Model formula (R-style). Currently not implemented in this function.
+
+Y : np.ndarray or None
+    Functional response matrix of shape (n_samples, n_grid_points). Required if `fdobj` is not provided.
+
+fdobj : FDataBasis or None
+    Functional data object (from scikit-fda). Used as an alternative to raw Y input.
+
+data : pandas.DataFrame or None
+    Dataset containing predictors (used if `formula` is implemented in the future).
+
+X : np.ndarray
+    Scalar predictor matrix of shape (n_samples, n_predictors).
+
+con : np.ndarray or None
+    Constraint matrix to be applied on coefficients, e.g., for identifiability constraints.
+
+argvals : np.ndarray or None
+    Grid values over which functional response is evaluated. If None, defaults to linspace from 0 to 1.
+
+method : str, default = "OLS"
+    Estimation method. Options are:
+    - "OLS": Ordinary Least Squares.
+    - Others (e.g., REML) not fully implemented.
+
+gam_method : str, default = "REML"
+    Method used for GAM fitting (e.g., REML, GCV).
+
+cov_method : str, default = "naive"
+    Method for estimating covariance. Currently a placeholder.
+
+labda : float, list, or None
+    Smoothing parameter(s). If None, automatic selection is used (not fully implemented for all cases).
+
+nbasis : int, default = 15
+    Number of B-spline basis functions used to represent functional data.
+
+norder : int, default = 4
+    Order of B-spline basis functions (degree + 1).
+
+pen_order : int, default = 2
+    Order of derivative used for roughness penalty.
+
+multi_sp : bool, default = False
+    Whether to use multiple smoothing parameters (not supported with "OLS").
+
+pve : float, default = 0.99
+    Proportion of variance explained (used in PCA step; placeholder for now).
+
+max_iter : int, default = 1
+    Maximum number of iterations for penalized fitting (not implemented beyond 0 or 1).
+
+maxlam : float or None
+    Maximum lambda value to consider during tuning. Currently not used.
+
+cv1 : bool, default = False
+    If True, enables cross-validation for lambda selection. Currently a placeholder.
+
+scale : bool, default = False
+    If True, standardizes predictors using variance only (no centering). Placeholder for now.
+
+Returns:
+-------
+dict
+    A dictionary containing:
+        - 'fd': FDataBasis object for fitted coefficient functions.
+        - 'pca.resid': Placeholder for residual PCA (currently None).
+        - 'U': Placeholder (currently None).
+        - 'yhat': Fitted values (n_samples × n_grid_points).
+        - 'est.func': Estimated functional coefficient matrix.
+        - 'se.func': Pointwise standard error estimates for each coefficient function.
+        - 'argvals': Grid of evaluation points used in basis expansion.
+        - 'fit': Dictionary of model fit from `gam()` (including coefficients, covariance, etc.).
+
+Notes:
+------
+- Only raw response matrix `Y` is currently supported (not `fdobj`).
+- Multiple smoothing parameters and cross-validation are indicated but not implemented.
+- Uses B-spline basis expansion and matrix operations similar to R's refund::fosr.
+- Penalized estimation uses Tikhonov regularization with differential operators.
+"""
+def fosr(formula=None, Y=None, fdobj=None, data=None, X=None, con = None, argvals = None, method = "OLS", gam_method = "REML", cov_method = "naive", labda = None, nbasis=15, norder=4, pen_order=2, multi_sp = False, pve=.99, max_iter = 1, maxlam = None, cv1 = False, scale = False):
 
     multi_sp = False if method == "OLS" else True
 
