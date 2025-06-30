@@ -135,11 +135,11 @@ class SlrWithQbxFlow(Workflow):
         nb_pts=20,
         progressive=True,
         out_dir="",
-        out_moved="moved.trk",
+        out_moved="moved.trx",
         out_affine="affine.txt",
-        out_stat_centroids="static_centroids.trk",
-        out_moving_centroids="moving_centroids.trk",
-        out_moved_centroids="moved_centroids.trk",
+        out_stat_centroids="static_centroids.trx",
+        out_moving_centroids="moving_centroids.trx",
+        out_moved_centroids="moved_centroids.trx",
     ):
         """Streamline-based linear registration.
 
@@ -895,8 +895,8 @@ class BundleWarpFlow(Workflow):
         max_iter=15,
         affine=True,
         out_dir="",
-        out_linear_moved="linearly_moved.trk",
-        out_nonlinear_moved="nonlinearly_moved.trk",
+        out_linear_moved="linearly_moved.trx",
+        out_nonlinear_moved="nonlinearly_moved.trx",
         out_warp_transform="warp_transform.npy",
         out_warp_kernel="warp_kernel.npy",
         out_dist="distance_matrix.npy",
@@ -910,9 +910,9 @@ class BundleWarpFlow(Workflow):
         Parameters
         ----------
         static_file : string
-            Path to the static (reference) .trk file.
+            Path to the static (reference) .trx file.
         moving_file : string
-            Path to the moving (target to be registered) .trk file.
+            Path to the moving (target to be registered) .trx file.
         dist : string, optional
             Path to the precalculated distance matrix file.
         alpha : float, optional

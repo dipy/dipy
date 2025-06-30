@@ -24,7 +24,7 @@ from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere, get_fnames
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import load_tractogram, save_trk
+from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
@@ -156,7 +156,7 @@ streamline_generator = deterministic_tracking(
 
 det_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(det_streams, labels_img, Space.RASMM)
-save_trk(sft, "tractogram_disco_deterministic.trk")
+save_tractogram(sft, "tractogram_disco_deterministic.trx")
 
 if has_fury:
     scene = window.Scene()
@@ -194,7 +194,7 @@ streamline_generator = probabilistic_tracking(
 )
 prob_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(prob_streams, labels_img, Space.RASMM)
-save_trk(sft, "tractogram_disco_probabilistic.trk")
+save_tractogram(sft, "tractogram_disco_probabilistic.trx")
 
 if has_fury:
     scene = window.Scene()
@@ -239,7 +239,7 @@ streamline_generator = ptt_tracking(
 )
 ptt_streams = Streamlines(streamline_generator)
 sft = StatefulTractogram(ptt_streams, labels_img, Space.RASMM)
-save_trk(sft, "tractogram_disco_ptt.trk")
+save_tractogram(sft, "tractogram_disco_ptt.trx")
 
 if has_fury:
     scene = window.Scene()

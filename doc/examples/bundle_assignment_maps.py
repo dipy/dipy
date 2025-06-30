@@ -13,7 +13,7 @@ First import the necessary modules.
 import numpy as np
 
 from dipy.data import fetch_bundle_atlas_hcp842, get_two_hcp842_bundles
-from dipy.io.streamline import load_trk
+from dipy.io.streamline import load_tractogram
 from dipy.stats.analysis import assignment_map
 from dipy.viz import actor, window
 
@@ -28,7 +28,7 @@ atlas_file, atlas_folder = fetch_bundle_atlas_hcp842()
 
 model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
 
-sft_af_l = load_trk(model_af_l_file, reference="same", bbox_valid_check=False)
+sft_af_l = load_tractogram(model_af_l_file, reference="same", bbox_valid_check=False)
 model_af_l = sft_af_l.streamlines
 
 ###############################################################################

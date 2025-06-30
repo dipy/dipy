@@ -134,7 +134,7 @@ class RecoBundlesFlow(Workflow):
         r_pruning_thr=6.0,
         no_r_slr=False,
         out_dir="",
-        out_recognized_transf="recognized.trk",
+        out_recognized_transf="recognized.trx",
         out_recognized_labels="labels.npy",
     ):
         """Recognize bundles
@@ -336,7 +336,7 @@ class LabelsBundlesFlow(Workflow):
         streamline_files,
         labels_files,
         out_dir="",
-        out_bundle="recognized_orig.trk",
+        out_bundle="recognized_orig.trx",
     ):
         """Extract bundles using existing indices (labels)
 

@@ -17,7 +17,7 @@ from dipy.direction.peaks import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst import sfm
 from dipy.reconst.csdeconv import auto_response_ssst
 from dipy.tracking import utils
@@ -157,11 +157,11 @@ if has_fury:
 # Sparse Fascicle Model tracks
 #
 #
-# Finally, we can save these streamlines to a 'trk' file, for use in other
+# Finally, we can save these streamlines to a 'trx' file, for use in other
 # software, or for further analysis.
 
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_sfm_detr.trk")
+save_tractogram(sft, "tractogram_sfm_detr.trx")
 
 ###############################################################################
 # References
