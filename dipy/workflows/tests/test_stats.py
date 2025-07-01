@@ -20,9 +20,11 @@ from dipy.workflows.stats import (
     BundleAnalysisTractometryFlow,
     BundleShapeAnalysis,
     LinearMixedModelsFlow,
+    FOSRFlow, 
     SNRinCCFlow,
     buan_bundle_profiles,
 )
+
 
 pd, have_pandas, _ = optional_package("pandas")
 _, have_statsmodels, _ = optional_package("statsmodels", min_version="0.14.0")
@@ -279,6 +281,50 @@ def test_linear_mixed_models_flow():
             ValueError, lmm_flow.run, input_path, no_disks=5, out_dir=out_dir4
         )
 
+@pytest.mark.skipif(
+    not have_pandas or not have_statsmodels or not have_tables or not have_matplotlib,
+    reason="Requires Pandas, StatsModels, PyTables, and matplotlib",
+)
+def test_fosr_flow():
+    with TemporaryDirectory() as dirpath:
+        out_dir = os.path.join(dirpath, "output")
+        os.mkdir(out_dir)
+
+        d = {
+            "disk": [1, 2, 3, 4, 5, 1, 2, 3, 4, 5] * 10,
+            "fa": [0.21, 0.234, 0.44, 0.44, 0.5, 0.23, 0.55, 0.34, 0.76, 0.34] * 10,
+            "subject": [
+                "10001",
+                "10001",
+                "10001",
+                "10001",
+                "10001",
+                "20002",
+                "20002",
+                "20002",
+                "20002",
+                "20002",
+            ]
+            * 10,
+            "group": [0, 0, 0, 0, 0, 1, 1, 1, 1, 1] * 10,
+        }
+
+        df = pd.DataFrame(data=d)
+        store = pd.HDFStore(os.path.join(out_dir, "temp_fa.h5"))
+        store.append("fa", df, data_columns=True)
+        store.close()
+
+        fosr_flow = FOSRFlow()
+
+        out_dir2 = os.path.join(dirpath, "output2")
+        os.mkdir(out_dir2)
+
+        input_path = os.path.join(out_dir, "*")
+
+        fosr_output = fosr_flow.run(input_path, no_disks=5, out_dir=out_dir2)
+        expected_shape = (100,2)
+        assert(fosr_output["est.func"].shape, expected_shape)
+        assert(fosr_output["se.func"].shape, expected_shape)
 
 @pytest.mark.skipif(
     not have_pandas or not have_statsmodels or not have_tables or not have_matplotlib,
