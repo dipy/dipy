@@ -56,7 +56,7 @@ class HorizonFlow(Workflow):
 
         See :footcite:p:`Garyfallidis2019` for further details about Horizon.
 
-        Interact with any number of .trk, .tck or .dpy tractograms and anatomy
+        Interact with any number of .trx, .trk, .tck or .dpy tractograms and anatomy
         files .nii or .nii.gz. Cluster streamlines on loading.
 
         Parameters
