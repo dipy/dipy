@@ -1,13 +1,10 @@
-import logging
-
 import numpy as np
 import numpy.linalg as npl
 from scipy.ndimage import gaussian_filter
 
 from dipy.align import floating
 from dipy.testing.decorators import warning_for_keywords
-
-logger = logging.getLogger(__name__)
+from dipy.utils.logging import logger
 
 
 class ScaleSpace:

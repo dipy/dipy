@@ -29,6 +29,7 @@ python_sources = [
   'compatibility.py',
   'convert.py',
   'deprecator.py',
+  'logging.py',
   'multiproc.py',
   'optpkg.py',
   'parallel.py',

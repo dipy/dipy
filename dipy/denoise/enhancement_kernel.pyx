@@ -2,15 +2,13 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 import os.path
-import logging
 
 from dipy.data import get_sphere
 from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
+from dipy.utils.logging import logger
 from tempfile import gettempdir
 from libc.math cimport sqrt, exp, fabs, cos, sin, tan, acos, atan2
 from math import ceil
-
-logger = logging.getLogger(__name__)
 
 
 cdef class EnhancementKernel:

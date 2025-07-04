@@ -8,6 +8,7 @@ import scipy.optimize as opt
 from scipy.optimize import minimize
 
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
@@ -198,7 +199,7 @@ class Optimizer:
         return self.res["message"]
 
     def print_summary(self):
-        print(self.res)
+        logger.info(self.res)
 
     @property
     def evolution(self):

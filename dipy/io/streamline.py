@@ -1,5 +1,4 @@
 from copy import deepcopy
-import logging
 import os
 import time
 
@@ -14,6 +13,7 @@ from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.utils import create_tractogram_header, is_header_compatible
 from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 
 
 @warning_for_keywords()
@@ -80,7 +80,7 @@ def save_tractogram(sft, filename, *, bbox_valid_check=True):
         tmm.save(trx, filename)
         trx.close()
 
-    logging.debug(
+    logger.debug(
         "Save %s with %s streamlines in %s seconds.",
         filename,
         len(sft),
@@ -134,25 +134,25 @@ def load_tractogram(
     """
     _, extension = os.path.splitext(filename)
     if extension not in [".trk", ".tck", ".trx", ".vtk", ".vtp", ".fib", ".dpy"]:
-        logging.error("Output filename is not one of the supported format.")
+        logger.error("Output filename is not one of the supported format.")
         return False
 
     if to_space not in Space:
-        logging.error("Space MUST be one of the 3 choices (Enum).")
+        logger.error("Space MUST be one of the 3 choices (Enum).")
         return False
 
     if reference == "same":
         if extension in [".trk", ".trx"]:
             reference = filename
         else:
-            logging.error(
+            logger.error(
                 'Reference must be provided, "same" is only available for Trk file.'
             )
             return False
 
     if trk_header_check and extension == ".trk":
         if not is_header_compatible(filename, reference):
-            logging.error("Trk file header does not match the provided reference.")
+            logger.error("Trk file header does not match the provided reference.")
             return False
 
     timer = time.time()
@@ -186,7 +186,7 @@ def load_tractogram(
             data_per_streamline=data_per_streamline,
         )
 
-    logging.debug(
+    logger.debug(
         "Load %s with %s streamlines in %s seconds.",
         filename,
         len(sft),
