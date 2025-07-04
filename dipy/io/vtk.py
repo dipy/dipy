@@ -18,14 +18,14 @@ def load_polydata(file_name):
 
     Parameters
     ----------
-    file_name : string
+    file_name : string or Path
 
     Returns
     -------
     output : vtkPolyData
 
     """
-    return fury.io.load_polydata(file_name)
+    return fury.io.load_polydata(str(file_name))
 
 
 @warning_for_keywords()
@@ -37,12 +37,12 @@ def save_polydata(polydata, file_name, *, binary=False, color_array_name=None):
     Parameters
     ----------
     polydata : vtkPolyData
-    file_name : string
+    file_name : string or Path
 
     """
     fury.io.save_polydata(
         polydata=polydata,
-        file_name=file_name,
+        file_name=str(file_name),
         binary=binary,
         color_array_name=color_array_name,
     )
@@ -58,7 +58,7 @@ def save_vtk_streamlines(streamlines, filename, *, to_lps=True, binary=False):
     ----------
     streamlines : list
         list of 2D arrays or ArraySequence
-    filename : string
+    filename : string or Path
         output filename (.obj, .vtk, .fib, .ply, .stl and .xml)
     to_lps : bool
         Default to True, will follow the vtk file convention for streamlines
@@ -86,7 +86,7 @@ def load_vtk_streamlines(filename, *, to_lps=True):
 
     Parameters
     ----------
-    filename : string
+    filename : string or Path
         input filename (.vtk or .fib)
     to_lps : bool
         Default to True, will follow the vtk file convention for streamlines

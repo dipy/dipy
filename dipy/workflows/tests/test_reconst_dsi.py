@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 import warnings
 
@@ -36,7 +36,7 @@ def reconst_flow_core(flow, **kwargs):
         data_path, bval_path, bvec_path = get_fnames(name="small_64D")
         volume, affine = load_nifti(data_path)
         mask = np.ones_like(volume[:, :, :, 0])
-        mask_path = pjoin(out_dir, "tmp_mask.nii.gz")
+        mask_path = Path(out_dir) / "tmp_mask.nii.gz"
         save_nifti(mask_path, mask.astype(np.uint8), affine)
 
         dsi_flow = ReconstDsiFlow()
@@ -47,10 +47,10 @@ def reconst_flow_core(flow, **kwargs):
                 category=PendingDeprecationWarning,
             )
             dsi_flow.run(
-                data_path,
-                bval_path,
-                bvec_path,
-                mask_path,
+                str(data_path),
+                str(bval_path),
+                str(bvec_path),
+                str(mask_path),
                 out_dir=out_dir,
                 extract_pam_values=True,
                 **kwargs,

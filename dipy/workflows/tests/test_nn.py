@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import numpy as np
@@ -23,7 +23,7 @@ def test_evac_plus_flow():
 
         volume = np.load(file_path)["input"][0]
         temp_affine = np.eye(4)
-        temp_path = pjoin(out_dir, "temp.nii.gz")
+        temp_path = Path(out_dir) / "temp.nii.gz"
         save_nifti(temp_path, volume, temp_affine)
         save_masked = True
 
@@ -37,10 +37,10 @@ def test_evac_plus_flow():
         mask = evac.predict(volume, temp_affine)
         masked = volume * mask
 
-        result_mask_data = load_nifti_data(pjoin(out_dir, mask_name))
+        result_mask_data = load_nifti_data(Path(out_dir) / mask_name)
         npt.assert_array_equal(result_mask_data.astype(np.uint8), mask)
 
-        result_masked_data = load_nifti_data(pjoin(out_dir, masked_name))
+        result_masked_data = load_nifti_data(Path(out_dir) / masked_name)
 
         npt.assert_array_equal(result_masked_data, masked)
 
@@ -54,7 +54,7 @@ def test_correct_biasfield_flow():
 
             volume = np.load(file_path[0])["img"]
             temp_affine = np.load(file_path[0])["affine"]
-            temp_path = pjoin(out_dir, "temp.nii.gz")
+            temp_path = Path(out_dir) / "temp.nii.gz"
             save_nifti(temp_path, volume, temp_affine)
 
             bias_flow = BiasFieldCorrectionFlow()
@@ -62,7 +62,7 @@ def test_correct_biasfield_flow():
 
             corrected_name = bias_flow.last_generated_outputs["out_corrected"]
 
-            corrected_data = load_nifti_data(pjoin(out_dir, corrected_name))
+            corrected_data = load_nifti_data(Path(out_dir) / corrected_name)
             npt.assert_almost_equal(
                 corrected_data.mean(), 119.03902876428222, decimal=4
             )
@@ -82,7 +82,7 @@ def test_correct_biasfield_flow():
 
         corrected_name = bias_flow.last_generated_outputs["out_corrected"]
 
-        corrected_data = load_nifti_data(pjoin(out_dir, corrected_name))
+        corrected_data = load_nifti_data(Path(out_dir) / corrected_name)
         npt.assert_almost_equal(corrected_data.mean(), 0.0384615384615, decimal=5)
 
     args = {

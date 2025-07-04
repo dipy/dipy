@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
@@ -27,8 +28,8 @@ def test_optional_package():
     assert_true(have_pkg)
 
     with TemporaryDirectory() as tmpdir:
-        os.makedirs(os.path.join(tmpdir, "fake_package"))
-        open(os.path.join(tmpdir, "fake_package", "__init__.py"), "a").close()
+        os.makedirs(Path(tmpdir) / "fake_package")
+        open(Path(tmpdir) / "fake_package" / "__init__.py", "a").close()
         current_dir = os.getcwd()
         os.chdir(tmpdir)
         pkg, have_pkg, setup_module = optional_package(

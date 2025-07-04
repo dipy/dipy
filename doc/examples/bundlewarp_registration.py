@@ -13,7 +13,7 @@ registration of white matter tracts :footcite:p:`Chandio2023`.
 
 """
 
-from os.path import join as pjoin
+from pathlib import Path
 from time import time
 
 from dipy.align.streamwarp import (
@@ -37,8 +37,8 @@ from dipy.viz.streamline import viz_displacement_mag, viz_two_bundles, viz_vecto
 # https://figshare.com/articles/dataset/Test_Bundles_for_DIPY/22557733
 
 bundle_warp_files = fetch_bundle_warp_dataset()
-s_UF_L_path = pjoin(bundle_warp_files[1], "s_UF_L.trk")
-m_UF_L_path = pjoin(bundle_warp_files[1], "m_UF_L.trk")
+s_UF_L_path = Path(bundle_warp_files[1]) / "s_UF_L.trk"
+m_UF_L_path = Path(bundle_warp_files[1]) / "m_UF_L.trk"
 
 uf_subj1 = load_trk(s_UF_L_path, reference="same", bbox_valid_check=False).streamlines
 uf_subj2 = load_trk(m_UF_L_path, reference="same", bbox_valid_check=False).streamlines

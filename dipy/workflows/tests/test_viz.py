@@ -1,5 +1,4 @@
-import os
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import numpy as np
@@ -75,7 +74,7 @@ def test_horizon_flow(rng):
             clusters_gt=0,
             world_coords=True,
             interactive=False,
-            out_png=pjoin(out_dir, "horizon-flow.png"),
+            out_png=str(Path(out_dir) / "horizon-flow.png"),
         )
 
         buan_colors = np.ones(streamlines.get_data().shape)
@@ -86,7 +85,7 @@ def test_horizon_flow(rng):
             buan_colors=buan_colors,
             world_coords=True,
             interactive=False,
-            out_png=pjoin(out_dir, "buan.png"),
+            out_png=str(Path(out_dir) / "buan.png"),
         )
 
         data = 255 * rng.random((197, 233, 189))
@@ -105,12 +104,12 @@ def test_horizon_flow(rng):
             clusters_gt=0,
             world_coords=True,
             interactive=False,
-            out_png=pjoin(out_dir, "horizon-flow-nii-images.png"),
+            out_png=str(Path(out_dir) / "horizon-flow-nii-images.png"),
         )
 
-        fimg = os.path.join(out_dir, "test.nii.gz")
-        ftrk = os.path.join(out_dir, "test.trk")
-        fnpy = os.path.join(out_dir, "test.npy")
+        fimg = Path(out_dir) / "test.nii.gz"
+        ftrk = Path(out_dir) / "test.trk"
+        fnpy = Path(out_dir) / "test.npy"
 
         save_nifti(fimg, data, affine)
         dimensions = data.shape
@@ -121,7 +120,7 @@ def test_horizon_flow(rng):
         pvalues = rng.uniform(low=0, high=1, size=(10,))
         np.save(fnpy, pvalues)
 
-        input_files = [ftrk, fimg]
+        input_files = [str(ftrk), str(fimg)]
 
         npt.assert_equal(len(input_files), 2)
 
@@ -134,7 +133,7 @@ def test_horizon_flow(rng):
             out_stealth_png="tmp_x.png",
         )
 
-        npt.assert_equal(os.path.exists(os.path.join(out_dir, "tmp_x.png")), True)
+        npt.assert_equal(Path(Path(out_dir) / "tmp_x.png").exists(), True)
         npt.assert_raises(
             ValueError, hz_flow.run, input_files=input_files, bg_color=(0.2, 0.2)
         )
@@ -148,9 +147,9 @@ def test_horizon_flow(rng):
             out_dir=out_dir,
             out_stealth_png="tmp_x.png",
         )
-        npt.assert_equal(os.path.exists(os.path.join(out_dir, "tmp_x.png")), True)
+        npt.assert_equal(Path(Path(out_dir) / "tmp_x.png").exists(), True)
 
-        input_files = [ftrk, fnpy]
+        input_files = [str(ftrk), str(fnpy)]
 
         npt.assert_equal(len(input_files), 2)
 
@@ -166,7 +165,7 @@ def test_horizon_flow(rng):
             out_dir=out_dir,
             out_stealth_png="tmp_x.png",
         )
-        npt.assert_equal(os.path.exists(os.path.join(out_dir, "tmp_x.png")), True)
+        npt.assert_equal(Path(Path(out_dir) / "tmp_x.png").exists(), True)
 
         npt.assert_raises(
             ValueError, hz_flow.run, input_files=input_files, roi_colors=(0.2, 0.2)
@@ -181,4 +180,4 @@ def test_horizon_flow(rng):
             out_dir=out_dir,
             out_stealth_png="tmp_x.png",
         )
-        npt.assert_equal(os.path.exists(os.path.join(out_dir, "tmp_x.png")), True)
+        npt.assert_equal(Path(Path(out_dir) / "tmp_x.png").exists(), True)

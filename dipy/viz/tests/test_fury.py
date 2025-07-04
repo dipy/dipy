@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 import warnings
 
@@ -101,13 +101,13 @@ def test_contour_from_roi():
         sc2 = window.Scene()
         sc.add(streamlines_actor)
         arr3 = window.snapshot(
-            sc, fname=pjoin(out_dir, "test_surface3.png"), offscreen=True
+            sc, fname=Path(out_dir) / "test_surface3.png", offscreen=True
         )
         report3 = window.analyze_snapshot(arr3, find_objects=True)
         sc2.add(streamlines_actor)
         sc2.add(seedroi_actor)
         arr4 = window.snapshot(
-            sc2, fname=pjoin(out_dir, "test_surface4.png"), offscreen=True
+            sc2, fname=Path(out_dir) / "test_surface4.png", offscreen=True
         )
         report4 = window.analyze_snapshot(arr4, find_objects=True)
 
