@@ -8,3 +8,12 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
 
 cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
     pass
+    
+cdef class FlockingDirectionGetter(PmfGenDirectionGetter):
+    cdef:
+        double[:, :] vertices
+        int particle_count
+        double r_min
+        double r_max
+        double delta
+        double alpha

@@ -11,6 +11,7 @@ from .peaks import (
 from .probabilistic_direction_getter import (
     DeterministicMaximumDirectionGetter,
     ProbabilisticDirectionGetter,
+    FlockingDirectionGetter,
 )
 from .ptt_direction_getter import PTTDirectionGetter
 
@@ -19,6 +20,7 @@ __all__ = [
     "ClosestPeakDirectionGetter",
     "DeterministicMaximumDirectionGetter",
     "ProbabilisticDirectionGetter",
+    "FlockingDirectionGetter",
     "PTTDirectionGetter",
     "PeaksAndMetrics",
     "peak_directions",
