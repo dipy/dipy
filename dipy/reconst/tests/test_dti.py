@@ -389,8 +389,7 @@ def test_wls_and_ls_fit():
     npt.assert_array_almost_equal(
         tensor_est.quadratic_form[0],
         tensor,
-        err_msg="Calculation of tensor from Y does "
-        "not compare to analytical solution",
+        err_msg="Calculation of tensor from Y does not compare to analytical solution",
     )
     npt.assert_almost_equal(tensor_est.md[0], md)
     npt.assert_array_almost_equal(tensor_est.S0_hat[0], b0, decimal=3)

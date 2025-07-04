@@ -71,7 +71,7 @@ class PyxFile(pytest.File):
             match = re.search(r"(dipy/[^\/]+/tests/test_\w+)", str(self.path))
             mod_name = match.group(1) if match else None
             if mod_name is None:
-                raise PyxException("Could not find test module for " f"{self.path}.")
+                raise PyxException(f"Could not find test module for {self.path}.")
             mod_name = mod_name.replace("/", ".")
             mod = importlib.import_module(mod_name)
             for name in dir(mod):

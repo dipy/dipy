@@ -474,9 +474,7 @@ class RecoBundles:
             pruning_distance=pruning_distance,
         )
         if self.verbose:
-            logger.info(
-                f"Total duration of recognition time" f" is {time()-t:0.3f} s\n"
-            )
+            logger.info(f"Total duration of recognition time is {time() - t:0.3f} s\n")
 
         return pruned_streamlines, self.filtered_indices[labels]
 
@@ -628,9 +626,7 @@ class RecoBundles:
         )
 
         if self.verbose:
-            logger.info(
-                f"Total duration of recognition time" f" is {time()-t:0.3f} s\n"
-            )
+            logger.info(f"Total duration of recognition time is {time() - t:0.3f} s\n")
 
         return pruned_streamlines, self.filtered_indices[labels]
 
@@ -747,7 +743,7 @@ class RecoBundles:
                 logger.info("You have no neighbor streamlines... No bundle recognition")
             return Streamlines([]), []
         if self.verbose:
-            logger.info(f" Number of neighbor streamlines" f" {nb_neighb_streamlines}")
+            logger.info(f" Number of neighbor streamlines {nb_neighb_streamlines}")
             logger.info(f" Duration {time() - t:0.3f} s\n")
 
         return neighb_streamlines, neighb_indices
@@ -899,7 +895,7 @@ class RecoBundles:
         if self.verbose:
             logger.info(f" Number of centroids: {len(rtransf_centroids)}")
             logger.info(
-                f" Number of streamlines after pruning:" f" {len(pruned_streamlines)}"
+                f" Number of streamlines after pruning: {len(pruned_streamlines)}"
             )
             logger.info(f" Duration {time() - t:0.3f} s\n")
 

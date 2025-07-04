@@ -103,9 +103,7 @@ class Workflow:
 
         if len(duplicates) > 0:
             if self._force_overwrite:
-                logging.info(
-                    "The following output files are about to be" " overwritten."
-                )
+                logging.info("The following output files are about to be overwritten.")
 
             else:
                 logging.info(
