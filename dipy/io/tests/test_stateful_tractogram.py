@@ -1069,8 +1069,7 @@ def test_set_partial_dtype_dict_attributes():
     except ValueError:
         assert_(
             False,
-            msg="Partial use of dtype_dict should apply only to the "
-            "relevant portions.",
+            msg="Partial use of dtype_dict should apply only to the relevant portions.",
         )
 
 

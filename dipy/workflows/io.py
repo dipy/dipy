@@ -1028,8 +1028,7 @@ class ConcatenateTractogramFlow(Workflow):
 
             if not reference:
                 raise ValueError(
-                    "No reference provided. It is needed for tck,"
-                    "fib, dpy or vtk files"
+                    "No reference provided. It is needed for tck,fib, dpy or vtk files"
                 )
 
             tractogram_obj = load_tractogram(fpath, reference, bbox_valid_check=False)
@@ -1186,8 +1185,7 @@ class ConvertTractogramFlow(Workflow):
 
             if not reference and in_extension not in ["trx", "trk"]:
                 raise ValueError(
-                    "No reference provided. It is needed for tck,"
-                    "fib, dpy or vtk files"
+                    "No reference provided. It is needed for tck,fib, dpy or vtk files"
                 )
 
             sft = load_tractogram(fpath, reference, bbox_valid_check=False)
