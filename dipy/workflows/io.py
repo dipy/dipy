@@ -1,7 +1,6 @@
 import enum
 import importlib
 from inspect import getmembers, isfunction
-import logging
 import os
 import re
 import sys
@@ -30,6 +29,7 @@ from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.reconst.utils import convert_tensors
 from dipy.tracking.streamlinespeed import length
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tractogram import concatenate_tractogram
 from dipy.workflows.utils import handle_vol_idx
@@ -110,7 +110,7 @@ def _print_property_information(prop, val, alignment_space):
         Character width for the property, value pair alignment.
     """
 
-    logging.info(f"{prop + ':':<{alignment_space}}{val}")
+    logger.info(f"{prop + ':':<{alignment_space}}{val}")
 
 
 def _print_stats_information(data, alignment_space, tab):
@@ -130,11 +130,11 @@ def _print_stats_information(data, alignment_space, tab):
         indentation.
     """
 
-    logging.info(f"{tab + 'min:':<{alignment_space}}{np.min(data)}")
-    logging.info(f"{tab + 'max:':<{alignment_space}}{np.max(data)}")
-    logging.info(f"{tab + 'median:':<{alignment_space}}{np.median(data)}")
-    logging.info(f"{tab + 'mean:':<{alignment_space}}{np.mean(data)}")
-    logging.info(f"{tab + 'std dev:':<{alignment_space}}{np.std(data)}")
+    logger.info(f"{tab + 'min:':<{alignment_space}}{np.min(data)}")
+    logger.info(f"{tab + 'max:':<{alignment_space}}{np.max(data)}")
+    logger.info(f"{tab + 'median:':<{alignment_space}}{np.median(data)}")
+    logger.info(f"{tab + 'mean:':<{alignment_space}}{np.mean(data)}")
+    logger.info(f"{tab + 'std dev:':<{alignment_space}}{np.std(data)}")
 
 
 def _print_volumetric_information(data, affine, vox_sz, affcodes, alignment_space, tab):
@@ -173,7 +173,7 @@ def _print_volumetric_information(data, affine, vox_sz, affcodes, alignment_spac
             for the indentation.
         """
 
-        logging.info(f"{_name}:")
+        logger.info(f"{_name}:")
         _print_stats_information(_data, _alignment_space, _tab)
         _print_property_information(
             _tab + PercentilePropertyName.PERCENTILE_2.value,
@@ -203,7 +203,7 @@ def _print_volumetric_information(data, affine, vox_sz, affcodes, alignment_spac
         "".join(affcodes),
         alignment_space,
     )
-    logging.info(f"Affine matrix:\n{affine}")
+    logger.info(f"Affine matrix:\n{affine}")
     _print_property_information(
         VolumetricPropertyName.VOXEL_SIZE.value,
         tuple(map(float, vox_sz)),
@@ -212,7 +212,7 @@ def _print_volumetric_information(data, affine, vox_sz, affcodes, alignment_spac
 
     if np.sum(np.abs(np.diff(vox_sz))) > 0.1:
         msg = "Voxel size is not isotropic. Please reslice.\n"
-        logging.warning(msg, stacklevel=2)
+        logger.warning(msg, stacklevel=2)
 
 
 def _print_bval_data_information(bvals, b0_threshold, bshell_thr, alignment_space):
@@ -230,7 +230,7 @@ def _print_bval_data_information(bvals, b0_threshold, bshell_thr, alignment_spac
         Character width for the property, value pair alignment.
     """
 
-    logging.info(f"{BvalPropertyName.B_VALUES.value}:\n{bvals}")
+    logger.info(f"{BvalPropertyName.B_VALUES.value}:\n{bvals}")
     _print_property_information(
         BvalPropertyName.NUMBER_B_VALUES.value, len(bvals), alignment_space
     )
@@ -239,7 +239,7 @@ def _print_bval_data_information(bvals, b0_threshold, bshell_thr, alignment_spac
         BvalPropertyName.NUMBER_SHELLS.value, shells, alignment_space
     )
     num_b0s = np.sum(bvals <= b0_threshold)
-    logging.info(
+    logger.info(
         f"{BvalPropertyName.NUMBER_B0s.value + ':':<{alignment_space}}{num_b0s}"
         f" ({BvalPropertyName.B0_THRESHOLD.value}: {b0_threshold})"
     )
@@ -266,7 +266,7 @@ def _print_bvec_data_information(bvecs, bvecs_tol, alignment_space):
     rows, cols = bvecs.shape
     if rows < cols:
         bvecs = bvecs.T
-    logging.info(f"{BvecPropertyName.B_VECTORS.value}\n{bvecs}")
+    logger.info(f"{BvecPropertyName.B_VECTORS.value}\n{bvecs}")
     norms = np.array([np.linalg.norm(bvec) for bvec in bvecs])
     res = np.where((norms <= 1 + bvecs_tol) & (norms >= 1 - bvecs_tol))
     ncl1 = np.sum(norms < 1 - bvecs_tol)
@@ -303,11 +303,11 @@ def _print_tractography_information(
     _print_property_information(
         TractographyPropertyName.NUM_STRML.value, len(sft), alignment_space
     )
-    logging.info(f"{TractographyPropertyName.LENGTH_MM.value}:")
+    logger.info(f"{TractographyPropertyName.LENGTH_MM.value}:")
     _print_stats_information(lengths_mm, alignment_space, tab)
-    logging.info(f"{TractographyPropertyName.LENGTH_NUM_PTS.value}:")
+    logger.info(f"{TractographyPropertyName.LENGTH_NUM_PTS.value}:")
     _print_stats_information(lengths, alignment_space, tab)
-    logging.info(f"{TractographyPropertyName.STEP_SIZE.value}:")
+    logger.info(f"{TractographyPropertyName.STEP_SIZE.value}:")
     _print_stats_information(step_size, alignment_space, tab)
     _print_property_information(
         TractographyPropertyName.DPP_KEYS.value,
@@ -319,7 +319,7 @@ def _print_tractography_information(
         list(sft.data_per_streamline.keys()),
         alignment_space,
     )
-    logging.info(f"Affine matrix:\n{sft.affine}")
+    logger.info(f"Affine matrix:\n{sft.affine}")
     _print_property_information(
         VolumetricPropertyName.DIMENSIONS.value,
         tuple(map(int, sft.dimensions)),
@@ -399,9 +399,9 @@ class IoInfoFlow(Workflow):
 
         for input_path in io_it:
             mult_ = len(input_path)
-            logging.info(f"-----------{mult_ * '-'}")
-            logging.info(f"Looking at {input_path}")
-            logging.info(f"-----------{mult_ * '-'}")
+            logger.info(f"-----------{mult_ * '-'}")
+            logger.info(f"Looking at {input_path}")
+            logger.info(f"-----------{mult_ * '-'}")
 
             ipath_lower = input_path.lower()
             extension = os.path.splitext(ipath_lower)[1]
@@ -475,7 +475,7 @@ class IoInfoFlow(Workflow):
                             "Nifti or Trk file using the option "
                             "--reference my_files.nii.gz ."
                         )
-                        logging.error(msg, stacklevel=2)
+                        logger.error(msg, stacklevel=2)
                         sys.exit(1)
 
                     sft = load_tractogram(input_path, reference, bbox_valid_check=False)
@@ -608,19 +608,19 @@ class FetchFlow(Workflow):
         data_names = [name.lower() for name in data_names]
 
         if "all" in data_names:
-            logging.warning("Skipping HCP and HBN datasets.")
+            logger.warning("Skipping HCP and HBN datasets.")
             available_data.pop("hcp", None)
             available_data.pop("hbn", None)
             for name, fetcher_function in available_data.items():
                 if name in ["hcp", "hbn"]:
                     continue
-                logging.info("------------------------------------------")
-                logging.info(f"Fetching at {name}")
-                logging.info("------------------------------------------")
+                logger.info("------------------------------------------")
+                logger.info(f"Fetching at {name}")
+                logger.info("------------------------------------------")
                 fetcher_function(include_optional=include_optional)
 
         elif "list" in data_names:
-            logging.info(
+            logger.info(
                 "Please, select between the following data names: \n"
                 f"{', '.join(available_data.keys())}"
             )
@@ -632,12 +632,12 @@ class FetchFlow(Workflow):
                     skipped_names.append(data_name)
                     continue
 
-                logging.info("------------------------------------------")
-                logging.info(f"Fetching at {data_name}")
-                logging.info("------------------------------------------")
+                logger.info("------------------------------------------")
+                logger.info(f"Fetching at {data_name}")
+                logger.info("------------------------------------------")
                 if data_name == "hcp":
                     if not subjects:
-                        logging.error(
+                        logger.error(
                             "Please provide the subjects to download the HCP dataset."
                         )
                         continue
@@ -651,12 +651,12 @@ class FetchFlow(Workflow):
                             aws_secret_access_key=hcp_aws_secret_access_key,
                         )
                     except Exception as e:
-                        logging.error(
+                        logger.error(
                             f"Error while fetching HCP dataset: {str(e)}", exc_info=True
                         )
                 elif data_name == "hbn":
                     if not subjects:
-                        logging.error(
+                        logger.error(
                             "Please provide the subjects to download the HBN dataset."
                         )
                         continue
@@ -665,18 +665,18 @@ class FetchFlow(Workflow):
                             subjects=subjects, include_afq=include_afq
                         )
                     except Exception as e:
-                        logging.error(
+                        logger.error(
                             f"Error while fetching HBN dataset: {str(e)}", exc_info=True
                         )
                 else:
                     available_data[data_name](include_optional=include_optional)
 
             nb_success = len(data_names) - len(skipped_names)
-            print("\n")
-            logging.info(f"Fetched {nb_success} / {len(data_names)} Files ")
+            logger.info("\n")
+            logger.info(f"Fetched {nb_success} / {len(data_names)} Files ")
             if skipped_names:
-                logging.warning(f"Skipped data name(s): {' '.join(skipped_names)}")
-                logging.warning(
+                logger.warning(f"Skipped data name(s): {' '.join(skipped_names)}")
+                logger.warning(
                     "Please, select between the following data names: "
                     f"{', '.join(available_data.keys())}"
                 )
@@ -715,16 +715,16 @@ class SplitFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         for fpath, osplit in io_it:
-            logging.info(f"Splitting {fpath}")
+            logger.info(f"Splitting {fpath}")
             data, affine, image = load_nifti(fpath, return_img=True)
 
             if vol_idx == 0:
-                logging.info("Splitting and extracting 1st b0")
+                logger.info("Splitting and extracting 1st b0")
 
             split_vol = data[..., vol_idx]
             save_nifti(osplit, split_vol, affine, hdr=image.header)
 
-            logging.info(f"Split volume saved as {osplit}")
+            logger.info(f"Split volume saved as {osplit}")
 
 
 class ExtractB0Flow(Workflow):
@@ -773,7 +773,7 @@ class ExtractB0Flow(Workflow):
         """
         io_it = self.get_io_iterator()
         for dwi, bval, ob0 in io_it:
-            logging.info(f"Extracting b0 from {dwi}")
+            logger.info(f"Extracting b0 from {dwi}")
             data, affine, image = load_nifti(dwi, return_img=True)
 
             bvals, bvecs = read_bvals_bvecs(bval, None)
@@ -801,7 +801,7 @@ class ExtractB0Flow(Workflow):
 
             if b0s_result.ndim == 3:
                 save_nifti(ob0, b0s_result, affine, hdr=image.header)
-                logging.info(f"b0 saved as {ob0}")
+                logger.info(f"b0 saved as {ob0}")
             elif b0s_result.ndim == 4:
                 for i in range(b0s_result.shape[-1]):
                     save_nifti(
@@ -810,9 +810,9 @@ class ExtractB0Flow(Workflow):
                         affine,
                         hdr=image.header,
                     )
-                    logging.info(f"b0 saved as {ob0.replace('.nii', f'_{i}.nii')}")
+                    logger.info(f"b0 saved as {ob0.replace('.nii', f'_{i}.nii')}")
             else:
-                logging.error("No b0 volumes found")
+                logger.error("No b0 volumes found")
 
 
 class ExtractShellFlow(Workflow):
@@ -870,7 +870,7 @@ class ExtractShellFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         if bvals_to_extract is None:
-            logging.error(
+            logger.error(
                 "Please provide a list of b-values to extract."
                 " e.g: --bvals_to_extract 1000 2000 3000"
             )
@@ -879,7 +879,7 @@ class ExtractShellFlow(Workflow):
         bvals_to_extract = handle_vol_idx(bvals_to_extract)
 
         for dwi, bval, bvec, oshell in io_it:
-            logging.info(f"Extracting shell from {dwi}")
+            logger.info(f"Extracting shell from {dwi}")
             data, affine, image = load_nifti(dwi, return_img=True)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -913,7 +913,7 @@ class ExtractShellFlow(Workflow):
                     affine,
                     hdr=image.header,
                 )
-                logging.info(
+                logger.info(
                     f"b0 saved as {oshell.replace('.nii', f'_{shell_value}.nii')}"
                 )
 
@@ -951,19 +951,19 @@ class ExtractVolumeFlow(Workflow):
         vol_idx = handle_vol_idx(vol_idx)
 
         for fpath, ovol in io_it:
-            logging.info(f"Extracting volume from {fpath}")
+            logger.info(f"Extracting volume from {fpath}")
             data, affine, image = load_nifti(fpath, return_img=True)
 
             if grouped:
                 split_vol = data[..., vol_idx]
                 save_nifti(ovol, split_vol, affine, hdr=image.header)
-                logging.info(f"Volume saved as {ovol}")
+                logger.info(f"Volume saved as {ovol}")
             else:
                 for i in vol_idx:
                     fname = ovol.replace(".nii", f"_{i}.nii")
                     split_vol = data[..., i]
                     save_nifti(fname, split_vol, affine, hdr=image.header)
-                    logging.info(f"Volume saved as {fname}")
+                    logger.info(f"Volume saved as {fname}")
 
 
 class ConcatenateTractogramFlow(Workflow):
@@ -1124,7 +1124,7 @@ class ConvertTensorsFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         for fpath, otensor in io_it:
-            logging.info(f"Converting {fpath}")
+            logger.info(f"Converting {fpath}")
             data, affine, image = load_nifti(fpath, return_img=True)
             data = convert_tensors(data, from_format, to_format)
             save_nifti(otensor, data, affine, hdr=image.header)
@@ -1265,7 +1265,7 @@ class NiftisToPamFlow(Workflow):
         msg = f"pam5 files saved in {out_dir or 'current directory'}"
 
         for fpeak_dirs, fpeak_values, fpeak_indices, opam in io_it:
-            logging.info("Converting nifti files to pam5")
+            logger.info("Converting nifti files to pam5")
             peak_dirs, affine = load_nifti(fpeak_dirs)
             peak_values, _ = load_nifti(fpeak_values)
             peak_indices, _ = load_nifti(fpeak_indices)
@@ -1284,7 +1284,7 @@ class NiftisToPamFlow(Workflow):
                 peak_indices=peak_indices,
                 pam_file=opam,
             )
-            logging.info(msg.replace("pam5", opam))
+            logger.info(msg.replace("pam5", opam))
 
 
 class TensorToPamFlow(Workflow):
@@ -1331,7 +1331,7 @@ class TensorToPamFlow(Workflow):
         msg = f"pam5 files saved in {out_dir or 'current directory'}"
 
         for fevals, fevecs, opam in io_it:
-            logging.info("Converting tensor files to pam5...")
+            logger.info("Converting tensor files to pam5...")
             evals, affine = load_nifti(fevals)
             evecs, _ = load_nifti(fevecs)
 
@@ -1342,7 +1342,7 @@ class TensorToPamFlow(Workflow):
                 sphere = get_sphere(name=default_sphere_name)
 
             tensor_to_pam(evals, evecs, affine, sphere=sphere, pam_file=opam)
-            logging.info(msg.replace("pam5", opam))
+            logger.info(msg.replace("pam5", opam))
 
 
 class PamToNiftisFlow(Workflow):
@@ -1404,7 +1404,7 @@ class PamToNiftisFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info("Converting %s file to niftis...", ipam)
+            logger.info("Converting %s file to niftis...", ipam)
             pam = load_pam(ipam)
             pam_to_niftis(
                 pam,
@@ -1417,7 +1417,7 @@ class PamToNiftisFlow(Workflow):
                 fname_b=ob,
                 fname_qa=oqa,
             )
-            logging.info(msg)
+            logger.info(msg)
 
 
 class MathFlow(Workflow):
@@ -1518,7 +1518,7 @@ class MathFlow(Workflow):
         have_errors = False
         for i, fname in enumerate(input_files, start=1):
             if not os.path.isfile(fname):
-                logging.error(f"Input file {fname} does not exist.")
+                logger.error(f"Input file {fname} does not exist.")
                 raise SystemExit()
 
             if not (fname.endswith(".nii.gz") or fname.endswith(".nii")):
@@ -1526,7 +1526,7 @@ class MathFlow(Workflow):
                     f"Wrong volume type: {fname}. Only Nifti files are supported"
                     " (*.nii or *.nii.gz)."
                 )
-                logging.error(msg)
+                logger.error(msg)
                 raise SystemExit()
 
             data, affine = load_nifti(fname)
@@ -1545,10 +1545,10 @@ class MathFlow(Workflow):
             )
 
         if have_errors:
-            logging.warning(info_msg)
+            logger.warning(info_msg)
             if not disable_check:
                 msg = "All input files must have the same shape and affine matrix."
-                logging.error(msg)
+                logger.error(msg)
                 raise SystemExit()
 
         try:
@@ -1560,7 +1560,7 @@ class MathFlow(Workflow):
                 f"Impossible key {e} in the operation. You have {len(input_files)}"
                 f" volumes available with the following keys: {list(vol_dict.keys())}"
             )
-            logging.error(msg)
+            logger.error(msg)
             raise SystemExit() from e
 
         if dtype:
@@ -1571,11 +1571,11 @@ class MathFlow(Workflow):
                     f"Impossible to cast to {dtype}. Check possible numpy type here:"
                     "https://numpy.org/doc/stable/reference/arrays.interface.html"
                 )
-                logging.error(msg)
+                logger.error(msg)
                 raise SystemExit() from e
 
         if res.dtype == bool:
             res = res.astype(np.uint8)
         out_fname = os.path.join(out_dir, out_file)
-        logging.info(f"Saving result to {out_fname}")
+        logger.info(f"Saving result to {out_fname}")
         save_nifti(out_fname, res, affine)

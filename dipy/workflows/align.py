@@ -1,4 +1,3 @@
-import logging
 from os.path import join as pjoin
 from warnings import warn
 
@@ -16,6 +15,7 @@ from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti, save_qa_metric
 from dipy.tracking.streamline import set_number_of_points, transform_streamlines
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
@@ -101,7 +101,7 @@ class ResliceFlow(Workflow):
 
         for inputfile, outpfile in io_it:
             data, affine, vox_sz = load_nifti(inputfile, return_voxsize=True)
-            logging.info(f"Processing {inputfile}")
+            logger.info(f"Processing {inputfile}")
             new_data, new_affine = reslice(
                 data,
                 affine,
@@ -113,7 +113,7 @@ class ResliceFlow(Workflow):
                 num_processes=num_processes,
             )
             save_nifti(outpfile, new_data, new_affine)
-            logging.info(f"Resliced file save in {outpfile}")
+            logger.info(f"Resliced file save in {outpfile}")
 
 
 class SlrWithQbxFlow(Workflow):
@@ -204,8 +204,8 @@ class SlrWithQbxFlow(Workflow):
 
         io_it = self.get_io_iterator()
 
-        logging.info("QuickBundlesX clustering is in use")
-        logging.info(f"QBX thresholds {qbx_thr}")
+        logger.info("QuickBundlesX clustering is in use")
+        logger.info(f"QBX thresholds {qbx_thr}")
 
         for (
             static_file,
@@ -216,8 +216,8 @@ class SlrWithQbxFlow(Workflow):
             moving_centroids_file,
             moved_centroids_file,
         ) in io_it:
-            logging.info(f"Loading static file {static_file}")
-            logging.info(f"Loading moving file {moving_file}")
+            logger.info(f"Loading static file {static_file}")
+            logger.info(f"Loading moving file {moving_file}")
 
             static_obj = nib.streamlines.load(static_file)
             moving_obj = nib.streamlines.load(moving_file)
@@ -235,16 +235,16 @@ class SlrWithQbxFlow(Workflow):
                 qbx_thr=qbx_thr,
             )
 
-            logging.info(f"Saving output file {out_moved_file}")
+            logger.info(f"Saving output file {out_moved_file}")
             new_tractogram = nib.streamlines.Tractogram(
                 moved, affine_to_rasmm=np.eye(4)
             )
             nib.streamlines.save(new_tractogram, out_moved_file, header=moving_header)
 
-            logging.info(f"Saving output file {out_affine_file}")
+            logger.info(f"Saving output file {out_affine_file}")
             np.savetxt(out_affine_file, affine)
 
-            logging.info(f"Saving output file {static_centroids_file}")
+            logger.info(f"Saving output file {static_centroids_file}")
             new_tractogram = nib.streamlines.Tractogram(
                 centroids_static, affine_to_rasmm=np.eye(4)
             )
@@ -252,7 +252,7 @@ class SlrWithQbxFlow(Workflow):
                 new_tractogram, static_centroids_file, header=static_header
             )
 
-            logging.info(f"Saving output file {moving_centroids_file}")
+            logger.info(f"Saving output file {moving_centroids_file}")
             new_tractogram = nib.streamlines.Tractogram(
                 centroids_moving, affine_to_rasmm=np.eye(4)
             )
@@ -262,7 +262,7 @@ class SlrWithQbxFlow(Workflow):
 
             centroids_moved = transform_streamlines(centroids_moving, affine)
 
-            logging.info(f"Saving output file {moved_centroids_file}")
+            logger.info(f"Saving output file {moved_centroids_file}")
 
             new_tractogram = nib.streamlines.Tractogram(
                 centroids_moved, affine_to_rasmm=np.eye(4)
@@ -454,8 +454,8 @@ class ImageRegistrationFlow(Workflow):
                 """
                 Saving the moved image file and the affine matrix.
                 """
-                logging.info(f"Optimal parameters: {str(xopt)}")
-                logging.info(f"Similarity metric: {str(fopt)}")
+                logger.info(f"Optimal parameters: {str(xopt)}")
+                logger.info(f"Similarity metric: {str(fopt)}")
 
                 if save_metric:
                     save_qa_metric(qual_val_file, xopt, fopt)
@@ -683,8 +683,8 @@ class SynRegistrationFlow(Workflow):
                 " provide a valid metric like 'ssd', 'cc', 'em'"
             )
 
-        logging.info("Starting Diffeomorphic Registration")
-        logging.info(f"Using {metric.upper()} Metric")
+        logger.info("Starting Diffeomorphic Registration")
+        logger.info(f"Using {metric.upper()} Metric")
 
         # Init parameter if they are not setup
         init_param = {
@@ -725,8 +725,8 @@ class SynRegistrationFlow(Workflow):
             oinv_static_file,
             omap_file,
         ) in io_it:
-            logging.info(f"Loading static file {static_file}")
-            logging.info(f"Loading moving file {moving_file}")
+            logger.info(f"Loading static file {static_file}")
+            logger.info(f"Loading moving file {moving_file}")
 
             # Loading the image data from the input files into object.
             static_image, static_grid2world = load_nifti(static_file)
@@ -791,11 +791,11 @@ class SynRegistrationFlow(Workflow):
             inv_static = mapping.transform(static_image)
 
             # Saving
-            logging.info(f"Saving warped {owarped_file}")
+            logger.info(f"Saving warped {owarped_file}")
             save_nifti(owarped_file, warped_moving, static_grid2world)
-            logging.info(f"Saving inverse transformes static {oinv_static_file}")
+            logger.info(f"Saving inverse transformes static {oinv_static_file}")
             save_nifti(oinv_static_file, inv_static, static_grid2world)
-            logging.info(f"Saving Diffeomorphic map {omap_file}")
+            logger.info(f"Saving Diffeomorphic map {omap_file}")
             save_nifti(omap_file, mapping_data, mapping.codomain_world2grid)
 
 
@@ -845,7 +845,7 @@ class MotionCorrectionFlow(Workflow):
 
         for dwi, bval, bvec, omoved, oafffine in io_it:
             # Load the data from the input files and store into objects.
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -948,8 +948,8 @@ class BundleWarpFlow(Workflow):
         .. footbibliography::
         """
 
-        logging.info(f"Loading static file {static_file}")
-        logging.info(f"Loading moving file {moving_file}")
+        logger.info(f"Loading static file {static_file}")
+        logger.info(f"Loading moving file {moving_file}")
 
         static_obj = nib.streamlines.load(static_file)
         moving_obj = nib.streamlines.load(moving_file)
@@ -970,7 +970,7 @@ class BundleWarpFlow(Workflow):
             affine=affine,
         )
 
-        logging.info(f"Saving output file {out_linear_moved}")
+        logger.info(f"Saving output file {out_linear_moved}")
         new_tractogram = nib.streamlines.Tractogram(
             affine_bundle, affine_to_rasmm=np.eye(4)
         )
@@ -978,7 +978,7 @@ class BundleWarpFlow(Workflow):
             new_tractogram, pjoin(out_dir, out_linear_moved), header=moving_header
         )
 
-        logging.info(f"Saving output file {out_nonlinear_moved}")
+        logger.info(f"Saving output file {out_nonlinear_moved}")
         new_tractogram = nib.streamlines.Tractogram(
             deformed_bundle, affine_to_rasmm=np.eye(4)
         )
@@ -986,14 +986,14 @@ class BundleWarpFlow(Workflow):
             new_tractogram, pjoin(out_dir, out_nonlinear_moved), header=moving_header
         )
 
-        logging.info(f"Saving output file {out_warp_transform}")
+        logger.info(f"Saving output file {out_warp_transform}")
         np.save(pjoin(out_dir, out_warp_transform), np.array(warp["transforms"]))
 
-        logging.info(f"Saving output file {out_warp_kernel}")
+        logger.info(f"Saving output file {out_warp_kernel}")
         np.save(pjoin(out_dir, out_warp_kernel), np.array(warp["gaussian_kernel"]))
 
-        logging.info(f"Saving output file {out_dist}")
+        logger.info(f"Saving output file {out_dist}")
         np.save(pjoin(out_dir, out_dist), dist)
 
-        logging.info(f"Saving output file {out_matched_pairs}")
+        logger.info(f"Saving output file {out_matched_pairs}")
         np.save(pjoin(out_dir, out_matched_pairs), mp)

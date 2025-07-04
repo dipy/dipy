@@ -1,6 +1,5 @@
 from glob import glob
 import json
-import logging
 import os
 from time import time
 import warnings
@@ -19,6 +18,7 @@ from dipy.segment.mask import bounding_box, segment_from_cfa
 from dipy.stats.analysis import anatomical_measures, assignment_map, peak_values
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.workflow import Workflow
 
@@ -88,11 +88,11 @@ class SNRinCCFlow(Workflow):
 
             mask, affine = load_nifti(mask_path)
 
-            logging.info("Computing tensors...")
+            logger.info("Computing tensors...")
             tenmodel = TensorModel(gtab)
             tensorfit = tenmodel.fit(data, mask=mask)
 
-            logging.info("Computing worst-case/best-case SNR using the CC...")
+            logger.info("Computing worst-case/best-case SNR using the CC...")
 
             if np.ndim(data) == 4:
                 CC_box = np.zeros_like(data[..., 0])
@@ -122,13 +122,13 @@ class SNRinCCFlow(Workflow):
             )
 
             if not np.count_nonzero(mask_cc_part.astype(np.uint8)):
-                logging.warning(
+                logger.warning(
                     "Empty mask: corpus callosum not found."
                     " Update your data or your threshold"
                 )
 
             save_nifti(cc_mask_path, mask_cc_part.astype(np.uint8), affine)
-            logging.info(f"CC mask saved as {cc_mask_path}")
+            logger.info(f"CC mask saved as {cc_mask_path}")
 
             masked_data = data[mask_cc_part]
             mean_signal = 0
@@ -139,13 +139,13 @@ class SNRinCCFlow(Workflow):
             mask_noise = ~mask_noise
 
             save_nifti(mask_noise_path, mask_noise.astype(np.uint8), affine)
-            logging.info(f"Mask noise saved as {mask_noise_path}")
+            logger.info(f"Mask noise saved as {mask_noise_path}")
 
             noise_std = 0
             if np.count_nonzero(mask_noise.astype(np.uint8)):
                 noise_std = np.std(data[mask_noise, :])
 
-            logging.info(f"Noise standard deviation sigma= {noise_std}")
+            logger.info(f"Noise standard deviation sigma= {noise_std}")
 
             idx = np.sum(gtab.bvecs, axis=-1) == 0
             gtab.bvecs[idx] = np.inf
@@ -158,9 +158,9 @@ class SNRinCCFlow(Workflow):
             for direction in ["b0", axis_X, axis_Y, axis_Z]:
                 if direction == "b0":
                     SNR = mean_signal[0] / noise_std if noise_std else 0
-                    logging.info(f"SNR for the b=0 image is : {SNR}")
+                    logger.info(f"SNR for the b=0 image is : {SNR}")
                 else:
-                    logging.info(
+                    logger.info(
                         f"SNR for direction {direction} {gtab.bvecs[direction]} is: "
                         f"{SNR}"
                     )
@@ -226,17 +226,17 @@ def buan_bundle_profiles(
     t = time()
 
     mb = glob(os.path.join(model_bundle_folder, "*.trk"))
-    print(mb)
+    logger.info(mb)
 
     mb.sort()
 
     bd = glob(os.path.join(bundle_folder, "*.trk"))
 
     bd.sort()
-    print(bd)
+    logger.info(bd)
     org_bd = glob(os.path.join(orig_bundle_folder, "*.trk"))
     org_bd.sort()
-    print(org_bd)
+    logger.info(org_bd)
     n = len(mb)
 
     for io in range(n):
@@ -270,11 +270,11 @@ def buan_bundle_profiles(
                 fm = metric_name[:-7]
                 bm = os.path.split(mb[io])[1][:-4]
 
-                logging.info(f"bm = {bm}")
+                logger.info(f"bm = {bm}")
 
                 dt = {}
 
-                logging.info(f"metric = {metric_files_names_dti[mn]}")
+                logger.info(f"metric = {metric_files_names_dti[mn]}")
 
                 metric, _ = load_nifti(metric_files_names_dti[mn])
 
@@ -297,8 +297,8 @@ def buan_bundle_profiles(
                 fm = metric_name[:-5]
                 bm = os.path.split(mb[io])[1][:-4]
 
-                logging.info(f"bm = {bm}")
-                logging.info(f"metric = {metric_files_names_csa[mn]}")
+                logger.info(f"bm = {bm}")
+                logger.info(f"metric = {metric_files_names_csa[mn]}")
                 dt = {}
                 metric = load_peaks(metric_files_names_csa[mn])
 
@@ -314,7 +314,7 @@ def buan_bundle_profiles(
                     out_dir,
                 )
 
-    print("total time taken in minutes = ", (-t + time()) / 60)
+    logger.info(f"total time taken in minutes = {(-t + time()) / 60}")
 
 
 class BundleAnalysisTractometryFlow(Workflow):
@@ -357,22 +357,22 @@ class BundleAnalysisTractometryFlow(Workflow):
         groups.sort()
         for group in groups:
             if os.path.isdir(os.path.join(subject_folder, group)):
-                logging.info(f"group = {group}")
+                logger.info(f"group = {group}")
                 all_subjects = os.listdir(os.path.join(subject_folder, group))
                 all_subjects.sort()
-                logging.info(all_subjects)
+                logger.info(all_subjects)
             if group.lower() == "patient":
                 group_id = 1  # 1 means patient
             elif group.lower() == "control":
                 group_id = 0  # 0 means control
             else:
-                print(group)
+                logger.info(group)
                 raise ValueError("Invalid group. Neither patient nor control")
 
             for sub in all_subjects:
-                logging.info(sub)
+                logger.info(sub)
                 pre = os.path.join(subject_folder, group, sub)
-                logging.info(pre)
+                logger.info(pre)
                 b = os.path.join(pre, "rec_bundles")
                 c = os.path.join(pre, "org_bundles")
                 d = os.path.join(pre, "anatomical_measures")
@@ -507,11 +507,11 @@ class LinearMixedModelsFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for file_path in io_it:
-            logging.info(f"Applying metric {file_path}")
+            logger.info(f"Applying metric {file_path}")
 
             file_name, bundle_name, save_name = self.get_metric_name(file_path)
-            logging.info(f" file name = {file_name}")
-            logging.info(f"file path = {file_path}")
+            logger.info(f" file name = {file_name}")
+            logger.info(f"file path = {file_path}")
 
             pvalues = np.zeros(no_disks)
             warnings.filterwarnings("ignore")
@@ -520,7 +520,7 @@ class LinearMixedModelsFlow(Workflow):
                 disk_count = i + 1
                 df = pd.read_hdf(file_path, where="disk=disk_count")
 
-                logging.info(f"read the dataframe for disk number {disk_count}")
+                logger.info(f"read the dataframe for disk number {disk_count}")
                 # check if data has significant data to perform LMM
                 if len(df) < 10:
                     raise ValueError("Dataset for Linear Mixed Model is too small")
@@ -588,7 +588,7 @@ class BundleShapeAnalysis(Workflow):
             if os.path.isdir(os.path.join(subject_folder, group)):
                 subjects = os.listdir(os.path.join(subject_folder, group))
                 subjects.sort()
-                logging.info(
+                logger.info(
                     "first "
                     + str(len(subjects))
                     + " subjects in matrix belong to "
@@ -608,7 +608,7 @@ class BundleShapeAnalysis(Workflow):
             # bundle shape similarity matrix
             ba_matrix = np.zeros((N, N))
             i = 0
-            logging.info(bun)
+            logger.info(bun)
             for sub in all_subjects:
                 j = 0
 
@@ -619,7 +619,7 @@ class BundleShapeAnalysis(Workflow):
                 ).streamlines
 
                 for subi in all_subjects:
-                    logging.info(subi)
+                    logger.info(subi)
 
                     bundle2 = load_tractogram(
                         os.path.join(subi, "rec_bundles", bun),
@@ -635,7 +635,7 @@ class BundleShapeAnalysis(Workflow):
 
                     j += 1
                 i += 1
-            logging.info("saving BA score matrix")
+            logger.info("saving BA score matrix")
             np.save(os.path.join(out_dir, bun[:-4] + ".npy"), ba_matrix)
 
             cmap = matplt.colormaps["Blues"]

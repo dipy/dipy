@@ -1,7 +1,6 @@
 import contextlib
 from hashlib import md5
 import json
-import logging
 import os
 import os.path as op
 from os.path import join as pjoin
@@ -24,6 +23,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.streamline import load_trk
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import TripWire, optional_package
 
 # Set a user-writeable file-system location to put files:
@@ -96,12 +96,6 @@ class FetcherError(Exception):
     pass
 
 
-def _log(msg):
-    """Helper function used as short hand for logging."""
-    logger = logging.getLogger(__name__)
-    logger.info(msg)
-
-
 @warning_for_keywords()
 def copyfileobj_withprogress(fsrc, fdst, total_length, *, length=16 * 1024):
     for _ in tqdm(
@@ -121,7 +115,7 @@ def _already_there_msg(folder):
     """
     msg = "Dataset is already in place. If you want to fetch it again "
     msg += f"please first remove the folder {folder} "
-    _log(msg)
+    logger.info(msg)
 
 
 def _get_file_md5(filename):
@@ -215,11 +209,11 @@ def fetch_data(files, folder, *, data_size=None, use_headers=False):
 
     """
     if not op.exists(folder):
-        _log(f"Creating new folder {folder}")
+        logger.info(f"Creating new folder {folder}")
         os.makedirs(folder)
 
     if data_size is not None:
-        _log(f"Data size is approximately {data_size}")
+        logger.info(f"Data size is approximately {data_size}")
 
     all_skip = True
     for f in files:
@@ -228,14 +222,14 @@ def fetch_data(files, folder, *, data_size=None, use_headers=False):
         if op.exists(fullpath) and (_get_file_md5(fullpath) == md5):
             continue
         all_skip = False
-        _log(f'Downloading "{f}" to {folder}')
-        _log(f"From: {url}")
+        logger.info(f'Downloading "{f}" to {folder}')
+        logger.info(f"From: {url}")
         _get_file_data(fullpath, url, use_headers=use_headers)
         check_md5(fullpath, stored_md5=md5)
     if all_skip:
         _already_there_msg(folder)
     else:
-        _log(f"Files successfully downloaded to {folder}")
+        logger.info(f"Files successfully downloaded to {folder}")
 
 
 @warning_for_keywords()
@@ -309,7 +303,7 @@ def _make_fetcher(
         fetch_data(files, folder, data_size=data_size, use_headers=use_headers)
 
         if msg is not None:
-            _log(msg)
+            logger.info(msg)
         if unzip:
             for f in local_fnames:
                 split_ext = op.splitext(f)
@@ -2229,17 +2223,17 @@ def fetch_tissue_data(*, include_optional=False):
     fname_list = ["t1_brain.nii.gz", "t1_brain_denoised.nii.gz", "power_map.nii.gz"]
 
     if not op.exists(folder):
-        _log(f"Creating new directory {folder}")
+        logger.info(f"Creating new directory {folder}")
         os.makedirs(folder)
         msg = "Downloading 3 Nifti1 images (9.3MB)..."
-        _log(msg)
+        logger.info(msg)
 
         for i in range(len(md5_list)):
             _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
             check_md5(pjoin(folder, fname_list[i]), md5_list[i])
 
-        _log("Done.")
-        _log(f"Files copied in folder {folder}")
+        logger.info("Done.")
+        logger.info(f"Files copied in folder {folder}")
     else:
         _already_there_msg(folder)
 

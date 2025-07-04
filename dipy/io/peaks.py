@@ -9,6 +9,7 @@ from dipy.io.image import save_nifti
 from dipy.reconst.dti import quantize_evecs
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecate_with_version
+from dipy.utils.logging import logger
 
 
 def _safe_save(group, array, name):
@@ -104,28 +105,28 @@ def load_pam(fname, *, verbose=False):
     f.close()
 
     if verbose:
-        print("PAM5 version")
-        print(version)
-        print("Affine")
-        print(pam.affine)
-        print("Dirs shape")
-        print(pam.peak_dirs.shape)
-        print("SH shape")
+        logger.info("PAM5 version")
+        logger.info(version)
+        logger.info("Affine")
+        logger.info(pam.affine)
+        logger.info("Dirs shape")
+        logger.info(pam.peak_dirs.shape)
+        logger.info("SH shape")
         if pam.shm_coeff is not None:
-            print(pam.shm_coeff.shape)
+            logger.info(pam.shm_coeff.shape)
         else:
-            print("None")
-        print("ODF shape")
+            logger.info("None")
+        logger.info("ODF shape")
         if pam.odf is not None:
-            print(pam.odf.shape)
+            logger.info(pam.odf.shape)
         else:
-            print("None")
-        print("Total weight")
-        print(pam.total_weight)
-        print("Angular threshold")
-        print(pam.ang_thr)
-        print("Sphere vertices shape")
-        print(pam.sphere.vertices.shape)
+            logger.info("None")
+        logger.info("Total weight")
+        logger.info(pam.total_weight)
+        logger.info("Angular threshold")
+        logger.info(pam.ang_thr)
+        logger.info("Sphere vertices shape")
+        logger.info(pam.sphere.vertices.shape)
 
     return pam
 
@@ -224,28 +225,28 @@ def save_pam(fname, pam, *, affine=None, verbose=False):
     f.close()
 
     if verbose:
-        print("PAM5 version")
+        logger.info("PAM5 version")
         print(version_string)
-        print("Affine")
-        print(affine)
-        print("Dirs shape")
-        print(pam.peak_dirs.shape)
-        print("SH shape")
+        logger.info("Affine")
+        logger.info(affine)
+        logger.info("Dirs shape")
+        logger.info(pam.peak_dirs.shape)
+        logger.info("SH shape")
         if shm_coeff is not None:
-            print(shm_coeff.shape)
+            logger.info(shm_coeff.shape)
         else:
-            print("None")
-        print("ODF shape")
+            logger.info("None")
+        logger.info("ODF shape")
         if odf is not None:
-            print(pam.odf.shape)
+            logger.info(pam.odf.shape)
         else:
-            print("None")
-        print("Total weight")
-        print(pam.total_weight)
-        print("Angular threshold")
-        print(pam.ang_thr)
-        print("Sphere vertices shape")
-        print(pam.sphere.vertices.shape)
+            logger.info("None")
+        logger.info("Total weight")
+        logger.info(pam.total_weight)
+        logger.info("Angular threshold")
+        logger.info(pam.ang_thr)
+        logger.info("Sphere vertices shape")
+        logger.info(pam.sphere.vertices.shape)
 
     return pam
 

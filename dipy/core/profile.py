@@ -4,6 +4,7 @@ import os
 import subprocess
 
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 cProfile, _, _ = optional_package("cProfile")
@@ -62,9 +63,9 @@ class Profiler:
 
         try:
             ext = os.path.splitext(call)[1].lower()
-            print("ext", ext)
+            logger.info("ext", ext)
             if ext in (".py", ".pyx"):  # python/cython file
-                print("profiling python/cython file ...")
+                logger.info("profiling python/cython file ...")
                 subprocess.call(
                     ["python3", "-m", "cProfile", "-o", "profile.prof", call]
                 )
@@ -73,7 +74,7 @@ class Profiler:
                 self.stats = stats
 
         except Exception:
-            print("profiling function call ...")
+            logger.info("profiling function call ...")
             self.args = args
             self.call = call
 

@@ -1,5 +1,4 @@
 from ast import literal_eval
-import logging
 import os.path
 from warnings import warn
 
@@ -41,6 +40,7 @@ from dipy.reconst.sfm import SparseFascicleModel
 from dipy.reconst.shm import CsaOdfModel, OpdtModel, QballModel
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
+from dipy.utils.logging import logger
 from dipy.workflows.workflow import Workflow
 
 
@@ -192,7 +192,7 @@ class ReconstMAPMRIFlow(Workflow):
             opeaks_values,
             opeaks_indices,
         ) in io_it:
-            logging.info(f"Computing MAPMRI metrics for {dwi}")
+            logger.info(f"Computing MAPMRI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -259,7 +259,7 @@ class ReconstMAPMRIFlow(Workflow):
                     r = func()
                     save_nifti(fname, r.astype(np.float32), affine)
 
-            logging.info(f"MAPMRI saved in {os.path.abspath(out_dir)}")
+            logger.info(f"MAPMRI saved in {os.path.abspath(out_dir)}")
 
             sphere = default_sphere
             if sphere_name:
@@ -473,7 +473,7 @@ class ReconstDtiFlow(Workflow):
             oqa,
             os0,
         ) in io_it:
-            logging.info(f"Computing DTI metrics for {dwi}")
+            logger.info(f"Computing DTI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
@@ -574,9 +574,9 @@ class ReconstDtiFlow(Workflow):
 
             if save_metrics:
                 msg = f"DTI metrics saved to {os.path.abspath(out_dir)}"
-                logging.info(msg)
+                logger.info(msg)
                 for metric in save_metrics:
-                    logging.info(self.last_generated_outputs[f"out_{metric}"])
+                    logger.info(self.last_generated_outputs[f"out_{metric}"])
 
             pam = tensor_to_pam(
                 tenfit.evals.astype(np.float32),
@@ -611,7 +611,7 @@ class ReconstDtiFlow(Workflow):
         fit_method="WLS",
         optional_args=None,
     ):
-        logging.info("Tensor estimation...")
+        logger.info("Tensor estimation...")
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         gtab = gradient_table(
             bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
@@ -758,7 +758,7 @@ class ReconstDsiFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Computing DSI Model for {dwi}")
+            logger.info(f"Computing DSI Model for {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -801,7 +801,7 @@ class ReconstDsiFlow(Workflow):
 
             save_pam(opam, peaks_dsi)
 
-            logging.info("DSI computation completed.")
+            logger.info("DSI computation completed.")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -817,7 +817,7 @@ class ReconstDsiFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            logging.info(f"DSI metrics saved to {os.path.abspath(out_dir)}")
+            logger.info(f"DSI metrics saved to {os.path.abspath(out_dir)}")
 
 
 class ReconstCSDFlow(Workflow):
@@ -952,7 +952,7 @@ class ReconstCSDFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -981,10 +981,10 @@ class ReconstCSDFlow(Workflow):
                 )
 
             if frf is None:
-                logging.info("Computing response function")
+                logger.info("Computing response function")
                 if roi_center is not None:
-                    logging.info(f"Response ROI center:\n{roi_center}")
-                    logging.info(f"Response ROI radii:\n{roi_radii}")
+                    logger.info(f"Response ROI center:\n{roi_center}")
+                    logger.info(f"Response ROI radii:\n{roi_radii}")
                 response, ratio = auto_response_ssst(
                     gtab,
                     data,
@@ -995,7 +995,7 @@ class ReconstCSDFlow(Workflow):
                 response = list(response)
 
             else:
-                logging.info("Using response function")
+                logger.info("Using response function")
                 if isinstance(frf, str):
                     l01 = np.array(literal_eval(frf), dtype=np.float64)
                 else:
@@ -1006,16 +1006,14 @@ class ReconstCSDFlow(Workflow):
                 ratio = l01[1] / l01[0]
                 response = (response, ratio)
 
-            logging.info(
-                f"Eigenvalues for the frf of the input data are :{response[0]}"
-            )
-            logging.info(f"Ratio for smallest to largest eigen value is {ratio}")
+            logger.info(f"Eigenvalues for the frf of the input data are :{response[0]}")
+            logger.info(f"Ratio for smallest to largest eigen value is {ratio}")
 
             peaks_sphere = default_sphere
             if sphere_name is not None:
                 peaks_sphere = get_sphere(name=sphere_name)
 
-            logging.info("CSD computation started.")
+            logger.info("CSD computation started.")
             csd_model = ConstrainedSphericalDeconvModel(
                 gtab, response, sh_order_max=sh_order_max
             )
@@ -1037,7 +1035,7 @@ class ReconstCSDFlow(Workflow):
 
             save_pam(opam, peaks_csd)
 
-            logging.info("CSD computation completed.")
+            logger.info("CSD computation completed.")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -1055,9 +1053,9 @@ class ReconstCSDFlow(Workflow):
 
             dname_ = os.path.dirname(opam)
             if dname_ == "":
-                logging.info("Pam5 file saved in current directory")
+                logger.info("Pam5 file saved in current directory")
             else:
-                logging.info(f"Pam5 file saved in {dname_}")
+                logger.info(f"Pam5 file saved in {dname_}")
 
             return io_it
 
@@ -1211,7 +1209,7 @@ class ReconstQBallBaseFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -1234,7 +1232,7 @@ class ReconstQBallBaseFlow(Workflow):
             if sphere_name is not None:
                 peaks_sphere = get_sphere(name=sphere_name)
 
-            logging.info(f"Starting {method.upper()} computations {dwi}")
+            logger.info(f"Starting {method.upper()} computations {dwi}")
 
             qball_base_model = model_list[method.lower()](
                 gtab,
@@ -1261,7 +1259,7 @@ class ReconstQBallBaseFlow(Workflow):
 
             save_pam(opam, peaks_qballbase)
 
-            logging.info(f"Finished {method.upper()} {dwi}")
+            logger.info(f"Finished {method.upper()} {dwi}")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -1279,9 +1277,9 @@ class ReconstQBallBaseFlow(Workflow):
 
             dname_ = os.path.dirname(opam)
             if dname_ == "":
-                logging.info("Pam5 file saved in current directory")
+                logger.info("Pam5 file saved in current directory")
             else:
-                logging.info(f"Pam5 file saved in {dname_}")
+                logger.info(f"Pam5 file saved in {dname_}")
 
             return io_it
 
@@ -1438,7 +1436,7 @@ class ReconstDkiFlow(Workflow):
             opeaks_indices,
             osphere,
         ) in io_it:
-            logging.info(f"Computing DKI metrics for {dwi}")
+            logger.info(f"Computing DKI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
@@ -1532,7 +1530,7 @@ class ReconstDkiFlow(Workflow):
             if "rk" in save_metrics:
                 save_nifti(ork, dkfit.rk().astype(np.float32), affine)
 
-            logging.info(f"DKI metrics saved in {os.path.dirname(oevals)}")
+            logger.info(f"DKI metrics saved in {os.path.dirname(oevals)}")
 
             pam = tensor_to_pam(
                 dkfit.evals.astype(np.float32),
@@ -1565,7 +1563,7 @@ class ReconstDkiFlow(Workflow):
         fit_method="WLS",
         optional_args=None,
     ):
-        logging.info("Diffusion kurtosis estimation...")
+        logger.info("Diffusion kurtosis estimation...")
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         # If all b-values are smaller or equal to the b0 threshold, it is
         # assumed that no thresholding is requested
@@ -1667,7 +1665,7 @@ class ReconstIvimFlow(Workflow):
             oD_star,
             oD,
         ) in io_it:
-            logging.info(f"Computing IVIM metrics for {dwi}")
+            logger.info(f"Computing IVIM metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
@@ -1698,11 +1696,11 @@ class ReconstIvimFlow(Workflow):
             if "D" in save_metrics:
                 save_nifti(oD, ivimfit.D.astype(np.float32), affine)
 
-            logging.info(f"IVIM metrics saved in {os.path.dirname(oD)}")
+            logger.info(f"IVIM metrics saved in {os.path.dirname(oD)}")
 
     @warning_for_keywords()
     def get_fitted_ivim(self, data, mask, bval, bvec, *, b0_threshold=50):
-        logging.info("Intra-Voxel Incoherent Motion Estimation...")
+        logger.info("Intra-Voxel Incoherent Motion Estimation...")
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         # If all b-values are smaller or equal to the b0 threshold, it is
         # assumed that no thresholding is requested
@@ -1895,7 +1893,7 @@ class ReconstRUMBAFlow(Workflow):
             oqa,
         ) in io_it:
             # Read the data
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -1954,7 +1952,7 @@ class ReconstRUMBAFlow(Workflow):
                 num_processes=num_processes,
             )
 
-            logging.info("Peak computation completed.")
+            logger.info("Peak computation completed.")
 
             rumba_peaks.affine = affine
 
@@ -1976,9 +1974,9 @@ class ReconstRUMBAFlow(Workflow):
 
             dname_ = os.path.dirname(opam)
             if dname_ == "":
-                logging.info("Pam5 file saved in current directory")
+                logger.info("Pam5 file saved in current directory")
             else:
-                logging.info(f"Pam5 file saved in {dname_}")
+                logger.info(f"Pam5 file saved in {dname_}")
 
             return io_it
 
@@ -2115,7 +2113,7 @@ class ReconstSDTFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
 
@@ -2143,7 +2141,7 @@ class ReconstSDTFlow(Workflow):
                 )
 
             if ratio is None:
-                logging.info("Computing response function")
+                logger.info("Computing response function")
                 _, ratio = auto_response_ssst(
                     gtab,
                     data,
@@ -2152,13 +2150,13 @@ class ReconstSDTFlow(Workflow):
                     fa_thr=fa_thr,
                 )
 
-            logging.info(f"Ratio for smallest to largest eigen value is {ratio}")
+            logger.info(f"Ratio for smallest to largest eigen value is {ratio}")
 
             peaks_sphere = default_sphere
             if sphere_name is not None:
                 peaks_sphere = get_sphere(name=sphere_name)
 
-            logging.info("SDT computation started.")
+            logger.info("SDT computation started.")
             sdt_model = ConstrainedSDTModel(
                 gtab,
                 ratio,
@@ -2185,7 +2183,7 @@ class ReconstSDTFlow(Workflow):
 
             save_pam(opam, peaks_sdt)
 
-            logging.info("SDT computation completed.")
+            logger.info("SDT computation completed.")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -2203,9 +2201,9 @@ class ReconstSDTFlow(Workflow):
 
             dname_ = os.path.dirname(opam)
             if dname_ == "":
-                logging.info("Pam5 file saved in current directory")
+                logger.info("Pam5 file saved in current directory")
             else:
-                logging.info(f"Pam5 file saved in {dname_}")
+                logger.info(f"Pam5 file saved in {dname_}")
 
             return io_it
 
@@ -2340,7 +2338,7 @@ class ReconstSFMFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
 
@@ -2371,7 +2369,7 @@ class ReconstSFMFlow(Workflow):
                 default_sphere if sphere_name is None else get_sphere(name=sphere_name)
             )
 
-            logging.info("SFM computation started.")
+            logger.info("SFM computation started.")
             sfm_model = SparseFascicleModel(
                 gtab,
                 sphere=peaks_sphere,
@@ -2399,7 +2397,7 @@ class ReconstSFMFlow(Workflow):
 
             save_pam(opam, peaks_sfm)
 
-            logging.info("SFM computation completed.")
+            logger.info("SFM computation completed.")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -2421,7 +2419,7 @@ class ReconstSFMFlow(Workflow):
                 if dname_ == ""
                 else f"Pam5 file saved in {dname_}"
             )
-            logging.info(msg)
+            logger.info(msg)
 
             return io_it
 
@@ -2546,7 +2544,7 @@ class ReconstGQIFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
 
@@ -2577,7 +2575,7 @@ class ReconstGQIFlow(Workflow):
                 default_sphere if sphere_name is None else get_sphere(name=sphere_name)
             )
 
-            logging.info("GQI computation started.")
+            logger.info("GQI computation started.")
             gqi_model = GeneralizedQSamplingModel(
                 gtab,
                 method=method,
@@ -2602,7 +2600,7 @@ class ReconstGQIFlow(Workflow):
 
             save_pam(opam, peaks_gqi)
 
-            logging.info("GQI computation completed.")
+            logger.info("GQI computation completed.")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -2624,7 +2622,7 @@ class ReconstGQIFlow(Workflow):
                 if dname_ == ""
                 else f"Pam5 file saved in {dname_}"
             )
-            logging.info(msg)
+            logger.info(msg)
 
             return io_it
 
@@ -2757,7 +2755,7 @@ class ReconstForecastFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
 
@@ -2788,7 +2786,7 @@ class ReconstForecastFlow(Workflow):
                 default_sphere if sphere_name is None else get_sphere(name=sphere_name)
             )
 
-            logging.info("FORECAST computation started.")
+            logger.info("FORECAST computation started.")
             forecast_model = ForecastModel(
                 gtab,
                 sh_order_max=sh_order_max,
@@ -2815,7 +2813,7 @@ class ReconstForecastFlow(Workflow):
 
             save_pam(opam, peaks_forecast)
 
-            logging.info("FORECAST computation completed.")
+            logger.info("FORECAST computation completed.")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -2837,6 +2835,6 @@ class ReconstForecastFlow(Workflow):
                 if dname_ == ""
                 else f"Pam5 file saved in {dname_}"
             )
-            logging.info(msg)
+            logger.info(msg)
 
             return io_it

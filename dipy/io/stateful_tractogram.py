@@ -2,7 +2,6 @@ from bisect import bisect
 from collections import OrderedDict
 from copy import deepcopy
 from itertools import product
-import logging
 
 from nibabel.affines import apply_affine
 from nibabel.streamlines.tractogram import (
@@ -21,9 +20,7 @@ from dipy.io.utils import (
     is_reference_info_valid,
 )
 from dipy.testing.decorators import warning_for_keywords
-
-logger = logging.getLogger("StatefulTractogram")
-logger.setLevel(level=logging.INFO)
+from dipy.utils.logging import logger
 
 
 def set_sft_logger_level(log_level):
