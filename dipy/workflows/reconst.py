@@ -1,5 +1,5 @@
 from ast import literal_eval
-import os.path
+from pathlib import Path
 from warnings import warn
 
 import nibabel as nib
@@ -259,7 +259,7 @@ class ReconstMAPMRIFlow(Workflow):
                     r = func()
                     save_nifti(fname, r.astype(np.float32), affine)
 
-            logger.info(f"MAPMRI saved in {os.path.abspath(out_dir)}")
+            logger.info(f"MAPMRI saved in {Path(out_dir).resolve()}")
 
             sphere = default_sphere
             if sphere_name:
@@ -573,7 +573,7 @@ class ReconstDtiFlow(Workflow):
                     )
 
             if save_metrics:
-                msg = f"DTI metrics saved to {os.path.abspath(out_dir)}"
+                msg = f"DTI metrics saved to {Path(out_dir).resolve()}"
                 logger.info(msg)
                 for metric in save_metrics:
                     logger.info(self.last_generated_outputs[f"out_{metric}"])
@@ -817,7 +817,7 @@ class ReconstDsiFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            logger.info(f"DSI metrics saved to {os.path.abspath(out_dir)}")
+            logger.info(f"DSI metrics saved to {Path(out_dir).resolve()}")
 
 
 class ReconstCSDFlow(Workflow):
@@ -1051,7 +1051,7 @@ class ReconstCSDFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             if dname_ == "":
                 logger.info("Pam5 file saved in current directory")
             else:
@@ -1275,7 +1275,7 @@ class ReconstQBallBaseFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             if dname_ == "":
                 logger.info("Pam5 file saved in current directory")
             else:
@@ -1530,7 +1530,7 @@ class ReconstDkiFlow(Workflow):
             if "rk" in save_metrics:
                 save_nifti(ork, dkfit.rk().astype(np.float32), affine)
 
-            logger.info(f"DKI metrics saved in {os.path.dirname(oevals)}")
+            logger.info(f"DKI metrics saved in {Path(oevals).parent}")
 
             pam = tensor_to_pam(
                 dkfit.evals.astype(np.float32),
@@ -1696,7 +1696,7 @@ class ReconstIvimFlow(Workflow):
             if "D" in save_metrics:
                 save_nifti(oD, ivimfit.D.astype(np.float32), affine)
 
-            logger.info(f"IVIM metrics saved in {os.path.dirname(oD)}")
+            logger.info(f"IVIM metrics saved in {Path(oD).parent}")
 
     @warning_for_keywords()
     def get_fitted_ivim(self, data, mask, bval, bvec, *, b0_threshold=50):
@@ -1972,7 +1972,7 @@ class ReconstRUMBAFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             if dname_ == "":
                 logger.info("Pam5 file saved in current directory")
             else:
@@ -2199,7 +2199,7 @@ class ReconstSDTFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             if dname_ == "":
                 logger.info("Pam5 file saved in current directory")
             else:
@@ -2413,7 +2413,7 @@ class ReconstSFMFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             msg = (
                 "Pam5 file saved in current directory"
                 if dname_ == ""
@@ -2616,7 +2616,7 @@ class ReconstGQIFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             msg = (
                 "Pam5 file saved in current directory"
                 if dname_ == ""
@@ -2829,7 +2829,7 @@ class ReconstForecastFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             msg = (
                 "Pam5 file saved in current directory"
                 if dname_ == ""

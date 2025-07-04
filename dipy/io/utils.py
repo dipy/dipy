@@ -2,7 +2,7 @@
 
 import enum
 import numbers
-import os
+from pathlib import Path
 
 import nibabel as nib
 from nibabel import Nifti1Image
@@ -254,34 +254,6 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     return all_valid
 
 
-def split_name_with_gz(filename):
-    """
-    Returns the clean basename and extension of a file.
-    Means that this correctly manages the ".nii.gz" extensions.
-
-    Parameters
-    ----------
-    filename: str
-        The filename to clean
-
-    Returns
-    -------
-        base, ext : tuple(str, str)
-        Clean basename and the full extension
-    """
-    base, ext = os.path.splitext(filename)
-
-    if ext.lower() == ".gz":
-        # Test if we have a .nii additional extension
-        temp_base, add_ext = os.path.splitext(base)
-
-        if add_ext.lower() in [".nii", ".trk", ".gii"]:
-            ext = add_ext + ext
-            base = temp_base
-
-    return base, ext
-
-
 def get_reference_info(reference):
     """Get the spatial attributes of the given data file.
 
@@ -304,9 +276,8 @@ def get_reference_info(reference):
     is_sft = False
     is_trx = False
 
-    if isinstance(reference, str):
-        _, ext = split_name_with_gz(reference)
-        ext = ext.lower()
+    if isinstance(reference, (str, Path)):
+        ext = "".join(Path(reference).suffixes).lower()
         if ext in [".nii", ".nii.gz"]:
             header = nib.load(reference).header
             is_nifti = True
@@ -452,7 +423,7 @@ def save_buan_profiles_hdf5(fname, dt, *, key=None):
 
     Parameters
     ----------
-    fname : string
+    fname : string or Path
         file name for saving the hdf5 file
     dt : Pandas DataFrame
         DataFrame to be saved as .h5 file
@@ -463,11 +434,11 @@ def save_buan_profiles_hdf5(fname, dt, *, key=None):
     """
 
     df = pd.DataFrame(dt)
-    filename_hdf5 = fname + ".h5"
+    filename_hdf5 = Path(fname).with_suffix(".h5")
 
     if key is None:
-        base_name_parts, _ = os.path.splitext(os.path.basename(fname))
-        key = base_name_parts.split(".")[0]
+        fname = Path(fname)
+        key = fname.name.removesuffix("".join(fname.suffixes))
 
     store = pd.HDFStore(filename_hdf5, complevel=9)
     store.append(key, df, data_columns=True, complevel=9)
@@ -481,7 +452,7 @@ def read_img_arr_or_path(data, *, affine=None):
 
     Parameters
     ----------
-    data : array or nib.Nifti1Image or str.
+    data : array or nib.Nifti1Image, str or Path.
         Either as a 3D/4D array or as a nifti image object, or as
         a string containing the full path to a nifti file.
 
@@ -499,7 +470,7 @@ def read_img_arr_or_path(data, *, affine=None):
         raise ValueError(
             "If data is provided as an array, an affine has ", "to be provided as well"
         )
-    if isinstance(data, str):
+    if isinstance(data, (str, Path)):
         data = nib.load(data)
     if isinstance(data, nib.Nifti1Image):
         if affine is None:

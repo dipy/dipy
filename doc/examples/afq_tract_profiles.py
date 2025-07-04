@@ -16,8 +16,6 @@ mean trajectory of the bundle at that location.
 
 """
 
-import os.path as op
-
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -42,7 +40,7 @@ session = "HBNsiteRU"
 
 fdict, path = fetch_hbn([subject], include_afq=True)
 
-afq_path = op.join(path, "derivatives", "afq", f"sub-{subject}", f"ses-{session}")
+afq_path = path / "derivatives" / "afq" / f"sub-{subject}" / f"ses-{session}"
 
 ###############################################################################
 # We can use the `dipy.io` API to read in the bundles from file.
@@ -50,17 +48,17 @@ afq_path = op.join(path, "derivatives", "afq", f"sub-{subject}", f"ses-{session}
 # the `streamlines` attribute will give us access to the sequence of arrays
 # that contain the streamline coordinates.
 
-cst_l_file = op.join(
-    afq_path,
-    "clean_bundles",
-    f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
+cst_l_file = (
+    afq_path
+    / "clean_bundles"
+    / f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
     "-RASMM_model-CSD_desc-prob-afq-CST_L_tractography.trk",
 )
 
-arc_l_file = op.join(
-    afq_path,
-    "clean_bundles",
-    f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
+arc_l_file = (
+    afq_path
+    / "clean_bundles"
+    / f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
     "-RASMM_model-CSD_desc-prob-afq-ARC_L_tractography.trk",
 )
 
@@ -123,11 +121,8 @@ oriented_arc_l = dts.orient_by_streamline(arc_l, standard_af_l)
 # this subject with the diffusion tensor imaging (DTI) model.
 
 fa, fa_affine = load_nifti(
-    op.join(
-        afq_path,
-        f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc"
-        "-preproc_dwi_model-DTI_FA.nii.gz",
-    )
+    afq_path / f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc"
+    "-preproc_dwi_model-DTI_FA.nii.gz",
 )
 
 ###############################################################################

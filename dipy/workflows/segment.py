@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import sys
 from time import time
 
@@ -502,7 +502,7 @@ class ClassifyTissueFlow(Workflow):
                 save_nifti(opve, PVE, affine)
 
             elif method.lower() == "dam":
-                if bvals_file is None or not os.path.isfile(bvals_file):
+                if bvals_file is None or not Path(bvals_file).is_file():
                     logger.error("'--bvals filename' is required for 'dam' method")
                     sys.exit(1)
 

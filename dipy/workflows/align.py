@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 from warnings import warn
 
 import nibabel as nib
@@ -71,7 +71,7 @@ class ResliceFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         new_vox_size : variable float
@@ -150,9 +150,9 @@ class SlrWithQbxFlow(Workflow):
 
         Parameters
         ----------
-        static_files : string
+        static_files : string or Path
             List of reference/fixed bundle tractograms.
-        moving_files : string
+        moving_files : string or Path
             List of target bundle tractograms that will be moved/registered to
             match the static bundles.
         x0 : string, optional
@@ -239,7 +239,9 @@ class SlrWithQbxFlow(Workflow):
             new_tractogram = nib.streamlines.Tractogram(
                 moved, affine_to_rasmm=np.eye(4)
             )
-            nib.streamlines.save(new_tractogram, out_moved_file, header=moving_header)
+            nib.streamlines.save(
+                new_tractogram, str(out_moved_file), header=moving_header
+            )
 
             logger.info(f"Saving output file {out_affine_file}")
             np.savetxt(out_affine_file, affine)
@@ -249,7 +251,7 @@ class SlrWithQbxFlow(Workflow):
                 centroids_static, affine_to_rasmm=np.eye(4)
             )
             nib.streamlines.save(
-                new_tractogram, static_centroids_file, header=static_header
+                new_tractogram, str(static_centroids_file), header=static_header
             )
 
             logger.info(f"Saving output file {moving_centroids_file}")
@@ -257,7 +259,7 @@ class SlrWithQbxFlow(Workflow):
                 centroids_moving, affine_to_rasmm=np.eye(4)
             )
             nib.streamlines.save(
-                new_tractogram, moving_centroids_file, header=moving_header
+                new_tractogram, str(moving_centroids_file), header=moving_header
             )
 
             centroids_moved = transform_streamlines(centroids_moving, affine)
@@ -268,7 +270,7 @@ class SlrWithQbxFlow(Workflow):
                 centroids_moved, affine_to_rasmm=np.eye(4)
             )
             nib.streamlines.save(
-                new_tractogram, moved_centroids_file, header=moving_header
+                new_tractogram, str(moved_centroids_file), header=moving_header
             )
 
 
@@ -975,7 +977,7 @@ class BundleWarpFlow(Workflow):
             affine_bundle, affine_to_rasmm=np.eye(4)
         )
         nib.streamlines.save(
-            new_tractogram, pjoin(out_dir, out_linear_moved), header=moving_header
+            new_tractogram, str(Path(out_dir) / out_linear_moved), header=moving_header
         )
 
         logger.info(f"Saving output file {out_nonlinear_moved}")
@@ -983,17 +985,19 @@ class BundleWarpFlow(Workflow):
             deformed_bundle, affine_to_rasmm=np.eye(4)
         )
         nib.streamlines.save(
-            new_tractogram, pjoin(out_dir, out_nonlinear_moved), header=moving_header
+            new_tractogram,
+            str(Path(out_dir) / out_nonlinear_moved),
+            header=moving_header,
         )
 
         logger.info(f"Saving output file {out_warp_transform}")
-        np.save(pjoin(out_dir, out_warp_transform), np.array(warp["transforms"]))
+        np.save(Path(out_dir) / out_warp_transform, np.array(warp["transforms"]))
 
         logger.info(f"Saving output file {out_warp_kernel}")
-        np.save(pjoin(out_dir, out_warp_kernel), np.array(warp["gaussian_kernel"]))
+        np.save(Path(out_dir) / out_warp_kernel, np.array(warp["gaussian_kernel"]))
 
         logger.info(f"Saving output file {out_dist}")
-        np.save(pjoin(out_dir, out_dist), dist)
+        np.save(Path(out_dir) / out_dist, dist)
 
         logger.info(f"Saving output file {out_matched_pairs}")
-        np.save(pjoin(out_dir, out_matched_pairs), mp)
+        np.save(Path(out_dir) / out_matched_pairs, mp)

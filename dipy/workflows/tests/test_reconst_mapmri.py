@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 import warnings
 
@@ -43,9 +43,9 @@ def reconst_mmri_core(flow, lap, pos):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message=msg, category=UserWarning)
             mmri_flow.run(
-                data_files=data_path,
-                bvals_files=bval_path,
-                bvecs_files=bvec_path,
+                data_files=str(data_path),
+                bvals_files=str(bval_path),
+                bvecs_files=str(bvec_path),
                 small_delta=0.0129,
                 big_delta=0.0218,
                 laplacian=lap,
@@ -71,8 +71,8 @@ def reconst_mmri_core(flow, lap, pos):
         bvals, bvecs = read_bvals_bvecs(bval_path, bvec_path)
         bvals[0] = 5.0
         bvecs = generate_bvecs(len(bvals))
-        tmp_bval_path = pjoin(out_dir, "tmp.bval")
-        tmp_bvec_path = pjoin(out_dir, "tmp.bvec")
+        tmp_bval_path = Path(out_dir) / "tmp.bval"
+        tmp_bvec_path = Path(out_dir) / "tmp.bvec"
         np.savetxt(tmp_bval_path, bvals)
         np.savetxt(tmp_bvec_path, bvecs.T)
         mmri_flow._force_overwrite = True
@@ -80,9 +80,9 @@ def reconst_mmri_core(flow, lap, pos):
             npt.assert_warns(
                 UserWarning,
                 mmri_flow.run,
-                data_path,
-                tmp_bval_path,
-                tmp_bvec_path,
+                str(data_path),
+                str(tmp_bval_path),
+                str(tmp_bvec_path),
                 small_delta=0.0129,
                 big_delta=0.0218,
                 laplacian=lap,

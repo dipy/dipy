@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import nibabel as nib
@@ -39,7 +39,7 @@ def test_median_otsu_flow():
         mo_flow = MedianOtsuFlow()
         with npt.assert_warns(ArgsDeprecationWarning):
             mo_flow.run(
-                data_path,
+                str(data_path),
                 out_dir=out_dir,
                 save_masked=save_masked,
                 median_radius=median_radius,
@@ -63,10 +63,10 @@ def test_median_otsu_flow():
             dilate=dilate,
         )
 
-        result_mask_data = load_nifti_data(pjoin(out_dir, mask_name))
+        result_mask_data = load_nifti_data(Path(out_dir) / mask_name)
         npt.assert_array_equal(result_mask_data.astype(np.uint8), mask)
 
-        result_masked = nib.load(pjoin(out_dir, masked_name))
+        result_masked = nib.load(Path(out_dir) / masked_name)
         result_masked_data = np.asanyarray(result_masked.dataobj)
 
         npt.assert_array_equal(np.round(result_masked_data), masked)
@@ -86,18 +86,18 @@ def test_recobundles_flow():
 
         f.extend(f2)
 
-        f2_path = pjoin(out_dir, "f2.trk")
+        f2_path = Path(out_dir) / "f2.trk"
         sft = StatefulTractogram(f2, data_path, Space.RASMM)
         save_tractogram(sft, f2_path, bbox_valid_check=False)
 
-        f1_path = pjoin(out_dir, "f1.trk")
+        f1_path = Path(out_dir) / "f1.trk"
         sft = StatefulTractogram(f, data_path, Space.RASMM)
         save_tractogram(sft, f1_path, bbox_valid_check=False)
 
         rb_flow = RecoBundlesFlow(force=True)
         rb_flow.run(
-            f1_path,
-            f2_path,
+            str(f1_path),
+            str(f2_path),
             greater_than=0,
             clust_thr=10,
             model_clust_thr=5.0,
@@ -114,7 +114,7 @@ def test_recobundles_flow():
         npt.assert_equal(len(rec_bundle) == len(f2), True)
 
         label_flow = LabelsBundlesFlow(force=True)
-        label_flow.run(f1_path, labels, out_dir=out_dir)
+        label_flow.run(str(f1_path), labels, out_dir=out_dir)
 
         recog_bundle = label_flow.last_generated_outputs["out_bundle"]
         rec_bundle_org = load_tractogram(
@@ -136,11 +136,11 @@ def test_recobundles_flow():
 def test_classify_tissue_flow():
     with TemporaryDirectory() as out_dir:
         data = create_image()
-        data_path = pjoin(out_dir, "data.nii.gz")
+        data_path = Path(out_dir) / "data.nii.gz"
         nib.save(nib.Nifti1Image(data, np.eye(4)), data_path)
 
         args = {
-            "input_files": data_path,
+            "input_files": str(data_path),
             "method": "hmrf",
             "nclass": 4,
             "beta": 0.1,
@@ -164,23 +164,23 @@ def test_classify_tissue_flow():
         npt.assert_equal(pve_data.shape, (data.shape) + (4,))
         npt.assert_equal(pve_data.max(), 1)
 
-        npt.assert_raises(SystemExit, flow.run, data_path)
-        npt.assert_raises(SystemExit, flow.run, data_path, method="random")
-        npt.assert_raises(SystemExit, flow.run, data_path, method="dam")
-        npt.assert_raises(SystemExit, flow.run, data_path, method="hmrf")
+        npt.assert_raises(SystemExit, flow.run, str(data_path))
+        npt.assert_raises(SystemExit, flow.run, str(data_path), method="random")
+        npt.assert_raises(SystemExit, flow.run, str(data_path), method="dam")
+        npt.assert_raises(SystemExit, flow.run, str(data_path), method="hmrf")
 
     if has_sklearn:
         with TemporaryDirectory() as out_dir:
             data = np.random.rand(3, 3, 3, 7) * 100  # Simulated random data
             bvals = np.array([0, 100, 500, 1000, 1500, 2000, 3000])
-            data_path = pjoin(out_dir, "data.nii.gz")
-            bvals_path = pjoin(out_dir, "bvals")
+            data_path = Path(out_dir) / "data.nii.gz"
+            bvals_path = Path(out_dir) / "bvals"
             np.savetxt(bvals_path, bvals)
             nib.save(nib.Nifti1Image(data, np.eye(4)), data_path)
 
             args = {
-                "input_files": data_path,
-                "bvals_file": bvals_path,
+                "input_files": str(data_path),
+                "bvals_file": str(bvals_path),
                 "method": "dam",
                 "wm_threshold": 0.5,
                 "out_dir": out_dir,

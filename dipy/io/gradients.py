@@ -1,5 +1,5 @@
 import io
-from os.path import splitext
+from pathlib import Path
 import re
 import warnings
 
@@ -11,9 +11,9 @@ def read_bvals_bvecs(fbvals, fbvecs):
 
     Parameters
     ----------
-    fbvals : str
+    fbvals : str or Path
        Full path to file with b-values. None to not read bvals.
-    fbvecs : str
+    fbvecs : str or Path
        Full path of file with b-vectors. None to not read bvecs.
 
     Returns
@@ -37,10 +37,10 @@ def read_bvals_bvecs(fbvals, fbvecs):
             vals.append(None)
             continue
 
-        if not isinstance(this_fname, str):
+        if not isinstance(this_fname, (str, Path)):
             raise ValueError("String with full path to file is required")
 
-        base, ext = splitext(this_fname)
+        ext = Path(this_fname).suffix
         if ext in [
             ".bvals",
             ".bval",

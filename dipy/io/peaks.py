@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import h5py
 import numpy as np
@@ -58,7 +58,7 @@ def load_pam(fname, *, verbose=False):
 
     Parameters
     ----------
-    fname : string
+    fname : string or Path
         Filename of PAM5 file.
     verbose : bool, optional
         Print summary information about the loaded file.
@@ -69,7 +69,7 @@ def load_pam(fname, *, verbose=False):
         Object holding peaks information and metrics.
 
     """
-    if os.path.splitext(fname)[1].lower() != ".pam5":
+    if Path(fname).suffix.lower() != ".pam5":
         raise IOError("This function supports only PAM5 (HDF5) files")
 
     f = h5py.File(fname, "r")
@@ -174,7 +174,7 @@ def save_pam(fname, pam, *, affine=None, verbose=False):
         Print summary information about the saved file.
 
     """
-    if os.path.splitext(fname)[1] != ".pam5":
+    if Path(fname).suffix.lower() != ".pam5":
         raise IOError("This function saves only PAM5 (HDF5) files")
 
     if not (

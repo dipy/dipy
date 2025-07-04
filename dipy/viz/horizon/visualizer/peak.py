@@ -1,4 +1,3 @@
-from os.path import join as pjoin
 from pathlib import Path
 import warnings
 
@@ -172,11 +171,11 @@ class PeakActor(Actor):
             uniform vec3 lowRanges;
             uniform vec3 highRanges;
             """
-        orient_to_rgb = import_fury_shader(pjoin("utils", "orient_to_rgb.glsl"))
+        orient_to_rgb = import_fury_shader(Path("utils") / "orient_to_rgb.glsl")
         visible_cross_section = import_fury_shader(
-            pjoin("interaction", "visible_cross_section.glsl")
+            Path("interaction") / "visible_cross_section.glsl"
         )
-        visible_range = import_fury_shader(pjoin("interaction", "visible_range.glsl"))
+        visible_range = import_fury_shader(Path("interaction") / "visible_range.glsl")
 
         vs_dec = compose_shader([vs_var_dec, orient_to_rgb])
         fs_dec = compose_shader([fs_var_dec, visible_cross_section, visible_range])
