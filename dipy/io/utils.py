@@ -508,23 +508,6 @@ def read_img_arr_or_path(data, *, affine=None):
     return data, affine
 
 
-def split_name_with_gz(filename):
-    """
-    Returns the clean basename and extension of a file.
-    Means that this correctly manages the ".nii.gz" extensions.
-
-    Parameters
-    ----------
-    filename: str
-        The filename to clean
-    """
-    base, ext = os.path.splitext(filename)
-    if ext == ".gz":
-        base, add_ext = os.path.splitext(base)
-        ext = add_ext + ext
-    return base, ext
-
-
 def recursive_compare(d1, d2, level="root"):
     if isinstance(d1, dict) and isinstance(d2, dict):
         if d1.keys() != d2.keys():

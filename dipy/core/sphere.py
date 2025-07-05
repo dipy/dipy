@@ -174,8 +174,7 @@ class Sphere:
 
         if not (all_specified == 1 and one_complete == 1):
             raise ValueError(
-                "Sphere must be constructed using either "
-                "(x,y,z), (theta, phi) or xyz."
+                "Sphere must be constructed using either (x,y,z), (theta, phi) or xyz."
             )
 
         if edges is not None and faces is None:

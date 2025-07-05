@@ -554,7 +554,7 @@ class StatefulSurface:
 
     def remove_invalid_vertices(self, *, epsilon=1e-3):
         # TODO: implement if make sense (must cut faces too)
-        pass
+        raise NotImplementedError
 
     def _get_face_count(self):
         """Safe getter for the number of faces"""

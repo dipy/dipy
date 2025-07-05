@@ -252,7 +252,7 @@ ax.plot(gtab.bvals, ivim_trr_predict, label="trr prediction")
 S0_est, f_est, D_star_est, D_est = ivimfit.model_params[i, j, :]
 
 trr_pro_param_est = (
-    f"S0={S0_est:06.3f} f={f_est:06.4f}\n" f"D*={D_star_est:06.5f} D={D_est:06.5f}"
+    f"S0={S0_est:06.3f} f={f_est:06.4f}\nD*={D_star_est:06.5f} D={D_est:06.5f}"
 )
 text_fit = f"""trr param estimates:\n {trr_pro_param_est}"""
 
@@ -274,7 +274,7 @@ ax.set_ylabel("Signals")
 S0_est, f_est, D_star_est, D_est = ivimfit_vp.model_params[i, j, :]
 
 var_pro_param_est = (
-    f"S0={S0_est:06.3f} f={f_est:06.4f}\n" f"D*={D_star_est:06.5f} D={D_est:06.5f}"
+    f"S0={S0_est:06.3f} f={f_est:06.4f}\nD*={D_star_est:06.5f} D={D_est:06.5f}"
 )
 text_fit = f"""VarPro param estimates:\n{var_pro_param_est}"""
 

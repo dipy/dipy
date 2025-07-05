@@ -389,8 +389,7 @@ def test_wls_and_ls_fit():
     npt.assert_array_almost_equal(
         tensor_est.quadratic_form[0],
         tensor,
-        err_msg="Calculation of tensor from Y does "
-        "not compare to analytical solution",
+        err_msg="Calculation of tensor from Y does not compare to analytical solution",
     )
     npt.assert_almost_equal(tensor_est.md[0], md)
     npt.assert_array_almost_equal(tensor_est.S0_hat[0], b0, decimal=3)
@@ -622,7 +621,10 @@ def test_lower_triangular():
     npt.assert_array_equal(D, [0, 3, 4, 6, 7, 8])
     D = lower_triangular(tensor, b0=1)
     npt.assert_array_equal(D, [0, 3, 4, 6, 7, 8, 0])
+    D = lower_triangular(tensor, b0=0)
+    npt.assert_array_equal(D, [0, 3, 4, 6, 7, 8, 0])
     npt.assert_raises(ValueError, lower_triangular, np.zeros((2, 3)))
+    npt.assert_raises(TypeError, lower_triangular, tensor, b0="not a number")
     shape = (4, 5, 6)
     many_tensors = np.empty(shape + (3, 3))
     many_tensors[:] = tensor

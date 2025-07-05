@@ -186,7 +186,7 @@ def load_tractogram(
             reference = filename
         else:
             logging.error(
-                'Reference must be provided, "same" is only ' "available for Trk file."
+                'Reference must be provided, "same" is only available for Trk file.'
             )
             return False
 
