@@ -46,7 +46,7 @@ def test_nlmeans_flow():
 @needs_sklearn
 def test_patch2self_flow():
     with TemporaryDirectory() as out_dir:
-        data_path, fbvals, fbvecs = get_fnames()
+        data_path, fbvals, _ = get_fnames()
 
         patch2self_flow = Patch2SelfFlow()
         patch2self_flow.run(

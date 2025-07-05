@@ -773,7 +773,7 @@ class ExtractB0Flow(Workflow):
         """
         io_it = self.get_io_iterator()
         for dwi, bval, ob0 in io_it:
-            logging.info("Extracting b0 from {0}".format(dwi))
+            logging.info(f"Extracting b0 from {dwi}")
             data, affine, image = load_nifti(dwi, return_img=True)
 
             bvals, bvecs = read_bvals_bvecs(bval, None)
@@ -801,7 +801,7 @@ class ExtractB0Flow(Workflow):
 
             if b0s_result.ndim == 3:
                 save_nifti(ob0, b0s_result, affine, hdr=image.header)
-                logging.info("b0 saved as {0}".format(ob0))
+                logging.info(f"b0 saved as {ob0}")
             elif b0s_result.ndim == 4:
                 for i in range(b0s_result.shape[-1]):
                     save_nifti(
@@ -810,9 +810,7 @@ class ExtractB0Flow(Workflow):
                         affine,
                         hdr=image.header,
                     )
-                    logging.info(
-                        "b0 saved as {0}".format(ob0.replace(".nii", f"_{i}.nii"))
-                    )
+                    logging.info(f"b0 saved as {ob0.replace('.nii', f'_{i}.nii')}")
             else:
                 logging.error("No b0 volumes found")
 
@@ -881,7 +879,7 @@ class ExtractShellFlow(Workflow):
         bvals_to_extract = handle_vol_idx(bvals_to_extract)
 
         for dwi, bval, bvec, oshell in io_it:
-            logging.info("Extracting shell from {0}".format(dwi))
+            logging.info(f"Extracting shell from {dwi}")
             data, affine, image = load_nifti(dwi, return_img=True)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -916,9 +914,7 @@ class ExtractShellFlow(Workflow):
                     hdr=image.header,
                 )
                 logging.info(
-                    "b0 saved as {0}".format(
-                        oshell.replace(".nii", f"_{shell_value}.nii")
-                    )
+                    f"b0 saved as {oshell.replace('.nii', f'_{shell_value}.nii')}"
                 )
 
 
@@ -955,19 +951,19 @@ class ExtractVolumeFlow(Workflow):
         vol_idx = handle_vol_idx(vol_idx)
 
         for fpath, ovol in io_it:
-            logging.info("Extracting volume from {0}".format(fpath))
+            logging.info(f"Extracting volume from {fpath}")
             data, affine, image = load_nifti(fpath, return_img=True)
 
             if grouped:
                 split_vol = data[..., vol_idx]
                 save_nifti(ovol, split_vol, affine, hdr=image.header)
-                logging.info("Volume saved as {0}".format(ovol))
+                logging.info(f"Volume saved as {ovol}")
             else:
                 for i in vol_idx:
                     fname = ovol.replace(".nii", f"_{i}.nii")
                     split_vol = data[..., i]
                     save_nifti(fname, split_vol, affine, hdr=image.header)
-                    logging.info("Volume saved as {0}".format(fname))
+                    logging.info(f"Volume saved as {fname}")
 
 
 class ConcatenateTractogramFlow(Workflow):

@@ -700,7 +700,7 @@ def _patch2self_version3(
         if end_idx > data.shape[3]:
             end_idx = data.shape[3]
         if verbose:
-            print("Loading data from {} to {}".format(idx_start, end_idx))
+            print(f"Loading data from {idx_start} to {end_idx}")
         tmp[..., idx_start:end_idx] = data[..., idx_start:end_idx]
         idx_start = end_idx
     sketch_rows = int(0.30 * data.shape[0] * data.shape[1] * data.shape[2])

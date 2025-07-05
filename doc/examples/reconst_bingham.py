@@ -37,7 +37,7 @@ gtab = gradient_table(bvals, bvecs=bvecs)
 sphere = unit_icosahedron.subdivide(n=5)
 
 nd = sphere.vertices.shape[0]
-print("The number of directions on the sphere is {}".format(nd))
+print(f"The number of directions on the sphere is {nd}")
 
 ###############################################################################
 # Step 1. ODF estimation
