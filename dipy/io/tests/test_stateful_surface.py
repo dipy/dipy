@@ -32,10 +32,10 @@ def setup_module():
         return
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_empty_change_space():
     sfs = StatefulSurface(
-        ([], []),
+        [],
+        [],
         FILEPATH_DIX["naf_mni_masked.nii.gz"],
         space=Space.RASMM,
         origin=Origin.NIFTI,
@@ -50,10 +50,10 @@ def test_empty_change_space():
     npt.assert_equal([], sfs.vertices)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_empty_change_origin():
     sfs = StatefulSurface(
-        ([], []),
+        [],
+        [],
         FILEPATH_DIX["naf_mni_masked.nii.gz"],
         space=Space.RASMM,
         origin=Origin.NIFTI,
@@ -66,7 +66,6 @@ def test_empty_change_origin():
     npt.assert_equal([], sfs.vertices)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("space", [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX])
 def test_to_space_equivalent_to_rasmm(space):
     # Load initial surface and convert to rasmm directly
@@ -93,7 +92,6 @@ def test_to_space_equivalent_to_rasmm(space):
     npt.assert_allclose(ref_vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("origin", [Origin.NIFTI, Origin.TRACKVIS])
 def test_to_origin_equivalent_to_center(origin):
     # Load initial surface and convert to center directly
@@ -116,7 +114,6 @@ def test_to_origin_equivalent_to_center(origin):
     npt.assert_allclose(ref_vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("space", [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX])
 def test_change_origin_from_space(space):
     sfs = load_surface(
@@ -132,7 +129,6 @@ def test_change_origin_from_space(space):
     npt.assert_allclose(ref_vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("space", [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX])
 def test_change_space_many_times(space):
     sfs = load_surface(
@@ -148,7 +144,6 @@ def test_change_space_many_times(space):
     npt.assert_allclose(ref_vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("origin", [Origin.NIFTI, Origin.TRACKVIS])
 def test_change_space_many_times_with_origin(origin):
     sfs = load_surface(
@@ -165,7 +160,6 @@ def test_change_space_many_times_with_origin(origin):
 
 
 # Test out of grid
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize(
     "value, is_out_of_grid", [(1000, True), (-1000, True), (0, False)]
 )
@@ -186,10 +180,10 @@ def test_out_of_grid(value, is_out_of_grid):
         npt.assert_(False)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_invalid_empty():
     sfs = StatefulSurface(
-        ([], []),
+        [],
+        [],
         FILEPATH_DIX["naf_mni_masked.nii.gz"],
         space=Space.RASMM,
         origin=Origin.NIFTI,
@@ -203,7 +197,6 @@ def test_invalid_empty():
         npt.assert_(True)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_equality():
     sfs_1 = load_surface(
         FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
@@ -222,7 +215,6 @@ def test_equality():
     npt.assert_(sfs_1 == sfs_2)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_random_space_transformations():
     sfs = load_surface(
         FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
@@ -244,7 +236,6 @@ def test_random_space_transformations():
     sfs.to_rasmm()
     sfs.to_center()
     npt.assert_almost_equal(initial_vertices, sfs.vertices, decimal=5)
-
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("space, origin", itertools.product(SPACES, ORIGINS))
@@ -293,15 +284,14 @@ def test_create_from_sfs():
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
     )
     sfs_2 = StatefulSurface.from_sfs(
-        sfs_1.vertices, sfs_1, data_per_point=sfs_1.data_per_point
+        sfs_1.vertices, sfs_1, data_per_vertex=sfs_1.data_per_vertex
     )
 
     if not (sfs_1 == sfs_2):
         npt.assert_(
             True,
             msg="vertices, faces, space attributes, space, origin, "
-            "data_per_point and data_per_streamline should "
-            "be identical",
+            "and data_per_vertex should be identical",
         )
 
     nb_pts = sfs_1.vertices.shape[0]
@@ -337,7 +327,7 @@ def test_set_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
     )
-    sfs.data_per_point = {
+    sfs.data_per_vertex = {
         "normal": np.zeros((sfs.vertices.shape[0], 3), dtype=np.float16),
     }
     dtype_dict = {
@@ -358,7 +348,7 @@ def test_set_partial_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
     )
-    sfs.data_per_point = {
+    sfs.data_per_vertex = {
         "normal": np.zeros((sfs.vertices.shape[0], 3), dtype=np.float16),
     }
     dtype_dict = {"vertices": np.float16, "faces": np.int32}
@@ -408,7 +398,7 @@ def test_from_sfs_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
     )
-    sfs.data_per_point = {
+    sfs.data_per_vertex = {
         "color_r": np.zeros((sfs.vertices.shape[0], 3), dtype=np.uint16),
         "color_g": np.zeros((sfs.vertices.shape[0], 3), dtype=np.uint16),
         "color_b": np.zeros((sfs.vertices.shape[0], 3), dtype=np.uint16),
@@ -421,7 +411,7 @@ def test_from_sfs_dtype_dict_attributes():
 
     sfs.dtype_dict = dtype_dict
     new_sfs = StatefulSurface.from_sfs(
-        sfs.vertices, sfs, data_per_point=sfs.data_per_point
+        sfs.vertices, sfs, data_per_vertex=sfs.data_per_vertex
     )
     try:
         recursive_compare(new_sfs.dtype_dict, dtype_dict)

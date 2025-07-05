@@ -13,18 +13,10 @@ from dipy.io.utils import (
     is_header_compatible,
     is_reference_info_valid,
 )
-from dipy.io.vtk import (
-    convert_to_polydata,
-    get_polydata_triangles,
-    get_polydata_vertices,
-)
+from dipy.io.vtk import convert_to_polydata
 from dipy.utils.optpkg import optional_package
 
 fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
-
-if have_fury:
-    import vtk
-    import vtk.util.numpy_support as ns
 
 logger = logging.getLogger("StatefulSurface")
 logger.setLevel(level=logging.INFO)
@@ -46,25 +38,31 @@ class StatefulSurface:
     """Class for stateful representation of meshes and lines
     Object designed to be identical no matter the file format
     (gii, vtk, ply, stl, obj, pial). Facilitate transformation between space
-    and data manipulation for each streamline / point.
+    and data manipulation for each streamline / vertex.
     """
 
     def __init__(
         self,
-        data,
+        vertices,
+        faces,
         reference,
         space,
         *,
         origin=Origin.NIFTI,
-        data_per_point=None,
+        data_per_vertex=None,
         dtype_dict=None,
     ):
         """Create a strict, state-aware, robust surface
 
         Parameters
         ----------
-        data : tuple of (vertices, faces) as np.ndarray or polydata
-            Mesh data to be represented
+        vertices : ndarray
+            Vertices of the surface, shape (N, 3) where N is the number of
+            points on the surface.
+        faces : ndarray
+            Faces of the surface, shape (M, 3) where M is the number of
+            triangles on the surface. Each face is defined by 3 indices
+            corresponding to the vertices.
         reference : Nifti or Trk filename, Nifti1Image or TrkFile,
             Nifti1Header, trk.header (dict) or another Stateful Surface
             Reference that provides the spatial attributes.
@@ -77,18 +75,19 @@ class StatefulSurface:
         origin : Enum (dipy.io.utils.Origin), optional
             Current origin in which the surface are (center or corner)
             After loading with nibabel the origin is CENTER
-        data_per_point : dict, optional
+        data_per_vertex : dict, optional
             Dictionary in which each key has X items.
             X being the number of points on the surface.
         dtype_dict : dict, optional
             Dictionary containing the desired datatype for vertices, faces
-            and all data_per_point keys.
+            and all data_per_vertex keys.
 
         Notes
+        -----
         Very important to respect the convention, verify that surface
         match the reference and are effectively in the right space.
 
-        Any change to the number of surface's points, data_per_point
+        Any change to the number of surface's vertices, data_per_vertex
         requires verification.
 
         In a case of manipulation not allowed by this object, use Nibabel
@@ -98,32 +97,26 @@ class StatefulSurface:
         self.fs_metadata = None
         self.gii_header = None
 
-        self.data_per_point = {} if data_per_point is None else data_per_point
+        self.data_per_vertex = {} if data_per_vertex is None else data_per_vertex
         if dtype_dict is None:
             dtype_dict = {"vertices": np.float64, "faces": np.uint32}
         self.dtype_dict = dtype_dict
 
-        if have_fury and isinstance(data, vtk.vtkPolyData):
-            self._vertices = get_polydata_vertices(
-                data, dtype=self.dtype_dict["vertices"]
-            )
-            self._faces = get_polydata_triangles(data, dtype=self.dtype_dict["faces"])
+        self._vertices = np.array(vertices, dtype=self.dtype_dict["vertices"])
+        self._faces = np.array(faces, dtype=self.dtype_dict["faces"])
 
-            point_data = data.GetPointData()
-            scalar_names = [
-                point_data.GetArrayName(i)
-                for i in range(point_data.GetNumberOfArrays())
-            ]
-            if scalar_names:
-                for name in scalar_names:
-                    scalar = data.GetPointData().GetScalars(name)
-                    if name in self.data_per_point:
-                        logger.warning(
-                            f"Scalar {name} already in data_per_point, overwriting"
-                        )
-                    self.data_per_point[name] = ns.vtk_to_numpy(scalar)
-        else:
-            self._vertices, self._faces = np.array(data[0]), np.array(data[1])
+        # Verify that vertices and faces are in the right format (if not empty)
+        if self._vertices.size != 0 or self._faces.size != 0:
+            if self._vertices.ndim != 2 or self._vertices.shape[1] != 3:
+                raise ValueError(
+                    "Vertices must be a 2D array with shape (N, 3), "
+                    f"got {self._vertices.shape} instead."
+                )
+            if self._faces.ndim != 2 or self._faces.shape[1] != 3:
+                raise ValueError(
+                    "Faces must be a 2D array with shape (M, 3), "
+                    f"got {self._faces.shape} instead."
+                )
 
         if isinstance(reference, type(self)):
             logger.warning(
@@ -174,7 +167,7 @@ class StatefulSurface:
     @staticmethod
     def are_compatible(sfs_1, sfs_2):
         """Compatibility verification of two StatefulSurface to ensure space,
-        origin, data_per_point consistency"""
+        origin, data_per_vertex consistency"""
 
         are_sfs_compatible = True
         if not is_header_compatible(sfs_1, sfs_2):
@@ -188,35 +181,40 @@ class StatefulSurface:
             logger.warning("Inconsistent origin between both sfs.")
             are_sfs_compatible = False
 
-        if sfs_1.get_data_per_point_keys() != sfs_2.get_data_per_point_keys():
-            logger.warning("Inconsistent data_per_point between both sfs.")
+        if sfs_1.get_data_per_vertex_keys() != sfs_2.get_data_per_vertex_keys():
+            logger.warning("Inconsistent data_per_vertex between both sfs.")
             are_sfs_compatible = False
 
         return are_sfs_compatible
 
     @staticmethod
-    def from_sfs(data, sfs, *, data_per_point=None):
+    def from_sfs(vertices, sfs, *, faces=None, data_per_vertex=None):
         """Create an instance of `StatefulSurface` from another instance
         of `StatefulSurface`.
 
         Parameters
         ----------
-        data : tuple of (vertices, faces) as np.ndarray or polydata
-            Mesh data to be represented
+        vertices : ndarray
+            Vertices of the new StatefulSurface.
         sfs : StatefulSurface,
             The other StatefulSurface to copy the space_attribute AND
             state from.
-        data_per_point : dict, optional
+        faces : ndarray, optional
+            Faces of the new StatefulSurface. If None, the faces of the
+            original StatefulSurface will be used.
+        data_per_vertex : dict, optional
             Dictionary in which each key has X items.
             X being the number of points on the surface.
         -----
         """
+        faces = faces if faces is not None else sfs.faces
         new_sfs = StatefulSurface(
-            data,
+            vertices,
+            faces,
             sfs.space_attributes,
             sfs.space,
             origin=sfs.origin,
-            data_per_point=data_per_point,
+            data_per_vertex=data_per_vertex,
         )
         new_sfs.dtype_dict = sfs.dtype_dict
         return new_sfs
@@ -236,14 +234,14 @@ class StatefulSurface:
         text += f"\nvoxel_order: {self._voxel_order}"
 
         text += f"\nface_count: {self._get_face_count()}"
-        text += f"\npoint_count: {self._get_point_count()}"
-        text += f"\ndata_per_point keys: {self.get_data_per_point_keys()}"
+        text += f"\nvertex_count: {self._get_vertex_count()}"
+        text += f"\ndata_per_vertex keys: {self.get_data_per_vertex_keys()}"
 
         return text
 
     def __len__(self):
         """Define the length of the object"""
-        return self._get_point_count()
+        return self._get_vertex_count()
 
     def __getitem__(self, key):
         # TODO: implement slicing if make sense
@@ -254,17 +252,17 @@ class StatefulSurface:
         if not self.are_compatible(self, other):
             return False
 
-        points_equal = np.allclose(self._vertices, other.vertices, rtol=1e-3)
+        vertices_equal = np.allclose(self._vertices, other.vertices, rtol=1e-3)
         faces_equal = np.allclose(self._faces, other.faces, rtol=1e-3)
 
-        if not points_equal or not faces_equal:
+        if not vertices_equal or not faces_equal:
             return False
 
         dpp_equal = True
-        for key in self.data_per_point:
+        for key in self.data_per_vertex:
             dpp_equal = dpp_equal and np.allclose(
-                self.data_per_point[key].get_data(),
-                other.data_per_point[key].get_data(),
+                self.data_per_vertex[key].get_data(),
+                other.data_per_vertex[key].get_data(),
                 rtol=1e-3,
             )
         if not dpp_equal:
@@ -297,11 +295,11 @@ class StatefulSurface:
             "vertices": self._vertices.dtype,
             "faces": self._faces.dtype,
         }
-        if self.data_per_point is not None:
+        if self.data_per_vertex is not None:
             dtype_dict["dpp"] = {}
-            for key in self.data_per_point.keys():
-                if key in self.data_per_point:
-                    dtype_dict["dpp"][key] = self.data_per_point[key].dtype
+            for key in self.data_per_vertex.keys():
+                if key in self.data_per_vertex:
+                    dtype_dict["dpp"][key] = self.data_per_vertex[key].dtype
 
         return OrderedDict(dtype_dict)
 
@@ -374,17 +372,17 @@ class StatefulSurface:
         if "dpp" not in dtype_dict:
             dtype_dict["dpp"] = {}
 
-        for key in self.data_per_point:
+        for key in self.data_per_vertex:
             if key in dtype_dict["dpp"]:
                 dtype_to_use = dtype_dict["dpp"][key]
-                self.data_per_point[key] = self.data_per_point[key].astype(dtype_to_use)
+                self.data_per_vertex[key] = self.data_per_vertex[key].astype(dtype_to_use)
 
     def get_vertices_copy(self):
         """Safe getter for vertices (for slicing)"""
         return self._vertices.copy()
 
     def get_polydata(self):
-        return convert_to_polydata(self._vertices, self._faces, self._data_per_point)
+        return convert_to_polydata(self._vertices, self._faces, self._data_per_vertex)
 
     @vertices.setter
     def vertices(self, data):
@@ -398,13 +396,13 @@ class StatefulSurface:
         self._vertices = data
 
     @property
-    def data_per_point(self):
-        """Getter for data_per_point"""
-        return self._data_per_point
+    def data_per_vertex(self):
+        """Getter for data_per_vertex"""
+        return self._data_per_vertex
 
-    @data_per_point.setter
-    def data_per_point(self, data):
-        """Modify point data . Creating a new object would be less risky.
+    @data_per_vertex.setter
+    def data_per_vertex(self, data):
+        """Modify vertex data . Creating a new object would be less risky.
 
         Parameters
         ----------
@@ -412,12 +410,12 @@ class StatefulSurface:
             Dictionary in which each key has X items.
             X being the number of points on the surface.
         """
-        self._data_per_point = data
-        logger.warning("Data_per_point has been modified.")
+        self._data_per_vertex = data
+        logger.warning("data_per_vertex has been modified.")
 
-    def get_data_per_point_keys(self):
-        """Return a list of the data_per_point attribute names"""
-        return list(set(self.data_per_point.keys()))
+    def get_data_per_vertex_keys(self):
+        """Return a list of the data_per_vertex attribute names"""
+        return list(set(self.data_per_vertex.keys()))
 
     def to_vox(self):
         """Safe function to transform vertices and update state"""
@@ -560,7 +558,7 @@ class StatefulSurface:
         """Safe getter for the number of faces"""
         return len(self._faces)
 
-    def _get_point_count(self):
+    def _get_vertex_count(self):
         """Safe getter for the number of vertices"""
         return len(self._vertices)
 

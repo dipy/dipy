@@ -45,7 +45,8 @@ def load_polydata(file_name):
 
 @warning_for_keywords()
 def save_polydata(
-    polydata, file_name, *, binary=False, color_array_name=None, legacy_vtk_format=False
+    polydata, file_name, *, binary=False, color_array_name=None,
+    legacy_vtk_format=False
 ):
     """Save a vtk polydata to a supported format file.
 
@@ -130,6 +131,22 @@ def load_vtk_streamlines(filename, *, to_lps=True):
 
 
 def get_polydata_triangles(polydata, dtype=None):
+    """Get triangles from a vtkPolyData object.
+
+    Parameters
+    ----------
+    polydata : vtkPolyData
+        The polydata object from which to extract triangles.
+    dtype : data-type, optional
+        The desired data type for the output triangles. If None, the default
+        data type will be used.
+    Returns
+    -------
+    triangles : numpy.ndarray
+        An array of shape (n_triangles, 3) containing the vertex indices
+        of the triangles.
+
+    """
     vtk_polys = ns.vtk_to_numpy(polydata.GetPolys().GetData())
     if len(vtk_polys) == 0:
         nbr_cells = polydata.GetNumberOfCells()
@@ -149,6 +166,21 @@ def get_polydata_triangles(polydata, dtype=None):
 
 
 def get_polydata_vertices(polydata, dtype=None):
+    """Get vertices from a vtkPolyData object.
+
+    Parameters
+    ----------
+    polydata : vtkPolyData
+        The polydata object from which to extract vertices.
+    dtype : data-type, optional
+        The desired data type for the output vertices. If None, the default
+        data type will be used.
+    Returns
+    -------
+    vertices : numpy.ndarray
+        An array of shape (n_vertices, 3) containing the vertex coordinates.
+
+    """
     vertices = ns.vtk_to_numpy(polydata.GetPoints().GetData())
     if dtype is not None:
         return vertices.astype(dtype)

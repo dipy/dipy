@@ -9,7 +9,12 @@ import numpy as np
 
 from dipy.io.stateful_surface import StatefulSurface
 from dipy.io.utils import Origin, Space, get_reference_info, split_name_with_gz
-from dipy.io.vtk import load_polydata, save_polydata
+from dipy.io.vtk import (
+    get_polydata_triangles,
+    get_polydata_vertices,
+    load_polydata,
+    save_polydata,
+)
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
@@ -41,23 +46,23 @@ def load_surface(
         trk.header (dict), or 'same' if the input is a trk file.
         Reference that provides the spatial attribute.
         Typically a nifti-related object from the native diffusion used for
-        streamlines generation
-    to_space : Enum (dipy.io.utils.Space)
+        surface generation
+    to_space : Enum (dipy.io.utils.Space), optional
         Space to which the surface will be transformed after loading
-    to_origin : Enum (dipy.io.utils.Origin)
+    to_origin : Enum (dipy.io.utils.Origin), optional
         Origin to which the surface will be transformed after loading
             NIFTI standard, default (center of the voxel)
             TRACKVIS standard (corner of the voxel)
-    bbox_valid_check : bool
+    bbox_valid_check : bool, optional
         Verification for negative voxel coordinates or values above the
         volume dimensions. Default is True, to enforce valid file.
-    from_space : Enum (dipy.io.utils.Space)
+    from_space : Enum (dipy.io.utils.Space), optional
         Space to which the surface was transformed before saving.
         Help for software compatibility. If None, assumes RASMM.
-    from_origin : Enum (dipy.io.utils.Origin)
+    from_origin : Enum (dipy.io.utils.Origin), optional
         Origin to which the surface was transformed before saving.
         Help for software compatibility. If None, assumes NIFTI.
-    gifti_in_freesurfer : bool
+    gifti_in_freesurfer : bool, optional
         Whether the gifti file is in freesurfer reference space.
 
     Raises
@@ -97,13 +102,29 @@ def load_surface(
 
     timer = time.time()
     metadata = None
-
+    data_per_vertex = None
     if ext == ".gii" or ext == ".gii.gz":
         data = load_gifti(fname)
         if gifti_in_freesurfer:
             data = (apply_freesurfer_transform(data[0], reference, inv=True), data[1])
+        vertices = np.array(data[0])
+        faces = np.array(data[1])
     elif ext in [".vtk", ".vtp", ".obj", ".stl", ".ply"]:
         data = load_polydata(fname)
+        vertices = get_polydata_vertices(data)
+        faces = get_polydata_triangles(data)
+        vertex_data = data.GetPointData()
+        scalar_names = [
+            vertex_data.GetArrayName(i) for i in range(vertex_data.GetNumberOfArrays())
+        ]
+        if scalar_names:
+            for name in scalar_names:
+                scalar = data.GetPointData().GetScalars(name)
+                if name in data_per_vertex:
+                    logging.warning(
+                        f"Scalar {name} already in data_per_vertex, overwriting"
+                    )
+                data_per_vertex[name] = ns.vtk_to_numpy(scalar)
     else:
         data = load_pial(fname, return_meta=True)
         data, metadata = data[0:2], data[2]
@@ -115,11 +136,18 @@ def load_surface(
             )
         from_space = Space.RASMM
         from_origin = Origin.NIFTI
+        vertices = np.array(data[0])
+        faces = np.array(data[1])
 
     from_space = Space.RASMM if from_space is None else from_space
     from_origin = Origin.NIFTI if from_origin is None else from_origin
     sfs = StatefulSurface(
-        data, reference, space=from_space, origin=from_origin, data_per_point=None
+        vertices,
+        faces,
+        reference,
+        space=from_space,
+        origin=from_origin,
+        data_per_vertex=data_per_vertex,
     )
     if isinstance(metadata, dict):
         sfs.fs_metadata = metadata
@@ -127,7 +155,7 @@ def load_surface(
         sfs.gii_header = metadata
 
     logging.debug(
-        "Load %s with %s streamlines in %s seconds.",
+        "Load %s with %s vertices in %s seconds.",
         fname,
         len(sfs),
         round(time.time() - timer, 3),
@@ -137,9 +165,8 @@ def load_surface(
         raise ValueError(
             "Bounding box is not valid in voxel space, cannot "
             "load a valid file if some coordinates are invalid.\n"
-            "Please set bbox_valid_check to False and then use "
-            "the function remove_invalid_streamlines to discard "
-            "invalid streamlines."
+            "Please set bbox_valid_check to False and be careful if processing "
+            "the surface/vertices further."
         )
 
     sfs.to_space(to_space)
@@ -169,24 +196,24 @@ def save_surface(
         The surface to save (must have been loaded properly)
     fname : str
         Absolute path of the file.
-    to_space : Enum (dipy.io.stateful_surface.Space)
+    to_space : Enum (dipy.io.stateful_surface.Space), optional
         Space to which the surface will be transformed before saving
-    to_origin : Enum (dipy.io.stateful_surface.Origin)
+    to_origin : Enum (dipy.io.stateful_surface.Origin), optional
         Origin to which the surface will be transformed before saving
             NIFTI standard, default (center of the voxel)
             TRACKVIS standard (corner of the voxel)
-    legacy_vtk_format : bool
+    legacy_vtk_format : bool, optional
         Whether to save the file in legacy VTK format or not.
-    check_bbox_valid : bool
+    check_bbox_valid : bool, optional
         Verification for negative voxel coordinates or values above the
         volume dimensions. Default is True, to enforce valid file.
-    ref_pial : str (optional)
+    ref_pial : str, optional
         Reference pial file to save the surface in pial format.
         If not provided, the metadata of the input surface is used (if available).
-    ref_gii : str (optional)
+    ref_gii : str, optional
         Reference gii file to save the surface in gii format.
         If not provided, the header of the input surface is used (if available).
-    gifti_in_freesurfer : bool
+    gifti_in_freesurfer : bool, optional
         Whether the gifti file must be saved in freesurfer reference space.
 
     Raises
@@ -211,22 +238,22 @@ def save_surface(
         sfs.to_space(to_space)
         sfs.to_origin(to_origin)
 
-        if sfs.data_per_point is not None:
+        if sfs.data_per_vertex is not None:
             # Check if rgb, colors, colors, etc. are available
             color_array_name = None
             for key in ["rgb", "colors", "color"]:
-                if key in sfs.data_per_point:
+                if key in sfs.data_per_vertex:
                     color_array_name = key
                     break
-                if key.upper() in sfs.data_per_point:
+                if key.upper() in sfs.data_per_vertex:
                     color_array_name = key.upper()
                     break
 
         polydata = sfs.get_polydata()
         if color_array_name is not None:
-            color_array = sfs.data_per_point[color_array_name]
+            color_array = sfs.data_per_vertex[color_array_name]
             if len(color_array) != polydata.GetNumberOfPoints():
-                raise ValueError("Array length does not match number of points.")
+                raise ValueError("Array length does not match number of vertices.")
             vtk_array = ns.numpy_to_vtk(
                 np.array(color_array), deep=True, array_type=vtk.VTK_UNSIGNED_CHAR
             )
@@ -241,7 +268,8 @@ def save_surface(
                     polydata.GetPointData().AddArray(vtk_array)
 
         save_polydata(
-            polydata, fname, legacy_vtk_format=legacy_vtk_format, color_array_name="RGB"
+            polydata, fname, legacy_vtk_format=legacy_vtk_format,
+            color_array_name="RGB"
         )
     elif ext in [".gii", ".gii.gz"]:
         if not hasattr(sfs, "gii_header") and ref_gii is None:
@@ -336,7 +364,7 @@ def save_pial(fname, vertices, faces, *, metadata=None):
         Vertices.
     faces : ndarray
         Faces.
-    metadata : dict
+    metadata : dict, optional
         Key-value pairs to encode at the end of the file.
     """
     nib.freesurfer.write_geometry(fname, vertices, faces, volume_info=metadata)
@@ -349,6 +377,10 @@ def load_gifti(fname, *, return_header=False):
     ----------
     fname : str
         Absolute path of the file.
+
+    return_header : bool, optional
+        Whether to read the header of the file or not, by default False.
+        If True, returns a tuple with vertices, faces and header.
 
     Returns
     -------
@@ -383,8 +415,6 @@ def save_gifti(fname, vertices, faces, *, header=None):
         Vertices.
     faces : ndarray
         Faces.
-    header : nib.filebasedimages.FileBasedHeader
-        Valid header for the gifti file, typically loaded from a reference GII
     """
     vert = nib.gifti.GiftiDataArray(
         vertices,
@@ -408,7 +438,7 @@ def apply_freesurfer_transform(vertices, reference, *, inv=False):
         Vertices to transform.
     reference : str
         Reference file to get the transform from.
-    inv : bool
+    inv : bool, optional
         True if loading the surface, False if saving the surface.
     """
 
