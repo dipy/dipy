@@ -6,6 +6,7 @@ python_sources = [
   'peaks.py',
   'pickles.py',
   'stateful_tractogram.py',
+  'stateful_surface.py',
   'streamline.py',
   'surface.py',
   'utils.py',
