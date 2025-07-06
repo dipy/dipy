@@ -268,8 +268,7 @@ def save_surface(
                     polydata.GetPointData().AddArray(vtk_array)
 
         save_polydata(
-            polydata, fname, legacy_vtk_format=legacy_vtk_format,
-            color_array_name="RGB"
+            polydata, fname, legacy_vtk_format=legacy_vtk_format, color_array_name="RGB"
         )
     elif ext in [".gii", ".gii.gz"]:
         if not hasattr(sfs, "gii_header") and ref_gii is None:

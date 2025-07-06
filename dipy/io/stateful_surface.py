@@ -375,7 +375,9 @@ class StatefulSurface:
         for key in self.data_per_vertex:
             if key in dtype_dict["dpp"]:
                 dtype_to_use = dtype_dict["dpp"][key]
-                self.data_per_vertex[key] = self.data_per_vertex[key].astype(dtype_to_use)
+                self.data_per_vertex[key] = self.data_per_vertex[key].astype(
+                    dtype_to_use
+                )
 
     def get_vertices_copy(self):
         """Safe getter for vertices (for slicing)"""

@@ -237,6 +237,7 @@ def test_random_space_transformations():
     sfs.to_center()
     npt.assert_almost_equal(initial_vertices, sfs.vertices, decimal=5)
 
+
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 @pytest.mark.parametrize("space, origin", itertools.product(SPACES, ORIGINS))
 def test_space_origin_gold_standard(space, origin):
