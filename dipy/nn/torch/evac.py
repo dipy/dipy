@@ -1,8 +1,6 @@
 #!/usr/bin/python
 """Class and helper functions for fitting the EVAC+ model."""
 
-import logging
-
 import numpy as np
 
 from dipy.align.reslice import reslice
@@ -16,6 +14,7 @@ from dipy.nn.utils import (
 from dipy.segment.utils import remove_holes_and_islands
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.deprecator import deprecated_params
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
@@ -35,14 +34,11 @@ else:
     class Module:
         pass
 
-    logging.warning(
+    logger.warning(
         "This model requires Pytorch.\
                     Please install these packages using \
                     pip."
     )
-
-logging.basicConfig()
-logger = logging.getLogger("EVAC+")
 
 
 def prepare_img(image):

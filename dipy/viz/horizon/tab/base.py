@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-import logging
 from typing import Any
 import warnings
 
 import numpy as np
 
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.util import show_ellipsis
 
@@ -186,7 +186,7 @@ class TabManager:
                 "Images are of different dimensions, "
                 + "synchronization of slices will not work"
             )
-            logging.warning(msg)
+            logger.warning(msg)
 
         for tab_id, tab in enumerate(tabs):
             self._tab_ui.tabs[tab_id].title_font_size = 18

@@ -1,4 +1,3 @@
-import logging
 from os.path import join as pjoin
 from pathlib import Path
 import warnings
@@ -6,6 +5,7 @@ import warnings
 import numpy as np
 
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 fury, has_fury, setup_module = optional_package("fury", min_version="0.9.0")
@@ -524,22 +524,22 @@ class PeaksVisualizer:
         if world_coords:
             np.set_printoptions(3, suppress=True)
             fname = Path(fname).name if fname is not None else ""
-            logging.info(f"-------------------{len(fname) * '-'}")
-            logging.info(f"Applying affine to {fname}")
-            logging.info(f"-------------------{len(fname) * '-'}")
-            logging.info(f"Affine Native to RAS matrix \n{self._affine}")
+            logger.info(f"-------------------{len(fname) * '-'}")
+            logger.info(f"Applying affine to {fname}")
+            logger.info(f"-------------------{len(fname) * '-'}")
+            logger.info(f"Affine Native to RAS matrix \n{self._affine}")
             self._data_shape = self._peak_dirs.shape[:3]
-            logging.info(f"Original shape: {self._data_shape}")
+            logger.info(f"Original shape: {self._data_shape}")
             self._peak_actor = peak(self._peak_dirs, affine=self._affine)
             self._data_shape = tuple(self._peak_actor.max_centers)
-            logging.info(f"Resized to RAS shape: {self._data_shape} \n")
+            logger.info(f"Resized to RAS shape: {self._data_shape} \n")
             np.set_printoptions()
         else:
-            logging.info(f"------------{len(fname) * '-'}")
-            logging.info(f"Visualizing {fname}")
-            logging.info(f"------------{len(fname) * '-'}")
+            logger.info(f"------------{len(fname) * '-'}")
+            logger.info(f"Visualizing {fname}")
+            logger.info(f"------------{len(fname) * '-'}")
             self._data_shape = self._peak_dirs.shape[:3]
-            logging.info(f"Original shape: {self._data_shape}")
+            logger.info(f"Original shape: {self._data_shape}")
             self._peak_actor = peak(self._peak_dirs)
 
     @property

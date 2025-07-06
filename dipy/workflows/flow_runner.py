@@ -2,6 +2,7 @@ import logging
 import warnings
 
 from dipy import __version__ as dipy_version
+from dipy.utils.logging import configure_logger
 from dipy.workflows.base import IntrospectiveArgumentParser
 
 #  Disabling the FutureWarning from h5py below.
@@ -87,9 +88,9 @@ def run_flow(flow, *, extra_args=None):
 
     args = parser.get_flow_args()
 
-    logging.basicConfig(
+    configure_logger(
         filename=args["log_file"],
-        format="%(levelname)s:%(message)s",
+        fmt="%(levelname)s: %(message)s",
         level=get_level(args["log_level"]),
     )
 

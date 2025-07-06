@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
-import logging
-
 import numpy as np
 
 from dipy.io.image import load_nifti, save_nifti
+from dipy.utils.logging import logger
 from dipy.workflows.workflow import Workflow
 
 
@@ -30,7 +29,7 @@ class MaskFlow(Workflow):
            Name of the masked file.
         """
         if lb >= ub:
-            logging.error(
+            logger.error(
                 "The upper bound(less than) should be greater"
                 " than the lower bound (greater_than)."
             )
@@ -39,8 +38,8 @@ class MaskFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for input_path, out_mask_path in io_it:
-            logging.info(f"Creating mask of {input_path}")
+            logger.info(f"Creating mask of {input_path}")
             data, affine = load_nifti(input_path)
             mask = np.bitwise_and(data > lb, data < ub)
             save_nifti(out_mask_path, mask.astype(np.ubyte), affine)
-            logging.info(f"Mask saved at {out_mask_path}")
+            logger.info(f"Mask saved at {out_mask_path}")

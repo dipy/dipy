@@ -1,6 +1,5 @@
 import abc
 from itertools import combinations
-import logging
 from time import time
 
 import numpy as np
@@ -23,6 +22,7 @@ from dipy.tracking.streamline import (
     transform_streamlines,
     unlist_streamlines,
 )
+from dipy.utils.logging import logger
 
 DEFAULT_BOUNDS = [
     (-35, 35),
@@ -38,8 +38,6 @@ DEFAULT_BOUNDS = [
     (-10, 10),
     (-10, 10),
 ]
-
-logger = logging.getLogger(__name__)
 
 
 class StreamlineDistanceMetric(metaclass=abc.ABCMeta):
@@ -1291,15 +1289,15 @@ def groupwise_slr(
     n_bundle = len(bundles)
 
     if verbose:
-        logging.info("Groupwise bundle registration running.")
-        logging.info(f"Number of bundles found: {n_bundle}.")
+        logger.info("Groupwise bundle registration running.")
+        logger.info(f"Number of bundles found: {n_bundle}.")
 
     # Preprocess bundles: streamline selection, centering and clustering
     centroids = []
     aff_list = []
     for i in range(n_bundle):
         if verbose:
-            logging.info(
+            logger.info(
                 f"Preprocessing: bundle {i}/{n_bundle}: "
                 + f"{len(bundles[i])} streamlines found."
             )
@@ -1324,7 +1322,7 @@ def groupwise_slr(
     d = group_distance(centroids, n_bundle)
 
     if verbose:
-        logging.info(f"Initial group distance: {np.mean(d)}.")
+        logger.info(f"Initial group distance: {np.mean(d)}.")
 
     # Make pairs and start iterating
     pairs, excluded = get_unique_pairs(n_bundle)
@@ -1351,7 +1349,7 @@ def groupwise_slr(
             centroids[ind2] = centroids2
 
             if verbose:
-                logging.info(f"Iteration: {i_iter} pair: {i_pair + 1}/{n_pair}.")
+                logger.info(f"Iteration: {i_iter} pair: {i_pair + 1}/{n_pair}.")
 
         d = np.vstack((d, group_distance(centroids, n_bundle)))
 
@@ -1360,12 +1358,12 @@ def groupwise_slr(
         d_improve = np.mean(d[prev_iter, :]) - np.mean(d[i_iter, :])
 
         if verbose:
-            logging.info(f"Iteration {i_iter} group distance: {np.mean(d[i_iter, :])}")
-            logging.info(f"Iteration {i_iter} improvement previous 3: {d_improve}")
+            logger.info(f"Iteration {i_iter} group distance: {np.mean(d[i_iter, :])}")
+            logger.info(f"Iteration {i_iter} improvement previous 3: {d_improve}")
 
         if d_improve < tol:
             if verbose:
-                logging.info("Registration converged {d_improve} < {tol}")
+                logger.info("Registration converged {d_improve} < {tol}")
             break
 
         pairs, excluded = get_unique_pairs(n_bundle, pairs=pairs)

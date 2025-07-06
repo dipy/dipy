@@ -1,4 +1,3 @@
-import logging
 from warnings import warn
 
 import numpy as np
@@ -9,10 +8,9 @@ from dipy.core.onetime import auto_attr
 from dipy.core.sphere import HemiSphere, disperse_charges
 from dipy.io import gradients as io
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
-
-logger = logging.getLogger(__name__)
 
 
 def b0_threshold_empty_gradient_message(bvals, idx, b0_threshold):
@@ -299,7 +297,7 @@ class GradientTable:
 
     @property
     def info(self, use_logging=False):
-        show = logging.info if use_logging else print
+        show = logger.info if use_logging else print
         show(self.__str__())
 
     def __str__(self):
@@ -1337,11 +1335,11 @@ def orientation_to_string(ornt):
 def _check_ornt(ornt):
     uniq = np.unique(ornt[:, 0])
     if len(uniq) != len(ornt):
-        print(len(uniq))
+        logger.info(len(uniq))
         return True
     uniq = np.unique(ornt[:, 1])
     if tuple(uniq) not in {(-1, 1), (-1,), (1,)}:
-        print(tuple(uniq))
+        logger.info(tuple(uniq))
         return True
 
 

@@ -1,4 +1,3 @@
-import logging
 import sys
 
 import numpy as np
@@ -8,6 +7,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.nn.deepn4 import DeepN4
 from dipy.nn.evac import EVACPlus
+from dipy.utils.logging import logger
 from dipy.workflows.workflow import Workflow
 
 
@@ -50,7 +50,7 @@ class EVACPlusFlow(Workflow):
         empty_flag = True
 
         for fpath, mask_out_path, masked_out_path in io_it:
-            logging.info(f"Applying evac+ brain extraction on {fpath}")
+            logger.info(f"Applying evac+ brain extraction on {fpath}")
 
             data, affine, img, voxsize = load_nifti(
                 fpath, return_img=True, return_voxsize=True
@@ -61,12 +61,12 @@ class EVACPlusFlow(Workflow):
 
             save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
 
-            logging.info(f"Mask saved as {mask_out_path}")
+            logger.info(f"Mask saved as {mask_out_path}")
 
             if save_masked:
                 save_nifti(masked_out_path, masked_volume, affine, hdr=img.header)
 
-                logging.info(f"Masked volume saved as {masked_out_path}")
+                logger.info(f"Masked volume saved as {masked_out_path}")
             empty_flag = False
         if empty_flag:
             raise ValueError(
@@ -133,7 +133,7 @@ class BiasFieldCorrectionFlow(Workflow):
         io_it = self.get_io_iterator()
 
         if method.lower() not in ["n4", "b0"]:
-            logging.error("Unknown bias field correction method. Choose from 'n4, b0'.")
+            logger.error("Unknown bias field correction method. Choose from 'n4, b0'.")
             sys.exit(1)
 
         prefix = "t1" if method.lower() == "n4" else "dwi"
@@ -145,7 +145,7 @@ class BiasFieldCorrectionFlow(Workflow):
 
         self.update_flat_outputs(self.flat_outputs, io_it)
         for fpath, corrected_out_path in io_it:
-            logging.info(f"Applying bias field correction on {fpath}")
+            logger.info(f"Applying bias field correction on {fpath}")
 
             data, affine, img, voxsize = load_nifti(
                 fpath, return_img=True, return_voxsize=True
@@ -172,6 +172,6 @@ class BiasFieldCorrectionFlow(Workflow):
                 )
 
             save_nifti(corrected_out_path, corrected_data, affine, hdr=img.header)
-            logging.info(f"Corrected volume saved as {corrected_out_path}")
+            logger.info(f"Corrected volume saved as {corrected_out_path}")
 
         return io_it

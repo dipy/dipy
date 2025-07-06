@@ -1,7 +1,6 @@
 """Classes and functions for Symmetric Diffeomorphic Registration"""
 
 import abc
-import logging
 
 import nibabel as nib
 from nibabel.streamlines import ArraySequence as Streamlines
@@ -11,6 +10,7 @@ import numpy.linalg as npl
 from dipy.align import Bunch, VerbosityLevels, floating, vector_fields as vfu
 from dipy.align.scalespace import ScaleSpace
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 
 RegistrationStages = Bunch(
     INIT_START=0,
@@ -37,8 +37,6 @@ SCALE_END: optimization at the current scale space resolution ends
 ITER_START: a new iteration starts
 ITER_END: the current iteration ends
 """
-
-logger = logging.getLogger(__name__)
 
 
 def mult_aff(A, B):

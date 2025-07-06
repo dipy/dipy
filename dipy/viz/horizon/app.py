@@ -1,4 +1,3 @@
-import logging
 from warnings import warn
 
 import numpy as np
@@ -9,6 +8,7 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import Streamlines
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.tab import (
@@ -388,14 +388,14 @@ class Horizon:
                 c = cluster_actors[bundle]["cluster"]
                 indices = tractogram_clusters[t][c]
                 saving_streamlines.extend(Streamlines(indices))
-        logging.info("Saving result in tmp.trk")
+        logger.info("Saving result in tmp.trk")
 
         # Using the header of the first of the tractograms
         sft_new = StatefulTractogram(
             saving_streamlines, self.tractograms[0], Space.RASMM
         )
         save_tractogram(sft_new, "tmp.trk", bbox_valid_check=False)
-        logging.info("Saved!")
+        logger.info("Saved!")
 
     # TODO: Move to another class/module
     def __show_all(self):
@@ -706,7 +706,7 @@ class Horizon:
             self.show_m.render()
 
         def right_click_cluster_callback(obj, event):
-            logging.info("Cluster Area Selected")
+            logger.info("Cluster Area Selected")
             self.show_m.render()
 
         for cl in self.cla:
