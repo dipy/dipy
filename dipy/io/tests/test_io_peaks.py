@@ -139,7 +139,7 @@ def test_io_peaks(rng):
         ]:
             npt.assert_(
                 os.path.isfile(pjoin(tmpdir, name)),
-                "{} file does not exist".format(pjoin(tmpdir, name)),
+                f"{pjoin(tmpdir, name)} file does not exist",
             )
 
 
