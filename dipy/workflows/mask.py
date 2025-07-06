@@ -17,13 +17,13 @@ class MaskFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
            Path to image to be masked.
         lb : float
             Lower bound value.
         ub : float, optional
             Upper bound value.
-        out_dir : string, optional
+        out_dir : string or Path, optional
            Output directory.
         out_mask : string, optional
            Name of the masked file.

@@ -18,12 +18,12 @@ def test_force_overwrite():
 
         # Generate the first results
         with npt.assert_warns(ArgsDeprecationWarning):
-            mo_flow.run(str(data_path), out_dir=out_dir, vol_idx=[0])
+            mo_flow.run(data_path, out_dir=out_dir, vol_idx=[0])
         mask_file = mo_flow.last_generated_outputs["out_mask"]
         first_time = os.path.getmtime(mask_file)
 
         # re-run with no force overwrite, modified time should not change
-        mo_flow.run(str(data_path), out_dir=out_dir)
+        mo_flow.run(data_path, out_dir=out_dir)
         mask_file = mo_flow.last_generated_outputs["out_mask"]
         second_time = os.path.getmtime(mask_file)
         assert first_time == second_time
@@ -34,7 +34,7 @@ def test_force_overwrite():
         # different (sometimes measured in whole seconds)
         time.sleep(1)
         with npt.assert_warns(ArgsDeprecationWarning):
-            mo_flow.run(str(data_path), out_dir=out_dir, vol_idx=[0])
+            mo_flow.run(data_path, out_dir=out_dir, vol_idx=[0])
         mask_file = mo_flow.last_generated_outputs["out_mask"]
         third_time = os.path.getmtime(mask_file)
         assert third_time != second_time
@@ -61,9 +61,9 @@ def test_missing_file():
             Parameters
             ----------
 
-            filename : string
+            filename : string or Path
                 path of the first input file.
-            out_dir: string, optional
+            out_dir: string or Path, optional
                 folder path to save the results.
             """
             _ = self.get_io_iterator()

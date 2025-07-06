@@ -60,12 +60,12 @@ class LocalFiberTrackingPAMFlow(Workflow):
 
         Parameters
         ----------
-        pam_files : string
+        pam_files : string or Path
            Path to the peaks and metrics files. This path may contain
             wildcards to use multiple masks at once.
-        stopping_files : string
+        stopping_files : string or Path
             Path to images (e.g. FA) used for stopping criterion for tracking.
-        seeding_files : string
+        seeding_files : string or Path
             A binary image showing where we need to seed for tracking.
         use_binary_mask : bool, optional
             If True, uses a binary stopping criterion. If the provided
@@ -118,7 +118,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
             Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
             buffer. A value of 0.5 will use half of the seed buffer then the other half.
             a way to reduce memory usage.
-        out_dir : string, optional
+        out_dir : string or Path, optional
            Output directory.
         out_tractogram : string, optional
            Name of the tractogram file to be saved.
@@ -302,17 +302,17 @@ class PFTrackingPAMFlow(Workflow):
 
         Parameters
         ----------
-        pam_files : string
+        pam_files : string or Path
            Path to the peaks and metrics files. This path may contain
             wildcards to use multiple masks at once.
-        wm_files : string
+        wm_files : string or Path
             Path to white matter partial volume estimate for tracking (CMC).
-        gm_files : string
+        gm_files : string or Path
             Path to grey matter partial volume estimate for tracking (CMC).
-        csf_files : string
+        csf_files : string or Path
             Path to cerebrospinal fluid partial volume estimate for tracking
             (CMC).
-        seeding_files : string
+        seeding_files : string or Path
             A binary image showing where we need to seed for tracking.
         step_size : float, optional
             Step size (in mm) used for tracking.
@@ -363,7 +363,7 @@ class PFTrackingPAMFlow(Workflow):
             Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
             buffer. A value of 0.5 will use half of the seed buffer then the other half.
             a way to reduce memory usage.
-        out_dir : string, optional
+        out_dir : string or Path, optional
            Output directory.
         out_tractogram : string, optional
            Name of the tractogram file to be saved.

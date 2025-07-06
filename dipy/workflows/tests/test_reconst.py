@@ -121,10 +121,10 @@ def reconst_flow_core(flow, *, use_multishell_data=None, **kwargs):
             8,
         ]:
             reconst_flow.run(
-                str(data_path),
-                str(bval_path),
-                str(bvec_path),
-                str(mask_path),
+                data_path,
+                bval_path,
+                bvec_path,
+                mask_path,
                 sh_order_max=sh_order_max,
                 out_dir=out_dir,
                 extract_pam_values=True,

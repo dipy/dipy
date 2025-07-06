@@ -39,7 +39,7 @@ def test_median_otsu_flow():
         mo_flow = MedianOtsuFlow()
         with npt.assert_warns(ArgsDeprecationWarning):
             mo_flow.run(
-                str(data_path),
+                data_path,
                 out_dir=out_dir,
                 save_masked=save_masked,
                 median_radius=median_radius,
@@ -96,8 +96,8 @@ def test_recobundles_flow():
 
         rb_flow = RecoBundlesFlow(force=True)
         rb_flow.run(
-            str(f1_path),
-            str(f2_path),
+            f1_path,
+            f2_path,
             greater_than=0,
             clust_thr=10,
             model_clust_thr=5.0,
@@ -114,7 +114,7 @@ def test_recobundles_flow():
         npt.assert_equal(len(rec_bundle) == len(f2), True)
 
         label_flow = LabelsBundlesFlow(force=True)
-        label_flow.run(str(f1_path), labels, out_dir=out_dir)
+        label_flow.run(f1_path, labels, out_dir=out_dir)
 
         recog_bundle = label_flow.last_generated_outputs["out_bundle"]
         rec_bundle_org = load_tractogram(
@@ -140,7 +140,7 @@ def test_classify_tissue_flow():
         nib.save(nib.Nifti1Image(data, np.eye(4)), data_path)
 
         args = {
-            "input_files": str(data_path),
+            "input_files": data_path,
             "method": "hmrf",
             "nclass": 4,
             "beta": 0.1,
@@ -164,10 +164,10 @@ def test_classify_tissue_flow():
         npt.assert_equal(pve_data.shape, (data.shape) + (4,))
         npt.assert_equal(pve_data.max(), 1)
 
-        npt.assert_raises(SystemExit, flow.run, str(data_path))
-        npt.assert_raises(SystemExit, flow.run, str(data_path), method="random")
-        npt.assert_raises(SystemExit, flow.run, str(data_path), method="dam")
-        npt.assert_raises(SystemExit, flow.run, str(data_path), method="hmrf")
+        npt.assert_raises(SystemExit, flow.run, data_path)
+        npt.assert_raises(SystemExit, flow.run, data_path, method="random")
+        npt.assert_raises(SystemExit, flow.run, data_path, method="dam")
+        npt.assert_raises(SystemExit, flow.run, data_path, method="hmrf")
 
     if has_sklearn:
         with TemporaryDirectory() as out_dir:
@@ -179,8 +179,8 @@ def test_classify_tissue_flow():
             nib.save(nib.Nifti1Image(data, np.eye(4)), data_path)
 
             args = {
-                "input_files": str(data_path),
-                "bvals_file": str(bvals_path),
+                "input_files": data_path,
+                "bvals_file": bvals_path,
                 "method": "dam",
                 "wm_threshold": 0.5,
                 "out_dir": out_dir,

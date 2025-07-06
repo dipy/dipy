@@ -28,7 +28,7 @@ def test_evac_plus_flow():
         save_masked = True
 
         evac_flow = EVACPlusFlow()
-        evac_flow.run(str(temp_path), out_dir=out_dir, save_masked=save_masked)
+        evac_flow.run(temp_path, out_dir=out_dir, save_masked=save_masked)
 
         mask_name = evac_flow.last_generated_outputs["out_mask"]
         masked_name = evac_flow.last_generated_outputs["out_masked"]
@@ -58,7 +58,7 @@ def test_correct_biasfield_flow():
             save_nifti(temp_path, volume, temp_affine)
 
             bias_flow = BiasFieldCorrectionFlow()
-            bias_flow.run(str(temp_path), out_dir=out_dir)
+            bias_flow.run(temp_path, out_dir=out_dir)
 
             corrected_name = bias_flow.last_generated_outputs["out_corrected"]
 
@@ -71,9 +71,9 @@ def test_correct_biasfield_flow():
     with TemporaryDirectory() as out_dir:
         fdata, fbval, fbvec = get_fnames(name="small_25")
         args = {
-            "input_files": str(fdata),
-            "bval": str(fbval),
-            "bvec": str(fbvec),
+            "input_files": fdata,
+            "bval": fbval,
+            "bvec": fbvec,
             "method": "b0",
             "out_dir": out_dir,
         }
@@ -86,9 +86,9 @@ def test_correct_biasfield_flow():
         npt.assert_almost_equal(corrected_data.mean(), 0.0384615384615, decimal=5)
 
     args = {
-        "input_files": str(fdata),
-        "bval": str(fbval),
-        "bvec": str(fbvec),
+        "input_files": fdata,
+        "bval": fbval,
+        "bvec": fbvec,
         "method": "random",
         "out_dir": out_dir,
     }

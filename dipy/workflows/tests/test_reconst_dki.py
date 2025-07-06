@@ -24,7 +24,7 @@ def test_reconst_dki():
 
         dki_flow = ReconstDkiFlow()
 
-        args = [str(data_path), str(bval_path), str(bvec_path), str(mask_path)]
+        args = [data_path, bval_path, bvec_path, mask_path]
 
         with warnings.catch_warnings():
             warnings.filterwarnings(
@@ -131,10 +131,10 @@ def test_reconst_dki():
                 category=PendingDeprecationWarning,
             )
             dki_flow.run(
-                str(data_path),
-                str(tmp_bval_path),
-                str(tmp_bvec_path),
-                str(mask_path),
+                data_path,
+                tmp_bval_path,
+                tmp_bvec_path,
+                mask_path,
                 out_dir=out_dir,
                 b0_threshold=0,
             )

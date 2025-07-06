@@ -72,10 +72,10 @@ def test_reconst_ivim():
         ivim_flow = ReconstIvimFlow()
 
         args = [
-            str(data_path),
-            str(temp_bval_path),
-            str(temp_bvec_path),
-            str(mask_path),
+            data_path,
+            temp_bval_path,
+            temp_bvec_path,
+            mask_path,
         ]
 
         msg = "Bounds for this fit have been set from experiments and * "

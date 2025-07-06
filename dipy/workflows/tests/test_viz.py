@@ -120,7 +120,7 @@ def test_horizon_flow(rng):
         pvalues = rng.uniform(low=0, high=1, size=(10,))
         np.save(fnpy, pvalues)
 
-        input_files = [str(ftrk), str(fimg)]
+        input_files = [ftrk, fimg]
 
         npt.assert_equal(len(input_files), 2)
 
@@ -149,7 +149,7 @@ def test_horizon_flow(rng):
         )
         npt.assert_equal(Path(Path(out_dir) / "tmp_x.png").exists(), True)
 
-        input_files = [str(ftrk), str(fnpy)]
+        input_files = [ftrk, fnpy]
 
         npt.assert_equal(len(input_files), 2)
 
