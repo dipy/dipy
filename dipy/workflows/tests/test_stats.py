@@ -39,7 +39,7 @@ def test_stats():
         save_nifti(mask_path, mask, affine)
 
         snr_flow = SNRinCCFlow(force=True)
-        args = [str(data_path), str(bval_path), str(bvec_path), str(mask_path)]
+        args = [data_path, bval_path, bvec_path, mask_path]
         snr_flow.run(*args, out_dir=out_dir)
 
         assert_true(Path(Path(out_dir) / "product.json").exists())
@@ -110,14 +110,14 @@ def test_buan_bundle_profiles(rng):
         os.mkdir(out_dir)
 
         buan_bundle_profiles(
-            str(mb),
-            str(rb),
-            str(ob),
-            str(dt),
+            mb,
+            rb,
+            ob,
+            dt,
             group_id=1,
             subject="10001",
             no_disks=100,
-            out_dir=str(out_dir),
+            out_dir=out_dir,
         )
 
         assert_true(Path(Path(out_dir) / "temp_fa.h5").exists())
@@ -186,7 +186,7 @@ def test_bundle_analysis_tractometry_flow(rng):
 
         ba_flow = BundleAnalysisTractometryFlow()
 
-        ba_flow.run(str(mb), str(sub), out_dir=str(out_dir))
+        ba_flow.run(mb, sub, out_dir=out_dir)
 
         assert_true(Path(Path(out_dir) / "temp_fa.h5").exists())
 
@@ -237,7 +237,7 @@ def test_linear_mixed_models_flow():
 
         input_path = Path(out_dir) / "*"
 
-        lmm_flow.run(str(input_path), no_disks=5, out_dir=str(out_dir2))
+        lmm_flow.run(input_path, no_disks=5, out_dir=out_dir2)
 
         assert_true(Path(Path(out_dir2) / "temp_fa_pvalues.npy").exists())
         assert_true(Path(Path(out_dir2) / "temp_fa.png").exists())
@@ -277,13 +277,13 @@ def test_linear_mixed_models_flow():
         input_path = Path(out_dir3) / "f*"
         # OS error raised if path is wrong or file does not exist
         npt.assert_raises(
-            OSError, lmm_flow.run, str(input_path), no_disks=5, out_dir=out_dir4
+            OSError, lmm_flow.run, input_path, no_disks=5, out_dir=out_dir4
         )
 
         input_path = Path(out_dir3) / "*"
         # value error raised if length of data frame is less than 100
         npt.assert_raises(
-            ValueError, lmm_flow.run, str(input_path), no_disks=5, out_dir=str(out_dir4)
+            ValueError, lmm_flow.run, input_path, no_disks=5, out_dir=out_dir4
         )
 
 
@@ -350,6 +350,6 @@ def test_bundle_shape_analysis_flow(rng):
 
         sm_flow = BundleShapeAnalysis()
 
-        sm_flow.run(str(sub), out_dir=str(out_dir))
+        sm_flow.run(sub, out_dir=out_dir)
 
         assert_true(Path(Path(out_dir) / "temp.npy").exists())

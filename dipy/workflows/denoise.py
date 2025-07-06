@@ -47,10 +47,10 @@ class Patch2SelfFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bval_files : string
+        bval_files : string or Path
             bval file associated with the diffusion data.
         model : string, or initialized linear model object, optional
             This will determine the algorithm used to solve the set of linear
@@ -79,7 +79,7 @@ class Patch2SelfFlow(Workflow):
             non-negative values if set to True.
         ver : int, optional
             Version of the Patch2Self algorithm to use between  1 or 3.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_denoised : string, optional
             Name of the resulting denoised volume
@@ -144,7 +144,7 @@ class NLMeansFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         sigma : float, optional
@@ -156,7 +156,7 @@ class NLMeansFlow(Workflow):
         rician : bool, optional
             If True the noise is estimated as Rician, otherwise Gaussian noise
             is assumed.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_denoised : string, optional
             Name of the resulting denoised volume.
@@ -217,10 +217,10 @@ class LPCAFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
         bvectors_files : string
@@ -257,7 +257,7 @@ class LPCAFlow(Workflow):
             noise standard deviation and the threshold $\tau$. If
             $\tau_{factor}$ is set to None, it will be automatically calculated
             using the Marcenko-Pastur distribution :footcite:p`Veraart2016b`.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_denoised : string, optional
             Name of the resulting denoised volume.
@@ -316,7 +316,7 @@ class MPPCAFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         patch_radius : variable int, optional
@@ -332,7 +332,7 @@ class MPPCAFlow(Workflow):
         return_sigma : bool, optional
             If true, a noise standard deviation estimate based on the
             Marcenko-Pastur distribution is returned :footcite:p:`Veraart2016b`.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_denoised : string, optional
             Name of the resulting denoised volume.
@@ -387,7 +387,7 @@ class GibbsRingingFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         slice_axis : int, optional
@@ -401,7 +401,7 @@ class GibbsRingingFlow(Workflow):
             applies to 3D or 4D `data` arrays. Default is 1. If < 0 the maximal
             number of cores minus ``num_processes + 1`` is used (enter -1 to
             use as many cores as possible). 0 raises an error.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_unring : string, optional
             Name of the resulting denoised volume.

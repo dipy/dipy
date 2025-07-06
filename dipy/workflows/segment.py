@@ -46,7 +46,7 @@ class MedianOtsuFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         save_masked : bool, optional
@@ -72,7 +72,7 @@ class MedianOtsuFlow(Workflow):
         finalize_mask : bool, optional
             Whether to remove potential holes or islands.
             Useful for solving minor errors.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_mask : string, optional
             Name of the mask volume to be saved.
@@ -144,9 +144,9 @@ class RecoBundlesFlow(Workflow):
 
         Parameters
         ----------
-        streamline_files : string
+        streamline_files : string or Path
             The path of streamline files where you want to recognize bundles.
-        model_bundle_files : string
+        model_bundle_files : string or Path
             The path of model bundle files.
         greater_than : int, optional
             Keep streamlines that have length greater than
@@ -184,7 +184,7 @@ class RecoBundlesFlow(Workflow):
         no_r_slr : bool, optional
             Don't enable Refine local Streamline-based Linear
             Registration.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_recognized_transf : string, optional
             Recognized bundle in the space of the model bundle.
@@ -344,11 +344,11 @@ class LabelsBundlesFlow(Workflow):
 
         Parameters
         ----------
-        streamline_files : string
+        streamline_files : string or Path
             The path of streamline files where you want to recognize bundles.
-        labels_files : string
+        labels_files : string or Path
             The path of model bundle files.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_bundle : string, optional
             Recognized bundle in the space of the model bundle.
@@ -404,10 +404,10 @@ class ClassifyTissueFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvals_file : string, optional
+        bvals_file : string or Path, optional
             Path to the b-values file. Required for 'dam' method.
         method : string, optional
             Method to use for tissue extraction. Options are:
@@ -445,7 +445,7 @@ class ClassifyTissueFlow(Workflow):
             and the algorithm will run for the specified number of
             iterations unless another stopping criterion is met.
             Used only for 'hmrf' method.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_tissue : string, optional
             Name of the tissue volume to be saved.
@@ -468,15 +468,14 @@ class ClassifyTissueFlow(Workflow):
 
         prefix = "t1" if method.lower() == "hmrf" else "dwi"
         for i, name in enumerate(self.flat_outputs):
-            if name.endswith("tissue_classified.nii.gz"):
-                self.flat_outputs[i] = name.replace(
-                    "tissue_classified.nii.gz", f"{prefix}_tissue_classified.nii.gz"
-                )
-            if name.endswith("tissue_classified_pve.nii.gz"):
-                self.flat_outputs[i] = name.replace(
-                    "tissue_classified_pve.nii.gz",
-                    f"{prefix}_tissue_classified_pve.nii.gz",
-                )
+            if str(name).endswith("tissue_classified.nii.gz"):
+                self.flat_outputs[i] = Path(name).parent / Path(
+                    "tissue_classified.nii.gz"
+                ).with_name(f"{prefix}_tissue_classified.nii.gz")
+            if str(name).endswith("tissue_classified_pve.nii.gz"):
+                self.flat_outputs[i] = Path(name).parent / Path(
+                    "tissue_classified_pve.nii.gz"
+                ).with_name(f"{prefix}_tissue_classified_pve.nii.gz")
 
         self.update_flat_outputs(self.flat_outputs, io_it)
 
