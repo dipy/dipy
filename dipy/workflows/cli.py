@@ -118,13 +118,4 @@ def run():
                 "default": "qball",
             }
         }
-    elif script_name == "dipy_buan_fosr":
-        extra_args = {
-            "method": {
-                "action": "store",
-                "dest": "method",
-                "metavar": "string",
-                "default": "qball",
-            }
-        }
     run_flow(getattr(mod, flow_name)(), extra_args=extra_args)

@@ -577,7 +577,7 @@ class FOSRFlow(Workflow):
         return "fosr"
                 
     @warning_for_keywords()
-    def run(self, hd5_dir, *, no_disks=100, out_dir=""):
+    def run(self, hd5_dir, no_disks=100, out_dir=""):
         """Workflow of Functional on Scalar Regression models.
 
         Applies functional on Scalar Regression models on bundles of subjects.
