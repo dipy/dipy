@@ -12,7 +12,7 @@ from dipy.stats.gam import gam
 
 def get_covariates(df):
     """
-    Constructs the covariate matrix X and response matrix Y from a DataFrame of subject-level
+    Constructs the covariate matrix X and response matrix Y using 12000 stramlines from subject-level
     diffusion imaging data, incorporating group, gender, age, and fractional anisotropy (FA) values.
 
     Parameters:
