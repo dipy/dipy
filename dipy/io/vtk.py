@@ -58,13 +58,17 @@ def save_polydata(
     polydata : vtkPolyData
     file_name : string
     """
+    # use kwargs for backward compatibility with fury < 2.0
+    kwargs = {}
+    if fury.__version__.split(".")[0] >= "2":
+        kwargs.update({"legacy_vtk_format": legacy_vtk_format})
 
     fury.io.save_polydata(
         polydata=polydata,
         file_name=file_name,
         binary=binary,
         color_array_name=color_array_name,
-        legacy_vtk_format=legacy_vtk_format,
+        **kwargs,
     )
 
 
