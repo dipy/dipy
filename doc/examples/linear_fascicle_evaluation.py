@@ -21,7 +21,7 @@ variables that were created in that example:
 
 """
 
-from os.path import join as pjoin
+from pathlib import Path
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -56,7 +56,7 @@ cc_slice = labels == 2
 # Read the candidates from file in voxel space:
 
 streamlines_files = fetch_stanford_tracks()
-lr_superiorfrontal_path = pjoin(streamlines_files[1], "hardi-lr-superiorfrontal.trk")
+lr_superiorfrontal_path = Path(streamlines_files[1]) / "hardi-lr-superiorfrontal.trk"
 
 candidate_sl_sft = load_trk(lr_superiorfrontal_path, "same")
 candidate_sl_sft.to_vox()

@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import numpy as np
 from scipy.ndimage import map_coordinates
@@ -104,7 +104,7 @@ def anatomical_measures(
 
     file_name = f"{bname}_{pname}"
 
-    save_buan_profiles_hdf5(os.path.join(dir_name, file_name), dt)
+    save_buan_profiles_hdf5(Path(dir_name) / file_name, dt)
 
 
 def assignment_map(target_bundle, model_bundle, no_disks):

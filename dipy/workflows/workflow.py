@@ -1,6 +1,6 @@
 import inspect
 import logging
-import os
+from pathlib import Path
 
 from dipy.testing.decorators import warning_for_keywords
 from dipy.workflows.multi_io import _io_iterator
@@ -98,7 +98,7 @@ class Workflow:
         """
         duplicates = []
         for output in self.flat_outputs:
-            if os.path.isfile(output):
+            if Path(output).is_file():
                 duplicates.append(output)
 
         if len(duplicates) > 0:

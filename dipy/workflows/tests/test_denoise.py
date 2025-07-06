@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import numpy as np
@@ -31,13 +31,13 @@ def test_nlmeans_flow():
 
         nlmeans_flow = NLMeansFlow()
 
-        nlmeans_flow.run(data_path, out_dir=out_dir)
-        assert_true(os.path.isfile(nlmeans_flow.last_generated_outputs["out_denoised"]))
+        nlmeans_flow.run(str(data_path), out_dir=out_dir)
+        assert_true(Path(nlmeans_flow.last_generated_outputs["out_denoised"]).is_file())
 
         nlmeans_flow._force_overwrite = True
-        nlmeans_flow.run(data_path, sigma=4, out_dir=out_dir)
+        nlmeans_flow.run(str(data_path), sigma=4, out_dir=out_dir)
         denoised_path = nlmeans_flow.last_generated_outputs["out_denoised"]
-        assert_true(os.path.isfile(denoised_path))
+        assert_true(Path(denoised_path).is_file())
         denoised_data, denoised_affine = load_nifti(denoised_path)
         npt.assert_equal(denoised_data.shape, volume.shape)
         npt.assert_array_almost_equal(denoised_affine, affine)
@@ -50,17 +50,17 @@ def test_patch2self_flow():
 
         patch2self_flow = Patch2SelfFlow()
         patch2self_flow.run(
-            data_path, fbvals, patch_radius=(0, 0, 0), out_dir=out_dir, ver=1
+            str(data_path), str(fbvals), patch_radius=(0, 0, 0), out_dir=out_dir, ver=1
         )
         assert_true(
-            os.path.isfile(patch2self_flow.last_generated_outputs["out_denoised"])
+            Path(patch2self_flow.last_generated_outputs["out_denoised"]).is_file()
         )
         patch2self_flow = Patch2SelfFlow()
         patch2self_flow.run(
-            data_path, fbvals, patch_radius=(0, 0, 0), out_dir=out_dir, ver=3
+            str(data_path), str(fbvals), patch_radius=(0, 0, 0), out_dir=out_dir, ver=3
         )
         assert_true(
-            os.path.isfile(patch2self_flow.last_generated_outputs["out_denoised"])
+            Path(patch2self_flow.last_generated_outputs["out_denoised"]).is_file()
         )
 
 
@@ -69,26 +69,28 @@ def test_lpca_flow():
         data_path, fbvals, fbvecs = get_fnames()
 
     lpca_flow = LPCAFlow()
-    lpca_flow.run(data_path, fbvals, fbvecs, out_dir=out_dir)
-    assert_true(os.path.isfile(lpca_flow.last_generated_outputs["out_denoised"]))
+    lpca_flow.run(str(data_path), str(fbvals), str(fbvecs), out_dir=out_dir)
+    assert_true(Path(lpca_flow.last_generated_outputs["out_denoised"]).is_file())
 
 
 @set_random_number_generator()
 def test_mppca_flow(rng):
     with TemporaryDirectory() as out_dir:
         S0 = 100 + 2 * rng.standard_normal((22, 23, 30, 20))
-        data_path = os.path.join(out_dir, "random_noise.nii.gz")
+        data_path = Path(out_dir) / "random_noise.nii.gz"
         save_nifti(data_path, S0, np.eye(4))
 
         mppca_flow = MPPCAFlow()
-        mppca_flow.run(data_path, out_dir=out_dir)
-        assert_true(os.path.isfile(mppca_flow.last_generated_outputs["out_denoised"]))
-        assert_false(os.path.isfile(mppca_flow.last_generated_outputs["out_sigma"]))
+        mppca_flow.run(str(data_path), out_dir=out_dir)
+        assert_true(Path(mppca_flow.last_generated_outputs["out_denoised"]).is_file())
+        assert_false(Path(mppca_flow.last_generated_outputs["out_sigma"]).is_file())
 
         mppca_flow._force_overwrite = True
-        mppca_flow.run(data_path, return_sigma=True, pca_method="svd", out_dir=out_dir)
-        assert_true(os.path.isfile(mppca_flow.last_generated_outputs["out_denoised"]))
-        assert_true(os.path.isfile(mppca_flow.last_generated_outputs["out_sigma"]))
+        mppca_flow.run(
+            str(data_path), return_sigma=True, pca_method="svd", out_dir=out_dir
+        )
+        assert_true(Path(mppca_flow.last_generated_outputs["out_denoised"]).is_file())
+        assert_true(Path(mppca_flow.last_generated_outputs["out_sigma"]).is_file())
 
         denoised_path = mppca_flow.last_generated_outputs["out_denoised"]
         denoised_data = load_nifti_data(denoised_path)
@@ -121,9 +123,9 @@ def test_gibbs_flow():
         image4d[:, :, 1, 0] = generate_slice()
         image4d[:, :, 0, 1] = generate_slice()
         image4d[:, :, 1, 1] = generate_slice()
-        data_path = os.path.join(out_dir, "random_noise.nii.gz")
+        data_path = Path(out_dir) / "random_noise.nii.gz"
         save_nifti(data_path, image4d, np.eye(4))
 
         gibbs_flow = GibbsRingingFlow()
-        gibbs_flow.run(data_path, out_dir=out_dir)
-        assert_true(os.path.isfile(gibbs_flow.last_generated_outputs["out_unring"]))
+        gibbs_flow.run(str(data_path), out_dir=out_dir)
+        assert_true(Path(gibbs_flow.last_generated_outputs["out_unring"]).is_file())

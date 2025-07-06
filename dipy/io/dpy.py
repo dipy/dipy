@@ -25,7 +25,7 @@ class Dpy:
 
         Parameters
         ----------
-        fname : str
+        fname : str or Path
             Full filename
         mode : str, optional
             Use 'r' to read, 'w' to write, and 'r+' to read and write (only if

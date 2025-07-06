@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
 
@@ -55,15 +55,15 @@ def test_none_or_dtype():
 
 def test_variable_type():
     with TemporaryDirectory() as out_dir:
-        open(pjoin(out_dir, "test"), "w").close()
-        open(pjoin(out_dir, "test1"), "w").close()
-        open(pjoin(out_dir, "test2"), "w").close()
+        open(Path(out_dir) / "test", "w").close()
+        open(Path(out_dir) / "test1", "w").close()
+        open(Path(out_dir) / "test2", "w").close()
 
         sys.argv = [sys.argv[0]]
         pos_results = [
-            pjoin(out_dir, "test"),
-            pjoin(out_dir, "test1"),
-            pjoin(out_dir, "test2"),
+            Path(out_dir) / "test",
+            Path(out_dir) / "test1",
+            Path(out_dir) / "test2",
             12,
         ]
         inputs = inputs_from_results(pos_results)
@@ -73,7 +73,7 @@ def test_variable_type():
         npt.assert_equal(positional_res2, 12)
 
         for k, v in zip(positional_res, pos_results[:-1]):
-            npt.assert_equal(k, v)
+            npt.assert_equal(Path(k), v)
 
         dcwf = DummyVariableTypeErrorWorkflow()
         npt.assert_raises(ValueError, run_flow, dcwf)

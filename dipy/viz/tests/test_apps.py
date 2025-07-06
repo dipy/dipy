@@ -1,5 +1,4 @@
-import os
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 import warnings
 
@@ -67,7 +66,7 @@ def test_horizon_events(rng):
     # select all centroids and expand and click everything else
     # do not press the key shortcuts as vtk generates warning that
     # blocks recording
-    fname = os.path.join(DATA_DIR, "record_horizon.log.gz")
+    fname = Path(DATA_DIR) / "record_horizon.log.gz"
 
     with TemporaryDirectory() as out_dir:
         horizon(
@@ -84,8 +83,8 @@ def test_horizon_events(rng):
             clusters_lt=np.inf,
             world_coords=True,
             interactive=True,
-            out_png=pjoin(out_dir, "horizon-event.png"),
-            recorded_events=fname,
+            out_png=str(Path(out_dir) / "horizon-event.png"),
+            recorded_events=str(fname),
         )
 
 
@@ -143,7 +142,7 @@ def test_horizon(rng):
             clusters_gt=0,
             world_coords=True,
             interactive=False,
-            out_png=pjoin(out_dir, "only-tractograms.png"),
+            out_png=Path(out_dir) / "only-tractograms.png",
         )
 
         images = [(data, affine, "/test/filename.nii.gz")]
@@ -161,7 +160,7 @@ def test_horizon(rng):
                 clusters_gt=0,
                 world_coords=False,
                 interactive=False,
-                out_png=pjoin(out_dir, "native-tractograms.png"),
+                out_png=Path(out_dir) / "native-tractograms.png",
             )
 
         msg = "Currently native coordinates are not supported for streamlines."
@@ -181,7 +180,7 @@ def test_horizon(rng):
             clusters_gt=0,
             world_coords=True,
             interactive=False,
-            out_png=pjoin(out_dir, "only-images.png"),
+            out_png=Path(out_dir) / "only-images.png",
         )
 
         # no clustering tractograms and images
@@ -197,7 +196,7 @@ def test_horizon(rng):
             clusters_gt=0,
             world_coords=True,
             interactive=False,
-            out_png=pjoin(out_dir, "no-clusting-tractograms-and-images.png"),
+            out_png=Path(out_dir) / "no-clusting-tractograms-and-images.png",
         )
 
 
@@ -218,10 +217,12 @@ def test_horizon_wrong_dtype_images():
         horizon(
             images=images,
             interactive=False,
-            out_png=pjoin(out_dir, "wrong-dtype.png"),
+            out_png=str(Path(out_dir) / "wrong-dtype.png"),
         )
         # Asserting the image will not get added and the image will be black.
-        assert len(np.unique(io.load_image(pjoin(out_dir, "wrong-dtype.png")))) == 1
+        assert (
+            len(np.unique(io.load_image(str(Path(out_dir) / "wrong-dtype.png")))) == 1
+        )
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")

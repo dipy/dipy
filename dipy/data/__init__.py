@@ -2,7 +2,8 @@
 
 import gzip
 import json
-from os.path import dirname, exists, join as pjoin
+from os.path import dirname, exists
+from pathlib import Path
 import pickle
 
 import numpy as np
@@ -151,14 +152,14 @@ def loads_compat(byte_data):
     return pickle.loads(byte_data, encoding="latin1")
 
 
-DATA_DIR = pjoin(dirname(__file__), "files")
+DATA_DIR = Path(dirname(__file__)) / "files"
 SPHERE_FILES = {
-    "symmetric362": pjoin(DATA_DIR, "evenly_distributed_sphere_362.npz"),
-    "symmetric642": pjoin(DATA_DIR, "evenly_distributed_sphere_642.npz"),
-    "symmetric724": pjoin(DATA_DIR, "evenly_distributed_sphere_724.npz"),
-    "repulsion724": pjoin(DATA_DIR, "repulsion724.npz"),
-    "repulsion100": pjoin(DATA_DIR, "repulsion100.npz"),
-    "repulsion200": pjoin(DATA_DIR, "repulsion200.npz"),
+    "symmetric362": Path(DATA_DIR) / "evenly_distributed_sphere_362.npz",
+    "symmetric642": Path(DATA_DIR) / "evenly_distributed_sphere_642.npz",
+    "symmetric724": Path(DATA_DIR) / "evenly_distributed_sphere_724.npz",
+    "repulsion724": Path(DATA_DIR) / "repulsion724.npz",
+    "repulsion100": Path(DATA_DIR) / "repulsion100.npz",
+    "repulsion200": Path(DATA_DIR) / "repulsion200.npz",
 }
 
 
@@ -206,11 +207,11 @@ def get_sim_voxels(*, name="fib1"):
 
     """
     if name == "fib0":
-        fname = pjoin(DATA_DIR, "fib0.pkl.gz")
+        fname = Path(DATA_DIR) / "fib0.pkl.gz"
     if name == "fib1":
-        fname = pjoin(DATA_DIR, "fib1.pkl.gz")
+        fname = Path(DATA_DIR) / "fib1.pkl.gz"
     if name == "fib2":
-        fname = pjoin(DATA_DIR, "fib2.pkl.gz")
+        fname = Path(DATA_DIR) / "fib2.pkl.gz"
     return loads_compat(gzip.open(fname, "rb").read())
 
 
@@ -238,9 +239,9 @@ def get_skeleton(*, name="C1"):
 
     """
     if name == "C1":
-        fname = pjoin(DATA_DIR, "C1.pkl.gz")
+        fname = Path(DATA_DIR) / "C1.pkl.gz"
     if name == "C3":
-        fname = pjoin(DATA_DIR, "C3.pkl.gz")
+        fname = Path(DATA_DIR) / "C3.pkl.gz"
     return loads_compat(gzip.open(fname, "rb").read())
 
 
@@ -299,7 +300,7 @@ def _gradient_from_file(filename):
     and saved in the dipy data directory"""
 
     def gtab_getter():
-        gradfile = pjoin(DATA_DIR, filename)
+        gradfile = Path(DATA_DIR) / filename
         grad = np.loadtxt(gradfile, delimiter=",")
         gtab = GradientTable(grad)
         return gtab
@@ -360,9 +361,9 @@ def mrtrix_spherical_functions():
     These coefficients were obtained by using the dwi2SH command of mrtrix.
 
     """
-    func_discrete, _ = load_nifti(pjoin(DATA_DIR, "func_discrete.nii.gz"))
-    func_coef, _ = load_nifti(pjoin(DATA_DIR, "func_coef.nii.gz"))
-    gradients = np.loadtxt(pjoin(DATA_DIR, "sphere_grad.txt"))
+    func_discrete, _ = load_nifti(Path(DATA_DIR) / "func_discrete.nii.gz")
+    func_coef, _ = load_nifti(Path(DATA_DIR) / "func_coef.nii.gz")
+    gradients = np.loadtxt(Path(DATA_DIR) / "sphere_grad.txt")
     # gradients[0] and the first volume of func_discrete,
     # func_discrete[..., 0], are associated with the b=0 signal.
     # gradients[:, 3] are the b-values for each gradient/volume.
@@ -377,7 +378,7 @@ def get_cmap(name):
     """Make a callable, similar to maptlotlib.pyplot.get_cmap."""
     global dipy_cmaps
     if dipy_cmaps is None:
-        filename = pjoin(DATA_DIR, "dipy_colormaps.json")
+        filename = Path(DATA_DIR) / "dipy_colormaps.json"
         with open(filename) as f:
             dipy_cmaps = json.load(f)
 
@@ -409,8 +410,8 @@ def two_cingulum_bundles():
 
 
 def matlab_life_results():
-    matlab_rmse = np.load(pjoin(DATA_DIR, "life_matlab_rmse.npy"))
-    matlab_weights = np.load(pjoin(DATA_DIR, "life_matlab_weights.npy"))
+    matlab_rmse = np.load(Path(DATA_DIR) / "life_matlab_rmse.npy")
+    matlab_weights = np.load(Path(DATA_DIR) / "life_matlab_weights.npy")
     return matlab_rmse, matlab_weights
 
 
@@ -451,7 +452,7 @@ def load_sdp_constraints(model_name, *, order=None):
         file += "_SC"
     file += ".npz"
 
-    path = pjoin(DATA_DIR, file)
+    path = Path(DATA_DIR) / file
 
     if not exists(path):
         raise ValueError(f"Constraints file '{file}' not found.")

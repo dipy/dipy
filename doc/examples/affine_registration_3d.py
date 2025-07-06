@@ -14,7 +14,7 @@ the ``dipy.align`` module. The second part will use a simplified functional
 interface.
 """
 
-from os.path import join as pjoin
+from pathlib import Path
 
 import numpy as np
 
@@ -41,7 +41,7 @@ from dipy.viz import regtools
 
 files, folder = fetch_stanford_hardi()
 static_data, static_affine, static_img = load_nifti(
-    pjoin(folder, "HARDI150.nii.gz"), return_img=True
+    Path(folder) / "HARDI150.nii.gz", return_img=True
 )
 static = np.squeeze(static_data)[..., 0]
 static_grid2world = static_affine
@@ -51,7 +51,7 @@ static_grid2world = static_affine
 
 files, folder2 = fetch_syn_data()
 moving_data, moving_affine, moving_img = load_nifti(
-    pjoin(folder2, "b0.nii.gz"), return_img=True
+    Path(folder2) / "b0.nii.gz", return_img=True
 )
 moving = moving_data
 moving_grid2world = moving_affine
@@ -458,7 +458,7 @@ regtools.overlay_slices(
 
 xformed_dwi, reg_affine = register_dwi_to_template(
     dwi=static_img,
-    gtab=(pjoin(folder, "HARDI150.bval"), pjoin(folder, "HARDI150.bvec")),
+    gtab=(Path(folder) / "HARDI150.bval", Path(folder) / "HARDI150.bvec"),
     template=moving_img,
     reg_method="aff",
     nbins=32,

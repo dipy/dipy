@@ -8,7 +8,7 @@ Here we present an example for visualizing slices from 3D images.
 Let's start by importing the relevant modules.
 """
 
-import os
+from pathlib import Path
 
 from dipy.data import fetch_bundles_2_subjects
 from dipy.io.image import load_nifti, load_nifti_data
@@ -19,13 +19,13 @@ from dipy.viz import actor, ui, window
 
 fetch_bundles_2_subjects()
 
-fname_t1 = os.path.join(
-    os.path.expanduser("~"),
-    ".dipy",
-    "exp_bundles_and_maps",
-    "bundles_2_subjects",
-    "subj_1",
-    "t1_warped.nii.gz",
+fname_t1 = (
+    Path("~").expanduser()
+    / ".dipy"
+    / "exp_bundles_and_maps"
+    / "bundles_2_subjects"
+    / "subj_1"
+    / "t1_warped.nii.gz"
 )
 
 data, affine = load_nifti(fname_t1)
@@ -99,12 +99,12 @@ window.record(scene=scene, out_path="slices.png", size=(600, 600), reset_camera=
 # loading an FA image and showing it in a non-standard way using an HSV
 # colormap.
 
-fname_fa = os.path.join(
-    os.path.expanduser("~"),
-    ".dipy",
-    "exp_bundles_and_maps",
-    "bundles_2_subjects",
-    "subj_1",
+fname_fa = (
+    Path("~").expanduser()
+    / ".dipy"
+    / "exp_bundles_and_maps"
+    / "bundles_2_subjects"
+    / "subj_1"
     "fa_1x1x1.nii.gz",
 )
 
