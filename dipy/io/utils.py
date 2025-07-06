@@ -275,7 +275,7 @@ def split_name_with_gz(filename):
         # Test if we have a .nii additional extension
         temp_base, add_ext = os.path.splitext(base)
 
-        if add_ext.lower() == ".nii" or add_ext.lower() == ".trk":
+        if add_ext.lower() in [".nii", ".trk", ".gii"]:
             ext = add_ext + ext
             base = temp_base
 
