@@ -15,11 +15,11 @@ class DummyWorkflow1(Workflow):
         inputs : string
             fake input string param
         param1 : int
-            fake positional param (default 1)
+            fake positional param
         out_dir : string
-            fake output directory (default '')
-        out_combined : string
-            fake out file (default out_combined.txt)
+            fake output directory
+        output_1 : string
+            fake out file
 
         References
         ----------
@@ -41,11 +41,11 @@ class DummyWorkflow2(Workflow):
         inputs : string
             fake input string param
         param2 : int
-            fake positional param (default 2)
+            fake positional param
         out_dir : string
-            fake output directory (default '')
-        out_combined : string
-            fake out file (default out_combined.txt)
+            fake output directory
+        output_1 : string
+            fake out file
         """
         return param2
 
@@ -64,11 +64,11 @@ class DummyCombinedWorkflow(CombinedWorkflow):
         inputs : string
             fake input string param
         param_combined : int
-            fake positional param (default 3)
+            fake positional param
         out_dir : string
-            fake output directory (default '')
+            fake output directory
         out_combined : string
-            fake out file (default out_combined.txt)
+            fake out file
         """
         dwf1 = DummyWorkflow1()
         param1 = self.run_sub_flow(dwf1, inputs)
@@ -108,21 +108,21 @@ class DummyFlow(Workflow):
         positional_float : float
             positional float argument
         optional_str : string, optional
-            optional string argument (default 'default')
+            optional string argument
         optional_bool : bool, optional
-            optional bool argument (default False)
+            optional bool argument
         optional_int : int, optional
-            optional int argument (default 0)
+            optional int argument
         optional_float : float, optional
-            optional float argument (default 1.0)
+            optional float argument
         optional_float_2 : float, optional
-            optional float argument #2 (default 2.0)
+            optional float argument #2
         optional_int_2 : int, optional
-            optional int argument #2 (default 5)
+            optional int argument #2
         optional_float_3 : float, optional
-            optional float argument #3 (default 2.0)
+            optional float argument #3
         out_dir : string
-            output directory (default '')
+            output directory
         """
         return (
             positional_str,
@@ -149,7 +149,7 @@ class DummyWorkflowOptionalStr(Workflow):
         optional_str_1 : variable str, optional
             optional string argument 1
         optional_str_2 : str, optional
-            optional string argument 2 (default 'default')
+            optional string argument 2
         """
         return optional_str_1, optional_str_2
 
@@ -167,9 +167,9 @@ class DummyVariableTypeWorkflow(Workflow):
         positional_variable_str : variable string
             fake input string param
         positional_variable_int : int
-            fake positional param (default 2)
+            fake positional param
         out_dir : string
-            fake output directory (default '')
+            fake output directory
         """
         result = []
         io_it = self.get_io_iterator()
@@ -192,9 +192,9 @@ class DummyVariableTypeErrorWorkflow(Workflow):
         positional_variable_str : variable string
             fake input string param
         positional_variable_int : variable int
-            fake positional param (default 2)
+            fake positional param
         out_dir : string
-            fake output directory (default '')
+            fake output directory
         """
         result = []
         io_it = self.get_io_iterator()
