@@ -99,7 +99,7 @@ class Patch2SelfFlow(Workflow):
                 shutil.copy(fpath, odenoised)
                 logger.warning("Denoising skipped for now.")
             else:
-                logger.info("Denoising %s", fpath)
+                logger.info(f"Denoising {fpath}")
                 data, affine, image = load_nifti(fpath, return_img=True)
                 bvals = np.loadtxt(bvalpath)
                 extra_args = {"patch_radius": patch_radius} if ver == 1 else {}
@@ -172,7 +172,7 @@ class NLMeansFlow(Workflow):
                 shutil.copy(fpath, odenoised)
                 logger.warning("Denoising skipped for now.")
             else:
-                logger.info("Denoising %s", fpath)
+                logger.info(f"Denoising {fpath}")
                 data, affine, image = load_nifti(fpath, return_img=True)
 
                 if sigma == 0:

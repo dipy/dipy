@@ -155,10 +155,8 @@ def load_surface(
         sfs.gii_header = metadata
 
     logging.debug(
-        "Load %s with %s vertices in %s seconds.",
-        fname,
-        len(sfs),
-        round(time.time() - timer, 3),
+        f"Load {fname} with {len(sfs)} vertices in {round(time.time() - timer, 3)}"
+        f" seconds."
     )
 
     if bbox_valid_check and not sfs.is_bbox_in_vox_valid():

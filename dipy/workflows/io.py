@@ -1404,7 +1404,7 @@ class PamToNiftisFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logger.info("Converting %s file to niftis...", ipam)
+            logger.info(f"Converting file {ipam} to niftis...")
             pam = load_pam(ipam)
             pam_to_niftis(
                 pam,
