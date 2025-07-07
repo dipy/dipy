@@ -278,8 +278,8 @@ def save_surface(
             )
 
         if ref_gii is not None:
-            _, ext = split_name_with_gz(ref_gii)
-            if ext != ".gii" or ext != ".gii.gz":
+            _, ref_ext = split_name_with_gz(ref_gii)
+            if ref_ext != ".gii" or ref_ext != ".gii.gz":
                 raise ValueError("Reference gii file must have .gii extension.")
             _, metadata = load_gifti(ref_gii, return_header=True)[-1]
         else:
