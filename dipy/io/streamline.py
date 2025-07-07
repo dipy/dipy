@@ -42,11 +42,6 @@ def save_tractogram(
         Origin to which the streamlines will be transformed before saving
             NIFTI standard, default (center of the voxel)
             TRACKVIS standard (corner of the voxel)
-
-    Returns
-    -------
-    output : bool
-        True if the saving operation was successful
     """
 
     _, extension = os.path.splitext(filename)
@@ -55,11 +50,9 @@ def save_tractogram(
 
     if to_space not in Space:
         raise ValueError("Space MUST be one of the 3 choices (Enum).")
-        return False
 
     if to_origin not in Origin:
         raise ValueError("Origin MUST be one of the 2 choices (Enum).")
-        return False
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError(
@@ -120,8 +113,6 @@ def save_tractogram(
 
     sft.to_space(old_space)
     sft.to_origin(old_origin)
-
-    return True
 
 
 @warning_for_keywords()
