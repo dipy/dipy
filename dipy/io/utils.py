@@ -1,5 +1,6 @@
 """Utility functions for file formats"""
 
+import enum
 import logging
 import numbers
 import os
@@ -18,6 +19,24 @@ pd, have_pd, _ = optional_package("pandas")
 
 if have_pd:
     import pandas as pd
+
+
+class Space(enum.Enum):
+    """Enum to simplify future change to convention"""
+
+    VOX = "vox"
+    VOXMM = "voxmm"
+    RASMM = "rasmm"
+    LPSMM = "lpsmm"
+
+
+class Origin(enum.Enum):
+    """Enum to simplify future change to convention"""
+
+    # TODO: maybe gifti and vtk should be different origins?
+    # Required to do mapping using numpy
+    NIFTI = "center"
+    TRACKVIS = "corner"
 
 
 def nifti1_symmat(image_data, *args, **kwargs):
@@ -256,7 +275,7 @@ def split_name_with_gz(filename):
         # Test if we have a .nii additional extension
         temp_base, add_ext = os.path.splitext(base)
 
-        if add_ext.lower() == ".nii" or add_ext.lower() == ".trk":
+        if add_ext.lower() in [".nii", ".trk", ".gii"]:
             ext = add_ext + ext
             base = temp_base
 
@@ -275,16 +294,16 @@ def get_reference_info(reference):
     Returns
     -------
     output : tuple
-        - affine ndarray (4,4), np.float32, transformation of VOX to RASMM
+        - affine ndarray (4,4), np.float64, transformation of VOX to RASMM
         - dimensions ndarray (3,), int16, volume shape for each axis
         - voxel_sizes  ndarray (3,), float32, size of voxel for each axis
         - voxel_order, string, Typically 'RAS' or 'LPS'
     """
-
     is_nifti = False
     is_trk = False
     is_sft = False
     is_trx = False
+
     if isinstance(reference, str):
         _, ext = split_name_with_gz(reference)
         ext = ext.lower()
@@ -316,6 +335,8 @@ def get_reference_info(reference):
         header = reference
         is_trx = True
     elif isinstance(reference, dipy.io.stateful_tractogram.StatefulTractogram):
+        is_sft = True
+    elif isinstance(reference, dipy.io.stateful_surface.StatefulSurface):
         is_sft = True
 
     if is_nifti:
@@ -349,7 +370,7 @@ def get_reference_info(reference):
 
     is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order)
 
-    return affine.astype(np.float32), dimensions, voxel_sizes, voxel_order
+    return affine.astype(np.float64), dimensions, voxel_sizes, voxel_order
 
 
 def is_header_compatible(reference_1, reference_2):
@@ -485,3 +506,30 @@ def read_img_arr_or_path(data, *, affine=None):
             affine = data.affine
         data = data.get_fdata()
     return data, affine
+
+
+def recursive_compare(d1, d2, level="root"):
+    if isinstance(d1, dict) and isinstance(d2, dict):
+        if d1.keys() != d2.keys():
+            s1 = set(d1.keys())
+            s2 = set(d2.keys())
+            common_keys = s1 & s2
+            if s1 - s2:
+                raise ValueError(f"Keys {s1 - s2} in d1 but not in d2")
+        else:
+            common_keys = set(d1.keys())
+
+        for k in common_keys:
+            recursive_compare(d1[k], d2[k], level=f"{level}.{k}")
+
+    elif isinstance(d1, list) and isinstance(d2, list):
+        if len(d1) != len(d2):
+            raise ValueError(f"Lists do not have the same length at level {level}")
+        common_len = min(len(d1), len(d2))
+
+        for i in range(common_len):
+            recursive_compare(d1[i], d2[i], level=f"{level}[{i}]")
+
+    else:
+        if np.dtype(d1).itemsize != np.dtype(d2).itemsize:
+            raise ValueError(f"Values {d1}, {d2} do not match at level {level}")

@@ -1,4 +1,5 @@
-import os
+import itertools
+from os.path import join as pjoin
 from tempfile import TemporaryDirectory
 from urllib.error import HTTPError, URLError
 
@@ -9,22 +10,24 @@ import pytest
 from dipy.data import get_fnames
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, load_trk, save_tractogram, save_trk
-from dipy.io.utils import create_nifti_header
+from dipy.io.utils import Origin, Space, create_nifti_header
 from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 
 fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
 
-FILEPATH_DIX, STREAMLINE, STREAMLINES = None, None, None
+FILEPATH_DIX = None
+SPACES = [Space.RASMM, Space.LPSMM, Space.VOXMM, Space.VOX]
+ORIGINS = [Origin.NIFTI, Origin.TRACKVIS]
 
 
 def setup_module():
     global FILEPATH_DIX, STREAMLINE, STREAMLINES
     try:
-        FILEPATH_DIX, _, _ = get_fnames(name="gold_standard_tracks")
+        FILEPATH_DIX, _, _ = get_fnames(name="gold_standard_io")
     except (HTTPError, URLError) as e:
-        FILEPATH_DIX, STREAMLINE, STREAMLINES = None, None, None
+        FILEPATH_DIX = None
         error_msg = f'"Tests Data failed to download." Reason: {e}'
         pytest.skip(error_msg, allow_module_level=True)
         return
@@ -166,14 +169,14 @@ def setup_module():
 
 
 def teardown_module():
-    global FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA, STREA
+    global FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA
     FILEPATH_DIX, POINTS_DATA, STREAMLINES_DATA = None, None, None
 
 
 def io_tractogram(extension):
     with TemporaryDirectory() as tmp_dir:
         fname = f"test.{extension}"
-        fpath = os.path.join(tmp_dir, fname)
+        fpath = pjoin(tmp_dir, fname)
 
         in_affine = np.eye(4)
         in_dimensions = np.array([50, 50, 50])
@@ -199,36 +202,49 @@ def io_tractogram(extension):
         npt.assert_array_almost_equal(sft.streamlines[1], STREAMLINE, decimal=4)
 
 
-def test_io_trk():
-    io_tractogram("trk")
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.parametrize("space,origin", list(itertools.product(SPACES, ORIGINS)))
+def test_vtk_matching_space(space, origin):
+    # VTK/FIB in the gold standard dataset are in LPSMM space.
+    sfs = load_tractogram(
+        FILEPATH_DIX["gs_streamlines.vtk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        from_space=Space.LPSMM,
+    )
+    sfs.to_rasmm()
+    sfs.to_center()
+    ref_coords = sfs.streamlines._data.copy()
+
+    with TemporaryDirectory() as tmpdir:
+        save_tractogram(sfs, pjoin(tmpdir, "tmp.vtk"), to_space=space, to_origin=origin)
+        sfs = load_tractogram(
+            pjoin(tmpdir, "tmp.vtk"),
+            FILEPATH_DIX["gs_volume.nii"],
+            from_space=space,
+            from_origin=origin,
+        )
+
+        sfs.to_rasmm()
+        sfs.to_center()
+        save_coords = sfs.streamlines._data.copy()
+        npt.assert_almost_equal(ref_coords, save_coords, decimal=5)
 
 
-def test_io_tck():
-    io_tractogram("tck")
-
-
-def test_io_trx():
-    io_tractogram("trx")
+@pytest.mark.parametrize("ext", ["trk", "tck", "trx", "dpy"])
+def test_io_ext_non_vtk(ext):
+    io_tractogram(ext)
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
-def test_io_vtk():
-    io_tractogram("vtk")
-
-
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
-def test_io_vtp():
-    io_tractogram("vtp")
-
-
-def test_io_dpy():
-    io_tractogram("dpy")
+@pytest.mark.parametrize("ext", ["vtk", "vtp"])
+def test_io_vtk(ext):
+    io_tractogram(ext)
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_low_io_vtk():
     with TemporaryDirectory() as tmp_dir:
-        fname = os.path.join(tmp_dir, "test.fib")
+        fname = pjoin(tmp_dir, "test.fib")
 
         # Test save
         save_vtk_streamlines(STREAMLINES, fname, binary=True)
@@ -240,18 +256,20 @@ def test_low_io_vtk():
 def trk_loader(filename):
     try:
         with TemporaryDirectory() as tmp_dir:
-            load_trk(os.path.join(tmp_dir, filename), FILEPATH_DIX["gs.nii"])
+            load_trk(pjoin(tmp_dir, filename), FILEPATH_DIX["gs_volume.nii"])
         return True
     except ValueError:
         return False
 
 
 def trk_saver(filename):
-    sft = load_tractogram(FILEPATH_DIX["gs.trk"], FILEPATH_DIX["gs.nii"])
+    sft = load_tractogram(
+        FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
+    )
 
     try:
         with TemporaryDirectory() as tmp_dir:
-            save_trk(sft, os.path.join(tmp_dir, filename))
+            save_trk(sft, pjoin(tmp_dir, filename))
         return True
     except ValueError:
         return False
@@ -259,7 +277,7 @@ def trk_saver(filename):
 
 def test_io_trk_load():
     npt.assert_(
-        trk_loader(FILEPATH_DIX["gs.trk"]),
+        trk_loader(FILEPATH_DIX["gs_streamlines.trk"]),
         msg="trk_loader should be able to load a trk",
     )
     npt.assert_(
@@ -267,35 +285,36 @@ def test_io_trk_load():
         msg="trk_loader should not be able to load a TRK",
     )
     npt.assert_(
-        not trk_loader(FILEPATH_DIX["gs.tck"]),
+        not trk_loader(FILEPATH_DIX["gs_streamlines.tck"]),
         msg="trk_loader should not be able to load a tck",
     )
     npt.assert_(
-        not trk_loader(FILEPATH_DIX["gs.fib"]),
+        not trk_loader(FILEPATH_DIX["gs_streamlines.fib"]),
         msg="trk_loader should not be able to load a fib",
     )
     npt.assert_(
-        not trk_loader(FILEPATH_DIX["gs.dpy"]),
+        not trk_loader(FILEPATH_DIX["gs_streamlines.dpy"]),
         msg="trk_loader should not be able to load a dpy",
     )
 
 
 def test_io_trk_save():
     npt.assert_(
-        trk_saver(FILEPATH_DIX["gs.trk"]), msg="trk_saver should be able to save a trk"
+        trk_saver(FILEPATH_DIX["gs_streamlines.trk"]),
+        msg="trk_saver should be able to save a trk",
     )
     npt.assert_(
         not trk_saver("fake_file.TRK"), msg="trk_saver should not be able to save a TRK"
     )
     npt.assert_(
-        not trk_saver(FILEPATH_DIX["gs.tck"]),
+        not trk_saver(FILEPATH_DIX["gs_streamlines.tck"]),
         msg="trk_saver should not be able to save a tck",
     )
     npt.assert_(
-        not trk_saver(FILEPATH_DIX["gs.fib"]),
+        not trk_saver(FILEPATH_DIX["gs_streamlines.fib"]),
         msg="trk_saver should not be able to save a fib",
     )
     npt.assert_(
-        not trk_saver(FILEPATH_DIX["gs.dpy"]),
+        not trk_saver(FILEPATH_DIX["gs_streamlines.dpy"]),
         msg="trk_saver should not be able to save a dpy",
     )
