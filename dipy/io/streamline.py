@@ -49,10 +49,16 @@ def save_tractogram(
         raise TypeError("Output filename is not one of the supported format.")
 
     if to_space not in Space:
-        raise ValueError("Space MUST be one of the 3 choices (Enum).")
+        raise ValueError(
+            f"Space MUST be one of the {len(Space)} choices:"
+            f" {list(Space.__members__.keys())}."
+        )
 
     if to_origin not in Origin:
-        raise ValueError("Origin MUST be one of the 2 choices (Enum).")
+        raise ValueError(
+            f"Origin MUST be one of the {len(Origin)} choices:"
+            f" {list(Origin.__members__.keys())}."
+        )
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError(

@@ -84,11 +84,17 @@ def load_surface(
         return False
 
     if to_space not in Space:
-        logging.error("Space MUST be one of the 3 choices (Enum).")
+        logging.error(
+            f"Space MUST be one of the {len(Space)} choices:"
+            f" {list(Space.__members__.keys())}."
+        )
         return False
 
     if to_origin not in Origin:
-        logging.error("Origin MUST be one of the 2 choices (Enum).")
+        logging.error(
+            f"Origin MUST be one of the {len(Origin)} choices:"
+            f" {list(Origin.__members__.keys())}."
+        )
         return False
 
     if reference == "same":
