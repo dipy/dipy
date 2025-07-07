@@ -259,7 +259,7 @@ def angular_similarity(S, T):
     >>> S=np.array([[0,1,0],[1,0,0]])
     >>> T=np.array([[0,np.sqrt(2)/2.,np.sqrt(2)/2.]])
 
-    Now we use ``print`` to reduce the precision of of the printed output
+    Now we use ``print`` to reduce the precision of the printed output
     (so the doctests don't detect unimportant differences)
 
     >>> print('%.12f' % angular_similarity(S,T))
