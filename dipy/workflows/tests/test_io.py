@@ -60,12 +60,12 @@ def test_io_info():
     io_info_flow = IoInfoFlow()
     io_info_flow.run([fimg, fbvals, fbvecs])
 
-    fimg, fbvals, fvecs = get_fnames(name="small_25")
+    fimg, fbvals, fbvecs = get_fnames(name="small_25")
     io_info_flow = IoInfoFlow()
-    io_info_flow.run([fimg, fbvals, fvecs])
+    io_info_flow.run([fimg, fbvals, fbvecs])
 
     io_info_flow = IoInfoFlow()
-    io_info_flow.run([fimg, fbvals, fvecs], b0_threshold=20, bvecs_tol=0.001)
+    io_info_flow.run([fimg, fbvals, fbvecs], b0_threshold=20, bvecs_tol=0.001)
 
     filepath_dix, _, _ = get_fnames(name="gold_standard_tracks")
     if not is_big_endian:
@@ -76,7 +76,9 @@ def test_io_info():
     io_info_flow.run(filepath_dix["gs.trk"])
 
     io_info_flow = IoInfoFlow()
-    npt.assert_raises(TypeError, io_info_flow.run, filepath_dix["gs.tck"])
+    npt.assert_raises(SystemExit, io_info_flow.run, filepath_dix["gs.tck"])
+    io_info_flow = IoInfoFlow()
+    npt.assert_raises(OSError, io_info_flow.run, "fake.vtk")
 
     io_info_flow = IoInfoFlow()
     io_info_flow.run(filepath_dix["gs.tck"], reference=filepath_dix["gs.nii"])
@@ -377,6 +379,38 @@ def test_math():
                 npt.assert_array_equal(out_data, data * 3)
                 if kwarg:
                     npt.assert_equal(out_data.dtype, np.dtype(kwarg["dtype"]))
+
+            # Test broadcasting 3D/4D
+            data_3d = np.ones(data.shape[:-1]) * 15
+            data_3d_path = pjoin(out_dir, "data_3d.nii.gz")
+            save_nifti(data_3d_path, data_3d, np.eye(4))
+            math_flow = MathFlow()
+            math_flow.run(
+                "vol1*vol2",
+                [data_path_a, data_3d_path],
+                disable_check=True,
+                out_dir=out_dir,
+            )
+
+            # Test boolean data type
+            data_bool = np.ones(data.shape, dtype=np.uint8)
+            data_bool_2 = np.zeros(data.shape, dtype=np.uint8)
+            data_bool_path = pjoin(out_dir, "data_bool.nii.gz")
+            data_bool_2_path = pjoin(out_dir, "data_bool_2.nii.gz")
+            save_nifti(data_bool_path, data_bool, np.eye(4))
+            save_nifti(data_bool_2_path, data_bool_2, np.eye(4))
+            math_flow = MathFlow()
+            math_flow.run(
+                "vol1*vol2",
+                [data_bool_path, data_bool_2_path],
+                disable_check=True,
+                dtype="bool",
+                out_dir=out_dir,
+            )
+            out_path = pjoin(out_dir, "math_out.nii.gz")
+            out_data, _ = load_nifti(out_path)
+            npt.assert_array_equal(out_data, data_bool * data_bool_2)
+            npt.assert_equal(out_data.dtype, np.uint8)
 
         else:
             math_flow = MathFlow()

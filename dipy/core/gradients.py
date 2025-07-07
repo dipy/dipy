@@ -1126,7 +1126,7 @@ def btens_to_params(btens, *, ztol=1e-10):
     --------
     >>> lte = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
     >>> bval, bdelta, b_eta = btens_to_params(lte)
-    >>> print("bval={}; bdelta={}; b_eta={}".format(bdelta, bval, b_eta))
+    >>> print(f"bval={bval}; bdelta={bdelta}; b_eta={b_eta}")
     bval=[ 1.]; bdelta=[ 1.]; b_eta=[ 0.]
 
     """
@@ -1384,7 +1384,7 @@ def extract_b0(dwi, b0_mask, *, group_contiguous_b0=False, strategy="mean"):
     strategy = strategy.lower()
     if strategy not in ["first", "all", "mean"]:
         raise ValueError(
-            "Invalid strategy: {}. Valid strategies are: " "first, all, mean.".format(
+            "Invalid strategy: {}. Valid strategies are: first, all, mean.".format(
                 strategy
             )
         )

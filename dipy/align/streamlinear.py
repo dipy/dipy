@@ -1351,7 +1351,7 @@ def groupwise_slr(
             centroids[ind2] = centroids2
 
             if verbose:
-                logging.info(f"Iteration: {i_iter} pair: {i_pair+1}/{n_pair}.")
+                logging.info(f"Iteration: {i_iter} pair: {i_pair + 1}/{n_pair}.")
 
         d = np.vstack((d, group_distance(centroids, n_bundle)))
 

@@ -48,7 +48,7 @@ output directory (``out_dir``).
 To get the mask file, we will use the median Otsu thresholding method by
 calling the ``dipy_median_otsu`` command::
 
-    dipy_median_otsu data/stanford_hardi/HARDI150.nii.gz --vol_idx 10-50 --out_dir "stanford_hardi_mask"
+    dipy_median_otsu data/stanford_hardi/HARDI150.nii.gz --vol_idx "10-50" --out_dir "stanford_hardi_mask"
 
 Then, to perform the CSD reconstruction we will run the ``dipy_fit_csd``
 command as::

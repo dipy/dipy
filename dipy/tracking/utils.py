@@ -162,7 +162,7 @@ def connectivity_matrix(
     valid_label_volume = labels_positive and label_volume.ndim == 3
     if not valid_label_volume:
         raise ValueError(
-            "label_volume must be a 3d integer array with" "non-negative label values"
+            "label_volume must be a 3d integer array with non-negative label values"
         )
 
     matrix = np.zeros(

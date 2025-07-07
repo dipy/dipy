@@ -42,8 +42,7 @@ def check_dimensions(static, moving):
     """
     if len(static.shape) != len(moving.shape):
         raise ValueError(
-            "Dimension mismatch: The input images must "
-            "have same number of dimensions."
+            "Dimension mismatch: The input images must have same number of dimensions."
         )
 
     if len(static.shape) > 3 and len(moving.shape) > 3:
@@ -366,9 +365,7 @@ class ImageRegistrationFlow(Workflow):
         transform = transform.lower()
         metric = metric.upper()
         if metric != "MI":
-            raise ValueError(
-                "Invalid similarity metric: Please provide a" "valid metric."
-            )
+            raise ValueError("Invalid similarity metric: Please provide avalid metric.")
 
         if progressive:
             pipeline_opt = {

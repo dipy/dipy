@@ -410,7 +410,6 @@ def test_cti_design_matrix():
     A1 = design_matrix(gtab1, gtab2)
     A2 = design_matrix(gtab2, gtab1)
     # Check if the two matrices are the same
-    assert np.allclose(A1, A2), (
-        "The design matrices are not symmetric for different gradient"
-        "directions order."
-    )
+    assert np.allclose(
+        A1, A2
+    ), "The design matrices are not symmetric for different gradientdirections order."
