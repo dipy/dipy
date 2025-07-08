@@ -1520,8 +1520,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
             ch = "-" if np.isnan(der) else der
             logger.info(
-                "%d:\t%0.6f\t%0.6f\t%0.6f\t%s"
-                % (n_iter, fw_energy, bw_energy, fw_energy + bw_energy, ch)
+                f"{n_iter}:\t{fw_energy:.6f}\t{bw_energy:.6f}"
+                f"\t{(fw_energy + bw_energy):.6f}\t{ch}"
             )
 
         self.energy_list.append(fw_energy + bw_energy)
