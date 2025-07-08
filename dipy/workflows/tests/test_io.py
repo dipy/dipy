@@ -79,6 +79,9 @@ def test_io_info():
     npt.assert_raises(SystemExit, io_info_flow.run, filepath_dix["gs_streamlines.tck"])
 
     io_info_flow = IoInfoFlow()
+    npt.assert_raises(OSError, io_info_flow.run, "fake.vtk")
+
+    io_info_flow = IoInfoFlow()
     io_info_flow.run(
         filepath_dix["gs_streamlines.tck"], reference=filepath_dix["gs_volume.nii"]
     )
