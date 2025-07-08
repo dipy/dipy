@@ -1,10 +1,10 @@
-import logging
 from pathlib import Path
 import warnings
 
 import numpy as np
 
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
@@ -70,19 +70,19 @@ class SlicesVisualizer:
         if world_coords:
             np.set_printoptions(3, suppress=True)
             fname = "" if fname is None else Path(fname).name
-            logging.info(f"-------------------{len(fname) * '-'}")
-            logging.info(f"Applying affine to {fname}")
-            logging.info(f"-------------------{len(fname) * '-'}")
-            logging.info(f"Affine Native to RAS matrix \n{affine}")
-            logging.info(f"Original shape: {self._data_shape}")
+            logger.info(f"-------------------{len(fname) * '-'}")
+            logger.info(f"Applying affine to {fname}")
+            logger.info(f"-------------------{len(fname) * '-'}")
+            logger.info(f"Affine Native to RAS matrix \n{affine}")
+            logger.info(f"Original shape: {self._data_shape}")
             self._create_and_resize_actors(vol_data, self._int_range)
-            logging.info(f"Resized to RAS shape: {self._data_shape} \n")
+            logger.info(f"Resized to RAS shape: {self._data_shape} \n")
             np.set_printoptions()
         else:
-            logging.info(f"------------{len(fname) * '-'}")
-            logging.info(f"Visualizing {fname}")
-            logging.info(f"------------{len(fname) * '-'}")
-            logging.info(f"Original shape: {self._data_shape}")
+            logger.info(f"------------{len(fname) * '-'}")
+            logger.info(f"Visualizing {fname}")
+            logger.info(f"------------{len(fname) * '-'}")
+            logger.info(f"Original shape: {self._data_shape}")
             self._create_and_resize_actors(vol_data, self._int_range)
 
         self._sel_slices = np.rint(np.asarray(self._data_shape[:3]) / 2).astype(int)

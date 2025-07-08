@@ -1,7 +1,6 @@
 """Utility functions for file formats"""
 
 import enum
-import logging
 import numbers
 import os
 
@@ -13,6 +12,7 @@ from trx import trx_file_memmap
 
 import dipy
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 pd, have_pd, _ = optional_package("pandas")
@@ -208,11 +208,11 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
 
     if not affine.shape == (4, 4):
         all_valid = False
-        logging.warning("Transformation matrix must be 4x4")
+        logger.warning("Transformation matrix must be 4x4")
 
     if not affine[0:3, 0:3].any():
         all_valid = False
-        logging.warning("Rotation matrix cannot be all zeros")
+        logger.warning("Rotation matrix cannot be all zeros")
 
     if not len(dimensions) >= 3:
         all_valid = False
@@ -221,10 +221,10 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     for i in dimensions:
         if not isinstance(i, numbers.Integral):
             all_valid = False
-            logging.warning("Dimensions must be int.")
+            logger.warning("Dimensions must be int.")
         if i <= 0:
             all_valid = False
-            logging.warning("Dimensions must be above 0.")
+            logger.warning("Dimensions must be above 0.")
 
     if not len(voxel_sizes) >= 3:
         all_valid = False
@@ -232,10 +232,10 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     for i in voxel_sizes:
         if not isinstance(i, numbers.Number):
             all_valid = False
-            logging.warning("Voxel size must be int/float.")
+            logger.warning("Voxel size must be int/float.")
         if i <= 0:
             all_valid = False
-            logging.warning("Voxel size must be above 0.")
+            logger.warning("Voxel size must be above 0.")
 
     if not len(voxel_order) >= 3:
         all_valid = False
@@ -243,13 +243,13 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     for i in voxel_order:
         if not isinstance(i, str):
             all_valid = False
-            logging.warning("Voxel order must be string/char.")
+            logger.warning("Voxel order must be string/char.")
         if i not in ["R", "A", "S", "L", "P", "I"]:
             all_valid = False
-            logging.warning("Voxel order does not follow convention.")
+            logger.warning("Voxel order does not follow convention.")
 
     if only_3d_warning:
-        logging.warning("Only 3D (and above) reference are considered valid.")
+        logger.warning("Only 3D (and above) reference are considered valid.")
 
     return all_valid
 
@@ -400,19 +400,19 @@ def is_header_compatible(reference_1, reference_2):
 
     identical_header = True
     if not np.allclose(affine_1, affine_2, rtol=1e-03, atol=1e-03):
-        logging.error("Affine not equal")
+        logger.error("Affine not equal")
         identical_header = False
 
     if not np.array_equal(dimensions_1, dimensions_2):
-        logging.error("Dimensions not equal")
+        logger.error("Dimensions not equal")
         identical_header = False
 
     if not np.allclose(voxel_sizes_1, voxel_sizes_2, rtol=1e-03, atol=1e-03):
-        logging.error("Voxel_size not equal")
+        logger.error("Voxel_size not equal")
         identical_header = False
 
     if voxel_order_1 != voxel_order_2:
-        logging.error("Voxel_order not equal")
+        logger.error("Voxel_order not equal")
         identical_header = False
 
     return identical_header

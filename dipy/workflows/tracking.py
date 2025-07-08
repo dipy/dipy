@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-
-import logging
 import sys
 
 from dipy.data import SPHERE_FILES, get_sphere
@@ -22,6 +20,7 @@ from dipy.tracking.tracker import (
     probabilistic_tracking,
     ptt_tracking,
 )
+from dipy.utils.logging import logger
 from dipy.workflows.workflow import Workflow
 
 
@@ -136,27 +135,27 @@ class LocalFiberTrackingPAMFlow(Workflow):
 
         for pams_path, stopping_path, seeding_path, out_tract in io_it:
             if tracking_method == "eudx":
-                logging.info(f"EuDX Deterministic tracking on {pams_path}")
+                logger.info(f"EuDX Deterministic tracking on {pams_path}")
             else:
-                logging.info(f"{tracking_method.title()} tracking on {pams_path}")
+                logger.info(f"{tracking_method.title()} tracking on {pams_path}")
 
             pam = load_pam(pams_path, verbose=False)
             sphere = pam.sphere if sphere_name is None else get_sphere(name=sphere_name)
 
-            logging.info("Loading stopping criterion")
+            logger.info("Loading stopping criterion")
             stop, affine = load_nifti(stopping_path)
             if use_binary_mask:
                 stopping_criterion = BinaryStoppingCriterion(stop > stopping_thr)
             else:
                 stopping_criterion = ThresholdStoppingCriterion(stop, stopping_thr)
 
-            logging.info("Loading seeds")
+            logger.info("Loading seeds")
             seed_mask, _ = load_nifti(seeding_path)
             seeds = utils.seeds_from_mask(
                 seed_mask, affine, density=[seed_density, seed_density, seed_density]
             )
 
-            logging.info("Starting to track")
+            logger.info("Starting to track")
             if tracking_method in ["closestpeaks", "cp"]:
                 tracking_result = closestpeak_tracking(
                     seeds,
@@ -246,7 +245,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                     seed_buffer_fraction=seed_buffer_fraction,
                 )
             else:
-                logging.error(
+                logger.error(
                     f"Unknown tracking method: {tracking_method}. "
                     f"Please use one of the following: "
                     f"'eudx', 'deterministic', 'probabilistic', 'closestpeaks', 'ptt'"
@@ -263,7 +262,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                 streamlines, seeding_path, Space.RASMM, data_per_streamline=seeds
             )
             save_tractogram(sft, out_tract, bbox_valid_check=False)
-            logging.info(f"Saved {out_tract}")
+            logger.info(f"Saved {out_tract}")
 
 
 class PFTrackingPAMFlow(Workflow):
@@ -378,7 +377,7 @@ class PFTrackingPAMFlow(Workflow):
         sphere_name = SPHERE_FILES.get(sphere_name, None)
 
         for pams_path, wm_path, gm_path, csf_path, seeding_path, out_tract in io_it:
-            logging.info(f"Particle Filtering tracking on {pams_path}")
+            logger.info(f"Particle Filtering tracking on {pams_path}")
 
             pam = load_pam(pams_path, verbose=False)
             sphere = pam.sphere if sphere_name is None else get_sphere(name=sphere_name)
@@ -388,18 +387,18 @@ class PFTrackingPAMFlow(Workflow):
             csf, _ = load_nifti(csf_path)
             avs = sum(voxel_size) / len(voxel_size)  # average_voxel_size
 
-            logging.info("Preparing stopping criterion")
+            logger.info("Preparing stopping criterion")
             stopping_criterion = CmcStoppingCriterion.from_pve(
                 wm, gm, csf, step_size=step_size, average_voxel_size=avs
             )
 
-            logging.info("Seeding in mask")
+            logger.info("Seeding in mask")
             seed_mask, _ = load_nifti(seeding_path)
             seeds = utils.seeds_from_mask(
                 seed_mask, affine, density=[seed_density, seed_density, seed_density]
             )
 
-            logging.info("Start tracking")
+            logger.info("Start tracking")
             tracking_result = pft_tracking(
                 seeds,
                 stopping_criterion,
@@ -431,4 +430,4 @@ class PFTrackingPAMFlow(Workflow):
                 streamlines, seeding_path, Space.RASMM, data_per_streamline=seeds
             )
             save_tractogram(sft, out_tract, bbox_valid_check=False)
-            logging.info(f"Saved {out_tract}")
+            logger.info(f"Saved {out_tract}")

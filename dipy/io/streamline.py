@@ -1,5 +1,4 @@
 from copy import deepcopy
-import logging
 import os
 import time
 
@@ -14,6 +13,7 @@ from dipy.io.stateful_tractogram import StatefulTractogram
 from dipy.io.utils import Origin, Space, create_tractogram_header, is_header_compatible
 from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 
 
 @warning_for_keywords()
@@ -77,7 +77,7 @@ def save_tractogram(
     if extension in [".trk", ".tck", ".trx"]:
         to_origin = Origin.NIFTI
         to_space = Space.RASMM
-        logging.warning(
+        logger.warning(
             "to_space and to_origin are ignored when saving "
             ".trk or .tck or .trx files."
         )
@@ -98,7 +98,7 @@ def save_tractogram(
     elif extension in [".vtk", ".vtp", ".fib"]:
         binary = extension in [".vtk", ".fib"]
         save_vtk_streamlines(sft.streamlines, filename, binary=binary, to_lps=False)
-        logging.warning(
+        logger.warning(
             "StatefulTractogram was previously saving  in LPSMM space.\n"
             "Now use to_space=Space.LPSMM to match the previous behavior."
         )
@@ -111,7 +111,7 @@ def save_tractogram(
         tmm.save(trx, filename)
         trx.close()
 
-    logging.debug(
+    logger.debug(
         "Save %s with %s streamlines in %s seconds.",
         filename,
         len(sft),
@@ -174,25 +174,25 @@ def load_tractogram(
     """
     _, extension = os.path.splitext(filename)
     if extension not in [".trk", ".tck", ".trx", ".vtk", ".vtp", ".fib", ".dpy"]:
-        logging.error("Output filename is not one of the supported format.")
+        logger.error("Output filename is not one of the supported format.")
         return False
 
     if to_space not in Space:
-        logging.error("Space MUST be one of the 3 choices (Enum).")
+        logger.error("Space MUST be one of the 3 choices (Enum).")
         return False
 
     if reference == "same":
         if extension in [".trk", ".trx"]:
             reference = filename
         else:
-            logging.error(
+            logger.error(
                 'Reference must be provided, "same" is only available for Trk file.'
             )
             return False
 
     if trk_header_check and extension == ".trk":
         if not is_header_compatible(filename, reference):
-            logging.error("Trk file header does not match the provided reference.")
+            logger.error("Trk file header does not match the provided reference.")
             return False
 
     timer = time.time()
@@ -203,7 +203,7 @@ def load_tractogram(
     ):
         from_space = None
         from_origin = None
-        logging.warning(
+        logger.warning(
             "from_space and from_origin are ignored when loading "
             ".trk or .tck or .trx files."
         )
@@ -217,7 +217,7 @@ def load_tractogram(
 
     elif extension in [".vtk", ".vtp", ".fib"]:
         streamlines = load_vtk_streamlines(filename, to_lps=False)
-        logging.warning(
+        logger.warning(
             "StatefulTractogram was previously saving in LPSMM space.\n"
             "Use from_space=Space.LPSMM to load older files."
         )
@@ -243,7 +243,7 @@ def load_tractogram(
             data_per_streamline=data_per_streamline,
         )
 
-    logging.debug(
+    logger.debug(
         "Load %s with %s streamlines in %s seconds.",
         filename,
         len(sft),

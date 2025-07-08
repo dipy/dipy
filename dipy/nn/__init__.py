@@ -3,6 +3,7 @@ import os
 import sys
 
 from dipy.utils.deprecator import deprecate_with_version
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 
@@ -77,7 +78,7 @@ def _load_backend():
         ]
 
     else:
-        print(
+        logger.info(
             "Warning: Neither TensorFlow nor PyTorch is installed. "
             "Please install one of these packages."
         )

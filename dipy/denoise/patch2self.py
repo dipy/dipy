@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from dipy.stats.sketching import count_sketch
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 sklearn, has_sklearn, _ = optional_package("sklearn")
@@ -210,7 +211,7 @@ def vol_denoise(
         b0_denoising = False
     if not b0_denoising:
         if verbose:
-            print("b0 denoising skipped....")
+            logger.info("b0 denoising skipped....")
     for vol_idx in tqdm(
         range(data_shape[-1]), desc="Fitting and Denoising", leave=False
     ):
@@ -551,7 +552,7 @@ def _patch2self_version1(
     # if only 1 b0 volume, skip denoising it
     if data_b0s.ndim == 3 or not b0_denoising:
         if verbose:
-            print("b0 denoising skipped...")
+            logger.info("b0 denoising skipped...")
         denoised_b0s = data_b0s
 
     else:
@@ -579,7 +580,7 @@ def _patch2self_version1(
             )
 
         if verbose is True:
-            print("Denoised b0 Volume: ", vol_idx)
+            logger.info("Denoised b0 Volume: ", vol_idx)
     # Separate denoising for DWI volumes
     train_dwi = _extract_3d_patches(
         np.pad(
@@ -603,11 +604,11 @@ def _patch2self_version1(
         )
 
         if verbose is True:
-            print("Denoised DWI Volume: ", vol_idx)
+            logger.info("Denoised DWI Volume: ", vol_idx)
 
     if verbose is True:
         t2 = time.time()
-        print("Total time taken for Patch2Self: ", t2 - t1, " seconds")
+        logger.info("Total time taken for Patch2Self: ", t2 - t1, " seconds")
 
     if data_b0s.ndim == 3:
         denoised_arr[:, :, :, b0_idx[0][0]] = denoised_b0s
@@ -700,7 +701,7 @@ def _patch2self_version3(
         if end_idx > data.shape[3]:
             end_idx = data.shape[3]
         if verbose:
-            print(f"Loading data from {idx_start} to {end_idx}")
+            logger.info(f"Loading data from {idx_start} to {end_idx}")
         tmp[..., idx_start:end_idx] = data[..., idx_start:end_idx]
         idx_start = end_idx
     sketch_rows = int(0.30 * data.shape[0] * data.shape[1] * data.shape[2])
@@ -718,7 +719,7 @@ def _patch2self_version3(
         shape=sketched_matrix_shape,
     ).T
     if verbose:
-        print("Sketching done.")
+        logger.info("Sketching done.")
     b0_idx = np.argwhere(bvals <= b0_threshold)
     dwi_idx = np.argwhere(bvals > b0_threshold)
     data_b0s = np.take(np.squeeze(sketched_matrix), b0_idx, axis=0)
@@ -750,7 +751,7 @@ def _patch2self_version3(
     )
     if verbose:
         t2 = time.time()
-        print("Time taken for Patch2Self: ", t2 - t1, " seconds.")
+        logger.info("Time taken for Patch2Self: ", t2 - t1, " seconds.")
 
     denoised_arr = _apply_post_processing(
         denoised_arr, shift_intensity, clip_negative_vals

@@ -1,10 +1,11 @@
 """This module is dedicated to the handling of tractograms."""
 
-import logging
 import os
 
 import numpy as np
 import trx.trx_file_memmap as tmm
+
+from dipy.utils.logging import logger
 
 
 def concatenate_tractogram(
@@ -57,12 +58,12 @@ def concatenate_tractogram(
     ]
 
     if not trx_list:
-        logging.warning("Inputs of concatenation were empty.")
+        logger.warning("Inputs of concatenation were empty.")
         return tmm.TrxFile()
 
     if len(trx_list) == 1:
         if len(tractogram_list) > 1:
-            logging.warning("Only 1 valid tractogram returned.")
+            logger.warning("Only 1 valid tractogram returned.")
         return trx_list[0]
 
     ref_trx = trx_list[0]
@@ -93,13 +94,13 @@ def concatenate_tractogram(
                 or key not in curr_trx.data_per_vertex.keys()
             ):
                 if not delete_dpv:
-                    logging.debug(f"{key} dpv key does not exist in all TrxFile.")
+                    logger.debug(f"{key} dpv key does not exist in all TrxFile.")
                     raise ValueError("TrxFile must be sharing identical dpv keys.")
             elif (
                 ref_trx.data_per_vertex[key]._data.dtype
                 != curr_trx.data_per_vertex[key]._data.dtype
             ):
-                logging.debug(
+                logger.debug(
                     f"{key} dpv key is not declared with the same dtype in all TrxFile."
                 )
                 raise ValueError("Shared dpv key, has different dtype.")
@@ -111,13 +112,13 @@ def concatenate_tractogram(
                 or key not in curr_trx.data_per_streamline.keys()
             ):
                 if not delete_dps:
-                    logging.debug(f"{key} dps key does not exist in all TrxFile.")
+                    logger.debug(f"{key} dps key does not exist in all TrxFile.")
                     raise ValueError("TrxFile must be sharing identical dps keys.")
             elif (
                 ref_trx.data_per_streamline[key].dtype
                 != curr_trx.data_per_streamline[key].dtype
             ):
-                logging.debug(
+                logger.debug(
                     f"{key} dps key is not declared with the same dtype in all TrxFile."
                 )
                 raise ValueError("Shared dps key, has different dtype.")

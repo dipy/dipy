@@ -8,6 +8,7 @@ from cython.parallel import parallel, prange, threadid
 from scipy.spatial import KDTree
 from scipy.interpolate import interp1d
 
+from dipy.utils.logging import logger
 from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
@@ -87,10 +88,10 @@ cdef class FBCMeasures:
             3) the relative fiber to bundle coherence (RFBC)
         """
         if verbose:
-            print("median RFBC: " + str(np.median(self.streamlines_rfbc)))
-            print("mean RFBC: " + str(np.mean(self.streamlines_rfbc)))
-            print("min RFBC: " + str(np.min(self.streamlines_rfbc)))
-            print("max RFBC: " + str(np.max(self.streamlines_rfbc)))
+            logger.info("median RFBC: " + str(np.median(self.streamlines_rfbc)))
+            logger.info("mean RFBC: " + str(np.mean(self.streamlines_rfbc)))
+            logger.info("min RFBC: " + str(np.min(self.streamlines_rfbc)))
+            logger.info("max RFBC: " + str(np.max(self.streamlines_rfbc)))
 
         # logarithmic transform of color values to emphasize spurious fibers
         minval = np.nanmin(self.streamlines_lfbc)
@@ -193,8 +194,8 @@ cdef class FBCMeasures:
                                       dtype=np.int32)
         min_length = min(streamlines_length)
         if min_length < min_fiberlength:
-            print("The minimum fiber length is 10 points. \
-                    Shorter fibers were found and removed.")
+            logger.info("The minimum fiber length is 10 points. \
+                         Shorter fibers were found and removed.")
             py_streamlines = [x for x in py_streamlines
                               if x.shape[0] >= min_fiberlength]
             streamlines_length = np.array([x.shape[0] for x in py_streamlines],
@@ -252,9 +253,9 @@ cdef class FBCMeasures:
 
         if verbose:
             if have_openmp:
-                print("Running in parallel!")
+                logger.info("Running in parallel!")
             else:
-                print("No OpenMP...")
+                logger.info("No OpenMP...")
 
         # compute fiber LFBC measures
         with nogil:

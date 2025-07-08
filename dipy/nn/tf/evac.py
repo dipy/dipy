@@ -1,8 +1,6 @@
 #!/usr/bin/python
 """Class and helper functions for fitting the EVAC+ model."""
 
-import logging
-
 import numpy as np
 
 from dipy.align.reslice import reslice
@@ -16,6 +14,7 @@ from dipy.nn.utils import (
 from dipy.segment.utils import remove_holes_and_islands
 from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
@@ -40,16 +39,13 @@ else:
     class Layer:
         pass
 
-    logging.warning(
+    logger.warning(
         "This model requires Tensorflow.\
                     Please install these packages using \
                     pip. If using mac, please refer to this \
                     link for installation. \
                     https://github.com/apple/tensorflow_macos"
     )
-
-logging.basicConfig()
-logger = logging.getLogger("EVAC+")
 
 
 def prepare_img(image):
@@ -332,7 +328,7 @@ class EVACPlus:
         is mainly intended for the class function 'predict'.
         """
         fetch_model_weights_path = get_fnames(name="evac_default_tf_weights")
-        print(f"fetched {fetch_model_weights_path}")
+        logger.info(f"fetched {fetch_model_weights_path}")
         self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):

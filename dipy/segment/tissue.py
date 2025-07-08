@@ -3,6 +3,7 @@ import numpy as np
 from dipy.segment.mrf import ConstantObservationModel, IteratedConditionalModes
 from dipy.sims.voxel import add_noise
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 sklearn, has_sklearn, _ = optional_package("sklearn")
@@ -91,7 +92,7 @@ class TissueClassifierHMRF:
 
         for i in range(max_iter):
             if self.verbose:
-                print(f">> Iteration: {i}")
+                logger.info(f">> Iteration: {i}")
 
             PLN = icm.prob_neighborhood(seg_init, beta, nclasses)
             PVE = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)

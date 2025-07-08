@@ -1,5 +1,4 @@
 from abc import ABCMeta, abstractmethod
-import logging
 import operator
 from time import time
 
@@ -13,8 +12,7 @@ from dipy.segment.metricspeed import (
 )
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import nbytes, set_number_of_points
-
-logger = logging.getLogger(__name__)
+from dipy.utils.logging import logger
 
 
 class Identity:

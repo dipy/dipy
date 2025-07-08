@@ -1,4 +1,3 @@
-import logging
 from os.path import join as pjoin
 from warnings import warn
 
@@ -10,6 +9,7 @@ from dipy.io.streamline import load_tractogram
 from dipy.io.surface import load_gifti, load_pial
 from dipy.io.utils import create_nifti_header
 from dipy.stats.analysis import assignment_map
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz import horizon
 from dipy.workflows.workflow import Workflow
@@ -178,7 +178,7 @@ class HorizonFlow(Workflow):
             fname = input_output[0]
 
             if verbose:
-                logging.info(f"Loading file ... \n {fname}\n")
+                logger.info(f"Loading file ... \n {fname}\n")
 
             fl = fname.lower()
             ends = fl.endswith
@@ -219,7 +219,7 @@ class HorizonFlow(Workflow):
                 numpy_files.append(data)
 
                 if verbose:
-                    logging.info(f"numpy array length \n {len(data)}\n")
+                    logger.info(f"numpy array length \n {len(data)}\n")
 
         if buan:
             bundle_colors = []
