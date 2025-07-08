@@ -40,7 +40,7 @@ def load_surface(
 
     Parameters
     ----------
-    filename : string
+    fname : string
         Filename with valid extension
     reference : Nifti or Trk filename, Nifti1Image or TrkFile, Nifti1Header or
         trk.header (dict), or 'same' if the input is a trk file.
@@ -204,7 +204,7 @@ def save_surface(
             TRACKVIS standard (corner of the voxel)
     legacy_vtk_format : bool, optional
         Whether to save the file in legacy VTK format or not.
-    check_bbox_valid : bool, optional
+    bbox_valid_check : bool, optional
         Verification for negative voxel coordinates or values above the
         volume dimensions. Default is True, to enforce valid file.
     ref_pial : str, optional
@@ -278,8 +278,8 @@ def save_surface(
             )
 
         if ref_gii is not None:
-            _, ext = split_name_with_gz(ref_gii)
-            if ext != ".gii" or ext != ".gii.gz":
+            _, ref_ext = split_name_with_gz(ref_gii)
+            if ref_ext != ".gii" or ref_ext != ".gii.gz":
                 raise ValueError("Reference gii file must have .gii extension.")
             _, metadata = load_gifti(ref_gii, return_header=True)[-1]
         else:
