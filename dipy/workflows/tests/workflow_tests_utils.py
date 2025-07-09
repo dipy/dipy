@@ -166,7 +166,7 @@ class DummyVariableTypeWorkflow(Workflow):
         ----------
         positional_variable_str : variable string
             fake input string param
-        positional_variable_int : int
+        positional_int : int
             fake positional param
         out_dir : string
             fake output directory
