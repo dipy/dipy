@@ -252,7 +252,7 @@ def test_space_origin_gold_standard(space, origin):
     )
 
     # Test in the space it was loaded from
-    vertices = np.loadtxt(fname.replace(".ply", ".txt"))
+    vertices = np.loadtxt(fname.with_suffix(".txt"))
     faces = np.loadtxt(FILEPATH_DIX["gs_mesh_faces.txt"])
     npt.assert_allclose(vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
     npt.assert_allclose(faces, sfs.faces, atol=1e-3, rtol=1e-6)

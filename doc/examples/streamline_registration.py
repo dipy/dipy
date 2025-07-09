@@ -20,8 +20,6 @@ example.
 
 """
 
-from os.path import join as pjoin
-
 import numpy as np
 
 from dipy.align import affine_registration, syn_registration
@@ -181,7 +179,7 @@ regtools.overlay_slices(
 # We read the streamlines from file in voxel space:
 
 streamlines_files = fetch_stanford_tracks()
-lr_superiorfrontal_path = pjoin(streamlines_files[1], "hardi-lr-superiorfrontal.trk")
+lr_superiorfrontal_path = streamlines_files[1] / "hardi-lr-superiorfrontal.trk"
 
 sft = load_tractogram(lr_superiorfrontal_path, "same")
 

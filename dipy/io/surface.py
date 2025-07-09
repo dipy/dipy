@@ -1,14 +1,14 @@
 from copy import deepcopy
 import gzip
 import logging
-import os
+from pathlib import Path
 import time
 
 import nibabel as nib
 import numpy as np
 
 from dipy.io.stateful_surface import StatefulSurface
-from dipy.io.utils import Origin, Space, get_reference_info, split_name_with_gz
+from dipy.io.utils import Origin, Space, get_reference_info
 from dipy.io.vtk import (
     get_polydata_triangles,
     get_polydata_vertices,
@@ -40,7 +40,7 @@ def load_surface(
 
     Parameters
     ----------
-    fname : string
+    filename : string or Path
         Filename with valid extension
     reference : Nifti or Trk filename, Nifti1Image or TrkFile, Nifti1Header or
         trk.header (dict), or 'same' if the input is a trk file.
@@ -77,9 +77,10 @@ def load_surface(
     """
     vtk_ext = [".vtk", ".vtp", ".obj", ".stl", ".ply"]
     freesurfer_ext = [".gii", ".gii.gz", ".pial", ".nofix", ".orig", ".smoothwm", ".T1"]
-    _, ext = split_name_with_gz(fname)
 
-    if ext not in (freesurfer_ext + vtk_ext):
+    ext = "".join(Path(fname).suffixes).lower()
+
+    if not any(ext.endswith(_ext) for _ext in freesurfer_ext + vtk_ext):
         logging.error("Input extension is not one of the supported format.")
         return False
 
@@ -98,7 +99,7 @@ def load_surface(
         return False
 
     if reference == "same":
-        if ext in [".gii", ".gii.gz"]:
+        if any(ext.endswith(_ext) for _ext in [".gii", ".gii.gz"]):
             reference = fname
         else:
             logging.error(
@@ -109,7 +110,7 @@ def load_surface(
     timer = time.time()
     metadata = None
     data_per_vertex = None
-    if ext == ".gii" or ext == ".gii.gz":
+    if any(ext.endswith(_ext) for _ext in [".gii", ".gii.gz"]):
         data = load_gifti(fname)
         if gifti_in_freesurfer:
             data = (apply_freesurfer_transform(data[0], reference, inv=True), data[1])
@@ -198,7 +199,7 @@ def save_surface(
     ----------
     sfs : StatefulSurface
         The surface to save (must have been loaded properly)
-    fname : str
+    fname : str or Path
         Absolute path of the file.
     to_space : Enum (dipy.io.stateful_surface.Space), optional
         Space to which the surface will be transformed before saving
@@ -211,10 +212,10 @@ def save_surface(
     bbox_valid_check : bool, optional
         Verification for negative voxel coordinates or values above the
         volume dimensions. Default is True, to enforce valid file.
-    ref_pial : str, optional
+    ref_pial : str or Path, optional
         Reference pial file to save the surface in pial format.
         If not provided, the metadata of the input surface is used (if available).
-    ref_gii : str, optional
+    ref_gii : str or Path, optional
         Reference gii file to save the surface in gii format.
         If not provided, the header of the input surface is used (if available).
     gifti_in_freesurfer : bool, optional
@@ -236,7 +237,7 @@ def save_surface(
             "bounding box of the surface."
         )
 
-    _, ext = split_name_with_gz(fname)
+    ext = "".join(Path(fname).suffixes).lower()
 
     if ext in [".vtk", ".vtp", ".obj", ".stl", ".ply"]:
         sfs.to_space(to_space)
@@ -274,7 +275,7 @@ def save_surface(
         save_polydata(
             polydata, fname, legacy_vtk_format=legacy_vtk_format, color_array_name="RGB"
         )
-    elif ext in [".gii", ".gii.gz"]:
+    elif any(ext.endswith(_ext) for _ext in [".gii", ".gii.gz"]):
         if not hasattr(sfs, "gii_header") and ref_gii is None:
             raise ValueError(
                 "Metadata is required to save a gii file.\n"
@@ -282,8 +283,8 @@ def save_surface(
             )
 
         if ref_gii is not None:
-            _, ref_ext = split_name_with_gz(ref_gii)
-            if ref_ext != ".gii" or ref_ext != ".gii.gz":
+            ext = "".join(Path(ref_gii).suffixes).lower()
+            if not any(ext.endswith(_ext) for _ext in [".gii", ".gii.gz"]):
                 raise ValueError("Reference gii file must have .gii extension.")
             _, metadata = load_gifti(ref_gii, return_header=True)[-1]
         else:
@@ -303,7 +304,7 @@ def save_surface(
             )
 
         if ref_pial is not None:
-            _, ext = os.path.splitext(ref_pial)
+            ext = Path(ref_pial).suffix
             if ext != ".pial":
                 raise ValueError("Reference pial file must have .pial extension.")
             metadata = load_pial(ref_pial, return_meta=True)[-1]
@@ -333,7 +334,7 @@ def load_pial(fname, *, return_meta=False):
 
     Parameters
     ----------
-    fname : str
+    fname : str or Path
         Absolute path of the file.
     return_meta : bool, optional
         Whether to read the metadata of the file or not, by default False.
@@ -361,7 +362,7 @@ def save_pial(fname, vertices, faces, *, metadata=None):
 
     Parameters
     ----------
-    fname : str
+    fname : str or Path
         Absolute path of the file.
     vertices : ndarray
         Vertices.
@@ -378,7 +379,7 @@ def load_gifti(fname, *, return_header=False):
 
     Parameters
     ----------
-    fname : str
+    fname : str or Path
         Absolute path of the file.
 
     return_header : bool, optional
@@ -392,7 +393,8 @@ def load_gifti(fname, *, return_header=False):
     """
 
     def reader(fname):
-        if str(fname).endswith(".gii.gz"):
+        ext = "".join(Path(fname).suffixes).lower()
+        if ext.endswith(".gii.gz"):
             with gzip.GzipFile(fname) as gz:
                 img = nib.GiftiImage.from_bytes(gz.read())
         else:
@@ -412,12 +414,14 @@ def save_gifti(fname, vertices, faces, *, header=None):
 
     Parameters
     ----------
-    fname : str
+    fname : str or Path
         Absolute path of the file.
     vertices : ndarray
         Vertices.
     faces : ndarray
         Faces.
+    header : nib.filebasedimages.FileBasedHeader
+        Valid header for the gifti file, typically loaded from a reference GII
     """
     vert = nib.gifti.GiftiDataArray(
         vertices,
@@ -439,7 +443,7 @@ def apply_freesurfer_transform(vertices, reference, *, inv=False):
     ----------
     vertices : ndarray
         Vertices to transform.
-    reference : str
+    reference : str or Path
         Reference file to get the transform from.
     inv : bool, optional
         True if loading the surface, False if saving the surface.

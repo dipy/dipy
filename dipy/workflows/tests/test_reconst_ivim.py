@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 import warnings
 
@@ -40,9 +40,9 @@ def test_reconst_ivim():
         )
         N = len(bvals)
         bvecs = generate_bvecs(N)
-        temp_bval_path = pjoin(out_dir, "temp.bval")
+        temp_bval_path = Path(out_dir) / "temp.bval"
         np.savetxt(temp_bval_path, bvals)
-        temp_bvec_path = pjoin(out_dir, "temp.bvec")
+        temp_bvec_path = Path(out_dir) / "temp.bvec"
         np.savetxt(temp_bvec_path, bvecs)
 
         gtab = gradient_table(bvals, bvecs=bvecs)
@@ -62,16 +62,21 @@ def test_reconst_ivim():
         data_multi[0, 0, 0] = data_multi[0, 1, 0] = data_multi[1, 0, 0] = data_multi[
             1, 1, 0
         ] = data_single
-        data_path = pjoin(out_dir, "tmp_data.nii.gz")
+        data_path = Path(out_dir) / "tmp_data.nii.gz"
         save_nifti(data_path, data_multi, temp_affine, dtype=data_multi.dtype)
 
         mask = np.ones_like(data_multi[..., 0], dtype=np.uint8)
-        mask_path = pjoin(out_dir, "tmp_mask.nii.gz")
+        mask_path = Path(out_dir) / "tmp_mask.nii.gz"
         save_nifti(mask_path, mask, temp_affine)
 
         ivim_flow = ReconstIvimFlow()
 
-        args = [data_path, temp_bval_path, temp_bvec_path, mask_path]
+        args = [
+            str(data_path),
+            str(temp_bval_path),
+            str(temp_bvec_path),
+            str(mask_path),
+        ]
 
         msg = "Bounds for this fit have been set from experiments and * "
         with warnings.catch_warnings():

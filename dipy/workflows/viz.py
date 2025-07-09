@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 from warnings import warn
 
 import numpy as np
@@ -286,5 +286,5 @@ class HorizonFlow(Workflow):
             buan_colors=bundle_colors,
             roi_images=roi_images,
             roi_colors=roi_colors,
-            out_png=pjoin(out_dir, out_stealth_png),
+            out_png=Path(out_dir) / out_stealth_png,
         )

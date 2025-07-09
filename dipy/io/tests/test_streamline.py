@@ -1,5 +1,5 @@
 import itertools
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from urllib.error import HTTPError, URLError
 
@@ -176,7 +176,7 @@ def teardown_module():
 def io_tractogram(extension):
     with TemporaryDirectory() as tmp_dir:
         fname = f"test.{extension}"
-        fpath = pjoin(tmp_dir, fname)
+        fpath = Path(tmp_dir) / fname
 
         in_affine = np.eye(4)
         in_dimensions = np.array([50, 50, 50])
@@ -216,9 +216,9 @@ def test_vtk_matching_space(space, origin):
     ref_coords = sfs.streamlines._data.copy()
 
     with TemporaryDirectory() as tmpdir:
-        save_tractogram(sfs, pjoin(tmpdir, "tmp.vtk"), to_space=space, to_origin=origin)
+        save_tractogram(sfs, Path(tmpdir) / "tmp.vtk", to_space=space, to_origin=origin)
         sfs = load_tractogram(
-            pjoin(tmpdir, "tmp.vtk"),
+            Path(tmpdir) / "tmp.vtk",
             FILEPATH_DIX["gs_volume.nii"],
             from_space=space,
             from_origin=origin,
@@ -244,7 +244,7 @@ def test_io_vtk(ext):
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_low_io_vtk():
     with TemporaryDirectory() as tmp_dir:
-        fname = pjoin(tmp_dir, "test.fib")
+        fname = Path(tmp_dir) / "test.fib"
 
         # Test save
         save_vtk_streamlines(STREAMLINES, fname, binary=True)
@@ -256,7 +256,7 @@ def test_low_io_vtk():
 def trk_loader(filename):
     try:
         with TemporaryDirectory() as tmp_dir:
-            load_trk(pjoin(tmp_dir, filename), FILEPATH_DIX["gs_volume.nii"])
+            load_trk(Path(tmp_dir) / filename, FILEPATH_DIX["gs_volume.nii"])
         return True
     except ValueError:
         return False
@@ -269,7 +269,7 @@ def trk_saver(filename):
 
     try:
         with TemporaryDirectory() as tmp_dir:
-            save_trk(sft, pjoin(tmp_dir, filename))
+            save_trk(sft, Path(tmp_dir) / filename)
         return True
     except ValueError:
         return False

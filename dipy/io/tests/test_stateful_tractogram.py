@@ -1,7 +1,6 @@
 from copy import deepcopy
 import itertools
-import os
-from os.path import join as pjoin
+from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
 from urllib.error import HTTPError, URLError
@@ -49,14 +48,14 @@ def teardown_module():
 def test_direct_trx_loading():
     trx = tmm.load(FILEPATH_DIX["gs_streamlines.trx"])
     tmp_dir = deepcopy(trx._uncompressed_folder_handle.name)
-    assert os.path.isdir(tmp_dir)
+    assert Path(tmp_dir).is_dir()
     sft = trx.to_sft()
 
     tmp_points_vox = np.loadtxt(FILEPATH_DIX["gs_streamlines_vox_space.txt"])
     tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
 
     trx.close()
-    assert not os.path.isdir(tmp_dir)
+    assert not Path(tmp_dir).is_dir()
 
     npt.assert_allclose(sft.streamlines._data, tmp_points_rasmm, rtol=1e-04, atol=1e-06)
     sft.to_vox()
@@ -258,19 +257,19 @@ def test_iterative_saving_loading(ext):
         from_space=from_space,
     )
     with TemporaryDirectory() as tmp_dir:
-        save_tractogram(sft, pjoin(tmp_dir, f"gs_iter.{ext}"))
+        save_tractogram(sft, Path(tmp_dir) / f"gs_iter.{ext}")
         tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
 
         for _ in range(100):
             sft_iter = load_tractogram(
-                pjoin(tmp_dir, f"gs_iter.{ext}"),
+                Path(tmp_dir) / f"gs_iter.{ext}",
                 FILEPATH_DIX["gs_volume.nii"],
                 to_space=Space.RASMM,
             )
             npt.assert_allclose(
                 tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
             )
-            save_tractogram(sft_iter, pjoin(tmp_dir, f"gs_iter.{ext}"))
+            save_tractogram(sft_iter, Path(tmp_dir) / f"gs_iter.{ext}")
 
 
 def test_iterative_to_vox_transformation():
@@ -467,7 +466,7 @@ def test_random_point_color(rng):
     try:
         sft.data_per_point = coloring_dict
         with TemporaryDirectory() as tmp_dir:
-            save_tractogram(sft, pjoin(tmp_dir, "random_points_color.trk"))
+            save_tractogram(sft, Path(tmp_dir) / "random_points_color.trk")
         npt.assert_(True)
     except (TypeError, ValueError):
         npt.assert_(False)
@@ -489,7 +488,7 @@ def test_random_point_gray(rng):
     try:
         sft.data_per_point = coloring_dict
         with TemporaryDirectory() as tmp_dir:
-            save_tractogram(sft, pjoin(tmp_dir, "random_points_gray.trk"))
+            save_tractogram(sft, Path(tmp_dir) / "random_points_gray.trk")
         npt.assert_(True)
     except ValueError:
         npt.assert_(False)
@@ -517,7 +516,7 @@ def test_random_streamline_color(rng):
     try:
         sft.data_per_point = coloring_dict
         with TemporaryDirectory() as tmp_dir:
-            save_tractogram(sft, pjoin(tmp_dir, "random_streamlines_color.trk"))
+            save_tractogram(sft, Path(tmp_dir) / "random_streamlines_color.trk")
         npt.assert_(True)
     except (TypeError, ValueError):
         npt.assert_(False)

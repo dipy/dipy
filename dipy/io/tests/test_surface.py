@@ -1,5 +1,5 @@
 import itertools
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from urllib.error import HTTPError, URLError
 
@@ -51,9 +51,9 @@ def test_pial_load_save():
 
     with TemporaryDirectory() as tmpdir:
         save_surface(
-            sfs, pjoin(tmpdir, "lh.pial"), ref_pial=FILEPATH_DIX["naf_lh.pial"]
+            sfs, Path(tmpdir) / "lh.pial", ref_pial=FILEPATH_DIX["naf_lh.pial"]
         )
-        data_save = nib.freesurfer.read_geometry(pjoin(tmpdir, "lh.pial"))
+        data_save = nib.freesurfer.read_geometry(Path(tmpdir) / "lh.pial")
     npt.assert_almost_equal(data_raw[0], data_save[0], decimal=5)
 
 
@@ -68,9 +68,9 @@ def test_vtk_matching_space(space, origin):
     ref_vertices = sfs.vertices.copy()
 
     with TemporaryDirectory() as tmpdir:
-        save_surface(sfs, pjoin(tmpdir, "tmp.vtk"), to_space=space, to_origin=origin)
+        save_surface(sfs, Path(tmpdir) / "tmp.vtk", to_space=space, to_origin=origin)
         sfs = load_surface(
-            pjoin(tmpdir, "tmp.vtk"),
+            Path(tmpdir) / "tmp.vtk",
             FILEPATH_DIX["naf_mni_masked.nii.gz"],
             from_space=space,
             from_origin=origin,
@@ -96,9 +96,9 @@ def test_gifti_matching_space(type, fname, space, origin):
     ref_vertices = sfs.vertices.copy()
 
     with TemporaryDirectory() as tmpdir:
-        save_surface(sfs, pjoin(tmpdir, "tmp.gii"), to_space=space, to_origin=origin)
+        save_surface(sfs, Path(tmpdir) / "tmp.gii", to_space=space, to_origin=origin)
         sfs = load_surface(
-            pjoin(tmpdir, "tmp.gii"),
+            Path(tmpdir) / "tmp.gii",
             FILEPATH_DIX["anat.nii.gz"],
             from_space=space,
             from_origin=origin,
@@ -134,7 +134,7 @@ def test_freesurfer_density_operation(dataset, hemisphere, type):
     with TemporaryDirectory() as tmpdir:
         nib.save(
             nib.Nifti1Image(data, sfs.affine),
-            pjoin(tmpdir, f"{hemisphere}_{type}.nii.gz"),
+            Path(tmpdir) / f"{hemisphere}_{type}.nii.gz",
         )
 
     # Compute the barycenter of the density map and compare it to the

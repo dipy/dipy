@@ -1,4 +1,4 @@
-import os.path as op
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import nibabel as nib
@@ -78,7 +78,7 @@ def test_syn_registration():
         )
 
         npt.assert_equal(warped_moving.shape, subset_t2.shape)
-        mapping_fname = op.join(tmpdir, "mapping.nii.gz")
+        mapping_fname = Path(tmpdir) / "mapping.nii.gz"
         write_mapping(mapping, mapping_fname)
         file_mapping = read_mapping(mapping_fname, subset_b0_img, subset_t2_img)
 
@@ -300,14 +300,14 @@ def test_register_dwi_series_and_motion_correction():
         # Use an abbreviated data-set:
         img = nib.load(fdata)
         data = img.get_fdata()[..., :10]
-        nib.save(nib.Nifti1Image(data, img.affine), op.join(tmpdir, "data.nii.gz"))
+        nib.save(nib.Nifti1Image(data, img.affine), Path(tmpdir) / "data.nii.gz")
         # Save a subset:
         bvals = np.loadtxt(fbval)
         bvecs = np.loadtxt(fbvec)
-        np.savetxt(op.join(tmpdir, "bvals.txt"), bvals[:10])
-        np.savetxt(op.join(tmpdir, "bvecs.txt"), bvecs[:10])
+        np.savetxt(Path(tmpdir) / "bvals.txt", bvals[:10])
+        np.savetxt(Path(tmpdir) / "bvecs.txt", bvecs[:10])
         gtab = dpg.gradient_table(
-            op.join(tmpdir, "bvals.txt"), bvecs=op.join(tmpdir, "bvecs.txt")
+            Path(tmpdir) / "bvals.txt", bvecs=Path(tmpdir) / "bvecs.txt"
         )
         reg_img, reg_affines = register_dwi_series(data, gtab, affine=img.affine)
         reg_img_2, reg_affines_2 = motion_correction(data, gtab, affine=img.affine)
@@ -339,8 +339,8 @@ def test_streamline_registration(rng):
 
     with TemporaryDirectory() as tmpdir:
         for use_aff in [None, base_aff]:
-            fname1 = op.join(tmpdir, "sl1.trk")
-            fname2 = op.join(tmpdir, "sl2.trk")
+            fname1 = Path(tmpdir) / "sl1.trk"
+            fname2 = Path(tmpdir) / "sl2.trk"
             if use_aff is not None:
                 img = nib.Nifti1Image(np.zeros((2, 2, 2)), use_aff)
                 # Move the streamlines to this other space, and report it:

@@ -1,5 +1,5 @@
 from copy import deepcopy
-import os
+from pathlib import Path
 import time
 
 import nibabel as nib
@@ -31,7 +31,7 @@ def save_tractogram(
     ----------
     sft : StatefulTractogram
         The stateful tractogram to save
-    filename : string
+    filename : string or Path
         Filename with valid extension
     bbox_valid_check : bool
         Verification for negative voxel coordinates or values above the
@@ -44,7 +44,8 @@ def save_tractogram(
             TRACKVIS standard (corner of the voxel)
     """
 
-    _, extension = os.path.splitext(filename)
+    filename = Path(filename)
+    extension = "".join(filename.suffixes)
     if extension not in [".trk", ".tck", ".trx", ".vtk", ".vtp", ".fib", ".dpy"]:
         raise TypeError("Output filename is not one of the supported format.")
 
@@ -83,7 +84,7 @@ def save_tractogram(
     sft.to_space(to_space)
     sft.to_origin(to_origin)
     if extension in [".trk", ".tck"]:
-        tractogram_type = detect_format(filename)
+        tractogram_type = detect_format(str(filename))
         header = create_tractogram_header(tractogram_type, *sft.space_attributes)
         new_tractogram = Tractogram(sft.streamlines, affine_to_rasmm=np.eye(4))
 
@@ -92,7 +93,7 @@ def save_tractogram(
             new_tractogram.data_per_streamline = sft.data_per_streamline
 
         fileobj = tractogram_type(new_tractogram, header=header)
-        nib.streamlines.save(fileobj, filename)
+        nib.streamlines.save(fileobj, str(filename))
 
     elif extension in [".vtk", ".vtp", ".fib"]:
         binary = extension in [".vtk", ".fib"]
@@ -107,7 +108,7 @@ def save_tractogram(
         dpy_obj.close()
     elif extension in [".trx"]:
         trx = tmm.TrxFile.from_sft(sft)
-        tmm.save(trx, filename)
+        tmm.save(trx, str(filename))
         trx.close()
 
     logger.debug(
@@ -137,7 +138,7 @@ def load_tractogram(
 
     Parameters
     ----------
-    filename : string
+    filename : string or Path
         Filename with valid extension
     reference : Nifti or Trk filename, Nifti1Image or TrkFile, Nifti1Header or
         trk.header (dict), or 'same' if the input is a trk file.
@@ -169,7 +170,7 @@ def load_tractogram(
     output : StatefulTractogram
         The tractogram to load (must have been saved properly)
     """
-    _, extension = os.path.splitext(filename)
+    extension = "".join(Path(filename).suffixes)
     if extension not in [".trk", ".tck", ".trx", ".vtk", ".vtp", ".fib", ".dpy"]:
         logger.error("Output filename is not one of the supported format.")
         return False
@@ -289,7 +290,7 @@ def load_generator(ttype):
         from_space=None,
         from_origin=None,
     ):
-        _, extension = os.path.splitext(filename)
+        extension = "".join(Path(filename).suffixes)
         if not extension == ttype:
             msg = f"This function can only load {ttype} files, "
             msg += "for a more general purpose, use load_tractogram instead."
@@ -329,7 +330,7 @@ def save_generator(ttype):
     """
 
     def f_gen(sft, filename, bbox_valid_check=True):
-        _, extension = os.path.splitext(filename)
+        extension = "".join(Path(filename).suffixes)
         if not extension == ttype:
             msg = f"This function can only save {ttype} file, "
             msg += "for more general cases, use save_tractogram instead."

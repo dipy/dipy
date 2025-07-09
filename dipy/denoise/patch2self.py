@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import tempfile
 import time
 from warnings import warn
@@ -448,7 +449,7 @@ def _validate_inputs(data, out_dtype, patch_radius, version, tmp_dir):
     if isinstance(patch_radius, int):
         patch_radius = (patch_radius, patch_radius, patch_radius)
 
-    if version == 3 and tmp_dir is not None and not os.path.exists(tmp_dir):
+    if version == 3 and tmp_dir is not None and not Path(tmp_dir).exists():
         raise ValueError("The temporary directory does not exist.")
     if data.ndim != 4:
         raise ValueError("Patch2Self can only denoise on 4D arrays.", data.shape)

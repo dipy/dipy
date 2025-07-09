@@ -1,3 +1,4 @@
+from pathlib import Path
 from warnings import warn
 
 import numpy as np
@@ -705,9 +706,9 @@ def gradient_table(
 
     # If you provided strings with full paths, we go and load those from
     # the files:
-    if isinstance(bvals, str):
+    if isinstance(bvals, (str, Path)):
         bvals, _ = io.read_bvals_bvecs(bvals, None)
-    if isinstance(bvecs, str):
+    if isinstance(bvecs, (str, Path)):
         _, bvecs = io.read_bvals_bvecs(None, bvecs)
 
     bvals = np.asarray(bvals)

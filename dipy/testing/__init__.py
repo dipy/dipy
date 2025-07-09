@@ -2,14 +2,14 @@
 
 from functools import partial
 import operator
-from os.path import abspath, dirname, join as pjoin
+from pathlib import Path
 import warnings
 
 import numpy.testing as npt
 from numpy.testing import assert_array_equal
 
 # set path to example data
-IO_DATA_PATH = abspath(pjoin(dirname(__file__), "..", "io", "tests", "data"))
+IO_DATA_PATH = Path(__file__).resolve().parent / ".." / "io" / "tests" / "data"
 
 
 def assert_operator(value1, value2, msg="", op=operator.eq):

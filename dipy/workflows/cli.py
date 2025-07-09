@@ -1,5 +1,5 @@
 #!python
-import os
+from pathlib import Path
 import sys
 
 from dipy.utils.logging import logger
@@ -67,7 +67,7 @@ cli_flows = {
 
 def run():
     """Run scripts located in pyproject.toml."""
-    script_name = os.path.basename(sys.argv[0])
+    script_name = Path(sys.argv[0]).name
     mod_name, flow_name = cli_flows.get(script_name, (None, None))
     if mod_name is None:
         logger.info(f"Flow: {script_name} not Found in DIPY")
