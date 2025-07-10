@@ -14,9 +14,9 @@ from dipy.reconst.dti import color_fa, fractional_anisotropy
 from dipy.reconst.shm import CsaOdfModel, descoteaux07_legacy_msg, sh_to_sf_matrix
 from dipy.testing.decorators import set_random_number_generator, use_xvfb
 from dipy.tracking import utils
-from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import center_streamlines, transform_streamlines
+from dipy.tracking.tracker import eudx_tracking
 from dipy.utils.optpkg import optional_package
 
 fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
@@ -80,12 +80,21 @@ def test_contour_from_roi():
     seed_mask = labels == 2
     seeds = utils.seeds_from_mask(seed_mask, density=[1, 1, 1], affine=affine)
 
-    # Initialization of LocalTracking.
+    # Initialization of Eudx Tracking.
     # The computation happens in the next step.
-    streamlines = LocalTracking(csa_peaks, classifier, seeds, affine, step_size=2)
+    streamlines_generator = eudx_tracking(
+        seeds,
+        classifier,
+        affine,
+        pam=csa_peaks,
+        random_seed=1,
+        sphere=default_sphere,
+        step_size=2,
+        max_angle=45,
+    )
 
     # Compute streamlines and store as a list.
-    streamlines = list(streamlines)
+    streamlines = list(streamlines_generator)
 
     # Prepare the display objects.
     streamlines_actor = actor.line(
