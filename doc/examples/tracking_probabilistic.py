@@ -26,7 +26,7 @@ from dipy.direction import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
@@ -78,7 +78,7 @@ streamline_generator = probabilistic_tracking(
 
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_probabilistic_sf.trk")
+save_tractogram(sft, "tractogram_probabilistic_sf.trx")
 
 if has_fury:
     scene = window.Scene()
@@ -120,7 +120,7 @@ streamline_generator = probabilistic_tracking(
 
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_probabilistic_sh.trk")
+save_tractogram(sft, "tractogram_probabilistic_sh.trx")
 
 if has_fury:
     scene = window.Scene()
@@ -169,7 +169,7 @@ streamline_generator = probabilistic_tracking(
 
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_probabilistic_sh_pfm.trk")
+save_tractogram(sft, "tractogram_probabilistic_sh_pfm.trx")
 
 if has_fury:
     scene = window.Scene()

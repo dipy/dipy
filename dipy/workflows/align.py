@@ -1,7 +1,6 @@
 from pathlib import Path
 from warnings import warn
 
-import nibabel as nib
 import numpy as np
 
 from dipy.align import affine_registration, motion_correction
@@ -14,6 +13,8 @@ from dipy.align.streamwarp import bundlewarp
 from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti, save_qa_metric
+from dipy.io.stateful_tractogram import StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking.streamline import set_number_of_points, transform_streamlines
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
@@ -133,12 +134,13 @@ class SlrWithQbxFlow(Workflow):
         less_than=250,
         nb_pts=20,
         progressive=True,
+        bbox_valid_check=True,
         out_dir="",
-        out_moved="moved.trk",
+        out_moved="moved.trx",
         out_affine="affine.txt",
-        out_stat_centroids="static_centroids.trk",
-        out_moving_centroids="moving_centroids.trk",
-        out_moved_centroids="moved_centroids.trk",
+        out_stat_centroids="static_centroids.trx",
+        out_moving_centroids="moving_centroids.trx",
+        out_moved_centroids="moved_centroids.trx",
     ):
         """Streamline-based linear registration.
 
@@ -177,6 +179,9 @@ class SlrWithQbxFlow(Workflow):
             Number of points for discretizing each streamline.
         progressive : boolean, optional
             True to enable progressive registration.
+        bbox_valid_check : boolean, optional
+            Verification for negative voxel coordinates or values above the volume
+            dimensions.
         out_dir : string, optional
             Output directory.
         out_moved : string, optional
@@ -219,58 +224,77 @@ class SlrWithQbxFlow(Workflow):
             logger.info(f"Loading static file {static_file}")
             logger.info(f"Loading moving file {moving_file}")
 
-            static_obj = nib.streamlines.load(static_file)
-            moving_obj = nib.streamlines.load(moving_file)
-
-            static, static_header = static_obj.streamlines, static_obj.header
-            moving, moving_header = moving_obj.streamlines, moving_obj.header
+            static_obj = load_tractogram(
+                static_file, "same", bbox_valid_check=bbox_valid_check
+            )
+            moving_obj = load_tractogram(
+                moving_file, "same", bbox_valid_check=bbox_valid_check
+            )
 
             moved, affine, centroids_static, centroids_moving = slr_with_qbx(
-                static,
-                moving,
+                static_obj.streamlines,
+                moving_obj.streamlines,
                 x0=x0,
                 rm_small_clusters=rm_small_clusters,
                 greater_than=greater_than,
                 less_than=less_than,
                 qbx_thr=qbx_thr,
+                progressive=progressive,
+                nb_pts=nb_pts,
+                num_threads=num_threads,
             )
 
             logger.info(f"Saving output file {out_moved_file}")
-            new_tractogram = nib.streamlines.Tractogram(
-                moved, affine_to_rasmm=np.eye(4)
+
+            new_tractogram = StatefulTractogram(
+                moved,
+                moving_obj,
+                moving_obj.space,
             )
-            nib.streamlines.save(
-                new_tractogram, str(out_moved_file), header=moving_header
+            save_tractogram(
+                new_tractogram, str(out_moved_file), bbox_valid_check=bbox_valid_check
             )
 
             logger.info(f"Saving output file {out_affine_file}")
             np.savetxt(out_affine_file, affine)
 
             logger.info(f"Saving output file {static_centroids_file}")
-            new_tractogram = nib.streamlines.Tractogram(
-                centroids_static, affine_to_rasmm=np.eye(4)
+            new_tractogram = StatefulTractogram(
+                centroids_static,
+                moving_obj,
+                moving_obj.space,
             )
-            nib.streamlines.save(
-                new_tractogram, str(static_centroids_file), header=static_header
+            save_tractogram(
+                new_tractogram,
+                str(static_centroids_file),
+                bbox_valid_check=bbox_valid_check,
             )
 
             logger.info(f"Saving output file {moving_centroids_file}")
-            new_tractogram = nib.streamlines.Tractogram(
-                centroids_moving, affine_to_rasmm=np.eye(4)
+            new_tractogram = StatefulTractogram(
+                centroids_moving,
+                moving_obj,
+                moving_obj.space,
             )
-            nib.streamlines.save(
-                new_tractogram, str(moving_centroids_file), header=moving_header
+            save_tractogram(
+                new_tractogram,
+                str(moving_centroids_file),
+                bbox_valid_check=bbox_valid_check,
             )
 
             centroids_moved = transform_streamlines(centroids_moving, affine)
 
             logger.info(f"Saving output file {moved_centroids_file}")
 
-            new_tractogram = nib.streamlines.Tractogram(
-                centroids_moved, affine_to_rasmm=np.eye(4)
+            new_tractogram = StatefulTractogram(
+                centroids_moved,
+                moving_obj,
+                moving_obj.space,
             )
-            nib.streamlines.save(
-                new_tractogram, str(moved_centroids_file), header=moving_header
+            save_tractogram(
+                new_tractogram,
+                str(moved_centroids_file),
+                bbox_valid_check=bbox_valid_check,
             )
 
 
@@ -893,9 +917,10 @@ class BundleWarpFlow(Workflow):
         beta=20,
         max_iter=15,
         affine=True,
+        bbox_valid_check=True,
         out_dir="",
-        out_linear_moved="linearly_moved.trk",
-        out_nonlinear_moved="nonlinearly_moved.trk",
+        out_linear_moved="linearly_moved.trx",
+        out_nonlinear_moved="nonlinearly_moved.trx",
         out_warp_transform="warp_transform.npy",
         out_warp_kernel="warp_kernel.npy",
         out_dist="distance_matrix.npy",
@@ -909,9 +934,9 @@ class BundleWarpFlow(Workflow):
         Parameters
         ----------
         static_file : string
-            Path to the static (reference) .trk file.
+            Path to the static (reference) .trx file.
         moving_file : string
-            Path to the moving (target to be registered) .trk file.
+            Path to the moving (target to be registered) .trx file.
         dist : string, optional
             Path to the precalculated distance matrix file.
         alpha : float, optional
@@ -928,7 +953,10 @@ class BundleWarpFlow(Workflow):
             Maximum number of iterations for deformation process in ml-CPD
             method.
         affine : boolean, optional
-            If False, use rigid registration as starting point. (default True)
+            If False, use rigid registration as starting point.
+        bbox_valid_check : boolean, optional
+            Verification for negative voxel coordinates or values above the volume
+            dimensions.
         out_dir : string, optional
             Output directory.
         out_linear_moved : string, optional
@@ -953,16 +981,20 @@ class BundleWarpFlow(Workflow):
         logger.info(f"Loading static file {static_file}")
         logger.info(f"Loading moving file {moving_file}")
 
-        static_obj = nib.streamlines.load(static_file)
-        moving_obj = nib.streamlines.load(moving_file)
+        static_obj = load_tractogram(
+            static_file, "same", bbox_valid_check=bbox_valid_check
+        )
+        moving_obj = load_tractogram(
+            moving_file, "same", bbox_valid_check=bbox_valid_check
+        )
 
-        static, _ = static_obj.streamlines, static_obj.header
-        moving, moving_header = moving_obj.streamlines, moving_obj.header
+        static = static_obj.streamlines
+        moving = moving_obj.streamlines
 
         static = set_number_of_points(static, nb_points=20)
         moving = set_number_of_points(moving, nb_points=20)
 
-        deformed_bundle, affine_bundle, dists, mp, warp = bundlewarp(
+        deformed_bundle, affine_bundle, _, mp, warp = bundlewarp(
             static,
             moving,
             dist=dist,
@@ -973,21 +1005,25 @@ class BundleWarpFlow(Workflow):
         )
 
         logger.info(f"Saving output file {out_linear_moved}")
-        new_tractogram = nib.streamlines.Tractogram(
-            affine_bundle, affine_to_rasmm=np.eye(4)
+        new_tractogram = StatefulTractogram(
+            affine_bundle,
+            moving_obj,
+            moving_obj.space,
         )
-        nib.streamlines.save(
-            new_tractogram, str(Path(out_dir) / out_linear_moved), header=moving_header
+        save_tractogram(
+            new_tractogram,
+            str(Path(out_dir) / out_linear_moved),
+            bbox_valid_check=bbox_valid_check,
         )
 
         logger.info(f"Saving output file {out_nonlinear_moved}")
-        new_tractogram = nib.streamlines.Tractogram(
-            deformed_bundle, affine_to_rasmm=np.eye(4)
+        new_tractogram = StatefulTractogram(
+            deformed_bundle, moving_obj, moving_obj.space
         )
-        nib.streamlines.save(
+        save_tractogram(
             new_tractogram,
             str(Path(out_dir) / out_nonlinear_moved),
-            header=moving_header,
+            bbox_valid_check=bbox_valid_check,
         )
 
         logger.info(f"Saving output file {out_warp_transform}")

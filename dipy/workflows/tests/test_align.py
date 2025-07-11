@@ -50,24 +50,15 @@ def test_slr_flow():
     with TemporaryDirectory() as out_dir:
         data_path = get_fnames(name="fornix")
 
-        fornix = load_tractogram(data_path, "same", bbox_valid_check=False).streamlines
-
-        f = Streamlines(fornix)
-        f1 = f.copy()
-
-        f1_path = Path(out_dir) / "f1.trk"
-        sft = StatefulTractogram(f1, data_path, Space.RASMM)
-        save_tractogram(sft, f1_path, bbox_valid_check=False)
-
-        f2 = f1.copy()
-        f2._data += np.array([50, 0, 0])
-
-        f2_path = Path(out_dir) / "f2.trk"
-        sft = StatefulTractogram(f2, data_path, Space.RASMM)
-        save_tractogram(sft, f2_path, bbox_valid_check=False)
+        sft = load_tractogram(data_path, "same", bbox_valid_check=False)
+        sft.streamlines._data += np.array([50, 0, 0])
+        moved_path = Path(out_dir) / "moved.trk"
+        save_tractogram(sft, moved_path, bbox_valid_check=False)
 
         slr_flow = SlrWithQbxFlow(force=True)
-        slr_flow.run(str(f1_path), str(f2_path), out_dir=out_dir)
+        slr_flow.run(
+            str(data_path), str(moved_path), out_dir=out_dir, bbox_valid_check=False
+        )
 
         out_path = slr_flow.last_generated_outputs["out_moved"]
 
@@ -586,10 +577,10 @@ def test_bundlewarp_flow():
         save_tractogram(sft, f2_path, bbox_valid_check=False)
 
         bw_flow = BundleWarpFlow(force=True)
-        bw_flow.run(str(f1_path), str(f2_path), out_dir=out_dir)
+        bw_flow.run(str(f1_path), str(f2_path), out_dir=out_dir, bbox_valid_check=False)
 
-        out_linearly_moved = Path(out_dir) / "linearly_moved.trk"
-        out_nonlinearly_moved = Path(out_dir) / "nonlinearly_moved.trk"
+        out_linearly_moved = Path(out_dir) / "linearly_moved.trx"
+        out_nonlinearly_moved = Path(out_dir) / "nonlinearly_moved.trx"
 
         assert out_linearly_moved.exists()
         assert out_nonlinearly_moved.exists()

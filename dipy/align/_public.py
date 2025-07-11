@@ -35,7 +35,7 @@ from dipy.align.transforms import (
 import dipy.core.gradients as dpg
 import dipy.data as dpd
 from dipy.io.image import load_nifti, save_nifti
-from dipy.io.streamline import load_trk
+from dipy.io.streamline import load_tractogram
 from dipy.io.utils import read_img_arr_or_path
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points
@@ -848,9 +848,9 @@ def streamline_registration(moving, static, *, n_points=100, native_resampled=Fa
     """
     # Load the streamlines, if you were given a file-name
     if isinstance(moving, (str, Path)):
-        moving = load_trk(moving, "same", bbox_valid_check=False).streamlines
+        moving = load_tractogram(moving, "same", bbox_valid_check=False).streamlines
     if isinstance(static, (str, Path)):
-        static = load_trk(static, "same", bbox_valid_check=False).streamlines
+        static = load_tractogram(static, "same", bbox_valid_check=False).streamlines
 
     srr = StreamlineLinearRegistration()
     srm = srr.optimize(

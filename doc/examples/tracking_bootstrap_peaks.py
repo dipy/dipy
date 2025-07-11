@@ -20,7 +20,7 @@ from dipy.data import get_fnames, small_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking import utils
@@ -78,7 +78,7 @@ boot_streamline_generator = bootstrap_tracking(
 )
 streamlines = Streamlines(boot_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_bootstrap_dg.trk")
+save_tractogram(sft, "tractogram_bootstrap_dg.trx")
 
 if has_fury:
     scene = window.Scene()
@@ -114,7 +114,7 @@ peak_streamline_generator = closestpeak_tracking(
 )
 streamlines = Streamlines(peak_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "closest_peak_dg_CSD.trk")
+save_tractogram(sft, "closest_peak_dg_CSD.trx")
 
 if has_fury:
     scene = window.Scene()

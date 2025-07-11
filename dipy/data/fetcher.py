@@ -20,7 +20,7 @@ from dipy.core.gradients import (
 )
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
-from dipy.io.streamline import load_trk
+from dipy.io.streamline import load_tractogram
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import TripWire, optional_package
@@ -2581,7 +2581,6 @@ def read_bundles_2_subjects(
     """
     dname = Path(dipy_home) / "exp_bundles_and_maps", "bundles_2_subjects"
 
-    from dipy.io.streamline import load_tractogram
     from dipy.tracking.streamline import Streamlines
 
     res = {}
@@ -2889,7 +2888,7 @@ def read_five_af_bundles():
         bundles = []
         for sub in subjects:
             fname = Path(temp_dir) / sub / "AF_L.trk"
-            bundle_obj = load_trk(fname, "same", bbox_valid_check=False)
+            bundle_obj = load_tractogram(fname, "same", bbox_valid_check=False)
             bundles.append(bundle_obj.streamlines)
 
     return bundles

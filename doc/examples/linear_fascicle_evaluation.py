@@ -34,7 +34,7 @@ import dipy.core.optimize as opt
 from dipy.data import fetch_stanford_tracks, get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
-from dipy.io.streamline import load_trk
+from dipy.io.streamline import load_tractogram
 import dipy.tracking.life as life
 from dipy.viz import actor, colormap as cmap, window
 
@@ -58,7 +58,7 @@ cc_slice = labels == 2
 streamlines_files = fetch_stanford_tracks()
 lr_superiorfrontal_path = Path(streamlines_files[1]) / "hardi-lr-superiorfrontal.trk"
 
-candidate_sl_sft = load_trk(lr_superiorfrontal_path, "same")
+candidate_sl_sft = load_tractogram(lr_superiorfrontal_path, "same")
 candidate_sl_sft.to_vox()
 candidate_sl = candidate_sl_sft.streamlines
 

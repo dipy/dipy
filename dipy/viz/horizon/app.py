@@ -388,13 +388,13 @@ class Horizon:
                 c = cluster_actors[bundle]["cluster"]
                 indices = tractogram_clusters[t][c]
                 saving_streamlines.extend(Streamlines(indices))
-        logger.info("Saving result in tmp.trk")
+        logger.info("Saving result in tmp.trx")
 
         # Using the header of the first of the tractograms
         sft_new = StatefulTractogram(
             saving_streamlines, self.tractograms[0], Space.RASMM
         )
-        save_tractogram(sft_new, "tmp.trk", bbox_valid_check=False)
+        save_tractogram(sft_new, "tmp.trx", bbox_valid_check=False)
         logger.info("Saved!")
 
     # TODO: Move to another class/module

@@ -23,7 +23,7 @@ from dipy.data import get_fnames, small_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst.csdeconv import auto_response_ssst
 from dipy.reconst.rumba import RumbaSDModel
 from dipy.tracking import utils
@@ -142,7 +142,7 @@ window.record(
 )
 
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_probabilistic_rumba.trk")
+save_tractogram(sft, "tractogram_probabilistic_rumba.trx")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

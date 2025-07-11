@@ -2,7 +2,6 @@ from os.path import join
 from tempfile import TemporaryDirectory
 import warnings
 
-import nibabel as nib
 import numpy as np
 from numpy.testing import assert_equal
 
@@ -312,13 +311,12 @@ def test_local_fiber_tracking_workflow():
 
 
 def is_tractogram_empty(tractogram_path):
-    tractogram_file = nib.streamlines.load(tractogram_path)
-
-    return len(tractogram_file.tractogram) == 0
+    tractogram = load_tractogram(tractogram_path, "same", bbox_valid_check=False)
+    return len(tractogram) == 0
 
 
 def tractogram_has_seeds(tractogram_path):
-    tractogram = nib.streamlines.load(tractogram_path).tractogram
+    tractogram = load_tractogram(tractogram_path, "same", bbox_valid_check=False)
 
     return len(tractogram.data_per_streamline["seeds"]) > 0
 

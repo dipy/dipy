@@ -29,7 +29,7 @@ import dipy.data as dpd
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking.utils import transform_tracking_output
 
@@ -339,8 +339,8 @@ def test_streamline_registration(rng):
 
     with TemporaryDirectory() as tmpdir:
         for use_aff in [None, base_aff]:
-            fname1 = Path(tmpdir) / "sl1.trk"
-            fname2 = Path(tmpdir) / "sl2.trk"
+            fname1 = Path(tmpdir) / "sl1.trx"
+            fname2 = Path(tmpdir) / "sl2.trx"
             if use_aff is not None:
                 img = nib.Nifti1Image(np.zeros((2, 2, 2)), use_aff)
                 # Move the streamlines to this other space, and report it:
@@ -350,7 +350,7 @@ def test_streamline_registration(rng):
                     Space.VOX,
                 )
 
-                save_trk(tgm1, fname1, bbox_valid_check=False)
+                save_tractogram(tgm1, fname1, bbox_valid_check=False)
 
                 tgm2 = StatefulTractogram(
                     transform_tracking_output(sl2, np.linalg.inv(use_aff)),
@@ -358,14 +358,14 @@ def test_streamline_registration(rng):
                     Space.VOX,
                 )
 
-                save_trk(tgm2, fname2, bbox_valid_check=False)
+                save_tractogram(tgm2, fname2, bbox_valid_check=False)
 
             else:
                 img = nib.Nifti1Image(np.zeros((2, 2, 2)), np.eye(4))
                 tgm1 = StatefulTractogram(sl1, img, Space.RASMM)
                 tgm2 = StatefulTractogram(sl2, img, Space.RASMM)
-                save_trk(tgm1, fname1, bbox_valid_check=False)
-                save_trk(tgm2, fname2, bbox_valid_check=False)
+                save_tractogram(tgm1, fname1, bbox_valid_check=False)
+                save_tractogram(tgm2, fname2, bbox_valid_check=False)
 
             aligned, matrix = streamline_registration(fname2, fname1)
             npt.assert_almost_equal(aligned[0], sl1[0], decimal=5)
