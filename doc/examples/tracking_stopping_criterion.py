@@ -13,7 +13,7 @@ Each stopping criterion determines if the stopping is 'valid' or
 the streamline stops in a position classified as 'ENDPOINT' or 'OUTSIDEIMAGE'.
 A streamline is 'invalid' when it stops in a position classified as
 'TRACKPOINT' or 'INVALIDPOINT'. These conditions are described below. The
-'LocalTracking' generator can be set to output all generated streamlines
+deterministic tracker generator can be set to output all generated streamlines
 or only the 'valid' ones. See :footcite:t:`Girard2014` and
 :footcite:p:`Smith2012` for more details on these methods.
 
