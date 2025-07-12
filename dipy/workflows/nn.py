@@ -30,12 +30,12 @@ class EVACPlusFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         save_masked : bool, optional
             Save mask.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_mask : string, optional
             Name of the mask volume to be saved.
@@ -99,12 +99,12 @@ class BiasFieldCorrectionFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bval : string, optional
+        bval : string or Path, optional
             Path to the b-value file.
-        bvec : string, optional
+        bvec : string or Path, optional
             Path to the b-vector file.
         method : string, optional
             Bias field correction method. Choose from:
@@ -120,7 +120,7 @@ class BiasFieldCorrectionFlow(Workflow):
             Use CUDA for DeepN4 bias field correction.
         verbose : bool, optional
             Print verbose output.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_corrected : string, optional
             Name of the corrected volume to be saved.
