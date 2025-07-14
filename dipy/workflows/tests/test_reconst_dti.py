@@ -57,7 +57,7 @@ def reconst_flow_core(flow, extra_args=None, extra_kwargs=None):
 
         dti_flow = flow()
 
-        args = [str(data_path), str(bval_path), str(bvec_path), str(mask_path)]
+        args = [data_path, bval_path, bvec_path, mask_path]
         args.extend(extra_args)
         kwargs = {"out_dir": out_dir, "extract_pam_values": True}
         kwargs.update(extra_kwargs)

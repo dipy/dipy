@@ -102,10 +102,10 @@ def test_particle_filtering_tracking_workflows():
                 category=PendingDeprecationWarning,
             )
             reconst_csd_flow.run(
-                str(dwi_path),
-                str(bval_path),
-                str(bvec_path),
-                str(mask_path),
+                dwi_path,
+                bval_path,
+                bvec_path,
+                mask_path,
                 out_dir=out_dir,
                 extract_pam_values=True,
             )
@@ -143,11 +143,11 @@ def test_particle_filtering_tracking_workflows():
                 category=PendingDeprecationWarning,
             )
             pf_track_pam.run(
-                str(pam_path),
-                str(wm_path),
-                str(gm_path),
-                str(csf_path),
-                str(seeds_path),
+                pam_path,
+                wm_path,
+                gm_path,
+                csf_path,
+                seeds_path,
                 save_seeds=True,
                 out_dir=out_dir,
             )
@@ -172,10 +172,10 @@ def test_local_fiber_tracking_workflow():
                 category=PendingDeprecationWarning,
             )
             reconst_csd_flow.run(
-                str(data_path),
-                str(bval_path),
-                str(bvec_path),
-                str(mask_path),
+                data_path,
+                bval_path,
+                bvec_path,
+                mask_path,
                 out_dir=out_dir,
                 extract_pam_values=True,
             )
@@ -241,9 +241,9 @@ def test_local_fiber_tracking_workflow():
                 category=PendingDeprecationWarning,
             )
             lf_track_pam.run(
-                str(pam_path),
-                str(gfa_path),
-                str(seeds_path),
+                pam_path,
+                gfa_path,
+                seeds_path,
                 tracking_method="deterministic",
                 out_dir=out_dir,
             )
@@ -260,9 +260,9 @@ def test_local_fiber_tracking_workflow():
                 category=PendingDeprecationWarning,
             )
             lf_track_pam.run(
-                str(pam_path),
-                str(gfa_path),
-                str(seeds_path),
+                pam_path,
+                gfa_path,
+                seeds_path,
                 tracking_method="probabilistic",
                 out_dir=out_dir,
             )
@@ -279,9 +279,9 @@ def test_local_fiber_tracking_workflow():
                 category=PendingDeprecationWarning,
             )
             lf_track_pam.run(
-                str(pam_path),
-                str(gfa_path),
-                str(seeds_path),
+                pam_path,
+                gfa_path,
+                seeds_path,
                 tracking_method="closestpeaks",
                 out_dir=out_dir,
             )
@@ -298,9 +298,9 @@ def test_local_fiber_tracking_workflow():
                 category=PendingDeprecationWarning,
             )
             lf_track_pam.run(
-                str(pam_path),
-                str(gfa_path),
-                str(seeds_path),
+                pam_path,
+                gfa_path,
+                seeds_path,
                 tracking_method="deterministic",
                 save_seeds=True,
                 out_dir=out_dir,

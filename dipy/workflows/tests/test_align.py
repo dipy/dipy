@@ -35,7 +35,7 @@ def test_reslice():
         volume = load_nifti_data(data_path)
 
         reslice_flow = ResliceFlow()
-        reslice_flow.run(str(data_path), [1.5, 1.5, 1.5], out_dir=out_dir)
+        reslice_flow.run(data_path, [1.5, 1.5, 1.5], out_dir=out_dir)
 
         out_path = reslice_flow.last_generated_outputs["out_resliced"]
         resliced = load_nifti_data(out_path)
@@ -56,9 +56,7 @@ def test_slr_flow():
         save_tractogram(sft, moved_path, bbox_valid_check=False)
 
         slr_flow = SlrWithQbxFlow(force=True)
-        slr_flow.run(
-            str(data_path), str(moved_path), out_dir=out_dir, bbox_valid_check=False
-        )
+        slr_flow.run(data_path, moved_path, out_dir=out_dir, bbox_valid_check=False)
 
         out_path = slr_flow.last_generated_outputs["out_moved"]
 
@@ -100,12 +98,12 @@ def test_image_registration(rng):
 
             image_registration_flow._force_overwrite = True
             image_registration_flow.run(
-                str(static_image_file),
-                str(moving_image_file),
+                static_image_file,
+                moving_image_file,
                 transform="com",
                 out_dir=temp_out_dir,
-                out_moved=str(out_moved),
-                out_affine=str(out_affine),
+                out_moved=out_moved,
+                out_affine=out_affine,
             )
             check_existence(out_moved, out_affine)
 
@@ -115,12 +113,12 @@ def test_image_registration(rng):
 
             image_registration_flow._force_overwrite = True
             image_registration_flow.run(
-                str(static_image_file),
-                str(moving_image_file),
+                static_image_file,
+                moving_image_file,
                 transform="trans",
                 out_dir=temp_out_dir,
-                out_moved=str(out_moved),
-                out_affine=str(out_affine),
+                out_moved=out_moved,
+                out_affine=out_affine,
                 save_metric=True,
                 level_iters=[100, 10, 1],
                 out_quality="trans_q.txt",
@@ -136,12 +134,12 @@ def test_image_registration(rng):
 
             image_registration_flow._force_overwrite = True
             image_registration_flow.run(
-                str(static_image_file),
-                str(moving_image_file),
+                static_image_file,
+                moving_image_file,
                 transform="rigid",
                 out_dir=temp_out_dir,
-                out_moved=str(out_moved),
-                out_affine=str(out_affine),
+                out_moved=out_moved,
+                out_affine=out_affine,
                 save_metric=True,
                 level_iters=[100, 10, 1],
                 out_quality="rigid_q.txt",
@@ -157,12 +155,12 @@ def test_image_registration(rng):
 
             image_registration_flow._force_overwrite = True
             image_registration_flow.run(
-                str(static_image_file),
-                str(moving_image_file),
+                static_image_file,
+                moving_image_file,
                 transform="rigid_isoscaling",
                 out_dir=temp_out_dir,
-                out_moved=str(out_moved),
-                out_affine=str(out_affine),
+                out_moved=out_moved,
+                out_affine=out_affine,
                 save_metric=True,
                 level_iters=[100, 10, 1],
                 out_quality="rigid_isoscaling_q.txt",
@@ -178,12 +176,12 @@ def test_image_registration(rng):
 
             image_registration_flow._force_overwrite = True
             image_registration_flow.run(
-                str(static_image_file),
-                str(moving_image_file),
+                static_image_file,
+                moving_image_file,
                 transform="rigid_scaling",
                 out_dir=temp_out_dir,
-                out_moved=str(out_moved),
-                out_affine=str(out_affine),
+                out_moved=out_moved,
+                out_affine=out_affine,
                 save_metric=True,
                 level_iters=[100, 10, 1],
                 out_quality="rigid_scaling_q.txt",
@@ -199,12 +197,12 @@ def test_image_registration(rng):
 
             image_registration_flow._force_overwrite = True
             image_registration_flow.run(
-                str(static_image_file),
-                str(moving_image_file),
+                static_image_file,
+                moving_image_file,
                 transform="affine",
                 out_dir=temp_out_dir,
-                out_moved=str(out_moved),
-                out_affine=str(out_affine),
+                out_moved=out_moved,
+                out_affine=out_affine,
                 save_metric=True,
                 level_iters=[100, 10, 1],
                 out_quality="affine_q.txt",
@@ -220,8 +218,8 @@ def test_image_registration(rng):
             npt.assert_raises(
                 ValueError,
                 image_registration_flow.run,
-                str(static_image_file),
-                str(moving_image_file),
+                static_image_file,
+                moving_image_file,
                 transform="notransform",
             )
 
@@ -229,8 +227,8 @@ def test_image_registration(rng):
             npt.assert_raises(
                 ValueError,
                 image_registration_flow.run,
-                str(static_image_file),
-                str(moving_image_file),
+                static_image_file,
+                moving_image_file,
                 metric="wrong_metric",
             )
 
@@ -245,12 +243,12 @@ def test_image_registration(rng):
 
             image_registration_flow._force_overwrite = True
             kwargs = {
-                "static_image_files": str(dwi_image_file),
-                "moving_image_files": str(moving_image_file),
+                "static_image_files": dwi_image_file,
+                "moving_image_files": moving_image_file,
                 "transform": "trans",
                 "out_dir": temp_out_dir,
-                "out_moved": str(out_moved),
-                "out_affine": str(out_affine),
+                "out_moved": out_moved,
+                "out_affine": out_affine,
                 "save_metric": True,
                 "level_iters": [100, 10, 1],
                 "out_quality": "trans_q.txt",
@@ -265,10 +263,10 @@ def test_image_registration(rng):
             check_existence(out_moved, out_affine)
 
             apply_trans.run(
-                static_image_files=str(dwi_image_file),
-                moving_image_files=str(moving_image_file),
+                static_image_files=dwi_image_file,
+                moving_image_files=moving_image_file,
                 out_dir=temp_out_dir,
-                transform_map_file=str(out_affine),
+                transform_map_file=out_affine,
             )
 
             # Checking for the transformed volume shape
@@ -282,12 +280,12 @@ def test_image_registration(rng):
             image_registration_flow._force_overwrite = True
 
             kwargs = {
-                "static_image_files": str(static_image_file),
-                "moving_image_files": str(dwi_image_file),
+                "static_image_files": static_image_file,
+                "moving_image_files": dwi_image_file,
                 "transform": "trans",
                 "out_dir": temp_out_dir,
-                "out_moved": str(out_moved),
-                "out_affine": str(out_affine),
+                "out_moved": out_moved,
+                "out_affine": out_affine,
                 "save_metric": True,
                 "level_iters": [100, 10, 1],
                 "out_quality": "trans_q.txt",
@@ -302,10 +300,10 @@ def test_image_registration(rng):
             check_existence(out_moved, out_affine)
 
             apply_trans.run(
-                static_image_files=str(static_image_file),
-                moving_image_files=str(dwi_image_file),
+                static_image_files=static_image_file,
+                moving_image_files=dwi_image_file,
                 out_dir=temp_out_dir,
-                transform_map_file=str(out_affine),
+                transform_map_file=out_affine,
                 out_file="transformed2.nii.gz",
             )
 
@@ -406,12 +404,12 @@ def test_apply_affine_transform():
                 transform_type = str(i[0]).lower()
 
             image_registration_flow.run(
-                str(static_image_file),
-                str(moving_image_file),
+                static_image_file,
+                moving_image_file,
                 transform=transform_type,
                 out_dir=temp_out_dir,
-                out_moved=str(out_moved),
-                out_affine=str(out_affine),
+                out_moved=out_moved,
+                out_affine=out_affine,
                 level_iters=[1, 1, 1],
                 save_metric=False,
             )
@@ -422,10 +420,10 @@ def test_apply_affine_transform():
 
         images = Path(temp_out_dir) / "*moving*"
         apply_trans.run(
-            str(static_image_file),
-            str(images),
+            static_image_file,
+            images,
             out_dir=temp_out_dir,
-            transform_map_file=str(out_affine),
+            transform_map_file=out_affine,
         )
 
         # Checking for the transformed file.
@@ -481,7 +479,7 @@ def test_syn_registration_flow():
         fname_moving = Path(out_dir) / "tmp_moving.nii.gz"
         nib.save(moving_img, fname_moving)
 
-        positional_args = [str(fname_static), str(fname_moving)]
+        positional_args = [fname_static, fname_moving]
 
         # Test the cc metric
         metric_optional_args = {
@@ -577,7 +575,7 @@ def test_bundlewarp_flow():
         save_tractogram(sft, f2_path, bbox_valid_check=False)
 
         bw_flow = BundleWarpFlow(force=True)
-        bw_flow.run(str(f1_path), str(f2_path), out_dir=out_dir, bbox_valid_check=False)
+        bw_flow.run(f1_path, f2_path, out_dir=out_dir, bbox_valid_check=False)
 
         out_linearly_moved = Path(out_dir) / "linearly_moved.trx"
         out_nonlinearly_moved = Path(out_dir) / "nonlinearly_moved.trx"

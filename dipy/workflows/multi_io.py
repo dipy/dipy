@@ -2,11 +2,40 @@ from glob import glob
 import inspect
 import itertools
 import os
+from pathlib import Path
+import re
 
 import numpy as np
 
 from dipy.testing.decorators import warning_for_keywords
 from dipy.workflows.base import get_args_default
+
+
+def _resolve_path_or_pattern(path):
+    """Resolve a file path, directory, or glob pattern into a list of Path objects.
+
+    Parameters
+    ----------
+    path : str or Path
+        A single path string or Path object that can be a file, directory, or
+        glob pattern.
+
+    Returns
+    -------
+    list of paths
+        A sorted list of matching paths. Empty if no matches found.
+    """
+
+    if re.search(r"[*?\[\]]", str(path)):
+        return sorted(Path(p) for p in glob(str(path)))
+    else:
+        return (
+            sorted([path])
+            if Path(path).is_file()
+            else sorted(Path(path).glob("*"))
+            if Path(path).is_dir()
+            else []
+        )
 
 
 def common_start(sa, sb):
@@ -37,7 +66,7 @@ def connect_output_paths(
     ----------
     inputs : array
         List of input paths.
-    out_dir : string
+    out_dir : string or Path
         The output directory.
     out_files : array
         List of output files.
@@ -56,9 +85,9 @@ def connect_output_paths(
 
     """
     outputs = []
-    if isinstance(inputs, str):
+    if isinstance(inputs, (str, Path)):
         inputs = [inputs]
-    if isinstance(out_files, str):
+    if isinstance(out_files, (str, Path)):
         out_files = [out_files]
 
     sizes_of_inputs = [len(inp) for inp in inputs]
@@ -79,22 +108,22 @@ def connect_output_paths(
         mixing_prefixes = [""] * len(inputs[0])
 
     for mix_pref, inp in zip(mixing_prefixes, inputs[0]):
-        inp_dirname = os.path.dirname(inp)
+        inp_dirname = Path(inp).parent
         if output_strategy == "prepend":
-            if os.path.isabs(out_dir):
-                dname = out_dir + inp_dirname
-            if not os.path.isabs(out_dir):
-                dname = os.path.join(os.getcwd(), out_dir + inp_dirname)
+            if Path(out_dir).is_absolute():
+                dname = Path(out_dir) / inp_dirname
+            if not Path(out_dir).is_absolute():
+                dname = Path(os.getcwd()) / out_dir / inp_dirname
 
         elif output_strategy == "append":
-            dname = os.path.join(inp_dirname, out_dir)
+            dname = Path(inp_dirname) / out_dir
 
         else:
             dname = out_dir
 
         updated_out_files = []
         for out_file in out_files:
-            updated_out_files.append(os.path.join(dname, mix_pref + out_file))
+            updated_out_files.append(Path(dname) / (mix_pref + str(out_file)))
 
         outputs.append(updated_out_files)
 
@@ -107,19 +136,11 @@ def concatenate_inputs(multi_inputs):
     for inps in zip(*multi_inputs):
         mixing_name = ""
         for inp in inps:
-            mixing_name += basename_without_extension(inp) + "_"
+            inp = Path(inp)
+            mixing_name += inp.name.removesuffix("".join(inp.suffixes)) + "_"
 
         mixing_names.append(mixing_name + "_")
     return mixing_names
-
-
-def basename_without_extension(fname):
-    base = os.path.basename(fname)
-    result = base.split(".")[0]
-    if result[-4:] == ".nii":
-        result = result.split(".")[0]
-
-    return result
 
 
 @warning_for_keywords()
@@ -251,11 +272,16 @@ class IOIterator:
         self.file_existence_check(args)
         self.input_args = list(args)
         for inp in self.input_args:
-            if isinstance(inp, str):
-                self.inputs.append(sorted(glob(inp)))
-            if isinstance(inp, list) and all(isinstance(s, str) for s in inp):
-                nested = [sorted(glob(i)) for i in inp if isinstance(i, str)]
-                self.inputs.append(list(itertools.chain.from_iterable(nested)))
+            if isinstance(inp, (str, Path)):
+                _inp = _resolve_path_or_pattern(inp)
+                self.inputs.append(_inp)
+            if isinstance(inp, list) and all(isinstance(s, (str, Path)) for s in inp):
+                _nested = []
+                for i in inp:
+                    if not isinstance(i, (str, Path)):
+                        continue
+                    _nested.append(_resolve_path_or_pattern(i))
+                self.inputs.append(list(itertools.chain.from_iterable(_nested)))
 
     def set_out_dir(self, out_dir):
         self.out_dir = out_dir
@@ -284,8 +310,8 @@ class IOIterator:
     def create_directories(self):
         for outputs in self.outputs:
             for output in outputs:
-                directory = os.path.dirname(output)
-                if not (directory == "" or os.path.exists(directory)):
+                directory = Path(output).parent
+                if not (directory == "" or directory.exists()):
                     os.makedirs(directory)
 
     def __iter__(self):
@@ -294,18 +320,22 @@ class IOIterator:
         IO = np.concatenate([ins, out], axis=1)
         for i_o in IO:
             if len(i_o) == 1:
-                yield str(*i_o)
+                item = i_o[0]
+                yield item if isinstance(item, Path) else str(item)
             else:
                 yield i_o
 
     def file_existence_check(self, args):
         input_args = []
         for fname in args:
-            if isinstance(fname, str):
+            if isinstance(fname, (str, Path)):
                 input_args.append(fname)
             # unpack variable string
-            if isinstance(fname, list) and all(isinstance(s, str) for s in fname):
+            if isinstance(fname, list) and all(
+                isinstance(s, (str, Path)) for s in fname
+            ):
                 input_args += fname
         for path in input_args:
-            if len(glob(path)) == 0:
+            paths = _resolve_path_or_pattern(path)
+            if len(paths) == 0:
                 raise OSError(f"File not found: {path}")

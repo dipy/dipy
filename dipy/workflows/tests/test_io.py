@@ -57,14 +57,12 @@ is_big_endian = "big" in sys.byteorder.lower()
 def test_io_info():
     fimg, fbvals, fbvecs = get_fnames(name="small_101D")
     io_info_flow = IoInfoFlow()
-    io_info_flow.run([str(fimg), str(fbvals), str(fbvecs)])
+    io_info_flow.run([fimg, fbvals, fbvecs])
 
     fimg, fbvals, fbvecs = get_fnames(name="small_25")
     io_info_flow = IoInfoFlow()
-    io_info_flow.run([str(fimg), str(fbvals), str(fbvecs)])
-    io_info_flow.run(
-        [str(fimg), str(fbvals), str(fbvecs)], b0_threshold=20, bvecs_tol=0.001
-    )
+    io_info_flow.run([fimg, fbvals, fbvecs])
+    io_info_flow.run([fimg, fbvals, fbvecs], b0_threshold=20, bvecs_tol=0.001)
 
     filepath_dix, _, _ = get_fnames(name="gold_standard_io")
     if not is_big_endian:
@@ -138,10 +136,10 @@ def test_split_flow():
         split_flow = SplitFlow()
         data_path, _, _ = get_fnames()
         volume, affine = load_nifti(data_path)
-        split_flow.run(str(data_path), out_dir=out_dir)
+        split_flow.run(data_path, out_dir=out_dir)
         assert_true(Path(split_flow.last_generated_outputs["out_split"]).is_file())
         split_flow._force_overwrite = True
-        split_flow.run(str(data_path), vol_idx=0, out_dir=out_dir)
+        split_flow.run(data_path, vol_idx=0, out_dir=out_dir)
         split_path = split_flow.last_generated_outputs["out_split"]
         assert_true(Path(split_path).is_file())
         split_data, split_affine = load_nifti(split_path)
@@ -154,7 +152,7 @@ def test_concatenate_flow():
         concatenate_flow = ConcatenateTractogramFlow()
         data_path, _, _ = get_fnames(name="gold_standard_io")
         input_files = [
-            str(v)
+            v
             for k, v in data_path.items()
             if k
             in [
@@ -166,17 +164,15 @@ def test_concatenate_flow():
         ]
         concatenate_flow.run(*input_files, out_dir=out_dir)
         assert_true(
-            concatenate_flow.last_generated_outputs["out_extension"].endswith("trx")
+            str(concatenate_flow.last_generated_outputs["out_extension"]).endswith(
+                "trx"
+            )
         )
-        assert_true(
-            Path(
-                concatenate_flow.last_generated_outputs["out_tractogram"] + ".trx"
-            ).is_file()
-        )
+        _fname = concatenate_flow.last_generated_outputs["out_tractogram"]
+        _fname = Path(_fname).with_suffix(Path(_fname).suffix + ".trx")
+        assert_true(_fname.is_file())
 
-        trk = load_tractogram(
-            concatenate_flow.last_generated_outputs["out_tractogram"] + ".trx", "same"
-        )
+        trk = load_tractogram(_fname, "same")
         npt.assert_equal(len(trk), 13)
 
 
@@ -200,9 +196,9 @@ def test_convert_sh_flow():
         # Run the workflow and load the output
         workflow = ConvertSHFlow()
         workflow.run(
-            str(filepath_in),
+            filepath_in,
             out_dir=out_dir,
-            out_file=str(filename_out),
+            out_file=filename_out,
         )
         img_out, _ = load_nifti(filepath_out)
 
@@ -214,7 +210,7 @@ def test_convert_tractogram_flow():
     with TemporaryDirectory() as out_dir:
         data_path, _, _ = get_fnames(name="gold_standard_io")
         input_files = [
-            str(v)
+            v
             for k, v in data_path.items()
             if k
             in [
@@ -268,11 +264,11 @@ def test_convert_tensors_flow():
         # Run the workflow and load the output
         workflow = ConvertTensorsFlow()
         workflow.run(
-            str(filepath_in),
+            filepath_in,
             from_format="dipy",
             to_format="mrtrix",
             out_dir=out_dir,
-            out_tensor=str(filename_out),
+            out_tensor=filename_out,
         )
 
         img_out, _ = load_nifti(filepath_out)
@@ -302,7 +298,7 @@ def test_niftis_to_pam_flow():
         fname = Path(out_dir) / "test.pam5"
         save_pam(fname, pam)
 
-        args = [str(fname), str(out_dir)]
+        args = [fname, out_dir]
         flow = PamToNiftisFlow()
         flow.run(*args)
 
@@ -340,7 +336,7 @@ def test_tensor_to_pam_flow():
         save_nifti(f_mevals, df.evals, affine)
         save_nifti(f_mevecs, df.evecs, affine)
 
-        args = [str(f_mevals), str(f_mevecs)]
+        args = [f_mevals, f_mevecs]
         flow = TensorToPamFlow()
         flow.run(*args, out_dir=out_dir)
         pam_file = flow.last_generated_outputs["out_pam"]
@@ -359,7 +355,7 @@ def test_pam_to_niftis_flow():
         fname = Path(out_dir) / "test.pam5"
         save_pam(fname, pam)
 
-        args = [str(fname), str(out_dir)]
+        args = [fname, out_dir]
         flow = PamToNiftisFlow()
         flow.run(*args)
         assert_true(Path(flow.last_generated_outputs["out_peaks_dir"]).is_file())
@@ -387,7 +383,7 @@ def test_math():
                 math_flow = MathFlow()
                 math_flow.run(
                     op,
-                    [str(data_path_a), str(data_path_b), str(data_path)],
+                    [data_path_a, data_path_b, data_path],
                     out_dir=out_dir,
                     **kwarg,
                 )
@@ -404,7 +400,7 @@ def test_math():
             math_flow = MathFlow()
             math_flow.run(
                 "vol1*vol2",
-                [str(data_path_a), str(data_3d_path)],
+                [data_path_a, data_3d_path],
                 disable_check=True,
                 out_dir=out_dir,
             )
@@ -419,7 +415,7 @@ def test_math():
             math_flow = MathFlow()
             math_flow.run(
                 "vol1*vol2",
-                [str(data_bool_path), str(data_bool_2_path)],
+                [data_bool_path, data_bool_2_path],
                 disable_check=True,
                 dtype="bool",
                 out_dir=out_dir,
@@ -431,9 +427,7 @@ def test_math():
 
         else:
             math_flow = MathFlow()
-            npt.assert_raises(
-                TripWireError, math_flow.run, "vol1*3", [str(data_path_a)]
-            )
+            npt.assert_raises(TripWireError, math_flow.run, "vol1*3", [data_path_a])
 
 
 @pytest.mark.skipif(not have_ne, reason="numexpr not installed")
@@ -449,30 +443,30 @@ def test_math_error():
 
         math_flow = MathFlow()
         npt.assert_raises(
-            SyntaxError, math_flow.run, "vol1*", [str(data_path_a)], out_dir=out_dir
+            SyntaxError, math_flow.run, "vol1*", [data_path_a], out_dir=out_dir
         )
         npt.assert_raises(
             SystemExit,
             math_flow.run,
             "vol1*2",
-            [str(data_path_a)],
+            [data_path_a],
             dtype="k",
             out_dir=out_dir,
         )
         npt.assert_raises(
-            SystemExit, math_flow.run, "vol1*2", [str(data_path_b)], out_dir=out_dir
+            SystemExit, math_flow.run, "vol1*2", [data_path_b], out_dir=out_dir
         )
         npt.assert_raises(
-            SystemExit, math_flow.run, "vol1*2", [str(data_path_c)], out_dir=out_dir
+            SystemExit, math_flow.run, "vol1*2", [data_path_c], out_dir=out_dir
         )
         npt.assert_raises(
-            SystemExit, math_flow.run, "vol1*vol3", [str(data_path_a)], out_dir=out_dir
+            SystemExit, math_flow.run, "vol1*vol3", [data_path_a], out_dir=out_dir
         )
         npt.assert_raises(
             SystemExit,
             math_flow.run,
             "vol1*vol2",
-            [str(data_path), str(data_path_2)],
+            [data_path, data_path_2],
             out_dir=out_dir,
         )
 
@@ -486,7 +480,7 @@ def test_extract_b0_flow():
         save_nifti(b0_path, b0_data, affine)
 
         extract_b0_flow = ExtractB0Flow()
-        extract_b0_flow.run(str(fdata), str(fbval), out_dir=out_dir, strategy="first")
+        extract_b0_flow.run(fdata, fbval, out_dir=out_dir, strategy="first")
         npt.assert_equal(
             Path(extract_b0_flow.last_generated_outputs["out_b0"]),
             Path(out_dir) / "b0.nii.gz",
@@ -502,16 +496,16 @@ def test_extract_shell_flow():
 
         extract_shell_flow = ExtractShellFlow()
         extract_shell_flow.run(
-            str(fdata), str(fbval), str(fbvec), bvals_to_extract="2000", out_dir=out_dir
+            fdata, fbval, fbvec, bvals_to_extract="2000", out_dir=out_dir
         )
         res, _ = load_nifti(Path(out_dir) / "shell_2000.nii.gz")
         npt.assert_array_equal(res, data[..., 1:])
 
         extract_shell_flow._force_overwrite = True
         extract_shell_flow.run(
-            str(fdata),
-            str(fbval),
-            str(fbvec),
+            fdata,
+            fbval,
+            fbvec,
             bvals_to_extract="0, 2000",
             group_shells=False,
             out_dir=out_dir,
@@ -530,14 +524,12 @@ def test_extract_volume_flow():
         data, affine = load_nifti(fdata)
 
         extract_volume_flow = ExtractVolumeFlow()
-        extract_volume_flow.run(str(fdata), vol_idx="0-3,5", out_dir=out_dir)
+        extract_volume_flow.run(fdata, vol_idx="0-3,5", out_dir=out_dir)
         res, _ = load_nifti(extract_volume_flow.last_generated_outputs["out_vol"])
         npt.assert_equal(res.shape[-1], 5)
 
         extract_volume_flow._force_overwrite = True
-        extract_volume_flow.run(
-            str(fdata), vol_idx="0-3,5", grouped=False, out_dir=out_dir
-        )
+        extract_volume_flow.run(fdata, vol_idx="0-3,5", grouped=False, out_dir=out_dir)
         npt.assert_equal(Path(Path(out_dir) / "volume_2.nii.gz").is_file(), True)
         npt.assert_equal(Path(Path(out_dir) / "volume_5.nii.gz").is_file(), True)
         res2, _ = load_nifti(Path(out_dir) / "volume_2.nii.gz")

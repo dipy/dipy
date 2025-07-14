@@ -49,19 +49,19 @@ class SNRinCCFlow(Workflow):
 
         Parameters
         ----------
-        data_files : string
+        data_files : string or Path
             Path to the dwi.nii.gz file. This path may contain wildcards to
             process multiple inputs at once.
-        bvals_files : string
+        bvals_files : string or Path
             Path of bvals.
-        bvecs_files : string
+        bvecs_files : string or Path
             Path of bvecs.
-        mask_file : string
+        mask_file : string or Path
             Path of a brain mask file.
         bbox_threshold : variable float, optional
             Threshold for bounding box, values separated with commas for ex.
             [0.6,1,0,0.1,0,0.1].
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Where the resulting file will be saved.
         out_file : string, optional
             Name of the result file to be saved.
@@ -339,7 +339,7 @@ class BundleAnalysisTractometryFlow(Workflow):
             wildcards to process multiple inputs at once.
         no_disks : integer, optional
             Number of disks used for dividing bundle into disks.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
 
         References
@@ -492,12 +492,12 @@ class LinearMixedModelsFlow(Workflow):
 
         Parameters
         ----------
-        h5_files : string
+        h5_files : string or Path
             Path to the input metric files. This path may
             contain wildcards to process multiple inputs at once.
         no_disks : integer, optional
             Number of disks used for dividing bundle into disks.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
 
         """
@@ -566,7 +566,7 @@ class BundleShapeAnalysis(Workflow):
             list of bundle clustering thresholds used in QuickBundlesX.
         threshold : float, optional
             Bundle shape similarity threshold.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
 
         References

@@ -43,9 +43,9 @@ def reconst_mmri_core(flow, lap, pos):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message=msg, category=UserWarning)
             mmri_flow.run(
-                data_files=str(data_path),
-                bvals_files=str(bval_path),
-                bvecs_files=str(bvec_path),
+                data_files=data_path,
+                bvals_files=bval_path,
+                bvecs_files=bvec_path,
                 small_delta=0.0129,
                 big_delta=0.0218,
                 laplacian=lap,
@@ -80,9 +80,9 @@ def reconst_mmri_core(flow, lap, pos):
             npt.assert_warns(
                 UserWarning,
                 mmri_flow.run,
-                str(data_path),
-                str(tmp_bval_path),
-                str(tmp_bvec_path),
+                data_path,
+                tmp_bval_path,
+                tmp_bvec_path,
                 small_delta=0.0129,
                 big_delta=0.0218,
                 laplacian=lap,

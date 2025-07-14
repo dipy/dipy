@@ -61,7 +61,7 @@ class HorizonFlow(Workflow):
 
         Parameters
         ----------
-        input_files : variable string
+        input_files : variable string or Path
             Filenames.
         cluster : bool, optional
             Enable QuickBundlesX clustering.
@@ -118,7 +118,7 @@ class HorizonFlow(Workflow):
             Define the color for the roi images. Colors can be defined
             with 1 or 3 values and should be between [0-1]. For example, a
             value of (1, 0, 0) would mean the red color.
-        out_dir : str, optional
+        out_dir : str or Path, optional
             Output directory.
         out_stealth_png : str, optional
             Filename of saved picture.
@@ -180,28 +180,27 @@ class HorizonFlow(Workflow):
             if verbose:
                 logger.info(f"Loading file ... \n {fname}\n")
 
-            fl = fname.lower()
-            ends = fl.endswith
+            ext = "".join(Path(fname).suffixes).lower()
 
-            if ends(".trk") or ends(".trx"):
+            if ext in [".trk", ".trx"]:
                 sft = load_tractogram(fname, "same", bbox_valid_check=False)
                 tractograms.append(sft)
 
-            if ends((".dpy", ".tck", ".vtk", ".vtp", ".fib")):
+            if ext in [".dpy", ".tck", ".vtk", ".vtp", ".fib"]:
                 sft = load_tractogram(fname, emergency_ref)
                 tractograms.append(sft)
 
-            if ends(".nii.gz") or ends(".nii"):
+            if ext in [".nii.gz", ".nii"]:
                 data, affine = load_nifti(fname)
                 images.append((data, affine, fname))
 
-            if ends(".pial"):
+            if ext == ".pial":
                 surface = load_pial(fname)
                 if surface:
                     vertices, faces = surface
                     surfaces.append((vertices, faces, fname))
 
-            if ends(".gii.gz") or ends(".gii"):
+            if any(ext.endswith(_ext) for _ext in [".gii", ".gii.gz"]):
                 surface = load_gifti(fname)
                 vertices, faces = surface
                 if len(vertices) and len(faces):
@@ -210,11 +209,11 @@ class HorizonFlow(Workflow):
                 else:
                     warn(f"{fname} does not have any surface geometry.", stacklevel=2)
 
-            if ends(".pam5"):
+            if ext == ".pam5":
                 pam = load_pam(fname)
                 pams.append((pam, fname))
 
-            if ends(".npy"):
+            if ext == ".npy":
                 data = np.load(fname)
                 numpy_files.append(data)
 

@@ -47,10 +47,10 @@ def reconst_flow_core(flow, **kwargs):
                 category=PendingDeprecationWarning,
             )
             dsi_flow.run(
-                str(data_path),
-                str(bval_path),
-                str(bvec_path),
-                str(mask_path),
+                data_path,
+                bval_path,
+                bvec_path,
+                mask_path,
                 out_dir=out_dir,
                 extract_pam_values=True,
                 **kwargs,

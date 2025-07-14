@@ -31,11 +31,11 @@ def test_nlmeans_flow():
 
         nlmeans_flow = NLMeansFlow()
 
-        nlmeans_flow.run(str(data_path), out_dir=out_dir)
+        nlmeans_flow.run(data_path, out_dir=out_dir)
         assert_true(Path(nlmeans_flow.last_generated_outputs["out_denoised"]).is_file())
 
         nlmeans_flow._force_overwrite = True
-        nlmeans_flow.run(str(data_path), sigma=4, out_dir=out_dir)
+        nlmeans_flow.run(data_path, sigma=4, out_dir=out_dir)
         denoised_path = nlmeans_flow.last_generated_outputs["out_denoised"]
         assert_true(Path(denoised_path).is_file())
         denoised_data, denoised_affine = load_nifti(denoised_path)
@@ -50,14 +50,14 @@ def test_patch2self_flow():
 
         patch2self_flow = Patch2SelfFlow()
         patch2self_flow.run(
-            str(data_path), str(fbvals), patch_radius=(0, 0, 0), out_dir=out_dir, ver=1
+            data_path, fbvals, patch_radius=(0, 0, 0), out_dir=out_dir, ver=1
         )
         assert_true(
             Path(patch2self_flow.last_generated_outputs["out_denoised"]).is_file()
         )
         patch2self_flow = Patch2SelfFlow()
         patch2self_flow.run(
-            str(data_path), str(fbvals), patch_radius=(0, 0, 0), out_dir=out_dir, ver=3
+            data_path, fbvals, patch_radius=(0, 0, 0), out_dir=out_dir, ver=3
         )
         assert_true(
             Path(patch2self_flow.last_generated_outputs["out_denoised"]).is_file()
@@ -69,7 +69,7 @@ def test_lpca_flow():
         data_path, fbvals, fbvecs = get_fnames()
 
     lpca_flow = LPCAFlow()
-    lpca_flow.run(str(data_path), str(fbvals), str(fbvecs), out_dir=out_dir)
+    lpca_flow.run(data_path, fbvals, fbvecs, out_dir=out_dir)
     assert_true(Path(lpca_flow.last_generated_outputs["out_denoised"]).is_file())
 
 
@@ -81,14 +81,12 @@ def test_mppca_flow(rng):
         save_nifti(data_path, S0, np.eye(4))
 
         mppca_flow = MPPCAFlow()
-        mppca_flow.run(str(data_path), out_dir=out_dir)
+        mppca_flow.run(data_path, out_dir=out_dir)
         assert_true(Path(mppca_flow.last_generated_outputs["out_denoised"]).is_file())
         assert_false(Path(mppca_flow.last_generated_outputs["out_sigma"]).is_file())
 
         mppca_flow._force_overwrite = True
-        mppca_flow.run(
-            str(data_path), return_sigma=True, pca_method="svd", out_dir=out_dir
-        )
+        mppca_flow.run(data_path, return_sigma=True, pca_method="svd", out_dir=out_dir)
         assert_true(Path(mppca_flow.last_generated_outputs["out_denoised"]).is_file())
         assert_true(Path(mppca_flow.last_generated_outputs["out_sigma"]).is_file())
 
@@ -127,5 +125,5 @@ def test_gibbs_flow():
         save_nifti(data_path, image4d, np.eye(4))
 
         gibbs_flow = GibbsRingingFlow()
-        gibbs_flow.run(str(data_path), out_dir=out_dir)
+        gibbs_flow.run(data_path, out_dir=out_dir)
         assert_true(Path(gibbs_flow.last_generated_outputs["out_unring"]).is_file())

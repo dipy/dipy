@@ -12,11 +12,11 @@ class DummyWorkflow1(Workflow):
 
         Parameters
         ----------
-        inputs : string
+        inputs : string or Path
             fake input string param
         param1 : int
             fake positional param
-        out_dir : string
+        out_dir : string or Path
             fake output directory
         output_1 : string
             fake out file
@@ -38,11 +38,11 @@ class DummyWorkflow2(Workflow):
 
         Parameters
         ----------
-        inputs : string
+        inputs : string or Path
             fake input string param
         param2 : int
             fake positional param
-        out_dir : string
+        out_dir : string or Path
             fake output directory
         output_1 : string
             fake out file
@@ -61,11 +61,11 @@ class DummyCombinedWorkflow(CombinedWorkflow):
 
         Parameters
         ----------
-        inputs : string
+        inputs : string or Path
             fake input string param
         param_combined : int
             fake positional param
-        out_dir : string
+        out_dir : string or Path
             fake output directory
         out_combined : string
             fake out file
@@ -99,7 +99,7 @@ class DummyFlow(Workflow):
 
         Parameters
         ----------
-        positional_str : string
+        positional_str : string or Path
             positional string argument
         positional_bool : bool
             positional bool argument
@@ -121,7 +121,7 @@ class DummyFlow(Workflow):
             optional int argument #2
         optional_float_3 : float, optional
             optional float argument #3
-        out_dir : string
+        out_dir : string or Path
             output directory
         """
         return (
@@ -164,11 +164,11 @@ class DummyVariableTypeWorkflow(Workflow):
 
         Parameters
         ----------
-        positional_variable_str : variable string
+        positional_variable_str : variable string or Path
             fake input string param
         positional_int : int
             fake positional param
-        out_dir : string
+        out_dir : string or Path
             fake output directory
         """
         result = []
@@ -189,11 +189,11 @@ class DummyVariableTypeErrorWorkflow(Workflow):
 
         Parameters
         ----------
-        positional_variable_str : variable string
+        positional_variable_str : variable string or Path
             fake input string param
         positional_variable_int : variable int
             fake positional param
-        out_dir : string
+        out_dir : string or Path
             fake output directory
         """
         result = []

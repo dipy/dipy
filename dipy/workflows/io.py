@@ -2,6 +2,7 @@ import enum
 import importlib
 from inspect import getmembers, isfunction
 import os
+from pathlib import Path
 import re
 import sys
 import warnings
@@ -367,7 +368,7 @@ class IoInfoFlow(Workflow):
 
         Parameters
         ----------
-        input_files : variable string
+        input_files : variable string or Path
             Any number of NIfTI, bvals, bvecs or tractography data files.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
@@ -377,7 +378,7 @@ class IoInfoFlow(Workflow):
             unit vectors.
         bshell_thr : float, optional
             Threshold for distinguishing b-values in different shells.
-        reference : string, optional
+        reference : string or Path, optional
             Reference anatomy for ``*.tck``, ``*.vtk``/``*.vtp``, ``*.fib``, and
             ``*.dpy`` tractography files.
 
@@ -398,15 +399,15 @@ class IoInfoFlow(Workflow):
         tab = "\t".expandtabs(4)
 
         for input_path in io_it:
-            mult_ = len(input_path)
+            input_path = Path(input_path)
+            mult_ = len(str(input_path))
             logger.info(f"-----------{mult_ * '-'}")
             logger.info(f"Looking at {input_path}")
             logger.info(f"-----------{mult_ * '-'}")
 
-            ipath_lower = input_path.lower()
-            extension = os.path.splitext(ipath_lower)[1]
+            extension = "".join(input_path.suffixes).lower()
 
-            if ipath_lower.endswith(".nii") or ipath_lower.endswith(".nii.gz"):
+            if extension in [".nii", ".nii.gz"]:
                 data, affine, img, vox_sz, affcodes = load_nifti(
                     input_path, return_img=True, return_voxsize=True, return_coords=True
                 )
@@ -432,7 +433,7 @@ class IoInfoFlow(Workflow):
                     tab,
                 )
 
-            if os.path.basename(input_path).lower().find("bval") > -1:
+            if "bval" in input_path.name.lower():
                 bval_property_length = (
                     len(max([item.value for item in BvalPropertyName], key=len)) + 2
                 )
@@ -442,7 +443,7 @@ class IoInfoFlow(Workflow):
                     bvals, b0_threshold, bshell_thr, bval_property_length
                 )
 
-            if os.path.basename(input_path).lower().find("bvec") > -1:
+            if "bvec" in input_path.name.lower():
                 bvec_property_length = (
                     len(max([item.value for item in BvecPropertyName], key=len)) + 2
                 )
@@ -468,7 +469,7 @@ class IoInfoFlow(Workflow):
                 if extension in [".trk", ".trx"]:
                     sft = load_tractogram(input_path, "same", bbox_valid_check=False)
                 else:
-                    if not reference or not os.path.exists(reference):
+                    if not reference or not Path(reference).exists():
                         msg = (
                             "No reference provided. It is needed for tck, fib, dpy or "
                             "vtk files to load properly. Please provide a reference, "
@@ -574,7 +575,7 @@ class FetchFlow(Workflow):
 
         Parameters
         ----------
-        data_names : variable string
+        data_names : variable string or Path
             Any number of Nifti1, bvals or bvecs files.
         subjects : variable string, optional
             Identifiers of the subjects to download. Used only by the HBN & HCP dataset.
@@ -595,7 +596,7 @@ class FetchFlow(Workflow):
         hcp_aws_secret_access_key : string, optional
             AWS credentials to HCP AWS S3. Will only be used if `profile_name` is
             set to False.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
 
         """
@@ -703,13 +704,13 @@ class SplitFlow(Workflow):
 
         Parameters
         ----------
-        input_files : variable string
+        input_files : variable string or Path
             Any number of Nifti1 files
         vol_idx : int, optional
             Index of the 3D volume to extract.
         out_dir : string, optional
             Output directory.
-        out_split : string, optional
+        out_split : string or Path, optional
             Name of the resulting split volume
 
         """
@@ -746,10 +747,10 @@ class ExtractB0Flow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
         b0_threshold : float, optional
@@ -765,7 +766,7 @@ class ExtractB0Flow(Workflow):
 
             When used in conjunction with the batch parameter set to True, the
             strategy is applied individually on each continuous set found.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_b0 : string, optional
             Name of the resulting b0 volume.
@@ -837,13 +838,13 @@ class ExtractShellFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
         bvals_to_extract : string, optional
@@ -862,7 +863,7 @@ class ExtractShellFlow(Workflow):
         group_shells : bool, optional
             If True, extracted volumes are grouped into a single array. If False,
             returns a list of separate volumes.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_shell : string, optional
             Name of the resulting shell volume.
@@ -907,15 +908,12 @@ class ExtractShellFlow(Workflow):
             for i, shell in enumerate(shell_data):
                 shell_value = np.unique(output_bvals[i]).astype(int).astype(str)
                 shell_value = "_".join(shell_value.tolist())
-                save_nifti(
-                    oshell.replace(".nii", f"_{shell_value}.nii"),
-                    shell,
-                    affine,
-                    hdr=image.header,
+                suffixes = "".join(oshell.suffixes)
+                out_fname = Path(oshell).with_name(
+                    f"{oshell.name.removesuffix(suffixes)}_{shell_value}{suffixes}"
                 )
-                logger.info(
-                    f"b0 saved as {oshell.replace('.nii', f'_{shell_value}.nii')}"
-                )
+                save_nifti(out_fname, shell, affine, hdr=image.header)
+                logger.info(f"b0 saved as {out_fname}")
 
 
 class ExtractVolumeFlow(Workflow):
@@ -930,7 +928,7 @@ class ExtractVolumeFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Any number of Nifti1 files
         vol_idx : string, optional
             Indexes of the 3D volume to extract. Index start from 0. You can provide
@@ -941,7 +939,7 @@ class ExtractVolumeFlow(Workflow):
         grouped : bool, optional
             If True, extracted volumes are grouped into a single array. If False,
             save a list of separate volumes.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_vol : string, optional
             Name of the resulting volume.
@@ -960,7 +958,10 @@ class ExtractVolumeFlow(Workflow):
                 logger.info(f"Volume saved as {ovol}")
             else:
                 for i in vol_idx:
-                    fname = ovol.replace(".nii", f"_{i}.nii")
+                    suffixes = "".join(ovol.suffixes)
+                    fname = Path(ovol).with_name(
+                        f"{ovol.name.removesuffix(suffixes)}_{i}{suffixes}"
+                    )
                     split_vol = data[..., i]
                     save_nifti(fname, split_vol, affine, hdr=image.header)
                     logger.info(f"Volume saved as {fname}")
@@ -988,9 +989,9 @@ class ConcatenateTractogramFlow(Workflow):
 
         Parameters
         ----------
-        tractogram_list : variable string
+        tractogram_list : variable string or Path
             The stateful tractogram filenames to concatenate
-        reference : string, optional
+        reference : string or Path, optional
             Reference anatomy for tck/vtk/fib/dpy file.
             support (.nii or .nii.gz).
         delete_dpv : bool, optional
@@ -1006,7 +1007,7 @@ class ConcatenateTractogramFlow(Workflow):
             Preallocated TrxFile has already been generated and is the first
             element in trx_list (Note: delete_groups must be set to True as
             well)
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_extension : string, optional
             Extension of the resulting tractogram
@@ -1019,7 +1020,7 @@ class ConcatenateTractogramFlow(Workflow):
         trx_list = []
         has_group = False
         for fpath, _, _ in io_it:
-            if fpath.lower().endswith(".trx") or fpath.lower().endswith(".trk"):
+            if "".join(Path(fpath).suffixes).lower() in [".trx", ".trk"]:
                 reference = "same"
 
             if not reference:
@@ -1050,7 +1051,7 @@ class ConcatenateTractogramFlow(Workflow):
                 f"Invalid extension. Valid extensions are: {valid_extensions}"
             )
 
-        out_fpath = os.path.join(out_dir, f"{out_tractogram}.{out_extension}")
+        out_fpath = Path(out_dir) / f"{out_tractogram}.{out_extension}"
         save_tractogram(trx.to_sft(), out_fpath, bbox_valid_check=False)
 
 
@@ -1071,11 +1072,11 @@ class ConvertSHFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input files. This path may contain wildcards to
             process multiple inputs at once.
 
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Where the resulting file will be saved. (default '')
 
         out_file : string, optional
@@ -1108,7 +1109,7 @@ class ConvertTensorsFlow(Workflow):
 
         Parameters
         ----------
-        tensor_files : variable string
+        tensor_files : variable string or Path
             Any number of tensor files
         from_format : string, optional
             Format of the input tensor files. Valid options are 'dipy',
@@ -1116,7 +1117,7 @@ class ConvertTensorsFlow(Workflow):
         to_format : string, optional
             Format of the output tensor files. Valid options are 'dipy',
             'mrtrix', 'ants', 'fsl'.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_tensor : string, optional
             Name of the resulting tensor file
@@ -1148,7 +1149,7 @@ class ConvertTractogramFlow(Workflow):
 
         Parameters
         ----------
-        input_files : variable string
+        input_files : variable string or Path
             Any number of tractogram files
         reference : string, optional
             Reference anatomy for tck/vtk/fib/dpy file.
@@ -1157,7 +1158,7 @@ class ConvertTractogramFlow(Workflow):
             Data type of the tractogram points, used for vtk files.
         offsets_dtype : string, optional
             Data type of the tractogram offsets, used for vtk files.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_tractogram : string, optional
             Name of the resulting tractogram
@@ -1166,8 +1167,8 @@ class ConvertTractogramFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for fpath, otracks in io_it:
-            in_extension = fpath.lower().split(".")[-1]
-            out_extension = otracks.lower().split(".")[-1]
+            in_extension = Path(fpath).suffix.lower()
+            out_extension = Path(otracks).suffix.lower()
 
             if in_extension == out_extension:
                 warnings.warn(
@@ -1176,18 +1177,18 @@ class ConvertTractogramFlow(Workflow):
                 )
                 continue
 
-            if not reference and in_extension in ["trx", "trk"]:
+            if not reference and in_extension in [".trx", ".trk"]:
                 reference = "same"
 
-            if not reference and in_extension not in ["trx", "trk"]:
+            if not reference and in_extension not in [".trx", ".trk"]:
                 raise ValueError(
                     "No reference provided. It is needed for tck,fib, dpy or vtk files"
                 )
 
             sft = load_tractogram(fpath, reference, bbox_valid_check=False)
 
-            if out_extension != "trx":
-                if out_extension == "vtk":
+            if out_extension != ".trx":
+                if out_extension == ".vtk":
                     if sft.streamlines._data.dtype.name != pos_dtype:
                         sft.streamlines._data = sft.streamlines._data.astype(pos_dtype)
                     if offsets_dtype == "uint64" or offsets_dtype == "uint32":
@@ -1230,22 +1231,22 @@ class NiftisToPamFlow(Workflow):
 
         Parameters
         ----------
-        peaks_dir_files : string
+        peaks_dir_files : string or Path
             Path to the input peaks directions volume. This path may contain
             wildcards to process multiple inputs at once.
-        peaks_values_files : string
+        peaks_values_files : string or Path
             Path to the input peaks values volume. This path may contain
             wildcards to process multiple inputs at once.
-        peaks_indices_files : string
+        peaks_indices_files : string or Path
             Path to the input peaks indices volume. This path may contain
             wildcards to process multiple inputs at once.
-        shm_files : string, optional
+        shm_files : string, optional or Path
             Path to the input spherical harmonics volume. This path may
             contain wildcards to process multiple inputs at once.
-        gfa_files : string, optional
+        gfa_files : string or Path, optional
             Path to the input generalized FA volume. This path may contain
             wildcards to process multiple inputs at once.
-        sphere_files : string, optional
+        sphere_files : string or Path, optional
             Path to the input sphere vertices. This path may contain
             wildcards to process multiple inputs at once. If it is not define,
             default_sphere option will be used.
@@ -1254,7 +1255,7 @@ class NiftisToPamFlow(Workflow):
             representation. This option can be superseded by
             sphere_files option. Possible options: ['symmetric362', 'symmetric642',
             'symmetric724', 'repulsion724', 'repulsion100', 'repulsion200'].
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory (default input file directory).
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -1284,7 +1285,7 @@ class NiftisToPamFlow(Workflow):
                 peak_indices=peak_indices,
                 pam_file=opam,
             )
-            logger.info(msg.replace("pam5", opam))
+            logger.info(msg.replace("pam5", str(opam)))
 
 
 class TensorToPamFlow(Workflow):
@@ -1305,13 +1306,13 @@ class TensorToPamFlow(Workflow):
 
         Parameters
         ----------
-        evals_files : string
+        evals_files : string or Path
             Path to the input eigen values volumes. This path may contain
             wildcards to process multiple inputs at once.
-        evecs_files : string
+        evecs_files : string or Path
             Path to the input eigen vectors volumes. This path may contain
             wildcards to process multiple inputs at once.
-        sphere_files : string, optional
+        sphere_files : string or Path, optional
             Path to the input sphere vertices. This path may contain
             wildcards to process multiple inputs at once. If it is not define,
             default_sphere option will be used.
@@ -1320,7 +1321,7 @@ class TensorToPamFlow(Workflow):
             representation. This option can be superseded by sphere_files
             option. Possible options: ['symmetric362', 'symmetric642',
             'symmetric724', 'repulsion724', 'repulsion100', 'repulsion200'].
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory (default input file directory).
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -1342,7 +1343,7 @@ class TensorToPamFlow(Workflow):
                 sphere = get_sphere(name=default_sphere_name)
 
             tensor_to_pam(evals, evecs, affine, sphere=sphere, pam_file=opam)
-            logger.info(msg.replace("pam5", opam))
+            logger.info(msg.replace("pam5", str(opam)))
 
 
 class PamToNiftisFlow(Workflow):
@@ -1499,7 +1500,7 @@ class MathFlow(Workflow):
                   parts.
                 - ``contains(np.str, np.str) -> bool``: returns True for every string
                   in op1 that contains op2.
-        input_files : variable string
+        input_files : variable string or Path
             Any number of Nifti1 files
         dtype : string, optional
             Data type of the resulting file.
@@ -1517,11 +1518,11 @@ class MathFlow(Workflow):
         info_msg = ""
         have_errors = False
         for i, fname in enumerate(input_files, start=1):
-            if not os.path.isfile(fname):
+            if not Path(fname).is_file():
                 logger.error(f"Input file {fname} does not exist.")
                 raise SystemExit()
 
-            if not (fname.endswith(".nii.gz") or fname.endswith(".nii")):
+            if "".join(Path(fname).suffixes) not in [".nii.gz", ".nii"]:
                 msg = (
                     f"Wrong volume type: {fname}. Only Nifti files are supported"
                     " (*.nii or *.nii.gz)."
@@ -1576,6 +1577,6 @@ class MathFlow(Workflow):
 
         if res.dtype == bool:
             res = res.astype(np.uint8)
-        out_fname = os.path.join(out_dir, out_file)
+        out_fname = Path(out_dir) / out_file
         logger.info(f"Saving result to {out_fname}")
         save_nifti(out_fname, res, affine)

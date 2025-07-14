@@ -78,10 +78,10 @@ def reconst_flow_core(flow, **kwargs):
         reconst_flow = flow()
         for sh_order in [4, 6, 8]:
             reconst_flow.run(
-                str(data_path),
-                str(bval_path),
-                str(bvec_path),
-                str(mask_path),
+                data_path,
+                bval_path,
+                bvec_path,
+                mask_path,
                 sh_order_max=sh_order,
                 out_dir=out_dir,
                 extract_pam_values=True,
@@ -139,10 +139,10 @@ def reconst_flow_core(flow, **kwargs):
                 reconst_flow = flow()
                 reconst_flow._force_overwrite = True
                 reconst_flow.run(
-                    str(data_path),
-                    str(bval_path),
-                    str(bvec_path),
-                    str(mask_path),
+                    data_path,
+                    bval_path,
+                    bvec_path,
+                    mask_path,
                     out_dir=out_dir,
                     frf=[15, 5, 5],
                     **kwargs,
@@ -150,10 +150,10 @@ def reconst_flow_core(flow, **kwargs):
                 reconst_flow = flow()
                 reconst_flow._force_overwrite = True
                 reconst_flow.run(
-                    str(data_path),
-                    str(bval_path),
-                    str(bvec_path),
-                    str(mask_path),
+                    data_path,
+                    bval_path,
+                    bvec_path,
+                    mask_path,
                     out_dir=out_dir,
                     frf="15, 5, 5",
                     **kwargs,
@@ -161,10 +161,10 @@ def reconst_flow_core(flow, **kwargs):
                 reconst_flow = flow()
                 reconst_flow._force_overwrite = True
                 reconst_flow.run(
-                    str(data_path),
-                    str(bval_path),
-                    str(bvec_path),
-                    str(mask_path),
+                    data_path,
+                    bval_path,
+                    bvec_path,
+                    mask_path,
                     out_dir=out_dir,
                     frf=None,
                     **kwargs,
@@ -172,10 +172,10 @@ def reconst_flow_core(flow, **kwargs):
                 reconst_flow2 = flow()
                 reconst_flow2._force_overwrite = True
                 reconst_flow2.run(
-                    str(data_path),
-                    str(bval_path),
-                    str(bvec_path),
-                    str(mask_path),
+                    data_path,
+                    bval_path,
+                    bvec_path,
+                    mask_path,
                     out_dir=out_dir,
                     frf=None,
                     roi_center=[5, 5, 5],
@@ -186,10 +186,10 @@ def reconst_flow_core(flow, **kwargs):
                     npt.assert_warns(
                         UserWarning,
                         reconst_flow.run,
-                        str(data_path),
-                        str(tmp_bval_path),
-                        str(tmp_bvec_path),
-                        str(mask_path),
+                        data_path,
+                        tmp_bval_path,
+                        tmp_bvec_path,
+                        mask_path,
                         out_dir=out_dir,
                         extract_pam_values=True,
                         **kwargs,
@@ -201,10 +201,10 @@ def reconst_flow_core(flow, **kwargs):
                 reconst_flow = flow()
                 reconst_flow._force_overwrite = True
                 reconst_flow.run(
-                    str(data_path),
-                    str(bval_path),
-                    str(bvec_path),
-                    str(mask_path),
+                    data_path,
+                    bval_path,
+                    bvec_path,
+                    mask_path,
                     out_dir=out_dir,
                     parallel=True,
                     num_processes=2,

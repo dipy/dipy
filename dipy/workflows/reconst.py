@@ -96,11 +96,11 @@ class ReconstMAPMRIFlow(Workflow):
 
         Parameters
         ----------
-        data_files : string
+        data_files : string or Path
             Path to the input volume.
-        bvals_files : string
+        bvals_files : string or Path
             Path to the bval files.
-        bvecs_files : string
+        bvecs_files : string or Path
             Path to the bvec files.
         small_delta : float
             Small delta value used in generation of gradient table of provided
@@ -143,7 +143,7 @@ class ReconstMAPMRIFlow(Workflow):
             If true, all peak values are calculated relative to `max(odf)`.
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_rtop : string, optional
             Name of the rtop to be saved.
@@ -355,16 +355,16 @@ class ReconstDtiFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once.
         fit_method : string, optional
@@ -397,7 +397,7 @@ class ReconstDtiFlow(Workflow):
             Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension.
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_tensor : string, optional
             Name of the tensors volume to be saved.
@@ -667,16 +667,16 @@ class ReconstDsiFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once.
         qgrid_size : int, optional
@@ -717,7 +717,7 @@ class ReconstDsiFlow(Workflow):
             (default multiprocessing.cpu_count()). If < 0 the maximal number
             of cores minus ``num_processes + 1`` is used (enter -1 to use as
             many cores as possible). 0 raises an error.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -1103,16 +1103,16 @@ class ReconstQBallBaseFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         method : string, optional
@@ -1154,7 +1154,7 @@ class ReconstQBallBaseFlow(Workflow):
             (default multiprocessing.cpu_count()). If < 0 the maximal number
             of cores minus ``num_processes + 1`` is used (enter -1 to use as
             many cores as possible). 0 raises an error.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -1331,16 +1331,16 @@ class ReconstDkiFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         fit_method : string, optional
@@ -1361,7 +1361,7 @@ class ReconstDkiFlow(Workflow):
             Save or not to save pam volumes as single nifti files.
         npeaks : int, optional
             Number of peaks to fit in each voxel.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_dt_tensor : string, optional
             Name of the tensors volume to be saved.
@@ -1613,16 +1613,16 @@ class ReconstIvimFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         split_b_D : int, optional
@@ -1636,7 +1636,7 @@ class ReconstIvimFlow(Workflow):
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: S0_predicted, perfusion_fraction, D_star, D
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_S0_predicted : string, optional
             Name of the S0 signal estimated to be saved.
@@ -1774,16 +1774,16 @@ class ReconstRUMBAFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once.
         b0_threshold : float, optional
@@ -1849,7 +1849,7 @@ class ReconstRUMBAFlow(Workflow):
         min_separation_angle : float, optional
             The minimum distance between directions. If two peaks are too close
             only the larger of the two is returned.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -2025,16 +2025,16 @@ class ReconstSDTFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         ratio : float, optional
@@ -2071,7 +2071,7 @@ class ReconstSDTFlow(Workflow):
             Save or not to save pam volumes as single nifti files.
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -2251,14 +2251,14 @@ class ReconstSFMFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
         sphere_name : string, optional
             Sphere name on which to reconstruct the fODFs.
@@ -2295,7 +2295,7 @@ class ReconstSFMFlow(Workflow):
             Save or not to save pam volumes as single nifti files.
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -2465,13 +2465,13 @@ class ReconstGQIFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
         mask_files : string
@@ -2502,7 +2502,7 @@ class ReconstGQIFlow(Workflow):
             Save or not to save pam volumes as single nifti files.
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -2673,16 +2673,16 @@ class ReconstForecastFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvalues files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         lambda_lb : float, optional
@@ -2713,7 +2713,7 @@ class ReconstForecastFlow(Workflow):
             Save or not to save pam volumes as single nifti files.
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
