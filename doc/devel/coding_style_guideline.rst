@@ -41,6 +41,7 @@ In order to check the compliance locally, developers should install the
 The git hook scripts need to be installed then running::
 
   pre-commit install
+  pre-commit install --hook-type commit-msg
 
 ``pre-commit`` will then run automatically on ``git commit``.
 

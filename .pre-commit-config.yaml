@@ -16,3 +16,9 @@ repos:
       - id: codespell
         additional_dependencies:
           - tomli
+  - repo: local
+    hooks:
+    - id: dipy-commit-msg
+      name: 'dipy-commit-msg'
+      entry: 'tools/hooks/commit-msg.py'
+      language: python
