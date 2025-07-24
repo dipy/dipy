@@ -161,6 +161,8 @@ streamline = np.array(
 )
 
 streamline_64bit = streamline.astype(np.float64)
+streamline_16bit = streamline.astype(np.float16)
+streamline_16bit = streamline.astype(np.float16)
 
 streamlines = [
     streamline[[0, 10]],
@@ -396,6 +398,10 @@ def test_length():
     length_streamline_cython = length(streamline_64bit)
     length_streamline_python = length_python(streamline_64bit)
     assert_almost_equal(length_streamline_cython, length_streamline_python)
+
+    length_streamline_cython = length(streamline_16bit)
+    length_streamline_python = length_python(streamline_16bit)
+    assert_almost_equal(length_streamline_cython, length_streamline_python, decimal=4)
 
     # Test computing length of multiple streamlines of different nb_points
     length_streamlines_cython = length(streamlines)
@@ -847,8 +853,8 @@ def test_compress_streamlines_memory_leaks(rng):
             cstreamlines
         )  # Delete `cstreamlines` because it holds a reference to `list`   # noqa: F841
 
-        # Calling `compress_streamlines` should increase the refcount of `list`
-        # by one since we kept the returned value.
+        # Calling `compress_streamlines` should increase the refcount of `list` by
+        # one since we kept the returned value.
         assert_equal(list_refcount_after, list_refcount_before + 1)
 
     # Test mixed dtypes
