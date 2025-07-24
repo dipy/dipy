@@ -2377,11 +2377,8 @@ def lower_triangular(tensor, *, b0=None):
     if not isinstance(b0, (int, float, np.ndarray)):
         raise TypeError("b0 should be a number")
 
-    if isinstance(b0, np.ndarray):
-        b0 = b0.mean()
-
     D = np.empty(tensor.shape[:-2] + (7,), dtype=tensor.dtype)
-    D[..., 6] = -np.log(b0 if b0 > 0 else 1.0)
+    D[..., 6] = -np.log(np.where(b0 > MIN_POSITIVE_SIGNAL, b0, MIN_POSITIVE_SIGNAL))
     D[..., :6] = tensor[..., _lt_rows, _lt_cols]
     return D
 
