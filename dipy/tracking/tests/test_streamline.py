@@ -162,7 +162,6 @@ streamline = np.array(
 
 streamline_64bit = streamline.astype(np.float64)
 streamline_16bit = streamline.astype(np.float16)
-streamline_16bit = streamline.astype(np.float16)
 
 streamlines = [
     streamline[[0, 10]],
