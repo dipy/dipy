@@ -6,7 +6,7 @@ References
 .. footbibliography::
 """
 
-from warnings import warn
+from warnings import catch_warnings, filterwarnings, warn
 
 import numpy as np
 
@@ -691,23 +691,30 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
         vox_log_data = log_data[i : i + 1, :].T
         vox_log_data[np.isinf(vox_log_data)] = 0
         y.value = vox_data * vox_log_data
-        A.value = vox_data * X
+        A_val = vox_data * X
 
-        try:
-            prob.solve(solver=cvxpy_solver, verbose=False)
-            m = x.value
-        except Exception:
-            msg = "Constrained optimization failed, attempting unconstrained"
-            msg += " optimization."
-            warn(msg, stacklevel=2)
+        A.value = A_val
+
+        # Suppress SCS CSC warning only for small matrices
+        with catch_warnings():
+            if A_val.shape[0] < 1000:
+                filterwarnings("ignore", message="Converting A to a CSC")
+
             try:
-                unconstrained.solve(solver=cvxpy_solver)
+                prob.solve(solver=cvxpy_solver, verbose=False)
                 m = x.value
             except Exception:
-                msg = "Unconstrained optimization failed,"
-                msg += " returning zero array."
+                msg = "Constrained optimization failed, attempting unconstrained"
+                msg += " optimization."
                 warn(msg, stacklevel=2)
-                m = np.zeros(x.shape)
+                try:
+                    unconstrained.solve(solver=cvxpy_solver)
+                    m = x.value
+                except Exception:
+                    msg = "Unconstrained optimization failed,"
+                    msg += " returning zero array."
+                    warn(msg, stacklevel=2)
+                    m = np.zeros(x.shape)
 
         params_masked[i : i + 1, :] = m.T
 
