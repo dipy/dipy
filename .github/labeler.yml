@@ -112,11 +112,11 @@ area:utils:
 
 area:viz:
   files:
-    - "src/viz/*"
+    - "dipy/viz/*"
 
 area:workflows:
   files:
-    - "src/workflows/*"
+    - "dipy/workflows/*"
 
 type:cython:
   files:

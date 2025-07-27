@@ -28,12 +28,12 @@ from dipy.direction import peaks
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst import shm
 from dipy.tracking import utils
-from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tracker import eudx_tracking
 from dipy.viz import actor, colormap as cmap, window
 
 ###############################################################################
@@ -88,10 +88,16 @@ csapeaks = peaks.peaks_from_model(
 seeds = utils.seeds_from_mask(white_matter, affine, density=1)
 stopping_criterion = BinaryStoppingCriterion(white_matter)
 
-streamline_generator = LocalTracking(
-    csapeaks, stopping_criterion, seeds, affine=affine, step_size=0.5
+streamlines_generator = eudx_tracking(
+    seeds,
+    stopping_criterion,
+    affine,
+    pam=csapeaks,
+    random_seed=1,
+    sphere=peaks.default_sphere,
+    step_size=0.5,
 )
-streamlines = Streamlines(streamline_generator)
+streamlines = Streamlines(streamlines_generator)
 
 ###############################################################################
 # The first of the tracking utilities we'll cover here is ``target``. This
@@ -239,7 +245,7 @@ lr_sf_trk = Streamlines(lr_superiorfrontal_track)
 
 # Save streamlines
 sft = StatefulTractogram(lr_sf_trk, hardi_img, Space.RASMM)
-save_trk(sft, "lr-superiorfrontal.trk")
+save_tractogram(sft, "lr-superiorfrontal.trx")
 
 ###############################################################################
 # .. rubric:: Footnotes

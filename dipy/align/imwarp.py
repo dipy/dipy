@@ -1,7 +1,6 @@
 """Classes and functions for Symmetric Diffeomorphic Registration"""
 
 import abc
-import logging
 
 import nibabel as nib
 from nibabel.streamlines import ArraySequence as Streamlines
@@ -11,6 +10,7 @@ import numpy.linalg as npl
 from dipy.align import Bunch, VerbosityLevels, floating, vector_fields as vfu
 from dipy.align.scalespace import ScaleSpace
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 
 RegistrationStages = Bunch(
     INIT_START=0,
@@ -37,8 +37,6 @@ SCALE_END: optimization at the current scale space resolution ends
 ITER_START: a new iteration starts
 ITER_END: the current iteration ends
 """
-
-logger = logging.getLogger(__name__)
 
 
 def mult_aff(A, B):
@@ -1522,8 +1520,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
             ch = "-" if np.isnan(der) else der
             logger.info(
-                "%d:\t%0.6f\t%0.6f\t%0.6f\t%s"
-                % (n_iter, fw_energy, bw_energy, fw_energy + bw_energy, ch)
+                f"{n_iter}:\t{fw_energy:.6f}\t{bw_energy:.6f}"
+                f"\t{(fw_energy + bw_energy):.6f}\t{ch}"
             )
 
         self.energy_list.append(fw_energy + bw_energy)

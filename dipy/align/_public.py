@@ -9,6 +9,7 @@ streamlines.
 import collections.abc
 from functools import partial
 import numbers
+from pathlib import Path
 import re
 from warnings import warn
 
@@ -34,7 +35,7 @@ from dipy.align.transforms import (
 import dipy.core.gradients as dpg
 import dipy.data as dpd
 from dipy.io.image import load_nifti, save_nifti
-from dipy.io.streamline import load_trk
+from dipy.io.streamline import load_tractogram
 from dipy.io.utils import read_img_arr_or_path
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points
@@ -186,16 +187,16 @@ def register_dwi_to_template(
 
     Parameters
     ----------
-    dwi : 4D array, nifti image or str
+    dwi : 4D array, nifti image, str or Path
         Containing the DWI data, or full path to a nifti file with DWI.
-    gtab : GradientTable or sequence of strings
+    gtab : GradientTable or sequence of strings or Paths
         The gradients associated with the DWI data, or a sequence with
         (fbval, fbvec), full paths to bvals and bvecs files.
     dwi_affine : 4x4 array, optional
         An affine transformation associated with the DWI. Required if data
         is provided as an array. If provided together with nifti/path,
         will over-ride the affine that is in the nifti.
-    template : 3D array, nifti image or str
+    template : 3D array, nifti image, str or Path
         Containing the data for the template, or full path to a nifti file
         with the template data.
     template_affine : 4x4 array, optional
@@ -296,13 +297,13 @@ def read_mapping(disp, domain_img, codomain_img, *, prealign=None):
 
     Parameters
     ----------
-    disp : str or Nifti1Image
+    disp : str, Path or Nifti1Image
         A file of image containing the mapping displacement field in each voxel
         Shape (x, y, z, 3, 2)
 
-    domain_img : str or Nifti1Image
+    domain_img : str, Path or Nifti1Image
 
-    codomain_img : str or Nifti1Image
+    codomain_img : str, Path or Nifti1Image
 
     Returns
     -------
@@ -313,13 +314,13 @@ def read_mapping(disp, domain_img, codomain_img, *, prealign=None):
     See :func:`write_mapping` for the data format expected.
 
     """
-    if isinstance(disp, str):
+    if isinstance(disp, (str, Path)):
         disp_data, disp_affine = load_nifti(disp)
 
-    if isinstance(domain_img, str):
+    if isinstance(domain_img, (str, Path)):
         domain_img = nib.load(domain_img)
 
-    if isinstance(codomain_img, str):
+    if isinstance(codomain_img, (str, Path)):
         codomain_img = nib.load(codomain_img)
 
     mapping = DiffeomorphicMap(
@@ -824,7 +825,7 @@ def streamline_registration(moving, static, *, n_points=100, native_resampled=Fa
 
     Parameters
     ----------
-    moving, static : lists of 3 by n, or str
+    moving, static : lists of 3 by n, str or Path
         The two bundles to be registered. Given either as lists of arrays with
         3D coordinates, or strings containing full paths to these files.
 
@@ -846,10 +847,10 @@ def streamline_registration(moving, static, *, n_points=100, native_resampled=Fa
 
     """
     # Load the streamlines, if you were given a file-name
-    if isinstance(moving, str):
-        moving = load_trk(moving, "same", bbox_valid_check=False).streamlines
-    if isinstance(static, str):
-        static = load_trk(static, "same", bbox_valid_check=False).streamlines
+    if isinstance(moving, (str, Path)):
+        moving = load_tractogram(moving, "same", bbox_valid_check=False).streamlines
+    if isinstance(static, (str, Path)):
+        static = load_tractogram(static, "same", bbox_valid_check=False).streamlines
 
     srr = StreamlineLinearRegistration()
     srm = srr.optimize(

@@ -54,6 +54,7 @@ from dipy.align.scalespace import IsotropicScaleSpace
 from dipy.core.interpolation import interpolate_scalar_2d, interpolate_scalar_3d
 from dipy.core.optimize import Optimizer
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 
 _interp_options = ["nearest", "linear"]
 _transform_method = {}
@@ -1086,7 +1087,7 @@ class AffineRegistration:
                     static_masked, static_grid2world, moving_masked, moving_grid2world
                 )
                 self.starting_affine = affine_map.affine
-                print("starting_affine in imaffine:", self.starting_affine)
+                logger.info(f"starting_affine in imaffine: {self.starting_affine}")
             elif starting_affine == "voxel-origin":
                 affine_map = transform_origins(
                     static, static_grid2world, moving, moving_grid2world
@@ -1274,7 +1275,7 @@ class AffineRegistration:
             self.current_level = level
             max_iter = self.level_iters[-1 - level]
             if self.verbosity >= VerbosityLevels.STATUS:
-                print(f"Optimizing level {level} [max iter: {max_iter}]")
+                logger.info(f"Optimizing level {level} [max iter: {max_iter}]")
 
             # Resample the smooth static image to the shape of this level
             smooth_static = self.static_ss.get_image(level)

@@ -1,8 +1,8 @@
 #!python
-import logging
-import os
+from pathlib import Path
 import sys
 
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.flow_runner import run_flow
 
@@ -68,16 +68,16 @@ cli_flows = {
 
 def run():
     """Run scripts located in pyproject.toml."""
-    script_name = os.path.basename(sys.argv[0])
+    script_name = Path(sys.argv[0]).name
     mod_name, flow_name = cli_flows.get(script_name, (None, None))
     if mod_name is None:
-        print(f"Flow: {script_name} not Found in DIPY")
-        print(f"Available flows: {', '.join(cli_flows.keys())}")
+        logger.info(f"Flow: {script_name} not Found in DIPY")
+        logger.info(f"Available flows: {', '.join(cli_flows.keys())}")
         sys.exit(1)
     mod, _, _ = optional_package(mod_name)
 
     if script_name in ["dipy_sh_convert_mrtrix"]:
-        logging.warning(
+        logger.warning(
             "`dipy_sh_convert_mrtrix` CLI is deprecated since DIPY 1.11.0. It will be "
             "removed on later release. Please use the `dipy_convert_sh` CLI instead.",
         )

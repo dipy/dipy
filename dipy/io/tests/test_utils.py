@@ -9,15 +9,22 @@ import trx.trx_file_memmap as tmm
 
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
+from dipy.io.surface import load_surface
 from dipy.io.utils import (
+    Space,
     create_nifti_header,
     decfa,
     decfa_to_float,
     get_reference_info,
+    is_header_compatible,
     is_reference_info_valid,
     read_img_arr_or_path,
 )
 from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.optpkg import optional_package
+
+fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
+
 
 FILEPATH_DIX = None
 
@@ -25,7 +32,7 @@ FILEPATH_DIX = None
 def setup_module():
     global FILEPATH_DIX
     try:
-        FILEPATH_DIX, _, _ = get_fnames(name="gold_standard_tracks")
+        FILEPATH_DIX, _, _ = get_fnames(name="gold_standard_io")
     except (HTTPError, URLError) as e:
         FILEPATH_DIX = None
         error_msg = f'"Tests Data failed to download." Reason: {e}'
@@ -36,6 +43,31 @@ def setup_module():
 def teardown_module():
     global FILEPATH_DIX
     FILEPATH_DIX = (None,)
+
+
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+def test_equivalence_lpsmm_sft_sfs():
+    sft = load_tractogram(
+        FILEPATH_DIX["gs_streamlines.vtk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        from_space=Space.LPSMM,
+    )
+    sfs = load_surface(
+        FILEPATH_DIX["gs_streamlines.vtk"],
+        FILEPATH_DIX["gs_volume.nii"],
+        from_space=Space.LPSMM,
+        to_space=Space.RASMM,
+    )
+
+    assert is_header_compatible(sft, sfs)
+    assert_allclose(sft.streamlines._data, sfs.vertices, atol=1e-3, rtol=1e-6)
+
+    sfs.to_lpsmm()
+    sfs.to_corner()
+    sft.to_lpsmm()
+    sft.to_corner()
+
+    assert_allclose(sft.streamlines._data, sfs.vertices, atol=1e-3, rtol=1e-6)
 
 
 def test_decfa():
@@ -128,8 +160,8 @@ def reference_info_zero_affine():
 
 
 def test_reference_trk_file_info_identical():
-    tuple_1 = get_reference_info(FILEPATH_DIX["gs.trk"])
-    tuple_2 = get_reference_info(FILEPATH_DIX["gs.nii"])
+    tuple_1 = get_reference_info(FILEPATH_DIX["gs_streamlines.trk"])
+    tuple_2 = get_reference_info(FILEPATH_DIX["gs_volume.nii"])
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
     affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = tuple_2
 
@@ -140,8 +172,8 @@ def test_reference_trk_file_info_identical():
 
 
 def test_reference_trx_file_info_identical():
-    tuple_1 = get_reference_info(FILEPATH_DIX["gs.trx"])
-    tuple_2 = get_reference_info(FILEPATH_DIX["gs.nii"])
+    tuple_1 = get_reference_info(FILEPATH_DIX["gs_streamlines.trx"])
+    tuple_2 = get_reference_info(FILEPATH_DIX["gs_volume.nii"])
     affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = tuple_1
     affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = tuple_2
 
@@ -152,9 +184,9 @@ def test_reference_trx_file_info_identical():
 
 
 def test_reference_obj_info_identical():
-    sft = load_tractogram(FILEPATH_DIX["gs.trk"], "same")
-    trx = tmm.load(FILEPATH_DIX["gs.trx"])
-    img = nib.load(FILEPATH_DIX["gs.nii"])
+    sft = load_tractogram(FILEPATH_DIX["gs_streamlines.trk"], "same")
+    trx = tmm.load(FILEPATH_DIX["gs_streamlines.trx"])
+    img = nib.load(FILEPATH_DIX["gs_volume.nii"])
 
     tuple_1 = get_reference_info(sft)
     tuple_2 = get_reference_info(trx)
@@ -175,9 +207,9 @@ def test_reference_obj_info_identical():
 
 
 def test_reference_header_info_identical():
-    trk = nib.streamlines.load(FILEPATH_DIX["gs.trk"])
-    trx = tmm.load(FILEPATH_DIX["gs.trx"])
-    img = nib.load(FILEPATH_DIX["gs.nii"])
+    trk = nib.streamlines.load(FILEPATH_DIX["gs_streamlines.trk"])
+    trx = tmm.load(FILEPATH_DIX["gs_streamlines.trx"])
+    img = nib.load(FILEPATH_DIX["gs_volume.nii"])
 
     tuple_1 = get_reference_info(trk.header)
     tuple_2 = get_reference_info(trx.header)

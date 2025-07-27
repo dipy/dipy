@@ -5,6 +5,15 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.12.0 changes
+-------------------
+
+**IO**
+
+- The `utils` function `split_name_with_gz` was removed in PR https://github.com/dipy/dipy/pull/3593
+  as DIPY transitioned to using `pathlib` for path manipulation.
+
+
 DIPY 1.10.0 changes
 -------------------
 

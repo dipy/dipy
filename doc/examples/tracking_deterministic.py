@@ -28,7 +28,7 @@ from dipy.data import default_sphere, get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
@@ -81,7 +81,7 @@ streamline_generator = deterministic_tracking(
 streamlines = Streamlines(streamline_generator)
 
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_deterministic.trk")
+save_tractogram(sft, "tractogram_deterministic.trx")
 
 if has_fury:
     scene = window.Scene()

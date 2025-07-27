@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import nibabel as nib
@@ -63,10 +63,10 @@ def test_median_otsu_flow():
             dilate=dilate,
         )
 
-        result_mask_data = load_nifti_data(pjoin(out_dir, mask_name))
+        result_mask_data = load_nifti_data(Path(out_dir) / mask_name)
         npt.assert_array_equal(result_mask_data.astype(np.uint8), mask)
 
-        result_masked = nib.load(pjoin(out_dir, masked_name))
+        result_masked = nib.load(Path(out_dir) / masked_name)
         result_masked_data = np.asanyarray(result_masked.dataobj)
 
         npt.assert_array_equal(np.round(result_masked_data), masked)
@@ -86,11 +86,11 @@ def test_recobundles_flow():
 
         f.extend(f2)
 
-        f2_path = pjoin(out_dir, "f2.trk")
+        f2_path = Path(out_dir) / "f2.trk"
         sft = StatefulTractogram(f2, data_path, Space.RASMM)
         save_tractogram(sft, f2_path, bbox_valid_check=False)
 
-        f1_path = pjoin(out_dir, "f1.trk")
+        f1_path = Path(out_dir) / "f1.trk"
         sft = StatefulTractogram(f, data_path, Space.RASMM)
         save_tractogram(sft, f1_path, bbox_valid_check=False)
 
@@ -136,7 +136,7 @@ def test_recobundles_flow():
 def test_classify_tissue_flow():
     with TemporaryDirectory() as out_dir:
         data = create_image()
-        data_path = pjoin(out_dir, "data.nii.gz")
+        data_path = Path(out_dir) / "data.nii.gz"
         nib.save(nib.Nifti1Image(data, np.eye(4)), data_path)
 
         args = {
@@ -173,8 +173,8 @@ def test_classify_tissue_flow():
         with TemporaryDirectory() as out_dir:
             data = np.random.rand(3, 3, 3, 7) * 100  # Simulated random data
             bvals = np.array([0, 100, 500, 1000, 1500, 2000, 3000])
-            data_path = pjoin(out_dir, "data.nii.gz")
-            bvals_path = pjoin(out_dir, "bvals")
+            data_path = Path(out_dir) / "data.nii.gz"
+            bvals_path = Path(out_dir) / "bvals"
             np.savetxt(bvals_path, bvals)
             nib.save(nib.Nifti1Image(data, np.eye(4)), data_path)
 

@@ -1,8 +1,6 @@
 #!/usr/bin/python
 """Class and helper functions for fitting the Histological ResDNN model."""
 
-import logging
-
 import numpy as np
 
 from dipy.core.gradients import get_bval_indices, unique_bvals_magnitude
@@ -12,6 +10,7 @@ from dipy.nn.utils import set_logger_level
 from dipy.reconst.shm import sf_to_sh, sh_to_sf, sph_harm_ind_list
 from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
@@ -19,17 +18,13 @@ if have_tf:
     from tensorflow.keras.layers import Add, Dense, Input
     from tensorflow.keras.models import Model
 else:
-    logging.warning(
+    logger.warning(
         "This model requires Tensorflow.\
                     Please install these packages using \
                     pip. If using mac, please refer to this \
                     link for installation. \
                     https://github.com/apple/tensorflow_macos"
     )
-
-
-logging.basicConfig()
-logger = logging.getLogger("histo_resdnn")
 
 
 class HistoResDNN:

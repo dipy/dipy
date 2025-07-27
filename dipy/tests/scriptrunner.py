@@ -14,7 +14,7 @@ Then, in the tests, something like::
 """
 
 import os
-from os.path import dirname, isdir, isfile, join as pjoin, pathsep, realpath
+from pathlib import Path
 from subprocess import PIPE, Popen
 import sys
 
@@ -40,10 +40,10 @@ def local_script_dir(script_sdir):
     # Check for presence of scripts in development directory.  ``realpath``
     # allows for the situation where the development directory has been linked
     # into the path.
-    package_path = dirname(__import__(MY_PACKAGE).__file__)
-    above_us = realpath(pjoin(package_path, ".."))
-    devel_script_dir = pjoin(above_us, script_sdir)
-    if isfile(pjoin(above_us, "setup.py")) and isdir(devel_script_dir):
+    package_path = Path(__import__(MY_PACKAGE).__file__).parent
+    above_us = Path(package_path).resolve().parent
+    devel_script_dir = above_us / script_sdir
+    if (Path(above_us) / "setup.py").is_file() and Path(devel_script_dir).is_dir():
         return devel_script_dir
     return None
 
@@ -51,8 +51,8 @@ def local_script_dir(script_sdir):
 def local_module_dir(module_name):
     """Get local module directory if running in development dir, else None"""
     mod = __import__(module_name)
-    containing_path = dirname(dirname(realpath(mod.__file__)))
-    if containing_path == realpath(os.getcwd()):
+    containing_path = Path(mod.__file__).resolve().parent.parent
+    if containing_path == Path.cwd().resolve():
         return containing_path
     return None
 
@@ -75,11 +75,11 @@ class ScriptRunner:
 
         Parameters
         ----------
-        script_sdir : str, optional
+        script_sdir : str or Path, optional
             Name of subdirectory in top-level directory (directory containing
             setup.py), to find scripts in development tree.  Typically
             'scripts', but might be 'bin'.
-        module_sdir : str, optional
+        module_sdir : str or Path, optional
             Name of subdirectory in top-level directory (directory containing
             setup.py), to find main package directory.
         debug_print_vsr : str, optional
@@ -126,7 +126,7 @@ class ScriptRunner:
             # wrong incantation for the Python interpreter
             # in the hash bang first line in the source file. So, either way,
             # run the script through the Python interpreter
-            cmd = [sys.executable, pjoin(self.local_script_dir, cmd[0])] + cmd[1:]
+            cmd = [sys.executable, Path(self.local_script_dir) / cmd[0]] + cmd[1:]
         elif os.name == "nt":
             # Need .bat file extension for windows
             cmd[0] += ".bat"
@@ -147,7 +147,7 @@ class ScriptRunner:
             if pypath is None:
                 env["PYTHONPATH"] = self.local_module_dir
             else:
-                env["PYTHONPATH"] = self.local_module_dir + pathsep + pypath
+                env["PYTHONPATH"] = self.local_module_dir / pypath
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
         stdout, stderr = proc.communicate()
         if proc.poll() is None:

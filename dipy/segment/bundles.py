@@ -1,5 +1,4 @@
 from itertools import chain
-import logging
 from time import time
 
 from nibabel.affines import apply_affine
@@ -21,6 +20,7 @@ from dipy.tracking.streamline import (
     select_random_set_of_streamlines,
     set_number_of_points,
 )
+from dipy.utils.logging import logger
 
 
 def check_range(streamline, gt, lt):
@@ -29,9 +29,6 @@ def check_range(streamline, gt, lt):
         return True
     else:
         return False
-
-
-logger = logging.getLogger(__name__)
 
 
 def bundle_adjacency(dtracks0, dtracks1, threshold):

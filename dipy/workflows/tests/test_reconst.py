@@ -1,6 +1,6 @@
 import logging
 import os
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 import warnings
 
@@ -99,21 +99,21 @@ def reconst_flow_core(flow, *, use_multishell_data=None, **kwargs):
             bvals_2s = np.concatenate((bvals, bvals * 1.5), axis=0)
             bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
             gtab_2s = gradient_table(bvals_2s, bvecs=bvecs_2s)
-            bval_path = pjoin(out_dir, os.path.basename(bval_path))
-            bvec_path = pjoin(out_dir, os.path.basename(bvec_path))
+            bval_path = Path(out_dir) / os.path.basename(bval_path)
+            bvec_path = Path(out_dir) / os.path.basename(bvec_path)
             np.savetxt(bval_path, bvals_2s)
             np.savetxt(bvec_path, bvecs_2s)
 
             volume = simulate_multitensor_data(gtab_2s)
-            data_path = pjoin(out_dir, "dwi.nii.gz")
+            data_path = Path(out_dir) / "dwi.nii.gz"
             mask = np.ones_like(volume[..., 0], dtype=bool)
-            mask_path = pjoin(out_dir, "mask.nii.gz")
+            mask_path = Path(out_dir) / "mask.nii.gz"
             save_nifti(mask_path, mask.astype(np.int32), np.eye(4))
             save_nifti(data_path, volume, np.eye(4))
         else:
             volume, affine = load_nifti(data_path)
             mask = np.ones_like(volume[:, :, :, 0])
-            mask_path = pjoin(out_dir, "tmp_mask.nii.gz")
+            mask_path = Path(out_dir) / "tmp_mask.nii.gz"
             save_nifti(mask_path, mask.astype(np.uint8), affine)
 
         reconst_flow = flow()

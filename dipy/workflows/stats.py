@@ -1,7 +1,6 @@
-from glob import glob
 import json
-import logging
 import os
+from pathlib import Path
 from time import time
 import warnings
 
@@ -19,6 +18,7 @@ from dipy.segment.mask import bounding_box, segment_from_cfa
 from dipy.stats.analysis import anatomical_measures, assignment_map, peak_values
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.workflow import Workflow
 
@@ -76,19 +76,19 @@ class SNRinCCFlow(Workflow):
 
         Parameters
         ----------
-        data_files : string
+        data_files : string or Path
             Path to the dwi.nii.gz file. This path may contain wildcards to
             process multiple inputs at once.
-        bvals_files : string
+        bvals_files : string or Path
             Path of bvals.
-        bvecs_files : string
+        bvecs_files : string or Path
             Path of bvecs.
-        mask_file : string
+        mask_file : string or Path
             Path of a brain mask file.
         bbox_threshold : variable float, optional
             Threshold for bounding box, values separated with commas for ex.
             [0.6,1,0,0.1,0,0.1].
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Where the resulting file will be saved.
         out_file : string, optional
             Name of the result file to be saved.
@@ -115,11 +115,11 @@ class SNRinCCFlow(Workflow):
 
             mask, affine = load_nifti(mask_path)
 
-            logging.info("Computing tensors...")
+            logger.info("Computing tensors...")
             tenmodel = TensorModel(gtab)
             tensorfit = tenmodel.fit(data, mask=mask)
 
-            logging.info("Computing worst-case/best-case SNR using the CC...")
+            logger.info("Computing worst-case/best-case SNR using the CC...")
 
             if np.ndim(data) == 4:
                 CC_box = np.zeros_like(data[..., 0])
@@ -149,13 +149,13 @@ class SNRinCCFlow(Workflow):
             )
 
             if not np.count_nonzero(mask_cc_part.astype(np.uint8)):
-                logging.warning(
+                logger.warning(
                     "Empty mask: corpus callosum not found."
                     " Update your data or your threshold"
                 )
 
             save_nifti(cc_mask_path, mask_cc_part.astype(np.uint8), affine)
-            logging.info(f"CC mask saved as {cc_mask_path}")
+            logger.info(f"CC mask saved as {cc_mask_path}")
 
             masked_data = data[mask_cc_part]
             mean_signal = 0
@@ -166,13 +166,13 @@ class SNRinCCFlow(Workflow):
             mask_noise = ~mask_noise
 
             save_nifti(mask_noise_path, mask_noise.astype(np.uint8), affine)
-            logging.info(f"Mask noise saved as {mask_noise_path}")
+            logger.info(f"Mask noise saved as {mask_noise_path}")
 
             noise_std = 0
             if np.count_nonzero(mask_noise.astype(np.uint8)):
                 noise_std = np.std(data[mask_noise, :])
 
-            logging.info(f"Noise standard deviation sigma= {noise_std}")
+            logger.info(f"Noise standard deviation sigma= {noise_std}")
 
             idx = np.sum(gtab.bvecs, axis=-1) == 0
             gtab.bvecs[idx] = np.inf
@@ -185,9 +185,9 @@ class SNRinCCFlow(Workflow):
             for direction in ["b0", axis_X, axis_Y, axis_Z]:
                 if direction == "b0":
                     SNR = mean_signal[0] / noise_std if noise_std else 0
-                    logging.info(f"SNR for the b=0 image is : {SNR}")
+                    logger.info(f"SNR for the b=0 image is : {SNR}")
                 else:
-                    logging.info(
+                    logger.info(
                         f"SNR for direction {direction} {gtab.bvecs[direction]} is: "
                         f"{SNR}"
                     )
@@ -199,7 +199,7 @@ class SNRinCCFlow(Workflow):
             dir_str = f"b0 {SNR_directions[0]} {SNR_directions[1]} {SNR_directions[2]}"
             data = [{"data": snr_str, "directions": dir_str}]
 
-            with open(os.path.join(out_dir, out_path), "w") as myfile:
+            with open(Path(out_dir) / out_path, "w") as myfile:
                 json.dump(data, myfile)
 
 
@@ -223,16 +223,16 @@ def buan_bundle_profiles(
 
     Parameters
     ----------
-    model_bundle_folder : string
+    model_bundle_folder : string or Path
         Path to the input model bundle files. This path may contain
         wildcards to process multiple inputs at once.
-    bundle_folder : string
+    bundle_folder : string or Path
         Path to the input bundle files in common space. This path may
         contain wildcards to process multiple inputs at once.
-    orig_bundle_folder : string
+    orig_bundle_folder : string or Path
         Path to the input bundle files in native space. This path may
         contain wildcards to process multiple inputs at once.
-    metric_folder : string
+    metric_folder : string or Path
         Path to the input dti metric or/and peak files. It will be used as
         metric for statistical analysis of bundles.
     group_id : integer
@@ -241,7 +241,7 @@ def buan_bundle_profiles(
         subject id e.g. 10001.
     no_disks : integer, optional
         Number of disks used for dividing bundle into disks.
-    out_dir : string, optional
+    out_dir : string or Path, optional
         Output directory.
 
     References
@@ -252,18 +252,18 @@ def buan_bundle_profiles(
 
     t = time()
 
-    mb = glob(os.path.join(model_bundle_folder, "*.trk"))
-    print(mb)
+    mb = list(Path(model_bundle_folder).glob("*.trk"))
+    logger.info(mb)
 
     mb.sort()
 
-    bd = glob(os.path.join(bundle_folder, "*.trk"))
+    bd = list(Path(bundle_folder).glob("*.trk"))
 
     bd.sort()
-    print(bd)
-    org_bd = glob(os.path.join(orig_bundle_folder, "*.trk"))
+    logger.info(bd)
+    org_bd = list(Path(orig_bundle_folder).glob("*.trk"))
     org_bd.sort()
-    print(org_bd)
+    logger.info(org_bd)
     n = len(mb)
 
     for io in range(n):
@@ -281,9 +281,9 @@ def buan_bundle_profiles(
             indx = assignment_map(bundles, mbundles, no_disks)
             ind = np.array(indx)
 
-            metric_files_names_dti = glob(os.path.join(metric_folder, "*.nii.gz"))
+            metric_files_names_dti = list(Path(metric_folder).glob("*.nii.gz"))
 
-            metric_files_names_csa = glob(os.path.join(metric_folder, "*.pam5"))
+            metric_files_names_csa = list(Path(metric_folder).glob("*.pam5"))
 
             _, affine = load_nifti(metric_files_names_dti[0])
 
@@ -291,17 +291,16 @@ def buan_bundle_profiles(
             transformed_orig_bundles = transform_streamlines(orig_bundles, affine_r)
 
             for mn in range(len(metric_files_names_dti)):
-                ab = os.path.split(metric_files_names_dti[mn])
-                metric_name = ab[1]
+                metric_name = Path(metric_files_names_dti[mn]).name
 
                 fm = metric_name[:-7]
-                bm = os.path.split(mb[io])[1][:-4]
+                bm = Path(mb[io]).name[:-4]
 
-                logging.info(f"bm = {bm}")
+                logger.info(f"bm = {bm}")
 
                 dt = {}
 
-                logging.info(f"metric = {metric_files_names_dti[mn]}")
+                logger.info(f"metric = {metric_files_names_dti[mn]}")
 
                 metric, _ = load_nifti(metric_files_names_dti[mn])
 
@@ -318,14 +317,13 @@ def buan_bundle_profiles(
                 )
 
             for mn in range(len(metric_files_names_csa)):
-                ab = os.path.split(metric_files_names_csa[mn])
-                metric_name = ab[1]
+                metric_name = Path(metric_files_names_csa[mn]).name
 
                 fm = metric_name[:-5]
-                bm = os.path.split(mb[io])[1][:-4]
+                bm = Path(mb[io]).name[:-4]
 
-                logging.info(f"bm = {bm}")
-                logging.info(f"metric = {metric_files_names_csa[mn]}")
+                logger.info(f"bm = {bm}")
+                logger.info(f"metric = {metric_files_names_csa[mn]}")
                 dt = {}
                 metric = load_peaks(metric_files_names_csa[mn])
 
@@ -341,7 +339,7 @@ def buan_bundle_profiles(
                     out_dir,
                 )
 
-    print("total time taken in minutes = ", (-t + time()) / 60)
+    logger.info(f"total time taken in minutes = {(-t + time()) / 60}")
 
 
 class BundleAnalysisTractometryFlow(Workflow):
@@ -360,15 +358,15 @@ class BundleAnalysisTractometryFlow(Workflow):
 
         Parameters
         ----------
-        model_bundle_folder : string
+        model_bundle_folder : string or Path
             Path to the input model bundle files. This path may
             contain wildcards to process multiple inputs at once.
-        subject_folder : string
+        subject_folder : string or Path
             Path to the input subject folder. This path may contain
             wildcards to process multiple inputs at once.
         no_disks : integer, optional
             Number of disks used for dividing bundle into disks.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
 
         References
@@ -377,32 +375,33 @@ class BundleAnalysisTractometryFlow(Workflow):
 
         """
 
-        if os.path.isdir(subject_folder) is False:
+        if not Path(subject_folder).is_dir():
             raise ValueError("Invalid path to subjects")
 
-        groups = os.listdir(subject_folder)
+        groups = [p.name for p in Path(subject_folder).iterdir()]
         groups.sort()
         for group in groups:
-            if os.path.isdir(os.path.join(subject_folder, group)):
-                logging.info(f"group = {group}")
-                all_subjects = os.listdir(os.path.join(subject_folder, group))
+            group_dirname = Path(subject_folder) / group
+            if group_dirname.is_dir():
+                logger.info(f"group = {group}")
+                all_subjects = os.listdir(group_dirname)
                 all_subjects.sort()
-                logging.info(all_subjects)
+                logger.info(all_subjects)
             if group.lower() == "patient":
                 group_id = 1  # 1 means patient
             elif group.lower() == "control":
                 group_id = 0  # 0 means control
             else:
-                print(group)
+                logger.info(group)
                 raise ValueError("Invalid group. Neither patient nor control")
 
             for sub in all_subjects:
-                logging.info(sub)
-                pre = os.path.join(subject_folder, group, sub)
-                logging.info(pre)
-                b = os.path.join(pre, "rec_bundles")
-                c = os.path.join(pre, "org_bundles")
-                d = os.path.join(pre, "anatomical_measures")
+                logger.info(sub)
+                pre = group_dirname / sub
+                logger.info(pre)
+                b = Path(pre) / "rec_bundles"
+                c = Path(pre) / "org_bundles"
+                d = Path(pre) / "anatomical_measures"
                 buan_bundle_profiles(
                     model_bundle_folder,
                     b,
@@ -427,13 +426,12 @@ class LinearMixedModelsFlow(Workflow):
 
         Parameters
         ----------
-        path : string
+        path : string or Path
             Path to the input metric files. This path may
             contain wildcards to process multiple inputs at once.
         """
 
-        head_tail = os.path.split(path)
-        name = head_tail[1]
+        name = Path(path).name
         count = 0
         i = len(name) - 1
         while i > 0:
@@ -521,12 +519,12 @@ class LinearMixedModelsFlow(Workflow):
 
         Parameters
         ----------
-        h5_files : string
+        h5_files : string or Path
             Path to the input metric files. This path may
             contain wildcards to process multiple inputs at once.
         no_disks : integer, optional
             Number of disks used for dividing bundle into disks.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
 
         """
@@ -534,11 +532,11 @@ class LinearMixedModelsFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for file_path in io_it:
-            logging.info(f"Applying metric {file_path}")
+            logger.info(f"Applying metric {file_path}")
 
             file_name, bundle_name, save_name = self.get_metric_name(file_path)
-            logging.info(f" file name = {file_name}")
-            logging.info(f"file path = {file_path}")
+            logger.info(f" file name = {file_name}")
+            logger.info(f"file path = {file_path}")
 
             pvalues = np.zeros(no_disks)
             warnings.filterwarnings("ignore")
@@ -547,7 +545,7 @@ class LinearMixedModelsFlow(Workflow):
                 disk_count = i + 1
                 df = pd.read_hdf(file_path, where="disk=disk_count")
 
-                logging.info(f"read the dataframe for disk number {disk_count}")
+                logger.info(f"read the dataframe for disk number {disk_count}")
                 # check if data has significant data to perform LMM
                 if len(df) < 10:
                     raise ValueError("Dataset for Linear Mixed Model is too small")
@@ -562,13 +560,13 @@ class LinearMixedModelsFlow(Workflow):
             x = list(range(1, len(pvalues) + 1))
             y = -1 * np.log10(pvalues)
 
-            save_file = os.path.join(out_dir, save_name + "_pvalues.npy")
+            save_file = Path(out_dir) / (save_name + "_pvalues.npy")
             np.save(save_file, pvalues)
 
-            save_file = os.path.join(out_dir, save_name + "_pvalues_log.npy")
+            save_file = Path(out_dir) / (save_name + "_pvalues_log.npy")
             np.save(save_file, y)
 
-            save_file = os.path.join(out_dir, save_name + ".png")
+            save_file = Path(out_dir) / (save_name + ".png")
             self.save_lmm_plot(save_file, file_name, bundle_name, x, y)
 
 class FOSRFlow(Workflow):
@@ -652,14 +650,14 @@ class BundleShapeAnalysis(Workflow):
 
         Parameters
         ----------
-        subject_folder : string
+        subject_folder : string or Path
             Path to the input subject folder. This path may contain
             wildcards to process multiple inputs at once.
         clust_thr : variable float, optional
             list of bundle clustering thresholds used in QuickBundlesX.
         threshold : float, optional
             Bundle shape similarity threshold.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
 
         References
@@ -669,17 +667,16 @@ class BundleShapeAnalysis(Workflow):
         """
         rng = np.random.default_rng()
         all_subjects = []
-        if os.path.isdir(subject_folder):
-            groups = os.listdir(subject_folder)
-            groups.sort()
+        if Path(subject_folder).is_dir():
+            groups = sorted([p.name for p in Path(subject_folder).iterdir()])
         else:
             raise ValueError("Not a directory")
 
         for group in groups:
-            if os.path.isdir(os.path.join(subject_folder, group)):
-                subjects = os.listdir(os.path.join(subject_folder, group))
-                subjects.sort()
-                logging.info(
+            group_dirname = Path(subject_folder) / group
+            if group_dirname.is_dir():
+                subjects = sorted([p.name for p in Path(group_dirname).iterdir()])
+                logger.info(
                     "first "
                     + str(len(subjects))
                     + " subjects in matrix belong to "
@@ -688,32 +685,32 @@ class BundleShapeAnalysis(Workflow):
                 )
 
                 for sub in subjects:
-                    dpath = os.path.join(subject_folder, group, sub)
-                    if os.path.isdir(dpath):
+                    dpath = group_dirname / sub
+                    if dpath.is_dir():
                         all_subjects.append(dpath)
 
         N = len(all_subjects)
 
-        bundles = os.listdir(os.path.join(all_subjects[0], "rec_bundles"))
+        bundles = [p.name for p in (Path(all_subjects[0]) / "rec_bundles").iterdir()]
         for bun in bundles:
             # bundle shape similarity matrix
             ba_matrix = np.zeros((N, N))
             i = 0
-            logging.info(bun)
+            logger.info(bun)
             for sub in all_subjects:
                 j = 0
 
                 bundle1 = load_tractogram(
-                    os.path.join(sub, "rec_bundles", bun),
+                    Path(sub) / "rec_bundles" / bun,
                     reference="same",
                     bbox_valid_check=False,
                 ).streamlines
 
                 for subi in all_subjects:
-                    logging.info(subi)
+                    logger.info(subi)
 
                     bundle2 = load_tractogram(
-                        os.path.join(subi, "rec_bundles", bun),
+                        Path(subi) / "rec_bundles" / bun,
                         reference="same",
                         bbox_valid_check=False,
                     ).streamlines
@@ -726,13 +723,13 @@ class BundleShapeAnalysis(Workflow):
 
                     j += 1
                 i += 1
-            logging.info("saving BA score matrix")
-            np.save(os.path.join(out_dir, bun[:-4] + ".npy"), ba_matrix)
+            logger.info("saving BA score matrix")
+            np.save(Path(out_dir) / (bun[:-4] + ".npy"), ba_matrix)
 
             cmap = matplt.colormaps["Blues"]
             plt.title(bun[:-4])
             plt.imshow(ba_matrix, cmap=cmap)
             plt.colorbar()
             plt.clim(0, 1)
-            plt.savefig(os.path.join(out_dir, f"SM_{bun[:-4]}"))
+            plt.savefig(Path(out_dir) / f"SM_{bun[:-4]}")
             plt.clf()

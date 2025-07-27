@@ -1,6 +1,5 @@
 """Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)"""
 
-import logging
 import warnings
 
 import numpy as np
@@ -17,10 +16,10 @@ from dipy.reconst.shm import lazy_index, normalize_data
 from dipy.segment.mask import bounding_box, crop
 from dipy.sims.voxel import all_tensor_evecs, single_tensor
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 
 # Machine precision for numerical stability in division
 _EPS = np.finfo(float).eps
-logger = logging.getLogger(__name__)
 
 
 class RumbaSDModel(OdfModel):
@@ -1037,12 +1036,12 @@ def rumba_deconv_global(
         sigma2_i = np.minimum((1 / 8) ** 2, np.maximum(sigma2_i, (1 / 80) ** 2))
 
         if verbose:
-            logger.info("Iteration %d of %d", i + 1, n_iter)
+            logger.info(f"Iteration {i + 1} of {n_iter}")
 
             snr_mean = np.mean(1 / np.sqrt(sigma2_i))
             snr_std = np.std(1 / np.sqrt(sigma2_i))
             logger.info(
-                "Mean SNR (S0/sigma) estimated to be %.3f +/- %.3f", snr_mean, snr_std
+                f"Mean SNR (S0/sigma) estimated to be {snr_mean:3f} +/- {snr_std:.3f}"
             )
         # Expand into matrix
         sigma2 = np.tile(sigma2_i[None, :], (data_2d.shape[0], 1))

@@ -1,8 +1,7 @@
-import logging
-
 import numpy as np
 
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 
 
 def check_img_shapes(images):
@@ -61,18 +60,18 @@ def check_img_dtype(images):
         if np.issubdtype(data.dtype, np.integer):
             if data.dtype != np.int32:
                 msg = f"{data.dtype} is not supported, falling back to int32"
-                logging.warning(msg)
+                logger.warning(msg)
                 img = (data.astype(np.int32), affine, fname)
             valid_images.append(img)
         elif np.issubdtype(data.dtype, np.floating):
             if data.dtype != np.float64 and data.dtype != np.float32:
                 msg = f"{data.dtype} is not supported, falling back to float32"
-                logging.warning(msg)
+                logger.warning(msg)
                 img = (data.astype(np.float32), affine, fname)
             valid_images.append(img)
         else:
             msg = f"skipping image {idx + 1}, passed image is not in numerical format"
-            logging.warning(msg)
+            logger.warning(msg)
 
     return valid_images
 

@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 import warnings
 
@@ -71,8 +71,8 @@ def reconst_mmri_core(flow, lap, pos):
         bvals, bvecs = read_bvals_bvecs(bval_path, bvec_path)
         bvals[0] = 5.0
         bvecs = generate_bvecs(len(bvals))
-        tmp_bval_path = pjoin(out_dir, "tmp.bval")
-        tmp_bvec_path = pjoin(out_dir, "tmp.bvec")
+        tmp_bval_path = Path(out_dir) / "tmp.bval"
+        tmp_bvec_path = Path(out_dir) / "tmp.bvec"
         np.savetxt(tmp_bval_path, bvals)
         np.savetxt(tmp_bvec_path, bvecs.T)
         mmri_flow._force_overwrite = True

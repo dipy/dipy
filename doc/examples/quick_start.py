@@ -14,7 +14,7 @@ their own datasets.
 Let's start with some necessary imports.
 """
 
-from os.path import expanduser, join
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 
@@ -32,25 +32,25 @@ fetch_sherbrooke_3shell()
 # By default these datasets will go in the ``.dipy`` folder inside your home
 # directory. Here is how you can access them.
 
-home = expanduser("~")
+home = Path("~").expanduser()
 
 ###############################################################################
 # ``dname`` holds the directory name where the 3 files are in.
 
-dname = join(home, ".dipy", "sherbrooke_3shell")
+dname = home / ".dipy" / "sherbrooke_3shell"
 
 ###############################################################################
 # Here, we show the complete filenames of the 3 files
 
-fdwi = join(dname, "HARDI193.nii.gz")
+fdwi = dname / "HARDI193.nii.gz"
 
 print(fdwi)
 
-fbval = join(dname, "HARDI193.bval")
+fbval = dname / "HARDI193.bval"
 
 print(fbval)
 
-fbvec = join(dname, "HARDI193.bvec")
+fbvec = dname / "HARDI193.bvec"
 
 print(fbvec)
 
