@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 from warnings import warn
 
 import numpy as np
@@ -230,6 +231,13 @@ class SlrWithQbxFlow(Workflow):
             moving_obj = load_tractogram(
                 moving_file, "same", bbox_valid_check=bbox_valid_check
             )
+
+            if not len(static_obj.streamlines):
+                logger.error(f"Static file {static_file} is empty")
+                sys.exit(1)
+            if not len(moving_obj.streamlines):
+                logger.error(f"Moving file {moving_file} is empty")
+                sys.exit(1)
 
             moved, affine, centroids_static, centroids_moving = slr_with_qbx(
                 static_obj.streamlines,
