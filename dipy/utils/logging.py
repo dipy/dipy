@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 
 
@@ -77,7 +78,9 @@ def get_logger(name="dipy", filename=None, force=False):
         handler.setFormatter(formatter)
         _logger.addHandler(handler)
         _logger.setLevel(logging.INFO)
-        _logger.propagate = False  # Prevent propagation to root logger
+        # Enable propagation when running tests so pytest caplog can capture messages
+        # before we were using False to prevent propagation to root logger
+        _logger.propagate = "PYTEST_CURRENT_TEST" in os.environ
     return _logger
 
 

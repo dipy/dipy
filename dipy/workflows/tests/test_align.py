@@ -46,7 +46,7 @@ def test_reslice():
         npt.assert_equal(resliced.shape[-1], volume.shape[-1])
 
 
-def test_slr_flow():
+def test_slr_flow(caplog):
     with TemporaryDirectory() as out_dir:
         data_path = get_fnames(name="fornix")
 
@@ -61,6 +61,44 @@ def test_slr_flow():
         out_path = slr_flow.last_generated_outputs["out_moved"]
 
         npt.assert_equal(Path(out_path).is_file(), True)
+
+        sft = sft.from_sft(np.array([]), sft)
+        empty_path = Path(out_dir) / "empty.trk"
+        save_tractogram(sft, empty_path, bbox_valid_check=False)
+
+        slr_flow = SlrWithQbxFlow(force=True)
+
+        # Test empty static file
+        with pytest.raises(SystemExit) as exc_info:
+            slr_flow.run(
+                empty_path,
+                moved_path,
+                out_dir=out_dir,
+                bbox_valid_check=False,
+            )
+
+        assert exc_info.value.code == 1
+        error_records = [r for r in caplog.records if r.levelname == "ERROR"]
+        assert len(error_records) > 0, "Expected ERROR level log message"
+        error_msg = f"Static file {empty_path} is empty"
+        assert any(err.msg in error_msg for err in error_records)
+
+        caplog.clear()
+
+        # Test empty moving file
+        with pytest.raises(SystemExit) as exc_info:
+            slr_flow.run(
+                data_path,
+                empty_path,
+                out_dir=out_dir,
+                bbox_valid_check=False,
+            )
+
+        assert exc_info.value.code == 1
+        error_records = [r for r in caplog.records if r.levelname == "ERROR"]
+        assert len(error_records) > 0, "Expected ERROR level log message"
+        error_msg = f"Moving file {empty_path} is empty"
+        assert any(err.msg in error_msg for err in error_records)
 
 
 @set_random_number_generator(1234)
