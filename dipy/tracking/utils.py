@@ -655,6 +655,56 @@ def target_line_based(streamlines, affine, target_mask, *, include=True):
         yield streamlines[idx]
 
 
+@_with_initialize
+def clip_streamlines_to_target(streamlines, target_mask, affine):
+    """Clip streamlines to where they first touch a target ROI.
+
+    Parameters
+    ----------
+    streamlines : iterable
+        A sequence of streamlines. Each streamline should be a (N, 3) array,
+        where N is the length of the streamline.
+    target_mask : array-like
+        A mask used as a target. Non-zero values are considered to be within
+        the target region. Streamlines will be clipped where they first
+        encounter the ROI
+    affine : array (4, 4)
+        The affine transform from voxel indices to streamline points.
+
+    Returns
+    -------
+    generator
+        A sequence of streamlines clipped at the edge of `target_mask`
+
+    Raises
+    ------
+    ValueError
+        When the points of the streamlines lie outside of the `target_mask`
+
+    """
+    target_mask = np.array(target_mask, dtype=bool, copy=True)
+    lin_T, offset = _mapping_to_voxel(affine)
+    yield
+    # End of initialization
+
+    for sl in streamlines:
+        try:
+            ind = _to_voxel_coordinates(sl, lin_T, offset)
+            i, j, k = ind.T
+            state = target_mask[i, j, k]
+        except IndexError as e:
+            raise ValueError("streamline points are outside of target_mask") from e
+        if state.any():
+            mymin = np.argwhere(state).min()
+            mymax = np.argwhere(state).max()
+            if mymin > state.shape[0] - mymin and mymax > state.shape[0] - mymin:
+                yield sl[:mymin, :]
+            elif mymin < state.shape[0] - mymin and mymax < state.shape[0] - mymin:
+                yield sl[mymax:, :]
+        else:
+            yield sl
+
+
 @warning_for_keywords()
 def streamline_near_roi(streamline, roi_coords, tol, *, mode="any"):
     """Is a streamline near an ROI.
