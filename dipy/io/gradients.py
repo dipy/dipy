@@ -1,21 +1,19 @@
-from __future__ import division, print_function, absolute_import
-
-from os.path import splitext
+import io
+from pathlib import Path
 import re
-from dipy.utils.six import string_types
+import warnings
+
 import numpy as np
-from nibabel.tmpdirs import InTemporaryDirectory
 
 
 def read_bvals_bvecs(fbvals, fbvecs):
-    """
-    Read b-values and b-vectors from disk
+    """Read b-values and b-vectors from disk.
 
     Parameters
     ----------
-    fbvals : str
+    fbvals : str or Path
        Full path to file with b-values. None to not read bvals.
-    fbvecs : str
+    fbvecs : str or Path
        Full path of file with b-vectors. None to not read bvecs.
 
     Returns
@@ -27,8 +25,8 @@ def read_bvals_bvecs(fbvals, fbvecs):
     -----
     Files can be either '.bvals'/'.bvecs' or '.txt' or '.npy' (containing
     arrays stored with the appropriate values).
-    """
 
+    """
     # Loop over the provided inputs, reading each one in turn and adding them
     # to this list:
     vals = []
@@ -37,25 +35,31 @@ def read_bvals_bvecs(fbvals, fbvecs):
         # move on:
         if this_fname is None or not this_fname:
             vals.append(None)
+            continue
+
+        if not isinstance(this_fname, (str, Path)):
+            raise ValueError("String with full path to file is required")
+
+        ext = Path(this_fname).suffix
+        if ext in [
+            ".bvals",
+            ".bval",
+            ".bvecs",
+            ".bvec",
+            ".txt",
+            ".eddy_rotated_bvecs",
+            "",
+        ]:
+            with open(this_fname, "r") as f:
+                content = f.read()
+
+            munged_content = io.StringIO(re.sub(r"(\t|,)", " ", content))
+            vals.append(np.squeeze(np.loadtxt(munged_content)))
+        elif ext == ".npy":
+            vals.append(np.squeeze(np.load(this_fname)))
         else:
-            if isinstance(this_fname, string_types):
-                base, ext = splitext(this_fname)
-                if ext in ['.bvals', '.bval', '.bvecs', '.bvec', '.txt', '.eddy_rotated_bvecs', '']:
-                    with open(this_fname, 'r') as f:
-                        content = f.read()
-                    # We replace coma and tab delimiter by space
-                    with InTemporaryDirectory():
-                        tmp_fname = "tmp_bvals_bvecs.txt"
-                        with open(tmp_fname, 'w') as f:
-                            f.write(re.sub(r'(\t|,)', ' ', content))
-                        vals.append(np.squeeze(np.loadtxt(tmp_fname)))
-                elif ext == '.npy':
-                    vals.append(np.squeeze(np.load(this_fname)))
-                else:
-                    e_s = "File type %s is not recognized" % ext
-                    raise ValueError(e_s)
-            else:
-                raise ValueError('String with full path to file is required')
+            e_s = f"File type {ext} is not recognized"
+            raise ValueError(e_s)
 
     # Once out of the loop, unpack them:
     bvals, bvecs = vals[0], vals[1]
@@ -64,11 +68,16 @@ def read_bvals_bvecs(fbvals, fbvecs):
     if bvecs is None:
         return bvals, bvecs
 
-    if min(bvecs.shape) != 3:
-        raise IOError('bvec file should have three rows')
+    if 3 not in bvecs.shape:
+        raise OSError("bvec file should have three rows")
     if bvecs.ndim != 2:
-        raise IOError('bvec file should be saved as a two dimensional array')
-    if bvecs.shape[1] > bvecs.shape[0]:
+        bvecs = bvecs[None, ...]
+        bvals = bvals[None, ...]
+        msg = "Detected only 1 direction on your bvec file. For diffusion "
+        msg += "dataset, it is recommended to have at least 3 directions."
+        msg += "You may have problems during the reconstruction step."
+        warnings.warn(msg, stacklevel=2)
+    if bvecs.shape[1] != 3:
         bvecs = bvecs.T
 
     # If bvals is None, you don't need to check that they have the same shape:
@@ -76,9 +85,9 @@ def read_bvals_bvecs(fbvals, fbvecs):
         return bvals, bvecs
 
     if len(bvals.shape) > 1:
-        raise IOError('bval file should have one row')
+        raise OSError("bval file should have one row")
 
-    if max(bvals.shape) != max(bvecs.shape):
-            raise IOError('b-values and b-vectors shapes do not correspond')
+    if bvals.shape[0] != bvecs.shape[0]:
+        raise OSError("b-values and b-vectors shapes do not correspond")
 
     return bvals, bvecs

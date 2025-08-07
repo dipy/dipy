@@ -1,29 +1,21 @@
-""" Routines to support optional packages """
+"""Routines to support optional packages"""
+
+import importlib
+
+from packaging.version import Version
 
 try:
-    import importlib
+    import pytest
 except ImportError:
-    import dipy.utils._importlib as importlib
-
-try:
-    import nose
-except ImportError:
-    have_nose = False
+    have_pytest = False
 else:
-    have_nose = True
+    have_pytest = True
 
 from dipy.utils.tripwire import TripWire
 
-if have_nose:
-    class OptionalImportError(ImportError, nose.SkipTest):
-        pass
-else:
-    class OptionalImportError(ImportError):
-        pass
 
-
-def optional_package(name, trip_msg=None):
-    """ Return package-like thing and module setup for package `name`
+def optional_package(name, *, trip_msg=None, min_version=None):
+    """Return package-like thing and module setup for package `name`
 
     Parameters
     ----------
@@ -33,6 +25,10 @@ def optional_package(name, trip_msg=None):
         message to give when someone tries to use the return package, but we
         could not import it, and have returned a TripWire object instead.
         Default message if None.
+    min_version : None or str
+        If not None, require that the imported package be at least this
+        version.  If the package has no ``__version__`` attribute, or if the
+        version is not parseable, raise an error.
 
     Returns
     -------
@@ -45,8 +41,8 @@ def optional_package(name, trip_msg=None):
         callable usually set as ``setup_module`` in calling namespace, to allow
         skipping tests.
 
-    Example
-    -------
+    Examples
+    --------
     Typical use would be something like this at the top of a module using an
     optional package:
 
@@ -84,15 +80,31 @@ def optional_package(name, trip_msg=None):
         pass
     else:  # import worked
         # top level module
-        return pkg, True, lambda: None
+        if not min_version:
+            return pkg, True, lambda: None
+
+        current_version = getattr(pkg, "__version__", "0.0.0")
+        if Version(current_version) >= Version(min_version):
+            return pkg, True, lambda: None
+
+        if trip_msg is None:
+            trip_msg = (
+                f"We need at least version {min_version} of "
+                f"package {name}, but ``import {name}`` "
+                f"found version {current_version}."
+            )
+            if current_version == "0.0.0":
+                trip_msg += "Your installation might be incomplete or corrupted."
+
     if trip_msg is None:
-        trip_msg = ('We need package %s for these functions, but '
-                    '``import %s`` raised an ImportError'
-                    % (name, name))
+        trip_msg = (
+            f"We need package {name} for these functions, but "
+            f"``import {name}`` raised an ImportError"
+        )
     pkg = TripWire(trip_msg)
 
     def setup_module():
-        if have_nose:
-            raise nose.plugins.skip.SkipTest('No %s for these tests'
-                                             % name)
+        if have_pytest:
+            pytest.mark.skip(f"No {name} for these tests")
+
     return pkg, False, setup_module

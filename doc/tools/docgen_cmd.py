@@ -1,17 +1,19 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Script to generate documentation for command line utilities
 """
-from os.path import join as pjoin
-from os import listdir
-import re
-from subprocess import Popen, PIPE, CalledProcessError
-import sys
 import importlib
 import inspect
+import os
+from os.path import join as pjoin
+from subprocess import PIPE, CalledProcessError, Popen
+import sys
 
 # version comparison
-from distutils.version import LooseVersion as V
+# from packaging.version import Version
+
+# List of workflows to ignore
+SKIP_WORKFLOWS_LIST = ("Workflow", "CombinedWorkflow")
 
 
 def sh3(cmd):
@@ -56,25 +58,29 @@ def sh3(cmd):
 
 
 def abort(error):
-    print('*WARNING* Command line API documentation not generated: %s' % error)
+    print(f"*WARNING* Command line API documentation not generated: {error}")
     exit()
 
 
-def get_rst_string(module_name, help_string):
-    """
-    Generate rst text for module
-    """
-    dashes = "========================\n"
+def get_doc_parser(class_obj):
+    # return inspect.getdoc(class_obj.run)
+    try:
+        ia_module = importlib.import_module("dipy.workflows.base")
+        parser = ia_module.IntrospectiveArgumentParser()
+        parser.add_workflow(class_obj())
+    except Exception as e:
+        abort(f"Error on {class_obj.__name__}: {e}")
 
-    rst_text = ""
-    rst_text += dashes
-    rst_text += module_name + "\n"
-    rst_text += dashes + "\n"
-    rst_text += help_string
-    return rst_text
+    return parser
 
 
-if __name__ == '__main__':
+def format_title(text):
+    text = text.title()
+    line = "-" * len(text)
+    return f"{text}\n{line}\n\n"
+
+
+if __name__ == "__main__":
     # package name: Eg: dipy
     package = sys.argv[1]
     # directory in which the generated rst files will be saved
@@ -82,69 +88,112 @@ if __name__ == '__main__':
 
     try:
         __import__(package)
-    except ImportError as e:
-        abort("Cannot import " + package)
+    except ImportError:
+        abort(f"Can not import {package}")
 
-    module = sys.modules[package]
+    # NOTE: with the new versioning scheme, this check is not needed anymore
+    # Also, this might be needed if we do not use spin to generate the docs
+    # module = sys.modules[package]
 
     # Check that the source version is equal to the installed
     # version. If the versions mismatch the API documentation sources
     # are not (re)generated. This avoids automatic generation of documentation
     # for older or newer versions if such versions are installed on the system.
 
-    installed_version = V(module.__version__)
+    # installed_version = Version(module.__version__)
 
-    info_file = pjoin('..', package, 'info.py')
-    info_lines = open(info_file).readlines()
-    source_version = '.'.join(
-        [v.split('=')[1].strip(" '\n.")
-         for v in info_lines
-         if re.match('^_version_(major|minor|micro|extra)', v)])
-    print('***', source_version)
+    # info_file = pjoin('..', package, 'info.py')
+    # info_lines = open(info_file).readlines()
+    # source_version = '.'.join(
+    #     [v.split('=')[1].strip(" '\n.")
+    #      for v in info_lines
+    #      if re.match('^_version_(major|minor|micro|extra)', v)]).strip('.')
+    # source_version = Version(source_version)
+    # print('***', source_version)
 
-    if source_version != installed_version:
-        abort("Installed version does not match source version")
+    # if source_version != installed_version:
+    #     print('***', installed_version)
+    #     abort("Installed version does not match source version")
 
     # generate docs
     command_list = []
 
-    workflows_folder = pjoin('..', 'dipy', 'workflows')
-    workflow_class = module = importlib.import_module(
-        "dipy.workflows.workflow")
+    workflow_module = importlib.import_module("dipy.workflows.workflow")
+    cli_module = importlib.import_module("dipy.workflows.cli")
 
-    for f in listdir(workflows_folder):
-        fpath = pjoin(workflows_folder, f)
-        module_name = inspect.getmodulename(fpath)
-        if module_name is not None:
-            module = importlib.import_module(
-                "dipy.workflows." + module_name)
-            members = inspect.getmembers(module)
-            for member_name, member_obj in members:
-                if(inspect.isclass(member_obj)):
-                    if (issubclass(member_obj, workflow_class.Workflow) and
-                            not member_obj == workflow_class.Workflow):
-                        # member_obj is a workflow
-                        print("Generating docs for: ", member_name)
-                        if hasattr(member_obj, 'run'):
-                            help_string = inspect.getdoc(member_obj.run)
+    workflows_dict = getattr(cli_module, "cli_flows")
 
-                            doc_string = get_rst_string(member_name,
-                                                        help_string)
-                            out_f = member_name + ".rst"
-                            output_file = open(pjoin(outdir, out_f), "w")
-                            output_file.write(doc_string)
-                            output_file.close()
-                            command_list.append(out_f)
-                            print("Done")
+    workflow_desc = {}
+    # We get all workflows class obj in a dictionary
+    for path_file in os.listdir(pjoin("..", "dipy", "workflows")):
+        module_name = inspect.getmodulename(path_file)
+        if module_name is None:
+            continue
+
+        module = importlib.import_module(f"dipy.workflows.{module_name}")
+        members = inspect.getmembers(module)
+        d_wkflw = {name: {"module": obj, "parser": get_doc_parser(obj)}
+                   for name, obj in members
+                   if inspect.isclass(obj) and
+                   issubclass(obj, workflow_module.Workflow) and
+                   name not in SKIP_WORKFLOWS_LIST
+                   }
+
+        workflow_desc.update(d_wkflw)
+
+    cmd_list = []
+    for fname, wflw_value in workflows_dict.items():
+        flow_module_name, flow_name = wflw_value
+
+        print(f"Generating docs for: {fname} ({flow_name})")
+        out_fname = fname + ".rst"
+        with open(pjoin(outdir, out_fname), "w", encoding="utf-8") as fp:
+            dashes = "=" * len(fname)
+            fp.write(f".. {fname}:\n\n{dashes}\n{fname}\n{dashes}\n\n")
+            parser = workflow_desc[flow_name]["parser"]
+            if parser.description not in ["", "\n\n"]:
+                fp.write(format_title("Synopsis"))
+                fp.write(f"{parser.description}\n\n")
+            fp.write(format_title("usage"))
+            str_p_args = " ".join([p[0] for p in parser.positional_parameters]).lower()
+            fp.write(".. code-block:: bash\n\n")
+            fp.write(f"    {fname} [OPTIONS] {str_p_args}\n\n")
+            fp.write(format_title("Input Parameters"))
+            for p in parser.positional_parameters:
+                fp.write(f"* ``{p[0]}``\n\n")
+                comment = '\n  '.join([text.rstrip() for text in p[2]])
+                fp.write(f"  {comment}\n\n")
+
+            optional_params = [p for p in parser.optional_parameters
+                               if not p[0].startswith("out_")]
+            if optional_params:
+                fp.write(format_title("General Options"))
+                for p in optional_params:
+                    fp.write(f"* ``--{p[0]}``\n\n")
+                    comment = '\n  '.join([text.rstrip() for text in p[2]])
+                    fp.write(f"  {comment}\n\n")
+
+            if parser.output_parameters:
+                fp.write(format_title("Output Options"))
+                for p in parser.output_parameters:
+                    fp.write(f"* ``--{p[0]}``\n\n")
+                    comment = '\n  '.join([text.rstrip() for text in p[2]])
+                    fp.write(f"  {comment}\n\n")
+
+            if parser.epilog:
+                fp.write(format_title("References"))
+                fp.write(parser.epilog.replace("References: \n", ""))
+        cmd_list.append(out_fname)
+        print("Done")
 
     # generate index.rst
     print("Generating index.rst")
-    index = open(pjoin(outdir, "index.rst"), "w")
-    index.write("Command Line Utilities Reference\n")
-    index.write("================================\n\n")
-    index.write(".. toctree::\n\n")
-    for cmd in command_list:
-        index.write("   " + cmd)
-        index.write("\n")
-    index.close()
+    with open(pjoin(outdir, "index.rst"), "w") as index:
+        index.write(".. _workflows_reference:\n\n")
+        index.write("Command Line Utilities Reference\n")
+        index.write("================================\n\n")
+        index.write(".. toctree::\n\n")
+        for cmd in cmd_list:
+            index.write(f"   {cmd}")
+            index.write("\n")
     print("Done")

@@ -28,15 +28,30 @@ For a full list of the features implemented in the most recent release cycle, ch
 .. toctree::
    :maxdepth: 1
 
-   release0.14
-   release0.13
-   release0.12
-   release0.11
-   release0.10
-   release0.9
-   release0.8
-   release0.7
-   release0.6
+   release_notes/release1.11
+   release_notes/release1.10
+   release_notes/release1.9
+   release_notes/release1.8
+   release_notes/release1.7
+   release_notes/release1.6
+   release_notes/release1.5
+   release_notes/release1.4.1
+   release_notes/release1.4
+   release_notes/release1.3
+   release_notes/release1.2
+   release_notes/release1.1
+   release_notes/release1.0
+   release_notes/release0.16
+   release_notes/release0.15
+   release_notes/release0.14
+   release_notes/release0.13
+   release_notes/release0.12
+   release_notes/release0.11
+   release_notes/release0.10
+   release_notes/release0.9
+   release_notes/release0.8
+   release_notes/release0.7
+   release_notes/release0.6
 
 =================
 Systems supported
@@ -44,7 +59,7 @@ Systems supported
 
 DIPY_ is multiplatform and will run under any standard operating systems such
 as *Windows*, *Linux* and  *Mac OS X*. Every single new code addition is being tested on
-a number of different buildbots and can be monitored online `here <http://nipy.bic.berkeley.edu/builders>`_.
+a number of different buildbots and can be monitored online `here <https://github.com/dipy/dipy/actions>`_.
 
 
 .. include:: links_names.inc

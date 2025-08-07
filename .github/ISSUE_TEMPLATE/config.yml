@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://docs.dipy.org/stable/
+    about: Please read the documentation before creating an issue.
+  - name: Support and help
+    url: https://github.com/dipy/dipy/discussions
+    about: Use GitHub Discussions to ask questions and to get support.

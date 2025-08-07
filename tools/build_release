@@ -1,8 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """dipy release build script.
 """
 import os
-from toollib import (c, get_dipydir, compile_tree, cd, pjoin, remove_tree)
+
+from toollib import c, cd, compile_tree, get_dipydir, pjoin, remove_tree
 
 # Get main dipy dir, this will raise if it doesn't pass some checks
 dipydir = get_dipydir()

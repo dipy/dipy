@@ -1,30 +1,39 @@
-""" A unified interface for performing and debugging optimization problems.
+"""A unified interface for performing and debugging optimization problems."""
 
-Only L-BFGS-B and Powell is supported in this class for versions of
-Scipy < 0.12. All optimizers are available for scipy >= 0.12.
-"""
 import abc
-from distutils.version import LooseVersion
+import warnings
+
 import numpy as np
-import scipy
-import scipy.sparse as sps
 import scipy.optimize as opt
-from dipy.utils.six import with_metaclass
+from scipy.optimize import minimize
 
-SCIPY_LESS_0_12 = LooseVersion(scipy.version.short_version) < '0.12'
+from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
+from dipy.utils.optpkg import optional_package
 
-if not SCIPY_LESS_0_12:
-    from scipy.optimize import minimize
-else:
-    from scipy.optimize import fmin_l_bfgs_b, fmin_powell
+cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
-class Optimizer(object):
-
-    def __init__(self, fun,  x0, args=(), method='L-BFGS-B', jac=None,
-                 hess=None, hessp=None, bounds=None, constraints=(),
-                 tol=None, callback=None, options=None, evolution=False):
-        """ A class for handling minimization of scalar function of one or more
+class Optimizer:
+    @warning_for_keywords()
+    def __init__(
+        self,
+        fun,
+        x0,
+        args=(),
+        *,
+        method="L-BFGS-B",
+        jac=None,
+        hess=None,
+        hessp=None,
+        bounds=None,
+        constraints=(),
+        tol=None,
+        callback=None,
+        options=None,
+        evolution=False,
+    ):
+        """A class for handling minimization of scalar function of one or more
         variables.
 
         Parameters
@@ -84,6 +93,7 @@ class Optimizer(object):
         constraints : dict or sequence of dict, optional
             Constraints definition (only for COBYLA and SLSQP).
             Each constraint is defined in a dictionary with fields:
+
                 type : str
                     Constraint type: 'eq' for equality, 'ineq' for inequality.
                 fun : callable
@@ -92,6 +102,7 @@ class Optimizer(object):
                     The Jacobian of `fun` (only for SLSQP).
                 args : sequence, optional
                     Extra arguments to be passed to the function and Jacobian.
+
             Equality constraint means that the constraint function result is to
             be zero whereas inequality means that it is to be non-negative.
             Note that COBYLA only supports inequality constraints.
@@ -107,10 +118,12 @@ class Optimizer(object):
         options : dict, optional
             A dictionary of solver options. All methods accept the following
             generic options:
+
                 maxiter : int
                     Maximum number of iterations to perform.
                 disp : bool
                     Set to True to print convergence messages.
+
             For method-specific options, see
             `show_options('minimize', method)`.
 
@@ -118,147 +131,75 @@ class Optimizer(object):
             save history of x for each iteration. Only available using Scipy
             >= 0.12.
 
-        See also
-        ---------
+        See Also
+        --------
         scipy.optimize.minimize
-        """
 
+        """
         self.size_of_x = len(x0)
         self._evol_kx = None
 
-        _eps = np.finfo(float).eps
+        if evolution is True:
+            self._evol_kx = []
 
-        if SCIPY_LESS_0_12:
+            def history_of_x(kx):
+                self._evol_kx.append(kx)
 
-            if evolution is True:
-                print('Saving history is available only with Scipy >= 0.12.')
+            res = minimize(
+                fun,
+                x0,
+                args,
+                method,
+                jac,
+                hess,
+                hessp,
+                bounds,
+                constraints,
+                tol,
+                callback=history_of_x,
+                options=options,
+            )
 
-            if method == 'L-BFGS-B':
-                default_options = {'maxcor': 10, 'ftol': 1e-7, 'gtol': 1e-5,
-                                   'eps': 1e-8, 'maxiter': 1000}
-
-                if jac is None:
-                    approx_grad = True
-                else:
-                    approx_grad = False
-
-                if options is None:
-                    options = default_options
-
-                if options is not None:
-                    for key in options:
-                        default_options[key] = options[key]
-                    options = default_options
-
-                try:
-                    out = fmin_l_bfgs_b(fun, x0, fprime=jac, args=args,
-                                        approx_grad=approx_grad,
-                                        bounds=bounds,
-                                        m=options['maxcor'],
-                                        factr=options['ftol']/_eps,
-                                        pgtol=options['gtol'],
-                                        epsilon=options['eps'],
-                                        maxiter=options['maxiter'])
-                except TypeError:
-
-                    msg = 'In Scipy ' + scipy.__version__ + ' `maxiter` '
-                    msg += 'parameter is not available for L-BFGS-B. \n Using '
-                    msg += '`maxfun` instead with value twice of maxiter.'
-
-                    print(msg)
-                    out = fmin_l_bfgs_b(fun, x0, fprime=jac, args=args,
-                                        approx_grad=approx_grad,
-                                        bounds=bounds,
-                                        m=options['maxcor'],
-                                        factr=options['ftol']/_eps,
-                                        pgtol=options['gtol'],
-                                        epsilon=options['eps'],
-                                        maxfun=options['maxiter'] * 2)
-
-                res = {'x': out[0], 'fun': out[1], 'nfev': out[2]['funcalls']}
-                try:
-                    res['nit'] = out[2]['nit']
-                except KeyError:
-                    res['nit'] = None
-
-            elif method == 'Powell':
-
-                default_options = {'xtol': 0.0001, 'ftol': 0.0001,
-                                   'maxiter': None}
-
-                if options is None:
-                    options = default_options
-
-                if options is not None:
-                    for key in options:
-                        default_options[key] = options[key]
-                    options = default_options
-
-                out = fmin_powell(fun, x0, args,
-                                  xtol=options['xtol'],
-                                  ftol=options['ftol'],
-                                  maxiter=options['maxiter'],
-                                  full_output=True,
-                                  disp=False,
-                                  retall=True)
-
-                xopt, fopt, direc, iterations, funcs, warnflag, allvecs = out
-                res = {'x': xopt, 'fun': fopt,
-                       'nfev': funcs, 'nit': iterations}
-
-            else:
-
-                msg = 'Only L-BFGS-B and Powell is supported in this class '
-                msg += 'for versions of Scipy < 0.12.'
-                raise ValueError(msg)
-
-        if not SCIPY_LESS_0_12:
-
-            if evolution is True:
-
-                self._evol_kx = []
-
-                def history_of_x(kx):
-                    self._evol_kx.append(kx)
-                res = minimize(fun, x0, args, method, jac, hess, hessp, bounds,
-                               constraints, tol, callback=history_of_x,
-                               options=options)
-
-            else:
-
-                res = minimize(fun, x0, args, method, jac, hess, hessp, bounds,
-                               constraints, tol, callback, options)
+        else:
+            res = minimize(
+                fun,
+                x0,
+                args,
+                method,
+                jac,
+                hess,
+                hessp,
+                bounds,
+                constraints,
+                tol,
+                callback,
+                options,
+            )
 
         self.res = res
 
     @property
     def xopt(self):
-
-        return self.res['x']
+        return self.res["x"]
 
     @property
     def fopt(self):
-
-        return self.res['fun']
+        return self.res["fun"]
 
     @property
     def nit(self):
-
-        return self.res['nit']
+        return self.res["nit"]
 
     @property
     def nfev(self):
-
-        return self.res['nfev']
+        return self.res["nfev"]
 
     @property
     def message(self):
-
-        return self.res['message']
+        return self.res["message"]
 
     def print_summary(self):
-
-        print(self.res)
+        logger.info(self.res)
 
     @property
     def evolution(self):
@@ -283,55 +224,52 @@ def spdot(A, B):
 
     See discussion here:
     http://mail.scipy.org/pipermail/scipy-user/2010-November/027700.html
+
     """
-    if sps.issparse(A) and sps.issparse(B):
-        return A * B
-    elif sps.issparse(A) and not sps.issparse(B):
-        return (A * B).view(type=B.__class__)
-    elif not sps.issparse(A) and sps.issparse(B):
-        return (B.T * A.T).T.view(type=A.__class__)
-    else:
-        return np.dot(A, B)
+    return A @ B
 
 
-def sparse_nnls(y, X,
-                momentum=1,
-                step_size=0.01,
-                non_neg=True,
-                check_error_iter=10,
-                max_error_checks=10,
-                converge_on_sse=0.99):
+@warning_for_keywords()
+def sparse_nnls(
+    y,
+    X,
+    *,
+    momentum=1,
+    step_size=0.01,
+    non_neg=True,
+    check_error_iter=10,
+    max_error_checks=10,
+    converge_on_sse=0.99,
+):
     """
-
-    Solve y=Xh for h, using gradient descent, with X a sparse matrix
+    Solve y=Xh for h, using gradient descent, with X a sparse matrix.
 
     Parameters
     ----------
-
     y : 1-d array of shape (N)
         The data. Needs to be dense.
 
     X : ndarray. May be either sparse or dense. Shape (N, M)
        The regressors
 
-    momentum : float, optional (default: 1).
+    momentum : float, optional
         The persistence of the gradient.
 
-    step_size : float, optional (default: 0.01).
+    step_size : float, optional
         The increment of parameter update in each iteration
 
-    non_neg : Boolean, optional (default: True)
+    non_neg : Boolean, optional
         Whether to enforce non-negativity of the solution.
 
-    check_error_iter : int (default:10)
+    check_error_iter : int, optional
         How many rounds to run between error evaluation for
         convergence-checking.
 
-    max_error_checks : int (default: 10)
+    max_error_checks : int, optional
         Don't check errors more than this number of times if no improvement in
         r-squared is seen.
 
-    converge_on_sse : float (default: 0.99)
+    converge_on_sse : float, optional
       a percentage improvement in SSE that is required each time to say
       that things are still going well.
 
@@ -347,7 +285,7 @@ def sparse_nnls(y, X,
     h_best = h
     iteration = 1
     ss_residuals_min = np.inf  # This will keep track of the best solution
-    sse_best = np.inf   # This will keep track of the best performance so far
+    sse_best = np.inf  # This will keep track of the best performance so far
     count_bad = 0  # Number of times estimation error has gone up.
     error_checks = 0  # How many error checks have we done so far
 
@@ -357,8 +295,7 @@ def sparse_nnls(y, X,
             gradient = spdot(X.T, spdot(X, h) - y)
             gradient += momentum * gradient
             # Normalize to unit-length
-            unit_length_gradient = (gradient /
-                                    np.sqrt(np.dot(gradient, gradient)))
+            unit_length_gradient = gradient / np.sqrt(np.dot(gradient, gradient))
             # Update the parameters in the direction of the gradient:
             h -= step_size * unit_length_gradient
             if non_neg:
@@ -390,7 +327,7 @@ def sparse_nnls(y, X,
         iteration += 1
 
 
-class SKLearnLinearSolver(with_metaclass(abc.ABCMeta, object)):
+class SKLearnLinearSolver(metaclass=abc.ABCMeta):
     """
     Provide a sklearn-like uniform interface to algorithms that solve problems
     of the form: $y = Ax$ for $x$
@@ -401,13 +338,14 @@ class SKLearnLinearSolver(with_metaclass(abc.ABCMeta, object)):
     such that an estimate of y can be calculated as:
     `y_hat = np.dot(X, SKLearnLinearSolver.coef_.T)`
     """
+
     def __init__(self, *args, **kwargs):
         self._args = args
         self._kwargs = kwargs
 
     @abc.abstractmethod
     def fit(self, X, y):
-        """Implement for all derived classes """
+        """Implement for all derived classes"""
 
     def predict(self, X):
         """
@@ -432,14 +370,201 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
     A sklearn-like interface to scipy.optimize.nnls
 
     """
+
     def fit(self, X, y):
         """
         Fit the NonNegativeLeastSquares linear model to data
 
         Parameters
         ----------
+        X : array-like (n_samples, n_features)
+            Samples.
+        y : array-like (n_samples,)
+            Target values.
 
         """
         coef, rnorm = opt.nnls(X, y)
         self.coef_ = coef
         return self
+
+
+class PositiveDefiniteLeastSquares:
+    @warning_for_keywords()
+    def __init__(self, m, *, A=None, L=None):
+        r"""Regularized least squares with linear matrix inequality constraints.
+
+        See :footcite:p:`DelaHaije2020` for further details about the method.
+
+        Generate a CVXPY representation of a regularized least squares
+        optimization problem subject to linear matrix inequality constraints.
+
+        Parameters
+        ----------
+        m : int
+            Positive int indicating the number of regressors.
+        A : array (t = m + k + 1, p, p), optional
+            Constraint matrices $A$.
+        L : array (m, m), optional
+            Regularization matrix $L$.
+            Default: None.
+
+        Notes
+        -----
+        The basic problem is to solve for $h$ the minimization of
+
+        $c=\|X h - y\|^2 + \|L h\|^2$,
+
+        where $X$ is an (m, m) upper triangular design matrix and $y$ is a set
+        of m measurements, subject to the constraint that
+
+        $M=A_0+\sum_{i=0}^{m-1} h_i A_{i+1}+\sum_{j=0}^{k-1} s_j A_{m+j+1}>0$,
+
+        where $s_j$ are slack variables and where the inequality sign denotes
+        positive definiteness of the matrix $M$. The sparsity pattern and size
+        of $X$ and $y$ are fixed, because every design matrix and set of
+        measurements can be reduced to an equivalent (minimal) formulation of
+        this type.
+
+        This formulation is used here mainly to enforce polynomial
+        sum-of-squares constraints on various models, as described in
+        :footcite:p:`DelaHaije2020`.
+
+        References
+        ----------
+        .. footbibliography::
+        """
+        # Note: several comments refer to DelaHaije2020 eq 22
+
+        # Input
+        self.A = A  # list: [zeros, H(omega), L(alpha)] --- see eq 22
+        self.L = L  # this is a regularizer matrix, NOT L(alpha) eq 22
+
+        # Problem size
+        t = len(A) if A else 0
+        k = t - m - 1  # length of alpha in L(alpha) eq 22
+
+        # Unknowns
+        self._X = cvxpy.Parameter((m, m))  # Design matrix
+        self._f = cvxpy.Parameter(m)  # Given solution for feasibility check
+        self._h = cvxpy.Variable(m)  # Solution to constrained problem
+        self._y = cvxpy.Parameter(m)  # Regressand
+
+        # Error output
+        self._zeros = np.zeros(m)
+
+        # Objective
+        c = self._X @ self._h - self._y
+        if L is not None:
+            c += L @ self._h
+
+        f_objective = cvxpy.Minimize(0)
+        p_objective = cvxpy.Minimize(cvxpy.norm(c))
+
+        # Constraints
+        if t:
+            M = F = A[0]  # first matrix all zeros (use to initialize)
+            if k > 0:
+                for i in range(m):  # loop over H(omega) from eq 22
+                    F += self._f[i] * A[i + 1]
+                    M += self._h[i] * A[i + 1]
+                    # A-matrix for 'intercept' (22nd, i=21) should be zeros
+                self._s = cvxpy.Variable(k)
+                for j in range(k):  # loop over L(alpha) from eq 22
+                    F += self._s[j] * A[m + j + 1]
+                    M += self._s[j] * A[m + j + 1]
+            else:
+                for i in range(t - 1):
+                    F += self._f[i] * A[i + 1]
+                    M += self._h[i] * A[i + 1]
+            f_constraints = [F >> 0]
+            p_constraints = [M >> 0]
+        else:
+            f_constraints = p_constraints = []
+
+        # CVXPY problems
+        self.problem = cvxpy.Problem(p_objective, p_constraints)
+        self.unconstrained_problem = cvxpy.Problem(p_objective)
+        self.feasibility_problem = cvxpy.Problem(f_objective, f_constraints)
+
+    @warning_for_keywords()
+    def solve(self, design_matrix, measurements, *, check=False, **kwargs):
+        r"""Solve CVXPY problem
+
+        Solve a CVXPY problem instance for a given design matrix and a given set
+        of observations, and return the optimum.
+
+        Parameters
+        ----------
+        design_matrix : array (n, m)
+            Design matrix.
+        measurements : array (n)
+            Measurements.
+        check : boolean, optional
+            If True check whether the unconstrained optimization solution
+            already satisfies the constraints, before running the constrained
+            optimization. This adds overhead, but can avoid unnecessary
+            constrained optimization calls.
+        kwargs : keyword arguments
+            Arguments passed to the CVXPY solve method.
+
+        Returns
+        -------
+        h : array (m)
+             Estimated optimum for problem variables $h$.
+        """
+
+        # Compute and set reduced problem parameters
+        try:
+            X = np.linalg.cholesky(np.dot(design_matrix.T, design_matrix)).T
+        except np.linalg.linalg.LinAlgError:
+            msg = "Cholesky decomposition failed, returning zero array. Verify "
+            msg += "that the data is sufficient to estimate the model "
+            msg += "parameters, and that the design matrix has full rank."
+            warnings.warn(msg, stacklevel=2)
+            return self._zeros
+        self._X.value = X
+        self._y.value = np.linalg.multi_dot(
+            [X, np.linalg.pinv(design_matrix), measurements]
+        )
+
+        try:
+            # Check unconstrained solution
+            if check:
+                # Solve unconstrained problem
+                self.unconstrained_problem.solve(**kwargs)
+
+                # Return zeros if optimization failed
+                status = self.unconstrained_problem.status
+                if status != "optimal":
+                    msg = f"Solver failed to produce an optimum: {status}."
+                    warnings.warn(msg, stacklevel=2)
+                    msg = "Optimization failed, returning zero array."
+                    warnings.warn(msg, stacklevel=2)
+                    return self._zeros
+
+                # Return unconstrained solution if satisfactory
+                self._f.value = self._h.value
+                self.feasibility_problem.solve(**kwargs)
+                if self.feasibility_problem.status == "optimal":
+                    return np.asarray(self._h.value).squeeze()
+
+            # Solve constrained problem
+            with warnings.catch_warnings():
+                if self._y.value.shape[0] < 1000:
+                    warnings.filterwarnings("ignore", message="Converting A to a CSC")
+                self.problem.solve(**kwargs)
+
+            # Show warning if solution is not optimal
+            status = self.problem.status
+            if status != "optimal":
+                msg = f"Solver failed to produce an optimum: {status}."
+                warnings.warn(msg, stacklevel=2)
+
+            # Return solution
+            return np.asarray(self._h.value).squeeze()
+
+        except cvxpy.error.SolverError:
+            # Return zeros
+            msg = "Optimization failed, returning zero array."
+            warnings.warn(msg, stacklevel=2)
+            return self._zeros

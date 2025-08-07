@@ -4,16 +4,17 @@ Base-classes for reconstruction models and reconstruction fits.
 
 All the models in the reconst module follow the same template: a Model object
 is used to represent the abstract properties of the model, that are independent
-of the specifics of the data . These properties are reused whenver fitting a
+of the specifics of the data . These properties are reused whenever fitting a
 particular set of data (different voxels, for example).
 
 
 """
 
+from dipy.testing.decorators import warning_for_keywords
 
-class ReconstModel(object):
-    """ Abstract class for signal reconstruction models
-    """
+
+class ReconstModel:
+    """Abstract class for signal reconstruction models"""
 
     def __init__(self, gtab):
         """Initialization of the abstract class for signal reconstruction models
@@ -21,16 +22,18 @@ class ReconstModel(object):
         Parameters
         ----------
         gtab : GradientTable class instance
+            Gradient table.
 
         """
         self.gtab = gtab
 
-    def fit(self, data, mask=None, **kwargs):
+    @warning_for_keywords()
+    def fit(self, data, *, mask=None, **kwargs):
         return ReconstFit(self, data)
 
 
-class ReconstFit(object):
-    """ Abstract class which holds the fit result of ReconstModel
+class ReconstFit:
+    """Abstract class which holds the fit result of ReconstModel
 
     For example that could be holding FA or GFA etc.
     """

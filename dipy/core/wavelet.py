@@ -1,5 +1,7 @@
 import numpy as np
+
 from dipy.denoise import nlmeans_block
+from dipy.testing.decorators import warning_for_keywords
 
 """
  Functions for Wavelet Transforms in 3D domain
@@ -7,7 +9,7 @@ from dipy.denoise import nlmeans_block
  Code adapted from
 
  WAVELET SOFTWARE AT POLYTECHNIC UNIVERSITY, BROOKLYN, NY
- http://taco.poly.edu/WaveletSoftware/
+ https://eeweb.engineering.nyu.edu/iselesni/WaveletSoftware/
 """
 
 
@@ -26,7 +28,7 @@ def cshift3D(x, m, d):
     Returns
     -------
     y : 3D ndarray
-       array x will be shifed by m samples down
+       array x will be shifted by m samples down
        along dimension d
     """
 
@@ -99,12 +101,12 @@ def afb3D_A(x, af, d):
     hi = np.zeros((L + n1Half, N2, N3))
     for k in range(N3):
         lo[:, :, k] = nlmeans_block.firdn(x[:, :, k], lpf)
-    lo[:L] = lo[:L] + lo[n1Half:n1Half + L, :, :]
+    lo[:L] = lo[:L] + lo[n1Half : n1Half + L, :, :]
     lo = lo[:n1Half, :, :]
 
     for k in range(N3):
         hi[:, :, k] = nlmeans_block.firdn(x[:, :, k], hpf)
-    hi[:L] = hi[:L] + hi[n1Half:n1Half + L, :, :]
+    hi[:L] = hi[:L] + hi[n1Half : n1Half + L, :, :]
     hi = hi[:n1Half, :, :]
     # permute dimensions of x (inverse permutation)
     q = permutationinverse(p)
@@ -146,9 +148,10 @@ def sfb3D_A(lo, hi, sf, d):
     L = sf.shape[0]
     y = np.zeros((N + L - 2, N2, N3))
     for k in range(N3):
-        y[:, :, k] = (np.array(nlmeans_block.upfir(lo[:, :, k], lpf)) +
-                      np.array(nlmeans_block.upfir(hi[:, :, k], hpf)))
-    y[:(L - 2), :, :] = y[:(L - 2), :, :] + y[N:(N + L - 2), :, :]
+        y[:, :, k] = np.array(nlmeans_block.upfir(lo[:, :, k], lpf)) + np.array(
+            nlmeans_block.upfir(hi[:, :, k], hpf)
+        )
+    y[: (L - 2), :, :] = y[: (L - 2), :, :] + y[N : (N + L - 2), :, :]
     y = y[:N, :, :]
     y = cshift3D(y, 1 - L / 2, 0)
     # permute dimensions of y (inverse permutation)
@@ -157,7 +160,8 @@ def sfb3D_A(lo, hi, sf, d):
     return y
 
 
-def sfb3D(lo, hi, sf1, sf2=None, sf3=None):
+@warning_for_keywords()
+def sfb3D(lo, hi, sf1, *, sf2=None, sf3=None):
     """3D Synthesis Filter Bank
 
     Parameters
@@ -200,7 +204,8 @@ def sfb3D(lo, hi, sf1, sf2=None, sf3=None):
     return y
 
 
-def afb3D(x, af1, af2=None, af3=None):
+@warning_for_keywords()
+def afb3D(x, af1, *, af2=None, af3=None):
     """3D Analysis Filter Bank
 
     Parameters
@@ -263,7 +268,7 @@ def dwt3D(x, J, af):
 
     w = [None] * (J + 1)
     for k in range(J):
-        x, w[k] = afb3D(x, af, af, af)
+        x, w[k] = afb3D(x, af, af2=af, af3=af)
     w[J] = x
     return w
 
@@ -289,5 +294,5 @@ def idwt3D(w, J, sf):
 
     y = w[J]
     for k in range(J)[::-1]:
-        y = sfb3D(y, w[k], sf, sf, sf)
+        y = sfb3D(y, w[k], sf, sf2=sf, sf3=sf)
     return y

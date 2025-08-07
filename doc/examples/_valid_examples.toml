@@ -1,0 +1,279 @@
+[main]
+readme = """
+:html_theme.sidebar_secondary.remove:
+
+.. _examples:
+
+
+Examples
+========
+
+.. note::
+    The examples here are some uses of the analysis and visualization functionality
+    of DIPY, with example data from actual neuroscience experiments, or with
+    synthetic data, which is generated as part of the example.
+
+    All the examples presented in the documentation are generated from
+    *fully functioning* python scripts, which are available as part of the
+    source distribution in the `doc/examples` folder.
+
+    If you want to replicate a particular analysis or visualization, copy
+    or download the relevant `.py` script, edit out
+    the body of the text of the example and alter it to your purpose.
+
+
+.. contents::
+   :depth: 2
+
+"""
+position = 0   # it should always be 0
+enable = true  # it should always be true
+files = []
+
+[quick_start]
+readme = """
+Quick Start
+-----------
+
+"""
+position = 1
+enable = true
+files = [
+    "quick_start.py",
+    "tracking_introduction_eudx.py",
+]
+
+
+[preprocessing]
+readme = """
+Preprocessing
+-------------
+
+"""
+position = 4
+enable = true
+files = [
+    "brain_extraction_dwi.py",
+    "denoise_ascm.py",
+    "denoise_nlmeans.py",
+    "denoise_gibbs.py",
+    "denoise_localpca.py",
+    "denoise_mppca.py",
+    "denoise_patch2self.py",
+    "gradients_spheres.py",
+    "piesno.py",
+    "reslice_datasets.py",
+    "snr_in_cc.py",
+    "motion_correction.py",
+]
+
+[reconstruction]
+readme = """
+Reconstruction
+--------------
+
+Below, an overview of all reconstruction models available in DIPY.
+
+.. note::
+    Some reconstruction models do not have a tutorial yet
+
+.. include:: ../../reconstruction_models_list.rst
+
+
+"""
+position = 7
+enable = true
+files = [
+    "kfold_xval.py",
+    "reconst_csa.py",
+    "reconst_csd.py",
+    "reconst_cti.py",
+    "reconst_mcsd.py",
+    "reconst_dki.py",
+    "reconst_dki_micro.py",
+    "reconst_dsi.py",
+    "reconst_dsi_metrics.py",
+    "reconst_dsid.py",
+    "reconst_dti.py",
+    "reconst_forecast.py",
+    "reconst_fwdti.py",
+    "reconst_gqi.py",
+    "reconst_ivim.py",
+    "reconst_mapmri.py",
+    "reconst_msdki.py",
+    "reconst_qtdmri.py",
+    "reconst_shore.py",
+    "reconst_shore_metrics.py",
+    "restore_dti.py",
+    "reconst_sfm.py",
+    "reconst_sh.py",
+    "reconst_rumba.py",
+    "reconst_qti.py",
+    "reconst_qtiplus.py",
+    "histology_resdnn.py",
+    "reconst_bingham.py"
+]
+
+[contextual_enhancement]
+readme = """
+Contextual Enhancement
+----------------------
+
+"""
+position = 10
+enable = true
+files = [
+    "contextual_enhancement.py",
+    "fiber_to_bundle_coherence.py",
+]
+
+[fiber_tracking]
+readme = """
+Fiber Tracking
+--------------
+
+.. include:: ../../tractography_methods_list.rst
+
+"""
+position = 13
+enable = true
+files = [
+    "tracking_bootstrap_peaks.py",
+    "tracking_deterministic.py",
+    "tracking_introduction_eudx.py",
+    "tracking_pft.py",
+    "tracking_ptt.py",
+    "tracking_probabilistic.py",
+    "tracking_sfm.py",
+    "tracking_stopping_criterion.py",
+    "tracking_rumba.py",
+    "linear_fascicle_evaluation.py",
+    "surface_seed.py",
+]
+
+[streamline_analysis]
+readme = """
+Streamlines Analysis and Connectivity
+-------------------------------------
+
+"""
+position = 17
+enable = true
+files = [
+    "afq_tract_profiles.py",
+    "cluster_confidence.py",
+    "path_length_map.py",
+    "streamline_length.py",
+    "streamline_tools.py",
+    "bundle_assignment_maps.py",
+    "bundle_shape_similarity.py",
+]
+
+
+[registration]
+readme = """
+Registration
+------------
+
+"""
+position = 20
+enable = true
+files = [
+    "affine_registration_3d.py",
+    "bundle_registration.py",
+    "bundle_group_registration.py",
+    "register_binary_fuzzy.py",
+    "streamline_registration.py",
+    "bundlewarp_registration.py",
+    "syn_registration_2d.py",
+    "syn_registration_3d.py",
+    "affine_registration_masks.py",
+]
+
+[segmentation]
+readme = """
+Segmentation
+------------
+
+"""
+position = 23
+enable = true
+files = [
+    "bundle_extraction.py",
+    "segment_clustering_features.py",
+    "segment_clustering_metrics.py",
+    "segment_extending_clustering_framework.py",
+    "segment_quickbundles.py",
+    "tissue_classification_dam.py",
+    "tissue_classification.py",
+    "brain_extraction_dwi.py",
+    "fast_streamline_search.py",
+]
+
+[simulations]
+readme = """
+Simulation
+----------
+
+"""
+position = 26
+enable = true
+files = [
+    "simulate_dki.py",
+    "simulate_multi_tensor.py",
+    "reconst_dsid.py",
+]
+
+[Multiprocessing]
+readme = """
+Multiprocessing
+---------------
+
+"""
+position = 29
+enable = true
+files = [
+    "reconst_csa_parallel.py",
+    "reconst_csd_parallel.py",
+    "tracking_disco_phantom.py",
+]
+
+[file_formats]
+readme = """
+File Formats
+------------
+
+"""
+position = 32
+enable = true
+files = [
+    "streamline_formats.py",
+]
+
+[visualization]
+readme = """
+Visualization
+-------------
+
+"""
+position = 35
+enable = true
+files = [
+    "viz_advanced.py",
+    "viz_bundles.py",
+    "viz_roi_contour.py",
+    "viz_slice.py",
+]
+
+[workflows]
+readme = """
+Workflows
+---------
+
+"""
+position = 37
+enable = true
+files = [
+    "combined_workflow_creation.py",
+    "workflow_creation.py",
+]

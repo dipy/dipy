@@ -1,7 +1,7 @@
 .. _using-git:
 
 Working with DIPY source code
-================================================
+=============================
 
 Contents:
 
@@ -13,6 +13,5 @@ Contents:
    following_latest
    patching
    git_development
+   dot2_dot3
    git_resources
-
-

@@ -5,12 +5,13 @@ import os.path
 
 from dipy.data import get_sphere
 from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
+from dipy.utils.logging import logger
 from tempfile import gettempdir
 from libc.math cimport sqrt, exp, fabs, cos, sin, tan, acos, atan2
 from math import ceil
 
-cdef class EnhancementKernel:
 
+cdef class EnhancementKernel:
     cdef double D33
     cdef double D44
     cdef double t
@@ -25,6 +26,10 @@ cdef class EnhancementKernel:
         """ Compute a look-up table for the contextual
         enhancement kernel
 
+        See :footcite:p:`Meesters2016a`, :footcite:p:`Duits2011`,
+        :footcite:p:`Portegies2015a` and :footcite:p:`Portegies2015b` for
+        further details about the method.
+
         Parameters
         ----------
         D33 : float
@@ -33,35 +38,19 @@ cdef class EnhancementKernel:
             Angular diffusion
         t : float
             Diffusion time
-        force_recompute : boolean
+        force_recompute : boolean, optional
             Always compute the look-up table even if it is available
-            in cache. Default is False.
-        orientations : integer or Sphere object
+            in cache.
+        orientations : integer or Sphere object, optional
             Specify the number of orientations to be used with
             electrostatic repulsion, or provide a Sphere object.
             The default sphere is 'repulsion100'.
-        verbose : boolean
+        verbose : boolean, optional
             Enable verbose mode.
-            
+
         References
         ----------
-        [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis, 
-                             J. Portegies, R. Duits. (2016) Fast implementations 
-                             of contextual PDE’s for HARDI data processing in 
-                             DIPY. ISMRM 2016 conference.
-        [DuitsAndFranken_IJCV] R. Duits and E. Franken (2011) Left-invariant diffusions 
-                        on the space of positions and orientations and their 
-                        application to crossing-preserving smoothing of HARDI 
-                        images. International Journal of Computer Vision, 92:231-264.
-        [Portegies2015] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits.
-                        (2015) New Approximation of a Scale Space Kernel on SE(3) 
-                        and Applications in Neuroimaging. Fifth International
-                        Conference on Scale Space and Variational Methods in
-                        Computer Vision
-        [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, 
-                         G. Girard, and R. Duits. (2015) Improving Fiber 
-                         Alignment in HARDI by Combining Contextual PDE flow with 
-                         Constrained Spherical Deconvolution. PLoS One.
+        .. footbibliography::
         """
 
         # save parameters as class members
@@ -70,22 +59,24 @@ cdef class EnhancementKernel:
         self.t = t
 
         # define a sphere
+        rng = np.random.default_rng()
+
         if isinstance(orientations, Sphere):
             # use the sphere defined by the user
             sphere = orientations
-        elif isinstance(orientations, (int, long, float)):
+        elif isinstance(orientations, (int, float)):
             # electrostatic repulsion based on number of orientations
             n_pts = int(orientations)
             if n_pts == 0:
                 sphere = None
             else:
-                theta = np.pi * np.random.rand(n_pts)
-                phi = 2 * np.pi * np.random.rand(n_pts)
+                theta = np.pi * rng.random(n_pts)
+                phi = 2 * np.pi * rng.random(n_pts)
                 hsph_initial = HemiSphere(theta=theta, phi=phi)
                 sphere, potential = disperse_charges(hsph_initial, 5000)
         else:
             # use default
-            sphere = get_sphere('repulsion100')
+            sphere = get_sphere(name="repulsion100")
 
         if sphere is not None:
             self.orientations_list = sphere.vertices
@@ -93,26 +84,26 @@ cdef class EnhancementKernel:
         else:
             self.orientations_list = np.zeros((0,0))
             self.sphere = None
-        
+
         # file location of the lut table for saving/loading
-        kernellutpath = os.path.join(gettempdir(), 
+        kernellutpath = os.path.join(gettempdir(),
                                      "kernel_d33@%4.2f_d44@%4.2f_t@%4.2f_numverts%d.npy" \
                                        % (D33, D44, t, len(self.orientations_list)))
 
         # if LUT exists, load
         if not force_recompute and os.path.isfile(kernellutpath):
             if verbose:
-                print "The kernel already exists. Loading from " + kernellutpath
+                logger.info("The kernel already exists. Loading from " + kernellutpath)
             self.lookuptable = np.load(kernellutpath)
 
         # else, create
         else:
             if verbose:
-                print "The kernel doesn't exist yet. Computing..."
+                logger.info("The kernel doesn't exist yet. Computing...")
             self.create_lookup_table(verbose)
             if self.sphere is not None:
                 np.save(kernellutpath, self.lookuptable)
-            
+
     def get_lookup_table(self):
         """ Return the computed look-up table.
         """
@@ -122,7 +113,7 @@ cdef class EnhancementKernel:
         """ Return the orientations.
         """
         return self.orientations_list
-        
+
     def get_sphere(self):
         """ Get the sphere corresponding with the orientations
         """
@@ -240,7 +231,7 @@ cdef class EnhancementKernel:
                 i += 0.1
                 x[2] = i
                 kval = self.k2(x, y, r, v) / self.kernelmax
-                if(kval < 0.1):
+                if kval < 0.1:
                     break
 
         N = ceil(i) * 2
@@ -248,7 +239,7 @@ cdef class EnhancementKernel:
             N -= 1
 
         if verbose:
-            print("Dimensions of kernel: %dx%dx%d" % (N, N, N))
+            logger.info("Dimensions of kernel: %dx%dx%d" % (N, N, N))
 
         self.kernelsize = N
 
@@ -256,7 +247,7 @@ cdef class EnhancementKernel:
     @cython.boundscheck(False)
     @cython.nonecheck(False)
     cdef double k2(self, double [:] x, double [:] y,
-                   double [:] r, double [:] v) nogil:
+                   double [:] r, double [:] v) noexcept nogil:
         """ Evaluate the kernel at position x relative to
         position y, with orientation r relative to orientation v.
 
@@ -303,7 +294,7 @@ cdef class EnhancementKernel:
     @cython.cdivision(True)
     cdef double [:] coordinate_map(self, double x, double y,
                                    double z, double beta,
-                                   double gamma) nogil:
+                                   double gamma) noexcept nogil:
         """ Compute a coordinate map for the kernel
 
         Parameters
@@ -366,7 +357,7 @@ cdef class EnhancementKernel:
     @cython.boundscheck(False)
     @cython.nonecheck(False)
     @cython.cdivision(True)
-    cdef double kernel(self, double [:] c) nogil:
+    cdef double kernel(self, double [:] c) noexcept nogil:
         """ Internal function, evaluates the kernel based on the coordinate map.
 
         Parameters
@@ -391,7 +382,7 @@ cdef double PI = 3.1415926535897932
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef double [:] euler_angles(double [:] inp) nogil:
+cdef double [:] euler_angles(double [:] inp) noexcept nogil:
     """ Compute the Euler angles for a given input vector
 
     Parameters
@@ -436,7 +427,7 @@ cdef double [:] euler_angles(double [:] inp) nogil:
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef double [:,:] R(double [:] inp) nogil:
+cdef double [:,:] R(double [:] inp) noexcept nogil:
     """ Compute the Rotation matrix for a given input vector
 
     Parameters
@@ -459,9 +450,9 @@ cdef double [:,:] R(double [:] inp) nogil:
 
     beta = inp[0]
     gamma = inp[1]
-    
+
     with gil:
-        
+
         output = np.zeros(9)
 
     cb = cos(beta)

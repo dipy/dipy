@@ -1,33 +1,152 @@
-Eleftherios Garyfallidis <garyfallidis@gmail.com>
-Ian Nimmo-Smith <iannimmosmith@gmail.com>
-Matthew Brett <matthew.brett@gmail.com>
-Bago Amirbekian <mrbago@gmail.com>
-Stefan Van der Walt <sjvdwalt@gmail.com>
-Ariel Rokem <arokem@gmail.com>
-Christopher Nguyen <christopher.t.nguyen@gmail.com>
-Yaroslav Halchenko <debian@onerussian.com>
-Emanuele Olivetti <emanuele@relativita.com>
-Mauro Zucchelli <mauro.zucchelli88@gmail.com>
-Samuel St-Jean <samuel.st-jean@usherbrooke.ca>
-Maxime Descoteaux <m.descoteaux@usherbrooke.ca>
-Gabriel Girard <girard.gabriel@gmail.com>
-Matthieu Dumont <matthieu.dumont@usherbrooke.ca>
-Kimberly Chan <kimberlylchan@gmail.com>
-Erik Ziegler <erik.ziegler@ulg.ac.be>
-Emmanuel Caruyer <caruyer@gmail.com>
-Matthias Ekman <matthias.ekman@gmail.com>
-Jean-Christophe Houde <jean.christophe.houde@gmail.com>
-Michael Paquette <jotha885@gmail.com>
-Sylvain Merlet <merlet.sylvain@gmail.com>
-Omar Ocegueda <jomaroceguedag@gmail.com>
-Marc-Alexandre Cote <marc.cote.19@gmail.com>
-Demian Wassermann <demian.wassermann@inria.fr>
-endolith <endolith@gmail.com>
-Andrew Lawrence <lawrenceajl@gmail.com>
-Gregory R. Lee <gregory.lee@cchmc.org>
-Maria Luisa Mandelli <mmandelli@sampras.radiology.ucsf.edu>
-Kesshi jordan <Kesshi.Jordan@ucsf.edu>
-Chantal Tax <chantaltax88@gmail.com>
-Qiyuan Tian <qytian@stanford.edu>
-Shahnawaz Ahmed <shahnawaz.ahmed95@gmail.com>
-Eric Peterson <globshim@gmail.com>
+Eleftherios Garyfallidis
+Ariel Rokem
+Serge Koudoro
+Matthew Brett
+Rafael Neto Henriques
+Bago Amirbekian
+Gabriel Girard
+Omar Ocegueda
+Bramsh Qamar
+Jon Haitz Legarreta Gorroño
+Francois Rheault
+Samuel St-Jean
+Shreyas Fadnavis
+Marc-Alexandre Côté
+Philippe Karan
+Javier Guaje
+Rutger Fick
+Shahnawaz Ahmed
+Ian Nimmo-Smith
+Mauro Zucchelli
+Matthieu Dumont
+Kesshi Jordan
+Stefan van der Walt
+Ranveer Aggarwal
+Maxime Descoteaux
+Kenji Marshall
+Jong Sung Park
+Riddhish Bhalodia
+Shilpi Prasad
+Tom Dela Haije
+Parichit Sharma
+Bishakh Ghosh
+Christopher Nguyen
+Ricci Woo
+Maharshi Gor
+Stephan Meesters
+Leevi Kerkela
+Eric Peterson
+David Romero-Bascones
+Etienne St-Onge
+Julio Villalon
+Jean-Christophe Houde
+Manu Tej Sharma
+Sourav Singh
+Nasim Anousheh
+Charles Poirier
+Dimitri Papadopoulos
+Paul Camacho
+Kumar Ashutosh
+David Reagan
+Guillaume Theaud
+Shubham Shaswat
+Aman Arya
+Deneb Boito
+Dimitris Rozakis
+Fabio Nery
+Rahul Ubale
+kunal mehta
+Gregory R. Lee
+Areesha Tariq
+Saber Sheybani
+Sam Coveney
+Chantal Tax
+Gregory Lee
+Nil Goyette
+Eric Larson
+Rohan Prinja
+Yaroslav Halchenko
+Antonio Ossa
+Jaewon Chung
+Vara Lakshmi Bayanagari
+Demian Wassermann
+John Kruper
+Michael Paquette
+Shrishti Hore
+Tingyi Wanyan
+Jiri Borovec
+Siddharth Kapoor
+Leon Weninger
+Malinda Dilhara
+Conor Corbin
+Dan Bullock
+Derek Pisner
+Martijn Nagtegaal
+ArjitJ
+Enes Albay
+Kimberly Chan
+Erik Ziegler
+Jacob Roberts
+Takis Panagopoulos
+Antoine Theberge
+Baran Aydogan
+Ross Lawrence
+Scott Trinkle
+David Qixiang Chen
+Kevin Sitek
+Pradeep Reddy Raamana
+Adam Richie-Halford
+Alexandre Gauvin
+Basile Pinsard
+David Hunt
+Emanuele Olivetti
+Emmanuelle Renauld
+Nicolas Delinte
+Sarath Chandra
+Clint Greene
+Giulia Bertò
+Lucas Da Costa
+Matthias Ekman
+Mitesh Gulecha
+Yash Sherry
+dependabot[bot]
+endolith
+Andrew Lawrence
+Bennet Fauber
+Emmanuel Caruyer
+Felix Liu
+Matt Cieslak
+Oscar Esteban
+Tashrif Billah
+Tom Wright
+svabhishek29
+ujjwal-shekhar
+Adam Rybinski
+Aryansh Omray
+Chandan Gangwar
+Clément Zotti
+Gonzalo Sanguinetti
+Joshua Newton
+Naveen Kumarmarri
+Sylvain Merlet
+Vatsala Swaroop
+Vibhatha Abeykoon
+Étienne Mollier
+Atharva Shah
+Chris Filo Gorgolewski
+Daniel Enrico Cahall
+Dogu Baran Aydogan
+Francis Jerome
+Himanshu Mishra
+Jakob Wasserthal
+Jirka Borovec
+Jon Mendoza
+Katrin Leinweber
+Maria Luisa Mandelli
+Martino Pilia
+Michael R. Crusoe
+Qiyuan Tian
+Sagun Pai
+Sven Dorkenwald
+Theodore Ni
+Yijun Liu

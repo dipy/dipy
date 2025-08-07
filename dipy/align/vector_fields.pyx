@@ -5,8 +5,14 @@
 
 import numpy as np
 cimport numpy as cnp
-cimport cython
-from .fused_types cimport floating, number
+
+from dipy.align.fused_types cimport floating, number
+from dipy.core.interpolation cimport (_interpolate_scalar_2d,
+                                      _interpolate_scalar_3d,
+                                      _interpolate_vector_2d,
+                                      _interpolate_vector_3d,
+                                      _interpolate_scalar_nn_2d,
+                                      _interpolate_scalar_nn_3d)
 
 
 cdef extern from "dpy_math.h" nogil:
@@ -26,706 +32,12 @@ def is_valid_affine(double[:, :] M, int dim):
     return True
 
 
-def interpolate_vector_2d(floating[:, :, :] field, double[:, :] locations):
-    r"""Bilinear interpolation of a 2D vector field
-
-    Interpolates the 2D vector field at the given locations. This function is
-    a wrapper for _interpolate_vector_2d for testing purposes, it is
-    equivalent to using scipy.ndimage.interpolation.map_coordinates with
-    bilinear interpolation at each vector component
-
-    Parameters
-    ----------
-    field : array, shape (S, R, 2)
-        the 2D vector field to be interpolated
-    locations : array, shape (n, 2)
-        (locations[i,0], locations[i,1]), 0<=i<n must contain the row and
-        column coordinates to interpolate the vector field at
-
-    Returns
-    -------
-    out : array, shape (n, 2)
-        out[i,:], 0<=i<n will be the interpolated vector at coordinates
-        locations[i,:], or (0,0) if locations[i,:] is outside the field
-    inside : array, (n,)
-        if (locations[i,0], locations[i,1]) is inside the vector field
-        then inside[i]=1, else inside[i]=0
-    """
-    ftype = np.asarray(field).dtype
-    cdef:
-        cnp.npy_intp i, n = locations.shape[0]
-        floating[:, :] out = np.zeros(shape=(n, 2), dtype=ftype)
-        int[:] inside = np.empty(shape=(n,), dtype=np.int32)
-    with nogil:
-        for i in range(n):
-            inside[i] = _interpolate_vector_2d[floating](field,
-                locations[i, 0], locations[i, 1], &out[i, 0])
-    return np.asarray(out), np.asarray(inside)
-
-
-cdef inline int _interpolate_vector_2d(floating[:, :, :] field, double dii,
-                                       double djj, floating *out) nogil:
-    r"""Bilinear interpolation of a 2D vector field
-
-    Interpolates the 2D displacement field at (dii, djj) and stores the
-    result in out. If (dkk, dii, djj) is outside the vector field's domain, a
-    zero vector is written to out instead.
-
-    Parameters
-    ----------
-    field : array, shape (R, C)
-        the input 2D displacement field
-    dii : floating
-        the first coordinate of the interpolating position
-    djj : floating
-        the second coordinate of the interpolating position
-    out : array, shape (2,)
-        the array which the interpolation result will be written to
-
-    Returns
-    -------
-    inside : int
-        if (dii, djj) is inside the domain of the displacement field,
-        inside == 1, otherwise inside == 0
-    """
-    cdef:
-        cnp.npy_intp nr = field.shape[0]
-        cnp.npy_intp nc = field.shape[1]
-        cnp.npy_intp ii, jj
-        double alpha, beta, calpha, cbeta
-        int inside
-    if((dii <= -1) or (djj <= -1) or (dii >= nr) or (djj >= nc)):
-        out[0] = 0
-        out[1] = 0
-        return 0
-    # ---top-left
-    ii = <int>floor(dii)
-    jj = <int>floor(djj)
-
-    calpha = dii - ii
-    cbeta = djj - jj
-    alpha = 1 - calpha
-    beta = 1 - cbeta
-
-    inside = 0
-    if (ii >= 0) and (jj >= 0):
-        out[0] = alpha * beta * field[ii, jj, 0]
-        out[1] = alpha * beta * field[ii, jj, 1]
-        inside += 1
-    else:
-        out[0] = 0
-        out[1] = 0
-    # ---top-right
-    jj += 1
-    if (jj < nc) and (ii >= 0):
-        out[0] += alpha * cbeta * field[ii, jj, 0]
-        out[1] += alpha * cbeta * field[ii, jj, 1]
-        inside += 1
-    # ---bottom-right
-    ii += 1
-    if (jj < nc) and (ii < nr):
-        out[0] += calpha * cbeta * field[ii, jj, 0]
-        out[1] += calpha * cbeta * field[ii, jj, 1]
-        inside += 1
-    # ---bottom-left
-    jj -= 1
-    if (jj >= 0) and (ii < nr):
-        out[0] += calpha * beta * field[ii, jj, 0]
-        out[1] += calpha * beta * field[ii, jj, 1]
-        inside += 1
-    return 1 if inside == 4 else 0
-
-
-def interpolate_scalar_2d(floating[:, :] image, double[:, :] locations):
-    r"""Bilinear interpolation of a 2D scalar image
-
-    Interpolates the 2D image at the given locations. This function is
-    a wrapper for _interpolate_scalar_2d for testing purposes, it is
-    equivalent to scipy.ndimage.interpolation.map_coordinates with
-    bilinear interpolation
-
-    Parameters
-    ----------
-    field : array, shape (S, R)
-        the 2D image to be interpolated
-    locations : array, shape (n, 2)
-        (locations[i,0], locations[i,1]), 0<=i<n must contain the row and
-        column coordinates to interpolate the image at
-
-    Returns
-    -------
-    out : array, shape (n,)
-        out[i], 0<=i<n will be the interpolated scalar at coordinates
-        locations[i,:], or 0 if locations[i,:] is outside the image
-    inside : array, (n,)
-        if locations[i:] is inside the image then inside[i]=1, else
-        inside[i]=0
-    """
-    ftype = np.asarray(image).dtype
-    cdef:
-        cnp.npy_intp i, n = locations.shape[0]
-        floating[:] out = np.zeros(shape=(n,), dtype=ftype)
-        int[:] inside = np.empty(shape=(n,), dtype=np.int32)
-    with nogil:
-        for i in range(n):
-            inside[i] = _interpolate_scalar_2d[floating](image,
-                locations[i, 0], locations[i, 1], &out[i])
-    return np.asarray(out), np.asarray(inside)
-
-
-cdef inline int _interpolate_scalar_2d(floating[:, :] image, double dii,
-                                       double djj, floating *out) nogil:
-    r"""Bilinear interpolation of a 2D scalar image
-
-    Interpolates the 2D image at (dii, djj) and stores the
-    result in out. If (dii, djj) is outside the image's domain,
-    zero is written to out instead.
-
-    Parameters
-    ----------
-    image : array, shape (R, C)
-        the input 2D image
-    dii : floating
-        the first coordinate of the interpolating position
-    djj : floating
-        the second coordinate of the interpolating position
-    out : array, shape (2,)
-        the array which the interpolation result will be written to
-
-    Returns
-    -------
-    inside : int
-        if (dii, djj) is inside the domain of the image,
-        inside == 1, otherwise inside == 0
-    """
-    cdef:
-        cnp.npy_intp nr = image.shape[0]
-        cnp.npy_intp nc = image.shape[1]
-        cnp.npy_intp ii, jj
-        int inside
-        double alpha, beta, calpha, cbeta
-    if((dii <= -1) or (djj <= -1) or (dii >= nr) or (djj >= nc)):
-        out[0] = 0
-        return 0
-    # ---top-left
-    ii = <int>floor(dii)
-    jj = <int>floor(djj)
-
-    calpha = dii - ii
-    cbeta = djj - jj
-    alpha = 1 - calpha
-    beta = 1 - cbeta
-
-    inside = 0
-    if (ii >= 0) and (jj >= 0):
-        out[0] = alpha * beta * image[ii, jj]
-        inside += 1
-    else:
-        out[0] = 0
-    # ---top-right
-    jj += 1
-    if (jj < nc) and (ii >= 0):
-        out[0] += alpha * cbeta * image[ii, jj]
-        inside += 1
-    # ---bottom-right
-    ii += 1
-    if (jj < nc) and (ii < nr):
-        out[0] += calpha * cbeta * image[ii, jj]
-        inside += 1
-    # ---bottom-left
-    jj -= 1
-    if (jj >= 0) and (ii < nr):
-        out[0] += calpha * beta * image[ii, jj]
-        inside += 1
-    return 1 if inside == 4 else 0
-
-
-def interpolate_scalar_nn_2d(number[:, :] image, double[:, :] locations):
-    r"""Nearest neighbor interpolation of a 2D scalar image
-
-    Interpolates the 2D image at the given locations. This function is
-    a wrapper for _interpolate_scalar_nn_2d for testing purposes, it is
-    equivalent to scipy.ndimage.interpolation.map_coordinates with
-    nearest neighbor interpolation
-
-    Parameters
-    ----------
-    image : array, shape (S, R)
-        the 2D image to be interpolated
-    locations : array, shape (n, 2)
-        (locations[i,0], locations[i,1]), 0<=i<n must contain the row and
-        column coordinates to interpolate the image at
-
-    Returns
-    -------
-    out : array, shape (n,)
-        out[i], 0<=i<n will be the interpolated scalar at coordinates
-        locations[i,:], or 0 if locations[i,:] is outside the image
-    inside : array, (n,)
-        if locations[i:] is inside the image then inside[i]=1, else
-        inside[i]=0
-    """
-    ftype = np.asarray(image).dtype
-    cdef:
-        cnp.npy_intp i, n = locations.shape[0]
-        number[:] out = np.zeros(shape=(n,), dtype=ftype)
-        int[:] inside = np.empty(shape=(n,), dtype=np.int32)
-    with nogil:
-        for i in range(n):
-            inside[i] = _interpolate_scalar_nn_2d[number](image,
-                locations[i, 0], locations[i, 1], &out[i])
-    return np.asarray(out), np.asarray(inside)
-
-
-cdef inline int _interpolate_scalar_nn_2d(number[:, :] image, double dii,
-                                          double djj, number *out) nogil:
-    r"""Nearest-neighbor interpolation of a 2D scalar image
-
-    Interpolates the 2D image at (dii, djj) using nearest neighbor
-    interpolation and stores the result in out. If (dii, djj) is outside the
-    image's domain, zero is written to out instead.
-
-    Parameters
-    ----------
-    image : array, shape (R, C)
-        the input 2D image
-    dii : float
-        the first coordinate of the interpolating position
-    djj : float
-        the second coordinate of the interpolating position
-    out : array, shape (1,)
-        the variable which the interpolation result will be written to
-
-    Returns
-    -------
-    inside : int
-        if (dii, djj) is inside the domain of the image,
-        inside == 1, otherwise inside == 0
-    """
-    cdef:
-        cnp.npy_intp nr = image.shape[0]
-        cnp.npy_intp nc = image.shape[1]
-        cnp.npy_intp ii, jj
-        double alpha, beta, calpha, cbeta
-    if((dii < 0) or (djj < 0) or (dii > nr - 1) or (djj > nc - 1)):
-        out[0] = 0
-        return 0
-    # find the top left index and the interpolation coefficients
-    ii = <int>floor(dii)
-    jj = <int>floor(djj)
-    # no one is affected
-    if((ii < 0) or (jj < 0) or (ii >= nr) or (jj >= nc)):
-        out[0] = 0
-        return 0
-    calpha = dii - ii  # by definition these factors are nonnegative
-    cbeta = djj - jj
-    alpha = 1 - calpha
-    beta = 1 - cbeta
-    if(alpha < calpha):
-        ii += 1
-    if(beta < cbeta):
-        jj += 1
-    # no one is affected
-    if((ii < 0) or (jj < 0) or (ii >= nr) or (jj >= nc)):
-        out[0] = 0
-        return 0
-    out[0] = image[ii, jj]
-    return 1
-
-
-def interpolate_scalar_nn_3d(number[:, :, :] image, double[:, :] locations):
-    r"""Nearest neighbor interpolation of a 3D scalar image
-
-    Interpolates the 3D image at the given locations. This function is
-    a wrapper for _interpolate_scalar_nn_3d for testing purposes, it is
-    equivalent to scipy.ndimage.interpolation.map_coordinates with
-    nearest neighbor interpolation
-
-    Parameters
-    ----------
-    image : array, shape (S, R, C)
-        the 3D image to be interpolated
-    locations : array, shape (n, 3)
-        (locations[i,0], locations[i,1], locations[i,2), 0<=i<n must contain
-        the coordinates to interpolate the image at
-
-    Returns
-    -------
-    out : array, shape (n,)
-        out[i], 0<=i<n will be the interpolated scalar at coordinates
-        locations[i,:], or 0 if locations[i,:] is outside the image
-    inside : array, (n,)
-        if locations[i,:] is inside the image then inside[i]=1, else
-        inside[i]=0
-    """
-    ftype = np.asarray(image).dtype
-    cdef:
-        cnp.npy_intp i, n = locations.shape[0]
-        number[:] out = np.zeros(shape=(n,), dtype=ftype)
-        int[:] inside = np.empty(shape=(n,), dtype=np.int32)
-    with nogil:
-        for i in range(n):
-            inside[i] = _interpolate_scalar_nn_3d[number](image,
-                locations[i, 0], locations[i, 1], locations[i, 2], &out[i])
-    return np.asarray(out), np.asarray(inside)
-
-
-cdef inline int _interpolate_scalar_nn_3d(number[:, :, :] volume, double dkk,
-                                         double dii, double djj,
-                                         number *out) nogil:
-    r"""Nearest-neighbor interpolation of a 3D scalar image
-
-    Interpolates the 3D image at (dkk, dii, djj) using nearest neighbor
-    interpolation and stores the result in out. If (dkk, dii, djj) is outside
-    the image's domain, zero is written to out instead.
-
-    Parameters
-    ----------
-    image : array, shape (S, R, C)
-        the input 2D image
-    dkk : float
-        the first coordinate of the interpolating position
-    dii : float
-        the second coordinate of the interpolating position
-    djj : float
-        the third coordinate of the interpolating position
-    out : array, shape (1,)
-        the variable which the interpolation result will be written to
-
-    Returns
-    -------
-    inside : int
-        if (dkk, dii, djj) is inside the domain of the image,
-        inside == 1, otherwise inside == 0
-    """
-    cdef:
-        cnp.npy_intp ns = volume.shape[0]
-        cnp.npy_intp nr = volume.shape[1]
-        cnp.npy_intp nc = volume.shape[2]
-        cnp.npy_intp kk, ii, jj
-        double alpha, beta, calpha, cbeta, gamma, cgamma
-    if not (0 <= dkk <= ns - 1 and 0 <= dii <= nr - 1 and 0 <= djj <= nc - 1):
-        out[0] = 0
-        return 0
-    # find the top left index and the interpolation coefficients
-    kk = <int>floor(dkk)
-    ii = <int>floor(dii)
-    jj = <int>floor(djj)
-    # no one is affected
-    if not ((0 <= kk < ns) and (0 <= ii < nr) and (0 <= jj < nc)):
-        out[0] = 0
-        return 0
-    cgamma = dkk - kk
-    calpha = dii - ii
-    cbeta = djj - jj
-    alpha = 1 - calpha
-    beta = 1 - cbeta
-    gamma = 1 - cgamma
-    if(gamma < cgamma):
-        kk += 1
-    if(alpha < calpha):
-        ii += 1
-    if(beta < cbeta):
-        jj += 1
-    # no one is affected
-    if not ((0 <= kk < ns) and (0 <= ii < nr) and (0 <= jj < nc)):
-        out[0] = 0
-        return 0
-    out[0] = volume[kk, ii, jj]
-    return 1
-
-
-def interpolate_scalar_3d(floating[:, :, :] image, locations):
-    r"""Trilinear interpolation of a 3D scalar image
-
-    Interpolates the 3D image at the given locations. This function is
-    a wrapper for _interpolate_scalar_3d for testing purposes, it is
-    equivalent to scipy.ndimage.interpolation.map_coordinates with
-    trilinear interpolation
-
-    Parameters
-    ----------
-    field : array, shape (S, R, C)
-        the 3D image to be interpolated
-    locations : array, shape (n, 3)
-        (locations[i,0], locations[i,1], locations[i,2), 0<=i<n must contain
-        the coordinates to interpolate the image at
-
-    Returns
-    -------
-    out : array, shape (n,)
-        out[i], 0<=i<n will be the interpolated scalar at coordinates
-        locations[i,:], or 0 if locations[i,:] is outside the image
-    inside : array, (n,)
-        if locations[i,:] is inside the image then inside[i]=1, else
-        inside[i]=0
-    """
-    ftype = np.asarray(image).dtype
-    cdef:
-        cnp.npy_intp i, n = locations.shape[0]
-        floating[:] out = np.zeros(shape=(n,), dtype=ftype)
-        int[:] inside = np.empty(shape=(n,), dtype=np.int32)
-        double[:,:] _locations = np.array(locations, dtype=np.float64)
-    with nogil:
-        for i in range(n):
-            inside[i] = _interpolate_scalar_3d[floating](image,
-                _locations[i, 0], _locations[i, 1], _locations[i, 2], &out[i])
-    return np.asarray(out), np.asarray(inside)
-
-
-cdef inline int _interpolate_scalar_3d(floating[:, :, :] volume,
-                                       double dkk, double dii, double djj,
-                                       floating *out) nogil:
-    r"""Trilinear interpolation of a 3D scalar image
-
-    Interpolates the 3D image at (dkk, dii, djj) and stores the
-    result in out. If (dkk, dii, djj) is outside the image's domain,
-    zero is written to out instead.
-
-    Parameters
-    ----------
-    image : array, shape (R, C)
-        the input 2D image
-    dkk : floating
-        the first coordinate of the interpolating position
-    dii : floating
-        the second coordinate of the interpolating position
-    djj : floating
-        the third coordinate of the interpolating position
-    out : array, shape (2,)
-        the array which the interpolation result will be written to
-
-    Returns
-    -------
-    inside : int
-        if (dkk, dii, djj) is inside the domain of the image,
-        inside == 1, otherwise inside == 0
-    """
-    cdef:
-        cnp.npy_intp ns = volume.shape[0]
-        cnp.npy_intp nr = volume.shape[1]
-        cnp.npy_intp nc = volume.shape[2]
-        cnp.npy_intp kk, ii, jj
-        int inside
-        double alpha, beta, calpha, cbeta, gamma, cgamma
-    if not (-1 < dkk < ns and -1 < dii < nr and -1 < djj < nc):
-        out[0] = 0
-        return 0
-    # find the top left index and the interpolation coefficients
-    kk = <int>floor(dkk)
-    ii = <int>floor(dii)
-    jj = <int>floor(djj)
-    # no one is affected
-
-    cgamma = dkk - kk
-    calpha = dii - ii
-    cbeta = djj - jj
-    alpha = 1 - calpha
-    beta = 1 - cbeta
-    gamma = 1 - cgamma
-
-    inside = 0
-    # ---top-left
-    if (ii >= 0) and (jj >= 0) and (kk >= 0):
-        out[0] = alpha * beta * gamma * volume[kk, ii, jj]
-        inside += 1
-    else:
-        out[0] = 0
-    # ---top-right
-    jj += 1
-    if (ii >= 0) and (jj < nc) and (kk >= 0):
-        out[0] += alpha * cbeta * gamma * volume[kk, ii, jj]
-        inside += 1
-    # ---bottom-right
-    ii += 1
-    if (ii < nr) and (jj < nc) and (kk >= 0):
-        out[0] += calpha * cbeta * gamma * volume[kk, ii, jj]
-        inside += 1
-    # ---bottom-left
-    jj -= 1
-    if (ii < nr) and (jj >= 0) and (kk >= 0):
-        out[0] += calpha * beta * gamma * volume[kk, ii, jj]
-        inside += 1
-    kk += 1
-    if(kk < ns):
-        ii -= 1
-        if (ii >= 0) and (jj >= 0):
-            out[0] += alpha * beta * cgamma * volume[kk, ii, jj]
-            inside += 1
-        jj += 1
-        if (ii >= 0) and (jj < nc):
-            out[0] += alpha * cbeta * cgamma * volume[kk, ii, jj]
-            inside += 1
-        # ---bottom-right
-        ii += 1
-        if (ii < nr) and (jj < nc):
-            out[0] += calpha * cbeta * cgamma * volume[kk, ii, jj]
-            inside += 1
-        # ---bottom-left
-        jj -= 1
-        if (ii < nr) and (jj >= 0):
-            out[0] += calpha * beta * cgamma * volume[kk, ii, jj]
-            inside += 1
-    return 1 if inside == 8 else 0
-
-
-def interpolate_vector_3d(floating[:, :, :, :] field, double[:, :] locations):
-    r"""Trilinear interpolation of a 3D vector field
-
-    Interpolates the 3D vector field at the given locations. This function is
-    a wrapper for _interpolate_vector_3d for testing purposes, it is
-    equivalent to using scipy.ndimage.interpolation.map_coordinates with
-    trilinear interpolation at each vector component
-
-    Parameters
-    ----------
-    field : array, shape (S, R, C, 3)
-        the 3D vector field to be interpolated
-    locations : array, shape (n, 3)
-        (locations[i,0], locations[i,1], locations[i,2), 0<=i<n must contain
-        the coordinates to interpolate the vector field at
-
-    Returns
-    -------
-    out : array, shape (n, 3)
-        out[i,:], 0<=i<n will be the interpolated vector at coordinates
-        locations[i,:], or (0,0,0) if locations[i,:] is outside the field
-    inside : array, (n,)
-        if locations[i,:] is inside the vector field then inside[i]=1, else
-        inside[i]=0
-    """
-    ftype = np.asarray(field).dtype
-    cdef:
-        cnp.npy_intp i, n = locations.shape[0]
-        floating[:, :] out = np.zeros(shape=(n, 3), dtype=ftype)
-        int[:] inside = np.empty(shape=(n,), dtype=np.int32)
-    with nogil:
-        for i in range(n):
-            inside[i] = _interpolate_vector_3d[floating](field,
-                locations[i, 0], locations[i, 1], locations[i, 2], &out[i, 0])
-    return np.asarray(out), np.asarray(inside)
-
-
-cdef inline int _interpolate_vector_3d(floating[:, :, :, :] field, double dkk,
-                                       double dii, double djj,
-                                       floating* out) nogil:
-    r"""Trilinear interpolation of a 3D vector field
-
-    Interpolates the 3D displacement field at (dkk, dii, djj) and stores the
-    result in out. If (dkk, dii, djj) is outside the vector field's domain, a
-    zero vector is written to out instead.
-
-    Parameters
-    ----------
-    field : array, shape (S, R, C)
-        the input 3D displacement field
-    dkk : floating
-        the first coordinate of the interpolating position
-    dii : floating
-        the second coordinate of the interpolating position
-    djj : floating
-        the third coordinate of the interpolating position
-    out : array, shape (3,)
-        the array which the interpolation result will be written to
-
-    Returns
-    -------
-    inside : int
-        if (dkk, dii, djj) is inside the domain of the displacement field,
-        inside == 1, otherwise inside == 0
-    """
-    cdef:
-        cnp.npy_intp ns = field.shape[0]
-        cnp.npy_intp nr = field.shape[1]
-        cnp.npy_intp nc = field.shape[2]
-        cnp.npy_intp kk, ii, jj
-        int inside
-        double alpha, beta, gamma, calpha, cbeta, cgamma
-    if not (-1 < dkk < ns and -1 < dii < nr and -1 < djj < nc):
-        out[0] = 0
-        out[1] = 0
-        out[2] = 0
-        return 0
-    #---top-left
-    kk = <int>floor(dkk)
-    ii = <int>floor(dii)
-    jj = <int>floor(djj)
-
-    cgamma = dkk - kk
-    calpha = dii - ii
-    cbeta = djj - jj
-    alpha = 1 - calpha
-    beta = 1 - cbeta
-    gamma = 1 - cgamma
-
-    inside = 0
-    if (ii >= 0) and (jj >= 0) and (kk >= 0):
-        out[0] = alpha * beta * gamma * field[kk, ii, jj, 0]
-        out[1] = alpha * beta * gamma * field[kk, ii, jj, 1]
-        out[2] = alpha * beta * gamma * field[kk, ii, jj, 2]
-        inside += 1
-    else:
-        out[0] = 0
-        out[1] = 0
-        out[2] = 0
-    # ---top-right
-    jj += 1
-    if (jj < nc) and (ii >= 0) and (kk >= 0):
-        out[0] += alpha * cbeta * gamma * field[kk, ii, jj, 0]
-        out[1] += alpha * cbeta * gamma * field[kk, ii, jj, 1]
-        out[2] += alpha * cbeta * gamma * field[kk, ii, jj, 2]
-        inside += 1
-    # ---bottom-right
-    ii += 1
-    if (jj < nc) and (ii < nr) and (kk >= 0):
-        out[0] += calpha * cbeta * gamma * field[kk, ii, jj, 0]
-        out[1] += calpha * cbeta * gamma * field[kk, ii, jj, 1]
-        out[2] += calpha * cbeta * gamma * field[kk, ii, jj, 2]
-        inside += 1
-    # ---bottom-left
-    jj -= 1
-    if (jj >= 0) and (ii < nr) and (kk >= 0):
-        out[0] += calpha * beta * gamma * field[kk, ii, jj, 0]
-        out[1] += calpha * beta * gamma * field[kk, ii, jj, 1]
-        out[2] += calpha * beta * gamma * field[kk, ii, jj, 2]
-        inside += 1
-    kk += 1
-    if (kk < ns):
-        ii -= 1
-        if (jj >= 0) and (ii >= 0):
-            out[0] += alpha * beta * cgamma * field[kk, ii, jj, 0]
-            out[1] += alpha * beta * cgamma * field[kk, ii, jj, 1]
-            out[2] += alpha * beta * cgamma * field[kk, ii, jj, 2]
-            inside += 1
-        jj += 1
-        if (jj < nc) and (ii >= 0):
-            out[0] += alpha * cbeta * cgamma * field[kk, ii, jj, 0]
-            out[1] += alpha * cbeta * cgamma * field[kk, ii, jj, 1]
-            out[2] += alpha * cbeta * cgamma * field[kk, ii, jj, 2]
-            inside += 1
-        # ---bottom-right
-        ii += 1
-        if (jj < nc) and (ii < nr):
-            out[0] += calpha * cbeta * cgamma * field[kk, ii, jj, 0]
-            out[1] += calpha * cbeta * cgamma * field[kk, ii, jj, 1]
-            out[2] += calpha * cbeta * cgamma * field[kk, ii, jj, 2]
-            inside += 1
-        # ---bottom-left
-        jj -= 1
-        if (jj >= 0) and (ii < nr):
-            out[0] += calpha * beta * cgamma * field[kk, ii, jj, 0]
-            out[1] += calpha * beta * cgamma * field[kk, ii, jj, 1]
-            out[2] += calpha * beta * cgamma * field[kk, ii, jj, 2]
-            inside += 1
-    return 1 if inside == 8 else 0
-
-
 cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                                     double[:, :] premult_index,
                                     double[:, :] premult_disp,
                                     double time_scaling,
                                     floating[:, :, :] comp,
-                                    double[:] stats) nogil:
+                                    double[:] stats) noexcept nogil:
     r"""Computes the composition of two 2D displacement fields
 
     Computes the composition of the two 2-D displacements d1 and d2. The
@@ -839,7 +151,7 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                 meanNorm += nn
                 stdNorm += nn * nn
                 cnt += 1
-                if(maxNorm < nn):
+                if maxNorm < nn:
                     maxNorm = nn
             else:
                 comp[i, j, 0] = 0
@@ -925,7 +237,7 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                                     double[:, :] premult_disp,
                                     double t,
                                     floating[:, :, :, :] comp,
-                                    double[:] stats) nogil:
+                                    double[:] stats) noexcept nogil:
     r"""Computes the composition of two 3D displacement fields
 
     Computes the composition of the two 3-D displacements d1 and d2. The
@@ -1048,7 +360,7 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                     meanNorm += nn
                     stdNorm += nn * nn
                     cnt += 1
-                    if(maxNorm < nn):
+                    if maxNorm < nn:
                         maxNorm = nn
                 else:
                     comp[k, i, j, 0] = 0
@@ -1219,7 +531,7 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
                     mag = sqrt((q[i, j, 0]/sr) ** 2 + (q[i, j, 1]/sc) ** 2)
                     norms[i, j] = mag
                     error += mag
-                    if(difmag < mag):
+                    if difmag < mag:
                         difmag = mag
             maxlen = difmag * epsilon
             for i in range(nr):
@@ -1328,7 +640,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                                    (q[k, i, j, 2]/sc) ** 2)
                         norms[k, i, j] = mag
                         error += mag
-                        if(difmag < mag):
+                        if difmag < mag:
                             difmag = mag
             maxlen = difmag*epsilon
             for k in range(ns):
@@ -1866,6 +1178,149 @@ def downsample_displacement_field_2d(floating[:, :, :] field):
     return np.asarray(down)
 
 
+def warp_coordinates_3d(points,  floating[:, :, :, :] d1,
+                        double[:, :] in2world,
+                        double[:, :] world2out,
+                        double[:, :] field_world2grid):
+    r"""
+    Parameters
+    ----------
+    points : array, shape (n, 3)
+    d1 : array, shape (S, R, C, 3)
+    in2world : array, shape (4, 4)
+    world2out : array, shape (4, 4)
+    field_world2grid : array, shape (4, 4)
+    """
+    cdef:
+        cnp.npy_intp n = points.shape[0]
+        cnp.npy_intp i
+        double x, y, z, wx, wy, wz, gx, gy, gz
+        double[:, :] out = np.zeros(shape=(n, 3), dtype=np.float64)
+        double[:, :] _points = np.array(points, dtype=np.float64)
+        double[:, :] in2grid
+        int inside
+        floating[:] tmp = np.zeros(shape=(3,), dtype=np.asarray(d1).dtype)
+    # in2grid maps points to displacement's grid
+    if in2world is None:  # then points are already in world coordinates
+        in2grid = field_world2grid
+    elif field_world2grid is None:  # then the grid is in world coordinates
+        in2grid = in2world
+    else:
+        in2grid = np.dot(field_world2grid, in2world)
+
+    with nogil:
+        for i in range(n):
+            x = _points[i, 0]
+            y = _points[i, 1]
+            z = _points[i, 2]
+
+            # Map points to world coordinates
+            if in2world is not None:
+                wx = _apply_affine_3d_x0(x, y, z, 1, in2world)
+                wy = _apply_affine_3d_x1(x, y, z, 1, in2world)
+                wz = _apply_affine_3d_x2(x, y, z, 1, in2world)
+            else:
+                wx = x
+                wy = y
+                wz = z
+
+            # Map points to deformation field's grid
+            if in2grid is not None:
+                gx = _apply_affine_3d_x0(x, y, z, 1, in2grid)
+                gy = _apply_affine_3d_x1(x, y, z, 1, in2grid)
+                gz = _apply_affine_3d_x2(x, y, z, 1, in2grid)
+            else:
+                gx = x
+                gy = y
+                gz = z
+
+            # Interpolate deformation field at (gx, gy, gz)
+            inside = _interpolate_vector_3d[floating](d1, gx, gy, gz, &tmp[0])
+
+            # Warp input point
+            wx += tmp[0]
+            wy += tmp[1]
+            wz += tmp[2]
+
+            # Map warped point to requested out coordinates
+            if world2out is not None:
+                out[i, 0] = _apply_affine_3d_x0(wx, wy, wz, 1, world2out)
+                out[i, 1] = _apply_affine_3d_x1(wx, wy, wz, 1, world2out)
+                out[i, 2] = _apply_affine_3d_x2(wx, wy, wz, 1, world2out)
+            else:
+                out[i, 0] = wx
+                out[i, 1] = wy
+                out[i, 2] = wz
+    return np.asarray(out)
+
+
+def warp_coordinates_2d(points,  floating[:, :, :] d1,
+                        double[:, :] in2world,
+                        double[:, :] world2out,
+                        double[:, :] field_world2grid):
+    r"""
+    Parameters
+    ----------
+    points : array, shape (n, 2)
+    d1 : array, shape (S, R, C, 2)
+    in2world : array, shape (3, 3)
+    world2out : array, shape (3, 3)
+    field_world2grid : array, shape (3, 3)
+    """
+    cdef:
+        cnp.npy_intp n = points.shape[0]
+        cnp.npy_intp i
+        double x, y, wx, wy, gx, gy
+        double[:, :] out = np.zeros(shape=(n, 2), dtype=np.float64)
+        double[:, :] _points = np.array(points, dtype=np.float64)
+        double[:, :] in2grid
+        int inside
+        floating[:] tmp = np.zeros(shape=(2,), dtype=np.asarray(d1).dtype)
+    # in2grid maps points to displacement's grid
+    if in2world is None:  # then points are already in world coordinates
+        in2grid = field_world2grid
+    elif field_world2grid is None:  # then the grid is in world coordinates
+        in2grid = in2world
+    else:
+        in2grid = np.dot(field_world2grid, in2world)
+    with nogil:
+        for i in range(n):
+            x = _points[i, 0]
+            y = _points[i, 1]
+
+            # Map points to world coordinates
+            if in2world is not None:
+                wx = _apply_affine_2d_x0(x, y, 1, in2world)
+                wy = _apply_affine_2d_x1(x, y, 1, in2world)
+            else:
+                wx = x
+                wy = y
+
+            # Map points to deformation field's grid
+            if in2grid is not None:
+                gx = _apply_affine_2d_x0(x, y, 1, in2grid)
+                gy = _apply_affine_2d_x1(x, y, 1, in2grid)
+            else:
+                gx = x
+                gy = y
+
+            # Interpolate deformation field at (gx, gy, gz)
+            inside = _interpolate_vector_2d[floating](d1, gx, gy, &tmp[0])
+
+            # Warp input point
+            wx += tmp[0]
+            wy += tmp[1]
+
+            # Map warped point to requested out coordinates
+            if world2out is not None:
+                out[i, 0] = _apply_affine_2d_x0(wx, wy, 1, world2out)
+                out[i, 1] = _apply_affine_2d_x1(wx, wy, 1, world2out)
+            else:
+                out[i, 0] = wx
+                out[i, 1] = wy
+    return np.asarray(out)
+
+
 def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
             double[:, :] affine_idx_in=None,
             double[:, :] affine_idx_out=None,
@@ -1946,7 +1401,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
     cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols),
                                              dtype=np.asarray(volume).dtype)
-    cdef floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(d1).dtype)
+    cdef floating[:] tmp = np.zeros(shape=(3,), dtype=np.asarray(d1).dtype)
 
     with nogil:
 
@@ -1996,7 +1451,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
                     inside = _interpolate_scalar_3d[floating](volume, dkk,
                                                               dii, djj,
-                                                              &warped[k,i,j])
+                                                              &warped[k, i, j])
     return np.asarray(warped)
 
 
@@ -2062,7 +1517,7 @@ def transform_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
                         dii = i
                         djj = j
                     inside = _interpolate_scalar_3d[floating](volume, dkk,
-                        dii, djj, &out[k,i,j])
+                        dii, djj, &out[k, i, j])
     return np.asarray(out)
 
 
@@ -2194,8 +1649,8 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                         dii = di + i
                         djj = dj + j
 
-                    inside = _interpolate_scalar_nn_3d[number](volume, dkk, dii, djj,
-                                                       &warped[k,i,j])
+                    inside = _interpolate_scalar_nn_3d[number](volume,
+                                        dkk, dii, djj, &warped[k, i, j])
     return np.asarray(warped)
 
 
@@ -2260,7 +1715,7 @@ def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
                         dii = i
                         djj = j
                     _interpolate_scalar_nn_3d[number](volume, dkk, dii, djj,
-                                                      &out[k,i,j])
+                                                      &out[k, i, j])
     return np.asarray(out)
 
 
@@ -2707,17 +2162,18 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
 def create_random_displacement_2d(int[:] from_shape,
                                   double[:, :] from_grid2world,
                                   int[:] to_shape,
-                                  double[:, :] to_grid2world):
+                                  double[:, :] to_grid2world,
+                                  object rng=None):
     r"""Creates a random 2D displacement 'exactly' mapping points of two grids
 
     Creates a random 2D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output
     discrete domain (with shape given by to_shape). The affine matrices
-    bringing discrete coordinates to physical space are given by from_grid2world
-    (for the displacement field discretization) and to_grid2world (for the target
-    discretization). Since this function is intended to be used for testing,
-    voxels in the input domain will never be assigned to boundary voxels on the
-    output domain.
+    bringing discrete coordinates to physical space are given by
+    from_grid2world (for the displacement field discretization) and
+    to_grid2world (for the target discretization). Since this function is
+    intended to be used for testing, voxels in the input domain will never be
+    assigned to boundary voxels on the output domain.
 
     Parameters
     ----------
@@ -2729,6 +2185,9 @@ def create_random_displacement_2d(int[:] from_shape,
         the grid shape where the deformation field will map the input grid to.
     to_grid2world : array, shape (3,3)
         the grid-to-space transformation of the mapped grid
+    rng : numpy.rnadom.Generator class, optional
+        Numpy's random generator for setting seed values when needed.
+        Default is None.
 
     Returns
     -------
@@ -2741,7 +2200,7 @@ def create_random_displacement_2d(int[:] from_shape,
         cnp.npy_intp i, j, ri, rj
         double di, dj, dii, djj
         int[:, :, :] int_field = np.empty(tuple(from_shape) + (2,),
-                                            dtype=np.int32)
+                                          dtype=np.int32)
         double[:, :, :] output = np.zeros(tuple(from_shape) + (2,),
                                           dtype=np.float64)
         cnp.npy_intp dom_size = from_shape[0]*from_shape[1]
@@ -2751,13 +2210,16 @@ def create_random_displacement_2d(int[:] from_shape,
     if not is_valid_affine(to_grid2world, 2):
         raise ValueError("Invalid 'to' affine transform matrix")
 
+    if rng is None:
+        rng = np.random.default_rng()
+
     # compute the actual displacement field in the physical space
     for i in range(from_shape[0]):
         for j in range(from_shape[1]):
             # randomly choose where each input grid point will be mapped to in
             # the target grid
-            ri = np.random.randint(1, to_shape[0]-1)
-            rj = np.random.randint(1, to_shape[1]-1)
+            ri = rng.integers(1, to_shape[0]-1)
+            rj = rng.integers(1, to_shape[1]-1)
             int_field[i, j, 0] = ri
             int_field[i, j, 1] = rj
 
@@ -2786,18 +2248,21 @@ def create_random_displacement_2d(int[:] from_shape,
     return np.asarray(output), np.asarray(int_field)
 
 
-def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2world,
-                                  int[:] to_shape, double[:, :] to_grid2world):
+def create_random_displacement_3d(int[:] from_shape,
+                                  double[:, :] from_grid2world,
+                                  int[:] to_shape,
+                                  double[:, :] to_grid2world,
+                                  object rng=None):
     r"""Creates a random 3D displacement 'exactly' mapping points of two grids
 
     Creates a random 3D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output
     discrete domain (with shape given by to_shape). The affine matrices
-    bringing discrete coordinates to physical space are given by from_grid2world
-    (for the displacement field discretization) and to_grid2world (for the target
-    discretization). Since this function is intended to be used for testing,
-    voxels in the input domain will never be assigned to boundary voxels on the
-    output domain.
+    bringing discrete coordinates to physical space are given by
+    from_grid2world (for the displacement field discretization) and
+    to_grid2world (for the target discretization). Since this function is
+    intended to be used for testing, voxels in the input domain will never be
+    assigned to boundary voxels on the output domain.
 
     Parameters
     ----------
@@ -2809,6 +2274,9 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2worl
         the grid shape where the deformation field will map the input grid to.
     to_grid2world : array, shape (4,4)
         the grid-to-space transformation of the mapped grid
+    rng : numpy.rnadom.Generator class, optional
+        Numpy's random generator for setting seed values when needed.
+        Default is None.
 
     Returns
     -------
@@ -2821,7 +2289,7 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2worl
         cnp.npy_intp i, j, k, ri, rj, rk
         double di, dj, dk, dii, djj, dkk
         int[:, :, :, :] int_field = np.empty(tuple(from_shape) + (3,),
-                                               dtype=np.int32)
+                                             dtype=np.int32)
         double[:, :, :, :] output = np.zeros(tuple(from_shape) + (3,),
                                              dtype=np.float64)
         cnp.npy_intp dom_size = from_shape[0]*from_shape[1]*from_shape[2]
@@ -2831,14 +2299,17 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2worl
     if not is_valid_affine(to_grid2world, 3):
         raise ValueError("Invalid 'to' affine transform matrix")
 
+    if rng is None:
+        rng = np.random.default_rng()
+
     # compute the actual displacement field in the physical space
     for k in range(from_shape[0]):
         for i in range(from_shape[1]):
             for j in range(from_shape[2]):
                 # randomly choose the location of each point on the target grid
-                rk = np.random.randint(1, to_shape[0]-1)
-                ri = np.random.randint(1, to_shape[1]-1)
-                rj = np.random.randint(1, to_shape[2]-1)
+                rk = rng.integers(1, to_shape[0]-1)
+                ri = rng.integers(1, to_shape[1]-1)
+                rj = rng.integers(1, to_shape[2]-1)
                 int_field[k, i, j, 0] = rk
                 int_field[k, i, j, 1] = ri
                 int_field[k, i, j, 2] = rj
@@ -2863,8 +2334,8 @@ def create_random_displacement_3d(int[:] from_shape, double[:, :] from_grid2worl
                     dii = ri
                     djj = rj
 
-                # the displacement vector at (i,j) must be the target point minus
-                # the original point, both in physical space
+                # the displacement vector at (i,j) must be the target point
+                # minus the original point, both in physical space
 
                 output[k, i, j, 0] = dkk - dk
                 output[k, i, j, 1] = dii - di
@@ -2897,7 +2368,7 @@ def create_harmonic_fields_2d(cnp.npy_intp nrows, cnp.npy_intp ncols,
     d : array, shape (nrows, ncols, 2)
         the harmonic displacement field
     inv : array, shape (nrows, ncols, 2)
-        the analitical inverse of the harmonic displacement field
+        the analytical inverse of the harmonic displacement field
 
     [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008).
         A simple fixed-point approach to invert a deformation field.
@@ -2949,7 +2420,7 @@ def create_harmonic_fields_3d(int nslices, cnp.npy_intp nrows,
     d : array, shape (nslices, nrows, ncols, 3)
         the harmonic displacement field
     inv : array, shape (nslices, nrows, ncols, 3)
-        the analitical inverse of the harmonic displacement field
+        the analytical inverse of the harmonic displacement field
 
     [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008).
         A simple fixed-point approach to invert a deformation field.
@@ -3101,10 +2572,10 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
         point lies inside (=1) or outside (=0) the image grid
     """
     cdef:
-        int nslices = out.shape[0]
-        int nrows = out.shape[1]
-        int ncols = out.shape[2]
-        int i, j, k, in_flag
+        cnp.npy_intp nslices = out.shape[0]
+        cnp.npy_intp nrows = out.shape[1]
+        cnp.npy_intp ncols = out.shape[2]
+        cnp.npy_intp i, j, k, in_flag
         double tmp
         double[:] x = np.empty(shape=(3,), dtype=np.float64)
         double[:] dx = np.empty(shape=(3,), dtype=np.float64)
@@ -3150,12 +2621,13 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
                                                    img_world2grid)
                         # Interpolate img at q
                         in_flag = _interpolate_scalar_3d[floating](img, q[0],
-                            q[1], q[2], &out[k, i, j, p])
+                                                q[1], q[2], &out[k, i, j, p])
                         if in_flag == 0:
                             out[k, i, j, p] = 0
                             inside[k, i, j] = 0
                             continue
-                        out[k, i, j, p] = (out[k, i, j, p] - tmp) / img_spacing[p]
+                        out[k, i, j, p] = ((out[k, i, j, p] - tmp) /
+                                           img_spacing[p])
                         dx[p] = x[p]
 
 
@@ -3193,8 +2665,8 @@ def _sparse_gradient_3d(floating[:, :, :] img,
         the buffer in which to store the image gradient
     """
     cdef:
-        int n = sample_points.shape[0]
-        int i, in_flag
+        cnp.npy_intp n = sample_points.shape[0]
+        cnp.npy_intp i, in_flag
         double tmp
         double[:] dx = np.empty(shape=(3,), dtype=np.float64)
         double[:] h = np.empty(shape=(3,), dtype=np.float64)
@@ -3219,7 +2691,7 @@ def _sparse_gradient_3d(floating[:, :, :] img,
                                            img_world2grid)
                 # Interpolate img at q
                 in_flag = _interpolate_scalar_3d[floating](img, q[0], q[1],
-                    q[2], &out[i, p])
+                                                           q[2], &out[i, p])
                 if in_flag == 0:
                     out[i, p] = 0
                     inside[i] = 0
@@ -3234,8 +2706,8 @@ def _sparse_gradient_3d(floating[:, :, :] img,
                 q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
                                            img_world2grid)
                 # Interpolate img at q
-                in_flag = _interpolate_scalar_3d[floating](img, q[0], q[1], q[2],
-                                                 &out[i, p])
+                in_flag = _interpolate_scalar_3d[floating](img,
+                                                q[0], q[1], q[2], &out[i, p])
                 if in_flag == 0:
                     out[i, p] = 0
                     inside[i] = 0
@@ -3281,9 +2753,9 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
         point lies inside (=1) or outside (=0) the image grid
     """
     cdef:
-        int nrows = out.shape[0]
-        int ncols = out.shape[1]
-        int i, j, k, in_flag
+        cnp.npy_intp nrows = out.shape[0]
+        cnp.npy_intp ncols = out.shape[1]
+        cnp.npy_intp i, j, k, in_flag
         double tmp
         double[:] x = np.empty(shape=(2,), dtype=np.float64)
         double[:] dx = np.empty(shape=(2,), dtype=np.float64)
@@ -3306,7 +2778,7 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                     q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
                     # Interpolate img at q
                     in_flag = _interpolate_scalar_2d[floating](img, q[0],
-                        q[1], &out[i, j, p])
+                                                    q[1], &out[i, j, p])
                     if in_flag == 0:
                         out[i, j, p] = 0
                         inside[i, j] = 0
@@ -3318,7 +2790,7 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                     q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
                     # Interpolate img at q
                     in_flag = _interpolate_scalar_2d[floating](img, q[0],
-                        q[1], &out[i, j, p])
+                                                    q[1], &out[i, j, p])
                     if in_flag == 0:
                         out[i, j, p] = 0
                         inside[i, j] = 0
@@ -3362,8 +2834,8 @@ def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
         point lies inside (=1) or outside (=0) the image grid
     """
     cdef:
-        int n = sample_points.shape[0]
-        int i, in_flag
+        cnp.npy_intp n = sample_points.shape[0]
+        cnp.npy_intp i, in_flag
         double tmp
         double[:] dx = np.empty(shape=(2,), dtype=np.float64)
         double[:] h = np.empty(shape=(2,), dtype=np.float64)

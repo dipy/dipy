@@ -1,7 +1,5 @@
-# distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False, initializedcheck=False
 
-cimport cython
 import numpy as np
 cimport numpy as cnp
 
@@ -10,7 +8,7 @@ from dipy.segment.clustering import TreeCluster, TreeClusterMap
 
 
 from libc.math cimport fabs
-from cythonutils cimport Data2D, Shape, shape2tuple,\
+from dipy.segment.cythonutils cimport Data2D, Shape,\
     tuple2shape, same_shape, create_memview_2d, free_memview_2d
 
 cdef extern from "math.h" nogil:
@@ -43,7 +41,7 @@ cdef print_node(CentroidNode* node, prepend=""):
     txt += " thres({})".format(node.threshold)
     txt += "\n"
 
-    cdef int i
+    cdef cnp.npy_intp i
     for i in range(node.nb_children):
         txt += prepend
         if i == node.nb_children-1:
@@ -55,12 +53,12 @@ cdef print_node(CentroidNode* node, prepend=""):
     return txt
 
 
-cdef void aabb_creation(Data2D streamline, float* aabb) nogil:
+cdef void aabb_creation(Data2D streamline, float* aabb) noexcept nogil:
     """ Creates AABB enveloping the given streamline.
 
-        Notes
-        -----
-        This currently assumes streamline is made of 3D points.
+    Notes
+    -----
+    This currently assumes streamline is made of 3D points.
     """
     cdef:
         int N = streamline.shape[0], D = streamline.shape[1]
@@ -83,7 +81,7 @@ cdef void aabb_creation(Data2D streamline, float* aabb) nogil:
         aabb[d] = min_[d] + aabb[d + 3]  # center
 
 
-cdef inline int aabb_overlap(float* aabb1, float* aabb2, float padding=0.) nogil:
+cdef inline int aabb_overlap(float* aabb1, float* aabb2, float padding=0.) noexcept nogil:
     """ SIMD optimized AABB-AABB test
 
     Optimized by removing conditional branches
@@ -122,7 +120,7 @@ cdef CentroidNode* create_empty_node(Shape centroid_shape, float threshold) nogi
 
 
 
-cdef class QuickBundlesX(object):
+cdef class QuickBundlesX:
 
     def __init__(self, features_shape, levels_thresholds, Metric metric):
         self.metric = metric
@@ -131,7 +129,7 @@ cdef class QuickBundlesX(object):
         self.nb_levels = len(levels_thresholds)
         self.thresholds = <double*> malloc(self.nb_levels*sizeof(double))
 
-        cdef int i
+        cdef cnp.npy_intp i
         for i in range(self.nb_levels):
             self.thresholds[i] = levels_thresholds[i]
 
@@ -163,7 +161,7 @@ cdef class QuickBundlesX(object):
             free(self.current_streamline)
             self.current_streamline = NULL
 
-    cdef int _add_child(self, CentroidNode* node) nogil:
+    cdef int _add_child(self, CentroidNode* node) noexcept nogil:
         cdef double threshold = 0.0  # Leaf node doesn't need threshold.
         if node.level+1 < self.nb_levels:
             threshold = self.thresholds[node.level+1]
@@ -179,7 +177,7 @@ cdef class QuickBundlesX(object):
 
         return node.nb_children-1
 
-    cdef void _update_node(self, CentroidNode* node, StreamlineInfos* streamline_infos) nogil:
+    cdef void _update_node(self, CentroidNode* node, StreamlineInfos* streamline_infos) noexcept nogil:
         cdef Data2D element = streamline_infos.features[0]
         cdef int C = node.size
         cdef cnp.npy_intp n, d
@@ -202,7 +200,7 @@ cdef class QuickBundlesX(object):
         # Update AABB
         aabb_creation(centroid, node.aabb)
 
-    cdef void _insert_in(self, CentroidNode* node, StreamlineInfos* streamline_infos, int[:] path) nogil:
+    cdef void _insert_in(self, CentroidNode* node, StreamlineInfos* streamline_infos, int[:] path) noexcept nogil:
         cdef:
             float dist, dist_flip
             cnp.npy_intp k
@@ -259,7 +257,7 @@ cdef class QuickBundlesX(object):
         return print_node(self.root)
 
     cdef void traverse_postorder(self, CentroidNode* node, void (*visit)(QuickBundlesX, CentroidNode*)):
-        cdef int i
+        cdef cnp.npy_intp i
         for i in range(node.nb_children):
             self.traverse_postorder(node.children[i], visit)
         visit(self, node)
@@ -283,7 +281,7 @@ cdef class QuickBundlesX(object):
         tree_cluster = TreeCluster(threshold=node.threshold,
                                    centroid=np.asarray(centroid),
                                    indices=np.asarray(<int[:node.size]> node.indices).copy())
-        cdef int i
+        cdef cnp.npy_intp i
         for i in range(node.nb_children):
             tree_cluster.add(self._build_tree_clustermap(node.children[i]))
 
@@ -307,8 +305,8 @@ cdef class QuickBundlesX(object):
 cdef class Clusters:
     """ Provides Cython functionalities to interact with clustering outputs.
 
-    This class allows to create clusters and assign elements to them.
-    Assignements of a cluster are represented as a list of element indices.
+    This class allows one to create clusters and assign elements to them.
+    Assignments of a cluster are represented as a list of element indices.
     """
     def __init__(Clusters self):
         self._nb_clusters = 0
@@ -326,11 +324,11 @@ cdef class Clusters:
         free(self.clusters_size)
         self.clusters_size = NULL
 
-    cdef int c_size(Clusters self) nogil:
+    cdef int c_size(Clusters self) noexcept nogil:
         """ Returns the number of clusters. """
         return self._nb_clusters
 
-    cdef void c_assign(Clusters self, int id_cluster, int id_element, Data2D element) nogil except *:
+    cdef void c_assign(Clusters self, int id_cluster, int id_element, Data2D element) noexcept nogil:
         """ Assigns an element to a cluster.
 
         Parameters
@@ -347,7 +345,7 @@ cdef class Clusters:
         self.clusters_indices[id_cluster][C] = id_element
         self.clusters_size[id_cluster] += 1
 
-    cdef int c_create_cluster(Clusters self) nogil except -1:
+    cdef int c_create_cluster(Clusters self) except -1 nogil:
         """ Creates a cluster and adds it at the end of the list.
 
         Returns
@@ -368,7 +366,7 @@ cdef class ClustersCentroid(Clusters):
     """ Provides Cython functionalities to interact with clustering outputs
     having the notion of cluster's centroid.
 
-    This class allows to create clusters, assign elements to them and
+    This class allows one to create clusters, assign elements to them and
     update their centroid.
 
     Parameters
@@ -398,7 +396,7 @@ cdef class ClustersCentroid(Clusters):
         Notes
         -----
         The `__dealloc__` method of the superclass is automatically called:
-        http://docs.cython.org/src/userguide/special_methods.html#finalization-method-dealloc
+        https://docs.cython.org/src/userguide/special_methods.html#finalization-method-dealloc
         """
         cdef cnp.npy_intp i
         for i in range(self._nb_clusters):
@@ -411,7 +409,7 @@ cdef class ClustersCentroid(Clusters):
         free(self._updated_centroids)
         self._updated_centroids = NULL
 
-    cdef void c_assign(ClustersCentroid self, int id_cluster, int id_element, Data2D element) nogil except *:
+    cdef void c_assign(ClustersCentroid self, int id_cluster, int id_element, Data2D element) noexcept nogil:
         """ Assigns an element to a cluster.
 
         In addition of keeping element's index, an updated version of the
@@ -438,7 +436,7 @@ cdef class ClustersCentroid(Clusters):
 
         Clusters.c_assign(self, id_cluster, id_element, element)
 
-    cdef int c_update(ClustersCentroid self, cnp.npy_intp id_cluster) nogil except -1:
+    cdef int c_update(ClustersCentroid self, cnp.npy_intp id_cluster) except -1 nogil:
         """ Update the centroid of a cluster.
 
         Parameters
@@ -468,7 +466,7 @@ cdef class ClustersCentroid(Clusters):
 
         return converged
 
-    cdef int c_create_cluster(ClustersCentroid self) nogil except -1:
+    cdef int c_create_cluster(ClustersCentroid self) except -1 nogil:
         """ Creates a cluster and adds it at the end of the list.
 
         Returns
@@ -492,7 +490,7 @@ cdef class ClustersCentroid(Clusters):
         return Clusters.c_create_cluster(self)
 
 
-cdef class QuickBundles(object):
+cdef class QuickBundles:
     def __init__(QuickBundles self, features_shape, Metric metric, double threshold,
                  int max_nb_clusters=BIGGEST_INT):
         self.metric = metric
@@ -506,7 +504,7 @@ cdef class QuickBundles(object):
         self.stats.nb_mdf_calls = 0
         self.stats.nb_aabb_calls = 0
 
-    cdef NearestCluster find_nearest_cluster(QuickBundles self, Data2D features) nogil except *:
+    cdef NearestCluster find_nearest_cluster(QuickBundles self, Data2D features) noexcept nogil:
         """ Finds the nearest cluster of a datum given its `features` vector.
 
         Parameters
@@ -527,7 +525,7 @@ cdef class QuickBundles(object):
 
         nearest_cluster.id = -1
         nearest_cluster.dist = BIGGEST_DOUBLE
-
+        nearest_cluster.flip = 0
 
         for k in range(self.clusters.c_size()):
 
@@ -542,7 +540,7 @@ cdef class QuickBundles(object):
 
         return nearest_cluster
 
-    cdef int assignment_step(QuickBundles self, Data2D datum, int datum_id) nogil except -1:
+    cdef int assignment_step(QuickBundles self, Data2D datum, int datum_id) except -1 nogil:
         """ Compute the assignment step of the QuickBundles algorithm.
 
         It will assign a datum to its closest cluster according to a given
@@ -603,7 +601,7 @@ cdef class QuickBundles(object):
         self.clusters.c_assign(nearest_cluster.id, datum_id, features_to_add)
         return nearest_cluster.id
 
-    cdef void update_step(QuickBundles self, int cluster_id) nogil except *:
+    cdef void update_step(QuickBundles self, int cluster_id) noexcept nogil:
         """ Compute the update step of the QuickBundles algorithm.
 
         It will update the centroid of a cluster given its index.

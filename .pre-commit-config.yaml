@@ -1,0 +1,18 @@
+default_language_version:
+  python: python3
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      # Run the linter
+      - id: ruff
+        args: [ --fix ]
+      # Run the formatter
+      - id: ruff-format
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        additional_dependencies:
+          - tomli

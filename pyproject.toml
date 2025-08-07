@@ -1,0 +1,218 @@
+[project]
+name = "dipy"
+description = "Diffusion MRI Imaging in Python"
+license = {file = "LICENSE"}
+readme = "README.rst"
+requires-python = ">=3.10"
+authors = [{ name = "DIPY developers", email = "dipy@python.org" }]
+maintainers = [
+    {name = "Eleftherios Garyfallidis", email="neuroimaging@python.org"},
+    {name = "Ariel Rokem", email="neuroimaging@python.org"},
+    {name = "Serge Koudoro", email="neuroimaging@python.org"},
+]
+keywords = ["dipy", "diffusionimaging", "dti", "tracking", "tractography",
+            "diffusionmri", "mri", "tractometry", "connectomics", "brain",
+            "dipymri", "microstructure", "deeplearning", "registration",
+            "segmentations", "simulation", "medical", "imaging", "brain",
+            "machinelearning", "signalprocessing"]
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Environment :: Console',
+    'Intended Audience :: Developers',
+    'Intended Audience :: Science/Research',
+    'License :: OSI Approved :: BSD License',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3 :: Only',
+    "Topic :: Software Development :: Libraries",
+    'Topic :: Scientific/Engineering',
+    "Operating System :: OS Independent",
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: POSIX',
+    'Operating System :: Unix',
+    'Operating System :: MacOS',
+]
+version = "1.12.0.dev0"
+dependencies = [
+    "numpy>=1.22.4",
+    "scipy>=1.8",
+    "nibabel>=3.0.0",
+    "h5py>=3.1.0",
+    "packaging>=21",
+    "tqdm>=4.30.0",
+    "trx-python>=0.3.0",
+]
+
+[project.scripts]
+dipy_align_syn = "dipy.workflows.cli:run"
+dipy_align_affine = "dipy.workflows.cli:run"
+dipy_apply_transform = "dipy.workflows.cli:run"
+dipy_buan_shapes = "dipy.workflows.cli:run"
+dipy_buan_profiles = "dipy.workflows.cli:run"
+dipy_buan_lmm = "dipy.workflows.cli:run"
+dipy_bundlewarp = "dipy.workflows.cli:run"
+dipy_classify_tissue = "dipy.workflows.cli:run"
+dipy_correct_biasfield = "dipy.workflows.cli:run"
+dipy_correct_motion = "dipy.workflows.cli:run"
+dipy_denoise_nlmeans = "dipy.workflows.cli:run"
+dipy_denoise_lpca = "dipy.workflows.cli:run"
+dipy_denoise_mppca = "dipy.workflows.cli:run"
+dipy_denoise_patch2self = "dipy.workflows.cli:run"
+dipy_evac_plus = "dipy.workflows.cli:run"
+dipy_fetch = "dipy.workflows.cli:run"
+dipy_fit_csa = "dipy.workflows.cli:run"
+dipy_fit_csd = "dipy.workflows.cli:run"
+dipy_fit_dki = "dipy.workflows.cli:run"
+dipy_fit_dsi = "dipy.workflows.cli:run"
+dipy_fit_dsid = "dipy.workflows.cli:run"
+dipy_fit_dti = "dipy.workflows.cli:run"
+dipy_fit_forecast = "dipy.workflows.cli:run"
+dipy_fit_gqi = "dipy.workflows.cli:run"
+dipy_fit_ivim = "dipy.workflows.cli:run"
+dipy_fit_mapmri = "dipy.workflows.cli:run"
+dipy_fit_opdt = "dipy.workflows.cli:run"
+dipy_fit_qball = "dipy.workflows.cli:run"
+dipy_fit_sdt = "dipy.workflows.cli:run"
+dipy_fit_sfm = "dipy.workflows.cli:run"
+dipy_math = "dipy.workflows.cli:run"
+dipy_mask = "dipy.workflows.cli:run"
+dipy_gibbs_ringing = "dipy.workflows.cli:run"
+dipy_horizon = "dipy.workflows.cli:run"
+dipy_info = "dipy.workflows.cli:run"
+dipy_extract_b0 = "dipy.workflows.cli:run"
+dipy_extract_shell = "dipy.workflows.cli:run"
+dipy_extract_volume = "dipy.workflows.cli:run"
+dipy_labelsbundles = "dipy.workflows.cli:run"
+dipy_median_otsu = "dipy.workflows.cli:run"
+dipy_recobundles = "dipy.workflows.cli:run"
+dipy_reslice = "dipy.workflows.cli:run"
+dipy_sh_convert_mrtrix = "dipy.workflows.cli:run"
+dipy_snr_in_cc = "dipy.workflows.cli:run"
+dipy_split = "dipy.workflows.cli:run"
+dipy_track = "dipy.workflows.cli:run"
+dipy_track_pft = "dipy.workflows.cli:run"
+dipy_slr = "dipy.workflows.cli:run"
+dipy_concatenate_tractograms = "dipy.workflows.cli:run"
+dipy_convert_tractogram = "dipy.workflows.cli:run"
+dipy_convert_tensors = "dipy.workflows.cli:run"
+dipy_convert_sh = "dipy.workflows.cli:run"
+dipy_nifti2pam = "dipy.workflows.cli:run"
+dipy_pam2nifti = "dipy.workflows.cli:run"
+dipy_tensor2pam = "dipy.workflows.cli:run"
+
+[project.optional-dependencies]
+all = ["dipy[dev,doc,style,test, viz, ml, extra, benchmark]"]
+style = ["ruff", "pre-commit"]
+viz = ["fury>=0.10.0", "matplotlib"]
+test = ["pytest", "coverage", "coveralls", "codecov"]
+ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow>=2.18.0", "torch"]
+dev = [
+    # Also update [build-system] -> requires
+    'meson-python>=0.13',
+    'wheel',
+    'setuptools~=69.5',
+    'packaging>=21',
+    'ninja',
+    'Cython>=0.29.35',
+    'numpy>=1.22.4',
+    # Developer UI
+    'spin>=0.5',
+    'build',
+]
+
+extra = ["dipy[viz, ml]",
+         "cvxpy",
+         "scikit-image",
+         "boto3",
+         "numexpr"
+        ]
+
+doc = [
+    "numpydoc",
+    "sphinx>=7.2.6",
+    "texext",
+    "tomli; python_version < \"3.11\"",
+    "sphinxcontrib-bibtex",
+    "sphinx_design",
+    "sphinx-gallery>=0.10.0",
+    "tomli>=2.0.1",
+    "grg-sphinx-theme>=0.4.0",
+    "Jinja2"
+]
+benchmark = [
+    "asv",
+    "pyperf",
+    "virtualenv",
+]
+
+
+[project.urls]
+homepage = "https://dipy.org"
+documentation = "https://docs.dipy.org/stable/"
+source = "https://github.com/dipy/dipy"
+download = "https://pypi.org/project/dipy/#files"
+tracker = "https://github.com/dipy/dipy/issues"
+
+[build-system]
+build-backend = "mesonpy"
+requires = [
+    "meson-python>=0.13.1",
+    "Cython>=3.0.4",
+    "packaging>21.0",
+    "wheel",
+    # numpy requirement for wheel builds for distribution on PyPI - building
+    # against 2.x yields wheels that are also compatible with numpy 1.x at
+    # runtime.
+    # Note that building against numpy 1.x works fine too - users and
+    # redistributors can do this by installing the numpy version they like and
+    # disabling build isolation.
+    "numpy>=2.0.0rc1; python_version>='3.10' and platform_python_implementation!='PyPy'",
+    "numpy; python_version>='3.10' and platform_python_implementation=='PyPy'",
+]
+
+[tool.spin]
+package = 'dipy'
+
+[tool.spin.commands]
+Build = [
+    "spin.cmds.meson.build",
+    "spin.cmds.meson.test",
+    "spin.cmds.build.sdist",
+    ".spin/cmds.py:clean"
+]
+
+Environments = [
+    "spin.cmds.meson.run",
+    "spin.shell",
+    "spin.ipython",
+    "spin.python"
+]
+
+"Documentation" = [
+    "spin.cmds.meson.docs",
+    # ".spin/cmds.py:docs"
+]
+Metrics = [
+    ".spin/cmds.py:bench",
+    # ".spin/cmds.py:coverage
+]
+# TODO: Add custom commands
+
+[tool.pytest.ini_options]
+addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignore-glob=**/benchmarks/*"
+filterwarnings = [
+    # FURY
+    "ignore:.*You do not have FURY installed.*:UserWarning",
+    # pkg_resources (via Ray)
+    "ignore:Implementing implicit namespace packages.*:DeprecationWarning",
+    "ignore:Deprecated call to `pkg_resources.*:DeprecationWarning",
+    "ignore:pkg_resources is deprecated as an API.*:DeprecationWarning",
+    # CVXPY. see #2770 in the CVXPY repo
+    "ignore:\"polish\" is deprecated. Please use \"polishing\".*:DeprecationWarning",
+    "ignore:The default value of raise_error will change.*:PendingDeprecationWarning",
+    # Joblib:loky issue. see https://github.com/joblib/joblib/blob/71c2ce7f1b8bebc804ff8e9eb77571bb486ed34d/CHANGES.rst?plain=1#L79
+    "ignore:.*is multi-threaded, use of fork.{2} may lead to deadlocks in the child.*:DeprecationWarning",
+]

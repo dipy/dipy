@@ -5,23 +5,26 @@
 
 import numpy as np
 cimport numpy as cnp
-cimport cython
 
 cimport safe_openmp as openmp
 from safe_openmp cimport have_openmp
 
 from cython.parallel import prange
 from libc.stdlib cimport malloc, free
-from libc.math cimport sqrt, sin, cos
-from multiprocessing import cpu_count
+from libc.math cimport sqrt
+
+from dipy.utils.omp import determine_num_threads
+from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
 cdef cnp.dtype f64_dt = np.dtype(np.float64)
 
 
 cdef double min_direct_flip_dist(double *a,double *b,
-                                 cnp.npy_intp rows) nogil:
-    r""" Minimum of direct and flip average (MDF) distance [Garyfallidis12]
-    between two streamlines.
+                                 cnp.npy_intp rows) noexcept nogil:
+    r""" Minimum of direct and flip average (MDF) distance between two
+    streamlines.
+
+    See :footcite:p:`Garyfallidis2012a` for a definition of the distance.
 
     Parameters
     ----------
@@ -35,13 +38,11 @@ cdef double min_direct_flip_dist(double *a,double *b,
     Returns
     -------
     out : double
-        mininum of direct and flipped average distances
+        minimum of direct and flipped average distances
 
-    Reference
-    ---------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+    References
+    ----------
+    .. footbibliography::
     """
 
     cdef:
@@ -81,7 +82,7 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
     points as they align with the static streamlines.
 
     Parameters
-    -----------
+    ----------
     static: array
         Static streamlines
     moving: array
@@ -94,9 +95,12 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
         Number of points per streamline
     D : 2D array
         Distance matrix
-    num_threads : int
-        Number of threads. If None (default) then all available threads
-        will be used.
+    num_threads : int, optional
+        Number of threads to be used for OpenMP parallelization. If None
+        (default) the value of OMP_NUM_THREADS environment variable is used
+        if it is set, otherwise all available threads are used. If < 0 the
+        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        use as many threads as possible). 0 raises an error.
 
     Returns
     -------
@@ -105,17 +109,10 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
 
     cdef:
         cnp.npy_intp i=0, j=0, mov_i=0, mov_j=0
-        int all_cores = openmp.omp_get_num_procs()
         int threads_to_use = -1
 
-    if num_threads is not None:
-        threads_to_use = num_threads
-    else:
-        threads_to_use = all_cores
-
-    if have_openmp:
-        openmp.omp_set_dynamic(0)
-        openmp.omp_set_num_threads(threads_to_use)
+    threads_to_use = determine_num_threads(num_threads)
+    set_num_threads(threads_to_use)
 
     with nogil:
 
@@ -126,8 +123,8 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
                                                &moving[j * rows, 0],
                                                rows)
 
-    if have_openmp and num_threads is not None:
-        openmp.omp_set_num_threads(all_cores)
+    if num_threads is not None:
+        restore_default_num_threads()
 
     return np.asarray(D)
 
@@ -144,7 +141,7 @@ def _bundle_minimum_distance(double [:, ::1] static,
     points as they align with the static streamlines.
 
     Parameters
-    -----------
+    ----------
     static : array
         Static streamlines
     moving : array
@@ -155,9 +152,12 @@ def _bundle_minimum_distance(double [:, ::1] static,
         Number of moving streamlines
     rows : int
         Number of points per streamline
-    num_threads : int
-        Number of threads. If None (default) then all available threads
-        will be used.
+    num_threads : int, optional
+        Number of threads to be used for OpenMP parallelization. If None
+        (default) the value of OMP_NUM_THREADS environment variable is used
+        if it is set, otherwise all available threads are used. If < 0 the
+        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        use as many threads as possible). 0 raises an error.
 
     Returns
     -------
@@ -177,17 +177,10 @@ def _bundle_minimum_distance(double [:, ::1] static,
         double * min_j
         double * min_i
         openmp.omp_lock_t lock
-        int all_cores = openmp.omp_get_num_procs()
         int threads_to_use = -1
 
-    if num_threads is not None:
-        threads_to_use = num_threads
-    else:
-        threads_to_use = all_cores
-
-    if have_openmp:
-        openmp.omp_set_dynamic(0)
-        openmp.omp_set_num_threads(threads_to_use)
+    threads_to_use = determine_num_threads(num_threads)
+    set_num_threads(threads_to_use)
 
     with nogil:
 
@@ -236,8 +229,8 @@ def _bundle_minimum_distance(double [:, ::1] static,
 
         dist = 0.25 * dist * dist
 
-    if have_openmp and num_threads is not None:
-        openmp.omp_set_num_threads(all_cores)
+    if num_threads is not None:
+        restore_default_num_threads()
 
     return dist
 
@@ -254,7 +247,7 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
     points as they align with the static streamlines.
 
     Parameters
-    -----------
+    ----------
     static : array
         Static streamlines
     moving : array
@@ -273,18 +266,15 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
     Notes
     -----
     The difference with ``_bundle_minimum_distance`` is that we sum the
-    minimum values only for the static. Therefore, this is an asymetric
+    minimum values only for the static. Therefore, this is an asymmetric
     distance metric. This means that we are weighting only one direction of the
     registration. Not both directions. This can be very useful when we want
     to register a big set of bundles to a small set of bundles.
-    See [Wanyan17]_.
+    See :footcite:p:`Wanyan2017`.
 
     References
     ----------
-    .. [Wanyan17] Wanyan and Garyfallidis, Important new insights for the
-    reduction of false positives in tractograms emerge from streamline-based
-    registration and pruning, International Society for Magnetic Resonance in
-    Medicine, Honolulu, Hawai, 2017.
+    .. footbibliography::
 
     """
 
@@ -303,8 +293,8 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
 
         min_j = <double *> malloc(static_size * sizeof(double))
 
-        for i in range(static_size):
-            min_j[i] = inf
+        for sz_i in range(static_size):
+            min_j[sz_i] = inf
 
         for i in prange(static_size):
 
@@ -352,10 +342,10 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
         distance matrix
     """
     cdef:
-        size_t i, j, lentA, lentB
+        cnp.npy_intp i, j, lentA, lentB
     # preprocess tracks
     cdef:
-        size_t longest_track_len = 0, track_len
+        cnp.npy_intp longest_track_len = 0, track_len
         longest_track_lenA, longest_track_lenB
         cnp.ndarray[object, ndim=1] tracksA64
         cnp.ndarray[object, ndim=1] tracksB64
@@ -377,20 +367,22 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
         tracksB64[i] = np.ascontiguousarray(streamlines_b[i], dtype=f64_dt)
     # preallocate buffer array for track distance calculations
     cdef:
-        cnp.float64_t *t1_ptr, *t2_ptr, *min_buffer
+        cnp.float64_t *t1_ptr
+        cnp.float64_t *t2_ptr
+        cnp.float64_t *min_buffer
     # cycle over tracks
     cdef:
         cnp.ndarray [cnp.float64_t, ndim=2] t1, t2
-        size_t t1_len, t2_len
+        cnp.npy_intp t1_len, t2_len
         double d[2]
     t_len = tracksA64[0].shape[0]
 
     for i from 0 <= i < lentA:
         t1 = tracksA64[i]
-        t1_ptr = <cnp.float64_t *>t1.data
+        t1_ptr = <cnp.float64_t *> cnp.PyArray_DATA(t1)
         for j from 0 <= j < lentB:
             t2 = tracksB64[j]
-            t2_ptr = <cnp.float64_t *>t2.data
+            t2_ptr = <cnp.float64_t *> cnp.PyArray_DATA(t2)
 
             DM[i, j] = min_direct_flip_dist(t1_ptr, t2_ptr,t_len)
 

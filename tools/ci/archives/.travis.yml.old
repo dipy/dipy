@@ -1,0 +1,162 @@
+# vim ft=yaml
+# Multiple lines can be made a single "virtual line" because of the way that
+# Travis munges each line before executing it to print out the exit status.
+# It's okay for it to be on multiple physical lines, so long as you remember:
+# - There can't be any leading "-"s - All newlines will be removed, so use
+# ";"s
+sudo: false  # To use travis container infrastructure
+language: python
+cache:
+  directories:
+    - $HOME/.cache/pip
+addons:
+  apt:
+    packages:
+      - libhdf5-serial-dev
+
+env:
+    global:
+        - DEPENDS="cython numpy matplotlib h5py nibabel cvxpy tqdm"
+        - VENV_ARGS="--python=python"
+        - INSTALL_TYPE="setup"
+        - PRE_WHEELS="https://pypi.anaconda.org/scipy-wheels-nightly/simple"
+        - EXTRA_PIP_FLAGS="--timeout=60 "
+
+python:
+    - 3.6
+    - 3.7
+    - 3.8
+
+matrix:
+  include:
+    - python: 3.7
+      dist: xenial
+      env:
+        - DEPENDS="$DEPENDS scipy"
+    # To test minimum dependencies for Python 3.6:
+    - python: 3.6
+      env:
+        # Check these values against requirements.txt and dipy/info.py
+        - DEPENDS="cython==0.29 numpy==1.12.0 scipy==1.0 nibabel==3.0.0 h5py==2.5.0 nose tqdm>=4.30.0"
+    # To test minimum dependencies for Python 3.7:
+    - python: 3.7
+      dist: xenial
+      env:
+        # Check these values against requirements.txt and dipy/info.py
+        - DEPENDS="cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==3.0.0 h5py==2.8.0 tqdm>=4.30.0"
+    # Need to be uncomment when tensorflow and statsmodel available
+    #- python: 3.8
+    #  dist: xenial
+    #  env:
+    #    - DEPENDS="$DEPENDS scikit_learn pandas statsmodels tables scipy tensorflow"
+    - python: 3.7
+      dist: xenial
+      env:
+        - COVERAGE=1
+        - DEPENDS="$DEPENDS scikit_learn pandas statsmodels tables scipy tensorflow"
+    # To test vtk functionality
+    - python: 3.7
+      dist: xenial
+      sudo: true   # This is set to true for apt-get
+      services:
+        - xvfb
+      env:
+        - COVERAGE=1
+        - VTK=1
+        - TEST_WITH_XVFB=true
+        - MESA_GL_VERSION_OVERRIDE=3.3
+        - LIBGL_ALWAYS_INDIRECT=y
+        - DEPENDS="$DEPENDS scikit_learn vtk fury scipy"
+
+    - python: 3.7
+      dist: xenial
+      env:
+        - INSTALL_TYPE=sdist
+        - DEPENDS="$DEPENDS scipy"
+
+    - python: 3.7
+      dist: xenial
+      env:
+        - INSTALL_TYPE=pip
+        # Dependency checking should get all needed dependencies
+        - DEPENDS=""
+    - python: 3.7
+      dist: xenial
+      env:
+        - INSTALL_TYPE=wheel
+        - DEPENDS="$DEPENDS scipy"
+    - python: 3.7
+      dist: xenial
+      env:
+        - INSTALL_TYPE=requirements
+        - DEPENDS=""
+    - python: 3.7
+      dist: xenial
+      # Check against latest available pre-release version of all packages
+      env:
+        - USE_PRE=1
+        - DEPENDS="$DEPENDS scipy statsmodels pandas scikit_learn"
+  allow_failures:
+    - python: 3.7
+      dist: xenial
+      env:
+        - USE_PRE=1
+        - DEPENDS="$DEPENDS scipy statsmodels pandas scikit_learn"
+
+before_install:
+    - PIPI="pip install $EXTRA_PIP_FLAGS"
+    - if [ -n "$USE_PRE" ]; then
+        PIPI="$PIPI --extra-index-url=$PRE_WHEELS --pre";
+      fi
+    - pip install --upgrade virtualenv
+    - virtualenv $VENV_ARGS venv
+    - source venv/bin/activate
+    - python --version # just to check
+    - $PIPI --upgrade pip "setuptools<50.0"
+    - $PIPI pytest
+    - $PIPI numpy
+    - if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS; fi
+    - if [ "${COVERAGE}" == "1" ]; then pip install coverage coveralls; fi
+    - if [ "${VTK}" == "1" ]; then
+          sudo apt-get update;
+          sudo apt-get install -y $VTK_VER;
+          sudo apt-get install -y xvfb;
+          sudo apt-get install -y python-tk;
+          sudo apt-get install -y python-imaging;
+          $PIPI xvfbwrapper;
+      fi
+install:
+    - |
+      if [ "$INSTALL_TYPE" == "setup" ]; then
+        python setup.py install
+      elif [ "$INSTALL_TYPE" == "pip" ]; then
+        $PIPI .
+      elif [ "$INSTALL_TYPE" == "sdist" ]; then
+        python setup_egg.py egg_info  # check egg_info while we're here
+        python setup_egg.py sdist
+        $PIPI dist/*.tar.gz
+      elif [ "$INSTALL_TYPE" == "wheel" ]; then
+        pip install wheel
+        python setup_egg.py bdist_wheel
+        $PIPI dist/*.whl
+      elif [ "$INSTALL_TYPE" == "requirements" ]; then
+        $PIPI -r requirements.txt
+        python setup.py install
+      fi
+# command to run tests, e.g. python setup.py test
+script:
+    # Change into an innocuous directory and find tests from installation
+    - mkdir for_testing
+    - cd for_testing
+    # We need the setup.cfg for the pytest settings
+    - cp ../setup.cfg .
+    # No figure windows for mpl; quote to hide : from travis-ci yaml parsing
+    - 'echo "backend : agg" > matplotlibrc'
+    - if [ "${COVERAGE}" == "1" ]; then
+      cp ../.coveragerc .;
+      cp ../.codecov.yml .;
+      COVER_CMD="coverage run -m ";
+      fi
+    - $COVER_CMD pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
+after_success:
+    - if [ "${COVERAGE}" == "1" ]; then coveralls; codecov; fi

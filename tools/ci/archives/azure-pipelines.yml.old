@@ -1,0 +1,152 @@
+schedules:
+- cron: "0 0 * * 1,4"  #twice per week
+  displayName: Weekly midnight build
+  branches:
+    include:
+    - master
+
+
+trigger:
+- master
+- maint/*
+
+pr:
+- master
+- maint/*
+
+jobs:
+
+- template: ci/azure/linux.yml
+  parameters:
+    name: Linux
+    vmImage: ubuntu-latest
+    matrix:
+      Python36-64bit:
+        python.version: '3.6'
+      Python37-64bit:
+        python.version: '3.7'
+      Python38-64bit:
+        python.version: '3.8'
+      Python39-64bit:
+        python.version: '3.9'
+      Python37-64bit + MIN_DEPS:
+        python.version: '3.7'
+        DEPENDS: "cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==3.0.0 h5py==2.8.0 tqdm"
+      Python38-64bit + MIN_DEPS:
+        python.version: '3.8'
+        DEPENDS: "cython==0.29 numpy==1.17.5 scipy==1.3.2 nibabel==3.0.0 h5py==3.0.0 tqdm"
+      Python37-64bit + OPTIONAL_DEPS:
+        python.version: '3.7'
+        EXTRA_DEPENDS: "scikit_learn pandas statsmodels tables scipy"
+      Python37-64bit + VIZ + COVERAGE:
+        TEST_WITH_XVFB: "1"
+        COVERAGE: "1"
+        python.version: '3.7'
+        MESA_GL_VERSION_OVERRIDE: '3.3'
+        LIBGL_ALWAYS_INDIRECT: 'y'
+        EXTRA_DEPENDS: "scikit_learn vtk==8.1.2 fury scipy pandas statsmodels tables xvfbwrapper"
+      Python37-64bit + SDIST:
+        python.version: '3.7'
+        INSTALL_TYPE: "sdist"
+        EXTRA_DEPENDS: "scipy"
+      Python37-64bit + PIP:
+        python.version: '3.7'
+        INSTALL_TYPE: "pip"
+        DEPENDS: "" # Dependency checking should get all needed dependencies
+      Python37-64bit + WHEEL:
+        python.version: '3.7'
+        INSTALL_TYPE: "wheel"
+        EXTRA_DEPENDS: "scipy"
+      Python37-64bit + Requirements:
+        python.version: '3.7'
+        INSTALL_TYPE: "requirements"
+        DEPENDS: ""
+      CONDA Python37-64bit + OPTIONAL_DEPS:
+        python.version: '3.7'
+        EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy"
+        INSTALL_TYPE: "conda"
+      CONDA Python37-64bit:
+        python.version: '3.7'
+        INSTALL_TYPE: "conda"
+      CONDA Python36-64bit:
+        python.version: '3.6'
+        INSTALL_TYPE: "conda"
+      Python37-64bit - PRE:
+        USE_PRE: 1
+        python.version: '3.7'
+        EXTRA_DEPENDS: "scikit_learn scipy statsmodels pandas tables"
+
+- template: ci/azure/osx.yml
+  parameters:
+    name: OSX
+    vmImage: macOS-latest
+    matrix:
+      Python37-64bit + OPTIONAL_DEPS:
+        python.version: '3.7'
+        EXTRA_DEPENDS: "scikit_learn pandas statsmodels tables scipy"
+      Python37-64bit:
+        python.version: '3.7'
+      Python38-64bit:
+        python.version: '3.8'
+      Python39-64bit:
+        python.version: '3.9'
+      # Problem with h5py
+      # CONDA Python37-64bit + OPTIONAL_DEPS:
+      #   python.version: '3.7'
+      #   EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy==1.2"
+      #   INSTALL_TYPE: "conda"
+      CONDA Python37-64bit:
+        python.version: '3.7'
+        INSTALL_TYPE: "conda"
+      CONDA Python36-64bit:
+        python.version: '3.6'
+        INSTALL_TYPE: "conda"
+      Python37-64bit + VIZ:
+        TEST_WITH_XVFB: "1"
+        python.version: '3.7'
+        MESA_GL_VERSION_OVERRIDE: '3.3'
+        LIBGL_ALWAYS_INDIRECT: 'y'
+        EXTRA_DEPENDS: "scikit_learn vtk fury scipy xvfbwrapper"
+      # TODO: Need to figure out how to allow failure before any activation
+      # Python37-64bit - PRE:
+      #   USE_PRE: 1
+      #   python.version: '3.7'
+      #   EXTRA_DEPENDS: "scikit_learn scipy statsmodels pandas "
+
+- template: ci/azure/windows.yml
+  parameters:
+    name: Windows
+    vmImage: windows-latest
+    matrix:
+      Python37-64bit + OPTIONAL_DEPS:
+        python.version: '3.7'
+        EXTRA_DEPENDS: "scikit_learn pandas statsmodels tables scipy"
+      Python39-64bit:
+        python.version: '3.9'
+      Python38-64bit:
+        python.version: '3.8'
+      Python37-64bit:
+        python.version: '3.7'
+      Python36-64bit:
+        python.version: '3.6'
+      CONDA Python37-64bit + OPTIONAL_DEPS:
+        python.version: '3.7'
+        EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy"
+        INSTALL_TYPE: "conda"
+      CONDA Python37-64bit:
+        python.version: '3.7'
+        INSTALL_TYPE: "conda"
+      CONDA Python36-64bit:
+        python.version: '3.6'
+        INSTALL_TYPE: "conda"
+      Python37-64bit + VIZ:
+        TEST_WITH_XVFB: "1"
+        python.version: '3.7'
+        MESA_GL_VERSION_OVERRIDE: '3.3'
+        LIBGL_ALWAYS_INDIRECT: 'y'
+        EXTRA_DEPENDS: "scikit_learn vtk fury scipy"
+      # TODO: Need to figure out how to allow failure before any activation
+      # Python37-64bit - PRE:
+      #   USE_PRE: 1
+      #   python.version: '3.7'
+      #   EXTRA_DEPENDS: "scikit_learn scipy statsmodels pandas "

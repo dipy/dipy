@@ -1,24 +1,26 @@
 import warnings
 
 import numpy as np
-import nibabel as nib
-from scipy.ndimage import generate_binary_structure, binary_dilation
-from scipy.ndimage.filters import median_filter
+from numpy.testing import assert_almost_equal, assert_equal, assert_raises
+from scipy.ndimage import binary_dilation, generate_binary_structure, median_filter
 
-from dipy.segment.mask import (otsu, bounding_box, crop, applymask,
-                               multi_median, median_otsu)
-
-from numpy.testing import (assert_equal,
-                           assert_almost_equal,
-                           run_module_suite)
-from dipy.data import get_data
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti_data
+from dipy.segment.mask import (
+    applymask,
+    bounding_box,
+    crop,
+    median_otsu,
+    multi_median,
+    otsu,
+)
 
 
 def test_mask():
     vol = np.zeros((30, 30, 30))
     vol[15, 15, 15] = 1
     struct = generate_binary_structure(3, 1)
-    voln = binary_dilation(vol, structure=struct, iterations=4).astype('f4')
+    voln = binary_dilation(vol, structure=struct, iterations=4).astype("f4")
     initial = np.sum(voln > 0)
     mask = voln.copy()
     thresh = otsu(mask)
@@ -36,15 +38,16 @@ def test_mask():
     assert_equal(final, initial)
 
     # Test multi_median.
-    median_test = np.arange(25).reshape(5, 5)
-    median_control = median_test.copy()
-    medianradius = 3
-    median_test = multi_median(median_test, medianradius, 3)
+    img = np.arange(25).reshape(5, 5)
+    img_copy = img.copy()
+    medianradius = 2
+    median_test = multi_median(img, medianradius, 3)
+    assert_equal(img, img_copy)
 
-    medarr = np.ones_like(median_control.shape) * ((medianradius * 2) + 1)
-    median_filter(median_control, medarr, output=median_control)
-    median_filter(median_control, medarr, output=median_control)
-    median_filter(median_control, medarr, output=median_control)
+    medarr = np.ones_like(img.shape) * ((medianradius * 2) + 1)
+    median_control = median_filter(img, medarr)
+    median_control = median_filter(median_control, medarr)
+    median_control = median_filter(median_control, medarr)
     assert_equal(median_test, median_control)
 
 
@@ -83,34 +86,28 @@ def test_bounding_box():
 
 
 def test_median_otsu():
-    fname = get_data('S0_10')
-    img = nib.load(fname)
-    data = img.get_data()
-    data = np.squeeze(data.astype('f8'))
+    fname = get_fnames(name="S0_10")
+    data = load_nifti_data(fname)
+    data = np.squeeze(data.astype("f8"))
     dummy_mask = data > data.mean()
-    data_masked, mask = median_otsu(data, median_radius=3, numpass=2,
-                                    autocrop=False, vol_idx=None,
-                                    dilate=None)
+    data_masked, mask = median_otsu(
+        data, median_radius=3, numpass=2, vol_idx=None, dilate=None
+    )
     assert_equal(mask.sum() < dummy_mask.sum(), True)
     data2 = np.zeros(data.shape + (2,))
     data2[..., 0] = data
     data2[..., 1] = data
 
-    data2_masked, mask2 = median_otsu(data2, median_radius=3, numpass=2,
-                                      autocrop=False, vol_idx=[0, 1],
-                                      dilate=None)
+    data2_masked, mask2 = median_otsu(
+        data2, median_radius=3, numpass=2, vol_idx=[0, 1], dilate=None
+    )
     assert_almost_equal(mask.sum(), mask2.sum())
 
-    _, mask3 = median_otsu(data2, median_radius=3, numpass=2,
-                           autocrop=False, vol_idx=[0, 1],
-                           dilate=1)
+    _, mask3 = median_otsu(data2, median_radius=3, numpass=2, vol_idx=[0, 1], dilate=1)
     assert_equal(mask2.sum() < mask3.sum(), True)
 
-    _, mask4 = median_otsu(data2, median_radius=3, numpass=2,
-                           autocrop=False, vol_idx=[0, 1],
-                           dilate=2)
+    _, mask4 = median_otsu(data2, median_radius=3, numpass=2, vol_idx=[0, 1], dilate=2)
     assert_equal(mask3.sum() < mask4.sum(), True)
 
-
-if __name__ == '__main__':
-    run_module_suite()
+    # For 4D volumes, can't call without vol_idx input:
+    assert_raises(ValueError, median_otsu, data2)

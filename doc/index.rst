@@ -1,108 +1,147 @@
 .. _home:
 
-###########################
-Diffusion Imaging In Python
-###########################
+Diffusion Imaging In Python - Documentation
+===========================================
 
-DIPY_ is a **free** and **open source** software project for computational neuroanatomy,
-focusing mainly on **diffusion** *magnetic resonance imaging* (dMRI) analysis. It implements a
-broad range of algorithms for denoising, registration, reconstruction, tracking, clustering,
-visualization, and statistical analysis of MRI data.
+.. container:: index-paragraph
+
+   DIPY_ is the paragon 3D/4D+ imaging library in Python. Contains generic methods for
+   spatial normalization, signal processing, machine learning, statistical analysis
+   and visualization of medical images. Additionally, it contains
+   specialized methods for computational anatomy including diffusion,
+   perfusion and structural imaging.
+
+   DIPY is part of the `NiPy ecosystem <https://nipy.org/>`__.
+
+
+***********
+Quick links
+***********
+
+.. grid:: 2
+    :gutter: 3
+
+    .. grid-item-card:: :octicon:`rocket` Get started
+        :link: user_guide/installation
+        :link-type: any
+
+        New to DIPY_? Start with our installation guide and DIPY key
+        concepts.
+
+    .. grid-item-card:: :octicon:`image` Tutorials
+        :link: examples_built/index
+        :link-type: any
+
+        Browse our tutorials gallery.
+
+    .. grid-item-card:: :octicon:`image` Recipes
+        :link: recipes
+        :link-type: ref
+
+        How do I do X in DIPY?  This dedicated section will provide you quick and direct answer.
+
+    .. grid-item-card:: :octicon:`zap` Workflows
+        :link: interfaces/index
+        :link-type: any
+
+        Not comfortable with coding? we have command line interfaces for you.
+        An easy way to use DIPY_ via a terminal.
+
+    .. grid-item-card:: :octicon:`rocket` Theory
+        :link: theory/index
+        :link-type: any
+
+        Back to the basics. Learn the theory behind the methods implemented in DIPY_.
+
+    .. grid-item-card:: :octicon:`tools` Developer Guide
+        :link: development
+        :link-type: any
+
+        Saw a typo? Found a bug? Want to improve a function? Learn how to
+        contribute to DIPY_!
+
+    .. grid-item-card:: :octicon:`repo` API reference
+        :link: reference/index
+        :link-type: any
+
+        A detailed description of DIPY public Python API.
+
+    .. grid-item-card:: :octicon:`repo` Workflows API reference
+        :link: reference_cmd/index
+        :link-type: any
+
+        A detailed description of all the DIPY workflows command line.
+
+    .. grid-item-card:: :octicon:`history` Release notes
+        :link: stateoftheart
+        :link-type: ref
+
+        Upgrading from a previous version? See what's new and changed between
+        each release of DIPY_.
+
+    .. grid-item-card:: :octicon:`comment-discussion` Get help :octicon:`link-external`
+        :link: https://github.com/dipy/dipy/discussions
+
+        Need help with your processing? Ask us and a large
+        neuroimaging community.
+
 
 **********
 Highlights
 **********
 
-**DIPY 0.14.0** is now available. New features include:
+**DIPY 1.11.0** is now available. New features include:
 
-- RecoBundles: anatomically relevant segmentation of bundles
-- New super fast clustering algorithm: QuickBundlesX
-- New tracking algorithm: Particle Filtering Tracking.
-- New tracking algorithm: Probabilistic Residual Bootstrap Tracking.
-- Integration of the Streamlines API for reading, saving and processing tractograms.
-- Fiber ORientation Estimated using Continuous Axially Symmetric Tensors (Forecast).
-- New command line interfaces.
-- Deprecated fvtk (old visualization framework).
-- A range of new visualization improvements.
-- Large documentation update.
+- NF: Refactoring of the tracking API.
+- Deprecation of Tensorflow backend in favor of PyTorch.
+- Performance improvements of multiple functionalities.
+- DIPY Horizon improvements and minor features added.
+- Added support for Python 3.13.
+- Drop support for Python 3.9.
+- Multiple Workflows updated and added (15 workflows).
+- Documentation update.
+- Closed 73 issues and merged 47 pull requests.
+
 
 See :ref:`Older Highlights <old_highlights>`.
-
 
 *************
 Announcements
 *************
+- :doc:`DIPY 1.11.0 <release_notes/release1.11>` released March 15, 2025.
+- :doc:`DIPY 1.10.0 <release_notes/release1.10>` released December 12, 2024.
+- :doc:`DIPY 1.9.0 <release_notes/release1.9>` released March 8, 2024.
 
-- :ref:`DIPY 0.14 <release0.14>` released May 1, 2018.
-- :ref:`DIPY 0.13 <release0.13>` released October 24, 2017.
-- :ref:`DIPY 0.12 <release0.12>` released June 26, 2017.
+
 
 See some of our :ref:`Past Announcements <old_news>`
 
 
-***************
-Getting Started
-***************
-
-Here is a quick snippet showing how to calculate `color FA` also known as the
-DEC map. We use a Tensor model to reconstruct the datasets which are
-saved in a Nifti file along with the b-values and b-vectors which are saved as
-text files. Finally, we save our result as a Nifti file ::
-
-    fdwi = 'dwi.nii.gz'
-    fbval = 'dwi.bval'
-    fbvec = 'dwi.bvec'
-
-    from dipy.io.image import load_nifti, save_nifti
-    from dipy.io import read_bvals_bvecs
-    from dipy.core.gradients import gradient_table
-    from dipy.reconst.dti import TensorModel
-
-    data, affine = load_nifti(fdwi)
-    bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    gtab = gradient_table(bvals, bvecs)
-
-    tenmodel = TensorModel(gtab)
-    tenfit = tenmodel.fit(data)
-
-    save_nifti('colorfa.nii.gz', tenfit.color_fa, affine)
-
-As an exercise, you can try to calculate `color FA` with your datasets. You will need
-to replace the filepaths `fimg`, `fbval` and `fbvec`. Here is what
-a slice should look like.
-
-.. image:: _static/colorfa.png
-    :align: center
-
-**********
-Next Steps
-**********
-
-You can learn more about how you to use DIPY_ with  your datasets by reading the examples in our :ref:`documentation`.
-
-.. We need the following toctree directive to include the documentation
-.. in the document hierarchy - see http://sphinx.pocoo.org/concepts.html
+.. This tree is helping populate the side navigation panel
 .. toctree::
+   :maxdepth: 2
    :hidden:
 
-   documentation
+   user_guide/index
+   examples_built/index
+   interfaces/index
+   devel/index
+   theory/index
+   reference/index
+   reference_cmd/index
+   recipes
+   api_changes
    stateoftheart
+   old_highlights
+   old_news
+   glossary
+   developers
+   gimbal_lock
+   faq
+   cite
+   subscribe
 
-*******
-Support
-*******
-
-We acknowledge support from the following organizations:
-
-- The department of Intelligent Systems Engineering of Indiana University.
-
-- The Gordon and Betty Moore Foundation and the Alfred P. Sloan Foundation, through the
-  University of Washington eScience Institute Data Science Environment.
-
-- Google supported DIPY through the Google Summer of Code Program during
-  Summer 2015 and 2016.
-
-
+.. Main content will be displayed using the jinja template
 
 
 .. include:: links_names.inc

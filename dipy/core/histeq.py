@@ -1,8 +1,11 @@
 import numpy as np
 
+from dipy.testing.decorators import warning_for_keywords
 
-def histeq(arr, num_bins=256):
-    """ Performs an histogram equalization on ``arr``.
+
+@warning_for_keywords()
+def histeq(arr, *, num_bins=256):
+    """Performs an histogram equalization on ``arr``.
     This was taken from:
     http://www.janeriksolem.net/2009/06/histogram-equalization-with-python-and.html
 
@@ -19,7 +22,7 @@ def histeq(arr, num_bins=256):
         Histogram equalized image.
     """
     # get image histogram
-    histo, bins = np.histogram(arr.flatten(), num_bins, normed=True)
+    histo, bins = np.histogram(arr.flatten(), num_bins, density=True)
     cdf = histo.cumsum()
     cdf = 255 * cdf / cdf[-1]
 

@@ -2,7 +2,7 @@
 #
 
 # You can set these variables from the command line.
-SPHINXOPTS    =
+SPHINXOPTS    = -j auto
 SPHINXBUILD   = sphinx-build
 PAPER         =
 
@@ -33,6 +33,7 @@ clean: api-clean examples-clean
 
 api-clean:
 	rm -rf reference/*.rst
+	rm -rf reference_cmd/*.rst
 
 api:
 	@mkdir -p reference
@@ -42,25 +43,23 @@ api:
 	@echo "Build API docs...done."
 
 examples-clean:
-	-cd examples_built && rm -rf *.py *.rst *.png fig
-
-examples-clean-tgz: examples-clean examples-tgz
-	../tools/pack_examples.py ../dist
-
-examples-tgz: rstexamples
-	../tools/pack_examples.py ../dist
+	rm -rf examples_revamped
+	-cd examples_built && find . -not -name "README" -not -name ".gitignore" -exec rm -rfd {} \; || true
 
 gitwash-update:
-	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=nipy \
-            --project-url=http://nipy.org/dipy \
+	python3 ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=dipy \
+            --project-url=https://dipy.org \
             --project-ml-url=https://mail.python.org/mailman/listinfo/neuroimaging
 
-html: api rstexamples html-after-examples
-	# build full docs including examples
-
-html-after-examples:
-	# Standard html build after examples have been prepared
+html: api
+	#  Standard html build after examples have been prepared
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
+	@echo
+	@echo "Build finished. The HTML pages are in _build/html."
+
+html-no-examples: api
+	# Standard html build after examples have been prepared
+	$(SPHINXBUILD) -D plot_gallery=0 -b html $(ALLSPHINXOPTS) _build/html
 	@echo
 	@echo "Build finished. The HTML pages are in _build/html."
 
@@ -94,9 +93,7 @@ qthelp:
 	@echo "To view the help file:"
 	@echo "# assistant -collectionFile _build/qthelp/dipy.qhc"
 
-latex: rstexamples latex-after-examples
-
-latex-after-examples:
+latex: api
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) _build/latex
 	@echo
 	@echo "Build finished; the LaTeX files are in _build/latex."
@@ -119,18 +116,13 @@ doctest:
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in _build/doctest/output.txt."
 
-rstexamples: rstexamples-stamp
-rstexamples-stamp:
-	cd examples_built && ../../tools/make_examples.py
-	touch $@
-
 pdf: pdf-stamp
 pdf-stamp: latex
 	cd _build/latex && make all-pdf
 	touch $@
 
 upload: html
-	./upload-gh-pages.sh _build/html/ dipy nipy
+	./upload-gh-pages.sh _build/html/ dipy dipy
 
 xvfb:
 	export TEST_WITH_XVFB=true && make html

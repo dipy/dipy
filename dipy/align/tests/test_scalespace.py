@@ -1,15 +1,12 @@
 import numpy as np
+from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_raises
 import scipy as sp
-from numpy.testing import (assert_array_equal,
-                           assert_array_almost_equal,
-                           assert_almost_equal,
-                           assert_equal,
-                           assert_raises)
+
 from dipy.align import floating
 from dipy.align.imwarp import get_direction_and_spacings
-from dipy.align.scalespace import (ScaleSpace,
-                          IsotropicScaleSpace)
+from dipy.align.scalespace import IsotropicScaleSpace, ScaleSpace
 from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_scale_space():
@@ -29,8 +26,9 @@ def test_scale_space():
                 ss = test_class(
                     original,
                     num_levels,
-                    grid2world,
-                    input_spacing)
+                    image_grid2world=grid2world,
+                    input_spacing=input_spacing,
+                )
             elif test_class is IsotropicScaleSpace:
                 factors = [4, 2, 1]
                 sigmas = [3.0, 1.0, 0.0]
@@ -38,14 +36,16 @@ def test_scale_space():
                     original,
                     factors,
                     sigmas,
-                    grid2world,
-                    input_spacing)
+                    image_grid2world=grid2world,
+                    input_spacing=input_spacing,
+                )
             for level in range(num_levels):
                 # Verify sigmas and images are consistent
                 sigmas = ss.get_sigmas(level)
-                expected = sp.ndimage.filters.gaussian_filter(original, sigmas)
-                expected = ((expected - expected.min()) /
-                            (expected.max() - expected.min()))
+                expected = sp.ndimage.gaussian_filter(original, sigmas)
+                expected = (expected - expected.min()) / (
+                    expected.max() - expected.min()
+                )
                 actual = ss.get_image(level)
                 assert_array_almost_equal(actual, expected)
 
@@ -69,13 +69,13 @@ def test_scale_space():
                 assert_array_almost_equal(actual_sp, expected_sp)
 
 
-def test_scale_space_exceptions():
-    np.random.seed(2022966)
+@set_random_number_generator(2022966)
+def test_scale_space_exceptions(rng):
     target_shape = (32, 32)
     # create a random image
     image = np.ndarray(target_shape, dtype=floating)
     ns = np.size(image)
-    image[...] = np.random.randint(0, 10, ns).reshape(tuple(target_shape))
+    image[...] = rng.integers(0, 10, ns).reshape(tuple(target_shape))
     zeros = (image == 0).astype(np.int32)
 
     ss = ScaleSpace(image, 3)

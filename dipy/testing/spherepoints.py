@@ -1,12 +1,12 @@
-''' Create example sphere points '''
+"""Create example sphere points"""
 
 import numpy as np
 
 
 def _make_pts():
-    ''' Make points around sphere quadrants '''
-    thetas = np.arange(1, 4) * np.pi/4
-    phis = np.arange(8) * np.pi/4
+    """Make points around sphere quadrants"""
+    thetas = np.arange(1, 4) * np.pi / 4
+    phis = np.arange(8) * np.pi / 4
     north_pole = (0, 0, 1)
     south_pole = (0, 0, -1)
     points = [north_pole, south_pole]

@@ -1,0 +1,50 @@
+target-version = "py310"
+
+line-length = 88
+force-exclude = true
+extend-exclude = [
+  "__pycache__",
+  "build",
+  "_version.py",
+  "doc/sphinxext/**",
+  "doc/tools/*.py",
+  "doc/upload_docs.py",
+  "tools/**",
+  # dipy/info.py
+]
+
+[lint]
+select = [
+  "F",
+  "E",
+  "C",
+  "W",
+  "B",
+  "I",
+]
+ignore = [
+  "B905",
+  "C901",
+  "E203",
+  "F811"
+]
+
+[lint.extend-per-file-ignores]
+"dipy/align/__init__.py" = ["E402"]
+"dipy/reconst/*.py" = ["B026"]
+"dipy/viz/__init__.py" = ["F401"]
+"doc/examples/**" = ["E402"]
+"doc/conf.py" = ["E402"]
+
+[lint.isort]
+case-sensitive = true
+combine-as-imports = true
+force-sort-within-sections = true
+known-first-party = ["dipy"]
+no-sections = false
+order-by-type = true
+relative-imports-order = "closest-to-furthest"
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+[format]
+quote-style = "double"

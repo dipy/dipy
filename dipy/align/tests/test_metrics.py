@@ -1,10 +1,12 @@
+import itertools
+
 import numpy as np
+from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_raises
 from scipy import ndimage
+
 from dipy.align import floating
-from dipy.align.metrics import SSDMetric, CCMetric, EMMetric
-from numpy.testing import (assert_array_equal,
-                           assert_array_almost_equal,
-                           assert_raises)
+from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_exceptions():
@@ -12,19 +14,48 @@ def test_exceptions():
         assert_raises(ValueError, CCMetric, invalid_dim)
         assert_raises(ValueError, EMMetric, invalid_dim)
         assert_raises(ValueError, SSDMetric, invalid_dim)
-    assert_raises(ValueError, SSDMetric, 3, step_type='unknown_metric_name')
-    assert_raises(ValueError, EMMetric, 3, step_type='unknown_metric_name')
+    assert_raises(ValueError, SSDMetric, 3, step_type="unknown_metric_name")
+    assert_raises(ValueError, EMMetric, 3, step_type="unknown_metric_name")
+
+    def init_metric(shape, radius):
+        dim = len(shape)
+        metric = CCMetric(dim, radius=radius)
+        metric.set_static_image(
+            np.arange(np.prod(shape), dtype=float).reshape(shape),
+            np.eye(4),
+            np.ones(dim),
+            np.eye(3),
+        )
+        metric.set_moving_image(
+            np.arange(np.prod(shape), dtype=float).reshape(shape),
+            np.eye(4),
+            np.ones(dim),
+            np.eye(3),
+        )
+        return metric
+
+    # Generate many shape combinations
+    shapes_2d = itertools.product((5, 8), (8, 5))
+    shapes_3d = itertools.product((5, 8), (8, 5), (30, 50))
+    all_shapes = itertools.chain(shapes_2d, shapes_3d)
+    # expected to fail for any dimension < 2*radius + 1.
+    for shape in all_shapes:
+        metric = init_metric(shape, 4)
+        assert_raises(ValueError, metric.initialize_iteration)
+
+    # expected to pass for any dimension == 2*radius + 1.
+    metric = init_metric((9, 9), 4)
+    metric.initialize_iteration()
 
 
-def test_EMMetric_image_dynamics():
-    np.random.seed(7181309)
+@set_random_number_generator(7181309)
+def test_EMMetric_image_dynamics(rng):
     metric = EMMetric(2)
 
     target_shape = (10, 10)
     # create a random image
     image = np.ndarray(target_shape, dtype=floating)
-    image[...] = np.random.randint(
-        0, 10, np.size(image)).reshape(tuple(target_shape))
+    image[...] = rng.integers(0, 10, np.size(image)).reshape(tuple(target_shape))
     # compute the expected binary mask
     expected = (image > 0).astype(np.int32)
 
@@ -60,9 +91,9 @@ def test_em_demons_step_2d():
     x_0 = np.asarray(range(sh[0]))
     x_1 = np.asarray(range(sh[1]))
     X = np.ndarray(sh + (2,), dtype=np.float64)
-    O = np.ones(sh)
-    X[..., 0] = x_0[:, None] * O
-    X[..., 1] = x_1[None, :] * O
+    _O = np.ones(sh)
+    X[..., 0] = x_0[:, None] * _O
+    X[..., 1] = x_1[None, :] * _O
 
     # Compute the gradient fields of F and G
     grad_F = X - c_f
@@ -85,7 +116,7 @@ def test_em_demons_step_2d():
     # Set arbitrary values for $\sigma_i$ (eq. 4 in [Vercauteren09])
     # The original Demons algorithm used simply |F(x) - G(x)| as an
     # estimator, so let's use it as well
-    sigma_i_sq = (F - G)**2
+    sigma_i_sq = (F - G) ** 2
     # Set the properties relevant to the demons methods
     metric.smooth = 3.0
     metric.gradient_static = np.array(grad_F, dtype=floating)
@@ -98,8 +129,8 @@ def test_em_demons_step_2d():
     metric.movingq_sigma_sq_field = np.array(sigma_i_sq, dtype=floating)
 
     # compute the step using the implementation under test
-    actual_forward = metric.compute_demons_step(True)
-    actual_backward = metric.compute_demons_step(False)
+    actual_forward = metric.compute_demons_step(forward_step=True)
+    actual_backward = metric.compute_demons_step(forward_step=False)
 
     # Now directly compute the demons steps according to eq 4 in
     # [Vercauteren09]
@@ -110,10 +141,8 @@ def test_em_demons_step_2d():
     expected_fwd[..., 0] *= num_fwd / den_fwd
     expected_fwd[..., 1] *= num_fwd / den_fwd
     # apply Gaussian smoothing
-    expected_fwd[..., 0] = ndimage.filters.gaussian_filter(
-        expected_fwd[..., 0], 3.0)
-    expected_fwd[..., 1] = ndimage.filters.gaussian_filter(
-        expected_fwd[..., 1], 3.0)
+    expected_fwd[..., 0] = ndimage.gaussian_filter(expected_fwd[..., 0], 3.0)
+    expected_fwd[..., 1] = ndimage.gaussian_filter(expected_fwd[..., 1], 3.0)
 
     num_bwd = sigma_x_sq * (F - G)
     den_bwd = sigma_x_sq * sq_norm_grad_G + sigma_i_sq
@@ -122,10 +151,8 @@ def test_em_demons_step_2d():
     expected_bwd[..., 0] *= num_bwd / den_bwd
     expected_bwd[..., 1] *= num_bwd / den_bwd
     # apply Gaussian smoothing
-    expected_bwd[..., 0] = ndimage.filters.gaussian_filter(
-        expected_bwd[..., 0], 3.0)
-    expected_bwd[..., 1] = ndimage.filters.gaussian_filter(
-        expected_bwd[..., 1], 3.0)
+    expected_bwd[..., 0] = ndimage.gaussian_filter(expected_bwd[..., 0], 3.0)
+    expected_bwd[..., 1] = ndimage.gaussian_filter(expected_bwd[..., 1], 3.0)
 
     assert_array_almost_equal(actual_forward, expected_fwd)
     assert_array_almost_equal(actual_backward, expected_bwd)
@@ -157,10 +184,10 @@ def test_em_demons_step_3d():
     x_1 = np.asarray(range(sh[1]))
     x_2 = np.asarray(range(sh[2]))
     X = np.ndarray(sh + (3,), dtype=np.float64)
-    O = np.ones(sh)
-    X[..., 0] = x_0[:, None, None] * O
-    X[..., 1] = x_1[None, :, None] * O
-    X[..., 2] = x_2[None, None, :] * O
+    _O = np.ones(sh)
+    X[..., 0] = x_0[:, None, None] * _O
+    X[..., 1] = x_1[None, :, None] * _O
+    X[..., 2] = x_2[None, None, :] * _O
 
     # Compute the gradient fields of F and G
     grad_F = X - c_f
@@ -183,7 +210,7 @@ def test_em_demons_step_3d():
     # Set arbitrary values for $\sigma_i$ (eq. 4 in [Vercauteren09])
     # The original Demons algorithm used simply |F(x) - G(x)| as an
     # estimator, so let's use it as well
-    sigma_i_sq = (F - G)**2
+    sigma_i_sq = (F - G) ** 2
     # Set the properties relevant to the demons methods
     metric.smooth = 3.0
     metric.gradient_static = np.array(grad_F, dtype=floating)
@@ -196,8 +223,8 @@ def test_em_demons_step_3d():
     metric.movingq_sigma_sq_field = np.array(sigma_i_sq, dtype=floating)
 
     # compute the step using the implementation under test
-    actual_forward = metric.compute_demons_step(True)
-    actual_backward = metric.compute_demons_step(False)
+    actual_forward = metric.compute_demons_step(forward_step=True)
+    actual_backward = metric.compute_demons_step(forward_step=False)
 
     # Now directly compute the demons steps according to eq 4 in
     # [Vercauteren09]
@@ -208,12 +235,9 @@ def test_em_demons_step_3d():
     expected_fwd[..., 1] *= num_fwd / den_fwd
     expected_fwd[..., 2] *= num_fwd / den_fwd
     # apply Gaussian smoothing
-    expected_fwd[..., 0] = ndimage.filters.gaussian_filter(
-        expected_fwd[..., 0], 3.0)
-    expected_fwd[..., 1] = ndimage.filters.gaussian_filter(
-        expected_fwd[..., 1], 3.0)
-    expected_fwd[..., 2] = ndimage.filters.gaussian_filter(
-        expected_fwd[..., 2], 3.0)
+    expected_fwd[..., 0] = ndimage.gaussian_filter(expected_fwd[..., 0], 3.0)
+    expected_fwd[..., 1] = ndimage.gaussian_filter(expected_fwd[..., 1], 3.0)
+    expected_fwd[..., 2] = ndimage.gaussian_filter(expected_fwd[..., 2], 3.0)
 
     num_bwd = sigma_x_sq * (F - G)
     den_bwd = sigma_x_sq * sq_norm_grad_G + sigma_i_sq
@@ -222,19 +246,9 @@ def test_em_demons_step_3d():
     expected_bwd[..., 1] *= num_bwd / den_bwd
     expected_bwd[..., 2] *= num_bwd / den_bwd
     # apply Gaussian smoothing
-    expected_bwd[..., 0] = ndimage.filters.gaussian_filter(
-        expected_bwd[..., 0], 3.0)
-    expected_bwd[..., 1] = ndimage.filters.gaussian_filter(
-        expected_bwd[..., 1], 3.0)
-    expected_bwd[..., 2] = ndimage.filters.gaussian_filter(
-        expected_bwd[..., 2], 3.0)
+    expected_bwd[..., 0] = ndimage.gaussian_filter(expected_bwd[..., 0], 3.0)
+    expected_bwd[..., 1] = ndimage.gaussian_filter(expected_bwd[..., 1], 3.0)
+    expected_bwd[..., 2] = ndimage.gaussian_filter(expected_bwd[..., 2], 3.0)
 
     assert_array_almost_equal(actual_forward, expected_fwd)
     assert_array_almost_equal(actual_backward, expected_bwd)
-
-
-if __name__ == '__main__':
-    test_em_demons_step_2d()
-    test_em_demons_step_3d()
-    test_exceptions()
-    test_EMMetric_image_dynamics()

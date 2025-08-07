@@ -1,20 +1,34 @@
 import numpy as np
-from numpy.testing import (run_module_suite,
-                           assert_,
-                           assert_equal,
-                           assert_array_almost_equal,
-                           assert_raises)
+from numpy.testing import (
+    assert_,
+    assert_array_almost_equal,
+    assert_equal,
+    assert_raises,
+)
+
 from dipy.denoise.non_local_means import non_local_means
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_nlmeans_static():
-    S0 = 100 * np.ones((20, 20, 20), dtype='f8')
+    S0 = 100 * np.ones((20, 20, 20), dtype="f8")
     S0nb = non_local_means(S0, sigma=1.0, rician=False)
     assert_array_almost_equal(S0, S0nb)
 
+    S0 = 100 * np.ones((20, 20, 20, 3), dtype="f8")
+    S0nb = non_local_means(S0, sigma=1.0, rician=False)
+    assert_array_almost_equal(S0, S0nb)
 
-def test_nlmeans_random_noise():
-    S0 = 100 + 2 * np.random.standard_normal((22, 23, 30))
+    S0nb = non_local_means(S0, sigma=np.array(1.0), rician=False)
+    assert_array_almost_equal(S0, S0nb)
+
+    S0nb = non_local_means(S0, sigma=np.array([1.0]), rician=False)
+    assert_array_almost_equal(S0, S0nb)
+
+
+@set_random_number_generator()
+def test_nlmeans_random_noise(rng):
+    S0 = 100 + 2 * rng.standard_normal((22, 23, 30))
 
     masker = np.zeros(S0.shape[:3]).astype(bool)
     masker[8:15, 8:15, 8:15] = 1
@@ -32,20 +46,24 @@ def test_nlmeans_random_noise():
         assert_equal(np.round(S0nb[mask].mean()), 100)
 
 
-def test_scalar_sigma():
+@set_random_number_generator()
+def test_scalar_sigma(rng):
     S0 = 100 + np.zeros((20, 20, 20))
-    noise = 2 * np.random.standard_normal((20, 20, 20))
+    noise = 2 * rng.standard_normal((20, 20, 20))
     S0 += noise
     S0[:10, :10, :10] = 300 + noise[:10, :10, :10]
 
-    assert_raises(
-        ValueError, non_local_means, S0, sigma=noise, rician=False)
+    assert_raises(ValueError, non_local_means, S0, sigma=noise, rician=False)
+
+    noise = "a"
+    assert_raises(ValueError, non_local_means, S0, sigma=noise, rician=False)
 
 
-def test_nlmeans_boundary():
+@set_random_number_generator()
+def test_nlmeans_boundary(rng):
     # nlmeans preserves boundaries
     S0 = 100 + np.zeros((20, 20, 20))
-    noise = 2 * np.random.standard_normal((20, 20, 20))
+    noise = 2 * rng.standard_normal((20, 20, 20))
     S0 += noise
     S0[:10, :10, :10] = 300 + noise[:10, :10, :10]
     non_local_means(S0, sigma=np.std(noise), rician=False)
@@ -58,11 +76,11 @@ def test_nlmeans_wrong():
     assert_raises(ValueError, non_local_means, S0, 1.0)
     S0 = 100 + np.zeros((20, 20, 20))
     mask = np.ones((10, 10))
-    assert_raises(ValueError, non_local_means, S0, 1.0, mask)
+    assert_raises(ValueError, non_local_means, S0, 1.0, mask=mask)
 
 
 def test_nlmeans_4D_and_mask():
-    S0 = 200 * np.ones((20, 20, 20, 3), dtype='f8')
+    S0 = 200 * np.ones((20, 20, 20, 3), dtype="f8")
     mask = np.zeros((20, 20, 20))
     mask[10, 10, 10] = 1
     S0n = non_local_means(S0, sigma=1, mask=mask, rician=True)
@@ -72,8 +90,7 @@ def test_nlmeans_4D_and_mask():
 
 
 def test_nlmeans_dtype():
-
-    S0 = 200 * np.ones((20, 20, 20, 3), dtype='f4')
+    S0 = 200 * np.ones((20, 20, 20, 3), dtype="f4")
     mask = np.zeros((20, 20, 20))
     mask[10:14, 10:14, 10:14] = 1
     S0n = non_local_means(S0, sigma=1, mask=mask, rician=True)
@@ -85,5 +102,16 @@ def test_nlmeans_dtype():
     assert_equal(S0.dtype, S0n.dtype)
 
 
-if __name__ == '__main__':
-    run_module_suite()
+def test_nlmeans_2D_sigma():
+    S0 = np.ones((20, 20, 20, 3))
+    noise = np.ones((3, 2))
+    assert_raises(ValueError, non_local_means, S0, sigma=noise, rician=True)
+
+    S0 = np.ones((20, 20, 20))
+    assert_raises(ValueError, non_local_means, S0, sigma=noise, rician=True)
+
+
+def test_nlmeans_sigma_arr():
+    S0 = np.ones((20, 20, 20, 3))
+    noise = np.ones(4)
+    assert_raises(ValueError, non_local_means, S0, sigma=noise, rician=True)

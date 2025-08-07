@@ -1,24 +1,18 @@
- .. _development:
+.. _development:
 
-DIPY development
-================
-
-Contents:
+DIPY Developer Guide
+====================
 
 .. toctree::
    :maxdepth: 2
 
    intro
+   installation_from_source
    gitwash/index
    make_release
    commit_codes
    coding_style_guideline
-   python3
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   bibliography
+   benchmarking
+   toolchain
 

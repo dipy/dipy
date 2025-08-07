@@ -1,0 +1,116 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  schedule:
+    - cron: '0 0 5 * 0' # 1 per month
+
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.13']
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install DIPY and its Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+      - name: Fetch Data
+        run: |
+          dipy_fetch all
+      - name: Cache Data
+        uses: actions/cache@v4
+        with:
+            path: ~/.dipy
+            key: dipy-${{ hashFiles('**/dipy/data/*') }}
+
+  stable:
+    needs: fetch-data
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", "macos-latest", "windows-latest", "macos-14"]'
+      python-version: '["3.10", "3.11", "3.12", "3.13"]'
+
+  optional-deps-pip:
+    needs: fetch-data
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
+      depends: cython!=0.29.29 numpy==1.24.2 matplotlib h5py==3.11.0 nibabel cvxpy<=1.4.4 tqdm
+      extra-depends: scikit_learn pandas statsmodels tables scipy==1.10.1 numexpr
+
+  optional-deps-conda:
+    needs: fetch-data
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["macos-latest", "windows-latest"]'
+      install-type: '["conda"]'
+      depends: cython!=0.29.29 numpy==1.25.0 matplotlib h5py==3.11.0 nibabel cvxpy<=1.4.4 tqdm
+      extra-depends: scikit-learn pandas statsmodels pytables scipy==1.10.1
+
+  parallel:
+    needs: fetch-data
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
+      extra-depends: dask joblib ray==2.9.3 protobuf<4.0.0 # More info here https://github.com/ray-project/ray/pull/25211
+
+  minimal-py310:
+    needs: fetch-data
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", ]'
+      python-version: '["3.10", ]'
+      depends: cython==0.29.25 numpy==1.22.4 scipy==1.8.1 nibabel==3.0.0 h5py==3.6.0 tqdm
+
+  minimal-py311:
+    needs: fetch-data
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", ]'
+      python-version: '["3.11", ]'
+      depends: cython==0.29.32 numpy==1.23.5 scipy==1.9.3 nibabel==3.0.0 h5py==3.8.0 tqdm
+
+  coverage:
+    needs: fetch-data
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", ]'
+      coverage: true
+      enable-viz-tests: true
+      extra-depends: scikit-learn scipy statsmodels pandas tables fury tensorflow torch
+    secrets:
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  pre-py313:
+    needs: fetch-data
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", ]'
+      python-version: '["3.13",]'
+      use-pre: true
+      extra-depends: scikit_learn scipy statsmodels pandas tables

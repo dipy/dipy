@@ -4,8 +4,6 @@
 import os
 import sys
 
-from distutils.dir_util import remove_tree
-
 # Useful shorthands
 pjoin = os.path.join
 cd = os.chdir
@@ -17,7 +15,7 @@ def c(cmd):
     stat = os.system(cmd)
     #stat = 0  # Uncomment this and comment previous to run in debug mode
     if stat:
-        raise SystemExit("Command %s failed with code: %s" % (cmd, stat))
+        raise SystemExit(f"Command {cmd} failed with code: {stat}")
 
 
 def get_dipydir():
@@ -33,13 +31,13 @@ def get_dipydir():
 
     cd(dipydir)
     if not os.path.isdir('dipy') and os.path.isfile('setup.py'):
-        raise SystemExit('Invalid dipy directory: %s' % dipydir)
+        raise SystemExit(f'Invalid dipy directory: {dipydir}')
     return dipydir
 
 # import compileall and then get dir os.path.split
 def compile_tree():
     """Compile all Python files below current directory."""
-    stat = os.system('python -m compileall .')
+    stat = os.system('python3 -m compileall .')
     if stat:
         msg = '*** ERROR: Some Python files in tree do NOT compile! ***\n'
         msg += 'See messages above for the actual file that produced it.\n'

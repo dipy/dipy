@@ -1,32 +1,51 @@
-""" Random number generation utilities """
-from __future__ import division, print_function, absolute_import
+"""Random number generation utilities."""
 
 from math import floor
 from platform import architecture
 
+import numpy as np
 
-def WichmannHill2006():
-    '''
-    B.A. Wichmann, I.D. Hill, Generating good pseudo-random numbers,
-    Computational Statistics & Data Analysis, Volume 51, Issue 3, 1
-    December 2006, Pages 1614-1622, ISSN 0167-9473, DOI:
-    10.1016/j.csda.2006.05.019.
-    (http://www.sciencedirect.com/science/article/B6V8V-4K7F86W-2/2/a3a33291b8264e4c882a8f21b6e43351)
-    for advice on generating many sequences for use together, and on
-    alternative algorithms and codes
+from dipy.testing.decorators import warning_for_keywords
+
+
+@warning_for_keywords()
+def WichmannHill2006(*, ix=100001, iy=200002, iz=300003, it=400004):
+    """Wichmann Hill random number generator.
+
+    See :footcite:p:`Wichmann2006` for advice on generating many sequences for
+    use together, and on alternative algorithms and codes
+
+    Parameters
+    ----------
+    ix: int
+        First seed value. Should not be null. (default 100001)
+    iy: int
+        Second seed value. Should not be null. (default 200002)
+    iz: int
+        Third seed value. Should not be null. (default 300003)
+    it: int
+        Fourth seed value. Should not be null. (default 400004)
+
+    Returns
+    -------
+    r_number : float
+        pseudo-random number uniformly distributed between [0-1]
+
+    References
+    ----------
+    .. footbibliography::
 
     Examples
-    ----------
+    --------
     >>> from dipy.core import rng
-    >>> rng.ix, rng.iy, rng.iz, rng.it = 100001, 200002, 300003, 400004
     >>> N = 1000
     >>> a = [rng.WichmannHill2006() for i in range(N)]
-    '''
 
-    global ix, iy, iz, it
+    """
+    if not ix or not iy or not iz or not it:
+        raise ValueError("A seed value can not be null.")
 
-    if architecture()[0] == '64':
-
+    if architecture()[0] == "64":
         # If 64 bits are available then the following lines of code will be
         # faster.
         ix = (11600 * ix) % 2147483579
@@ -35,13 +54,12 @@ def WichmannHill2006():
         it = (33000 * it) % 2147483123
 
     else:
-
         # If only 32 bits are available
 
         ix = 11600 * (ix % 185127) - 10379 * (ix / 185127)
-        iy = 47003 * (ix %  45688) - 10479 * (iy /  45688)
-        iz = 23000 * (iz %  93368) - 19423 * (iz /  93368)
-        it = 33000 * (it %  65075) -  8123 * (it /  65075)
+        iy = 47003 * (ix % 45688) - 10479 * (iy / 45688)
+        iz = 23000 * (iz % 93368) - 19423 * (iz / 93368)
+        it = 33000 * (it % 65075) - 8123 * (it / 65075)
 
         if ix < 0:
             ix = ix + 2147483579
@@ -52,14 +70,14 @@ def WichmannHill2006():
         if it < 0:
             it = it + 2147483123
 
-    W = ix/2147483579.0 + iy/2147483543.0 + iz/2147483423.0 + it/2147483123.0
+    W = ix / 2147483579.0 + iy / 2147483543.0 + iz / 2147483423.0 + it / 2147483123.0
 
     return W - floor(W)
 
 
-def WichmannHill1982():
-    '''
-    Algorithm AS 183 Appl. Statist. (1982) vol.31, no.2
+@warning_for_keywords()
+def WichmannHill1982(*, ix=100001, iy=200002, iz=300003):
+    """Algorithm AS 183 Appl. Statist. (1982) vol.31, no.2.
 
     Returns a pseudo-random number rectangularly distributed
     between 0 and 1.   The cycle length is 6.95E+12 (See page 123
@@ -70,17 +88,35 @@ def WichmannHill1982():
     30000 before the first entry.
 
     Integer arithmetic up to 5212632 is required.
-    '''
 
-    import numpy as np
+    Parameters
+    ----------
+    ix: int
+        First seed value. Should not be null. (default 100001)
+    iy: int
+        Second seed value. Should not be null. (default 200002)
+    iz: int
+        Third seed value. Should not be null. (default 300003)
 
-    global ix, iy, iz
+    Returns
+    -------
+    r_number : float
+        pseudo-random number uniformly distributed between [0-1]
 
+    Examples
+    --------
+    >>> from dipy.core import rng
+    >>> N = 1000
+    >>> a = [rng.WichmannHill1982() for i in range(N)]
+
+    """
+    if not ix or not iy or not iz:
+        raise ValueError("A seed value can not be null.")
     ix = (171 * ix) % 30269
     iy = (172 * iy) % 30307
     iz = (170 * iz) % 30323
 
-    '''
+    """
     If integer arithmetic only up to 30323 (!) is available, the preceding
     3 statements may be replaced by:
 
@@ -94,23 +130,45 @@ def WichmannHill1982():
         iy = iy + 30307
     if iz < 0:
         iz = iz + 30323
-    '''
-    return np.remainder(np.float(ix) / 30269. + np.float(iy) / 30307. +
-                        np.float(iz) / 30323., 1.0)
+    """
+    return np.remainder(
+        float(ix) / 30269.0 + float(iy) / 30307.0 + float(iz) / 30323.0, 1.0
+    )
 
 
-def LEcuyer():
-    '''
+@warning_for_keywords()
+def LEcuyer(*, s1=100001, s2=200002):
+    """Return a LEcuyer random number generator.
+
     Generate uniformly distributed random numbers using the 32-bit
     generator from figure 3 of:
+
         L'Ecuyer, P. Efficient and portable combined random number
         generators, C.A.C.M., vol. 31, 742-749 & 774-?, June 1988.
 
     The cycle length is claimed to be 2.30584E+18
-    '''
 
-    global s1, s2
+    Parameters
+    ----------
+    s1: int
+        First seed value. Should not be null. (default 100001)
+    s2: int
+        Second seed value. Should not be null. (default 200002)
 
+    Returns
+    -------
+    r_number : float
+        pseudo-random number uniformly distributed between [0-1]
+
+    Examples
+    --------
+    >>> from dipy.core import rng
+    >>> N = 1000
+    >>> a = [rng.LEcuyer() for i in range(N)]
+
+    """
+    if not s1 or not s2:
+        raise ValueError("A seed value can not be null.")
     k = s1 / 53668
     s1 = 40014 * (s1 - k * 53668) - k * 12211
     if s1 < 0:
@@ -123,4 +181,4 @@ def LEcuyer():
     if z < 0:
         z = z + 2147483562
 
-    return z / 2147483563.
+    return z / 2147483563.0

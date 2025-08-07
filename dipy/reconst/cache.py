@@ -1,7 +1,8 @@
 from dipy.core.onetime import auto_attr
+from dipy.testing.decorators import warning_for_keywords
 
 
-class Cache(object):
+class Cache:
     """Cache values based on a key object (such as a sphere or gradient table).
 
     Notes
@@ -65,7 +66,8 @@ class Cache(object):
         """
         self._cache[(tag, key)] = value
 
-    def cache_get(self, tag, key, default=None):
+    @warning_for_keywords()
+    def cache_get(self, tag, key, *, default=None):
         """Retrieve a value from the cache.
 
         Parameters
@@ -87,7 +89,5 @@ class Cache(object):
         return self._cache.get((tag, key), default)
 
     def cache_clear(self):
-        """Clear the cache.
-
-        """
+        """Clear the cache."""
         self._cache = {}

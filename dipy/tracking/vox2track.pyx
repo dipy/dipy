@@ -10,9 +10,7 @@ from libc.math cimport ceil, floor, fabs, sqrt
 
 import numpy as np
 cimport numpy as cnp
-from ._utils import _mapping_to_voxel, _to_voxel_coordinates
-
-from ..utils.six.moves import xrange
+from dipy.tracking._utils import _mapping_to_voxel, _to_voxel_coordinates
 
 
 @cython.boundscheck(False)
@@ -76,7 +74,7 @@ def _voxel2streamline(sl,
     return v2f ,v2fn
 
 
-def streamline_mapping(streamlines, voxel_size=None, affine=None,
+def streamline_mapping(streamlines, affine=None,
                        mapping_as_streamlines=False):
     """Creates a mapping from voxel indices to streamlines.
 
@@ -87,14 +85,11 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
     ----------
     streamlines : sequence
         A sequence of streamlines.
-    voxel_size : array_like (3,), optional
-        The size of the voxels in the image volume. This is ignored if affine
-        is set.
     affine : array_like (4, 4), optional
-        The mapping from voxel coordinates to streamline coordinates. If
-        neither `affine` or `voxel_size` is set, the streamline values are
-        assumed to be in voxel coordinates. IE ``[0, 0, 0]`` is the center of
-        the first voxel and the voxel size is ``[1, 1, 1]``.
+        The mapping from voxel coordinates to streamline coordinates.
+        The streamline values are assumed to be in voxel coordinates.
+        IE ``[0, 0, 0]`` is the center of the first voxel and the voxel size
+        is ``[1, 1, 1]``.
     mapping_as_streamlines : bool, optional, False by default
         If True voxel indices map to lists of streamline objects. Otherwise
         voxel indices map to lists of integers.
@@ -112,7 +107,7 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
     ...                          [2., 3., 4.]]),
     ...                np.array([[0., 0., 0.],
     ...                          [1., 2., 3.]])]
-    >>> mapping = streamline_mapping(streamlines, (1, 1, 1))
+    >>> mapping = streamline_mapping(streamlines, affine=np.eye(4))
     >>> mapping[0, 0, 0]
     [0, 1]
     >>> mapping[1, 1, 1]
@@ -121,16 +116,16 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
     [1]
     >>> mapping.get((3, 2, 1), 'no streamlines')
     'no streamlines'
-    >>> mapping = streamline_mapping(streamlines, (1, 1, 1),
+    >>> mapping = streamline_mapping(streamlines, affine=np.eye(4),
     ...                              mapping_as_streamlines=True)
     >>> mapping[1, 2, 3][0] is streamlines[1]
     True
 
     """
     cdef:
-        cnp.ndarray[cnp.int_t, ndim=2, mode='strided'] voxel_indices
+        cnp.npy_intp[:, :] voxel_indices
 
-    lin, offset = _mapping_to_voxel(affine, voxel_size)
+    lin, offset = _mapping_to_voxel(affine)
     if mapping_as_streamlines:
         streamlines = list(streamlines)
     mapping = {}
@@ -146,7 +141,7 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
                      voxel_indices[j, 2])
             uniq_points.add(point)
 
-        # Add the index of this streamline for each uniq voxel
+        # Add the index of this streamline for each unique voxel
         for point in uniq_points:
             if point in mapping:
                 mapping[point].append(i)
@@ -165,7 +160,7 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
 @cython.wraparound(False)
 cdef inline cnp.double_t norm(cnp.double_t x,
                               cnp.double_t y,
-                              cnp.double_t z) nogil:
+                              cnp.double_t z) noexcept nogil:
     cdef cnp.double_t val = sqrt(x*x + y*y + z*z)
     return val
 
@@ -176,7 +171,7 @@ cdef inline cnp.double_t norm(cnp.double_t x,
 cdef inline void c_get_closest_edge(cnp.double_t* p,
                                     cnp.double_t* direction,
                                     cnp.double_t* edge,
-                                    double eps=1.) nogil:
+                                    double eps=1.) noexcept nogil:
      edge[0] = floor(p[0] + eps) if direction[0] >= 0.0 else ceil(p[0] - eps)
      edge[1] = floor(p[1] + eps) if direction[1] >= 0.0 else ceil(p[1] - eps)
      edge[2] = floor(p[2] + eps) if direction[2] >= 0.0 else ceil(p[2] - eps)
@@ -233,9 +228,9 @@ def _streamlines_in_mask(list streamlines,
 @cython.cdivision(True)
 cdef cnp.npy_intp _streamline_in_mask(
         cnp.double_t[:,:] streamline,
-        cnp.uint8_t[:,:,:] mask) nogil:
+        cnp.uint8_t[:,:,:] mask) noexcept nogil:
     """
-    Check if a single streamline is passing through a mask. This ia an utility
+    Check if a single streamline is passing through a mask. This is an utility
     function to make streamlines_in_mask() more readable.
     """
     cdef cnp.double_t *current_pt = [0.0, 0.0, 0.0]
@@ -267,6 +262,10 @@ cdef cnp.npy_intp _streamline_in_mask(
         direction_norm = norm(direction[0], direction[1], direction[2])
         remaining_distance = direction_norm
 
+        # If consecutive coordinates are the same, skip one.
+        if direction_norm == 0:
+            continue
+
         # Check if it's already a real edge. If not, find the closest edge.
         if floor(current_edge[0]) != current_edge[0] and \
            floor(current_edge[1]) != current_edge[1] and \
@@ -296,11 +295,12 @@ cdef cnp.npy_intp _streamline_in_mask(
             # Find the coordinates of voxel containing current point, to
             # tag it in the map
             half_ratio = 0.5 * length_ratio
-            x = <cnp.npy_intp>(current_pt[0] + half_ratio * direction[0])
-            y = <cnp.npy_intp>(current_pt[1] + half_ratio * direction[1])
-            z = <cnp.npy_intp>(current_pt[2] + half_ratio * direction[2])
-            if mask[x, y, z]:
-                return 1
+            x = <cnp.npy_intp>floor(current_pt[0] + half_ratio * direction[0])
+            y = <cnp.npy_intp>floor(current_pt[1] + half_ratio * direction[1])
+            z = <cnp.npy_intp>floor(current_pt[2] + half_ratio * direction[2])
+            if 0 <= x < mask.shape[0] and 0 <= y < mask.shape[1] and 0 <= z < mask.shape[2]:
+                if mask[x, y, z]:
+                    return 1
 
             # current_pt is moved to the closest edge
             for dim_idx in range(3):
@@ -314,17 +314,20 @@ cdef cnp.npy_intp _streamline_in_mask(
             c_get_closest_edge(current_pt, direction, current_edge)
 
     # Check last point
-    x = <cnp.npy_intp>next_pt[0]
-    y = <cnp.npy_intp>next_pt[1]
-    z = <cnp.npy_intp>next_pt[2]
-    return mask[x, y, z]
+    x = <cnp.npy_intp>floor(next_pt[0])
+    y = <cnp.npy_intp>floor(next_pt[1])
+    z = <cnp.npy_intp>floor(next_pt[2])
+    if 0 <= x < mask.shape[0] and 0 <= y < mask.shape[1] and 0 <= z < mask.shape[2]:
+        if mask[x, y, z]:
+            return 1
+    return 0
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.profile(False)
 def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
-    ''' Counts of points in `tracks` that pass through voxels in volume
+    """ Counts of points in `tracks` that pass through voxels in volume
 
     We find whether a point passed through a track by rounding the mm
     point values to voxels.  For a track that passes through a voxel more
@@ -390,13 +393,13 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     (5, 10, 15)
     >>> tcs[1,1,2], tcs[1,2,3]
     (1, 1)
-    '''
-    vol_dims = np.asarray(vol_dims).astype(np.int)
+    """
+    vol_dims = np.asarray(vol_dims).astype(int)
     vox_sizes = np.asarray(vox_sizes).astype(np.double)
     n_voxels = np.prod(vol_dims)
     # output track counts array, flattened
-    cdef cnp.ndarray[cnp.int_t, ndim=1] tcs = \
-        np.zeros((n_voxels,), dtype=np.int)
+    cdef cnp.ndarray[cnp.npy_intp, ndim=1] tcs = \
+        np.zeros((n_voxels,), dtype=np.intp)
     # pointer to output track indices
     cdef cnp.npy_intp i
     if return_elements:
@@ -421,11 +424,11 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     # x slice size (C array ordering)
     cdef cnp.npy_intp yz = vd[1] * vd[2]
     for tno in range(len(tracks)):
-        t = tracks[tno].astype(np.float)
+        t = tracks[tno].astype(float)
         # set to find unique voxel points in track
         in_inds = set()
         # the loop below is time-critical
-        for pno in range(t.shape[0]):
+        for pno in range(cnp.PyArray_DIM(t, 0)):
             in_pt = t[pno]
             # Round to voxel coordinates, and set coordinates outside
             # volume to volume edges

@@ -1,14 +1,13 @@
-# distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 import numpy as np
 cimport numpy as cnp
 
-from cythonutils cimport tuple2shape, shape2tuple, shape_from_memview
+from dipy.segment.cythonutils cimport tuple2shape, shape2tuple, shape_from_memview
 from dipy.tracking.streamlinespeed cimport c_set_number_of_points, c_length
 
 
-cdef class Feature(object):
+cdef class Feature:
     """ Extracts features from a sequential datum.
 
     A sequence of N-dimensional points is represented as a 2D array with
@@ -37,7 +36,7 @@ cdef class Feature(object):
         def __set__(self, int value):
             self.is_order_invariant = bool(value)
 
-    cdef Shape c_infer_shape(Feature self, Data2D datum) nogil except *:
+    cdef Shape c_infer_shape(Feature self, Data2D datum) noexcept nogil:
         """ Cython version of `Feature.infer_shape`. """
         with gil:
             shape = self.infer_shape(np.asarray(datum))
@@ -50,7 +49,7 @@ cdef class Feature(object):
             else:
                 raise TypeError("Only scalar, 1D or 2D array features are supported!")
 
-    cdef void c_extract(Feature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(Feature self, Data2D datum, Data2D out) noexcept nogil:
         """ Cython version of `Feature.extract`. """
         cdef Data2D c_features
         with gil:
@@ -175,10 +174,10 @@ cdef class IdentityFeature(CythonFeature):
     def __init__(IdentityFeature self):
         super(IdentityFeature, self).__init__(is_order_invariant=False)
 
-    cdef Shape c_infer_shape(IdentityFeature self, Data2D datum) nogil except *:
+    cdef Shape c_infer_shape(IdentityFeature self, Data2D datum) noexcept nogil:
         return shape_from_memview(datum)
 
-    cdef void c_extract(IdentityFeature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(IdentityFeature self, Data2D datum, Data2D out) noexcept nogil:
         cdef:
             int N = datum.shape[0], D = datum.shape[1]
             int n, d
@@ -189,14 +188,15 @@ cdef class IdentityFeature(CythonFeature):
 
 
 cdef class ResampleFeature(CythonFeature):
-    """ Extracts features from a sequential datum.
+    """Extract features from a sequential datum.
 
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions).
 
     The features being extracted are the points of the sequence once resampled.
     This is useful for metrics requiring a constant number of points for all
-     streamlines.
+    streamlines.
+
     """
     def __init__(ResampleFeature self, cnp.npy_intp nb_points):
         super(ResampleFeature, self).__init__(is_order_invariant=False)
@@ -205,17 +205,17 @@ cdef class ResampleFeature(CythonFeature):
         if nb_points <= 0:
             raise ValueError("ResampleFeature: `nb_points` must be strictly positive: {0}".format(nb_points))
 
-    cdef Shape c_infer_shape(ResampleFeature self, Data2D datum) nogil except *:
+    cdef Shape c_infer_shape(ResampleFeature self, Data2D datum) noexcept nogil:
         cdef Shape shape = shape_from_memview(datum)
         shape.dims[0] = self.nb_points
         return shape
 
-    cdef void c_extract(ResampleFeature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(ResampleFeature self, Data2D datum, Data2D out) noexcept nogil:
         c_set_number_of_points(datum, out)
 
 
 cdef class CenterOfMassFeature(CythonFeature):
-    """ Extracts features from a sequential datum.
+    """Extract features from a sequential datum.
 
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions).
@@ -226,17 +226,17 @@ cdef class CenterOfMassFeature(CythonFeature):
     def __init__(CenterOfMassFeature self):
         super(CenterOfMassFeature, self).__init__(is_order_invariant=True)
 
-    cdef Shape c_infer_shape(CenterOfMassFeature self, Data2D datum) nogil except *:
-        cdef Shape shape
+    cdef Shape c_infer_shape(CenterOfMassFeature self, Data2D datum) noexcept nogil:
+        cdef Shape shape = shape_from_memview(datum)
         shape.ndim = 2
         shape.dims[0] = 1
         shape.dims[1] = datum.shape[1]
         shape.size = datum.shape[1]
         return shape
 
-    cdef void c_extract(CenterOfMassFeature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(CenterOfMassFeature self, Data2D datum, Data2D out) noexcept nogil:
         cdef int N = datum.shape[0], D = datum.shape[1]
-        cdef int i, d
+        cdef cnp.npy_intp i, d
 
         for d in range(D):
             out[0, d] = 0
@@ -250,26 +250,27 @@ cdef class CenterOfMassFeature(CythonFeature):
 
 
 cdef class MidpointFeature(CythonFeature):
-    """ Extracts features from a sequential datum.
+    r"""Extract features from a sequential datum.
 
     A sequence of N-dimensional points is represented as a 2D array with
     shape (nb_points, nb_dimensions).
 
     The feature being extracted consists of one N-dimensional point representing
-    the middle point of the sequence (i.e. `nb_points//2`th point).
+    the middle point of the sequence (i.e. `nb_points//2` th point).
+
     """
     def __init__(MidpointFeature self):
         super(MidpointFeature, self).__init__(is_order_invariant=False)
 
-    cdef Shape c_infer_shape(MidpointFeature self, Data2D datum) nogil except *:
-        cdef Shape shape
+    cdef Shape c_infer_shape(MidpointFeature self, Data2D datum) noexcept nogil:
+        cdef Shape shape = shape_from_memview(datum)
         shape.ndim = 2
         shape.dims[0] = 1
         shape.dims[1] = datum.shape[1]
         shape.size = datum.shape[1]
         return shape
 
-    cdef void c_extract(MidpointFeature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(MidpointFeature self, Data2D datum, Data2D out) noexcept nogil:
         cdef:
             int N = datum.shape[0], D = datum.shape[1]
             int mid = N/2
@@ -291,15 +292,15 @@ cdef class ArcLengthFeature(CythonFeature):
     def __init__(ArcLengthFeature self):
         super(ArcLengthFeature, self).__init__(is_order_invariant=True)
 
-    cdef Shape c_infer_shape(ArcLengthFeature self, Data2D datum) nogil except *:
-        cdef Shape shape
+    cdef Shape c_infer_shape(ArcLengthFeature self, Data2D datum) noexcept nogil:
+        cdef Shape shape = shape_from_memview(datum)
         shape.ndim = 2
         shape.dims[0] = 1
         shape.dims[1] = 1
         shape.size = 1
         return shape
 
-    cdef void c_extract(ArcLengthFeature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(ArcLengthFeature self, Data2D datum, Data2D out) noexcept nogil:
         out[0, 0] = c_length(datum)
 
 
@@ -316,15 +317,15 @@ cdef class VectorOfEndpointsFeature(CythonFeature):
     def __init__(VectorOfEndpointsFeature self):
         super(VectorOfEndpointsFeature, self).__init__(is_order_invariant=False)
 
-    cdef Shape c_infer_shape(VectorOfEndpointsFeature self, Data2D datum) nogil except *:
-        cdef Shape shape
+    cdef Shape c_infer_shape(VectorOfEndpointsFeature self, Data2D datum) noexcept nogil:
+        cdef Shape shape = shape_from_memview(datum)
         shape.ndim = 2
         shape.dims[0] = 1
         shape.dims[1] = datum.shape[1]
         shape.size = datum.shape[1]
         return shape
 
-    cdef void c_extract(VectorOfEndpointsFeature self, Data2D datum, Data2D out) nogil except *:
+    cdef void c_extract(VectorOfEndpointsFeature self, Data2D datum, Data2D out) noexcept nogil:
         cdef:
             int N = datum.shape[0], D = datum.shape[1]
             int d
@@ -357,7 +358,7 @@ cpdef infer_shape(Feature feature, data):
         return []
 
     shapes = []
-    cdef int i
+    cdef cnp.npy_intp i
     for i in range(0, len(data)):
         datum = data[i] if data[i].flags.writeable else data[i].astype(np.float32)
         shapes.append(shape2tuple(feature.c_infer_shape(datum)))
@@ -394,7 +395,7 @@ cpdef extract(Feature feature, data):
     shapes = infer_shape(feature, data)
     features = [np.empty(shape, dtype=np.float32) for shape in shapes]
 
-    cdef int i
+    cdef cnp.npy_intp i
     for i in range(len(data)):
         datum = data[i] if data[i].flags.writeable else data[i].astype(np.float32)
         feature.c_extract(datum, features[i])

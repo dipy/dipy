@@ -35,8 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
-Utilities to support special Python descriptors [1,2], in particular the use of
-a useful pattern for properties we call 'one time properties'.  These are
+Utilities to support special Python descriptors [1]_, [2]_ in particular the use
+of a useful pattern for properties we call 'one time properties'.  These are
 object attributes which are declared as properties, but become regular
 attributes once they've been read the first time.  They can thus be evaluated
 later in the object's life cycle, but once evaluated they become normal, static
@@ -48,19 +48,19 @@ to their 'untriggered' state.
 
 References
 ----------
-[1] How-To Guide for Descriptors, Raymond
-Hettinger. http://users.rcn.com/python/download/Descriptor.htm
+.. [1] How-To Guide for Descriptors, Raymond
+   Hettinger. http://users.rcn.com/python/download/Descriptor.htm
 
-[2] Python data model, http://docs.python.org/reference/datamodel.html
+.. [2] Python data model, https://docs.python.org/reference/datamodel.html
 """
-from __future__ import division, print_function, absolute_import
 
-#-----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
 # Classes and Functions
-#-----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 
-class ResetMixin(object):
+class ResetMixin:
     """A Mixin class to add a .reset() method to users of OneTimeProperty.
 
     By default, auto attributes once computed, become static.  If they happen
@@ -142,11 +142,12 @@ class ResetMixin(object):
                 delattr(self, mname)
 
 
-class OneTimeProperty(object):
+class OneTimeProperty:
     """A descriptor to make special properties that become normal attributes.
 
     This is meant to be used mostly by the auto_attr decorator in this module.
     """
+
     def __init__(self, func):
         """Create a OneTimeProperty instance.
 
@@ -190,7 +191,7 @@ def auto_attr(func):
 
     Examples
     --------
-    >>> class MagicProp(object):
+    >>> class MagicProp:
     ...     @auto_attr
     ...     def a(self):
     ...         return 99
@@ -202,13 +203,6 @@ def auto_attr(func):
     99
     >>> 'a' in x.__dict__
     True
+
     """
     return OneTimeProperty(func)
-
-
-#-----------------------------------------------------------------------------
-# Deprecated API
-#-----------------------------------------------------------------------------
-
-# For backwards compatibility
-setattr_on_read = auto_attr

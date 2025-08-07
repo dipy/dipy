@@ -1,28 +1,34 @@
-import operator
-import numpy as np
-from time import time
 from abc import ABCMeta, abstractmethod
+import operator
+from time import time
 
-from dipy.segment.metric import Metric
-from dipy.segment.metric import ResampleFeature
-from dipy.segment.metric import AveragePointwiseEuclideanMetric
-from dipy.segment.metric import MinimumAverageDirectFlipMetric
-from dipy.tracking.streamline import set_number_of_points, nbytes
+import numpy as np
+
+from dipy.segment.featurespeed import ResampleFeature
+from dipy.segment.metricspeed import (
+    AveragePointwiseEuclideanMetric,
+    Metric,
+    MinimumAverageDirectFlipMetric,
+)
+from dipy.testing.decorators import warning_for_keywords
+from dipy.tracking.streamline import nbytes, set_number_of_points
+from dipy.utils.logging import logger
 
 
 class Identity:
-    """ Provides identity indexing functionality.
+    """Provides identity indexing functionality.
 
     This can replace any class supporting indexing used for referencing
     (e.g. list, tuple). Indexing an instance of this class will return the
     index provided instead of the element. It does not support slicing.
     """
+
     def __getitem__(self, idx):
         return idx
 
 
-class Cluster(object):
-    """ Provides functionalities for interacting with a cluster.
+class Cluster:
+    """Provides functionalities for interacting with a cluster.
 
     Useful container to retrieve index of elements grouped together. If
     a reference to the data is provided to `cluster_map`, elements will
@@ -32,9 +38,9 @@ class Cluster(object):
     ----------
     cluster_map : `ClusterMap` object
         Reference to the set of clusters this cluster is being part of.
-    id : int
+    id : int, optional
         Id of this cluster in its associated `cluster_map` object.
-    refdata : list (optional)
+    refdata : list, optional
         Actual elements that clustered indices refer to.
 
     Notes
@@ -42,7 +48,11 @@ class Cluster(object):
     A cluster does not contain actual data but instead knows how to
     retrieve them using its `ClusterMap` object.
     """
-    def __init__(self, id=0, indices=None, refdata=Identity()):
+
+    @warning_for_keywords()
+    def __init__(self, *, id=0, indices=None, refdata=None):
+        if refdata is None:
+            refdata = Identity()
         self.id = id
         self.refdata = refdata
         self.indices = indices if indices is not None else []
@@ -51,7 +61,7 @@ class Cluster(object):
         return len(self.indices)
 
     def __getitem__(self, idx):
-        """ Gets element(s) through indexing.
+        """Gets element(s) through indexing.
 
         If a reference to the data was provided (via refdata property)
         elements will be returned instead of their index.
@@ -68,14 +78,14 @@ class Cluster(object):
 
             When `idx` is either a slice or a list, returns a list of elements.
         """
-        if isinstance(idx, int) or isinstance(idx, np.integer):
+        if isinstance(idx, (int, np.integer)):
             return self.refdata[self.indices[idx]]
-        elif type(idx) is slice:
+        elif isinstance(idx, slice):
             return [self.refdata[i] for i in self.indices[idx]]
-        elif type(idx) is list:
+        elif isinstance(idx, list):
             return [self[i] for i in idx]
 
-        msg = "Index must be a int or a slice! Not '{0}'".format(type(idx))
+        msg = f"Index must be a int or a slice! Not '{type(idx)}'"
         raise TypeError(msg)
 
     def __iter__(self):
@@ -85,7 +95,7 @@ class Cluster(object):
         return "[" + ", ".join(map(str, self.indices)) + "]"
 
     def __repr__(self):
-        return "Cluster(" + str(self) + ")"
+        return f"Cluster({str(self)})"
 
     def __eq__(self, other):
         return isinstance(other, Cluster) and self.indices == other.indices
@@ -97,7 +107,7 @@ class Cluster(object):
         raise TypeError("Cannot compare Cluster objects.")
 
     def assign(self, *indices):
-        """ Assigns indices to this cluster.
+        """Assigns indices to this cluster.
 
         Parameters
         ----------
@@ -108,7 +118,7 @@ class Cluster(object):
 
 
 class ClusterCentroid(Cluster):
-    """ Provides functionalities for interacting with a cluster.
+    """Provides functionalities for interacting with a cluster.
 
     Useful container to retrieve the indices of elements grouped together and
     the cluster's centroid. If a reference to the data is provided to
@@ -119,9 +129,9 @@ class ClusterCentroid(Cluster):
     ----------
     cluster_map : `ClusterMapCentroid` object
         Reference to the set of clusters this cluster is being part of.
-    id : int
+    id : int, optional
         Id of this cluster in its associated `cluster_map` object.
-    refdata : list (optional)
+    refdata : list, optional
         Actual elements that clustered indices refer to.
 
     Notes
@@ -130,18 +140,23 @@ class ClusterCentroid(Cluster):
     retrieve them using its `ClusterMapCentroid` object.
     """
 
-    def __init__(self, centroid, id=0, indices=None, refdata=Identity()):
-        super(ClusterCentroid, self).__init__(id, indices, refdata)
+    @warning_for_keywords()
+    def __init__(self, centroid, *, id=0, indices=None, refdata=None):
+        if refdata is None:
+            refdata = Identity()
+        super(ClusterCentroid, self).__init__(id=id, indices=indices, refdata=refdata)
         self.centroid = centroid.copy()
         self.new_centroid = centroid.copy()
 
     def __eq__(self, other):
-        return (isinstance(other, ClusterCentroid) and
-                np.all(self.centroid == other.centroid) and
-                super(ClusterCentroid, self).__eq__(other))
+        return (
+            isinstance(other, ClusterCentroid)
+            and np.all(self.centroid == other.centroid)
+            and super(ClusterCentroid, self).__eq__(other)
+        )
 
     def assign(self, id_datum, features):
-        """ Assigns a data point to this cluster.
+        """Assigns a data point to this cluster.
 
         Parameters
         ----------
@@ -151,11 +166,11 @@ class ClusterCentroid(Cluster):
             Data point's features to modify this cluster's centroid.
         """
         N = len(self)
-        self.new_centroid = ((self.new_centroid * N) + features) / (N+1.)
+        self.new_centroid = ((self.new_centroid * N) + features) / (N + 1.0)
         super(ClusterCentroid, self).assign(id_datum)
 
     def update(self):
-        """ Update centroid of this cluster.
+        """Update centroid of this cluster.
 
         Returns
         -------
@@ -167,8 +182,8 @@ class ClusterCentroid(Cluster):
         return converged
 
 
-class ClusterMap(object):
-    """ Provides functionalities for interacting with clustering outputs.
+class ClusterMap:
+    """Provides functionalities for interacting with clustering outputs.
 
     Useful container to create, remove, retrieve and filter clusters.
     If `refdata` is given, elements will be returned instead of their
@@ -179,7 +194,11 @@ class ClusterMap(object):
     refdata : list
         Actual elements that clustered indices refer to.
     """
-    def __init__(self, refdata=Identity()):
+
+    @warning_for_keywords()
+    def __init__(self, *, refdata=None):
+        if refdata is None:
+            refdata = Identity()
         self._clusters = []
         self.refdata = refdata
 
@@ -204,7 +223,7 @@ class ClusterMap(object):
         return len(self.clusters)
 
     def __getitem__(self, idx):
-        """ Gets cluster(s) through indexing.
+        """Gets cluster(s) through indexing.
 
         Parameters
         ----------
@@ -214,17 +233,16 @@ class ClusterMap(object):
         Returns
         -------
         `Cluster` object(s)
-            When `idx` is a int, returns a single `Cluster` object.
+            When `idx` is an int, returns a single `Cluster` object.
 
             When `idx`is either a slice, list or boolean array, returns
             a list of `Cluster` objects.
         """
-        if isinstance(idx, np.ndarray) and idx.dtype == np.bool:
-            return [self.clusters[i]
-                    for i, take_it in enumerate(idx) if take_it]
-        elif type(idx) is slice:
+        if isinstance(idx, np.ndarray) and idx.dtype == bool:
+            return [self.clusters[i] for i, take_it in enumerate(idx) if take_it]
+        elif isinstance(idx, slice):
             return [self.clusters[i] for i in range(*idx.indices(len(self)))]
-        elif type(idx) is list:
+        elif isinstance(idx, list):
             return [self.clusters[i] for i in idx]
 
         return self.clusters[idx]
@@ -236,10 +254,10 @@ class ClusterMap(object):
         return "[" + ", ".join(map(str, self)) + "]"
 
     def __repr__(self):
-        return "ClusterMap(" + str(self) + ")"
+        return f"ClusterMap({str(self)})"
 
     def _richcmp(self, other, op):
-        """ Compares this cluster map with another cluster map or an integer.
+        """Compares this cluster map with another cluster map or an integer.
 
         Two `ClusterMap` objects are equal if they contain the same clusters.
         When comparing a `ClusterMap` object with an integer, the comparison
@@ -263,20 +281,25 @@ class ClusterMap(object):
         """
         if isinstance(other, ClusterMap):
             if op is operator.eq:
-                return isinstance(other, ClusterMap) \
-                    and len(self) == len(other) \
+                return (
+                    isinstance(other, ClusterMap)
+                    and len(self) == len(other)
                     and self.clusters == other.clusters
+                )
             elif op is operator.ne:
                 return not self == other
 
             raise NotImplementedError(
-                "Can only check if two ClusterMap instances are equal or not.")
+                "Can only check if two ClusterMap instances are equal or not."
+            )
 
         elif isinstance(other, int):
             return np.array([op(len(cluster), other) for cluster in self])
 
-        msg = ("ClusterMap only supports comparison with a int or another"
-               " instance of Clustermap.")
+        msg = (
+            "ClusterMap only supports comparison with a int or another"
+            " instance of Clustermap."
+        )
         raise NotImplementedError(msg)
 
     def __eq__(self, other):
@@ -298,7 +321,7 @@ class ClusterMap(object):
         return self._richcmp(other, operator.ge)
 
     def add_cluster(self, *clusters):
-        """ Adds one or multiple clusters to this cluster map.
+        """Adds one or multiple clusters to this cluster map.
 
         Parameters
         ----------
@@ -310,7 +333,7 @@ class ClusterMap(object):
             cluster.refdata = self.refdata
 
     def remove_cluster(self, *clusters):
-        """ Remove one or multiple clusters from this cluster map.
+        """Remove one or multiple clusters from this cluster map.
 
         Parameters
         ----------
@@ -321,15 +344,15 @@ class ClusterMap(object):
             self.clusters.remove(cluster)
 
     def clear(self):
-        """ Remove all clusters from this cluster map. """
+        """Remove all clusters from this cluster map."""
         del self.clusters[:]
 
     def size(self):
-        """ Gets number of clusters contained in this cluster map. """
+        """Gets number of clusters contained in this cluster map."""
         return len(self)
 
     def clusters_sizes(self):
-        """ Gets the size of every cluster contained in this cluster map.
+        """Gets the size of every cluster contained in this cluster map.
 
         Returns
         -------
@@ -339,7 +362,7 @@ class ClusterMap(object):
         return list(map(len, self))
 
     def get_large_clusters(self, min_size):
-        """ Gets clusters which contains at least `min_size` elements.
+        """Gets clusters which contains at least `min_size` elements.
 
         Parameters
         ----------
@@ -354,7 +377,7 @@ class ClusterMap(object):
         return self[self >= min_size]
 
     def get_small_clusters(self, max_size):
-        """ Gets clusters which contains at most `max_size` elements.
+        """Gets clusters which contains at most `max_size` elements.
 
         Parameters
         ----------
@@ -370,10 +393,10 @@ class ClusterMap(object):
 
 
 class ClusterMapCentroid(ClusterMap):
-    """ Provides functionalities for interacting with clustering outputs
+    """Provides functionalities for interacting with clustering outputs
     that have centroids.
 
-    Allows to retrieve easely the centroid of every cluster. Also, it is
+    Allows to retrieve easily the centroid of every cluster. Also, it is
     a useful container to create, remove, retrieve and filter clusters.
     If `refdata` is given, elements will be returned instead of their
     index when using `ClusterCentroid` objects.
@@ -383,17 +406,19 @@ class ClusterMapCentroid(ClusterMap):
     refdata : list
         Actual elements that clustered indices refer to.
     """
+
     @property
     def centroids(self):
         return [cluster.centroid for cluster in self.clusters]
 
 
-class Clustering(object):
+class Clustering:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def cluster(self, data, ordering=None):
-        """ Clusters `data`.
+    @warning_for_keywords()
+    def cluster(self, data, *, ordering=None):
+        """Clusters `data`.
 
         Subclasses will perform their clustering algorithm here.
 
@@ -414,36 +439,40 @@ class Clustering(object):
 
 
 class QuickBundles(Clustering):
-    r""" Clusters streamlines using QuickBundles [Garyfallidis12]_.
+    r"""Clusters streamlines using QuickBundles.
 
-    Given a list of streamlines, the QuickBundles algorithm sequentially
-    assigns each streamline to its closest bundle in $\mathcal{O}(Nk)$ where
-    $N$ is the number of streamlines and $k$ is the final number of bundles.
-    If for a given streamline its closest bundle is farther than `threshold`,
-    a new bundle is created and the streamline is assigned to it except if the
-    number of bundles has already exceeded `max_nb_clusters`.
+    Given a list of streamlines, the QuickBundles algorithm
+    :footcite:p:`Garyfallidis2012a` sequentially assigns each streamline to its
+    closest bundle in $\mathcal{O}(Nk)$ where $N$ is the number of streamlines
+    and $k$ is the final number of bundles. If for a given streamline its
+    closest bundle is farther than `threshold`, a new bundle is created and the
+    streamline is assigned to it except if the number of bundles has already
+    exceeded `max_nb_clusters`.
 
     Parameters
     ----------
     threshold : float
         The maximum distance from a bundle for a streamline to be still
         considered as part of it.
-    metric : str or `Metric` object (optional)
+    metric : str or `Metric` object, optional
         The distance metric to use when comparing two streamlines. By default,
-        the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
-        used and streamlines are automatically resampled so they have
-        12 points.
-    max_nb_clusters : int
+        the Minimum average Direct-Flip (MDF) distance
+        :footcite:p:`Garyfallidis2012a` is used and streamlines are
+        automatically resampled so they have 12 points.
+    max_nb_clusters : int, optional
         Limits the creation of bundles.
 
     Examples
     --------
     >>> from dipy.segment.clustering import QuickBundles
-    >>> from dipy.data import get_data
-    >>> from nibabel import trackvis as tv
-    >>> streams, hdr = tv.read(get_data('fornix'))
-    >>> streamlines = [i[0] for i in streams]
-    >>> # Segment fornix with a treshold of 10mm and streamlines resampled
+    >>> from dipy.data import get_fnames
+    >>> from dipy.io.streamline import load_tractogram
+    >>> from dipy.tracking.streamline import Streamlines
+    >>> fname = get_fnames(name='fornix')
+    >>> fornix = load_tractogram(fname, 'same',
+    ...                          bbox_valid_check=False).streamlines
+    >>> streamlines = Streamlines(fornix)
+    >>> # Segment fornix with a threshold of 10mm and streamlines resampled
     >>> # to 12 points.
     >>> qb = QuickBundles(threshold=10.)
     >>> clusters = qb.cluster(streamlines)
@@ -453,8 +482,8 @@ class QuickBundles(Clustering):
     [61, 191, 47, 1]
     >>> # Resampling streamlines differently is done explicitly as follows.
     >>> # Note this has an impact on the speed and the accuracy (tradeoff).
-    >>> from dipy.segment.metric import ResampleFeature
-    >>> from dipy.segment.metric import AveragePointwiseEuclideanMetric
+    >>> from dipy.segment.featurespeed import ResampleFeature
+    >>> from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
     >>> feature = ResampleFeature(nb_points=2)
     >>> metric = AveragePointwiseEuclideanMetric(feature)
     >>> qb = QuickBundles(threshold=10., metric=metric)
@@ -467,13 +496,14 @@ class QuickBundles(Clustering):
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
+    .. footbibliography::
     """
 
-    def __init__(self, threshold, metric="MDF_12points",
-                 max_nb_clusters=np.iinfo('i4').max):
+    @warning_for_keywords()
+    def __init__(self, threshold, *, metric="MDF_12points", max_nb_clusters=None):
+        if max_nb_clusters is None:
+            max_nb_clusters = np.iinfo("i4").max
+
         self.threshold = threshold
         self.max_nb_clusters = max_nb_clusters
 
@@ -486,10 +516,11 @@ class QuickBundles(Clustering):
             feature = ResampleFeature(nb_points=12)
             self.metric = AveragePointwiseEuclideanMetric(feature)
         else:
-            raise ValueError("Unknown metric: {0}".format(metric))
+            raise ValueError(f"Unknown metric: {metric}")
 
-    def cluster(self, streamlines, ordering=None):
-        """ Clusters `streamlines` into bundles.
+    @warning_for_keywords()
+    def cluster(self, streamlines, *, ordering=None):
+        """Clusters `streamlines` into bundles.
 
         Performs quickbundles algorithm using predefined metric and threshold.
 
@@ -497,7 +528,7 @@ class QuickBundles(Clustering):
         ----------
         streamlines : list of 2D arrays
             Each 2D array represents a sequence of 3D points (points, 3).
-        ordering : iterable of indices
+        ordering : iterable of indices, optional
             Specifies the order in which data points will be clustered.
 
         Returns
@@ -506,17 +537,23 @@ class QuickBundles(Clustering):
             Result of the clustering.
         """
         from dipy.segment.clustering_algorithms import quickbundles
-        cluster_map = quickbundles(streamlines, self.metric,
-                                   threshold=self.threshold,
-                                   max_nb_clusters=self.max_nb_clusters,
-                                   ordering=ordering)
+
+        cluster_map = quickbundles(
+            streamlines,
+            self.metric,
+            threshold=self.threshold,
+            max_nb_clusters=self.max_nb_clusters,
+            ordering=ordering,
+        )
 
         cluster_map.refdata = streamlines
         return cluster_map
 
 
 class QuickBundlesX(Clustering):
-    r""" Clusters streamlines using QuickBundlesX.
+    r"""Clusters streamlines using QuickBundlesX.
+
+    See :footcite:p:`Garyfallidis2016` for further details about the method.
 
     Parameters
     ----------
@@ -524,25 +561,19 @@ class QuickBundlesX(Clustering):
         Thresholds to use for each clustering layer. A threshold represents the
         maximum distance from a cluster for a streamline to be still considered
         as part of it.
-    metric : str or `Metric` object (optional)
+    metric : str or `Metric` object, optional
         The distance metric to use when comparing two streamlines. By default,
-        the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
-        used and streamlines are automatically resampled so they have 12
-        points.
+        the Minimum average Direct-Flip (MDF) distance
+        :footcite:p:`Garyfallidis2012a` is used and streamlines are
+        automatically resampled so they have 12 points.
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
-
-    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential
-                        clustering of millions of streamlines in multiple
-                        levels of detail at record execution time. Proceedings
-                        of the, International Society of Magnetic Resonance
-                        in Medicine (ISMRM). Singapore, 4187, 2016.
+    .. footbibliography::
     """
-    def __init__(self, thresholds, metric="MDF_12points"):
+
+    @warning_for_keywords()
+    def __init__(self, thresholds, *, metric="MDF_12points"):
         self.thresholds = thresholds
 
         if isinstance(metric, MinimumAverageDirectFlipMetric):
@@ -554,10 +585,11 @@ class QuickBundlesX(Clustering):
             feature = ResampleFeature(nb_points=12)
             self.metric = AveragePointwiseEuclideanMetric(feature)
         else:
-            raise ValueError("Unknown metric: {0}".format(metric))
+            raise ValueError(f"Unknown metric: {metric}")
 
-    def cluster(self, streamlines, ordering=None):
-        """ Clusters `streamlines` into bundles.
+    @warning_for_keywords()
+    def cluster(self, streamlines, *, ordering=None):
+        """Clusters `streamlines` into bundles.
 
         Performs QuickbundleX using a predefined metric and thresholds.
 
@@ -574,15 +606,17 @@ class QuickBundlesX(Clustering):
             Result of the clustering.
         """
         from dipy.segment.clustering_algorithms import quickbundlesx
-        tree = quickbundlesx(streamlines, self.metric,
-                             thresholds=self.thresholds,
-                             ordering=ordering)
+
+        tree = quickbundlesx(
+            streamlines, self.metric, thresholds=self.thresholds, ordering=ordering
+        )
         tree.refdata = streamlines
         return tree
 
 
 class TreeCluster(ClusterCentroid):
-    def __init__(self, threshold, centroid, indices=None):
+    @warning_for_keywords()
+    def __init__(self, threshold, centroid, *, indices=None):
         super(TreeCluster, self).__init__(centroid=centroid, indices=indices)
         self.threshold = threshold
         self.parent = None
@@ -595,6 +629,9 @@ class TreeCluster(ClusterCentroid):
     @property
     def is_leaf(self):
         return len(self.children) == 0
+
+    def return_indices(self):
+        return self.children
 
 
 class TreeClusterMap(ClusterMap):
@@ -661,19 +698,25 @@ class TreeClusterMap(ClusterMap):
         return clusters
 
 
-def qbx_and_merge(streamlines, thresholds,
-                  nb_pts=20, select_randomly=None, rng=None, verbose=True):
-    """ Run QuickBundlesX and then run again on the centroids of the last layer
+@warning_for_keywords()
+def qbx_and_merge(
+    streamlines, thresholds, *, nb_pts=20, select_randomly=None, rng=None, verbose=False
+):
+    """Run QuickBundlesX and then run again on the centroids of the last layer.
 
     Running again QuickBundles at a layer has the effect of merging
-    some of the clusters that maybe originally devided because of branching.
+    some of the clusters that may be originally divided because of branching.
     This function help obtain a result at a QuickBundles quality but with
     QuickBundlesX speed. The merging phase has low cost because it is applied
     only on the centroids rather than the entire dataset.
 
+    See :footcite:p:`Garyfallidis2012a` and :footcite:p:`Garyfallidis2016` for
+    further details about the method.
+
     Parameters
     ----------
     streamlines : Streamlines
+        Streamlines.
     thresholds : sequence
         List of distance thresholds for QuickBundlesX.
     nb_pts : int
@@ -681,10 +724,10 @@ def qbx_and_merge(streamlines, thresholds,
     select_randomly : int
         Randomly select a specific number of streamlines. If None all the
         streamlines are used.
-    rng : RandomState
-        If None then RandomState is initialized internally.
-    verbose : bool
-        If True print information in stdout.
+    rng : numpy.random.Generator
+        If None then generator is initialized internally.
+    verbose : bool, optional.
+        If True, log information. Default False.
 
     Returns
     -------
@@ -693,54 +736,43 @@ def qbx_and_merge(streamlines, thresholds,
 
     References
     ----------
-    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                        tractography simplification, Frontiers in Neuroscience,
-                        vol 6, no 175, 2012.
-
-    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential
-                        clustering of millions of streamlines in multiple
-                        levels of detail at record execution time. Proceedings
-                        of the, International Society of Magnetic Resonance
-                        in Medicine (ISMRM). Singapore, 4187, 2016.
+    .. footbibliography::
     """
-    if verbose:
-        t = time()
+    t = time()
     len_s = len(streamlines)
     if select_randomly is None:
         select_randomly = len_s
 
     if rng is None:
-        rng = np.random.RandomState()
-    indices = rng.choice(len_s, min(select_randomly, len_s),
-                         replace=False)
-    sample_streamlines = set_number_of_points(streamlines, nb_pts)
+        rng = np.random.default_rng()
+    indices = rng.choice(len_s, min(select_randomly, len_s), replace=False)
+    sample_streamlines = set_number_of_points(streamlines, nb_points=nb_pts)
 
     if verbose:
-        print(' Resampled to {} points'.format(nb_pts))
-        print(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
-        print(' Duration of resampling is %0.3f sec.' % (time() - t,))
-        print(' QBX phase starting...')
+        logger.info(f" Resampled to {nb_pts} points")
+        logger.info(f" Size is {nbytes(sample_streamlines):0.3f} MB")
+        logger.info(f" Duration of resampling is {time() - t:0.3f} s")
+        logger.info(" QBX phase starting...")
 
-    qbx = QuickBundlesX(thresholds,
-                        metric=AveragePointwiseEuclideanMetric())
+    qbx = QuickBundlesX(thresholds, metric=AveragePointwiseEuclideanMetric())
 
-    if verbose:
-        t1 = time()
+    t1 = time()
     qbx_clusters = qbx.cluster(sample_streamlines, ordering=indices)
 
     if verbose:
-        print(' Merging phase starting ...')
+        logger.info(" Merging phase starting ...")
 
-    qbx_merge = QuickBundlesX([thresholds[-1]],
-                              metric=AveragePointwiseEuclideanMetric())
+    qbx_merge = QuickBundlesX(
+        [thresholds[-1]], metric=AveragePointwiseEuclideanMetric()
+    )
 
     final_level = len(thresholds)
     len_qbx_fl = len(qbx_clusters.get_clusters(final_level))
     qbx_ordering_final = rng.choice(len_qbx_fl, len_qbx_fl, replace=False)
 
     qbx_merged_cluster_map = qbx_merge.cluster(
-        qbx_clusters.get_clusters(final_level).centroids,
-        ordering=qbx_ordering_final).get_clusters(1)
+        qbx_clusters.get_clusters(final_level).centroids, ordering=qbx_ordering_final
+    ).get_clusters(1)
 
     qbx_cluster_map = qbx_clusters.get_clusters(final_level)
 
@@ -754,9 +786,8 @@ def qbx_and_merge(streamlines, thresholds,
     merged_cluster_map.refdata = streamlines
 
     if verbose:
-        print(' QuickBundlesX time for %d random streamlines'
-              % (select_randomly,))
+        logger.info(f" QuickBundlesX time for {select_randomly} random streamlines")
 
-        print(' Duration %0.3f sec. \n' % (time() - t1,))
+        logger.info(f" Duration {time() - t1:0.3f} s\n")
 
     return merged_cluster_map

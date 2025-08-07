@@ -3,7 +3,7 @@
 import numpy as np
 cimport cython
 cimport numpy as cnp
-from .fused_types cimport floating, number
+from dipy.align.fused_types cimport floating
 cdef extern from "dpy_math.h" nogil:
     int dpy_isinf(double)
     double sqrt(double)
@@ -14,7 +14,7 @@ cdef extern from "dpy_math.h" nogil:
 @cython.cdivision(True)
 cdef void _solve_2d_symmetric_positive_definite(double* A, double* y,
                                                 double det,
-                                                double* out) nogil:
+                                                double* out) noexcept nogil:
     r"""Solves a 2-variable symmetric positive-definite linear system
 
     The C implementation of the public-facing Python function
@@ -167,7 +167,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
     r"""One iteration of a large linear system solver for 2D SSD registration
 
     Performs one iteration at one level of the Multi-resolution Gauss-Seidel
-    solver proposed by Bruhn and Weickert [Bruhn05].
+    solver proposed by :footcite:t:`Bruhn2005`.
 
     Parameters
     ----------
@@ -196,10 +196,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
+    .. footbibliography::
     """
     ftype = np.asarray(delta_field).dtype
     cdef:
@@ -214,8 +211,9 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
         double* d = [0, 0]
         double* y = [0, 0]
         double* A = [0, 0, 0]
-        int yi
+
         double xx, yy, opt, nrm2, delta, sigmasq, max_displacement, det
+
     max_displacement = 0
 
     with nogil:
@@ -223,8 +221,8 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
         for r in range(nrows):
             for c in range(ncols):
                 delta = delta_field[r, c]
-                sigmasq = sigmasq_field[r, c] if sigmasq_field != None else 1
-                if(target is None):
+                sigmasq = sigmasq_field[r, c] if sigmasq_field is not None else 1
+                if target is None:
                     b[0] = delta_field[r, c] * grad[r, c, 0]
                     b[1] = delta_field[r, c] * grad[r, c, 1]
                 else:
@@ -235,10 +233,10 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                 y[1] = 0
                 for k in range(NUM_NEIGHBORS):
                     dr = r + dRow[k]
-                    if((dr < 0) or (dr >= nrows)):
+                    if dr < 0 or dr >= nrows:
                         continue
                     dc = c + dCol[k]
-                    if((dc < 0) or (dc >= ncols)):
+                    if dc < 0 or dc >= ncols:
                         continue
                     nn += 1
                     y[0] += displacement_field[dr, dc, 0]
@@ -251,17 +249,17 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                     xx -= displacement_field[r, c, 0]
                     yy -= displacement_field[r, c, 1]
                     opt = xx * xx + yy * yy
-                    if(max_displacement < opt):
+                    if max_displacement < opt:
                         max_displacement = opt
                 else:
                     A[0] = grad[r, c, 0] ** 2 + sigmasq * lambda_param * nn
                     A[1] = grad[r, c, 0] * grad[r, c, 1]
                     A[2] = grad[r, c, 1] ** 2 + sigmasq * lambda_param * nn
                     det = A[0] * A[2] - A[1] * A[1]
-                    if(det < 1e-9):
+                    if det < 1e-9:
                         nrm2 = (grad[r, c, 0] ** 2 +
                                 grad[r, c, 1] ** 2)
-                        if(nrm2 < 1e-9):
+                        if nrm2 < 1e-9:
                             displacement_field[r, c, 0] = 0
                             displacement_field[r, c, 1] = 0
                         else:
@@ -276,7 +274,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                         displacement_field[r, c, 0] = d[0]
                         displacement_field[r, c, 1] = d[1]
                         opt = xx * xx + yy * yy
-                        if(max_displacement < opt):
+                        if max_displacement < opt:
                             max_displacement = opt
     return sqrt(max_displacement)
 
@@ -339,7 +337,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
     r"""One iteration of a large linear system solver for 3D SSD registration
 
     Performs one iteration at one level of the Multi-resolution Gauss-Seidel
-    solver proposed by Bruhn and Weickert [Bruhn05].
+    solver proposed by :footcite:t:`Bruhn2005`.
 
     Parameters
     ----------
@@ -368,10 +366,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
+    .. footbibliography::
     """
     ftype = np.asarray(delta_field).dtype
     cdef:
@@ -401,8 +396,8 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                     g[1] = grad[s, r, c, 1]
                     g[2] = grad[s, r, c, 2]
                     delta = delta_field[s, r, c]
-                    sigmasq = sigmasq_field[s, r, c] if sigmasq_field != None else 1
-                    if(target is None):
+                    sigmasq = sigmasq_field[s, r, c] if sigmasq_field is not None else 1
+                    if target is None:
                         b[0] = delta_field[s, r, c] * g[0]
                         b[1] = delta_field[s, r, c] * g[1]
                         b[2] = delta_field[s, r, c] * g[2]
@@ -416,13 +411,13 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                     y[2] = 0
                     for k in range(NUM_NEIGHBORS):
                         ds = s + dSlice[k]
-                        if((ds < 0) or (ds >= nslices)):
+                        if ds < 0 or ds >= nslices:
                             continue
                         dr = r + dRow[k]
-                        if((dr < 0) or (dr >= nrows)):
+                        if dr < 0 or dr >= nrows:
                             continue
                         dc = c + dCol[k]
-                        if((dc < 0) or (dc >= ncols)):
+                        if dc < 0 or dc >= ncols:
                             continue
                         nn += 1
                         y[0] += disp[ds, dr, dc, 0]
@@ -439,11 +434,11 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                         yy -= disp[s, r, c, 1]
                         zz -= disp[s, r, c, 2]
                         opt = xx * xx + yy * yy + zz * zz
-                        if(max_displacement < opt):
+                        if max_displacement < opt:
                             max_displacement = opt
-                    elif(sigmasq < 1e-9):
+                    elif sigmasq < 1e-9:
                             nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
-                            if(nrm2 < 1e-9):
+                            if nrm2 < 1e-9:
                                 disp[s, r, c, 0] = 0
                                 disp[s, r, c, 1] = 0
                                 disp[s, r, c, 2] = 0
@@ -460,7 +455,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                                                                 g, y, tau, d)
                         if is_singular == 1:
                             nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
-                            if(nrm2 < 1e-9):
+                            if nrm2 < 1e-9:
                                 disp[s, r, c, 0] = 0
                                 disp[s, r, c, 1] = 0
                                 disp[s, r, c, 2] = 0
@@ -475,7 +470,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                         disp[s, r, c, 1] = d[1]
                         disp[s, r, c, 2] = d[2]
                         opt = xx * xx + yy * yy + zz * zz
-                        if(max_displacement < opt):
+                        if max_displacement < opt:
                             max_displacement = opt
     return sqrt(max_displacement)
 
@@ -539,7 +534,7 @@ def compute_residual_displacement_field_ssd_3d(
 
     Computes the residual displacement field corresponding to the current
     displacement field (given by 'disp') in the Multi-resolution
-    Gauss-Seidel solver proposed by Bruhn and Weickert [Bruhn].
+    Gauss-Seidel solver proposed by :footcite:t:`Bruhn2005`.
 
     Parameters
     ----------
@@ -570,10 +565,7 @@ def compute_residual_displacement_field_ssd_3d(
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
+    .. footbibliography::
     """
     ftype = np.asarray(delta_field).dtype
     cdef:
@@ -583,7 +575,7 @@ def compute_residual_displacement_field_ssd_3d(
         int* dCol = [0,  0, 1, 0, -1, 0]
         double* b = [0, 0, 0]
         double* y = [0, 0, 0]
-        int yi
+
         cnp.npy_intp nslices = delta_field.shape[0]
         cnp.npy_intp nrows = delta_field.shape[1]
         cnp.npy_intp ncols = delta_field.shape[2]
@@ -598,8 +590,8 @@ def compute_residual_displacement_field_ssd_3d(
             for r in range(nrows):
                 for c in range(ncols):
                     delta = delta_field[s, r, c]
-                    sigmasq = sigmasq_field[s, r, c] if sigmasq_field != None else 1
-                    if(target is None):
+                    sigmasq = sigmasq_field[s, r, c] if sigmasq_field is not None else 1
+                    if target is None:
                         b[0] = delta * gradient_field[s, r, c, 0]
                         b[1] = delta * gradient_field[s, r, c, 1]
                         b[2] = delta * gradient_field[s, r, c, 2]
@@ -612,13 +604,13 @@ def compute_residual_displacement_field_ssd_3d(
                     y[2] = 0
                     for k in range(NUM_NEIGHBORS):
                         ds = s + dSlice[k]
-                        if((ds < 0) or (ds >= nslices)):
+                        if ds < 0 or ds >= nslices:
                             continue
                         dr = r + dRow[k]
-                        if((dr < 0) or (dr >= nrows)):
+                        if dr < 0 or dr >= nrows:
                             continue
                         dc = c + dCol[k]
-                        if((dc < 0) or (dc >= ncols)):
+                        if dc < 0 or dc >= ncols:
                             continue
                         y[0] += (disp[s, r, c, 0] - disp[ds, dr, dc, 0])
                         y[1] += (disp[s, r, c, 1] - disp[ds, dr, dc, 1])
@@ -654,7 +646,7 @@ cpdef compute_residual_displacement_field_ssd_2d(
 
     Computes the residual displacement field corresponding to the current
     displacement field in the Multi-resolution Gauss-Seidel solver proposed by
-    Bruhn and Weickert [Bruhn05].
+    :footcite:t:`Bruhn2005`.
 
     Parameters
     ----------
@@ -685,10 +677,7 @@ cpdef compute_residual_displacement_field_ssd_2d(
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
+    .. footbibliography::
     """
     ftype = np.asarray(delta_field).dtype
     cdef:
@@ -697,7 +686,7 @@ cpdef compute_residual_displacement_field_ssd_2d(
         int* dCol = [0, 1, 0, -1]
         double* b = [0, 0]
         double* y = [0, 0]
-        int yi
+
         cnp.npy_intp nrows = delta_field.shape[0]
         cnp.npy_intp ncols = delta_field.shape[1]
         double delta, sigmasq, dotP
@@ -710,7 +699,7 @@ cpdef compute_residual_displacement_field_ssd_2d(
         for r in range(nrows):
             for c in range(ncols):
                 delta = delta_field[r, c]
-                sigmasq = sigmasq_field[r, c] if sigmasq_field != None else 1
+                sigmasq = sigmasq_field[r, c] if sigmasq_field is not None else 1
                 if target is None:
                     b[0] = delta * gradient_field[r, c, 0]
                     b[1] = delta * gradient_field[r, c, 1]
@@ -722,10 +711,10 @@ cpdef compute_residual_displacement_field_ssd_2d(
                 nn=0
                 for k in range(NUM_NEIGHBORS):
                     dr = r + dRow[k]
-                    if((dr < 0) or (dr >= nrows)):
+                    if dr < 0 or dr >= nrows:
                         continue
                     dc = c + dCol[k]
-                    if((dc < 0) or (dc >= ncols)):
+                    if dc < 0 or dc >= ncols:
                         continue
                     y[0] += (d[r, c, 0] - d[dr, dc, 0])
                     y[1] += (d[r, c, 1] - d[dr, dc, 1])
@@ -755,7 +744,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
     r"""Demons step for 2D SSD-driven registration
 
     Computes the demons step for SSD-driven registration
-    ( eq. 4 in [Bruhn05] )
+    ( eq. 4 in :footcite:p:`Bruhn2005` )
 
     Parameters
     ----------
@@ -766,7 +755,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
         the gradient of the moving image
     sigma_sq_x : float
         parameter controlling the amount of regularization. It corresponds to
-        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[Vercauteren09]
+        $\sigma_x^2$ in algorithm 1 of :footcite:t:`Vercauteren2009`.
     out : array, shape (R, C, 2)
         if None, a new array will be created to store the demons step. Otherwise
         the provided array will be used.
@@ -781,14 +770,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
-    [Vercauteren09] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N.
-                    (2009). Diffeomorphic demons: efficient non-parametric
-                    image registration. NeuroImage, 45(1 Suppl), S61-72.
-                    doi:10.1016/j.neuroimage.2008.10.040
+    .. footbibliography::
     """
     cdef:
         cnp.npy_intp nr = delta_field.shape[0]
@@ -829,7 +811,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
     r"""Demons step for 3D SSD-driven registration
 
     Computes the demons step for SSD-driven registration
-    ( eq. 4 in [Bruhn05] )
+    ( eq. 4 in :footcite:p:`Bruhn2005` )
 
     Parameters
     ----------
@@ -840,7 +822,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
         the gradient of the moving image
     sigma_sq_x : float
         parameter controlling the amount of regularization. It corresponds to
-        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[Vercauteren09]
+        $\sigma_x^2$ in algorithm 1 of :footcite:t:`Vercauteren2009`.
     out : array, shape (S, R, C, 2)
         if None, a new array will be created to store the demons step. Otherwise
         the provided array will be used.
@@ -855,14 +837,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
 
     References
     ----------
-    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining highest accuracy with real-time
-              performance", 10th IEEE International Conference on Computer
-              Vision, 2005. ICCV 2005.
-    [Vercauteren09] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N.
-                    (2009). Diffeomorphic demons: efficient non-parametric
-                    image registration. NeuroImage, 45(1 Suppl), S61-72.
-                    doi:10.1016/j.neuroimage.2008.10.040
+    .. footbibliography::
     """
     cdef:
         cnp.npy_intp ns = delta_field.shape[0]

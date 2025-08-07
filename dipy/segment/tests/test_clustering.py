@@ -1,26 +1,30 @@
+import copy
+import itertools
 
 import numpy as np
-import itertools
-import copy
+from numpy.testing import assert_array_equal, assert_equal, assert_raises
 
-from dipy.segment.clustering import Cluster, ClusterCentroid
-from dipy.segment.clustering import ClusterMap, ClusterMapCentroid
-from dipy.segment.clustering import Clustering
-
-from nose.tools import assert_equal, assert_true, assert_false
-from numpy.testing import assert_array_equal, assert_raises, run_module_suite
-from dipy.testing import assert_arrays_equal
-
+from dipy.segment.clustering import (
+    Cluster,
+    ClusterCentroid,
+    ClusterMap,
+    ClusterMapCentroid,
+    Clustering,
+)
+from dipy.testing import assert_arrays_equal, assert_false, assert_true
+from dipy.testing.decorators import set_random_number_generator
 
 features_shape = (1, 10)
 dtype = "float32"
 features = np.ones(features_shape, dtype=dtype)
 
-data = [np.arange(3*5, dtype=dtype).reshape((-1, 3)),
-        np.arange(3*10, dtype=dtype).reshape((-1, 3)),
-        np.arange(3*15, dtype=dtype).reshape((-1, 3)),
-        np.arange(3*17, dtype=dtype).reshape((-1, 3)),
-        np.arange(3*20, dtype=dtype).reshape((-1, 3))]
+data = [
+    np.arange(3 * 5, dtype=dtype).reshape((-1, 3)),
+    np.arange(3 * 10, dtype=dtype).reshape((-1, 3)),
+    np.arange(3 * 15, dtype=dtype).reshape((-1, 3)),
+    np.arange(3 * 17, dtype=dtype).reshape((-1, 3)),
+    np.arange(3 * 20, dtype=dtype).reshape((-1, 3)),
+]
 
 expected_clusters = [[2, 4], [0, 3], [1]]
 
@@ -34,12 +38,14 @@ def test_cluster_attributes_and_constructor():
     assert_equal(len(cluster), 0)
 
     # Duplicate
-    assert_equal(cluster, Cluster(cluster.id,
-                                  cluster.indices,
-                                  cluster.refdata))
-    assert_false(cluster != Cluster(cluster.id,
-                                    cluster.indices,
-                                    cluster.refdata))
+    assert_true(
+        cluster
+        == Cluster(id=cluster.id, indices=cluster.indices, refdata=cluster.refdata)
+    )
+    assert_false(
+        cluster
+        != Cluster(id=cluster.id, indices=cluster.indices, refdata=cluster.refdata)
+    )
 
     # Invalid comparison
     assert_raises(TypeError, cluster.__cmp__, cluster)
@@ -62,9 +68,10 @@ def test_cluster_assign():
     assert_array_equal(cluster.indices, indices)
 
 
-def test_cluster_iter():
+@set_random_number_generator()
+def test_cluster_iter(rng):
     indices = list(range(len(data)))
-    np.random.shuffle(indices)  # None trivial ordering
+    rng.shuffle(indices)  # None trivial ordering
 
     # Test without specifying refdata
     cluster = Cluster()
@@ -77,9 +84,10 @@ def test_cluster_iter():
     assert_arrays_equal(list(cluster), [data[i] for i in indices])
 
 
-def test_cluster_getitem():
+@set_random_number_generator()
+def test_cluster_getitem(rng):
     indices = list(range(len(data)))
-    np.random.shuffle(indices)  # None trivial ordering
+    rng.shuffle(indices)  # None trivial ordering
     advanced_indices = indices + [0, 1, 2, -1, -2, -3]
 
     # Test without specifying refdata in ClusterMap
@@ -91,12 +99,13 @@ def test_cluster_getitem():
         assert_equal(cluster[i], indices[i])
 
     # Test advanced indexing
-    assert_array_equal(cluster[advanced_indices],
-                       [indices[i] for i in advanced_indices])
+    assert_array_equal(
+        cluster[advanced_indices], [indices[i] for i in advanced_indices]
+    )
 
     # Test index out of bounds
     assert_raises(IndexError, cluster.__getitem__, len(cluster))
-    assert_raises(IndexError, cluster.__getitem__, -len(cluster)-1)
+    assert_raises(IndexError, cluster.__getitem__, -len(cluster) - 1)
 
     # Test slicing and negative indexing
     assert_equal(cluster[-1], indices[-1])
@@ -116,12 +125,13 @@ def test_cluster_getitem():
         assert_array_equal(cluster[i], data[indices[i]])
 
     # Test advanced indexing
-    assert_arrays_equal(cluster[advanced_indices],
-                       [data[indices[i]] for i in advanced_indices])
+    assert_arrays_equal(
+        cluster[advanced_indices], [data[indices[i]] for i in advanced_indices]
+    )
 
     # Test index out of bounds
     assert_raises(IndexError, cluster.__getitem__, len(cluster))
-    assert_raises(IndexError, cluster.__getitem__, -len(cluster)-1)
+    assert_raises(IndexError, cluster.__getitem__, -len(cluster) - 1)
 
     # Test slicing and negative indexing
     assert_array_equal(cluster[-1], data[indices[-1]])
@@ -134,22 +144,21 @@ def test_cluster_getitem():
     assert_raises(TypeError, cluster.__getitem__, "wrong")
 
 
-def test_cluster_str_and_repr():
+@set_random_number_generator()
+def test_cluster_str_and_repr(rng):
     indices = list(range(len(data)))
-    np.random.shuffle(indices)  # None trivial ordering
+    rng.shuffle(indices)  # None trivial ordering
 
     # Test without specifying refdata in ClusterMap
     cluster = Cluster()
     cluster.assign(*indices)
     assert_equal(str(cluster), "[" + ", ".join(map(str, indices)) + "]")
-    assert_equal(repr(cluster),
-                 "Cluster([" + ", ".join(map(str, indices)) + "])")
+    assert_equal(repr(cluster), "Cluster([" + ", ".join(map(str, indices)) + "])")
 
     # Test with specifying refdata in ClusterMap
     cluster.refdata = data
     assert_equal(str(cluster), "[" + ", ".join(map(str, indices)) + "]")
-    assert_equal(repr(cluster),
-                 "Cluster([" + ", ".join(map(str, indices)) + "])")
+    assert_equal(repr(cluster), "Cluster([" + ", ".join(map(str, indices)) + "])")
 
 
 def test_cluster_centroid_attributes_and_constructor():
@@ -163,9 +172,9 @@ def test_cluster_centroid_attributes_and_constructor():
     assert_equal(len(cluster), 0)
 
     # Duplicate
-    assert_equal(cluster, ClusterCentroid(centroid))
+    assert_true(cluster == ClusterCentroid(centroid))
     assert_false(cluster != ClusterCentroid(centroid))
-    assert_false(cluster == ClusterCentroid(centroid+1))
+    assert_false(cluster == ClusterCentroid(centroid + 1))
 
     # Invalid comparison
     assert_raises(TypeError, cluster.__cmp__, cluster)
@@ -178,10 +187,10 @@ def test_cluster_centroid_assign():
     indices = []
     centroid = np.zeros(features_shape, dtype=dtype)
     for idx in range(1, 10):
-        cluster.assign(idx, (idx+1) * features)
+        cluster.assign(idx, (idx + 1) * features)
         cluster.update()
         indices.append(idx)
-        centroid = (centroid * (idx-1) + (idx+1) * features) / idx
+        centroid = (centroid * (idx - 1) + (idx + 1) * features) / idx
         assert_equal(len(cluster), idx)
         assert_equal(type(cluster.indices), list)
         assert_array_equal(cluster.indices, indices)
@@ -189,15 +198,16 @@ def test_cluster_centroid_assign():
         assert_array_equal(cluster.centroid, centroid)
 
 
-def test_cluster_centroid_iter():
+@set_random_number_generator()
+def test_cluster_centroid_iter(rng):
     indices = list(range(len(data)))
-    np.random.shuffle(indices)  # None trivial ordering
+    rng.shuffle(indices)  # None trivial ordering
 
     # Test without specifying refdata in ClusterCentroid
     centroid = np.zeros(features_shape)
     cluster = ClusterCentroid(centroid)
     for idx in indices:
-        cluster.assign(idx, (idx+1)*features)
+        cluster.assign(idx, (idx + 1) * features)
 
     assert_array_equal(cluster.indices, indices)
     assert_array_equal(list(cluster), indices)
@@ -207,28 +217,30 @@ def test_cluster_centroid_iter():
     assert_arrays_equal(list(cluster), [data[i] for i in indices])
 
 
-def test_cluster_centroid_getitem():
+@set_random_number_generator()
+def test_cluster_centroid_getitem(rng):
     indices = list(range(len(data)))
-    np.random.shuffle(indices)  # None trivial ordering
+    rng.shuffle(indices)  # None trivial ordering
     advanced_indices = indices + [0, 1, 2, -1, -2, -3]
 
     # Test without specifying refdata in ClusterCentroid
     centroid = np.zeros(features_shape)
     cluster = ClusterCentroid(centroid)
     for idx in indices:
-        cluster.assign(idx, (idx+1)*features)
+        cluster.assign(idx, (idx + 1) * features)
 
     # Test indexing
     for i in advanced_indices:
         assert_equal(cluster[i], indices[i])
 
     # Test advanced indexing
-    assert_array_equal(cluster[advanced_indices],
-                       [indices[i] for i in advanced_indices])
+    assert_array_equal(
+        cluster[advanced_indices], [indices[i] for i in advanced_indices]
+    )
 
     # Test index out of bounds
     assert_raises(IndexError, cluster.__getitem__, len(cluster))
-    assert_raises(IndexError, cluster.__getitem__, -len(cluster)-1)
+    assert_raises(IndexError, cluster.__getitem__, -len(cluster) - 1)
 
     # Test slicing and negative indexing
     assert_equal(cluster[-1], indices[-1])
@@ -245,12 +257,13 @@ def test_cluster_centroid_getitem():
         assert_array_equal(cluster[i], data[indices[i]])
 
     # Test advanced indexing
-    assert_arrays_equal(cluster[advanced_indices],
-                        [data[indices[i]] for i in advanced_indices])
+    assert_arrays_equal(
+        cluster[advanced_indices], [data[indices[i]] for i in advanced_indices]
+    )
 
     # Test index out of bounds
     assert_raises(IndexError, cluster.__getitem__, len(cluster))
-    assert_raises(IndexError, cluster.__getitem__, -len(cluster)-1)
+    assert_raises(IndexError, cluster.__getitem__, -len(cluster) - 1)
 
     # Test slicing and negative indexing
     assert_array_equal(cluster[-1], data[indices[-1]])
@@ -266,7 +279,7 @@ def test_cluster_map_attributes_and_constructor():
     assert_array_equal(clusters.clusters, [])
     assert_array_equal(list(clusters), [])
     assert_raises(IndexError, clusters.__getitem__, 0)
-    assert_raises(AttributeError, setattr, clusters, 'clusters', [])
+    assert_raises(AttributeError, setattr, clusters, "clusters", [])
 
 
 def test_cluster_map_add_cluster():
@@ -285,17 +298,19 @@ def test_cluster_map_add_cluster():
 
         clusters.add_cluster(cluster)
         assert_equal(type(cluster), Cluster)
-        assert_equal(len(clusters), i+1)
-        assert_equal(cluster, clusters[-1])
+        assert_equal(len(clusters), i + 1)
+        assert_true(cluster == clusters[-1])
 
-    assert_array_equal(list(itertools.chain(*clusters)),
-                       list(itertools.chain(*list_of_indices)))
+    assert_array_equal(
+        list(itertools.chain(*clusters)), list(itertools.chain(*list_of_indices))
+    )
 
     # Test adding multiple clusters at once.
     clusters = ClusterMap()
     clusters.add_cluster(*list_of_cluster_objects)
-    assert_array_equal(list(itertools.chain(*clusters)),
-                       list(itertools.chain(*list_of_indices)))
+    assert_array_equal(
+        list(itertools.chain(*clusters)), list(itertools.chain(*list_of_indices))
+    )
 
 
 def test_cluster_map_remove_cluster():
@@ -314,8 +329,9 @@ def test_cluster_map_remove_cluster():
 
     clusters.remove_cluster(cluster2)
     assert_equal(len(clusters), 2)
-    assert_array_equal(list(itertools.chain(*clusters)),
-                       list(itertools.chain(*[cluster1, cluster3])))
+    assert_array_equal(
+        list(itertools.chain(*clusters)), list(itertools.chain(*[cluster1, cluster3]))
+    )
     assert_equal(clusters[0], cluster1)
     assert_equal(clusters[1], cluster3)
 
@@ -357,20 +373,19 @@ def test_cluster_map_clear():
     assert_array_equal(list(itertools.chain(*clusters)), [])
 
 
-def test_cluster_map_iter():
-    rng = np.random.RandomState(42)
+@set_random_number_generator(42)
+def test_cluster_map_iter(rng):
     nb_clusters = 11
 
     # Test without specifying refdata in ClusterMap
     cluster_map = ClusterMap()
     clusters = []
-    for i in range(nb_clusters):
-        new_cluster = Cluster(indices=rng.randint(0, len(data), size=10))
+    for _ in range(nb_clusters):
+        new_cluster = Cluster(indices=rng.integers(0, len(data), size=10))
         cluster_map.add_cluster(new_cluster)
         clusters.append(new_cluster)
 
-    assert_true(all([c1 is c2 for c1, c2 in zip(cluster_map.clusters,
-                                                clusters)]))
+    assert_true(all(c1 is c2 for c1, c2 in zip(cluster_map.clusters, clusters)))
     assert_array_equal(cluster_map, clusters)
     assert_array_equal(cluster_map.clusters, clusters)
     assert_array_equal(cluster_map, [cluster.indices for cluster in clusters])
@@ -385,10 +400,11 @@ def test_cluster_map_iter():
     assert_array_equal(cluster_map, [cluster.indices for cluster in clusters])
 
 
-def test_cluster_map_getitem():
+@set_random_number_generator()
+def test_cluster_map_getitem(rng):
     nb_clusters = 11
     indices = list(range(nb_clusters))
-    np.random.shuffle(indices)  # None trivial ordering
+    rng.shuffle(indices)  # None trivial ordering
     advanced_indices = indices + [0, 1, 2, -1, -2, -3]
 
     cluster_map = ClusterMap()
@@ -400,19 +416,22 @@ def test_cluster_map_getitem():
 
     # Test indexing
     for i in advanced_indices:
-        assert_equal(cluster_map[i], clusters[i])
+        assert_true(cluster_map[i] == clusters[i])
 
     # Test advanced indexing
-    assert_arrays_equal(cluster_map[advanced_indices],
-                        [clusters[i] for i in advanced_indices])
+    assert_arrays_equal(
+        cluster_map[advanced_indices], [clusters[i] for i in advanced_indices]
+    )
 
     # Test index out of bounds
     assert_raises(IndexError, cluster_map.__getitem__, len(clusters))
-    assert_raises(IndexError, cluster_map.__getitem__, -len(clusters)-1)
+    assert_raises(IndexError, cluster_map.__getitem__, -len(clusters) - 1)
 
     # Test slicing and negative indexing
     assert_equal(cluster_map[-1], clusters[-1])
-    assert_array_equal(cluster_map[::2], clusters[::2])
+    assert_array_equal(
+        np.array(cluster_map[::2], dtype=object), np.array(clusters[::2], dtype=object)
+    )
     assert_arrays_equal(cluster_map[::-1], clusters[::-1])
     assert_arrays_equal(cluster_map[:-1], clusters[:-1])
     assert_arrays_equal(cluster_map[1:], clusters[1:])
@@ -429,7 +448,7 @@ def test_cluster_map_str_and_repr():
 
     expected_str = "[" + ", ".join(map(str, clusters)) + "]"
     assert_equal(str(cluster_map), expected_str)
-    assert_equal(repr(cluster_map), "ClusterMap(" + expected_str + ")")
+    assert_equal(repr(cluster_map), f"ClusterMap({expected_str})")
 
 
 def test_cluster_map_size():
@@ -442,11 +461,11 @@ def test_cluster_map_size():
     assert_equal(cluster_map.size(), nb_clusters)
 
 
-def test_cluster_map_clusters_sizes():
-    rng = np.random.RandomState(42)
+@set_random_number_generator(42)
+def test_cluster_map_clusters_sizes(rng):
     nb_clusters = 11
     # Generate random indices
-    indices = [range(rng.randint(1, 10)) for _ in range(nb_clusters)]
+    indices = [range(rng.integers(1, 10)) for _ in range(nb_clusters)]
 
     cluster_map = ClusterMap()
     clusters = [Cluster(indices=indices[i]) for i in range(nb_clusters)]
@@ -455,31 +474,30 @@ def test_cluster_map_clusters_sizes():
     assert_equal(cluster_map.clusters_sizes(), list(map(len, indices)))
 
 
-def test_cluster_map_get_small_and_large_clusters():
-    rng = np.random.RandomState(42)
+@set_random_number_generator(42)
+def test_cluster_map_get_small_and_large_clusters(rng):
     nb_clusters = 11
     cluster_map = ClusterMap()
 
     # Randomly generate small clusters
-    indices = [rng.randint(0, 10, size=i) for i in range(1, nb_clusters+1)]
+    indices = [rng.integers(0, 10, size=i) for i in range(1, nb_clusters + 1)]
     small_clusters = [Cluster(indices=indices[i]) for i in range(nb_clusters)]
     cluster_map.add_cluster(*small_clusters)
 
     # Randomly generate small clusters
-    indices = [rng.randint(0, 10, size=i)
-               for i in range(nb_clusters+1, 2*nb_clusters+1)]
+    indices = [
+        rng.integers(0, 10, size=i) for i in range(nb_clusters + 1, 2 * nb_clusters + 1)
+    ]
     large_clusters = [Cluster(indices=indices[i]) for i in range(nb_clusters)]
     cluster_map.add_cluster(*large_clusters)
 
-    assert_equal(len(cluster_map), 2*nb_clusters)
-    assert_equal(len(cluster_map.get_small_clusters(nb_clusters)),
-                 len(small_clusters))
-    assert_arrays_equal(cluster_map.get_small_clusters(nb_clusters),
-                        small_clusters)
-    assert_equal(len(cluster_map.get_large_clusters(nb_clusters+1)),
-                 len(large_clusters))
-    assert_arrays_equal(cluster_map.get_large_clusters(nb_clusters+1),
-                        large_clusters)
+    assert_equal(len(cluster_map), 2 * nb_clusters)
+    assert_equal(len(cluster_map.get_small_clusters(nb_clusters)), len(small_clusters))
+    assert_arrays_equal(cluster_map.get_small_clusters(nb_clusters), small_clusters)
+    assert_equal(
+        len(cluster_map.get_large_clusters(nb_clusters + 1)), len(large_clusters)
+    )
+    assert_arrays_equal(cluster_map.get_large_clusters(nb_clusters + 1), large_clusters)
 
 
 def test_cluster_map_comparison_with_int():
@@ -540,7 +558,9 @@ def test_cluster_map_comparison_with_object():
 
     # Comparison with another ClusterMap object
     other_cluster_map = copy.deepcopy(cluster_map)
-    assert_equal(cluster_map, other_cluster_map)
+    assert_equal(
+        np.array(cluster_map, dtype=object), np.array(other_cluster_map, dtype=object)
+    )
 
     other_cluster_map = copy.deepcopy(cluster_map)
     assert_false(cluster_map != other_cluster_map)
@@ -555,7 +575,7 @@ def test_cluster_map_comparison_with_object():
 def test_cluster_map_centroid_attributes_and_constructor():
     clusters = ClusterMapCentroid()
     assert_array_equal(clusters.centroids, [])
-    assert_raises(AttributeError, setattr, clusters, 'centroids', [])
+    assert_raises(AttributeError, setattr, clusters, "centroids", [])
 
 
 def test_cluster_map_centroid_add_cluster():
@@ -566,43 +586,46 @@ def test_cluster_map_centroid_add_cluster():
         cluster = ClusterCentroid(centroid=np.zeros_like(features))
 
         centroids.append(np.zeros_like(features))
-        for id_data in range(2*i):
-            centroids[-1] = ((centroids[-1]*id_data + (id_data+1)*features) /
-                             (id_data+1))
-            cluster.assign(id_data, (id_data+1)*features)
+        for id_data in range(2 * i):
+            centroids[-1] = (centroids[-1] * id_data + (id_data + 1) * features) / (
+                id_data + 1
+            )
+            cluster.assign(id_data, (id_data + 1) * features)
             cluster.update()
 
         clusters.add_cluster(cluster)
         assert_array_equal(cluster.centroid, centroids[-1])
         assert_equal(type(cluster), ClusterCentroid)
-        assert_equal(cluster, clusters[-1])
+        assert_true(cluster == clusters[-1])
 
     assert_equal(type(clusters.centroids), list)
-    assert_array_equal(list(itertools.chain(*clusters.centroids)),
-                       list(itertools.chain(*centroids)))
+    assert_array_equal(
+        list(itertools.chain(*clusters.centroids)), list(itertools.chain(*centroids))
+    )
 
     # Check adding features of different sizes (shorter and longer)
-    features_shape_short = (1, features_shape[1]-3)
+    features_shape_short = (1, features_shape[1] - 3)
     features_too_short = np.ones(features_shape_short, dtype=dtype)
     assert_raises(ValueError, cluster.assign, 123, features_too_short)
 
-    features_shape_long = (1, features_shape[1]+3)
+    features_shape_long = (1, features_shape[1] + 3)
     features_too_long = np.ones(features_shape_long, dtype=dtype)
     assert_raises(ValueError, cluster.assign, 123, features_too_long)
 
 
-def test_cluster_map_centroid_remove_cluster():
+@set_random_number_generator()
+def test_cluster_map_centroid_remove_cluster(rng):
     clusters = ClusterMapCentroid()
 
-    centroid1 = np.random.rand(*features_shape).astype(dtype)
+    centroid1 = rng.random(features_shape).astype(dtype)
     cluster1 = ClusterCentroid(centroid1, indices=[1])
     clusters.add_cluster(cluster1)
 
-    centroid2 = np.random.rand(*features_shape).astype(dtype)
+    centroid2 = rng.random(features_shape).astype(dtype)
     cluster2 = ClusterCentroid(centroid2, indices=[1, 2])
     clusters.add_cluster(cluster2)
 
-    centroid3 = np.random.rand(*features_shape).astype(dtype)
+    centroid3 = rng.random(features_shape).astype(dtype)
     cluster3 = ClusterCentroid(centroid3, indices=[1, 2, 3])
     clusters.add_cluster(cluster3)
 
@@ -610,8 +633,9 @@ def test_cluster_map_centroid_remove_cluster():
 
     clusters.remove_cluster(cluster2)
     assert_equal(len(clusters), 2)
-    assert_array_equal(list(itertools.chain(*clusters)),
-                       list(itertools.chain(*[cluster1, cluster3])))
+    assert_array_equal(
+        list(itertools.chain(*clusters)), list(itertools.chain(*[cluster1, cluster3]))
+    )
     assert_array_equal(clusters.centroids, np.array([centroid1, centroid3]))
     assert_equal(clusters[0], cluster1)
     assert_equal(clusters[1], cluster3)
@@ -628,22 +652,21 @@ def test_cluster_map_centroid_remove_cluster():
     assert_array_equal(clusters.centroids, [])
 
 
-def test_cluster_map_centroid_iter():
-    rng = np.random.RandomState(42)
+@set_random_number_generator(42)
+def test_cluster_map_centroid_iter(rng):
     nb_clusters = 11
 
     cluster_map = ClusterMapCentroid()
     clusters = []
-    for i in range(nb_clusters):
+    for _ in range(nb_clusters):
         new_centroid = np.zeros_like(features)
-        new_cluster = ClusterCentroid(new_centroid,
-                                      indices=rng.randint(0, len(data),
-                                                          size=10))
+        new_cluster = ClusterCentroid(
+            new_centroid, indices=rng.integers(0, len(data), size=10)
+        )
         cluster_map.add_cluster(new_cluster)
         clusters.append(new_cluster)
 
-    assert_true(all([c1 is c2 for c1, c2 in
-                     zip(cluster_map.clusters, clusters)]))
+    assert_true(all(c1 is c2 for c1, c2 in zip(cluster_map.clusters, clusters)))
     assert_array_equal(cluster_map, clusters)
     assert_array_equal(cluster_map.clusters, clusters)
     assert_array_equal(cluster_map, [cluster.indices for cluster in clusters])
@@ -654,15 +677,16 @@ def test_cluster_map_centroid_iter():
         assert_arrays_equal(c1, [data[i] for i in c2.indices])
 
 
-def test_cluster_map_centroid_getitem():
+@set_random_number_generator()
+def test_cluster_map_centroid_getitem(rng):
     nb_clusters = 11
     indices = list(range(len(data)))
-    np.random.shuffle(indices)  # None trivial ordering
+    rng.shuffle(indices)  # None trivial ordering
     advanced_indices = indices + [0, 1, 2, -1, -2, -3]
 
     cluster_map = ClusterMapCentroid()
     clusters = []
-    for i in range(nb_clusters):
+    for _ in range(nb_clusters):
         centroid = np.zeros_like(features)
         cluster = ClusterCentroid(centroid)
         cluster.id = cluster_map.add_cluster(cluster)
@@ -670,18 +694,19 @@ def test_cluster_map_centroid_getitem():
 
     # Test indexing
     for i in advanced_indices:
-        assert_equal(cluster_map[i], clusters[i])
+        assert_true(cluster_map[i] == clusters[i])
 
     # Test advanced indexing
-    assert_arrays_equal(cluster_map[advanced_indices],
-                        [clusters[i] for i in advanced_indices])
+    assert_arrays_equal(
+        cluster_map[advanced_indices], [clusters[i] for i in advanced_indices]
+    )
 
     # Test index out of bounds
     assert_raises(IndexError, cluster_map.__getitem__, len(clusters))
-    assert_raises(IndexError, cluster_map.__getitem__, -len(clusters)-1)
+    assert_raises(IndexError, cluster_map.__getitem__, -len(clusters) - 1)
 
     # Test slicing and negative indexing
-    assert_equal(cluster_map[-1], clusters[-1])
+    assert_true(cluster_map[-1] == clusters[-1])
     assert_array_equal(cluster_map[::2], clusters[::2])
     assert_arrays_equal(cluster_map[::-1], clusters[::-1])
     assert_arrays_equal(cluster_map[:-1], clusters[:-1])
@@ -751,10 +776,6 @@ def test_subclassing_clustering():
             pass
 
     clustering_algo = SubClustering()
-    assert_raises(NotImplementedError,
-                  super(SubClustering, clustering_algo).cluster,
-                  None)
-
-
-if __name__ == '__main__':
-    run_module_suite()
+    assert_raises(
+        NotImplementedError, super(SubClustering, clustering_algo).cluster, None
+    )

@@ -2,6 +2,7 @@ cimport cython
 from cython.view cimport array as cvarray
 from libc.math cimport sqrt, exp
 import numpy as np
+cimport numpy as cnp
 
 __all__ = ['firdn', 'upfir', 'nlmeans_block']
 
@@ -38,15 +39,15 @@ def _upfir_vector(double[:] f, double[:] h, double[:] out):
     cdef double ss
     for x in range(outLen):
         limInf = _int_max(0, x - klen + 1)
-        if(limInf % 2 == 1):
+        if limInf % 2 == 1:
             limInf += 1
         limSup = _int_min(2 * (n - 1), x)
-        if(limSup % 2 == 1):
+        if limSup % 2 == 1:
             limSup -= 1
         ss = 0
         k = limInf
         ks = limInf // 2
-        while(k <= limSup):
+        while k <= limSup:
             ss += f[ks] * h[x - k]
             k += 2
             ks += 1
@@ -72,7 +73,7 @@ def _upfir_matrix(double[:, :] F, double[:] h, double[:, :] out):
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
-                         double[:, :, :] average, double weight) nogil:
+                         double[:, :, :] average, double weight) noexcept nogil:
     """
     Computes the weighted average of the patches in a blockwise manner
 
@@ -94,7 +95,6 @@ cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
 
     cdef int a, b, c, x_pos, y_pos, z_pos
     cdef int is_outside
-    cdef int count = 0
     cdef int neighborhoodsize = average.shape[0] // 2
     for a in range(average.shape[0]):
         for b in range(average.shape[1]):
@@ -103,13 +103,13 @@ cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
                 y_pos = y + b - neighborhoodsize
                 z_pos = z + c - neighborhoodsize
                 is_outside = 0
-                if ((x_pos < 0) or (x_pos >= ima.shape[1])):
+                if x_pos < 0 or x_pos >= ima.shape[1]:
                     is_outside = 1
-                if ((y_pos < 0) or (y_pos >= ima.shape[0])):
+                if y_pos < 0 or y_pos >= ima.shape[0]:
                     is_outside = 1
-                if ((z_pos < 0) or (z_pos >= ima.shape[2])):
+                if z_pos < 0 or z_pos >= ima.shape[2]:
                     is_outside = 1
-                if (is_outside == 1):
+                if is_outside == 1:
                     average[a, b, c] += weight * (ima[y, x, z]**2)
                 else:
                     average[a, b, c] += weight * (ima[y_pos, x_pos, z_pos]**2)
@@ -119,7 +119,7 @@ cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, int y,
-                       int z, double[:, :, :] average, double global_sum, double hh, int rician_int) nogil:
+                       int z, double[:, :, :] average, double global_sum, double hh, int rician_int) noexcept nogil:
 
     """
     Computes the final estimate of the denoised image
@@ -158,19 +158,19 @@ cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, i
                 x_pos = x + a - neighborhoodsize
                 y_pos = y + b - neighborhoodsize
                 z_pos = z + c - neighborhoodsize
-                if ((x_pos < 0) or (x_pos >= estimate.shape[1])):
+                if x_pos < 0 or x_pos >= estimate.shape[1]:
                     is_outside = 1
-                if ((y_pos < 0) or (y_pos >= estimate.shape[0])):
+                if y_pos < 0 or y_pos >= estimate.shape[0]:
                     is_outside = 1
-                if ((z_pos < 0) or (z_pos >= estimate.shape[2])):
+                if z_pos < 0 or z_pos >= estimate.shape[2]:
                     is_outside = 1
-                if (is_outside == 0):
+                if is_outside == 0:
                     value = estimate[y_pos, x_pos, z_pos]
-                    if (rician_int):
+                    if rician_int:
                         denoised_value = (average[a, b, c] / global_sum) - hh
                     else:
                         denoised_value = (average[a, b, c] / global_sum)
-                    if (denoised_value > 0):
+                    if denoised_value > 0:
                         denoised_value = sqrt(denoised_value)
                     else:
                         denoised_value = 0.0
@@ -207,7 +207,7 @@ cdef double _distance(double[:, :, :] image, int x, int y, int z,
     nz : integer
         nz coordinate of second patch's center
     block_radius : integer
-        block radius for which the distince is computed for
+        block radius for which the distance is computed for
     """
 
     cdef double acu, distancetotal
@@ -224,29 +224,29 @@ cdef double _distance(double[:, :, :] image, int x, int y, int z,
                 ni2 = nx + i
                 nj2 = ny + j
                 nk2 = nz + k
-                if(ni1 < 0):
+                if ni1 < 0:
                     ni1 = -ni1
-                if(nj1 < 0):
+                if nj1 < 0:
                     nj1 = -nj1
-                if(ni2 < 0):
+                if ni2 < 0:
                     ni2 = -ni2
-                if(nj2 < 0):
+                if nj2 < 0:
                     nj2 = -nj2
-                if(nk1 < 0):
+                if nk1 < 0:
                     nk1 = -nk1
-                if(nk2 < 0):
+                if nk2 < 0:
                     nk2 = -nk2
-                if(ni1 >= sx):
+                if ni1 >= sx:
                     ni1 = 2 * sx - ni1 - 1
-                if(nj1 >= sy):
+                if nj1 >= sy:
                     nj1 = 2 * sy - nj1 - 1
-                if(nk1 >= sz):
+                if nk1 >= sz:
                     nk1 = 2 * sz - nk1 - 1
-                if(ni2 >= sx):
+                if ni2 >= sx:
                     ni2 = 2 * sx - ni2 - 1
-                if(nj2 >= sy):
+                if nj2 >= sy:
                     nj2 = 2 * sy - nj2 - 1
-                if(nk2 >= sz):
+                if nk2 >= sz:
                     nk2 = 2 * sz - nk2 - 1
                 distancetotal += (image[nj1, ni1, nk1] -
                                   image[nj2, ni2, nk2])**2
@@ -347,7 +347,10 @@ cpdef upfir(double[:, :] image, double[:] h):
 @cython.wraparound(False)
 @cython.cdivision(True)
 def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, int block_radius, double h, int rician):
-    """Non-Local Means Denoising Using Blockwise Averaging
+    """Non-Local Means Denoising Using Blockwise Averaging.
+
+    See :footcite:p:`Coupe2008` and :footcite:p:`Coupe2012` for further details
+    about the method.
 
     Parameters
     ----------
@@ -378,14 +381,7 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
 
     References
     ----------
-    [1] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
-        "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
-        Resonance Images"
-        IEEE Transactions on Medical Imaging, 27(4):425-441, 2008
-
-    [2] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-        "Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
-        IET Image Processing, Institution of Engineering and Technology, 2011
+    .. footbibliography::
 
     """
 
@@ -402,7 +398,7 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
     cdef double[:, :, :] variances = np.zeros_like(image)
     cdef double[:, :, :] Estimate = np.zeros_like(image)
     cdef double[:, :, :] Label = np.zeros_like(image)
-    cdef int i, j, k, ni, nj, nk
+    cdef cnp.npy_intp i, j, k, ni, nj, nk
     cdef double t1, t2
     cdef double epsilon = 0.00001
     cdef double mu1 = 0.95
@@ -435,10 +431,9 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
                         for nk in range(k - patch_radius, k + patch_radius + 1):
                             for ni in range(i - patch_radius, i + patch_radius + 1):
                                 for nj in range(j - patch_radius, j + patch_radius + 1):
-                                    if((ni == i)and(nj == j)and(nk == k)):
+                                    if ni == i and nj == j and nk == k:
                                         continue
-                                    if ((ni < 0) or (nj < 0) or (nk < 0) or (
-                                            nj >= dims[0]) or (ni >= dims[1]) or (nk >= dims[2])):
+                                    if ni < 0 or nj < 0 or nk < 0 or nj >= dims[0] or ni >= dims[1] or nk >= dims[2]:
                                         continue
                                     if ((means[nj, ni, nk] <= epsilon) or (
                                             variances[nj, ni, nk] <= epsilon)):
@@ -446,18 +441,17 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
                                     t1 = (means[j, i, k]) / (means[nj, ni, nk])
                                     t2 = (variances[j, i, k]) / \
                                         (variances[nj, ni, nk])
-                                    if ((t1 > mu1) and (t1 < (1 / mu1)) and
-                                            (t2 > var1) and (t2 < (1 / var1))):
+                                    if mu1 < t1 < (1 / mu1) and var1 < t2 < (1 / var1):
                                         d = _distance(
                                             image, i, j, k, ni, nj, nk, block_radius)
                                         w = exp(-d / (h * h))
-                                        if(w > wmax):
+                                        if w > wmax:
                                             wmax = w
                                         _average_block(
                                             image, ni, nj, nk, average, w)
                                         totalWeight += w
 
-                        if(totalWeight != 0.0):
+                        if totalWeight != 0.0:
                             _value_block(Estimate, Label, i, j, k,
                                          average, totalWeight, hh, rician)
 
@@ -469,7 +463,7 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
                         fima[j, i, k] = 0
 
                     else:
-                        if(Label[j, i, k] == 0.0):
+                        if Label[j, i, k] == 0.0:
                             fima[j, i, k] = image[j, i, k]
                         else:
                             fima[j, i, k] = Estimate[j, i, k] / Label[j, i, k]

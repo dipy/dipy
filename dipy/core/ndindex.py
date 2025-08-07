@@ -1,5 +1,3 @@
-from __future__ import division, print_function, absolute_import
-
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
@@ -36,11 +34,10 @@ def ndindex(shape):
     else:
         x = as_strided(np.zeros(1), shape=shape, strides=np.zeros_like(shape))
         try:
-            ndi = np.nditer(x, flags=['multi_index', 'zerosize_ok'], order='C')
+            ndi = np.nditer(x, flags=["multi_index", "zerosize_ok"], order="C")
         except AttributeError:
             # nditer only available in numpy >= 1.6
-            for ix in np.ndindex(*shape):
-                yield ix
+            yield from np.ndindex(*shape)
         else:
             for _ in ndi:
                 yield ndi.multi_index

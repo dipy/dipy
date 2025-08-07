@@ -2,17 +2,15 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 
-cimport safe_openmp as openmp
 from safe_openmp cimport have_openmp
 from cython.parallel import parallel, prange, threadid
 
 from scipy.spatial import KDTree
 from scipy.interpolate import interp1d
-from math import sqrt, log
 
-from dipy.data import get_sphere
-from dipy.denoise.enhancement_kernel import EnhancementKernel
-from dipy.core.ndindex import ndindex
+from dipy.utils.logging import logger
+from dipy.utils.omp import determine_num_threads
+from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
 cdef class FBCMeasures:
 
@@ -31,6 +29,9 @@ cdef class FBCMeasures:
         """ Compute the fiber to bundle coherence measures for a set of
         streamlines.
 
+        See :footcite:p`Meesters2016b` and :footcite:p:`Portegies2015b` for
+        further details about the method.
+
         Parameters
         ----------
         streamlines : list
@@ -43,29 +44,25 @@ cdef class FBCMeasures:
             computation.
         max_windowsize : int
             The maximal window size used to calculate the average LFBC region
-        num_threads : int
-            Number of threads to use for OpenMP.
+        num_threads : int, optional
+            Number of threads to be used for OpenMP parallelization. If None
+            (default) the value of OMP_NUM_THREADS environment variable is used
+            if it is set, otherwise all available threads are used. If < 0 the
+            maximal number of threads minus |num_threads + 1| is used (enter -1
+            to use as many threads as possible). 0 raises an error.
         verbose : boolean
             Enable verbose mode.
 
         References
         ----------
-        [Meesters2016_HBM] S. Meesters, G. Sanguinetti, E. Garyfallidis,
-                           J. Portegies, P. Ossenblok, R. Duits. (2016) Cleaning
-                           output of tractography via fiber to bundle coherence,
-                           a new open source implementation. Human Brain Mapping
-                           conference 2016.
-        [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters,
-                         G.Girard, and R. Duits. (2015) Improving Fiber Alignment
-                         in HARDI by Combining Contextual PDE flow with
-                         Constrained Spherical Deconvolution. PLoS One.
+        .. footbibliography::
         """
         self.compute(streamlines,
-                     kernel,
-                     min_fiberlength,
-                     max_windowsize,
-                     num_threads,
-                     verbose)
+                 kernel,
+                 min_fiberlength=min_fiberlength,
+                 max_windowsize=max_windowsize,
+                 num_threads=num_threads,
+                 verbose=verbose)
 
     def get_points_rfbc_thresholded(self, threshold, emphasis=.5, verbose=False):
         """ Set a threshold on the RFBC to remove spurious fibers.
@@ -91,10 +88,10 @@ cdef class FBCMeasures:
             3) the relative fiber to bundle coherence (RFBC)
         """
         if verbose:
-            print "median RFBC: " + str(np.median(self.streamlines_rfbc))
-            print "mean RFBC: " + str(np.mean(self.streamlines_rfbc))
-            print "min RFBC: " + str(np.min(self.streamlines_rfbc))
-            print "max RFBC: " + str(np.max(self.streamlines_rfbc))
+            logger.info("median RFBC: " + str(np.median(self.streamlines_rfbc)))
+            logger.info("mean RFBC: " + str(np.mean(self.streamlines_rfbc)))
+            logger.info("min RFBC: " + str(np.min(self.streamlines_rfbc)))
+            logger.info("max RFBC: " + str(np.max(self.streamlines_rfbc)))
 
         # logarithmic transform of color values to emphasize spurious fibers
         minval = np.nanmin(self.streamlines_lfbc)
@@ -118,7 +115,7 @@ cdef class FBCMeasures:
         streamline_out = []
         color_out = []
         rfbc_out = []
-        for i in range((self.streamlines_rfbc).shape[0]):
+        for i in range(self.streamlines_rfbc.shape[0]):
             rfbc = self.streamlines_rfbc[i]
             lfbc = lfbc_log[i]
             if rfbc > threshold:
@@ -160,37 +157,36 @@ cdef class FBCMeasures:
             computation.
         max_windowsize : int
             The maximal window size used to calculate the average LFBC region
-        num_threads : int
-            Number of threads to use for OpenMP.
+        num_threads : int, optional
+            Number of threads to be used for OpenMP parallelization. If None
+            (default) the value of OMP_NUM_THREADS environment variable is used
+            if it is set, otherwise all available threads are used. If < 0 the
+            maximal number of threads minus |num_threads + 1| is used (enter -1
+            to use as many threads as possible). 0 raises an error.
         verbose : boolean
             Enable verbose mode.
         """
         cdef:
-            int num_fibers, max_length, dim
+            cnp.npy_intp num_fibers, max_length, dim
             double [:, :, :] streamlines
             int [:] streamlines_length
             double [:, :, :] streamlines_tangent
             int [:, :] streamlines_nearestp
             double [:, :] streamline_scores
-            double [:] tangent
-            int line_id, point_id
-            int line_id2, point_id2
+            cnp.npy_intp line_id = 0
+            cnp.npy_intp point_id = 0
+            cnp.npy_intp line_id2 = 0
+            cnp.npy_intp point_id2 = 0
+            cnp.npy_intp dims
             double score
             double [:] score_mp
             int [:] xd_mp, yd_mp, zd_mp
-            int xd, yd, zd, N, hn
+            cnp.npy_intp xd, yd, zd, N, hn
             double [:, :, :, :, ::1] lut
-            int threads_to_use = -1
-            int all_cores = openmp.omp_get_num_procs()
+            cnp.npy_intp threads_to_use = -1
 
-        if num_threads is not None:
-            threads_to_use = num_threads
-        else:
-            threads_to_use = all_cores
-
-        if have_openmp:
-            openmp.omp_set_dynamic(0)
-            openmp.omp_set_num_threads(threads_to_use)
+        threads_to_use = determine_num_threads(num_threads)
+        set_num_threads(threads_to_use)
 
         # if the fibers are too short FBC measures cannot be applied,
         # remove these.
@@ -198,8 +194,8 @@ cdef class FBCMeasures:
                                       dtype=np.int32)
         min_length = min(streamlines_length)
         if min_length < min_fiberlength:
-            print("The minimum fiber length is 10 points. \
-                    Shorter fibers were found and removed.")
+            logger.info("The minimum fiber length is 10 points. \
+                         Shorter fibers were found and removed.")
             py_streamlines = [x for x in py_streamlines
                               if x.shape[0] >= min_fiberlength]
             streamlines_length = np.array([x.shape[0] for x in py_streamlines],
@@ -228,9 +224,9 @@ cdef class FBCMeasures:
         # copy python streamlines into numpy array
         for line_id in range(num_fibers):
             for point_id in range(streamlines_length[line_id]):
-                for dim in range(3):
-                    streamlines[line_id, point_id, dim] = \
-                        py_streamlines[line_id][point_id][dim]
+                for dims in range(3):
+                    streamlines[line_id, point_id, dims] = \
+                        py_streamlines[line_id][point_id][dims]
         self.streamline_points = streamlines
 
         # compute tangents
@@ -257,9 +253,9 @@ cdef class FBCMeasures:
 
         if verbose:
             if have_openmp:
-                print("Running in parallel!")
+                logger.info("Running in parallel!")
             else:
-                print("No OpenMP...")
+                logger.info("No OpenMP...")
 
         # compute fiber LFBC measures
         with nogil:
@@ -302,8 +298,8 @@ cdef class FBCMeasures:
                     streamline_scores[line_id, point_id] = score_mp[line_id]
 
         # Reset number of OpenMP cores to default
-        if have_openmp and num_threads is not None:
-            openmp.omp_set_num_threads(all_cores)
+        if num_threads is not None:
+            restore_default_num_threads()
 
         # Save LFBC as class member
         self.streamlines_lfbc = streamline_scores
@@ -311,7 +307,7 @@ cdef class FBCMeasures:
         # compute RFBC for each fiber
         self.streamlines_rfbc = compute_rfbc(streamlines_length,
                                              streamline_scores,
-                                             max_windowsize)
+                                             max_windowsize=max_windowsize)
 
 
 def compute_rfbc(streamlines_length, streamline_scores, max_windowsize=7):
@@ -328,7 +324,7 @@ def compute_rfbc(streamlines_length, streamline_scores, max_windowsize=7):
         The maximal window size used to calculate the average LFBC region
 
     Returns
-    ----------
+    -------
     output: normalized lowest average LFBC region along the fiber
     """
 
@@ -360,7 +356,7 @@ def min_moving_average(a, n):
         Length of the segment
 
     Returns
-    ----------
+    -------
     output: normalized lowest average LFBC region along the fiber
     """
     ret = np.cumsum(np.extract(a >= 0, a))

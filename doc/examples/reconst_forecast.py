@@ -5,145 +5,152 @@ Crossing invariant fiber response function with FORECAST model
 
 We show how to obtain a voxel specific response function in the form of
 axially symmetric tensor and the fODF using the FORECAST model from
-[Anderson2005]_ , [Kaden2016]_ and [Zucchelli2017]_.
+:footcite:p:`Anderson2005`, :footcite:p:`Kaden2016a` and
+:footcite:p:`Zucchelli2017`.
 
 First import the necessary modules:
 """
 
 import matplotlib.pyplot as plt
+import nibabel as nib
+import numpy as np
+
+from dipy.core.gradients import gradient_table
+from dipy.data import fetch_hbn, get_sphere
 from dipy.reconst.forecast import ForecastModel
 from dipy.viz import actor, window
-from dipy.data import fetch_cenir_multib, read_cenir_multib, get_sphere
 
-"""
-Download and read the data for this tutorial.
-Our implementation of FORECAST requires multi-shell data.
-fetch_cenir_multib() provides data acquired using the shells at b-values 1000,
-2000, and 3000 (see MAPMRI example for more information on this dataset).
-"""
+###############################################################################
+# Download and read the data for this tutorial. Our implementation of FORECAST
+# requires multi-shell `data.fetch_hbn()` provides data that was acquired using
+# b-values of 1000 and 2000 as part of the Healthy Brain Network study
+# :footcite:p:`Alexander2017` and was preprocessed and quality controlled in the
+# HBN-POD2 dataset :footcite:p:`RichieHalford2022`.
 
-fetch_cenir_multib(with_raw=False)
+data_path = fetch_hbn(["NDARAA948VFH"])[1]
+dwi_path = (
+    data_path / "derivatives" / "qsiprep" / "sub-NDARAA948VFH" / "ses-HBNsiteRU" / "dwi"
+)
 
-bvals = [1000, 2000, 3000]
-img, gtab = read_cenir_multib(bvals)
-data = img.get_data()
+img = nib.load(
+    dwi_path
+    / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.nii.gz",
+)
 
-"""
-Let us consider only a single slice for the FORECAST fitting
-"""
+gtab = gradient_table(
+    dwi_path
+    / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval",
+    bvecs=(
+        dwi_path
+        / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec"
+    ),
+)
 
-data_small = data[18:87, 51:52, 10:70]
-mask_small = data_small[..., 0] > 1000
+data = np.asarray(img.dataobj)
 
-"""
-Instantiate the FORECAST Model.
+mask_img = nib.load(
+    dwi_path
+    / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-brain_mask.nii.gz"
+)
 
-"sh_order" is the spherical harmonics order used for the fODF.
+brain_mask = mask_img.get_fdata()
 
-dec_alg is the spherical deconvolution algorithm used for the FORECAST basis fitting, in this case
-we used the Constrained Spherical Deconvolution (CSD) algorithm.
-"""
+###############################################################################
+# Let us consider only a single slice for the FORECAST fitting
 
-fm = ForecastModel(gtab, sh_order=6, dec_alg='CSD')
+data_small = data[:, :, 50:51]
+mask_small = brain_mask[:, :, 50:51]
 
-"""
-Fit the FORECAST to the data
-"""
+###############################################################################
+# Instantiate the FORECAST Model.
+#
+# "sh_order_max" is the spherical harmonics order (l) used for the fODF.
+#
+# dec_alg is the spherical deconvolution algorithm used for the FORECAST basis
+# fitting, in this case we used the Constrained Spherical Deconvolution (CSD)
+# algorithm.
 
-f_fit = fm.fit(data_small, mask_small)
+fm = ForecastModel(gtab, sh_order_max=6, dec_alg="CSD")
 
-"""
-Calculate the crossing invariant tensor indices [Kaden2016]_ : the parallel diffusivity,
-the perpendicular diffusivity, the fractional anisotropy and the mean
-diffusivity.
-"""
+###############################################################################
+# Fit the FORECAST to the data
+
+f_fit = fm.fit(data_small, mask=mask_small)
+
+###############################################################################
+# Calculate the crossing invariant tensor indices :footcite:p:`Kaden2016a`: the
+# parallel diffusivity, the perpendicular diffusivity, the fractional anisotropy
+# and the mean diffusivity.
 
 d_par = f_fit.dpar
 d_perp = f_fit.dperp
 fa = f_fit.fractional_anisotropy()
 md = f_fit.mean_diffusivity()
 
-"""
-Show the indices and save them in FORECAST_indices.png.
-"""
+###############################################################################
+# Show the indices and save them in FORECAST_indices.png.
 
 fig = plt.figure(figsize=(6, 6))
-ax1 = fig.add_subplot(2, 2, 1, title='parallel diffusivity')
+ax1 = fig.add_subplot(2, 2, 1, title="parallel diffusivity")
 ax1.set_axis_off()
-ind = ax1.imshow(d_par[:, 0, :].T, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray)
+ind = ax1.imshow(
+    d_par[:, :, 0].T, interpolation="nearest", origin="lower", cmap=plt.cm.gray
+)
 plt.colorbar(ind, shrink=0.6)
-ax2 = fig.add_subplot(2, 2, 2, title='perpendicular diffusivity')
+ax2 = fig.add_subplot(2, 2, 2, title="perpendicular diffusivity")
 ax2.set_axis_off()
-ind = ax2.imshow(d_perp[:, 0, :].T, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray)
+ind = ax2.imshow(
+    d_perp[:, :, 0].T, interpolation="nearest", origin="lower", cmap=plt.cm.gray
+)
 plt.colorbar(ind, shrink=0.6)
-ax3 = fig.add_subplot(2, 2, 3, title='fractional anisotropy')
+ax3 = fig.add_subplot(2, 2, 3, title="fractional anisotropy")
 ax3.set_axis_off()
-ind = ax3.imshow(fa[:, 0, :].T, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray)
+ind = ax3.imshow(
+    fa[:, :, 0].T, interpolation="nearest", origin="lower", cmap=plt.cm.gray
+)
 plt.colorbar(ind, shrink=0.6)
-ax4 = fig.add_subplot(2, 2, 4, title='mean diffusivity')
+ax4 = fig.add_subplot(2, 2, 4, title="mean diffusivity")
 ax4.set_axis_off()
-ind = ax4.imshow(md[:, 0, :].T, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray)
+ind = ax4.imshow(
+    md[:, :, 0].T, interpolation="nearest", origin="lower", cmap=plt.cm.gray
+)
 plt.colorbar(ind, shrink=0.6)
-plt.savefig('FORECAST_indices.png', dpi=300, bbox_inches='tight')
+plt.savefig("FORECAST_indices.png", dpi=300, bbox_inches="tight")
 
-"""
-.. figure:: FORECAST_indices.png
-   :align: center
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# FORECAST scalar indices.
+#
+#
+# Load an ODF reconstruction sphere
 
-   **FORECAST scalar indices**.
+sphere = get_sphere(name="repulsion724")
 
-"""
-
-"""
-Load an ODF reconstruction sphere
-"""
-
-sphere = get_sphere('symmetric724')
-
-"""
-Compute the fODFs.
-"""
+###############################################################################
+# Compute the fODFs.
 
 odf = f_fit.odf(sphere)
-print('fODF.shape (%d, %d, %d, %d)' % odf.shape)
+print(f"fODF.shape {odf.shape}")
 
-"""
-Display a part of the fODFs
-"""
+###############################################################################
+# Display a part of the fODFs
 
-odf_actor = actor.odf_slicer(odf[16:36, :, 30:45], sphere=sphere,
-                             colormap='plasma', scale=0.6)
-odf_actor.display(y=0)
-odf_actor.RotateX(-90)
-ren = window.Renderer()
-ren.add(odf_actor)
-window.record(ren, out_path='fODFs.png', size=(600, 600), magnification=4)
+odf_actor = actor.odf_slicer(
+    odf[30:60, 30:60, :], sphere=sphere, colormap="plasma", scale=0.6
+)
+scene = window.Scene()
+scene.add(odf_actor)
+window.record(scene=scene, out_path="fODFs.png", size=(600, 600), magnification=4)
 
-"""
-.. figure:: fODFs.png
-   :align: center
-
-   **Fiber Orientation Distribution Functions, in a small ROI of the brain**.
-
-References
-----------
-
-.. [Anderson2005] Anderson A. W., "Measurement of Fiber Orientation Distributions
-       Using High Angular Resolution Diffusion Imaging", Magnetic
-       Resonance in Medicine, 2005.
-
-.. [Kaden2016] Kaden E. et al., "Quantitative Mapping of the Per-Axon Diffusion
-       Coefficients in Brain White Matter", Magnetic Resonance in
-       Medicine, 2016.
-
-.. [Zucchelli2017] Zucchelli E. et al., "A generalized SMT-based framework for
-       Diffusion MRI microstructural model estimation", MICCAI Workshop
-       on Computational DIFFUSION MRI (CDMRI), 2017.
-
-.. include:: ../links_names.inc
-
-"""
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Fiber Orientation Distribution Functions, in a small ROI of the brain.
+#
+#
+# References
+# ----------
+#
+# .. footbibliography::
+#

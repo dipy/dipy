@@ -1,43 +1,48 @@
 import numpy as np
-from scipy.ndimage import map_coordinates
 from scipy.fftpack import fftn, fftshift, ifftshift
-from dipy.reconst.odf import OdfModel, OdfFit
+from scipy.ndimage import map_coordinates
+
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.odf import OdfFit, OdfModel
+from dipy.testing.decorators import warning_for_keywords
 
-from dipy.testing import setup_test
 
 class DiffusionSpectrumModel(OdfModel, Cache):
-
-    def __init__(self,
-                 gtab,
-                 qgrid_size=17,
-                 r_start=2.1,
-                 r_end=6.,
-                 r_step=0.2,
-                 filter_width=32,
-                 normalize_peaks=False):
-        r""" Diffusion Spectrum Imaging
+    @warning_for_keywords()
+    def __init__(
+        self,
+        gtab,
+        *,
+        qgrid_size=17,
+        r_start=2.1,
+        r_end=6.0,
+        r_step=0.2,
+        filter_width=32,
+        normalize_peaks=False,
+    ):
+        r"""Diffusion Spectrum Imaging
 
         The theoretical idea underlying this method is that the diffusion
         propagator $P(\mathbf{r})$ (probability density function of the average
         spin displacements) can be estimated by applying 3D FFT to the signal
         values $S(\mathbf{q})$
 
-        ..math::
-            :nowrap:
-                \begin{eqnarray}
-                    P(\mathbf{r}) & = & S_{0}^{-1}\int S(\mathbf{q})\exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{r}
-                \end{eqnarray}
+        .. math::
+           :nowrap:
+
+           P(\mathbf{r}) & = & S_{0}^{-1}\int S(\mathbf{q})\exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{r}
 
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
         wave vector which corresponds to different gradient directions. Method
         used to calculate the ODFs. Here we implement the method proposed by
-        Wedeen et al. [1]_.
+        :footcite:t:`Wedeen2005`.
 
         The main assumption for this model is fast gradient switching and that
         the acquisition gradients will sit on a keyhole Cartesian grid in
-        q_space [3]_.
+        q_space :footcite:p:`Garyfallidis2012b`.
+
+        See also :footcite:p:`CanalesRodriguez2010`.
 
         Parameters
         ----------
@@ -59,14 +64,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
         References
         ----------
-        .. [1]  Wedeen V.J et al., "Mapping Complex Tissue Architecture With
-        Diffusion Spectrum Magnetic Resonance Imaging", MRM 2005.
-
-        .. [2] Canales-Rodriguez E.J et al., "Deconvolution in Diffusion
-        Spectrum Imaging", Neuroimage, 2010.
-
-        .. [3] Garyfallidis E, "Towards an accurate brain tractography", PhD
-        thesis, University of Cambridge, 2012.
+        .. footbibliography::
 
         Examples
         --------
@@ -75,19 +73,17 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         voxel in the data with the reconstruction performed using DSI.
 
         >>> import warnings
-        >>> warnings.simplefilter("default")
-        >>> from dipy.data import dsi_voxels, get_sphere
+        >>> from dipy.data import dsi_voxels, default_sphere
         >>> data, gtab = dsi_voxels()
-        >>> sphere = get_sphere('symmetric724')
         >>> from dipy.reconst.dsi import DiffusionSpectrumModel
         >>> ds = DiffusionSpectrumModel(gtab)
         >>> dsfit = ds.fit(data)
         >>> from dipy.reconst.odf import gfa
-        >>> np.round(gfa(dsfit.odf(sphere))[0, 0, 0], 2)
+        >>> np.round(gfa(dsfit.odf(default_sphere))[0, 0, 0], 2)
         0.11
 
         Notes
-        ------
+        -----
         A. Have in mind that DSI expects gradients on both hemispheres. If your
         gradients span only one hemisphere you need to duplicate the data and
         project them to the other hemisphere before calling this class. The
@@ -105,14 +101,14 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         --------
         dipy.reconst.gqi.GeneralizedQSampling
 
-        """
+        """  # noqa: E501
 
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
         self.normalize_peaks = normalize_peaks
         # 3d volume for Sq
         if qgrid_size % 2 == 0:
-            raise ValueError('qgrid_size needs to be an odd integer')
+            raise ValueError("qgrid_size needs to be an odd integer")
         self.qgrid_size = qgrid_size
         # necessary shifting for centering
         self.origin = self.qgrid_size // 2
@@ -129,14 +125,13 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         self.gtab = gtab
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         return DiffusionSpectrumFit(self, data)
 
 
 class DiffusionSpectrumFit(OdfFit):
-
     def __init__(self, model, data):
-        """ Calculates PDF and ODF and other properties for a single voxel
+        """Calculates PDF and ODF and other properties for a single voxel
 
         Parameters
         ----------
@@ -154,8 +149,9 @@ class DiffusionSpectrumFit(OdfFit):
         self._peak_values = None
         self._peak_indices = None
 
-    def pdf(self, normalized=True):
-        """ Applies the 3D FFT in the q-space grid to generate
+    @warning_for_keywords()
+    def pdf(self, *, normalized=True):
+        """Applies the 3D FFT in the q-space grid to generate
         the diffusion propagator
         """
         values = self.data * self.model.filter
@@ -167,7 +163,7 @@ class DiffusionSpectrumFit(OdfFit):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
         # apply fourier transform
-        Pr = fftshift(np.real(fftn(ifftshift(Sq), 3 * (self.qgrid_sz, ))))
+        Pr = fftshift(np.real(fftn(ifftshift(Sq), 3 * (self.qgrid_sz,))))
         # clipping negative values to 0 (ringing artefact)
         Pr = np.clip(Pr, 0, Pr.max())
 
@@ -177,14 +173,15 @@ class DiffusionSpectrumFit(OdfFit):
 
         return Pr
 
-    def rtop_signal(self, filtering=True):
-        """ Calculates the return to origin probability (rtop) from the signal
+    @warning_for_keywords()
+    def rtop_signal(self, *, filtering=True):
+        """Calculates the return to origin probability (rtop) from the signal
         rtop equals to the sum of all signal values
 
         Parameters
         ----------
         filtering : boolean, optional
-            Whether to perform Hanning filtering. Default: True
+            Whether to perform Hanning filtering.
 
         Returns
         -------
@@ -201,17 +198,21 @@ class DiffusionSpectrumFit(OdfFit):
 
         return rtop
 
-    def rtop_pdf(self, normalized=True):
-        r""" Calculates the return to origin probability from the propagator, which is
-        the propagator evaluated at zero (see Descoteaux et Al. [1]_,
-        Tuch [2]_, Wu et al. [3]_)
+    @warning_for_keywords()
+    def rtop_pdf(self, *, normalized=True):
+        r"""Calculates the return to origin probability from the propagator,
+        which is the propagator evaluated at zero.
+
         rtop = P(0)
+
+        See :footcite:p:`Descoteaux2011`, :footcite:p:`Tuch2002` and
+        :footcite:p:`Wu2008` for further details about the method.
 
         Parameters
         ----------
         normalized : boolean, optional
             Whether to normalize the propagator by its sum in order to obtain a
-            pdf. Default: True.
+            pdf.
 
         Returns
         -------
@@ -220,15 +221,7 @@ class DiffusionSpectrumFit(OdfFit):
 
         References
         ----------
-        .. [1] Descoteaux M. et al., "Multiple q-shell diffusion propagator
-        imaging", Medical Image Analysis, vol 15, No. 4, p. 603-621, 2011.
-
-        .. [2] Tuch D.S., "Diffusion MRI of Complex Tissue Structure",
-         PhD Thesis, 2002.
-
-        .. [3] Wu Y. et al., "Computation of Diffusion Function Measures
-        in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging",
-        IEEE TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865, 2008
+        .. footbibliography::
 
         """
 
@@ -239,23 +232,23 @@ class DiffusionSpectrumFit(OdfFit):
         rtop = Pr[center, center, center]
         return rtop
 
-    def msd_discrete(self, normalized=True):
-        r""" Calculates the mean squared displacement on the discrete propagator
+    @warning_for_keywords()
+    def msd_discrete(self, *, normalized=True):
+        r"""Calculates the mean squared displacement on the discrete propagator
 
-        ..math::
+        .. math::
             :nowrap:
-                \begin{equation}
-                    MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
-                \end{equation}
+
+            MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
 
         where $\hat{\mathbf{r}}$ is a point in the 3D Propagator space
-        (see Wu et al. [1]_).
+        (see :footcite:p:`Wu2007`).
 
         Parameters
         ----------
         normalized : boolean, optional
             Whether to normalize the propagator by its sum in order to obtain a
-            pdf. Default: True
+            pdf.
 
         Returns
         -------
@@ -264,10 +257,9 @@ class DiffusionSpectrumFit(OdfFit):
 
         References
         ----------
-        .. [1] Wu Y. et al., "Hybrid diffusion imaging", NeuroImage, vol 36,
-        p. 617-629, 2007.
+        .. footbibliography::
 
-        """
+        """  # noqa: E501
 
         Pr = self.pdf(normalized=normalized)
 
@@ -278,30 +270,27 @@ class DiffusionSpectrumFit(OdfFit):
         x = np.tile(a, (gridsize, gridsize, 1))
         y = np.tile(a.reshape(gridsize, 1), (gridsize, 1, gridsize))
         z = np.tile(a.reshape(gridsize, 1, 1), (1, gridsize, gridsize))
-        r2 = x ** 2 + y ** 2 + z ** 2
+        r2 = x**2 + y**2 + z**2
 
-        msd = np.sum(Pr * r2) / float((gridsize ** 3))
+        msd = np.sum(Pr * r2) / float((gridsize**3))
         return msd
 
     def odf(self, sphere):
-        r""" Calculates the real discrete odf for a given discrete sphere
+        r"""Calculates the real discrete odf for a given discrete sphere
 
-        ..math::
-            :nowrap:
-                \begin{equation}
-                    \psi_{DSI}(\hat{\mathbf{u}})=\int_{0}^{\infty}P(r\hat{\mathbf{u}})r^{2}dr
-                \end{equation}
+        .. math::
+
+           \psi_{DSI}(\hat{\mathbf{u}})=\int_{0}^{\infty}P(r\hat{\mathbf{u}})r^{2}dr
 
         where $\hat{\mathbf{u}}$ is the unit vector which corresponds to a
         sphere point.
         """
-        interp_coords = self.model.cache_get('interp_coords',
-                                             key=sphere)
+        interp_coords = self.model.cache_get("interp_coords", key=sphere)
         if interp_coords is None:
-            interp_coords = pdf_interp_coords(sphere,
-                                              self.model.qradius,
-                                              self.model.origin)
-            self.model.cache_set('interp_coords', sphere, interp_coords)
+            interp_coords = pdf_interp_coords(
+                sphere, self.model.qradius, self.model.origin
+            )
+            self.model.cache_set("interp_coords", sphere, interp_coords)
 
         Pr = self.pdf()
 
@@ -310,11 +299,12 @@ class DiffusionSpectrumFit(OdfFit):
 
 
 def create_qspace(gtab, origin):
-    """ create the 3D grid which holds the signal values (q-space)
+    """create the 3D grid which holds the signal values (q-space)
 
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     origin : (3,) ndarray
         center of qspace
 
@@ -328,15 +318,16 @@ def create_qspace(gtab, origin):
 
     # center and index in qspace volume
     qgrid = qtable + origin
-    return qgrid.astype('i8')
+    return qgrid.astype("i8")
 
 
 def create_qtable(gtab, origin):
-    """ create a normalized version of gradients
+    """create a normalized version of gradients
 
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     origin : (3,) ndarray
         center of qspace
 
@@ -359,11 +350,11 @@ def create_qtable(gtab, origin):
 
     bv = np.sqrt(bv / bmin)
     qtable = np.vstack((bv, bv, bv)).T * gtab.bvecs
-    return np.floor(qtable + .5)
+    return np.floor(qtable + 0.5)
 
 
 def hanning_filter(gtab, filter_width, origin):
-    """ create a hanning window
+    """create a hanning window
 
     The signal is premultiplied by a Hanning window before
     Fourier transform in order to ensure a smooth attenuation
@@ -372,7 +363,9 @@ def hanning_filter(gtab, filter_width, origin):
     Parameters
     ----------
     gtab : GradientTable
+        Gradient table.
     filter_width : int
+        Strength of the Hanning filter.
     origin : (3,) ndarray
         center of qspace
 
@@ -386,20 +379,20 @@ def hanning_filter(gtab, filter_width, origin):
     # calculate r - hanning filter free parameter
     r = np.sqrt(qtable[:, 0] ** 2 + qtable[:, 1] ** 2 + qtable[:, 2] ** 2)
     # setting hanning filter width and hanning
-    return .5 * np.cos(2 * np.pi * r / filter_width)
+    return 0.5 * np.cos(2 * np.pi * r / filter_width)
 
 
 def pdf_interp_coords(sphere, rradius, origin):
-    """ Precompute coordinates for ODF calculation from the PDF
+    """Precompute coordinates for ODF calculation from the PDF
 
     Parameters
     ----------
     sphere : object,
-            Sphere
+        Sphere
     rradius : array, shape (N,)
-            line interpolation points
+        line interpolation points
     origin : array, shape (3,)
-            center of the grid
+        center of the grid
 
     """
     interp_coords = rradius * sphere.vertices[np.newaxis].T
@@ -409,7 +402,7 @@ def pdf_interp_coords(sphere, rradius, origin):
 
 
 def pdf_odf(Pr, rradius, interp_coords):
-    r""" Calculates the real ODF from the diffusion propagator(PDF) Pr
+    r"""Calculates the real ODF from the diffusion propagator(PDF) Pr
 
     Parameters
     ----------
@@ -421,12 +414,12 @@ def pdf_odf(Pr, rradius, interp_coords):
         coordinates in the pdf for interpolating the odf
     """
     PrIs = map_coordinates(Pr, interp_coords, order=1)
-    odf = (PrIs * rradius ** 2).sum(-1)
+    odf = (PrIs * rradius**2).sum(-1)
     return odf
 
 
 def half_to_full_qspace(data, gtab):
-    """ Half to full Cartesian grid mapping
+    """Half to full Cartesian grid mapping
 
     Useful when dMRI data are provided in one qspace hemisphere as
     DiffusionSpectrum expects data to be in full qspace.
@@ -441,7 +434,9 @@ def half_to_full_qspace(data, gtab):
     Returns
     -------
     new_data : array, shape (X, Y, Z, 2 * W -1)
+        DWI data across the full Cartesian space.
     new_gtab : GradientTable
+        Gradient table.
 
     Notes
     -----
@@ -453,7 +448,7 @@ def half_to_full_qspace(data, gtab):
     bvals = gtab.bvals
     bvecs = gtab.bvecs
     bvals = np.append(bvals, bvals[1:])
-    bvecs = np.append(bvecs, - bvecs[1:], axis=0)
+    bvecs = np.append(bvecs, -bvecs[1:], axis=0)
     data = np.append(data, data[..., 1:], axis=-1)
     gtab.bvals = bvals.copy()
     gtab.bvecs = bvecs.copy()
@@ -461,7 +456,7 @@ def half_to_full_qspace(data, gtab):
 
 
 def project_hemisph_bvecs(gtab):
-    """ Project any near identical bvecs to the other hemisphere
+    """Project any near identical bvecs to the other hemisphere
 
     Parameters
     ----------
@@ -469,7 +464,7 @@ def project_hemisph_bvecs(gtab):
             GradientTable
 
     Notes
-    -------
+    -----
     Useful only when working with some types of dsi data.
     """
     bvals = gtab.bvals
@@ -479,11 +474,11 @@ def project_hemisph_bvecs(gtab):
     b = bvs[:, None] * bvcs
     bb = np.zeros((len(bvs), len(bvs)))
     pairs = []
-    for (i, vec) in enumerate(b):
-        for (j, vec2) in enumerate(b):
+    for i, vec in enumerate(b):
+        for j, vec2 in enumerate(b):
             bb[i, j] = np.sqrt(np.sum((vec - vec2) ** 2))
-        I = np.argsort(bb[i])
-        for j in I:
+        _I = np.argsort(bb[i])
+        for j in _I:
             if j != i:
                 break
         if (j, i) in pairs:
@@ -491,76 +486,88 @@ def project_hemisph_bvecs(gtab):
         else:
             pairs.append((i, j))
     bvecs2 = bvecs.copy()
-    for (i, j) in pairs:
-        bvecs2[1 + j] = - bvecs2[1 + j]
+    for _, j in pairs:
+        bvecs2[1 + j] = -bvecs2[1 + j]
     return bvecs2, pairs
 
 
 class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
-
-    def __init__(self, gtab, qgrid_size=35, r_start=4.1, r_end=13.,
-                 r_step=0.4, filter_width=np.inf, normalize_peaks=False):
+    @warning_for_keywords()
+    def __init__(
+        self,
+        gtab,
+        *,
+        qgrid_size=35,
+        r_start=4.1,
+        r_end=13.0,
+        r_step=0.4,
+        filter_width=np.inf,
+        normalize_peaks=False,
+    ):
         r""" Diffusion Spectrum Deconvolution
 
         The idea is to remove the convolution on the DSI propagator that is
         caused by the truncation of the q-space in the DSI sampling.
 
-        ..math::
+        .. math::
             :nowrap:
-                \begin{eqnarray*}
+
+                \begin{eqnarray}
                     P_{dsi}(\mathbf{r}) & = & S_{0}^{-1}\iiint\limits_{\| \mathbf{q} \| \le \mathbf{q_{max}}} S(\mathbf{q})\exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{q} \\
                     & = & S_{0}^{-1}\iiint\limits_{\mathbf{q}} \left( S(\mathbf{q}) \cdot M(\mathbf{q}) \right) \exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{q} \\
                     & = & P(\mathbf{r}) \otimes \left( S_{0}^{-1}\iiint\limits_{\mathbf{q}}  M(\mathbf{q}) \exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{q} \right) \\
-                \end{eqnarray*}
+                \end{eqnarray}
 
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
         wave vector which corresponds to different gradient directions,
         $M(\mathbf{q})$ is a mask corresponding to your q-space sampling and
-        $\otimes$ is the convolution operator [1]_.
+        $\otimes$ is the convolution operator
+        :footcite:p:`CanalesRodriguez2010`.
 
+        See also :footcite:p:`Biggs1997`.
 
         Parameters
         ----------
         gtab : GradientTable,
             Gradient directions and bvalues container class
-        qgrid_size : int,
+        qgrid_size : int, optional
             has to be an odd number. Sets the size of the q_space grid.
             For example if qgrid_size is 35 then the shape of the grid will be
             ``(35, 35, 35)``.
-        r_start : float,
+        r_start : float, optional
             ODF is sampled radially in the PDF. This parameters shows where the
             sampling should start.
-        r_end : float,
+        r_end : float, optional
             Radial endpoint of ODF sampling
-        r_step : float,
+        r_step : float, optional
             Step size of the ODf sampling from r_start to r_end
         filter_width : float,
             Strength of the hanning filter
 
         References
         ----------
-        .. [1] Canales-Rodriguez E.J et al., "Deconvolution in Diffusion
-        Spectrum Imaging", Neuroimage, 2010.
+        .. footbibliography::
 
-        .. [2] Biggs David S.C. et al., "Acceleration of Iterative Image
-        Restoration Algorithms", Applied Optics, vol. 36, No. 8, p. 1766-1775,
-        1997.
-
-        """
-        DiffusionSpectrumModel.__init__(self, gtab, qgrid_size,
-                                        r_start, r_end, r_step,
-                                        filter_width,
-                                        normalize_peaks)
+        """  # noqa: E501
+        DiffusionSpectrumModel.__init__(
+            self,
+            gtab,
+            qgrid_size=qgrid_size,
+            r_start=r_start,
+            r_end=r_end,
+            r_step=r_step,
+            filter_width=filter_width,
+            normalize_peaks=normalize_peaks,
+        )
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         return DiffusionSpectrumDeconvFit(self, data)
 
 
 class DiffusionSpectrumDeconvFit(DiffusionSpectrumFit):
-
     def pdf(self):
-        """ Applies the 3D FFT in the q-space grid to generate
+        """Applies the 3D FFT in the q-space grid to generate
         the DSI diffusion propagator, remove the background noise with a
         hard threshold and then deconvolve the propagator with the
         Lucy-Richardson deconvolution algorithm
@@ -573,22 +580,23 @@ class DiffusionSpectrumDeconvFit(DiffusionSpectrumFit):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
         # get deconvolution PSF
-        DSID_PSF = self.model.cache_get('deconv_psf', key=self.model.gtab)
+        DSID_PSF = self.model.cache_get("deconv_psf", key=self.model.gtab)
         if DSID_PSF is None:
-            DSID_PSF = gen_PSF(self.model.qgrid, self.qgrid_sz,
-                               self.qgrid_sz, self.qgrid_sz)
-        self.model.cache_set('deconv_psf', self.model.gtab, DSID_PSF)
+            DSID_PSF = gen_PSF(
+                self.model.qgrid, self.qgrid_sz, self.qgrid_sz, self.qgrid_sz
+            )
+        self.model.cache_set("deconv_psf", self.model.gtab, DSID_PSF)
         # apply fourier transform
-        Pr = fftshift(np.abs(np.real(fftn(ifftshift(Sq),
-                                          3 * (self.qgrid_sz, )))))
+        Pr = fftshift(np.abs(np.real(fftn(ifftshift(Sq), 3 * (self.qgrid_sz,)))))
         # threshold propagator
         Pr = threshold_propagator(Pr)
         # apply LR deconvolution
-        Pr = LR_deconv(Pr, DSID_PSF, 5, 2)
+        Pr = LR_deconv(Pr, DSID_PSF, numit=5, acc_factor=2)
         return Pr
 
 
-def threshold_propagator(P, estimated_snr=15.):
+@warning_for_keywords()
+def threshold_propagator(P, *, estimated_snr=15.0):
     """
     Applies hard threshold on the propagator to remove background noise for the
     deconvolution.
@@ -612,7 +620,8 @@ def gen_PSF(qgrid_sampling, siz_x, siz_y, siz_z):
     return Sq * np.real(np.fft.fftshift(np.fft.ifftn(np.fft.ifftshift(Sq))))
 
 
-def LR_deconv(prop, psf, numit=5, acc_factor=1):
+@warning_for_keywords()
+def LR_deconv(prop, psf, *, numit=5, acc_factor=1):
     r"""
     Perform Lucy-Richardson deconvolution algorithm on a 3D array.
 
@@ -625,13 +634,11 @@ def LR_deconv(prop, psf, numit=5, acc_factor=1):
     numit : int
         Number of Lucy-Richardson iteration to perform.
     acc_factor : float
-        Exponential acceleration factor as in [1]_.
+        Exponential acceleration factor as in :footcite:p:`Biggs1997`.
 
     References
     ----------
-    .. [1] Biggs David S.C. et al., "Acceleration of Iterative Image
-       Restoration Algorithms", Applied Optics, vol. 36, No. 8, p. 1766-1775,
-       1997.
+    .. footbibliography::
 
     """
 
@@ -639,26 +646,31 @@ def LR_deconv(prop, psf, numit=5, acc_factor=1):
     # Create the otf of the same size as prop
     otf = np.zeros_like(prop)
     # prop.ndim==3
-    otf[otf.shape[0] // 2 - psf.shape[0] // 2:otf.shape[0] // 2 +
-        psf.shape[0] // 2 + 1, otf.shape[1] // 2 - psf.shape[1] // 2:
-        otf.shape[1] // 2 + psf.shape[1] // 2 + 1, otf.shape[2] // 2 -
-        psf.shape[2] // 2:otf.shape[2] // 2 + psf.shape[2] // 2 + 1] = psf
+    otf[
+        otf.shape[0] // 2 - psf.shape[0] // 2 : otf.shape[0] // 2
+        + psf.shape[0] // 2
+        + 1,
+        otf.shape[1] // 2 - psf.shape[1] // 2 : otf.shape[1] // 2
+        + psf.shape[1] // 2
+        + 1,
+        otf.shape[2] // 2 - psf.shape[2] // 2 : otf.shape[2] // 2
+        + psf.shape[2] // 2
+        + 1,
+    ] = psf
     otf = np.real(np.fft.fftn(np.fft.ifftshift(otf)))
     # Enforce Positivity
     prop = np.clip(prop, 0, np.inf)
     prop_deconv = prop.copy()
-    for it in range(numit):
+    for _ in range(numit):
         # Blur the estimate
         reBlurred = np.real(np.fft.ifftn(otf * np.fft.fftn(prop_deconv)))
         reBlurred[reBlurred < eps] = eps
         # Update the estimate
-        prop_deconv = prop_deconv * (
-            np.real(np.fft.ifftn(
-                otf * np.fft.fftn((prop / reBlurred) + eps)))) ** acc_factor
+        prop_deconv = (
+            prop_deconv
+            * (np.real(np.fft.ifftn(otf * np.fft.fftn((prop / reBlurred) + eps))))
+            ** acc_factor
+        )
         # Enforce positivity
         prop_deconv = np.clip(prop_deconv, 0, np.inf)
     return prop_deconv / prop_deconv.sum()
-
-
-if __name__ == '__main__':
-    pass

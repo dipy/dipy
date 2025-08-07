@@ -4,7 +4,7 @@
  Gimbal lock
 =============
 
-See also: http://en.wikipedia.org/wiki/Gimbal_lock
+See also: https://en.wikipedia.org/wiki/Gimbal_lock
 
 Euler angles have a major deficiency, and that is, that it is possible,
 in some rotation sequences, to reach a situation where two of the three
@@ -23,28 +23,28 @@ is left to right (tail to nose), the $y$ axis is from the left wing tip
 to the right wing tip (going away from the screen), and the $z$ axis is
 from bottom to top:
 
-.. image:: images/spitfire_0.png
+.. image:: /_static/spitfire_0.png
 
 Imagine we wanted to do a slight roll with the left wing tilting down
 (rotation about $x$) like this:
 
-.. image:: images/spitfire_x.png
+.. image:: /_static/spitfire_x.png
 
 followed by a violent pitch so we are pointing straight up (rotation
 around $y$ axis):
 
-.. image:: images/spitfire_y.png
+.. image:: /_static/spitfire_y.png
 
 Now we'd like to do a turn of the nose towards the viewer (and the tail
 away from the viewer):
 
-.. image:: images/spitfire_hoped.png
+.. image:: /_static/spitfire_hoped.png
 
 But, wait, let's go back over that again.  Look at the result of the
 rotation around the $y$ axis.  Notice that the $x$ axis, as was, is now
 aligned with the $z$ axis, as it is now.  Rotating around the $z$ axis
 will have exactly the same effect as adding an extra rotation around the
-$x$ axis at the beginning.  That means that, when there is a $y$ axis
+$x$ axis at the beginning.  That means that when there is a $y$ axis
 rotation that rotates the $x$ axis onto the $z$ axis (a rotation of
 $\pm\pi/2$ around the $y$ axis) - the $x$ and $y$ axes are "locked"
 together.
@@ -82,10 +82,10 @@ When $\sin(\beta) = 1$:
    R = \left(\begin{smallmatrix}0 & \operatorname{cos}\left(\gamma\right) \operatorname{sin}\left(\alpha\right) - \operatorname{cos}\left(\alpha\right) \operatorname{sin}\left(\gamma\right) & \operatorname{cos}\left(\alpha\right) \operatorname{cos}\left(\gamma\right) + \operatorname{sin}\left(\alpha\right) \operatorname{sin}\left(\gamma\right)\\0 & \operatorname{cos}\left(\alpha\right) \operatorname{cos}\left(\gamma\right) + \operatorname{sin}\left(\alpha\right) \operatorname{sin}\left(\gamma\right) & \operatorname{cos}\left(\alpha\right) \operatorname{sin}\left(\gamma\right) - \operatorname{cos}\left(\gamma\right) \operatorname{sin}\left(\alpha\right)\\-1 & 0 & 0\end{smallmatrix}\right)
 
 From the `angle sum and difference identities
-<http://en.wikipedia.org/wiki/List_of_trigonometric_identities#Angle_sum_and_difference_identities>`_
+<https://en.wikipedia.org/wiki/List_of_trigonometric_identities#Angle_sum_and_difference_identities>`_
 (see also `geometric proof
 <http://www.themathpage.com/atrig/sum-proof.htm>`_, `Mathworld treatment
-<http://mathworld.wolfram.com/TrigonometricAdditionFormulas.html>`_) we
+<https://mathworld.wolfram.com/TrigonometricAdditionFormulas.html>`_) we
 remind ourselves that, for any two angles $\alpha$ and $\beta$:
 
 .. math::

@@ -1,0 +1,59 @@
+parameters:
+  name: ''
+  vmImage: ''
+  matrix: []
+
+jobs:
+- job: ${{ parameters.name }}
+  timeoutInMinutes: 120
+  pool:
+    vmIMage: ${{ parameters.vmImage }}
+  variables:
+    DEPENDS: "cython numpy matplotlib h5py nibabel cvxpy tqdm"
+    VENV_ARGS: "--python=python"
+    INSTALL_TYPE: "setup"
+    PRE_WHEELS: "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
+  strategy:
+    # maxParallel: 4
+    matrix:
+      ${{ insert }}: ${{ parameters.matrix }}
+
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: $(python.version)
+      architecture: 'x64'
+      addToPath: true
+  - bash: |
+      sudo apt-get update
+      sudo apt-get install -y libhdf5-serial-dev
+    displayName: 'Install packages'
+  - bash: |
+      sudo apt-get install -y xvfb
+      /usr/bin/Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
+      echo ">>> Started xvfb"
+    displayName: 'Install Xvfb package'
+    condition: and(succeeded(), eq( variables['TEST_WITH_XVFB'], '1' ))
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: Add conda to PATH
+    condition: eq( variables['INSTALL_TYPE'], 'conda' )
+  - bash: |
+      sudo chmod +x ci/azure/install.sh
+      if [ "${USE_PRE}" == "1" ]; then
+        echo "we use PRE"
+        echo "${USE_PRE}"
+        ./ci/azure/install.sh || echo -e "\043#vso[task.logissue type=warning;] Error during pre-package installation"
+      else
+        ./ci/azure/install.sh
+      fi
+    displayName: 'Install dependencies'
+  - bash: |
+      sudo chmod +x ci/azure/script.sh
+      if [ "${USE_PRE}" == "1" ]; then
+        ./ci/azure/script.sh || echo -e "\043#vso[task.logissue type=warning;] Error during tests on PRE matrix"
+      else
+        ./ci/azure/script.sh
+      fi
+    env:
+      CODECOV_TOKEN: $(CODECOV-TOKEN)
+    displayName: 'Install DIPY and Run Tests'

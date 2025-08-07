@@ -1,0 +1,149 @@
+# Commit prefix regexes
+type:bugfix:
+  title: "^BF:.*"
+
+type:backward compatibility:
+  title: "^BW:.*"
+
+type:continuous integration:
+  title: "^CI:.*"
+
+type:documentation:
+  title: "^DOC:.*"
+
+type:maintenance:
+  title: "^MNT:.*"
+
+type:new feature:
+  title: "^NF:.*"
+
+type:optimization:
+  title: "^OPT:.*"
+
+type:refactoring:
+  title: "^RF:.*"
+
+type:style:
+  title: "^STYLE:.*"
+
+type:test:
+  title: "^TEST:.*"
+
+type:coverage:
+  title: "coverage"
+
+type:design:
+  title: "design"
+
+# Filename regexes
+area:align:
+  files:
+    - "dipy/align/*"
+
+area:benchmarking:
+  files:
+    - "benchmarks/*"
+
+area:boots:
+  files:
+    - "dipy/boots/*"
+
+area:core:
+  files:
+    - "dipy/core/*"
+
+area:data:
+  files:
+    - "dipy/data/*"
+
+area:denoise:
+  files:
+    - "dipy/denoise/*"
+
+area:direction:
+  files:
+    - "dipy/direction/*"
+
+area:documentation:
+  files:
+    - "doc/*"
+    - "README.rst"
+
+area:examples:
+  files:
+    - "doc/examples/*"
+
+area:io:
+  files:
+    - "dipy/io/*"
+
+area:nn:
+  files:
+    - "dipy/nn/*"
+
+area:reconst:
+  files:
+    - "dipy/reconst/*"
+
+area:segment:
+  files:
+    - "dipy/segment/*"
+
+area:sims:
+  files:
+    - "dipy/sims/*"
+
+area:stats:
+  files:
+    - "dipy/stats/*"
+
+area:testing:
+  files:
+    - "dipy/testing/*"
+    - "dipy/tests/*"
+
+area:tracking:
+  files:
+    - "dipy/tracking/*"
+
+area:utils:
+  files:
+    - "dipy/utils/*"
+
+area:viz:
+  files:
+    - "dipy/viz/*"
+
+area:workflows:
+  files:
+    - "dipy/workflows/*"
+
+type:cython:
+  files:
+    - "**/.pxd"
+    - "**/.pyx"
+
+type:infrastructure:
+  files:
+    - ".github/*"
+    - ".spin/*"
+    - ".codecov.yml"
+    - ".codespellrc"
+    - ".coveragerc"
+    - ".gitattributes"
+    - ".gitignore"
+    - ".mailmap"
+    - ".mailmap"
+    - ".pre-commit-config.yaml"
+    - "Makefile"
+    - "pyproject.toml"
+    - "requirements.txt"
+    - "ruff.toml"
+    - "**/meson.build"
+    - "requirements/*"
+    - "src/*"
+    - "tools/*"
+
+type:testing:
+  files:
+    - "test_.*.py"

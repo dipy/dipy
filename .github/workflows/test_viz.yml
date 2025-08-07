@@ -1,0 +1,25 @@
+name: Visualization
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - dipy/viz/**
+      - dipy/workflows/**
+  pull_request:
+    branches: [ master ]
+    paths:
+      - dipy/viz/**
+      - dipy/workflows/**
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  VIZ:
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
+      extra-depends: scikit_learn vtk fury scipy
+      enable-viz-tests: true

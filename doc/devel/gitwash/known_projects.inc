@@ -6,7 +6,7 @@
 .. _`PROJECTNAME mailing list`: https://mail.python.org/mailman/listinfo/neuroimaging
 
 .. numpy
-.. _numpy: hhttp://numpy.scipy.org
+.. _numpy: http://numpy.scipy.org
 .. _`numpy github`: http://github.com/numpy/numpy
 .. _`numpy mailing list`: http://mail.scipy.org/mailman/listinfo/numpy-discussion
 
@@ -26,8 +26,8 @@
 .. _`ipython mailing list`: http://mail.scipy.org/mailman/listinfo/IPython-dev
 
 .. dipy
-.. _dipy: http://nipy.org/dipy
-.. _`dipy github`: https://github.com/nipy/dipy
+.. _dipy: https://dipy.org
+.. _`dipy github`: https://github.com/dipy/dipy
 .. _`dipy mailing list`: https://mail.python.org/mailman/listinfo/neuroimaging
 
 .. nibabel

@@ -10,8 +10,11 @@ cimport cython
 import numpy as np
 cimport numpy as cnp
 
+from libc.math cimport cos, fabs, M_PI
 from libc.stdlib cimport malloc, free
-from libc.string cimport memcpy
+from libc.string cimport memset, memcpy
+
+from dipy.utils.fast_numpy cimport take
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double x)
@@ -28,89 +31,78 @@ cnp.import_array()
 
 #numpy pointers
 cdef inline float* asfp(cnp.ndarray pt):
-    return <float *>pt.data
+    return <float *> cnp.PyArray_DATA(pt)
 
 cdef inline double* asdp(cnp.ndarray pt):
-    return <double *>pt.data
-
-
-cdef void splitoffset(float *offset, size_t *index, size_t shape) nogil:
-    """Splits a global offset into an integer index and a relative offset"""
-    offset[0] -= .5
-    if offset[0] <= 0:
-        index[0] = 0
-        offset[0] = 0.
-    elif offset[0] >= (shape - 1):
-        index[0] = shape - 2
-        offset[0] = 1.
-    else:
-        index[0] = <size_t> offset[0]
-        offset[0] = offset[0] - index[0]
+    return <double *> cnp.PyArray_DATA(pt)
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-@cython.cdivision(True)
-def trilinear_interp(cnp.ndarray[cnp.float32_t, ndim=4, mode='strided'] data,
-                     cnp.ndarray[cnp.float_t, ndim=1, mode='strided'] index,
-                     cnp.ndarray[cnp.float_t, ndim=1, mode='c'] voxel_size):
-    """Interpolates vector from 4D `data` at 3D point given by `index`
-
-    Interpolates a vector of length T from a 4D volume of shape (I, J, K, T),
-    given point (x, y, z) where (x, y, z) are the coordinates of the point in
-    real units (not yet adjusted for voxel size).
+cdef void remove_similar_vertices_c(
+    double[:, :] vertices,
+    double theta,
+    int remove_antipodal,
+    int return_mapping,
+    int return_index,
+    double[:, :] unique_vertices,
+    cnp.uint16_t[:] mapping,
+    cnp.uint16_t[:] index,
+    cnp.uint16_t* n_unique
+) noexcept nogil:
+    """
+    Optimized Cython version to remove vertices that are less than `theta` degrees from any other.
     """
     cdef:
-        float x = index[0] / voxel_size[0]
-        float y = index[1] / voxel_size[1]
-        float z = index[2] / voxel_size[2]
-        float weight
-        size_t x_ind, y_ind, z_ind, ii, jj, kk, LL
-        size_t last_d = data.shape[3]
-        bint bounds_check
-        cnp.ndarray[cnp.float32_t, ndim=1, mode='c'] result
-    bounds_check = (x < 0 or y < 0 or z < 0 or
-                    x > data.shape[0] or
-                    y > data.shape[1] or
-                    z > data.shape[2])
-    if bounds_check:
-        raise IndexError
+        int n = vertices.shape[0]
+        int i, j
+        int pass_all
+        double a, b, c, sim, cos_similarity
 
-    splitoffset(&x, &x_ind, data.shape[0])
-    splitoffset(&y, &y_ind, data.shape[1])
-    splitoffset(&z, &z_ind, data.shape[2])
+    cos_similarity = cos(M_PI / 180 * theta)
+    n_unique[0] = 0
 
-    result = np.zeros(last_d, dtype='float32')
-    for ii from 0 <= ii <= 1:
-        for jj from 0 <= jj <= 1:
-            for kk from 0 <= kk <= 1:
-                weight = wght(ii, x)*wght(jj, y)*wght(kk, z)
-                for LL from 0 <= LL < last_d:
-                    result[LL] += data[x_ind+ii,y_ind+jj,z_ind+kk,LL]*weight
-    return result
-
-
-@cython.profile(False)
-cdef float wght(int i, float r) nogil:
-    if i:
-        return r
-    else:
-        return 1.-r
+    for i in range(n):
+        pass_all = 1
+        a = vertices[i, 0]
+        b = vertices[i, 1]
+        c = vertices[i, 2]
+        for j in range(n_unique[0]):
+            sim = (a * unique_vertices[j, 0] +
+                   b * unique_vertices[j, 1] +
+                   c * unique_vertices[j, 2])
+            if remove_antipodal:
+                sim = fabs(sim)
+            if sim > cos_similarity:
+                pass_all = 0
+                if return_mapping:
+                    mapping[i] = j
+                break
+        if pass_all:
+            unique_vertices[n_unique[0], 0] = a
+            unique_vertices[n_unique[0], 1] = b
+            unique_vertices[n_unique[0], 2] = c
+            if return_mapping:
+                mapping[i] = n_unique[0]
+            if return_index:
+                index[n_unique[0]] = i
+            n_unique[0] += 1
 
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
 def remove_similar_vertices(
-    cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] vertices,
+    cnp.float64_t[:, ::1] vertices,
     double theta,
     bint return_mapping=False,
-    bint return_index=False):
+    bint return_index=False,
+    bint remove_antipodal=True
+):
     """Remove vertices that are less than `theta` degrees from any other
 
     Returns vertices that are at least theta degrees from any other vertex.
     Vertex v and -v are considered the same so if v and -v are both in
     `vertices` only one is kept. Also if v and w are both in vertices, w must
-    be separated by theta degrees from both v and -v to be unique.
+    be separated by theta degrees from both v and -v to be unique. To disable
+    this, set `remove_antipodal` to False to keep both directions.
 
     Parameters
     ----------
@@ -124,6 +116,8 @@ def remove_similar_vertices(
     return_indices : {False, True}, optional
         If True, return `indices` as well as `vertices` and maybe `mapping`
         (see below).
+    remove_antipodal : {False, True}, optional
+        If True, v and -v are considered equal, and only one will be kept.
 
     Returns
     -------
@@ -141,71 +135,90 @@ def remove_similar_vertices(
         `vertices` that is less than theta degrees from `unique_vertices[j]`,
         return the first (lowest index) matching value.  Only return if
         `return_indices` is True.
+
     """
     if vertices.shape[1] != 3:
         raise ValueError('Vertices should be 2D with second dim length 3')
-    cdef:
-        cnp.ndarray[cnp.float_t, ndim=2, mode='c'] unique_vertices
-        cnp.ndarray[cnp.uint16_t, ndim=1, mode='c'] mapping
-        cnp.ndarray[cnp.uint16_t, ndim=1, mode='c'] index
-        char pass_all
-        # Variable has to be large enough for all valid sizes of vertices
-        cnp.npy_int32 i, j
-        cnp.npy_int32 n_unique = 0
-        # Large enough for all possible sizes of vertices
-        cnp.npy_intp n = vertices.shape[0]
-        double a, b, c, sim
-        double cos_similarity = cos(DPY_PI/180 * theta)
-    if n >= 2**16:  # constrained by input data type
-        raise ValueError("too many vertices")
-    unique_vertices = np.empty((n, 3), dtype=np.float)
+
+    cdef int n = vertices.shape[0]
+    if n >= 2**16:
+        raise ValueError("Too many vertices")
+
+    cdef cnp.float64_t[:, ::1] unique_vertices = np.empty((n, 3), dtype=np.float64)
+    cdef cnp.uint16_t[::1] mapping = None
+    cdef cnp.uint16_t[::1] index = None
+    cdef cnp.uint16_t n_unique = 0
+
     if return_mapping:
         mapping = np.empty(n, dtype=np.uint16)
     if return_index:
         index = np.empty(n, dtype=np.uint16)
 
-    for i in range(n):
-        pass_all = 1
-        a = vertices[i, 0]
-        b = vertices[i, 1]
-        c = vertices[i, 2]
-        # Check all other accepted vertices for similarity to this one
-        for j in range(n_unique):
-            sim = fabs(a * unique_vertices[j, 0] +
-                       b * unique_vertices[j, 1] +
-                       c * unique_vertices[j, 2])
-            if sim > cos_similarity:  # too similar, drop
-                pass_all = 0
-                if return_mapping:
-                    mapping[i] = j
-                # This point unique_vertices[j] already has an entry in index,
-                # so we do not need to update.
-                break
-        if pass_all:  # none similar, keep
-            unique_vertices[n_unique, 0] = a
-            unique_vertices[n_unique, 1] = b
-            unique_vertices[n_unique, 2] = c
-            if return_mapping:
-                mapping[i] = n_unique
-            if return_index:
-                index[n_unique] = i
-            n_unique += 1
+    # Call the optimized Cython function
+    remove_similar_vertices_c(
+        vertices, theta, remove_antipodal,
+        return_mapping, return_index,
+        unique_vertices, mapping, index, &n_unique
+    )
 
-    verts = unique_vertices[:n_unique].copy()
+    # Prepare the outputs
+    verts = np.asarray(unique_vertices[:n_unique]).copy()
     if not return_mapping and not return_index:
         return verts
+
     out = [verts]
     if return_mapping:
-        out.append(mapping)
+        out.append(np.asarray(mapping))
     if return_index:
-        out.append(index[:n_unique].copy())
+        out.append(np.asarray(index[:n_unique]).copy())
     return out
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
-                      double relative_threshold):
+cdef cnp.npy_intp search_descending_c(cython.floating* arr, cnp.npy_intp size, double relative_threshold) noexcept nogil:
+    """
+    Optimized Cython version of the search_descending function.
+
+    Parameters
+    ----------
+    arr : floating*
+        1D contiguous array assumed to be sorted in descending order.
+    size : cnp.npy_intp
+        Number of elements in the array.
+    relative_threshold : double
+        Threshold factor to determine the cutoff index.
+
+    Returns
+    -------
+    cnp.npy_intp
+        Largest index `i` such that all(arr[:i] >= T), where T = arr[0] * relative_threshold.
+    """
+    cdef:
+        cnp.npy_intp left = 0
+        cnp.npy_intp right = size
+        cnp.npy_intp mid
+        double threshold
+
+    # Handle edge case of empty array
+    if right == 0:
+        return 0
+
+    threshold = relative_threshold * arr[0]
+
+    # Binary search for the threshold
+    while left != right:
+        mid = (left + right) // 2
+        if arr[mid] >= threshold:
+            left = mid + 1
+        else:
+            right = mid
+
+    return left
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def search_descending(cython.floating[::1] a, double relative_threshold):
     """`i` in descending array `a` so `a[i] < a[0] * relative_threshold`
 
     Call ``T = a[0] * relative_threshold``. Return value `i` will be the
@@ -230,40 +243,52 @@ def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
     Examples
     --------
     >>> a = np.arange(10, 0, -1, dtype=float)
-    >>> a
-    array([ 10.,   9.,   8.,   7.,   6.,   5.,   4.,   3.,   2.,   1.])
+    >>> np.allclose(a, np.array([10., 9., 8., 7., 6., 5., 4., 3., 2., 1.]))
+    True
     >>> search_descending(a, 0.5)
     6
-    >>> a < 10 * 0.5
-    array([False, False, False, False, False, False,  True,  True,  True,  True], dtype=bool)
+    >>> np.allclose(a < 10 * 0.5, np.array([False, False, False, False, False,
+    ... False,  True,  True,  True,  True]))
+    True
     >>> search_descending(a, 1)
     1
     >>> search_descending(a, 2)
     0
     >>> search_descending(a, 0)
     10
+
     """
-    if a.shape[0] == 0:
-        return 0
-
-    cdef:
-        cnp.npy_intp left = 0
-        cnp.npy_intp right = a.shape[0]
-        cnp.npy_intp mid
-        double threshold = relative_threshold * a[0]
-
-    while left != right:
-        mid = (left + right) // 2
-        if a[mid] >= threshold:
-            left = mid + 1
-        else:
-            right = mid
-    return left
+    return search_descending_c(&a[0], a.shape[0], relative_threshold)
 
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-@cython.profile(True)
+cdef long local_maxima_c(double[:] odf, cnp.uint16_t[:, :] edges, double[::1] out_values,
+        cnp.npy_intp[::1] out_indices) noexcept nogil:
+    cdef:
+        long count
+        cnp.npy_intp* wpeak = <cnp.npy_intp*>malloc(odf.shape[0] * sizeof(cnp.npy_intp))
+
+    if not wpeak:
+        return -3  # Memory allocation failed
+
+    memset(wpeak, 0, odf.shape[0] * sizeof(cnp.npy_intp))
+    count = _compare_neighbors(odf, edges, wpeak)
+    if count < 0:
+        free(wpeak)
+        return count
+
+    memcpy(&out_indices[0], wpeak, count * sizeof(cnp.npy_intp))
+    take(&odf[0], &out_indices[0], <int>count, &out_values[0])
+
+    _cosort(out_values, out_indices)
+
+    free(wpeak)
+
+    return count
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
 def local_maxima(double[:] odf, cnp.uint16_t[:, :] edges):
     """Local maxima of a function evaluated on a discrete set of points.
 
@@ -287,8 +312,8 @@ def local_maxima(double[:] odf, cnp.uint16_t[:, :] edges):
         Indices of maximum points. Sorted in the same order as `peak_values` so
         `odf[peak_indices[i]] == peak_values[i]`.
 
-    Note
-    ----
+    Notes
+    -----
     A point is a local maximum if it is > at least one neighbor and >= all
     neighbors. If no points meet the above criteria, 1 maximum is returned such
     that `odf[maximum] == max(odf)`.
@@ -296,30 +321,39 @@ def local_maxima(double[:] odf, cnp.uint16_t[:, :] edges):
     See Also
     --------
     dipy.core.sphere
+
     """
     cdef:
         cnp.ndarray[cnp.npy_intp] wpeak
-    wpeak = np.zeros((odf.shape[0],), dtype=np.intp)
-    count = _compare_neighbors(odf, edges, &wpeak[0])
+        double[::1] out_values
+        cnp.npy_intp[::1] out_indices
+
+    out_values = np.zeros(odf.shape[0], dtype=float)
+    out_indices = np.zeros(odf.shape[0], dtype=np.intp)
+
+    count = local_maxima_c(odf, edges, out_values, out_indices)
+
     if count == -1:
         raise IndexError("Values in edges must be < len(odf)")
     elif count == -2:
-        raise ValueError("odf can not have nans")
-    indices = wpeak[:count].copy()
-    # Get peak values return
-    values = np.take(odf, indices)
-    # Sort both values and indices
-    _cosort(values, indices)
+        raise ValueError("odf cannot have NaNs")
+    elif count == -3:
+        raise MemoryError("Memory allocation failed")
+
+    # Wrap the pointers as NumPy arrays
+    values = np.asarray(out_values[:count])
+    indices = np.asarray(out_indices[:count])
+
     return values, indices
 
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef void _cosort(double[::1] A, cnp.npy_intp[::1] B) nogil:
+cdef void _cosort(double[::1] A, cnp.npy_intp[::1] B) noexcept nogil:
     """Sorts `A` in-place and applies the same reordering to `B`"""
     cdef:
-        size_t n = A.shape[0]
-        size_t hole
+        cnp.npy_intp n = A.shape[0]
+        cnp.npy_intp hole
         double insert_A
         long insert_B
 
@@ -338,7 +372,7 @@ cdef void _cosort(double[::1] A, cnp.npy_intp[::1] B) nogil:
 @cython.wraparound(False)
 @cython.boundscheck(False)
 cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
-                             cnp.npy_intp *wpeak_ptr) nogil:
+                             cnp.npy_intp *wpeak_ptr) noexcept nogil:
     """Compares every pair of points in edges
 
     Parameters
@@ -362,9 +396,9 @@ cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
             -2 : odf contains nans
     """
     cdef:
-        size_t lenedges = edges.shape[0]
-        size_t lenodf = odf.shape[0]
-        size_t i
+        cnp.npy_intp lenedges = edges.shape[0]
+        cnp.npy_intp lenodf = odf.shape[0]
+        cnp.npy_intp i
         cnp.uint16_t find0, find1
         double odf0, odf1
         long count = 0
@@ -449,15 +483,15 @@ def sum_on_blocks_1d(cnp.ndarray[double, ndim=1] arr,
     """
     cdef:
         int m,i,j
-        double sum
+        double blocksum
 
     with nogil:
         j=0
         for m in range(outn):
-            sum=0
+            blocksum=0
             for i in range(j,j+blocks[m]):
-                sum+=arr[i]
-            out[m]=sum
+                blocksum+=arr[i]
+            out[m]=blocksum
             j+=blocks[m]
     return
 
@@ -490,7 +524,7 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
 
 
 def proc_reco_args(vals, vertinds):
-    vals = np.ascontiguousarray(vals.astype(np.float))
+    vals = np.ascontiguousarray(vals.astype(float))
     vertinds = np.ascontiguousarray(vertinds.astype(np.uint32))
     return vals, vertinds
 
@@ -501,13 +535,13 @@ def adj_to_countarrs(adj_inds):
     We use this to provide expected input to ``argmax_from_countarrs``
 
     Parameters
-    ------------
+    ----------
     adj_indices : sequence
        length V sequence of sequences, where sequence ``i`` contains the
        neighbors of a particular vertex.
 
     Returns
-    ---------
+    -------
     counts : (V,) array
        Number of neighbors for each vertex
     adj_inds : (n,) array
@@ -545,7 +579,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
        For every vertex ``i`` in ``vertex_inds``, the number of
        neighbors for vertex ``i``
     adj_inds : (P,) array, dtype uint32
-       Indices for neighbors for each point.  ``P=sum(adj_counts)`` 
+       Indices for neighbors for each point.  ``P=sum(adj_counts)``
 
     Returns
     -------
@@ -567,21 +601,24 @@ def argmax_from_countarrs(cnp.ndarray vals,
         int is_max
         cnp.float64_t *vals_ptr
         double val
-        cnp.uint32_t vert_ind, *vertinds_ptr, *counts_ptr, *adj_ptr, ind
+        cnp.uint32_t vert_ind, ind
+        cnp.uint32_t *vertinds_ptr
+        cnp.uint32_t *counts_ptr
+        cnp.uint32_t *adj_ptr
         cnp.uint32_t vals_size, vert_size
     if not (cnp.PyArray_ISCONTIGUOUS(cvals) and
             cnp.PyArray_ISCONTIGUOUS(cvertinds) and
             cnp.PyArray_ISCONTIGUOUS(cadj_counts) and
             cnp.PyArray_ISCONTIGUOUS(cadj_inds)):
         raise ValueError('Need contiguous arrays as input')
-    vals_size = cvals.shape[0]
-    vals_ptr = <cnp.float64_t *>cvals.data
-    vertinds_ptr = <cnp.uint32_t *>cvertinds.data
-    adj_ptr = <cnp.uint32_t *>cadj_inds.data
-    counts_ptr = <cnp.uint32_t *>cadj_counts.data
-    V = cadj_counts.shape[0]
-    adj_size = cadj_inds.shape[0]
-    if cvertinds.shape[0] < V:
+    vals_size = cnp.PyArray_DIM(cvals, 0)
+    vals_ptr = <cnp.float64_t *> cnp.PyArray_DATA(cvals)
+    vertinds_ptr = <cnp.uint32_t *> cnp.PyArray_DATA(cvertinds)
+    adj_ptr = <cnp.uint32_t *> cnp.PyArray_DATA(cadj_inds)
+    counts_ptr = <cnp.uint32_t *> cnp.PyArray_DATA(cadj_counts)
+    V = cnp.PyArray_DIM(cadj_counts, 0)
+    adj_size = cnp.PyArray_DIM(cadj_inds, 0)
+    if cnp.PyArray_DIM(cvertinds, 0) < V:
         raise ValueError('Too few indices for adj arrays')
     for i in range(V):
         vert_ind = vertinds_ptr[i]

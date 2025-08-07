@@ -10,55 +10,59 @@ This recursive method will avoid the common problem of the polar singularity,
 produced by 2d (lon-lat) parameterization methods.
 
 """
-from dipy.core.sphere import unit_octahedron, HemiSphere
+
+from dipy.core.sphere import HemiSphere, unit_octahedron
+from dipy.testing.decorators import warning_for_keywords
 
 
-def create_unit_sphere(recursion_level=2):
-    """ Creates a unit sphere by subdividing a unit octahedron.
+@warning_for_keywords()
+def create_unit_sphere(*, recursion_level=2):
+    """Creates a unit sphere by subdividing a unit octahedron.
 
     Starts with a unit octahedron and subdivides the faces, projecting the
     resulting points onto the surface of a unit sphere.
 
     Parameters
-    ------------
+    ----------
     recursion_level : int
         Level of subdivision, recursion_level=1 will return an octahedron,
         anything bigger will return a more subdivided sphere. The sphere will
         have $4^recursion_level+2$ vertices.
 
     Returns
-    ---------
+    -------
     Sphere :
         The unit sphere.
 
     See Also
-    ----------
+    --------
     create_unit_hemisphere, Sphere
     """
     if recursion_level > 7 or recursion_level < 1:
         raise ValueError("recursion_level must be between 1 and 7")
-    return unit_octahedron.subdivide(recursion_level - 1)
+    return unit_octahedron.subdivide(n=recursion_level - 1)
 
 
-def create_unit_hemisphere(recursion_level=2):
+@warning_for_keywords()
+def create_unit_hemisphere(*, recursion_level=2):
     """Creates a unit sphere by subdividing a unit octahedron, returns half
     the sphere.
 
     Parameters
-    -------------
+    ----------
     recursion_level : int
         Level of subdivision, recursion_level=1 will return an octahedron,
         anything bigger will return a more subdivided sphere. The sphere will
         have $(4^recursion_level+2)/2$ vertices.
 
     Returns
-    ---------
+    -------
     HemiSphere :
         Half of a unit sphere.
 
     See Also
-    ----------
+    --------
     create_unit_sphere, Sphere, HemiSphere
     """
-    sphere = create_unit_sphere(recursion_level)
+    sphere = create_unit_sphere(recursion_level=recursion_level)
     return HemiSphere.from_sphere(sphere)

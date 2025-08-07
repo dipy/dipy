@@ -1,21 +1,13 @@
-""" Testing reconstruction utilities
-"""
+"""Testing reconstruction utilities."""
 
 import numpy as np
+from numpy.testing import assert_array_equal, assert_equal
 
-from dipy.reconst.recspeed import (adj_to_countarrs,
-                                   argmax_from_countarrs)
-
-from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_raises
-
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from dipy.reconst.recspeed import adj_to_countarrs, argmax_from_countarrs
 
 
 def test_adj_countarrs():
-    adj = [[0, 1, 2],
-           [2, 3],
-           [4, 5, 6, 7]]
+    adj = [[0, 1, 2], [2, 3], [4, 5, 6, 7]]
     counts, inds = adj_to_countarrs(adj)
     assert_array_equal(counts, [3, 2, 4])
     assert_equal(counts.dtype.type, np.uint32)
@@ -25,11 +17,11 @@ def test_adj_countarrs():
 
 def test_argmax_from_countarrs():
     # basic case
-    vals = np.arange(10, dtype=np.float)
+    vals = np.arange(10, dtype=float)
     vertinds = np.arange(10, dtype=np.uint32)
     adj_counts = np.ones((10,), dtype=np.uint32)
     adj_inds_raw = np.arange(10, dtype=np.uint32)[::-1]
-    # when contigous - OK
+    # when contiguous - OK
     adj_inds = adj_inds_raw.copy()
     argmax_from_countarrs(vals, vertinds, adj_counts, adj_inds)
     # yield assert_array_equal(inds, [5, 6, 7, 8, 9])

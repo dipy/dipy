@@ -2,51 +2,98 @@
 # cython: initializedcheck=False
 # cython: wraparound=False
 
-from warnings import warn
-
 import numpy as np
-cimport numpy as np
+cimport numpy as cnp
 
-from dipy.core.geometry import cart2sphere
 from dipy.reconst import shm
 
-from dipy.tracking.local.interpolation cimport trilinear_interpolate4d_c
+from dipy.core.interpolation cimport trilinear_interpolate4d_c
+from libc.stdlib cimport malloc, free
+
+cdef extern from "stdlib.h" nogil:
+    void *memset(void *ptr, int value, size_t num)
 
 
 cdef class PmfGen:
 
     def __init__(self,
-                 double[:, :, :, :] data):
-        self.data = np.asarray(data,  dtype=float)
+                 double[:, :, :, :] data,
+                 object sphere):
+        self.data = np.asarray(data, dtype=float, order='C')
+        self.vertices = np.asarray(sphere.vertices, dtype=float)
+        self.pmf = np.zeros(self.vertices.shape[0])
+        self.sphere = sphere
 
-    cpdef double[:] get_pmf(self, double[::1] point):
-        return self.get_pmf_c(&point[0])
+    def get_pmf(self, double[::1] point, double[:] out=None):
+        if out is None:
+            out = self.pmf
+        return <double[:len(self.vertices)]>self.get_pmf_c(&point[0], &out[0])
 
-    cdef double[:] get_pmf_c(self, double* point):
+    def get_sphere(self):
+        return self.sphere
+
+    cdef double* get_pmf_c(self, double* point, double* out) noexcept nogil:
         pass
 
-    cdef void __clear_pmf(self):
+    cdef int find_closest(self, double* xyz) noexcept nogil:
         cdef:
-            size_t len_pmf = self.pmf.shape[0]
-            size_t i
+            cnp.npy_intp idx = 0
+            cnp.npy_intp i
+            cnp.npy_intp len_pmf = self.pmf.shape[0]
+            double cos_max = 0
+            double cos_sim
 
         for i in range(len_pmf):
-            self.pmf[i] = 0.0
+            cos_sim = self.vertices[i][0] * xyz[0] \
+                    + self.vertices[i][1] * xyz[1] \
+                    + self.vertices[i][2] * xyz[2]
+            if cos_sim < 0:
+                cos_sim = cos_sim * -1
+            if cos_sim > cos_max:
+                cos_max = cos_sim
+                idx = i
+        return idx
+
+    def get_pmf_value(self, double[::1] point, double[::1] xyz):
+        return self.get_pmf_value_c(&point[0], &xyz[0])
+
+    cdef double get_pmf_value_c(self,
+                                double* point,
+                                double* xyz) noexcept nogil:
+        pass
 
 
 cdef class SimplePmfGen(PmfGen):
 
     def __init__(self,
-                 double[:, :, :, :] pmf_array):
-        PmfGen.__init__(self, pmf_array)
-        self.pmf = np.empty(pmf_array.shape[3])
-        if np.min(pmf_array) < 0:
-            raise ValueError("pmf should not have negative values.")
+                 double[:, :, :, :] pmf_array,
+                 object sphere):
+        PmfGen.__init__(self, pmf_array, sphere)
+        if not pmf_array.shape[3] == sphere.vertices.shape[0]:
+            raise ValueError("pmf should have the same number of values as the"
+                             + " number of vertices of sphere.")
 
-    cdef double[:] get_pmf_c(self, double* point):
-        if trilinear_interpolate4d_c(self.data, point, self.pmf) != 0:
-            self.__clear_pmf()
-        return self.pmf
+    cdef double* get_pmf_c(self, double* point, double* out) noexcept nogil:
+        if trilinear_interpolate4d_c(self.data, point, out) != 0:
+            memset(out, 0, self.pmf.shape[0] * sizeof(double))
+        return out
+
+    cdef double get_pmf_value_c(self,
+                                double* point,
+                                double* xyz) noexcept nogil:
+        """
+        Return the pmf value corresponding to the closest vertex to the
+        direction xyz.
+        """
+        cdef:
+            int idx
+            double pmf_value = 0
+
+        idx = self.find_closest(xyz)
+        trilinear_interpolate4d_c(self.data[:,:,:,idx:idx+1],
+                                  point,
+                                  &pmf_value)
+        return pmf_value
 
 
 cdef class SHCoeffPmfGen(PmfGen):
@@ -54,96 +101,57 @@ cdef class SHCoeffPmfGen(PmfGen):
     def __init__(self,
                  double[:, :, :, :] shcoeff_array,
                  object sphere,
-                 object basis_type):
+                 object basis_type,
+                 legacy=True):
         cdef:
             int sh_order
 
-        PmfGen.__init__(self, shcoeff_array)
+        PmfGen.__init__(self, shcoeff_array, sphere)
 
-        self.sphere = sphere
         sh_order = shm.order_from_ncoef(shcoeff_array.shape[3])
         try:
             basis = shm.sph_harm_lookup[basis_type]
         except KeyError:
-            raise ValueError("%s is not a known basis type." % basis_type)
-        self.B, _, _ = basis(sh_order, sphere.theta, sphere.phi)
-        self.coeff = np.empty(shcoeff_array.shape[3])
-        self.pmf = np.empty(self.B.shape[0])
+            raise ValueError(f"{basis_type} is not a known basis type.")
+        self.B, _, _ = basis(sh_order, sphere.theta, sphere.phi, legacy=legacy)
 
-    cdef double[:] get_pmf_c(self, double* point):
+    cdef double* get_pmf_c(self, double* point, double* out) noexcept nogil:
         cdef:
-            size_t i, j
-            size_t len_pmf = self.pmf.shape[0]
-            size_t len_B = self.B.shape[1]
+            cnp.npy_intp i, j
+            cnp.npy_intp len_pmf = self.pmf.shape[0]
+            cnp.npy_intp len_B = self.B.shape[1]
             double _sum
+            double *coeff = <double*> malloc(len_B * sizeof(double))
 
-        if trilinear_interpolate4d_c(self.data, point, self.coeff) != 0:
-            self.__clear_pmf()
+        if trilinear_interpolate4d_c(self.data, point, coeff) != 0:
+            memset(out, 0, len_pmf * sizeof(double))
         else:
             for i in range(len_pmf):
                 _sum = 0
                 for j in range(len_B):
-                    _sum += self.B[i, j] * self.coeff[j]
-                self.pmf[i] = _sum
-        return self.pmf
+                    _sum = _sum + (self.B[i, j] * coeff[j])
+                out[i] = _sum
+        free(coeff)
+        return out
 
-
-cdef class BootPmfGen(PmfGen):
-
-    def __init__(self,
-                 double[:, :, :, :] dwi_array,
-                 object model,
-                 object sphere,
-                 int sh_order=0,
-                 double tol=1e-2):
+    cdef double get_pmf_value_c(self,
+                                double* point,
+                                double* xyz) noexcept nogil:
+        """
+        Return the pmf value corresponding to the closest vertex to the
+        direction xyz.
+        """
         cdef:
-            double b_range
-            np.ndarray x, y, z, r
-            double[:] theta, phi
-            double[:, :] B
+            int idx = self.find_closest(xyz)
+            cnp.npy_intp j
+            cnp.npy_intp len_B = self.B.shape[1]
+            double *coeff = <double*> malloc(len_B * sizeof(double))
+            double pmf_value = 0
 
-        PmfGen.__init__(self, dwi_array)
-        self.sh_order = sh_order
-        if self.sh_order == 0:
-            if hasattr(model, "sh_order"):
-                self.sh_order = model.sh_order
-            else:
-                self.sh_order = 4 #  DEFAULT Value
+        if trilinear_interpolate4d_c(self.data, point, coeff) == 0:
+            for j in range(len_B):
+                pmf_value = pmf_value + (self.B[idx, j] * coeff[j])
 
-        self.dwi_mask = model.gtab.b0s_mask == 0
-        x, y, z = model.gtab.gradients[self.dwi_mask].T
-        r, theta, phi = shm.cart2sphere(x, y, z)
-        b_range = (r.max() - r.min()) / r.min()
-        if b_range > tol:
-            raise ValueError("BootPmfGen only supports single shell data")
-        B, _, _ = shm.real_sym_sh_basis(self.sh_order, theta, phi)
-        self.H = shm.hat(B)
-        self.R = shm.lcr_matrix(self.H)
-        self.vox_data = np.empty(dwi_array.shape[3])
+        free(coeff)
+        return pmf_value
 
-        self.model = model
-        self.sphere = sphere
-        self.pmf = np.empty(len(sphere.theta))
-
-
-    cdef double[:] get_pmf_c(self, double* point):
-        """Produces an ODF from a SH bootstrap sample"""
-        if trilinear_interpolate4d_c(self.data, point, self.vox_data) != 0:
-            self.__clear_pmf()
-        else:
-            self.vox_data[self.dwi_mask] = shm.bootstrap_data_voxel(
-                self.vox_data[self.dwi_mask], self.H, self.R)
-            self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
-        return self.pmf
-
-
-    cpdef double[:] get_pmf_no_boot(self, double[::1] point):
-        return self.get_pmf_no_boot_c(&point[0])
-
-
-    cdef double[:] get_pmf_no_boot_c(self, double* point):
-        if trilinear_interpolate4d_c(self.data, point, self.vox_data) != 0:
-            self.__clear_pmf()
-        else:
-            self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
-        return self.pmf

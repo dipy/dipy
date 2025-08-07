@@ -6,7 +6,7 @@
 
    Affine matrix
       A matrix implementing an :term:`affine transformation` in
-      :term:`homogenous coordinates`.  For a 3 dimensional transform, the
+      :term:`homogeneous coordinates`.  For a 3 dimensional transform, the
       matrix is shape 4 by 4.
 
    Affine transformation
@@ -33,13 +33,13 @@
       Pure Pythagoras.
 
    Euler angles
-      See: `wikipedia Euler angles`_ and `Mathworld Euler angles`_.  
+      See: `wikipedia Euler angles`_ and `Mathworld Euler angles`_.
 
    Gimbal lock
       See :ref:`gimbal-lock`
 
-   Homogenous coordinates
-      See `wikipedia homogenous coordinates`_
+   Homogeneous coordinates
+      See `wikipedia homogeneous coordinates`_
 
    Linear transformation
       A linear transformation is one that preserves lines - that is, if

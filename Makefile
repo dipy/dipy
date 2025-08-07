@@ -3,7 +3,7 @@
 # the setup.py file, this Makefile is just meant as a command
 # convenience/reminder while doing development.
 
-PYTHON ?= python
+PYTHON ?= python3
 PKGDIR=dipy
 DOCSRC_DIR=doc
 DOCDIR=${PKGDIR}/${DOCSRC_DIR}
@@ -27,7 +27,7 @@ ext: recspeed.so propspeed.so vox2track.so \
     mrf.so
 
 test: ext
-	nosetests .
+	pytest -s --verbose --doctest-modules .
 
 cython-html:  ${PKGDIR}/reconst/recspeed.html ${PKGDIR}/tracking/propspeed.html ${PKGDIR}/tracking/vox2track.html ${PKGDIR}/tracking/distances.html ${PKGDIR}/tracking/streamlinespeed.html ${PKGDIR}/segment/cythonutils.html ${PKGDIR}/segment/featurespeed.html ${PKGDIR}/segment/metricspeed.html ${PKGDIR}/segment/clusteringspeed.html ${PKGDIR}/segment/clustering_algorithms.html
 
@@ -77,31 +77,13 @@ distclean: clean
 %.html : %.pyx
 	cython -a $<
 
-# Check for files not installed
-check-files:
-	$(PYTHON) -c 'from nisext.testers import check_files; check_files("dipy")'
-
-# Print out info for possible install methods
-check-version-info:
-	$(PYTHON) -c 'from nisext.testers import info_from_here; info_from_here("dipy")'
-
-# Run tests from installed code
-installed-tests:
-	$(PYTHON) -c 'from nisext.testers import tests_installed; tests_installed("dipy")'
-
-# Run tests from installed code
-sdist-tests:
-	$(PYTHON) -c 'from nisext.testers import sdist_tests; sdist_tests("dipy")'
-
-bdist-egg-tests:
-	$(PYTHON) -c 'from nisext.testers import bdist_egg_tests; bdist_egg_tests("dipy")'
-
 source-release: clean
 	$(PYTHON) -m compileall .
-	$(PYTHON) setup.py sdist --formats=gztar,zip
+	$(PYTHON) -m build --sdist --wheel .
 
 binary-release: clean
-	$(PYTHON) setup_egg.py bdist_egg
+	$(PYTHON) -m build --wheel .
 
-build-stamp-source:
-	$(PYTHON) -c 'import cythexts; cythexts.build_stamp_source()'
+# Checks to see if local files pass formatting rules
+format:
+	$(PYTHON) -m pycodestyle dipy

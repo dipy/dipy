@@ -1,4 +1,3 @@
-# distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 import numpy as np
@@ -12,21 +11,21 @@ cdef extern from "stdlib.h" nogil:
 
 cdef Py_ssize_t sizeof_memviewslice = 2 * sizeof(cnp.npy_intp) + 3 * sizeof(cnp.npy_intp) * 8
 
-cdef Shape shape_from_memview(Data data) nogil:
+cdef Shape shape_from_memview(Data data) noexcept nogil:
     """ Retrieves shape from a memoryview object.
 
     Parameters
     ----------
     data : memoryview object (float)
-        array for which the shape informations are retrieved
+        array for which the shape information is retrieved
 
     Returns
     -------
     shape : `Shape` struct
-        structure containing informations about the shape of `data`
+        structure containing information about the shape of `data`
     """
     cdef Shape shape
-    cdef int i
+    cdef cnp.npy_intp i
     shape.ndim = 0
     shape.size = 1
     for i in range(MAX_NDIM):
@@ -49,11 +48,11 @@ cdef Shape tuple2shape(dims) except *:
     Returns
     -------
     shape : `Shape` struct
-        structure containing shape informations obtained from `dims`
+        structure containing shape information obtained from `dims`
     """
     assert len(dims) < MAX_NDIM
     cdef Shape shape
-    cdef int i
+    cdef cnp.npy_intp i
     shape.ndim = len(dims)
     shape.size = np.prod(dims)
     for i in range(shape.ndim):
@@ -68,14 +67,14 @@ cdef shape2tuple(Shape shape):
     Parameters
     ----------
     shape : `Shape` struct
-        structure containing shape informations
+        structure containing shape information
 
     Returns
     -------
     dims : tuple of int
         size of each dimension
     """
-    cdef int i
+    cdef cnp.npy_intp i
     dims = []
     for i in range(shape.ndim):
         dims.append(shape.dims[i])
@@ -83,7 +82,7 @@ cdef shape2tuple(Shape shape):
     return tuple(dims)
 
 
-cdef int same_shape(Shape shape1, Shape shape2) nogil:
+cdef int same_shape(Shape shape1, Shape shape2) noexcept nogil:
     """ Checks if two shapes are the same.
 
     Two shapes are equals if they have the same number of dimensions
@@ -92,9 +91,9 @@ cdef int same_shape(Shape shape1, Shape shape2) nogil:
     Parameters
     ----------
     shape1 : `Shape` struct
-        structure containing shape informations
+        structure containing shape information
     shape2 : `Shape` struct
-        structure containing shape informations
+        structure containing shape information
 
     Returns
     -------
@@ -102,7 +101,7 @@ cdef int same_shape(Shape shape1, Shape shape2) nogil:
         tells if the shape are equals
     """
 
-    cdef int i
+    cdef cnp.npy_intp i
     cdef int same_shape = True
 
     same_shape &= shape1.ndim == shape2.ndim
@@ -113,20 +112,19 @@ cdef int same_shape(Shape shape1, Shape shape2) nogil:
     return same_shape
 
 
-cdef Data2D* create_memview_2d(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) nogil:
-    """ Create a light version of cython memory view 
-
+cdef Data2D* create_memview_2d(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) noexcept nogil:
+    """ Create a light version of cython memory view.
 
     Parameters
     ----------
     buffer_size : int
-        data size 
+        data size
     dims : array
-        desired memory view shape 
+        desired memory view shape
 
     Returns
     -------
-    Data2D* : memview pointer 
+    Data2D* : memview pointer
         floating pointer to memview
     """
     cdef Data2D* memview
@@ -142,14 +140,14 @@ cdef Data2D* create_memview_2d(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]
 
     return memview
 
-cdef void free_memview_2d(Data2D* memview) nogil:
+cdef void free_memview_2d(Data2D* memview) noexcept nogil:
     """ free a light version of cython memory view
 
     Parameters
     ----------
     memview : Data2D*
         floating pointer to memory view pointer
-        
+
     """
     free(&(memview[0][0, 0]))
     memview[0] = None  # Necessary to decrease refcount

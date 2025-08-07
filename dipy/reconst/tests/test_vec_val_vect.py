@@ -1,29 +1,20 @@
 import numpy as np
 from numpy.random import randn
-from numpy.testing import assert_almost_equal, dec
+from numpy.testing import assert_almost_equal
 
 from dipy.reconst.vec_val_sum import vec_val_vect
 
 
 def make_vecs_vals(shape):
-    return randn(*(shape)), randn(*(shape[:-2] + shape[-1:]))
+    return randn(*shape), randn(*(shape[:-2] + shape[-1:]))
 
 
-try:
-    np.einsum
-except AttributeError:
-    with_einsum = dec.skipif(True, "Need einsum for benchmark")
-else:
-    def with_einsum(f): return f
-
-
-@with_einsum
 def test_vec_val_vect():
     for shape0 in ((10,), (100,), (10, 12), (12, 10, 5)):
         for shape1 in ((3, 3), (4, 3), (3, 4)):
             shape = shape0 + shape1
             evecs, evals = make_vecs_vals(shape)
-            res1 = np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
+            res1 = np.einsum("...ij,...j,...kj->...ik", evecs, evals, evecs)
             assert_almost_equal(res1, vec_val_vect(evecs, evals))
 
 

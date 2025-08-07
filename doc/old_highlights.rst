@@ -4,10 +4,233 @@
 Older Highlights
 ****************
 
+**DIPY 1.10.0** is now available. New features include:
+
+- NF: Patch2Self3 - Large improvements of self-supervised denoising method added.
+- NF: Fiber density and spread from ODF using Bingham distributions method added.
+- NF: Iteratively reweighted least squares for robust fitting of diffusion models added.
+- NF: NDC - Neighboring DWI Correlation quality metric added.
+- NF: DAM - DWI-based tissue classification method added.
+- NF: New Parallel Backends (Ray, joblib, Dask) for fitting reconstruction methods added.
+- RF: Deprecation of Tensorflow support. PyTorch support is now the default.
+- Transition to Keyword-only arguments (PEP 3102).
+- Zero-warnings policy (CIs, Compilation, doc generation) adopted.
+- Adoption of ruff for automatic style enforcement.
+- Transition to using f-strings.
+- Citation system updated. It is more uniform and robust.
+- Multiple Workflows updated.
+- Multiple DIPY Horizon features updated.
+- Large documentation update.
+- Closed 250 issues and merged 185 pull requests.
+
+**DIPY 1.9.0** is now available. New features include:
+
+- Numpy 2.0.0 support.
+- DeepN4 novel DL-based N4 Bias Correction method added.
+- Multiple Workflows added.
+- Large update of DIPY Horizon features.
+- Pytest for Cython files (``*.pyx``) added.
+- Large documentation update.
+- Support of Python 3.8 removed.
+- Closed 142 issues and merged 60 pull requests.
+
+
+**DIPY 1.8.0** is now available. New features include:
+
+- Python 3.12.0 support.
+- Cython 3.0.0 compatibility.
+- Migrated to Meson build system. Setuptools is no more.
+- EVAC+ novel DL-based brain extraction method added.
+- Parallel Transport Tractography (PTT) 10X faster.
+- Many Horizon updates. Fast overlays of many images.
+- New Correlation Tensor Imaging (CTI) method added.
+- Improved warnings for optional dependencies.
+- Large documentation update. New theme/design integration.
+- Closed 197 issues and merged 130 pull requests.
+
+**DIPY 1.7.0** is now available. New features include:
+
+- NF: BundleWarp - Streamline-based nonlinear registration method for bundles added.
+- NF: DKI+ - Diffusion Kurtosis modeling with advanced constraints added.
+- NF: Synb0 - Synthetic b0 creation added using deep learning added.
+- NF: New Parallel Transport Tractography (PTT) added.
+- NF: Fast Streamline Search algorithm added.
+- NF: New denoising methods based on 1D CNN added.
+- Handle Asymmetric Spherical Functions.
+- Large update of DIPY Horizon features.
+- Multiple Workflows updated
+- Large codebase cleaning.
+- Large documentation update. Integration of Sphinx-Gallery.
+- Closed 53 issues and merged 34 pull requests.
+
+**DIPY 1.6.0** is now available. New features include:
+
+- NF: Unbiased groupwise linear bundle registration added.
+- NF: MAP+ constraints added.
+- Generalized PCA to less than 3 spatial dims.
+- Add positivity constraints to QTI.
+- Ability to apply Symmetric Diffeomorphic Registration to points/streamlines.
+- New Human Connectome Project (HCP) data fetcher added.
+- New Healthy Brain Network (HBN) data fetcher added.
+- Multiple Workflows updated (DTIFlow, LPCAFlow, MPPCA) and added (RUMBAFlow).
+- Ability to handle VTP files.
+- Large codebase cleaning.
+- Large documentation update.
+- Closed 75 issues and merged 41 pull requests.
+
+**DIPY 1.5.0** is now available. New features include:
+
+- New reconstruction model added: Q-space Trajectory Imaging (QTI).
+- New reconstruction model added: Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD).
+- New reconstruction model added: Residual block Deep Neural Network (ResDNN).
+- Masking management in Affine Registration added.
+- Multiple Workflows updated (DTIFlow, DKIFlow, ImageRegistrationFlow) and added (MotionCorrectionFlow).
+- Compatibility with Python 3.10 added.
+- Migrations from Azure Pipeline to Github Actions.
+- Large codebase cleaning.
+- New parallelisation module added.
+- ``dipy.io.bvectxt`` module deprecated.
+- New DIPY Horizon features (ROI Visualizer, random colors flag).
+- Large documentation update.
+- Closed 129 issues and merged 72 pull requests.
+
+**DIPY 1.4.1** is now available. New features include:
+
+- Patch2Self and its documentation updated.
+- BUAN and Recobundles documentation updated.
+- Standardization and improvement of the multiprocessing / multithreading rules.
+- Community and governance information added.
+- New surface seeding module for tractography named `mesh`.
+- Large update of Cython code in respect of the last standard.
+- Large documentation update.
+- Closed 61 issues and merged 28 pull requests.
+
+
+**DIPY 1.4.0** is now available. New features include:
+
+- New self-supervised denoising algorithm Patch2Self added.
+- BUAN and RecoBundles documentation updated.
+- Response function refactored and clarified.
+- B-tensor allowed with response functions.
+- Large Command Line Interface (CLI) documentation updated.
+- Public API for Registration added.
+- Large documentation update.
+- Closed 47 issues and merged 19 pull requests.
+
+
+**DIPY 1.3.0** is now available. New features include:
+
+- Gibbs Ringing correction 10X faster.
+- Spherical harmonics basis definitions updated.
+- Added SMT2 metrics from mean signal diffusion kurtosis.
+- New interface functions added to the registration module.
+- New linear transform added to the registration module.
+- New tutorials for DIPY command line interfaces.
+- Fixed compatibility issues with different dependencies.
+- Tqdm (multiplatform progress bar for data downloading) dependency added.
+- Large documentation update.
+- Bundle section highlight from BUAN added in Horizon.
+- Closed 134 issues and merged 49 pull requests.
+
+
+**DIPY 1.2.0** is now available. New features include:
+
+- New command line interfaces for group analysis: BUAN.
+- Added b-tensor encoding for gradient table.
+- Better support for single shell or multi-shell response functions.
+- Stats module refactored.
+- Numpy minimum version is 1.2.0.
+- Fixed compatibilities with FURY 0.6+, VTK9+, CVXPY 1.1+.
+- Added multiple tutorials for DIPY command line interfaces.
+- Updated SH basis convention.
+- Improved performance of tissue classification.
+- Fixed a memory overlap bug (multi_median).
+- Large documentation update (typography / references).
+- Closed 256 issues and merged 94 pull requests.
+
+
+**DIPY 1.1.1** is now available. New features include:
+
+- New module for deep learning ``dipy.nn`` (uses TensorFlow 2.0).
+- Improved DKI performance and increased utilities.
+- Non-linear and RESTORE fits from DTI compatible now with DKI.
+- Numerical solutions for estimating axial, radial and mean kurtosis.
+- Added Kurtosis Fractional Anisotropy by Glenn et al. 2015.
+- Added Mean Kurtosis Tensor by Hansen et al. 2013.
+- Nibabel minimum version is 3.0.0.
+- Azure CI added and Appveyor CI removed.
+- New command line interfaces for LPCA, MPPCA and Gibbs unringing.
+- New MSMT CSD tutorial added.
+- Horizon refactored and updated to support StatefulTractograms.
+- Speeded up all cython modules by using a smarter configuration setting.
+- All tutorials updated to API changes and 2 new tutorials added.
+- Large documentation update.
+- Closed 126 issues and merged 50 pull requests.
+
+
+**DIPY 1.0.0** is now available. New features include:
+
+- Critical :doc:`API changes <api_changes>`
+- Large refactoring of tracking API.
+- New denoising algorithm: MP-PCA.
+- New Gibbs ringing removal.
+- New interpolation module: ``dipy.core.interpolation``.
+- New reconstruction models: MTMS-CSD, Mean Signal DKI.
+- Increased coordinate systems consistency.
+- New object to manage safely tractography data: StatefulTractogram
+- New command line interface for downloading datasets: FetchFlow
+- Horizon updated, medical visualization interface powered by QuickBundlesX.
+- Removed all deprecated functions and parameters.
+- Removed compatibility with Python 2.7.
+- Updated minimum dependencies version (Numpy, Scipy).
+- All tutorials updated to API changes and 3 new added.
+- Large documentation update.
+- Closed 289 issues and merged 98 pull requests.
+
+
+**DIPY 0.16.0** is now available. New features include:
+
+- Horizon, medical visualization interface powered by QuickBundlesX.
+- New Tractometry tools: Bundle Analysis / Bundle Profiles.
+- New reconstruction model: IVIM MIX (Variable Projection).
+- New command line interface: Affine and Diffeomorphic Registration.
+- New command line interface: Probabilistic, Deterministic and PFT Tracking.
+- Integration of Cython Guidelines for developers.
+- Replacement of Nose by Pytest.
+- Documentation update.
+- Closed 103 issues and merged 41 pull requests.
+
+
+**DIPY 0.15.0** is now available. New features include:
+
+- Updated RecoBundles for automatic anatomical bundle segmentation.
+- New Reconstruction Model: qtau-dMRI.
+- New command line interfaces (e.g. dipy_slr).
+- New continuous integration with AppVeyor CI.
+- Nibabel Streamlines API now used almost everywhere for better memory management.
+- Compatibility with Python 3.7.
+- Many tutorials added or updated (5 New).
+- Large documentation update.
+- Moved visualization module to a new library: FURY.
+- Closed 287 issues and merged 93 pull requests.
+
+**DIPY 0.14** is now available. New features include:
+
+- RecoBundles: anatomically relevant segmentation of bundles
+- New super fast clustering algorithm: QuickBundlesX
+- New tracking algorithm: Particle Filtering Tracking.
+- New tracking algorithm: Probabilistic Residual Bootstrap Tracking.
+- Integration of the Streamlines API for reading, saving and processing tractograms.
+- Fiber ORientation Estimated using Continuous Axially Symmetric Tensors (Forecast).
+- New command line interfaces.
+- Deprecated fvtk (old visualization framework).
+- A range of new visualization improvements.
+- Large documentation update.
+
 **DIPY 0.13.0** is now available. New features include:
 
 - Faster local PCA implementation.
-- Fixed different issues with OpenMP and Windows / OSX.
+- Fixed different issues with OpenMP and Windows / macOS.
 - Replacement of cvxopt by cvxpy.
 - Replacement of Pytables by h5py.
 - Updated API to support latest numpy version (1.14).

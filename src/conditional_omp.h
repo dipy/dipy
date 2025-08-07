@@ -21,10 +21,10 @@ void omp_init_lock(omp_lock_t *lock) {};
 void omp_destroy_lock(omp_lock_t *lock) {};
 void omp_set_lock(omp_lock_t *lock) {};
 void omp_unset_lock(omp_lock_t *lock) {};
-int omp_test_lock(omp_lock_t *lock) {};
+int omp_test_lock(omp_lock_t *lock) { return -1;};
 void omp_set_dynamic(int dynamic_threads) {};
 void omp_set_num_threads(int num_threads) {};
-int omp_get_num_procs() {};
-int omp_get_max_threads() {};
+int omp_get_num_procs() { return -1;};
+int omp_get_max_threads() { return -1; };
 #define have_openmp 0
 #endif

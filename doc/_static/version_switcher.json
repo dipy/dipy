@@ -1,0 +1,53 @@
+[
+    {
+        "name": "development",
+        "version": "development",
+        "url": "https://docs.dipy.org/dev/"
+    },
+    {
+        "name": "1.11.0 (stable)",
+        "version":"1.11.0",
+        "url": "https://docs.dipy.org/1.11.0/",
+        "preferred": true
+    },
+    {
+        "name": "1.10.0",
+        "version":"1.10.0",
+        "url": "https://docs.dipy.org/1.10.0/"
+    },
+    {
+        "name": "1.9.0",
+        "version":"1.9.0",
+        "url": "https://docs.dipy.org/1.9.0/"
+    },
+    {
+        "name": "1.8.0",
+        "version":"1.8.0",
+        "url": "https://docs.dipy.org/1.8.0/"
+    },
+    {
+        "name": "1.7.0",
+        "version":"1.7.0",
+        "url": "https://docs.dipy.org/1.7.0/"
+    },
+    {
+        "name": "1.6.0",
+        "version":"1.6.0",
+        "url": "https://docs.dipy.org/1.6.0/"
+    },
+    {
+        "name": "1.5.0",
+        "version":"1.5.0",
+        "url": "https://docs.dipy.org/1.5.0/"
+    },
+    {
+        "name": "1.0.0",
+        "version":"1.0.0",
+        "url": "https://docs.dipy.org/1.0.0/"
+    },
+    {
+        "name": "0.16.0",
+        "version":"0.16.0",
+        "url": "https://docs.dipy.org/0.16.0/"
+    }
+]

@@ -1,49 +1,53 @@
-""" Classes and functions for generalized q-sampling """
-import numpy as np
-from dipy.reconst.odf import OdfModel, OdfFit, gfa
-from dipy.reconst.cache import Cache
+"""Classes and functions for generalized q-sampling"""
+
 import warnings
+
+import numpy as np
+
+from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
+from dipy.reconst.odf import OdfFit, OdfModel
+from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 
 
 class GeneralizedQSamplingModel(OdfModel, Cache):
-    def __init__(self,
-                 gtab,
-                 method='gqi2',
-                 sampling_length=1.2,
-                 normalize_peaks=False):
-        r""" Generalized Q-Sampling Imaging [1]_
+    @warning_for_keywords()
+    def __init__(
+        self, gtab, *, method="gqi2", sampling_length=1.2, normalize_peaks=False
+    ):
+        r"""Generalized Q-Sampling Imaging.
+
+        See :footcite:t:`Yeh2010` for further details about the model.
 
         This model has the same assumptions as the DSI method i.e. Cartesian
         grid sampling in q-space and fast gradient switching.
 
-        Implements equations 2.14 from [2]_ for standard GQI and equation 2.16
-        from [2]_ for GQI2. You can think of GQI2 as an analytical solution of
-        the DSI ODF.
+        Implements equations 2.14 from :footcite:p:`Garyfallidis2012b` for
+        standard GQI and equation 2.16 from :footcite:p:`Garyfallidis2012b` for
+        GQI2. You can think of GQI2 as an analytical solution of the DSI ODF.
 
         Parameters
         ----------
         gtab : object,
             GradientTable
-        method : str,
+        method : str, optional
             'standard' or 'gqi2'
-        sampling_length : float,
+        sampling_length : float, optional
             diffusion sampling length (lambda in eq. 2.14 and 2.16)
-
-        References
-        ----------
-        .. [1] Yeh F-C et al., "Generalized Q-Sampling Imaging", IEEE TMI, 2010
-
-        .. [2] Garyfallidis E, "Towards an accurate brain tractography", PhD
-        thesis, University of Cambridge, 2012.
+        normalize_peaks : bool, optional
+            True to normalize peaks.
 
         Notes
         -----
         As of version 0.9, range of the sampling length in GQI2 has changed
-        to match the same scale used in the 'standard' method [1]_. This
-        means that the value of `sampling_length` should be approximately
-        1 - 1.3 (see [1]_, pg. 1628).
+        to match the same scale used in the 'standard' method
+        :footcite:t:`Yeh2010`. This means that the value of `sampling_length`
+        should be approximately 1 - 1.3 (see :footcite:t:`Yeh2010`, pg. 1628).
+
+        References
+        ----------
+        .. footbibliography::
 
         Examples
         --------
@@ -54,9 +58,9 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         >>> from dipy.data import dsi_voxels
         >>> data, gtab = dsi_voxels()
         >>> from dipy.core.subdivide_octahedron import create_unit_sphere
-        >>> sphere = create_unit_sphere(5)
+        >>> sphere = create_unit_sphere(recursion_level=5)
         >>> from dipy.reconst.gqi import GeneralizedQSamplingModel
-        >>> gq = GeneralizedQSamplingModel(gtab, 'gqi2', 1.1)
+        >>> gq = GeneralizedQSamplingModel(gtab, method='gqi2', sampling_length=1.1)
         >>> voxel_signal = data[0, 0, 0]
         >>> odf = gq.fit(voxel_signal).odf(sphere)
 
@@ -79,14 +83,13 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         self.b_vector = b_vector.T
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         return GeneralizedQSamplingFit(self, data)
 
 
 class GeneralizedQSamplingFit(OdfFit):
-
     def __init__(self, model, data):
-        """ Calculates PDF and ODF for a single voxel
+        """Calculates PDF and ODF for a single voxel
 
         Parameters
         ----------
@@ -104,27 +107,34 @@ class GeneralizedQSamplingFit(OdfFit):
         self._qa = None
 
     def odf(self, sphere):
-        """ Calculates the discrete ODF for a given discrete sphere.
-        """
-        self.gqi_vector = self.model.cache_get('gqi_vector', key=sphere)
+        """Calculates the discrete ODF for a given discrete sphere."""
+        self.gqi_vector = self.model.cache_get("gqi_vector", key=sphere)
         if self.gqi_vector is None:
-            if self.model.method == 'gqi2':
+            if self.model.method == "gqi2":
                 H = squared_radial_component
                 # print self.gqi_vector.shape
-                self.gqi_vector = np.real(H(np.dot(
-                    self.model.b_vector, sphere.vertices.T) *
-                    self.model.Lambda))
-            if self.model.method == 'standard':
-                self.gqi_vector = np.real(np.sinc(np.dot(
-                    self.model.b_vector, sphere.vertices.T) *
-                    self.model.Lambda / np.pi))
-            self.model.cache_set('gqi_vector', sphere, self.gqi_vector)
+                self.gqi_vector = np.real(
+                    H(
+                        np.dot(self.model.b_vector, sphere.vertices.T)
+                        * self.model.Lambda
+                    )
+                )
+            if self.model.method == "standard":
+                self.gqi_vector = np.real(
+                    np.sinc(
+                        np.dot(self.model.b_vector, sphere.vertices.T)
+                        * self.model.Lambda
+                        / np.pi
+                    )
+                )
+            self.model.cache_set("gqi_vector", sphere, self.gqi_vector)
 
         return np.dot(self.data, self.gqi_vector)
 
 
-def normalize_qa(qa, max_qa=None):
-    """ Normalize quantitative anisotropy.
+@warning_for_keywords()
+def normalize_qa(qa, *, max_qa=None):
+    """Normalize quantitative anisotropy.
 
     Used mostly with GQI rather than GQI2.
 
@@ -152,20 +162,26 @@ def normalize_qa(qa, max_qa=None):
     return qa / max_qa
 
 
-def squared_radial_component(x, tol=0.01):
-    """ Part of the GQI2 integral
+@warning_for_keywords()
+def squared_radial_component(x, *, tol=0.01):
+    """Part of the GQI2 integral
 
-    Eq.8 in the referenced paper by Yeh et al. 2010
+    Eq.8 in the referenced paper by :footcite:t:`Yeh2010`.
+
+    References
+    ----------
+    .. footbibliography::
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        result = (2 * x * np.cos(x) + (x * x - 2) * np.sin(x)) / (x ** 3)
+        result = (2 * x * np.cos(x) + (x * x - 2) * np.sin(x)) / (x**3)
     x_near_zero = (x < tol) & (x > -tol)
-    return np.where(x_near_zero, 1./3, result)
+    return np.where(x_near_zero, 1.0 / 3, result)
 
 
-def npa(self, odf, width=5):
-    """ non-parametric anisotropy
+@warning_for_keywords()
+def npa(self, odf, *, width=5):
+    """non-parametric anisotropy
 
     Nimmo-Smith et al.  ISMRM 2011
     """
@@ -174,49 +190,54 @@ def npa(self, odf, width=5):
     psi0 = t0[1] ** 2
     psi1 = t1[1] ** 2
     psi2 = t2[1] ** 2
-    npa = (np.sqrt(
-        (psi0 - psi1) ** 2 +
-        (psi1 - psi2) ** 2 +
-        (psi2 - psi0) ** 2) /
-        np.sqrt(2 * (psi0 ** 2 + psi1 ** 2 + psi2 ** 2)))
+    npa = np.sqrt(
+        (psi0 - psi1) ** 2 + (psi1 - psi2) ** 2 + (psi2 - psi0) ** 2
+    ) / np.sqrt(2 * (psi0**2 + psi1**2 + psi2**2))
     # print 'tom >>>> ',t0,t1,t2,npa
 
     return t0, t1, t2, npa
 
 
-def equatorial_zone_vertices(vertices, pole, width=5):
+@warning_for_keywords()
+def equatorial_zone_vertices(vertices, pole, *, width=5):
     """
     finds the 'vertices' in the equatorial zone conjugate
     to 'pole' with width half 'width' degrees
     """
-    return [i
-            for i, v in enumerate(vertices)
-            if np.abs(np.dot(v, pole)) < np.abs(np.sin(np.pi * width / 180))]
+    return [
+        i
+        for i, v in enumerate(vertices)
+        if np.abs(np.dot(v, pole)) < np.abs(np.sin(np.pi * width / 180))
+    ]
 
 
-def polar_zone_vertices(vertices, pole, width=5):
+@warning_for_keywords()
+def polar_zone_vertices(vertices, pole, *, width=5):
     """
     finds the 'vertices' in the equatorial band around
     the 'pole' of radius 'width' degrees
     """
-    return [i
-            for i, v in enumerate(vertices)
-            if np.abs(np.dot(v, pole)) > np.abs(np.cos(np.pi * width / 180))]
+    return [
+        i
+        for i, v in enumerate(vertices)
+        if np.abs(np.dot(v, pole)) > np.abs(np.cos(np.pi * width / 180))
+    ]
 
 
 def upper_hemi_map(v):
     """
     maps a 3-vector into the z-upper hemisphere
     """
-    return np.sign(v[2])*v
+    return np.sign(v[2]) * v
 
 
 def equatorial_maximum(vertices, odf, pole, width):
     eqvert = equatorial_zone_vertices(vertices, pole, width)
     # need to test for whether eqvert is empty or not
     if len(eqvert) == 0:
-        print('empty equatorial band at %s  pole with width %f' %
-              (np.array_str(pole), width))
+        logger.info(
+            f"empty equatorial band at {np.array_str(pole)}  pole with width {width:f}"
+        )
         return None, None
     eqvals = [odf[i] for i in eqvert]
     eqargmax = np.argmax(eqvals)
@@ -230,17 +251,20 @@ def patch_vertices(vertices, pole, width):
     """
     find 'vertices' within the cone of 'width' degrees around 'pole'
     """
-    return [i
-            for i, v in enumerate(vertices)
-            if np.abs(np.dot(v, pole)) > np.abs(np.cos(np.pi * width / 180))]
+    return [
+        i
+        for i, v in enumerate(vertices)
+        if np.abs(np.dot(v, pole)) > np.abs(np.cos(np.pi * width / 180))
+    ]
 
 
 def patch_maximum(vertices, odf, pole, width):
     eqvert = patch_vertices(vertices, pole, width)
     # need to test for whether eqvert is empty or not
     if len(eqvert) == 0:
-        print('empty cone around pole %s with with width %f' %
-              (np.array_str(pole), width))
+        logger.info(
+            f"empty cone around pole {np.array_str(pole)} with with width {width:f}"
+        )
         return np.Null, np.Null
     eqvals = [odf[i] for i in eqvert]
     eqargmax = np.argmax(eqvals)
@@ -257,21 +281,22 @@ def patch_sum(vertices, odf, pole, width):
     eqvert = patch_vertices(vertices, pole, width)
     # need to test for whether eqvert is empty or not
     if len(eqvert) == 0:
-        print('empty cone around pole %s with with width %f' %
-              (np.array_str(pole), width))
+        logger.info(
+            f"empty cone around pole {np.array_str(pole)} with with width {width:f}"
+        )
         return np.Null
     return np.sum([odf[i] for i in eqvert])
 
 
 def triple_odf_maxima(vertices, odf, width):
-
     indmax1 = np.argmax([odf[i] for i, v in enumerate(vertices)])
     odfmax1 = odf[indmax1]
     pole = vertices[indmax1]
     eqvert = equatorial_zone_vertices(vertices, pole, width)
     indmax2, odfmax2 = equatorial_maximum(vertices, odf, pole, width)
-    indmax3 = eqvert[np.argmin([np.abs(np.dot(vertices[indmax2], vertices[p]))
-                                for p in eqvert])]
+    indmax3 = eqvert[
+        np.argmin([np.abs(np.dot(vertices[indmax2], vertices[p])) for p in eqvert])
+    ]
     odfmax3 = odf[indmax3]
     """
     cross12 = np.cross(vertices[indmax1],vertices[indmax2])

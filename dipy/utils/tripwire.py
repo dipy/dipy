@@ -1,13 +1,12 @@
-""" Class to raise error for missing modules or other misfortunes
-"""
+"""Class to raise error for missing modules or other misfortunes"""
 
 
 class TripWireError(AttributeError):
-    """ Exception if trying to use TripWire object """
+    """Exception if trying to use TripWire object"""
 
 
 def is_tripwire(obj):
-    """ Returns True if `obj` appears to be a TripWire object
+    """Returns True if `obj` appears to be a TripWire object
 
     Examples
     --------
@@ -17,7 +16,7 @@ def is_tripwire(obj):
     True
     """
     try:
-        obj.any_attribute
+        _ = obj.any_attribute
     except TripWireError:
         return True
     except Exception:
@@ -25,8 +24,8 @@ def is_tripwire(obj):
     return False
 
 
-class TripWire(object):
-    """ Class raising error if used
+class TripWire:
+    """Class raising error if used
 
     Standard use is to proxy modules that we could not import
 
@@ -40,15 +39,15 @@ class TripWire(object):
     Traceback (most recent call last):
         ...
     TripWireError: We do not have silly_module_name
-    """
+    """  # noqa: E501
 
     def __init__(self, msg):
         self._msg = msg
 
     def __getattr__(self, attr_name):
-        ''' Raise informative error accessing attributes '''
+        """Raise informative error accessing attributes"""
         raise TripWireError(self._msg)
 
     def __call__(self, *args, **kwargs):
-        ''' Raise informative error while calling '''
+        """Raise informative error while calling"""
         raise TripWireError(self._msg)

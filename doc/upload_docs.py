@@ -1,23 +1,24 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Script to upload docs to gh-pages branch of dipy_web that will be
 # automatically detected by the dipy website.
 import os
-import re
-import sys
 from os import chdir as cd
+import re
 from subprocess import check_call
+import sys
 
 
 def sh(cmd):
     """Execute command in a subshell, return status code."""
     print("--------------------------------------------------")
-    print("Executing: %s" % (cmd, ))
+    print(f"Executing: {cmd}")
     print("--------------------------------------------------")
     return check_call(cmd, shell=True)
 
+
 # paths
 docs_repo_path = "_build/docs_repo"
-docs_repo_url = "git@github.com:nipy/dipy_web.git"
+docs_repo_url = "https://github.com/dipy/dipy_web.git"
 
 if __name__ == '__main__':
     # get current directory
@@ -34,7 +35,7 @@ if __name__ == '__main__':
     print("Source version: ", source_version)
 
     # check for dev tag
-    if(source_version.split(".")[-1] == "dev"):
+    if source_version.split(".")[-1] == "dev":
         dev = True
         print("Development Version detected")
     else:
@@ -43,13 +44,13 @@ if __name__ == '__main__':
     # pull current docs_repo
     if not os.path.exists(docs_repo_path):
         print("docs_repo not found, pulling from git..")
-        sh("git clone %s %s" % (docs_repo_url, docs_repo_path))
+        sh(f"git clone {docs_repo_url} {docs_repo_path}")
     cd(docs_repo_path)
-    print("Moved to " + os.getcwd())
+    print(f"Moved to {os.getcwd()}")
     try:
         sh("git checkout gh-pages")
     except:
-        while(1):
+        while 1:
             print("\nLooks like gh-pages branch does not exist!")
             print("Do you want to create a new one? (y/n)")
             choice = str(input()).lower()
@@ -68,10 +69,10 @@ if __name__ == '__main__':
     sh("git pull origin gh-pages")
 
     # check if docs for current version exists
-    if (os.path.exists(source_version)) and (dev is not True):
+    if os.path.exists(source_version) and not dev:
         print("docs for current version already exists")
     else:
-        if(dev is True):
+        if dev:
             print("Re-building docs for development version")
         else:
             print("Building docs for a release")
@@ -86,14 +87,14 @@ if __name__ == '__main__':
         sh("make api")
         sh("make rstexamples")
         sh("make json")
-        sh("cp -r _build/json %s/" % (docs_repo_path,))
+        sh(f"cp -r _build/json {docs_repo_path}/")
         cd(docs_repo_path)
-        if dev is True:
+        if dev:
             try:
-                sh("rm -r %s" % (source_version,))
+                sh(f"rm -r {source_version}")
             except:
                 pass
-        sh("mv json %s" % (source_version,))
+        sh(f"mv json {source_version}")
         sh("git add .")
-        sh("git commit -m \"Add docs for %s\"" % (source_version,))
+        sh(f"git commit -m \"Add docs for {source_version}\"")
         sh("git push origin gh-pages")

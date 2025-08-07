@@ -1,20 +1,20 @@
 import numpy as np
 from numpy import zeros
+from numpy.testing import assert_equal
+
 from dipy.segment.threshold import upper_bound_by_percent, upper_bound_by_rate
-from numpy.testing import assert_equal, run_module_suite
 
 
 def test_adjustment():
-
     imga = zeros([128, 128])
 
     for y in range(128):
         for x in range(128):
-            if y > 10 and y < 115 and x > 10 and x < 115:
+            if 10 < y < 115 and 10 < x < 115:
                 imga[x, y] = 100
-            if y > 39 and y < 88 and x > 39 and x < 88:
+            if 39 < y < 88 and 39 < x < 88:
                 imga[x, y] = 150
-            if y > 59 and y < 69 and x > 59 and x < 69:
+            if 59 < y < 69 and 59 < x < 69:
                 imga[x, y] = 255
 
     high_1 = upper_bound_by_rate(imga)
@@ -50,12 +50,8 @@ def test_adjustment():
             if vol2[i][j] > 0:
                 count1_upper_test = count1_upper_test + 1
 
-
     assert_equal(count2, count2_test)
     assert_equal(count1, count1_test)
 
     assert_equal(count2_upper, count2_upper_test)
     assert_equal(count1_upper, count1_upper_test)
-
-if __name__ == '__main__':
-    run_module_suite()
