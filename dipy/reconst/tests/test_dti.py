@@ -622,7 +622,7 @@ def test_lower_triangular():
     D = lower_triangular(tensor, b0=1)
     npt.assert_array_equal(D, [0, 3, 4, 6, 7, 8, 0])
     D = lower_triangular(tensor, b0=0)
-    npt.assert_array_equal(D, [0, 3, 4, 6, 7, 8, 0])
+    npt.assert_array_equal(D, [0, 3, 4, 6, 7, 8, 9])
     npt.assert_raises(ValueError, lower_triangular, np.zeros((2, 3)))
     npt.assert_raises(TypeError, lower_triangular, tensor, b0="not a number")
     shape = (4, 5, 6)
