@@ -20,6 +20,7 @@ from dipy.reconst.weights_method import (
     weights_method_wls_m_est,
 )
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.parallel import paramap
 
 MIN_POSITIVE_SIGNAL = 0.0001
 
@@ -2481,30 +2482,61 @@ def design_matrix(gtab, *, dtype=None):
 
 
 @warning_for_keywords()
-def quantize_evecs(evecs, *, odf_vertices=None):
+def quantize_evecs(evecs, *, odf_vertices=None, idx=0, n_jobs=-1, engine="serial"):
     """Find the closest orientation of an evenly distributed sphere
 
     Parameters
     ----------
     evecs : ndarray
-        Eigenvectors.
+        Eigenvectors of shape (..., 3, n_evecs)
     odf_vertices : ndarray, optional
         If None, then set vertices from symmetric362 sphere.  Otherwise use
         passed ndarray as vertices
+    idx : int, optional
+        Use idx-th eigenvector as the primary eigenvector for fiber tracking.
+        If 0, uses the largest eigenvalue.
+    n_jobs : int, optional
+        Number of parallel jobs.
+    engine : str, optional
+        Parallel engine to use.  Choose from {"serial", "ray", "dask", "joblib"}.
+        "ray" is recommended but requires the ray library to be installed.
 
     Returns
     -------
-    IN : ndarray
-
+    ndarray
+        Indices of the closest vertices in the odf_vertices for each
+        principal eigenvector.
     """
-    max_evecs = evecs[..., :, 0]
+    if idx < 0 or idx > evecs.shape[-1] - 1:
+        raise ValueError(f"idx must be in range [0, {evecs.shape[-1] - 1}]")
+
+    if evecs.ndim < 2 or evecs.shape[-2] != 3:
+        raise ValueError(
+            "evecs must be at least 2D with second-to-last dimension of size 3"
+        )
+
+    def _find_closest_vertex(eigenvector):
+        """Helper function to find closest vertex for a single eigenvector."""
+        return np.argmax(np.dot(odf_vertices, eigenvector))
+
+    principal_eigenvectors = evecs[..., :, idx]
     if odf_vertices is None:
         odf_vertices = get_sphere(name="symmetric362").vertices
-    tup = max_evecs.shape[:-1]
-    mec = max_evecs.reshape(np.prod(np.array(tup)), 3)
-    IN = np.array([np.argmin(np.dot(odf_vertices, m)) for m in mec])
-    IN = IN.reshape(tup)
-    return IN
+
+    if evecs.ndim == 2:
+        return _find_closest_vertex(principal_eigenvectors)
+
+    original_shape = principal_eigenvectors.shape[:-1]
+    flattened_eigenvectors = principal_eigenvectors.reshape(
+        np.prod(np.array(original_shape)), 3
+    )
+
+    vertex_indices = paramap(
+        _find_closest_vertex, flattened_eigenvectors, n_jobs=n_jobs, engine=engine
+    )
+
+    vertex_indices = np.array(vertex_indices).reshape(original_shape)
+    return vertex_indices
 
 
 @warning_for_keywords()
