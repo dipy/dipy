@@ -37,6 +37,7 @@ cli_flows = {
     "dipy_fit_gqi": ("dipy.workflows.reconst", "ReconstGQIFlow"),
     "dipy_fit_ivim": ("dipy.workflows.reconst", "ReconstIvimFlow"),
     "dipy_fit_mapmri": ("dipy.workflows.reconst", "ReconstMAPMRIFlow"),
+    "dipy_fit_msmtcsd": ("dipy.workflows.reconst", "ReconstCSDFlow"),
     "dipy_fit_opdt": ("dipy.workflows.reconst", "ReconstQBallBaseFlow"),
     "dipy_fit_qball": ("dipy.workflows.reconst", "ReconstQBallBaseFlow"),
     "dipy_fit_sdt": ("dipy.workflows.reconst", "ReconstSDTFlow"),
@@ -87,6 +88,14 @@ def run():
             "remove_convolution": {
                 "dest": "remove_convolution",
                 "action": "store_true",
+                "default": True,
+            }
+        }
+    elif script_name == "dipy_fit_msmtcsd":
+        extra_args = {
+            "method": {
+                "dest": "use_msmt",
+                "metavar": "store_true",
                 "default": True,
             }
         }
