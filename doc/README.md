@@ -23,6 +23,34 @@ $ pip install -U -r doc-requirements.txt
 
 ### Generate all the Documentation
 
+The recommended way is via `spin`, which supports selective builds:
+
+```bash
+# Full build with all examples
+spin docs
+
+# Skip example execution (fast, RST/API only)
+spin docs --no-plot
+
+# Build only one tutorial (runs its code)
+spin docs reconst_csa
+
+# Build only one tutorial without running it
+spin docs reconst_csa --no-plot
+
+# Build multiple tutorials
+spin docs reconst_csa reconst_dti
+
+# Clean before building
+spin docs --clean
+```
+
+Tutorial names are matched as regex substrings against each example file path,
+so `reconst_csa` matches any script whose path contains that string.  Multiple
+names are joined with `|` (union match).
+
+Alternatively you can call `make` directly:
+
 #### Under Linux and macOS
 
 ```bash
