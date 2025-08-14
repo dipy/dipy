@@ -35,7 +35,7 @@ classifiers = [
     'Operating System :: Unix',
     'Operating System :: MacOS',
 ]
-version = "1.12.0.dev0"
+version = "1.12.0"
 dependencies = [
     "numpy>=1.22.4",
     "scipy>=1.8",
@@ -206,14 +206,15 @@ Environments = [
 ]
 
 "Documentation" = [
-    "spin.cmds.meson.docs",
-    # ".spin/cmds.py:docs"
+    ".spin/cmds.py:docs",
 ]
 Metrics = [
     ".spin/cmds.py:bench",
     # ".spin/cmds.py:coverage
 ]
-# TODO: Add custom commands
+Release = [
+    ".spin/cmds.py:prepare_release",
+]
 
 [tool.pytest.ini_options]
 addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignore-glob=**/benchmarks/*"
