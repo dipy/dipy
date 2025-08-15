@@ -1,7 +1,6 @@
 cython_sources = [
   'denspeed',
   'enhancement_kernel',
-  'nlmeans_block',
   'pca_noise_estimate',
   'shift_twist_convolution',
   ]
@@ -24,7 +23,6 @@ python_sources = ['__init__.py',
   'localpca.py',
   'nlmeans.py',
   'noise_estimate.py',
-  'non_local_means.py',
   'patch2self.py',
   ]
 
