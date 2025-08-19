@@ -236,6 +236,11 @@ To build the documentation in HTML in your computer you will need to do::
 
     sudo pip install sphinx
 
+You will also need to install the requirements for the documentation::
+
+    pip install -r requirements/doc.txt
+    pip install -r requirements/optional.txt
+
 Then change directory to ``<dipy root>`` and::
 
     cd doc
