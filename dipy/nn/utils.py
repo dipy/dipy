@@ -93,6 +93,7 @@ def transform_img(
     ratio=None,
     final_size=None,
     need_isotropic=False,
+    order=3,
 ):
     """
     Function to transform images for Deep Learning models
@@ -122,6 +123,10 @@ def transform_img(
         The final size of the image array.
     need_isotropic : bool, optional
         Whether the output needs to be isotropic in the end.
+    order : int, optional
+        The order of the spline interpolation.
+        The order has to be in the range 0-5.
+        If transforming an int image, order 0 is recommended.
 
 
 
@@ -186,7 +191,7 @@ def transform_img(
     inv_affine = np.linalg.inv(new_affine)
     new_image = np.zeros(tuple(new_shape))
     affine_transform(
-        image2, inv_affine, output_shape=tuple(new_shape), output=new_image
+        image2, inv_affine, output_shape=tuple(new_shape), output=new_image, order=order
     )
 
     mid_image = new_image.copy()
@@ -231,6 +236,7 @@ def transform_img(
         need_isotropic,
         final_size,
         ori_shape,
+        order,
     )
 
     return new_image, params
@@ -260,7 +266,7 @@ def recover_img(image, params):
     if param_len != 11:
         raise ValueError(
             f"{param_len} is an invalid length for length of params."
-            + " params should have a length of 11. Please check whether "
+            + " params should have a length of 12. Please check whether "
             + "if you are using the output of the transform_img function."
         )
     (
@@ -275,6 +281,7 @@ def recover_img(image, params):
         need_isotropic,
         final_size,
         ori_shape,
+        order,
     ) = params
     new_affine = np.linalg.inv(inv_affine)
     if need_isotropic:
@@ -313,7 +320,9 @@ def recover_img(image, params):
             pad_vs[2, 0] : new_image.shape[2] - pad_vs[2, 1],
         ]
 
-    new_image = affine_transform(new_image, new_affine, output_shape=mid_shape)
+    new_image = affine_transform(
+        new_image, new_affine, output_shape=mid_shape, order=order
+    )
     affine = np.matmul(np.linalg.inv(offset_array), new_affine)
 
     if target_voxsize is not None and np.any(target_voxsize != np.ones(3)):
