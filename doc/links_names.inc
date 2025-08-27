@@ -33,7 +33,6 @@
 .. _pip: https://www.pip-installer.org/en/latest/
 .. _easy_install: https://pypi.python.org/pypi/setuptools
 .. _homebrew: https://brew.sh/
-.. _neurofedora: https://neuro.fedoraproject.org/
 
 .. Documentation tools
 .. _graphviz: https://www.graphviz.org/
