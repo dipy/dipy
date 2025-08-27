@@ -5,7 +5,7 @@ Using Various Stopping Criterion for Tractography
 The stopping criterion determines if the tracking stops or continues at each
 tracking position. The tracking stops when it reaches an ending region
 (e.g. low FA, gray matter or corticospinal fluid regions) or exits the image
-boundaries. The tracking also stops if the direction getter has no direction
+boundaries. The tracking also stops if the tracker has no direction
 to follow.
 
 Each stopping criterion determines if the stopping is 'valid' or
@@ -13,7 +13,7 @@ Each stopping criterion determines if the stopping is 'valid' or
 the streamline stops in a position classified as 'ENDPOINT' or 'OUTSIDEIMAGE'.
 A streamline is 'invalid' when it stops in a position classified as
 'TRACKPOINT' or 'INVALIDPOINT'. These conditions are described below. The
-'LocalTracking' generator can be set to output all generated streamlines
+deterministic tracker generator can be set to output all generated streamlines
 or only the 'valid' ones. See :footcite:t:`Girard2014` and
 :footcite:p:`Smith2012` for more details on these methods.
 
@@ -21,8 +21,8 @@ This example is an extension of the
 :ref:`sphx_glr_examples_built_fiber_tracking_tracking_deterministic.py`
 example. We begin by loading the data, creating a seeding mask from white
 matter voxels of the corpus callosum, fitting a Constrained Spherical
-Deconvolution (CSD) reconstruction model and creating the maximum
-deterministic direction getter.
+Deconvolution (CSD) reconstruction model and creating the
+deterministic tracker.
 """
 
 import matplotlib.pyplot as plt
@@ -33,7 +33,7 @@ from dipy.data import default_sphere, get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.tracking import utils
@@ -132,7 +132,7 @@ streamline_generator = deterministic_tracking(
 )
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_probabilistic_thresh_all.trk")
+save_tractogram(sft, "tractogram_probabilistic_thresh_all.trx")
 
 if has_fury:
     scene = window.Scene()
@@ -207,7 +207,7 @@ streamline_generator = deterministic_tracking(
 )
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_deterministic_binary_all.trk")
+save_tractogram(sft, "tractogram_deterministic_binary_all.trx")
 
 if has_fury:
     scene = window.Scene()
@@ -312,7 +312,7 @@ streamline_generator = deterministic_tracking(
 )
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_deterministic_act_all.trk")
+save_tractogram(sft, "tractogram_deterministic_act_all.trx")
 
 if has_fury:
     scene = window.Scene()
@@ -341,7 +341,7 @@ streamline_generator = deterministic_tracking(
 )
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_deterministic_act_valid.trk")
+save_tractogram(sft, "tractogram_deterministic_act_valid.trx")
 
 if has_fury:
     scene = window.Scene()

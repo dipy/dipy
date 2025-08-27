@@ -116,9 +116,9 @@ Practical
 
 4. **Which file formats do you support?**
 
-  Nifti (.nii), Dicom (Siemens(read-only)), Trackvis (.trk), DIPY (.dpy),
-  Numpy (.npy, ,npz), text and any other formats supported by nibabel and
-  pydicom.
+  Nifti (.nii), Dicom (Siemens(read-only)), Trackvis (.trk), DIPY (.dpy), Mrtrix (.tck),
+  TRX community file (.trx), Numpy (.npy, ,npz), text and any other formats supported
+  by nibabel and pydicom.
 
   You can also read/save in Matlab version v4 (Level 1.0), v6 and v7 to 7.2,
   using `scipy.io.loadmat`. For higher versions >= 7.3, you can use pytables_

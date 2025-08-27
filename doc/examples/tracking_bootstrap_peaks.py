@@ -1,12 +1,12 @@
 """
 ====================================================
-Bootstrap and Closest Peak Direction Getters Example
+Bootstrap and Closest Peak Tracker Example
 ====================================================
 
-This example shows how choices in direction-getter impact fiber
-tracking results by demonstrating the bootstrap direction getter (a type of
+This example shows how choices in tracker impact fiber
+tracking results by demonstrating the bootstrap tracker (a type of
 probabilistic tracking, as described in :footcite:p:`Berman2008` and the closest
-peak direction getter (a type of deterministic tracking)
+peak tracker (a type of deterministic tracking)
 :footcite:p:`Amirbekian2016`.
 
 This example is an extension of the
@@ -20,7 +20,7 @@ from dipy.data import get_fnames, small_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking import utils
@@ -61,10 +61,10 @@ gfa = csa_model.fit(data, mask=white_matter).gfa
 stopping_criterion = ThresholdStoppingCriterion(gfa, 0.25)
 
 ###############################################################################
-# Next, we need to set up our two direction getters
+# Next, we need to set up our two trackers
 #
 #
-# Example #1: Bootstrap direction getter with CSD Model
+# Example #1: Bootstrap tracker with CSD Model
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 boot_streamline_generator = bootstrap_tracking(
     seeds,
@@ -78,7 +78,7 @@ boot_streamline_generator = bootstrap_tracking(
 )
 streamlines = Streamlines(boot_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_bootstrap_dg.trk")
+save_tractogram(sft, "tractogram_bootstrap_dg.trx")
 
 if has_fury:
     scene = window.Scene()
@@ -90,7 +90,7 @@ if has_fury:
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Corpus Callosum Bootstrap Probabilistic Direction Getter
+# Corpus Callosum Bootstrap Probabilistic Tracker
 #
 #
 # We have created a bootstrapped probabilistic set of streamlines. If you
@@ -99,7 +99,7 @@ if has_fury:
 #
 #
 #
-# Example #2: Closest peak direction getter with CSD Model
+# Example #2: Closest peak tracker with CSD Model
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 pmf = csd_fit.odf(small_sphere).clip(min=0)
@@ -114,7 +114,7 @@ peak_streamline_generator = closestpeak_tracking(
 )
 streamlines = Streamlines(peak_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "closest_peak_dg_CSD.trk")
+save_tractogram(sft, "closest_peak_dg_CSD.trx")
 
 if has_fury:
     scene = window.Scene()
@@ -128,10 +128,10 @@ if has_fury:
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Corpus Callosum Closest Peak Deterministic Direction Getter
+# Corpus Callosum Closest Peak Tracker
 #
 #
-# We have created a set of streamlines using the closest peak direction getter,
+# We have created a set of streamlines using the closest peak tracker,
 # which is a type of deterministic tracking. If you repeat the fiber tracking
 # (keeping all inputs the same) you will get exactly the same set of
 # streamlines.

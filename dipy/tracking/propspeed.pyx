@@ -29,8 +29,7 @@ from dipy.utils.fast_numpy cimport (
     where_to_insert,
 )
 from dipy.tracking.tractogen cimport prepare_pmf
-from dipy.tracking.tracker_parameters cimport (TrackerParameters, TrackerStatus,
-                                               SUCCESS, FAIL)
+from dipy.tracking.tracker_parameters cimport TrackerParameters, TrackerStatus
 
 from libc.stdlib cimport malloc, free
 from libc.math cimport M_PI, pow, sin, cos, fabs
@@ -731,7 +730,7 @@ cdef TrackerStatus deterministic_propagator(double* point,
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
 
     if norm(direction) == 0:
-        return FAIL
+        return TrackerStatus.FAIL
     normalize(direction)
 
     pmf = <double*> malloc(len_pmf * sizeof(double))
@@ -749,7 +748,7 @@ cdef TrackerStatus deterministic_propagator(double* point,
 
     if max_value <= 0:
         free(pmf)
-        return FAIL
+        return TrackerStatus.FAIL
 
     newdir = &pmf_gen.vertices[max_idx][0]
     # Update direction
@@ -763,7 +762,7 @@ cdef TrackerStatus deterministic_propagator(double* point,
         direction[1] = direction[1] * -1
         direction[2] = direction[2] * -1
     free(pmf)
-    return SUCCESS
+    return TrackerStatus.SUCCESS
 
 
 cdef TrackerStatus probabilistic_propagator(double* point,
@@ -807,7 +806,7 @@ cdef TrackerStatus probabilistic_propagator(double* point,
 
 
     if norm(direction) == 0:
-        return FAIL
+        return TrackerStatus.FAIL
     normalize(direction)
 
     pmf = <double*> malloc(len_pmf * sizeof(double))
@@ -826,7 +825,7 @@ cdef TrackerStatus probabilistic_propagator(double* point,
     last_cdf = pmf[len_pmf - 1]
     if last_cdf == 0:
         free(pmf)
-        return FAIL
+        return TrackerStatus.FAIL
 
     idx = where_to_insert(pmf, random_float(rng) * last_cdf, len_pmf)
     newdir = &pmf_gen.vertices[idx][0]
@@ -841,7 +840,7 @@ cdef TrackerStatus probabilistic_propagator(double* point,
         direction[1] = direction[1] * -1
         direction[2] = direction[2] * -1
     free(pmf)
-    return SUCCESS
+    return TrackerStatus.SUCCESS
 
 
 cdef TrackerStatus parallel_transport_propagator(double* point,
@@ -948,6 +947,6 @@ cdef TrackerStatus parallel_transport_propagator(double* point,
             # within the trial limit
             # update the point and return
             copy_point(&stream_data[19], point)
-            return SUCCESS
+            return TrackerStatus.SUCCESS
 
-    return FAIL
+    return TrackerStatus.FAIL

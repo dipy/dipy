@@ -1,14 +1,13 @@
 #!/usr/bin/python
 """Class and helper functions for fitting the DeepN4 model."""
 
-import logging
-
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
 from dipy.data import get_fnames
 from dipy.nn.utils import normalize, recover_img, set_logger_level, transform_img
 from dipy.testing.decorators import doctest_skip_parser
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
@@ -27,14 +26,11 @@ else:
     class Module:
         pass
 
-    logging.warning(
+    logger.warning(
         "This model requires Pytorch.\
                     Please install these packages using \
                     pip."
     )
-
-logging.basicConfig()
-logger = logging.getLogger("deepn4")
 
 
 class UNet3D(Module):

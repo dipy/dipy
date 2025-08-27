@@ -8,6 +8,7 @@ from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 
 
 class GeneralizedQSamplingModel(OdfModel, Cache):
@@ -234,7 +235,7 @@ def equatorial_maximum(vertices, odf, pole, width):
     eqvert = equatorial_zone_vertices(vertices, pole, width)
     # need to test for whether eqvert is empty or not
     if len(eqvert) == 0:
-        print(
+        logger.info(
             f"empty equatorial band at {np.array_str(pole)}  pole with width {width:f}"
         )
         return None, None
@@ -261,7 +262,9 @@ def patch_maximum(vertices, odf, pole, width):
     eqvert = patch_vertices(vertices, pole, width)
     # need to test for whether eqvert is empty or not
     if len(eqvert) == 0:
-        print(f"empty cone around pole {np.array_str(pole)} with with width {width:f}")
+        logger.info(
+            f"empty cone around pole {np.array_str(pole)} with with width {width:f}"
+        )
         return np.Null, np.Null
     eqvals = [odf[i] for i in eqvert]
     eqargmax = np.argmax(eqvals)
@@ -278,7 +281,9 @@ def patch_sum(vertices, odf, pole, width):
     eqvert = patch_vertices(vertices, pole, width)
     # need to test for whether eqvert is empty or not
     if len(eqvert) == 0:
-        print(f"empty cone around pole {np.array_str(pole)} with with width {width:f}")
+        logger.info(
+            f"empty cone around pole {np.array_str(pole)} with with width {width:f}"
+        )
         return np.Null
     return np.sum([odf[i] for i in eqvert])
 

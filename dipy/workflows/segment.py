@@ -1,5 +1,4 @@
-import logging
-import os
+from pathlib import Path
 import sys
 from time import time
 
@@ -13,6 +12,8 @@ from dipy.segment.bundles import RecoBundles
 from dipy.segment.mask import median_otsu
 from dipy.segment.tissue import TissueClassifierHMRF, dam_classifier
 from dipy.tracking import Streamlines
+from dipy.utils.deprecator import deprecated_params
+from dipy.utils.logging import logger
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
@@ -22,6 +23,7 @@ class MedianOtsuFlow(Workflow):
     def get_short_name(cls):
         return "medotsu"
 
+    @deprecated_params(["autocrop"], since="1.11.0", until="1.13.0")
     def run(
         self,
         input_files,
@@ -44,7 +46,7 @@ class MedianOtsuFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         save_masked : bool, optional
@@ -54,10 +56,13 @@ class MedianOtsuFlow(Workflow):
         numpass : int, optional
             Number of pass of the median filter.
         autocrop : bool, optional
-            If True, the masked input_volumes will also be cropped using the
-            bounding box defined by the masked data. For example, if diffusion
-            images are of 1x1x1 (mm^3) or higher resolution auto-cropping could
-            reduce their size in memory and speed up some of the analysis.
+            .. deprecated:: 1.11.0
+               This parameter is deprecated and will be removed in 1.13.0.
+
+            If True, the mask is cropped to the bounding box of the
+            non-zero elements. This is useful for large 3D volumes
+            (e.g. 4D volumes) where the mask is not the same size as
+            the input volume.
         vol_idx : str, optional
             1D array representing indices of ``axis=-1`` of a 4D
             `input_volume`. From the command line use something like
@@ -67,7 +72,7 @@ class MedianOtsuFlow(Workflow):
         finalize_mask : bool, optional
             Whether to remove potential holes or islands.
             Useful for solving minor errors.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_mask : string, optional
             Name of the mask volume to be saved.
@@ -78,7 +83,7 @@ class MedianOtsuFlow(Workflow):
         vol_idx = handle_vol_idx(vol_idx)
 
         for fpath, mask_out_path, masked_out_path in io_it:
-            logging.info(f"Applying median_otsu segmentation on {fpath}")
+            logger.info(f"Applying median_otsu segmentation on {fpath}")
 
             data, affine, img = load_nifti(fpath, return_img=True)
             masked_volume, mask_volume = median_otsu(
@@ -86,19 +91,19 @@ class MedianOtsuFlow(Workflow):
                 vol_idx=vol_idx,
                 median_radius=median_radius,
                 numpass=numpass,
-                autocrop=autocrop,
                 dilate=dilate,
                 finalize_mask=finalize_mask,
+                autocrop=autocrop,
             )
 
             save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
 
-            logging.info(f"Mask saved as {mask_out_path}")
+            logger.info(f"Mask saved as {mask_out_path}")
 
             if save_masked:
                 save_nifti(masked_out_path, masked_volume, affine, hdr=img.header)
 
-                logging.info(f"Masked volume saved as {masked_out_path}")
+                logger.info(f"Masked volume saved as {masked_out_path}")
 
         return io_it
 
@@ -129,7 +134,7 @@ class RecoBundlesFlow(Workflow):
         r_pruning_thr=6.0,
         no_r_slr=False,
         out_dir="",
-        out_recognized_transf="recognized.trk",
+        out_recognized_transf="recognized.trx",
         out_recognized_labels="labels.npy",
     ):
         """Recognize bundles
@@ -139,9 +144,9 @@ class RecoBundlesFlow(Workflow):
 
         Parameters
         ----------
-        streamline_files : string
+        streamline_files : string or Path
             The path of streamline files where you want to recognize bundles.
-        model_bundle_files : string
+        model_bundle_files : string or Path
             The path of model bundle files.
         greater_than : int, optional
             Keep streamlines that have length greater than
@@ -179,7 +184,7 @@ class RecoBundlesFlow(Workflow):
         no_r_slr : bool, optional
             Don't enable Refine local Streamline-based Linear
             Registration.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_recognized_transf : string, optional
             Recognized bundle in the space of the model bundle.
@@ -230,28 +235,28 @@ class RecoBundlesFlow(Workflow):
         if slr_transform == "scaling":
             bounds = bounds[:9]
 
-        logging.info("### RecoBundles ###")
+        logger.info("### RecoBundles ###")
 
         io_it = self.get_io_iterator()
 
         t = time()
-        logging.info(streamline_files)
+        logger.info(streamline_files)
         input_obj = load_tractogram(streamline_files, "same", bbox_valid_check=False)
         streamlines = input_obj.streamlines
 
-        logging.info(f" Loading time {time() - t:0.3f} sec")
+        logger.info(f" Loading time {time() - t:0.3f} sec")
 
         rb = RecoBundles(streamlines, greater_than=greater_than, less_than=less_than)
 
         for _, mb, out_rec, out_labels in io_it:
             t = time()
-            logging.info(mb)
+            logger.info(mb)
             model_bundle = load_tractogram(
                 mb, "same", bbox_valid_check=False
             ).streamlines
-            logging.info(f" Loading time {time() - t:0.3f} sec")
-            logging.info("model file = ")
-            logging.info(mb)
+            logger.info(f" Loading time {time() - t:0.3f} sec")
+            logger.info("model file = ")
+            logger.info(mb)
 
             recognized_bundle, labels = rb.recognize(
                 model_bundle,
@@ -308,17 +313,17 @@ class RecoBundlesFlow(Workflow):
                     model_bundle, recognized_bundle, slr_select
                 )
 
-                logging.info(f"Bundle adjacency Metric {ba}")
-                logging.info(f"Bundle Min Distance Metric {bmd}")
+                logger.info(f"Bundle adjacency Metric {ba}")
+                logger.info(f"Bundle Min Distance Metric {bmd}")
 
             new_tractogram = StatefulTractogram(
                 recognized_bundle, streamline_files, Space.RASMM
             )
             save_tractogram(new_tractogram, out_rec, bbox_valid_check=False)
-            logging.info("Saving output files ...")
+            logger.info("Saving output files ...")
             np.save(out_labels, np.array(labels))
-            logging.info(out_rec)
-            logging.info(out_labels)
+            logger.info(out_rec)
+            logger.info(out_labels)
 
 
 class LabelsBundlesFlow(Workflow):
@@ -331,7 +336,7 @@ class LabelsBundlesFlow(Workflow):
         streamline_files,
         labels_files,
         out_dir="",
-        out_bundle="recognized_orig.trk",
+        out_bundle="recognized_orig.trx",
     ):
         """Extract bundles using existing indices (labels)
 
@@ -339,11 +344,11 @@ class LabelsBundlesFlow(Workflow):
 
         Parameters
         ----------
-        streamline_files : string
+        streamline_files : string or Path
             The path of streamline files where you want to recognize bundles.
-        labels_files : string
+        labels_files : string or Path
             The path of model bundle files.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_bundle : string, optional
             Recognized bundle in the space of the model bundle.
@@ -353,25 +358,25 @@ class LabelsBundlesFlow(Workflow):
         .. footbibliography::
 
         """
-        logging.info("### Labels to Bundles ###")
+        logger.info("### Labels to Bundles ###")
 
         io_it = self.get_io_iterator()
         for f_steamlines, f_labels, out_bundle in io_it:
-            logging.info(f_steamlines)
+            logger.info(f_steamlines)
             sft = load_tractogram(f_steamlines, "same", bbox_valid_check=False)
             streamlines = sft.streamlines
 
-            logging.info(f_labels)
+            logger.info(f_labels)
             location = np.load(f_labels)
             if len(location) < 1:
                 bundle = Streamlines([])
             else:
                 bundle = streamlines[location]
 
-            logging.info("Saving output files ...")
+            logger.info("Saving output files ...")
             new_sft = StatefulTractogram(bundle, sft, Space.RASMM)
             save_tractogram(new_sft, out_bundle, bbox_valid_check=False)
-            logging.info(out_bundle)
+            logger.info(out_bundle)
 
 
 class ClassifyTissueFlow(Workflow):
@@ -399,10 +404,10 @@ class ClassifyTissueFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvals_file : string, optional
+        bvals_file : string or Path, optional
             Path to the b-values file. Required for 'dam' method.
         method : string, optional
             Method to use for tissue extraction. Options are:
@@ -440,7 +445,7 @@ class ClassifyTissueFlow(Workflow):
             and the algorithm will run for the specified number of
             iterations unless another stopping criterion is met.
             Used only for 'hmrf' method.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_tissue : string, optional
             Name of the tissue volume to be saved.
@@ -455,7 +460,7 @@ class ClassifyTissueFlow(Workflow):
         io_it = self.get_io_iterator()
 
         if not method or method.lower() not in ["hmrf", "dam"]:
-            logging.error(
+            logger.error(
                 f"Unknown method '{method}' for tissue extraction. "
                 "Choose '--method hmrf' (for T1w) or '--method dam' (for DWI)"
             )
@@ -463,26 +468,25 @@ class ClassifyTissueFlow(Workflow):
 
         prefix = "t1" if method.lower() == "hmrf" else "dwi"
         for i, name in enumerate(self.flat_outputs):
-            if name.endswith("tissue_classified.nii.gz"):
-                self.flat_outputs[i] = name.replace(
-                    "tissue_classified.nii.gz", f"{prefix}_tissue_classified.nii.gz"
-                )
-            if name.endswith("tissue_classified_pve.nii.gz"):
-                self.flat_outputs[i] = name.replace(
-                    "tissue_classified_pve.nii.gz",
-                    f"{prefix}_tissue_classified_pve.nii.gz",
-                )
+            if str(name).endswith("tissue_classified.nii.gz"):
+                self.flat_outputs[i] = Path(name).parent / Path(
+                    "tissue_classified.nii.gz"
+                ).with_name(f"{prefix}_tissue_classified.nii.gz")
+            if str(name).endswith("tissue_classified_pve.nii.gz"):
+                self.flat_outputs[i] = Path(name).parent / Path(
+                    "tissue_classified_pve.nii.gz"
+                ).with_name(f"{prefix}_tissue_classified_pve.nii.gz")
 
         self.update_flat_outputs(self.flat_outputs, io_it)
 
         for fpath, tissue_out_path, opve in io_it:
-            logging.info(f"Extracting tissue from {fpath}")
+            logger.info(f"Extracting tissue from {fpath}")
 
             data, affine = load_nifti(fpath)
 
             if method.lower() == "hmrf":
                 if nclass is None:
-                    logging.error(
+                    logger.error(
                         "Number of classes is required for 'hmrf' method. "
                         "For example, Use '--nclass 4' to specify the number of "
                         "classes."
@@ -497,8 +501,8 @@ class ClassifyTissueFlow(Workflow):
                 save_nifti(opve, PVE, affine)
 
             elif method.lower() == "dam":
-                if bvals_file is None or not os.path.isfile(bvals_file):
-                    logging.error("'--bvals filename' is required for 'dam' method")
+                if bvals_file is None or not Path(bvals_file).is_file():
+                    logger.error("'--bvals filename' is required for 'dam' method")
                     sys.exit(1)
 
                 bvals, _ = read_bvals_bvecs(bvals_file, None)
@@ -517,6 +521,6 @@ class ClassifyTissueFlow(Workflow):
                     opve, np.stack([wm_mask, gm_mask], axis=-1).astype(np.int32), affine
                 )
 
-            logging.info(f"Tissue saved as {tissue_out_path} and PVE as {opve}")
+            logger.info(f"Tissue saved as {tissue_out_path} and PVE as {opve}")
 
         return io_it

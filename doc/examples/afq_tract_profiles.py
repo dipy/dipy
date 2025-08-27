@@ -16,14 +16,12 @@ mean trajectory of the bundle at that location.
 
 """
 
-import os.path as op
-
 import matplotlib.pyplot as plt
 import numpy as np
 
 from dipy.data import fetch_hbn, get_two_hcp842_bundles
 from dipy.io.image import load_nifti
-from dipy.io.streamline import load_trk
+from dipy.io.streamline import load_tractogram
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.featurespeed import ResampleFeature
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
@@ -42,30 +40,34 @@ session = "HBNsiteRU"
 
 fdict, path = fetch_hbn([subject], include_afq=True)
 
-afq_path = op.join(path, "derivatives", "afq", f"sub-{subject}", f"ses-{session}")
+afq_path = path / "derivatives" / "afq" / f"sub-{subject}" / f"ses-{session}"
 
 ###############################################################################
 # We can use the `dipy.io` API to read in the bundles from file.
-# `load_trk` returns both the streamlines, as well as header information, and
-# the `streamlines` attribute will give us access to the sequence of arrays
-# that contain the streamline coordinates.
+# `load_tractogram` returns both the streamlines, as well as header
+# information, and the `streamlines` attribute will give us access to the
+# sequence of arrays that contain the streamline coordinates.
 
-cst_l_file = op.join(
-    afq_path,
-    "clean_bundles",
-    f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
+cst_l_file = (
+    afq_path
+    / "clean_bundles"
+    / f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
     "-RASMM_model-CSD_desc-prob-afq-CST_L_tractography.trk",
 )
 
-arc_l_file = op.join(
-    afq_path,
-    "clean_bundles",
-    f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
+arc_l_file = (
+    afq_path
+    / "clean_bundles"
+    / f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
     "-RASMM_model-CSD_desc-prob-afq-ARC_L_tractography.trk",
 )
 
-cst_l = load_trk(cst_l_file, reference="same", bbox_valid_check=False).streamlines
-arc_l = load_trk(arc_l_file, reference="same", bbox_valid_check=False).streamlines
+cst_l = load_tractogram(
+    cst_l_file, reference="same", bbox_valid_check=False
+).streamlines
+arc_l = load_tractogram(
+    arc_l_file, reference="same", bbox_valid_check=False
+).streamlines
 
 ###############################################################################
 # In the next step, we need to make sure that all the streamlines in each
@@ -83,10 +85,10 @@ arc_l = load_trk(arc_l_file, reference="same", bbox_valid_check=False).streamlin
 
 model_arc_l_file, model_cst_l_file = get_two_hcp842_bundles()
 
-model_arc_l = load_trk(
+model_arc_l = load_tractogram(
     model_arc_l_file, reference="same", bbox_valid_check=False
 ).streamlines
-model_cst_l = load_trk(
+model_cst_l = load_tractogram(
     model_cst_l_file, reference="same", bbox_valid_check=False
 ).streamlines
 
@@ -123,11 +125,8 @@ oriented_arc_l = dts.orient_by_streamline(arc_l, standard_af_l)
 # this subject with the diffusion tensor imaging (DTI) model.
 
 fa, fa_affine = load_nifti(
-    op.join(
-        afq_path,
-        f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc"
-        "-preproc_dwi_model-DTI_FA.nii.gz",
-    )
+    afq_path / f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc"
+    "-preproc_dwi_model-DTI_FA.nii.gz",
 )
 
 ###############################################################################

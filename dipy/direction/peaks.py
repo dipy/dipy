@@ -424,8 +424,8 @@ def peaks_from_model(
         SH coefficients (default 8).
     sh_basis_type : {None, 'tournier07', 'descoteaux07'}
         ``None`` for the default DIPY basis,
-        ``tournier07`` for the Tournier 2007 :footcite:p:Tournier2007` basis,
-        and ``descoteaux07`` for the Descoteaux 2007 :footcite:p:Descoteaux2007`
+        ``tournier07`` for the Tournier 2007 :footcite:p:`Tournier2007` basis,
+        and ``descoteaux07`` for the Descoteaux 2007 :footcite:p:`Descoteaux2007`
         basis
         (``None`` defaults to ``descoteaux07``).
     legacy: bool, optional

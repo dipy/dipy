@@ -1,7 +1,7 @@
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import importlib
 import os
-import os.path as op
+from pathlib import Path
 import tempfile
 from threading import Thread
 from urllib.request import pathname2url
@@ -31,7 +31,7 @@ def test_make_fetcher():
         stored_md5_642 = fetcher._get_file_md5(symmetric642)
 
         # create local HTTP Server
-        testfile_folder = op.split(symmetric362)[0] + os.sep
+        testfile_folder = str(Path(symmetric362).parent) + os.sep
         testfile_url = f"file:{pathname2url(testfile_folder)}"
         print(testfile_url)
         print(symmetric362)
@@ -48,7 +48,7 @@ def test_make_fetcher():
             "sphere_fetcher",
             tmpdir,
             testfile_url,
-            [op.sep + op.split(symmetric362)[-1], op.sep + op.split(symmetric642)[-1]],
+            [os.sep + Path(symmetric362).name, os.sep + Path(symmetric642).name],
             ["sphere_name", "sphere_name2"],
             md5_list=[stored_md5, stored_md5_642],
             optional_fnames=["sphere_name2"],
@@ -61,10 +61,10 @@ def test_make_fetcher():
             # stop local HTTP Server
             server.shutdown()
 
-        assert op.isfile(op.join(tmpdir, "sphere_name"))
-        assert not op.isfile(op.join(tmpdir, "sphere_name2"))
+        assert Path(Path(tmpdir) / "sphere_name").is_file()
+        assert not Path(Path(tmpdir) / "sphere_name2").is_file()
         npt.assert_equal(
-            fetcher._get_file_md5(op.join(tmpdir, "sphere_name")), stored_md5
+            fetcher._get_file_md5(Path(tmpdir) / "sphere_name"), stored_md5
         )
         try:
             sphere_fetcher(include_optional=True)
@@ -73,13 +73,13 @@ def test_make_fetcher():
             # stop local HTTP Server
             server.shutdown()
 
-        assert op.isfile(op.join(tmpdir, "sphere_name"))
-        assert op.isfile(op.join(tmpdir, "sphere_name2"))
+        assert Path(Path(tmpdir) / "sphere_name").is_file()
+        assert Path(Path(tmpdir) / "sphere_name2").is_file()
         npt.assert_equal(
-            fetcher._get_file_md5(op.join(tmpdir, "sphere_name")), stored_md5
+            fetcher._get_file_md5(Path(tmpdir) / "sphere_name"), stored_md5
         )
         npt.assert_equal(
-            fetcher._get_file_md5(op.join(tmpdir, "sphere_name2")), stored_md5_642
+            fetcher._get_file_md5(Path(tmpdir) / "sphere_name2"), stored_md5_642
         )
 
         # stop local HTTP Server
@@ -94,11 +94,12 @@ def test_fetch_data():
         md5 = fetcher._get_file_md5(symmetric362)
         bad_md5 = "8" * len(md5)
 
-        newfile = op.join(tmpdir, "testfile.txt")
+        newfile = Path(tmpdir) / "testfile.txt"
         # Test that the fetcher can get a file
         testfile_url = symmetric362
         print(testfile_url)
-        testfile_dir, testfile_name = op.split(testfile_url)
+        p = Path(testfile_url)
+        testfile_dir, testfile_name = str(p.parent), p.name
         # create local HTTP Server
         test_server_url = f"http://127.0.0.1:8001/{testfile_name}"
         current_dir = os.getcwd()
@@ -117,7 +118,7 @@ def test_fetch_data():
             print(e)
             # stop local HTTP Server
             server.shutdown()
-        npt.assert_(op.exists(newfile))
+        npt.assert_(newfile.exists())
 
         # Test that the file is replaced when the md5 doesn't match
         with open(newfile, "a") as f:
@@ -128,7 +129,7 @@ def test_fetch_data():
             print(e)
             # stop local HTTP Server
             server.shutdown()
-        npt.assert_(op.exists(newfile))
+        npt.assert_(newfile.exists())
         npt.assert_equal(fetcher._get_file_md5(newfile), md5)
 
         # Test that an error is raised when the md5 checksum of the download
@@ -152,7 +153,7 @@ def test_fetch_data():
         importlib.reload(fetcher)
 
         npt.assert_string_equal(
-            fetcher.dipy_home, op.join(os.path.expanduser("~"), ".dipy")
+            fetcher.dipy_home, str(Path("~").expanduser() / ".dipy")
         )
         os.environ["DIPY_HOME"] = test_path
         importlib.reload(fetcher)

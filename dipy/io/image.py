@@ -11,7 +11,7 @@ def load_nifti_data(fname, *, as_ndarray=True):
 
     Parameters
     ----------
-    fname : str
+    fname : str or Path
         Full path to the file.
     as_ndarray: bool, optional
         convert nibabel ArrayProxy to a numpy.ndarray.
@@ -44,7 +44,7 @@ def load_nifti(
 
     Parameters
     ----------
-    fname : str
+    fname : str or Path
         Full path to a nifti file.
 
     return_img : bool, optional
@@ -93,7 +93,7 @@ def save_nifti(fname, data, affine, *, hdr=None, dtype=None):
 
     Parameters
     ----------
-    fname : str
+    fname : str or Path
         The full path to the file to be saved.
 
     data : ndarray
@@ -144,7 +144,7 @@ def save_qa_metric(fname, xopt, fopt):
 
     Parameters
     ----------
-    fname: string
+    fname: string or Path
         File name to save the metric values.
     xopt: numpy array
         The metric containing the

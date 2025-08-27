@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import numpy as np
@@ -9,7 +9,7 @@ from dipy.io.dpy import Dpy, Streamlines
 
 def test_dpy():
     with TemporaryDirectory() as tmpdir:
-        fname = pjoin(tmpdir, "test.bin")
+        fname = Path(tmpdir) / "test.bin"
         dpw = Dpy(fname, mode="w")
         A = np.ones((5, 3))
         B = 2 * A.copy()

@@ -3,13 +3,12 @@
 Class and helper functions for fitting the Synb0 model.
 """
 
-import logging
-
 import numpy as np
 
 from dipy.data import get_fnames
 from dipy.nn.utils import normalize, set_logger_level, unnormalize
 from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
@@ -32,16 +31,13 @@ else:
     class Layer:
         pass
 
-    logging.warning(
+    logger.warning(
         "This model requires Tensorflow.\
                     Please install these packages using \
                     pip. If using mac, please refer to this \
                     link for installation. \
                     https://github.com/apple/tensorflow_macos"
     )
-
-logging.basicConfig()
-logger = logging.getLogger("synb0")
 
 
 class EncoderBlock(Layer):
@@ -183,7 +179,7 @@ class Synb0:
             The idx of the default weights. It can be from 0~4.
         """
         fetch_model_weights_path = get_fnames(name="synb0_default_weights")
-        print(f"fetched {fetch_model_weights_path[idx]}")
+        logger.info(f"fetched {fetch_model_weights_path[idx]}")
         self.load_model_weights(fetch_model_weights_path[idx])
 
     def load_model_weights(self, weights_path):

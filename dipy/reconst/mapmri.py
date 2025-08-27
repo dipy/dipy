@@ -242,8 +242,7 @@ class MapmriModel(ReconstModel, Cache):
             if global_constraints:
                 if not anisotropic_scaling:
                     raise ValueError(
-                        "Global constraints only available for"
-                        " anistropic_scaling=True."
+                        "Global constraints only available for anistropic_scaling=True."
                     )
                 if radial_order > 10:
                     self.sdp_constraints = load_sdp_constraints("hermite", order=10)

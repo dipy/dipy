@@ -24,9 +24,8 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                VALIDSTREAMLIME,
                                                INVALIDSTREAMLIME)
 from dipy.tracking.tracker_parameters cimport (TrackerParameters,
-                                               func_ptr,
-                                               SUCCESS,
-                                               FAIL)
+                                               TrackerStatus,
+                                               func_ptr)
 
 from nibabel.streamlines import ArraySequence as Streamlines
 
@@ -111,8 +110,8 @@ def generate_tractogram(double[:,::1] seed_positions,
 
         for i in range(seed_end - seed_start):
             if ((status_arr[i] == VALIDSTREAMLIME or params.return_all)
-                and (length_arr[i] >= params.min_len
-                     and length_arr[i] <= params.max_len)):
+                and (length_arr[i] >= params.min_nbr_pts
+                     and length_arr[i] <= params.max_nbr_pts)):
                 s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
                 track = s.copy().reshape((-1,3))
                 if save_seeds:
@@ -173,7 +172,7 @@ cdef void generate_tractogram_c(double[:,::1] seed_positions,
     if nbr_threads<= 0:
         nbr_threads = 0
     for i in prange(_len, nogil=True, num_threads=nbr_threads):
-        stream = <double*> malloc((params.max_len * 3 * 2 + 1) * sizeof(double))
+        stream = <double*> malloc((params.max_nbr_pts * 3 * 2 + 1) * sizeof(double))
         stream_idx = <int*> malloc(2 * sizeof(int))
         status[i] = generate_local_streamline(&seed_positions[i][0],
                                               &seed_directions[i][0],
@@ -243,8 +242,8 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     # set the initial position
     fast_numpy.copy_point(seed, point)
     fast_numpy.copy_point(direction, voxdir)
-    fast_numpy.copy_point(seed, &stream[params.max_len * 3])
-    stream_idx[0] = stream_idx[1] = params.max_len
+    fast_numpy.copy_point(seed, &stream[params.max_nbr_pts * 3])
+    stream_idx[0] = stream_idx[1] = params.max_nbr_pts
 
     # the input direction is invalid
     voxdir_norm = fast_numpy.norm(voxdir)
@@ -255,20 +254,20 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     stream_data = <double*> malloc(100 * sizeof(double))
     memset(stream_data, 0, 100 * sizeof(double))
     status_forward = TRACKPOINT
-    for i in range(1, params.max_len):
-        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng) == FAIL:
+    for i in range(1, params.max_nbr_pts):
+        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng) == TrackerStatus.FAIL:
             break
         # update position
         for j in range(3):
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
-        fast_numpy.copy_point(point, &stream[(params.max_len + i )* 3])
+        fast_numpy.copy_point(point, &stream[(params.max_nbr_pts + i )* 3])
 
         status_forward = sc.check_point_c(point, &rng)
         if (status_forward == ENDPOINT or
             status_forward == INVALIDPOINT or
             status_forward == OUTSIDEIMAGE):
             break
-    stream_idx[1] = params.max_len + i - 1
+    stream_idx[1] = params.max_nbr_pts + i - 1
     free(stream_data)
 
     # backward tracking
@@ -280,7 +279,8 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     if i > 1:
         # Use the first selected orientation for the backward tracking segment
         for j in range(3):
-            voxdir[j] = stream[(params.max_len + 1) * 3 + j] - stream[params.max_len * 3 + j]
+            voxdir[j] = (stream[(params.max_nbr_pts + 1) * 3 + j]
+                         - stream[params.max_nbr_pts * 3 + j])
         fast_numpy.normalize(voxdir)
 
     # flip the initial direction for backward streamline segment
@@ -288,20 +288,20 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         voxdir[j] = voxdir[j] * -1
 
     status_backward = TRACKPOINT
-    for i in range(1, params.max_len):
-        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng) == FAIL:
+    for i in range(1, params.max_nbr_pts):
+        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng) == TrackerStatus.FAIL:
             break
         # update position
         for j in range(3):
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
-        fast_numpy.copy_point(point, &stream[(params.max_len - i )* 3])
+        fast_numpy.copy_point(point, &stream[(params.max_nbr_pts - i )* 3])
 
         status_backward = sc.check_point_c(point, &rng)
         if (status_backward == ENDPOINT or
             status_backward == INVALIDPOINT or
             status_backward == OUTSIDEIMAGE):
             break
-    stream_idx[0] = params.max_len - i + 1
+    stream_idx[0] = params.max_nbr_pts - i + 1
     free(stream_data)
 
     # check for valid streamline ending status

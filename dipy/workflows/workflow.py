@@ -1,8 +1,8 @@
 import inspect
-import logging
-import os
+from pathlib import Path
 
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.workflows.multi_io import _io_iterator
 
 
@@ -98,17 +98,14 @@ class Workflow:
         """
         duplicates = []
         for output in self.flat_outputs:
-            if os.path.isfile(output):
+            if Path(output).is_file():
                 duplicates.append(output)
 
         if len(duplicates) > 0:
             if self._force_overwrite:
-                logging.info(
-                    "The following output files are about to be" " overwritten."
-                )
-
+                logger.info("The following output files are about to be overwritten.")
             else:
-                logging.info(
+                logger.info(
                     "The following output files already exist, the "
                     "workflow will not continue processing any "
                     "further. Add the --force flag to allow output "
@@ -116,7 +113,7 @@ class Workflow:
                 )
 
             for dup in duplicates:
-                logging.info(dup)
+                logger.info(dup)
 
             return self._force_overwrite
 

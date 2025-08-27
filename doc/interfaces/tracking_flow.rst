@@ -43,6 +43,8 @@ number of optional arguments, such as the number of seeds per dimension within
 a voxel (``seed_density``), or the output directory (``out_dir``), can also be
 provided.
 
+First, locate the GFA volume previously created in the
+:ref:`reconstruction tutorial<reconstruction_flow>` (CSA chapter).
 To get the stopping file, we will create a binary file of the GFA of the CSA
 reconstruction method and set a stopping criterion by calling the ``dipy_mask``
 command::

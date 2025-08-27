@@ -17,9 +17,9 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking import utils
-from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tracker import eudx_tracking
 from dipy.viz import actor, colormap as cmap, window
 
 ###############################################################################
@@ -52,11 +52,20 @@ stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, 0.25)
 seed_mask = labels == 2
 seeds = utils.seeds_from_mask(seed_mask, affine, density=[1, 1, 1])
 
-# Initialization of LocalTracking. The computation happens in the next step.
-streamlines = LocalTracking(csa_peaks, stopping_criterion, seeds, affine, step_size=2)
+# Initialization of EuDX Deterministic Tracking. The computation happens in the
+# next step.
+streamlines_generator = eudx_tracking(
+    seeds,
+    stopping_criterion,
+    affine,
+    pam=csa_peaks,
+    random_seed=1,
+    sphere=default_sphere,
+    step_size=2,
+)
 
 # Compute streamlines and store as a list.
-streamlines = Streamlines(streamlines)
+streamlines = Streamlines(streamlines_generator)
 
 ###############################################################################
 # We will create a streamline actor from the streamlines.

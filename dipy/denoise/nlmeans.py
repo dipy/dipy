@@ -24,7 +24,7 @@ def nlmeans(
 ):
     r"""Non-local means for denoising 3D and 4D images.
 
-    See :footcite:p:Descoteaux2008a` for further details about the method.
+    See :footcite:p:`Descoteaux2008a` for further details about the method.
 
     Parameters
     ----------

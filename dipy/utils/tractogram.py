@@ -1,10 +1,12 @@
 """This module is dedicated to the handling of tractograms."""
 
-import logging
 import os
+from pathlib import Path
 
 import numpy as np
 import trx.trx_file_memmap as tmm
+
+from dipy.utils.logging import logger
 
 
 def concatenate_tractogram(
@@ -57,12 +59,12 @@ def concatenate_tractogram(
     ]
 
     if not trx_list:
-        logging.warning("Inputs of concatenation were empty.")
+        logger.warning("Inputs of concatenation were empty.")
         return tmm.TrxFile()
 
     if len(trx_list) == 1:
         if len(tractogram_list) > 1:
-            logging.warning("Only 1 valid tractogram returned.")
+            logger.warning("Only 1 valid tractogram returned.")
         return trx_list[0]
 
     ref_trx = trx_list[0]
@@ -93,13 +95,13 @@ def concatenate_tractogram(
                 or key not in curr_trx.data_per_vertex.keys()
             ):
                 if not delete_dpv:
-                    logging.debug(f"{key} dpv key does not exist in all TrxFile.")
+                    logger.debug(f"{key} dpv key does not exist in all TrxFile.")
                     raise ValueError("TrxFile must be sharing identical dpv keys.")
             elif (
                 ref_trx.data_per_vertex[key]._data.dtype
                 != curr_trx.data_per_vertex[key]._data.dtype
             ):
-                logging.debug(
+                logger.debug(
                     f"{key} dpv key is not declared with the same dtype in all TrxFile."
                 )
                 raise ValueError("Shared dpv key, has different dtype.")
@@ -111,13 +113,13 @@ def concatenate_tractogram(
                 or key not in curr_trx.data_per_streamline.keys()
             ):
                 if not delete_dps:
-                    logging.debug(f"{key} dps key does not exist in all TrxFile.")
+                    logger.debug(f"{key} dps key does not exist in all TrxFile.")
                     raise ValueError("TrxFile must be sharing identical dps keys.")
             elif (
                 ref_trx.data_per_streamline[key].dtype
                 != curr_trx.data_per_streamline[key].dtype
             ):
-                logging.debug(
+                logger.debug(
                     f"{key} dps key is not declared with the same dtype in all TrxFile."
                 )
                 raise ValueError("Shared dps key, has different dtype.")
@@ -166,10 +168,11 @@ def concatenate_tractogram(
         # When memory is allocated on the spot, groups and data_per_group can
         # be concatenated together
         for group_key in all_groups_len.keys():
-            if not os.path.isdir(os.path.join(tmp_dir, "groups/")):
-                os.mkdir(os.path.join(tmp_dir, "groups/"))
+            group_dirname = Path(tmp_dir) / "groups"
+            if not group_dirname.is_dir():
+                os.mkdir(group_dirname)
             dtype = all_groups_dtype[group_key]
-            group_filename = os.path.join(tmp_dir, f"groups/{group_key}.{dtype.name}")
+            group_filename = group_dirname / f"{group_key}.{dtype.name}"
             group_len = all_groups_len[group_key]
             new_trx.groups[group_key] = tmm._create_memmap(
                 group_filename, mode="w+", shape=(group_len,), dtype=dtype

@@ -1917,7 +1917,6 @@ def generalized_crossvalidation(data, M, LR, *, startpoint=5e-4):
         args=(input_stuff,),
         approx_grad=True,
         bounds=bounds,
-        disp=False,
         pgtol=1e-10,
         factr=10.0,
     )

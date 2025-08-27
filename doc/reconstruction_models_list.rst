@@ -140,7 +140,7 @@
      - :bdg-danger:`No`
      - Minimum: 20 gradient directions and a b-value of 1000 s/mm^2; benefits additionally from 60 direction HARDI data with b-value = 3000 s/mm^2 or multi-shell
      - :cite:t:`Tournier2004`, :cite:t:`Tournier2007`, :cite:t:`Descoteaux2007`
-   * - :ref:`SMS/MT CSD <sphx_glr_examples_built_reconstruction_reconst_mcsd.py>`
+   * - :ref:`MS/MT CSD <sphx_glr_examples_built_reconstruction_reconst_mcsd.py>`
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
      - :bdg-danger:`No`

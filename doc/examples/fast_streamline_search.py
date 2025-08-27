@@ -17,7 +17,7 @@ from dipy.data import (
     get_target_tractogram_hcp,
     get_two_hcp842_bundles,
 )
-from dipy.io.streamline import load_trk
+from dipy.io.streamline import load_tractogram
 from dipy.segment.fss import FastStreamlineSearch, nearest_from_matrix_row
 from dipy.viz import actor, window
 
@@ -28,7 +28,7 @@ fetch_bundle_atlas_hcp842()
 fetch_target_tractogram_hcp()
 
 hcp_file = get_target_tractogram_hcp()
-streamlines = load_trk(hcp_file, "same", bbox_valid_check=False).streamlines
+streamlines = load_tractogram(hcp_file, "same", bbox_valid_check=False).streamlines
 
 ###############################################################################
 # Visualize the atlas (ref) bundle and full brain tractogram
@@ -55,7 +55,7 @@ else:
 # Arcuate Fasciculus Left model bundle.
 
 model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
-sft_af_l = load_trk(model_af_l_file, "same", bbox_valid_check=False)
+sft_af_l = load_tractogram(model_af_l_file, "same", bbox_valid_check=False)
 model_af_l = sft_af_l.streamlines
 
 scene = window.Scene()

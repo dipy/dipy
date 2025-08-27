@@ -3,7 +3,7 @@
 Tracking with Robust Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)
 ============================================================================
 
-Here, we demonstrate fiber tracking using a probabilistic direction getter
+Here, we demonstrate fiber tracking using a probabilistic tracker
 and RUMBA-SD, a model introduced in :footcite:p:`CanalesRodriguez2015`. This
 model adapts Richardson-Lucy deconvolution by assuming Rician or Noncentral Chi
 noise instead of Gaussian, which more accurately reflects the noise from MRI
@@ -23,7 +23,7 @@ from dipy.data import get_fnames, small_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst.csdeconv import auto_response_ssst
 from dipy.reconst.rumba import RumbaSDModel
 from dipy.tracking import utils
@@ -142,7 +142,7 @@ window.record(
 )
 
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_probabilistic_rumba.trk")
+save_tractogram(sft, "tractogram_probabilistic_rumba.trx")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

@@ -45,16 +45,16 @@ import numpy as np
 from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere, get_fnames
 from dipy.denoise.enhancement_kernel import EnhancementKernel
-from dipy.direction import ProbabilisticDirectionGetter, peaks_from_model
+from dipy.direction import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking import utils
 from dipy.tracking.fbcmeasures import FBCMeasures
-from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tracker import probabilistic_tracking
 from dipy.viz import actor, window
 
 # Enables/disables interactive visualization
@@ -120,11 +120,6 @@ csd_fit_shm = np.pad(
     "constant",
 )
 
-# Probabilistic direction getting for fiber tracking
-prob_dg = ProbabilisticDirectionGetter.from_shcoeff(
-    csd_fit_shm, max_angle=30.0, sphere=default_sphere
-)
-
 ###############################################################################
 # The optic radiation is reconstructed by tracking fibers from the calcarine
 # sulcus (visual cortex V1) to the lateral geniculate nucleus (LGN). We seed
@@ -141,9 +136,16 @@ seeds = utils.seeds_from_mask(mask, affine, density=[4, 4, 4])
 # Local Tracking is used for probabilistic tractography which takes the
 # direction getter along with the stopping criterion and seeds as input.
 
-# Perform tracking using Local Tracking
-streamlines_generator = LocalTracking(
-    prob_dg, stopping_criterion, seeds, affine, step_size=0.5
+# Perform tracking using probabilistic Tracking
+streamlines_generator = probabilistic_tracking(
+    seeds,
+    stopping_criterion,
+    affine,
+    sh=csd_fit_shm,
+    random_seed=1,
+    sphere=default_sphere,
+    step_size=0.5,
+    max_angle=30,
 )
 
 # Compute streamlines.

@@ -159,52 +159,96 @@ specified output directory.
 +--------------------+--------------------+
 
 -----------------------------
+Denoising using Patch2Self
+-----------------------------
+
+Patch2Self is a self-supervised learning method for denoising diffusion-weighted
+MR images :footcite:p:`Fadnavis2020`. It leverages the inherent redundancy in
+dMRI data to learn a denoising model directly from the noisy data itself,
+without requiring any clean training data. The method works by partitioning the
+data into two disjoint sets and using one set to predict the other, effectively
+learning the underlying signal structure and removing the noise.
+
+For this example, we will be using the ``stanford_hardi`` dataset.
+
+First, create an output directory for the denoised data::
+
+    mkdir denoise_patch2self_output
+
+To run Patch2Self denoising, you can use the ``dipy_denoise_patch2self``
+command. You need to provide the path to the diffusion data and the
+corresponding b-values file::
+
+    dipy_denoise_patch2self data/stanford_hardi/HARDI150.nii.gz data/stanford_hardi/HARDI150.bval --out_dir "denoise_patch2self_output"
+
+This command will denoise the input image and save the result as
+``dwi_patch2self.nii.gz`` inside the ``denoise_patch2self_output``
+directory. You can also specify different linear models for the denoising
+process, such as 'ridge' or 'lasso', using the ``--model`` flag. You can 
+also specify the version of the model to use with the ``--version`` flag.
+
+.. |image7| image:: https://raw.githubusercontent.com/dipy/dipy_data/c2babe937fa6b16f196c82a28741e2cb0870fe7b/P2S3.png
+   :align: middle
+
++--------------------+--------------------+
+|  Before Denoising  |  After Denoising   |
++====================+====================+
+|      |image1|      |      |image7|      |
++--------------------+--------------------+
+
+-----------------------------
 Overview of Denoising Methods
 -----------------------------
 
 Note: Users are recommended to zoom (click on each image) to see the denoising effect.
 
-.. |image7| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_3shell_original.png?raw=true
+.. |image8| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_3shell_original.png?raw=true
    :align: middle
-.. |image8| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_denoise_LPCA.png?raw=true
+.. |image9| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_denoise_LPCA.png?raw=true
    :align: middle
-.. |image9| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_3shell_denoise_MPPCA.png?raw=true
+.. |image10| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_3shell_denoise_MPPCA.png?raw=true
    :align: middle
-.. |image10| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_denoise_NLMEANS.png?raw=true
+.. |image11| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_denoise_NLMEANS.png?raw=true
    :align: middle
-.. |image11| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_original.png?raw=true
+.. |image12| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_original.png?raw=true
    :align: middle
-.. |image12| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_denoise_LPCA.png?raw=true
+.. |image13| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_denoise_LPCA.png?raw=true
    :align: middle
-.. |image13| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_denoise_MPPCA.png?raw=true
+.. |image14| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_denoise_MPPCA.png?raw=true
    :align: middle
-.. |image14| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_denoise_NLMEANS.png?raw=true
+.. |image15| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_denoise_NLMEANS.png?raw=true
    :align: middle
-.. |image15| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_original.png?raw=true
+.. |image16| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_original.png?raw=true
    :align: middle
-.. |image16| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_LPCA.png?raw=true
+.. |image17| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_LPCA.png?raw=true
    :align: middle
-.. |image17| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_denoise_MPPCA.png?raw=true
+.. |image18| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_denoise_MPPCA.png?raw=true
    :align: middle
-.. |image18| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_denoise_NLMEANS.png?raw=true
+.. |image19| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_denoise_NLMEANS.png?raw=true
    :align: middle
-.. |image19| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_t1_original.png?raw=true
+.. |image20| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_t1_original.png?raw=true
    :align: middle
-.. |image20| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_t1_NLMEANS.png?raw=true
+.. |image21| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_t1_NLMEANS.png?raw=true
+   :align: middle
+.. |image22| image:: https://raw.githubusercontent.com/dipy/dipy_data/c2babe937fa6b16f196c82a28741e2cb0870fe7b/P2S3.png
+   :align: middle
+.. |image23| image:: https://raw.githubusercontent.com/dipy/dipy_data/c2babe937fa6b16f196c82a28741e2cb0870fe7b/P2S3.png
+   :align: middle
+.. |image24| image:: https://raw.githubusercontent.com/dipy/dipy_data/c2babe937fa6b16f196c82a28741e2cb0870fe7b/P2S3.png
    :align: middle
 
 Diffusion
 ---------
 
-+--------------------+--------------------+--------------------+--------------------+--------------------+
-|      Dataset       |   Original Image   |    Denoise LCPA    |   Denoise MPPCA    |   Denoise NLMEANS  |
-+====================+====================+====================+====================+====================+
-|  sherbrooke_3shell |      |image7|      |      |image8|      |      |image9|      |      |image10|     |
-+--------------------+--------------------+--------------------+--------------------+--------------------+
-|  stanford_hardi    |      |image11|     |      |image12|     |      |image13|     |      |image14|     |
-+--------------------+--------------------+--------------------+--------------------+--------------------+
-|  cfin_multib       |      |image15|     |      |image16|     |      |image17|     |      |image18|     |
-+--------------------+--------------------+--------------------+--------------------+--------------------+
++--------------------+--------------------+--------------------+--------------------+--------------------+-----------------------+
+|      Dataset       |   Original Image   |    Denoise LCPA    |   Denoise MPPCA    |   Denoise NLMEANS  |   Denoise Patch2Self  |
++====================+====================+====================+====================+====================+=======================+
+|  sherbrooke_3shell |      |image7|      |      |image8|      |      |image9|      |      |image10|     |      |image22|        |
++--------------------+--------------------+--------------------+--------------------+--------------------+-----------------------+
+|  stanford_hardi    |      |image11|     |      |image12|     |      |image13|     |      |image14|     |      |image23|        |
++--------------------+--------------------+--------------------+--------------------+--------------------+-----------------------+
+|  cfin_multib       |      |image15|     |      |image16|     |      |image17|     |      |image18|     |      |image24|        |
++--------------------+--------------------+--------------------+--------------------+--------------------+-----------------------+
 
 Structural
 ----------

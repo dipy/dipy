@@ -1,14 +1,13 @@
 #!/usr/bin/python
 """Class and helper functions for fitting the DeepN4 model."""
 
-import logging
-
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
 from dipy.data import get_fnames
 from dipy.nn.utils import normalize, recover_img, set_logger_level, transform_img
 from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
@@ -31,17 +30,13 @@ else:
     class Layer:
         pass
 
-    logging.warning(
+    logger.warning(
         "This model requires Tensorflow.\
                     Please install these packages using \
                     pip. If using mac, please refer to this \
                     link for installation. \
                     https://github.com/apple/tensorflow_macos"
     )
-
-
-logging.basicConfig()
-logger = logging.getLogger("deepn4")
 
 
 class EncoderBlock(Layer):

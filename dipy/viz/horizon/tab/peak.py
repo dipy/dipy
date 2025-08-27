@@ -358,6 +358,21 @@ class PeaksTab(HorizonTab):
         if not self._slice_z.obj.value == z_slice:
             self._slice_z.obj.value = z_slice
 
+    def _toggle_actors(self, checkbox):
+        """Toggle the opacity of the peaks actor and slider.
+
+        Parameters
+        ----------
+        checkbox : CheckBox2D
+            FURY checkbox UI element.
+        """
+        if "" in checkbox.checked_labels:
+            self.show(self._opacity.obj)
+        else:
+            self.hide(self._opacity.obj)
+
+        super()._toggle_actors(checkbox)
+
     def build(self, tab_id):
         """Build all the elements under the tab.
 

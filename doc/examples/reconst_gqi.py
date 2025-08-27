@@ -47,7 +47,11 @@ print(f"data.shape {data.shape}")
 gqmodel = GeneralizedQSamplingModel(gtab, sampling_length=3)
 
 ###############################################################################
-# The parameter ``sampling_length`` is used here to
+# The parameter ``sampling_length`` is used here to control the diffusion
+# sampling length (lambda) in the GQI reconstruction. This parameter affects
+# the shape and smoothness of the resulting ODFs. The optimal value typically
+# ranges from 1-1.3 for GQI2 method, but higher values can be used depending on
+# the dataset characteristics.
 #
 # Lets just use one slice only from the data.
 

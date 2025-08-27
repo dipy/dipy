@@ -41,8 +41,6 @@ algorithm.
 Let's start by importing the relevant modules:
 """
 
-import os.path as op
-
 import matplotlib.pyplot as plt
 import nibabel as nib
 import numpy as np
@@ -58,25 +56,21 @@ import dipy.reconst.fwdti as fwdti
 # here we download a dataset that was acquired with multiple b-values.
 
 data_path = fetch_hbn(["NDARAA948VFH"])[1]
-dwi_path = op.join(
-    data_path, "derivatives", "qsiprep", "sub-NDARAA948VFH", "ses-HBNsiteRU", "dwi"
+dwi_path = (
+    data_path / "derivatives" / "qsiprep" / "sub-NDARAA948VFH" / "ses-HBNsiteRU" / "dwi"
 )
 
 img = nib.load(
-    op.join(
-        dwi_path,
-        "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.nii.gz",
-    )
+    dwi_path
+    / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.nii.gz",
 )
 
 gtab = gradient_table(
-    op.join(
-        dwi_path,
-        "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval",
-    ),
-    bvecs=op.join(
-        dwi_path,
-        "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec",
+    dwi_path
+    / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval",
+    bvecs=(
+        dwi_path
+        / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec",
     ),
 )
 
@@ -88,10 +82,8 @@ data = np.asarray(img.dataobj)
 # remove the background of the image and avoid unnecessary calculations.
 
 mask_img = nib.load(
-    op.join(
-        dwi_path,
-        "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-brain_mask.nii.gz",
-    )
+    dwi_path
+    / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-brain_mask.nii.gz",
 )
 
 ###############################################################################

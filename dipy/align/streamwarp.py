@@ -11,6 +11,7 @@ from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
 from dipy.stats.analysis import assignment_map
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import Streamlines, length, unlist_streamlines
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.plotting import bundle_shape_profile
 
@@ -128,7 +129,7 @@ def bundlewarp(
     moving_aligned, _, _, _ = slr_with_qbx(static, moving, x0=x0, rm_small_clusters=0)
 
     if dist is not None:
-        print("using pre-computed distances")
+        logger.info("using pre-computed distances")
     else:
         dist = distance_matrix_mdf(static, moving_aligned).T
 
