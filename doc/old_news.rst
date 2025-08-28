@@ -5,6 +5,7 @@
 Past Announcements
 **********************
 
+- :doc:`DIPY 1.9.0 <release_notes/release1.9>` released March 8, 2024.
 - :doc:`DIPY 1.8.0 <release_notes/release1.8>` released December 13, 2023.
 - :doc:`DIPY 1.7.0 <release_notes/release1.7>` released April 23, 2023.
 - :doc:`DIPY 1.6.0 <release_notes/release1.6>` released January 16, 2023.
