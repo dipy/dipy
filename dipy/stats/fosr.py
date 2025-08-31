@@ -1,19 +1,20 @@
-import numpy as np
-
-from skfda.representation.basis import BSplineBasis
-from skfda.misc.operators import LinearDifferentialOperator
-from skfda.misc.regularization import compute_penalty_matrix, TikhonovRegularization
-from skfda.representation import FDataBasis
-
 import gc
 
+import numpy as np
 import scipy.sparse as sp
+from skfda.misc.operators import LinearDifferentialOperator
+from skfda.misc.regularization import TikhonovRegularization, compute_penalty_matrix
+from skfda.representation import FDataBasis
+from skfda.representation.basis import BSplineBasis
+
 from dipy.stats.gam import gam
 
-def get_covariates(df):
+
+def get_covariates(df, no_streamlines=12000):
     """
     Constructs the covariate matrix X and response matrix Y using 12000 stramlines from subject-level
-    diffusion imaging data, incorporating group, gender, age, and fractional anisotropy (FA) values.
+    diffusion imaging data, incorporating group, gender, age, and 
+    fractional anisotropy (FA) values.
 
     Parameters:
     ----------
@@ -33,7 +34,6 @@ def get_covariates(df):
         Covariate matrix of shape (n_samples, n_features), with features including:
         - Group (0 or 1)
         - Gender (1 if Male, 0 if Female; added only if gender column exists)
-        - Age (added only if age column exists)
         - Intercept term (final column of 1s)
 
     Y : np.ndarray
@@ -45,73 +45,206 @@ def get_covariates(df):
     - The function ensures equal sampling across subjects by computing per-streamline averages.
     - Final output is subsampled to at most 12,000 rows for efficiency.
     - Prints diagnostic information about data shape during processing.
+    - Handles edge cases: converts numeric string subjects to int, validates gender values, requires FA values.
     """
+    import pandas as pd
+
+    # Input validation
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Input must be a pandas DataFrame")
+
+    if df.empty:
+        raise ValueError("Input DataFrame is empty")
+
+    # Check required columns
+    required_columns = ["subject", "streamline", "disk", "fa", "group"]
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {missing_columns}")
+
+    # Handle subject column - convert string numbers to int, but allow non-numeric subject IDs
+    if "subject" in df.columns:
+        # Check if subjects are numeric strings that can be converted to int
+        try:
+            # Try to convert to numeric first
+            numeric_subjects = pd.to_numeric(df["subject"], errors="coerce")
+            # If all subjects can be converted to numeric, convert them to int
+            if not numeric_subjects.isna().any():
+                df["subject"] = numeric_subjects.astype(int)
+                print("Converted string numeric subjects to integers")
+        except (ValueError, TypeError):
+            # If conversion fails, keep as string (this is valid for subject IDs)
+            print("Subject IDs kept as strings (non-numeric identifiers)")
+
+    # Create a working copy to avoid modifying the original DataFrame
+    df_working = df.copy()
+
+    # Validate data types for numeric columns
+    numeric_columns = ["streamline", "disk", "fa", "group"]
+    for col in numeric_columns:
+        if not pd.api.types.is_numeric_dtype(df_working[col]):
+            try:
+                df_working[col] = pd.to_numeric(df_working[col], errors="coerce")
+                if df_working[col].isna().any():
+                    raise ValueError(
+                        f"Column '{col}' contains non-numeric values that cannot be converted"
+                    )
+            except (ValueError, TypeError):
+                raise ValueError(f"Column '{col}' must be numeric")
+
+    # Validate FA values - throw error if not present
+    if df_working["fa"].isna().any():
+        missing_fa_count = df_working["fa"].isna().sum()
+        raise ValueError(
+            f"FA values are missing for {missing_fa_count} rows. All FA values must be present."
+        )
+
+    if np.isinf(df_working["fa"]).any():
+        inf_fa_count = df_working["fa"].isinf().sum()
+        raise ValueError(
+            f"FA values contain infinite values for {inf_fa_count} rows. All FA values must be finite."
+        )
+
+    if (df_working["fa"] < 0).any():
+        neg_fa_count = (df_working["fa"] < 0).sum()
+        raise ValueError(
+            f"FA values contain negative values for {neg_fa_count} rows. All FA values must be non-negative."
+        )
+
+    # Validate group values
+    if not df_working["group"].isin([0, 1]).all():
+        invalid_groups = df_working[~df_working["group"].isin([0, 1])]["group"].unique()
+        raise ValueError(
+            f"Invalid group values found: {invalid_groups}. Group must be 0 or 1."
+        )
+
+    # Validate gender values if present
+    if "gender" in df_working.columns:
+        valid_genders = ["Male", "Female"]
+        invalid_genders = df_working[~df_working["gender"].isin(valid_genders)][
+            "gender"
+        ].unique()
+        if len(invalid_genders) > 0:
+            raise ValueError(
+                f"Invalid gender values found: {invalid_genders}. Gender must be 'Male' or 'Female'."
+            )
+
+    # Validate disk and streamline values
+    if (df_working["disk"] <= 0).any():
+        raise ValueError("Disk values must be positive integers")
+
+    if (df_working["streamline"] < 0).any():
+        raise ValueError("Streamline values must be non-negative integers")
+
     Y = []
     X = []
 
-    unique_subjects = df['subject'].unique()
-    unique_disk = df['disk'].unique()
+    unique_subjects = df_working["subject"].unique()
+    unique_disk = df_working["disk"].unique()
 
     no_disk = len(unique_disk)
 
     for sub in unique_subjects:
-        sub_df = df[df['subject']==sub]
-        unique_streamline = sub_df['streamline'].unique()
+        sub_df = df_working[df_working["subject"] == sub]
+        unique_streamline = sub_df["streamline"].unique()
         len_streamlines = len(unique_streamline)
-        group = sub_df['group'].unique()[0]
+
+        # Create a mapping from actual streamline values to sequential indices
+        # Handle both int and float types by converting to int for consistency
+        streamline_mapping = {
+            int(val): idx for idx, val in enumerate(unique_streamline)
+        }
+
+        group = sub_df["group"].unique()[0]
         gender = None
-        if 'gender' in sub_df.columns:
-            gender = sub_df['gender'].unique()[0]
-        print("For subject {} I have {} unique streamlines and group is {}".format(sub, len_streamlines, group))
-        if(group==0):
+        if "gender" in sub_df.columns:
+            gender = sub_df["gender"].unique()[0]
+        print(
+            "For subject {} I have {} unique streamlines and group is {}".format(
+                sub, len_streamlines, group
+            )
+        )
+        if group == 0:
             # continue
-            sub_X = np.zeros((len_streamlines,1))
-        elif(group==1):
-            sub_X = np.ones((len_streamlines,1))
+            sub_X = np.zeros((len_streamlines, 1))
+        elif group == 1:
+            sub_X = np.ones((len_streamlines, 1))
         else:
-            print("For subject {} I have a invalid group which is {}".format(sub, group))
-        if(gender != None):
-            if(gender == "Female"):
+            raise ValueError(
+                "For subject {} we have a invalid group which is {}".format(sub, group)
+            )
+        if gender is not None:
+            if gender == "Female":
                 zero_column = np.zeros((len_streamlines, 1))
                 sub_X = np.hstack((sub_X, zero_column))
-            elif(gender == "Male"):
+            elif gender == "Male":
                 one_column = np.ones((len_streamlines, 1))
                 sub_X = np.hstack((sub_X, one_column))
-        if 'age' in sub_df.columns:
-            age = sub_df['age'].unique()[0]
-            age_column = age*np.ones((len_streamlines, 1))
+            else:
+                # This should not happen due to validation above, but just in case
+                raise ValueError(
+                    f"Warning: Invalid gender value '{gender}' for subject {sub}. Skipping gender column."
+                )
+        if "age" in sub_df.columns:
+            age = sub_df["age"].unique()[0]
+            age_column = age * np.ones((len_streamlines, 1))
             sub_X = np.hstack((sub_X, age_column))
-        if(len(X)==0):
+        if len(X) == 0:
             X = sub_X
         else:
             X = np.append(X, sub_X, axis=0)
-        sub_Y = np.zeros((len_streamlines,no_disk))
-        count_Y = np.zeros((len_streamlines,no_disk))
+        sub_Y = np.zeros((len_streamlines, no_disk))
+        count_Y = np.zeros((len_streamlines, no_disk))
 
         for index, row in sub_df.iterrows():
-            x = row['streamline']
-            y = row['disk']-1
-            sub_Y[x][y] += row['fa']
-            count_Y[x][y] +=1
+            streamline_val = row["streamline"]
+            x = streamline_mapping[int(streamline_val)]  # Map to sequential index
+            y = int(row["disk"] - 1)  # Convert to int for array indexing
+            sub_Y[x][y] += row["fa"]  # FA remains as float
+            count_Y[x][y] += 1
         for i in range(len_streamlines):
             for j in range(no_disk):
-                if(count_Y[i][j]>0):
-                    sub_Y[i][j] = sub_Y[i][j]/count_Y[i][j]
-        if(len(Y)==0):
+                if count_Y[i][j] > 0:
+                    sub_Y[i][j] = sub_Y[i][j] / count_Y[i][j]
+        if len(Y) == 0:
             Y = sub_Y
         else:
             Y = np.vstack((Y, sub_Y))
-        print("Printing X rows {}. Printing Y rows {}".format(X.shape[0],Y.shape[0]))
-        
-    selected_indices = np.random.choice(X.shape[0], min(X.shape[0],12000), replace=False)
+        print("Printing X rows {}. Printing Y rows {}".format(X.shape[0], Y.shape[0]))
+
+    selected_indices = np.random.choice(
+        X.shape[0], min(X.shape[0], no_streamlines), replace=False
+    )
     X = np.array(X[selected_indices])
     Y = np.array(Y[selected_indices])
     ones_column = np.ones((X.shape[0], 1))
     X = np.hstack((X, ones_column))
-    print("Printing X rows {}. Printing Y rows {}".format(X.shape[0],Y.shape[0]))
-    return X,Y
+    print("Printing X rows {}. Printing Y rows {}".format(X.shape[0], Y.shape[0]))
+    return X, Y
 
-def fosr(formula=None, Y=None, fdobj=None, data=None, X=None, con = None, argvals = None, method = "OLS", gam_method = "REML", cov_method = "naive", labda = None, nbasis=15, norder=4, pen_order=2, multi_sp = False, pve=.99, max_iter = 1, maxlam = None, cv1 = False, scale = False):
+
+def fosr(
+    formula=None,
+    Y=None,
+    fdobj=None,
+    data=None,
+    X=None,
+    con=None,
+    argvals=None,
+    method="OLS",
+    gam_method="REML",
+    cov_method="naive",
+    labda=None,
+    nbasis=15,
+    norder=4,
+    pen_order=2,
+    multi_sp=False,
+    pve=0.99,
+    max_iter=1,
+    maxlam=None,
+    cv1=False,
+    scale=False,
+):
     """
     Fits a Function-on-Scalar Regression (FoSR) model using basis expansion (B-splines)
     and optionally penalized smoothing through GAM. Supports estimation using Ordinary Least Squares (OLS)
@@ -206,29 +339,30 @@ def fosr(formula=None, Y=None, fdobj=None, data=None, X=None, con = None, argval
     ## Handle the case when formula is NULL
     resp_type = "fd" if Y is None else "raw"
 
-    if(argvals==None):
+    if argvals == None:
         argvals = np.linspace(0, 1, num=Y.shape[1])
     else:
-        print("R equivalent code of seq(min(fdobj$basis$range), max(fdobj$basis$range), length=201)")
+        print(
+            "R equivalent code of seq(min(fdobj$basis$range), max(fdobj$basis$range), length=201)"
+        )
 
-
-    if(method!= "OLS" and len(labda)>1):
+    if method != "OLS" and len(labda) > 1:
         print("Vector-valued lambda allowed only if method = 'OLS'")
         return None
-    if(labda!=None and multi_sp):
+    if labda != None and multi_sp:
         print("Fixed lambda not implemented with multiple penalties")
         return None
-    if(method == "OLS" and multi_sp):
+    if method == "OLS" and multi_sp:
         print("OLS not implemented with multiple penalties")
         return None
 
-    if(resp_type == "raw"):
-        bss = BSplineBasis(domain_range=(0,1) , n_basis=nbasis, order=norder)
-        Bmat = bss.evaluate(argvals).reshape(nbasis,100)
+    if resp_type == "raw":
+        bss = BSplineBasis(domain_range=(0, 1), n_basis=nbasis, order=norder)
+        Bmat = bss.evaluate(argvals).reshape(nbasis, 100)
         print("Bmat shape ", Bmat.shape)
-        Theta = bss.evaluate(argvals).reshape(nbasis,100)
+        Theta = bss.evaluate(argvals).reshape(nbasis, 100)
         respmat = Y
-    elif(resp_type == "fd"):
+    elif resp_type == "fd":
         print("Work in progress for when resp_type is fd")
 
     new_fit = None
@@ -239,7 +373,7 @@ def fosr(formula=None, Y=None, fdobj=None, data=None, X=None, con = None, argval
     q = X.shape[1]
     ncurve = respmat.shape[0]
 
-    if(multi_sp):
+    if multi_sp:
         print("Work in progress for multi_sp not None")
     else:
         # Define the differential operator for the penalty
@@ -249,42 +383,50 @@ def fosr(formula=None, Y=None, fdobj=None, data=None, X=None, con = None, argval
 
         # Compute the penalty matrix
         bss_derivative = compute_penalty_matrix(
-            basis_iterable=[bss], 
+            basis_iterable=[bss],
             regularization_parameter=regularization_parameter,
-            regularization=regularization
+            regularization=regularization,
         )
         pen = np.kron(np.eye(q), bss_derivative)
 
-    if(con!=None):
+    if con != None:
         constr = np.kron(con, np.eye(nbasis))
     else:
         constr = None
 
     cv = None
 
-    if(method == "OLS"):
-        if((labda == None  or len(labda) != 1) or cv1):
+    if method == "OLS":
+        if (labda == None or len(labda) != 1) or cv1:
             print("Time to use lofocv for hyper parameters")
 
     X_gam = np.kron(X_sc, np.transpose(Bmat))
     Y_gam = respmat.ravel()
-    firstfit = gam(Y_gam, X_gam, gam_method = gam_method, S = [pen], C = constr, labda = labda)
+    firstfit = gam(Y_gam, X_gam, gam_method=gam_method, S=[pen], C=constr, labda=labda)
 
-    coefmat = firstfit["coefficients"].reshape(q, firstfit["coefficients"].shape[0]//X.shape[1])
-    coefmat_ols = firstfit["coefficients"].reshape(q, firstfit["coefficients"].shape[0]//X.shape[1])
+    coefmat = firstfit["coefficients"].reshape(
+        q, firstfit["coefficients"].shape[0] // X.shape[1]
+    )
+    coefmat_ols = firstfit["coefficients"].reshape(
+        q, firstfit["coefficients"].shape[0] // X.shape[1]
+    )
     se = None
 
-    if(method != "OLS"):
+    if method != "OLS":
         print("Work in progress for method is not OLS")
-    if(method == "OLS" or max_iter == 0):
-        resid_vec = (respmat.ravel() - (np.kron(X_sc, Bmat.T)@firstfit["coefficients"])).reshape(-1, 1)
+    if method == "OLS" or max_iter == 0:
+        resid_vec = (
+            respmat.ravel() - (np.kron(X_sc, Bmat.T) @ firstfit["coefficients"])
+        ).reshape(-1, 1)
         num_rows = len(resid_vec) // ncurve
-        cov_mat = ((ncurve-1)/ncurve) * np.cov(np.reshape(resid_vec, (ncurve, num_rows)), rowvar=False)
+        cov_mat = ((ncurve - 1) / ncurve) * np.cov(
+            np.reshape(resid_vec, (ncurve, num_rows)), rowvar=False
+        )
         ngrid = cov_mat.shape[0]
         M = ngrid * ncurve
         # Construct the block diagonal matrix
         cov_bdiag = sp.block_diag([cov_mat] * ncurve, format="csc")
-        var_b = firstfit["GinvXT"]@cov_bdiag@firstfit["GinvXT"].T
+        var_b = firstfit["GinvXT"] @ cov_bdiag @ firstfit["GinvXT"].T
 
         del cov_bdiag
         gc.collect()
@@ -292,7 +434,7 @@ def fosr(formula=None, Y=None, fdobj=None, data=None, X=None, con = None, argval
         var_b = new_fit["Vp"]
 
     se_func = np.full((len(argvals), q), np.nan)
-    for j in range(1,q+1):
+    for j in range(1, q + 1):
         start_idx = nbasis * (j - 1)
         end_idx = nbasis * j
         var_b_submatrix = var_b[start_idx:end_idx, start_idx:end_idx]
@@ -303,14 +445,23 @@ def fosr(formula=None, Y=None, fdobj=None, data=None, X=None, con = None, argval
     fd = FDataBasis(basis=bss, coefficients=coefmat)
     est_func = np.squeeze(fd.evaluate(argvals)).T
 
-    if(method == "mix" and max_iter>0):
+    if method == "mix" and max_iter > 0:
         fit = new_fit
     else:
         fit = firstfit
 
-    roughness = np.diag(coefmat@bss_derivative@coefmat.T)
+    roughness = np.diag(coefmat @ bss_derivative @ coefmat.T)
 
-    if(resp_type == "raw"):
-        yhat = X@np.dot(coefmat, Theta)
-        
-    return {"fd": fd, "pca.resid": pca_resid, "U": U, "yhat": yhat, "est.func" : est_func,  "se.func" : se_func, "argvals": argvals, "fit": fit}
+    if resp_type == "raw":
+        yhat = X @ np.dot(coefmat, Theta)
+
+    return {
+        "fd": fd,
+        "pca.resid": pca_resid,
+        "U": U,
+        "yhat": yhat,
+        "est.func": est_func,
+        "se.func": se_func,
+        "argvals": argvals,
+        "fit": fit,
+    }
