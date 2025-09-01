@@ -110,7 +110,7 @@ def get_covariates(df, no_streamlines=12000):
         )
 
     if np.isinf(df_working["fa"]).any():
-        inf_fa_count = df_working["fa"].isinf().sum()
+        inf_fa_count = np.isinf(df_working["fa"]).sum()
         raise ValueError(
             f"FA values contain infinite values for {inf_fa_count} rows. "
             f"All FA values must be finite."
@@ -148,6 +148,22 @@ def get_covariates(df, no_streamlines=12000):
 
     if (df_working["streamline"] < 0).any():
         raise ValueError("Streamline values must be non-negative integers")
+
+    # Validate age values if present
+    if "age" in df_working.columns:
+        if (df_working["age"] < 0).any():
+            neg_age_count = (df_working["age"] < 0).sum()
+            raise ValueError(
+                f"Age values contain negative values for {neg_age_count} rows. "
+                f"All age values must be non-negative."
+            )
+
+        if (df_working["age"] > 150).any():
+            high_age_count = (df_working["age"] > 150).sum()
+            raise ValueError(
+                f"Age values contain values over 150 for {high_age_count} rows. "
+                f"All age values must be 150 or less."
+            )
 
     Y = []
     X = []
