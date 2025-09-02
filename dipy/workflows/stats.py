@@ -4,8 +4,11 @@ from pathlib import Path
 from time import time
 import warnings
 
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from scipy.ndimage import binary_dilation
+from scipy.stats import norm
 
 from dipy.core.gradients import gradient_table
 from dipy.io import read_bvals_bvecs
@@ -16,38 +19,12 @@ from dipy.reconst.dti import TensorModel
 from dipy.segment.bundles import bundle_shape_similarity
 from dipy.segment.mask import bounding_box, segment_from_cfa
 from dipy.stats.analysis import anatomical_measures, assignment_map, peak_values
+from dipy.stats.fosr import fosr, get_covariates
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.workflow import Workflow
-
-from scipy.stats import norm
-import numpy as np
-import pandas as pd
-import os
-import matplotlib.pyplot as plt
-
-from dipy.stats.fosr import get_covariates, fosr
-
-import numpy as np
-
-import statsmodels.api as sm
-
-from skfda import FDataGrid
-from skfda.representation.basis import BSplineBasis
-
-from skfda.misc.regularization import compute_penalty_matrix
-from skfda.misc.operators import LinearDifferentialOperator
-from skfda.misc.regularization import compute_penalty_matrix, TikhonovRegularization
-from skfda.representation import FDataBasis
-
-
-import gc
-
-from scipy.sparse import diags
-import scipy.sparse as sp
-import pandas as pd
 
 pd, have_pd, _ = optional_package("pandas")
 smf, have_smf, _ = optional_package("statsmodels.formula.api")
@@ -569,26 +546,32 @@ class LinearMixedModelsFlow(Workflow):
             save_file = Path(out_dir) / (save_name + ".png")
             self.save_lmm_plot(save_file, file_name, bundle_name, x, y)
 
+
 class FOSRFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return "fosr"
-                
+
     @warning_for_keywords()
-    def run(self, hd5_dir, *, no_disks=100, out_dir=""):
+    def run(
+        self, hd5_dir, *, no_disks=100, out_dir="", no_streamlines=12000, YMetric="fa"
+    ):
         """Workflow of Functional on Scalar Regression models.
 
         Applies functional on Scalar Regression models on bundles of subjects.
 
         Parameters
         ----------
-        h5_files : string
-            Path to the input metric files. This path may
-            contain wildcards to process multiple inputs at once.
+        hd5_dir : string
+            Path to the input metric files directory containing HDF5 files.
         no_disks : integer, optional
             Number of disks used for dividing bundle into disks.
         out_dir : string, optional
-            Output directory. Give full path
+            Output directory. Give full path.
+        no_streamlines : integer, optional
+            Number of streamlines to use for analysis.
+        YMetric : string, optional
+            Metric to use for Y variable (e.g., "fa" for fractional anisotropy).
         """
         h5_list = os.listdir(hd5_dir)
         std_error_list = []
@@ -598,30 +581,30 @@ class FOSRFlow(Workflow):
         os.makedirs(save_dir_p_value, exist_ok=True)
         for hd_file in h5_list:
             print("Running fosr for ", hd_file)
-            df = pd.read_hdf(os.path.join(hd5_dir,hd_file))
-            X,Y = get_covariates(df)
-    
+            df = pd.read_hdf(os.path.join(hd5_dir, hd_file))
+            X, Y = get_covariates(df, no_streamlines, YMetric)
+
             print("Getting the shape of X", X.shape)
             print("Getting the shape of Y", Y.shape)
 
-            fosr_output = fosr(Y = Y, X = X) 
+            fosr_output = fosr(Y=Y, X=X)
 
-            beta_1 = fosr_output["est.func"][:,0]
-            std_error = fosr_output["se.func"][:,0]
+            beta_1 = fosr_output["est.func"][:, 0]
+            std_error = fosr_output["se.func"][:, 0]
             std_error_list.append(np.array(std_error))
 
-            beta_1_lower = beta_1 - 1.96*std_error
-            beta_1_upper = beta_1 + 1.96*std_error
+            beta_1_lower = beta_1 - 1.96 * std_error
+            beta_1_upper = beta_1 + 1.96 * std_error
 
-            z_scores = (beta_1/std_error)
+            z_scores = beta_1 / std_error
 
-            p_values = norm.sf(abs(z_scores)) * 2 
+            p_values = norm.sf(abs(z_scores)) * 2
             # Plot beta values
             plt.figure()
-            plt.plot(beta_1_lower, label='lower bound')
-            plt.plot(beta_1, label='avg value')
-            plt.plot(beta_1_upper, label='upper value')
-            plt.axhline(y=0, color='r', linestyle='--')
+            plt.plot(beta_1_lower, label="lower bound")
+            plt.plot(beta_1, label="avg value")
+            plt.plot(beta_1_upper, label="upper value")
+            plt.axhline(y=0, color="r", linestyle="--")
             plt.legend()
             plt.title(f"{hd_file} - Beta Values")
             plt.savefig(os.path.join(save_dir_beta, f"{hd_file}_beta.png"))
@@ -629,10 +612,11 @@ class FOSRFlow(Workflow):
             # Plot p-values
             plt.figure()
             plt.plot(-1 * np.log10(p_values))
-            plt.axhline(y=0.01, color='r', linestyle='--')
-            plt.axhline(y=0.001, color='b', linestyle='--')
+            plt.axhline(y=0.01, color="r", linestyle="--")
+            plt.axhline(y=0.001, color="b", linestyle="--")
             plt.title(f"{hd_file} -log10(p-values)")
             plt.savefig(os.path.join(save_dir_p_value, f"{hd_file}_p_value.png"))
+
 
 class BundleShapeAnalysis(Workflow):
     @classmethod
