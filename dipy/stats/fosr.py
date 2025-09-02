@@ -11,7 +11,7 @@ from skfda.representation.basis import BSplineBasis
 from dipy.stats.gam import gam
 
 
-def get_covariates(df, no_streamlines=12000):
+def get_covariates(df, no_streamlines=12000, YMetric="fa"):
     """
     Constructs the covariate matrix X and response matrix Y using 12000
     stramlines from subject-level diffusion imaging data, incorporating
@@ -64,7 +64,7 @@ def get_covariates(df, no_streamlines=12000):
         raise ValueError("Input DataFrame is empty")
 
     # Check required columns
-    required_columns = ["subject", "streamline", "disk", "fa", "group"]
+    required_columns = ["subject", "streamline", "disk", YMetric, "group"]
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
         raise ValueError(f"Missing required columns: {missing_columns}")
@@ -88,7 +88,7 @@ def get_covariates(df, no_streamlines=12000):
     df_working = df.copy()
 
     # Validate data types for numeric columns
-    numeric_columns = ["streamline", "disk", "fa", "group"]
+    numeric_columns = ["streamline", "disk", YMetric, "group"]
     for col in numeric_columns:
         if not pd.api.types.is_numeric_dtype(df_working[col]):
             try:
@@ -102,22 +102,22 @@ def get_covariates(df, no_streamlines=12000):
                 raise ValueError(f"Column '{col}' must be numeric") from err
 
     # Validate FA values - throw error if not present
-    if df_working["fa"].isna().any():
-        missing_fa_count = df_working["fa"].isna().sum()
+    if df_working[YMetric].isna().any():
+        missing_fa_count = df_working[YMetric].isna().sum()
         raise ValueError(
             f"FA values are missing for {missing_fa_count} rows. "
             f"All FA values must be present."
         )
 
-    if np.isinf(df_working["fa"]).any():
-        inf_fa_count = np.isinf(df_working["fa"]).sum()
+    if np.isinf(df_working[YMetric]).any():
+        inf_fa_count = np.isinf(df_working[YMetric]).sum()
         raise ValueError(
             f"FA values contain infinite values for {inf_fa_count} rows. "
             f"All FA values must be finite."
         )
 
-    if (df_working["fa"] < 0).any():
-        neg_fa_count = (df_working["fa"] < 0).sum()
+    if (df_working[YMetric] < 0).any():
+        neg_fa_count = (df_working[YMetric] < 0).sum()
         raise ValueError(
             f"FA values contain negative values for {neg_fa_count} rows. "
             f"All FA values must be non-negative."
@@ -230,7 +230,7 @@ def get_covariates(df, no_streamlines=12000):
             streamline_val = row["streamline"]
             x = streamline_mapping[int(streamline_val)]  # Map to sequential index
             y = int(row["disk"] - 1)  # Convert to int for array indexing
-            sub_Y[x][y] += row["fa"]  # FA remains as float
+            sub_Y[x][y] += row[YMetric]  # FA remains as float
             count_Y[x][y] += 1
         for i in range(len_streamlines):
             for j in range(no_disk):
