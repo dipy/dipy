@@ -50,7 +50,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ env.BUILD_COMMIT }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         name: Install Python
         with:
           python-version: "3.12"
@@ -104,7 +104,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ env.BUILD_COMMIT }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         name: Install Python
         with:
           python-version: "3.12"
@@ -145,7 +145,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ env.BUILD_COMMIT }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         name: Install Python
         with:
           python-version: "3.12"
@@ -183,7 +183,7 @@ jobs:
         with:
           name: wheels-cp${{ env.PY_VERSION }}-manylinux2014-x86_64
           path: ./dist
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Test wheel
