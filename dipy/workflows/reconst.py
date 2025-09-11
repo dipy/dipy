@@ -33,6 +33,7 @@ from dipy.reconst.dti import (
     radial_diffusivity,
 )
 from dipy.reconst.forecast import ForecastModel
+from dipy.reconst.fwdti import FreeWaterTensorModel, common_fit_methods
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.ivim import IvimModel
 from dipy.reconst.rumba import RumbaSDModel
@@ -2838,3 +2839,281 @@ class ReconstForecastFlow(Workflow):
             logger.info(msg)
 
             return io_it
+
+
+class ReconstFwdtiFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "fwdti"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        fit_method="NLS",
+        b0_threshold=50,
+        bvecs_tol=0.01,
+        npeaks=1,
+        sigma=None,
+        save_metrics=None,
+        nifti_tensor=True,
+        extract_pam_values=False,
+        out_dir="",
+        out_tensor="fwdti_tensors.nii.gz",
+        out_fa="fwdti_fa.nii.gz",
+        out_ga="fwdti_ga.nii.gz",
+        out_rgb="fwdti_rgb.nii.gz",
+        out_md="fwdti_md.nii.gz",
+        out_ad="fwdti_ad.nii.gz",
+        out_rd="fwdti_rd.nii.gz",
+        out_mode="fwdti_mode.nii.gz",
+        out_evec="fwdti_evecs.nii.gz",
+        out_eval="fwdti_evals.nii.gz",
+        out_pam="fwdti_peaks.pam5",
+        out_peaks_dir="fwdti_peaks_dirs.nii.gz",
+        out_peaks_values="fwdti_peaks_values.nii.gz",
+        out_peaks_indices="fwdti_peaks_indices.nii.gz",
+        out_sphere="fwdti_sphere.txt",
+        out_qa="fwdti_qa.nii.gz",
+    ):
+        """Workflow for Free Water Elimination Diffusion Tensor Model.
+
+        Performs a Free Water Elimination Diffusion Tensor reconstruction
+        :footcite:p:`NetoHenriques2017` on the files by 'globing' ``input_files`` and
+        saves the DTI metrics in a directory specified by ``out_dir``.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        mask_files : string
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once.
+        fit_method : string, optional
+            can be one of the following:
+                - 'WLS' for weighted linear least square fit according to
+                  :footcite:p:`NetoHenriques2017`.
+                - 'NLS' for non-linear least square fit according to
+                  :footcite:p:`NetoHenriques2017`.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
+        npeaks : int, optional
+            Number of peaks/eigen vectors to save in each voxel. DTI generates
+            3 eigen values and eigen vectors. The principal eigenvector is
+            saved by default.
+        sigma : float, optional
+            An estimate of the variance. :footcite:t:`Chang2005` recommend to
+            use 1.5267 * std(background_noise), where background_noise is
+            estimated from some part of the image known to contain no signal
+            (only noise) b-vectors are unit vectors.
+        save_metrics : variable string, optional
+            List of metrics to save.
+            Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
+        nifti_tensor : bool, optional
+            Whether the tensor is saved in the standard Nifti format or in an
+            alternate format that is used by other software (e.g., FSL): a
+            4-dimensional volume (shape (i, j, k, 6)) with
+            Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
+        out_dir : string, optional
+            Output directory. (default current directory)
+        out_tensor : string, optional
+            Name of the tensors volume to be saved.
+            Per default, this will be saved following the nifti standard:
+            with the tensor elements as Dxx, Dxy, Dyy, Dxz, Dyz, Dzz on the
+            last (5th) dimension of the volume (shape: (i, j, k, 1, 6)). If
+            `nifti_tensor` is False, this will be saved in an alternate format
+            that is used by other software (e.g., FSL): a
+            4-dimensional volume (shape (i, j, k, 6)) with Dxx, Dxy, Dxz, Dyy,
+            Dyz, Dzz on the last dimension.
+        out_fa : string, optional
+            Name of the fractional anisotropy volume to be saved.
+        out_ga : string, optional
+            Name of the geodesic anisotropy volume to be saved.
+        out_rgb : string, optional
+            Name of the color fa volume to be saved.
+        out_md : string, optional
+            Name of the mean diffusivity volume to be saved.
+        out_ad : string, optional
+            Name of the axial diffusivity volume to be saved.
+        out_rd : string, optional
+            Name of the radial diffusivity volume to be saved.
+        out_mode : string, optional
+            Name of the mode volume to be saved.
+        out_evec : string, optional
+            Name of the eigenvectors volume to be saved.
+        out_eval : string, optional
+            Name of the eigenvalues to be saved.
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
+
+        References
+        ----------
+        .. footbibliography::
+
+        """
+        save_metrics = save_metrics or []
+
+        io_it = self.get_io_iterator()
+
+        if fit_method.upper() not in common_fit_methods:
+            raise ValueError(
+                f"Unknown fit method {fit_method}. "
+                f"Supported methods are {common_fit_methods}"
+            )
+
+        optional_args = {}
+        if fit_method.upper() in ["NLS", "NLLS"]:
+            optional_args["sigma"] = sigma
+
+        for (
+            dwi,
+            bval,
+            bvec,
+            mask,
+            otensor,
+            ofa,
+            oga,
+            orgb,
+            omd,
+            oad,
+            orad,
+            omode,
+            oevecs,
+            oevals,
+            opam,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            osphere,
+            oqa,
+        ) in io_it:
+            logging.info(f"Computing FWDTI metrics for {dwi}")
+            data, affine = load_nifti(dwi)
+
+            if mask is not None:
+                mask = load_nifti_data(mask).astype(bool)
+
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+            gtab = gradient_table(
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
+
+            fwdti_model = FreeWaterTensorModel(
+                gtab, fit_method=fit_method, **optional_args
+            )
+            fwdti_fit = fwdti_model.fit(data, mask=mask)
+
+            if not save_metrics:
+                save_metrics = [
+                    "fa",
+                    "md",
+                    "rd",
+                    "ad",
+                    "ga",
+                    "rgb",
+                    "mode",
+                    "evec",
+                    "eval",
+                    "tensor",
+                ]
+
+            FA = fwdti_fit.fa
+            FA[np.isnan(FA)] = 0
+            FA = np.clip(FA, 0, 1)
+
+            if "tensor" in save_metrics:
+                tensor_vals = lower_triangular(fwdti_fit.quadratic_form)
+
+                if nifti_tensor:
+                    ten_img = nifti1_symmat(tensor_vals, affine=affine)
+                else:
+                    alt_order = [0, 1, 3, 2, 4, 5]
+                    ten_img = nib.Nifti1Image(
+                        tensor_vals[..., alt_order].astype(np.float32), affine
+                    )
+
+                nib.save(ten_img, otensor)
+
+            if "fa" in save_metrics:
+                save_nifti(ofa, FA.astype(np.float32), affine)
+
+            if "ga" in save_metrics:
+                GA = geodesic_anisotropy(fwdti_fit.evals)
+                save_nifti(oga, GA.astype(np.float32), affine)
+
+            if "rgb" in save_metrics:
+                RGB = color_fa(FA, fwdti_fit.evecs)
+                save_nifti(orgb, np.array(255 * RGB, "uint8"), affine)
+
+            if "md" in save_metrics:
+                MD = mean_diffusivity(fwdti_fit.evals)
+                save_nifti(omd, MD.astype(np.float32), affine)
+
+            if "ad" in save_metrics:
+                AD = axial_diffusivity(fwdti_fit.evals)
+                save_nifti(oad, AD.astype(np.float32), affine)
+
+            if "rd" in save_metrics:
+                RD = radial_diffusivity(fwdti_fit.evals)
+                save_nifti(orad, RD.astype(np.float32), affine)
+
+            if "mode" in save_metrics:
+                MODE = get_mode(fwdti_fit.quadratic_form)
+                save_nifti(omode, MODE.astype(np.float32), affine)
+
+            if "evec" in save_metrics:
+                save_nifti(oevecs, fwdti_fit.evecs.astype(np.float32), affine)
+
+            if "eval" in save_metrics:
+                save_nifti(oevals, fwdti_fit.evals.astype(np.float32), affine)
+
+            if save_metrics:
+                msg = f"FWDTI metrics saved to {os.path.abspath(out_dir)}"
+                logging.info(msg)
+                for metric in save_metrics:
+                    logging.info(self.last_generated_outputs[f"out_{metric}"])
+
+            pam = tensor_to_pam(
+                fwdti_fit.evals.astype(np.float32),
+                fwdti_fit.evecs.astype(np.float32),
+                affine,
+                sphere=default_sphere,
+                generate_peaks_indices=False,
+                npeaks=npeaks,
+            )
+
+            save_pam(opam, pam)
+
+            if extract_pam_values:
+                pam_to_niftis(
+                    pam,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    fname_sphere=osphere,
+                    fname_qa=oqa,
+                    reshape_dirs=True,
+                )
