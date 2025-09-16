@@ -581,7 +581,7 @@ def _patch2self_version1(
             )
 
         if verbose is True:
-            logger.info("Denoised b0 Volume: ", vol_idx)
+            logger.info("Denoised b0 Volume: %d", vol_idx)
     # Separate denoising for DWI volumes
     train_dwi = _extract_3d_patches(
         np.pad(
@@ -605,11 +605,11 @@ def _patch2self_version1(
         )
 
         if verbose is True:
-            logger.info("Denoised DWI Volume: ", vol_idx)
+            logger.info("Denoised DWI Volume: %d", vol_idx)
 
     if verbose is True:
         t2 = time.time()
-        logger.info("Total time taken for Patch2Self: ", t2 - t1, " seconds")
+        logger.info("Total time taken for Patch2Self: %.3f seconds", t2 - t1)
 
     if data_b0s.ndim == 3:
         denoised_arr[:, :, :, b0_idx[0][0]] = denoised_b0s
@@ -687,11 +687,17 @@ def _patch2self_version3(
         clipped to non-negative values.
 
     """
+    if data.dtype == np.float64:
+        calc_dtype = np.float64
+
+    else:
+        calc_dtype = np.float32
+
     tmp_file = tempfile.NamedTemporaryFile(delete=False, dir=tmp_dir, suffix="tmp_file")
     tmp_file.close()
     tmp = np.memmap(
         tmp_file.name,
-        dtype=data.dtype,
+        dtype=calc_dtype,
         mode="w+",
         shape=(data.shape[0], data.shape[1], data.shape[2], data.shape[3]),
     )
@@ -708,7 +714,7 @@ def _patch2self_version3(
     sketch_rows = int(0.30 * data.shape[0] * data.shape[1] * data.shape[2])
     sketched_matrix_name, sketched_matrix_dtype, sketched_matrix_shape = count_sketch(
         tmp_file.name,
-        data.dtype,
+        calc_dtype,
         tmp.shape,
         sketch_rows=sketch_rows,
         tmp_dir=tmp_dir,
@@ -726,7 +732,7 @@ def _patch2self_version3(
     data_b0s = np.take(np.squeeze(sketched_matrix), b0_idx, axis=0)
     data_dwi = np.take(np.squeeze(sketched_matrix), dwi_idx, axis=0)
     data_dict = {
-        "data": [tmp_file.name, data.dtype, tmp.shape],
+        "data": [tmp_file.name, calc_dtype, tmp.shape],
         "data_b0s": data_b0s,
         "data_dwi": data_dwi,
     }
@@ -734,7 +740,7 @@ def _patch2self_version3(
         t1 = time.time()
     del sketched_matrix
     os.unlink(sketched_matrix_name)
-    denoised_arr_name, denoised_arr_dtype, denoised_arr_shape = vol_denoise(
+    denoised_arr_name, calc_dtype, denoised_arr_shape = vol_denoise(
         data_dict,
         b0_idx,
         dwi_idx,
@@ -746,13 +752,13 @@ def _patch2self_version3(
     )
     denoised_arr = np.memmap(
         denoised_arr_name,
-        dtype=denoised_arr_dtype,
+        dtype=calc_dtype,
         mode="r+",
         shape=denoised_arr_shape,
     )
     if verbose:
         t2 = time.time()
-        logger.info("Time taken for Patch2Self: ", t2 - t1, " seconds.")
+        logger.info("Time taken for Patch2Self: %.3f seconds.", t2 - t1)
 
     denoised_arr = _apply_post_processing(
         denoised_arr, shift_intensity, clip_negative_vals
