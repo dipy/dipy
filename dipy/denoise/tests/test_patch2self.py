@@ -1,7 +1,7 @@
 import warnings
 
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_equal, assert_raises
+from numpy.testing import assert_array_almost_equal, assert_equal, assert_raises, assert_allclose
 import pytest
 
 from dipy.core.gradients import generate_bvecs, gradient_table
@@ -310,3 +310,31 @@ def test_single_slice_data():
             f"Expected shape {single_slice_data.shape} for version {version}, "
             f"but got {denoised_data.shape}."
         )
+
+
+@needs_sklearn
+@set_random_number_generator(2025)
+def test_patch2self_v3_preserves_out_dtype_and_precision_invariance(rng):
+    shape = (10, 10, 6, 13)
+    base = 30.0 + 2.0 * rng.standard_normal(shape)
+    bvals = np.repeat(1000.0, shape[-1])  # all DWI
+
+    data32 = base.astype(np.float32)
+    data64 = base.astype(np.float64)
+
+    den32 = p2s.patch2self(data32, bvals, model="ridge", alpha=1.0, version=3)
+    den64 = p2s.patch2self(data64, bvals, model="ridge", alpha=1.0, version=3)
+
+    # Out dtype should follow input dtype by default
+    assert_equal(den32.dtype, np.float32)
+    assert_equal(den64.dtype, np.float64)
+
+    # Compare per-volume statistics (mean and std across spatial dims)
+    m32 = den32.reshape(-1, shape[-1]).mean(axis=0)
+    m64 = den64.reshape(-1, shape[-1]).mean(axis=0)
+    s32 = den32.reshape(-1, shape[-1]).std(axis=0)
+    s64 = den64.reshape(-1, shape[-1]).std(axis=0)
+
+    # Allow small-to-moderate diffs due to dtype & randomized count-sketch
+    assert_allclose(m32, m64, rtol=2e-2, atol=1.25)
+    assert_allclose(s32, s64, rtol=1e-1, atol=1.0)
