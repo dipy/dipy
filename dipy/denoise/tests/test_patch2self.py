@@ -1,7 +1,12 @@
 import warnings
 
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_equal, assert_raises, assert_allclose
+from numpy.testing import (
+    assert_allclose,
+    assert_array_almost_equal,
+    assert_equal,
+    assert_raises,
+)
 import pytest
 
 from dipy.core.gradients import generate_bvecs, gradient_table
