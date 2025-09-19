@@ -141,7 +141,7 @@ def connectivity_matrix(
     discard_stream_size : int, 0 by default
         If the length of a streamline is less than or equal to this value, it
         will not be included in the connectivity matrix. When 0, no filtering
-        is applied. This is useful for ignoring very short streamlines that 
+        is applied. This is useful for ignoring very short streamlines that
         are likely to be noise.
     return_mapping : bool, False by default
         If True, a mapping is returned which maps matrix indices to
@@ -183,7 +183,7 @@ def connectivity_matrix(
             # Only process if streamline length is above threshold
             if discard_stream_size > 0 and len(sl) <= discard_stream_size:
                 continue
-                
+
             sl = _to_voxel_coordinates(sl, lin_T, offset)
             x, y, z = sl.T
             if symmetric:
@@ -214,7 +214,7 @@ def connectivity_matrix(
         else:
             working_streamlines = streamlines
             orig_indices = list(range(len(streamlines)))
-        
+
         # Use the filtered streamlines for endpoint extraction
         streamlines_end = np.array([sl[0 :: len(sl) - 1] for sl in working_streamlines])
         streamlines_end = _to_voxel_coordinates(streamlines_end, lin_T, offset)
