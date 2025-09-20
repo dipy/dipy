@@ -133,6 +133,8 @@ class NLMeansFlow(Workflow):
         patch_radius=1,
         block_radius=5,
         rician=True,
+        num_threads=None,
+        method="blockwise",
         out_dir="",
         out_denoised="dwi_nlmeans.nii.gz",
     ):
@@ -156,6 +158,11 @@ class NLMeansFlow(Workflow):
         rician : bool, optional
             If True the noise is estimated as Rician, otherwise Gaussian noise
             is assumed.
+        num_threads : int, optional
+            Number of OpenMP threads to use for parallel processing. If None,
+            uses all available CPU threads. Set to 1 to disable parallel processing.
+        method : str, optional
+            Algorithm method to use: 'classic' or 'blockwise'.
         out_dir : string or Path, optional
             Output directory.
         out_denoised : string, optional
@@ -186,6 +193,8 @@ class NLMeansFlow(Workflow):
                     patch_radius=patch_radius,
                     block_radius=block_radius,
                     rician=rician,
+                    num_threads=num_threads,
+                    method=method,
                 )
                 save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 

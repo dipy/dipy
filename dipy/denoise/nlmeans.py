@@ -103,6 +103,10 @@ def nlmeans(
     >>> noise_levels = np.linspace(50, 100, 30)  # Varying noise
     >>> denoised_dwi = nlmeans(dwi_data, sigma=noise_levels)
     """
+    method = method.lower()
+    if method not in ["classic", "blockwise"]:
+        raise ValueError(f"Unknown method '{method}'. Use 'classic' or 'blockwise'.")
+
     if block_radius is None:
         if method == "classic":
             block_radius = 5
