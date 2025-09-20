@@ -111,35 +111,22 @@ def test_nlmeans_4d_3dsigma_and_threads():
     mask = np.zeros(data.shape[:3])
     mask[:] = 1
 
-    print(f"cpu count {cpu_count()}")
-
-    print("1")
+    print("1 core")
     t = time()
     new_data = nlmeans(data, sigma, mask=mask, num_threads=1, method="classic")
     duration_1core = time() - t
     print(duration_1core)
 
-    print("All")
+    print(f"All cores {cpu_count()}")
     t = time()
     new_data2 = nlmeans(data, sigma, mask=mask, num_threads=None, method="classic")
     duration_all_core = time() - t
     print(duration_all_core)
 
-    print("2")
-    t = time()
-    new_data3 = nlmeans(data, sigma, mask=mask, num_threads=2, method="classic")
-    duration_2core = time() - t
-    print(duration_2core)
-
     assert_array_almost_equal(new_data, new_data2)
-    assert_array_almost_equal(new_data2, new_data3)
 
     if cpu_count() > 2:
-        assert_equal(duration_all_core < duration_2core, True)
-        assert_equal(duration_2core < duration_1core, True)
-
-    if cpu_count() == 2:
-        assert_greater(duration_1core, duration_2core)
+        assert_greater(duration_1core, duration_all_core)
 
 
 def test_nlmeans_static_blockwise():

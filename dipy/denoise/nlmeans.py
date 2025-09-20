@@ -103,6 +103,10 @@ def nlmeans(
     >>> noise_levels = np.linspace(50, 100, 30)  # Varying noise
     >>> denoised_dwi = nlmeans(dwi_data, sigma=noise_levels)
     """
+    method = method.lower()
+    if method not in ["classic", "blockwise"]:
+        raise ValueError(f"Unknown method '{method}'. Use 'classic' or 'blockwise'.")
+
     if block_radius is None:
         if method == "classic":
             block_radius = 5
@@ -119,10 +123,8 @@ def nlmeans(
         if not np.issubdtype(sigma.dtype, np.number):
             raise ValueError("sigma should be an array of floats", sigma)
 
-        # Validation depends on both array dimensions and method
         if arr.ndim == 3:
             if method == "classic":
-                # Classic method for 3D: sigma should be 3D array or scalar
                 if sigma.ndim not in [0, 3] and not (
                     sigma.ndim == 3 and sigma.shape == arr.shape
                 ):
@@ -131,7 +133,6 @@ def nlmeans(
                         f" 3D array, got shape {sigma.shape}"
                     )
             elif method == "blockwise":
-                # Blockwise method: more flexible, accepts scalar, 1D, or 3D
                 if sigma.ndim > 3:
                     raise ValueError(
                         "For blockwise method, sigma should be at most 3D, got "
@@ -162,11 +163,9 @@ def nlmeans(
 
     if arr.ndim == 3:
         if method == "classic":
-            # Classic method needs 3D sigma array
             if not isinstance(sigma, np.ndarray):
                 sigma_3d = np.full(arr.shape, sigma, dtype="f8")
             else:
-                # Ensure sigma is 3D and same shape as arr
                 if sigma.shape != arr.shape:
                     if sigma.ndim == 0 or (sigma.ndim == 1 and len(sigma) == 1):
                         sigma_3d = np.full(arr.shape, float(sigma), dtype="f8")
@@ -178,7 +177,6 @@ def nlmeans(
                 else:
                     sigma_3d = np.ascontiguousarray(sigma, dtype="f8")
         else:
-            # For blockwise method, sigma can be scalar or array
             sigma_3d = sigma
 
         result = nlmeans_3d(
@@ -196,14 +194,12 @@ def nlmeans(
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
         for i in range(arr.shape[-1]):
-            # For classic method, we need to convert scalar sigma to 3D array
             if method == "classic":
                 if isinstance(sigma, np.ndarray):
                     sigma_vol = np.full(arr[..., i].shape, sigma[i], dtype="f8")
                 else:
                     sigma_vol = np.full(arr[..., i].shape, sigma, dtype="f8")
             else:
-                # For blockwise method, use scalar sigma
                 if isinstance(sigma, np.ndarray):
                     sigma_vol = sigma[i]
                 else:
