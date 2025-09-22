@@ -37,4 +37,8 @@ def test_default_weights(monkeypatch):
         deepn4_model = deepn4_mod.DeepN4()
         deepn4_model.fetch_default_weights()
         results_arr = deepn4_model.predict(input_arr, input_affine_arr)
-        assert_almost_equal(results_arr / 100, target_arr / 100, decimal=1)
+        assert_almost_equal(
+            results_arr / np.max(results_arr),
+            target_arr / np.max(target_arr),
+            decimal=3,
+        )
