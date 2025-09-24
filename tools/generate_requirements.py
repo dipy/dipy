@@ -21,18 +21,202 @@ header = [
 ]
 
 
-def generate_requirement_file(name: str, req_list: list[str]) -> None:
+def generate_requirement_file(name, req_list):
+    """Write a single requirements file with the shared header.
+
+    Parameters
+    ----------
+    name : str
+        Base filename (without extension) to write inside ``requirements/``.
+    req_list : sequence of str
+        Requirements to place after the generated header.
+    """
     req_fname = repo_dir / "requirements" / f"{name}.txt"
     req_fname.write_text("\n".join(header + req_list) + "\n")
 
 
-def main() -> None:
+def deduplicate(items):
+    """Preserve order while removing duplicate strings.
+
+    Parameters
+    ----------
+    items : iterable of str
+        Requirement strings that may contain duplicates.
+
+    Returns
+    -------
+    list of str
+        Input values with the first occurrence of each item kept.
+    """
+    seen = set()
+    unique = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            unique.append(item)
+    return unique
+
+
+def expand_project_extras(
+    requirements,
+    *,
+    project_name,
+    optional_dependencies,
+):
+    """Expand references such as `project[extra1,extra2]` using pyproject extras.
+
+    Extras are resolved recursively and deduplicated while preserving order. If an
+    unknown extra is referenced we raise a ValueError to surface the issue early.
+
+    Parameters
+    ----------
+    requirements : sequence of str
+        Requirements that may include references to the local project extras.
+    project_name : str
+        Name of the project defined in ``pyproject.toml``.
+    optional_dependencies : dict
+        Mapping of extra name to its requirement sequence.
+
+    Returns
+    -------
+    list of str
+        Flattened requirements with project extras expanded.
+
+    Raises
+    ------
+    ValueError
+        If an unknown extra is referenced, a cycle is detected or syntax is
+        malformed.
+    """
+
+    memo = {}
+
+    def find_project_extras(requirement):
+        """Return extras list if the requirement references the local project.
+
+        Parameters
+        ----------
+        requirement : str
+            Raw requirement string to inspect.
+
+        Returns
+        -------
+        list of str or None
+            List of extras when matched, otherwise ``None``.
+
+        Raises
+        ------
+        ValueError
+            If the string has malformed extras or unsupported syntax.
+        """
+
+        normalized = requirement.strip()
+        prefix = f"{project_name}["
+        if not normalized.startswith(prefix):
+            return None
+
+        closing_index = normalized.find("]")
+        if closing_index == -1:
+            raise ValueError(f"Malformed requirement '{requirement}'")
+
+        extras_segment = normalized[len(prefix) : closing_index]
+        rest = normalized[closing_index + 1 :].strip()
+        if rest:
+            msg = (
+                "Extras for the local project must not include version specifiers "
+                f"or markers: '{requirement}'"
+            )
+            raise ValueError(msg)
+
+        extras = [extra.strip() for extra in extras_segment.split(",") if extra.strip()]
+        if not extras:
+            raise ValueError(f"No extras found in requirement '{requirement}'")
+
+        return extras
+
+    def expand_extra(extra, stack):
+        """Recursively resolve a single extra name.
+
+        Parameters
+        ----------
+        extra : str
+            Name of the extra to expand.
+        stack : tuple of str
+            Chain of extras currently being processed to detect cycles.
+
+        Returns
+        -------
+        list of str
+            Requirements associated with the expanded extra.
+        """
+
+        if extra in memo:
+            return memo[extra]
+        if extra in stack:
+            cycle = " -> ".join(stack + (extra,))
+            raise ValueError(f"Cycle detected while expanding extras: {cycle}")
+
+        try:
+            deps = optional_dependencies[extra]
+        except KeyError as missing:
+            msg = f"Unknown extra '{missing.args[0]}' referenced by {project_name}"
+            raise ValueError(msg) from None
+
+        expanded = []
+        next_stack = stack + (extra,)
+        for dep in deps:
+            expanded.extend(expand_requirement(dep, next_stack))
+
+        memo[extra] = deduplicate(expanded)
+        return memo[extra]
+
+    def expand_requirement(req_str, stack):
+        """Expand a requirement that may reference local extras.
+
+        Parameters
+        ----------
+        req_str : str
+            Requirement string to evaluate.
+        stack : tuple of str
+            Chain of extras currently being processed.
+
+        Returns
+        -------
+        list of str
+            Expanded requirements for the given string.
+        """
+
+        extras = find_project_extras(req_str)
+        if extras is None:
+            return [req_str]
+
+        expanded = []
+        for extra in sorted(extras):
+            expanded.extend(expand_extra(extra, stack))
+        return expanded
+
+    flattened = []
+    for requirement in requirements:
+        flattened.extend(expand_requirement(requirement, ()))
+    return deduplicate(flattened)
+
+
+def main():
+    """Load ``pyproject.toml`` and regenerate the requirements directory."""
     pyproject = toml.loads((repo_dir / "pyproject.toml").read_text())
+    project = pyproject["project"]
+    project_name = project["name"]
+    optional_deps = project.get("optional-dependencies", {})
 
-    generate_requirement_file("default", pyproject["project"]["dependencies"])
+    generate_requirement_file("default", project["dependencies"])
 
-    for key, opt_list in pyproject["project"]["optional-dependencies"].items():
-        generate_requirement_file(key, opt_list)
+    for key, opt_list in optional_deps.items():
+        expanded = expand_project_extras(
+            opt_list,
+            project_name=project_name,
+            optional_dependencies=optional_deps,
+        )
+        generate_requirement_file(key, expanded)
 
 
 if __name__ == "__main__":
