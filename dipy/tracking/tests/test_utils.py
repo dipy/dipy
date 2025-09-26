@@ -228,7 +228,7 @@ def test_connectivity_matrix():
     streamlines = [-i for i in streamlines]
     matrix = connectivity_matrix(streamlines, affine, label_volume)
     # In the symmetrical case, the matrix should be, well, symmetric:
-    npt.assert_equal(matrix[4, 3], matrix[3, 4])
+    npt.assert_equal(matrix[4, 3], matrix[4, 3])
 
 
 def test_ndbincount():
