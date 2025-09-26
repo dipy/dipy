@@ -214,8 +214,15 @@ def connectivity_matrix(
                     orig_indices.append(i)
             working_streamlines = filtered_streamlines
         else:
-            working_streamlines = streamlines
-            orig_indices = list(range(len(streamlines)))
+            # Convert generator to list if needed to support indexing
+            if (
+                hasattr(streamlines, '__iter__')
+                and not hasattr(streamlines, '__getitem__')
+            ):
+                working_streamlines = list(streamlines)
+            else:
+                working_streamlines = streamlines
+            orig_indices = list(range(len(working_streamlines)))
 
         # Use the filtered streamlines for endpoint extraction
         def get_endpoints(sl):
