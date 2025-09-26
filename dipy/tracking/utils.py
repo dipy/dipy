@@ -215,9 +215,8 @@ def connectivity_matrix(
             working_streamlines = filtered_streamlines
         else:
             # Convert generator to list if needed to support indexing
-            if (
-                hasattr(streamlines, '__iter__')
-                and not hasattr(streamlines, '__getitem__')
+            if hasattr(streamlines, "__iter__") and not hasattr(
+                streamlines, "__getitem__"
             ):
                 working_streamlines = list(streamlines)
             else:
@@ -228,6 +227,7 @@ def connectivity_matrix(
         def get_endpoints(sl):
             sl_array = np.asarray(sl)
             return sl_array[0 :: len(sl_array) - 1]
+
         streamlines_end = np.array([get_endpoints(sl) for sl in working_streamlines])
         streamlines_end = _to_voxel_coordinates(streamlines_end, lin_T, offset)
         x, y, z = streamlines_end.T

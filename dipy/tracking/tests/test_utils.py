@@ -256,8 +256,11 @@ def test_connectivity_matrix_with_generator():
 
     # Test with discard_stream_size parameter
     matrix = connectivity_matrix(
-        streamline_generator(), np.eye(4), label_volume,
-        symmetric=False, discard_stream_size=1
+        streamline_generator(),
+        np.eye(4),
+        label_volume,
+        symmetric=False,
+        discard_stream_size=1,
     )
     npt.assert_array_equal(matrix, expected)
 
@@ -271,8 +274,12 @@ def test_connectivity_matrix_with_generator():
     expected_inclusive[3:5, 0] = 1
 
     matrix = connectivity_matrix(
-        streamline_generator(), np.eye(4), label_volume,
-        symmetric=False, inclusive=True, discard_stream_size=1
+        streamline_generator(),
+        np.eye(4),
+        label_volume,
+        symmetric=False,
+        inclusive=True,
+        discard_stream_size=1,
     )
     npt.assert_array_equal(matrix, expected_inclusive)
 
