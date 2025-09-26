@@ -39,11 +39,19 @@ def reconst_mmri_core(flow, lap, pos):
 
         mmri_flow = flow()
 
-        msg = "Optimization did not find a solution"
-        cvxpy_msg = "Solution may be inaccurate"
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message=msg, category=UserWarning)
-            warnings.filterwarnings("ignore", message=cvxpy_msg, category=UserWarning)
+            # To filter DIPY optimization warnings
+            warnings.filterwarnings(
+                "ignore",
+                message="Optimization did not find a solution",
+                category=UserWarning,
+            )
+            # To filter CVXPY solver warnings
+            warnings.filterwarnings(
+                "ignore",
+                message="Solution may be inaccurate.*",
+                category=UserWarning,
+            )
             mmri_flow.run(
                 data_files=data_path,
                 bvals_files=bval_path,
