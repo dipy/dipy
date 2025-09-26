@@ -181,6 +181,7 @@ def connectivity_matrix(
     if inclusive:
         for i, sl in enumerate(streamlines):
             # Only process if streamline length is above threshold
+            sl = np.asarray(sl)
             if discard_stream_size > 0 and len(sl) <= discard_stream_size:
                 continue
 
@@ -207,6 +208,7 @@ def connectivity_matrix(
             filtered_streamlines = []
             orig_indices = []
             for i, sl in enumerate(streamlines):
+                sl = np.asarray(sl)
                 if len(sl) > discard_stream_size:
                     filtered_streamlines.append(sl)
                     orig_indices.append(i)
@@ -216,7 +218,10 @@ def connectivity_matrix(
             orig_indices = list(range(len(streamlines)))
 
         # Use the filtered streamlines for endpoint extraction
-        streamlines_end = np.array([sl[0 :: len(sl) - 1] for sl in working_streamlines])
+        def get_endpoints(sl):
+            sl_array = np.asarray(sl)
+            return sl_array[0 :: len(sl_array) - 1]
+        streamlines_end = np.array([get_endpoints(sl) for sl in working_streamlines])
         streamlines_end = _to_voxel_coordinates(streamlines_end, lin_T, offset)
         x, y, z = streamlines_end.T
         if symmetric:
