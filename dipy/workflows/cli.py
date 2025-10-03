@@ -39,6 +39,7 @@ cli_flows = {
     "dipy_fit_ivim": ("dipy.workflows.reconst", "ReconstIvimFlow"),
     "dipy_fit_mapmri": ("dipy.workflows.reconst", "ReconstMAPMRIFlow"),
     "dipy_fit_opdt": ("dipy.workflows.reconst", "ReconstQBallBaseFlow"),
+    "dipy_fit_powermap": ("dipy.workflows.reconst", "ReconstPowermapFlow"),
     "dipy_fit_qball": ("dipy.workflows.reconst", "ReconstQBallBaseFlow"),
     "dipy_fit_sdt": ("dipy.workflows.reconst", "ReconstSDTFlow"),
     "dipy_fit_sfm": ("dipy.workflows.reconst", "ReconstSFMFlow"),
