@@ -239,15 +239,12 @@ def test_sh_to_bingham_handles_empty_voxels():
     data = load_nifti_data(dwi_fname)
     bvals, bvecs = read_bvals_bvecs(bval_fname, bvec_fname)
 
-    if data.ndim != 4:
-        raise SkipTest("small_64D dataset is not 4D in this DIPY version")
-
     # Prepare gradient table and fit CSA model to get SH coefficients
     gtab = gradient_table(bvals=bvals, bvecs=bvecs)
     csa_model = CsaOdfModel(gtab, sh_order_max=4)
     csa_fit = csa_model.fit(data)
 
-    # Extract SH coefficients (this is what sh_to_bingham expects)
+    # Extract SH coefficients
     sh_coeff = csa_fit.shm_coeff
 
     # Introduce an empty voxel (simulate background region)
