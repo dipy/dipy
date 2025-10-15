@@ -23,7 +23,6 @@ from dipy.io.image import load_nifti_data
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.reconst.shm import CsaOdfModel
-from unittest import SkipTest
 
 
 def setup_module():
