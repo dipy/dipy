@@ -5,7 +5,10 @@ from numpy.testing import (
     assert_array_less,
 )
 
-from dipy.data import get_sphere, get_fnames
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames, get_sphere
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data
 from dipy.reconst.bingham import (
     _bingham_fit_peak,
     _convert_bingham_pars,
@@ -18,11 +21,7 @@ from dipy.reconst.bingham import (
     sf_to_bingham,
     sh_to_bingham,
 )
-from dipy.reconst.shm import sf_to_sh
-from dipy.io.image import load_nifti_data
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.core.gradients import gradient_table
-from dipy.reconst.shm import CsaOdfModel
+from dipy.reconst.shm import CsaOdfModel, sf_to_sh
 
 
 def setup_module():
@@ -252,7 +251,7 @@ def test_sh_to_bingham_handles_empty_voxels():
 
     # Run sh_to_bingham
     sphere = get_sphere(name="repulsion724").subdivide(n=2)
-   
+
     bim = sh_to_bingham(sh_coeff, sphere, max_search_angle=45)
-    
+
     assert bim.model_params.shape[:3] == sh_coeff.shape[:3]
