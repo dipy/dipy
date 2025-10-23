@@ -19,6 +19,7 @@ from dipy.utils.optpkg import optional_package
 from dipy.workflows.reconst import (
     ReconstForecastFlow,
     ReconstGQIFlow,
+    ReconstPowermapFlow,
     ReconstRUMBAFlow,
     ReconstSFMFlow,
 )
@@ -168,3 +169,226 @@ def reconst_flow_core(flow, *, use_multishell_data=None, **kwargs):
             npt.assert_allclose(pam.peak_indices, peaks_idx_data)
             npt.assert_allclose(pam.shm_coeff, shm_data, atol=1e-7)
             npt.assert_allclose(pam.gfa, gfa_data)
+
+
+def test_reconst_powermap_basic():
+    """Test ReconstPowermapFlow basic functionality and parameter variations."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*descoteaux07 SH basis.*",
+            category=PendingDeprecationWarning,
+        )
+
+        with TemporaryDirectory() as out_dir:
+            data_path, bval_path, bvec_path = get_fnames(name="small_64D")
+            volume, affine = load_nifti(data_path)
+            mask = np.ones_like(volume[:, :, :, 0], dtype=bool)
+            mask_path = Path(out_dir) / "tmp_mask.nii.gz"
+            save_nifti(mask_path, mask.astype(np.uint8), affine)
+
+            reconst_flow = ReconstPowermapFlow()
+
+            # Test basic functionality with default parameters
+            reconst_flow.run(
+                data_path,
+                bval_path,
+                bvec_path,
+                mask_path,
+                out_dir=out_dir,
+            )
+
+            powermap_path = reconst_flow.last_generated_outputs["out_powermap"]
+            assert os.path.exists(powermap_path), "Powermap file was not created"
+            powermap_data = load_nifti_data(powermap_path)
+            npt.assert_equal(powermap_data.shape, volume.shape[:-1])
+            assert np.all(powermap_data >= 0), "Powermap should be non-negative"
+            assert not np.all(powermap_data == 0), "Powermap should not be all zeros"
+            assert np.isfinite(
+                powermap_data
+            ).all(), "Powermap should contain finite values"
+
+            # Test different SH orders
+            for sh_order in [4, 6]:
+                reconst_flow.run(
+                    data_path,
+                    bval_path,
+                    bvec_path,
+                    mask_path,
+                    sh_order_max=sh_order,
+                    out_dir=out_dir,
+                    out_powermap=f"powermap_sh{sh_order}.nii.gz",
+                )
+                powermap_path = reconst_flow.last_generated_outputs["out_powermap"]
+                assert os.path.exists(powermap_path)
+
+            # Test different power values and norm factors
+            for power in [1, 3]:
+                reconst_flow.run(
+                    data_path,
+                    bval_path,
+                    bvec_path,
+                    mask_path,
+                    power=power,
+                    out_dir=out_dir,
+                    out_powermap=f"powermap_power{power}.nii.gz",
+                )
+                powermap_path = reconst_flow.last_generated_outputs["out_powermap"]
+                assert os.path.exists(powermap_path)
+
+            # Test with smoothing
+            reconst_flow.run(
+                data_path,
+                bval_path,
+                bvec_path,
+                mask_path,
+                smooth=0.006,
+                out_dir=out_dir,
+                out_powermap="powermap_smooth.nii.gz",
+            )
+            powermap_path = reconst_flow.last_generated_outputs["out_powermap"]
+            assert os.path.exists(powermap_path)
+
+            # Test non_negative=False
+            reconst_flow.run(
+                data_path,
+                bval_path,
+                bvec_path,
+                mask_path,
+                non_negative=False,
+                out_dir=out_dir,
+                out_powermap="powermap_negative_allowed.nii.gz",
+            )
+            powermap_path = reconst_flow.last_generated_outputs["out_powermap"]
+            assert os.path.exists(powermap_path)
+            assert reconst_flow.get_short_name() == "powermap"
+
+
+def test_reconst_powermap_with_shm_files():
+    """Test ReconstPowermapFlow with precomputed SH coefficients."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*descoteaux07 SH basis.*",
+            category=PendingDeprecationWarning,
+        )
+
+        with TemporaryDirectory() as out_dir:
+            data_path, bval_path, bvec_path = get_fnames(name="small_64D")
+            volume, affine = load_nifti(data_path)
+            mask = np.ones_like(volume[:, :, :, 0], dtype=bool)
+            mask_path = Path(out_dir) / "tmp_mask.nii.gz"
+            save_nifti(mask_path, mask.astype(np.uint8), affine)
+
+            # Generate SH coefficients using GQI
+            reconst_flow = ReconstGQIFlow()
+            reconst_flow.run(
+                data_path,
+                bval_path,
+                bvec_path,
+                mask_path,
+                sh_order_max=6,
+                extract_pam_values=True,
+                out_dir=out_dir,
+            )
+
+            shm_path = reconst_flow.last_generated_outputs["out_shm"]
+            pam_path = reconst_flow.last_generated_outputs["out_pam"]
+
+            # Test with NIfTI SH file
+            powermap_flow = ReconstPowermapFlow()
+            powermap_flow.run(
+                data_path,
+                bval_path,
+                bvec_path,
+                mask_path,
+                shm_files=shm_path,
+                out_dir=out_dir,
+                out_powermap="powermap_from_shm.nii.gz",
+            )
+            powermap_path = powermap_flow.last_generated_outputs["out_powermap"]
+            assert os.path.exists(powermap_path)
+            powermap_data = load_nifti_data(powermap_path)
+            npt.assert_equal(powermap_data.shape, volume.shape[:-1])
+
+            # Test with PAM file
+            powermap_flow.run(
+                data_path,
+                bval_path,
+                bvec_path,
+                mask_path,
+                shm_files=pam_path,
+                out_dir=out_dir,
+                out_powermap="powermap_from_pam.nii.gz",
+            )
+            powermap_path = powermap_flow.last_generated_outputs["out_powermap"]
+            assert os.path.exists(powermap_path)
+
+
+def test_reconst_powermap_edge_cases():
+    """Test ReconstPowermapFlow error handling and edge cases."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=".*descoteaux07 SH basis.*",
+            category=PendingDeprecationWarning,
+        )
+
+        with TemporaryDirectory() as out_dir:
+            data_path, bval_path, bvec_path = get_fnames(name="small_64D")
+            volume, affine = load_nifti(data_path)
+            mask = np.ones_like(volume[:, :, :, 0], dtype=bool)
+            mask_path = Path(out_dir) / "tmp_mask.nii.gz"
+            save_nifti(mask_path, mask.astype(np.uint8), affine)
+
+            reconst_flow = ReconstPowermapFlow()
+
+            # Test with invalid SH file extension
+            invalid_shm_path = Path(out_dir) / "invalid.txt"
+            invalid_shm_path.write_text("dummy content")
+            with pytest.raises(ValueError, match="SH coefficients file must be"):
+                reconst_flow.run(
+                    data_path,
+                    bval_path,
+                    bvec_path,
+                    mask_path,
+                    shm_files=str(invalid_shm_path),
+                    out_dir=out_dir,
+                )
+
+            # Test with invalid sh_basis (should fallback to default)
+            reconst_flow.run(
+                data_path,
+                bval_path,
+                bvec_path,
+                mask_path,
+                sh_basis="invalid_basis",
+                out_dir=out_dir,
+                out_powermap="powermap_invalid_basis.nii.gz",
+            )
+            powermap_path = reconst_flow.last_generated_outputs["out_powermap"]
+            assert os.path.exists(powermap_path)
+
+            # Test different norm factors produce different results
+            norm_factors = [0.00001, 0.001]
+            powermaps = []
+            for i, norm_factor in enumerate(norm_factors):
+                reconst_flow.run(
+                    data_path,
+                    bval_path,
+                    bvec_path,
+                    mask_path,
+                    norm_factor=norm_factor,
+                    out_dir=out_dir,
+                    out_powermap=f"powermap_norm{i}.nii.gz",
+                )
+                powermap_path = reconst_flow.last_generated_outputs["out_powermap"]
+                powermap_data = load_nifti_data(powermap_path)
+                assert np.all(powermap_data >= 0), "Powermap should be non-negative"
+                assert np.isfinite(powermap_data).all(), "All values should be finite"
+                powermaps.append(powermap_data)
+
+            # Different norm factors should produce different results
+            assert not np.allclose(
+                powermaps[0], powermaps[1], rtol=0.1
+            ), "Different norm factors should produce different results"

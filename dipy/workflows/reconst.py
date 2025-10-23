@@ -5,13 +5,24 @@ from warnings import warn
 import nibabel as nib
 import numpy as np
 
-from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
+from dipy.core.gradients import (
+    gradient_table,
+    gradient_table_from_bvals_bvecs,
+    mask_non_weighted_bvals,
+)
 from dipy.core.ndindex import ndindex
+from dipy.core.sphere import HemiSphere
 from dipy.data import default_sphere, get_sphere
 from dipy.direction.peaks import peak_directions, peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
-from dipy.io.peaks import niftis_to_pam, pam_to_niftis, save_pam, tensor_to_pam
+from dipy.io.peaks import (
+    load_pam,
+    niftis_to_pam,
+    pam_to_niftis,
+    save_pam,
+    tensor_to_pam,
+)
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst import mapmri
 from dipy.reconst.csdeconv import (
@@ -38,7 +49,15 @@ from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.ivim import IvimModel
 from dipy.reconst.rumba import RumbaSDModel
 from dipy.reconst.sfm import SparseFascicleModel
-from dipy.reconst.shm import CsaOdfModel, OpdtModel, QballModel
+from dipy.reconst.shm import (
+    CsaOdfModel,
+    OpdtModel,
+    QballModel,
+    anisotropic_power,
+    normalize_data,
+    smooth_pinv,
+    sph_harm_lookup,
+)
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
@@ -307,6 +326,163 @@ class ReconstMAPMRIFlow(Workflow):
                     fname_peaks_indices=opeaks_indices,
                     reshape_dirs=True,
                 )
+
+
+class ReconstPowermapFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "powermap"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        *,
+        shm_files=None,
+        sh_order_max=8,
+        b0_threshold=50.0,
+        bvecs_tol=0.01,
+        norm_factor=0.00001,
+        power=2,
+        non_negative=True,
+        smooth=0.0,
+        sh_basis="descoteaux07",
+        out_dir="",
+        out_powermap="powermap.nii.gz",
+    ):
+        """Workflow for generating anisotropic powermap from diffusion data.
+
+        This workflow generates an anisotropic powermap as introduced by
+        :footcite:t:`DellAcqua2014`. The anisotropic powermap can be used as a
+        pseudo-T1 for tissue classification when a T1 image is not available.
+
+        The anisotropic powermap is computed by extracting the anisotropic power
+        from the spherical harmonic coefficients.
+
+        Parameters
+        ----------
+        input_files : string or Path
+            Path to the input diffusion volumes. This path may contain wildcards
+            to process multiple inputs at once.
+        bvalues_files : string or Path
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string or Path
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        mask_files : string or Path
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once.
+        shm_files : string or Path, optional
+            Path to the spherical harmonic coefficient files. This file may be a nifti
+            file (shm.nii.gz) containing the SH coefficients or a pam file (``*.pam5``)
+            containing the SH coefficients.
+        sh_order_max : int, optional
+            Maximum spherical harmonic order.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol.
+        norm_factor : float, optional
+            The value to normalize the ap values.
+        power : int, optional
+            The degree to which power maps are calculated.
+        non_negative : bool, optional
+            Whether to rectify the resulting map to be non-negative.
+        smooth : float, optional
+            The amount of smoothing to apply to the SH coefficients before
+            computing the anisotropic powermap. This is a smoothing factor
+            applied to the SH coefficients, which can help reduce noise in the
+            resulting powermap. A value of 0.0 means no smoothing is applied.
+        sh_basis : string, optional
+            The spherical harmonic basis to use for the computation.
+        out_dir : string or Path, optional
+            Output directory. Default is current directory.
+        out_powermap : string, optional
+            Name of the anisotropic powermap volume to be saved.
+
+        References
+        ----------
+        .. footbibliography::
+        """
+        io_it = self.get_io_iterator()
+
+        for (
+            dwi,
+            bval,
+            bvec,
+            mask,
+            out_powermap,
+        ) in io_it:
+            logger.info(f"Computing Anisotropic Powermap from {dwi}...")
+            data, affine = load_nifti(dwi)
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+
+            mask_data = load_nifti_data(mask)
+            gtab = gradient_table(
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
+            if shm_files is not None:
+                shm_path = Path(shm_files)
+                if shm_path.suffix == ".pam5":
+                    logger.info(f"Loading SH coefficients from {shm_files}...")
+                    pam = load_pam(shm_files)
+                    if not hasattr(pam, "shm_coeff") or not isinstance(
+                        pam.shm_coeff, np.ndarray
+                    ):
+                        raise ValueError(
+                            "The SH coefficients in the PAM file are not found."
+                        )
+                    shm_coeff_data = pam.shm_coeff
+                elif shm_path.suffix in [".nii", ".gz"] or str(shm_path).endswith(
+                    ".nii.gz"
+                ):
+                    logger.info(f"Loading SH coefficients from {shm_files}...")
+                    shm_coeff_data = load_nifti_data(shm_files)
+                else:
+                    raise ValueError(
+                        "The SH coefficients file must be a PAM file (*.pam5) "
+                        "or a NIfTI file (*.nii or *.nii.gz)."
+                    )
+            else:
+                gtab2 = gradient_table_from_bvals_bvecs(
+                    gtab.bvals[np.where(1 - gtab.b0s_mask)[0]],
+                    gtab.bvecs[np.where(1 - gtab.b0s_mask)[0]],
+                )
+                normed_data = normalize_data(data, gtab.b0s_mask)
+                normed_data = normed_data[..., np.where(1 - gtab.b0s_mask)[0]]
+
+                normed_data = normed_data * mask_data[..., None]
+
+                signal_native_pts = HemiSphere(xyz=gtab2.bvecs)
+                if sh_basis not in sph_harm_lookup:
+                    logger.warning(
+                        f"sh_basis {sh_basis} not found in sph_harm_lookup. "
+                        "Using 'descoteaux07' instead."
+                    )
+                    sh_basis = "descoteaux07"
+                sph_harm_basis = sph_harm_lookup.get(sh_basis)
+
+                Ba, m, n = sph_harm_basis(
+                    sh_order_max, signal_native_pts.theta, signal_native_pts.phi
+                )
+                L = -n * (n + 1)
+                invB = smooth_pinv(Ba, np.sqrt(smooth) * L)
+
+                # fit SH basis to DWI signal
+                shm_coeff_data = np.dot(normed_data, invB.T)
+
+            powermap = anisotropic_power(
+                shm_coeff_data,
+                norm_factor=norm_factor,
+                power=power,
+                non_negative=non_negative,
+            )
+            logger.info(f"Saving anisotropic powermap to {out_powermap}...")
+            save_nifti(out_powermap, powermap.astype(np.float32), affine)
+            logger.info("Anisotropic powermap saved successfully!")
 
 
 class ReconstDtiFlow(Workflow):
