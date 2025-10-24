@@ -216,9 +216,7 @@ def connectivity_matrix(
 
         filtered_streamlines = streamlines_obj[mask]
 
-        streamlines_endpoints = np.array(
-            [sl[[0, -1]] for sl in filtered_streamlines]
-        )
+        streamlines_endpoints = np.array([sl[[0, -1]] for sl in filtered_streamlines])
         streamlines_end = _to_voxel_coordinates(streamlines_endpoints, lin_T, offset)
         x, y, z = streamlines_end.T
         if symmetric:
@@ -228,7 +226,7 @@ def connectivity_matrix(
         np.add.at(matrix, (end_labels[0].T, end_labels[1].T), 1)
 
         if return_mapping:
-            streamlines_indexable = hasattr(streamlines, '__getitem__')
+            streamlines_indexable = hasattr(streamlines, "__getitem__")
 
             if mapping_as_streamlines:
                 for i, (a, b) in enumerate(end_labels.T):
