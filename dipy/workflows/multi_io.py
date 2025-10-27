@@ -9,6 +9,7 @@ import numpy as np
 
 from dipy.testing.decorators import warning_for_keywords
 from dipy.workflows.base import get_args_default
+from dipy.io.utils import split_filename_extension
 
 
 def _resolve_path_or_pattern(path):
@@ -136,8 +137,8 @@ def concatenate_inputs(multi_inputs):
     for inps in zip(*multi_inputs):
         mixing_name = ""
         for inp in inps:
-            inp = Path(inp)
-            mixing_name += inp.name.removesuffix("".join(inp.suffixes)) + "_"
+            name, _ = split_filename_extension(inp)
+            mixing_name += name + "_"
 
         mixing_names.append(mixing_name + "_")
     return mixing_names

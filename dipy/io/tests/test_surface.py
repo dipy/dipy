@@ -88,8 +88,11 @@ def test_vtk_matching_space(space, origin):
     list(itertools.product(FOLDERS_GII, FILENAMES_GII, SPACES, ORIGINS)),
 )
 def test_gifti_matching_space(type, fname, space, origin):
+    print(fname)
     if type == "gzip_base64":
+        print("Gzipping...")
         fname += ".gz"
+    print(fname)
     sfs = load_surface(FILEPATH_DIX[fname], FILEPATH_DIX["anat.nii.gz"])
     sfs.to_rasmm()
     sfs.to_center()

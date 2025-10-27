@@ -35,6 +35,7 @@ from dipy.utils.optpkg import optional_package
 from dipy.utils.tractogram import concatenate_tractogram
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
+from dipy.io.utils import split_filename_extension
 
 ne, have_ne, _ = optional_package("numexpr")
 
@@ -405,7 +406,8 @@ class IoInfoFlow(Workflow):
             logger.info(f"Looking at {input_path}")
             logger.info(f"-----------{mult_ * '-'}")
 
-            extension = "".join(input_path.suffixes).lower()
+            _, extension = split_filename_extension(input_path)
+            extension = extension.lower()
 
             if extension in [".nii", ".nii.gz"]:
                 data, affine, img, vox_sz, affcodes = load_nifti(
@@ -908,9 +910,9 @@ class ExtractShellFlow(Workflow):
             for i, shell in enumerate(shell_data):
                 shell_value = np.unique(output_bvals[i]).astype(int).astype(str)
                 shell_value = "_".join(shell_value.tolist())
-                suffixes = "".join(oshell.suffixes)
+                out_name, out_ext = split_filename_extension(oshell)
                 out_fname = Path(oshell).with_name(
-                    f"{oshell.name.removesuffix(suffixes)}_{shell_value}{suffixes}"
+                    f"{out_name}_{shell_value}{out_ext}"
                 )
                 save_nifti(out_fname, shell, affine, hdr=image.header)
                 logger.info(f"b0 saved as {out_fname}")
@@ -958,9 +960,9 @@ class ExtractVolumeFlow(Workflow):
                 logger.info(f"Volume saved as {ovol}")
             else:
                 for i in vol_idx:
-                    suffixes = "".join(ovol.suffixes)
+                    out_name, out_ext = split_filename_extension(ovol)
                     fname = Path(ovol).with_name(
-                        f"{ovol.name.removesuffix(suffixes)}_{i}{suffixes}"
+                        f"{out_name}_{i}{out_ext}"
                     )
                     split_vol = data[..., i]
                     save_nifti(fname, split_vol, affine, hdr=image.header)
@@ -1020,7 +1022,8 @@ class ConcatenateTractogramFlow(Workflow):
         trx_list = []
         has_group = False
         for fpath, _, _ in io_it:
-            if "".join(Path(fpath).suffixes).lower() in [".trx", ".trk"]:
+            _, extension = split_filename_extension(fpath)
+            if extension.lower() in [".trx", ".trk"]:
                 reference = "same"
 
             if not reference:
@@ -1522,7 +1525,8 @@ class MathFlow(Workflow):
                 logger.error(f"Input file {fname} does not exist.")
                 raise SystemExit()
 
-            if "".join(Path(fname).suffixes) not in [".nii.gz", ".nii"]:
+            _, ext = split_filename_extension(fname)
+            if ext not in [".nii.gz", ".nii"]:
                 msg = (
                     f"Wrong volume type: {fname}. Only Nifti files are supported"
                     " (*.nii or *.nii.gz)."

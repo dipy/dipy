@@ -10,7 +10,8 @@ import trx.trx_file_memmap as tmm
 
 from dipy.io.dpy import Dpy
 from dipy.io.stateful_tractogram import StatefulTractogram
-from dipy.io.utils import Origin, Space, create_tractogram_header, is_header_compatible
+from dipy.io.utils import (Origin, Space, create_tractogram_header,
+                           is_header_compatible, split_filename_extension)
 from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.logging import logger
@@ -44,8 +45,7 @@ def save_tractogram(
             TRACKVIS standard (corner of the voxel)
     """
 
-    filename = Path(filename)
-    extension = "".join(filename.suffixes)
+    _, extension = split_filename_extension(filename)
     if extension not in [".trk", ".tck", ".trx", ".vtk", ".vtp", ".fib", ".dpy"]:
         raise TypeError("Output filename is not one of the supported format.")
 
@@ -170,7 +170,7 @@ def load_tractogram(
     output : StatefulTractogram
         The tractogram to load (must have been saved properly)
     """
-    extension = "".join(Path(filename).suffixes)
+    _, extension = split_filename_extension(filename)
     if extension not in [".trk", ".tck", ".trx", ".vtk", ".vtp", ".fib", ".dpy"]:
         logger.error("Output filename is not one of the supported format.")
         return False
@@ -290,7 +290,7 @@ def load_generator(ttype):
         from_space=None,
         from_origin=None,
     ):
-        extension = "".join(Path(filename).suffixes)
+        _, extension = split_filename_extension(filename)
         if not extension == ttype:
             msg = f"This function can only load {ttype} files, "
             msg += "for a more general purpose, use load_tractogram instead."
@@ -330,7 +330,7 @@ def save_generator(ttype):
     """
 
     def f_gen(sft, filename, bbox_valid_check=True):
-        extension = "".join(Path(filename).suffixes)
+        _, extension = split_filename_extension(filename)
         if not extension == ttype:
             msg = f"This function can only save {ttype} file, "
             msg += "for more general cases, use save_tractogram instead."

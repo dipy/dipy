@@ -277,7 +277,8 @@ def get_reference_info(reference):
     is_trx = False
 
     if isinstance(reference, (str, Path)):
-        ext = "".join(Path(reference).suffixes).lower()
+        _, ext = split_filename_extension(reference)
+        ext = ext.lower()
         if ext in [".nii", ".nii.gz"]:
             header = nib.load(reference).header
             is_nifti = True
@@ -437,8 +438,7 @@ def save_buan_profiles_hdf5(fname, dt, *, key=None):
     filename_hdf5 = Path(fname).with_suffix(".h5")
 
     if key is None:
-        fname = Path(fname)
-        key = fname.name.removesuffix("".join(fname.suffixes))
+        key, _ = split_filename_extension(fname)
 
     store = pd.HDFStore(filename_hdf5, complevel=9)
     store.append(key, df, data_columns=True, complevel=9)
@@ -504,3 +504,36 @@ def recursive_compare(d1, d2, level="root"):
     else:
         if np.dtype(d1).itemsize != np.dtype(d2).itemsize:
             raise ValueError(f"Values {d1}, {d2} do not match at level {level}")
+
+
+def split_filename_extension(filename):
+    """Splits the filename and its extension(s).
+    In our field filename can have period in it (e.g. smoothwm.L.surf.gii)
+    At the moment only one double extension is supported (.nii.gz, .gii.gz)
+
+    Parameters
+    ----------
+    filename : str or Path
+        The input filename.
+
+    Returns
+    -------
+    name : str
+        The filename without its extension(s).
+    extension : str
+        The extension(s) of the filename, including the dot(s).
+    """
+    filename = Path(filename)
+
+    extensions = filename.suffixes
+    if len(extensions) > 1 and extensions[-1] == ".gz":
+        name = filename.with_suffix("").with_suffix("").name
+        extension = "".join(extensions[-2:])  # e.g., .nii.gz
+    elif len(extensions) >= 1:
+        name = filename.with_suffix("").name
+        extension = "".join(extensions[-1])
+    else:
+        name = filename.name
+        extension = "".join(extensions)
+
+    return str(name).replace(extension, ""), extension
