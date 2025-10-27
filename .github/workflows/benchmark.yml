@@ -38,5 +38,5 @@ jobs:
         export OMP_NUM_THREADS=1
     - name: Run benchmarks
       run: |
-        asv machine --yes --config benchmarks/asv.conf.json
-        asv run --config benchmarks/asv.conf.json --show-stderr
+        asv machine --yes --config ${GITHUB_WORKSPACE}/benchmarks/asv.conf.json
+        asv run --config ${GITHUB_WORKSPACE}/benchmarks/asv.conf.json --show-stderr

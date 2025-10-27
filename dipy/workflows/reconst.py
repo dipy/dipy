@@ -3075,11 +3075,9 @@ class ReconstFwdtiFlow(Workflow):
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once.
         fit_method : string, optional
-            can be one of the following:
-                - 'WLS' for weighted linear least square fit according to
-                  :footcite:p:`NetoHenriques2017`.
-                - 'NLS' for non-linear least square fit according to
-                  :footcite:p:`NetoHenriques2017`.
+            Controls the method used to fit the FW-DTI model. You can choose between a
+            simpler linear approach (WLS) or a more complex non-linear approach (NLS).
+            Both methods are described in :footcite:p:`NetoHenriques2017`.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
@@ -3186,7 +3184,7 @@ class ReconstFwdtiFlow(Workflow):
             osphere,
             oqa,
         ) in io_it:
-            logging.info(f"Computing FWDTI metrics for {dwi}")
+            logger.info(f"Computing FWDTI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
@@ -3267,10 +3265,10 @@ class ReconstFwdtiFlow(Workflow):
                 save_nifti(oevals, fwdti_fit.evals.astype(np.float32), affine)
 
             if save_metrics:
-                msg = f"FWDTI metrics saved to {os.path.abspath(out_dir)}"
-                logging.info(msg)
+                msg = f"FWDTI metrics saved to {Path(out_dir).resolve()}"
+                logger.info(msg)
                 for metric in save_metrics:
-                    logging.info(self.last_generated_outputs[f"out_{metric}"])
+                    logger.info(self.last_generated_outputs[f"out_{metric}"])
 
             pam = tensor_to_pam(
                 fwdti_fit.evals.astype(np.float32),
