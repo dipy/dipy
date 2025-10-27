@@ -1,5 +1,4 @@
 from copy import deepcopy
-from pathlib import Path
 import time
 
 import nibabel as nib
@@ -10,8 +9,13 @@ import trx.trx_file_memmap as tmm
 
 from dipy.io.dpy import Dpy
 from dipy.io.stateful_tractogram import StatefulTractogram
-from dipy.io.utils import (Origin, Space, create_tractogram_header,
-                           is_header_compatible, split_filename_extension)
+from dipy.io.utils import (
+    Origin,
+    Space,
+    create_tractogram_header,
+    is_header_compatible,
+    split_filename_extension,
+)
 from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.logging import logger

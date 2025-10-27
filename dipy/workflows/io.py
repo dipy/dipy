@@ -27,6 +27,7 @@ from dipy.io.peaks import (
     tensor_to_pam,
 )
 from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.io.utils import split_filename_extension
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.reconst.utils import convert_tensors
 from dipy.tracking.streamlinespeed import length
@@ -35,7 +36,6 @@ from dipy.utils.optpkg import optional_package
 from dipy.utils.tractogram import concatenate_tractogram
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
-from dipy.io.utils import split_filename_extension
 
 ne, have_ne, _ = optional_package("numexpr")
 
@@ -911,9 +911,7 @@ class ExtractShellFlow(Workflow):
                 shell_value = np.unique(output_bvals[i]).astype(int).astype(str)
                 shell_value = "_".join(shell_value.tolist())
                 out_name, out_ext = split_filename_extension(oshell)
-                out_fname = Path(oshell).with_name(
-                    f"{out_name}_{shell_value}{out_ext}"
-                )
+                out_fname = Path(oshell).with_name(f"{out_name}_{shell_value}{out_ext}")
                 save_nifti(out_fname, shell, affine, hdr=image.header)
                 logger.info(f"b0 saved as {out_fname}")
 
@@ -961,9 +959,7 @@ class ExtractVolumeFlow(Workflow):
             else:
                 for i in vol_idx:
                     out_name, out_ext = split_filename_extension(ovol)
-                    fname = Path(ovol).with_name(
-                        f"{out_name}_{i}{out_ext}"
-                    )
+                    fname = Path(ovol).with_name(f"{out_name}_{i}{out_ext}")
                     split_vol = data[..., i]
                     save_nifti(fname, split_vol, affine, hdr=image.header)
                     logger.info(f"Volume saved as {fname}")
