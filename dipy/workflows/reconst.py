@@ -3186,7 +3186,7 @@ class ReconstFwdtiFlow(Workflow):
             osphere,
             oqa,
         ) in io_it:
-            logging.info(f"Computing FWDTI metrics for {dwi}")
+            logger.info(f"Computing FWDTI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
@@ -3268,9 +3268,9 @@ class ReconstFwdtiFlow(Workflow):
 
             if save_metrics:
                 msg = f"FWDTI metrics saved to {os.path.abspath(out_dir)}"
-                logging.info(msg)
+                logger.info(msg)
                 for metric in save_metrics:
-                    logging.info(self.last_generated_outputs[f"out_{metric}"])
+                    logger.info(self.last_generated_outputs[f"out_{metric}"])
 
             pam = tensor_to_pam(
                 fwdti_fit.evals.astype(np.float32),
