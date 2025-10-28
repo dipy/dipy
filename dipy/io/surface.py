@@ -84,7 +84,6 @@ def load_surface(
     freesurfer_ext = [".gii", ".gii.gz", ".pial", ".nofix", ".orig", ".smoothwm", ".T1"]
 
     name, ext = split_filename_extension(fname)
-    print(name, ext)
     if ext.lower() not in freesurfer_ext + vtk_ext:
         logging.error("Input extension is not one of the supported format.")
         return False

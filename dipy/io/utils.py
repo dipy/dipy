@@ -507,7 +507,8 @@ def recursive_compare(d1, d2, level="root"):
 
 
 def split_filename_extension(filename):
-    """Splits the filename and its extension(s).
+    """Split  the filename and its extension(s).
+
     In our field filename can have period in it (e.g. smoothwm.L.surf.gii)
     At the moment only one double extension is supported (.nii.gz, .gii.gz)
 
@@ -523,6 +524,17 @@ def split_filename_extension(filename):
     extension : str
         The extension(s) of the filename, including the dot(s).
     """
+    filename_str = str(filename).lower()
+    if (
+        filename_str.count(".gii") >= 2
+        or filename_str.count(".nii") >= 2
+        or filename_str.count(".gz") >= 2
+    ):
+        logger.warning(
+            "Filename contains more than two instances of .gii, .nii, or .gz."
+            " This may be risky or bad practice."
+        )
+
     filename = Path(filename)
 
     extensions = filename.suffixes
@@ -536,4 +548,4 @@ def split_filename_extension(filename):
         name = filename.name
         extension = "".join(extensions)
 
-    return str(name).replace(extension, ""), extension
+    return str(name), extension

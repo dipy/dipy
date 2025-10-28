@@ -19,6 +19,7 @@ from dipy.io.utils import (
     is_header_compatible,
     is_reference_info_valid,
     read_img_arr_or_path,
+    split_filename_extension,
 )
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
@@ -256,3 +257,35 @@ def test_read_img_arr_or_path(rng):
     dd, aa = read_img_arr_or_path(path)
     assert np.allclose(dd, data)
     assert np.allclose(aa, aff)
+
+
+@pytest.mark.parametrize(
+    "filename, expected_name, expected_extension",
+    [
+        ("smoothwm.L.surf.gii", "smoothwm.L.surf", ".gii"),
+        ("smoothwm.L.surf.gii.gz", "smoothwm.L.surf", ".gii.gz"),
+        ("my.brain_2025.nii", "my.brain_2025", ".nii"),
+        ("my.brain_2025.nii.gz", "my.brain_2025", ".nii.gz"),
+        ("test.trk", "test", ".trk"),
+        ("test.tck", "test", ".tck"),
+        ("test.vtk", "test", ".vtk"),
+        ("test.ply", "test", ".ply"),
+        ("test_no_extension", "test_no_extension", ""),
+        ("a.b.c.d", "a.b.c", ".d"),
+        ("a.b.c.d.gz", "a.b.c", ".d.gz"),
+        ("test.nii.nii", "test.nii", ".nii"),
+        ("my_brain_2025.nii", "my_brain_2025", ".nii"),
+        ("my_brain_2025.nii.gz", "my_brain_2025", ".nii.gz"),
+        (".my.file-name.gii.gz", ".my.file-name", ".gii.gz"),
+    ],
+)
+def test_split_filename_extension(filename, expected_name, expected_extension):
+    name, ext = split_filename_extension(filename)
+    assert name == expected_name
+    assert ext == expected_extension
+
+
+@pytest.mark.parametrize("filename_to_test", ["test.nii.nii.nii.gz", "test.nii.nii"])
+def test_split_filename_extension_warning(caplog, filename_to_test):
+    split_filename_extension(filename_to_test)
+    assert "Filename contains more than two instances" in caplog.text
