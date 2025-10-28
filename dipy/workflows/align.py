@@ -861,7 +861,7 @@ class MotionCorrectionFlow(Workflow):
         bvectors_files,
         b0_threshold=50,
         bvecs_tol=0.01,
-        level_iters=[1000, 500, 100],
+        level_iters=None,
         out_dir="",
         out_moved="moved.nii.gz",
         out_affine="affine.txt",
@@ -894,6 +894,8 @@ class MotionCorrectionFlow(Workflow):
         out_affine : string, optional
             Name for the saved affine matrix.
         """
+        if level_iters is None:
+            level_iters = [1000, 500, 100]
 
         io_it = self.get_io_iterator()
 
