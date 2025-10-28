@@ -20,7 +20,7 @@ from dipy.io.streamline import load_tractogram
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst import dti, utils as reconst_utils
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
-from dipy.testing import assert_true
+from dipy.testing import assert_true, assert_warns
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWireError
 from dipy.workflows.io import (
@@ -229,7 +229,7 @@ def test_convert_tractogram_flow():
         )
 
         if not is_big_endian:
-            npt.assert_warns(
+            assert_warns(
                 UserWarning,
                 convert_tractogram_flow.run,
                 str(data_path["gs_streamlines.trx"]),

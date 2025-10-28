@@ -12,6 +12,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.peaks import load_pam
 from dipy.reconst.shm import descoteaux07_legacy_msg, sph_harm_ind_list
+from dipy.testing import assert_warns
 from dipy.workflows.reconst import ReconstCSDFlow, ReconstQBallBaseFlow, ReconstSDTFlow
 
 logging.getLogger().setLevel(logging.INFO)
@@ -183,7 +184,7 @@ def reconst_flow_core(flow, **kwargs):
                 )
             else:
                 with npt.assert_raises(BaseException):
-                    npt.assert_warns(
+                    assert_warns(
                         UserWarning,
                         reconst_flow.run,
                         data_path,

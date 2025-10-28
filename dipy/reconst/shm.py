@@ -1158,7 +1158,7 @@ def lcr_matrix(H):
     if H.ndim != 2 or H.shape[0] != H.shape[1]:
         raise ValueError("H should be a square matrix")
 
-    leverages = np.sqrt(1 - H.diagonal(), where=H.diagonal() < 1)
+    leverages = np.sqrt(1 - H.diagonal(), where=H.diagonal() < 1, out=None)
     leverages = leverages[:, None]
     R = (np.eye(len(H)) - H) / leverages
     return R - R.mean(0)

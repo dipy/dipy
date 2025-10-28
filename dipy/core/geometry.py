@@ -147,8 +147,8 @@ def cart2sphere(x, y, z):
 
     """
     r = np.sqrt(x * x + y * y + z * z)
-    cos = np.divide(z, r, where=r > 0)
-    theta = np.arccos(cos, where=(cos >= -1) & (cos <= 1))
+    cos = np.divide(z, r, where=r > 0, out=None)
+    theta = np.arccos(cos, where=(cos >= -1) & (cos <= 1), out=None)
     theta = np.where(r > 0, theta, 0.0)
     phi = np.arctan2(y, x)
     r, theta, phi = np.broadcast_arrays(r, theta, phi)

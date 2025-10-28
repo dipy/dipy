@@ -38,6 +38,7 @@ from dipy.reconst.weights_method import (
     weights_method_wls_m_est,
 )
 from dipy.sims.voxel import single_tensor
+from dipy.testing import assert_warns
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
@@ -199,8 +200,8 @@ def test_tensor_model():
 
     # Test error-handling:
     npt.assert_raises(ValueError, dti.TensorModel, gtab, fit_method="crazy_method")
-    npt.assert_warns(UserWarning, dti.TensorModel, gtab, fit_method="NLLS", step=1e4)
-    with npt.assert_warns(UserWarning):
+    assert_warns(UserWarning, dti.TensorModel, gtab, fit_method="NLLS", step=1e4)
+    with assert_warns(UserWarning):
         model = dti.TensorModel(gtab, fit_method="NLS", step=1e4)
         npt.assert_equal(model.kwargs.get("step", None), None)
 
@@ -842,13 +843,13 @@ def test_nlls_fit_tensor():
     # Test warning for failure of NLLS method, resort to OLS result
     # (reason for failure: too few data points for NLLS)
     tensor_model = dti.TensorModel(gtab_less, fit_method="NLLS", return_S0_hat=True)
-    tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y_less)
+    tmf = assert_warns(UserWarning, tensor_model.fit, Y_less)
 
     # Test fail_is_nan=True, failed NLLS method gives NaN
     tensor_model = dti.TensorModel(
         gtab_less, fit_method="NLLS", return_S0_hat=True, fail_is_nan=True
     )
-    tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y_less)
+    tmf = assert_warns(UserWarning, tensor_model.fit, Y_less)
     npt.assert_equal(tmf[0].S0_hat, np.nan)
 
 
@@ -916,13 +917,13 @@ def test_restore():
     tensor_model = dti.TensorModel(
         gtab, fit_method="restore", sigma=-1.0, return_S0_hat=True
     )
-    tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y.copy())
+    tmf = assert_warns(UserWarning, tensor_model.fit, Y.copy())
 
     # Test fail_is_nan=True, failed NLLS method gives NaN
     tensor_model = dti.TensorModel(
         gtab, fit_method="restore", sigma=-1.0, return_S0_hat=True, fail_is_nan=True
     )
-    tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y.copy())
+    tmf = assert_warns(UserWarning, tensor_model.fit, Y.copy())
     npt.assert_equal(tmf[0].S0_hat, np.nan)
 
 

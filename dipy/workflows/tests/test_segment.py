@@ -12,6 +12,7 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.segment.mask import median_otsu
 from dipy.segment.tests.test_mrf import create_image
+from dipy.testing import assert_warns
 from dipy.tracking.streamline import Streamlines, set_number_of_points
 from dipy.utils.deprecator import ArgsDeprecationWarning
 from dipy.utils.optpkg import optional_package
@@ -37,7 +38,7 @@ def test_median_otsu_flow():
         finalize_mask = False
 
         mo_flow = MedianOtsuFlow()
-        with npt.assert_warns(ArgsDeprecationWarning):
+        with assert_warns(ArgsDeprecationWarning):
             mo_flow.run(
                 data_path,
                 out_dir=out_dir,
