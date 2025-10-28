@@ -460,7 +460,7 @@ def affine_registration(
         scale of the scale space. `level_iters[0]` corresponds to the coarsest
         scale, `level_iters[-1]` the finest, where n is the length of the
         sequence. By default, a 3-level scale space with iterations
-        sequence equal to [10000, 1000, 100] will be used.
+        sequence equal to [1000, 500, 100] will be used.
 
     sigmas : sequence of floats, optional
         AffineRegistration key-word argument: custom smoothing parameter to
@@ -515,7 +515,7 @@ def affine_registration(
 
     """
     pipeline = pipeline or ["center_of_mass", "translation", "rigid", "affine"]
-    level_iters = level_iters or [10000, 1000, 100]
+    level_iters = level_iters or [1000, 500, 100]
     sigmas = sigmas or [3, 1, 0.0]
     factors = factors or [4, 2, 1]
 
@@ -650,7 +650,7 @@ _METHOD_DICT = {  # mapping from str key -> (callable, class) tuple
 
 @warning_for_keywords()
 def register_series(
-    series, ref, *, pipeline=None, series_affine=None, ref_affine=None, static_mask=None
+    series, ref, *, pipeline=None, series_affine=None, ref_affine=None, static_mask=None, level_iters=None
 ):
     """Register a series to a reference image.
 
@@ -677,6 +677,11 @@ def register_series(
     static_mask : array, shape (S, R, C) or (R, C), optional
         static image mask that defines which pixels in the static image
         are used to calculate the mutual information.
+
+    level_iters : list of int, optional
+        The number of iterations at each level of the Gaussian pyramid.
+        By default, a 3-level scale space with iterations [1000, 500, 100]
+        will be used.
 
     Returns
     -------
@@ -719,6 +724,7 @@ def register_series(
                 static_affine=ref_affine,
                 pipeline=pipeline,
                 static_mask=static_mask,
+                level_iters=level_iters,
             )
             xformed[..., ii] = transformed
             affines[..., ii] = reg_affine
@@ -728,7 +734,7 @@ def register_series(
 
 @warning_for_keywords()
 def register_dwi_series(
-    data, gtab, *, affine=None, b0_ref=0, pipeline=None, static_mask=None
+    data, gtab, *, affine=None, b0_ref=0, pipeline=None, static_mask=None, level_iters=None
 ):
     """Register a DWI series to the mean of the B0 images in that series.
 
@@ -761,6 +767,11 @@ def register_dwi_series(
         static image mask that defines which pixels in the static image
         are used to calculate the mutual information.
 
+    level_iters : list of int, optional
+        The number of iterations at each level of the Gaussian pyramid.
+        By default, a 3-level scale space with iterations [1000, 500, 100]
+        will be used.
+
     Returns
     -------
     xform_img, affine_array: a Nifti1Image containing the registered data and
@@ -778,7 +789,7 @@ def register_dwi_series(
         # First, register the b0s into one image and average:
         b0_img = nib.Nifti1Image(data[..., gtab.b0s_mask], affine)
         trans_b0, b0_affines = register_series(
-            b0_img, ref=b0_ref, pipeline=pipeline, static_mask=static_mask
+            b0_img, ref=b0_ref, pipeline=pipeline, static_mask=static_mask, level_iters=level_iters
         )
         ref_data = np.mean(trans_b0, -1, keepdims=True)
     else:
@@ -792,7 +803,7 @@ def register_dwi_series(
     series = nib.Nifti1Image(series_arr, affine)
 
     xformed, affines = register_series(
-        series, ref=0, pipeline=pipeline, static_mask=static_mask
+        series, ref=0, pipeline=pipeline, static_mask=static_mask, level_iters=level_iters
     )
     # Cut out the part pertaining to that first volume:
     affines = affines[..., 1:]
