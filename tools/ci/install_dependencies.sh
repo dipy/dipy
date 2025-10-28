@@ -12,7 +12,13 @@ python -m pip install -U pip 'setuptools~=69.5' wheel
 
 echo "Install Dependencies"
 if [ "$INSTALL_TYPE" == "conda" ]; then
-    conda install -yq --name venv $DEPENDS $EXTRA_DEPENDS pytest
+    # Install llvm-openmp to ensure consistent OpenMP runtime across all packages
+    # This prevents "OMP: Error #15: Initializing libomp.dylib" conflicts on macOS
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        conda install -yq --name venv llvm-openmp $DEPENDS $EXTRA_DEPENDS pytest
+    else
+        conda install -yq --name venv $DEPENDS $EXTRA_DEPENDS pytest
+    fi
 else
     PIPI="pip install --timeout=60 "
 
