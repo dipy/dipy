@@ -650,7 +650,14 @@ _METHOD_DICT = {  # mapping from str key -> (callable, class) tuple
 
 @warning_for_keywords()
 def register_series(
-    series, ref, *, pipeline=None, series_affine=None, ref_affine=None, static_mask=None, level_iters=None
+    series,
+    ref,
+    *,
+    pipeline=None,
+    series_affine=None,
+    ref_affine=None,
+    static_mask=None,
+    level_iters=None,
 ):
     """Register a series to a reference image.
 
@@ -734,7 +741,14 @@ def register_series(
 
 @warning_for_keywords()
 def register_dwi_series(
-    data, gtab, *, affine=None, b0_ref=0, pipeline=None, static_mask=None, level_iters=None
+    data,
+    gtab,
+    *,
+    affine=None,
+    b0_ref=0,
+    pipeline=None,
+    static_mask=None,
+    level_iters=None,
 ):
     """Register a DWI series to the mean of the B0 images in that series.
 
@@ -789,7 +803,11 @@ def register_dwi_series(
         # First, register the b0s into one image and average:
         b0_img = nib.Nifti1Image(data[..., gtab.b0s_mask], affine)
         trans_b0, b0_affines = register_series(
-            b0_img, ref=b0_ref, pipeline=pipeline, static_mask=static_mask, level_iters=level_iters
+            b0_img,
+            ref=b0_ref,
+            pipeline=pipeline,
+            static_mask=static_mask,
+            level_iters=level_iters,
         )
         ref_data = np.mean(trans_b0, -1, keepdims=True)
     else:
@@ -803,7 +821,11 @@ def register_dwi_series(
     series = nib.Nifti1Image(series_arr, affine)
 
     xformed, affines = register_series(
-        series, ref=0, pipeline=pipeline, static_mask=static_mask, level_iters=level_iters
+        series,
+        ref=0,
+        pipeline=pipeline,
+        static_mask=static_mask,
+        level_iters=level_iters,
     )
     # Cut out the part pertaining to that first volume:
     affines = affines[..., 1:]
