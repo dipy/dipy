@@ -115,3 +115,88 @@ def check_for_warnings(warn_printed, w_msg):
     assert len(selected_w) >= 1
     msg = [str(m.message) for m in selected_w]
     npt.assert_equal(w_msg in msg, True)
+
+
+def assert_warns(warning_class, *args, **kwargs):
+    """Assert that a warning is raised.
+
+    This function can be used as a context manager or as a function wrapper.
+    It is a replacement for the deprecated numpy.testing.assert_warns.
+
+    Parameters
+    ----------
+    warning_class : class
+        The class of warning to check for.
+    *args : positional arguments
+        If provided, the first argument should be a callable, and the
+        remaining arguments are passed to that callable.
+    **kwargs : keyword arguments
+        Keyword arguments passed to the callable.
+
+    Returns
+    -------
+    ctx : WarningsChecker or result
+        If used as a context manager, returns a WarningsChecker instance.
+        If used as a function wrapper, returns the result of the callable.
+
+    Examples
+    --------
+    As a context manager:
+    >>> with assert_warns(UserWarning):
+    ...     warnings.warn("test", UserWarning)
+
+    As a function wrapper:
+    >>> def f():
+    ...     warnings.warn("test", UserWarning)
+    ...     return 42
+    >>> result = assert_warns(UserWarning, f)
+    >>> result
+    42
+
+    Notes
+    -----
+    This replaces the deprecated numpy.testing.assert_warns function.
+    It uses warnings.catch_warnings internally for better compatibility
+    with NumPy 2.x.
+    """
+    if not args:
+        # Used as a context manager
+        return _WarningsChecker(warning_class)
+    else:
+        # Used as a function wrapper
+        func = args[0]
+        func_args = args[1:]
+        with _WarningsChecker(warning_class):
+            return func(*func_args, **kwargs)
+
+
+class _WarningsChecker:
+    """Context manager to check that a warning is raised."""
+
+    def __init__(self, warning_class):
+        self.warning_class = warning_class
+        self.caught_warnings = []
+
+    def __enter__(self):
+        self.catch_warnings = warnings.catch_warnings(record=True)
+        self.warning_list = self.catch_warnings.__enter__()
+        warnings.simplefilter("always")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.catch_warnings.__exit__(exc_type, exc_val, exc_tb)
+
+        # Check if the expected warning was raised
+        if exc_type is None:  # No exception was raised
+            matching_warnings = [
+                w
+                for w in self.warning_list
+                if issubclass(w.category, self.warning_class)
+            ]
+            if not matching_warnings:
+                raised_warnings = [w.category.__name__ for w in self.warning_list]
+                raise AssertionError(
+                    f"No warning of class {self.warning_class.__name__} "
+                    f"was raised. Warnings raised: {raised_warnings}"
+                )
+        return False

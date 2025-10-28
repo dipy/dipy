@@ -4,7 +4,6 @@ from numpy.testing import (
     assert_almost_equal,
     assert_array_almost_equal,
     assert_equal,
-    assert_warns,
 )
 
 import dipy.core.gradients as dpg
@@ -17,6 +16,7 @@ from dipy.denoise.noise_estimate import (
 )
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.io.image import load_nifti_data
+from dipy.testing import assert_warns
 from dipy.testing.decorators import set_random_number_generator
 
 
