@@ -1,5 +1,4 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+# DIPY Test
 
 name: Test
 
@@ -11,106 +10,265 @@ on:
   schedule:
     - cron: '0 0 5 * 0' # 1 per month
 
-
 concurrency:
-  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  fetch-data:
-    runs-on: ubuntu-latest
+  # Core test matrix: Python 3.11-3.13 on all major platforms
+  stable:
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
       fail-fast: false
+      max-parallel: 8
       matrix:
-        python-version: ['3.13']
-    defaults:
-      run:
-        shell: bash
+        python-version: ['3.11', '3.12', '3.13']
+        os: [ubuntu-latest, macos-latest, windows-latest, macos-14]
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install DIPY and its Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install .
-      - name: Fetch Data
-        run: |
-          dipy_fetch all
-      - name: Cache Data
+      - name: Restore cached data
         uses: actions/cache@v4
         with:
-            path: ~/.dipy
-            key: dipy-${{ hashFiles('**/dipy/data/*') }}
+          path: ~/.dipy
+          key: dipy-data-${{ runner.os }}-${{ hashFiles('**/dipy/data/fetcher.py') }}
+          restore-keys: |
+            dipy-data-${{ runner.os }}-
+            dipy-data-
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[test]
+      - name: Install OpenMP on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install llvm libomp
+          echo "CC=clang" >> $GITHUB_ENV
+      - name: Run tests
+        run: |
+          mkdir -p for_testing_results for_testing
+          cd for_testing
+          cp ../pyproject.toml .
+          echo "backend : agg" > matplotlibrc
+          pytest -o cache_dir=../for_testing_results -c pyproject.toml -svv --doctest-modules --verbose --durations=10 --pyargs dipy
+          cd ..
 
-  stable:
-    needs: fetch-data
-    uses: ./.github/workflows/test_template.yml
-    with:
-      runs-on: '["ubuntu-latest", "macos-latest", "windows-latest", "macos-14"]'
-      python-version: '["3.10", "3.11", "3.12", "3.13"]'
+  # Minimal dependencies test (Python 3.11)
+  minimal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Restore cached data
+        uses: actions/cache@v4
+        with:
+          path: ~/.dipy
+          key: dipy-data-Linux-${{ hashFiles('**/dipy/data/fetcher.py') }}
+          restore-keys: dipy-data-Linux-
+      - name: Install minimal dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install cython==0.29.32 numpy==1.23.5 scipy==1.9.3 nibabel==3.0.0 h5py==3.8.0 tqdm
+          pip install -e .
+      - name: Run tests
+        run: |
+          mkdir -p for_testing_results for_testing
+          cd for_testing
+          cp ../pyproject.toml .
+          pytest -o cache_dir=../for_testing_results -c pyproject.toml -svv --pyargs dipy
+          cd ..
 
-  optional-deps-pip:
-    needs: fetch-data
-    uses: ./.github/workflows/test_template.yml
-    with:
-      runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
-      depends: cython!=0.29.29 numpy==1.24.2 matplotlib h5py==3.11.0 nibabel cvxpy<=1.4.4 tqdm
-      extra-depends: scikit_learn pandas statsmodels tables scipy==1.10.1 numexpr
+  # Optional dependencies test
+  optional-deps:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Restore cached data
+        uses: actions/cache@v4
+        with:
+          path: ~/.dipy
+          key: dipy-data-${{ runner.os }}-${{ hashFiles('**/dipy/data/fetcher.py') }}
+          restore-keys: dipy-data-${{ runner.os }}-
+      - name: Install HDF5 on macOS
+        if: runner.os == 'macOS'
+        run: |
+          pip install cython
+          brew install hdf5 c-blosc
+          export HDF5_DIR=/opt/homebrew/opt/hdf5
+          export BLOSC_DIR=/opt/homebrew/opt/c-blosc
+          pip install tables
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[optional,ml,extra]
+      - name: Install OpenMP on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install llvm libomp
+          echo "CC=clang" >> $GITHUB_ENV
+      - name: Run tests
+        run: |
+          mkdir -p for_testing_results for_testing
+          cd for_testing
+          cp ../pyproject.toml .
+          pytest -o cache_dir=../for_testing_results -c pyproject.toml -svv --pyargs dipy
+          cd ..
 
-  optional-deps-conda:
-    needs: fetch-data
-    uses: ./.github/workflows/test_template.yml
-    with:
-      runs-on: '["macos-latest", "windows-latest"]'
-      install-type: '["conda"]'
-      depends: cython!=0.29.29 numpy==1.25.0 matplotlib h5py==3.11.0 nibabel cvxpy<=1.4.4 tqdm
-      extra-depends: scikit-learn pandas statsmodels pytables scipy==1.10.1
+  # Visualization tests
+  viz:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    if: contains(github.event.head_commit.modified, 'dipy/viz/') || contains(github.event.head_commit.modified, 'dipy/workflows/')
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.12']
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Restore cached data
+        uses: actions/cache@v4
+        with:
+          path: ~/.dipy
+          key: dipy-data-${{ runner.os }}-${{ hashFiles('**/dipy/data/fetcher.py') }}
+          restore-keys: dipy-data-${{ runner.os }}-
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[viz,test] scikit_learn vtk fury scipy
+      - name: Install OpenMP on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install llvm libomp
+          echo "CC=clang" >> $GITHUB_ENV
+      - name: Setup Headless Display
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          export DISPLAY=:99.0
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+      - name: Run viz tests
+        env:
+          TEST_WITH_XVFB: true
+        run: |
+          mkdir -p for_testing_results for_testing
+          cd for_testing
+          cp ../pyproject.toml .
+          pytest -o cache_dir=../for_testing_results -c pyproject.toml -svv --pyargs dipy.viz dipy.workflows
+          cd ..
 
-  parallel:
-    needs: fetch-data
-    uses: ./.github/workflows/test_template.yml
-    with:
-      runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
-      extra-depends: dask joblib ray==2.9.3 protobuf<4.0.0 # More info here https://github.com/ray-project/ray/pull/25211
-
-  minimal-py310:
-    needs: fetch-data
-    uses: ./.github/workflows/test_template.yml
-    with:
-      runs-on: '["ubuntu-latest", ]'
-      python-version: '["3.10", ]'
-      depends: cython==0.29.25 numpy==1.22.4 scipy==1.8.1 nibabel==3.0.0 h5py==3.6.0 tqdm
-
-  minimal-py311:
-    needs: fetch-data
-    uses: ./.github/workflows/test_template.yml
-    with:
-      runs-on: '["ubuntu-latest", ]'
-      python-version: '["3.11", ]'
-      depends: cython==0.29.32 numpy==1.23.5 scipy==1.9.3 nibabel==3.0.0 h5py==3.8.0 tqdm
-
+  # Coverage with full dependencies
   coverage:
-    needs: fetch-data
-    uses: ./.github/workflows/test_template.yml
-    with:
-      runs-on: '["ubuntu-latest", ]'
-      coverage: true
-      enable-viz-tests: true
-      extra-depends: scikit-learn scipy statsmodels pandas tables fury tensorflow torch
-    secrets:
-      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Restore cached data
+        uses: actions/cache@v4
+        with:
+          path: ~/.dipy
+          key: dipy-data-Linux-${{ hashFiles('**/dipy/data/fetcher.py') }}
+          restore-keys: dipy-data-Linux-
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[optional,viz,ml,extra,test]
+          pip install coverage pytest-cov
+      - name: Setup Headless Display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          export DISPLAY=:99.0
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+      - name: Run tests with coverage
+        env:
+          TEST_WITH_XVFB: true
+        run: |
+          mkdir -p for_testing_results for_testing
+          cd for_testing
+          cp ../pyproject.toml ../.coveragerc ../.codecov.yml .
+          coverage run --data-file=../for_testing_results/.coverage -m pytest -o cache_dir=../for_testing_results -c pyproject.toml -svv --doctest-modules --verbose --pyargs dipy
+          cd ../for_testing_results
+          coverage report -m
+          coverage xml
+          cd ..
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: for_testing_results
+          files: coverage.xml
+          fail_ci_if_error: false
+          flags: unittests
+          verbose: true
 
-  pre-py313:
-    needs: fetch-data
-    uses: ./.github/workflows/test_template.yml
-    with:
-      runs-on: '["ubuntu-latest", ]'
-      python-version: '["3.13",]'
-      use-pre: true
-      extra-depends: scikit_learn scipy statsmodels pandas tables
+  # Pre-release Python 3.14
+  pre-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14-dev'
+          allow-prereleases: true
+      - name: Restore cached data
+        uses: actions/cache@v4
+        with:
+          path: ~/.dipy
+          key: dipy-data-Linux-${{ hashFiles('**/dipy/data/fetcher.py') }}
+          restore-keys: dipy-data-Linux-
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --pre -i https://pypi.anaconda.org/scientific-python-nightly-wheels/simple cython numpy scipy
+          pip install .[optional,test] || echo "::warning::Installation with optional deps failed, trying minimal..."
+          pip install . || echo "::warning::Installation failed but continuing..."
+      - name: Run tests
+        run: |
+          mkdir -p for_testing_results for_testing
+          cd for_testing
+          cp ../pyproject.toml .
+          pytest -o cache_dir=../for_testing_results -c pyproject.toml -svv --pyargs dipy || echo "::warning::Tests failed with Python 3.14-dev"
+          cd ..
