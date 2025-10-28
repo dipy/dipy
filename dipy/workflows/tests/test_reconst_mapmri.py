@@ -39,9 +39,17 @@ def reconst_mmri_core(flow, lap, pos):
 
         mmri_flow = flow()
 
-        msg = "Optimization did not find a solution"
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+            warnings.filterwarnings(
+                "ignore",
+                message="Optimization did not find a solution",
+                category=UserWarning,
+            )
+            warnings.filterwarnings(
+                "ignore",
+                message="Solution may be inaccurate.*",
+                category=UserWarning,
+            )
             mmri_flow.run(
                 data_files=data_path,
                 bvals_files=bval_path,
