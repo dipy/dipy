@@ -892,7 +892,6 @@ class MotionCorrectionFlow(Workflow):
             b-vectors are unit vectors
         level_iters : variable int, optional
             The number of iterations at each level of the Gaussian pyramid.
-            will be used.
         out_dir : string or Path, optional
             Directory to save the transformed image and the affine matrix.
         out_moved : string, optional
