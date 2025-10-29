@@ -40,6 +40,7 @@ from dipy.io.utils import read_img_arr_or_path
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points
 from dipy.tracking.utils import transform_tracking_output
+from dipy.utils.logging import logger
 
 __all__ = [
     "syn_registration",
@@ -515,7 +516,14 @@ def affine_registration(
 
     """
     pipeline = pipeline or ["center_of_mass", "translation", "rigid", "affine"]
-    level_iters = level_iters or [1000, 500, 100]
+    if level_iters is None:
+        level_iters = [1000, 500, 100]
+        logger.info(
+            "Default level_iters have been updated to [1000, 500, 100] for "
+            "performance improvement. Identical results are expected. In case "
+            "of any discrepancy, you can revert to the previous default by "
+            "setting level_iters=[10000, 1000, 100]."
+        )
     sigmas = sigmas or [3, 1, 0.0]
     factors = factors or [4, 2, 1]
 
