@@ -954,6 +954,12 @@ class AffineRegistration:
 
         if level_iters is None:
             level_iters = [1000, 500, 100]
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
         self.level_iters = level_iters
         self.levels = len(level_iters)
         if self.levels == 0:
