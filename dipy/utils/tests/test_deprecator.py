@@ -15,7 +15,7 @@ import numpy.testing as npt
 import pytest
 
 import dipy
-from dipy.testing import assert_true, clear_and_catch_warnings
+from dipy.testing import assert_true, assert_warns, clear_and_catch_warnings
 from dipy.utils.deprecator import (
     ArgsDeprecationWarning,
     ExpiredDeprecationError,
@@ -250,7 +250,7 @@ def test_deprecated_argument():
         npt.assert_equal(method(scale=1), 1)
         # As old keyword argument
         if method.__name__ not in ["test4", "custom_actor_2"]:
-            res = npt.assert_warns(ArgsDeprecationWarning, method, height=1)
+            res = assert_warns(ArgsDeprecationWarning, method, height=1)
             npt.assert_equal(res, 1)
         else:
             npt.assert_raises(ExpiredDeprecationError, method, height=1)
@@ -289,7 +289,7 @@ def test_deprecated_argument_in_kwargs():
     npt.assert_equal(test(scale=1), 1)
 
     # Using the deprecated name
-    res = npt.assert_warns(ArgsDeprecationWarning, test, height=1)
+    res = assert_warns(ArgsDeprecationWarning, test, height=1)
     npt.assert_equal(res, 1)
 
     npt.assert_raises(ExpiredDeprecationError, test2, height=1)

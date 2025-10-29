@@ -11,6 +11,7 @@ from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti_data
 from dipy.reconst import mapmri
+from dipy.testing import assert_warns
 from dipy.workflows.reconst import ReconstMAPMRIFlow
 
 
@@ -85,7 +86,7 @@ def reconst_mmri_core(flow, lap, pos):
         np.savetxt(tmp_bvec_path, bvecs.T)
         mmri_flow._force_overwrite = True
         with npt.assert_raises(BaseException):
-            npt.assert_warns(
+            assert_warns(
                 UserWarning,
                 mmri_flow.run,
                 data_path,
