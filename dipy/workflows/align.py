@@ -497,6 +497,7 @@ class ApplyTransformFlow(Workflow):
         moving_image_files,
         transform_map_file,
         transform_type="affine",
+        interpolation="linear",
         out_dir="",
         out_file="transformed.nii.gz",
     ):
@@ -516,6 +517,9 @@ class ApplyTransformFlow(Workflow):
         transform_type : string, optional
             Select the transformation type to apply between 'affine' or
             'diffeomorphic'.
+        interpolation : string, optional
+            the type of interpolation to be used, either 'linear'
+            (for k-linear interpolation) or 'nearest' for nearest neighbor.
         out_dir : string or Path, optional
             Directory to save the transformed files.
         out_file : string, optional
@@ -529,6 +533,13 @@ class ApplyTransformFlow(Workflow):
                 "Invalid transformation type: Please"
                 " provide a valid transform like 'affine'"
                 " or 'diffeomorphic'"
+            )
+
+        if interpolation.lower() not in ["linear", "nearest"]:
+            raise ValueError(
+                "Invalid interpolation type: Please "
+                "provide 'linear' or 'nearest' as "
+                "valid option."
             )
 
         io = self.get_io_iterator()
@@ -582,11 +593,16 @@ class ApplyTransformFlow(Workflow):
 
             # Transforming the image
             if moving_image_full is None:
-                transformed = mapping.transform(moving_image)
+                print(f"Using interpolation: {interpolation}")
+                transformed = mapping.transform(
+                    moving_image, interpolation=interpolation
+                )
             else:
                 transformed = np.concatenate(
                     [
-                        mapping.transform(moving_image)[..., None]
+                        mapping.transform(moving_image, interpolation=interpolation)[
+                            ..., None
+                        ]
                         for moving_image in moving_image_full
                     ],
                     axis=-1,
