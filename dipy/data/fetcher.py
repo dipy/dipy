@@ -458,9 +458,9 @@ fetch_deepn4_test = _make_fetcher(
     "fetch_deepn4_test",
     Path(dipy_home) / "deepn4",
     "https://ndownloader.figshare.com/files/",
-    ["48842938", "52454531"],
-    [Path("test_input_deepn4.npz"), Path("new_test_output_deepn4.npz")],
-    md5_list=["07aa7cc7c7f839683a0aad5bb853605b", "6da15c4358fd13c99773eedeb93953c7"],
+    ["48842938", "53767670"],
+    ["test_input_deepn4.npz", "new2_test_output_deepn4.npz"],
+    md5_list=["07aa7cc7c7f839683a0aad5bb853605b", "2170a411716fa7621e262aef009eaa30"],
     doc="Download DeepN4 test data for Kanakaraj et. al 2024",
 )
 
@@ -1936,7 +1936,7 @@ def get_fnames(*, name="small_64D", include_optional=False):
     if name == "deepn4_test_data":
         files, folder = fetch_deepn4_test()
         input_array = Path(folder) / "test_input_deepn4.npz"
-        target_array = Path(folder) / "new_test_output_deepn4.npz"
+        target_array = Path(folder) / "new2_test_output_deepn4.npz"
         return input_array, target_array
     if name == "evac_default_tf_weights":
         files, folder = fetch_evac_tf_weights()
