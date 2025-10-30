@@ -53,6 +53,7 @@ from itertools import combinations
 from warnings import warn
 
 from nibabel.affines import apply_affine
+from nibabel.streamlines import ArraySequence as Streamlines
 import numpy as np
 from scipy.spatial.distance import cdist
 
@@ -116,6 +117,7 @@ def connectivity_matrix(
     *,
     inclusive=False,
     symmetric=True,
+    discard_stream_size=0,
     return_mapping=False,
     mapping_as_streamlines=False,
 ):
@@ -133,14 +135,19 @@ def connectivity_matrix(
         volume map to anatomical structures.
     inclusive: bool
         Whether to analyze the entire streamline, as opposed to just the
-        endpoints. False by default.
-    symmetric : bool, True by default
+        endpoints.
+    symmetric : bool, optional
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
-    return_mapping : bool, False by default
+    discard_stream_size : int, optional
+        If the length of a streamline is less than or equal to this value, it
+        will not be included in the connectivity matrix. When 0, no filtering
+        is applied. This is useful for ignoring very short streamlines that
+        are likely to be noise.
+    return_mapping : bool
         If True, a mapping is returned which maps matrix indices to
         streamlines.
-    mapping_as_streamlines : bool, False by default
+    mapping_as_streamlines : bool, optional
         If True voxel indices map to lists of streamline objects. Otherwise
         voxel indices map to lists of integers.
 
@@ -174,6 +181,9 @@ def connectivity_matrix(
 
     if inclusive:
         for i, sl in enumerate(streamlines):
+            if discard_stream_size > 0 and len(sl) <= discard_stream_size:
+                continue
+
             sl = _to_voxel_coordinates(sl, lin_T, offset)
             x, y, z = sl.T
             if symmetric:
@@ -192,8 +202,22 @@ def connectivity_matrix(
                         mapping[comb].append(i)
 
     else:
-        streamlines_end = np.array([sl[0 :: len(sl) - 1] for sl in streamlines])
-        streamlines_end = _to_voxel_coordinates(streamlines_end, lin_T, offset)
+        if not isinstance(streamlines, Streamlines):
+            streamlines_obj = Streamlines(streamlines)
+        else:
+            streamlines_obj = streamlines
+
+        if discard_stream_size > 0:
+            mask = np.array([len(sl) > discard_stream_size for sl in streamlines_obj])
+            orig_indices = np.where(mask)[0]
+        else:
+            mask = np.ones(len(streamlines_obj), dtype=bool)
+            orig_indices = np.arange(len(streamlines_obj))
+
+        filtered_streamlines = streamlines_obj[mask]
+
+        streamlines_endpoints = np.array([sl[[0, -1]] for sl in filtered_streamlines])
+        streamlines_end = _to_voxel_coordinates(streamlines_endpoints, lin_T, offset)
         x, y, z = streamlines_end.T
         if symmetric:
             end_labels = np.sort(label_volume[x, y, z], axis=0)
@@ -202,12 +226,17 @@ def connectivity_matrix(
         np.add.at(matrix, (end_labels[0].T, end_labels[1].T), 1)
 
         if return_mapping:
+            streamlines_indexable = hasattr(streamlines, "__getitem__")
+
             if mapping_as_streamlines:
                 for i, (a, b) in enumerate(end_labels.T):
-                    mapping[a, b].append(streamlines[i])
+                    if streamlines_indexable:
+                        mapping[a, b].append(streamlines[orig_indices[i]])
+                    else:
+                        mapping[a, b].append(streamlines_obj[orig_indices[i]])
             else:
                 for i, (a, b) in enumerate(end_labels.T):
-                    mapping[a, b].append(i)
+                    mapping[a, b].append(orig_indices[i])
 
     if symmetric:
         matrix = np.maximum(matrix, matrix.T)
