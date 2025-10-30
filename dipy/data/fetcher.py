@@ -7,6 +7,8 @@ import random
 from shutil import copyfileobj
 import tarfile
 import tempfile
+import time
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 import zipfile
 
@@ -151,8 +153,8 @@ def check_md5(filename, *, stored_md5=None):
             raise FetcherError(msg)
 
 
-def _get_file_data(fname, url, *, use_headers=False):
-    """Get data from url and write it to file.
+def _get_file_data(fname, url, *, use_headers=False, timeout=60, max_retries=5):
+    """Get data from url and write it to file with retry logic.
 
     Parameters
     ----------
@@ -162,27 +164,120 @@ def _get_file_data(fname, url, *, use_headers=False):
         The URL to get the data from.
     use_headers : bool, optional
         Whether to use headers when downloading files.
+    timeout : int, optional
+        Timeout in seconds for the HTTP request.
+    max_retries : int, optional
+        Maximum number of retry attempts.
+
+    Raises
+    ------
+    FetcherError
+        If download fails after all retry attempts.
 
     """
+    # Detect if URL is from a known provider that may rate limit
+    is_figshare = "figshare.com" in url
+    is_zenodo = "zenodo.org" in url
+
+    # Always use headers for Figshare and Zenodo to avoid bot detection
+    if is_figshare or is_zenodo:
+        use_headers = True
+
+    # Add small random delay to avoid rate limiting when multiple downloads
+    if is_figshare or is_zenodo:
+        time.sleep(random.uniform(0.5, 2.0))
+
     req = url
     if use_headers:
         hdr = random.choice(HEADER_LIST)
         req = Request(url, headers=hdr)
-    with contextlib.closing(urlopen(req)) as opener:
-        try:
-            response_size = opener.headers["content-length"]
-        except KeyError:
-            response_size = None
 
-        with open(fname, "wb") as data:
-            if response_size is None:
-                copyfileobj(opener, data)
+    last_exception = None
+    for attempt in range(max_retries):
+        try:
+            with contextlib.closing(urlopen(req, timeout=timeout)) as opener:
+                try:
+                    response_size = opener.headers["content-length"]
+                except KeyError:
+                    response_size = None
+
+                with open(fname, "wb") as data:
+                    if response_size is None:
+                        copyfileobj(opener, data)
+                    else:
+                        copyfileobj_withprogress(opener, data, response_size)
+            # Success - exit the retry loop
+            return
+
+        except HTTPError as e:
+            last_exception = e
+            # Special handling for 403 Forbidden (rate limiting)
+            if e.code == 403:
+                if attempt < max_retries - 1:
+                    # Longer wait for rate limiting (exponential + jitter)
+                    base_wait = 2 ** (attempt + 2)  # 4, 8, 16, 32 seconds
+                    jitter = random.uniform(1, 5)
+                    wait_time = base_wait + jitter
+                    logger.warning(
+                        f"Download blocked (403 Forbidden) for {url}. "
+                        f"Likely rate limiting. Waiting {wait_time:.1f}s "
+                        f"before retry {attempt + 2}/{max_retries}..."
+                    )
+                    time.sleep(wait_time)
+                    # Always rotate headers on 403
+                    hdr = random.choice(HEADER_LIST)
+                    req = Request(url, headers=hdr)
+                else:
+                    logger.error(
+                        f"Download blocked after {max_retries} attempts. "
+                        f"URL: {url}. This may indicate rate limiting."
+                    )
             else:
-                copyfileobj_withprogress(opener, data, response_size)
+                # Other HTTP errors (404, 500, 504, etc.)
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** (attempt + 1)
+                    logger.warning(
+                        f"Download attempt {attempt + 1}/{max_retries} "
+                        f"failed for {url}: HTTP {e.code}. "
+                        f"Retrying in {wait_time} seconds..."
+                    )
+                    time.sleep(wait_time)
+                    if use_headers:
+                        hdr = random.choice(HEADER_LIST)
+                        req = Request(url, headers=hdr)
+
+        except (URLError, TimeoutError, OSError) as e:
+            last_exception = e
+            if attempt < max_retries - 1:
+                # Exponential backoff: 2, 4, 8, 16 seconds
+                wait_time = 2 ** (attempt + 1)
+                logger.warning(
+                    f"Download attempt {attempt + 1}/{max_retries} failed "
+                    f"for {url}: {e}. Retrying in {wait_time} seconds..."
+                )
+                time.sleep(wait_time)
+                # Try with different headers on retry
+                if use_headers:
+                    hdr = random.choice(HEADER_LIST)
+                    req = Request(url, headers=hdr)
+            else:
+                logger.error(f"Download failed after {max_retries} attempts for {url}")
+
+    # If we get here, all retries failed
+    error_msg = f"Failed to download {url} after {max_retries} attempts."
+    if isinstance(last_exception, HTTPError) and last_exception.code == 403:
+        error_msg += (
+            " Got 403 Forbidden - likely rate limiting. "
+            "Try reducing parallel downloads or wait before retrying."
+        )
+    error_msg += f" Last error: {last_exception}"
+    raise FetcherError(error_msg)
 
 
 @warning_for_keywords()
-def fetch_data(files, folder, *, data_size=None, use_headers=False):
+def fetch_data(
+    files, folder, *, data_size=None, use_headers=False, raise_on_error=True
+):
     """Downloads files to folder and checks their md5 checksums
 
     Parameters
@@ -199,12 +294,15 @@ def fetch_data(files, folder, *, data_size=None, use_headers=False):
         the screen. Default does not produce any information about data size.
     use_headers : bool, optional
         Whether to use headers when downloading files.
+    raise_on_error : bool, optional
+        If True (default), raises FetcherError on download/checksum failures.
+        If False, logs warnings and continues with remaining files.
 
     Raises
     ------
     FetcherError
-        Raises if the md5 checksum of the file does not match the expected
-        value. The downloaded file is not deleted when this error is raised.
+        Raises if raise_on_error is True and the md5 checksum of the file
+        does not match the expected value or download fails.
 
     """
     if not Path(folder).exists():
@@ -215,6 +313,9 @@ def fetch_data(files, folder, *, data_size=None, use_headers=False):
         logger.info(f"Data size is approximately {data_size}")
 
     all_skip = True
+    failed_files = []
+    successful_downloads = 0
+
     for f in files:
         url, md5 = files[f]
         fullpath = Path(folder) / f
@@ -223,12 +324,35 @@ def fetch_data(files, folder, *, data_size=None, use_headers=False):
         all_skip = False
         logger.info(f'Downloading "{f}" to {folder}')
         logger.info(f"From: {url}")
-        _get_file_data(fullpath, url, use_headers=use_headers)
-        check_md5(fullpath, stored_md5=md5)
+        try:
+            _get_file_data(fullpath, url, use_headers=use_headers)
+            check_md5(fullpath, stored_md5=md5)
+            successful_downloads += 1
+        except (FetcherError, Exception) as e:
+            failed_files.append((f, url, str(e)))
+            if raise_on_error:
+                raise
+            else:
+                logger.warning(f"Failed to download {f}: {e}")
+                # Clean up partial download
+                if fullpath.exists():
+                    try:
+                        os.remove(fullpath)
+                    except OSError:
+                        pass
+
     if all_skip:
         _already_there_msg(folder)
     else:
-        logger.info(f"Files successfully downloaded to {folder}")
+        if failed_files:
+            logger.warning(
+                f"Downloaded {successful_downloads} files successfully, "
+                f"but {len(failed_files)} files failed to download."
+            )
+            for fname, furl, error in failed_files:
+                logger.warning(f"  - {fname} from {furl}: {error}")
+        else:
+            logger.info(f"Files successfully downloaded to {folder}")
 
 
 @warning_for_keywords()
