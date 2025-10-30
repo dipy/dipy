@@ -1,3 +1,4 @@
+from pathlib import Path
 import tempfile
 from urllib.error import HTTPError, URLError
 
@@ -265,18 +266,21 @@ def test_read_img_arr_or_path(rng):
         ("smoothwm.L.surf.gii", "smoothwm.L.surf", ".gii"),
         ("smoothwm.L.surf.gii.gz", "smoothwm.L.surf", ".gii.gz"),
         ("my.brain_2025.nii", "my.brain_2025", ".nii"),
-        ("my.brain_2025.nii.gz", "my.brain_2025", ".nii.gz"),
+        (Path("my.brain_2025.nii.gz"), "my.brain_2025", ".nii.gz"),
         ("test.trk", "test", ".trk"),
         ("test.tck", "test", ".tck"),
         ("test.vtk", "test", ".vtk"),
-        ("test.ply", "test", ".ply"),
+        (Path("test.ply"), "test", ".ply"),
         ("test_no_extension", "test_no_extension", ""),
+        (Path("test_no_extension"), "test_no_extension", ""),
         ("a.b.c.d", "a.b.c", ".d"),
         ("a.b.c.d.gz", "a.b.c", ".d.gz"),
         ("test.nii.nii", "test.nii", ".nii"),
+        (Path("test.nii.nii"), "test.nii", ".nii"),
         ("my_brain_2025.nii", "my_brain_2025", ".nii"),
-        ("my_brain_2025.nii.gz", "my_brain_2025", ".nii.gz"),
+        (Path("my_brain_2025.nii.gz"), "my_brain_2025", ".nii.gz"),
         (".my.file-name.gii.gz", ".my.file-name", ".gii.gz"),
+        (Path(".my.file-name.gii.gz"), ".my.file-name", ".gii.gz"),
     ],
 )
 def test_split_filename_extension(filename, expected_name, expected_extension):
