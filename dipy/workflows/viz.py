@@ -7,7 +7,7 @@ from dipy.io.image import load_nifti
 from dipy.io.peaks import load_pam
 from dipy.io.streamline import load_tractogram
 from dipy.io.surface import load_gifti, load_pial
-from dipy.io.utils import create_nifti_header
+from dipy.io.utils import create_nifti_header, split_filename_extension
 from dipy.stats.analysis import assignment_map
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
@@ -180,7 +180,8 @@ class HorizonFlow(Workflow):
             if verbose:
                 logger.info(f"Loading file ... \n {fname}\n")
 
-            ext = "".join(Path(fname).suffixes).lower()
+            _, ext = split_filename_extension(fname)
+            ext = ext.lower()
 
             if ext in [".trk", ".trx"]:
                 sft = load_tractogram(fname, "same", bbox_valid_check=False)
