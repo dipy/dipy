@@ -450,7 +450,6 @@ def test_apply_affine_transform():
             out_file="transformed_linear.nii.gz",
         )
 
-        # Checking for the transformed file.
         assert Path(Path(temp_out_dir) / "transformed_linear.nii.gz").exists()
 
         apply_trans.run(
@@ -462,7 +461,6 @@ def test_apply_affine_transform():
             out_file="transformed_nearest.nii.gz",
         )
 
-        # Checking for the transformed file.
         assert Path(Path(temp_out_dir) / "transformed_nearest.nii.gz").exists()
 
 

@@ -593,7 +593,6 @@ class ApplyTransformFlow(Workflow):
 
             # Transforming the image
             if moving_image_full is None:
-                print(f"Using interpolation: {interpolation}")
                 transformed = mapping.transform(
                     moving_image, interpolation=interpolation
                 )
