@@ -917,7 +917,7 @@ class AffineRegistration:
             `level_iters[0]` corresponds to the coarsest scale,
             `level_iters[-1]` the finest, where n is the length of the
             sequence. By default, a 3-level scale space with iterations
-            sequence equal to [10000, 1000, 100] will be used.
+            sequence equal to [1000, 500, 100] will be used.
         sigmas : sequence of floats, optional
             custom smoothing parameter to build the scale space (one parameter
             for each scale). By default, the sequence of sigmas will be
@@ -953,7 +953,13 @@ class AffineRegistration:
             self.metric = MutualInformationMetric()
 
         if level_iters is None:
-            level_iters = [10000, 1000, 100]
+            level_iters = [1000, 500, 100]
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
         self.level_iters = level_iters
         self.levels = len(level_iters)
         if self.levels == 0:
