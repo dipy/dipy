@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from dipy.testing import assert_true
+from dipy.testing import assert_true, assert_warns
 from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking import metrics
 from dipy.tracking._utils import _to_voxel_coordinates
@@ -716,8 +716,8 @@ def test_reduce_rois():
     # Int and float input
     roi1 = np.zeros((4, 4, 4), dtype=int)
     roi2 = np.zeros((4, 4, 4), dtype=float)
-    npt.assert_warns(UserWarning, reduce_rois, [roi1], [True])
-    npt.assert_warns(UserWarning, reduce_rois, [roi2], [True])
+    assert_warns(UserWarning, reduce_rois, [roi1], [True])
+    assert_warns(UserWarning, reduce_rois, [roi2], [True])
 
 
 @set_random_number_generator()

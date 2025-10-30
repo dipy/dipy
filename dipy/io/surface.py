@@ -8,7 +8,12 @@ import nibabel as nib
 import numpy as np
 
 from dipy.io.stateful_surface import StatefulSurface
-from dipy.io.utils import Origin, Space, get_reference_info
+from dipy.io.utils import (
+    Origin,
+    Space,
+    get_reference_info,
+    split_filename_extension,
+)
 from dipy.io.vtk import (
     get_polydata_triangles,
     get_polydata_vertices,
@@ -78,9 +83,8 @@ def load_surface(
     vtk_ext = [".vtk", ".vtp", ".obj", ".stl", ".ply"]
     freesurfer_ext = [".gii", ".gii.gz", ".pial", ".nofix", ".orig", ".smoothwm", ".T1"]
 
-    ext = "".join(Path(fname).suffixes).lower()
-
-    if not any(ext.endswith(_ext) for _ext in freesurfer_ext + vtk_ext):
+    name, ext = split_filename_extension(fname)
+    if ext.lower() not in freesurfer_ext + vtk_ext:
         logging.error("Input extension is not one of the supported format.")
         return False
 
@@ -99,7 +103,7 @@ def load_surface(
         return False
 
     if reference == "same":
-        if any(ext.endswith(_ext) for _ext in [".gii", ".gii.gz"]):
+        if ext in [".gii", ".gii.gz"]:
             reference = fname
         else:
             logging.error(
@@ -110,7 +114,7 @@ def load_surface(
     timer = time.time()
     metadata = None
     data_per_vertex = None
-    if any(ext.endswith(_ext) for _ext in [".gii", ".gii.gz"]):
+    if ext in [".gii", ".gii.gz"]:
         data = load_gifti(fname)
         if gifti_in_freesurfer:
             data = (apply_freesurfer_transform(data[0], reference, inv=True), data[1])
@@ -237,7 +241,8 @@ def save_surface(
             "bounding box of the surface."
         )
 
-    ext = "".join(Path(fname).suffixes).lower()
+    _, ext = split_filename_extension(fname)
+    ext = ext.lower()
 
     if ext in [".vtk", ".vtp", ".obj", ".stl", ".ply"]:
         sfs.to_space(to_space)
@@ -275,7 +280,7 @@ def save_surface(
         save_polydata(
             polydata, fname, legacy_vtk_format=legacy_vtk_format, color_array_name="RGB"
         )
-    elif any(ext.endswith(_ext) for _ext in [".gii", ".gii.gz"]):
+    elif ext in [".gii", ".gii.gz"]:
         if not hasattr(sfs, "gii_header") and ref_gii is None:
             raise ValueError(
                 "Metadata is required to save a gii file.\n"
@@ -283,8 +288,9 @@ def save_surface(
             )
 
         if ref_gii is not None:
-            ext = "".join(Path(ref_gii).suffixes).lower()
-            if not any(ext.endswith(_ext) for _ext in [".gii", ".gii.gz"]):
+            _, ext = split_filename_extension(ref_gii)
+            ext = ext.lower()
+            if ext not in [".gii", ".gii.gz"]:
                 raise ValueError("Reference gii file must have .gii extension.")
             _, metadata = load_gifti(ref_gii, return_header=True)[-1]
         else:
@@ -393,8 +399,9 @@ def load_gifti(fname, *, return_header=False):
     """
 
     def reader(fname):
-        ext = "".join(Path(fname).suffixes).lower()
-        if ext.endswith(".gii.gz"):
+        _, ext = split_filename_extension(fname)
+        ext = ext.lower()
+        if ext == ".gii.gz":
             with gzip.GzipFile(fname) as gz:
                 img = nib.GiftiImage.from_bytes(gz.read())
         else:

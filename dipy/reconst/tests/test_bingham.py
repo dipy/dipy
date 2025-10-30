@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from numpy.testing import (
     assert_almost_equal,
@@ -21,7 +23,7 @@ from dipy.reconst.bingham import (
     sf_to_bingham,
     sh_to_bingham,
 )
-from dipy.reconst.shm import CsaOdfModel, sf_to_sh
+from dipy.reconst.shm import CsaOdfModel, descoteaux07_legacy_msg, sf_to_sh
 
 
 def setup_module():
@@ -229,7 +231,7 @@ def test_bingham_from_sh():
 def test_sh_to_bingham_handles_empty_voxels():
     """Regression test for UnboundLocalError in sh_to_bingham (Issue #3638).
 
-    Uses DIPY's built-in small DWI dataset to fit SH coefficients via CSA ODF,
+    Uses  small DWI dataset to fit SH coefficients via CSA ODF,
     then verifies that sh_to_bingham handles empty voxels correctly.
     """
     # Load small diffusion dataset
@@ -239,11 +241,17 @@ def test_sh_to_bingham_handles_empty_voxels():
 
     # Prepare gradient table and fit CSA model to get SH coefficients
     gtab = gradient_table(bvals=bvals, bvecs=bvecs)
-    csa_model = CsaOdfModel(gtab, sh_order_max=4)
-    csa_fit = csa_model.fit(data)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        csa_model = CsaOdfModel(gtab, sh_order_max=4)
+        csa_fit = csa_model.fit(data)
 
-    # Extract SH coefficients
-    sh_coeff = csa_fit.shm_coeff
+        # Extract SH coefficients
+        sh_coeff = csa_fit.shm_coeff
 
     # Introduce an empty voxel (simulate background region)
     sh_coeff = sh_coeff.copy()
@@ -252,6 +260,6 @@ def test_sh_to_bingham_handles_empty_voxels():
     # Run sh_to_bingham
     sphere = get_sphere(name="repulsion724").subdivide(n=2)
 
-    bim = sh_to_bingham(sh_coeff, sphere, max_search_angle=45)
+    bim = sh_to_bingham(sh_coeff, sphere, legacy=False, max_search_angle=45)
 
     assert bim.model_params.shape[:3] == sh_coeff.shape[:3]
