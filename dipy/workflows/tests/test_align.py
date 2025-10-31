@@ -322,7 +322,7 @@ def test_image_registration(rng):
         test_4D_moving()
 
 
-def test_apply_transform_error():
+def test_apply_transform_type_error():
     flow = ApplyTransformFlow()
     npt.assert_raises(
         ValueError,
@@ -331,6 +331,19 @@ def test_apply_transform_error():
         "my_fake_moving.nii.gz",
         "my_fake_map.nii.gz",
         transform_type="wrong_type",
+    )
+
+
+def test_apply_transform_interp_error():
+    flow = ApplyTransformFlow()
+    npt.assert_raises(
+        ValueError,
+        flow.run,
+        "my_fake_static.nii.gz",
+        "my_fake_moving.nii.gz",
+        "my_fake_map.nii.gz",
+        transform_type="affine",
+        interpolation="wrong_interp",
     )
 
 
@@ -428,6 +441,27 @@ def test_apply_affine_transform():
 
         # Checking for the transformed file.
         assert Path(Path(temp_out_dir) / "transformed.nii.gz").exists()
+
+        apply_trans.run(
+            static_image_file,
+            images,
+            out_dir=temp_out_dir,
+            transform_map_file=out_affine,
+            out_file="transformed_linear.nii.gz",
+        )
+
+        assert Path(Path(temp_out_dir) / "transformed_linear.nii.gz").exists()
+
+        apply_trans.run(
+            static_image_file,
+            images,
+            out_dir=temp_out_dir,
+            transform_map_file=out_affine,
+            interpolation="nearest",
+            out_file="transformed_nearest.nii.gz",
+        )
+
+        assert Path(Path(temp_out_dir) / "transformed_nearest.nii.gz").exists()
 
 
 def test_motion_correction():
