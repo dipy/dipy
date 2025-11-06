@@ -50,3 +50,4 @@ build-install
 benchmarks/results/
 benchmarks/env/
 sg_execution_times.rst
+uv.lock
