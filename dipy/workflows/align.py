@@ -394,7 +394,7 @@ class ImageRegistrationFlow(Workflow):
         out_quality : string, optional
             Name of the file containing the saved quality metric.
         """
-        if level_iters == (1000, 500, 100):
+        if tuple(level_iters) == (1000, 500, 100):
             logger.info(
                 "Default level_iters have been updated to [1000, 500, 100] for "
                 "performance improvement. Identical results are expected. In case "
@@ -899,7 +899,7 @@ class MotionCorrectionFlow(Workflow):
         out_affine : string, optional
             Name for the saved affine matrix.
         """
-        if level_iters == (1000, 500, 100):
+        if tuple(level_iters) == (1000, 500, 100):
             logger.info(
                 "Default level_iters have been updated to [1000, 500, 100] for "
                 "performance improvement. Identical results are expected. In case "
