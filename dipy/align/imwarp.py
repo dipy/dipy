@@ -1097,6 +1097,12 @@ class DiffeomorphicRegistration(metaclass=abc.ABCMeta):
         Returns the resulting diffeomorphic map after optimization
         """
 
+    @abc.abstractmethod
+    def get_intermediate_maps(self):
+        """
+        Return the transforms mapping the input images toward the reference image.
+        """
+
 
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
     @warning_for_keywords()
@@ -1747,7 +1753,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             )
 
         # Compose the two partial transformations
-        self.moving_to_ref = self.moving_to_ref.warp_endomorphism(
+        self.static_to_moving = self.moving_to_ref.warp_endomorphism(
             self.static_to_ref.inverse()
         ).inverse()
 
