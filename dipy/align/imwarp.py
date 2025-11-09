@@ -1239,7 +1239,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             msg += "SymmetricDiffeomorphicRegistration.optimize()"
             raise ValueError(msg)
         return self.static_to_moving
-    
+
     def get_intermediate_maps(self):
         """Return the transforms mapping the input images toward the reference
         Returns the DiffeomorphicMap objects mapping points in the static
@@ -1257,10 +1257,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             the diffeomorphic map registering the moving image towards
             the reference image
         """
-        if not (hasattr(self, 'static_to_ref') and hasattr(self, 'moving_to_ref')):
-            msg = 'Diffeormorphic map can not be obtained without running '
-            msg += 'the optimizer. Please call first '
-            msg += 'SymmetricDiffeomorphicRegistration.optimize()'
+        if not (hasattr(self, "static_to_ref") and hasattr(self, "moving_to_ref")):
+            msg = "Diffeormorphic map can not be obtained without running "
+            msg += "the optimizer. Please call first "
+            msg += "SymmetricDiffeomorphicRegistration.optimize()"
             raise ValueError(msg)
         return self.static_to_ref, self.moving_to_ref
 
