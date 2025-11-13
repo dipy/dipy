@@ -33,19 +33,32 @@ installed (required for 3D visualization):
 
 """
 
+import sys
+
 import numpy as np
 
 from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames, get_sphere
+from dipy.data import default_sphere, get_fnames
+from dipy.direction import peaks_from_model
+from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.reconst.csdeconv import (
+    ConstrainedSphericalDeconvModel,
+    auto_response_ssst,
+)
 from dipy.reconst.dti import TensorModel
 from dipy.segment.mask import median_otsu
 from dipy.tracking import utils
-from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tracker import deterministic_tracking
+from dipy.utils.logging import logger
+from dipy.utils.optpkg import optional_package
 from dipy.viz import has_fury
+from dipy.viz.horizon.app import Horizon
+
+fury, has_fury, setup_module = optional_package("fury")
 
 ###############################################################################
 # Interactive Mode Control
@@ -61,9 +74,10 @@ interactive = False  # Change this to True for interactive exploration!
 
 # Check if FURY is available
 if not has_fury:
-    print("FURY is required for Horizon. Install it with: pip install fury")
-else:
-    from dipy.viz import horizon
+    logger.error("FURY is required for Horizon. Install it with: pip install fury")
+    sys.exit(1)
+
+from dipy.viz import horizon
 
 ###############################################################################
 # Basic Example: Visualizing a Brain Image
@@ -74,7 +88,7 @@ else:
 
 # Load example data
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
-data, affine = load_nifti(hardi_fname)
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 
 # Extract b0 image (first volume)
 b0_data = data[..., 0]
@@ -84,21 +98,20 @@ b0_data = data[..., 0]
 # containing (data, affine, optional_filename). The affine matrix defines
 # the spatial orientation of the image.
 
-if has_fury:
-    # Prepare image data for Horizon
-    # Format: list of tuples [(data, affine, filename)]
-    images = [(b0_data, affine, "b0.nii.gz")]
 
-    # Create visualization
-    horizon(
-        images=images,
-        world_coords=True,  # Use world coordinates (not voxel coordinates)
-        interactive=interactive,  # Controlled by flag at top of script
-        out_png="horizon_basic_image.png",
-    )
+# Prepare image data for Horizon
+images = [(b0_data, affine, "b0.nii.gz")]
 
-    if not interactive:
-        print("Saved: horizon_basic_image.png")
+# Create visualization
+horizon(
+    images=images,
+    world_coords=True,  # Use world coordinates (not voxel coordinates)
+    interactive=interactive,  # Controlled by flag at top of script
+    out_png="horizon_basic_image.png",
+)
+
+if not interactive:
+    logger.info("Saved: horizon_basic_image.png")
 
 ###############################################################################
 # Visualizing Multiple Images
@@ -107,34 +120,30 @@ if has_fury:
 # Horizon can display multiple images simultaneously. This is useful for
 # comparing different contrasts or viewing multiple subjects.
 
-if has_fury:
-    # Create FA map for comparison
-    from dipy.io.gradients import read_bvals_bvecs
+# Create FA map for comparison
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs=bvecs)
 
-    bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
-    gtab = gradient_table(bvals, bvecs=bvecs)
+logger.info("Computing tensor model...")
+tenmodel = TensorModel(gtab)
+tenfit = tenmodel.fit(data)
+fa_data = tenfit.fa
 
-    # Compute DTI model
-    print("Computing tensor model...")
-    tenmodel = TensorModel(gtab)
-    tenfit = tenmodel.fit(data)
-    fa_data = tenfit.fa
+# Visualize both b0 and FA
+images = [
+    (b0_data, affine, "b0.nii.gz"),
+    (fa_data, affine, "fa.nii.gz"),
+]
 
-    # Visualize both b0 and FA
-    images = [
-        (b0_data, affine, "b0.nii.gz"),
-        (fa_data, affine, "fa.nii.gz"),
-    ]
+horizon(
+    images=images,
+    world_coords=True,
+    interactive=interactive,
+    out_png="horizon_multiple_images.png",
+)
 
-    horizon(
-        images=images,
-        world_coords=True,
-        interactive=interactive,
-        out_png="horizon_multiple_images.png",
-    )
-
-    if not interactive:
-        print("Saved: horizon_multiple_images.png")
+if not interactive:
+    logger.info("Saved: horizon_multiple_images.png")
 
 ###############################################################################
 # Visualizing Tractograms with Clustering
@@ -143,77 +152,71 @@ if has_fury:
 # One of Horizon's most powerful features is interactive tractography
 # visualization with automatic clustering using QuickBundlesX.
 
-if has_fury:
-    print("Generating streamlines...")
+logger.info("Generating streamlines...")
 
-    # Create a seed mask from white matter
-    # median_otsu returns a 4D masked data array, we need to extract a 3D mask
-    _, white_matter_mask = median_otsu(data, vol_idx=range(10, 50), numpass=3)
+# Create a seed mask from white matter
+# median_otsu returns a 4D masked data array, we need to extract a 3D mask
+_, white_matter_mask = median_otsu(data, vol_idx=range(10, 50), numpass=3)
 
-    # Create seeds
-    seeds = utils.seeds_from_mask(
-        white_matter_mask, affine, density=[2, 2, 2]
-    )
+# Create seeds
+seeds = utils.seeds_from_mask(white_matter_mask, affine, density=[2, 2, 2])
 
-    # we'll use a subset of seeds
-    np.random.shuffle(seeds)
-    seeds = seeds[:5000]  # Use 5000 seeds for demo
+# we'll use a subset of seeds
+np.random.shuffle(seeds)
+seeds = seeds[:5000]  # Use 5000 seeds for demo
 
-    # Create stopping criterion from FA
-    stopping_criterion = ThresholdStoppingCriterion(fa_data, 0.2)
+# Create stopping criterion from FA
+stopping_criterion = ThresholdStoppingCriterion(fa_data, 0.2)
 
-    # Perform tractography using EuDX (simple and fast for demo)
-    from dipy.direction import DeterministicMaximumDirectionGetter
-    from dipy.io.gradients import read_bvals_bvecs
+# Perform tractography using the modern functional tracker
+# Build a CSD model to get SH coefficients for deterministic tracking
+logger.info("Computing CSD model...")
+response, _ = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
+csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order_max=6)
+csd_fit = csd_model.fit(data, mask=fa_data > 0.2)
 
-    # Get tensor model peaks
-    peak_indices = tenfit.directions
+# Generate streamlines with built-in length filtering
+# min_len and max_len filter during tracking (no post-processing needed)
+streamline_generator = deterministic_tracking(
+    seeds,
+    stopping_criterion,
+    affine,
+    step_size=0.5,
+    min_len=10,  # Minimum length in mm (filters short streamlines)
+    max_len=500,  # Maximum length in mm
+    sh=csd_fit.shm_coeff,
+    max_angle=30.0,
+    sphere=default_sphere,
+    nbr_threads=0,  # 0 = auto-detect cores; set to >0 for explicit threading
+    return_all=False,
+)
 
-    # Create a simple direction getter
-    dg = DeterministicMaximumDirectionGetter.from_pmf(
-        tenfit.odf(get_sphere(name="repulsion724")),
-        max_angle=30.0,
-        sphere=get_sphere(name="repulsion724"),
-    )
+streamlines = Streamlines(streamline_generator)
+logger.info(f"Generated {len(streamlines)} streamlines (min_len=10mm, max_len=500mm)")
 
-    # Generate streamlines
-    streamline_generator = LocalTracking(
-        dg, stopping_criterion, seeds, affine, step_size=0.5
-    )
+# Create StatefulTractogram (required for Horizon)
+# Using the image object directly ensures proper coordinate system handling
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 
-    streamlines = Streamlines(streamline_generator)
-    print(f"Generated {len(streamlines)} streamlines")
+###########################################################################
+# Now visualize with clustering enabled. Clustering groups similar
+# streamlines together, making it easier to explore large tractography
+# datasets.
 
-    # Keep only streamlines with reasonable length
-    streamlines = [s for s in streamlines if len(s) > 10]
-    print(f"Kept {len(streamlines)} streamlines after filtering")
+tractograms = [sft]
 
-    # Create StatefulTractogram (required for Horizon)
-    # This ensures coordinate systems are properly handled
-    from dipy.io.utils import create_nifti_header
+horizon(
+    tractograms=tractograms,
+    cluster=True,  # Enable QuickBundlesX clustering
+    cluster_thr=15.0,  # Distance threshold in mm (smaller = more clusters)
+    random_colors=False,  # Use consistent colors
+    world_coords=True,
+    interactive=interactive,
+    out_png="horizon_tractography_clustered.png",
+)
 
-    nii_header = create_nifti_header(affine, data.shape[:3], data.shape[:3])
-    sft = StatefulTractogram(streamlines, nii_header, Space.RASMM)
-
-    ###########################################################################
-    # Now visualize with clustering enabled. Clustering groups similar
-    # streamlines together, making it easier to explore large tractography
-    # datasets.
-
-    tractograms = [sft]
-
-    horizon(
-        tractograms=tractograms,
-        cluster=True,  # Enable QuickBundlesX clustering
-        cluster_thr=15.0,  # Distance threshold in mm (smaller = more clusters)
-        random_colors=False,  # Use consistent colors
-        world_coords=True,
-        interactive=interactive,
-        out_png="horizon_tractography_clustered.png",
-    )
-
-    if not interactive:
-        print("Saved: horizon_tractography_clustered.png")
+if not interactive:
+    logger.info("Saved: horizon_tractography_clustered.png")
 
 ###############################################################################
 # Combining Tractograms and Images
@@ -222,20 +225,19 @@ if has_fury:
 # Horizon really shines when you combine multiple data types. Let's visualize
 # streamlines overlaid on anatomical images.
 
-if has_fury:
-    # Visualize tractography with FA background
-    horizon(
-        tractograms=tractograms,
-        images=[(fa_data, affine, "fa.nii.gz")],
-        cluster=True,
-        cluster_thr=15.0,
-        world_coords=True,
-        interactive=interactive,
-        out_png="horizon_combined.png",
-    )
+# Visualize tractography with FA background
+horizon(
+    tractograms=tractograms,
+    images=[(fa_data, affine, "fa.nii.gz")],
+    cluster=True,
+    cluster_thr=15.0,
+    world_coords=True,
+    interactive=interactive,
+    out_png="horizon_combined.png",
+)
 
-    if not interactive:
-        print("Saved: horizon_combined.png")
+if not interactive:
+    logger.info("Saved: horizon_combined.png")
 
 ###############################################################################
 # Filtering Streamlines by Length
@@ -244,22 +246,22 @@ if has_fury:
 # Horizon allows you to filter clusters by various criteria, including
 # streamline length.
 
-if has_fury:
-    # Show only streamlines longer than 30mm and shorter than 150mm
-    horizon(
-        tractograms=tractograms,
-        images=[(fa_data, affine, "fa.nii.gz")],
-        cluster=True,
-        cluster_thr=15.0,
-        length_gt=30,  # Greater than 30mm
-        length_lt=150,  # Less than 150mm
-        world_coords=True,
-        interactive=interactive,
-        out_png="horizon_filtered_length.png",
-    )
 
-    if not interactive:
-        print("Saved: horizon_filtered_length.png")
+# Show only streamlines longer than 30mm and shorter than 150mm
+horizon(
+    tractograms=tractograms,
+    images=[(fa_data, affine, "fa.nii.gz")],
+    cluster=True,
+    cluster_thr=15.0,
+    length_gt=30,  # Greater than 30mm
+    length_lt=150,  # Less than 150mm
+    world_coords=True,
+    interactive=interactive,
+    out_png="horizon_filtered_length.png",
+)
+
+if not interactive:
+    logger.info("Saved: horizon_filtered_length.png")
 
 ###############################################################################
 # Filtering by Cluster Size
@@ -267,48 +269,62 @@ if has_fury:
 #
 # You can also filter based on the number of streamlines in each cluster.
 
-if has_fury:
-    # Show only clusters with at least 10 streamlines
-    horizon(
-        tractograms=tractograms,
-        images=[(fa_data, affine, "fa.nii.gz")],
-        cluster=True,
-        cluster_thr=15.0,
-        clusters_gt=10,  # Clusters with > 10 streamlines
-        world_coords=True,
-        interactive=interactive,
-        out_png="horizon_filtered_clusters.png",
-    )
+# Show only clusters with at least 10 streamlines
+horizon(
+    tractograms=tractograms,
+    images=[(fa_data, affine, "fa.nii.gz")],
+    cluster=True,
+    cluster_thr=15.0,
+    clusters_gt=10,  # Clusters with > 10 streamlines
+    world_coords=True,
+    interactive=interactive,
+    out_png="horizon_filtered_clusters.png",
+)
 
-    if not interactive:
-        print("Saved: horizon_filtered_clusters.png")
+if not interactive:
+    logger.info("Saved: horizon_filtered_clusters.png")
 
-###############################################################################
-# Note: Advanced Peak Directions Visualization
-# =============================================
-#
-# Horizon can also visualize peak directions from models like CSD using the
-# `pams` parameter. This accepts PeakAndMetrics objects from
-# `dipy.direction.peaks_from_model`. This is useful for quality control and
-# understanding fiber orientations. Here's a quick example:
-#
-# .. code-block:: python
-#
-#     from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
-#     from dipy.direction import peaks_from_model
-#
-#     # Fit CSD model and compute peaks
-#     response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
-#     csd_model = ConstrainedSphericalDeconvModel(gtab, response)
-#     csd_peaks = peaks_from_model(csd_model, data, sphere, mask=mask)
-#
-#     # Visualize peaks with Horizon
-#     horizon(
-#         pams=[csd_peaks],
-#         images=[(fa_data, affine, "fa.nii.gz")],
-#         world_coords=True,
-#         interactive=True,
-#     )
+# ##############################################################################
+# Visualizing Peak Directions
+# ============================
+
+# .. note::
+#     Peak visualization with Horizon requires peaks data with affine
+#     information. The current implementation of `peaks_from_model` doesn't
+#     include affine data in the returned `PeaksAndMetrics` object.
+#     For peak visualization, you can manually add the affine to the peaks
+#     object or save the peaks to disk and load them with the affine matrix.
+
+# Example (commented out due to missing affine attribute):
+
+
+# Create a simple mask for peak computation
+mask = fa_data > 0.2
+
+# Compute peaks from the tensor model
+dti_peaks = peaks_from_model(
+    tenmodel,
+    data,
+    default_sphere,
+    relative_peak_threshold=0.5,
+    min_separation_angle=25,
+    mask=mask,
+)
+
+# Add affine to peaks for visualization
+dti_peaks.affine = affine
+
+# Visualize peaks with FA background
+horizon(
+    pams=[dti_peaks],
+    images=[(fa_data, affine, "fa.nii.gz")],
+    world_coords=True,
+    interactive=interactive,
+    out_png="horizon_dti_peaks.png",
+)
+
+if not interactive:
+    logger.info("Saved: horizon_dti_peaks.png")
 
 ###############################################################################
 # Interactive Mode
@@ -334,25 +350,6 @@ if has_fury:
 # - Ctrl/Cmd + drag: rotate camera
 # - Ctrl/Cmd + R: reset camera
 #
-# To enable interactive mode, uncomment the code below:
-#
-# This will open an interactive 3D window where you can:
-# - Rotate, zoom, and pan the view
-# - Select/deselect clusters by clicking
-# - Use keyboard shortcuts to manipulate the display
-#
-# Uncomment these lines to try interactive mode:
-#
-# if has_fury:
-#     horizon(
-#         tractograms=tractograms,
-#         images=[(fa_data, affine, "fa.nii.gz")],
-#         cluster=True,
-#         cluster_thr=15.0,
-#         world_coords=True,
-#         interactive=True,  # This enables the interactive window!
-#     )
-#
 # Note: The window will stay open until you close it manually.
 
 ###############################################################################
@@ -361,21 +358,20 @@ if has_fury:
 #
 # Horizon provides many customization options:
 
-if has_fury:
-    horizon(
-        tractograms=tractograms,
-        images=[(fa_data, affine, "fa.nii.gz")],
-        cluster=True,
-        cluster_thr=10.0,  # Smaller threshold = more clusters
-        random_colors="tracts",  # Random colors for each tractogram
-        bg_color=(1, 1, 1),  # White background
-        world_coords=True,
-        interactive=interactive,
-        out_png="horizon_customized.png",
-    )
+horizon(
+    tractograms=tractograms,
+    images=[(fa_data, affine, "fa.nii.gz")],
+    cluster=True,
+    cluster_thr=10.0,  # Smaller threshold = more clusters
+    random_colors="tracts",  # Random colors for each tractogram
+    bg_color=(1, 1, 1),  # White background
+    world_coords=True,
+    interactive=interactive,
+    out_png="horizon_customized.png",
+)
 
-    if not interactive:
-        print("Saved: horizon_customized.png")
+if not interactive:
+    logger.info("Saved: horizon_customized.png")
 
 ###############################################################################
 # Programmatic Control: Using the Horizon Class
@@ -384,85 +380,26 @@ if has_fury:
 # For advanced use cases, you can use the Horizon class directly instead of
 # the convenience function. This gives you more control:
 
-if has_fury:
-    from dipy.viz.horizon.app import Horizon
+# Create Horizon instance
+hz = Horizon(
+    tractograms=tractograms,
+    images=[(fa_data, affine, "fa.nii.gz")],
+    cluster=True,
+    cluster_thr=15.0,
+    world_coords=True,
+    interactive=interactive,
+    out_png="horizon_class.png",
+)
 
-    # Create Horizon instance
-    hz = Horizon(
-        tractograms=tractograms,
-        images=[(fa_data, affine, "fa.nii.gz")],
-        cluster=True,
-        cluster_thr=15.0,
-        world_coords=True,
-        interactive=interactive,
-        out_png="horizon_class.png",
-    )
+# Build the visualization
+hz.build_scene()
 
-    # Build the visualization
-    hz.build_scene()
+# You can access the ShowManager for further customization
+# show_m = hz.build_show(show_m=None)
 
-    # You can access the ShowManager for further customization
-    # show_m = hz.build_show(show_m=None)
+if not interactive:
+    logger.info("Saved: horizon_class.png")
 
-    if not interactive:
-        print("Saved: horizon_class.png")
-
-###############################################################################
-# Using DIPY Horizon in Python code
-# =====================================
-#
-# Here's a complete, minimal example you can copy and run interactively.
-# Save this as a separate script and run it to explore Horizon interactively:
-#
-# .. code-block:: python
-#
-#     from dipy.data import get_fnames
-#     from dipy.io.image import load_nifti
-#     from dipy.io.stateful_tractogram import Space, StatefulTractogram
-#     from dipy.io.streamline import load_tractogram
-#     from dipy.viz import horizon
-#
-#     # Load some example data
-#     hardi_fname = get_fnames(name='stanford_hardi')[0]
-#     data, affine = load_nifti(hardi_fname)
-#     b0_data = data[..., 0]
-#
-#     # For tractograms, you can load your own .trk, .tck, or .trx file:
-#     # sft = load_tractogram('your_tractogram.trk', 'same')
-#     #
-#     # Then visualize interactively:
-#     # horizon(
-#     #     tractograms=[sft],
-#     #     images=[(b0_data, affine, 'b0.nii.gz')],
-#     #     cluster=True,
-#     #     cluster_thr=15.0,
-#     #     interactive=True,  # This opens the interactive window!
-#     # )
-#     #
-#     # Or just visualize the image:
-#     horizon(
-#         images=[(b0_data, affine, 'b0.nii.gz')],
-#         interactive=True,
-#     )
-#
-# The interactive window allows you to:
-#
-# - **Rotate**: Click and drag
-# - **Zoom**: Mouse wheel or pinch
-# - **Pan**: Shift + drag
-# - **Reset view**: Ctrl/Cmd + R
-# - **Toggle control panel**: Press O
-# - **Take screenshot**: Use the camera button in the UI
-#
-# When visualizing tractography with clustering:
-#
-# - **Select clusters**: Left click on centroid
-# - **Expand cluster**: Press E
-# - **Hide unselected**: Press H
-# - **Select all**: Press A
-# - **Invert selection**: Press I
-# - **Collapse all**: Press R
-# - **Save selection**: Press S
 
 ###############################################################################
 # Summary
@@ -501,7 +438,4 @@ if has_fury:
 # For more details, see the Horizon documentation and the command-line
 # interface tutorial at :ref:`viz_flow`.
 #
-# References
-# ----------
-#
-# .. footbibliography::
+# See :footcite:p:`Garyfallidis2019` for further details about Horizon.
