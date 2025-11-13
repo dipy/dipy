@@ -213,6 +213,12 @@ def warning_for_keywords(from_version="1.10.0", until_version="2.0.0"):
             # Default case: call the function with the original arguments
             return func(*args, **kwargs)
 
+        # Explicitly preserve the original function's signature and wrapped attribute
+        # This is crucial for compatibility with libraries like Keras 3.x that use
+        # inspect.signature() and getfullargspec() for introspection
+        wrapper.__wrapped__ = func
+        wrapper.__signature__ = signature(func)
+
         return wrapper
 
     return decorator

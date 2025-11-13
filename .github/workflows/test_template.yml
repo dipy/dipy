@@ -12,7 +12,7 @@ on:
         description: "Select Python version"
         type: string
         required: false
-        default: '["3.10", ]'
+        default: '["3.11", ]'
       use-pre:
         description: "bal"
         type: boolean
@@ -54,6 +54,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
+      max-parallel: 3
       fail-fast: false
       matrix:
         python-version: ${{fromJSON(inputs.python-version) }}
@@ -91,8 +92,11 @@ jobs:
         auto-activate-base: false
         activate-environment: venv
         python-version: ${{ matrix.python-version }}
-        channels: defaults, conda-forge
-        use-only-tar-bz2: true
+        allow-softlinks: true
+        channel-priority: flexible
+        show-channel-urls: true
+        use-only-tar-bz2: false
+        miniforge-version: latest
     - name: Install HDF5 and pytables on macOS
       if: ${{ (runner.os == 'macOS')  &&  (env.EXTRA_DEPENDS != '')  &&  (env.INSTALL_TYPE == 'pip') }}
       run: |
@@ -109,8 +113,8 @@ jobs:
         else
           tools/ci/install_dependencies.sh
         fi
-    - name: Install OpenMP on macOS
-      if: runner.os == 'macOS'
+    - name: Install OpenMP on macOS (pip only)
+      if: runner.os == 'macOS' && matrix.install-type != 'conda'
       run: |
         brew install llvm
         brew install libomp
@@ -119,11 +123,10 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.dipy
-        key: dipy-${{ hashFiles('**/dipy/data/*') }}
+        key: dipy-data-${{ runner.os }}-${{ hashFiles('dipy/data/fetcher.py') }}
         restore-keys: |
-          ${{ runner.os }}-dipy-
-          dipy-${{ hashFiles('**/dipy/data/*') }}
-          dipy-${{ hashFiles('**/dipy/data/*') }}-
+          dipy-data-${{ runner.os }}-
+          dipy-data-
     - name: Install DIPY
       run: |
         if [ "${{ inputs.use-pre }}" == "true" ]; then
