@@ -1242,7 +1242,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
     def get_intermediate_maps(self):
         """Return the transforms mapping the input images toward the reference.
-        
+
         Returns the DiffeomorphicMap objects mapping points in the static
         and moving image's grids to points in the reference image's grid.
         Note: this is used to "deform" the reference image (which is computed
