@@ -329,7 +329,7 @@ class ImageRegistrationFlow(Workflow):
         nbins=32,
         sampling_prop=None,
         metric="mi",
-        level_iters=(10000, 1000, 100),
+        level_iters=(1000, 500, 100),
         sigmas=(3.0, 1.0, 0.0),
         factors=(4, 2, 1),
         progressive=True,
@@ -394,6 +394,13 @@ class ImageRegistrationFlow(Workflow):
         out_quality : string, optional
             Name of the file containing the saved quality metric.
         """
+        if tuple(level_iters) == (1000, 500, 100):
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
 
         io_it = self.get_io_iterator()
         transform = transform.lower()
@@ -861,6 +868,7 @@ class MotionCorrectionFlow(Workflow):
         bvectors_files,
         b0_threshold=50,
         bvecs_tol=0.01,
+        level_iters=(1000, 500, 100),
         out_dir="",
         out_moved="moved.nii.gz",
         out_affine="affine.txt",
@@ -882,6 +890,8 @@ class MotionCorrectionFlow(Workflow):
         bvecs_tol : float, optional
             Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
             b-vectors are unit vectors
+        level_iters : variable int, optional
+            The number of iterations at each level of the Gaussian pyramid.
         out_dir : string or Path, optional
             Directory to save the transformed image and the affine matrix.
         out_moved : string, optional
@@ -889,6 +899,13 @@ class MotionCorrectionFlow(Workflow):
         out_affine : string, optional
             Name for the saved affine matrix.
         """
+        if tuple(level_iters) == (1000, 500, 100):
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
 
         io_it = self.get_io_iterator()
 
@@ -913,7 +930,7 @@ class MotionCorrectionFlow(Workflow):
             )
 
             reg_img, reg_affines = motion_correction(
-                data=data, gtab=gtab, affine=affine
+                data=data, gtab=gtab, affine=affine, level_iters=level_iters
             )
 
             # Saving the corrected image file
