@@ -144,7 +144,7 @@ def connectivity_matrix(
         will not be included in the connectivity matrix. When 0, no filtering
         is applied. This is useful for ignoring very short streamlines that
         are likely to be noise.
-    return_mapping : bool
+    return_mapping : bool, optional
         If True, a mapping is returned which maps matrix indices to
         streamlines.
     mapping_as_streamlines : bool, optional
