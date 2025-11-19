@@ -33,16 +33,74 @@ in the ``ruff.toml`` configuration file. When requesting to push to DIPY, the
 compliance to the set of rules is automatically checked using a GitHub Actions
 workflow.
 
-In order to check the compliance locally, developers should install the
-``[style]`` dependencies::
+Pre-commit Setup
+-----------------
 
-  pip install -e .[style]
+Pre-commit is a framework for managing and maintaining multi-language pre-commit
+hooks. It helps catch issues before they are committed to the repository, ensuring
+code quality and consistency. DIPY's pre-commit configuration includes:
 
-The git hook scripts need to be installed then running::
+* **ruff**: A fast Python linter and formatter
+* **codespell**: Spell checker for code and documentation
+* **generate_requirements.py**: Custom hook to keep requirements files synchronized
 
-  pre-commit install
+Setting up pre-commit
+^^^^^^^^^^^^^^^^^^^^^^
 
-``pre-commit`` will then run automatically on ``git commit``.
+1. Install the style dependencies (includes pre-commit and ruff)::
+
+     pip install -e .[style]
+
+2. Install the git hook scripts::
+
+     pre-commit install
+
+   This installs pre-commit into your git hooks. After this, pre-commit will
+   run automatically on every ``git commit``.
+
+Using pre-commit
+^^^^^^^^^^^^^^^^
+
+Once installed, pre-commit will automatically run on modified files when you commit::
+
+  git commit -m "Your commit message"
+
+If any hooks fail, the commit will be aborted. The hooks may automatically fix
+some issues (like formatting). Review the changes and stage them::
+
+  git add <fixed-files>
+  git commit -m "Your commit message"
+
+You can also manually run pre-commit on all files::
+
+  pre-commit run --all-files
+
+Or on specific files::
+
+  pre-commit run --files path/to/file.py
+
+Skipping hooks (use sparingly)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In rare cases, you may need to skip pre-commit hooks. You can do this with::
+
+  git commit --no-verify -m "Your commit message"
+
+**Note:** Only skip hooks when absolutely necessary, as CI checks will still
+enforce these rules.
+
+Updating pre-commit hooks
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To update the pre-commit hooks to their latest versions::
+
+  pre-commit autoupdate
+
+This will update the hooks specified in ``.pre-commit-config.yaml`` to the
+latest available versions.
+
+Editor Integration
+^^^^^^^^^^^^^^^^^^
 
 Most text editors can be configured to check the compliance of your code with
 the set of rules specified in the ``ruff.toml`` file. Beyond the aspects
