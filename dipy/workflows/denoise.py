@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 import shutil
 
 import numpy as np
@@ -129,10 +130,12 @@ class NLMeansFlow(Workflow):
     def run(
         self,
         input_files,
-        sigma=0,
+        sigma=(0,),
         patch_radius=1,
         block_radius=5,
         rician=True,
+        num_threads=None,
+        method="blockwise",
         out_dir="",
         out_denoised="dwi_nlmeans.nii.gz",
     ):
@@ -147,8 +150,9 @@ class NLMeansFlow(Workflow):
         input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        sigma : float, optional
+        sigma : variable float, optional
             Sigma parameter to pass to the nlmeans algorithm.
+            if this value is 0, we estimate a sigma.
         patch_radius : int, optional
             patch size is ``2 x patch_radius + 1``.
         block_radius : int, optional
@@ -156,6 +160,11 @@ class NLMeansFlow(Workflow):
         rician : bool, optional
             If True the noise is estimated as Rician, otherwise Gaussian noise
             is assumed.
+        num_threads : int, optional
+            Number of OpenMP threads to use for parallel processing. If None,
+            uses all available CPU threads. Set to 1 to disable parallel processing.
+        method : str, optional
+            Algorithm method to use: 'classic' or 'blockwise'.
         out_dir : string or Path, optional
             Output directory.
         out_denoised : string, optional
@@ -166,6 +175,9 @@ class NLMeansFlow(Workflow):
         .. footbibliography::
 
         """
+        if isinstance(sigma, (Sequence, np.ndarray)) and len(sigma) == 1:
+            sigma = float(sigma[0])
+
         io_it = self.get_io_iterator()
         for fpath, odenoised in io_it:
             if self._skip:
@@ -175,7 +187,7 @@ class NLMeansFlow(Workflow):
                 logger.info(f"Denoising {fpath}")
                 data, affine, image = load_nifti(fpath, return_img=True)
 
-                if sigma == 0:
+                if isinstance(sigma, float) and sigma == 0:
                     logger.info("Estimating sigma")
                     sigma = estimate_sigma(data)
                     logger.debug(f"Found sigma {sigma}")
@@ -186,6 +198,8 @@ class NLMeansFlow(Workflow):
                     patch_radius=patch_radius,
                     block_radius=block_radius,
                     rician=rician,
+                    num_threads=num_threads,
+                    method=method,
                 )
                 save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 
