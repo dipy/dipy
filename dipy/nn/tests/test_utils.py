@@ -16,9 +16,12 @@ def test_norm(rng=None):
 
 @set_random_number_generator()
 def test_transform(rng=None):
-    temp = rng.random((30, 31, 32))
-    temp2, affine, mid_shape, offset_array, scale, crop_vs, pad_vs = transform_img(
-        temp, np.eye(4), init_shape=(32, 32, 32), voxsize=np.ones(3) * 2
+    temp = rng.random((28, 30, 34))
+    temp2, params = transform_img(
+        temp,
+        np.eye(4),
+        target_voxsize=tuple(np.ones(3) * 2),
+        final_size=(14, 15, 16),
     )
     with warnings.catch_warnings():
         scipy_affine_txfm_msg = (
@@ -29,15 +32,5 @@ def test_transform(rng=None):
         warnings.filterwarnings(
             "ignore", message=scipy_affine_txfm_msg, category=UserWarning
         )
-        temp2 = recover_img(
-            temp2,
-            affine,
-            mid_shape,
-            temp.shape,
-            offset_array,
-            np.ones(3) * 2,
-            scale,
-            crop_vs,
-            pad_vs,
-        )
+        temp2, _ = recover_img(temp2, params)
     np.testing.assert_almost_equal(np.array(temp.shape), np.array(temp2.shape))
