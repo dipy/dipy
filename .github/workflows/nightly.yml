@@ -46,7 +46,7 @@ jobs:
         shell: bash
         run: |
           if [ "schedule" == "${{ github.event_name }}" ]; then echo "BUILD_COMMIT=master" >> $GITHUB_ENV; else echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" >> $GITHUB_ENV; fi
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ env.BUILD_COMMIT }}
@@ -100,7 +100,7 @@ jobs:
         shell: bash
         run: |
           if [ "schedule" == "${{ github.event_name }}" ]; then echo "BUILD_COMMIT=master" >> $GITHUB_ENV; else echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" >> $GITHUB_ENV; fi
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ env.BUILD_COMMIT }}
@@ -141,7 +141,7 @@ jobs:
         shell: bash
         run: |
           if [ "schedule" == "${{ github.event_name }}" ]; then echo "BUILD_COMMIT=master" >> $GITHUB_ENV; else echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" >> $GITHUB_ENV; fi
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ env.BUILD_COMMIT }}
