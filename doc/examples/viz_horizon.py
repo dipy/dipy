@@ -55,7 +55,6 @@ from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker import deterministic_tracking
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
-from dipy.viz import has_fury
 
 fury, has_fury, setup_module = optional_package("fury")
 
@@ -82,7 +81,7 @@ from dipy.viz import horizon
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 
-# Extract b0 image (first volume)
+# Extract the first b0 image (this dataset has multiple b0 volumes)
 b0_data = data[..., 0]
 
 ###############################################################################
@@ -168,14 +167,13 @@ sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 ###########################################################################
 # Now visualize with clustering enabled. Clustering groups similar
 # streamlines together, making it easier to explore large tractography
-# datasets. We also overlay the tractography on FA and the white matter mask
-# for better anatomical context.
+# datasets. We also overlay the tractography on FA for anatomical context.
 
 tractograms = [sft]
 
 horizon(
     tractograms=tractograms,
-    images=[(fa_data, affine, "fa.nii.gz"), (white_matter_mask, affine, "wm.nii.gz")],
+    images=[(fa_data, affine, "fa.nii.gz")],
     cluster=True,  # Enable QuickBundlesX clustering
     cluster_thr=15.0,  # Distance threshold in mm
     length_gt=30,  # Filter: show streamlines > 30mm
@@ -192,6 +190,8 @@ if not interactive:
 ###############################################################################
 # Visualizing Peak Directions
 # ============================
+
+logger.info("Computing peaks...")
 
 # Compute peaks from the tensor model using the white matter mask
 dti_peaks = peaks_from_model(
@@ -276,3 +276,8 @@ if not interactive:
 # interface tutorial at :ref:`viz_flow`.
 #
 # See :footcite:p:`Garyfallidis2019` for further details about Horizon.
+#
+# References
+# ----------
+#
+# .. footbibliography::
