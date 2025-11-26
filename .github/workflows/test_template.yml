@@ -123,10 +123,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.dipy
-        key: dipy-data-${{ runner.os }}-${{ hashFiles('dipy/data/fetcher.py') }}
+        key: dipy-downloaded-data-${{ hashFiles('dipy/data/fetcher.py') }}
         restore-keys: |
-          dipy-data-${{ runner.os }}-
-          dipy-data-
+          dipy-downloaded-data-
     - name: Install DIPY
       run: |
         if [ "${{ inputs.use-pre }}" == "true" ]; then
