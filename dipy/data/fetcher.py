@@ -2771,34 +2771,30 @@ def read_bundles_2_subjects(
     .. footbibliography::
 
     """
-    dname = Path(dipy_home) / "exp_bundles_and_maps", "bundles_2_subjects"
+    dname = Path(dipy_home) / "exp_bundles_and_maps" / "bundles_2_subjects"
 
     from dipy.tracking.streamline import Streamlines
 
     res = {}
 
     if "t1" in metrics:
-        data, affine = load_nifti(Path(dname) / subj_id, "t1_warped.nii.gz")
+        data, affine = load_nifti(Path(dname) / subj_id / "t1_warped.nii.gz")
         res["t1"] = data
 
     if "fa" in metrics:
-        fa, affine = load_nifti(Path(dname) / subj_id, "fa_1x1x1.nii.gz")
+        fa, affine = load_nifti(Path(dname) / subj_id / "fa_1x1x1.nii.gz")
         res["fa"] = fa
 
     res["affine"] = affine
-
     for bun in bundles:
         streams = load_tractogram(
-            Path(dname) / subj_id,
-            "bundles",
-            f"bundles_{bun}.trk",
+            Path(dname) / subj_id / "bundles" / f"bundles_{bun}.trk",
             "same",
             bbox_valid_check=False,
         ).streamlines
 
         streamlines = Streamlines(streams)
         res[bun] = streamlines
-
     return res
 
 
