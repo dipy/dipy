@@ -92,25 +92,31 @@ class Horizon:
         roi_colors=(1, 0, 0),
         surface_colors=((1, 0, 0),),
     ):
-        """Interactive medical visualization - Invert the Horizon!
+        """Orchestrate interactive medical visualization for multimodal data.
+
+        Invert the Horizon! The Horizon class acts as a central controller for
+        visualizing medical imaging data, including tractograms, volumetric images,
+        and surfaces. It manages the 3D scene, user interactions, and optional
+        processing pipelines such as QuickBundlesX clustering
         :footcite:p:`Garyfallidis2019`.
 
         Parameters
         ----------
-        tractograms : sequence of StatefulTractograms
+        tractograms : sequence of StatefulTractograms, optional
             StatefulTractograms are used for making sure that the coordinate
             systems are correct
-        images : sequence of tuples
+        images : sequence of tuples, optional
             Each tuple contains data and affine
-        pams : sequence of PeakAndMetrics
+        pams : sequence of PeakAndMetrics, optional
             Contains peak directions and spherical harmonic coefficients
-        surfaces : sequence of tuples
+        surfaces : sequence of tuples, optional
             Each tuple contains vertices and faces
-        cluster : bool
-            Enable QuickBundlesX clustering
+        cluster : bool, optional
+            If True, applies QuickBundlesX clustering to the input tractograms
+            for real-time simplification and grouping of streamlines.
         rgb : bool, optional
             Enable the color image (rgb only, alpha channel will be ignored).
-        cluster_thr : float
+        cluster_thr : float, optional
             Distance threshold used for clustering. Default value 15.0 for
             small animal data you may need to use something smaller such
             as 2.0. The threshold is in mm. For this parameter to be active
@@ -123,34 +129,34 @@ class Horizon:
             should only be applied to one of the 2 types, then use the
             options 'tracts' and 'rois' for the tractograms and the ROIs
             respectively.
-        length_gt : float
+        length_gt : float, optional
             Clusters with average length greater than ``length_gt`` amount
             in mm will be shown.
-        length_lt : float
+        length_lt : float, optional
             Clusters with average length less than ``length_lt`` amount in mm
             will be shown.
-        clusters_gt : int
+        clusters_gt : int, optional
             Clusters with size greater than ``clusters_gt`` will be shown.
-        clusters_lt : int
+        clusters_lt : int, optional
             Clusters with size less than ``clusters_lt`` will be shown.
-        world_coords : bool
+        world_coords : bool, optional
             Show data in their world coordinates (not native voxel coordinates)
             Default True.
-        interactive : bool
+        interactive : bool, optional
             Allow user interaction. If False then Horizon goes on stealth mode
             and just saves pictures.
-        out_png : string
+        out_png : string, optional
             Filename of saved picture.
-        recorded_events : string
+        recorded_events : string, optional
             File path to replay recorded events
-        return_showm : bool
+        return_showm : bool, optional
             Return ShowManager object. Used only at Python level. Can be used
             for extending Horizon's capabilities externally and for testing
             purposes.
-        bg_color : ndarray or list or tuple
+        bg_color : ndarray or list or tuple, optional
             Define the background color of the scene.
             Default is black (0, 0, 0)
-        order_transparent : bool
+        order_transparent : bool, optional
             Default True. Use depth peeling to sort transparent objects.
             If True also enables anti-aliasing.
         buan : bool, optional
