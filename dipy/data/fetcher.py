@@ -2778,27 +2778,26 @@ def read_bundles_2_subjects(
     res = {}
 
     if "t1" in metrics:
-        data, affine = load_nifti(Path(dname) / subj_id, "t1_warped.nii.gz")
-        res["t1"] = data
+       
+       base_path = dname[0] / dname[1]
+       data, affine = load_nifti(base_path / subj_id/ "t1_warped.nii.gz")
+        
+    res["t1"] = data
 
     if "fa" in metrics:
-        fa, affine = load_nifti(Path(dname) / subj_id, "fa_1x1x1.nii.gz")
+        fa, affine = load_nifti(base_path / subj_id / "fa_1x1x1.nii.gz")
         res["fa"] = fa
 
     res["affine"] = affine
-
     for bun in bundles:
         streams = load_tractogram(
-            Path(dname) / subj_id,
-            "bundles",
-            f"bundles_{bun}.trk",
+            base_path / subj_id / "bundles" / f"bundles_{bun}.trk",
             "same",
             bbox_valid_check=False,
         ).streamlines
-
+        
         streamlines = Streamlines(streams)
         res[bun] = streamlines
-
     return res
 
 
