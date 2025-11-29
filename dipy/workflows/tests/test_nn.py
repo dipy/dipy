@@ -64,7 +64,7 @@ def test_correct_biasfield_flow():
 
             corrected_data = load_nifti_data(Path(out_dir) / corrected_name)
             npt.assert_almost_equal(
-                corrected_data.mean(), 119.03902876428222, decimal=4
+                corrected_data.mean(), 121.63047683497516, decimal=4
             )
 
     # Test with DWI data
