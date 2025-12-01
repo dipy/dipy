@@ -36,12 +36,12 @@ workflow.
 Pre-commit Setup
 -----------------
 
-Pre-commit is a framework for managing and maintaining multi-language pre-commit
+`Pre-commit <https://pre-commit.com/>`_ is a framework for managing and maintaining multi-language pre-commit
 hooks. It helps catch issues before they are committed to the repository, ensuring
 code quality and consistency. DIPY's pre-commit configuration includes:
 
-* **ruff**: A fast Python linter and formatter
-* **codespell**: Spell checker for code and documentation
+* `**ruff** <https://docs.astral.sh/ruff/>`_: A fast Python linter and formatter
+* `**codespell** <https://github.com/codespell-project/codespell>`_: Spell checker for code and documentation
 * **generate_requirements.py**: Custom hook to keep requirements files synchronized
 
 Setting up pre-commit
@@ -55,8 +55,8 @@ Setting up pre-commit
 
      pre-commit install
 
-   This installs pre-commit into your git hooks. After this, pre-commit will
-   run automatically on every ``git commit``.
+This installs pre-commit into your git hooks. After this, pre-commit will
+run automatically on every ``git commit``.
 
 Using pre-commit
 ^^^^^^^^^^^^^^^^
