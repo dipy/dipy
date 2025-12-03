@@ -1247,7 +1247,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         and moving image's grids to points in the reference image's grid.
 
         Notes
-        -------
+        -----
         this is used to "deform" the reference image (which is computed
         iteratively by the optimization process) "toward" the static and moving
         images, respectively, which might be counterintuitive.
