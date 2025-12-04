@@ -79,16 +79,6 @@ Or on specific files::
 
   pre-commit run --files path/to/file.py
 
-Skipping hooks (use sparingly)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-In rare cases, you may need to skip pre-commit hooks. You can do this with::
-
-  git commit --no-verify -m "Your commit message"
-
-**Note:** Only skip hooks when absolutely necessary, as CI checks will still
-enforce these rules.
-
 Updating pre-commit hooks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
