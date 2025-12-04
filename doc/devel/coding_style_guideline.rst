@@ -40,8 +40,8 @@ Pre-commit Setup
 hooks. It helps catch issues before they are committed to the repository, ensuring
 code quality and consistency. DIPY's pre-commit configuration includes:
 
-* `**ruff** <https://docs.astral.sh/ruff/>`_: A fast Python linter and formatter
-* `**codespell** <https://github.com/codespell-project/codespell>`_: Spell checker for code and documentation
+* `ruff <https://docs.astral.sh/ruff/>`_: A fast Python linter and formatter
+* `codespell <https://github.com/codespell-project/codespell>`_: Spell checker for code and documentation
 * **generate_requirements.py**: Custom hook to keep requirements files synchronized
 
 Setting up pre-commit
