@@ -17,7 +17,8 @@ from dipy.direction import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.reconst.shm import CsaOdfModel
-from dipy.segment.mask import median_otsu
+from dipy.segment.mask import median_otsu, crop, bounding_box
+
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 
@@ -27,8 +28,19 @@ bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs=bvecs)
 
 maskdata, mask = median_otsu(
-    data, vol_idx=range(10, 50), median_radius=3, numpass=1, autocrop=True, dilate=2
+    data, vol_idx=range(10, 50), median_radius=3, numpass=1, dilate=2
 )
+
+#We crop the data and mask to the smallest possible region that contains all the non-zero voxels.
+#The ``crop`` function requires the volume to crop and the minimum and maximum indices for each dimension.
+#The maskdata is cropped to the smallest possible region that contains all the non-zero voxels.
+#The mask is cropped to the smallest possible region that contains all the non-zero voxels.
+
+mins, maxs = bounding_box(mask)
+maskdata = crop(maskdata, mins, maxs)
+mask = crop(mask, mins, maxs)
+
+print(f"Data shape: {maskdata.shape}")
 
 ###############################################################################
 # We instantiate our CSA model with spherical harmonic order ($l$) of 4
