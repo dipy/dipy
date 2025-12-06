@@ -15,7 +15,7 @@ import numpy as np
 from dipy.core.histeq import histeq
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
-from dipy.segment.mask import median_otsu
+from dipy.segment.mask import median_otsu, crop, bounding_box
 
 ###############################################################################
 # Download and read the data for this tutorial.
@@ -66,15 +66,17 @@ plt.savefig(f"{fname}_median_otsu.png", bbox_inches="tight")
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# An application of median_otsu for brain segmentation.
-#
-#
-# ``median_otsu`` can also automatically crop the outputs to remove the largest
-# possible number of background voxels. This makes outputted data significantly
-# smaller. Auto-cropping in ``median_otsu`` is activated by setting the
-# ``autocrop`` parameter to ``True``.
+# We can crop the outputs to remove the largest possible number of background voxels.
+# This makes outputted data significantly smaller. To do this, we first compute
+# the bounding box of the mask using ``bounding_box``, which returns the minimum
+# and maximum indices for each dimension where the mask is non-zero. Then we use
+# ``crop`` to crop both the mask and the masked data to these bounding box dimensions.
 
-b0_mask_crop, mask_crop = median_otsu(data, median_radius=4, numpass=4, autocrop=True)
+b0_mask, mask = median_otsu(data, median_radius=4, numpass=4)
+
+mins,maxs = bounding_box(mask)
+b0_mask_crop = crop(b0_mask, mins, maxs)
+mask_crop = crop(mask, mins, maxs)
 
 ###############################################################################
 # Saving cropped data as demonstrated previously.
