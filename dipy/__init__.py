@@ -60,6 +60,7 @@ def get_info():
 submodules = [
     "align",
     "core",
+    "correct",
     "data",
     "denoise",
     "direction",
