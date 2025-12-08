@@ -96,7 +96,7 @@ First of all, we mask and crop the data. This is a quick way to avoid
 calculating Tensors on the background of the image. This is done using DIPY_'s
 ``mask`` module.
 """
-from dipy.segment.mask import bounding_box, crop, median_otsu
+from dipy.segment.mask import median_otsu
 
 maskdata, mask = median_otsu(
     data, vol_idx=range(10, 50), median_radius=3, numpass=1, dilate=2, autocrop=True

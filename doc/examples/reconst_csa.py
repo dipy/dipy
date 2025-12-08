@@ -17,7 +17,7 @@ from dipy.direction import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.reconst.shm import CsaOdfModel
-from dipy.segment.mask import median_otsu, crop, bounding_box
+from dipy.segment.mask import bounding_box, crop, median_otsu
 from dipy.viz import actor, window
 
 ###############################################################################
@@ -44,11 +44,11 @@ print(f"data.shape {data.shape}")
 maskdata, mask = median_otsu(
     data, vol_idx=range(10, 50), median_radius=3, numpass=1, dilate=2
 )
+
 """
-We crop the data and mask to the smallest possible region that contains all the non-zero voxels.
-The ``crop`` function requires the volume to crop and the minimum and maximum indices for each dimension.
-The maskdata is cropped to the smallest possible region that contains all the non-zero voxels.
-The mask is cropped to the smallest possible region that contains all the non-zero voxels.
+We crop the data and mask to the smallest possible region that contains all
+the non-zero voxels. The ``crop`` function requires the volume to crop and
+the minimum and maximum indices for each dimension.
 """
 
 mins, maxs = bounding_box(mask)
