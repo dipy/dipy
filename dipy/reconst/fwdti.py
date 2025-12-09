@@ -676,9 +676,13 @@ def nls_iter(
         # converting evals and evecs to diffusion tensor elements
         evals = params[:3]
         evecs = params[3:12].reshape((3, 3))
-        dt = lower_triangular(vec_val_vect(evecs, evals))
 
         # Cholesky decomposition if requested
+        if cholesky:
+            evals = np.maximum(evals, 2e-7)
+
+        dt = lower_triangular(vec_val_vect(evecs, evals))
+
         if cholesky:
             dt = lower_triangular_to_cholesky(dt)
 
