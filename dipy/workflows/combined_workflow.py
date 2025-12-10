@@ -1747,6 +1747,14 @@ class AutoFlow(Workflow):
         out_report : str, optional
             Path to the report file.
         """
+
+        if list_pipelines:
+            current_log_level = logger.getEffectiveLevel()
+            logger.info(
+                templates.list_pipelines_with_descriptions(log_level=current_log_level)
+            )
+            return
+
         out_dir = os.path.abspath(out_dir) or os.getcwd()
 
         if list_pipelines:
