@@ -20,7 +20,7 @@ from dipy.data import (
     get_two_hcp842_bundles,
 )
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import load_trk, save_trk
+from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.io.utils import create_tractogram_header
 from dipy.segment.bundles import RecoBundles
 from dipy.viz import actor, window
@@ -34,11 +34,11 @@ atlas_file, atlas_folder = fetch_bundle_atlas_hcp842()
 atlas_file, all_bundles_files = get_bundle_atlas_hcp842()
 target_file = get_target_tractogram_hcp()
 
-sft_atlas = load_trk(atlas_file, "same", bbox_valid_check=False)
+sft_atlas = load_tractogram(atlas_file, "same", bbox_valid_check=False)
 atlas = sft_atlas.streamlines
 atlas_header = create_tractogram_header(atlas_file, *sft_atlas.space_attributes)
 
-sft_target = load_trk(target_file, "same", bbox_valid_check=False)
+sft_target = load_tractogram(target_file, "same", bbox_valid_check=False)
 target = sft_target.streamlines
 target_header = create_tractogram_header(target_file, *sft_target.space_attributes)
 
@@ -144,7 +144,7 @@ if interactive:
 # Arcuate Fasciculus Left model bundle.
 
 model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
-sft_af_l = load_trk(model_af_l_file, reference="same", bbox_valid_check=False)
+sft_af_l = load_tractogram(model_af_l_file, reference="same", bbox_valid_check=False)
 model_af_l = sft_af_l.streamlines
 
 interactive = False
@@ -202,18 +202,18 @@ if interactive:
 #
 #
 #
-# Save the bundle as a trk file. Let's save the recognized bundle in the
+# Save the bundle as a trx file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
 reco_af_l = StatefulTractogram(recognized_af_l, atlas_header, Space.RASMM)
-save_trk(reco_af_l, "AF_L_rec_1.trk", bbox_valid_check=False)
+save_tractogram(reco_af_l, "AF_L_rec_1.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
 reco_af_l = StatefulTractogram(target[af_l_labels], target_header, Space.RASMM)
-save_trk(reco_af_l, "AF_L_org_1.trk", bbox_valid_check=False)
+save_tractogram(reco_af_l, "AF_L_org_1.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Now, let's increase the reduction_thr and pruning_thr values.
@@ -251,18 +251,18 @@ if interactive:
 # Extracted Arcuate Fasciculus Left bundle
 #
 #
-# Save the bundle as a trk file. Let's save the recognized bundle in the
+# Save the bundle as a trx file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
 reco_af_l = StatefulTractogram(recognized_af_l, atlas_header, Space.RASMM)
-save_trk(reco_af_l, "AF_L_rec_2.trk", bbox_valid_check=False)
+save_tractogram(reco_af_l, "AF_L_rec_2.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
 reco_af_l = StatefulTractogram(target[af_l_labels], target_header, Space.RASMM)
-save_trk(reco_af_l, "AF_L_org_2.trk", bbox_valid_check=False)
+save_tractogram(reco_af_l, "AF_L_org_2.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Now, let's increase the reduction_thr and pruning_thr values further.
@@ -300,18 +300,18 @@ if interactive:
 # Extracted Arcuate Fasciculus Left bundle
 #
 #
-# Save the bundle as a trk file. Let's save the recognized bundle in the
+# Save the bundle as a trx file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
 reco_af_l = StatefulTractogram(recognized_af_l, atlas_header, Space.RASMM)
-save_trk(reco_af_l, "AF_L_rec_3.trk", bbox_valid_check=False)
+save_tractogram(reco_af_l, "AF_L_rec_3.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
 reco_af_l = StatefulTractogram(target[af_l_labels], target_header, Space.RASMM)
-save_trk(reco_af_l, "AF_L_org_3.trk", bbox_valid_check=False)
+save_tractogram(reco_af_l, "AF_L_org_3.trx", bbox_valid_check=False)
 
 
 ###############################################################################
@@ -358,23 +358,23 @@ if interactive:
 #
 #
 #
-# Save the bundle as a trk file. Let's save the recognized bundle in the
+# Save the bundle as a trx file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
 reco_af_l = StatefulTractogram(r_recognized_af_l, atlas_header, Space.RASMM)
-save_trk(reco_af_l, "AF_L_rec_refine.trk", bbox_valid_check=False)
+save_tractogram(reco_af_l, "AF_L_rec_refine.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
 reco_af_l = StatefulTractogram(target[r_af_l_labels], target_header, Space.RASMM)
-save_trk(reco_af_l, "AF_L_org_refine.trk", bbox_valid_check=False)
+save_tractogram(reco_af_l, "AF_L_org_refine.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Let's load Corticospinal Tract Left model bundle and visualize it.
 
-sft_cst_l = load_trk(model_cst_l_file, "same", bbox_valid_check=False)
+sft_cst_l = load_tractogram(model_cst_l_file, "same", bbox_valid_check=False)
 model_cst_l = sft_cst_l.streamlines
 
 interactive = False
@@ -430,18 +430,18 @@ if interactive:
 #
 #
 #
-# Save the bundle as a trk file. Let's save the recognized bundle in the
+# Save the bundle as a trx file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
 reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header, Space.RASMM)
-save_trk(reco_cst_l, "CST_L_rec_1.trk", bbox_valid_check=False)
+save_tractogram(reco_cst_l, "CST_L_rec_1.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
 reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header, Space.RASMM)
-save_trk(reco_cst_l, "CST_L_org_1.trk", bbox_valid_check=False)
+save_tractogram(reco_cst_l, "CST_L_org_1.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Now, let's increase the reduction_thr and pruning_thr values.
@@ -479,18 +479,18 @@ if interactive:
 # Extracted Corticospinal tract Left bundle
 #
 #
-# Save the bundle as a trk file. Let's save the recognized bundle in the
+# Save the bundle as a trx file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
 reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header, Space.RASMM)
-save_trk(reco_cst_l, "CST_L_rec_2.trk", bbox_valid_check=False)
+save_tractogram(reco_cst_l, "CST_L_rec_2.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
 reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header, Space.RASMM)
-save_trk(reco_cst_l, "CST_L_org_2.trk", bbox_valid_check=False)
+save_tractogram(reco_cst_l, "CST_L_org_2.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Now, let's increase the reduction_thr and pruning_thr values further.
@@ -530,18 +530,18 @@ if interactive:
 #
 #
 #
-# Save the bundle as a trk file. Let's save the recognized bundle in the
+# Save the bundle as a trx file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
 reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header, Space.RASMM)
-save_trk(reco_cst_l, "CST_L_rec_3.trk", bbox_valid_check=False)
+save_tractogram(reco_cst_l, "CST_L_rec_3.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
 reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header, Space.RASMM)
-save_trk(reco_cst_l, "CST_L_org_3.trk", bbox_valid_check=False)
+save_tractogram(reco_cst_l, "CST_L_org_3.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Let's apply auto-calibrated RecoBundles on the output of standard
@@ -586,18 +586,18 @@ if interactive:
 # Extracted refined Corticospinal tract Left bundle
 #
 #
-# Save the bundle as a trk file. Let's save the recognized bundle in the
+# Save the bundle as a trx file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
 
 reco_cst_l = StatefulTractogram(r_recognized_cst_l, atlas_header, Space.RASMM)
-save_trk(reco_cst_l, "CST_L_rec_refine.trk", bbox_valid_check=False)
+save_tractogram(reco_cst_l, "CST_L_rec_refine.trx", bbox_valid_check=False)
 
 ###############################################################################
 # Let's save the recognized bundle in the original space of the subject
 # anatomy.
 
 reco_cst_l = StatefulTractogram(target[r_cst_l_labels], target_header, Space.RASMM)
-save_trk(reco_cst_l, "CST_L_org_refine.trk", bbox_valid_check=False)
+save_tractogram(reco_cst_l, "CST_L_org_refine.trx", bbox_valid_check=False)
 
 ###############################################################################
 # This example shows how changing different threshold parameters can change the

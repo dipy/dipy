@@ -261,6 +261,7 @@ enable = true
 files = [
     "viz_advanced.py",
     "viz_bundles.py",
+    "viz_horizon.py",
     "viz_roi_contour.py",
     "viz_slice.py",
 ]

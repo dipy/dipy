@@ -1,9 +1,7 @@
 from bisect import bisect
 from collections import OrderedDict
 from copy import deepcopy
-import enum
 from itertools import product
-import logging
 
 from nibabel.affines import apply_affine
 from nibabel.streamlines.tractogram import (
@@ -15,14 +13,14 @@ import numpy as np
 
 from dipy.io.dpy import Streamlines
 from dipy.io.utils import (
+    Origin,
+    Space,
     get_reference_info,
     is_header_compatible,
     is_reference_info_valid,
 )
 from dipy.testing.decorators import warning_for_keywords
-
-logger = logging.getLogger("StatefulTractogram")
-logger.setLevel(level=logging.INFO)
+from dipy.utils.logging import logger
 
 
 def set_sft_logger_level(log_level):
@@ -35,21 +33,6 @@ def set_sft_logger_level(log_level):
         Log level for the StatefulTractogram only
     """
     logger.setLevel(level=log_level)
-
-
-class Space(enum.Enum):
-    """Enum to simplify future change to convention"""
-
-    VOX = "vox"
-    VOXMM = "voxmm"
-    RASMM = "rasmm"
-
-
-class Origin(enum.Enum):
-    """Enum to simplify future change to convention"""
-
-    NIFTI = "center"
-    TRACKVIS = "corner"
 
 
 class StatefulTractogram:
@@ -81,11 +64,11 @@ class StatefulTractogram:
             Reference that provides the spatial attributes.
             Typically a nifti-related object from the native diffusion used for
             streamlines generation
-        space : Enum (dipy.io.stateful_tractogram.Space)
+        space : Enum (dipy.io.utils.Space)
             Current space in which the streamlines are (vox, voxmm or rasmm)
             After tracking the space is VOX, after loading with nibabel
             the space is RASMM
-        origin : Enum (dipy.io.stateful_tractogram.Origin), optional
+        origin : Enum (dipy.io.utils.Origin), optional
             Current origin in which the streamlines are (center or corner)
             After loading with nibabel the origin is CENTER
         data_per_point : dict, optional
@@ -153,7 +136,7 @@ class StatefulTractogram:
                     "TrkFile, Nifti1Header or trk.header (dict)."
                 )
 
-        (self._affine, self._dimensions, self._voxel_sizes, self._voxel_order) = (
+        self._affine, self._dimensions, self._voxel_sizes, self._voxel_order = (
             space_attributes
         )
         self._inv_affine = np.linalg.inv(self._affine).astype(np.float32)
@@ -233,7 +216,7 @@ class StatefulTractogram:
             self._affine, formatter={"float_kind": lambda x: f"{x:.6f}"}
         )
         vox_sizes = np.array2string(
-            self._voxel_sizes, formatter={"float_kind": lambda x: "{x:.2f}"}
+            self._voxel_sizes, formatter={"float_kind": lambda x: f"{x:.2f}"}
         )
         text = f"Affine: \n{affine}"
         text += f"\ndimensions: {np.array2string(self._dimensions)}"
@@ -499,6 +482,8 @@ class StatefulTractogram:
             self._voxmm_to_vox()
         elif self._space == Space.RASMM:
             self._rasmm_to_vox()
+        elif self._space == Space.LPSMM:
+            self._lpsmm_to_vox()
 
     def to_voxmm(self):
         """Safe function to transform streamlines and update state"""
@@ -506,6 +491,8 @@ class StatefulTractogram:
             self._vox_to_voxmm()
         elif self._space == Space.RASMM:
             self._rasmm_to_voxmm()
+        elif self._space == Space.LPSMM:
+            self._lpsmm_to_voxmm()
 
     def to_rasmm(self):
         """Safe function to transform streamlines and update state"""
@@ -513,6 +500,16 @@ class StatefulTractogram:
             self._vox_to_rasmm()
         elif self._space == Space.VOXMM:
             self._voxmm_to_rasmm()
+        elif self._space == Space.LPSMM:
+            self._lpsmm_to_rasmm()
+
+    def to_lpsmm(self):
+        if self._space == Space.VOX:
+            self._vox_to_lpsmm()
+        elif self._space == Space.VOXMM:
+            self._voxmm_to_lpsmm()
+        elif self._space == Space.RASMM:
+            self._rasmm_to_lpsmm()
 
     def to_space(self, target_space):
         """Safe function to transform streamlines to a particular space using
@@ -523,6 +520,8 @@ class StatefulTractogram:
             self.to_voxmm()
         elif target_space == Space.RASMM:
             self.to_rasmm()
+        elif target_space == Space.LPSMM:
+            self.to_lpsmm()
         else:
             logger.error(
                 "Unsupported target space, please use Enum in "
@@ -746,6 +745,64 @@ class StatefulTractogram:
         else:
             logger.warning("Wrong initial space for this function.")
 
+    def _lpsmm_to_rasmm(self):
+        """Unsafe function to transform vertices"""
+        if self._space == Space.LPSMM:
+            if self._tractogram.streamlines._data.size > 0:
+                flip_affine = np.diag([-1, -1, 1, 1])
+                self._tractogram.apply_affine(flip_affine)
+            self._space = Space.RASMM
+            logger.debug("Moved vertices from lpsmm to rasmm.")
+        else:
+            logger.warning("Wrong initial space for this function.")
+
+    def _rasmm_to_lpsmm(self):
+        """Unsafe function to transform vertices"""
+        if self._space == Space.RASMM:
+            if self._tractogram.streamlines._data.size > 0:
+                flip_affine = np.diag([-1, -1, 1, 1])
+                self._tractogram.apply_affine(flip_affine)
+            self._space = Space.LPSMM
+            logger.debug("Moved vertices from lpsmm to rasmm.")
+        else:
+            logger.warning("Wrong initial space for this function.")
+
+    def _lpsmm_to_voxmm(self):
+        """Unsafe function to transform vertices"""
+        if self._space == Space.LPSMM:
+            self._lpsmm_to_rasmm()
+            self._rasmm_to_voxmm()
+            logger.debug("Moved vertices from lpsmm to voxmm.")
+        else:
+            logger.warning("Wrong initial space for this function.")
+
+    def _voxmm_to_lpsmm(self):
+        """Unsafe function to transform vertices"""
+        if self._space == Space.VOXMM:
+            self._voxmm_to_rasmm()
+            self._rasmm_to_lpsmm()
+            logger.debug("Moved vertices from voxmm to lpsmm.")
+        else:
+            logger.warning("Wrong initial space for this function.")
+
+    def _lpsmm_to_vox(self):
+        """Unsafe function to transform vertices"""
+        if self._space == Space.LPSMM:
+            self._lpsmm_to_rasmm()
+            self._rasmm_to_vox()
+            logger.debug("Moved vertices from lpsmm to vox.")
+        else:
+            logger.warning("Wrong initial space for this function.")
+
+    def _vox_to_lpsmm(self):
+        """Unsafe function to transform vertices"""
+        if self._space == Space.VOX:
+            self._vox_to_rasmm()
+            self._rasmm_to_lpsmm()
+            logger.debug("Moved vertices from vox to lpsmm.")
+        else:
+            logger.warning("Wrong initial space for this function.")
+
     def _shift_voxel_origin(self):
         """Unsafe function to switch the origin from center to corner
         and vice versa"""
@@ -753,10 +810,11 @@ class StatefulTractogram:
             shift = np.asarray([0.5, 0.5, 0.5])
             if self._space == Space.VOXMM:
                 shift = shift * self._voxel_sizes
-            elif self._space == Space.RASMM:
+            elif self._space == Space.RASMM or self._space == Space.LPSMM:
                 tmp_affine = np.eye(4)
                 tmp_affine[0:3, 0:3] = self._affine[0:3, 0:3]
-                shift = apply_affine(tmp_affine, shift)
+                flip = [1, 1, 1] if self._space == Space.RASMM else [-1, -1, 1]
+                shift = apply_affine(tmp_affine, shift) * flip
             if self._origin == Origin.TRACKVIS:
                 shift *= -1
 

@@ -1,5 +1,5 @@
 import logging
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 import warnings
 
@@ -12,6 +12,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.peaks import load_pam
 from dipy.reconst.shm import descoteaux07_legacy_msg, sph_harm_ind_list
+from dipy.testing import assert_warns
 from dipy.workflows.reconst import ReconstCSDFlow, ReconstQBallBaseFlow, ReconstSDTFlow
 
 logging.getLogger().setLevel(logging.INFO)
@@ -72,7 +73,7 @@ def reconst_flow_core(flow, **kwargs):
         data_path, bval_path, bvec_path = get_fnames(name="small_64D")
         volume, affine = load_nifti(data_path)
         mask = np.ones_like(volume[:, :, :, 0])
-        mask_path = pjoin(out_dir, "tmp_mask.nii.gz")
+        mask_path = Path(out_dir) / "tmp_mask.nii.gz"
         save_nifti(mask_path, mask.astype(np.uint8), affine)
 
         reconst_flow = flow()
@@ -129,8 +130,8 @@ def reconst_flow_core(flow, **kwargs):
             bvals[0] = 5.0
             bvecs = generate_bvecs(len(bvals))
 
-            tmp_bval_path = pjoin(out_dir, "tmp.bval")
-            tmp_bvec_path = pjoin(out_dir, "tmp.bvec")
+            tmp_bval_path = Path(out_dir) / "tmp.bval"
+            tmp_bvec_path = Path(out_dir) / "tmp.bvec"
             np.savetxt(tmp_bval_path, bvals)
             np.savetxt(tmp_bvec_path, bvecs.T)
             reconst_flow._force_overwrite = True
@@ -183,7 +184,7 @@ def reconst_flow_core(flow, **kwargs):
                 )
             else:
                 with npt.assert_raises(BaseException):
-                    npt.assert_warns(
+                    assert_warns(
                         UserWarning,
                         reconst_flow.run,
                         data_path,

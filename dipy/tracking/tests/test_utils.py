@@ -4,13 +4,14 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from dipy.testing import assert_true
+from dipy.testing import assert_true, assert_warns
 from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking import metrics
 from dipy.tracking._utils import _to_voxel_coordinates
 from dipy.tracking.streamline import transform_streamlines
 from dipy.tracking.utils import (
     _min_at,
+    clip_streamlines_to_target,
     connectivity_matrix,
     density_map,
     length,
@@ -230,6 +231,59 @@ def test_connectivity_matrix():
     npt.assert_equal(matrix[4, 3], matrix[4, 3])
 
 
+def test_connectivity_matrix_with_generator():
+    """Test connectivity_matrix works with generator inputs."""
+    label_volume = np.array([[[3, 0, 0], [0, 0, 5], [0, 0, 4]]])
+    streamlines = [
+        np.array([[0, 0, 0], [0, 1, 2], [0, 2, 2]], "float"),
+        np.array([[0, 0, 0], [0, 1, 1], [0, 2, 2]], "float"),
+        np.array([[0, 2, 2], [0, 1, 1], [0, 0, 0]], "float"),
+    ]
+
+    # Create a generator version of streamlines
+    def streamline_generator():
+        for sl in streamlines:
+            yield sl
+
+    # Test that generator input works
+    matrix = connectivity_matrix(
+        streamline_generator(), np.eye(4), label_volume, symmetric=False
+    )
+    expected = np.zeros((6, 6), "int")
+    expected[3, 4] = 2
+    expected[4, 3] = 1
+    npt.assert_array_equal(matrix, expected)
+
+    # Test with discard_stream_size parameter
+    matrix = connectivity_matrix(
+        streamline_generator(),
+        np.eye(4),
+        label_volume,
+        symmetric=False,
+        discard_stream_size=1,
+    )
+    npt.assert_array_equal(matrix, expected)
+
+    # Test inclusive mode with generator
+    expected_inclusive = np.zeros((6, 6), "int")
+    expected_inclusive[3, 4] = 2
+    expected_inclusive[4, 3] = 1
+    expected_inclusive[3, 5] = 1
+    expected_inclusive[5, 4] = 1
+    expected_inclusive[0, 3:5] = 1
+    expected_inclusive[3:5, 0] = 1
+
+    matrix = connectivity_matrix(
+        streamline_generator(),
+        np.eye(4),
+        label_volume,
+        symmetric=False,
+        inclusive=True,
+        discard_stream_size=1,
+    )
+    npt.assert_array_equal(matrix, expected_inclusive)
+
+
 def test_ndbincount():
     def check(expected):
         npt.assert_equal(bc[0, 0], expected[0])
@@ -352,6 +406,69 @@ def test_target_line_based_out_of_bounds():
         mask[1, 0, 0] = 1
         matched = list(target_line_based([streamline], np.eye(4), mask))
         assert len(matched) == expected_matched
+
+
+def test_clip_to_target():
+    aff = np.eye(4)
+
+    sl1 = np.zeros([5, 3])
+    sl1[:, 0] = np.arange(5)
+    sl1[:, 2] = 2
+    sl2 = sl1.copy()
+    sl2[:, 1] = 1
+    sl3 = sl1.copy()
+    sl3[:, 1] = 2
+    sl4 = sl1.copy()
+    sl4[:, 1] = 40
+
+    streamlines = [sl1] + [sl2] + [sl3]
+    streamlines_outside = [sl1] + [sl2] + [sl3] + [sl4]
+
+    # clipping to length 3 if streamline touches
+    roi1 = np.zeros([20, 20, 20])  # all clipped
+    roi1[3:6, 0:5, 0:5] = 1
+    new1 = list(clip_streamlines_to_target(streamlines, roi1, affine=aff))
+    npt.assert_array_equal([len(i) for i in new1], np.array([3, 3, 3]))
+
+    roi2 = np.zeros([20, 20, 20])  # one clipped
+    roi2[3:6, 1:5, 0:5] = 1
+    new2 = list(clip_streamlines_to_target(streamlines, roi2, affine=aff))
+    npt.assert_array_equal([len(i) for i in new2], np.array([5, 3, 3]))
+
+    roi3 = np.zeros([20, 20, 20])  # two clipped
+    roi3[3:6, 2:5, 0:5] = 1
+    new3 = list(clip_streamlines_to_target(streamlines, roi3, affine=aff))
+    npt.assert_array_equal([len(i) for i in new3], np.array([5, 5, 3]))
+
+    # check if sls pass through roi instead of terminate in it
+    roi4 = np.zeros([20, 20, 20])
+    roi4[3:4, 0:5, 0:5] = 1
+    new4 = list(clip_streamlines_to_target(streamlines, roi4, affine=aff))
+    npt.assert_array_equal([len(i) for i in new4], [len(i) for i in new1])
+
+    # check if roi on either side it picks bigger piece of streamline
+    roi5 = np.zeros([20, 20, 20])
+    roi5[4:5, 0:5, 0:5] = 1
+    new5 = list(clip_streamlines_to_target(streamlines, roi5, affine=aff))
+    npt.assert_array_equal([len(i) for i in new5], np.array([4, 4, 4]))
+
+    roi5 = np.zeros([20, 20, 20])
+    roi5[1:2, 0:5, 0:5] = 1
+    new5 = list(clip_streamlines_to_target(streamlines, roi5, affine=aff))
+    npt.assert_array_equal([len(i) for i in new5], np.array([4, 4, 4]))
+
+    # check value error for streamline outside of target mask dimensions
+    bad = clip_streamlines_to_target(streamlines_outside, roi1, affine=aff)
+    npt.assert_raises(ValueError, list, bad)
+
+    # Test smaller voxels
+    affine = np.array([[0.3, 0, 0, 0], [0, 0.2, 0, 0], [0, 0, 0.4, 0], [0, 0, 0, 1]])
+    new1 = list(clip_streamlines_to_target(streamlines, roi1, affine=affine))
+    npt.assert_array_equal([len(i) for i in new1], np.array([5, 5, 5]))
+    # Test with an affine that includes a translation
+    affine = np.array([[1, 0, 0, -1.0], [0, 1, 0, 0.5], [0, 0, 1, 0.5], [0, 0, 0, 1]])
+    new1 = list(clip_streamlines_to_target(streamlines, roi1, affine=affine))
+    npt.assert_array_equal(new1, np.array([]))
 
 
 def test_near_roi():
@@ -652,8 +769,8 @@ def test_reduce_rois():
     # Int and float input
     roi1 = np.zeros((4, 4, 4), dtype=int)
     roi2 = np.zeros((4, 4, 4), dtype=float)
-    npt.assert_warns(UserWarning, reduce_rois, [roi1], [True])
-    npt.assert_warns(UserWarning, reduce_rois, [roi2], [True])
+    assert_warns(UserWarning, reduce_rois, [roi1], [True])
+    assert_warns(UserWarning, reduce_rois, [roi2], [True])
 
 
 @set_random_number_generator()

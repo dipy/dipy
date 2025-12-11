@@ -35,6 +35,9 @@ data = np.squeeze(data)
 # (``median_radius`` and ``num_pass``) if extraction yields incorrect results
 # but the default parameters work well on most volumes. For this example,
 # we used 2 as ``median_radius`` and 1 as ``num_pass``
+# In case of holes or minor errors in the mask, add the argument
+# ``finalize_mask=True`` to apply a final step to the mask, which will fix those
+# issues.
 
 b0_mask, mask = median_otsu(data, median_radius=2, numpass=1)
 

@@ -1,8 +1,8 @@
 """Utility functions for file formats"""
 
-import logging
+import enum
 import numbers
-import os
+from pathlib import Path
 
 import nibabel as nib
 from nibabel import Nifti1Image
@@ -12,12 +12,31 @@ from trx import trx_file_memmap
 
 import dipy
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 pd, have_pd, _ = optional_package("pandas")
 
 if have_pd:
     import pandas as pd
+
+
+class Space(enum.Enum):
+    """Enum to simplify future change to convention"""
+
+    VOX = "vox"
+    VOXMM = "voxmm"
+    RASMM = "rasmm"
+    LPSMM = "lpsmm"
+
+
+class Origin(enum.Enum):
+    """Enum to simplify future change to convention"""
+
+    # TODO: maybe gifti and vtk should be different origins?
+    # Required to do mapping using numpy
+    NIFTI = "center"
+    TRACKVIS = "corner"
 
 
 def nifti1_symmat(image_data, *args, **kwargs):
@@ -189,11 +208,11 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
 
     if not affine.shape == (4, 4):
         all_valid = False
-        logging.warning("Transformation matrix must be 4x4")
+        logger.warning("Transformation matrix must be 4x4")
 
     if not affine[0:3, 0:3].any():
         all_valid = False
-        logging.warning("Rotation matrix cannot be all zeros")
+        logger.warning("Rotation matrix cannot be all zeros")
 
     if not len(dimensions) >= 3:
         all_valid = False
@@ -202,10 +221,10 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     for i in dimensions:
         if not isinstance(i, numbers.Integral):
             all_valid = False
-            logging.warning("Dimensions must be int.")
+            logger.warning("Dimensions must be int.")
         if i <= 0:
             all_valid = False
-            logging.warning("Dimensions must be above 0.")
+            logger.warning("Dimensions must be above 0.")
 
     if not len(voxel_sizes) >= 3:
         all_valid = False
@@ -213,10 +232,10 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     for i in voxel_sizes:
         if not isinstance(i, numbers.Number):
             all_valid = False
-            logging.warning("Voxel size must be int/float.")
+            logger.warning("Voxel size must be int/float.")
         if i <= 0:
             all_valid = False
-            logging.warning("Voxel size must be above 0.")
+            logger.warning("Voxel size must be above 0.")
 
     if not len(voxel_order) >= 3:
         all_valid = False
@@ -224,43 +243,15 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     for i in voxel_order:
         if not isinstance(i, str):
             all_valid = False
-            logging.warning("Voxel order must be string/char.")
+            logger.warning("Voxel order must be string/char.")
         if i not in ["R", "A", "S", "L", "P", "I"]:
             all_valid = False
-            logging.warning("Voxel order does not follow convention.")
+            logger.warning("Voxel order does not follow convention.")
 
     if only_3d_warning:
-        logging.warning("Only 3D (and above) reference are considered valid.")
+        logger.warning("Only 3D (and above) reference are considered valid.")
 
     return all_valid
-
-
-def split_name_with_gz(filename):
-    """
-    Returns the clean basename and extension of a file.
-    Means that this correctly manages the ".nii.gz" extensions.
-
-    Parameters
-    ----------
-    filename: str
-        The filename to clean
-
-    Returns
-    -------
-        base, ext : tuple(str, str)
-        Clean basename and the full extension
-    """
-    base, ext = os.path.splitext(filename)
-
-    if ext.lower() == ".gz":
-        # Test if we have a .nii additional extension
-        temp_base, add_ext = os.path.splitext(base)
-
-        if add_ext.lower() == ".nii" or add_ext.lower() == ".trk":
-            ext = add_ext + ext
-            base = temp_base
-
-    return base, ext
 
 
 def get_reference_info(reference):
@@ -275,18 +266,18 @@ def get_reference_info(reference):
     Returns
     -------
     output : tuple
-        - affine ndarray (4,4), np.float32, transformation of VOX to RASMM
+        - affine ndarray (4,4), np.float64, transformation of VOX to RASMM
         - dimensions ndarray (3,), int16, volume shape for each axis
         - voxel_sizes  ndarray (3,), float32, size of voxel for each axis
         - voxel_order, string, Typically 'RAS' or 'LPS'
     """
-
     is_nifti = False
     is_trk = False
     is_sft = False
     is_trx = False
-    if isinstance(reference, str):
-        _, ext = split_name_with_gz(reference)
+
+    if isinstance(reference, (str, Path)):
+        _, ext = split_filename_extension(reference)
         ext = ext.lower()
         if ext in [".nii", ".nii.gz"]:
             header = nib.load(reference).header
@@ -316,6 +307,8 @@ def get_reference_info(reference):
         header = reference
         is_trx = True
     elif isinstance(reference, dipy.io.stateful_tractogram.StatefulTractogram):
+        is_sft = True
+    elif isinstance(reference, dipy.io.stateful_surface.StatefulSurface):
         is_sft = True
 
     if is_nifti:
@@ -349,7 +342,7 @@ def get_reference_info(reference):
 
     is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order)
 
-    return affine.astype(np.float32), dimensions, voxel_sizes, voxel_order
+    return affine.astype(np.float64), dimensions, voxel_sizes, voxel_order
 
 
 def is_header_compatible(reference_1, reference_2):
@@ -379,19 +372,19 @@ def is_header_compatible(reference_1, reference_2):
 
     identical_header = True
     if not np.allclose(affine_1, affine_2, rtol=1e-03, atol=1e-03):
-        logging.error("Affine not equal")
+        logger.error("Affine not equal")
         identical_header = False
 
     if not np.array_equal(dimensions_1, dimensions_2):
-        logging.error("Dimensions not equal")
+        logger.error("Dimensions not equal")
         identical_header = False
 
     if not np.allclose(voxel_sizes_1, voxel_sizes_2, rtol=1e-03, atol=1e-03):
-        logging.error("Voxel_size not equal")
+        logger.error("Voxel_size not equal")
         identical_header = False
 
     if voxel_order_1 != voxel_order_2:
-        logging.error("Voxel_order not equal")
+        logger.error("Voxel_order not equal")
         identical_header = False
 
     return identical_header
@@ -431,7 +424,7 @@ def save_buan_profiles_hdf5(fname, dt, *, key=None):
 
     Parameters
     ----------
-    fname : string
+    fname : string or Path
         file name for saving the hdf5 file
     dt : Pandas DataFrame
         DataFrame to be saved as .h5 file
@@ -442,11 +435,10 @@ def save_buan_profiles_hdf5(fname, dt, *, key=None):
     """
 
     df = pd.DataFrame(dt)
-    filename_hdf5 = fname + ".h5"
+    filename_hdf5 = Path(fname).with_suffix(".h5")
 
     if key is None:
-        base_name_parts, _ = os.path.splitext(os.path.basename(fname))
-        key = base_name_parts.split(".")[0]
+        key, _ = split_filename_extension(fname)
 
     store = pd.HDFStore(filename_hdf5, complevel=9)
     store.append(key, df, data_columns=True, complevel=9)
@@ -460,7 +452,7 @@ def read_img_arr_or_path(data, *, affine=None):
 
     Parameters
     ----------
-    data : array or nib.Nifti1Image or str.
+    data : array or nib.Nifti1Image, str or Path.
         Either as a 3D/4D array or as a nifti image object, or as
         a string containing the full path to a nifti file.
 
@@ -478,10 +470,82 @@ def read_img_arr_or_path(data, *, affine=None):
         raise ValueError(
             "If data is provided as an array, an affine has ", "to be provided as well"
         )
-    if isinstance(data, str):
+    if isinstance(data, (str, Path)):
         data = nib.load(data)
     if isinstance(data, nib.Nifti1Image):
         if affine is None:
             affine = data.affine
         data = data.get_fdata()
     return data, affine
+
+
+def recursive_compare(d1, d2, level="root"):
+    if isinstance(d1, dict) and isinstance(d2, dict):
+        if d1.keys() != d2.keys():
+            s1 = set(d1.keys())
+            s2 = set(d2.keys())
+            common_keys = s1 & s2
+            if s1 - s2:
+                raise ValueError(f"Keys {s1 - s2} in d1 but not in d2")
+        else:
+            common_keys = set(d1.keys())
+
+        for k in common_keys:
+            recursive_compare(d1[k], d2[k], level=f"{level}.{k}")
+
+    elif isinstance(d1, list) and isinstance(d2, list):
+        if len(d1) != len(d2):
+            raise ValueError(f"Lists do not have the same length at level {level}")
+        common_len = min(len(d1), len(d2))
+
+        for i in range(common_len):
+            recursive_compare(d1[i], d2[i], level=f"{level}[{i}]")
+
+    else:
+        if np.dtype(d1).itemsize != np.dtype(d2).itemsize:
+            raise ValueError(f"Values {d1}, {d2} do not match at level {level}")
+
+
+def split_filename_extension(filename):
+    """Split  the filename and its extension(s).
+
+    In our field filename can have period in it (e.g. smoothwm.L.surf.gii)
+    At the moment only one double extension is supported (.nii.gz, .gii.gz)
+
+    Parameters
+    ----------
+    filename : str or Path
+        The input filename.
+
+    Returns
+    -------
+    name : str
+        The filename without its extension(s).
+    extension : str
+        The extension(s) of the filename, including the dot(s).
+    """
+    filename_str = str(filename).lower()
+    if (
+        filename_str.count(".gii") >= 2
+        or filename_str.count(".nii") >= 2
+        or filename_str.count(".gz") >= 2
+    ):
+        logger.warning(
+            "Filename contains more than two instances of .gii, .nii, or .gz."
+            " This may be risky or bad practice."
+        )
+
+    filename = Path(filename)
+
+    extensions = filename.suffixes
+    if len(extensions) > 1 and extensions[-1] == ".gz":
+        name = filename.with_suffix("").with_suffix("").name
+        extension = "".join(extensions[-2:])  # e.g., .nii.gz
+    elif len(extensions) >= 1:
+        name = filename.with_suffix("").name
+        extension = "".join(extensions[-1])
+    else:
+        name = filename.name
+        extension = "".join(extensions)
+
+    return str(name), extension

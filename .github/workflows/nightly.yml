@@ -46,11 +46,11 @@ jobs:
         shell: bash
         run: |
           if [ "schedule" == "${{ github.event_name }}" ]; then echo "BUILD_COMMIT=master" >> $GITHUB_ENV; else echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" >> $GITHUB_ENV; fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ env.BUILD_COMMIT }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         name: Install Python
         with:
           python-version: "3.12"
@@ -73,7 +73,7 @@ jobs:
             CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
       - name: Rename Python version
         run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
             name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
             path: ./dist/*.whl
@@ -100,11 +100,11 @@ jobs:
         shell: bash
         run: |
           if [ "schedule" == "${{ github.event_name }}" ]; then echo "BUILD_COMMIT=master" >> $GITHUB_ENV; else echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" >> $GITHUB_ENV; fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ env.BUILD_COMMIT }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         name: Install Python
         with:
           python-version: "3.12"
@@ -121,7 +121,7 @@ jobs:
             CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
       - name: Rename Python version
         run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
             name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
             path: ./dist/*.whl
@@ -141,11 +141,11 @@ jobs:
         shell: bash
         run: |
           if [ "schedule" == "${{ github.event_name }}" ]; then echo "BUILD_COMMIT=master" >> $GITHUB_ENV; else echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" >> $GITHUB_ENV; fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ env.BUILD_COMMIT }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         name: Install Python
         with:
           python-version: "3.12"
@@ -161,7 +161,7 @@ jobs:
       - name: Rename Python version
         shell: bash
         run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
             name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_arch }}
             path: ./dist/*.whl
@@ -179,11 +179,11 @@ jobs:
       - name: Rename Python version
         shell: bash
         run: echo "PY_VERSION=$(echo ${{ matrix.python-version }} | tr -d '.')" >> $GITHUB_ENV
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v6
         with:
           name: wheels-cp${{ env.PY_VERSION }}-manylinux2014-x86_64
           path: ./dist
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Test wheel
@@ -204,7 +204,7 @@ jobs:
       if: ${{ always() }} && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
       runs-on: ubuntu-latest
       steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v6
         id: download
         with:
           pattern: wheels-*

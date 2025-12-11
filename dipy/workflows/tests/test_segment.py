@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import nibabel as nib
@@ -12,7 +12,9 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.segment.mask import median_otsu
 from dipy.segment.tests.test_mrf import create_image
+from dipy.testing import assert_warns
 from dipy.tracking.streamline import Streamlines, set_number_of_points
+from dipy.utils.deprecator import ArgsDeprecationWarning
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.segment import (
     ClassifyTissueFlow,
@@ -31,23 +33,22 @@ def test_median_otsu_flow():
         save_masked = True
         median_radius = 3
         numpass = 3
-        autocrop = False
         vol_idx = "0,"
         dilate = 0
         finalize_mask = False
 
         mo_flow = MedianOtsuFlow()
-        mo_flow.run(
-            data_path,
-            out_dir=out_dir,
-            save_masked=save_masked,
-            median_radius=median_radius,
-            numpass=numpass,
-            autocrop=autocrop,
-            vol_idx=vol_idx,
-            dilate=dilate,
-            finalize_mask=finalize_mask,
-        )
+        with assert_warns(ArgsDeprecationWarning):
+            mo_flow.run(
+                data_path,
+                out_dir=out_dir,
+                save_masked=save_masked,
+                median_radius=median_radius,
+                numpass=numpass,
+                vol_idx=vol_idx,
+                dilate=dilate,
+                finalize_mask=finalize_mask,
+            )
 
         mask_name = mo_flow.last_generated_outputs["out_mask"]
         masked_name = mo_flow.last_generated_outputs["out_masked"]
@@ -60,14 +61,13 @@ def test_median_otsu_flow():
             vol_idx=vol_idx,
             median_radius=median_radius,
             numpass=numpass,
-            autocrop=autocrop,
             dilate=dilate,
         )
 
-        result_mask_data = load_nifti_data(pjoin(out_dir, mask_name))
+        result_mask_data = load_nifti_data(Path(out_dir) / mask_name)
         npt.assert_array_equal(result_mask_data.astype(np.uint8), mask)
 
-        result_masked = nib.load(pjoin(out_dir, masked_name))
+        result_masked = nib.load(Path(out_dir) / masked_name)
         result_masked_data = np.asanyarray(result_masked.dataobj)
 
         npt.assert_array_equal(np.round(result_masked_data), masked)
@@ -87,11 +87,11 @@ def test_recobundles_flow():
 
         f.extend(f2)
 
-        f2_path = pjoin(out_dir, "f2.trk")
+        f2_path = Path(out_dir) / "f2.trk"
         sft = StatefulTractogram(f2, data_path, Space.RASMM)
         save_tractogram(sft, f2_path, bbox_valid_check=False)
 
-        f1_path = pjoin(out_dir, "f1.trk")
+        f1_path = Path(out_dir) / "f1.trk"
         sft = StatefulTractogram(f, data_path, Space.RASMM)
         save_tractogram(sft, f1_path, bbox_valid_check=False)
 
@@ -137,7 +137,7 @@ def test_recobundles_flow():
 def test_classify_tissue_flow():
     with TemporaryDirectory() as out_dir:
         data = create_image()
-        data_path = pjoin(out_dir, "data.nii.gz")
+        data_path = Path(out_dir) / "data.nii.gz"
         nib.save(nib.Nifti1Image(data, np.eye(4)), data_path)
 
         args = {
@@ -174,8 +174,8 @@ def test_classify_tissue_flow():
         with TemporaryDirectory() as out_dir:
             data = np.random.rand(3, 3, 3, 7) * 100  # Simulated random data
             bvals = np.array([0, 100, 500, 1000, 1500, 2000, 3000])
-            data_path = pjoin(out_dir, "data.nii.gz")
-            bvals_path = pjoin(out_dir, "bvals")
+            data_path = Path(out_dir) / "data.nii.gz"
+            bvals_path = Path(out_dir) / "bvals"
             np.savetxt(bvals_path, bvals)
             nib.save(nib.Nifti1Image(data, np.eye(4)), data_path)
 

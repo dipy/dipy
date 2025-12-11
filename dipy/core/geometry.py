@@ -147,8 +147,8 @@ def cart2sphere(x, y, z):
 
     """
     r = np.sqrt(x * x + y * y + z * z)
-    cos = np.divide(z, r, where=r > 0)
-    theta = np.arccos(cos, where=(cos >= -1) & (cos <= 1))
+    cos = np.divide(z, r, where=r > 0, out=None)
+    theta = np.arccos(cos, where=(cos >= -1) & (cos <= 1), out=None)
     theta = np.where(r > 0, theta, 0.0)
     phi = np.arctan2(y, x)
     r, theta, phi = np.broadcast_arrays(r, theta, phi)
@@ -420,9 +420,9 @@ def sphere_distance(pts1, pts2, *, radius=None, check_radius=True):
 
     Examples
     --------
-    >>> print('%.4f' % sphere_distance([0,1],[1,0]))
+    >>> print(f'{sphere_distance([0,1],[1,0]):.4f}')
     1.5708
-    >>> print('%.4f' % sphere_distance([0,3],[3,0]))
+    >>> print(f'{sphere_distance([0,3],[3,0]):.4f}')
     4.7124
     """
     pts1 = np.asarray(pts1)

@@ -1,4 +1,4 @@
-import logging
+from collections.abc import Sequence
 import shutil
 
 import numpy as np
@@ -12,6 +12,7 @@ from dipy.denoise.patch2self import patch2self
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
+from dipy.utils.logging import logger
 from dipy.workflows.workflow import Workflow
 
 
@@ -47,10 +48,10 @@ class Patch2SelfFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bval_files : string
+        bval_files : string or Path
             bval file associated with the diffusion data.
         model : string, or initialized linear model object, optional
             This will determine the algorithm used to solve the set of linear
@@ -79,7 +80,7 @@ class Patch2SelfFlow(Workflow):
             non-negative values if set to True.
         ver : int, optional
             Version of the Patch2Self algorithm to use between  1 or 3.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_denoised : string, optional
             Name of the resulting denoised volume
@@ -97,9 +98,9 @@ class Patch2SelfFlow(Workflow):
         for fpath, bvalpath, odenoised in io_it:
             if self._skip:
                 shutil.copy(fpath, odenoised)
-                logging.warning("Denoising skipped for now.")
+                logger.warning("Denoising skipped for now.")
             else:
-                logging.info("Denoising %s", fpath)
+                logger.info(f"Denoising {fpath}")
                 data, affine, image = load_nifti(fpath, return_img=True)
                 bvals = np.loadtxt(bvalpath)
                 extra_args = {"patch_radius": patch_radius} if ver == 1 else {}
@@ -118,7 +119,7 @@ class Patch2SelfFlow(Workflow):
                 )
                 save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 
-                logging.info("Denoised volumes saved as %s", odenoised)
+                logger.info("Denoised volumes saved as %s", odenoised)
 
 
 class NLMeansFlow(Workflow):
@@ -129,10 +130,12 @@ class NLMeansFlow(Workflow):
     def run(
         self,
         input_files,
-        sigma=0,
+        sigma=(0,),
         patch_radius=1,
         block_radius=5,
         rician=True,
+        num_threads=None,
+        method="blockwise",
         out_dir="",
         out_denoised="dwi_nlmeans.nii.gz",
     ):
@@ -144,11 +147,12 @@ class NLMeansFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        sigma : float, optional
+        sigma : variable float, optional
             Sigma parameter to pass to the nlmeans algorithm.
+            if this value is 0, we estimate a sigma.
         patch_radius : int, optional
             patch size is ``2 x patch_radius + 1``.
         block_radius : int, optional
@@ -156,7 +160,12 @@ class NLMeansFlow(Workflow):
         rician : bool, optional
             If True the noise is estimated as Rician, otherwise Gaussian noise
             is assumed.
-        out_dir : string, optional
+        num_threads : int, optional
+            Number of OpenMP threads to use for parallel processing. If None,
+            uses all available CPU threads. Set to 1 to disable parallel processing.
+        method : str, optional
+            Algorithm method to use: 'classic' or 'blockwise'.
+        out_dir : string or Path, optional
             Output directory.
         out_denoised : string, optional
             Name of the resulting denoised volume.
@@ -166,19 +175,22 @@ class NLMeansFlow(Workflow):
         .. footbibliography::
 
         """
+        if isinstance(sigma, (Sequence, np.ndarray)) and len(sigma) == 1:
+            sigma = float(sigma[0])
+
         io_it = self.get_io_iterator()
         for fpath, odenoised in io_it:
             if self._skip:
                 shutil.copy(fpath, odenoised)
-                logging.warning("Denoising skipped for now.")
+                logger.warning("Denoising skipped for now.")
             else:
-                logging.info("Denoising %s", fpath)
+                logger.info(f"Denoising {fpath}")
                 data, affine, image = load_nifti(fpath, return_img=True)
 
-                if sigma == 0:
-                    logging.info("Estimating sigma")
+                if isinstance(sigma, float) and sigma == 0:
+                    logger.info("Estimating sigma")
                     sigma = estimate_sigma(data)
-                    logging.debug(f"Found sigma {sigma}")
+                    logger.debug(f"Found sigma {sigma}")
 
                 denoised_data = nlmeans(
                     data,
@@ -186,10 +198,12 @@ class NLMeansFlow(Workflow):
                     patch_radius=patch_radius,
                     block_radius=block_radius,
                     rician=rician,
+                    num_threads=num_threads,
+                    method=method,
                 )
                 save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 
-                logging.info("Denoised volume saved as %s", odenoised)
+                logger.info("Denoised volume saved as %s", odenoised)
 
 
 class LPCAFlow(Workflow):
@@ -217,10 +231,10 @@ class LPCAFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
         bvectors_files : string
@@ -257,7 +271,7 @@ class LPCAFlow(Workflow):
             noise standard deviation and the threshold $\tau$. If
             $\tau_{factor}$ is set to None, it will be automatically calculated
             using the Marcenko-Pastur distribution :footcite:p`Veraart2016b`.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_denoised : string, optional
             Name of the resulting denoised volume.
@@ -271,17 +285,17 @@ class LPCAFlow(Workflow):
         if isinstance(patch_radius, list) and len(patch_radius) == 1:
             patch_radius = int(patch_radius[0])
         for dwi, bval, bvec, odenoised in io_it:
-            logging.info("Denoising %s", dwi)
+            logger.info("Denoising %s", dwi)
             data, affine, image = load_nifti(dwi, return_img=True)
 
             if not sigma:
-                logging.info("Estimating sigma")
+                logger.info("Estimating sigma")
                 bvals, bvecs = read_bvals_bvecs(bval, bvec)
                 gtab = gradient_table(
                     bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
                 )
                 sigma = pca_noise_estimate(data, gtab, correct_bias=True, smooth=3)
-                logging.debug("Found sigma %s", sigma)
+                logger.debug("Found sigma %s", sigma)
 
             denoised_data = localpca(
                 data,
@@ -292,7 +306,7 @@ class LPCAFlow(Workflow):
             )
             save_nifti(odenoised, denoised_data, affine, hdr=image.header)
 
-            logging.info("Denoised volume saved as %s", odenoised)
+            logger.info("Denoised volume saved as %s", odenoised)
 
 
 class MPPCAFlow(Workflow):
@@ -316,7 +330,7 @@ class MPPCAFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         patch_radius : variable int, optional
@@ -332,7 +346,7 @@ class MPPCAFlow(Workflow):
         return_sigma : bool, optional
             If true, a noise standard deviation estimate based on the
             Marcenko-Pastur distribution is returned :footcite:p:`Veraart2016b`.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_denoised : string, optional
             Name of the resulting denoised volume.
@@ -349,7 +363,7 @@ class MPPCAFlow(Workflow):
             patch_radius = int(patch_radius[0])
 
         for dwi, odenoised, osigma in io_it:
-            logging.info("Denoising %s", dwi)
+            logger.info("Denoising %s", dwi)
             data, affine, image = load_nifti(dwi, return_img=True)
 
             denoised_data, sigma = mppca(
@@ -360,10 +374,10 @@ class MPPCAFlow(Workflow):
             )
 
             save_nifti(odenoised, denoised_data, affine, hdr=image.header)
-            logging.info("Denoised volume saved as %s", odenoised)
+            logger.info("Denoised volume saved as %s", odenoised)
             if return_sigma:
                 save_nifti(osigma, sigma, affine, hdr=image.header)
-                logging.info("Sigma volume saved as %s", osigma)
+                logger.info("Sigma volume saved as %s", osigma)
 
 
 class GibbsRingingFlow(Workflow):
@@ -387,7 +401,7 @@ class GibbsRingingFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         slice_axis : int, optional
@@ -401,7 +415,7 @@ class GibbsRingingFlow(Workflow):
             applies to 3D or 4D `data` arrays. Default is 1. If < 0 the maximal
             number of cores minus ``num_processes + 1`` is used (enter -1 to
             use as many cores as possible). 0 raises an error.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_unring : string, optional
             Name of the resulting denoised volume.
@@ -413,7 +427,7 @@ class GibbsRingingFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         for dwi, ounring in io_it:
-            logging.info("Unringing %s", dwi)
+            logger.info("Unringing %s", dwi)
             data, affine, image = load_nifti(dwi, return_img=True)
 
             unring_data = gibbs_removal(
@@ -424,4 +438,4 @@ class GibbsRingingFlow(Workflow):
             )
 
             save_nifti(ounring, unring_data, affine, hdr=image.header)
-            logging.info("Denoised volume saved as %s", ounring)
+            logger.info("Denoised volume saved as %s", ounring)

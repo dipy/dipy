@@ -216,6 +216,19 @@ Whether you are using Anaconda_ or Homebrew/python.org Python, you will need to 
 run ``pip install dipy``. When you do that, it should now
 compile the code with this OpenMP-enabled compiler, and things should go faster!
 
+Setting up pre-commit (optional but recommended)
+=================================================
+
+If you plan to contribute code to DIPY, it's recommended to set up pre-commit
+hooks to automatically check your code style before committing. This helps catch
+issues early and ensures consistency::
+
+    pip install -e .[style]
+    pre-commit install
+
+After this, pre-commit will run automatically on every ``git commit``. For more
+details, see :ref:`coding_style_guideline`.
+
 Testing
 ========
 
@@ -235,6 +248,11 @@ Documentation
 To build the documentation in HTML in your computer you will need to do::
 
     sudo pip install sphinx
+
+You will also need to install the requirements for the documentation::
+
+    pip install -r requirements/doc.txt
+    pip install -r requirements/optional.txt
 
 Then change directory to ``<dipy root>`` and::
 

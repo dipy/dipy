@@ -1,8 +1,7 @@
-import logging
-from os.path import join as pjoin
+from pathlib import Path
+import sys
 from warnings import warn
 
-import nibabel as nib
 import numpy as np
 
 from dipy.align import affine_registration, motion_correction
@@ -15,7 +14,10 @@ from dipy.align.streamwarp import bundlewarp
 from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti, save_qa_metric
+from dipy.io.stateful_tractogram import StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking.streamline import set_number_of_points, transform_streamlines
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
@@ -42,8 +44,7 @@ def check_dimensions(static, moving):
     """
     if len(static.shape) != len(moving.shape):
         raise ValueError(
-            "Dimension mismatch: The input images must "
-            "have same number of dimensions."
+            "Dimension mismatch: The input images must have same number of dimensions."
         )
 
     if len(static.shape) > 3 and len(moving.shape) > 3:
@@ -72,7 +73,7 @@ class ResliceFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         new_vox_size : variable float
@@ -102,7 +103,7 @@ class ResliceFlow(Workflow):
 
         for inputfile, outpfile in io_it:
             data, affine, vox_sz = load_nifti(inputfile, return_voxsize=True)
-            logging.info(f"Processing {inputfile}")
+            logger.info(f"Processing {inputfile}")
             new_data, new_affine = reslice(
                 data,
                 affine,
@@ -114,7 +115,7 @@ class ResliceFlow(Workflow):
                 num_processes=num_processes,
             )
             save_nifti(outpfile, new_data, new_affine)
-            logging.info(f"Resliced file save in {outpfile}")
+            logger.info(f"Resliced file save in {outpfile}")
 
 
 class SlrWithQbxFlow(Workflow):
@@ -134,12 +135,13 @@ class SlrWithQbxFlow(Workflow):
         less_than=250,
         nb_pts=20,
         progressive=True,
+        bbox_valid_check=True,
         out_dir="",
-        out_moved="moved.trk",
+        out_moved="moved.trx",
         out_affine="affine.txt",
-        out_stat_centroids="static_centroids.trk",
-        out_moving_centroids="moving_centroids.trk",
-        out_moved_centroids="moved_centroids.trk",
+        out_stat_centroids="static_centroids.trx",
+        out_moving_centroids="moving_centroids.trx",
+        out_moved_centroids="moved_centroids.trx",
     ):
         """Streamline-based linear registration.
 
@@ -151,9 +153,9 @@ class SlrWithQbxFlow(Workflow):
 
         Parameters
         ----------
-        static_files : string
+        static_files : string or Path
             List of reference/fixed bundle tractograms.
-        moving_files : string
+        moving_files : string or Path
             List of target bundle tractograms that will be moved/registered to
             match the static bundles.
         x0 : string, optional
@@ -178,6 +180,9 @@ class SlrWithQbxFlow(Workflow):
             Number of points for discretizing each streamline.
         progressive : boolean, optional
             True to enable progressive registration.
+        bbox_valid_check : boolean, optional
+            Verification for negative voxel coordinates or values above the volume
+            dimensions.
         out_dir : string, optional
             Output directory.
         out_moved : string, optional
@@ -205,8 +210,8 @@ class SlrWithQbxFlow(Workflow):
 
         io_it = self.get_io_iterator()
 
-        logging.info("QuickBundlesX clustering is in use")
-        logging.info(f"QBX thresholds {qbx_thr}")
+        logger.info("QuickBundlesX clustering is in use")
+        logger.info(f"QBX thresholds {qbx_thr}")
 
         for (
             static_file,
@@ -217,59 +222,87 @@ class SlrWithQbxFlow(Workflow):
             moving_centroids_file,
             moved_centroids_file,
         ) in io_it:
-            logging.info(f"Loading static file {static_file}")
-            logging.info(f"Loading moving file {moving_file}")
+            logger.info(f"Loading static file {static_file}")
+            logger.info(f"Loading moving file {moving_file}")
 
-            static_obj = nib.streamlines.load(static_file)
-            moving_obj = nib.streamlines.load(moving_file)
+            static_obj = load_tractogram(
+                static_file, "same", bbox_valid_check=bbox_valid_check
+            )
+            moving_obj = load_tractogram(
+                moving_file, "same", bbox_valid_check=bbox_valid_check
+            )
 
-            static, static_header = static_obj.streamlines, static_obj.header
-            moving, moving_header = moving_obj.streamlines, moving_obj.header
+            if not len(static_obj.streamlines):
+                logger.error(f"Static file {static_file} is empty")
+                sys.exit(1)
+            if not len(moving_obj.streamlines):
+                logger.error(f"Moving file {moving_file} is empty")
+                sys.exit(1)
 
             moved, affine, centroids_static, centroids_moving = slr_with_qbx(
-                static,
-                moving,
+                static_obj.streamlines,
+                moving_obj.streamlines,
                 x0=x0,
                 rm_small_clusters=rm_small_clusters,
                 greater_than=greater_than,
                 less_than=less_than,
                 qbx_thr=qbx_thr,
+                progressive=progressive,
+                nb_pts=nb_pts,
+                num_threads=num_threads,
             )
 
-            logging.info(f"Saving output file {out_moved_file}")
-            new_tractogram = nib.streamlines.Tractogram(
-                moved, affine_to_rasmm=np.eye(4)
-            )
-            nib.streamlines.save(new_tractogram, out_moved_file, header=moving_header)
+            logger.info(f"Saving output file {out_moved_file}")
 
-            logging.info(f"Saving output file {out_affine_file}")
+            new_tractogram = StatefulTractogram(
+                moved,
+                moving_obj,
+                moving_obj.space,
+            )
+            save_tractogram(
+                new_tractogram, str(out_moved_file), bbox_valid_check=bbox_valid_check
+            )
+
+            logger.info(f"Saving output file {out_affine_file}")
             np.savetxt(out_affine_file, affine)
 
-            logging.info(f"Saving output file {static_centroids_file}")
-            new_tractogram = nib.streamlines.Tractogram(
-                centroids_static, affine_to_rasmm=np.eye(4)
+            logger.info(f"Saving output file {static_centroids_file}")
+            new_tractogram = StatefulTractogram(
+                centroids_static,
+                moving_obj,
+                moving_obj.space,
             )
-            nib.streamlines.save(
-                new_tractogram, static_centroids_file, header=static_header
+            save_tractogram(
+                new_tractogram,
+                str(static_centroids_file),
+                bbox_valid_check=bbox_valid_check,
             )
 
-            logging.info(f"Saving output file {moving_centroids_file}")
-            new_tractogram = nib.streamlines.Tractogram(
-                centroids_moving, affine_to_rasmm=np.eye(4)
+            logger.info(f"Saving output file {moving_centroids_file}")
+            new_tractogram = StatefulTractogram(
+                centroids_moving,
+                moving_obj,
+                moving_obj.space,
             )
-            nib.streamlines.save(
-                new_tractogram, moving_centroids_file, header=moving_header
+            save_tractogram(
+                new_tractogram,
+                str(moving_centroids_file),
+                bbox_valid_check=bbox_valid_check,
             )
 
             centroids_moved = transform_streamlines(centroids_moving, affine)
 
-            logging.info(f"Saving output file {moved_centroids_file}")
+            logger.info(f"Saving output file {moved_centroids_file}")
 
-            new_tractogram = nib.streamlines.Tractogram(
-                centroids_moved, affine_to_rasmm=np.eye(4)
+            new_tractogram = StatefulTractogram(
+                centroids_moved,
+                moving_obj,
+                moving_obj.space,
             )
-            nib.streamlines.save(
-                new_tractogram, moved_centroids_file, header=moving_header
+            save_tractogram(
+                new_tractogram,
+                str(moved_centroids_file),
+                bbox_valid_check=bbox_valid_check,
             )
 
 
@@ -296,7 +329,7 @@ class ImageRegistrationFlow(Workflow):
         nbins=32,
         sampling_prop=None,
         metric="mi",
-        level_iters=(10000, 1000, 100),
+        level_iters=(1000, 500, 100),
         sigmas=(3.0, 1.0, 0.0),
         factors=(4, 2, 1),
         progressive=True,
@@ -311,9 +344,9 @@ class ImageRegistrationFlow(Workflow):
         """
         Parameters
         ----------
-        static_image_files : string
+        static_image_files : string or Path
             Path to the static image file.
-        moving_image_files : string
+        moving_image_files : string or Path
             Path to the moving image file.
         transform : string, optional
             ``'com'``: center of mass; ``'trans'``: translation; ``'rigid'``:
@@ -352,7 +385,7 @@ class ImageRegistrationFlow(Workflow):
             `moving` input volume. From the command line use something like
             `3 4 5 6`. From script use something like `[3, 4, 5, 6]`. This
             input is required for 4D volumes.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Directory to save the transformed image and the affine matrix
         out_moved : string, optional
             Name for the saved transformed image.
@@ -361,14 +394,19 @@ class ImageRegistrationFlow(Workflow):
         out_quality : string, optional
             Name of the file containing the saved quality metric.
         """
+        if tuple(level_iters) == (1000, 500, 100):
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
 
         io_it = self.get_io_iterator()
         transform = transform.lower()
         metric = metric.upper()
         if metric != "MI":
-            raise ValueError(
-                "Invalid similarity metric: Please provide a" "valid metric."
-            )
+            raise ValueError("Invalid similarity metric: Please provide avalid metric.")
 
         if progressive:
             pipeline_opt = {
@@ -457,8 +495,8 @@ class ImageRegistrationFlow(Workflow):
                 """
                 Saving the moved image file and the affine matrix.
                 """
-                logging.info(f"Optimal parameters: {str(xopt)}")
-                logging.info(f"Similarity metric: {str(fopt)}")
+                logger.info(f"Optimal parameters: {str(xopt)}")
+                logger.info(f"Similarity metric: {str(fopt)}")
 
                 if save_metric:
                     save_qa_metric(qual_val_file, xopt, fopt)
@@ -474,18 +512,19 @@ class ApplyTransformFlow(Workflow):
         moving_image_files,
         transform_map_file,
         transform_type="affine",
+        interpolation="linear",
         out_dir="",
         out_file="transformed.nii.gz",
     ):
         """
         Parameters
         ----------
-        static_image_files : string
+        static_image_files : string or Path
             Path of the static image file.
-        moving_image_files : string
+        moving_image_files : string or Path
             Path of the moving image(s). It can be a single image or a
             folder containing multiple images.
-        transform_map_file : string
+        transform_map_file : string or Path
             For the affine case, it should be a text(``*.txt``) file containing
             the affine matrix. For the diffeomorphic case,
             it should be a nifti file containing the mapping displacement
@@ -493,7 +532,10 @@ class ApplyTransformFlow(Workflow):
         transform_type : string, optional
             Select the transformation type to apply between 'affine' or
             'diffeomorphic'.
-        out_dir : string, optional
+        interpolation : string, optional
+            the type of interpolation to be used, either 'linear'
+            (for k-linear interpolation) or 'nearest' for nearest neighbor.
+        out_dir : string or Path, optional
             Directory to save the transformed files.
         out_file : string, optional
             Name of the transformed file.
@@ -506,6 +548,13 @@ class ApplyTransformFlow(Workflow):
                 "Invalid transformation type: Please"
                 " provide a valid transform like 'affine'"
                 " or 'diffeomorphic'"
+            )
+
+        if interpolation.lower() not in ["linear", "nearest"]:
+            raise ValueError(
+                "Invalid interpolation type: Please "
+                "provide 'linear' or 'nearest' as "
+                "valid option."
             )
 
         io = self.get_io_iterator()
@@ -559,11 +608,15 @@ class ApplyTransformFlow(Workflow):
 
             # Transforming the image
             if moving_image_full is None:
-                transformed = mapping.transform(moving_image)
+                transformed = mapping.transform(
+                    moving_image, interpolation=interpolation
+                )
             else:
                 transformed = np.concatenate(
                     [
-                        mapping.transform(moving_image)[..., None]
+                        mapping.transform(moving_image, interpolation=interpolation)[
+                            ..., None
+                        ]
                         for moving_image in moving_image_full
                     ],
                     axis=-1,
@@ -601,11 +654,11 @@ class SynRegistrationFlow(Workflow):
         """
         Parameters
         ----------
-        static_image_files : string
+        static_image_files : string or Path
             Path of the static image file.
-        moving_image_files : string
+        moving_image_files : string or Path
             Path to the moving image file.
-        prealign_file : string, optional
+        prealign_file : string or Path, optional
             The text file containing pre alignment information via an affine matrix.
         inv_static : boolean, optional
             Apply the inverse mapping to the static image.
@@ -667,7 +720,7 @@ class SynRegistrationFlow(Workflow):
         inv_tol : float, optional
             the displacement field inversion algorithm will stop iterating
             when the inversion error falls below this threshold.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Directory to save the transformed files.
         out_warped : string, optional
             Name of the warped file.
@@ -686,8 +739,8 @@ class SynRegistrationFlow(Workflow):
                 " provide a valid metric like 'ssd', 'cc', 'em'"
             )
 
-        logging.info("Starting Diffeomorphic Registration")
-        logging.info(f"Using {metric.upper()} Metric")
+        logger.info("Starting Diffeomorphic Registration")
+        logger.info(f"Using {metric.upper()} Metric")
 
         # Init parameter if they are not setup
         init_param = {
@@ -728,8 +781,8 @@ class SynRegistrationFlow(Workflow):
             oinv_static_file,
             omap_file,
         ) in io_it:
-            logging.info(f"Loading static file {static_file}")
-            logging.info(f"Loading moving file {moving_file}")
+            logger.info(f"Loading static file {static_file}")
+            logger.info(f"Loading moving file {moving_file}")
 
             # Loading the image data from the input files into object.
             static_image, static_grid2world = load_nifti(static_file)
@@ -794,11 +847,11 @@ class SynRegistrationFlow(Workflow):
             inv_static = mapping.transform(static_image)
 
             # Saving
-            logging.info(f"Saving warped {owarped_file}")
+            logger.info(f"Saving warped {owarped_file}")
             save_nifti(owarped_file, warped_moving, static_grid2world)
-            logging.info(f"Saving inverse transformes static {oinv_static_file}")
+            logger.info(f"Saving inverse transformes static {oinv_static_file}")
             save_nifti(oinv_static_file, inv_static, static_grid2world)
-            logging.info(f"Saving Diffeomorphic map {omap_file}")
+            logger.info(f"Saving Diffeomorphic map {omap_file}")
             save_nifti(omap_file, mapping_data, mapping.codomain_world2grid)
 
 
@@ -815,6 +868,7 @@ class MotionCorrectionFlow(Workflow):
         bvectors_files,
         b0_threshold=50,
         bvecs_tol=0.01,
+        level_iters=(1000, 500, 100),
         out_dir="",
         out_moved="moved.nii.gz",
         out_affine="affine.txt",
@@ -822,13 +876,13 @@ class MotionCorrectionFlow(Workflow):
         """
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
         b0_threshold : float, optional
@@ -836,19 +890,28 @@ class MotionCorrectionFlow(Workflow):
         bvecs_tol : float, optional
             Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
             b-vectors are unit vectors
-        out_dir : string, optional
+        level_iters : variable int, optional
+            The number of iterations at each level of the Gaussian pyramid.
+        out_dir : string or Path, optional
             Directory to save the transformed image and the affine matrix.
         out_moved : string, optional
             Name for the saved transformed image.
         out_affine : string, optional
             Name for the saved affine matrix.
         """
+        if tuple(level_iters) == (1000, 500, 100):
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
 
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, omoved, oafffine in io_it:
             # Load the data from the input files and store into objects.
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -867,7 +930,7 @@ class MotionCorrectionFlow(Workflow):
             )
 
             reg_img, reg_affines = motion_correction(
-                data=data, gtab=gtab, affine=affine
+                data=data, gtab=gtab, affine=affine, level_iters=level_iters
             )
 
             # Saving the corrected image file
@@ -894,9 +957,10 @@ class BundleWarpFlow(Workflow):
         beta=20,
         max_iter=15,
         affine=True,
+        bbox_valid_check=True,
         out_dir="",
-        out_linear_moved="linearly_moved.trk",
-        out_nonlinear_moved="nonlinearly_moved.trk",
+        out_linear_moved="linearly_moved.trx",
+        out_nonlinear_moved="nonlinearly_moved.trx",
         out_warp_transform="warp_transform.npy",
         out_warp_kernel="warp_kernel.npy",
         out_dist="distance_matrix.npy",
@@ -909,10 +973,10 @@ class BundleWarpFlow(Workflow):
 
         Parameters
         ----------
-        static_file : string
-            Path to the static (reference) .trk file.
-        moving_file : string
-            Path to the moving (target to be registered) .trk file.
+        static_file : string or Path
+            Path to the static (reference) .trx file.
+        moving_file : string or Path
+            Path to the moving (target to be registered) .trx file.
         dist : string, optional
             Path to the precalculated distance matrix file.
         alpha : float, optional
@@ -929,8 +993,11 @@ class BundleWarpFlow(Workflow):
             Maximum number of iterations for deformation process in ml-CPD
             method.
         affine : boolean, optional
-            If False, use rigid registration as starting point. (default True)
-        out_dir : string, optional
+            If False, use rigid registration as starting point.
+        bbox_valid_check : boolean, optional
+            Verification for negative voxel coordinates or values above the volume
+            dimensions.
+        out_dir : string or Path, optional
             Output directory.
         out_linear_moved : string, optional
             Filename of linearly moved bundle.
@@ -951,19 +1018,23 @@ class BundleWarpFlow(Workflow):
         .. footbibliography::
         """
 
-        logging.info(f"Loading static file {static_file}")
-        logging.info(f"Loading moving file {moving_file}")
+        logger.info(f"Loading static file {static_file}")
+        logger.info(f"Loading moving file {moving_file}")
 
-        static_obj = nib.streamlines.load(static_file)
-        moving_obj = nib.streamlines.load(moving_file)
+        static_obj = load_tractogram(
+            static_file, "same", bbox_valid_check=bbox_valid_check
+        )
+        moving_obj = load_tractogram(
+            moving_file, "same", bbox_valid_check=bbox_valid_check
+        )
 
-        static, _ = static_obj.streamlines, static_obj.header
-        moving, moving_header = moving_obj.streamlines, moving_obj.header
+        static = static_obj.streamlines
+        moving = moving_obj.streamlines
 
         static = set_number_of_points(static, nb_points=20)
         moving = set_number_of_points(moving, nb_points=20)
 
-        deformed_bundle, affine_bundle, dists, mp, warp = bundlewarp(
+        deformed_bundle, affine_bundle, _, mp, warp = bundlewarp(
             static,
             moving,
             dist=dist,
@@ -973,30 +1044,36 @@ class BundleWarpFlow(Workflow):
             affine=affine,
         )
 
-        logging.info(f"Saving output file {out_linear_moved}")
-        new_tractogram = nib.streamlines.Tractogram(
-            affine_bundle, affine_to_rasmm=np.eye(4)
+        logger.info(f"Saving output file {out_linear_moved}")
+        new_tractogram = StatefulTractogram(
+            affine_bundle,
+            moving_obj,
+            moving_obj.space,
         )
-        nib.streamlines.save(
-            new_tractogram, pjoin(out_dir, out_linear_moved), header=moving_header
-        )
-
-        logging.info(f"Saving output file {out_nonlinear_moved}")
-        new_tractogram = nib.streamlines.Tractogram(
-            deformed_bundle, affine_to_rasmm=np.eye(4)
-        )
-        nib.streamlines.save(
-            new_tractogram, pjoin(out_dir, out_nonlinear_moved), header=moving_header
+        save_tractogram(
+            new_tractogram,
+            str(Path(out_dir) / out_linear_moved),
+            bbox_valid_check=bbox_valid_check,
         )
 
-        logging.info(f"Saving output file {out_warp_transform}")
-        np.save(pjoin(out_dir, out_warp_transform), np.array(warp["transforms"]))
+        logger.info(f"Saving output file {out_nonlinear_moved}")
+        new_tractogram = StatefulTractogram(
+            deformed_bundle, moving_obj, moving_obj.space
+        )
+        save_tractogram(
+            new_tractogram,
+            str(Path(out_dir) / out_nonlinear_moved),
+            bbox_valid_check=bbox_valid_check,
+        )
 
-        logging.info(f"Saving output file {out_warp_kernel}")
-        np.save(pjoin(out_dir, out_warp_kernel), np.array(warp["gaussian_kernel"]))
+        logger.info(f"Saving output file {out_warp_transform}")
+        np.save(Path(out_dir) / out_warp_transform, np.array(warp["transforms"]))
 
-        logging.info(f"Saving output file {out_dist}")
-        np.save(pjoin(out_dir, out_dist), dist)
+        logger.info(f"Saving output file {out_warp_kernel}")
+        np.save(Path(out_dir) / out_warp_kernel, np.array(warp["gaussian_kernel"]))
 
-        logging.info(f"Saving output file {out_matched_pairs}")
-        np.save(pjoin(out_dir, out_matched_pairs), mp)
+        logger.info(f"Saving output file {out_dist}")
+        np.save(Path(out_dir) / out_dist, dist)
+
+        logger.info(f"Saving output file {out_matched_pairs}")
+        np.save(Path(out_dir) / out_matched_pairs, mp)

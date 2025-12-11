@@ -1,4 +1,4 @@
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 import warnings
 
@@ -11,6 +11,7 @@ from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti_data
 from dipy.reconst import mapmri
+from dipy.testing import assert_warns
 from dipy.workflows.reconst import ReconstMAPMRIFlow
 
 
@@ -39,9 +40,17 @@ def reconst_mmri_core(flow, lap, pos):
 
         mmri_flow = flow()
 
-        msg = "Optimization did not find a solution"
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+            warnings.filterwarnings(
+                "ignore",
+                message="Optimization did not find a solution",
+                category=UserWarning,
+            )
+            warnings.filterwarnings(
+                "ignore",
+                message="Solution may be inaccurate.*",
+                category=UserWarning,
+            )
             mmri_flow.run(
                 data_files=data_path,
                 bvals_files=bval_path,
@@ -71,13 +80,13 @@ def reconst_mmri_core(flow, lap, pos):
         bvals, bvecs = read_bvals_bvecs(bval_path, bvec_path)
         bvals[0] = 5.0
         bvecs = generate_bvecs(len(bvals))
-        tmp_bval_path = pjoin(out_dir, "tmp.bval")
-        tmp_bvec_path = pjoin(out_dir, "tmp.bvec")
+        tmp_bval_path = Path(out_dir) / "tmp.bval"
+        tmp_bvec_path = Path(out_dir) / "tmp.bvec"
         np.savetxt(tmp_bval_path, bvals)
         np.savetxt(tmp_bvec_path, bvecs.T)
         mmri_flow._force_overwrite = True
         with npt.assert_raises(BaseException):
-            npt.assert_warns(
+            assert_warns(
                 UserWarning,
                 mmri_flow.run,
                 data_path,

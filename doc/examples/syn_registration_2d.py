@@ -101,7 +101,7 @@ regtools.overlay_images(
     fname="direct_warp_result.png",
 )
 
-###############################################################################
+##############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # Moving image transformed under the (direct) transformation in green on top
@@ -127,8 +127,62 @@ regtools.overlay_images(
 #
 # Static image transformed under the (inverse) transformation in red on top
 # of the moving image (in green).
+
+###############################################################################
+# Internally, SyN registers the static and moving images to an intermediate
+# "reference" image that is iteratively constructed on the fly. This means
+# that during the optimization process there are two diffeomorphisms being
+# computed: one from moving to reference and one from static to reference.
+# At the end of the optimization, SyN composes the two diffeomorphisms to
+# produce the final static-to-moving transform. Some times it is interesting
+# to inspect the intermediate transforms
+
+
+static_to_ref, moving_to_ref = sdr.get_intermediate_maps()
+
+###############################################################################
 #
+# We have two more transforms to visualize
 #
+
+regtools.plot_2d_diffeomorphic_map(static_to_ref, 10, "static_to_ref_map.png")
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Deformed lattice under the static-to-reference diffeomorphic map.
+
+regtools.plot_2d_diffeomorphic_map(moving_to_ref, 10, "moving_to_ref_map.png")
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Deformed lattice under the moving-to-reference diffeomorphic map.
+
+###############################################################################
+# We can transform the input images to see what the "reference" image looks like
+# according to each intermediate transform. To map the static image to the
+# reference space, we need to apply the inverse of the static-to-reference
+# transform. The reason is that "deforming" the static image is implemented as a
+# "pull" operation: for each point (pixel position) in the reference grid we need
+# to find its corresponding point in the static grid to "pull" the image
+# intensity of the static image at that point (by interpolation). Therefore, the
+# transform we are applying is reference-to-static not static-to-reference. The
+# same applies to mapping the moving image to the reference space.
+
+
+warped_static = static_to_ref.transform_inverse(static, "linear")
+warped_moving = moving_to_ref.transform_inverse(moving, "linear")
+
+regtools.overlay_images(
+    warped_static,
+    warped_moving,
+    "Warped static",
+    "Overlay",
+    "Warped moving",
+    "intermediate_images.png",
+)
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
 #
 # Now let's register a couple of slices from a b0 image using the Cross
 # Correlation metric. Also, let's inspect the evolution of the registration.

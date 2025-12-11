@@ -1,18 +1,28 @@
 from ast import literal_eval
-import logging
-import os.path
+from pathlib import Path
 from warnings import warn
 
 import nibabel as nib
 import numpy as np
 
-from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
+from dipy.core.gradients import (
+    gradient_table,
+    gradient_table_from_bvals_bvecs,
+    mask_non_weighted_bvals,
+)
 from dipy.core.ndindex import ndindex
+from dipy.core.sphere import HemiSphere
 from dipy.data import default_sphere, get_sphere
 from dipy.direction.peaks import peak_directions, peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
-from dipy.io.peaks import niftis_to_pam, pam_to_niftis, save_pam, tensor_to_pam
+from dipy.io.peaks import (
+    load_pam,
+    niftis_to_pam,
+    pam_to_niftis,
+    save_pam,
+    tensor_to_pam,
+)
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst import mapmri
 from dipy.reconst.csdeconv import (
@@ -34,13 +44,23 @@ from dipy.reconst.dti import (
     radial_diffusivity,
 )
 from dipy.reconst.forecast import ForecastModel
+from dipy.reconst.fwdti import FreeWaterTensorModel, common_fit_methods
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.ivim import IvimModel
 from dipy.reconst.rumba import RumbaSDModel
 from dipy.reconst.sfm import SparseFascicleModel
-from dipy.reconst.shm import CsaOdfModel, OpdtModel, QballModel
+from dipy.reconst.shm import (
+    CsaOdfModel,
+    OpdtModel,
+    QballModel,
+    anisotropic_power,
+    normalize_data,
+    smooth_pinv,
+    sph_harm_lookup,
+)
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
+from dipy.utils.logging import logger
 from dipy.workflows.workflow import Workflow
 
 
@@ -96,11 +116,11 @@ class ReconstMAPMRIFlow(Workflow):
 
         Parameters
         ----------
-        data_files : string
+        data_files : string or Path
             Path to the input volume.
-        bvals_files : string
+        bvals_files : string or Path
             Path to the bval files.
-        bvecs_files : string
+        bvecs_files : string or Path
             Path to the bvec files.
         small_delta : float
             Small delta value used in generation of gradient table of provided
@@ -143,7 +163,7 @@ class ReconstMAPMRIFlow(Workflow):
             If true, all peak values are calculated relative to `max(odf)`.
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_rtop : string, optional
             Name of the rtop to be saved.
@@ -192,7 +212,7 @@ class ReconstMAPMRIFlow(Workflow):
             opeaks_values,
             opeaks_indices,
         ) in io_it:
-            logging.info(f"Computing MAPMRI metrics for {dwi}")
+            logger.info(f"Computing MAPMRI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -259,7 +279,7 @@ class ReconstMAPMRIFlow(Workflow):
                     r = func()
                     save_nifti(fname, r.astype(np.float32), affine)
 
-            logging.info(f"MAPMRI saved in {os.path.abspath(out_dir)}")
+            logger.info(f"MAPMRI saved in {Path(out_dir).resolve()}")
 
             sphere = default_sphere
             if sphere_name:
@@ -308,6 +328,163 @@ class ReconstMAPMRIFlow(Workflow):
                 )
 
 
+class ReconstPowermapFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "powermap"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        *,
+        shm_files=None,
+        sh_order_max=8,
+        b0_threshold=50.0,
+        bvecs_tol=0.01,
+        norm_factor=0.00001,
+        power=2,
+        non_negative=True,
+        smooth=0.0,
+        sh_basis="descoteaux07",
+        out_dir="",
+        out_powermap="powermap.nii.gz",
+    ):
+        """Workflow for generating anisotropic powermap from diffusion data.
+
+        This workflow generates an anisotropic powermap as introduced by
+        :footcite:t:`DellAcqua2014`. The anisotropic powermap can be used as a
+        pseudo-T1 for tissue classification when a T1 image is not available.
+
+        The anisotropic powermap is computed by extracting the anisotropic power
+        from the spherical harmonic coefficients.
+
+        Parameters
+        ----------
+        input_files : string or Path
+            Path to the input diffusion volumes. This path may contain wildcards
+            to process multiple inputs at once.
+        bvalues_files : string or Path
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string or Path
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        mask_files : string or Path
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once.
+        shm_files : string or Path, optional
+            Path to the spherical harmonic coefficient files. This file may be a nifti
+            file (shm.nii.gz) containing the SH coefficients or a pam file (``*.pam5``)
+            containing the SH coefficients.
+        sh_order_max : int, optional
+            Maximum spherical harmonic order.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol.
+        norm_factor : float, optional
+            The value to normalize the ap values.
+        power : int, optional
+            The degree to which power maps are calculated.
+        non_negative : bool, optional
+            Whether to rectify the resulting map to be non-negative.
+        smooth : float, optional
+            The amount of smoothing to apply to the SH coefficients before
+            computing the anisotropic powermap. This is a smoothing factor
+            applied to the SH coefficients, which can help reduce noise in the
+            resulting powermap. A value of 0.0 means no smoothing is applied.
+        sh_basis : string, optional
+            The spherical harmonic basis to use for the computation.
+        out_dir : string or Path, optional
+            Output directory. Default is current directory.
+        out_powermap : string, optional
+            Name of the anisotropic powermap volume to be saved.
+
+        References
+        ----------
+        .. footbibliography::
+        """
+        io_it = self.get_io_iterator()
+
+        for (
+            dwi,
+            bval,
+            bvec,
+            mask,
+            out_powermap,
+        ) in io_it:
+            logger.info(f"Computing Anisotropic Powermap from {dwi}...")
+            data, affine = load_nifti(dwi)
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+
+            mask_data = load_nifti_data(mask)
+            gtab = gradient_table(
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
+            if shm_files is not None:
+                shm_path = Path(shm_files)
+                if shm_path.suffix == ".pam5":
+                    logger.info(f"Loading SH coefficients from {shm_files}...")
+                    pam = load_pam(shm_files)
+                    if not hasattr(pam, "shm_coeff") or not isinstance(
+                        pam.shm_coeff, np.ndarray
+                    ):
+                        raise ValueError(
+                            "The SH coefficients in the PAM file are not found."
+                        )
+                    shm_coeff_data = pam.shm_coeff
+                elif shm_path.suffix in [".nii", ".gz"] or str(shm_path).endswith(
+                    ".nii.gz"
+                ):
+                    logger.info(f"Loading SH coefficients from {shm_files}...")
+                    shm_coeff_data = load_nifti_data(shm_files)
+                else:
+                    raise ValueError(
+                        "The SH coefficients file must be a PAM file (*.pam5) "
+                        "or a NIfTI file (*.nii or *.nii.gz)."
+                    )
+            else:
+                gtab2 = gradient_table_from_bvals_bvecs(
+                    gtab.bvals[np.where(1 - gtab.b0s_mask)[0]],
+                    gtab.bvecs[np.where(1 - gtab.b0s_mask)[0]],
+                )
+                normed_data = normalize_data(data, gtab.b0s_mask)
+                normed_data = normed_data[..., np.where(1 - gtab.b0s_mask)[0]]
+
+                normed_data = normed_data * mask_data[..., None]
+
+                signal_native_pts = HemiSphere(xyz=gtab2.bvecs)
+                if sh_basis not in sph_harm_lookup:
+                    logger.warning(
+                        f"sh_basis {sh_basis} not found in sph_harm_lookup. "
+                        "Using 'descoteaux07' instead."
+                    )
+                    sh_basis = "descoteaux07"
+                sph_harm_basis = sph_harm_lookup.get(sh_basis)
+
+                Ba, m, n = sph_harm_basis(
+                    sh_order_max, signal_native_pts.theta, signal_native_pts.phi
+                )
+                L = -n * (n + 1)
+                invB = smooth_pinv(Ba, np.sqrt(smooth) * L)
+
+                # fit SH basis to DWI signal
+                shm_coeff_data = np.dot(normed_data, invB.T)
+
+            powermap = anisotropic_power(
+                shm_coeff_data,
+                norm_factor=norm_factor,
+                power=power,
+                non_negative=non_negative,
+            )
+            logger.info(f"Saving anisotropic powermap to {out_powermap}...")
+            save_nifti(out_powermap, powermap.astype(np.float32), affine)
+            logger.info("Anisotropic powermap saved successfully!")
+
+
 class ReconstDtiFlow(Workflow):
     @classmethod
     def get_short_name(cls):
@@ -344,6 +521,7 @@ class ReconstDtiFlow(Workflow):
         out_peaks_indices="peaks_indices.nii.gz",
         out_sphere="sphere.txt",
         out_qa="qa.nii.gz",
+        out_s0="s0.nii.gz",
     ):
         """Workflow for tensor reconstruction and for computing DTI metrics
         using Weighted  Least-Squares.
@@ -354,16 +532,16 @@ class ReconstDtiFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once.
         fit_method : string, optional
@@ -388,7 +566,7 @@ class ReconstDtiFlow(Workflow):
             (only noise) b-vectors are unit vectors.
         save_metrics : variable string, optional
             List of metrics to save.
-            Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
+            Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval, s0
         nifti_tensor : bool, optional
             Whether the tensor is saved in the standard Nifti format or in an
             alternate format that is used by other software (e.g., FSL): a
@@ -396,7 +574,7 @@ class ReconstDtiFlow(Workflow):
             Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension.
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_tensor : string, optional
             Name of the tensors volume to be saved.
@@ -437,6 +615,8 @@ class ReconstDtiFlow(Workflow):
             Sphere vertices name to be saved.
         out_qa : string, optional
             Name of the Quantitative Anisotropy to be saved.
+        out_s0 : string, optional
+            Name of the S0 estimate to be saved.
 
         References
         ----------
@@ -468,8 +648,9 @@ class ReconstDtiFlow(Workflow):
             opeaks_indices,
             osphere,
             oqa,
+            os0,
         ) in io_it:
-            logging.info(f"Computing DTI metrics for {dwi}")
+            logger.info(f"Computing DTI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
@@ -478,6 +659,8 @@ class ReconstDtiFlow(Workflow):
             optional_args = {}
             if fit_method in ["RT", "restore", "RESTORE", "NLLS"]:
                 optional_args["sigma"] = sigma
+            if "s0" in save_metrics or not save_metrics:
+                optional_args["return_S0_hat"] = True
 
             tenfit, tenmodel, _ = self.get_fitted_tensor(
                 data,
@@ -502,6 +685,7 @@ class ReconstDtiFlow(Workflow):
                     "evec",
                     "eval",
                     "tensor",
+                    "s0",
                 ]
 
             FA = fractional_anisotropy(tenfit.evals)
@@ -554,11 +738,22 @@ class ReconstDtiFlow(Workflow):
             if "eval" in save_metrics:
                 save_nifti(oevals, tenfit.evals.astype(np.float32), affine)
 
+            if "s0" in save_metrics:
+                if hasattr(tenfit, "S0_hat"):
+                    save_nifti(os0, tenfit.S0_hat.astype(np.float32), affine)
+                else:
+                    warn(
+                        "S0 estimate not available for this fit method. "
+                        "Please use a different fit method or set "
+                        "`return_S0_hat=True`.",
+                        stacklevel=2,
+                    )
+
             if save_metrics:
-                msg = f"DTI metrics saved to {os.path.abspath(out_dir)}"
-                logging.info(msg)
+                msg = f"DTI metrics saved to {Path(out_dir).resolve()}"
+                logger.info(msg)
                 for metric in save_metrics:
-                    logging.info(self.last_generated_outputs[f"out_{metric}"])
+                    logger.info(self.last_generated_outputs[f"out_{metric}"])
 
             pam = tensor_to_pam(
                 tenfit.evals.astype(np.float32),
@@ -593,7 +788,7 @@ class ReconstDtiFlow(Workflow):
         fit_method="WLS",
         optional_args=None,
     ):
-        logging.info("Tensor estimation...")
+        logger.info("Tensor estimation...")
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         gtab = gradient_table(
             bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
@@ -649,16 +844,16 @@ class ReconstDsiFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once.
         qgrid_size : int, optional
@@ -699,7 +894,7 @@ class ReconstDsiFlow(Workflow):
             (default multiprocessing.cpu_count()). If < 0 the maximal number
             of cores minus ``num_processes + 1`` is used (enter -1 to use as
             many cores as possible). 0 raises an error.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -740,7 +935,7 @@ class ReconstDsiFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Computing DSI Model for {dwi}")
+            logger.info(f"Computing DSI Model for {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -783,7 +978,7 @@ class ReconstDsiFlow(Workflow):
 
             save_pam(opam, peaks_dsi)
 
-            logging.info("DSI computation completed.")
+            logger.info("DSI computation completed.")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -799,7 +994,7 @@ class ReconstDsiFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            logging.info(f"DSI metrics saved to {os.path.abspath(out_dir)}")
+            logger.info(f"DSI metrics saved to {Path(out_dir).resolve()}")
 
 
 class ReconstCSDFlow(Workflow):
@@ -934,7 +1129,7 @@ class ReconstCSDFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -963,10 +1158,10 @@ class ReconstCSDFlow(Workflow):
                 )
 
             if frf is None:
-                logging.info("Computing response function")
+                logger.info("Computing response function")
                 if roi_center is not None:
-                    logging.info(f"Response ROI center:\n{roi_center}")
-                    logging.info(f"Response ROI radii:\n{roi_radii}")
+                    logger.info(f"Response ROI center:\n{roi_center}")
+                    logger.info(f"Response ROI radii:\n{roi_radii}")
                 response, ratio = auto_response_ssst(
                     gtab,
                     data,
@@ -977,7 +1172,7 @@ class ReconstCSDFlow(Workflow):
                 response = list(response)
 
             else:
-                logging.info("Using response function")
+                logger.info("Using response function")
                 if isinstance(frf, str):
                     l01 = np.array(literal_eval(frf), dtype=np.float64)
                 else:
@@ -988,16 +1183,14 @@ class ReconstCSDFlow(Workflow):
                 ratio = l01[1] / l01[0]
                 response = (response, ratio)
 
-            logging.info(
-                f"Eigenvalues for the frf of the input data are :{response[0]}"
-            )
-            logging.info(f"Ratio for smallest to largest eigen value is {ratio}")
+            logger.info(f"Eigenvalues for the frf of the input data are :{response[0]}")
+            logger.info(f"Ratio for smallest to largest eigen value is {ratio}")
 
             peaks_sphere = default_sphere
             if sphere_name is not None:
                 peaks_sphere = get_sphere(name=sphere_name)
 
-            logging.info("CSD computation started.")
+            logger.info("CSD computation started.")
             csd_model = ConstrainedSphericalDeconvModel(
                 gtab, response, sh_order_max=sh_order_max
             )
@@ -1019,7 +1212,7 @@ class ReconstCSDFlow(Workflow):
 
             save_pam(opam, peaks_csd)
 
-            logging.info("CSD computation completed.")
+            logger.info("CSD computation completed.")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -1035,11 +1228,11 @@ class ReconstCSDFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             if dname_ == "":
-                logging.info("Pam5 file saved in current directory")
+                logger.info("Pam5 file saved in current directory")
             else:
-                logging.info(f"Pam5 file saved in {dname_}")
+                logger.info(f"Pam5 file saved in {dname_}")
 
             return io_it
 
@@ -1087,16 +1280,16 @@ class ReconstQBallBaseFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         method : string, optional
@@ -1138,7 +1331,7 @@ class ReconstQBallBaseFlow(Workflow):
             (default multiprocessing.cpu_count()). If < 0 the maximal number
             of cores minus ``num_processes + 1`` is used (enter -1 to use as
             many cores as possible). 0 raises an error.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -1193,7 +1386,7 @@ class ReconstQBallBaseFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -1216,7 +1409,7 @@ class ReconstQBallBaseFlow(Workflow):
             if sphere_name is not None:
                 peaks_sphere = get_sphere(name=sphere_name)
 
-            logging.info(f"Starting {method.upper()} computations {dwi}")
+            logger.info(f"Starting {method.upper()} computations {dwi}")
 
             qball_base_model = model_list[method.lower()](
                 gtab,
@@ -1243,7 +1436,7 @@ class ReconstQBallBaseFlow(Workflow):
 
             save_pam(opam, peaks_qballbase)
 
-            logging.info(f"Finished {method.upper()} {dwi}")
+            logger.info(f"Finished {method.upper()} {dwi}")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -1259,11 +1452,11 @@ class ReconstQBallBaseFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             if dname_ == "":
-                logging.info("Pam5 file saved in current directory")
+                logger.info("Pam5 file saved in current directory")
             else:
-                logging.info(f"Pam5 file saved in {dname_}")
+                logger.info(f"Pam5 file saved in {dname_}")
 
             return io_it
 
@@ -1315,16 +1508,16 @@ class ReconstDkiFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         fit_method : string, optional
@@ -1345,7 +1538,7 @@ class ReconstDkiFlow(Workflow):
             Save or not to save pam volumes as single nifti files.
         npeaks : int, optional
             Number of peaks to fit in each voxel.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_dt_tensor : string, optional
             Name of the tensors volume to be saved.
@@ -1420,7 +1613,7 @@ class ReconstDkiFlow(Workflow):
             opeaks_indices,
             osphere,
         ) in io_it:
-            logging.info(f"Computing DKI metrics for {dwi}")
+            logger.info(f"Computing DKI metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
@@ -1514,7 +1707,7 @@ class ReconstDkiFlow(Workflow):
             if "rk" in save_metrics:
                 save_nifti(ork, dkfit.rk().astype(np.float32), affine)
 
-            logging.info(f"DKI metrics saved in {os.path.dirname(oevals)}")
+            logger.info(f"DKI metrics saved in {Path(oevals).parent}")
 
             pam = tensor_to_pam(
                 dkfit.evals.astype(np.float32),
@@ -1547,7 +1740,7 @@ class ReconstDkiFlow(Workflow):
         fit_method="WLS",
         optional_args=None,
     ):
-        logging.info("Diffusion kurtosis estimation...")
+        logger.info("Diffusion kurtosis estimation...")
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         # If all b-values are smaller or equal to the b0 threshold, it is
         # assumed that no thresholding is requested
@@ -1597,16 +1790,16 @@ class ReconstIvimFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         split_b_D : int, optional
@@ -1620,7 +1813,7 @@ class ReconstIvimFlow(Workflow):
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: S0_predicted, perfusion_fraction, D_star, D
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_S0_predicted : string, optional
             Name of the S0 signal estimated to be saved.
@@ -1649,7 +1842,7 @@ class ReconstIvimFlow(Workflow):
             oD_star,
             oD,
         ) in io_it:
-            logging.info(f"Computing IVIM metrics for {dwi}")
+            logger.info(f"Computing IVIM metrics for {dwi}")
             data, affine = load_nifti(dwi)
 
             if mask is not None:
@@ -1680,11 +1873,11 @@ class ReconstIvimFlow(Workflow):
             if "D" in save_metrics:
                 save_nifti(oD, ivimfit.D.astype(np.float32), affine)
 
-            logging.info(f"IVIM metrics saved in {os.path.dirname(oD)}")
+            logger.info(f"IVIM metrics saved in {Path(oD).parent}")
 
     @warning_for_keywords()
     def get_fitted_ivim(self, data, mask, bval, bvec, *, b0_threshold=50):
-        logging.info("Intra-Voxel Incoherent Motion Estimation...")
+        logger.info("Intra-Voxel Incoherent Motion Estimation...")
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         # If all b-values are smaller or equal to the b0 threshold, it is
         # assumed that no thresholding is requested
@@ -1758,16 +1951,16 @@ class ReconstRUMBAFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once.
         b0_threshold : float, optional
@@ -1833,7 +2026,7 @@ class ReconstRUMBAFlow(Workflow):
         min_separation_angle : float, optional
             The minimum distance between directions. If two peaks are too close
             only the larger of the two is returned.
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -1877,7 +2070,7 @@ class ReconstRUMBAFlow(Workflow):
             oqa,
         ) in io_it:
             # Read the data
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -1936,7 +2129,7 @@ class ReconstRUMBAFlow(Workflow):
                 num_processes=num_processes,
             )
 
-            logging.info("Peak computation completed.")
+            logger.info("Peak computation completed.")
 
             rumba_peaks.affine = affine
 
@@ -1956,11 +2149,11 @@ class ReconstRUMBAFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             if dname_ == "":
-                logging.info("Pam5 file saved in current directory")
+                logger.info("Pam5 file saved in current directory")
             else:
-                logging.info(f"Pam5 file saved in {dname_}")
+                logger.info(f"Pam5 file saved in {dname_}")
 
             return io_it
 
@@ -2009,16 +2202,16 @@ class ReconstSDTFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         ratio : float, optional
@@ -2055,7 +2248,7 @@ class ReconstSDTFlow(Workflow):
             Save or not to save pam volumes as single nifti files.
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -2097,7 +2290,7 @@ class ReconstSDTFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
 
@@ -2125,7 +2318,7 @@ class ReconstSDTFlow(Workflow):
                 )
 
             if ratio is None:
-                logging.info("Computing response function")
+                logger.info("Computing response function")
                 _, ratio = auto_response_ssst(
                     gtab,
                     data,
@@ -2134,13 +2327,13 @@ class ReconstSDTFlow(Workflow):
                     fa_thr=fa_thr,
                 )
 
-            logging.info(f"Ratio for smallest to largest eigen value is {ratio}")
+            logger.info(f"Ratio for smallest to largest eigen value is {ratio}")
 
             peaks_sphere = default_sphere
             if sphere_name is not None:
                 peaks_sphere = get_sphere(name=sphere_name)
 
-            logging.info("SDT computation started.")
+            logger.info("SDT computation started.")
             sdt_model = ConstrainedSDTModel(
                 gtab,
                 ratio,
@@ -2167,7 +2360,7 @@ class ReconstSDTFlow(Workflow):
 
             save_pam(opam, peaks_sdt)
 
-            logging.info("SDT computation completed.")
+            logger.info("SDT computation completed.")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -2183,11 +2376,11 @@ class ReconstSDTFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             if dname_ == "":
-                logging.info("Pam5 file saved in current directory")
+                logger.info("Pam5 file saved in current directory")
             else:
-                logging.info(f"Pam5 file saved in {dname_}")
+                logger.info(f"Pam5 file saved in {dname_}")
 
             return io_it
 
@@ -2235,14 +2428,14 @@ class ReconstSFMFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
         sphere_name : string, optional
             Sphere name on which to reconstruct the fODFs.
@@ -2279,7 +2472,7 @@ class ReconstSFMFlow(Workflow):
             Save or not to save pam volumes as single nifti files.
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -2322,7 +2515,7 @@ class ReconstSFMFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
 
@@ -2353,7 +2546,7 @@ class ReconstSFMFlow(Workflow):
                 default_sphere if sphere_name is None else get_sphere(name=sphere_name)
             )
 
-            logging.info("SFM computation started.")
+            logger.info("SFM computation started.")
             sfm_model = SparseFascicleModel(
                 gtab,
                 sphere=peaks_sphere,
@@ -2381,7 +2574,7 @@ class ReconstSFMFlow(Workflow):
 
             save_pam(opam, peaks_sfm)
 
-            logging.info("SFM computation completed.")
+            logger.info("SFM computation completed.")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -2397,13 +2590,13 @@ class ReconstSFMFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             msg = (
                 "Pam5 file saved in current directory"
                 if dname_ == ""
                 else f"Pam5 file saved in {dname_}"
             )
-            logging.info(msg)
+            logger.info(msg)
 
             return io_it
 
@@ -2449,13 +2642,13 @@ class ReconstGQIFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
         mask_files : string
@@ -2486,7 +2679,7 @@ class ReconstGQIFlow(Workflow):
             Save or not to save pam volumes as single nifti files.
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -2528,7 +2721,7 @@ class ReconstGQIFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
 
@@ -2559,7 +2752,7 @@ class ReconstGQIFlow(Workflow):
                 default_sphere if sphere_name is None else get_sphere(name=sphere_name)
             )
 
-            logging.info("GQI computation started.")
+            logger.info("GQI computation started.")
             gqi_model = GeneralizedQSamplingModel(
                 gtab,
                 method=method,
@@ -2584,7 +2777,7 @@ class ReconstGQIFlow(Workflow):
 
             save_pam(opam, peaks_gqi)
 
-            logging.info("GQI computation completed.")
+            logger.info("GQI computation completed.")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -2600,13 +2793,13 @@ class ReconstGQIFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             msg = (
                 "Pam5 file saved in current directory"
                 if dname_ == ""
                 else f"Pam5 file saved in {dname_}"
             )
-            logging.info(msg)
+            logger.info(msg)
 
             return io_it
 
@@ -2657,16 +2850,16 @@ class ReconstForecastFlow(Workflow):
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvalues files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         lambda_lb : float, optional
@@ -2697,7 +2890,7 @@ class ReconstForecastFlow(Workflow):
             Save or not to save pam volumes as single nifti files.
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
-        out_dir : string, optional
+        out_dir : string or Path, optional
             Output directory.
         out_pam : string, optional
             Name of the peaks volume to be saved.
@@ -2739,7 +2932,7 @@ class ReconstForecastFlow(Workflow):
             ob,
             oqa,
         ) in io_it:
-            logging.info(f"Loading {dwi}")
+            logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
 
@@ -2770,7 +2963,7 @@ class ReconstForecastFlow(Workflow):
                 default_sphere if sphere_name is None else get_sphere(name=sphere_name)
             )
 
-            logging.info("FORECAST computation started.")
+            logger.info("FORECAST computation started.")
             forecast_model = ForecastModel(
                 gtab,
                 sh_order_max=sh_order_max,
@@ -2797,7 +2990,7 @@ class ReconstForecastFlow(Workflow):
 
             save_pam(opam, peaks_forecast)
 
-            logging.info("FORECAST computation completed.")
+            logger.info("FORECAST computation completed.")
 
             if extract_pam_values:
                 pam_to_niftis(
@@ -2813,12 +3006,288 @@ class ReconstForecastFlow(Workflow):
                     reshape_dirs=True,
                 )
 
-            dname_ = os.path.dirname(opam)
+            dname_ = Path(opam).parent
             msg = (
                 "Pam5 file saved in current directory"
                 if dname_ == ""
                 else f"Pam5 file saved in {dname_}"
             )
-            logging.info(msg)
+            logger.info(msg)
 
             return io_it
+
+
+class ReconstFwdtiFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "fwdti"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        fit_method="NLS",
+        b0_threshold=50,
+        bvecs_tol=0.01,
+        npeaks=1,
+        sigma=None,
+        save_metrics=None,
+        nifti_tensor=True,
+        extract_pam_values=False,
+        out_dir="",
+        out_tensor="fwdti_tensors.nii.gz",
+        out_fa="fwdti_fa.nii.gz",
+        out_ga="fwdti_ga.nii.gz",
+        out_rgb="fwdti_rgb.nii.gz",
+        out_md="fwdti_md.nii.gz",
+        out_ad="fwdti_ad.nii.gz",
+        out_rd="fwdti_rd.nii.gz",
+        out_mode="fwdti_mode.nii.gz",
+        out_evec="fwdti_evecs.nii.gz",
+        out_eval="fwdti_evals.nii.gz",
+        out_pam="fwdti_peaks.pam5",
+        out_peaks_dir="fwdti_peaks_dirs.nii.gz",
+        out_peaks_values="fwdti_peaks_values.nii.gz",
+        out_peaks_indices="fwdti_peaks_indices.nii.gz",
+        out_sphere="fwdti_sphere.txt",
+        out_qa="fwdti_qa.nii.gz",
+    ):
+        """Workflow for Free Water Elimination Diffusion Tensor Model.
+
+        Performs a Free Water Elimination Diffusion Tensor reconstruction
+        :footcite:p:`NetoHenriques2017` on the files by 'globing' ``input_files`` and
+        saves the DTI metrics in a directory specified by ``out_dir``.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        mask_files : string
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once.
+        fit_method : string, optional
+            Controls the method used to fit the FW-DTI model. You can choose between a
+            simpler linear approach (WLS) or a more complex non-linear approach (NLS).
+            Both methods are described in :footcite:p:`NetoHenriques2017`.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
+        npeaks : int, optional
+            Number of peaks/eigen vectors to save in each voxel. DTI generates
+            3 eigen values and eigen vectors. The principal eigenvector is
+            saved by default.
+        sigma : float, optional
+            An estimate of the variance. :footcite:t:`Chang2005` recommend to
+            use 1.5267 * std(background_noise), where background_noise is
+            estimated from some part of the image known to contain no signal
+            (only noise) b-vectors are unit vectors.
+        save_metrics : variable string, optional
+            List of metrics to save.
+            Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
+        nifti_tensor : bool, optional
+            Whether the tensor is saved in the standard Nifti format or in an
+            alternate format that is used by other software (e.g., FSL): a
+            4-dimensional volume (shape (i, j, k, 6)) with
+            Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
+        out_dir : string, optional
+            Output directory. (default current directory)
+        out_tensor : string, optional
+            Name of the tensors volume to be saved.
+            Per default, this will be saved following the nifti standard:
+            with the tensor elements as Dxx, Dxy, Dyy, Dxz, Dyz, Dzz on the
+            last (5th) dimension of the volume (shape: (i, j, k, 1, 6)). If
+            `nifti_tensor` is False, this will be saved in an alternate format
+            that is used by other software (e.g., FSL): a
+            4-dimensional volume (shape (i, j, k, 6)) with Dxx, Dxy, Dxz, Dyy,
+            Dyz, Dzz on the last dimension.
+        out_fa : string, optional
+            Name of the fractional anisotropy volume to be saved.
+        out_ga : string, optional
+            Name of the geodesic anisotropy volume to be saved.
+        out_rgb : string, optional
+            Name of the color fa volume to be saved.
+        out_md : string, optional
+            Name of the mean diffusivity volume to be saved.
+        out_ad : string, optional
+            Name of the axial diffusivity volume to be saved.
+        out_rd : string, optional
+            Name of the radial diffusivity volume to be saved.
+        out_mode : string, optional
+            Name of the mode volume to be saved.
+        out_evec : string, optional
+            Name of the eigenvectors volume to be saved.
+        out_eval : string, optional
+            Name of the eigenvalues to be saved.
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
+
+        References
+        ----------
+        .. footbibliography::
+
+        """
+        save_metrics = save_metrics or []
+
+        io_it = self.get_io_iterator()
+
+        if fit_method.upper() not in common_fit_methods:
+            raise ValueError(
+                f"Unknown fit method {fit_method}. "
+                f"Supported methods are {common_fit_methods}"
+            )
+
+        optional_args = {}
+        if fit_method.upper() in ["NLS", "NLLS"]:
+            optional_args["sigma"] = sigma
+
+        for (
+            dwi,
+            bval,
+            bvec,
+            mask,
+            otensor,
+            ofa,
+            oga,
+            orgb,
+            omd,
+            oad,
+            orad,
+            omode,
+            oevecs,
+            oevals,
+            opam,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            osphere,
+            oqa,
+        ) in io_it:
+            logger.info(f"Computing FWDTI metrics for {dwi}")
+            data, affine = load_nifti(dwi)
+
+            if mask is not None:
+                mask = load_nifti_data(mask).astype(bool)
+
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+            gtab = gradient_table(
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
+
+            fwdti_model = FreeWaterTensorModel(
+                gtab, fit_method=fit_method, **optional_args
+            )
+            fwdti_fit = fwdti_model.fit(data, mask=mask)
+
+            if not save_metrics:
+                save_metrics = [
+                    "fa",
+                    "md",
+                    "rd",
+                    "ad",
+                    "ga",
+                    "rgb",
+                    "mode",
+                    "evec",
+                    "eval",
+                    "tensor",
+                ]
+
+            FA = fwdti_fit.fa
+            FA[np.isnan(FA)] = 0
+            FA = np.clip(FA, 0, 1)
+
+            if "tensor" in save_metrics:
+                tensor_vals = lower_triangular(fwdti_fit.quadratic_form)
+
+                if nifti_tensor:
+                    ten_img = nifti1_symmat(tensor_vals, affine=affine)
+                else:
+                    alt_order = [0, 1, 3, 2, 4, 5]
+                    ten_img = nib.Nifti1Image(
+                        tensor_vals[..., alt_order].astype(np.float32), affine
+                    )
+
+                nib.save(ten_img, otensor)
+
+            if "fa" in save_metrics:
+                save_nifti(ofa, FA.astype(np.float32), affine)
+
+            if "ga" in save_metrics:
+                GA = geodesic_anisotropy(fwdti_fit.evals)
+                save_nifti(oga, GA.astype(np.float32), affine)
+
+            if "rgb" in save_metrics:
+                RGB = color_fa(FA, fwdti_fit.evecs)
+                save_nifti(orgb, np.array(255 * RGB, "uint8"), affine)
+
+            if "md" in save_metrics:
+                MD = mean_diffusivity(fwdti_fit.evals)
+                save_nifti(omd, MD.astype(np.float32), affine)
+
+            if "ad" in save_metrics:
+                AD = axial_diffusivity(fwdti_fit.evals)
+                save_nifti(oad, AD.astype(np.float32), affine)
+
+            if "rd" in save_metrics:
+                RD = radial_diffusivity(fwdti_fit.evals)
+                save_nifti(orad, RD.astype(np.float32), affine)
+
+            if "mode" in save_metrics:
+                MODE = get_mode(fwdti_fit.quadratic_form)
+                save_nifti(omode, MODE.astype(np.float32), affine)
+
+            if "evec" in save_metrics:
+                save_nifti(oevecs, fwdti_fit.evecs.astype(np.float32), affine)
+
+            if "eval" in save_metrics:
+                save_nifti(oevals, fwdti_fit.evals.astype(np.float32), affine)
+
+            if save_metrics:
+                msg = f"FWDTI metrics saved to {Path(out_dir).resolve()}"
+                logger.info(msg)
+                for metric in save_metrics:
+                    logger.info(self.last_generated_outputs[f"out_{metric}"])
+
+            pam = tensor_to_pam(
+                fwdti_fit.evals.astype(np.float32),
+                fwdti_fit.evecs.astype(np.float32),
+                affine,
+                sphere=default_sphere,
+                generate_peaks_indices=False,
+                npeaks=npeaks,
+            )
+
+            save_pam(opam, pam)
+
+            if extract_pam_values:
+                pam_to_niftis(
+                    pam,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    fname_sphere=osphere,
+                    fname_qa=oqa,
+                    reshape_dirs=True,
+                )

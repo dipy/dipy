@@ -26,14 +26,14 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.direction import peaks
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti, load_nifti_data, save_nifti
+from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst import shm
 from dipy.tracking import utils
-from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tracker import eudx_tracking
 from dipy.viz import actor, colormap as cmap, window
 
 ###############################################################################
@@ -46,13 +46,20 @@ hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hard
 label_fname = get_fnames(name="stanford_labels")
 t1_fname = get_fnames(name="stanford_t1")
 
-data, _, hardi_img = load_nifti(hardi_fname, return_img=True)
-labels = load_nifti_data(label_fname)
-t1_data = load_nifti_data(t1_fname)
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+labels, labels_affine = load_nifti(label_fname)
+t1_data, t1_affine = load_nifti(t1_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs=bvecs)
 
 ###############################################################################
+# .. note::
+#    Affine, labels_affine and t1_affine are the same in this example, so we can
+#    use any of them for the affine transformation [#]_. If it was not the
+#    case, we would need to transform the streamlines to the space of the
+#    labels or the T1 image.
+#
+#
 # We've loaded an image called ``labels_img`` which is a map of tissue types
 # such that every integer value in the array ``labels`` represents an
 # anatomical structure or tissue type [#]_. For this example, the image was
@@ -73,20 +80,24 @@ csapeaks = peaks.peaks_from_model(
 )
 
 ###############################################################################
-# Now we can use EuDX to track all of the white matter. We define an identity
-# matrix for the affine transformation [#]_ of the seeding locations. To keep
-# things reasonably fast we use ``density=1`` which will result in 1 seeds per
+# Now we can use EuDX to track all of the white matter. To keep things
+# reasonably fast we use ``density=1`` which will result in 1 seeds per
 # voxel. The stopping criterion, determining when the tracking stops, is set to
 # stop when the tracking exits the white matter.
 
-affine = np.eye(4)
 seeds = utils.seeds_from_mask(white_matter, affine, density=1)
 stopping_criterion = BinaryStoppingCriterion(white_matter)
 
-streamline_generator = LocalTracking(
-    csapeaks, stopping_criterion, seeds, affine=affine, step_size=0.5
+streamlines_generator = eudx_tracking(
+    seeds,
+    stopping_criterion,
+    affine,
+    pam=csapeaks,
+    random_seed=1,
+    sphere=peaks.default_sphere,
+    step_size=0.5,
 )
-streamlines = Streamlines(streamline_generator)
+streamlines = Streamlines(streamlines_generator)
 
 ###############################################################################
 # The first of the tracking utilities we'll cover here is ``target``. This
@@ -122,9 +133,11 @@ color = cmap.line_colors(cc_streamlines)
 cc_streamlines_actor = actor.line(
     cc_streamlines, colors=cmap.line_colors(cc_streamlines)
 )
-cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1.0, 1.0, 0.0), opacity=0.5)
+cc_ROI_actor = actor.contour_from_roi(
+    cc_slice, color=(1.0, 1.0, 0.0), opacity=0.5, affine=affine
+)
 
-vol_actor = actor.slicer(t1_data)
+vol_actor = actor.slicer(t1_data, affine=affine)
 
 vol_actor.display(x=40)
 vol_actor2 = vol_actor.copy()
@@ -231,8 +244,8 @@ save_nifti("lr-superiorfrontal-dm.nii.gz", dm.astype("int16"), affine)
 lr_sf_trk = Streamlines(lr_superiorfrontal_track)
 
 # Save streamlines
-sft = StatefulTractogram(lr_sf_trk, hardi_img, Space.VOX)
-save_trk(sft, "lr-superiorfrontal.trk")
+sft = StatefulTractogram(lr_sf_trk, hardi_img, Space.RASMM)
+save_tractogram(sft, "lr-superiorfrontal.trx")
 
 ###############################################################################
 # .. rubric:: Footnotes

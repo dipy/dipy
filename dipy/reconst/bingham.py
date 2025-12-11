@@ -168,8 +168,8 @@ def _single_sf_to_bingham(
     n = min(npeaks, vals.shape[0])
 
     # Calculate dispersion on all and each of the peaks up to 'n'
+    fits = []
     if vals.shape[0] != 0:
-        fits = []
         for i in range(n):
             fit = _bingham_fit_peak(odf, dirs[i], sphere, max_search_angle)
             fits.append(fit)

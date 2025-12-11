@@ -20,11 +20,11 @@ jobs:
 
     steps:
     - name: Set up system
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -38,5 +38,5 @@ jobs:
         export OMP_NUM_THREADS=1
     - name: Run benchmarks
       run: |
-        asv machine --yes --config benchmarks/asv.conf.json
-        asv run --config benchmarks/asv.conf.json --show-stderr
+        asv machine --yes --config ${GITHUB_WORKSPACE}/benchmarks/asv.conf.json
+        asv run --config ${GITHUB_WORKSPACE}/benchmarks/asv.conf.json --show-stderr

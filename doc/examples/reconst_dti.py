@@ -96,12 +96,22 @@ First of all, we mask and crop the data. This is a quick way to avoid
 calculating Tensors on the background of the image. This is done using DIPY_'s
 ``mask`` module.
 """
-
-from dipy.segment.mask import median_otsu
+from dipy.segment.mask import bounding_box, crop, median_otsu
 
 maskdata, mask = median_otsu(
-    data, vol_idx=range(10, 50), median_radius=3, numpass=1, autocrop=True, dilate=2
+    data, vol_idx=range(10, 50), median_radius=3, numpass=1, dilate=2
 )
+
+mins, maxs = bounding_box(mask)
+
+"""
+The ``bounding_box`` function returns the minimum and maximum indices of the
+non-zero voxels in every dimension. We use these indices to crop the data
+and mask to the smallest possible region that contains all the non-zero voxels.
+"""
+
+maskdata = crop(maskdata, mins, maxs)
+mask = crop(mask, mins, maxs)
 print(f"maskdata.shape {maskdata.shape}")
 
 """

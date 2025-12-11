@@ -30,7 +30,7 @@ from dipy.data import default_sphere, get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_tractogram
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.tracking import utils
 from dipy.tracking.stopping_criterion import CmcStoppingCriterion
@@ -122,7 +122,7 @@ pft_streamline_gen = pft_tracking(
 )
 streamlines = Streamlines(pft_streamline_gen)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_pft.trk")
+save_tractogram(sft, "tractogram_pft.trx")
 
 if has_fury:
     scene = window.Scene()
@@ -149,7 +149,7 @@ prob_streamline_generator = probabilistic_tracking(
 )
 streamlines = Streamlines(prob_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_probabilistic_cmc.trk")
+save_tractogram(sft, "tractogram_probabilistic_cmc.trx")
 
 if has_fury:
     scene = window.Scene()

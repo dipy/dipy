@@ -54,6 +54,7 @@ from dipy.align.scalespace import IsotropicScaleSpace
 from dipy.core.interpolation import interpolate_scalar_2d, interpolate_scalar_3d
 from dipy.core.optimize import Optimizer
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 
 _interp_options = ["nearest", "linear"]
 _transform_method = {}
@@ -180,7 +181,7 @@ class AffineMap:
             affine = np.array(affine)
         except Exception as e:
             raise TypeError(
-                "Input must be type ndarray, or be convertible" " to one."
+                "Input must be type ndarray, or be convertible to one."
             ) from e
 
         if len(affine.shape) != _number_dim_affine_matrix:
@@ -203,7 +204,7 @@ class AffineMap:
         # Last row, last column in matrix must be 1.0!
         if affine[-1, -1] != 1.0:
             raise AffineInvalidValuesError(
-                "Last row, last column in matrix" " is not 1.0!"
+                "Last row, last column in matrix is not 1.0!"
             )
 
         # making a copy to insulate it from changes outside object
@@ -916,7 +917,7 @@ class AffineRegistration:
             `level_iters[0]` corresponds to the coarsest scale,
             `level_iters[-1]` the finest, where n is the length of the
             sequence. By default, a 3-level scale space with iterations
-            sequence equal to [10000, 1000, 100] will be used.
+            sequence equal to [1000, 500, 100] will be used.
         sigmas : sequence of floats, optional
             custom smoothing parameter to build the scale space (one parameter
             for each scale). By default, the sequence of sigmas will be
@@ -952,7 +953,13 @@ class AffineRegistration:
             self.metric = MutualInformationMetric()
 
         if level_iters is None:
-            level_iters = [10000, 1000, 100]
+            level_iters = [1000, 500, 100]
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
         self.level_iters = level_iters
         self.levels = len(level_iters)
         if self.levels == 0:
@@ -1086,7 +1093,7 @@ class AffineRegistration:
                     static_masked, static_grid2world, moving_masked, moving_grid2world
                 )
                 self.starting_affine = affine_map.affine
-                print("starting_affine in imaffine:", self.starting_affine)
+                logger.info(f"starting_affine in imaffine: {self.starting_affine}")
             elif starting_affine == "voxel-origin":
                 affine_map = transform_origins(
                     static, static_grid2world, moving, moving_grid2world
@@ -1274,7 +1281,7 @@ class AffineRegistration:
             self.current_level = level
             max_iter = self.level_iters[-1 - level]
             if self.verbosity >= VerbosityLevels.STATUS:
-                print(f"Optimizing level {level} [max iter: {max_iter}]")
+                logger.info(f"Optimizing level {level} [max iter: {max_iter}]")
 
             # Resample the smooth static image to the shape of this level
             smooth_static = self.static_ss.get_image(level)
@@ -1313,7 +1320,7 @@ class AffineRegistration:
 
             # Optimize this level
             if self.options is None:
-                self.options = {"gtol": 1e-4, "disp": False}
+                self.options = {"gtol": 1e-4}
 
             if self.method == "L-BFGS-B":
                 self.options["maxfun"] = max_iter

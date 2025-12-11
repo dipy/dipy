@@ -5,7 +5,6 @@ from numpy.testing import (
     assert_array_equal,
     assert_equal,
     assert_raises,
-    assert_warns,
 )
 
 from dipy.align import imaffine, vector_fields as vf
@@ -18,6 +17,7 @@ from dipy.align.imaffine import (
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
 from dipy.core import geometry as geometry
+from dipy.testing import assert_warns
 from dipy.testing.decorators import set_random_number_generator
 
 # For each transform type, select a transform factor (indicating how large the

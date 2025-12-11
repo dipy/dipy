@@ -8,6 +8,7 @@ from dipy.core.sphere import HemiSphere, disperse_charges
 from dipy.reconst.dti import fractional_anisotropy
 import dipy.reconst.qti as qti
 from dipy.sims.voxel import vec2vec_rotmat
+from dipy.testing import assert_warns
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
@@ -27,7 +28,7 @@ def test_from_3x3_to_6x1():
     npt.assert_array_almost_equal(qti.from_3x3_to_6x1(T), V)
     npt.assert_array_almost_equal(qti.from_3x3_to_6x1(qti.from_6x1_to_3x3(V)), V)
     npt.assert_raises(ValueError, qti.from_3x3_to_6x1, T[0:1])
-    npt.assert_warns(Warning, qti.from_3x3_to_6x1, T + np.arange(3))
+    assert_warns(Warning, qti.from_3x3_to_6x1, T + np.arange(3))
 
 
 def test_from_6x1_to_3x3():
@@ -61,7 +62,7 @@ def test_from_6x6_to_21x1():
     npt.assert_array_almost_equal(qti.from_6x6_to_21x1(T), V)
     npt.assert_array_almost_equal(qti.from_6x6_to_21x1(qti.from_21x1_to_6x6(V)), V)
     npt.assert_raises(ValueError, qti.from_6x6_to_21x1, T[0:1])
-    npt.assert_warns(Warning, qti.from_6x6_to_21x1, T + np.arange(6))
+    assert_warns(Warning, qti.from_6x6_to_21x1, T + np.arange(6))
 
 
 def test_from_21x1_to_6x6():
@@ -372,7 +373,7 @@ def test_qti_model(rng):
     gtab = gradient_table(np.ones(1), bvecs=np.array([[1, 0, 0]]))
     npt.assert_raises(ValueError, qti.QtiModel, gtab)
     gtab = gradient_table(np.ones(1), bvecs=np.array([[1, 0, 0]]), btens="LTE")
-    npt.assert_warns(UserWarning, qti.QtiModel, gtab)
+    assert_warns(UserWarning, qti.QtiModel, gtab)
     npt.assert_raises(ValueError, qti.QtiModel, _qti_gtab(rng), fit_method="non-linear")
 
     # Design matrix calculation

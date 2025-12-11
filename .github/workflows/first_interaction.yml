@@ -12,10 +12,10 @@ jobs:
       issues: write
 
     steps:
-    - uses: actions/first-interaction@v1
+    - uses: actions/first-interaction@v3.1
       with:
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
-        issue-message: |
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        issue_message: |
           :pray: Thank you for contributing an issue !
 
           :rocket: **We are glad that you are finding DIPY useful !**
@@ -28,7 +28,7 @@ jobs:
 
           :book: Please read our [CODE OF CONDUCT](https://github.com/dipy/dipy/blob/master/.github/CODE_OF_CONDUCT.md) and our [CONTRIBUTING guidelines](https://github.com/dipy/dipy/blob/master/.github/CONTRIBUTING.md) if you have not done that already.
 
-        pr-message: |
+        pr_message: |
           :pray: Thank you for contributing a pull request !
 
           :rocket: **We are glad that you are finding DIPY useful !**

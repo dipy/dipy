@@ -6,7 +6,6 @@ from numpy.testing import (
     assert_array_almost_equal,
     assert_equal,
     assert_raises,
-    assert_warns,
 )
 import scipy.special as sps
 
@@ -23,6 +22,7 @@ from dipy.denoise.localpca import (
     mppca,
 )
 from dipy.sims.voxel import multi_tensor
+from dipy.testing import assert_warns
 from dipy.testing.decorators import set_random_number_generator
 
 

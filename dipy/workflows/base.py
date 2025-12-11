@@ -1,6 +1,7 @@
 import argparse
 import inspect
 
+from dipy.utils.logging import logger
 from dipy.workflows.docstring_parser import NumpyDocString
 
 
@@ -360,7 +361,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
     def show_argument(self, dest):
         for act in self._actions[1:]:
             if act.dest == dest:
-                print(act)
+                logger.info(act)
 
     def add_epilogue(self):
         pass

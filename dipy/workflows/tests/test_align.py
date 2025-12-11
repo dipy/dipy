@@ -1,5 +1,4 @@
-import os.path
-from os.path import join as pjoin
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import nibabel as nib
@@ -47,32 +46,59 @@ def test_reslice():
         npt.assert_equal(resliced.shape[-1], volume.shape[-1])
 
 
-def test_slr_flow():
+def test_slr_flow(caplog):
     with TemporaryDirectory() as out_dir:
         data_path = get_fnames(name="fornix")
 
-        fornix = load_tractogram(data_path, "same", bbox_valid_check=False).streamlines
-
-        f = Streamlines(fornix)
-        f1 = f.copy()
-
-        f1_path = pjoin(out_dir, "f1.trk")
-        sft = StatefulTractogram(f1, data_path, Space.RASMM)
-        save_tractogram(sft, f1_path, bbox_valid_check=False)
-
-        f2 = f1.copy()
-        f2._data += np.array([50, 0, 0])
-
-        f2_path = pjoin(out_dir, "f2.trk")
-        sft = StatefulTractogram(f2, data_path, Space.RASMM)
-        save_tractogram(sft, f2_path, bbox_valid_check=False)
+        sft = load_tractogram(data_path, "same", bbox_valid_check=False)
+        sft.streamlines._data += np.array([50, 0, 0])
+        moved_path = Path(out_dir) / "moved.trk"
+        save_tractogram(sft, moved_path, bbox_valid_check=False)
 
         slr_flow = SlrWithQbxFlow(force=True)
-        slr_flow.run(f1_path, f2_path, out_dir=out_dir)
+        slr_flow.run(data_path, moved_path, out_dir=out_dir, bbox_valid_check=False)
 
         out_path = slr_flow.last_generated_outputs["out_moved"]
 
-        npt.assert_equal(os.path.isfile(out_path), True)
+        npt.assert_equal(Path(out_path).is_file(), True)
+
+        sft = sft.from_sft(np.array([]), sft)
+        empty_path = Path(out_dir) / "empty.trk"
+        save_tractogram(sft, empty_path, bbox_valid_check=False)
+
+        slr_flow = SlrWithQbxFlow(force=True)
+
+        # Test empty static file
+        with pytest.raises(SystemExit) as exc_info:
+            slr_flow.run(
+                empty_path,
+                moved_path,
+                out_dir=out_dir,
+                bbox_valid_check=False,
+            )
+
+        assert exc_info.value.code == 1
+        error_records = [r for r in caplog.records if r.levelname == "ERROR"]
+        assert len(error_records) > 0, "Expected ERROR level log message"
+        error_msg = f"Static file {empty_path} is empty"
+        assert any(err.msg in error_msg for err in error_records)
+
+        caplog.clear()
+
+        # Test empty moving file
+        with pytest.raises(SystemExit) as exc_info:
+            slr_flow.run(
+                data_path,
+                empty_path,
+                out_dir=out_dir,
+                bbox_valid_check=False,
+            )
+
+        assert exc_info.value.code == 1
+        error_records = [r for r in caplog.records if r.levelname == "ERROR"]
+        assert len(error_records) > 0, "Expected ERROR level log message"
+        error_msg = f"Moving file {empty_path} is empty"
+        assert any(err.msg in error_msg for err in error_records)
 
 
 @set_random_number_generator(1234)
@@ -84,29 +110,29 @@ def test_image_registration(rng):
             )
         )
 
-        save_nifti(pjoin(temp_out_dir, "b0.nii.gz"), data=static, affine=static_g2w)
-        save_nifti(pjoin(temp_out_dir, "t1.nii.gz"), data=moving, affine=moving_g2w)
+        save_nifti(Path(temp_out_dir) / "b0.nii.gz", data=static, affine=static_g2w)
+        save_nifti(Path(temp_out_dir) / "t1.nii.gz", data=moving, affine=moving_g2w)
         # simulate three direction DWI by repeating b0 three times
         save_nifti(
-            pjoin(temp_out_dir, "dwi.nii.gz"),
+            Path(temp_out_dir) / "dwi.nii.gz",
             data=np.repeat(static[..., None], 3, axis=-1),
             affine=static_g2w,
         )
 
-        static_image_file = pjoin(temp_out_dir, "b0.nii.gz")
-        moving_image_file = pjoin(temp_out_dir, "t1.nii.gz")
-        dwi_image_file = pjoin(temp_out_dir, "dwi.nii.gz")
+        static_image_file = Path(temp_out_dir) / "b0.nii.gz"
+        moving_image_file = Path(temp_out_dir) / "t1.nii.gz"
+        dwi_image_file = Path(temp_out_dir) / "dwi.nii.gz"
 
         image_registration_flow = ImageRegistrationFlow()
         apply_trans = ApplyTransformFlow()
 
         def read_distance(qual_fname):
-            with open(pjoin(temp_out_dir, qual_fname), "r") as f:
+            with open(Path(temp_out_dir) / qual_fname, "r") as f:
                 return float(f.readlines()[-1])
 
         def test_com():
-            out_moved = pjoin(temp_out_dir, "com_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "com_affine.txt")
+            out_moved = Path(temp_out_dir) / "com_moved.nii.gz"
+            out_affine = Path(temp_out_dir) / "com_affine.txt"
 
             image_registration_flow._force_overwrite = True
             image_registration_flow.run(
@@ -120,8 +146,8 @@ def test_image_registration(rng):
             check_existence(out_moved, out_affine)
 
         def test_translation():
-            out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "trans_affine.txt")
+            out_moved = Path(temp_out_dir) / "trans_moved.nii.gz"
+            out_affine = Path(temp_out_dir) / "trans_affine.txt"
 
             image_registration_flow._force_overwrite = True
             image_registration_flow.run(
@@ -141,8 +167,8 @@ def test_image_registration(rng):
             check_existence(out_moved, out_affine)
 
         def test_rigid():
-            out_moved = pjoin(temp_out_dir, "rigid_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "rigid_affine.txt")
+            out_moved = Path(temp_out_dir) / "rigid_moved.nii.gz"
+            out_affine = Path(temp_out_dir) / "rigid_affine.txt"
 
             image_registration_flow._force_overwrite = True
             image_registration_flow.run(
@@ -162,8 +188,8 @@ def test_image_registration(rng):
             check_existence(out_moved, out_affine)
 
         def test_rigid_isoscaling():
-            out_moved = pjoin(temp_out_dir, "rigid_isoscaling_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "rigid_isoscaling_affine.txt")
+            out_moved = Path(temp_out_dir) / "rigid_isoscaling_moved.nii.gz"
+            out_affine = Path(temp_out_dir) / "rigid_isoscaling_affine.txt"
 
             image_registration_flow._force_overwrite = True
             image_registration_flow.run(
@@ -183,8 +209,8 @@ def test_image_registration(rng):
             check_existence(out_moved, out_affine)
 
         def test_rigid_scaling():
-            out_moved = pjoin(temp_out_dir, "rigid_scaling_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "rigid_scaling_affine.txt")
+            out_moved = Path(temp_out_dir) / "rigid_scaling_moved.nii.gz"
+            out_affine = Path(temp_out_dir) / "rigid_scaling_affine.txt"
 
             image_registration_flow._force_overwrite = True
             image_registration_flow.run(
@@ -204,8 +230,8 @@ def test_image_registration(rng):
             check_existence(out_moved, out_affine)
 
         def test_affine():
-            out_moved = pjoin(temp_out_dir, "affine_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "affine_affine.txt")
+            out_moved = Path(temp_out_dir) / "affine_moved.nii.gz"
+            out_affine = Path(temp_out_dir) / "affine_affine.txt"
 
             image_registration_flow._force_overwrite = True
             image_registration_flow.run(
@@ -245,13 +271,13 @@ def test_image_registration(rng):
             )
 
         def check_existence(movedfile, affine_mat_file):
-            assert os.path.exists(movedfile)
-            assert os.path.exists(affine_mat_file)
+            assert Path(movedfile).exists()
+            assert Path(affine_mat_file).exists()
             return True
 
         def test_4D_static():
-            out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "trans_affine.txt")
+            out_moved = Path(temp_out_dir) / "trans_moved.nii.gz"
+            out_affine = Path(temp_out_dir) / "trans_affine.txt"
 
             image_registration_flow._force_overwrite = True
             kwargs = {
@@ -282,12 +308,12 @@ def test_image_registration(rng):
             )
 
             # Checking for the transformed volume shape
-            volume = load_nifti_data(pjoin(temp_out_dir, "transformed.nii.gz"))
+            volume = load_nifti_data(Path(temp_out_dir) / "transformed.nii.gz")
             assert volume.ndim == 3
 
         def test_4D_moving():
-            out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, "trans_affine.txt")
+            out_moved = Path(temp_out_dir) / "trans_moved.nii.gz"
+            out_affine = Path(temp_out_dir) / "trans_affine.txt"
 
             image_registration_flow._force_overwrite = True
 
@@ -320,7 +346,7 @@ def test_image_registration(rng):
             )
 
             # Checking for the transformed volume shape
-            volume = load_nifti_data(pjoin(temp_out_dir, "transformed2.nii.gz"))
+            volume = load_nifti_data(Path(temp_out_dir) / "transformed2.nii.gz")
             assert volume.ndim == 4
 
         test_com()
@@ -334,7 +360,7 @@ def test_image_registration(rng):
         test_4D_moving()
 
 
-def test_apply_transform_error():
+def test_apply_transform_type_error():
     flow = ApplyTransformFlow()
     npt.assert_raises(
         ValueError,
@@ -343,6 +369,19 @@ def test_apply_transform_error():
         "my_fake_moving.nii.gz",
         "my_fake_map.nii.gz",
         transform_type="wrong_type",
+    )
+
+
+def test_apply_transform_interp_error():
+    flow = ApplyTransformFlow()
+    npt.assert_raises(
+        ValueError,
+        flow.run,
+        "my_fake_static.nii.gz",
+        "my_fake_moving.nii.gz",
+        "my_fake_map.nii.gz",
+        transform_type="affine",
+        interpolation="wrong_interp",
     )
 
 
@@ -396,15 +435,15 @@ def test_apply_affine_transform():
             stat_file = str(i[0]) + "_static.nii.gz"
             mov_file = str(i[0]) + "_moving.nii.gz"
 
-            save_nifti(pjoin(temp_out_dir, stat_file), data=static, affine=static_g2w)
+            save_nifti(Path(temp_out_dir) / stat_file, data=static, affine=static_g2w)
 
-            save_nifti(pjoin(temp_out_dir, mov_file), data=moving, affine=moving_g2w)
+            save_nifti(Path(temp_out_dir) / mov_file, data=moving, affine=moving_g2w)
 
-            static_image_file = pjoin(temp_out_dir, str(i[0]) + "_static.nii.gz")
-            moving_image_file = pjoin(temp_out_dir, str(i[0]) + "_moving.nii.gz")
+            static_image_file = Path(temp_out_dir) / str(i[0] + "_static.nii.gz")
+            moving_image_file = Path(temp_out_dir) / str(i[0] + "_moving.nii.gz")
 
-            out_moved = pjoin(temp_out_dir, str(i[0]) + "_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, str(i[0]) + "_affine.txt")
+            out_moved = Path(temp_out_dir) / str(i[0] + "_moved.nii.gz")
+            out_affine = Path(temp_out_dir) / str(i[0] + "_affine.txt")
 
             if str(i[0]) == "TRANSLATION":
                 transform_type = "trans"
@@ -427,10 +466,10 @@ def test_apply_affine_transform():
             )
 
             # Checking for the created moved file.
-            assert os.path.exists(out_moved)
-            assert os.path.exists(out_affine)
+            assert Path(out_moved).exists()
+            assert Path(out_affine).exists()
 
-        images = pjoin(temp_out_dir, "*moving*")
+        images = Path(temp_out_dir) / "*moving*"
         apply_trans.run(
             static_image_file,
             images,
@@ -439,7 +478,28 @@ def test_apply_affine_transform():
         )
 
         # Checking for the transformed file.
-        assert os.path.exists(pjoin(temp_out_dir, "transformed.nii.gz"))
+        assert Path(Path(temp_out_dir) / "transformed.nii.gz").exists()
+
+        apply_trans.run(
+            static_image_file,
+            images,
+            out_dir=temp_out_dir,
+            transform_map_file=out_affine,
+            out_file="transformed_linear.nii.gz",
+        )
+
+        assert Path(Path(temp_out_dir) / "transformed_linear.nii.gz").exists()
+
+        apply_trans.run(
+            static_image_file,
+            images,
+            out_dir=temp_out_dir,
+            transform_map_file=out_affine,
+            interpolation="nearest",
+            out_file="transformed_nearest.nii.gz",
+        )
+
+        assert Path(Path(temp_out_dir) / "transformed_nearest.nii.gz").exists()
 
 
 def test_motion_correction():
@@ -449,22 +509,20 @@ def test_motion_correction():
         # Use an abbreviated data-set:
         img = nib.load(data_path)
         data = img.get_fdata()[..., :10]
-        nib.save(
-            nib.Nifti1Image(data, img.affine), os.path.join(out_dir, "data.nii.gz")
-        )
+        nib.save(nib.Nifti1Image(data, img.affine), Path(out_dir) / "data.nii.gz")
         # Save a subset:
         bvals = np.loadtxt(fbvals_path)
         bvecs = np.loadtxt(fbvecs_path)
-        np.savetxt(os.path.join(out_dir, "bvals.txt"), bvals[:10])
-        np.savetxt(os.path.join(out_dir, "bvecs.txt"), bvecs[:10])
+        np.savetxt(Path(out_dir) / "bvals.txt", bvals[:10])
+        np.savetxt(Path(out_dir) / "bvecs.txt", bvecs[:10])
 
         motion_correction_flow = MotionCorrectionFlow()
 
         motion_correction_flow._force_overwrite = True
         motion_correction_flow.run(
-            os.path.join(out_dir, "data.nii.gz"),
-            os.path.join(out_dir, "bvals.txt"),
-            os.path.join(out_dir, "bvecs.txt"),
+            str(Path(out_dir) / "data.nii.gz"),
+            str(Path(out_dir) / "bvals.txt"),
+            str(Path(out_dir) / "bvecs.txt"),
             out_dir=out_dir,
         )
         out_path = motion_correction_flow.last_generated_outputs["out_moved"]
@@ -486,11 +544,11 @@ def test_syn_registration_flow():
 
     with TemporaryDirectory() as out_dir:
         static_img = nib.Nifti1Image(static_data.astype(float), np.eye(4))
-        fname_static = pjoin(out_dir, "tmp_static.nii.gz")
+        fname_static = Path(out_dir) / "tmp_static.nii.gz"
         nib.save(static_img, fname_static)
 
         moving_img = nib.Nifti1Image(moving_data.astype(float), np.eye(4))
-        fname_moving = pjoin(out_dir, "tmp_moving.nii.gz")
+        fname_moving = Path(out_dir) / "tmp_moving.nii.gz"
         nib.save(moving_img, fname_moving)
 
         positional_args = [fname_static, fname_moving]
@@ -514,9 +572,9 @@ def test_syn_registration_flow():
         syn_flow.run(*positional_args, out_dir=out_dir, **all_args)
 
         warped_path = syn_flow.last_generated_outputs["out_warped"]
-        npt.assert_equal(os.path.isfile(warped_path), True)
+        npt.assert_equal(Path(warped_path).is_file(), True)
         warped_map_path = syn_flow.last_generated_outputs["out_field"]
-        npt.assert_equal(os.path.isfile(warped_map_path), True)
+        npt.assert_equal(Path(warped_map_path).is_file(), True)
 
         # Test the ssd metric
         metric_optional_args = {
@@ -538,9 +596,9 @@ def test_syn_registration_flow():
         syn_flow.run(*positional_args, out_dir=out_dir, **all_args)
 
         warped_path = syn_flow.last_generated_outputs["out_warped"]
-        npt.assert_equal(os.path.isfile(warped_path), True)
+        npt.assert_equal(Path(warped_path).is_file(), True)
         warped_map_path = syn_flow.last_generated_outputs["out_field"]
-        npt.assert_equal(os.path.isfile(warped_map_path), True)
+        npt.assert_equal(Path(warped_map_path).is_file(), True)
 
         # Test the em metric
         metric_optional_args = {
@@ -562,9 +620,9 @@ def test_syn_registration_flow():
         syn_flow.run(*positional_args, out_dir=out_dir, **all_args)
 
         warped_path = syn_flow.last_generated_outputs["out_warped"]
-        npt.assert_equal(os.path.isfile(warped_path), True)
+        npt.assert_equal(Path(warped_path).is_file(), True)
         warped_map_path = syn_flow.last_generated_outputs["out_field"]
-        npt.assert_equal(os.path.isfile(warped_map_path), True)
+        npt.assert_equal(Path(warped_map_path).is_file(), True)
 
 
 @pytest.mark.skipif(not have_pd, reason="Requires pandas")
@@ -577,22 +635,22 @@ def test_bundlewarp_flow():
         f = Streamlines(fornix)
         f1 = f.copy()
 
-        f1_path = pjoin(out_dir, "f1.trk")
+        f1_path = Path(out_dir) / "f1.trk"
         sft = StatefulTractogram(f1, data_path, Space.RASMM)
         save_tractogram(sft, f1_path, bbox_valid_check=False)
 
         f2 = f1.copy()
         f2._data += np.array([50, 0, 0])
 
-        f2_path = pjoin(out_dir, "f2.trk")
+        f2_path = Path(out_dir) / "f2.trk"
         sft = StatefulTractogram(f2, data_path, Space.RASMM)
         save_tractogram(sft, f2_path, bbox_valid_check=False)
 
         bw_flow = BundleWarpFlow(force=True)
-        bw_flow.run(f1_path, f2_path, out_dir=out_dir)
+        bw_flow.run(f1_path, f2_path, out_dir=out_dir, bbox_valid_check=False)
 
-        out_linearly_moved = pjoin(out_dir, "linearly_moved.trk")
-        out_nonlinearly_moved = pjoin(out_dir, "nonlinearly_moved.trk")
+        out_linearly_moved = Path(out_dir) / "linearly_moved.trx"
+        out_nonlinearly_moved = Path(out_dir) / "nonlinearly_moved.trx"
 
-        assert os.path.exists(out_linearly_moved)
-        assert os.path.exists(out_nonlinearly_moved)
+        assert out_linearly_moved.exists()
+        assert out_nonlinearly_moved.exists()

@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from numpy.testing import (
     assert_almost_equal,
@@ -5,7 +7,10 @@ from numpy.testing import (
     assert_array_less,
 )
 
-from dipy.data import get_sphere
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames, get_sphere
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data
 from dipy.reconst.bingham import (
     _bingham_fit_peak,
     _convert_bingham_pars,
@@ -18,7 +23,7 @@ from dipy.reconst.bingham import (
     sf_to_bingham,
     sh_to_bingham,
 )
-from dipy.reconst.shm import sf_to_sh
+from dipy.reconst.shm import CsaOdfModel, descoteaux07_legacy_msg, sf_to_sh
 
 
 def setup_module():
@@ -221,3 +226,40 @@ def test_bingham_from_sh():
     sh = sf_to_sh(odf, sphere, sh_order_max=16, legacy=False)
     bim_sh = sh_to_bingham(sh, sphere, legacy=False, npeaks=2, max_search_angle=45)
     assert_array_almost_equal(bim_sh.model_params, bim_odf.model_params, decimal=3)
+
+
+def test_sh_to_bingham_handles_empty_voxels():
+    """Regression test for UnboundLocalError in sh_to_bingham (Issue #3638).
+
+    Uses  small DWI dataset to fit SH coefficients via CSA ODF,
+    then verifies that sh_to_bingham handles empty voxels correctly.
+    """
+    # Load small diffusion dataset
+    dwi_fname, bval_fname, bvec_fname = get_fnames(name="small_64D")
+    data = load_nifti_data(dwi_fname)
+    bvals, bvecs = read_bvals_bvecs(bval_fname, bvec_fname)
+
+    # Prepare gradient table and fit CSA model to get SH coefficients
+    gtab = gradient_table(bvals=bvals, bvecs=bvecs)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        csa_model = CsaOdfModel(gtab, sh_order_max=4)
+        csa_fit = csa_model.fit(data)
+
+        # Extract SH coefficients
+        sh_coeff = csa_fit.shm_coeff
+
+    # Introduce an empty voxel (simulate background region)
+    sh_coeff = sh_coeff.copy()
+    sh_coeff[0, 0, 0, :] = 0
+
+    # Run sh_to_bingham
+    sphere = get_sphere(name="repulsion724").subdivide(n=2)
+
+    bim = sh_to_bingham(sh_coeff, sphere, legacy=False, max_search_angle=45)
+
+    assert bim.model_params.shape[:3] == sh_coeff.shape[:3]

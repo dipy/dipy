@@ -8,6 +8,7 @@ import scipy.optimize as opt
 from scipy.optimize import minimize
 
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
@@ -198,7 +199,7 @@ class Optimizer:
         return self.res["message"]
 
     def print_summary(self):
-        print(self.res)
+        logger.info(self.res)
 
     @property
     def evolution(self):
@@ -526,35 +527,49 @@ class PositiveDefiniteLeastSquares:
             [X, np.linalg.pinv(design_matrix), measurements]
         )
 
+        # Suppress cvxpy warnings; we handle solution status explicitly below
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            result = self._solve_internal(check, **kwargs)
+        return result
+
+    def _solve_internal(self, check, **kwargs):
+        """Internal solve method with warning suppression applied."""
         try:
             # Check unconstrained solution
             if check:
                 # Solve unconstrained problem
                 self.unconstrained_problem.solve(**kwargs)
 
-                # Return zeros if optimization failed
+                # Check if solution is present
                 status = self.unconstrained_problem.status
-                if status != "optimal":
-                    msg = f"Solver failed to produce an optimum: {status}."
-                    warnings.warn(msg, stacklevel=2)
+                if status not in cvxpy.settings.SOLUTION_PRESENT:
+                    msg = f"Solver failed to produce a solution: {status}."
+                    warnings.warn(msg, stacklevel=3)
                     msg = "Optimization failed, returning zero array."
-                    warnings.warn(msg, stacklevel=2)
+                    warnings.warn(msg, stacklevel=3)
                     return self._zeros
 
                 # Return unconstrained solution if satisfactory
                 self._f.value = self._h.value
                 self.feasibility_problem.solve(**kwargs)
-                if self.feasibility_problem.status == "optimal":
+                if self.feasibility_problem.status in cvxpy.settings.SOLUTION_PRESENT:
                     return np.asarray(self._h.value).squeeze()
 
             # Solve constrained problem
-            self.problem.solve(**kwargs)
+            with warnings.catch_warnings():
+                if self._y.value.shape[0] < 1000:
+                    warnings.filterwarnings("ignore", message="Converting A to a CSC")
+                self.problem.solve(**kwargs)
 
-            # Show warning if solution is not optimal
+            # Check solution status
             status = self.problem.status
-            if status != "optimal":
-                msg = f"Solver failed to produce an optimum: {status}."
-                warnings.warn(msg, stacklevel=2)
+            if status not in cvxpy.settings.SOLUTION_PRESENT:
+                msg = f"Solver failed to produce a solution: {status}."
+                warnings.warn(msg, stacklevel=3)
+            elif status != cvxpy.settings.OPTIMAL:
+                msg = f"Solver produced solution with status: {status}."
+                warnings.warn(msg, stacklevel=3)
 
             # Return solution
             return np.asarray(self._h.value).squeeze()
@@ -562,5 +577,5 @@ class PositiveDefiniteLeastSquares:
         except cvxpy.error.SolverError:
             # Return zeros
             msg = "Optimization failed, returning zero array."
-            warnings.warn(msg, stacklevel=2)
+            warnings.warn(msg, stacklevel=3)
             return self._zeros

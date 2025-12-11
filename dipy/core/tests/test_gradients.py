@@ -32,7 +32,7 @@ from dipy.core.gradients import (
 )
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.testing import clear_and_catch_warnings
+from dipy.testing import assert_warns, clear_and_catch_warnings
 from dipy.testing.decorators import set_random_number_generator
 
 
@@ -914,7 +914,7 @@ def test_affine_input_change():
     for i in range(4):
         affs[:, i, i] = 1
 
-    npt.assert_warns(Warning, reorient_bvecs, gt, affs)
+    assert_warns(Warning, reorient_bvecs, gt, affs)
 
     # Check if list still works
     affs = [np.eye(4) for _ in range(6)]
@@ -1080,4 +1080,4 @@ def test_extract_dwi_shell():
     npt.assert_array_equal(output_bvecs[0], expected_bvecs)
 
     npt.assert_raises(ValueError, extract_dwi_shell, dwi, gtab, bvals_to_extract=[5000])
-    npt.assert_warns(UserWarning, extract_dwi_shell, dwi, gtab, bvals_to_extract=[])
+    assert_warns(UserWarning, extract_dwi_shell, dwi, gtab, bvals_to_extract=[])

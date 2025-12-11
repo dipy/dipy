@@ -18,7 +18,7 @@ with respect to the heart.
 
 """
 
-from os.path import join as pjoin
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,7 +35,7 @@ from dipy.viz import regtools
 
 files, folder = fetch_stanford_hardi()
 static_data, static_affine, static_img = load_nifti(
-    pjoin(folder, "HARDI150.nii.gz"), return_img=True
+    Path(folder) / "HARDI150.nii.gz", return_img=True
 )
 static = np.squeeze(static_data)[..., 0]
 

@@ -862,7 +862,7 @@ def test_positivity_constraint(radial_order=6, rng=None):
     pdf_negative_no_constraint = pdf[pdf < 0].sum()
 
     # Set the cvxpy solver to CLARABEL as the one picked otherwise for this
-    # problem (OSQP) triggers a `Solution may be inaccurate` UserWarning
+    # problem (OSQP) may produce an inaccurate solution
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
