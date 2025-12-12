@@ -200,6 +200,7 @@ class DeepN4:
         else:
             self.device = torch.device("cpu")
         self.model = self.model.to(self.device)
+        self.fetch_default_weights()
 
     def fetch_default_weights(self):
         """Load the model pre-training weights to use for the fitting."""
@@ -303,7 +304,7 @@ class DeepN4:
             in_max,
         )
 
-    def predict(self, img, img_affine, *, voxsize=(1, 1, 1), threshold=0.5):
+    def predict(self, img, img_affine, *, threshold=0.5):
         """Wrapper function to facilitate prediction of larger dataset.
         The function will mask, normalize, split, predict and 're-assemble'
         the data as a volume.
@@ -314,8 +315,6 @@ class DeepN4:
             T1 image to predict and apply bias field
         img_affine : np.ndarray (4, 4)
             Affine matrix for the T1 image
-        voxsize : np.ndarray or list or tuple (3,), optional
-            voxel size of the T1 image.
         threshold : float, optional
             Threshold for cleaning the final correction field
 
@@ -326,8 +325,12 @@ class DeepN4:
             The volume has matching shape to the input data
         """
         # Preprocess input data (resample, normalize, and pad)
-        resampled_T1, inv_affine, mid_shape, offset_array, scale, crop_vs, pad_vs = (
-            transform_img(img, img_affine, voxsize=voxsize)
+        resampled_T1, params = transform_img(
+            img,
+            img_affine,
+            target_voxsize=(2.0, 2.0, 2.0),
+            final_size=(128, 128, 128),
+            order=3,
         )
         (in_features, lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ, in_max) = (
             self.load_resample(resampled_T1)
@@ -345,18 +348,7 @@ class DeepN4:
         )
         final_field[rx:rX, ry:rY, rz:rZ] = field[lx:lX, ly:lY, lz:lZ]
         final_fields = gaussian_filter(final_field, sigma=3)
-        upsample_final_field = recover_img(
-            final_fields,
-            inv_affine,
-            mid_shape,
-            img.shape,
-            offset_array,
-            voxsize,
-            scale,
-            crop_vs,
-            pad_vs,
-        )
-
+        upsample_final_field, _ = recover_img(final_fields, params)
         # Correct the image
         below_threshold_mask = np.abs(upsample_final_field) < threshold
         with np.errstate(divide="ignore", invalid="ignore"):
