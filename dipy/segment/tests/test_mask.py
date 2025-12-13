@@ -2,6 +2,7 @@ import warnings
 
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal, assert_raises
+import pytest
 from scipy.ndimage import binary_dilation, generate_binary_structure, median_filter
 
 from dipy.data import get_fnames
@@ -14,6 +15,7 @@ from dipy.segment.mask import (
     multi_median,
     otsu,
 )
+from dipy.utils.deprecator import ArgsDeprecationWarning
 
 
 def test_mask():
@@ -111,3 +113,9 @@ def test_median_otsu():
 
     # For 4D volumes, can't call without vol_idx input:
     assert_raises(ValueError, median_otsu, data2)
+
+    # Test autocrop
+    # Check that the masked data is cropped to the smallest possible region
+    # that contains all the non-zero voxels.
+    with pytest.warns(ArgsDeprecationWarning, match=r"autocrop"):
+        median_otsu(data2, median_radius=3, numpass=2, vol_idx=[0, 1], dilate=2)
