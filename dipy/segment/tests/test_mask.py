@@ -115,4 +115,6 @@ def test_median_otsu():
     assert_raises(ValueError, median_otsu, data2)
 
     with pytest.warns(ArgsDeprecationWarning, match=r"autocrop"):
-        median_otsu(data2, median_radius=3, numpass=2, vol_idx=[0, 1], dilate=2, autocrop=True)
+        median_otsu(
+            data2, median_radius=3, numpass=2, vol_idx=[0, 1], dilate=2, autocrop=True
+        )
