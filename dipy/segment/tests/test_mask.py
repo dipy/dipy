@@ -114,8 +114,5 @@ def test_median_otsu():
     # For 4D volumes, can't call without vol_idx input:
     assert_raises(ValueError, median_otsu, data2)
 
-    # Test autocrop
-    # Check that the masked data is cropped to the smallest possible region
-    # that contains all the non-zero voxels.
     with pytest.warns(ArgsDeprecationWarning, match=r"autocrop"):
-        median_otsu(data2, median_radius=3, numpass=2, vol_idx=[0, 1], dilate=2)
+        median_otsu(data2, median_radius=3, numpass=2, vol_idx=[0, 1], dilate=2, autocrop=True)
