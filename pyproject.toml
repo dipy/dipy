@@ -123,7 +123,7 @@ build = [
 ]
 all = ["dipy[build, dev, doc, style, viz, optional, benchmark]"]
 style = ["ruff", "pre-commit"]
-viz = ["fury>=0.12.0", "matplotlib"]
+viz = ["fury>0.12.0", "matplotlib", "imgui_bundle"]
 test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
 ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
 dev = [
