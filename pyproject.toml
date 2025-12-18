@@ -128,7 +128,7 @@ all = [
     {include-group = "doc"},
     {include-group = "style"},
     {include-group = "benchmark"},
-    {include-optional = "viz"},
+    {include-optional = "skyline"},
     {include-optional = "optional"},
 ]
 style = ["ruff", "pre-commit"]
@@ -161,10 +161,9 @@ benchmark = [
 
 [project.optional-dependencies]
 skyline = ["fury>=2.0.0a6", "imgui_bundle>=1.92.600", "matplotlib"]
-viz = ["fury>0.12.0", "matplotlib", "imgui_bundle>=1.92.600"]
 ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
 optional = [
-    "dipy[viz, ml]",
+    "dipy[skyline, ml]",
     "cvxpy",
     "scikit-image",
     "boto3",
