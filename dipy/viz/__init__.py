@@ -8,7 +8,8 @@ streamlines, and tensors (powered by FURY and Matplotlib).
 import warnings
 
 from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.app import horizon
+
+# from dipy.viz.horizon.app import horizon
 
 fury_pckg_msg = (
     "You do not have FURY installed. Some visualization functions might not "
@@ -22,12 +23,12 @@ fury, has_fury, _ = optional_package(
 )
 
 
-if has_fury:
-    from fury import actor, colormap, interactor, lib, shaders, ui, utils, window
-    from fury.data import DATA_DIR as FURY_DATA_DIR, fetch_viz_icons, read_viz_icons
+# if has_fury:
+#     from fury import actor, colormap, interactor, lib, shaders, ui, utils, window
+#     from fury.data import DATA_DIR as FURY_DATA_DIR, fetch_viz_icons, read_viz_icons
 
-else:
-    warnings.warn(fury_pckg_msg, stacklevel=2)
+# else:
+#     warnings.warn(fury_pckg_msg, stacklevel=2)
 
 # We make the visualization requirements optional imports:
 _, has_mpl, _ = optional_package(

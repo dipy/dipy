@@ -179,10 +179,12 @@ class Horizon:
             raise ImportError(
                 "Horizon requires FURY. Please install it with pip install fury"
             )
-        if Version(fury_version) < Version("0.10.0"):
+        if Version(fury_version) < Version("0.10.0") or Version(fury_version) > Version(
+            "0.12.0"
+        ):
             ValueError(
-                "Horizon requires FURY version 0.10.0 or higher."
-                " Please upgrade FURY with pip install -U fury."
+                "Horizon requires FURY version 0.10.0 to 0.12.0."
+                " Please use Skyline for version higher than 0.12.0."
             )
 
         self.cluster = cluster

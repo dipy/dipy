@@ -158,7 +158,7 @@ benchmark = [
 ]
 
 [project.optional-dependencies]
-viz = ["fury>=0.12.0", "matplotlib"]
+viz = ["fury>0.12.0", "matplotlib", "imgui_bundle"]
 ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
 optional = [
     "dipy[viz, ml]",
