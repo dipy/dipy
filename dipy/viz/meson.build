@@ -18,3 +18,4 @@ py3.install_sources(
 
 subdir('horizon')
 subdir('tests')
+subdir('skyline')
