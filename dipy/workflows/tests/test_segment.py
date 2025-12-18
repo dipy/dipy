@@ -38,17 +38,16 @@ def test_median_otsu_flow():
         finalize_mask = False
 
         mo_flow = MedianOtsuFlow()
-        with assert_warns(ArgsDeprecationWarning):
-            mo_flow.run(
-                data_path,
-                out_dir=out_dir,
-                save_masked=save_masked,
-                median_radius=median_radius,
-                numpass=numpass,
-                vol_idx=vol_idx,
-                dilate=dilate,
-                finalize_mask=finalize_mask,
-            )
+        mo_flow.run(
+            data_path,
+            out_dir=out_dir,
+            save_masked=save_masked,
+            median_radius=median_radius,
+            numpass=numpass,
+            vol_idx=vol_idx,
+            dilate=dilate,
+            finalize_mask=finalize_mask,
+        )
 
         mask_name = mo_flow.last_generated_outputs["out_mask"]
         masked_name = mo_flow.last_generated_outputs["out_masked"]
@@ -71,6 +70,47 @@ def test_median_otsu_flow():
         result_masked_data = np.asanyarray(result_masked.dataobj)
 
         npt.assert_array_equal(np.round(result_masked_data), masked)
+
+
+def test_median_otsu_flow_autocrop_deprecated():
+    """Test that autocrop parameter triggers deprecation warning."""
+    with TemporaryDirectory() as out_dir:
+        data_path, _, _ = get_fnames(name="small_25")
+
+        mo_flow = MedianOtsuFlow()
+
+        with assert_warns(ArgsDeprecationWarning):
+            mo_flow.run(
+                data_path,
+                out_dir=out_dir,
+                vol_idx="0,",
+                autocrop=True,
+            )
+
+
+def test_median_otsu_flow_with_bvalues():
+    """Test MedianOtsuFlow with bvalues_files parameter."""
+    with TemporaryDirectory() as out_dir:
+        data_path, bval_path, _ = get_fnames(name="small_25")
+        volume = load_nifti_data(data_path)
+
+        mo_flow = MedianOtsuFlow()
+        mo_flow.run(
+            data_path,
+            bvalues_files=[bval_path],
+            b0_threshold=50,
+            out_dir=out_dir,
+            save_masked=True,
+        )
+
+        mask_name = mo_flow.last_generated_outputs["out_mask"]
+        masked_name = mo_flow.last_generated_outputs["out_masked"]
+
+        npt.assert_equal((Path(out_dir) / mask_name).exists(), True)
+        npt.assert_equal((Path(out_dir) / masked_name).exists(), True)
+
+        result_mask_data = load_nifti_data(Path(out_dir) / mask_name)
+        npt.assert_equal(result_mask_data.shape, volume.shape[:3])
 
 
 def test_recobundles_flow():
