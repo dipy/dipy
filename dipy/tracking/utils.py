@@ -182,6 +182,9 @@ def connectivity_matrix(
 
     mapping = defaultdict(list)
     lin_T, offset = _mapping_to_voxel(affine)
+    
+    if not isinstance(streamlines, Streamlines):
+        streamlines = Streamlines(streamlines)
 
     if weights is None:
         weights = np.ones(len(streamlines))
@@ -212,9 +215,6 @@ def connectivity_matrix(
                         mapping[comb].append(i)
 
     else:
-        if not isinstance(streamlines, Streamlines):
-            streamlines = Streamlines(streamlines)
-
         streamlines_end = np.array([sl[[0, -1]] for sl in streamlines])
         streamlines_end = _to_voxel_coordinates(streamlines_end, lin_T, offset)
         x, y, z = streamlines_end.T
