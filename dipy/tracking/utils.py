@@ -140,8 +140,9 @@ def connectivity_matrix(
     symmetric : bool, optional
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
-    weights : ndarray
-        A 1D array containing the weights of each streamline.
+    weights : ndarray, optional
+        A 1D array of size n, containing the weights of each of the n
+        streamlines.
     discard_stream_size : int, optional
         If the length of a streamline is less than or equal to this value, it
         will not be included in the connectivity matrix. When 0, no filtering
@@ -181,11 +182,9 @@ def connectivity_matrix(
     mapping = defaultdict(list)
     lin_T, offset = _mapping_to_voxel(affine)
 
-    # Setting weights to 1 if not specified
     if weights is None:
         weights = np.ones(len(streamlines))
 
-    # Removing small streamlines
     if discard_stream_size > 0:
         keep_idx, = np.where(streamlines._lengths > discard_stream_size)
         streamlines = streamlines[keep_idx]
