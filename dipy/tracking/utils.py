@@ -51,6 +51,7 @@ from collections import defaultdict
 from functools import wraps
 from itertools import combinations
 from warnings import warn
+import types
 
 from nibabel.affines import apply_affine
 from nibabel.streamlines import ArraySequence as Streamlines
@@ -182,8 +183,8 @@ def connectivity_matrix(
 
     mapping = defaultdict(list)
     lin_T, offset = _mapping_to_voxel(affine)
-    
-    if not isinstance(streamlines, Streamlines):
+
+    if isinstance(streamlines, types.GeneratorType):
         streamlines = Streamlines(streamlines)
 
     if weights is None:
@@ -196,7 +197,6 @@ def connectivity_matrix(
 
     if inclusive:
         for i, sl in enumerate(streamlines):
-
             sl = _to_voxel_coordinates(sl, lin_T, offset)
             x, y, z = sl.T
             if symmetric:
