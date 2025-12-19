@@ -15,7 +15,7 @@ import numpy as np
 from dipy.core.histeq import histeq
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
-from dipy.segment.mask import median_otsu
+from dipy.segment.mask import bounding_box, crop, median_otsu
 
 ###############################################################################
 # Download and read the data for this tutorial.
@@ -36,8 +36,8 @@ data = np.squeeze(data)
 # but the default parameters work well on most volumes. For this example,
 # we used 2 as ``median_radius`` and 1 as ``num_pass``
 # In case of holes or minor errors in the mask, add the argument
-# ``finalize_mask=True`` to apply a final step to the mask, which will fix those
-# issues.
+# ``finalize_mask=True`` to apply a final step to the mask, which will fix
+# those issues.
 
 b0_mask, mask = median_otsu(data, median_radius=2, numpass=1)
 
@@ -69,12 +69,18 @@ plt.savefig(f"{fname}_median_otsu.png", bbox_inches="tight")
 # An application of median_otsu for brain segmentation.
 #
 #
-# ``median_otsu`` can also automatically crop the outputs to remove the largest
-# possible number of background voxels. This makes outputted data significantly
-# smaller. Auto-cropping in ``median_otsu`` is activated by setting the
-# ``autocrop`` parameter to ``True``.
+# We can also crop the outputs to remove the largest possible number of
+# background voxels. This makes outputted data significantly smaller. We can
+# use the ``crop`` function to crop the data using the bounding box of the
+# mask.
 
-b0_mask_crop, mask_crop = median_otsu(data, median_radius=4, numpass=4, autocrop=True)
+# 1. Regenerate mask with NEW parameters (radius=4, numpass=4)
+b0_mask_crop, mask_crop = median_otsu(data, median_radius=4, numpass=4)
+
+# 2. Calculate bounding box and crop
+mins, maxs = bounding_box(mask_crop)
+b0_mask_crop = crop(b0_mask_crop, mins, maxs)
+mask_crop = crop(mask_crop, mins, maxs)
 
 ###############################################################################
 # Saving cropped data as demonstrated previously.

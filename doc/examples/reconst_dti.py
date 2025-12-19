@@ -112,6 +112,7 @@ and mask to the smallest possible region that contains all the non-zero voxels.
 
 maskdata = crop(maskdata, mins, maxs)
 mask = crop(mask, mins, maxs)
+
 print(f"maskdata.shape {maskdata.shape}")
 
 """

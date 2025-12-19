@@ -86,6 +86,7 @@ signal, sticks = multi_tensor(
 signal_noisy, sticks = multi_tensor(
     gtab, mevals, S0=100, angles=angles, fractions=fractions, snr=20
 )
+plt.figure()
 
 plt.plot(signal, label="noiseless")
 
