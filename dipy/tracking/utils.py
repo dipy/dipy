@@ -50,8 +50,8 @@ And the letters A-D represent the following points in
 from collections import defaultdict
 from functools import wraps
 from itertools import combinations
-from warnings import warn
 import types
+from warnings import warn
 
 from nibabel.affines import apply_affine
 from nibabel.streamlines import ArraySequence as Streamlines
