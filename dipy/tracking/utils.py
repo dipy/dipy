@@ -176,8 +176,9 @@ def connectivity_matrix(
             "label_volume must be a 3d integer array with non-negative label values"
         )
 
-    matrix = np.zeros((np.max(label_volume) + 1, np.max(label_volume) + 1),
-                      dtype=np.int64)
+    matrix = np.zeros(
+        (np.max(label_volume) + 1, np.max(label_volume) + 1), dtype=np.int64
+    )
 
     mapping = defaultdict(list)
     lin_T, offset = _mapping_to_voxel(affine)
@@ -186,9 +187,9 @@ def connectivity_matrix(
         weights = np.ones(len(streamlines))
 
     if discard_stream_size > 0:
-        keep_idx, = np.where(streamlines._lengths > discard_stream_size)
+        (keep_idx,) = np.where(streamlines._lengths > discard_stream_size)
         streamlines = streamlines[keep_idx]
-        weights = weights[keep_idx]           
+        weights = weights[keep_idx]
 
     if inclusive:
         for i, sl in enumerate(streamlines):
