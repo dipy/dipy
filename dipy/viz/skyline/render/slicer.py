@@ -1,7 +1,7 @@
 from fury.actor import show_slices, volume_slicer
 import numpy as np
 
-from dipy.viz.skyline.UI.elements import create_numeric_input, create_slider
+from dipy.viz.skyline.UI.elements import thin_slider_float
 from dipy.viz.skyline.render.renderer import Visualization
 
 
@@ -25,7 +25,7 @@ class Slicer(Visualization):
         )
         self.bounds = self.slicer.get_bounding_box()
         self.state = np.mean(self.bounds, axis=0).astype(int)
-        print(self.state)
+        show_slices(self.slicer, self.state)
 
         self.slicer.add_event_handler(self._pick_voxel, "pointer_down")
 
@@ -44,29 +44,24 @@ class Slicer(Visualization):
         return self.slicer
 
     def render_widgets(self):
-        changed, new = create_slider(
-            "Slice X",
-            min_value=int(self.bounds[0][0]),
-            max_value=int(self.bounds[1][0]),
-            value=self.state[0],
+        axis_labels = ("X", "Y", "Z")
+        slider_bounds = (
+            (int(self.bounds[0][0] + 1), int(self.bounds[1][0] - 1)),
+            (int(self.bounds[0][1] + 1), int(self.bounds[1][1] - 1)),
+            (int(self.bounds[0][2] + 1), int(self.bounds[1][2] - 1)),
         )
-        if changed:
-            new = min(new, int(self.bounds[1][0]))
-            new = max(new, int(self.bounds[0][0]))
-            self.state[0] = int(new)
-            show_slices(self.slicer, self.state)
-            self.render()
-        changed, new = create_numeric_input("Slice Y", value=self.state[1])
-        if changed:
-            new = min(new, int(self.bounds[1][1]))
-            new = max(new, int(self.bounds[0][1]))
-            self.state[1] = int(new)
-            show_slices(self.slicer, self.state)
-            self.render()
-        changed, new = create_numeric_input("Slice Z", value=self.state[2])
-        if changed:
-            new = min(new, int(self.bounds[1][2]))
-            new = max(new, int(self.bounds[0][2]))
-            self.state[2] = int(new)
-            show_slices(self.slicer, self.state)
-            self.render()
+        for axis, label in enumerate(axis_labels):
+            min_bound, max_bound = slider_bounds[axis]
+            changed, new = thin_slider_float(
+                label,
+                min_value=min_bound,
+                max_value=max_bound,
+                value=int(self.state[axis]),
+                value_type="int",
+                width=250,
+                step=1.0,
+            )
+            if changed:
+                self.state[axis] = new
+        show_slices(self.slicer, self.state)
+        self.render()
