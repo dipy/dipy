@@ -1,7 +1,8 @@
 python_sources = [
   '__init__.py',
   'manager.py',
-  'elements.py'
+  'elements.py',
+  'theme.py'
   ]
 
 py3.install_sources(
