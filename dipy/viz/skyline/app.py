@@ -17,7 +17,7 @@ class Skyline:
                     img,
                     affine=affine,
                     render_callback=self.windows[0].render,
-                    interpolation="nearest",
+                    interpolation="linear",
                 )
                 self.windows[0].screens[0].scene.add(slicer.actor)
                 self.UI_window.add("HARDI Slicer", slicer.render_widgets)

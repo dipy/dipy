@@ -3,7 +3,7 @@ import math
 from imgui_bundle import icons_fontawesome_6, imgui
 
 from dipy.utils.logging import logger
-from dipy.viz.skyline.UI.theme import SLIDER_THEME, THEME
+from dipy.viz.skyline.UI.theme import SLIDER_THEME, SWITCH_THEME, THEME, WINDOW_THEME
 
 
 def render_section_header(
@@ -40,9 +40,9 @@ def render_section_header(
     imgui.push_id(label)
 
     total_width = width if width and width > 0 else imgui.get_content_region_avail().x
-    bg = imgui.get_color_u32(THEME["background"])
-    text_color = imgui.get_color_u32(THEME["text"])
-    accent_color = imgui.get_color_u32(THEME["text_highlight"])
+    bg = imgui.get_color_u32(WINDOW_THEME["background_color"])
+    text_color = imgui.get_color_u32(WINDOW_THEME["title_color"])
+    accent_color = imgui.get_color_u32(WINDOW_THEME["title_active_color"])
 
     start = imgui.get_cursor_screen_pos()
     end = (start.x + total_width, start.y + height)
@@ -197,6 +197,117 @@ def create_numeric_input(label, value, *, value_type="int", step=1, format="%.3f
         )
 
     return changed, new_val
+
+
+def segmented_switch(label, options, value, *, width=0, height=28):
+    """Render a segmented switch control.
+
+    Parameters
+    ----------
+    label : str
+        Text rendered next to the switch.
+    options : list of str
+        Labels for each segment in the switch.
+    value : str
+        Currently selected option. If not found in ``options``, the first option
+        is used.
+    width : int, optional
+        Total width for the switch. If 0 or negative, uses the available width.
+    height : int, optional
+        Height for each segment in pixels.
+
+    Returns
+    -------
+    tuple(bool, str)
+        Whether the selection changed and the resulting option value.
+    """
+    if not options:
+        return False, value
+
+    imgui.push_id(label)
+
+    value_options = [option.lower() for option in options]
+    current_value = value if value in value_options else options[0]
+    label_color = THEME["text"]
+    imgui.push_style_var(imgui.StyleVar_.frame_padding, (12.0, 6.0))
+    imgui.align_text_to_frame_padding()
+    imgui.text_colored(label_color, label)
+    imgui.same_line(0, 32)
+
+    available_width = imgui.get_content_region_avail().x
+    total_width = width if width and width > 0 else available_width
+    count = len(options)
+    button_width = total_width / count if total_width > 0 else 80.0
+
+    selected_bg = imgui.get_color_u32(SWITCH_THEME["active_color"])
+    selected_text = SWITCH_THEME["active_text_color"]
+    inactive_text = SWITCH_THEME["inactive_text_color"]
+    container_bg = SWITCH_THEME["background_color"]
+    border_color = imgui.get_color_u32(SWITCH_THEME["border_color"])
+    container_rounding = 6.0
+
+    imgui.push_style_var(imgui.StyleVar_.item_spacing, (0.0, 0.0))
+    imgui.push_style_var(imgui.StyleVar_.frame_border_size, 0.0)
+    imgui.push_style_var(imgui.StyleVar_.frame_rounding, container_rounding)
+
+    imgui.push_style_color(imgui.Col_.button, (0, 0, 0, 0))
+    imgui.push_style_color(imgui.Col_.button_hovered, (0, 0, 0, 0))
+    imgui.push_style_color(imgui.Col_.button_active, (0, 0, 0, 0))
+
+    changed = False
+    new_value = current_value
+
+    button_height = max(height, imgui.get_frame_height())
+    start = imgui.get_cursor_screen_pos()
+    end = (start.x + button_width * count, start.y + button_height)
+    draw_list = imgui.get_window_draw_list()
+    draw_list.add_rect_filled(
+        start, end, imgui.get_color_u32(container_bg), container_rounding
+    )
+
+    for idx, option in enumerate(value_options):
+        if idx > 0:
+            imgui.same_line(0, 0)
+
+        segment_start = (start.x + idx * button_width, start.y)
+        segment_end = (segment_start[0] + button_width, start.y + button_height)
+
+        is_selected = option == current_value
+        if is_selected:
+            if count == 1:
+                corner_flags = imgui.ImDrawFlags_.round_corners_all
+            elif idx == 0:
+                corner_flags = imgui.ImDrawFlags_.round_corners_left
+            elif idx == count - 1:
+                corner_flags = imgui.ImDrawFlags_.round_corners_right
+            else:
+                corner_flags = imgui.ImDrawFlags_.round_corners_none
+            draw_list.add_rect_filled(
+                segment_start,
+                segment_end,
+                selected_bg,
+                container_rounding,
+                corner_flags,
+            )
+
+        imgui.push_style_color(
+            imgui.Col_.text, selected_text if is_selected else inactive_text
+        )
+
+        if imgui.button(options[idx], (button_width, button_height)):
+            if option != current_value:
+                changed = True
+                new_value = option
+
+        imgui.pop_style_color(1)
+
+    draw_list.add_rect(start, end, border_color, container_rounding, 0, 1.5)
+
+    imgui.pop_style_color(3)
+    imgui.pop_style_var(4)
+    imgui.pop_id()
+
+    return changed, new_value
 
 
 def thin_slider(

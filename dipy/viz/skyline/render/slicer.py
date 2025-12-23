@@ -1,7 +1,8 @@
 from fury.actor import set_group_opacity, show_slices, volume_slicer
+from imgui_bundle import imgui
 import numpy as np
 
-from dipy.viz.skyline.UI.elements import render_group, thin_slider
+from dipy.viz.skyline.UI.elements import render_group, segmented_switch, thin_slider
 from dipy.viz.skyline.render.renderer import Visualization
 
 
@@ -28,6 +29,7 @@ class Slicer(Visualization):
         self.state = np.mean(self.bounds, axis=0).astype(int)
         show_slices(self.slicer, self.state)
         self.opacity = opacity
+        self.interpolation = interpolation or "linear"
 
         self.slicer.add_event_handler(self._pick_voxel, "pointer_down")
 
@@ -61,6 +63,7 @@ class Slicer(Visualization):
             self.opacity = new
             set_group_opacity(self.slicer, self.opacity / 100.0)
 
+        imgui.spacing()
         axis_labels = ("X", "Y", "Z")
         slider_bounds = (
             (int(self.bounds[0][0] + 1), int(self.bounds[1][0] - 1)),
@@ -88,4 +91,14 @@ class Slicer(Visualization):
                 self.state[idx] = new
         show_slices(self.slicer, self.state)
 
+        imgui.spacing()
+        changed, new = segmented_switch(
+            "Interpolation", ["Linear", "Nearest"], self.interpolation, width=250
+        )
+        if changed:
+            self.interpolation = new
+            for actor in self.slicer.children:
+                actor.material.interpolation = self.interpolation
+
+        imgui.spacing()
         self.render()
