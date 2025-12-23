@@ -61,6 +61,5 @@ class UIWindow:
                 self._section_open[name] = is_open
                 if is_open:
                     renderer()
-                    imgui.separator()
                 imgui.pop_id()
         imgui.end()
