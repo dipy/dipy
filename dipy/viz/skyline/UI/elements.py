@@ -3,7 +3,7 @@ import math
 from imgui_bundle import icons_fontawesome_6, imgui
 
 from dipy.utils.logging import logger
-from dipy.viz.skyline.UI.theme import SLIDER_THEME, THEME
+from dipy.viz.skyline.UI.theme import SLIDER_THEME, SWITCH_THEME, THEME, WINDOW_THEME
 
 
 def render_section_header(
@@ -15,13 +15,34 @@ def render_section_header(
     height=28,
     padding_x=12,
 ):
-    """Draw a custom section header with a toggle arrow, returning open state."""
+    """Draw a custom section header with a toggle arrow.
+
+    Parameters
+    ----------
+    label : str
+        Text to render in the header.
+    is_open : bool, optional
+        Current open state for the section. The returned value reflects toggling.
+    icon : str, optional
+        Optional icon text to prefix the label.
+    width : int, optional
+        Header width in pixels. If 0 or negative, uses available width.
+    height : int, optional
+        Header height in pixels.
+    padding_x : int, optional
+        Horizontal padding between the icon and label.
+
+    Returns
+    -------
+    bool
+        Updated open state after handling input.
+    """
     imgui.push_id(label)
 
     total_width = width if width and width > 0 else imgui.get_content_region_avail().x
-    bg = imgui.get_color_u32(THEME["background"])
-    text_color = imgui.get_color_u32(THEME["text"])
-    accent_color = imgui.get_color_u32(THEME["text_highlight"])
+    bg = imgui.get_color_u32(WINDOW_THEME["background_color"])
+    text_color = imgui.get_color_u32(WINDOW_THEME["title_color"])
+    accent_color = imgui.get_color_u32(WINDOW_THEME["title_active_color"])
 
     start = imgui.get_cursor_screen_pos()
     end = (start.x + total_width, start.y + height)
@@ -68,13 +89,35 @@ def render_section_header(
     return is_open
 
 
-def render_group(label, items, *, row_height=26, label_width=42, line_indent=8):
-    """Render a grouped list with a tree-like label column and custom rows."""
+def render_group(label, items, *, row_height=26, label_width=36, line_indent=8):
+    """Render a grouped list with a tree-like label column and custom rows.
+
+    Parameters
+    ----------
+    label : str
+        Group heading shown above the table.
+    items : list of tuple
+        Sequence of items where each entry is
+        ``(render_fn)`` or ``(render_fn, args, kwargs)``.
+        ``render_fn`` is called with the provided args/kwargs in the content column.
+    row_height : int, optional
+        Height of each row in pixels.
+    label_width : int, optional
+        Width of the label column in pixels.
+    line_indent : int, optional
+        Horizontal indent for the guide line from the row start.
+
+    Returns
+    -------
+    list of tuple
+        A list of ``(changed, new_value)`` returned from each ``render_fn`` call.
+        Returns ``None`` if no items are supplied.
+    """
     if not items:
         return
 
-    label_color = imgui.get_color_u32(THEME["text"])
-    line_color = label_color
+    label_color = THEME["text"]
+    line_color = imgui.get_color_u32(label_color)
 
     imgui.text_colored(label_color, label)
     imgui.spacing()
@@ -89,36 +132,48 @@ def render_group(label, items, *, row_height=26, label_width=42, line_indent=8):
         draw_list = imgui.get_window_draw_list()
         text_height = imgui.get_text_line_height()
 
-        for idx, (item_label, render_fn) in enumerate(items):
+        render_data = []
+        total_items = len(items)
+        for idx, item in enumerate(items):
+            render_fn, *rest = item
+            args, kwargs = (), {}
+            if rest:
+                args = rest[0] if len(rest) >= 1 else ()
+                kwargs = rest[1] if len(rest) >= 2 else {}
+
             imgui.table_next_row(imgui.TableRowFlags_.none, row_height)
 
             imgui.table_set_column_index(0)
             row_pos = imgui.get_cursor_screen_pos()
             line_x = row_pos.x + line_indent
-            text_x = line_x + 8
-            center_y = row_pos.y + row_height * 0.5
+            text_x = line_x + 16
+            center_y = row_pos.y + row_height * 0.4
+            is_last = idx == total_items - 1
+            vertical_end_y = center_y if is_last else row_pos.y + row_height
 
             draw_list.add_line(
-                (line_x, row_pos.y),
-                (line_x, row_pos.y + row_height),
+                imgui.ImVec2(line_x, row_pos.y),
+                imgui.ImVec2(line_x, vertical_end_y),
                 line_color,
                 1.0,
             )
             draw_list.add_line(
-                (line_x, center_y),
-                (text_x, center_y),
+                imgui.ImVec2(line_x, center_y),
+                imgui.ImVec2(text_x, center_y),
                 line_color,
                 1.0,
             )
 
             text_y = center_y - text_height * 0.5
-            imgui.set_cursor_screen_pos((text_x + 4, text_y))
-            # imgui.text_colored(label_color, item_label)
+            imgui.set_cursor_screen_pos((text_x, text_y))
+            imgui.dummy((1, text_height))
 
             imgui.table_set_column_index(1)
-            render_fn()
+            changed, new = render_fn(*args, **kwargs)
+            render_data.append((changed, new))
 
         imgui.end_table()
+        return render_data
 
 
 def create_numeric_input(label, value, *, value_type="int", step=1, format="%.3f"):
@@ -144,7 +199,118 @@ def create_numeric_input(label, value, *, value_type="int", step=1, format="%.3f
     return changed, new_val
 
 
-def thin_slider_float(
+def segmented_switch(label, options, value, *, width=0, height=28):
+    """Render a segmented switch control.
+
+    Parameters
+    ----------
+    label : str
+        Text rendered next to the switch.
+    options : list of str
+        Labels for each segment in the switch.
+    value : str
+        Currently selected option. If not found in ``options``, the first option
+        is used.
+    width : int, optional
+        Total width for the switch. If 0 or negative, uses the available width.
+    height : int, optional
+        Height for each segment in pixels.
+
+    Returns
+    -------
+    tuple(bool, str)
+        Whether the selection changed and the resulting option value.
+    """
+    if not options:
+        return False, value
+
+    imgui.push_id(label)
+
+    value_options = [option.lower() for option in options]
+    current_value = value if value in value_options else options[0]
+    label_color = THEME["text"]
+    imgui.push_style_var(imgui.StyleVar_.frame_padding, (12.0, 6.0))
+    imgui.align_text_to_frame_padding()
+    imgui.text_colored(label_color, label)
+    imgui.same_line(0, 32)
+
+    available_width = imgui.get_content_region_avail().x
+    total_width = width if width and width > 0 else available_width
+    count = len(options)
+    button_width = total_width / count if total_width > 0 else 80.0
+
+    selected_bg = imgui.get_color_u32(SWITCH_THEME["active_color"])
+    selected_text = SWITCH_THEME["active_text_color"]
+    inactive_text = SWITCH_THEME["inactive_text_color"]
+    container_bg = SWITCH_THEME["background_color"]
+    border_color = imgui.get_color_u32(SWITCH_THEME["border_color"])
+    container_rounding = 6.0
+
+    imgui.push_style_var(imgui.StyleVar_.item_spacing, (0.0, 0.0))
+    imgui.push_style_var(imgui.StyleVar_.frame_border_size, 0.0)
+    imgui.push_style_var(imgui.StyleVar_.frame_rounding, container_rounding)
+
+    imgui.push_style_color(imgui.Col_.button, (0, 0, 0, 0))
+    imgui.push_style_color(imgui.Col_.button_hovered, (0, 0, 0, 0))
+    imgui.push_style_color(imgui.Col_.button_active, (0, 0, 0, 0))
+
+    changed = False
+    new_value = current_value
+
+    button_height = max(height, imgui.get_frame_height())
+    start = imgui.get_cursor_screen_pos()
+    end = (start.x + button_width * count, start.y + button_height)
+    draw_list = imgui.get_window_draw_list()
+    draw_list.add_rect_filled(
+        start, end, imgui.get_color_u32(container_bg), container_rounding
+    )
+
+    for idx, option in enumerate(value_options):
+        if idx > 0:
+            imgui.same_line(0, 0)
+
+        segment_start = (start.x + idx * button_width, start.y)
+        segment_end = (segment_start[0] + button_width, start.y + button_height)
+
+        is_selected = option == current_value
+        if is_selected:
+            if count == 1:
+                corner_flags = imgui.ImDrawFlags_.round_corners_all
+            elif idx == 0:
+                corner_flags = imgui.ImDrawFlags_.round_corners_left
+            elif idx == count - 1:
+                corner_flags = imgui.ImDrawFlags_.round_corners_right
+            else:
+                corner_flags = imgui.ImDrawFlags_.round_corners_none
+            draw_list.add_rect_filled(
+                segment_start,
+                segment_end,
+                selected_bg,
+                container_rounding,
+                corner_flags,
+            )
+
+        imgui.push_style_color(
+            imgui.Col_.text, selected_text if is_selected else inactive_text
+        )
+
+        if imgui.button(options[idx], (button_width, button_height)):
+            if option != current_value:
+                changed = True
+                new_value = option
+
+        imgui.pop_style_color(1)
+
+    draw_list.add_rect(start, end, border_color, container_rounding, 0, 1.5)
+
+    imgui.pop_style_color(3)
+    imgui.pop_style_var(4)
+    imgui.pop_id()
+
+    return changed, new_value
+
+
+def thin_slider(
     label,
     value,
     min_value,
@@ -154,9 +320,10 @@ def thin_slider_float(
     step=1.0,
     track_height=2.0,
     thumb_radius=7.0,
-    hitbox_height=18.0,
+    hitbox_height=20.0,
     text_format=".3f",
     value_type="float",
+    value_unit=None,
 ):
     """Render a compact slider with a thin track and circular thumb.
 
@@ -184,6 +351,8 @@ def thin_slider_float(
         Format specification passed when displaying float values.
     value_type : {"float", "int"}, optional
         Numeric type enforced for the slider value.
+    value_unit : str or None, optional
+        Optional unit suffix appended to the value display.
 
     Returns
     -------
@@ -294,11 +463,18 @@ def thin_slider_float(
     draw_list.add_circle_filled((thumb_x, track_y), radius, thumb_color)
 
     value_color = SLIDER_THEME["value_color"]
-    imgui.same_line(0, 8)
-    if value_type == "int":
-        imgui.text_colored(value_color, f"{typed_value}")
+
+    if value_unit is not None:
+        display_text = f"{typed_value:{text_format}} {value_unit}"
     else:
-        imgui.text_colored(value_color, f"{typed_value:{text_format}}")
+        display_text = f"{typed_value:{text_format}}"
+
+    max_text_size = 48
+    text_size = imgui.calc_text_size(display_text)
+    imgui.same_line(
+        0, max_text_size - text_size.x if text_size.x < max_text_size else 8
+    )
+    imgui.text_colored(value_color, display_text)
 
     if width > 0:
         imgui.pop_item_width()
