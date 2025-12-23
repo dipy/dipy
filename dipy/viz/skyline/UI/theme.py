@@ -54,4 +54,13 @@ SLIDER_THEME = {
 WINDOW_THEME = {
     "title_color": THEME["text"],
     "title_active_color": THEME["text_highlight"],
+    "background_color": THEME["background"],
+}
+
+SWITCH_THEME = {
+    "background_color": THEME["background"],
+    "active_color": THEME["text"],
+    "inactive_text_color": THEME["text"],
+    "active_text_color": THEME["secondary"],
+    "border_color": THEME["text"],
 }
