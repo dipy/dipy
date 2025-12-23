@@ -686,6 +686,26 @@ fetch_evac_test = _make_fetcher(
     doc="Download EVAC+ test data for Park et. al 2022",
 )
 
+fetch_synthseg_torch_weights = _make_fetcher(
+    "fetch_synthseg_torch_weights",
+    Path(dipy_home) / "synthseg",
+    "https://ndownloader.figshare.com/files/",
+    ["60274412"],
+    [Path("synthseg_model_weights.h5")],
+    md5_list=["83d54a150410bdc1f04d70a84ff8f1ee"],
+    doc="Download SynthSeg model weights for Billot et. al 2023",
+)
+
+fetch_synthseg_test = _make_fetcher(
+    "fetch_synthseg_test",
+    Path(dipy_home) / "synthseg",
+    "https://ndownloader.figshare.com/files/",
+    ["60572540"],
+    ["synthseg_test_data.npz"],
+    md5_list=["70377d1858dc870eca389f30cfc4e193"],
+    doc="Download SynthSeg test data for Billot et. al 2023",
+)
+
 fetch_stanford_t1 = _make_fetcher(
     "fetch_stanford_t1",
     Path(dipy_home) / "stanford_hardi",
@@ -2140,6 +2160,14 @@ def get_fnames(*, name="small_64D", include_optional=False):
     if name == "evac_test_data":
         files, folder = fetch_evac_test()
         test_data = Path(folder) / "evac_test_data.npz"
+        return test_data
+    if name == "synthseg_default_torch_weights":
+        _, folder = fetch_synthseg_torch_weights()
+        w1 = Path(folder) / "synthseg_model_weights.pth"
+        return w1
+    if name == "synthseg_test_data":
+        files, folder = fetch_synthseg_test()
+        test_data = Path(folder) / "synthseg_test_data.npz"
         return test_data
     if name == "DiB_70_lte_pte_ste":
         _, folder = fetch_DiB_70_lte_pte_ste()
