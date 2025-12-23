@@ -7,6 +7,7 @@ python_sources = [
   'test_synb0.py',
   'test_tf.py',
   'test_utils.py',
+  'test_synthseg.py',
   ]
 
 

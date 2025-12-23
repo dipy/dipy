@@ -32,5 +32,5 @@ def test_transform(rng=None):
         warnings.filterwarnings(
             "ignore", message=scipy_affine_txfm_msg, category=UserWarning
         )
-        temp2, _ = recover_img(temp2, params)
+        temp2 = recover_img(temp2, params)
     np.testing.assert_almost_equal(np.array(temp.shape), np.array(temp2.shape))

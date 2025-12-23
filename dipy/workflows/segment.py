@@ -1,3 +1,4 @@
+import csv
 from pathlib import Path
 import sys
 from time import time
@@ -8,6 +9,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.nn.synthseg import SynthSeg
 from dipy.segment.bundles import RecoBundles
 from dipy.segment.mask import median_otsu
 from dipy.segment.tissue import TissueClassifierHMRF, dam_classifier
@@ -399,6 +401,7 @@ class ClassifyTissueFlow(Workflow):
         out_dir="",
         out_tissue="tissue_classified.nii.gz",
         out_pve="tissue_classified_pve.nii.gz",
+        out_csv="tissue_classified.csv",
     ):
         """Extract tissue from a volume.
 
@@ -413,9 +416,13 @@ class ClassifyTissueFlow(Workflow):
             Method to use for tissue extraction. Options are:
                 - 'hmrf': Markov Random Fields modeling approach.
                 - 'dam': Directional Average Maps, proposed by :footcite:p:`Cheng2020`.
+                - 'synthseg': SynthSeg method based on Freesurfer's implementation.
+                proposed by :footcite:p:`Billot2023`.
 
             'hmrf' method is recommended for T1w images, while 'dam' method is
             recommended for DWI Multishell images (single shell are not recommended).
+            'synthseg' works for all modalities, but requires more memory.
+            No pve maps are generated for 'synthseg' method.
         wm_threshold : float, optional
             The threshold below which a voxel is considered white matter. For data like
             HCP, threshold of 0.5 proves to be a good choice. For data like cfin, higher
@@ -451,38 +458,30 @@ class ClassifyTissueFlow(Workflow):
             Name of the tissue volume to be saved.
         out_pve : string, optional
             Name of the pve volume to be saved.
+        out_csv : string, optional
+            Name of the csv file containing label names to be saved.
 
         REFERENCES
         ----------
         .. footbibliography::
 
         """
+        csv_fieldnames = ["Label", "Name"]
         io_it = self.get_io_iterator()
 
-        if not method or method.lower() not in ["hmrf", "dam"]:
+        if not method or method.lower() not in ["hmrf", "dam", "synthseg"]:
             logger.error(
                 f"Unknown method '{method}' for tissue extraction. "
                 "Choose '--method hmrf' (for T1w) or '--method dam' (for DWI)"
+                " or '--method synthseg' (for all modalities)."
             )
             sys.exit(1)
 
-        prefix = "t1" if method.lower() == "hmrf" else "dwi"
-        for i, name in enumerate(self.flat_outputs):
-            if str(name).endswith("tissue_classified.nii.gz"):
-                self.flat_outputs[i] = Path(name).parent / Path(
-                    "tissue_classified.nii.gz"
-                ).with_name(f"{prefix}_tissue_classified.nii.gz")
-            if str(name).endswith("tissue_classified_pve.nii.gz"):
-                self.flat_outputs[i] = Path(name).parent / Path(
-                    "tissue_classified_pve.nii.gz"
-                ).with_name(f"{prefix}_tissue_classified_pve.nii.gz")
-
-        self.update_flat_outputs(self.flat_outputs, io_it)
-
-        for fpath, tissue_out_path, opve in io_it:
+        for fpath, tissue_out_path, opve, ocsv in io_it:
             logger.info(f"Extracting tissue from {fpath}")
 
             data, affine = load_nifti(fpath)
+            class_list = []
 
             if method.lower() == "hmrf":
                 if nclass is None:
@@ -499,6 +498,15 @@ class ClassifyTissueFlow(Workflow):
 
                 save_nifti(tissue_out_path, segmentation_final, affine)
                 save_nifti(opve, PVE, affine)
+                class_list.append(["0", "Background"])
+                for i in range(1, nclass + 1):
+                    class_list.append([f"{i}", f"Tissue_{i}"])
+                class_list.append(
+                    [
+                        "# Due to the nature of the HMRF algorithm",
+                        "tissues are not labeled specifically.",
+                    ]
+                )
 
             elif method.lower() == "dam":
                 if bvals_file is None or not Path(bvals_file).is_file():
@@ -520,7 +528,27 @@ class ClassifyTissueFlow(Workflow):
                 save_nifti(
                     opve, np.stack([wm_mask, gm_mask], axis=-1).astype(np.int32), affine
                 )
+                class_list.append(["0", "Background"])
+                class_list.append(["1", "White_Matter"])
+                class_list.append(["2", "Gray_Matter"])
 
-            logger.info(f"Tissue saved as {tissue_out_path} and PVE as {opve}")
+            elif method.lower() == "synthseg":
+                synthseg = SynthSeg()
+                segmentation_final, label_dict, _ = synthseg.predict(data, affine)
+                for label, name in label_dict.items():
+                    class_list.append([f"{label}", name])
+
+                save_nifti(tissue_out_path, segmentation_final.astype(np.int32), affine)
+
+            with open(ocsv, "w", newline="") as csv_object:
+                csv_writer = csv.writer(csv_object)
+                csv_writer.writerow(csv_fieldnames)
+                csv_writer.writerows(class_list)
+
+            if not method.lower() == "synthseg":
+                logger.info(f"Tissue saved as {tissue_out_path} and PVE as {opve}")
+            else:
+                logger.info(f"Tissue saved as {tissue_out_path}")
+            logger.info(f"Label names saved as {ocsv}")
 
         return io_it
