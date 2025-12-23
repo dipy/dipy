@@ -303,7 +303,7 @@ class DeepN4:
         )
         final_field[rx:rX, ry:rY, rz:rZ] = field[lx:lX, ly:lY, lz:lZ]
         final_fields = gaussian_filter(final_field, sigma=3)
-        upsample_final_field, _ = recover_img(final_fields, params)
+        upsample_final_field = recover_img(final_fields, params)
 
         # Correct the image
         below_threshold_mask = np.abs(upsample_final_field) < threshold

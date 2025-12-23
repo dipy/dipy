@@ -500,7 +500,7 @@ class EVACPlus:
 
         output_mask = []
         for i in range(len(T1)):
-            output, _ = recover_img(prediction[i], params_list[i])
+            output = recover_img(prediction[i], params_list[i])
             if not return_prob:
                 output = np.where(output >= 0.5, 1, 0)
                 if finalize_mask:
