@@ -21,7 +21,6 @@ class Skyline:
                 )
                 self.windows[0].screens[0].scene.add(slicer.actor)
                 self.UI_window.add("HARDI Slicer", slicer.render_widgets)
-            self.windows[0].screens[0].scene.background = (1, 1, 1, 1)
         self.windows[0]._imgui.set_gui(self.UI_window.render)
         self.windows[0].start()
 
