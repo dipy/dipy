@@ -27,6 +27,8 @@ class MedianOtsuFlow(Workflow):
     def run(
         self,
         input_files,
+        bvalues_files=None,
+        b0_threshold=50,
         save_masked=False,
         median_radius=2,
         numpass=5,
@@ -49,6 +51,12 @@ class MedianOtsuFlow(Workflow):
         input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
+        bvalues_files : variable string or Path, optional
+            Path to the b-values files. This path may contain wildcards to
+            process multiple inputs at once.
+        b0_threshold : float, optional
+            Threshold to consider a volume as b0. Used only if bvalues_files
+            is provided.
         save_masked : bool, optional
             Save mask.
         median_radius : int, optional
@@ -66,7 +74,9 @@ class MedianOtsuFlow(Workflow):
         vol_idx : str, optional
             1D array representing indices of ``axis=-1`` of a 4D
             `input_volume`. From the command line use something like
-            '1,2,3-5,7'. This input is required for 4D volumes.
+            '1,2,3-5,7'. This input is required for 4D volumes if bval files
+            are not provided. If bval files are provided, vol_idx is
+            ignored and b0 volumes are used for mask computation.
         dilate : int, optional
             number of iterations for binary dilation.
         finalize_mask : bool, optional
@@ -80,20 +90,44 @@ class MedianOtsuFlow(Workflow):
             Name of the masked volume to be saved.
         """
         io_it = self.get_io_iterator()
+
+        if vol_idx is not None and bvalues_files is not None and io_it:
+            logger.warning(
+                "'vol_idx' parameter is ignored when 'bvalues_files' is provided."
+            )
+
+        if len(bvalues_files or []) > 0 and io_it:
+            if len(bvalues_files) != len(io_it.inputs):
+                logger.error(
+                    "Number of b-values files must match the number of "
+                    "input volumes."
+                )
+                sys.exit(1)
+
         vol_idx = handle_vol_idx(vol_idx)
 
+        bvals_counter = 0
         for fpath, mask_out_path, masked_out_path in io_it:
             logger.info(f"Applying median_otsu segmentation on {fpath}")
 
             data, affine, img = load_nifti(fpath, return_img=True)
+            vol_idx_used = vol_idx
+            if bvalues_files is not None:
+                bvals, _ = read_bvals_bvecs(bvalues_files[bvals_counter], None)
+                bvals_counter += 1
+                b0_indices = np.where(bvals <= b0_threshold)[0]
+                vol_idx_used = b0_indices
+
+            logger.debug(f"vol_idx_used: {vol_idx_used}")
+            extra_args = {} if not autocrop else {"autocrop": autocrop}
             masked_volume, mask_volume = median_otsu(
                 data,
-                vol_idx=vol_idx,
+                vol_idx=vol_idx_used,
                 median_radius=median_radius,
                 numpass=numpass,
                 dilate=dilate,
                 finalize_mask=finalize_mask,
-                autocrop=autocrop,
+                **extra_args,
             )
 
             save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
