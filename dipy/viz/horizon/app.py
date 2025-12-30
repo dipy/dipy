@@ -92,7 +92,12 @@ class Horizon:
         roi_colors=(1, 0, 0),
         surface_colors=((1, 0, 0),),
     ):
-        """Interactive medical visualization - Invert the Horizon!
+        """""Orchestrates interactive medical visualization for multimodal data.
+
+    The Horizon class acts as a central controller for visualizing medical
+    imaging data, including tractograms, volumetric images, and surfaces.
+    It manages the 3D scene, user interactions, and optional processing
+    pipelines such as QuickBundlesX clustering.!
         :footcite:p:`Garyfallidis2019`.
 
         Parameters
@@ -107,7 +112,8 @@ class Horizon:
         surfaces : sequence of tuples
             Each tuple contains vertices and faces
         cluster : bool
-            Enable QuickBundlesX clustering
+        If True, applies QuickBundlesX clustering to the input tractograms
+        for real-time simplification and grouping of streamlines.
         rgb : bool, optional
             Enable the color image (rgb only, alpha channel will be ignored).
         cluster_thr : float
