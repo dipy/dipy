@@ -1743,7 +1743,10 @@ class AutoFlow(Workflow):
         """
 
         if list_pipelines:
-            logger.info(templates.list_pipelines_with_descriptions())
+            current_log_level = logger.getEffectiveLevel()
+            logger.info(
+                templates.list_pipelines_with_descriptions(log_level=current_log_level)
+            )
             return
 
         out_dir = os.path.abspath(out_dir) or os.getcwd()
