@@ -119,6 +119,12 @@ def configure_logger(
     logging.root.addHandler(handler)
     logging.root.setLevel(level)
 
+    dipy_logger = logging.getLogger("dipy")
+    if dipy_logger.hasHandlers():
+        dipy_logger.setLevel(level)
+        for h in dipy_logger.handlers:
+            h.setLevel(level)
+
 
 # Provide a default logger for convenience
 logger = get_logger()
