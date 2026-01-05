@@ -864,31 +864,40 @@ def interactive_pipeline_selection(*, data_chars):
 
     print(suggest_pipeline(data_chars=data_chars))
 
-    pipelines = list_predefined_pipelines()
-    print("\nAvailable predefined pipelines:")
-    print("  0. Custom (interactive) - Build your own pipeline step-by-step")
-    for i, name in enumerate(pipelines, 1):
-        desc = PREDEFINED_PIPELINES[name]["description"]
-        print(f"  {i}. {name:<15} - {desc}")
+    current_log_level = logger.getEffectiveLevel()
+    pipelines = list_predefined_pipelines(log_level=current_log_level)
 
-    choice = input(
-        f"\nEnter choice [0-{len(pipelines)}] (or press Enter for recommended): "
-    ).strip()
+    while True:
+        print("\nAvailable predefined pipelines:")
+        print("  0. Custom (interactive) - Build your own pipeline step-by-step")
+        for i, name in enumerate(pipelines, 1):
+            desc = PREDEFINED_PIPELINES[name]["description"]
+            print(f"  {i}. {name:<15} - {desc}")
 
-    if not choice:
-        return data_chars.recommended_pipeline
-    elif choice == "0":
-        return None
-    else:
+        choice = input(
+            f"\nEnter choice [0-{len(pipelines)}] (or press Enter for 'full'): "
+        ).strip()
+
+        # Default to 'full' if no input
+        if not choice:
+            return "full"
+
+        # Interactive mode
+        if choice == "0":
+            return None
+
+        # Try to parse as number
         try:
             idx = int(choice) - 1
             if 0 <= idx < len(pipelines):
                 return pipelines[idx]
             else:
-                rec = data_chars.recommended_pipeline
-                print(f"Invalid choice, using recommended: {rec}")
-                return data_chars.recommended_pipeline
+                print(
+                    f"Invalid choice. Please enter a number "
+                    f"between 0 and {len(pipelines)}."
+                )
         except ValueError:
-            rec = data_chars.recommended_pipeline
-            print(f"Invalid input, using recommended: {rec}")
-            return data_chars.recommended_pipeline
+            print(
+                f"Invalid input. Please enter a number "
+                f"between 0 and {len(pipelines)}."
+            )

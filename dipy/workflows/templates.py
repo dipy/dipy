@@ -330,7 +330,7 @@ step_size = 0.5
 FULL_PIPELINE = """
 [General]
 name = "full_pipeline"
-description = "Full pipeline: preprocessing + reconstruction + tracking"
+description = "Full pipeline: preprocessing + reconstruction + tracking + SLR + bundles"
 version = "1.0.0"
 author = "DIPY Developers"
 
@@ -341,6 +341,8 @@ bvecs = ""
 t1w = ""
 bids_folder = ""
 out_dir = "."
+atlas_tractogram = ""
+bundle_atlas_dir = ""
 
 # Full preprocessing chain
 [[pipeline]]
@@ -389,6 +391,20 @@ pam_files = "${csd_fit.out_pam}"
 stopping_files = "${dti_fit.out_fa}"
 seeding_files = "${brain_mask.out_mask}"
 seed_density = 2
+
+# Registration (SLR)
+[[pipeline]]
+name = "register"
+cli = "dipy_slr"
+moving_files = "${tracking.out_tractogram}"
+static_files = "${io.atlas_tractogram}"
+
+# Bundle segmentation (RecoBundles)
+[[pipeline]]
+name = "segment_bundles"
+cli = "dipy_recobundles"
+tractogram_files = "${register.out_moved}"
+atlas_dir = "${io.bundle_atlas_dir}"
 """
 
 # =============================================================================
@@ -703,7 +719,10 @@ PREDEFINED_PIPELINES = {
         "config": TRACTOGRAPHY_PIPELINE,
     },
     "full": {
-        "description": "Full pipeline: preprocessing + reconstruction + tracking",
+        "description": (
+            "Full pipeline: preprocessing + reconstruction + tracking + "
+            "SLR + bundles"
+        ),
         "config": FULL_PIPELINE,
     },
     "comprehensive": {
@@ -767,19 +786,40 @@ def get_pipeline_description(*, pipeline_name):
     return PREDEFINED_PIPELINES[pipeline_name]["description"]
 
 
-def list_predefined_pipelines():
+def list_predefined_pipelines(*, log_level=None):
     """List all available predefined pipeline names.
+
+    Parameters
+    ----------
+    log_level : int, optional
+        Logging level. If not DEBUG (10), only returns "full" and allows
+        "interactive" mode. If DEBUG or None, returns all pipelines.
 
     Returns
     -------
     list
         List of pipeline names.
     """
-    return list(PREDEFINED_PIPELINES.keys())
+    import logging
+
+    all_pipelines = list(PREDEFINED_PIPELINES.keys())
+
+    # If log_level is provided and it's not DEBUG, filter to show only "full"
+    # Note: "interactive" is handled separately as it's not a predefined pipeline
+    if log_level is not None and log_level != logging.DEBUG:
+        return ["full"]
+
+    return all_pipelines
 
 
-def list_pipelines_with_descriptions():
+def list_pipelines_with_descriptions(*, log_level=None):
     """List all predefined pipelines with descriptions.
+
+    Parameters
+    ----------
+    log_level : int, optional
+        Logging level. If not DEBUG (10), only shows "full" pipeline.
+        If DEBUG or None, shows all pipelines.
 
     Returns
     -------
@@ -787,7 +827,7 @@ def list_pipelines_with_descriptions():
         Formatted list of pipelines with descriptions.
     """
     lines = ["Available Semantic Pipelines (using [[pipeline]] sections):", "=" * 70]
-    for name in list_predefined_pipelines():
+    for name in list_predefined_pipelines(log_level=log_level):
         desc = PREDEFINED_PIPELINES[name]["description"]
         lines.append(f"  {name:<15} - {desc}")
     lines.append("=" * 70)
