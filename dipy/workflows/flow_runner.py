@@ -12,12 +12,30 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 
 def get_level(lvl):
     """Transforms the logging level passed on the commandline into a proper
-    logging level name.
+    logging level integer.
+
+    Parameters
+    ----------
+    lvl : str or int
+        Logging level name (case-insensitive) or integer.
+
+    Returns
+    -------
+    int
+        Logging level integer (e.g., 10 for DEBUG, 20 for INFO).
     """
+    if isinstance(lvl, int):
+        return lvl
+
     try:
-        return logging._levelNames[lvl]
-    except Exception:
-        return logging.INFO
+        level_name = str(lvl).upper()
+        level = getattr(logging, level_name, None)
+        if level is not None and isinstance(level, int):
+            return level
+    except (AttributeError, ValueError):
+        pass
+
+    return logging.INFO
 
 
 def run_flow(flow, *, extra_args=None):
