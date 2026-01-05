@@ -1069,7 +1069,10 @@ class AutoFlow(Workflow):
         """
 
         if list_pipelines:
-            logger.info(templates.list_pipelines_with_descriptions())
+            current_log_level = logger.getEffectiveLevel()
+            logger.info(
+                templates.list_pipelines_with_descriptions(log_level=current_log_level)
+            )
             return
 
         out_dir = os.path.abspath(out_dir) or os.getcwd()
@@ -1133,16 +1136,21 @@ class AutoFlow(Workflow):
                         config = toml.loads(config_str)
                     except KeyError:
                         logger.error(f"Unknown pipeline type: {pipeline_type}")
-                        logger.info(templates.list_pipelines_with_descriptions())
+                        current_log_level = logger.getEffectiveLevel()
+                        logger.info(
+                            templates.list_pipelines_with_descriptions(
+                                log_level=current_log_level
+                            )
+                        )
                         sys.exit(1)
                     except Exception as e:
                         logger.error(f"Error loading predefined pipeline: {e}")
                         sys.exit(1)
                 else:
-                    logger.info("Using default 'tractography' pipeline")
+                    logger.info("Using default 'full' pipeline")
                     try:
                         config_str = templates.get_predefined_pipeline(
-                            pipeline_name="tractography"
+                            pipeline_name="full"
                         )
                         config = toml.loads(config_str)
                     except Exception as e:
