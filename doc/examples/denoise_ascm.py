@@ -34,8 +34,8 @@ import numpy as np
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.denoise.adaptive_soft_matching import adaptive_soft_matching
+from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.noise_estimate import estimate_sigma
-from dipy.denoise.non_local_means import non_local_means
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 
@@ -67,7 +67,7 @@ sigma = estimate_sigma(data, N=4)
 # For the denoised version of the original data which preserves sharper
 # features, we perform non-local means with smaller patch size.
 
-den_small = non_local_means(
+den_small = nlmeans(
     data, sigma=sigma, mask=mask, patch_radius=1, block_radius=1, rician=True
 )
 
@@ -75,7 +75,7 @@ den_small = non_local_means(
 # For the denoised version of the original data that implies more smoothing, we
 # perform non-local means with larger patch size.
 
-den_large = non_local_means(
+den_large = nlmeans(
     data, sigma=sigma, mask=mask, patch_radius=2, block_radius=1, rician=True
 )
 

@@ -101,10 +101,10 @@ def test_io_fetch():
     fetch_flow = FetchFlow()
     with TemporaryDirectory() as out_dir:
         fetch_flow.run(["bundle_fa_hcp"])
-        npt.assert_equal(Path(Path(dipy_home) / "bundle_fa_hcp").is_dir(), True)
+        npt.assert_equal(Path(dipy_home / "bundle_fa_hcp").is_dir(), True)
 
         fetch_flow.run(["bundle_fa_hcp"], out_dir=out_dir)
-        npt.assert_equal(Path(Path(dipy_home) / "bundle_fa_hcp").is_dir(), True)
+        npt.assert_equal(Path(dipy_home / "bundle_fa_hcp").is_dir(), True)
 
 
 def test_io_fetch_fetcher_datanames():
