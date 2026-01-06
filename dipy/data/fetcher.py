@@ -2230,7 +2230,7 @@ def read_qtdMRI_test_retest_2subjects():
         "subject2_dwis_retest.nii.gz",
     ]
     for data_name in data_names:
-        data_loc = Path(dipy_home) / "qtdMRI_test_retest_2subjects", data_name
+        data_loc = Path(dipy_home) / "qtdMRI_test_retest_2subjects" / data_name
         data.append(load_nifti_data(data_loc))
 
     cc_masks = []
@@ -2241,7 +2241,7 @@ def read_qtdMRI_test_retest_2subjects():
         "subject2_ccmask_retest.nii.gz",
     ]
     for mask_name in mask_names:
-        mask_loc = Path(dipy_home) / "qtdMRI_test_retest_2subjects", mask_name
+        mask_loc = Path(dipy_home) / "qtdMRI_test_retest_2subjects" / mask_name
         cc_masks.append(load_nifti_data(mask_loc))
 
     gtabs = []
@@ -2252,7 +2252,7 @@ def read_qtdMRI_test_retest_2subjects():
         "subject2_scheme_retest.txt",
     ]
     for gtab_txt_name in gtab_txt_names:
-        txt_loc = Path(dipy_home) / "qtdMRI_test_retest_2subjects", gtab_txt_name
+        txt_loc = Path(dipy_home) / "qtdMRI_test_retest_2subjects" / gtab_txt_name
         qtdmri_scheme = np.loadtxt(txt_loc, skiprows=1)
         bvecs = qtdmri_scheme[:, 1:4]
         G = qtdmri_scheme[:, 4] / 1e3  # because dipy takes T/mm not T/m
@@ -2855,7 +2855,7 @@ def get_file_formats():
     bundles_list : all bundles (list)
     ref_anat : reference
     """
-    ref_anat = Path(dipy_home) / "bundle_file_formats_example", "template0.nii.gz"
+    ref_anat = Path(dipy_home) / "bundle_file_formats_example" / "template0.nii.gz"
     bundles_list = []
     for filename in [
         "cc_m_sub.trk",
@@ -2864,7 +2864,7 @@ def get_file_formats():
         "raf_m_sub.vtk",
         "rpt_m_sub.dpy",
     ]:
-        bundles_list.append(Path(dipy_home) / "bundle_file_formats_example", filename)
+        bundles_list.append(Path(dipy_home) / "bundle_file_formats_example" / filename)
 
     return bundles_list, ref_anat
 
@@ -2884,7 +2884,7 @@ def get_bundle_atlas_hcp842(*, size=80):
         / "bundle_atlas_hcp842"
         / f"Atlas_{size}_Bundles"
         / "whole_brain"
-        / "whole_brain_MNI.trk",
+        / "whole_brain_MNI.trk"
     )
 
     file2 = (
@@ -2906,17 +2906,19 @@ def get_two_hcp842_bundles():
     file2 : string
     """
     file1 = (
-        Path(dipy_home) / "bundle_atlas_hcp842",
-        "Atlas_80_Bundles",
-        "bundles",
-        "AF_L.trk",
+        Path(dipy_home)
+        / "bundle_atlas_hcp842"
+        / "Atlas_80_Bundles"
+        / "bundles"
+        / "AF_L.trk"
     )
 
     file2 = (
-        Path(dipy_home) / "bundle_atlas_hcp842",
-        "Atlas_80_Bundles",
-        "bundles",
-        "CST_L.trk",
+        Path(dipy_home)
+        / "bundle_atlas_hcp842"
+        / "Atlas_80_Bundles"
+        / "bundles"
+        / "CST_L.trk"
     )
 
     return file1, file2
@@ -2929,9 +2931,7 @@ def get_target_tractogram_hcp():
     file1 : string
     """
     file1 = (
-        Path(dipy_home) / "target_tractogram_hcp",
-        "hcp_tractogram",
-        "streamlines.trk",
+        Path(dipy_home) / "target_tractogram_hcp" / "hcp_tractogram" / "streamlines.trk"
     )
 
     return file1
@@ -3183,7 +3183,7 @@ def fetch_hcp(
     else:
         my_path = path
 
-    base_dir = Path(my_path) / study, "derivatives", "hcp_pipeline"
+    base_dir = Path(my_path) / study / "derivatives" / "hcp_pipeline"
 
     if not Path(base_dir).exists():
         os.makedirs(base_dir, exist_ok=True)
@@ -3199,19 +3199,19 @@ def fetch_hcp(
         if not Path(sub_dir).exists():
             os.makedirs(Path(sub_dir) / "dwi", exist_ok=True)
             os.makedirs(Path(sub_dir) / "anat", exist_ok=True)
-        data_files[Path(sub_dir) / "dwi", f"sub-{subject}_dwi.bval"] = (
+        data_files[Path(sub_dir) / "dwi" / f"sub-{subject}_dwi.bval"] = (
             f"{study}/{subject}/T1w/Diffusion/bvals"
         )
-        data_files[Path(sub_dir) / "dwi", f"sub-{subject}_dwi.bvec"] = (
+        data_files[Path(sub_dir) / "dwi" / f"sub-{subject}_dwi.bvec"] = (
             f"{study}/{subject}/T1w/Diffusion/bvecs"
         )
-        data_files[Path(sub_dir) / "dwi", f"sub-{subject}_dwi.nii.gz"] = (
+        data_files[Path(sub_dir) / "dwi" / f"sub-{subject}_dwi.nii.gz"] = (
             f"{study}/{subject}/T1w/Diffusion/data.nii.gz"
         )
-        data_files[Path(sub_dir) / "anat", f"sub-{subject}_T1w.nii.gz"] = (
+        data_files[Path(sub_dir) / "anat" / f"sub-{subject}_T1w.nii.gz"] = (
             f"{study}/{subject}/T1w/T1w_acpc_dc.nii.gz"
         )
-        data_files[Path(sub_dir) / "anat", f"sub-{subject}_aparc+aseg_seg.nii.gz"] = (
+        data_files[Path(sub_dir) / "anat" / f"sub-{subject}_aparc+aseg_seg.nii.gz"] = (
             f"{study}/{subject}/T1w/aparc+aseg.nii.gz"
         )
 
