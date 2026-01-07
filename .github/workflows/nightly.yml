@@ -113,20 +113,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ needs.check-commit.outputs.build-commit }}
-      # https://mac.r-project.org/openmp/
-      # https://github.com/mesonbuild/meson/issues/7435
-      # https://github.com/mesonbuild/meson/issues/13145
-      - name: Get OpenMP and llvm
-        shell: bash -el {0}
-        run: |
-          set -xo pipefail
-          brew install llvm
-          wget https://mac.r-project.org/openmp/openmp-19.1.0-darwin20-Release.tar.gz
-          sudo tar -xzvC / -f openmp-19.1.0-darwin20-Release.tar.gz
-          ls -al /usr/local/lib/libomp*
       - uses: pypa/cibuildwheel@v3.3.1
-        env:
-            CIBW_BUILD_ENVIRONMENT_MACOS: "CC=/opt/homebrew/opt/llvm/bin/clang CXX=/opt/homebrew/opt/llvm/bin/clang++"
         with:
           output-dir: dist
       - uses: actions/upload-artifact@v6
