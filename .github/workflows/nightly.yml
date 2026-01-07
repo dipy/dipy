@@ -123,10 +123,10 @@ jobs:
           wget https://mac.r-project.org/openmp/openmp-19.1.0-darwin20-Release.tar.gz
           sudo tar -xzvC / -f openmp-19.1.0-darwin20-Release.tar.gz
           ls -al /usr/local/lib/libomp*
+          echo "DYLD_FALLBACK_LIBRARY_PATH=/usr/local/lib:$DYLD_FALLBACK_LIBRARY_PATH" >> $GITHUB_ENV
       - uses: pypa/cibuildwheel@v3.3.1
         env:
             CIBW_BUILD: "${{ matrix.cibw_python }}-*"
-            CIBW_ENVIRONMENT_MACOS: "LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH"
         with:
           output-dir: dist
       - uses: actions/upload-artifact@v6
@@ -183,7 +183,7 @@ jobs:
       - name: Test wheel
         run: |
           set -eo pipefail
-          ls -al ./dist/*.whl
+          ls -al ./dist/*cp${PY_VERSION}-*.whl
           python -m pip install --only-binary="numpy,scipy,h5py" --index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple" "numpy>=2.1.0.dev0" "scipy>=1.14.0.dev0" h5py
           python -m pip install ./dist/*.whl
           python -c "import dipy; print(dipy.__version__)"
