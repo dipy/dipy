@@ -1,5 +1,8 @@
 name: Build and upload nightly wheels
 on:
+  pull_request:
+    branches:
+      - master
   workflow_dispatch:
     inputs:
       branch_or_tag:
@@ -33,37 +36,62 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-commit:
+    name: Check [wheels] in commit message
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.commit-message.outputs.PROCEED }}
+      build-commit: ${{ steps.build-commit.outputs.BUILD_COMMIT }}
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - name: Check commit message for [wheels]
+        id: commit-message
+        run: |
+          echo "github.event_name==${{ github.event_name }}"
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "PROCEED=true" | tee $GITHUB_OUTPUT
+          elif git log -1 --pretty=%B | grep -iq '\[wheels\]'; then
+            echo "PROCEED=true" | tee $GITHUB_OUTPUT
+          else
+            echo "PROCEED=false" | tee $GITHUB_OUTPUT
+          fi
+      - name: Check build commit
+        id: build-commit
+        run: |
+          if [[ "schedule" == "${{ github.event_name }}" ]]; then
+            echo "BUILD_COMMIT=master" | tee $GITHUB_OUTPUT;
+          else
+            echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" | tee $GITHUB_OUTPUT
+          fi
+
   build_linux_wheels:
     name: Build python ${{ matrix.cibw_python }} wheels on ${{ matrix.os }}
-    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+    needs: check-commit
+    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master' && needs.check-commit.outputs.proceed == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm]
-        cibw_python: ["cp310", "cp311", "cp312", "cp313", "cp314"]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, macos-latest]
+        cibw_python: ["cp311", "cp312", "cp313", "cp314"]
     steps:
-      - name: Setup Environment variables
-        shell: bash
-        run: |
-          if [ "schedule" == "${{ github.event_name }}" ]; then echo "BUILD_COMMIT=master" >> $GITHUB_ENV; else echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" >> $GITHUB_ENV; fi
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ env.BUILD_COMMIT }}
-      - uses: actions/setup-python@v6
-        name: Install Python
-        with:
-          python-version: "3.12"
-      - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel
-      - name: Build the wheel
-        run: python -m cibuildwheel --output-dir dist
+          ref: ${{ needs.check-commit.outputs.build-commit }}
+      - uses: pypa/cibuildwheel@v3.3.1
         env:
             CIBW_BUILD: "${{ matrix.cibw_python }}-*"
             CIBW_SKIP: "*-musllinux_*"
             CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
             CIBW_MANYLINUX_I686_IMAGE: manylinux2014
+        with:
+          output-dir: dist
       - uses: actions/upload-artifact@v6
         with:
             name: wheels-${{ matrix.os }}-${{ matrix.cibw_python }}
@@ -71,40 +99,36 @@ jobs:
 
   build_osx_wheels:
     name: Build python ${{ matrix.cibw_python }} wheels on ${{ matrix.os }}
-    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+    needs: check-commit
+    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master' && needs.check-commit.outputs.proceed == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, macos-latest]
-        cibw_python: ["cp310", "cp311", "cp312", "cp313", "cp314"]
-        include:
-          - os: macos-latest
-            compiler_env: CC=/usr/local/opt/llvm/bin/clang CXX=/usr/local/opt/llvm/bin/clang++ LIBRARY_PATH=/usr/local/opt/llvm/lib:$LIBRARY_PATH
-          - os: macos-15-intel
-            compiler_env: CC=/opt/homebrew/opt/llvm/bin/clang CXX=/opt/homebrew/opt/llvm/bin/clang++ LIBRARY_PATH=/opt/homebrew/opt/llvm/lib:$LIBRARY_PATH MACOSX_DEPLOYMENT_TARGET=14.7
-
+        os: [macos-15-intel, macos-latest]
+        cibw_python: ["cp311", "cp312", "cp313", "cp314"]
     steps:
-      - name: Setup Environment variables
-        shell: bash
-        run: |
-          if [ "schedule" == "${{ github.event_name }}" ]; then echo "BUILD_COMMIT=master" >> $GITHUB_ENV; else echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" >> $GITHUB_ENV; fi
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ env.BUILD_COMMIT }}
-      - uses: actions/setup-python@v6
-        name: Install Python
-        with:
-          python-version: "3.12"
-      - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel
-      - name: Build the wheel
-        run: python -m cibuildwheel --output-dir dist
+          ref: ${{ needs.check-commit.outputs.build-commit }}
+      - name: Install macOS compiler
+        if: runner.os == 'macOS'
+        run: |
+          ARCH=$(uname -m)
+          if [[ "$ARCH" == "x86_64" ]]; then
+            echo "MACOS_COMPILER_ENV=CC=/usr/local/opt/llvm/bin/clang CXX=/usr/local/opt/llvm/bin/clang++ LIBRARY_PATH=/usr/local/opt/llvm/lib:$LIBRARY_PATH" | tee -a $GITHUB_ENV
+          else
+            echo "MACOS_COMPILER_ENV=CC=/opt/homebrew/opt/llvm/bin/clang CXX=/opt/homebrew/opt/llvm/bin/clang++ LIBRARY_PATH=/opt/homebrew/opt/llvm/lib:$LIBRARY_PATH MACOSX_DEPLOYMENT_TARGET=14.7" | tee -a $GITHUB_ENV
+          fi
+          brew install llvm libomp
+      - uses: pypa/cibuildwheel@v3.3.1
         env:
-            CIBW_BEFORE_ALL_MACOS: "brew install llvm libomp"
             CIBW_BUILD: "${{ matrix.cibw_python }}-*"
-            CIBW_ENVIRONMENT_MACOS: ${{ matrix.compiler_env }}
+            CIBW_SKIP: "*-musllinux_*"
+            CIBW_ENVIRONMENT_MACOS: ${{ env.MACOS_COMPILER_ENV }}
+        with:
+          output-dir: dist
       - uses: actions/upload-artifact@v6
         with:
             name: wheels-${{ matrix.os }}-${{ matrix.cibw_python }}
@@ -112,33 +136,26 @@ jobs:
 
   build_windows_wheels:
     name: Build python ${{ matrix.cibw_python }} wheels on ${{ matrix.os }}
-    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+    needs: check-commit
+    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master' && needs.check-commit.outputs.proceed == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest]
-        cibw_python: ["cp310", "cp311", "cp312", "cp313", "cp314"]
+        cibw_python: ["cp311", "cp312", "cp313", "cp314"]
     steps:
-      - name: Setup Environment variables
-        shell: bash
-        run: |
-          if [ "schedule" == "${{ github.event_name }}" ]; then echo "BUILD_COMMIT=master" >> $GITHUB_ENV; else echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" >> $GITHUB_ENV; fi
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ env.BUILD_COMMIT }}
-      - uses: actions/setup-python@v6
-        name: Install Python
-        with:
-          python-version: "3.12"
-      - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel
-      - name: Build the wheel
-        run: python -m cibuildwheel --output-dir dist
+          ref: ${{ needs.check-commit.outputs.build-commit }}
+      - uses: pypa/cibuildwheel@v3.3.1
         env:
             CIBW_BUILD: "${{ matrix.cibw_python }}-*"
+            CIBW_SKIP: "*-musllinux_*"
             CIBW_CONFIG_SETTINGS: "setup-args=--vsenv compile-args=-v"
+        with:
+          output-dir: dist
       - uses: actions/upload-artifact@v6
         with:
             name: wheels-${{ matrix.os }}-${{ matrix.cibw_python }}
@@ -179,7 +196,7 @@ jobs:
         contents: write # for softprops/action-gh-release to create GitHub release
       name: Upload to Anaconda
       needs: [build_linux_wheels, build_osx_wheels, build_windows_wheels]
-      if: ${{ always() }} && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+      if: ${{ always() }} && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
       runs-on: ubuntu-latest
       steps:
       - uses: actions/download-artifact@v7
