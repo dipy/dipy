@@ -117,6 +117,7 @@ jobs:
           ref: ${{ needs.check-commit.outputs.build-commit }}
       # https://mac.r-project.org/openmp/
       - name: Get OpenMP
+        shell: bash -e
         run: |
           wget https://mac.r-project.org/openmp/openmp-19.1.0-darwin20-Release.tar.gz
           sudo tar -xzC / -f openmp-19.1.0-darwin20-Release.tar.gz
