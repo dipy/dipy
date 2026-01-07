@@ -19,7 +19,7 @@ on:
     - cron: "0 0 * * 0,3"  # Every Sunday and Wednesday at midnight
 
 env:
-  CIBW_BUILD_VERBOSITY: 2
+  CIBW_BUILD_VERBOSITY: 1  # verbosity of 2 shows thousands of annoying pip lines!
   CIBW_ARCHS: "native"
   CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
   CIBW_TEST_SKIP: "*"
@@ -123,7 +123,7 @@ jobs:
           wget https://mac.r-project.org/openmp/openmp-19.1.0-darwin20-Release.tar.gz
           sudo tar -xzvC / -f openmp-19.1.0-darwin20-Release.tar.gz
           ls -al /usr/local/lib/libomp*
-          echo "DYLD_FALLBACK_LIBRARY_PATH=/usr/local/lib:$DYLD_FALLBACK_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "DYLD_LIBRARY_PATH=/usr/local/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
       - uses: pypa/cibuildwheel@v3.3.1
         env:
             CIBW_BUILD: "${{ matrix.cibw_python }}-*"
