@@ -18,6 +18,9 @@ on:
 env:
   BUILD_COMMIT: "master"
   CIBW_BUILD_VERBOSITY: 2
+  CIBW_ARCHS: "native"
+  CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
+  CIBW_TEST_SKIP: "*"
   CIBW_TEST_REQUIRES: "-r requirements/build.txt pytest==8.0.0"
   CIBW_TEST_COMMAND: pytest --pyargs dipy
   CIBW_CONFIG_SETTINGS: "compile-args=-v"
@@ -31,16 +34,14 @@ concurrency:
 
 jobs:
   build_linux_wheels:
-    name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
+    name: Build python ${{ matrix.cibw_python }} wheels on ${{ matrix.os }}
     if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        cibw_python: ["cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
-        cibw_manylinux: [manylinux2014]
-        cibw_arch: ["x86_64", "aarch64"]
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+        cibw_python: ["cp310", "cp311", "cp312", "cp313", "cp314"]
     steps:
       - name: Setup Environment variables
         shell: bash
@@ -54,45 +55,33 @@ jobs:
         name: Install Python
         with:
           python-version: "3.12"
-      - name: Set up QEMU
-        if: ${{ matrix.cibw_arch == 'aarch64' }}
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
       - name: Install cibuildwheel
         run: python -m pip install cibuildwheel
       - name: Build the wheel
         run: python -m cibuildwheel --output-dir dist
         env:
-            CIBW_BUILD: ${{ matrix.cibw_python }}
-            CIBW_ARCHS_LINUX: ${{ matrix.cibw_arch }}
+            CIBW_BUILD: "${{ matrix.cibw_python }}-*"
             CIBW_SKIP: "*-musllinux_*"
-            CIBW_TEST_SKIP: "*"  # "*_aarch64"
-            CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.cibw_manylinux }}
-            CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.cibw_manylinux }}
-            CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
-      - name: Rename Python version
-        run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
+            CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+            CIBW_MANYLINUX_I686_IMAGE: manylinux2014
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
+            name: wheels-${{ matrix.os }}-${{ matrix.cibw_python }}
             path: ./dist/*.whl
 
   build_osx_wheels:
-    name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
+    name: Build python ${{ matrix.cibw_python }} wheels on ${{ matrix.os }}
     if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [macos-14, macos-latest]
-        cibw_python: ["cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
+        cibw_python: ["cp310", "cp311", "cp312", "cp313", "cp314"]
         include:
           - os: macos-latest
-            cibw_arch: x86_64
             compiler_env: CC=/usr/local/opt/llvm/bin/clang CXX=/usr/local/opt/llvm/bin/clang++ LIBRARY_PATH=/usr/local/opt/llvm/lib:$LIBRARY_PATH
-          - os: macos-14
-            cibw_arch: arm64
+          - os: macos-15-intel
             compiler_env: CC=/opt/homebrew/opt/llvm/bin/clang CXX=/opt/homebrew/opt/llvm/bin/clang++ LIBRARY_PATH=/opt/homebrew/opt/llvm/lib:$LIBRARY_PATH MACOSX_DEPLOYMENT_TARGET=14.7
 
     steps:
@@ -114,28 +103,22 @@ jobs:
         run: python -m cibuildwheel --output-dir dist
         env:
             CIBW_BEFORE_ALL_MACOS: "brew install llvm libomp"
-            CIBW_BUILD: ${{ matrix.cibw_python }}
-            CIBW_ARCHS_MACOS: ${{ matrix.cibw_arch }}
-            CIBW_TEST_SKIP: "*"  # "*_aarch64 *-macosx_arm64"
+            CIBW_BUILD: "${{ matrix.cibw_python }}-*"
             CIBW_ENVIRONMENT_MACOS: ${{ matrix.compiler_env }}
-            CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
-      - name: Rename Python version
-        run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
+            name: wheels-${{ matrix.os }}-${{ matrix.cibw_python }}
             path: ./dist/*.whl
 
   build_windows_wheels:
-    name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
+    name: Build python ${{ matrix.cibw_python }} wheels on ${{ matrix.os }}
     if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest]
-        cibw_python: ["cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
-        cibw_arch: ["AMD64"]
+        cibw_python: ["cp310", "cp311", "cp312", "cp313", "cp314"]
     steps:
       - name: Setup Environment variables
         shell: bash
@@ -154,16 +137,11 @@ jobs:
       - name: Build the wheel
         run: python -m cibuildwheel --output-dir dist
         env:
-            CIBW_BUILD: ${{ matrix.cibw_python }}
-            CIBW_ARCHS_WINDOWS: ${{ matrix.cibw_arch }}
+            CIBW_BUILD: "${{ matrix.cibw_python }}-*"
             CIBW_CONFIG_SETTINGS: "setup-args=--vsenv compile-args=-v"
-            CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
-      - name: Rename Python version
-        shell: bash
-        run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_arch }}
+            name: wheels-${{ matrix.os }}-${{ matrix.cibw_python }}
             path: ./dist/*.whl
 
   test_wheels:
@@ -181,7 +159,7 @@ jobs:
         run: echo "PY_VERSION=$(echo ${{ matrix.python-version }} | tr -d '.')" >> $GITHUB_ENV
       - uses: actions/download-artifact@v7
         with:
-          name: wheels-cp${{ env.PY_VERSION }}-manylinux2014-x86_64
+          name: wheels-ubuntu-latest-cp${{ env.PY_VERSION }}
           path: ./dist
       - uses: actions/setup-python@v6
         with:
