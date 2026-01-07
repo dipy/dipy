@@ -116,6 +116,8 @@ jobs:
           fetch-depth: 0
           ref: ${{ needs.check-commit.outputs.build-commit }}
       # https://mac.r-project.org/openmp/
+      # https://github.com/mesonbuild/meson/issues/7435
+      # https://github.com/mesonbuild/meson/issues/13145
       - name: Get OpenMP and llvm
         shell: bash -el {0}
         run: |
