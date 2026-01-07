@@ -21,6 +21,7 @@ on:
 env:
   CIBW_BUILD_VERBOSITY: 1  # verbosity of 2 shows thousands of annoying pip lines!
   CIBW_ARCHS: "native"
+  CIBW_BUILD: "cp3{11,12,13,14}-*"
   CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
   CIBW_TEST_SKIP: "*"
   CIBW_TEST_REQUIRES: "-r requirements/build.txt pytest==8.0.0"
@@ -73,15 +74,14 @@ jobs:
           echo "BUILD_COMMIT=$BUILD_COMMIT" | tee -a $GITHUB_OUTPUT
 
   build_linux_wheels:
-    name: Build python ${{ matrix.cibw_python }} wheels on ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.os }}
     needs: check-commit
     if: github.repository_owner == 'dipy' && needs.check-commit.outputs.proceed == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, macos-latest]
-        cibw_python: ["cp311", "cp312", "cp313", "cp314"]
+        os: [ubuntu-latest, ubuntu-24.04-arm]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -89,7 +89,6 @@ jobs:
           ref: ${{ needs.check-commit.outputs.build-commit }}
       - uses: pypa/cibuildwheel@v3.3.1
         env:
-            CIBW_BUILD: "${{ matrix.cibw_python }}-*"
             CIBW_SKIP: "*-musllinux_*"
             CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
             CIBW_MANYLINUX_I686_IMAGE: manylinux2014
@@ -97,11 +96,11 @@ jobs:
           output-dir: dist
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ matrix.os }}-${{ matrix.cibw_python }}
+            name: wheels-${{ matrix.os }}
             path: ./dist/*.whl
 
   build_osx_wheels:
-    name: Build python ${{ matrix.cibw_python }} wheels on ${{ matrix.os }}
+    name: Build ${{ matrix.os }} wheels
     needs: check-commit
     if: github.repository_owner == 'dipy' && needs.check-commit.outputs.proceed == 'true'
     runs-on: ${{ matrix.os }}
@@ -109,7 +108,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-15-intel, macos-latest]
-        cibw_python: ["cp311", "cp312", "cp313", "cp314"]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -122,23 +120,22 @@ jobs:
         shell: bash -el {0}
         run: |
           set -xo pipefail
+          brew install llvm
           wget https://mac.r-project.org/openmp/openmp-19.1.0-darwin20-Release.tar.gz
           sudo tar -xzvC / -f openmp-19.1.0-darwin20-Release.tar.gz
           ls -al /usr/local/lib/libomp*
-          brew install llvm
       - uses: pypa/cibuildwheel@v3.3.1
         env:
-            CIBW_BUILD: "${{ matrix.cibw_python }}-*"
             CIBW_BUILD_ENVIRONMENT_MACOS: "CC=/opt/homebrew/opt/llvm/bin/clang CXX=/opt/homebrew/opt/llvm/bin/clang++"
         with:
           output-dir: dist
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ matrix.os }}-${{ matrix.cibw_python }}
+            name: wheels-${{ matrix.os }}
             path: ./dist/*.whl
 
   build_windows_wheels:
-    name: Build python ${{ matrix.cibw_python }} wheels on ${{ matrix.os }}
+    name: Build ${{ matrix.os }} wheels
     needs: check-commit
     if: github.repository_owner == 'dipy' && needs.check-commit.outputs.proceed == 'true'
     runs-on: ${{ matrix.os }}
@@ -146,7 +143,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest]
-        cibw_python: ["cp311", "cp312", "cp313", "cp314"]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -154,13 +150,12 @@ jobs:
           ref: ${{ needs.check-commit.outputs.build-commit }}
       - uses: pypa/cibuildwheel@v3.3.1
         env:
-            CIBW_BUILD: "${{ matrix.cibw_python }}-*"
             CIBW_CONFIG_SETTINGS: "setup-args=--vsenv compile-args=-v"
         with:
           output-dir: dist
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ matrix.os }}-${{ matrix.cibw_python }}
+            name: wheels-${{ matrix.os }}
             path: ./dist/*.whl
 
   test_wheels:
@@ -178,7 +173,7 @@ jobs:
         run: echo "PY_VERSION=$(echo ${{ matrix.python-version }} | tr -d '.')" >> $GITHUB_ENV
       - uses: actions/download-artifact@v7
         with:
-          name: wheels-ubuntu-latest-cp${{ env.PY_VERSION }}
+          name: wheels-ubuntu-latest
           path: ./dist
       - uses: actions/setup-python@v6
         with:
@@ -186,9 +181,9 @@ jobs:
       - name: Test wheel
         run: |
           set -eo pipefail
-          ls -al ./dist/*cp${PY_VERSION}-*.whl
+          ls -al ./dist/*-cp${PY_VERSION}-*.whl
           python -m pip install --only-binary="numpy,scipy,h5py" --index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple" "numpy>=2.1.0.dev0" "scipy>=1.14.0.dev0" h5py
-          python -m pip install ./dist/*.whl
+          python -m pip install ./dist/*-cp${PY_VERSION}-*.whl
           python -c "import dipy; print(dipy.__version__)"
           python -c "import numpy; assert int(numpy.__version__[0]) >= 2, numpy.__version__"
           python -c "from dipy.align.imaffine import AffineMap"
