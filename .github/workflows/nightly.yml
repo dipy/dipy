@@ -115,21 +115,9 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ needs.check-commit.outputs.build-commit }}
-      - name: Install macOS compiler
-        if: runner.os == 'macOS'
-        run: |
-          ARCH=$(uname -m)
-          if [[ "$ARCH" == "x86_64" ]]; then
-            echo "MACOS_COMPILER_ENV=CC=/usr/local/opt/llvm/bin/clang CXX=/usr/local/opt/llvm/bin/clang++ LIBRARY_PATH=/usr/local/opt/llvm/lib:$LIBRARY_PATH" | tee -a $GITHUB_ENV
-          else
-            echo "MACOS_COMPILER_ENV=CC=/opt/homebrew/opt/llvm/bin/clang CXX=/opt/homebrew/opt/llvm/bin/clang++ LIBRARY_PATH=/opt/homebrew/opt/llvm/lib:$LIBRARY_PATH MACOSX_DEPLOYMENT_TARGET=14.7" | tee -a $GITHUB_ENV
-          fi
-          brew install llvm libomp
       - uses: pypa/cibuildwheel@v3.3.1
         env:
             CIBW_BUILD: "${{ matrix.cibw_python }}-*"
-            CIBW_SKIP: "*-musllinux_*"
-            CIBW_ENVIRONMENT_MACOS: ${{ env.MACOS_COMPILER_ENV }}
         with:
           output-dir: dist
       - uses: actions/upload-artifact@v6
@@ -155,7 +143,6 @@ jobs:
       - uses: pypa/cibuildwheel@v3.3.1
         env:
             CIBW_BUILD: "${{ matrix.cibw_python }}-*"
-            CIBW_SKIP: "*-musllinux_*"
             CIBW_CONFIG_SETTINGS: "setup-args=--vsenv compile-args=-v"
         with:
           output-dir: dist
