@@ -115,14 +115,19 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ needs.check-commit.outputs.build-commit }}
-      - uses: mamba-org/setup-micromamba@v2
-        with:
-          environment-name: omp
-          create-args: >-
-            llvm-openmp
+      # https://mac.r-project.org/openmp/
+      - name: Get OpenMP and llvm
+        shell: bash -el {0}
+        run: |
+          set -xo pipefail
+          wget https://mac.r-project.org/openmp/openmp-19.1.0-darwin20-Release.tar.gz
+          sudo tar -xzvC / -f openmp-19.1.0-darwin20-Release.tar.gz
+          ls -al /usr/local/lib/libomp*
+          brew install llvm
       - uses: pypa/cibuildwheel@v3.3.1
         env:
             CIBW_BUILD: "${{ matrix.cibw_python }}-*"
+            CIBW_BUILD_ENVIRONMENT_MACOS: "CC=/opt/homebrew/opt/llvm/bin/clang CXX=/opt/homebrew/opt/llvm/bin/clang++"
         with:
           output-dir: dist
       - uses: actions/upload-artifact@v6
