@@ -52,9 +52,9 @@ jobs:
         id: commit-message
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            MSG=$(git log -2 --pretty=%B)
-            echo "Commit message:\n$MSG"
-            if echo $MSG | grep -iq '\[wheels\]'; then
+            MSG=$(git show -s --format=%s ${{ github.event.pull_request.head.sha }})
+            echo "Got commit message: $MSG"
+            if echo "$MSG" | grep -iq '\[wheels\]'; then
               PROCEED=true
             else
               PROCEED=false
@@ -75,7 +75,7 @@ jobs:
   build_linux_wheels:
     name: Build python ${{ matrix.cibw_python }} wheels on ${{ matrix.os }}
     needs: check-commit
-    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master' && needs.check-commit.outputs.proceed == 'true'
+    if: github.repository_owner == 'dipy' && needs.check-commit.outputs.proceed == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -103,7 +103,7 @@ jobs:
   build_osx_wheels:
     name: Build python ${{ matrix.cibw_python }} wheels on ${{ matrix.os }}
     needs: check-commit
-    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master' && needs.check-commit.outputs.proceed == 'true'
+    if: github.repository_owner == 'dipy' && needs.check-commit.outputs.proceed == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -140,7 +140,7 @@ jobs:
   build_windows_wheels:
     name: Build python ${{ matrix.cibw_python }} wheels on ${{ matrix.os }}
     needs: check-commit
-    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master' && needs.check-commit.outputs.proceed == 'true'
+    if: github.repository_owner == 'dipy' && needs.check-commit.outputs.proceed == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -166,7 +166,7 @@ jobs:
 
   test_wheels:
     name: Test wheels
-    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+    if: github.repository_owner == 'dipy'
     needs: [build_linux_wheels]
     runs-on: ${{ matrix.os }}
     strategy:
