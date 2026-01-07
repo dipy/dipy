@@ -19,7 +19,6 @@ on:
     - cron: "0 0 * * 0,3"  # Every Sunday and Wednesday at midnight
 
 env:
-  BUILD_COMMIT: "master"
   CIBW_BUILD_VERBOSITY: 2
   CIBW_ARCHS: "native"
   CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
@@ -52,22 +51,26 @@ jobs:
       - name: Check commit message for [wheels]
         id: commit-message
         run: |
-          echo "github.event_name==${{ github.event_name }}"
-          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
-            echo "PROCEED=true" | tee $GITHUB_OUTPUT
-          elif git log -1 --pretty=%B | grep -iq '\[wheels\]'; then
-            echo "PROCEED=true" | tee $GITHUB_OUTPUT
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            MSG=$(git log -2 --pretty=%B)
+            echo "Commit message:\n$MSG"
+            if echo $MSG | grep -iq '\[wheels\]'; then
+              PROCEED=true
+            else
+              PROCEED=false
+            fi
           else
-            echo "PROCEED=false" | tee $GITHUB_OUTPUT
+            PROCEED=true
           fi
+          echo "PROCEED=$PROCEED" | tee -a $GITHUB_OUTPUT
       - name: Check build commit
         id: build-commit
         run: |
+          BUILD_COMMIT=master
           if [[ "schedule" == "${{ github.event_name }}" ]]; then
-            echo "BUILD_COMMIT=master" | tee $GITHUB_OUTPUT;
-          else
-            echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" | tee $GITHUB_OUTPUT
+            BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}
           fi
+          echo "BUILD_COMMIT=$BUILD_COMMIT" | tee -a $GITHUB_OUTPUT
 
   build_linux_wheels:
     name: Build python ${{ matrix.cibw_python }} wheels on ${{ matrix.os }}
@@ -195,8 +198,8 @@ jobs:
       permissions:
         contents: write # for softprops/action-gh-release to create GitHub release
       name: Upload to Anaconda
-      needs: [build_linux_wheels, build_osx_wheels, build_windows_wheels]
-      if: ${{ always() }} && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+      needs: [check-commit, build_linux_wheels, build_osx_wheels, build_windows_wheels]
+      if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
       runs-on: ubuntu-latest
       steps:
       - uses: actions/download-artifact@v7
@@ -215,7 +218,7 @@ jobs:
           anaconda_nightly_upload_labels: dev
       - name: Upload wheel
         uses: scientific-python/upload-nightly-action@5748273c71e2d8d3a61f3a11a16421c8954f9ecf # 0.6.3
-        if: env.BUILD_COMMIT == 'master'
+        if: needs.check-commit.outputs.build-commit == 'master'
         with:
           artifacts_path: dist
           anaconda_nightly_upload_token: ${{secrets.ANACONDA_SCIENTIFIC_PYTHON_NIGHTLY_TOKEN}}
