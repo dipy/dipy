@@ -176,6 +176,14 @@ if not omp.found() and meson.get_compiler('c').get_id() == 'clang'
       endif
     endif
   endif
+
+  # Fallback to system libraries (hopefully exist!)
+  if not omp.found()
+    omp = declare_dependency(
+      compile_args : ['-Xpreprocessor', '-fopenmp'],
+      link_args : ['-lomp']
+  )
+  endif
 endif
 
 # SSE intrinsics
