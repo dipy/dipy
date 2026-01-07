@@ -182,7 +182,7 @@ if not omp.found() and meson.get_compiler('c').get_id() == 'clang'
     omp = declare_dependency(
       compile_args : ['-Xpreprocessor', '-fopenmp'],
       link_args : ['-lomp']
-  )
+    )
     if omp.found()
       message('OpenMP Found: YES (system)')
     else
