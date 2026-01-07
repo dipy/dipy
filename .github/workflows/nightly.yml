@@ -93,6 +93,7 @@ jobs:
             CIBW_SKIP: "*-musllinux_*"
             CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
             CIBW_MANYLINUX_I686_IMAGE: manylinux2014
+            CIBW_ENVIRONMENT_MACOS: "LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH"
         with:
           output-dir: dist
       - uses: actions/upload-artifact@v6
@@ -119,8 +120,10 @@ jobs:
       - name: Get OpenMP
         shell: bash -el {0}
         run: |
+          set -xo pipefail
           wget https://mac.r-project.org/openmp/openmp-19.1.0-darwin20-Release.tar.gz
           sudo tar -xzvC / -f openmp-19.1.0-darwin20-Release.tar.gz
+          ls -al /usr/local/lib/
       - uses: pypa/cibuildwheel@v3.3.1
         env:
             CIBW_BUILD: "${{ matrix.cibw_python }}-*"
