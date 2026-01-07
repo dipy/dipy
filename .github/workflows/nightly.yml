@@ -115,15 +115,11 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ needs.check-commit.outputs.build-commit }}
-      # https://mac.r-project.org/openmp/
-      - name: Get OpenMP
-        shell: bash -el {0}
-        run: |
-          set -xo pipefail
-          wget https://mac.r-project.org/openmp/openmp-19.1.0-darwin20-Release.tar.gz
-          sudo tar -xzvC / -f openmp-19.1.0-darwin20-Release.tar.gz
-          ls -al /usr/local/lib/libomp*
-          echo "DYLD_LIBRARY_PATH=/usr/local/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-name: omp
+          create-args: >-
+            llvm-openmp
       - uses: pypa/cibuildwheel@v3.3.1
         env:
             CIBW_BUILD: "${{ matrix.cibw_python }}-*"

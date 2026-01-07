@@ -138,7 +138,7 @@ np_dep = declare_dependency(include_directories: inc_np)
 # ------------------------------------------------------------------------
 # Define Optimisation for cython extensions
 # ------------------------------------------------------------------------
-omp = dependency('openmp')
+omp = dependency('openmp', required: false)
 if not omp.found() and meson.get_compiler('c').get_id() == 'clang'
   # Check for libomp (OpenMP) - prioritize conda environment to avoid conflicts
   conda_prefix = run_command('sh', '-c', 'echo $CONDA_PREFIX', check: false).stdout().strip()
