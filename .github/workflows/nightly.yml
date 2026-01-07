@@ -115,6 +115,11 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ needs.check-commit.outputs.build-commit }}
+      # https://mac.r-project.org/openmp/
+      - name: Get OpenMP
+        run: |
+          wget https://mac.r-project.org/openmp/openmp-19.1.0-darwin20-Release.tar.gz
+          sudo tar -xzC / -f openmp-19.1.0-darwin20-Release.tar.gz
       - uses: pypa/cibuildwheel@v3.3.1
         env:
             CIBW_BUILD: "${{ matrix.cibw_python }}-*"
