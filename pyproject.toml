@@ -87,6 +87,7 @@ dipy_math = "dipy.workflows.cli:run"
 dipy_mask = "dipy.workflows.cli:run"
 dipy_gibbs_ringing = "dipy.workflows.cli:run"
 dipy_horizon = "dipy.workflows.cli:run"
+dipy_skyline = "dipy.workflows.cli:run"
 dipy_info = "dipy.workflows.cli:run"
 dipy_extract_b0 = "dipy.workflows.cli:run"
 dipy_extract_shell = "dipy.workflows.cli:run"
@@ -158,6 +159,8 @@ benchmark = [
 ]
 
 [project.optional-dependencies]
+horizon = ["fury>=0.10.0,<=0.12.0"]
+skyline = ["fury>=2.0.0a4", "imgui_bundle"]
 viz = ["fury>0.12.0", "matplotlib", "imgui_bundle"]
 ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
 optional = [
