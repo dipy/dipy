@@ -310,8 +310,6 @@ class SkylineFlow(Workflow):
 
         if images is None:
             images = []
-        else:
-            print(images)
 
         skyline_images = []
 
