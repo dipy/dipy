@@ -15,7 +15,7 @@ from dipy.tracking.streamline import (
 from dipy.utils.optpkg import optional_package
 
 _, have_matplotlib, _ = optional_package("matplotlib")
-fury, have_fury, _ = optional_package("fury", min_version="0.10.0")
+fury, have_fury, _ = optional_package("fury", min_version="0.10.0", max_version="1.0.0")
 pd, have_pd, _ = optional_package("pandas")
 
 if have_fury:

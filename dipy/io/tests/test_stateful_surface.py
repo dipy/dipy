@@ -13,7 +13,9 @@ from dipy.io.surface import load_surface, save_surface
 from dipy.io.utils import Origin, Space, recursive_compare
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
+fury, have_fury, setup_module = optional_package(
+    "fury", min_version="0.8.0", max_version="1.0.0"
+)
 SPACES = [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX]
 ORIGINS = [Origin.NIFTI, Origin.TRACKVIS]
 
@@ -367,8 +369,7 @@ def test_set_partial_dtype_dict_attributes():
     except ValueError:
         npt.assert_(
             False,
-            msg="Partial use of dtype_dict should apply only to the "
-            "relevant portions.",
+            msg="Partial use of dtype_dict should apply only to the relevant portions.",
         )
 
 

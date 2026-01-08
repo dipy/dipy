@@ -4,7 +4,9 @@ from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, have_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 
 if have_fury:
     import fury.io

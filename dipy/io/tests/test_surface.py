@@ -13,7 +13,9 @@ from dipy.io.surface import load_surface, save_surface
 from dipy.io.utils import Origin, Space
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, have_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 
 FOLDERS_GII = ["ascii", "base64", "gzip_base64"]
 FILENAMES_GII = ["pial.L.surf.gii", "smoothwm.L.surf.gii"]

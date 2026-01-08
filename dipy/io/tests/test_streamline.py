@@ -15,7 +15,9 @@ from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, have_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 
 FILEPATH_DIX = None
 SPACES = [Space.RASMM, Space.LPSMM, Space.VOXMM, Space.VOX]

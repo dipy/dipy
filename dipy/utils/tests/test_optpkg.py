@@ -27,6 +27,18 @@ def test_optional_package():
     pkg, have_pkg, setup_module = optional_package("dipy", min_version="1.0.0")
     assert_true(have_pkg)
 
+    pkg, have_pkg, setup_module = optional_package(
+        "dipy", min_version="1.0.0", max_version="100.0.0"
+    )
+    assert_true(have_pkg)
+
+    pkg, have_pkg, setup_module = optional_package(
+        "dipy", min_version="100.0.0", max_version="1.0.0"
+    )
+    assert_false(have_pkg)
+    with pytest.raises(TripWireError):
+        pkg.some_function()
+
     with TemporaryDirectory() as tmpdir:
         os.makedirs(Path(tmpdir) / "fake_package")
         open(Path(tmpdir) / "fake_package" / "__init__.py", "a").close()
