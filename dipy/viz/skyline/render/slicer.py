@@ -58,7 +58,6 @@ class Slicer(Visualization):
             value_type="int",
             text_format=".0f",
             value_unit="%",
-            width=250,
             step=1,
         )
         if changed:
@@ -82,7 +81,6 @@ class Slicer(Visualization):
                     {
                         "value_type": "int",
                         "text_format": ".0f",
-                        "width": 250,
                         "step": 1,
                     },
                 )
@@ -95,7 +93,7 @@ class Slicer(Visualization):
 
         imgui.spacing()
         changed, new = segmented_switch(
-            "Interpolation", ["Linear", "Nearest"], self.interpolation, width=250
+            "Interpolation", ["Linear", "Nearest"], self.interpolation
         )
         if changed:
             self.interpolation = new
