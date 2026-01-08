@@ -145,13 +145,17 @@ static_to_ref, moving_to_ref = sdr.get_intermediate_maps()
 # We have two more transforms to visualize
 #
 
-regtools.plot_2d_diffeomorphic_map(static_to_ref, 10, "static_to_ref_map.png")
+regtools.plot_2d_diffeomorphic_map(
+    static_to_ref, delta=10, fname="static_to_ref_map.png"
+)
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # Deformed lattice under the static-to-reference diffeomorphic map.
 
-regtools.plot_2d_diffeomorphic_map(moving_to_ref, 10, "moving_to_ref_map.png")
+regtools.plot_2d_diffeomorphic_map(
+    moving_to_ref, delta=10, fname="moving_to_ref_map.png"
+)
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
@@ -169,16 +173,16 @@ regtools.plot_2d_diffeomorphic_map(moving_to_ref, 10, "moving_to_ref_map.png")
 # same applies to mapping the moving image to the reference space.
 
 
-warped_static = static_to_ref.transform_inverse(static, "linear")
-warped_moving = moving_to_ref.transform_inverse(moving, "linear")
+warped_static = static_to_ref.transform_inverse(static, interpolation="linear")
+warped_moving = moving_to_ref.transform_inverse(moving, interpolation="linear")
 
 regtools.overlay_images(
     warped_static,
     warped_moving,
-    "Warped static",
-    "Overlay",
-    "Warped moving",
-    "intermediate_images.png",
+    title0="Warped static",
+    title_mid="Overlay",
+    title1="Warped moving",
+    fname="intermediate_images.png",
 )
 
 ###############################################################################

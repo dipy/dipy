@@ -105,7 +105,7 @@ fname_fa = (
     / "exp_bundles_and_maps"
     / "bundles_2_subjects"
     / "subj_1"
-    "fa_1x1x1.nii.gz",
+    / "fa_1x1x1.nii.gz"
 )
 
 fa = load_nifti_data(fname_fa)
@@ -205,7 +205,7 @@ fa_actor.AddObserver("LeftButtonPressEvent", left_click_callback, 1.0)
 # parallel. We'll also need a new show manager and an associated callback.
 
 scene.clear()
-scene.projection("parallel")
+scene.projection(proj_type="parallel")
 
 result_position.message = ""
 result_value.message = ""

@@ -53,9 +53,7 @@ gtab = gradient_table(bvals, bvecs=bvecs)
 # :ref:`sphx_glr_examples_built_reconstruction_reconst_dki.py`).
 
 # data masking
-maskdata, mask = median_otsu(
-    data, vol_idx=[0, 1], median_radius=4, numpass=2, autocrop=False, dilate=1
-)
+maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2, dilate=1)
 
 # Smoothing
 fwhm = 1.25

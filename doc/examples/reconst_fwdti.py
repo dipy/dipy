@@ -62,7 +62,7 @@ dwi_path = (
 
 img = nib.load(
     dwi_path
-    / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.nii.gz",
+    / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.nii.gz"
 )
 
 gtab = gradient_table(
@@ -70,7 +70,7 @@ gtab = gradient_table(
     / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval",
     bvecs=(
         dwi_path
-        / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec",
+        / "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec"
     ),
 )
 

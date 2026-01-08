@@ -138,9 +138,7 @@ gtab = gradient_table(bvals[bval_sel == 1], bvecs=bvecs[bval_sel == 1])
 # compute a brain mask to avoid unnecessary calculations on the background
 # of the image.
 
-datamask, mask = median_otsu(
-    data, vol_idx=[0, 1], median_radius=4, numpass=2, autocrop=False, dilate=1
-)
+datamask, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2, dilate=1)
 
 ###############################################################################
 # Since the diffusion kurtosis model involves the estimation of a large number

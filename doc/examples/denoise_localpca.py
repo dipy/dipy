@@ -86,7 +86,7 @@ t = time()
 
 denoised_arr = localpca(data, sigma=sigma, tau_factor=2.3, patch_radius=2)
 
-print("Time taken for local PCA (slow)", -t + time())
+print("Time taken for local PCA", -t + time())
 
 ###############################################################################
 # The ``localpca`` function returns the denoised data which is plotted below

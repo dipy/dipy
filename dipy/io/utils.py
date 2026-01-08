@@ -394,8 +394,8 @@ def create_tractogram_header(
     tractogram_type, affine, dimensions, voxel_sizes, voxel_order
 ):
     """Write a standard trk/tck header from spatial attribute"""
-    if isinstance(tractogram_type, str):
-        tractogram_type = detect_format(tractogram_type)
+    if isinstance(tractogram_type, (str, Path)):
+        tractogram_type = detect_format(str(tractogram_type))
 
     new_header = tractogram_type.create_empty_header()
     new_header[nib.streamlines.Field.VOXEL_SIZES] = tuple(voxel_sizes)

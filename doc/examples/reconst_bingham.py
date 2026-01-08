@@ -80,7 +80,7 @@ fodf_spheres = actor.odf_slicer(
 scene.add(fodf_spheres)
 
 print("Saving the illustration as csd_odfs.png")
-window.record(scene, out_path="csd_odfs.png", size=(600, 600))
+window.record(scene=scene, out_path="csd_odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
@@ -145,7 +145,7 @@ fodf_spheres = actor.odf_slicer(
 scene.add(fodf_spheres)
 
 print("Saving the illustration as Bingham_odfs.png")
-window.record(scene, out_path="Bingham_odfs.png", size=(600, 600))
+window.record(scene=scene, out_path="Bingham_odfs.png", size=(600, 600))
 if interactive:
     window.show(scene)
 
