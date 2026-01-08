@@ -15,7 +15,9 @@ from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
+vtk, have_vtk, setup_module = optional_package(
+    "vtk", min_version="9.0.0", max_version="9.1.0"
+)
 
 FILEPATH_DIX = None
 SPACES = [Space.RASMM, Space.LPSMM, Space.VOXMM, Space.VOX]
@@ -202,7 +204,7 @@ def io_tractogram(extension):
         npt.assert_array_almost_equal(sft.streamlines[1], STREAMLINE, decimal=4)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
 @pytest.mark.parametrize("space,origin", list(itertools.product(SPACES, ORIGINS)))
 def test_vtk_matching_space(space, origin):
     # VTK/FIB in the gold standard dataset are in LPSMM space.
@@ -235,13 +237,13 @@ def test_io_ext_non_vtk(ext):
     io_tractogram(ext)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
 @pytest.mark.parametrize("ext", ["vtk", "vtp"])
 def test_io_vtk(ext):
     io_tractogram(ext)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
 def test_low_io_vtk():
     with TemporaryDirectory() as tmp_dir:
         fname = Path(tmp_dir) / "test.fib"
