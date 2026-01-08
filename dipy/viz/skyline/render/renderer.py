@@ -18,7 +18,9 @@ class Visualization:
         raise NotImplementedError("Subclasses must implement the actor property.")
 
 
-def create_window(*, visualizer_type="standalone", size=(800, 600), screen_config=None):
+def create_window(
+    *, visualizer_type="standalone", size=(1200, 1000), screen_config=None
+):
     """Create a FURY ShowManager based on the visualizer type.
 
     This function enables the creation of different types of windows for visualizations.
@@ -63,6 +65,7 @@ def create_window(*, visualizer_type="standalone", size=(800, 600), screen_confi
 
     if visualizer_type != "stealth":
         show_m = window.ShowManager(
+            title="DIPY Skyline Visualizer",
             size=size,
             window_type=window_type,
             screen_config=screen_config,
@@ -72,7 +75,11 @@ def create_window(*, visualizer_type="standalone", size=(800, 600), screen_confi
         )
     else:
         show_m = window.ShowManager(
-            size=size, window_type=window_type, screen_config=screen_config, imgui=False
+            title="DIPY Skyline Visualizer",
+            size=size,
+            window_type=window_type,
+            screen_config=screen_config,
+            imgui=False,
         )
 
     return show_m

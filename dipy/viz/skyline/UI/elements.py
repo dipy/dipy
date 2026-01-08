@@ -12,7 +12,7 @@ def render_section_header(
     is_open=True,
     icon=None,
     width=0,
-    height=28,
+    height=48,
     padding_x=12,
 ):
     """Draw a custom section header with a toggle arrow.
@@ -62,20 +62,36 @@ def render_section_header(
 
     label_text = f"{icon}  {label}" if icon else label
     label_size = imgui.calc_text_size(label_text)
-    label_pos = (
-        start.x + brain_size.x + padding_x,
-        start.y + (height - label_size.y) * 0.5,
-    )
-    draw_list.add_text(label_pos, color, label_text)
-
     arrow_icon = (
         icons_fontawesome_6.ICON_FA_ANGLE_UP
         if is_open
         else icons_fontawesome_6.ICON_FA_ANGLE_DOWN
     )
     arrow_size = imgui.calc_text_size(arrow_icon)
+
+    available_label_width = total_width - brain_size.x - arrow_size.x - padding_x * 2
+    ellipsis_text = "..."
+    show_ellipsis = label_size.x > available_label_width > 0
+    display_text = label_text
+    label_pos = (
+        start.x + brain_size.x + padding_x,
+        start.y + (height - label_size.y) * 0.5,
+    )
+
+    if show_ellipsis:
+        ellipsis_size = imgui.calc_text_size(ellipsis_text)
+        max_label_width = max(0, available_label_width - ellipsis_size.x)
+        trimmed_label = label_text
+        while trimmed_label and imgui.calc_text_size(trimmed_label).x > max_label_width:
+            trimmed_label = trimmed_label[:-1]
+        display_text = trimmed_label.rstrip()
+        display_text += ellipsis_text
+
+    draw_list.add_text(label_pos, color, display_text)
+    display_text_size = imgui.calc_text_size(display_text)
+
     arrow_pos = (
-        start.x + brain_size.x + label_size.x + padding_x * 3,
+        label_pos[0] + display_text_size.x + padding_x,
         start.y + (height - arrow_size.y) * 0.6,
     )
     draw_list.add_text(arrow_pos, color, arrow_icon)
@@ -232,7 +248,7 @@ def segmented_switch(label, options, value, *, width=0, height=28):
     imgui.push_style_var(imgui.StyleVar_.frame_padding, (12.0, 6.0))
     imgui.align_text_to_frame_padding()
     imgui.text_colored(label_color, label)
-    imgui.same_line(0, 32)
+    imgui.same_line(0, 28)
 
     available_width = imgui.get_content_region_avail().x
     total_width = width if width and width > 0 else available_width
@@ -316,7 +332,7 @@ def thin_slider(
     min_value,
     max_value,
     *,
-    width=300,
+    width=0,
     step=1.0,
     track_height=2.0,
     thumb_radius=7.0,
@@ -378,9 +394,13 @@ def thin_slider(
 
     total_h = max(hitbox_height, thumb_radius * 2 + 4)
     available_size = (
-        (imgui.get_content_region_avail().x, total_h) if width < 0 else (width, total_h)
+        (imgui.get_content_region_avail().x, total_h)
+        if width <= 0
+        else (width, total_h)
     )
-    imgui.invisible_button(f"#thin_slider_btn_{label}", available_size, 0)
+    imgui.invisible_button(
+        f"#thin_slider_btn_{label}", (available_size[0] - 50, available_size[1]), 0
+    )
     bb_min = imgui.get_item_rect_min()
     bb_max = imgui.get_item_rect_max()
     draw_list = imgui.get_window_draw_list()
@@ -465,11 +485,11 @@ def thin_slider(
     value_color = SLIDER_THEME["value_color"]
 
     if value_unit is not None:
-        display_text = f"{typed_value:{text_format}} {value_unit}"
+        display_text = f"{typed_value:{text_format}}{value_unit}"
     else:
         display_text = f"{typed_value:{text_format}}"
 
-    max_text_size = 48
+    max_text_size = 40
     text_size = imgui.calc_text_size(display_text)
     imgui.same_line(
         0, max_text_size - text_size.x if text_size.x < max_text_size else 8
