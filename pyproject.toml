@@ -88,6 +88,7 @@ dipy_math = "dipy.workflows.cli:run"
 dipy_mask = "dipy.workflows.cli:run"
 dipy_gibbs_ringing = "dipy.workflows.cli:run"
 dipy_horizon = "dipy.workflows.cli:run"
+dipy_skyline = "dipy.workflows.cli:run"
 dipy_info = "dipy.workflows.cli:run"
 dipy_extract_b0 = "dipy.workflows.cli:run"
 dipy_extract_shell = "dipy.workflows.cli:run"
@@ -122,9 +123,10 @@ build = [
     "spin>=0.5",
     "build"
 ]
-all = ["dipy[build, dev, doc, style, viz, optional, benchmark]"]
+all = ["dipy[build, dev, doc, style, optional, benchmark]"]
 style = ["ruff", "pre-commit"]
-viz = ["fury>0.12.0", "matplotlib", "imgui_bundle"]
+horizon = ["fury>=0.10.0,<=0.12.0"]
+skyline = ["fury>=2.0.0a4", "imgui_bundle"]
 test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
 ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
 dev = [
@@ -137,11 +139,12 @@ dev = [
 ]
 
 optional = [
-    "dipy[viz, ml]",
+    "dipy[horizon, ml]",
     "cvxpy",
     "scikit-image",
     "boto3",
-    "numexpr"
+    "numexpr",
+    "matplotlib"
 ]
 
 doc = [
