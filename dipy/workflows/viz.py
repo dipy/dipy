@@ -11,10 +11,12 @@ from dipy.io.utils import create_nifti_header, split_filename_extension
 from dipy.stats.analysis import assignment_map
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
-from dipy.viz import horizon
+from dipy.viz import Skyline, horizon
 from dipy.workflows.workflow import Workflow
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, has_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="0.12.0"
+)
 
 
 if has_fury:
@@ -288,3 +290,36 @@ class HorizonFlow(Workflow):
             roi_colors=roi_colors,
             out_png=Path(out_dir) / out_stealth_png,
         )
+
+
+class SkylineFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "skyline"
+
+    def run(self, *, images=None):
+        """Launch Skyline GUI.
+
+        Parameters
+        ----------
+        images : variable str, optional
+            List of tuples (data, affine, filename) for each image to be
+            added to the Skyline viewer.
+        """
+        super(SkylineFlow, self).__init__(force=True)
+
+        if images is None:
+            images = []
+        else:
+            print(images)
+
+        skyline_images = []
+
+        for fname in images:
+            _, ext = split_filename_extension(fname)
+            ext = ext.lower()
+            if ext in [".nii.gz", ".nii"]:
+                data, affine = load_nifti(fname)
+                skyline_images.append((data, affine, fname))
+
+        Skyline(visualizer_type="standalone", images=skyline_images)
