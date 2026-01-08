@@ -141,8 +141,17 @@ dev = [
     "coverage",
     "coveralls",
     "codecov",
-    "asv",
+    "asv"
 ]
+
+optional = [
+    "dipy[skyline, ml]",
+    "cvxpy",
+    "scikit-image",
+    "boto3",
+    "numexpr"
+]
+
 doc = [
     "numpydoc",
     "sphinx>=7.2.6",
