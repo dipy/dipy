@@ -37,3 +37,4 @@ cvxpy
 scikit-image
 boto3
 numexpr
+matplotlib
