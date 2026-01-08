@@ -1,8 +1,38 @@
 """Theme utilities for Skyline UI components."""
 
 from pathlib import Path
+from urllib.request import urlretrieve
 
+from dipy.utils.logging import logger
+
+DIPY_DATA_MIRROR = "https://github.com/dipy/dipy_data/raw/refs/heads/master"
 SKYLINE_HOME = Path("~").expanduser() / ".dipy-skyline"
+
+if not SKYLINE_HOME.exists():
+    SKYLINE_HOME.mkdir(parents=True, exist_ok=True)
+
+ASSETS = SKYLINE_HOME / "assets"
+if not ASSETS.exists():
+    ASSETS.mkdir(parents=True, exist_ok=True)
+
+FONTS = ASSETS / "fonts"
+if not FONTS.exists():
+    FONTS.mkdir(parents=True, exist_ok=True)
+
+FONT = FONTS / "Inter_18pt-Regular.ttf"
+if not FONT.exists():
+    logger.info("Downloading Skyline UI font...")
+    urlretrieve(
+        f"{DIPY_DATA_MIRROR}/dipy-skyline/assets/fonts/Inter_18pt-Regular.ttf", FONT
+    )
+
+FONT_AWESOME = FONTS / "fontawesome-webfont.ttf"
+if not FONT_AWESOME.exists():
+    logger.info("Downloading Font Awesome Icons for Skyline UI...")
+    urlretrieve(
+        f"{DIPY_DATA_MIRROR}/dipy-skyline/assets/fonts/fontawesome-webfont.ttf",
+        FONT_AWESOME,
+    )
 
 
 def hex_to_rgba(hex_color, alpha=1.0):
@@ -28,10 +58,6 @@ def hex_to_rgba(hex_color, alpha=1.0):
     return (r, g, b, alpha)
 
 
-FONT = SKYLINE_HOME / "fonts" / "Inter_18pt-Regular.ttf"
-FONT_AWESOME = SKYLINE_HOME / "fonts" / "fa-solid-900.otf"
-
-LICENSE_DIRS = ("ofl", "apache", "ufl")
 THEME = {
     "background": hex_to_rgba("#191919"),
     "primary": hex_to_rgba("#EE942E"),
