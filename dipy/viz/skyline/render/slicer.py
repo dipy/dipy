@@ -20,8 +20,10 @@ class Slicer(Visualization):
         super().__init__(render_callback=render_callback)
         self.volume = volume
         self.affine = affine
+        if self.volume.ndim == 4:
+            self.volume = self.volume[..., 0]
         self.slicer = volume_slicer(
-            volume,
+            self.volume,
             affine=affine,
             interpolation=interpolation,
         )
