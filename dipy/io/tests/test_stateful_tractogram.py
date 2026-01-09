@@ -17,7 +17,9 @@ from dipy.io.utils import is_header_compatible, recursive_compare
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
+fury, have_fury, setup_module = optional_package(
+    "fury", min_version="0.8.0", max_version="1.0.0"
+)
 is_big_endian = "big" in sys.byteorder.lower()
 
 
