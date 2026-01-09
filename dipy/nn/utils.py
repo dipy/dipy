@@ -1,7 +1,6 @@
 import numpy as np
-from scipy.ndimage import affine_transform
+from scipy.ndimage import affine_transform, map_coordinates
 
-from dipy.align.reslice import reslice
 from dipy.testing.decorators import warning_for_keywords
 
 
@@ -89,7 +88,8 @@ def get_bounds(shape, affine, *, considered_points="corners"):
     considered_points : str, optional
         Considered points when calculating the transformed shape.
         \"corners\" will consider only corners of the image shape.
-        \"all\" will consider all voxels. Might be needed when shearing is applied.
+        \"all\" will consider all voxels.
+        Might be needed when shearing is applied.
 
     Returns
     -------
@@ -132,175 +132,89 @@ def get_bounds(shape, affine, *, considered_points="corners"):
 
 
 @warning_for_keywords()
-def transform_img(
-    image,
-    affine,
-    *,
-    target_voxsize=None,
-    final_size=None,
-    order=3,
-    considered_points="corners",
-):
-    """
-    Function to transform images for Deep Learning models
-
-    Parameters
-    ----------
-    image : np.ndarray
-        Image to transform.
-    affine : np.ndarray
-        Affine matrix provided by the image file.
-    target_voxsize : tuple (3,), optional
-        The voxel size we want to start from.
-        If none is provided, we calculate the closest isotropic voxel size.
-    final_size : tuple (3,), optional
-        The final size of the image array.
-    order : int, optional
-        The order of the spline interpolation.
-        The order has to be in the range 0-5.
-        If transforming an int image, order 0 is recommended.
-    considered_points : str, optional
-        Considered points when calculating the transformed shape.
-        \"corners\" will consider only corners of the image shape.
-        \"all\" will consider all voxels. Might be needed when shearing is applied.
-
-    Returns
-    -------
-    new_image : np.ndarray
-        Transformed image to be used in the Deep Learning model.
-    params : dict
-        Parameters that are used when recovering the original image space.
-    """
-    ori_shape = image.shape
-
+def transform_img(image, affine, target_voxsize=None, final_size=None, order=3):
+    init_shape = image.shape
     R = affine[:3, :3]
     voxsize = np.sqrt(np.sum(R * R, axis=0))
     if target_voxsize is None:
         target_voxsize = np.array([np.min(voxsize)] * 3)
     else:
-        target_voxsize = np.array(target_voxsize)
+        target_voxsize = np.array(target_voxsize, dtype=float)
 
-    if not np.allclose(voxsize, target_voxsize):
-        image, resliced_affine = reslice(
-            image, affine, tuple(voxsize), tuple(target_voxsize)
-        )
-    else:
-        resliced_affine = None
+    min_bounds, max_bounds = get_bounds(init_shape, affine)
+    new_shape = (max_bounds - min_bounds) / target_voxsize
+    new_shape = np.round(new_shape).astype(int)
 
-    init_shape = image.shape
+    invA = np.linalg.inv(affine)
+    D = np.diag(target_voxsize)
+    new_origin_world = min_bounds
 
-    min_bounds, max_bounds = get_bounds(
-        init_shape, affine, considered_points=considered_points
-    )
+    matrix = (invA[:3, :3] @ D).astype(float)
+    offset = (invA[:3, 3] + invA[:3, :3] @ new_origin_world).astype(float)
 
-    offset = np.ceil(-min_bounds)
-    new_shape = (np.ceil(max_bounds) + offset).astype(int)
-    offset_array = np.array(
-        [[1, 0, 0, offset[0]], [0, 1, 0, offset[1]], [0, 0, 1, offset[2]], [0, 0, 0, 1]]
-    )
-
-    new_affine = affine.copy()
-    new_affine = np.matmul(offset_array, new_affine)
-
-    inv_affine = np.linalg.inv(new_affine)
-
-    new_image = np.zeros(tuple(new_shape))
+    new_image = np.zeros(tuple(new_shape), dtype=image.dtype)
     affine_transform(
         image,
-        inv_affine,
+        matrix=matrix,
+        offset=offset,
         output_shape=tuple(new_shape),
         output=new_image,
         order=order,
     )
 
-    crop_vs = None
-    pad_vs = None
     if final_size is None:
         final_size = new_image.shape
-    final_size = np.array(final_size)
+    final_size = tuple(int(x) for x in final_size)
     new_image, pad_vs, crop_vs = pad_crop(new_image, final_size)
 
     params = {
-        "inv_affine": inv_affine,
-        "offset": offset_array,
-        "crop_value": crop_vs,
-        "pad_value": pad_vs,
-        "voxsize": voxsize,
-        "target_voxsize": target_voxsize,
-        "ori_shape": ori_shape,
         "init_shape": init_shape,
-        "affine": resliced_affine,
+        "ori_affine": affine,
+        "target_voxsize": target_voxsize,
+        "new_origin_world": new_origin_world,
+        "pad_value": pad_vs,
+        "crop_value": crop_vs,
     }
 
     return new_image, params
 
 
-def recover_img(image, params, *, order=3):
-    """
-    Function to recover image from transform_img
-
-    Parameters
-    ----------
-    image : np.ndarray
-        Image to recover.
-    params : tuple
-        Parameters for recover_img function.
-        Returned from transform_img.
-    order : int, optional
-        The order of the spline interpolation.
-        The order has to be in the range 0-5.
-        If recovering an int image, order 0 is recommended.
-
-    Returns
-    -------
-    new_image : np.ndarray
-        Recovered image
-    affine : np.ndarray
-        Recovered affine.
-        This should be same as the original affine.
-    """
-    expected_keys = {
-        "inv_affine",
-        "crop_value",
-        "pad_value",
-        "voxsize",
-        "target_voxsize",
-        "ori_shape",
+def recover_img(image, params, order=3):
+    expected = {
         "init_shape",
-        "affine",
+        "ori_affine",
+        "target_voxsize",
+        "new_origin_world",
+        "pad_value",
+        "crop_value",
     }
-    missing = expected_keys - set(params.keys())
+    missing = expected - set(params.keys())
     if missing:
-        raise ValueError(f"params is missing keys: {missing}")
+        raise ValueError(f"params missing: {missing}")
 
-    inv_affine = params["inv_affine"]
-    crop_vs = params["crop_value"]
+    init_shape = tuple(int(x) for x in params["init_shape"])
+    affine = np.asarray(params["ori_affine"], dtype=float)
+    target_voxsize = np.asarray(params["target_voxsize"], dtype=float)
+    new_origin_world = np.asarray(params["new_origin_world"], dtype=float)
     pad_vs = params["pad_value"]
-    voxsize = params["voxsize"]
-    target_voxsize = params["target_voxsize"]
-    ori_shape = params["ori_shape"]
-    init_shape = params["init_shape"]
-    affine = params["affine"]
+    crop_vs = params["crop_value"]
 
     if crop_vs is not None and pad_vs is not None:
         new_image = inv_pad_crop(image, crop_vs, pad_vs)
+    else:
+        new_image = image
 
-    new_affine = np.linalg.inv(inv_affine)
-    new_image = affine_transform(
-        new_image, new_affine, output_shape=init_shape, order=order
-    )
+    A = affine
+    D = np.diag(target_voxsize)
 
-    if not np.allclose(voxsize, target_voxsize):
-        new_image, affine = reslice(
-            new_image,
-            affine,
-            tuple(target_voxsize),
-            tuple(voxsize),
-            new_shape=ori_shape,
-            order=order,
-        )
+    coords_idx = np.indices(init_shape, dtype=float)
+    coords_idx = coords_idx.reshape((len(init_shape), -1))
+    world_coords = (A[:3, :3] @ coords_idx) + A[:3, 3][:, None]
+    coords_new = np.linalg.inv(D) @ (world_coords - new_origin_world[:, None])
+    coords_for_map = coords_new.reshape((len(init_shape),) + tuple(init_shape))
+    recovered = map_coordinates(new_image, coords_for_map, order=order)
 
-    return new_image, affine
+    return recovered
 
 
 def pad_crop(image, target_shape):
