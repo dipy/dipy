@@ -183,7 +183,7 @@ def connectivity_matrix(
     mapping = defaultdict(list)
     lin_T, offset = _mapping_to_voxel(affine)
 
-    if type(streamlines).__name__ == 'generator':
+    if type(streamlines).__name__ == "generator":
         streamlines = Streamlines(streamlines)
 
     if weights is None:
