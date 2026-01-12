@@ -1025,6 +1025,8 @@ class AutoFlow(Workflow):
         bvecs_file=None,
         t1_file=None,
         bids_folder=None,
+        atlas_tractogram=None,
+        bundle_atlas_dir=None,
         interactive_mode=False,
         pipeline_type=None,
         start=None,
@@ -1049,6 +1051,14 @@ class AutoFlow(Workflow):
             Path to the T1 file.
         bids_folder : str, optional
             Path to the BIDS folder (reserved for future use).
+        atlas_tractogram : str, optional
+            Path to atlas tractogram for registration (dipy_slr).
+            If not provided and dipy_slr is in the pipeline, will auto-download
+            HCP 30-bundle atlas.
+        bundle_atlas_dir : str, optional
+            Path to bundle atlas directory for segmentation (dipy_recobundles).
+            If not provided and dipy_recobundles is in the pipeline,
+            will auto-download HCP 30-bundle atlas.
         interactive_mode : bool, optional
             Enable interactive mode for pipeline customization.
         pipeline_type : str, optional
@@ -1165,6 +1175,12 @@ class AutoFlow(Workflow):
             config["io"]["bids_folder"] = bids_folder or config.get("io", {}).get(
                 "bids_folder", ""
             )
+            config["io"]["atlas_tractogram"] = atlas_tractogram or config.get(
+                "io", {}
+            ).get("atlas_tractogram", "")
+            config["io"]["bundle_atlas_dir"] = bundle_atlas_dir or config.get(
+                "io", {}
+            ).get("bundle_atlas_dir", "")
             config["io"]["out_dir"] = out_dir
             config["io"]["out_report"] = os.path.join(out_dir, out_report)
 
@@ -1253,6 +1269,8 @@ class AutoFlow(Workflow):
             "bvecs": bvecs_file,
             "t1w": t1_file,
             "bids_folder": bids_folder,
+            "atlas_tractogram": atlas_tractogram,
+            "bundle_atlas_dir": bundle_atlas_dir,
         }
 
         for config_key, cli_value in cli_overrides.items():
@@ -1261,6 +1279,59 @@ class AutoFlow(Workflow):
                 if existing and existing != cli_value:
                     logger.warning(f"Overriding {config_key}: {existing} → {cli_value}")
                 io_config[config_key] = cli_value
+
+        # =================================================================
+        # Auto-download Atlas if needed for SLR or RecoBundles
+        # =================================================================
+
+        # Check if dipy_slr or dipy_recobundles are in the pipeline
+        needs_atlas = False
+        for stage in config.get("pipeline", []):
+            cli_name = stage.get("cli", "")
+            if cli_name in ("dipy_slr", "dipy_recobundles"):
+                needs_atlas = True
+                break
+
+        # If atlas is needed and paths are empty, download the atlas
+        if needs_atlas:
+            atlas_tractogram_path = io_config.get("atlas_tractogram", "")
+            bundle_atlas_dir_path = io_config.get("bundle_atlas_dir", "")
+
+            if not atlas_tractogram_path or not bundle_atlas_dir_path:
+                logger.info("Atlas required for SLR/RecoBundles but not provided.")
+                logger.info("Downloading HCP 30-bundle atlas...")
+
+                try:
+                    from dipy.data import fetch_30_bundle_atlas_hcp842
+
+                    # fetch_30_bundle_atlas_hcp842 returns (files_dict, base_path)
+                    _, atlas_base = fetch_30_bundle_atlas_hcp842()
+
+                    # Set the atlas paths
+                    if not atlas_tractogram_path:
+                        atlas_tractogram_path = os.path.join(
+                            atlas_base,
+                            "Atlas_30_Bundles",
+                            "whole_brain",
+                            "whole_brain_MNI.trk",
+                        )
+                        io_config["atlas_tractogram"] = atlas_tractogram_path
+                        logger.info(f"Atlas tractogram: {atlas_tractogram_path}")
+
+                    if not bundle_atlas_dir_path:
+                        bundle_atlas_dir_path = os.path.join(
+                            atlas_base, "Atlas_30_Bundles", "bundles"
+                        )
+                        io_config["bundle_atlas_dir"] = bundle_atlas_dir_path
+                        logger.info(f"Bundle atlas directory: {bundle_atlas_dir_path}")
+
+                except Exception as e:
+                    logger.error(f"Failed to download atlas: {e}")
+                    logger.error(
+                        "Please provide atlas paths manually using "
+                        "--atlas_tractogram and --bundle_atlas_dir"
+                    )
+                    sys.exit(1)
 
         # =================================================================
         # Validate Input Files BEFORE Pipeline Execution
