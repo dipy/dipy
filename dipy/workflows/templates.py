@@ -346,28 +346,62 @@ bundle_atlas_dir = ""
 
 # Full preprocessing chain
 [[pipeline]]
-name = "denoise"
-cli = "dipy_denoise_mppca"
+name = "reslice"
+cli = "dipy_reslice"
 input_files = "${io.dwi}"
 
 [[pipeline]]
-name = "gibbs"
-cli = "dipy_gibbs_ringing"
-input_files = "${denoise.out_denoised}"
-slice_axis = 2
+name = "b0_extraction"
+cli = "dipy_extract_b0"
+input_files = "${reslice.out_resliced}"
+bvalues_files = "${io.bvals}"
+b0_threshold = 50
 
 [[pipeline]]
 name = "brain_mask"
 cli = "dipy_median_otsu"
-input_files = "${gibbs.out_unring}"
+input_files = "${b0_extraction.out_b0}"
+bvalues_files = "${io.bvals}"
 median_radius = 2
 numpass = 5
+
+[[pipeline]]
+name = "gibbs"
+cli = "dipy_gibbs_ringing"
+input_files = "${brain_mask.out_masked}"
+slice_axis = 2
+num_processes = -1
+
+# Step 3: Motion correction
+[[pipeline]]
+name = "motion_correction"
+cli = "dipy_correct_motion"
+input_files = "${gibbs.out_unring}"
+bvalues_files = "${io.bvals}"
+bvectors_files = "${io.bvecs}"
+
+# Step 4: Bias field correction (using median_otsu on b0)
+[[pipeline]]
+name = "bias_correction"
+cli = "dipy_correct_biasfield"
+input_files = "${motion_correction.out_moved}"
+bval = "${io.bvals}"
+bvec = "${io.bvecs}"
+method = "b0"
+
+# Step 5: Denoising with Patch2Self
+[[pipeline]]
+name = "denoise"
+cli = "dipy_denoise_patch2self"
+input_files = "${bias_correction.out_corrected}"
+bvalues_files = "${io.bvals}"
+verbose = true
 
 # Multiple reconstructions
 [[pipeline]]
 name = "dti_fit"
 cli = "dipy_fit_dti"
-input_files = "${gibbs.out_unring}"
+input_files = "${denoise.out_denoised}"
 bvalues_files = "${io.bvals}"
 bvectors_files = "${io.bvecs}"
 mask_files = "${brain_mask.out_mask}"
@@ -377,11 +411,12 @@ extract_pam_values = true
 [[pipeline]]
 name = "csd_fit"
 cli = "dipy_fit_csd"
-input_files = "${gibbs.out_unring}"
+input_files = "${denoise.out_denoised}"
 bvalues_files = "${io.bvals}"
 bvectors_files = "${io.bvecs}"
 mask_files = "${brain_mask.out_mask}"
 extract_pam_values = true
+
 
 # Tractography
 [[pipeline]]
@@ -404,7 +439,7 @@ static_files = "${io.atlas_tractogram}"
 name = "segment_bundles"
 cli = "dipy_recobundles"
 tractogram_files = "${register.out_moved}"
-atlas_dir = "${io.bundle_atlas_dir}"
+atlas_dir = "${io.bundle_atlas_dir}/*.trk"
 """
 
 # =============================================================================
