@@ -50,7 +50,6 @@ And the letters A-D represent the following points in
 from collections import defaultdict
 from functools import wraps
 from itertools import combinations
-import types
 from warnings import warn
 
 from nibabel.affines import apply_affine
@@ -184,7 +183,7 @@ def connectivity_matrix(
     mapping = defaultdict(list)
     lin_T, offset = _mapping_to_voxel(affine)
 
-    if isinstance(streamlines, types.GeneratorType):
+    if type(streamlines).__name__ == 'generator':
         streamlines = Streamlines(streamlines)
 
     if weights is None:
