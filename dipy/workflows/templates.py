@@ -390,6 +390,38 @@ input_files = "${bias_correction.out_corrected}"
 bval_files = "${io.bvals}"
 verbose = true
 
+[[pipeline]]
+name = "gibbs"
+cli = "dipy_gibbs_ringing"
+input_files = "${brain_mask.out_masked}"
+slice_axis = 2
+num_processes = -1
+
+# Step 3: Motion correction
+[[pipeline]]
+name = "motion_correction"
+cli = "dipy_correct_motion"
+input_files = "${gibbs.out_unring}"
+bvalues_files = "${io.bvals}"
+bvectors_files = "${io.bvecs}"
+
+# Step 4: Bias field correction (using median_otsu on b0)
+[[pipeline]]
+name = "bias_correction"
+cli = "dipy_correct_biasfield"
+input_files = "${motion_correction.out_moved}"
+bval = "${io.bvals}"
+bvec = "${io.bvecs}"
+method = "b0"
+
+# Step 5: Denoising with Patch2Self
+[[pipeline]]
+name = "denoise"
+cli = "dipy_denoise_patch2self"
+input_files = "${bias_correction.out_corrected}"
+bvalues_files = "${io.bvals}"
+verbose = true
+
 # Multiple reconstructions
 [[pipeline]]
 name = "dti_fit"
@@ -411,6 +443,7 @@ bvectors_files = "${io.bvecs}"
 mask_files = "${brain_mask.out_mask}"
 extract_pam_values = true
 out_dir = "${io.out_dir}/csd"
+
 
 # Tractography
 [[pipeline]]
