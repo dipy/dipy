@@ -10,7 +10,7 @@ from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti_data, save_nifti
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.testing.decorators import set_random_number_generator
@@ -44,6 +44,81 @@ def test_reslice():
         npt.assert_equal(resliced.shape[1] > volume.shape[1], True)
         npt.assert_equal(resliced.shape[2] > volume.shape[2], True)
         npt.assert_equal(resliced.shape[-1], volume.shape[-1])
+
+
+def test_reslice_auto_voxsize(caplog):
+    """Test ResliceFlow with automatic voxel size calculation."""
+    with TemporaryDirectory() as out_dir:
+        data_path, _, _ = get_fnames(name="small_25")
+        volume = load_nifti_data(data_path)
+
+        reslice_flow = ResliceFlow()
+        reslice_flow.run(data_path, out_dir=out_dir)
+
+        warning_records = [r for r in caplog.records if r.levelname == "WARNING"]
+        assert len(warning_records) > 0, "Expected WARNING level log message"
+        assert any(
+            "new_vox_size not provided" in record.message for record in warning_records
+        ), "Expected warning about auto-calculation"
+        assert any(
+            "vox_factor=0.14" in record.message for record in warning_records
+        ), "Expected warning to include vox_factor value"
+
+        out_path = reslice_flow.last_generated_outputs["out_resliced"]
+        resliced = load_nifti_data(out_path)
+
+        npt.assert_equal(resliced.shape[-1], volume.shape[-1])
+
+
+def test_reslice_custom_voxfactor(caplog):
+    """Test ResliceFlow with custom vox_factor parameter."""
+    with TemporaryDirectory() as out_dir:
+        data_path, _, _ = get_fnames(name="small_25")
+        volume = load_nifti_data(data_path)
+
+        reslice_flow = ResliceFlow()
+        custom_factor = 0.5
+        reslice_flow.run(data_path, vox_factor=custom_factor, out_dir=out_dir)
+
+        warning_records = [r for r in caplog.records if r.levelname == "WARNING"]
+        assert len(warning_records) > 0, "Expected WARNING level log message"
+        assert any(
+            f"vox_factor={custom_factor}" in record.message
+            for record in warning_records
+        ), f"Expected warning to include vox_factor={custom_factor}"
+
+        out_path = reslice_flow.last_generated_outputs["out_resliced"]
+        resliced = load_nifti_data(out_path)
+
+        npt.assert_equal(resliced.shape[-1], volume.shape[-1])
+
+
+def test_reslice_skip_when_matching(caplog):
+    """Test ResliceFlow skips reslicing when voxel size already matches."""
+    import logging
+
+    with TemporaryDirectory() as out_dir:
+        data_path, _, _ = get_fnames(name="small_25")
+        volume = load_nifti_data(data_path)
+        _, _, zooms = load_nifti(data_path, return_voxsize=True)
+
+        with caplog.at_level(logging.INFO, logger="dipy"):
+            reslice_flow = ResliceFlow()
+            reslice_flow.run(data_path, new_vox_size=list(zooms[:3]), out_dir=out_dir)
+
+        info_records = [r for r in caplog.records if r.levelname == "INFO"]
+        assert any("Skipping reslicing" in record.message for record in info_records), (
+            "Expected INFO message about skipping. "
+            f"Found: {[r.message for r in info_records]}"
+        )
+        assert any(
+            "already matches target" in record.message for record in info_records
+        ), "Expected INFO message about matching voxel size"
+
+        out_path = reslice_flow.last_generated_outputs["out_resliced"]
+        resliced = load_nifti_data(out_path)
+
+        npt.assert_equal(resliced.shape, volume.shape)
 
 
 def test_slr_flow(caplog):
