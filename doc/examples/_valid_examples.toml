@@ -37,7 +37,7 @@ Quick Start
 
 """
 position = 1
-enable = true
+enable = false
 files = [
     "quick_start.py",
     "tracking_introduction_eudx.py",
@@ -51,7 +51,7 @@ Preprocessing
 
 """
 position = 4
-enable = true
+enable = false
 files = [
     "brain_extraction_dwi.py",
     "denoise_ascm.py",
@@ -84,34 +84,35 @@ Below, an overview of all reconstruction models available in DIPY.
 position = 7
 enable = true
 files = [
-    "kfold_xval.py",
-    "reconst_csa.py",
-    "reconst_csd.py",
-    "reconst_cti.py",
-    "reconst_mcsd.py",
-    "reconst_dki.py",
-    "reconst_dki_micro.py",
-    "reconst_dsi.py",
-    "reconst_dsi_metrics.py",
-    "reconst_dsid.py",
-    "reconst_dti.py",
-    "reconst_forecast.py",
-    "reconst_fwdti.py",
-    "reconst_gqi.py",
-    "reconst_ivim.py",
-    "reconst_mapmri.py",
-    "reconst_msdki.py",
-    "reconst_qtdmri.py",
-    "reconst_shore.py",
-    "reconst_shore_metrics.py",
-    "restore_dti.py",
-    "reconst_sfm.py",
-    "reconst_sh.py",
-    "reconst_rumba.py",
-    "reconst_qti.py",
-    "reconst_qtiplus.py",
-    "histology_resdnn.py",
-    "reconst_bingham.py"
+#    "kfold_xval.py",
+#    "reconst_csa.py",
+#    "reconst_csd.py",
+#    "reconst_cti.py",
+#    "reconst_mcsd.py",
+#    "reconst_dki.py",
+#    "reconst_dki_micro.py",
+#    "reconst_dsi.py",
+#    "reconst_dsi_metrics.py",
+#    "reconst_dsid.py",
+#    "reconst_dti.py",
+#    "reconst_forecast.py",
+#    "reconst_fwdti.py",
+#    "reconst_gqi.py",
+#    "reconst_ivim.py",
+#    "reconst_mapmri.py",
+#    "reconst_msdki.py",
+     "reconst_robust_fitting.py",
+#    "reconst_qtdmri.py",
+#    "reconst_shore.py",
+#    "reconst_shore_metrics.py",
+#    "restore_dti.py",
+#    "reconst_sfm.py",
+#    "reconst_sh.py",
+#    "reconst_rumba.py",
+#    "reconst_qti.py",
+#    "reconst_qtiplus.py",
+#    "histology_resdnn.py",
+#    "reconst_bingham.py"
 ]
 
 [contextual_enhancement]
@@ -121,7 +122,7 @@ Contextual Enhancement
 
 """
 position = 10
-enable = true
+enable = false
 files = [
     "contextual_enhancement.py",
     "fiber_to_bundle_coherence.py",
@@ -136,7 +137,7 @@ Fiber Tracking
 
 """
 position = 13
-enable = true
+enable = false
 files = [
     "tracking_bootstrap_peaks.py",
     "tracking_deterministic.py",
@@ -158,7 +159,7 @@ Streamlines Analysis and Connectivity
 
 """
 position = 17
-enable = true
+enable = false
 files = [
     "afq_tract_profiles.py",
     "cluster_confidence.py",
@@ -177,7 +178,7 @@ Registration
 
 """
 position = 20
-enable = true
+enable = false
 files = [
     "affine_registration_3d.py",
     "bundle_registration.py",
@@ -197,7 +198,7 @@ Segmentation
 
 """
 position = 23
-enable = true
+enable = false
 files = [
     "bundle_extraction.py",
     "segment_clustering_features.py",
@@ -217,7 +218,7 @@ Simulation
 
 """
 position = 26
-enable = true
+enable = false
 files = [
     "simulate_dki.py",
     "simulate_multi_tensor.py",
@@ -231,7 +232,7 @@ Multiprocessing
 
 """
 position = 29
-enable = true
+enable = false
 files = [
     "reconst_csa_parallel.py",
     "reconst_csd_parallel.py",
@@ -245,7 +246,7 @@ File Formats
 
 """
 position = 32
-enable = true
+enable = false
 files = [
     "streamline_formats.py",
 ]
@@ -257,7 +258,7 @@ Visualization
 
 """
 position = 35
-enable = true
+enable = false
 files = [
     "viz_advanced.py",
     "viz_bundles.py",
@@ -273,7 +274,7 @@ Workflows
 
 """
 position = 37
-enable = true
+enable = false
 files = [
     "combined_workflow_creation.py",
     "workflow_creation.py",
