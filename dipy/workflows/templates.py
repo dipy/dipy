@@ -360,10 +360,11 @@ b0_threshold = 50
 [[pipeline]]
 name = "brain_mask"
 cli = "dipy_median_otsu"
-input_files = "${b0_extraction.out_b0}"
-bvalues_files = "${io.bvals}"
+input_files = "${reslice.out_resliced}"
+bvalues_files = ["${io.bvals}"]
 median_radius = 2
 numpass = 5
+save_masked = true
 
 [[pipeline]]
 name = "gibbs"
@@ -394,7 +395,7 @@ method = "b0"
 name = "denoise"
 cli = "dipy_denoise_patch2self"
 input_files = "${bias_correction.out_corrected}"
-bvalues_files = "${io.bvals}"
+bval_files = "${io.bvals}"
 verbose = true
 
 # Multiple reconstructions
@@ -438,8 +439,9 @@ static_files = "${io.atlas_tractogram}"
 [[pipeline]]
 name = "segment_bundles"
 cli = "dipy_recobundles"
-tractogram_files = "${register.out_moved}"
-atlas_dir = "${io.bundle_atlas_dir}/*.trk"
+streamline_files = "${register.out_moved}"
+model_bundle_files = "${io.bundle_atlas_dir}/*.trk"
+mix_names = true
 """
 
 # =============================================================================
