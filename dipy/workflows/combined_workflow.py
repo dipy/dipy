@@ -396,6 +396,7 @@ def resolve_stage_parameters(stage_config, resolved_outputs, io_config):
 
                     if output_param in resolved_outputs[stage_name]:
                         replacement = resolved_outputs[stage_name][output_param]
+                        logger.debug(f"Resolving ${{{match}}} -> {replacement}")
                         value = value.replace(f"${{{match}}}", str(replacement))
                     else:
                         available = list(resolved_outputs[stage_name].keys())
@@ -484,6 +485,9 @@ def get_workflow_output_params(*, cli_command):
 def detect_output_conflicts(*, pipeline_stages):
     """Detect if multiple stages would produce conflicting output filenames.
 
+    Only considers it a conflict if stages write to the same directory.
+    Stages with different out_dir values do not conflict.
+
     Parameters
     ----------
     pipeline_stages : list
@@ -498,8 +502,8 @@ def detect_output_conflicts(*, pipeline_stages):
     Examples
     --------
     >>> stages = [
-    ...     {"name": "csa_fit", "cli": "dipy_fit_csa", ...},
-    ...     {"name": "csd_fit", "cli": "dipy_fit_csd", ...}
+    ...     {"name": "csa_fit", "cli": "dipy_fit_csa"},
+    ...     {"name": "csd_fit", "cli": "dipy_fit_csd"}
     ... ]
     >>> conflicts = detect_output_conflicts(pipeline_stages=stages)
     >>> conflicts
@@ -507,7 +511,7 @@ def detect_output_conflicts(*, pipeline_stages):
      'out_shm': ['csa_fit', 'csd_fit']}
     """
     # Track which stages produce which output parameters
-    # Map: output_param -> list of (stage_name, cli)
+    # Map: (output_param, out_dir) -> list of (stage_name, cli)
     output_producers = defaultdict(list)
 
     for stage in pipeline_stages:
@@ -516,6 +520,9 @@ def detect_output_conflicts(*, pipeline_stages):
 
         if not cli:
             continue
+
+        # Get the output directory for this stage (None means use default)
+        stage_out_dir = stage.get("out_dir", None)
 
         # Dynamically get output parameters for this CLI
         output_params = get_workflow_output_params(cli_command=cli)
@@ -526,11 +533,14 @@ def detect_output_conflicts(*, pipeline_stages):
             if output_param in stage:
                 continue
 
-            output_producers[output_param].append((stage_name, cli))
+            # Key by both output_param AND out_dir
+            # Only stages writing to the same directory can conflict
+            key = (output_param, stage_out_dir)
+            output_producers[key].append((stage_name, cli))
 
-    # Find actual conflicts (multiple stages producing same output)
+    # Find actual conflicts (multiple stages producing same output to same dir)
     conflicts = {}
-    for output_param, producers in output_producers.items():
+    for (output_param, _), producers in output_producers.items():
         if len(producers) > 1:
             # Extract just the stage names
             stage_names = [stage_name for stage_name, _ in producers]
@@ -544,7 +554,7 @@ def resolve_output_conflicts(*, config, conflicts):
 
     Modifies the config in-place to add explicit output parameters with
     stage-specific filenames following the pattern:
-    {base_name}_{stage_name}.{extension}
+    {base_name}_{stage_name}.{original_extension}
 
     Parameters
     ----------
@@ -567,9 +577,9 @@ def resolve_output_conflicts(*, config, conflicts):
     >>> conflicts = {"out_pam": ["csa_fit", "csd_fit"]}
     >>> warnings = resolve_output_conflicts(config=config, conflicts=conflicts)
     >>> config["pipeline"][0]["out_pam"]
-    'pam_csa_fit.nii.gz'
+    'pam_csa_fit.pam5'
     >>> config["pipeline"][1]["out_pam"]
-    'pam_csd_fit.nii.gz'
+    'pam_csd_fit.pam5'
     """
     warnings = []
     pipeline_stages = config.get("pipeline", [])
@@ -589,11 +599,33 @@ def resolve_output_conflicts(*, config, conflicts):
                 continue
 
             stage = stage_map[stage_name]
+            cli_name = stage.get("cli")
 
-            # Create stage-specific filename
-            # Pattern: {base_name}_{stage_name}.nii.gz
-            # Example: pam_csa_fit.nii.gz, pam_csd_fit.nii.gz
-            new_filename = f"{base_name}_{stage_name}.nii.gz"
+            # Get original extension from workflow default
+            original_extension = "nii.gz"  # default fallback
+            try:
+                if cli_name and cli_name in cli_flows:
+                    module_name, class_name = cli_flows[cli_name]
+                    module = importlib.import_module(module_name)
+                    workflow_class = getattr(module, class_name)
+                    sig = inspect.signature(workflow_class.run)
+                    param = sig.parameters.get(output_param)
+
+                    if param and param.default != inspect.Parameter.empty:
+                        default_filename = param.default
+                        # Extract extension from default filename
+                        # e.g., "peaks.pam5" -> "pam5"
+                        if "." in default_filename:
+                            original_extension = default_filename.split(".", 1)[1]
+            except Exception as e:
+                logger.debug(
+                    f"Could not get extension for {output_param} in {cli_name}: {e}"
+                )
+
+            # Create stage-specific filename preserving original extension
+            # Pattern: {base_name}_{stage_name}.{original_extension}
+            # Example: pam_csa_fit.pam5, fa_dti_fit.nii.gz
+            new_filename = f"{base_name}_{stage_name}.{original_extension}"
 
             # Add explicit output parameter to stage config
             stage[output_param] = new_filename
@@ -654,6 +686,24 @@ def execute_pipeline_stage(*, stage_name, stage_config, resolved_outputs, io_con
     module = importlib.import_module(module_name)
     workflow_class = getattr(module, class_name)
 
+    # Extract __init__ parameters (mix_names, force, output_strategy, skip)
+    init_sig = inspect.signature(workflow_class.__init__)
+    init_params = {}
+    init_param_names = {"mix_names", "force", "output_strategy", "skip"}
+
+    for param_name in init_param_names:
+        if param_name in workflow_params:
+            init_params[param_name] = workflow_params.pop(param_name)
+            logger.debug(
+                f"Using __init__ param: {param_name}={init_params[param_name]}"
+            )
+        elif param_name in init_sig.parameters:
+            # Use default from signature
+            param = init_sig.parameters[param_name]
+            if param.default != inspect.Parameter.empty:
+                init_params[param_name] = param.default
+
+    # Get run() parameters
     sig = inspect.signature(workflow_class.run)
     valid_params = {
         name: param.default if param.default is not inspect.Parameter.empty else None
@@ -678,19 +728,26 @@ def execute_pipeline_stage(*, stage_name, stage_config, resolved_outputs, io_con
     t_start = time.perf_counter()
 
     try:
-        workflow = workflow_class()
+        workflow = workflow_class(**init_params)
         workflow.run(**final_params)
 
         stage_outputs = {}
         if hasattr(workflow, "last_generated_outputs"):
             if isinstance(workflow.last_generated_outputs, dict):
                 stage_outputs = workflow.last_generated_outputs
+                logger.debug(f"Stage '{stage_name}' outputs (dict): {stage_outputs}")
             elif isinstance(workflow.last_generated_outputs, list):
                 outputs = introspect_workflow_outputs(cli_name)
+                sorted_params = sorted(outputs)
+                logger.debug(
+                    f"Stage '{stage_name}' - sorted params: {sorted_params}, "
+                    f"files: {workflow.last_generated_outputs}"
+                )
                 for out_param, out_file in zip(
-                    sorted(outputs), workflow.last_generated_outputs
+                    sorted_params, workflow.last_generated_outputs
                 ):
                     stage_outputs[out_param] = out_file
+                logger.debug(f"Stage '{stage_name}' outputs (zipped): {stage_outputs}")
 
         duration = time.perf_counter() - t_start
         logger.info(f"Completed stage '{stage_name}' in {duration:.2f} seconds")
@@ -729,21 +786,63 @@ def discover_stage_outputs(*, stage_name, stage_config, io_config):
     out_dir = io_config.get("out_dir", ".")
     discovered = {}
 
+    # Strategy 1: Check if output filenames are explicitly specified in config
     for output_param in outputs:
+        if output_param in stage_config:
+            specified_file = stage_config[output_param]
+            full_path = os.path.join(out_dir, specified_file)
+            if os.path.exists(full_path):
+                discovered[output_param] = full_path
+                logger.debug(f"Discovered {output_param} from config: {full_path}")
+
+    # Strategy 2: Get default filenames from workflow signature
+    try:
+        module_name, class_name = cli_flows[cli_name]
+        module = importlib.import_module(module_name)
+        workflow_class = getattr(module, class_name)
+        sig = inspect.signature(workflow_class.run)
+
+        for output_param in outputs:
+            if output_param in discovered:
+                continue
+
+            param = sig.parameters.get(output_param)
+            if param and param.default != inspect.Parameter.empty:
+                default_filename = param.default
+                full_path = os.path.join(out_dir, default_filename)
+                if os.path.exists(full_path):
+                    discovered[output_param] = full_path
+                    logger.debug(
+                        f"Discovered {output_param} using default: {full_path}"
+                    )
+    except Exception as e:
+        logger.debug(f"Could not introspect defaults for {cli_name}: {e}")
+
+    # Strategy 3: Pattern matching for outputs not yet discovered
+    for output_param in outputs:
+        if output_param in discovered:
+            continue
+
         potential_patterns = []
 
         if "out_" in output_param:
             suffix = output_param.replace("out_", "")
+            # Try exact patterns first (without wildcards)
             potential_patterns.extend(
                 [
                     os.path.join(out_dir, f"{suffix}.nii.gz"),
                     os.path.join(out_dir, f"{suffix}.nii"),
-                    os.path.join(out_dir, f"*{suffix}*.nii.gz"),
-                    os.path.join(out_dir, f"*{suffix}*.nii"),
                     os.path.join(out_dir, f"{suffix}.trk"),
                     os.path.join(out_dir, f"{suffix}.tck"),
                     os.path.join(out_dir, f"{suffix}.txt"),
                     os.path.join(out_dir, f"{suffix}.pam5"),
+                ]
+            )
+            # Then try wildcards as fallback
+            potential_patterns.extend(
+                [
+                    os.path.join(out_dir, f"*{suffix}.nii.gz"),
+                    os.path.join(out_dir, f"*{suffix}.nii"),
                 ]
             )
 
@@ -751,11 +850,9 @@ def discover_stage_outputs(*, stage_name, stage_config, io_config):
             "dipy_denoise_nlmeans": ["dwi_nlmeans.nii.gz"],
             "dipy_denoise_mppca": ["dwi_mppca.nii.gz"],
             "dipy_denoise_patch2self": ["dwi_patch2self.nii.gz"],
-            "dipy_median_otsu": ["*_masked.nii.gz", "*_mask.nii.gz"],
-            "dipy_mask": ["mask.nii.gz"],
-            "dipy_gibbs_ringing": ["*_unring.nii.gz"],
-            "dipy_correct_motion": ["*_moved.nii.gz"],
-            "dipy_extract_b0": ["*_b0.nii.gz"],
+            "dipy_gibbs_ringing": ["dwi_unring.nii.gz", "*_unring.nii.gz"],
+            "dipy_correct_motion": ["dwi_moved.nii.gz", "*_moved.nii.gz"],
+            "dipy_extract_b0": ["b0.nii.gz", "*_b0.nii.gz"],
         }
 
         if cli_name in cli_workflow_patterns:
