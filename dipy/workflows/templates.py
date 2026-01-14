@@ -419,7 +419,7 @@ method = "b0"
 name = "denoise"
 cli = "dipy_denoise_patch2self"
 input_files = "${bias_correction.out_corrected}"
-bvalues_files = "${io.bvals}"
+bval_files = "${io.bvals}"
 verbose = true
 
 # Multiple reconstructions
