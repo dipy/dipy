@@ -1,7 +1,15 @@
 """
 Test DirectionGetter interface for pure Python implementations.
+
+This module validates that DirectionGetter subclasses implemented in pure
+Python (overriding get_direction() instead of get_direction_c()) work
+correctly with LocalTracking.
+
 This is essential for:
--ML-based tractography methods using PyTorch/TensorFlow
+- ML-based tractography methods using PyTorch/TensorFlow
+- Rapid prototyping of novel tracking algorithms
+- Educational purposes and documentation
+
 Note on Performance:
     Pure Python DirectionGetter implementations are ~10-100x slower than
     Cython implementations but enable full compatibility with Python ML
@@ -19,6 +27,26 @@ from dipy.tracking.streamline import Streamlines
 
 
 class PythonDirectionGetter(DirectionGetter):
+    """
+    Pure Python DirectionGetter returning a constant direction.
+
+    Demonstrates that DirectionGetter can be subclassed in pure Python
+    by overriding get_direction() instead of implementing get_direction_c().
+    This pattern is important for ML-based methods requiring PyTorch/TF.
+
+    Parameters
+    ----------
+    direction : array-like, shape (3,)
+        Constant direction vector (will be normalized).
+
+    Examples
+    --------
+    >>> dg = PythonDirectionGetter([1, 0, 0])
+    >>> point = np.array([0., 0., 0.])
+    >>> dirs = dg.initial_direction(point)
+    >>> print(dirs.shape)
+    (1, 3)
+    """
 
     def __init__(self, direction):
         direction = np.asarray(direction, dtype=float)
@@ -28,17 +56,41 @@ class PythonDirectionGetter(DirectionGetter):
         self.direction = direction / norm
 
     def initial_direction(self, point):
+        """
+        Return initial direction(s) at seed point.
 
+        Returns
+        -------
+        directions : ndarray, shape (n_directions, 3)
+            Array of initial directions. For deterministic: (1, 3).
+        """
         return np.array([self.direction], dtype=np.float64)
 
     def get_direction(self, point, direction):
+        """
+        Pure Python direction getter.
 
+        Overrides get_direction() wrapper instead of implementing
+        get_direction_c(). Slower but maintains Python compatibility.
+
+        Parameters
+        ----------
+        point : memoryview, shape (3,)
+            Current position.
+        direction : memoryview, shape (3,)
+            Direction array (modified in-place).
+
+        Returns
+        -------
+        status : int
+            0 for success, 1 for termination.
+        """
         direction[:] = self.direction
         return 0
 
 
 def test_pure_python_direction_getter_basic():
-
+    """Test that pure Python DirectionGetter works with LocalTracking."""
     data = np.ones((5, 5, 5))
     stopping = BinaryStoppingCriterion(data)
     seeds = np.array([[2., 2., 2.]])
@@ -60,7 +112,7 @@ def test_pure_python_direction_getter_basic():
 
 
 def test_initial_direction_shape():
-
+    """Validate initial_direction returns 2D array."""
     dg = PythonDirectionGetter([1, 0, 0])
     point = np.array([0., 0., 0.])
 
@@ -72,7 +124,7 @@ def test_initial_direction_shape():
 
 
 def test_direction_normalization():
-
+    """Test that directions are properly normalized."""
     dg = PythonDirectionGetter([3, 4, 0])
 
     point = np.array([0., 0., 0.])
@@ -84,7 +136,7 @@ def test_direction_normalization():
 
 
 def test_inplace_direction_update():
-
+    """Verify get_direction updates direction in-place."""
     dg = PythonDirectionGetter([0, 1, 0])
 
     point = np.array([1., 1., 1.])
@@ -98,7 +150,7 @@ def test_inplace_direction_update():
 
 
 def test_multiple_tracking_directions():
-
+    """Test tracking in various directions."""
     data = np.ones((10, 10, 10))
     stopping = BinaryStoppingCriterion(data)
     seeds = np.array([[5., 5., 5.]])
@@ -132,13 +184,13 @@ def test_multiple_tracking_directions():
 
 
 def test_invalid_direction_raises():
-
+    """Zero-length direction should raise ValueError."""
     with pytest.raises(ValueError, match="non-zero length"):
         PythonDirectionGetter([0, 0, 0])
 
 
 def test_with_nonidentity_affine():
-
+    """Validate compatibility with scaled affine transforms."""
     data = np.ones((5, 5, 5))
     stopping = BinaryStoppingCriterion(data)
     seeds = np.array([[2., 2., 2.]])
