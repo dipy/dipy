@@ -1,18 +1,16 @@
-#!/usr/bin/env python
 """
-Standalone test for PythonDirectionGetter.
-Runs without requiring pytest or DIPY rebuild.
+Test DirectionGetter interface for pure Python implementations.
+This is essential for:
+-ML-based tractography methods using PyTorch/TensorFlow
+Note on Performance:
+    Pure Python DirectionGetter implementations are ~10-100x slower than
+    Cython implementations but enable full compatibility with Python ML
+    frameworks and easier debugging.
 """
 
-import sys
-import os
 import numpy as np
 import numpy.testing as npt
-
-# Add DIPY to path
-dipy_path = '/Users/mrinalchaturvedi/Desktop/MOONNEW/Projects/FromScratch/dipy'
-if os.path.exists(dipy_path):
-    sys.path.insert(0, dipy_path)
+import pytest
 
 from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.direction_getter import DirectionGetter
@@ -21,7 +19,6 @@ from dipy.tracking.streamline import Streamlines
 
 
 class PythonDirectionGetter(DirectionGetter):
-    """Pure Python DirectionGetter for testing."""
 
     def __init__(self, direction):
         direction = np.asarray(direction, dtype=float)
@@ -31,16 +28,16 @@ class PythonDirectionGetter(DirectionGetter):
         self.direction = direction / norm
 
     def initial_direction(self, point):
+
         return np.array([self.direction], dtype=np.float64)
 
     def get_direction(self, point, direction):
+
         direction[:] = self.direction
         return 0
 
 
 def test_pure_python_direction_getter_basic():
-    """Test that pure Python DirectionGetter works with LocalTracking."""
-    print("Running: test_pure_python_direction_getter_basic...", end=" ")
 
     data = np.ones((5, 5, 5))
     stopping = BinaryStoppingCriterion(data)
@@ -61,12 +58,8 @@ def test_pure_python_direction_getter_basic():
     x_coords = streamline[:, 0]
     assert np.all(np.diff(x_coords) > 0), "Should track in +x direction"
 
-    print("✓ PASSED")
-
 
 def test_initial_direction_shape():
-    """Validate initial_direction returns 2D array."""
-    print("Running: test_initial_direction_shape...", end=" ")
 
     dg = PythonDirectionGetter([1, 0, 0])
     point = np.array([0., 0., 0.])
@@ -77,12 +70,8 @@ def test_initial_direction_shape():
     assert directions.shape[1] == 3
     assert directions.shape[0] == 1
 
-    print("✓ PASSED")
-
 
 def test_direction_normalization():
-    """Test that directions are properly normalized."""
-    print("Running: test_direction_normalization...", end=" ")
 
     dg = PythonDirectionGetter([3, 4, 0])
 
@@ -93,12 +82,8 @@ def test_direction_normalization():
     expected = np.array([3., 4., 0.]) / 5.0
     npt.assert_array_almost_equal(directions[0], expected)
 
-    print("✓ PASSED")
-
 
 def test_inplace_direction_update():
-    """Verify get_direction updates direction in-place."""
-    print("Running: test_inplace_direction_update...", end=" ")
 
     dg = PythonDirectionGetter([0, 1, 0])
 
@@ -111,12 +96,8 @@ def test_inplace_direction_update():
     expected = np.array([0., 1., 0.])
     npt.assert_array_almost_equal(direction, expected)
 
-    print("✓ PASSED")
-
 
 def test_multiple_tracking_directions():
-    """Test tracking in various directions."""
-    print("Running: test_multiple_tracking_directions...", end=" ")
 
     data = np.ones((10, 10, 10))
     stopping = BinaryStoppingCriterion(data)
@@ -149,25 +130,14 @@ def test_multiple_tracking_directions():
         dot_product = np.dot(displacement_norm, expected_dir)
         assert dot_product > 0.99
 
-    print("✓ PASSED")
-
 
 def test_invalid_direction_raises():
-    """Zero-length direction should raise ValueError."""
-    print("Running: test_invalid_direction_raises...", end=" ")
 
-    try:
+    with pytest.raises(ValueError, match="non-zero length"):
         PythonDirectionGetter([0, 0, 0])
-        assert False, "Should have raised ValueError"
-    except ValueError as e:
-        assert "non-zero length" in str(e)
-
-    print("✓ PASSED")
 
 
 def test_with_nonidentity_affine():
-    """Validate compatibility with scaled affine transforms."""
-    print("Running: test_with_nonidentity_affine...", end=" ")
 
     data = np.ones((5, 5, 5))
     stopping = BinaryStoppingCriterion(data)
@@ -183,41 +153,3 @@ def test_with_nonidentity_affine():
 
     streamlines = Streamlines(tracking)
     assert len(streamlines) > 0
-
-    print("✓ PASSED")
-
-
-def test_python_vs_cython_interface_note():
-    """Documentation test."""
-    print("Running: test_python_vs_cython_interface_note...", end=" ")
-    assert True
-    print("✓ PASSED")
-
-
-if __name__ == '__main__':
-    print("\n" + "=" * 70)
-    print("Testing PythonDirectionGetter Interface")
-    print("=" * 70 + "\n")
-
-    try:
-        test_pure_python_direction_getter_basic()
-        test_initial_direction_shape()
-        test_direction_normalization()
-        test_inplace_direction_update()
-        test_multiple_tracking_directions()
-        test_invalid_direction_raises()
-        test_with_nonidentity_affine()
-        test_python_vs_cython_interface_note()
-
-        print("\n" + "=" * 70)
-        print("✓ ALL TESTS PASSED (8/8)")
-        print("=" * 70)
-        print("\nYour PythonDirectionGetter implementation is working correctly!")
-        print("This validates the integration approach for RL tractography.\n")
-
-    except Exception as e:
-        print(f"\n✗ TEST FAILED: {e}")
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
