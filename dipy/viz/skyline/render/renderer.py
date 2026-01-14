@@ -17,6 +17,18 @@ class Visualization:
     def actor(self):
         raise NotImplementedError("Subclasses must implement the actor property.")
 
+    def render_widgets(self):
+        """Render control widgets for visualization.
+
+        Raises
+        ------
+        NotImplementedError
+            if the method is not implemented in the subclass.
+        """
+        raise NotImplementedError(
+            "Subclasses must implement the render_widgets method."
+        )
+
 
 def create_window(
     *, visualizer_type="standalone", size=(1200, 1000), screen_config=None
