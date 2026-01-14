@@ -25,7 +25,7 @@ class UIWindow:
         self._section_open = {}
         hello_imgui.set_assets_folder(str(ASSETS))
         hello_imgui.load_font_ttf_with_font_awesome_icons(
-            str(FONT.relative_to(ASSETS)), 20
+            str(FONT.relative_to(ASSETS)), 18
         )
         imgui.push_style_color(
             imgui.Col_.window_bg, imgui.get_color_u32(THEME["background"])
