@@ -1,11 +1,13 @@
 import sys
 
 from fury.actor import set_group_opacity, show_slices, volume_slicer
+from fury.lib import gfx
 from imgui_bundle import imgui
 import numpy as np
 
 from dipy.utils.logging import logger
 from dipy.viz.skyline.UI.elements import (
+    dropdown,
     render_group,
     segmented_switch,
     thin_slider,
@@ -25,6 +27,7 @@ class Image3D(Visualization):
         opacity=100,
         rgb=False,
         value_percentiles=(2, 98),
+        colormap="Gray",
     ):
         super().__init__(render_callback=render_callback)
         self.dwi = volume
@@ -42,9 +45,13 @@ class Image3D(Visualization):
             sys.exit(1)
         self.rgb = rgb
 
+        self._has_directions = self.dwi.ndim == 4 and not rgb
+
         self._volume_idx = 0
         self.interpolation = interpolation or "linear"
         self._value_percentiles = value_percentiles
+        self._colormap_options = ("Gray", "Inferno", "Magma", "Plasma", "Viridis")
+        self.colormap = colormap
 
         self._create_slicer_actor()
         self.opacity = opacity
@@ -62,7 +69,7 @@ class Image3D(Visualization):
         )
 
     def _create_slicer_actor(self):
-        if self.dwi.ndim == 4 and not self.rgb:
+        if self._has_directions:
             volume = self.dwi[..., self._volume_idx]
             self.value_range = self._value_range_from_percentile(volume)
             self.slicer = volume_slicer(
@@ -83,6 +90,7 @@ class Image3D(Visualization):
                 alpha_mode="bayer",
                 depth_write=True,
             )
+        self._apply_colormap(self.colormap)
         self.bounds = self.slicer.get_bounding_box()
         self.state = np.mean(self.bounds, axis=0).astype(int)
         show_slices(self.slicer, self.state)
@@ -92,6 +100,11 @@ class Image3D(Visualization):
         p_low, p_high = self._value_percentiles
         vmin, vmax = np.percentile(volume, (p_low, p_high))
         return vmin, vmax
+
+    def _apply_colormap(self, colormap):
+        self.colormap = colormap
+        for actor in self.slicer.children:
+            actor.material.map = getattr(gfx.cm, self.colormap.lower())
 
     @property
     def actor(self):
@@ -113,28 +126,7 @@ class Image3D(Visualization):
             set_group_opacity(self.slicer, self.opacity / 100.0)
 
         imgui.spacing()
-        volume_for_range = (
-            self.dwi[..., self._volume_idx]
-            if self.dwi.ndim == 4 and not self.rgb
-            else self.dwi
-        )
-        intensity_changed, new_percentiles = two_disk_slider(
-            "Intensities",
-            self._value_percentiles,
-            0,
-            100,
-            text_format=".1f",
-            step=1,
-            min_gap=0.1,
-            display_values=self.value_range,
-        )
-        if intensity_changed:
-            self._value_percentiles = new_percentiles
-            self.value_range = self._value_range_from_percentile(volume_for_range)
-            for actor in self.slicer.children:
-                actor.material.clim = self.value_range
 
-        imgui.spacing()
         axis_labels = ("X", "Y", "Z")
         slider_bounds = (
             (int(self.bounds[0][0] + 1), int(self.bounds[1][0] - 1)),
@@ -162,7 +154,29 @@ class Image3D(Visualization):
             show_slices(self.slicer, self.state)
 
         imgui.spacing()
-        if self.dwi.ndim == 4 and not self.rgb:
+
+        if self._has_directions:
+            volume_for_range = (
+                self.dwi[..., self._volume_idx] if self._has_directions else self.dwi
+            )
+            intensity_changed, new_percentiles = two_disk_slider(
+                "Intensities",
+                self._value_percentiles,
+                0,
+                100,
+                text_format=".1f",
+                step=1,
+                min_gap=0.1,
+                display_values=self.value_range,
+            )
+            if intensity_changed:
+                self._value_percentiles = new_percentiles
+                self.value_range = self._value_range_from_percentile(volume_for_range)
+                for actor in self.slicer.children:
+                    actor.material.clim = self.value_range
+
+            imgui.spacing()
+
             volume_changed, new_idx = thin_slider(
                 "Directions",
                 self._volume_idx,
@@ -176,6 +190,14 @@ class Image3D(Visualization):
                 self._volume_idx = new_idx
                 self._create_slicer_actor()
 
+        imgui.spacing()
+        colormap_changed, new_cmap = dropdown(
+            "Colormap", self._colormap_options, self.colormap
+        )
+        if colormap_changed:
+            self._apply_colormap(new_cmap)
+
+        imgui.spacing()
         imgui.spacing()
         changed, new = segmented_switch(
             "Interpolation", ["Linear", "Nearest"], self.interpolation
