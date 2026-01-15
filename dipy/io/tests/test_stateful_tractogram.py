@@ -17,7 +17,9 @@ from dipy.io.utils import is_header_compatible, recursive_compare
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
+vtk, have_vtk, setup_module = optional_package(
+    "vtk", min_version="9.0.0", max_version="9.1.0"
+)
 is_big_endian = "big" in sys.byteorder.lower()
 
 
@@ -62,7 +64,7 @@ def test_direct_trx_loading():
     npt.assert_allclose(sft.streamlines._data, tmp_points_vox, rtol=1e-04, atol=1e-06)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
 @pytest.mark.parametrize("ext, space", itertools.product(EXTENSIONS, SPACES))
 def test_space_gold_standard(ext, space):
     # VTK/FIB in the gold standard dataset are in LPSMM space.
@@ -245,7 +247,7 @@ def test_empty_sft_case():
     assert is_header_compatible(sft_1, sft_2)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_vtk, reason="Requires FURY")
 @pytest.mark.parametrize("ext", EXTENSIONS)
 def test_iterative_saving_loading(ext):
     # VTK/FIB in the gold standard dataset are in LPSMM space.

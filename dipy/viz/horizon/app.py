@@ -34,7 +34,9 @@ from dipy.viz.horizon.visualizer import (
     SurfaceVisualizer,
 )
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, has_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 
 if has_fury:
     from fury import __version__ as fury_version, actor, ui, window

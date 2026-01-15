@@ -10,7 +10,9 @@ from dipy.viz.horizon.tab.base import HorizonTab, HorizonUIElement
 from dipy.viz.horizon.tab.peak import PeaksTab
 from dipy.viz.horizon.visualizer.peak import PeaksVisualizer
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, has_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 skip_it = use_xvfb == "skip" or not has_fury
 
 
