@@ -326,6 +326,97 @@ def segmented_switch(label, options, value, *, width=0, height=28):
     return changed, new_value
 
 
+def dropdown(label, options, value, *, width=0):
+    """Render a themed dropdown/combobox control.
+
+    Parameters
+    ----------
+    label : str
+        Text rendered next to the dropdown.
+    options : list[str]
+        Available options displayed in the dropdown.
+    value : str
+        Currently selected option. If not present in ``options``, the first
+        option is used.
+    width : int, optional
+        Width of the dropdown in pixels. If 0 or negative, uses available space.
+
+    Returns
+    -------
+    tuple(bool, str)
+        Whether the selection changed and the resulting option value.
+    """
+    if not options:
+        return False, value
+
+    imgui.push_id(label)
+    label_color = THEME["text"]
+    imgui.align_text_to_frame_padding()
+    imgui.text_colored(label_color, label)
+    imgui.same_line(0, 16)
+
+    current_value = value if value in options else options[0]
+    available_width = imgui.get_content_region_avail().x
+    combo_width = width if width and width > 0 else max(140.0, available_width)
+    padding_x = 10.0
+    arrow_icon = icons_fontawesome_6.ICON_FA_ANGLE_DOWN
+
+    frame_bg = WINDOW_THEME["background_color"]
+    border_color = THEME["text"]
+    text_color = THEME["secondary"]
+    highlight = THEME["text_highlight"]
+
+    imgui.set_next_item_width(combo_width)
+    imgui.push_style_var(imgui.StyleVar_.frame_rounding, 6.0)
+    imgui.push_style_var(imgui.StyleVar_.frame_border_size, 1.0)
+    imgui.push_style_color(imgui.Col_.frame_bg, frame_bg)
+    imgui.push_style_color(imgui.Col_.frame_bg_hovered, frame_bg)
+    imgui.push_style_color(imgui.Col_.frame_bg_active, frame_bg)
+    imgui.push_style_color(imgui.Col_.border, border_color)
+    imgui.push_style_color(imgui.Col_.text, text_color)
+    imgui.push_style_color(imgui.Col_.header, highlight)
+    imgui.push_style_color(imgui.Col_.header_hovered, highlight)
+    imgui.push_style_color(imgui.Col_.header_active, highlight)
+
+    combo_flags = imgui.ComboFlags_.height_regular | imgui.ComboFlags_.no_arrow_button
+    changed = False
+    new_value = current_value
+    opened = imgui.begin_combo(f"##{label}_dropdown", current_value, combo_flags)
+
+    frame_min = imgui.get_item_rect_min()
+    frame_max = imgui.get_item_rect_max()
+    draw_list = imgui.get_window_draw_list()
+    arrow_size = imgui.calc_text_size(arrow_icon)
+    arrow_pos = (
+        frame_max.x - padding_x - arrow_size.x,
+        frame_min.y + (frame_max.y - frame_min.y - arrow_size.y) * 0.52,
+    )
+    draw_list.add_text(arrow_pos, imgui.get_color_u32(highlight), arrow_icon)
+
+    if opened:
+        for option in options:
+            is_selected = option == current_value
+            selectable_result = imgui.selectable(option, is_selected)
+            pressed = (
+                selectable_result[0]
+                if isinstance(selectable_result, tuple)
+                else selectable_result
+            )
+            if pressed:
+                new_value = option
+            if is_selected:
+                imgui.set_item_default_focus()
+        changed = new_value != current_value
+        imgui.end_combo()
+        current_value = new_value
+
+    imgui.pop_style_color(8)
+    imgui.pop_style_var(2)
+
+    imgui.pop_id()
+    return changed, new_value
+
+
 def thin_slider(
     label,
     value,
