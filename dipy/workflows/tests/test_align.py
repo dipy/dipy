@@ -127,7 +127,7 @@ def test_slr_flow(caplog):
 
         sft = load_tractogram(data_path, "same", bbox_valid_check=False)
         sft.streamlines._data += np.array([50, 0, 0])
-        moved_path = Path(out_dir) / "moved.trk"
+        moved_path = Path(out_dir) / "moved.trx"
         save_tractogram(sft, moved_path, bbox_valid_check=False)
 
         slr_flow = SlrWithQbxFlow(force=True)
@@ -144,15 +144,13 @@ def test_slr_flow(caplog):
         slr_flow = SlrWithQbxFlow(force=True)
 
         # Test empty static file
-        with pytest.raises(SystemExit) as exc_info:
-            slr_flow.run(
-                empty_path,
-                moved_path,
-                out_dir=out_dir,
-                bbox_valid_check=False,
-            )
+        slr_flow.run(
+            empty_path,
+            moved_path,
+            out_dir=out_dir,
+            bbox_valid_check=False,
+        )
 
-        assert exc_info.value.code == 1
         error_records = [r for r in caplog.records if r.levelname == "ERROR"]
         assert len(error_records) > 0, "Expected ERROR level log message"
         error_msg = f"Static file {empty_path} is empty"
@@ -161,19 +159,59 @@ def test_slr_flow(caplog):
         caplog.clear()
 
         # Test empty moving file
-        with pytest.raises(SystemExit) as exc_info:
-            slr_flow.run(
-                data_path,
-                empty_path,
-                out_dir=out_dir,
-                bbox_valid_check=False,
-            )
+        slr_flow.run(
+            data_path,
+            empty_path,
+            out_dir=out_dir,
+            bbox_valid_check=False,
+        )
 
-        assert exc_info.value.code == 1
         error_records = [r for r in caplog.records if r.levelname == "ERROR"]
         assert len(error_records) > 0, "Expected ERROR level log message"
         error_msg = f"Moving file {empty_path} is empty"
         assert any(err.msg in error_msg for err in error_records)
+
+
+def test_slr_flow_empty_after_length_filtering(caplog):
+    """Test that SlrWithQbxFlow logs error when all streamlines are filtered
+    out by length constraints.
+    """
+    with TemporaryDirectory() as out_dir:
+        data_path = get_fnames(name="fornix")
+
+        sft = load_tractogram(data_path, "same", bbox_valid_check=False)
+        moved_path = Path(out_dir) / "moved.trx"
+        save_tractogram(sft, moved_path, bbox_valid_check=False)
+
+        slr_flow = SlrWithQbxFlow(force=True)
+
+        caplog.clear()
+        slr_flow.run(
+            data_path,
+            moved_path,
+            out_dir=out_dir,
+            bbox_valid_check=False,
+            greater_than=1000,
+            less_than=np.inf,
+        )
+
+        error_records = [r for r in caplog.records if r.levelname == "ERROR"]
+        assert len(error_records) > 0, "Expected ERROR level log message"
+        assert any("SLR with QBX failed" in err.message for err in error_records)
+
+        caplog.clear()
+        slr_flow.run(
+            data_path,
+            moved_path,
+            out_dir=out_dir,
+            bbox_valid_check=False,
+            greater_than=0,
+            less_than=1,
+        )
+
+        error_records = [r for r in caplog.records if r.levelname == "ERROR"]
+        assert len(error_records) > 0, "Expected ERROR level log message"
+        assert any("SLR with QBX failed" in err.message for err in error_records)
 
 
 @set_random_number_generator(1234)
