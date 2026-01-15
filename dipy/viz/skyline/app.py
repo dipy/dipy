@@ -1,8 +1,6 @@
 from pathlib import Path
 
-from fury import update_camera
 from fury.actor import Actor
-from fury.window import update_viewports
 
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.render.image import Image3D
@@ -60,15 +58,9 @@ class Skyline:
     def handle_resize(self, size):
         self.size = size
         self.ui_size = (400, self.size[1])
-        update_viewports(
-            self.windows[0].screens,
-            [
-                (0, 0, self.ui_size[0], size[1]),
-                (self.ui_size[0], 0, size[0] - self.ui_size[0], size[1]),
-            ],
-        )
         self.UI_window.size = (self.ui_size[0], size[1])
-        camera = self.windows[0].screens[0].camera
-        scene = self.windows[0].screens[0].scene
-        update_camera(camera, None, scene)
+        self.windows[0]._screen_config = [
+            (self.ui_size[0], 0, self.size[0] - self.ui_size[0], self.size[1])
+        ]
+        self.UI_window.size = (self.ui_size[0], size[1])
         self.windows[0].render()
