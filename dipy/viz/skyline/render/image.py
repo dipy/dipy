@@ -47,9 +47,6 @@ class Image3D(Visualization):
         self._value_percentiles = value_percentiles
 
         self._create_slicer_actor()
-        self.bounds = self.slicer.get_bounding_box()
-        self.state = np.mean(self.bounds, axis=0).astype(int)
-        show_slices(self.slicer, self.state)
         self.opacity = opacity
 
         self.slicer.add_event_handler(self._pick_voxel, "pointer_down")
@@ -73,7 +70,7 @@ class Image3D(Visualization):
                 affine=self.affine,
                 interpolation=self.interpolation,
                 value_range=self.value_range,
-                alpha_mode="blend",
+                alpha_mode="bayer",
                 depth_write=True,
             )
         else:
@@ -83,9 +80,13 @@ class Image3D(Visualization):
                 affine=self.affine,
                 interpolation=self.interpolation,
                 value_range=self.value_range,
-                alpha_mode="blend",
+                alpha_mode="bayer",
                 depth_write=True,
             )
+        self.bounds = self.slicer.get_bounding_box()
+        self.state = np.mean(self.bounds, axis=0).astype(int)
+        show_slices(self.slicer, self.state)
+        self.render()
 
     def _value_range_from_percentile(self, volume):
         p_low, p_high = self._value_percentiles
@@ -158,7 +159,22 @@ class Image3D(Visualization):
         for idx, (changed, new) in enumerate(render_data):
             if changed:
                 self.state[idx] = new
-        show_slices(self.slicer, self.state)
+            show_slices(self.slicer, self.state)
+
+        imgui.spacing()
+        if self.dwi.ndim == 4 and not self.rgb:
+            volume_changed, new_idx = thin_slider(
+                "Directions",
+                self._volume_idx,
+                0,
+                self.dwi.shape[3] - 1,
+                value_type="int",
+                text_format=".0f",
+                step=1,
+            )
+            if volume_changed:
+                self._volume_idx = new_idx
+                self._create_slicer_actor()
 
         imgui.spacing()
         changed, new = segmented_switch(
@@ -170,4 +186,3 @@ class Image3D(Visualization):
                 actor.material.interpolation = self.interpolation
 
         imgui.spacing()
-        self.render()
