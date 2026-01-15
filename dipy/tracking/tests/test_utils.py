@@ -222,7 +222,7 @@ def test_connectivity_matrix():
     assert_true(mapping[4, 0][0] is streamlines[2])
     assert_true(mapping[4, 3][0] is streamlines[2])
     assert_true(mapping[5, 4][0] is streamlines[0])
-    
+
     # Test weighted streamline analysis
     weights = np.array([1.5, 0, 3])
 
