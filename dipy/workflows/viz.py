@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 from warnings import warn
 
 import numpy as np
@@ -297,21 +298,30 @@ class SkylineFlow(Workflow):
     def get_short_name(cls):
         return "skyline"
 
-    def run(self, *, images=None):
+    def run(self, *, images=None, peaks=None, rois=None):
         """Launch Skyline GUI.
 
         Parameters
         ----------
         images : variable str, optional
-            List of tuples (data, affine, filename) for each image to be
-            added to the Skyline viewer.
+            Tuple of path for each image to be added to the Skyline viewer.
+        peaks : variable str, optional
+            Tuple of path for each peak to be added to the Skyline viewer.
+        rois : variable str, optional
+            Tuple of path for each ROI to be added to the Skyline viewer.
         """
         super(SkylineFlow, self).__init__(force=True)
 
         if images is None:
             images = []
+        if peaks is None:
+            peaks = []
+        if rois is None:
+            rois = []
 
         skyline_images = []
+        skyline_peaks = []
+        skyline_rois = []
 
         for fname in images:
             _, ext = split_filename_extension(fname)
@@ -319,5 +329,39 @@ class SkylineFlow(Workflow):
             if ext in [".nii.gz", ".nii"]:
                 data, affine = load_nifti(fname)
                 skyline_images.append((data, affine, fname))
+            else:
+                logger.error(
+                    f"File extension '{ext}' is not supported for images in Skyline."
+                )
+                sys.exit(1)
 
-        Skyline(visualizer_type="standalone", images=skyline_images)
+        for fname in peaks:
+            _, ext = split_filename_extension(fname)
+            ext = ext.lower()
+            if ext == ".pam5":
+                pam = load_pam(fname)
+                skyline_peaks.append((pam, fname))
+            else:
+                logger.error(
+                    f"File extension '{ext}' is not supported for peaks in Skyline."
+                )
+                sys.exit(1)
+
+        for fname in rois:
+            _, ext = split_filename_extension(fname)
+            ext = ext.lower()
+            if ext in [".nii.gz", ".nii"]:
+                data, affine = load_nifti(fname)
+                skyline_rois.append((data, affine, fname))
+            else:
+                logger.error(
+                    f"File extension '{ext}' is not supported for ROIs in Skyline."
+                )
+                sys.exit(1)
+
+        Skyline(
+            visualizer_type="standalone",
+            images=skyline_images,
+            peaks=skyline_peaks,
+            rois=skyline_rois,
+        )

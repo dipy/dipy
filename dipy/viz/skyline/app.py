@@ -1,14 +1,19 @@
 from pathlib import Path
 
 from fury.actor import Actor
+from fury.colormap import distinguishable_colormap
 
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.render.image import Image3D
+from dipy.viz.skyline.render.peak import Peak3D
 from dipy.viz.skyline.render.renderer import create_window
+from dipy.viz.skyline.render.roi import ROI3D
 
 
 class Skyline:
-    def __init__(self, visualizer_type="standalone", images=None):
+    def __init__(
+        self, visualizer_type="standalone", images=None, peaks=None, rois=None
+    ):
         self.windows = []
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
@@ -25,6 +30,7 @@ class Skyline:
 
         self.UI_window = UIWindow("Image Controls", size=self.ui_size)
         self.windows[0].resize_callback(self.handle_resize)
+        self._color_gen = distinguishable_colormap()
 
         if images is not None:
             for idx, (img, affine, path) in enumerate(images):
@@ -37,6 +43,28 @@ class Skyline:
                 self.visualizations[0].append(image3d)
                 fname = Path(path).name if path is not None else f"Image {idx}"
                 self.UI_window.add(fname, image3d.render_widgets)
+        if peaks is not None:
+            for idx, (pam, path) in enumerate(peaks):
+                peak3d = Peak3D(
+                    pam.peak_dirs,
+                    affine=pam.affine,
+                    render_callback=self.before_render,
+                )
+                self.visualizations[0].append(peak3d)
+                fname = Path(path).name if path is not None else f"Peaks {idx}"
+                self.UI_window.add(fname, peak3d.render_widgets)
+        if rois is not None:
+            for idx, (roi, affine, path) in enumerate(rois):
+                color = next(self._color_gen)
+                roi3d = ROI3D(
+                    roi,
+                    affine=affine,
+                    color=color,
+                    render_callback=self.before_render,
+                )
+                self.visualizations[0].append(roi3d)
+                fname = Path(path).name if path is not None else f"ROI {idx}"
+                self.UI_window.add(fname, roi3d.render_widgets)
         self.windows[0]._imgui.set_gui(self.UI_window.render)
         self.before_render()
         self.windows[0].start()
