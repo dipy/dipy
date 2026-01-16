@@ -15,29 +15,5 @@ while keeping BUAN-style along-tract segmentation.
 
 """
 
-import numpy as np
 
-from dipy.data import fetch_bundles_2_subjects, read_bundles_2_subjects
-from dipy.tracking.streamline import length, transform_streamlines
-from dipy.viz import actor, window
-
-fetch_bundles_2_subjects()
-dix = read_bundles_2_subjects(
-    subj_id="subj_1", metrics=["fa"], bundles=["cst.right"]
-)
-
-###############################################################################
-# Store fractional anisotropy.
-
-fa = dix["fa"]
-
-###############################################################################
-# Store grid to world transformation matrix.
-
-affine = dix["affine"]
-
-###############################################################################
-# Store the corticospinal tract. A bundle is a list of streamlines.
-
-bundle = dix["CST.left"]
 
