@@ -162,7 +162,13 @@ data = mppca(data, patch_radius=[3, 3, 3])
 # GradientTable object by instantiating the DiffusionKurtosisModel object in
 # the following way:
 
-dkimodel = dki.DiffusionKurtosisModel(gtab)
+dkimodel = dki.DiffusionKurtosisModel(gtab, fit_method="WLS")
+
+###############################################################################
+# The ``fit_method`` argument gives the method that will be used when fitting
+# the data. Several options are available, such as weighted least squares
+# ``WLS`` (default) and ``RWLS``(see :footcite:t:`Coveney2025`). For
+# constrained fitting methods, see later in this example.
 
 ###############################################################################
 # To fit the data using the defined model object, we call the ``fit`` function
@@ -340,7 +346,12 @@ compare_maps(
 #    unconstrained counterpart to verify that there are no unexpected
 #    qualitative differences.
 
-dkimodel_plus = dki.DiffusionKurtosisModel(gtab, fit_method="CLS")
+# rescale for constrained DKI methods (will affect units, but not kurtosis)
+BVALS_SCALING = 0.001
+bvals = bvals * BVALS_SCALING
+gtab = gradient_table(bvals[bval_sel == 1], bvecs=bvecs[bval_sel == 1])
+
+dkimodel_plus = dki.DiffusionKurtosisModel(gtab, fit_method="CWLS")
 dkifit_plus = dkimodel_plus.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
 
 ###############################################################################
@@ -362,6 +373,51 @@ compare_maps(
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # DKI standard kurtosis measures obtained with constrained optimization.
+
+###############################################################################
+# It is also possible to combine robust fitting methods and constrained fitting
+# methods, as done in :footcite:t:`Coveney2025b`. For Robust CWLS (RCWLS), we
+# need to use the CWLS fitting method with a ``weights_method``, which will
+# cause DiPy to use iteratively reweighted least squares (fitting with CWLS on
+# each iteration) making use of the weights method.
+
+from dipy.reconst.weights_method import (
+    weights_method_wls_m_est,
+    simple_cutoff)
+
+def GMM_weights(*args):
+    """ Geman-McClure weights with outliers defined by +/-3 standard
+        deviations.
+    """
+    return weights_method_wls_m_est(*args, m_est="gm", cutoff=3,
+                                    outlier_condition_func=simple_cutoff)
+
+dkimodel_rcwls = dki.DiffusionKurtosisModel(gtab, fit_method="CWLS",
+                                            return_S0_hat=True,
+                                            weights_method=GMM_weights,
+                                            num_iter=6)
+dkifit_rcwls = dkimodel_rcwls.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
+
+compare_maps(
+    [dkifit_plus, dkifit_rcwls],
+    ["mkt", "rtk", "ak"],
+    fit_labels=["DKI+", "robust DKI+"],
+    map_kwargs={"vmin": 0, "vmax": 1.5},
+    filename="Compare_CWLS_and_RCWLS.png",
+)
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Constrained WLS vs robust constrained WLS for DKI.
+
+
+###############################################################################
+# See 
+# :ref:`here <sphx_glr_examples_built_reconstruction_reconst_robust_fitting.py>`
+# for more information on constructing weight functions and outlier functions.
+
+###############################################################################
 #
 # References
 # ----------

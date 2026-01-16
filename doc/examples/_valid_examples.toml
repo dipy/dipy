@@ -101,6 +101,7 @@ files = [
     "reconst_ivim.py",
     "reconst_mapmri.py",
     "reconst_msdki.py",
+    "reconst_robust_fitting.py",
     "reconst_qtdmri.py",
     "reconst_shore.py",
     "reconst_shore_metrics.py",
