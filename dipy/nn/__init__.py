@@ -21,20 +21,23 @@ def _load_backend():
         import dipy.nn.torch.deepn4 as deepn4_module
         import dipy.nn.torch.evac as evac_module
         import dipy.nn.torch.histo_resdnn as histo_resdnn_module
+        import dipy.nn.torch.synthseg as synthseg_module
 
         sys.modules["dipy.nn.evac"] = evac_module
         sys.modules["dipy.nn.histo_resdnn"] = histo_resdnn_module
         sys.modules["dipy.nn.deepn4"] = deepn4_module
+        sys.modules["dipy.nn.synthseg"] = synthseg_module
 
         globals().update(
             {
                 "evac": evac_module,
                 "histo_resdnn": histo_resdnn_module,
                 "deepn4": deepn4_module,
+                "synthseg": synthseg_module,
             }
         )
 
-        __all__ += ["evac", "histo_resdnn", "deepn4"]
+        __all__ += ["evac", "histo_resdnn", "deepn4", "synthseg"]
 
     elif have_tf:
         import dipy.nn.tf.cnn_1d_denoising as cnn_1d_denoising_module

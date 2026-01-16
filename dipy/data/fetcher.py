@@ -650,9 +650,9 @@ fetch_deepn4_test = _make_fetcher(
     "fetch_deepn4_test",
     dipy_home / "deepn4",
     "https://ndownloader.figshare.com/files/",
-    ["60270698"],
+    ["60829657"],
     ["d4_data.npz"],
-    md5_list=["68abf78bc3defb067ce2f48dfd9b43e2"],
+    md5_list=["d3cc2020107599139fe02bbadacee8ef"],
     doc="Download DeepN4 test data for Kanakaraj et. al 2024",
 )
 
@@ -680,10 +680,30 @@ fetch_evac_test = _make_fetcher(
     "fetch_evac_test",
     dipy_home / "evac",
     "https://ndownloader.figshare.com/files/",
-    ["60275369"],
+    ["60829660"],
     ["evac_test_data.npz"],
-    md5_list=["526a3ab269192e45d757f05250209a4d"],
+    md5_list=["d1f0dd6d38b4d358b2ce53a495fae31e"],
     doc="Download EVAC+ test data for Park et. al 2022",
+)
+
+fetch_synthseg_torch_weights = _make_fetcher(
+    "fetch_synthseg_torch_weights",
+    Path(dipy_home) / "synthseg",
+    "https://ndownloader.figshare.com/files/",
+    ["60274412"],
+    ["synthseg_model_weights.pth"],
+    md5_list=["83d54a150410bdc1f04d70a84ff8f1ee"],
+    doc="Download SynthSeg model weights for Billot et. al 2023",
+)
+
+fetch_synthseg_test = _make_fetcher(
+    "fetch_synthseg_test",
+    Path(dipy_home) / "synthseg",
+    "https://ndownloader.figshare.com/files/",
+    ["60572540"],
+    ["synthseg_test_data.npz"],
+    md5_list=["70377d1858dc870eca389f30cfc4e193"],
+    doc="Download SynthSeg test data for Billot et. al 2023",
 )
 
 fetch_stanford_t1 = _make_fetcher(
@@ -2140,6 +2160,14 @@ def get_fnames(*, name="small_64D", include_optional=False):
     if name == "evac_test_data":
         files, folder = fetch_evac_test()
         test_data = Path(folder) / "evac_test_data.npz"
+        return test_data
+    if name == "synthseg_torch_weights":
+        _, folder = fetch_synthseg_torch_weights()
+        w1 = Path(folder) / "synthseg_model_weights.pth"
+        return w1
+    if name == "synthseg_test_data":
+        files, folder = fetch_synthseg_test()
+        test_data = Path(folder) / "synthseg_test_data.npz"
         return test_data
     if name == "DiB_70_lte_pte_ste":
         _, folder = fetch_DiB_70_lte_pte_ste()
