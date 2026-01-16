@@ -184,11 +184,11 @@ def connectivity_matrix(
 
     if weights is None:
         weights = np.ones(len(streamlines))
-        matrix = np.zeros((np.max(label_volume) + 1, np.max(label_volume) + 1))
-    else:
         matrix = np.zeros(
             (np.max(label_volume) + 1, np.max(label_volume) + 1), dtype=np.int64
         )
+    else:
+        matrix = np.zeros((np.max(label_volume) + 1, np.max(label_volume) + 1))
 
     if discard_stream_size > 0:
         (keep_idx,) = np.where(streamlines._lengths > discard_stream_size)
