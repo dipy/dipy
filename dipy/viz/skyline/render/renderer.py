@@ -77,7 +77,7 @@ def create_window(
 
     if visualizer_type != "stealth":
         show_m = window.ShowManager(
-            title="DIPY Skyline Visualizer",
+            title="DIPY Skyline",
             size=size,
             window_type=window_type,
             screen_config=screen_config,
