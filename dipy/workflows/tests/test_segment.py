@@ -95,22 +95,24 @@ def test_median_otsu_flow_with_bvalues():
         volume = load_nifti_data(data_path)
 
         mo_flow = MedianOtsuFlow()
-        mo_flow.run(
-            data_path,
-            bvalues_files=[bval_path],
-            b0_threshold=50,
-            out_dir=out_dir,
-            save_masked=True,
-        )
+        for arg_bval in [{"bvalues_files": bval_path}, {"bvalues_files": [bval_path]}]:
+            mo_flow._force_overwrite = True
+            mo_flow.run(
+                data_path,
+                **arg_bval,
+                b0_threshold=50,
+                out_dir=out_dir,
+                save_masked=True,
+            )
 
-        mask_name = mo_flow.last_generated_outputs["out_mask"]
-        masked_name = mo_flow.last_generated_outputs["out_masked"]
+            mask_name = mo_flow.last_generated_outputs["out_mask"]
+            masked_name = mo_flow.last_generated_outputs["out_masked"]
 
-        npt.assert_equal((Path(out_dir) / mask_name).exists(), True)
-        npt.assert_equal((Path(out_dir) / masked_name).exists(), True)
+            npt.assert_equal((Path(out_dir) / mask_name).exists(), True)
+            npt.assert_equal((Path(out_dir) / masked_name).exists(), True)
 
-        result_mask_data = load_nifti_data(Path(out_dir) / mask_name)
-        npt.assert_equal(result_mask_data.shape, volume.shape[:3])
+            result_mask_data = load_nifti_data(Path(out_dir) / mask_name)
+            npt.assert_equal(result_mask_data.shape, volume.shape[:3])
 
 
 def test_recobundles_flow():

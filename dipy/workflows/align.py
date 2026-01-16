@@ -148,8 +148,15 @@ class ResliceFlow(Workflow):
                 logger.info(
                     f"Voxel size {tuple(zooms)} already matches target "
                     f"{tuple(new_vox_size_to_use)}. Skipping reslicing."
+                    "return original data as a symlink."
                 )
-                new_data, new_affine = data, affine
+                source_file = Path(inputfile)
+                link_file = Path(outpfile)
+                try:
+                    link_file.symlink_to(source_file.resolve())
+                except OSError:
+                    logger.error(f"Symlink {outpfile} creation failed")
+                continue
             else:
                 new_data, new_affine = reslice(
                     data,
@@ -161,8 +168,8 @@ class ResliceFlow(Workflow):
                     cval=cval,
                     num_processes=num_processes,
                 )
-            save_nifti(outpfile, new_data, new_affine)
-            logger.info(f"Resliced file save in {outpfile}")
+                save_nifti(outpfile, new_data, new_affine)
+                logger.info(f"Resliced file save in {outpfile}")
 
 
 class SlrWithQbxFlow(Workflow):

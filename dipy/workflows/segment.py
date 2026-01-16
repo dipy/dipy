@@ -96,6 +96,9 @@ class MedianOtsuFlow(Workflow):
                 "'vol_idx' parameter is ignored when 'bvalues_files' is provided."
             )
 
+        if bvalues_files is not None and not isinstance(bvalues_files, list):
+            bvalues_files = [bvalues_files]
+
         if len(bvalues_files or []) > 0 and io_it:
             if len(bvalues_files) != len(io_it.inputs):
                 logger.error(
