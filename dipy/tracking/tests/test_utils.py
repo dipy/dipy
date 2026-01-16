@@ -223,6 +223,37 @@ def test_connectivity_matrix():
     assert_true(mapping[4, 3][0] is streamlines[2])
     assert_true(mapping[5, 4][0] is streamlines[0])
 
+    # Test weighted streamline analysis
+    weights = np.array([1.5, 0, 3])
+
+    # Check weighted non-inclusive case
+    expected = np.zeros((6, 6))
+    expected[3, 4] = 1.5
+    expected[4, 3] = 3
+    matrix = connectivity_matrix(
+        streamlines, np.eye(4), label_volume, symmetric=False, weights=weights
+    )
+    npt.assert_array_equal(matrix, expected)
+
+    # Check weighted inclusive case
+    expected = np.zeros((6, 6))
+    expected[3, 4] = 1.5
+    expected[4, 3] = 3
+    expected[3, 5] = 1.5
+    expected[5, 4] = 1.5
+    expected[0, 3] = 3
+    expected[4, 0] = 3
+
+    matrix = connectivity_matrix(
+        streamlines,
+        np.eye(4),
+        label_volume,
+        symmetric=False,
+        inclusive=True,
+        weights=weights,
+    )
+    npt.assert_array_equal(matrix, expected)
+
     # Test passing affine to connectivity_matrix
     affine = np.diag([-1, -1, -1, 1.0])
     streamlines = [-i for i in streamlines]

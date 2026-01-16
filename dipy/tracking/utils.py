@@ -117,6 +117,7 @@ def connectivity_matrix(
     *,
     inclusive=False,
     symmetric=True,
+    weights=None,
     discard_stream_size=0,
     return_mapping=False,
     mapping_as_streamlines=False,
@@ -139,6 +140,9 @@ def connectivity_matrix(
     symmetric : bool, optional
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
+    weights : ndarray, optional
+        A 1D array of size n, containing the weights of each of the n
+        streamlines.
     discard_stream_size : int, optional
         If the length of a streamline is less than or equal to this value, it
         will not be included in the connectivity matrix. When 0, no filtering
@@ -172,18 +176,27 @@ def connectivity_matrix(
             "label_volume must be a 3d integer array with non-negative label values"
         )
 
-    matrix = np.zeros(
-        (np.max(label_volume) + 1, np.max(label_volume) + 1), dtype=np.int64
-    )
-
     mapping = defaultdict(list)
     lin_T, offset = _mapping_to_voxel(affine)
 
+    if type(streamlines).__name__ == "generator":
+        streamlines = Streamlines(streamlines)
+
+    if weights is None:
+        weights = np.ones(len(streamlines))
+        matrix = np.zeros(
+            (np.max(label_volume) + 1, np.max(label_volume) + 1), dtype=np.int64
+        )
+    else:
+        matrix = np.zeros((np.max(label_volume) + 1, np.max(label_volume) + 1))
+
+    if discard_stream_size > 0:
+        (keep_idx,) = np.where(streamlines._lengths > discard_stream_size)
+        streamlines = streamlines[keep_idx]
+        weights = weights[keep_idx]
+
     if inclusive:
         for i, sl in enumerate(streamlines):
-            if discard_stream_size > 0 and len(sl) <= discard_stream_size:
-                continue
-
             sl = _to_voxel_coordinates(sl, lin_T, offset)
             x, y, z = sl.T
             if symmetric:
@@ -193,7 +206,7 @@ def connectivity_matrix(
                 crossed_labels = crossed_labels[0][np.argsort(crossed_labels[1])]
 
             for comb in combinations(crossed_labels, 2):
-                matrix[comb] += 1
+                matrix[comb] += weights[i]
 
                 if return_mapping:
                     if mapping_as_streamlines:
@@ -202,41 +215,22 @@ def connectivity_matrix(
                         mapping[comb].append(i)
 
     else:
-        if not isinstance(streamlines, Streamlines):
-            streamlines_obj = Streamlines(streamlines)
-        else:
-            streamlines_obj = streamlines
-
-        if discard_stream_size > 0:
-            mask = np.array([len(sl) > discard_stream_size for sl in streamlines_obj])
-            orig_indices = np.where(mask)[0]
-        else:
-            mask = np.ones(len(streamlines_obj), dtype=bool)
-            orig_indices = np.arange(len(streamlines_obj))
-
-        filtered_streamlines = streamlines_obj[mask]
-
-        streamlines_endpoints = np.array([sl[[0, -1]] for sl in filtered_streamlines])
-        streamlines_end = _to_voxel_coordinates(streamlines_endpoints, lin_T, offset)
+        streamlines_end = np.array([sl[[0, -1]] for sl in streamlines])
+        streamlines_end = _to_voxel_coordinates(streamlines_end, lin_T, offset)
         x, y, z = streamlines_end.T
         if symmetric:
             end_labels = np.sort(label_volume[x, y, z], axis=0)
         else:
             end_labels = label_volume[x, y, z]
-        np.add.at(matrix, (end_labels[0].T, end_labels[1].T), 1)
+        np.add.at(matrix, (end_labels[0].T, end_labels[1].T), weights)
 
         if return_mapping:
-            streamlines_indexable = hasattr(streamlines, "__getitem__")
-
             if mapping_as_streamlines:
                 for i, (a, b) in enumerate(end_labels.T):
-                    if streamlines_indexable:
-                        mapping[a, b].append(streamlines[orig_indices[i]])
-                    else:
-                        mapping[a, b].append(streamlines_obj[orig_indices[i]])
+                    mapping[a, b].append(streamlines[i])
             else:
                 for i, (a, b) in enumerate(end_labels.T):
-                    mapping[a, b].append(orig_indices[i])
+                    mapping[a, b].append(i)
 
     if symmetric:
         matrix = np.maximum(matrix, matrix.T)
