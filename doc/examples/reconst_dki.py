@@ -415,6 +415,11 @@ compare_maps(
 
 
 ###############################################################################
+# See 
+# :ref:`here <sphx_glr_examples_built_reconstruction_reconst_robust_fitting.py>`
+# for more information on constructing weight functions and outlier functions.
+
+###############################################################################
 #
 # References
 # ----------
