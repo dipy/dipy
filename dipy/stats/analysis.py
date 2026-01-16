@@ -4,7 +4,6 @@ import numpy as np
 from scipy.ndimage import map_coordinates
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import mahalanobis
-import os
 from dipy.io.utils import save_buan_profiles_hdf5
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
@@ -188,6 +187,9 @@ def buan_bundle_profile_lite(model_bundle, bundle, orig_bundle, metric,
     """
 
 
+    if len(model_bundle) == 0 or len(bundle) == 0 or len(orig_bundle) == 0:
+        raise ValueError("The bundle contains no streamlines")
+        
     dist, indx = assignment_map(bundle, model_bundle, no_disks)
     ind = np.array(indx)
 
