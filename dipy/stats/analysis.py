@@ -4,7 +4,7 @@ import numpy as np
 from scipy.ndimage import map_coordinates
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import mahalanobis
-
+import os
 from dipy.io.utils import save_buan_profiles_hdf5
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
@@ -14,6 +14,7 @@ from dipy.tracking.streamline import (
     orient_by_streamline,
     set_number_of_points,
     values_from_volume,
+    transform_streamlines,
 )
 
 
@@ -116,9 +117,9 @@ def assignment_map(target_bundle, model_bundle, no_disks):
 
     Parameters
     ----------
-    target_bundle : streamlines
+    target_bundle : Streamlines
         target bundle extracted from subject data in common space
-    model_bundle : streamlines
+    model_bundle : Streamlines
         atlas bundle used as reference
     no_disks : integer, optional
         Number of disks used for dividing bundle into disks.
@@ -148,6 +149,89 @@ def assignment_map(target_bundle, model_bundle, no_disks):
 
     return indx
 
+
+def buan_bundle_profile_lite(model_bundle, bundle, orig_bundle, metric,
+                             affine, no_disks=100):
+    """
+    Create BUAN weighted mean bundle profiles (lite) and saves the results
+    in a directory specified by ``out_dir``.
+    Parameters
+    ----------
+    model_bundle : Streamlines
+        The input model bundle. 
+    bundle : Streamlines
+        The input bundle in common space. 
+    orig_bundle : Streamlines
+        The input bundle in native space. 
+    metric : 3D Volume
+        Path to the input dti metric or/and peak file. This metric will be
+        projected onto the bundle in native space to create bundle profiles.
+    affine : 2D array
+        Affine metrix for transforming streamlines to native space.
+    no_disks : integer, optional
+        Number of alongtract segments/disks used for dividing bundle into 
+        segments.
+    References
+    ----------
+    .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
+    Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
+    Bundle analytics, a computational framework for investigating the
+    shapes and profiles of brain pathways across populations.
+    Sci Rep 10, 17149 (2020)
+    
+    .. [Chandio2024] Chandio, B.Q., Villalon-Reina, J.E., Nir, T.M., Thomopoulos, S.I.,
+    Feng, Y., Benavidez, S., Jahanshad, N., Harezlak, J., Garyfallidis, E.,
+    and Thompson, P.M. Bundle analytics based data harmonization for
+    multi-site diffusion MRI tractometry. Proceedings of the 2024 46th Annual 
+    International Conference of the IEEE Engineering in Medicine and Biology 
+    Society (EMBC), pp. 1–7 (2024)
+    """
+
+
+    dist, indx = assignment_map(bundle, model_bundle, no_disks)
+    ind = np.array(indx)
+
+    affine_r = np.linalg.inv(affine)
+    transformed_orig_bundle = transform_streamlines(orig_bundle,
+                                                     affine_r)
+
+    bundle_profile = np.zeros(no_disks)
+    
+    values = map_coordinates(metric, transformed_orig_bundle._data.T,
+                             order=1)
+    
+    epsilon = 1e-8
+    
+    
+    weights = 1 / (dist + epsilon)
+    
+
+    for i in range(no_disks):
+        # Mask for current index (segment)
+        mask = ind == i
+        
+        # Further mask to ignore NaNs in values
+        valid_mask = mask & ~np.isnan(values)
+        
+        if np.any(valid_mask):
+            # Select valid values and weights
+            vals = values[valid_mask]
+            wts = weights[valid_mask]
+            
+            # Normalize weights
+            wts /= np.sum(wts)
+            
+            # Compute weighted mean
+            weighted_mean = np.sum(wts * vals)
+        else:
+            weighted_mean = np.nan 
+        
+        bundle_profile[i] = weighted_mean
+
+
+    return bundle_profile
+
+    
 
 @warning_for_keywords()
 def gaussian_weights(bundle, *, n_points=100, return_mahalnobis=False, stat=np.mean):
