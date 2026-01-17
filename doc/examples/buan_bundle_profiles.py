@@ -3,15 +3,15 @@
 BUAN bundle profiles 
 ================================
 
-This example shows how to compute **weighted mean bundle profiles**
-using the BUAN tractometry :footcite:p:`Chandio2020a`.
+This example shows how to compute weighted mean bundle profiles
+using the BUAN tractometry :footcite:p:`Chandio2020a`:.
 
-Compared to full BUAN profiles (streamline-by-streamline), the lite version
-summarizes each bundle into a mean profile, where each streamline contributes
-according to a weight based on its distance to a model bundle centroid.
-
-The output is useful for users who prefer working with **mean profiles**
-while keeping BUAN-style along-tract segmentation.
+Compared to full BUAN profiles, which retain measurements from all individual 
+streamlines within a bundle, the lite version summarizes each bundle into a 
+single mean profile. The bundle is first divided into along-tract segments by 
+assigning points on the streamlines to their nearest model centroid. Each streamline points 
+then contributes to these segments with a weight determined by its distance from the corresponding
+model centroid, producing a weighted mean representation of the bundle.
 
 First import the necessary modules.
 
