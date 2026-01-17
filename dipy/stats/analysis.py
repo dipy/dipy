@@ -154,7 +154,7 @@ def buan_bundle_profile_lite(model_bundle, bundle, orig_bundle, metric,
     """
     Create BUAN weighted mean bundle profiles (lite).
     
-    See :footcite:p:`Chandio2020a` for further details about the method.
+    See :footcite:p:`Chandio2020a` and and :footcite:p:`chandio2024bundle` for further details about the method.
     
     Parameters
     ----------

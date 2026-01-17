@@ -4,7 +4,7 @@ BUAN bundle profiles
 ================================
 
 This example shows how to compute weighted mean bundle profiles
-using the BUAN tractometry :footcite:p:`Chandio2020a`: and :footcite:p:`chandio2024bundle`:.
+using the BUAN tractometry :footcite:p:`Chandio2020a`, :footcite:p:`chandio2024bundle`.
 
 Compared to full BUAN bundle profiles, which retain measurements from all individual 
 streamlines within a bundle, the lite version summarizes each bundle into a 
