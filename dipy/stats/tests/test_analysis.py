@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.testing as npt
 
-from dipy.stats.analysis import afq_profile, gaussian_weights
+from dipy.stats.analysis import afq_profile, gaussian_weights, buan_bundle_profile_lite
 from dipy.tracking.streamline import Streamlines
 
 
@@ -135,3 +135,54 @@ def test_afq_profile():
     # Test for error-handling:
     empty_bundle = Streamlines([])
     npt.assert_raises(ValueError, afq_profile, data, empty_bundle, np.eye(4))
+
+
+def test_buan_bundle_profile_lite():
+    data = np.ones((40, 40, 40), dtype=float)
+
+    # Create 10 streamlines 
+    n_pts = 20
+    x = np.linspace(5, 34, n_pts)
+    y0 = 20.0
+    z0 = 20.0
+    base = np.vstack([x, np.ones(n_pts) * y0, np.ones(n_pts) * z0]).T
+
+    bundle = Streamlines([base + np.array([0, i, 0]) for i in range(10)])
+    model_bundle = Streamlines([base + np.array([0, -i, 0]) for i in range(10)])
+    orig_bundle = Streamlines([base + np.array([0, i, 0]) for i in range(10)])
+
+    affine = np.eye(4)
+
+    profile = buan_bundle_profile_lite(
+        model_bundle, bundle, orig_bundle, data, affine, no_disks=10
+    )
+    npt.assert_equal(profile.shape, (10,))
+    npt.assert_almost_equal(profile, np.ones(10))
+
+    # Test with a different number of disks/segments
+    profile = buan_bundle_profile_lite(
+        model_bundle, bundle, orig_bundle, data, affine, no_disks=5
+    )
+    npt.assert_equal(profile.shape, (5,))
+    npt.assert_almost_equal(profile, np.ones(5))
+
+    # Test NaN handling: if data is all NaNs, output should be all NaNs
+    data_nan = np.ones((40, 40, 40), dtype=float) * np.nan
+    profile = buan_bundle_profile_lite(
+        model_bundle, bundle, orig_bundle, data_nan, affine, no_disks=10
+    )
+    npt.assert_equal(profile.shape, (10,))
+    npt.assert_equal(np.all(np.isnan(profile)), True)
+
+    # Test error-handling: empty bundle should raise
+    empty_bundle = Streamlines([])
+    npt.assert_raises(
+        ValueError,
+        buan_bundle_profile_lite,
+        model_bundle,
+        empty_bundle,
+        empty_bundle,
+        data,
+        affine,
+        10,
+    )
