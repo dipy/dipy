@@ -142,11 +142,11 @@ def assignment_map(target_bundle, model_bundle, no_disks):
     clusters = qb.cluster(mbundle_streamlines)
     centroids = Streamlines(clusters.centroids)
 
-    _, indx = cKDTree(centroids.get_data(), 1, copy_data=True).query(
+    dist, indx = cKDTree(centroids.get_data(), 1, copy_data=True).query(
         target_bundle.get_data(), k=1
     )
 
-    return indx
+    return dist, indx
 
 
 def buan_bundle_profile_lite(model_bundle, bundle, orig_bundle, metric,
