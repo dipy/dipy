@@ -152,8 +152,10 @@ def assignment_map(target_bundle, model_bundle, no_disks):
 def buan_bundle_profile_lite(model_bundle, bundle, orig_bundle, metric,
                              affine, no_disks=100):
     """
-    Create BUAN weighted mean bundle profiles (lite) and saves the results
-    in a directory specified by ``out_dir``.
+    Create BUAN weighted mean bundle profiles (lite).
+    
+    See :footcite:p:`Chandio2020a` for further details about the method.
+    
     Parameters
     ----------
     model_bundle : Streamlines
@@ -170,20 +172,9 @@ def buan_bundle_profile_lite(model_bundle, bundle, orig_bundle, metric,
     no_disks : integer, optional
         Number of alongtract segments/disks used for dividing bundle into 
         segments.
-    References
-    ----------
-    .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-    Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
-    Bundle analytics, a computational framework for investigating the
-    shapes and profiles of brain pathways across populations.
-    Sci Rep 10, 17149 (2020)
-    
-    .. [Chandio2024] Chandio, B.Q., Villalon-Reina, J.E., Nir, T.M., Thomopoulos, S.I.,
-    Feng, Y., Benavidez, S., Jahanshad, N., Harezlak, J., Garyfallidis, E.,
-    and Thompson, P.M. Bundle analytics based data harmonization for
-    multi-site diffusion MRI tractometry. Proceedings of the 2024 46th Annual 
-    International Conference of the IEEE Engineering in Medicine and Biology 
-    Society (EMBC), pp. 1–7 (2024)
+     References
+     ----------
+     .. footbibliography::
     """
 
 
