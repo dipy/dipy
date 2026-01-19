@@ -29,6 +29,17 @@ cdef class ParallelTransportTrackerParameters:
 cdef class ShTrackerParameters:
     cdef public double pmf_threshold
 
+cdef class EudxTrackerParameters:
+    cdef public double qa_threshold
+    cdef public double ang_threshold
+    cdef public double total_weight
+    cdef double* peak_indices_ptr
+    cdef double* peak_values_ptr
+    cdef double* odf_vertices_ptr
+    cdef int max_peaks
+    cdef long[4] peak_shape
+    cdef long[4] peak_strides
+
 cdef class TrackerParameters:
     cdef func_ptr tracker
 
@@ -46,5 +57,6 @@ cdef class TrackerParameters:
 
     cdef public ShTrackerParameters sh
     cdef public ParallelTransportTrackerParameters ptt
+    cdef public EudxTrackerParameters eudx
 
     cdef void set_tracker_c(self, func_ptr tracker) noexcept nogil

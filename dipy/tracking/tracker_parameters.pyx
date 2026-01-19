@@ -5,6 +5,7 @@
 
 from dipy.tracking.propspeed cimport (
     deterministic_propagator,
+    eudx_propagator,
     probabilistic_propagator,
     parallel_transport_propagator,
 )
@@ -18,7 +19,8 @@ def generate_tracking_parameters(algo_name, *,
     int max_len=500, int min_len=2, double step_size=0.2, double[:] voxel_size,
     double max_angle=20, bint return_all=True, double pmf_threshold=0.1,
     double probe_length=0.5, double probe_radius=0, int probe_quality=3,
-    int probe_count=1, double data_support_exponent=1, int random_seed=0):
+    int probe_count=1, double data_support_exponent=1, int random_seed=0,
+    double qa_thr=0.0239, double ang_thr=60, double total_weight=0.5):
 
     cdef TrackerParameters params
 
@@ -62,6 +64,19 @@ def generate_tracking_parameters(algo_name, *,
                                    return_all=return_all)
         params.set_tracker_c(parallel_transport_propagator)
         return params
+    elif algo_name == 'eudx':
+        params = TrackerParameters(max_len=max_len,
+                                   min_len=min_len,
+                                   step_size=step_size,
+                                   voxel_size=voxel_size,
+                                   max_angle=ang_thr,
+                                   qa_thr=qa_thr,
+                                   ang_thr=ang_thr,
+                                   total_weight=total_weight,
+                                   random_seed=random_seed,
+                                   return_all=return_all)
+        params.set_tracker_c(eudx_propagator)
+        return params
     else:
         raise ValueError("Invalid algorithm name")
 
@@ -71,7 +86,8 @@ cdef class TrackerParameters:
     def __init__(self, max_len, min_len, step_size, voxel_size,
                  max_angle, return_all, pmf_threshold=None, probe_length=None,
                  probe_radius=None, probe_quality=None, probe_count=None,
-                 data_support_exponent=None, random_seed=None):
+                 data_support_exponent=None, random_seed=None, qa_thr=None,
+                 ang_thr=None, total_weight=None):
         cdef cnp.npy_intp i
 
         self.max_nbr_pts = int(max_len/step_size)
@@ -93,12 +109,16 @@ cdef class TrackerParameters:
 
         self.sh = None
         self.ptt = None
+        self.eudx = None
 
         if pmf_threshold is not None:
             self.sh = ShTrackerParameters(pmf_threshold)
 
         if probe_length is not None and probe_radius is not None and probe_quality is not None and probe_count is not None and data_support_exponent is not None:
             self.ptt = ParallelTransportTrackerParameters(probe_length, probe_radius, probe_quality, probe_count, data_support_exponent)
+
+        if qa_thr is not None and ang_thr is not None and total_weight is not None:
+            self.eudx = EudxTrackerParameters(qa_thr, ang_thr, total_weight)
 
     cdef void set_tracker_c(self, func_ptr tracker) noexcept nogil:
         self.tracker = tracker
@@ -126,3 +146,25 @@ cdef class ParallelTransportTrackerParameters:
         # Adaptively set in Trekker
         self.rejection_sampling_nbr_sample = 10
         self.rejection_sampling_max_try = 100
+
+
+cdef class EudxTrackerParameters:
+    """EUDX tracking parameters.
+
+    Parameters
+    ----------
+    qa_threshold : double
+        Minimum QA (quantitative anisotropy) threshold. Peaks below this
+        value are ignored. Default: 0.0239.
+    ang_threshold : double
+        Maximum angle (in degrees) between successive tracking steps.
+        Default: 60.
+    total_weight : double
+        Minimum fraction of interpolation support required to continue
+        tracking. Must be between 0 and 1. Default: 0.5 (50%).
+    """
+
+    def __init__(self, double qa_threshold, double ang_threshold, double total_weight):
+        self.qa_threshold = qa_threshold
+        self.ang_threshold = ang_threshold
+        self.total_weight = total_weight

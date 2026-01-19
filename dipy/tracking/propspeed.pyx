@@ -15,7 +15,8 @@ import numpy as np
 cimport numpy as cnp
 
 from dipy.core.interpolation cimport _trilinear_interpolation_iso, offset
-from dipy.direction.pmf cimport PmfGen
+from dipy.direction.pmf cimport PmfGen, SimplePeakGen
+from dipy.direction.peak_direction cimport PeakDirectionGen
 from dipy.utils.fast_numpy cimport (
     copy_point,
     cross,
@@ -840,6 +841,125 @@ cdef TrackerStatus probabilistic_propagator(double* point,
         direction[1] = direction[1] * -1
         direction[2] = direction[2] * -1
     free(pmf)
+    return TrackerStatus.SUCCESS
+
+
+cdef TrackerStatus eudx_propagator(double* point,
+                                    double* direction,
+                                    TrackerParameters params,
+                                    double* stream_data,
+                                    PmfGen pmf_gen,
+                                    RNGState* rng) noexcept nogil:
+    """EUDX propagator using trilinear interpolation of peak directions.
+
+    Parameters
+    ----------
+    point : double[3]
+        Current tracking position in voxel coordinates.
+    direction : double[3]
+        Previous tracking direction (input), updated to next direction (output).
+    params : TrackerParameters
+        EUDX tracking parameters.
+    stream_data : double*
+        Streamline data persistent across tracking steps.
+    pmf_gen : PmfGen
+        SimplePeakGen wrapper containing peak data.
+    rng : RNGState*
+        Random number generator state.
+
+    Returns
+    -------
+    status : TrackerStatus
+        SUCCESS if propagation succeeded, FAIL otherwise.
+    """
+    cdef:
+        double weights[8]
+        double* odf_vertices
+        double* peak_indices_ptr
+        double* peak_values_ptr
+        int max_peaks, peaks
+        int m, i, j
+        double total_w = 0
+        double new_direction[3]
+        double interp_direction[3]
+        double qa_tmp[PEAK_NO]
+        double ind_tmp[PEAK_NO]
+        cnp.npy_intp delta
+        double normd
+        double qa_thr, ang_thr, total_weight
+        cnp.npy_intp index[24]
+        cnp.npy_intp xyz[4]
+        cnp.npy_intp off
+        cnp.npy_intp peak_shape[4]
+        cnp.npy_intp peak_strides[4]
+
+    if norm(direction) == 0:
+        return TrackerStatus.FAIL
+    normalize(direction)
+
+    qa_thr = params.eudx.qa_threshold
+    ang_thr = params.eudx.ang_threshold
+    total_weight = params.eudx.total_weight
+    peak_indices_ptr = params.eudx.peak_indices_ptr
+    peak_values_ptr = params.eudx.peak_values_ptr
+    odf_vertices = params.eudx.odf_vertices_ptr
+    max_peaks = params.eudx.max_peaks
+    for i in range(4):
+        peak_shape[i] = params.eudx.peak_shape[i]
+        peak_strides[i] = params.eudx.peak_strides[i]
+
+    peaks = max_peaks
+
+    _trilinear_interpolation_iso(point, weights, index)
+
+    for i in range(3):
+        new_direction[i] = 0
+
+    for m in range(8):
+        for i in range(3):
+            xyz[i] = index[m * 3 + i]
+
+        if (xyz[0] < 0 or xyz[0] >= peak_shape[0] or
+            xyz[1] < 0 or xyz[1] >= peak_shape[1] or
+            xyz[2] < 0 or xyz[2] >= peak_shape[2]):
+            continue
+
+        for j in range(peaks):
+            xyz[3] = j
+            off = offset(xyz, peak_strides, 4, 8)
+            qa_tmp[j] = peak_values_ptr[off]
+            ind_tmp[j] = peak_indices_ptr[off]
+
+        delta = _nearest_direction(direction,
+                                   qa_tmp,
+                                   ind_tmp,
+                                   peaks,
+                                   odf_vertices,
+                                   qa_thr,
+                                   ang_thr,
+                                   interp_direction)
+
+        if delta == 0:
+            continue
+
+        total_w += weights[m]
+        for i in range(3):
+            new_direction[i] += weights[m] * interp_direction[i]
+
+    if total_w < total_weight:
+        return TrackerStatus.FAIL
+
+    normd = sqrt(new_direction[0] * new_direction[0] +
+                 new_direction[1] * new_direction[1] +
+                 new_direction[2] * new_direction[2])
+
+    if normd == 0:
+        return TrackerStatus.FAIL
+
+    normd = 1.0 / normd
+    for i in range(3):
+        direction[i] = new_direction[i] * normd
+
     return TrackerStatus.SUCCESS
 
 

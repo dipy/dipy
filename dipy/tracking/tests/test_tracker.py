@@ -4,11 +4,15 @@ import nibabel as nib
 import numpy as np
 import numpy.testing as npt
 
-from dipy.core.sphere import HemiSphere
+from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import get_fnames, get_sphere
+from dipy.direction.peaks import PeaksAndMetrics
 from dipy.reconst.shm import descoteaux07_legacy_msg, sh_to_sf
 from dipy.tracking import tracker
-from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
+from dipy.tracking.stopping_criterion import (
+    BinaryStoppingCriterion,
+    ThresholdStoppingCriterion,
+)
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.utils import random_seeds_from_mask
 
@@ -123,8 +127,9 @@ def test_tracking_error():
         ValueError, tracker.deterministic_tracking, seeds, sc, np.eye(4), sf=sh, sh=sh
     )
     npt.assert_raises(ValueError, tracker.deterministic_tracking, seeds, sc, np.eye(4))
+    # peaks now supported but requires a valid PeaksAndMetrics object
     npt.assert_raises(
-        NotImplementedError,
+        ValueError,
         tracker.deterministic_tracking,
         seeds,
         sc,
@@ -161,3 +166,76 @@ def test_tracking_error():
         sf=sh,
         seed_directions=[1],
     )
+
+
+def test_eudx_tracking():
+    """Test the eudx_tracking function with PeaksAndMetrics."""
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+
+    # A simple image with three possible configurations, a vertical tract,
+    # a horizontal tract and a crossing
+    peaks_values_lookup = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 0.0], [0.5, 0.5]])
+    peaks_indices_lookup = np.array([[-1, -1], [0, -1], [1, -1], [0, 1]])
+    # EuDX needs at least 3 slices on each axis to work
+    simple_image = np.zeros([5, 6, 3], dtype=int)
+    simple_image[:, :, 1] = np.array(
+        [
+            [0, 1, 0, 1, 0, 0],
+            [0, 1, 0, 1, 0, 0],
+            [0, 3, 2, 2, 2, 0],
+            [0, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+        ]
+    )
+
+    pam = PeaksAndMetrics()
+    pam.sphere = sphere
+    pam.peak_values = peaks_values_lookup[simple_image]
+    pam.peak_indices = peaks_indices_lookup[simple_image]
+    pam.odf_vertices = sphere.vertices
+    pam.ang_thr = 90
+
+    mask = (simple_image >= 0).astype(float)
+    sc = ThresholdStoppingCriterion(mask, 0.5)
+    seeds = np.array(
+        [
+            [1.0, 1.0, 1.0],
+            [2.0, 4.0, 1.0],
+            [1.0, 3.0, 1.0],
+        ]
+    )
+
+    # Test default parallel tracking
+    streamlines = list(
+        tracker.eudx_tracking(
+            seeds,
+            sc,
+            np.eye(4),
+            pam=pam,
+            sphere=sphere,
+            step_size=1.0,
+            max_angle=90,
+            pmf_threshold=0.01,
+            min_len=0,
+            return_all=True,
+        )
+    )
+    npt.assert_equal(len(streamlines), len(seeds))
+
+    # Test with explicit thread count
+    streamlines_explicit = list(
+        tracker.eudx_tracking(
+            seeds,
+            sc,
+            np.eye(4),
+            pam=pam,
+            sphere=sphere,
+            step_size=1.0,
+            max_angle=90,
+            pmf_threshold=0.01,
+            min_len=0,
+            return_all=True,
+            nbr_threads=2,
+        )
+    )
+    npt.assert_equal(len(streamlines_explicit), len(seeds))
