@@ -298,7 +298,7 @@ class SkylineFlow(Workflow):
     def get_short_name(cls):
         return "skyline"
 
-    def run(self, *, images=None, peaks=None, rois=None):
+    def run(self, *, images=None, peaks=None, rois=None, surfaces=None):
         """Launch Skyline GUI.
 
         Parameters
@@ -309,6 +309,8 @@ class SkylineFlow(Workflow):
             Tuple of path for each peak to be added to the Skyline viewer.
         rois : variable str, optional
             Tuple of path for each ROI to be added to the Skyline viewer.
+        surfaces : variable str, optional
+            Tuple of path for each surface to be added to the Skyline viewer.
         """
         super(SkylineFlow, self).__init__(force=True)
 
@@ -318,10 +320,13 @@ class SkylineFlow(Workflow):
             peaks = []
         if rois is None:
             rois = []
+        if surfaces is None:
+            surfaces = []
 
         skyline_images = []
         skyline_peaks = []
         skyline_rois = []
+        skyline_surfaces = []
 
         for fname in images:
             _, ext = split_filename_extension(fname)
@@ -359,9 +364,32 @@ class SkylineFlow(Workflow):
                 )
                 sys.exit(1)
 
+        for fname in surfaces:
+            _, ext = split_filename_extension(fname)
+            ext = ext.lower()
+            if ext == ".pial":
+                surface = load_pial(fname)
+                if surface:
+                    vertices, faces = surface
+                    skyline_surfaces.append((vertices, faces, fname))
+            elif any(ext.endswith(_ext) for _ext in [".gii", ".gii.gz"]):
+                surface = load_gifti(fname)
+                vertices, faces = surface
+                if len(vertices) and len(faces):
+                    vertices, faces = surface
+                    skyline_surfaces.append((vertices, faces, fname))
+                else:
+                    warn(f"{fname} does not have any surface geometry.", stacklevel=2)
+            else:
+                logger.error(
+                    f"File extension '{ext}' is not supported for surfaces in Skyline."
+                )
+                sys.exit(1)
+
         Skyline(
             visualizer_type="standalone",
             images=skyline_images,
             peaks=skyline_peaks,
             rois=skyline_rois,
+            surfaces=skyline_surfaces,
         )
