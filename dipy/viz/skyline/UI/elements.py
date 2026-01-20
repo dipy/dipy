@@ -3,16 +3,23 @@ import math
 from imgui_bundle import icons_fontawesome_6, imgui
 
 from dipy.utils.logging import logger
-from dipy.viz.skyline.UI.theme import SLIDER_THEME, SWITCH_THEME, THEME, WINDOW_THEME
+from dipy.viz.skyline.UI.theme import (
+    DROPDOWN_THEME,
+    SLIDER_THEME,
+    SWITCH_THEME,
+    THEME,
+    WINDOW_THEME,
+)
 
 
 def render_section_header(
     label,
     *,
     is_open=True,
-    icon=None,
+    is_visible=True,
+    type=None,
     width=0,
-    height=48,
+    height=40,
     padding_x=12,
 ):
     """Draw a custom section header with a toggle arrow.
@@ -23,8 +30,10 @@ def render_section_header(
         Text to render in the header.
     is_open : bool, optional
         Current open state for the section. The returned value reflects toggling.
-    icon : str, optional
-        Optional icon text to prefix the label.
+    is_visible : bool, optional
+        Current visibility state for the section.
+    type : str, optional
+        Type of section. Used to determine the icon shown.
     width : int, optional
         Header width in pixels. If 0 or negative, uses available width.
     height : int, optional
@@ -43,9 +52,10 @@ def render_section_header(
     bg = imgui.get_color_u32(WINDOW_THEME["background_color"])
     text_color = imgui.get_color_u32(WINDOW_THEME["title_color"])
     accent_color = imgui.get_color_u32(WINDOW_THEME["title_active_color"])
+    collapse_color = imgui.get_color_u32(WINDOW_THEME["collapse_color"])
 
     start = imgui.get_cursor_screen_pos()
-    end = (start.x + total_width, start.y + height)
+    end = (start.x + total_width - 10, start.y + height)
     draw_list = imgui.get_window_draw_list()
 
     draw_list.add_rect_filled(start, end, bg)
@@ -60,19 +70,45 @@ def render_section_header(
     brain_pos = (start.x, start.y + (height - brain_size.y) * 0.5)
     draw_list.add_text(brain_pos, color, brain_icon)
 
-    label_text = f"{icon}  {label}" if icon else label
-    label_size = imgui.calc_text_size(label_text)
+    label_size = imgui.calc_text_size(label)
+    icon_size = imgui.ImVec2(0, 0)
     arrow_icon = (
         icons_fontawesome_6.ICON_FA_ANGLE_UP
         if is_open
         else icons_fontawesome_6.ICON_FA_ANGLE_DOWN
     )
-    arrow_size = imgui.calc_text_size(arrow_icon)
+    info_icon = icons_fontawesome_6.ICON_FA_CIRCLE_INFO
+    close_icon = icons_fontawesome_6.ICON_FA_XMARK
+    show_icon = (
+        icons_fontawesome_6.ICON_FA_EYE
+        if is_visible
+        else icons_fontawesome_6.ICON_FA_EYE_SLASH
+    )
+    info_icon_size = imgui.calc_text_size(info_icon)
+    close_icon_size = imgui.calc_text_size(close_icon)
+    show_icon_size = imgui.calc_text_size(show_icon)
+    arrow_icon_size = imgui.calc_text_size(arrow_icon)
+    icon_size = imgui.ImVec2(
+        info_icon_size.x
+        + close_icon_size.x
+        + show_icon_size.x
+        + arrow_icon_size.x
+        + (padding_x * 4),
+        arrow_icon_size.y,
+    )
+    table_icon_size = imgui.ImVec2(0, 0)
+    if type == "image":
+        table_icon = icons_fontawesome_6.ICON_FA_TABLE
+        table_icon_size = imgui.calc_text_size(table_icon)
+        icon_size = imgui.ImVec2(
+            icon_size.x + table_icon_size.x + padding_x,
+            icon_size.y,
+        )
 
-    available_label_width = total_width - brain_size.x - arrow_size.x - padding_x * 2
+    available_label_width = total_width - brain_size.x - icon_size.x - padding_x * 2
     ellipsis_text = "..."
     show_ellipsis = label_size.x > available_label_width > 0
-    display_text = label_text
+    display_text = label
     label_pos = (
         start.x + brain_size.x + padding_x,
         start.y + (height - label_size.y) * 0.5,
@@ -81,28 +117,47 @@ def render_section_header(
     if show_ellipsis:
         ellipsis_size = imgui.calc_text_size(ellipsis_text)
         max_label_width = max(0, available_label_width - ellipsis_size.x)
-        trimmed_label = label_text
+        trimmed_label = label
         while trimmed_label and imgui.calc_text_size(trimmed_label).x > max_label_width:
             trimmed_label = trimmed_label[:-1]
         display_text = trimmed_label.rstrip()
         display_text += ellipsis_text
 
     draw_list.add_text(label_pos, color, display_text)
-    display_text_size = imgui.calc_text_size(display_text)
 
-    arrow_pos = (
-        label_pos[0] + display_text_size.x + padding_x,
-        start.y + (height - arrow_size.y) * 0.6,
+    pos_x = end[0] - icon_size.x
+    pos_y = start.y + (height - icon_size.y) * 0.6
+
+    draw_list.add_text((pos_x, pos_y), text_color, show_icon)
+    pos_x += show_icon_size.x + padding_x
+
+    draw_list.add_text((pos_x, pos_y), text_color, close_icon)
+    pos_x += close_icon_size.x + padding_x
+
+    if type == "image":
+        draw_list.add_text((pos_x, pos_y), text_color, table_icon)
+        pos_x += table_icon_size.x + padding_x
+
+    draw_list.add_text((pos_x, pos_y), text_color, info_icon)
+    pos_x += info_icon_size.x + padding_x
+
+    draw_list.add_text((pos_x, pos_y), collapse_color, arrow_icon)
+    draw_list.add_rect_filled(
+        (label_pos[0], height + start.y - 2),
+        end,
+        text_color,
+        0,
+        0,
     )
-    draw_list.add_text(arrow_pos, color, arrow_icon)
 
     imgui.set_cursor_screen_pos(start)
     imgui.invisible_button("section_header_button", (total_width, height))
+
     if imgui.is_item_clicked():
         is_open = not is_open
 
     imgui.pop_id()
-    return is_open
+    return is_open, is_visible
 
 
 def render_group(label, items, *, row_height=26, label_width=36, line_indent=8):
@@ -361,14 +416,16 @@ def dropdown(label, options, value, *, width=0):
     padding_x = 10.0
     arrow_icon = icons_fontawesome_6.ICON_FA_ANGLE_DOWN
 
-    frame_bg = WINDOW_THEME["background_color"]
-    border_color = THEME["text"]
-    text_color = THEME["secondary"]
-    highlight = THEME["text_highlight"]
+    frame_bg = DROPDOWN_THEME["background_color"]
+    border_color = DROPDOWN_THEME["border_color"]
+    text_color = DROPDOWN_THEME["selected_color"]
+    highlight = DROPDOWN_THEME["hover_color"]
+    arrow_color = DROPDOWN_THEME["arrow_color"]
 
     imgui.set_next_item_width(combo_width)
     imgui.push_style_var(imgui.StyleVar_.frame_rounding, 6.0)
     imgui.push_style_var(imgui.StyleVar_.frame_border_size, 1.0)
+    imgui.push_style_var(imgui.StyleVar_.item_spacing, (0.0, 10.0))
     imgui.push_style_color(imgui.Col_.frame_bg, frame_bg)
     imgui.push_style_color(imgui.Col_.frame_bg_hovered, frame_bg)
     imgui.push_style_color(imgui.Col_.frame_bg_active, frame_bg)
@@ -391,7 +448,7 @@ def dropdown(label, options, value, *, width=0):
         frame_max.x - padding_x - arrow_size.x,
         frame_min.y + (frame_max.y - frame_min.y - arrow_size.y) * 0.52,
     )
-    draw_list.add_text(arrow_pos, imgui.get_color_u32(highlight), arrow_icon)
+    draw_list.add_text(arrow_pos, imgui.get_color_u32(arrow_color), arrow_icon)
 
     if opened:
         for option in options:
@@ -411,7 +468,7 @@ def dropdown(label, options, value, *, width=0):
         current_value = new_value
 
     imgui.pop_style_color(8)
-    imgui.pop_style_var(2)
+    imgui.pop_style_var(3)
 
     imgui.pop_id()
     return changed, new_value
