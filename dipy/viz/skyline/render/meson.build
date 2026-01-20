@@ -3,7 +3,8 @@ python_sources = [
   'renderer.py',
   'image.py',
   'peak.py',
-  'roi.py'
+  'roi.py',
+  'surface.py'
   ]
 
 py3.install_sources(
