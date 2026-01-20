@@ -33,7 +33,7 @@ class UIWindow:
 
     def add(self, name, render_callback):
         self._sections[name] = render_callback
-        self._section_open.setdefault(name, True)
+        self._section_open.setdefault(name, False)
 
     def remove(self, name):
         if name in self._sections:
@@ -56,8 +56,8 @@ class UIWindow:
         if open_flag:
             for name, renderer in self._sections.items():
                 imgui.push_id(name)
-                is_open = self._section_open.get(name, True)
-                is_open = render_section_header(name, is_open=is_open)
+                is_open = self._section_open.get(name, False)
+                is_open, _ = render_section_header(name, is_open=is_open)
                 self._section_open[name] = is_open
                 if is_open:
                     padding = 20
