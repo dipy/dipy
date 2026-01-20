@@ -8,11 +8,17 @@ from dipy.viz.skyline.render.image import Image3D
 from dipy.viz.skyline.render.peak import Peak3D
 from dipy.viz.skyline.render.renderer import create_window
 from dipy.viz.skyline.render.roi import ROI3D
+from dipy.viz.skyline.render.surface import Surface
 
 
 class Skyline:
     def __init__(
-        self, visualizer_type="standalone", images=None, peaks=None, rois=None
+        self,
+        visualizer_type="standalone",
+        images=None,
+        peaks=None,
+        rois=None,
+        surfaces=None,
     ):
         self.windows = []
         self.size = (1200, 1000)
@@ -26,7 +32,7 @@ class Skyline:
                 ],
             )
         )
-        self.visualizations = [[]]
+        self.visualizations = [{"images": [], "peaks": [], "rois": [], "surfaces": []}]
 
         self.UI_window = UIWindow("Image Controls", size=self.ui_size)
         self.windows[0].resize_callback(self.handle_resize)
@@ -40,7 +46,7 @@ class Skyline:
                     render_callback=self.before_render,
                     interpolation="linear",
                 )
-                self.visualizations[0].append(image3d)
+                self.visualizations[0]["images"].append(image3d)
                 fname = Path(path).name if path is not None else f"Image {idx}"
                 self.UI_window.add(fname, image3d.render_widgets)
         if peaks is not None:
@@ -50,7 +56,7 @@ class Skyline:
                     affine=pam.affine,
                     render_callback=self.before_render,
                 )
-                self.visualizations[0].append(peak3d)
+                self.visualizations[0]["peaks"].append(peak3d)
                 fname = Path(path).name if path is not None else f"Peaks {idx}"
                 self.UI_window.add(fname, peak3d.render_widgets)
         if rois is not None:
@@ -62,9 +68,21 @@ class Skyline:
                     color=color,
                     render_callback=self.before_render,
                 )
-                self.visualizations[0].append(roi3d)
+                self.visualizations[0]["rois"].append(roi3d)
                 fname = Path(path).name if path is not None else f"ROI {idx}"
                 self.UI_window.add(fname, roi3d.render_widgets)
+        if surfaces is not None:
+            for idx, (verts, faces, path) in enumerate(surfaces):
+                color = next(self._color_gen)
+                surface3d = Surface(
+                    verts,
+                    faces,
+                    color=color,
+                    render_callback=self.before_render,
+                )
+                self.visualizations[0]["surfaces"].append(surface3d)
+                fname = Path(path).name if path is not None else f"Surface {idx}"
+                self.UI_window.add(fname, surface3d.render_widgets)
         self.windows[0]._imgui.set_gui(self.UI_window.render)
         self.before_render()
         self.windows[0].start()
