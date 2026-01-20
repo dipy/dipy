@@ -7,9 +7,16 @@ from dipy.viz.skyline.render.renderer import Visualization
 
 class Peak3D(Visualization):
     def __init__(
-        self, peaks, *, affine=None, peak_values=1.0, opacity=100, render_callback=None
+        self,
+        name,
+        peaks,
+        *,
+        affine=None,
+        peak_values=1.0,
+        opacity=100,
+        render_callback=None,
     ):
-        super().__init__(render_callback=render_callback)
+        super().__init__(name, render_callback)
         self.peaks = peaks
         self.affine = affine
         self.peak_values = peak_values
