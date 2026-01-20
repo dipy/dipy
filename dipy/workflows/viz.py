@@ -12,7 +12,7 @@ from dipy.io.utils import create_nifti_header, split_filename_extension
 from dipy.stats.analysis import assignment_map
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
-from dipy.viz import Skyline, horizon
+from dipy.viz import horizon, skyline
 from dipy.workflows.workflow import Workflow
 
 fury, has_fury, setup_module = optional_package(
@@ -386,8 +386,7 @@ class SkylineFlow(Workflow):
                 )
                 sys.exit(1)
 
-        Skyline(
-            visualizer_type="standalone",
+        skyline(
             images=skyline_images,
             peaks=skyline_peaks,
             rois=skyline_rois,
