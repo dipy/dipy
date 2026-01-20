@@ -19,6 +19,12 @@ FONTS = ASSETS / "fonts"
 if not FONTS.exists():
     FONTS.mkdir(parents=True, exist_ok=True)
 
+IMAGES = ASSETS / "images"
+if not IMAGES.exists():
+    IMAGES.mkdir(parents=True, exist_ok=True)
+
+LOGO = IMAGES / "dipy-logo.png"
+
 FONT = FONTS / "Inter_18pt-Regular.ttf"
 if not FONT.exists():
     logger.info("Downloading Skyline UI font...")

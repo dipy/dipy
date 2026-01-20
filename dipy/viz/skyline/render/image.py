@@ -19,6 +19,7 @@ from dipy.viz.skyline.render.renderer import Visualization
 class Image3D(Visualization):
     def __init__(
         self,
+        name,
         volume,
         *,
         affine=None,
@@ -29,7 +30,7 @@ class Image3D(Visualization):
         value_percentiles=(2, 98),
         colormap="Gray",
     ):
-        super().__init__(render_callback=render_callback)
+        super().__init__(name, render_callback)
         self.dwi = volume
         self.affine = affine
 
@@ -77,7 +78,7 @@ class Image3D(Visualization):
                 affine=self.affine,
                 interpolation=self.interpolation,
                 value_range=self.value_range,
-                alpha_mode="bayer",
+                alpha_mode="solid",
                 depth_write=True,
             )
         else:
@@ -87,7 +88,7 @@ class Image3D(Visualization):
                 affine=self.affine,
                 interpolation=self.interpolation,
                 value_range=self.value_range,
-                alpha_mode="bayer",
+                alpha_mode="solid",
                 depth_write=True,
             )
         self._apply_colormap(self.colormap)
@@ -123,6 +124,12 @@ class Image3D(Visualization):
         )
         if changed:
             self.opacity = new
+            if self.opacity == 100:
+                for actor in self.actor.children:
+                    actor.material.alpha_mode = "solid"
+            else:
+                for actor in self.actor.children:
+                    actor.material.alpha_mode = "bayer"
             set_group_opacity(self._slicer, self.opacity / 100.0)
 
         imgui.spacing()
