@@ -20,22 +20,21 @@ class Skyline:
         rois=None,
         surfaces=None,
     ):
-        self.windows = []
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
-        self.windows.append(
-            create_window(
-                visualizer_type=visualizer_type,
-                size=self.size,
-                screen_config=[
-                    (self.ui_size[0], 0, self.size[0] - self.ui_size[0], self.size[1]),
-                ],
-            )
+
+        self.window = create_window(
+            visualizer_type=visualizer_type,
+            size=self.size,
+            screen_config=[
+                (self.ui_size[0], 0, self.size[0] - self.ui_size[0], self.size[1]),
+            ],
         )
-        self.visualizations = [{"images": [], "peaks": [], "rois": [], "surfaces": []}]
+
+        self.visualizations = {"images": [], "peaks": [], "rois": [], "surfaces": []}
 
         self.UI_window = UIWindow("Image Controls", size=self.ui_size)
-        self.windows[0].resize_callback(self.handle_resize)
+        self.window.resize_callback(self.handle_resize)
         self._color_gen = distinguishable_colormap()
 
         if images is not None:
@@ -46,7 +45,7 @@ class Skyline:
                     render_callback=self.before_render,
                     interpolation="linear",
                 )
-                self.visualizations[0]["images"].append(image3d)
+                self.visualizations["images"].append(image3d)
                 fname = Path(path).name if path is not None else f"Image {idx}"
                 self.UI_window.add(fname, image3d.render_widgets)
         if peaks is not None:
@@ -56,7 +55,7 @@ class Skyline:
                     affine=pam.affine,
                     render_callback=self.before_render,
                 )
-                self.visualizations[0]["peaks"].append(peak3d)
+                self.visualizations["peaks"].append(peak3d)
                 fname = Path(path).name if path is not None else f"Peaks {idx}"
                 self.UI_window.add(fname, peak3d.render_widgets)
         if rois is not None:
@@ -68,7 +67,7 @@ class Skyline:
                     color=color,
                     render_callback=self.before_render,
                 )
-                self.visualizations[0]["rois"].append(roi3d)
+                self.visualizations["rois"].append(roi3d)
                 fname = Path(path).name if path is not None else f"ROI {idx}"
                 self.UI_window.add(fname, roi3d.render_widgets)
         if surfaces is not None:
@@ -80,33 +79,66 @@ class Skyline:
                     color=color,
                     render_callback=self.before_render,
                 )
-                self.visualizations[0]["surfaces"].append(surface3d)
+                self.visualizations["surfaces"].append(surface3d)
                 fname = Path(path).name if path is not None else f"Surface {idx}"
                 self.UI_window.add(fname, surface3d.render_widgets)
-        self.windows[0]._imgui.set_gui(self.UI_window.render)
+        self.window._imgui.set_gui(self.UI_window.render)
         self.before_render()
-        self.windows[0].start()
+        self.window.start()
 
     def _refresh_actors(self):
-        for actor in list(self.windows[0].screens[0].scene.main_scene.children):
+        all_actors = [v for viz_list in self.visualizations.values() for v in viz_list]
+
+        for actor in list(self.window.screens[0].scene.main_scene.children):
             if not isinstance(actor, Actor):
                 continue
-            if not any(viz.actor == actor for viz in self.visualizations[0]):
-                self.windows[0].screens[0].scene.main_scene.remove(actor)
-        for viz in self.visualizations[0]:
-            if viz.actor not in self.windows[0].screens[0].scene.main_scene.children:
-                self.windows[0].screens[0].scene.main_scene.add(viz.actor)
+            if not any(viz.actor == actor for viz in all_actors):
+                self.window.screens[0].scene.main_scene.remove(actor)
+        for viz in all_actors:
+            if viz.actor not in self.window.screens[0].scene.main_scene.children:
+                self.window.screens[0].scene.main_scene.add(viz.actor)
 
     def before_render(self):
         self._refresh_actors()
-        self.windows[0].render()
+        self.window.render()
 
     def handle_resize(self, size):
         self.size = size
         self.ui_size = (400, self.size[1])
         self.UI_window.size = (self.ui_size[0], size[1])
-        self.windows[0]._screen_config = [
+        self.window._screen_config = [
             (self.ui_size[0], 0, self.size[0] - self.ui_size[0], self.size[1])
         ]
         self.UI_window.size = (self.ui_size[0], size[1])
-        self.windows[0].render()
+        self.window.render()
+
+
+def skyline(
+    *, visualizer_type="standalone", images=None, peaks=None, rois=None, surfaces=None
+):
+    """Launch Skyline GUI.
+
+    Parameters
+    ----------
+    visualizer_type : str, optional
+        Type of visualizer to create. The options are:
+        - "standalone": A standalone window with full interactivity.
+        - "gui": A Qt-based GUI window.
+        - "jupyter": An inline Jupyter notebook visualizer.
+        - "stealth": An offscreen visualizer without GUI.
+    images : list, optional
+        List of path for each image to be added to the Skyline viewer.
+    peaks : list, optional
+        List of path for each peak to be added to the Skyline viewer.
+    rois : list, optional
+        List of path for each ROI to be added to the Skyline viewer.
+    surfaces : list, optional
+        List of path for each surface to be added to the Skyline viewer.
+    """
+    Skyline(
+        visualizer_type=visualizer_type,
+        images=images,
+        peaks=peaks,
+        rois=rois,
+        surfaces=surfaces,
+    )
