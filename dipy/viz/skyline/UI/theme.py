@@ -81,6 +81,7 @@ WINDOW_THEME = {
     "title_color": THEME["text"],
     "title_active_color": THEME["text_highlight"],
     "background_color": THEME["background"],
+    "collapse_color": THEME["secondary"],
 }
 
 SWITCH_THEME = {
@@ -89,4 +90,12 @@ SWITCH_THEME = {
     "inactive_text_color": THEME["text"],
     "active_text_color": THEME["secondary"],
     "border_color": THEME["text"],
+}
+
+DROPDOWN_THEME = {
+    "background_color": THEME["background"],
+    "border_color": THEME["text_highlight"],
+    "hover_color": THEME["text_highlight"],
+    "selected_color": THEME["secondary"],
+    "arrow_color": THEME["text_highlight"],
 }
