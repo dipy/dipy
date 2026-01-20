@@ -1,6 +1,5 @@
 from imgui_bundle import hello_imgui, imgui
 
-from dipy.viz.skyline.UI.elements import render_section_header
 from dipy.viz.skyline.UI.theme import ASSETS, FONT, THEME
 
 
@@ -14,7 +13,15 @@ class UIManager:
 
 class UIWindow:
     def __init__(
-        self, title, *, default_open=True, flags=0, pos=(0, 0), size=(400, 400)
+        self,
+        title,
+        *,
+        default_open=True,
+        flags=0,
+        pos=(0, 0),
+        size=(400, 400),
+        logo_tex_ref=None,
+        render_callback=None,
     ):
         self.title = title
         self.is_open = default_open
@@ -23,16 +30,22 @@ class UIWindow:
         self.size = size
         self._sections = {}
         self._section_open = {}
+        self._render_callback = render_callback
+        self.logo_tex_ref = logo_tex_ref
+        if render_callback is None:
+            self.render_callback = lambda: None
+
         hello_imgui.set_assets_folder(str(ASSETS))
         hello_imgui.load_font_ttf_with_font_awesome_icons(
             str(FONT.relative_to(ASSETS)), 18
         )
+
         imgui.push_style_color(
             imgui.Col_.window_bg, imgui.get_color_u32(THEME["background"])
         )
 
-    def add(self, name, render_callback):
-        self._sections[name] = render_callback
+    def add(self, name, section_renderer):
+        self._sections[name] = section_renderer
         self._section_open.setdefault(name, False)
 
     def remove(self, name):
@@ -50,31 +63,24 @@ class UIWindow:
         computed_flags = (
             self.flags | imgui.WindowFlags_.no_collapse | imgui.WindowFlags_.no_resize
         )
-        open_flag = imgui.begin(self.title, None, computed_flags)
-        self.is_open = open_flag
+        imgui.begin(self.title, None, computed_flags)
+        imgui.push_id("logo")
+        imgui.image(self.logo_tex_ref, (64, 64))
+        imgui.pop_id()
+        is_removed = [False] * len(self._sections)
+        for idx, (name, renderer) in enumerate(self._sections.items()):
+            imgui.push_id(name)
+            is_open = self._section_open.get(name, False)
+            is_open, is_removed[idx] = renderer(name, is_open)
+            self._section_open[name] = is_open
+            imgui.pop_id()
 
-        if open_flag:
-            for name, renderer in self._sections.items():
-                imgui.push_id(name)
-                is_open = self._section_open.get(name, False)
-                is_open, _ = render_section_header(name, is_open=is_open)
-                self._section_open[name] = is_open
-                if is_open:
-                    padding = 20
-                    imgui.begin_group()
-                    imgui.dummy((0, padding / 2))
-                    imgui.push_style_var(
-                        imgui.StyleVar_.window_padding, (padding, padding / 2)
-                    )
-                    child_flags = (
-                        imgui.ChildFlags_.always_use_window_padding
-                        | imgui.ChildFlags_.auto_resize_y
-                    )
-                    if imgui.begin_child(f"{name}_content_child", (0, 0), child_flags):
-                        renderer()
-                    imgui.end_child()
-                    imgui.pop_style_var()
-                    imgui.dummy((0, padding / 2))
-                    imgui.end_group()
-                imgui.pop_id()
+        for removed, name in zip(is_removed, list(self._sections.keys())):
+            if removed:
+                self.remove(name)
+                self._render_callback()
         imgui.end()
+
+    @property
+    def sections(self):
+        return self._sections
