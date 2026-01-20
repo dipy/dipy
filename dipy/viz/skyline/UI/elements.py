@@ -12,6 +12,28 @@ from dipy.viz.skyline.UI.theme import (
 )
 
 
+def _calculate_hit_box(pos, size, padding=4):
+    """Calculate hit box for given size and position.
+
+    Parameters
+    ----------
+    pos : imgui.ImVec2Like
+        Position of the top-left corner.
+    size : imgui.ImVec2Like
+        Size of the box.
+    padding : int, optional
+        Padding around the box.
+
+    Returns
+    -------
+    tuple
+        A tuple containing the minimum and maximum positions of the hit box.
+    """
+    min_pos = imgui.ImVec2(pos[0] - padding, pos[1] - padding)
+    max_pos = imgui.ImVec2(pos[0] + size[0] + padding, pos[1] + size[1] + padding)
+    return min_pos, max_pos
+
+
 def render_section_header(
     label,
     *,
@@ -128,9 +150,13 @@ def render_section_header(
     pos_x = end[0] - icon_size.x
     pos_y = start.y + (height - icon_size.y) * 0.6
 
+    show_icon_min, show_icon_max = _calculate_hit_box((pos_x, pos_y), show_icon_size)
+    show_icon_hovered = imgui.is_mouse_hovering_rect(show_icon_min, show_icon_max)
     draw_list.add_text((pos_x, pos_y), text_color, show_icon)
     pos_x += show_icon_size.x + padding_x
 
+    close_icon_min, close_icon_max = _calculate_hit_box((pos_x, pos_y), close_icon_size)
+    close_icon_hovered = imgui.is_mouse_hovering_rect(close_icon_min, close_icon_max)
     draw_list.add_text((pos_x, pos_y), text_color, close_icon)
     pos_x += close_icon_size.x + padding_x
 
@@ -153,11 +179,16 @@ def render_section_header(
     imgui.set_cursor_screen_pos(start)
     imgui.invisible_button("section_header_button", (total_width, height))
 
-    if imgui.is_item_clicked():
+    is_close = False
+    if show_icon_hovered and imgui.is_mouse_clicked(imgui.MouseButton_.left):
+        is_visible = not is_visible
+    elif close_icon_hovered and imgui.is_mouse_clicked(imgui.MouseButton_.left):
+        is_close = True
+    elif imgui.is_item_clicked():
         is_open = not is_open
 
     imgui.pop_id()
-    return is_open, is_visible
+    return is_open, is_visible, is_close
 
 
 def render_group(label, items, *, row_height=26, label_width=36, line_indent=8):
