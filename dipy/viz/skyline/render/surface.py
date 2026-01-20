@@ -7,6 +7,7 @@ from dipy.viz.skyline.render.renderer import Visualization
 class Surface(Visualization):
     def __init__(
         self,
+        name,
         vertices,
         faces,
         *,
@@ -16,7 +17,7 @@ class Surface(Visualization):
         texture=None,
         render_callback=None,
     ):
-        super().__init__(render_callback=render_callback)
+        super().__init__(name, render_callback)
         self.vertices = vertices
         self.faces = faces
         self.affine = affine

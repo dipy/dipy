@@ -6,9 +6,16 @@ from dipy.viz.skyline.render.renderer import Visualization
 
 class ROI3D(Visualization):
     def __init__(
-        self, roi, *, affine=None, opacity=100, color=(1, 0, 0), render_callback=None
+        self,
+        name,
+        roi,
+        *,
+        affine=None,
+        opacity=100,
+        color=(1, 0, 0),
+        render_callback=None,
     ):
-        super().__init__(render_callback)
+        super().__init__(name, render_callback)
         self.roi = roi
         self.affine = affine
         self.opacity = opacity

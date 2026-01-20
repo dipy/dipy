@@ -1,13 +1,16 @@
 import sys
 
 from fury import window
+from imgui_bundle import imgui
 
 from dipy.utils.logging import logger
+from dipy.viz.skyline.UI.elements import render_section_header
 
 
 class Visualization:
-    def __init__(self, render_callback):
+    def __init__(self, name, render_callback):
         self._render_callback = render_callback
+        self.name = name
 
     def render(self):
         if self._render_callback is not None:
@@ -16,6 +19,38 @@ class Visualization:
     @property
     def actor(self):
         raise NotImplementedError("Subclasses must implement the actor property.")
+
+    def renderer(self, name, is_open):
+        """Provides a callback from UIManager to handle visualization.
+
+        Parameters
+        ----------
+        name : str
+            Name of the visualization section
+        is_open : bool
+            If the UI section is open
+        """
+        is_open, is_visible, is_removed = render_section_header(
+            name, is_open=is_open, is_visible=self.actor.visible
+        )
+        self.actor.visible = is_visible
+
+        if is_open and is_visible:
+            padding = 20
+            imgui.begin_group()
+            imgui.push_style_var(imgui.StyleVar_.window_padding, (padding, padding / 2))
+            child_flags = (
+                imgui.ChildFlags_.always_use_window_padding
+                | imgui.ChildFlags_.auto_resize_y
+            )
+            if imgui.begin_child(f"{name}_content_child", (0, 0), child_flags):
+                self.render_widgets()
+            imgui.end_child()
+            imgui.pop_style_var()
+            imgui.dummy((0, padding / 2))
+            imgui.end_group()
+
+        return is_open, is_removed
 
     def render_widgets(self):
         """Render control widgets for visualization.
