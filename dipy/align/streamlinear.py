@@ -1120,6 +1120,25 @@ def slr_with_qbx(
 
     streamlines1 = Streamlines(static[np.array([check_range(s) for s in static])])
     streamlines2 = Streamlines(moving[np.array([check_range(s) for s in moving])])
+
+    if len(streamlines1) == 0:
+        msg = (
+            "No streamlines remain in 'static' after length filtering. "
+            f"All streamlines have length outside the range "
+            f"({greater_than}, {less_than}). "
+            "Please adjust the 'greater_than' and 'less_than' parameters."
+        )
+        raise ValueError(msg)
+
+    if len(streamlines2) == 0:
+        msg = (
+            "No streamlines remain in 'moving' after length filtering. "
+            f"All streamlines have length outside the range "
+            f"({greater_than}, {less_than}). "
+            "Please adjust the 'greater_than' and 'less_than' parameters."
+        )
+        raise ValueError(msg)
+
     if verbose:
         logger.info(f"Static streamlines after length reduction {len(streamlines1)}")
         logger.info(f"Moving streamlines after length reduction {len(streamlines2)}")

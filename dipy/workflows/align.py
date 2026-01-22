@@ -1,5 +1,4 @@
 from pathlib import Path
-import sys
 from warnings import warn
 
 import numpy as np
@@ -288,23 +287,30 @@ class SlrWithQbxFlow(Workflow):
 
             if not len(static_obj.streamlines):
                 logger.error(f"Static file {static_file} is empty")
-                sys.exit(1)
+                continue
             if not len(moving_obj.streamlines):
                 logger.error(f"Moving file {moving_file} is empty")
-                sys.exit(1)
+                continue
 
-            moved, affine, centroids_static, centroids_moving = slr_with_qbx(
-                static_obj.streamlines,
-                moving_obj.streamlines,
-                x0=x0,
-                rm_small_clusters=rm_small_clusters,
-                greater_than=greater_than,
-                less_than=less_than,
-                qbx_thr=qbx_thr,
-                progressive=progressive,
-                nb_pts=nb_pts,
-                num_threads=num_threads,
-            )
+            try:
+                moved, affine, centroids_static, centroids_moving = slr_with_qbx(
+                    static_obj.streamlines,
+                    moving_obj.streamlines,
+                    x0=x0,
+                    rm_small_clusters=rm_small_clusters,
+                    greater_than=greater_than,
+                    less_than=less_than,
+                    qbx_thr=qbx_thr,
+                    progressive=progressive,
+                    nb_pts=nb_pts,
+                    num_threads=num_threads,
+                )
+            except Exception as e:
+                logger.error(f"SLR with QBX failed: {e}")
+                logger.warning(
+                    "Skipping this pair of tractograms, " "continuing with next pair."
+                )
+                continue
 
             logger.info(f"Saving output file {out_moved_file}")
 
