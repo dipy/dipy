@@ -24,12 +24,12 @@ establishing concrete biophysical assumptions, DKI can also be related to
 microstructural models to infer specific biophysical parameters (e.g., the
 density of axonal fibers) - this aspect will be more closely explored in
 :ref:sphx_glr_examples_built_reconstruction_reconst_dki_micro.py. For
-additional information on DKI and its practical implementation within DIPY,
+additional information on DKI and its practical implementation within DIPY_,
 refer to :footcite:p:`NetoHenriques2021a`.
 
 Below, we introduce a concise theoretical background of DKI and demonstrate
-its fitting process using DIPY. We'll also guide you through the fitting
-process of DKI using DIPY, demonstrating how to effectively apply this
+its fitting process using DIPY_. We'll also guide you through the fitting
+process of DKI using DIPY_, demonstrating how to effectively apply this
 technique. Furthermore, we discuss the various diffusion metrics that can be
 derived from DKI, providing insight into their practical significance and
 applications. Additionally, we address strategies to mitigate common artifacts,
@@ -95,6 +95,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 import dipy.reconst.dki as dki
 import dipy.reconst.dti as dti
+from dipy.reconst.weights_method import simple_cutoff, weights_method_wls_m_est
 from dipy.segment.mask import median_otsu
 from dipy.viz.plotting import compare_maps
 
@@ -148,7 +149,7 @@ datamask, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2, d
 # favorable to suppress the effects of noise and artifacts before diffusion
 # kurtosis fitting. In this example, the effects of noise are suppressed using
 # the Marcenko-Pastur (MP)-PCA algorithm (for more information, see
-# :ref:sphx_glr_examples_built_preprocessing_denoise_mppca.py). Processing
+# :ref:`sphx_glr_examples_built_preprocessing_denoise_mppca.py`). Processing
 # MP-PCA may take a while - for illustration purposes, you can skip this step.
 # However, note that if you don't denoise your data, DKI reconstructions may
 # be corrupted by a large percentage of implausible DKI estimates (see below
@@ -162,9 +163,15 @@ data = mppca(data, patch_radius=[3, 3, 3])
 # GradientTable object by instantiating the DiffusionKurtosisModel object in
 # the following way:
 
-dkimodel = dki.DiffusionKurtosisModel(gtab)
+dkimodel = dki.DiffusionKurtosisModel(gtab, fit_method="WLS")
 
 ###############################################################################
+# The ``fit_method`` argument gives the method that will be used when fitting
+# the data. Several options are available, such as weighted least squares
+# ``WLS`` (default) and ``RWLS`` (see :footcite:t:`Coveney2025`). For
+# constrained fitting methods, see later in this example.
+#
+#
 # To fit the data using the defined model object, we call the ``fit`` function
 # of this object. For the purpose of this example, we will only fit a
 # single slice of the data:
@@ -179,7 +186,7 @@ dkifit = dkimodel.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
 # DiffusionKurtosisFit instance. For example, we can extract the fractional
 # anisotropy (FA), the mean diffusivity (MD), the radial diffusivity (RD) and
 # the axial diffusivity (AD) from the DiffusionKurtosisiFit instance. Of
-# course, these measures can also be computed from DIPY's ``TensorModel`` fit,
+# course, these measures can also be computed from DIPY_'s ``TensorModel`` fit,
 # and should be analogous; however, theoretically, the diffusion statistics
 # from the kurtosis model are expected to have better accuracy, since DKI's
 # diffusion tensor are decoupled from higher order terms effects
@@ -247,58 +254,63 @@ compare_maps(
 # 'Black' voxels or holes in DKI metrics (e.g. see the band of dark voxels in
 # the  RK map above). These negative kurtosis values are artifactual and might
 # be induced by:
-# 1) low radial diffusivities of aligned white matter - since it is very hard
-# to capture non-Gaussian information in radial direction due to its low
-# diffusion decays, radial kurtosis estimates (and consequently the mean
-# kurtosis estimates) might have low robustness and tendency to exhibit
-# negative values :footcite:p:`NetoHenriques2012`, :footcite:p:`Tabesh2011`;
-# 2) Gibbs artifacts - MRI images might be corrupted by signal oscillation
-# artifact between tissue's edges if an inadequate number of high frequencies
-# of the k-space is sampled. These oscillations might have different signs on
-# images acquired with different diffusion-weighted and inducing negative
-# biases in kurtosis parametric maps :footcite:p:`Perrone2015`,
-# :footcite:p:`NetoHenriques2018`. 3) Underestimation of b0 signals - Due to
-# physiological or noise artifacts, the signals acquired at b-value=0 may be
-# artifactually lower than the diffusion-weighted signals acquired for the
-# different b-values. In this case, the log diffusion-weighted signal decay may
-# appear to be concave rather than showing to be convex (as one would typically
-# expect), leading to negative kurtosis value estimates.
+#
+# 1. Low radial diffusivities of aligned white matter - since it is very hard
+#    to capture non-Gaussian information in radial direction due to its low
+#    diffusion decays, radial kurtosis estimates (and consequently the mean
+#    kurtosis estimates) might have low robustness and tendency to exhibit
+#    negative values :footcite:p:`NetoHenriques2012`, :footcite:p:`Tabesh2011`;
+# 2. Gibbs artifacts - MRI images might be corrupted by signal oscillation
+#    artifact between tissue's edges if an inadequate number of high frequencies
+#    of the k-space is sampled. These oscillations might have different signs on
+#    images acquired with different diffusion-weighted and inducing negative
+#    biases in kurtosis parametric maps :footcite:p:`Perrone2015`,
+#    :footcite:p:`NetoHenriques2018`.
+# 3. Underestimation of b0 signals - Due to physiological or noise artifacts,
+#    the signals acquired at b-value=0 may be artifactually lower than the
+#    diffusion-weighted signals acquired for the different b-values. In this case,
+#    the log diffusion-weighted signal decay may appear to be concave rather than
+#    showing to be convex (as one would typically expect), leading to negative
+#    kurtosis value estimates.
 #
 # Given the above, one can try to suppress the 'Black' voxel / holes in DKI
 # metrics by:
-# 1) using more advanced noise and artifact suppression algorithms, e.g.,
-# as mentioned above, the MP-PCA denoising
-# (:ref:`sphx_glr_examples_built_preprocessing_denoise_mppca.py`), other
-# denoising alternatives such as Patch2self
-# (:ref:`sphx_glr_examples_built_preprocessing_denoise_patch2self.py`) or
-# incorporating methods for Gibbs Artifact Unringing
-# (:ref:`sphx_glr_examples_built_preprocessing_denoise_gibbs.py`)
-# algorithms.
-# 2) computing the kurtosis values from powder-averaged diffusion-weighted
-# signals which are known to be less sensitive to implausible negative
-# estimates. The details on how to compute the kurtosis from powder-averaged
-# signals in DIPY are described in the following tutorial
-# (:ref:`sphx_glr_examples_built_reconstruction_reconst_msdki.py`).
-# 3) computing alternative definitions of mean and radial kurtosis such as
-# the mean kurtosis tensor (MKT) and radial tensor kurtosis (RTK) metrics (see
-# below).
-# 4) constrained optimization to ensure that the fitted parameters
-# are physically plausible :footcite:p:`DelaHaije2020` (see below).
+#
+# 1. Using more advanced noise and artifact suppression algorithms, e.g.,
+#    as mentioned above, the MP-PCA denoising
+#    (:ref:`sphx_glr_examples_built_preprocessing_denoise_mppca.py`), other
+#    denoising alternatives such as Patch2self
+#    (:ref:`sphx_glr_examples_built_preprocessing_denoise_patch2self.py`) or
+#    incorporating methods for Gibbs Artifact Unringing
+#    (:ref:`sphx_glr_examples_built_preprocessing_denoise_gibbs.py`) algorithms.
+# 2. Computing the kurtosis values from powder-averaged diffusion-weighted
+#    signals which are known to be less sensitive to implausible negative
+#    estimates. The details on how to compute the kurtosis from powder-averaged
+#    signals in DIPY_ are described in the following tutorial
+#    (:ref:`sphx_glr_examples_built_reconstruction_reconst_msdki.py`).
+# 3. Computing alternative definitions of mean and radial kurtosis such as
+#    the mean kurtosis tensor (MKT) and radial tensor kurtosis (RTK) metrics (see
+#    below).
+# 4. Constrained optimization to ensure that the fitted parameters
+#    are physically plausible :footcite:p:`DelaHaije2020` (see below).
+#
 #
 # Alternative DKI metrics
 # =======================
 #
 # In addition to the standard mean, axial, and radial kurtosis metrics shown
 # above, alternative metrics can be computed from DKI, e.g.:
-# 1) the mean kurtosis tensor (MKT) - defined as the trace of the kurtosis
-# tensor - is a quantity that provides a contrast similar to the standard MK
-# but it is more robust to noise artifacts :footcite:p:`Hansen2013`,
-# :footcite:p:`NetoHenriques2021a`. 2) the radial tensor kurtosis (RTK) provides
-# an alternative definition to standard radial kurtosis (RK) that, as MKT, is
-# more robust to noise artifacts :footcite:p:`Hansen2013`.
-# 3) the kurtosis fractional anisotropy (KFA) that quantifies the anisotropy of
-# the kurtosis tensor :footcite:p:`Glenn2015`, which provides different
-# information than the FA measures from the diffusion tensor.
+#
+# 1. The mean kurtosis tensor (MKT) - defined as the trace of the kurtosis
+#    tensor - is a quantity that provides a contrast similar to the standard MK
+#    but it is more robust to noise artifacts :footcite:p:`Hansen2013`,
+#    :footcite:p:`NetoHenriques2021a`.
+# 2. The radial tensor kurtosis (RTK) provides
+#    an alternative definition to standard radial kurtosis (RK) that, as MKT, is
+#    more robust to noise artifacts :footcite:p:`Hansen2013`.
+# 3. The kurtosis fractional anisotropy (KFA) that quantifies the anisotropy of
+#    the kurtosis tensor :footcite:p:`Glenn2015`, which provides different
+#    information than the FA measures from the diffusion tensor.
 #
 # These measures are computed and illustrated below:
 
@@ -324,8 +336,8 @@ compare_maps(
 # ================================
 #
 # When instantiating the DiffusionKurtosisModel, the model can be set up to use
-# constraints with the option `fit_method='CLS'` (for ordinary least squares)
-# or with `fit_method='CWLS'` (for weighted least squares). Constrained fitting
+# constraints with the option ``fit_method='CLS'`` (for ordinary least squares)
+# or with ``fit_method='CWLS'`` (for weighted least squares). Constrained fitting
 # takes more time than unconstrained fitting, but is generally recommended to
 # prevent physically implausible parameter estimates
 # :footcite:p:`DelaHaije2020`. For performance purposes it is recommended to use
@@ -340,7 +352,12 @@ compare_maps(
 #    unconstrained counterpart to verify that there are no unexpected
 #    qualitative differences.
 
-dkimodel_plus = dki.DiffusionKurtosisModel(gtab, fit_method="CLS")
+# rescale for constrained DKI methods (will affect units, but not kurtosis)
+BVALS_SCALING = 0.001
+bvals = bvals * BVALS_SCALING
+gtab = gradient_table(bvals[bval_sel == 1], bvecs=bvecs[bval_sel == 1])
+
+dkimodel_plus = dki.DiffusionKurtosisModel(gtab, fit_method="CWLS")
 dkifit_plus = dkimodel_plus.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
 
 ###############################################################################
@@ -362,6 +379,49 @@ compare_maps(
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # DKI standard kurtosis measures obtained with constrained optimization.
+#
+#
+# It is also possible to combine robust fitting methods and constrained fitting
+# methods, as done in :footcite:t:`Coveney2025b`. For Robust CWLS (RCWLS), we
+# need to use the CWLS fitting method with a ``weights_method``, which will
+# cause DIPY_ to use iteratively reweighted least squares (fitting with CWLS on
+# each iteration) making use of the weights method.
+
+
+def GMM_weights(*args):
+    """Geman-McClure weights with outliers defined by +/-3 standard
+    deviations.
+    """
+    return weights_method_wls_m_est(
+        *args, m_est="gm", cutoff=3, outlier_condition_func=simple_cutoff
+    )
+
+
+dkimodel_rcwls = dki.DiffusionKurtosisModel(
+    gtab, fit_method="CWLS", return_S0_hat=True, weights_method=GMM_weights, num_iter=6
+)
+dkifit_rcwls = dkimodel_rcwls.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
+
+compare_maps(
+    [dkifit_plus, dkifit_rcwls],
+    ["mkt", "rtk", "ak"],
+    fit_labels=["DKI+", "robust DKI+"],
+    map_kwargs={"vmin": 0, "vmax": 1.5},
+    filename="Compare_CWLS_and_RCWLS.png",
+)
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Constrained WLS vs robust constrained WLS for DKI.
+#
+#
+#
+# .. note::
+#    See
+#    :ref:`here <sphx_glr_examples_built_reconstruction_reconst_robust_fitting.py>`
+#    for more information on constructing weight functions and outlier functions.
+#
 #
 # References
 # ----------
