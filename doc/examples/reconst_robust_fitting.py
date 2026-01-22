@@ -15,32 +15,26 @@ Here we show an example of multi-voxel outlier detection (MVOD)
 :footcite:t:`Coveney2025`.
 """
 
-from dipy.viz.plotting import compare_maps
-
 import numpy as np
 
 from dipy.core.gradients import gradient_table
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti, save_nifti
-
-from dipy.segment.mask import median_otsu
-
-import dipy.reconst.dti as dti
-
 from dipy.data import get_fnames
-
-from dipy.utils.volume import adjacency_calc
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
+import dipy.reconst.dti as dti
 from dipy.reconst.weights_method import (
-    weights_method_wls_m_est,
     simple_cutoff,
-    two_eyes_cutoff
+    weights_method_wls_m_est,
 )
+from dipy.segment.mask import median_otsu
+from dipy.utils.volume import adjacency_calc
+from dipy.viz.plotting import compare_maps
 
 ###############################################################################
-# We will use the same data from the DTI example.
+# We will use the same data from the
+# :ref:`DTI example <sphx_glr_examples_built_reconstruction_reconst_dti.py>`.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname =\
-    get_fnames(name="stanford_hardi")
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 
 data, affine = load_nifti(hardi_fname)
 
@@ -49,8 +43,7 @@ gtab = gradient_table(bvals, bvecs=bvecs)
 
 
 maskdata, mask = median_otsu(
-    data, vol_idx=range(10, 50), median_radius=3, numpass=1, autocrop=True,
-    dilate=2
+    data, vol_idx=range(10, 50), median_radius=3, numpass=1, autocrop=True, dilate=2
 )
 
 ###############################################################################
@@ -91,22 +84,22 @@ compare_maps(
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # WLS and RWLS on the corrupted data, compared to the original fit.
-
-
-###############################################################################
+#
+#
+#
 # We might be able to do better by designing our own weight function to use on
 # each iteration of IRLS, as well as by designing our own outlier rejection
 # functions.
 #
 # Here, for simplicity, we will load the
-# :func:`~dipy.reconst.weights_method.weights_method_wls_m_est `
+# :func:`~dipy.reconst.weights_method.weights_method_wls_m_est`
 # function (take a look at this function to understand how you might write your
 # own), but write our own outlier rejection function that depends on
 # neighbouring voxels.
 #
 # Firstly, let's calculate adjacency, respecting the mask. For each voxel, we
 # obtain the index (into a masked array of neighbouring voxels), with
-# voxel-distance less than ```cutoff```.
+# voxel-distance less than ``cutoff``.
 
 adjacency = adjacency_calc(mask.shape[0:2], mask=mask[:, :, 38:39], cutoff=3)
 
@@ -114,14 +107,23 @@ adjacency = adjacency_calc(mask.shape[0:2], mask=mask[:, :, 38:39], cutoff=3)
 # Now we will write a multi-voxel outlier detection (MVOD) function.
 
 
-def MVOD_cutoff(residuals, log_residuals, pred_sig,
-                design_matrix, leverages, C, cutoff,
-                linear, adjacency):
-    """ MVOD outlier detection (includes "two-eyes" SVOD condition as well)"""
+def MVOD_cutoff(
+    residuals,
+    log_residuals,
+    pred_sig,
+    design_matrix,
+    leverages,
+    C,
+    cutoff,
+    linear,
+    adjacency,
+):
+    """MVOD outlier detection (includes "two-eyes" SVOD condition as well)"""
 
     # SVOD: single voxel outlier detection
-    cond = simple_cutoff(residuals, log_residuals, pred_sig,
-                         design_matrix, leverages, C, cutoff)
+    cond = simple_cutoff(
+        residuals, log_residuals, pred_sig, design_matrix, leverages, C, cutoff
+    )
     # an alternative outlier definition for single voxels is:
     # cond = two_eyes_cutoff(residuals, log_residuals, pred_sig,
     #                        design_matrix, leverages, C, cutoff)
@@ -131,26 +133,25 @@ def MVOD_cutoff(residuals, log_residuals, pred_sig,
     MV_cond = np.zeros_like(cond)
     leverages[np.isclose(leverages, 1.0)] = 0.9999
     HAT_factor = np.sqrt(1 - leverages)
-    p = design_matrix.shape[1]
+    _p = design_matrix.shape[1]
     factor = 1.4826
 
     # if adjacency is None, then weights are the same for all voxels
     adj_full = False
     if adjacency is None:
-        adjacency = [[vox for vox in range(residuals.shape[0])]]
+        adjacency = [[list(range(residuals.shape[0]))]]
         adj_full = True
 
     for vox in range(len(adjacency)):
-
         if linear:
-            HAT, HAT_vox = HAT_factor[adjacency[vox]], HAT_factor[vox]
+            HAT, _HAT_vox = HAT_factor[adjacency[vox]], HAT_factor[vox]
         else:
-            HAT, HAT_vox = HAT_factor, HAT_factor
+            HAT, _HAT_vox = HAT_factor, HAT_factor
 
         # calculate C from all adjacent voxels
         residuals_vox = residuals[adjacency[vox]]
-        log_residuals_vox = log_residuals[adjacency[vox]]
-        pred_sig_vox = pred_sig[adjacency[vox]]
+        _log_residuals_vox = log_residuals[adjacency[vox]]
+        _pred_sig_vox = pred_sig[adjacency[vox]]
 
         yy = residuals_vox / HAT
         # C is a robust estimate of stdev of error
@@ -162,7 +163,7 @@ def MVOD_cutoff(residuals, log_residuals, pred_sig,
         RMSE = np.sqrt((yy**2).mean(axis=0))
         MED = np.median(RMSE)
         MAD = 1.4826 * np.median(np.abs(RMSE - MED))
-        cond_RMSE = (RMSE > (MED + MV_cutoff*MAD))
+        cond_RMSE = RMSE > (MED + MV_cutoff * MAD)
         MV_cond[vox] = MV_cond[vox] | cond_RMSE
 
         # multivariate outlier condition: SE
@@ -170,7 +171,7 @@ def MVOD_cutoff(residuals, log_residuals, pred_sig,
         SE = np.sum(yy, axis=0)  # sum of residuals
         MED = np.median(SE)
         MAD = 1.4826 * np.median(np.abs(SE - MED))
-        cond_SE = (SE > (MED + MV_cutoff*MAD)) | (SE < (MED - MV_cutoff*MAD))
+        cond_SE = (SE > (MED + MV_cutoff * MAD)) | (SE < (MED - MV_cutoff * MAD))
         MV_cond[vox] = MV_cond[vox] | cond_SE
 
     if adj_full:
@@ -178,9 +179,7 @@ def MVOD_cutoff(residuals, log_residuals, pred_sig,
 
     # check condition number that will result
     for vox in range(cond.shape[0]):
-        u, s, vh = np.linalg.svd(
-            design_matrix[np.invert(MV_cond[vox] | cond[vox])]
-        )
+        u, s, vh = np.linalg.svd(design_matrix[np.invert(MV_cond[vox] | cond[vox])])
         min_s = s.min()
         if min_s < 1e-2:
             pass
@@ -206,29 +205,33 @@ def MVOD_cutoff(residuals, log_residuals, pred_sig,
 def mvod(*args):
     return MVOD_cutoff(*args, linear=True, adjacency=adjacency)
 
+
 ###############################################################################
 # Now we are free to define our weights function. Even though we will use
-# ```weights_method_wls_m_est```, we will specify a new weights function that
+# ``weights_method_wls_m_est``, we will specify a new weights function that
 # defines the outlier condition, and other additional arguments, as follows:
 
 
 def wm(*args):
     return weights_method_wls_m_est(
-        *args, m_est="gm", cutoff=3, outlier_condition_func=mvod)
+        *args, m_est="gm", cutoff=3, outlier_condition_func=mvod
+    )
+
 
 ###############################################################################
 # This is because weights functions in DIPY_ must only take arguments
-# ```data, pred_sig, design_matrix, leverages, rdx, TDX, robust```
-# (and must return only ```w, robust```).
+# ``data, pred_sig, design_matrix, leverages, rdx, TDX, robust``
+# (and must return only ``w, robust``).
 
 tenmodel_rwls_mvod = dti.TensorModel(
-    gtab, fit_method="IRLS",
+    gtab,
+    fit_method="IRLS",
     return_S0_hat=True,
     weights_method=wm,
     fit_type="WLS",
-    num_iter=10)
-tenfit_rwls_mvod = tenmodel_rwls_mvod.fit(maskdata[:, :, 38:39],
-                                          mask=mask[:, :, 38:39])
+    num_iter=10,
+)
+tenfit_rwls_mvod = tenmodel_rwls_mvod.fit(maskdata[:, :, 38:39], mask=mask[:, :, 38:39])
 
 ###############################################################################
 # Robustly fitting (via IRLS) with the new weights function gives much better
@@ -246,16 +249,16 @@ compare_maps(
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # WLS and RWLS with MVOD on the corrupted data, compared to the original fit.
-
-###############################################################################
+#
+#
 # Of course you are free to write your own weights functions from scratch.
 # Since weights are calculated after each iteration of fitting over all masked
 # voxels, both the weights function and the outlier condition function can
 # calculate weights and define outliers for the current voxels using
 # information from other voxels.
-
-
-###############################################################################
+#
+#
+#
 #
 # References
 # ----------
