@@ -126,7 +126,7 @@ build = [
 all = ["dipy[build, dev, doc, style, optional, benchmark]"]
 style = ["ruff", "pre-commit"]
 horizon = ["fury>=0.10.0,<=0.12.0"]
-skyline = ["fury>=2.0.0a4", "imgui_bundle"]
+skyline = ["fury>=2.0.0a5", "imgui_bundle"]
 test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
 ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
 dev = [
