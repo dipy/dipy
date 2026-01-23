@@ -2,9 +2,7 @@ from pathlib import Path
 
 from fury.actor import Actor
 from fury.colormap import distinguishable_colormap
-from fury.io import load_image_texture
-from fury.lib import gfx
-import wgpu
+from fury.io import load_image_as_wgpu_texture_view
 
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO
@@ -36,12 +34,7 @@ class Skyline:
         )
 
         self.visualizations = []
-        texture = load_image_texture(str(LOGO))
-        texture._wgpu_usage = (
-            wgpu.TextureUsage.COPY_DST | wgpu.TextureUsage.TEXTURE_BINDING
-        )
-        gfx_texture = gfx.wgpu.GfxTextureView(texture)
-        gpu_texture = gfx.renderers.wgpu.engine.update.ensure_wgpu_object(gfx_texture)
+        gpu_texture = load_image_as_wgpu_texture_view(str(LOGO), self.window.device)
         logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
 
         self.UI_window = UIWindow(
