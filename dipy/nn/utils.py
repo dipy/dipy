@@ -143,6 +143,7 @@ def transform_img(
 ):
     """
     Function to transform images for Deep Learning models
+
     Parameters
     ----------
     image : np.ndarray
@@ -221,11 +222,12 @@ def transform_img(
 def recover_img(image, params, *, order=3):
     """
     Function to recover image from transform_img
+
     Parameters
     ----------
     image : np.ndarray
         Image to recover.
-    params : tuple
+    params : dict
         Parameters for recover_img function.
         Returned from transform_img.
     order : int, optional
