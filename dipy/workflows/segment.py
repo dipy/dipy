@@ -451,10 +451,12 @@ class ClassifyTissueFlow(Workflow):
             Path to the b-values file. Required for 'dam' method.
         method : string, optional
             Method to use for tissue extraction. Options are:
-                - 'hmrf': Markov Random Fields modeling approach.
-                - 'dam': Directional Average Maps, proposed by :footcite:p:`Cheng2020`.
-                - 'synthseg': SynthSeg method based on Freesurfer's implementation.
-                proposed by :footcite:p:`Billot2023`.
+
+            - 'hmrf': Markov Random Fields modeling approach.
+            - 'dam': Directional Average Maps, proposed by
+              :footcite:p:`Cheng2020`.
+            - 'synthseg': SynthSeg method based on Freesurfer's implementation,
+              proposed by :footcite:p:`Billot2023`.
 
             'hmrf' method is recommended for T1w images, while 'dam' method is
             recommended for DWI Multishell images (single shell are not recommended).
