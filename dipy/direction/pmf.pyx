@@ -6,6 +6,7 @@ import numpy as np
 cimport numpy as cnp
 
 from dipy.reconst import shm
+from dipy.direction.peak_direction cimport PeakDirectionGen
 
 from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from libc.stdlib cimport malloc, free
@@ -154,4 +155,79 @@ cdef class SHCoeffPmfGen(PmfGen):
 
         free(coeff)
         return pmf_value
+
+
+cdef class SimplePeakGen(PmfGen):
+    """Wrapper class to make PeakDirectionGen compatible with PmfGen interface.
+
+    This class allows sphere-based peak data (EUDX-style) to work with the
+    generic tracking framework. It wraps a PeakDirectionGen instance and
+    provides the PmfGen interface required by the tractogram generator.
+
+    Parameters
+    ----------
+    peak_data : PeakDirectionGen
+        Peak direction data container with sphere-based representation.
+    sphere : Sphere
+        Sphere object (used for interface compatibility).
+
+    Notes
+    -----
+    This wrapper enables EUDX tracking to use the parallel generic_tracking
+    infrastructure while maintaining backward compatibility with sphere-based
+    peak representation.
+    """
+
+    def __init__(self, PeakDirectionGen peak_data, object sphere):
+        """Initialize SimplePeakGen with peak data.
+
+        Parameters
+        ----------
+        peak_data : PeakDirectionGen
+            Peak data container.
+        sphere : Sphere
+            Sphere object.
+        """
+        cdef int i
+
+        cdef cnp.ndarray dummy_data = np.zeros((1, 1, 1, sphere.vertices.shape[0]))
+        PmfGen.__init__(self, dummy_data, sphere)
+
+        self.peak_data = peak_data
+        self.peak_indices_ptr = &peak_data.peak_indices[0, 0, 0, 0]
+        self.peak_values_ptr = &peak_data.peak_values[0, 0, 0, 0]
+        self.odf_vertices_ptr = &peak_data.odf_vertices[0, 0]
+        self.max_peaks = peak_data.max_peaks
+
+        for i in range(4):
+            self.peak_shape[i] = peak_data.shape[i]
+            self.peak_strides[i] = peak_data.strides[i]
+
+    cdef double* get_pmf_c(self, double* point, double* out) noexcept nogil:
+        """Get PMF at a point.
+
+        Parameters
+        ----------
+        point : double*, shape (3,)
+            Query position in voxel coordinates.
+        out : double*, shape (N_vertices,)
+            Output PMF values.
+
+        Returns
+        -------
+        out : double*
+            Pointer to output array.
+        """
+        memset(out, 0, self.pmf.shape[0] * sizeof(double))
+        return out
+
+    cdef double get_pmf_value_c(self, double* point, double* xyz) noexcept nogil:
+        """Get PMF value in a direction.
+
+        Returns
+        -------
+        value : double
+            PMF value.
+        """
+        return 0.0
 
