@@ -21,7 +21,7 @@ import numpy as np
 import nibabel as nib
 from dipy.stats.analysis import assignment_map
 from dipy.io.streamline import load_tractogram
-from dipy.stats.analysis import buan_bundle_profile_lite
+from dipy.stats.analysis import buan_profile
 from fury import actor, window
 
 ###############################################################################
@@ -98,7 +98,7 @@ if interactive:
 ###############################################################################
 # Compute BUAN weighted mean bundle profile
 
-profile = buan_bundle_profile_lite(
+profile = buan_profile(
     model_bundle=model_bundle,
     bundle=bundle_mni,
     orig_bundle=orig_bundle,
