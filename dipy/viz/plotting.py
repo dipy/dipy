@@ -239,7 +239,7 @@ def compare_qti_maps(
     plt.show()
 
 
-def bundle_shape_profile(x, shape_profile, std):
+def bundle_shape_profile(x, shape_profile, std=None):
     """Plot bundlewarp bundle shape profile.
 
     Parameters
