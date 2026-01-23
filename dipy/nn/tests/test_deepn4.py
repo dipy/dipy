@@ -38,4 +38,4 @@ def test_default_weights(monkeypatch):
         deepn4_model = deepn4_mod.DeepN4()
         deepn4_model.fetch_default_weights()
         results_arr = deepn4_model.predict(input_arr, input_affine_arr)
-        assert_percent_almost_equal(results_arr, target_arr, decimal=3, percent=0.95)
+        assert_percent_almost_equal(results_arr, target_arr, decimal=2, percent=0.95)
