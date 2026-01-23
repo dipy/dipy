@@ -150,7 +150,7 @@ def assignment_map(target_bundle, model_bundle, no_disks):
 
 
 def buan_profile(model_bundle, bundle, orig_bundle, metric,
-                             affine, no_disks=100):
+                             affine, *, no_disks=100):
     """
     Create BUAN weighted mean bundle profiles (lite).
     
@@ -164,14 +164,15 @@ def buan_profile(model_bundle, bundle, orig_bundle, metric,
         The input bundle in common space. 
     orig_bundle : Streamlines
         The input bundle in native space. 
-    metric : 3D Volume
-        Path to the input dti metric or/and peak file. This metric will be
+    metric : ndarray
+        Dti metric such as FA. This metric will be
         projected onto the bundle in native space to create bundle profiles.
-    affine : 2D array
+    affine : ndarray
         Affine metrix for transforming streamlines to native space.
-    no_disks : integer, optional
+    no_disks : int, optional
         Number of alongtract segments/disks used for dividing bundle into 
         segments.
+
      References
      ----------
      .. footbibliography::
@@ -179,7 +180,7 @@ def buan_profile(model_bundle, bundle, orig_bundle, metric,
 
 
     if len(model_bundle) == 0 or len(bundle) == 0 or len(orig_bundle) == 0:
-        raise ValueError("The bundle contains no streamlines")
+        raise ValueError("One of the bundles contains no streamlines")
         
     dist, indx = assignment_map(bundle, model_bundle, no_disks)
     ind = np.array(indx)
@@ -200,21 +201,20 @@ def buan_profile(model_bundle, bundle, orig_bundle, metric,
     
 
     for i in range(no_disks):
-        # Mask for current index (segment)
+        
         mask = ind == i
         
-        # Further mask to ignore NaNs in values
-        valid_mask = mask & ~np.isnan(values)
+        valid_mask = mask.copy()
+        
+        valid_mask[np.isnan(values)] = False
         
         if np.any(valid_mask):
-            # Select valid values and weights
+            
             vals = values[valid_mask]
             wts = weights[valid_mask]
             
-            # Normalize weights
             wts /= np.sum(wts)
             
-            # Compute weighted mean
             weighted_mean = np.sum(wts * vals)
         else:
             weighted_mean = np.nan 
