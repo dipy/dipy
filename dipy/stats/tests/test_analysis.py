@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.testing as npt
 
-from dipy.stats.analysis import afq_profile, gaussian_weights, buan_bundle_profile_lite
+from dipy.stats.analysis import afq_profile, gaussian_weights, buan_profile
 from dipy.tracking.streamline import Streamlines
 
 
@@ -137,7 +137,7 @@ def test_afq_profile():
     npt.assert_raises(ValueError, afq_profile, data, empty_bundle, np.eye(4))
 
 
-def test_buan_bundle_profile_lite():
+def test_buan_profile():
     data = np.ones((40, 40, 40), dtype=float)
 
     # Create 10 streamlines 
@@ -153,14 +153,14 @@ def test_buan_bundle_profile_lite():
 
     affine = np.eye(4)
 
-    profile = buan_bundle_profile_lite(
+    profile = buan_profile(
         model_bundle, bundle, orig_bundle, data, affine, no_disks=10
     )
     npt.assert_equal(profile.shape, (10,))
     npt.assert_almost_equal(profile, np.ones(10))
 
     # Test with a different number of disks/segments
-    profile = buan_bundle_profile_lite(
+    profile = buan_profile(
         model_bundle, bundle, orig_bundle, data, affine, no_disks=5
     )
     npt.assert_equal(profile.shape, (5,))
@@ -168,7 +168,7 @@ def test_buan_bundle_profile_lite():
 
     # Test NaN handling: if data is all NaNs, output should be all NaNs
     data_nan = np.ones((40, 40, 40), dtype=float) * np.nan
-    profile = buan_bundle_profile_lite(
+    profile = buan_profile(
         model_bundle, bundle, orig_bundle, data_nan, affine, no_disks=10
     )
     npt.assert_equal(profile.shape, (10,))
@@ -178,7 +178,7 @@ def test_buan_bundle_profile_lite():
     empty_bundle = Streamlines([])
     npt.assert_raises(
         ValueError,
-        buan_bundle_profile_lite,
+        buan_profile,
         model_bundle,
         empty_bundle,
         empty_bundle,

@@ -149,7 +149,7 @@ def assignment_map(target_bundle, model_bundle, no_disks):
     return dist, indx
 
 
-def buan_bundle_profile_lite(model_bundle, bundle, orig_bundle, metric,
+def buan_profile(model_bundle, bundle, orig_bundle, metric,
                              affine, no_disks=100):
     """
     Create BUAN weighted mean bundle profiles (lite).
