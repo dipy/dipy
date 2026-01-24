@@ -36,6 +36,7 @@ from dipy.reconst.dti import (
     robust_fit_tensor_wls,
 )
 from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.dkispeed import mean_kurtosis_analytical
 from dipy.reconst.recspeed import local_maxima
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.reconst.vec_val_sum import vec_val_vect
@@ -832,11 +833,11 @@ def mean_kurtosis(
         KV = apparent_kurtosis_coef(dki_params, sph, min_kurtosis=min_kurtosis)
         MK = np.mean(KV, axis=-1)
 
-    if min_kurtosis is not None:
-        MK = MK.clip(min=min_kurtosis)
+        if min_kurtosis is not None:
+            MK = MK.clip(min=min_kurtosis)
 
-    if max_kurtosis is not None:
-        MK = MK.clip(max=max_kurtosis)
+        if max_kurtosis is not None:
+            MK = MK.clip(max=max_kurtosis)
 
     return MK.reshape(outshape)
 

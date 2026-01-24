@@ -8,6 +8,7 @@ cython_sources = [
   ]
 
 cython_headers = [
+  'dkispeed.pxd',
   '_force_heap.pxd',
   '_force_search.pxd',
   'dkispeed.pxd',
