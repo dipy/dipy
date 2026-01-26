@@ -24,6 +24,9 @@ if not IMAGES.exists():
     IMAGES.mkdir(parents=True, exist_ok=True)
 
 LOGO = IMAGES / "dipy-logo.png"
+if not LOGO.exists():
+    logger.info("Downloading Skyline UI logo...")
+    urlretrieve(f"{DIPY_DATA_MIRROR}/dipy-skyline/assets/images/dipy-logo.png", LOGO)
 
 FONT = FONTS / "Inter_18pt-Regular.ttf"
 if not FONT.exists():
