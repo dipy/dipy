@@ -159,7 +159,7 @@ benchmark = [
 ]
 
 [project.optional-dependencies]
-horizon = ["fury>=0.10.0,<=0.12.0"]
+horizon = ["fury>=0.10.0,<=1.0.0"]
 skyline = ["fury>=2.0.0a5", "imgui_bundle"]
 viz = ["fury>0.12.0", "matplotlib", "imgui_bundle"]
 ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
