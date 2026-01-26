@@ -167,7 +167,10 @@ def render_section_header(
     draw_list.add_text((pos_x, pos_y), text_color, info_icon)
     pos_x += info_icon_size.x + padding_x
 
-    draw_list.add_text((pos_x, pos_y), collapse_color, arrow_icon)
+    arrow_pos = (pos_x, pos_y)
+    arrow_icon_min, arrow_icon_max = _calculate_hit_box(arrow_pos, arrow_icon_size)
+    arrow_icon_hovered = imgui.is_mouse_hovering_rect(arrow_icon_min, arrow_icon_max)
+    draw_list.add_text(arrow_pos, collapse_color, arrow_icon)
     draw_list.add_rect_filled(
         (label_pos[0], height + start.y - 2),
         end,
@@ -180,15 +183,19 @@ def render_section_header(
     imgui.invisible_button("section_header_button", (total_width, height))
 
     is_close = False
+    is_changed = False
     if show_icon_hovered and imgui.is_mouse_clicked(imgui.MouseButton_.left):
         is_visible = not is_visible
     elif close_icon_hovered and imgui.is_mouse_clicked(imgui.MouseButton_.left):
         is_close = True
-    elif imgui.is_item_clicked():
+    elif arrow_icon_hovered and imgui.is_mouse_clicked(imgui.MouseButton_.left):
         is_open = not is_open
+    elif imgui.is_item_clicked():
+        is_changed = True
+        is_open = True
 
     imgui.pop_id()
-    return is_open, is_visible, is_close
+    return is_open, is_visible, is_close, is_changed
 
 
 def render_group(label, items, *, row_height=26, label_width=36, line_indent=8):

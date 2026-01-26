@@ -1,8 +1,9 @@
 from pathlib import Path
 
-from fury.actor import Actor
+from fury.actor import Actor, show_slices
 from fury.colormap import distinguishable_colormap
 from fury.io import load_image_as_wgpu_texture_view
+import numpy as np
 
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO
@@ -33,7 +34,10 @@ class Skyline:
             ],
         )
 
-        self.visualizations = []
+        self._image_visualizations = []
+        self._peak_visualizations = []
+        self._roi_visualizations = []
+        self._surface_visualizations = []
         gpu_texture = load_image_as_wgpu_texture_view(str(LOGO), self.window.device)
         logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
 
@@ -56,7 +60,7 @@ class Skyline:
                     render_callback=self.before_render,
                     interpolation="linear",
                 )
-                self.visualizations.append(image3d)
+                self._image_visualizations.append(image3d)
                 self.UI_window.add(fname, image3d.renderer)
         if peaks is not None:
             for idx, (pam, path) in enumerate(peaks):
@@ -67,7 +71,7 @@ class Skyline:
                     affine=pam.affine,
                     render_callback=self.before_render,
                 )
-                self.visualizations.append(peak3d)
+                self._peak_visualizations.append(peak3d)
                 self.UI_window.add(fname, peak3d.renderer)
         if rois is not None:
             for idx, (roi, affine, path) in enumerate(rois):
@@ -80,7 +84,7 @@ class Skyline:
                     color=color,
                     render_callback=self.before_render,
                 )
-                self.visualizations.append(roi3d)
+                self._roi_visualizations.append(roi3d)
                 self.UI_window.add(fname, roi3d.renderer)
         if surfaces is not None:
             for idx, (verts, faces, path) in enumerate(surfaces):
@@ -93,9 +97,13 @@ class Skyline:
                     color=color,
                     render_callback=self.before_render,
                 )
-                self.visualizations.append(surface3d)
+                self._surface_visualizations.append(surface3d)
                 self.UI_window.add(fname, surface3d.renderer)
-        self.window._imgui.set_gui(self.UI_window.render)
+        self.active_image = None
+        if self._image_visualizations:
+            self._image_visualizations[0].active = True
+            self.active_image = self._image_visualizations[0]
+        self.window._imgui.set_gui(self.draw_ui)
         self.before_render()
         self.window.start()
 
@@ -116,6 +124,23 @@ class Skyline:
             if viz.name not in self.UI_window.sections:
                 self.visualizations.remove(viz)
 
+    def _arrange_image_actors(self):
+        prev_active = self.active_image
+        for viz in self._image_visualizations:
+            if viz.active:
+                self.active_image = viz
+
+        if prev_active is not None and prev_active != self.active_image:
+            prev_active.state = np.round(prev_active.state)
+            show_slices(prev_active.actor, prev_active.state)
+            self.active_image.state = np.round(self.active_image.state) + 0.01
+            show_slices(self.active_image.actor, self.active_image.state)
+            self.window.render()
+
+    def draw_ui(self):
+        self.UI_window.render()
+        self._arrange_image_actors()
+
     def before_render(self):
         self._refresh_ui()
         self._refresh_actors()
@@ -130,6 +155,15 @@ class Skyline:
         ]
         self.UI_window.size = (self.ui_size[0], size[1])
         self.window.render()
+
+    @property
+    def visualizations(self):
+        return (
+            self._image_visualizations
+            + self._peak_visualizations
+            + self._roi_visualizations
+            + self._surface_visualizations
+        )
 
 
 def skyline(
