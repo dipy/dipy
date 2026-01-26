@@ -1077,6 +1077,13 @@ class ClusterStreamline3D(Visualization):
 
         imgui.spacing()
         imgui.spacing()
+        warning_message(
+            "We recommend using type 'Line' for better"
+            "\nperformance with large tractograms."
+        )
+
+        imgui.spacing()
+        imgui.spacing()
 
         threshold_value = (
             self._pending_thr if self._pending_thr is not None else self.thr
