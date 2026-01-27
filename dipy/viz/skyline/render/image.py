@@ -78,7 +78,7 @@ class Image3D(Visualization):
                 affine=self.affine,
                 interpolation=self.interpolation,
                 value_range=self.value_range,
-                alpha_mode="solid",
+                alpha_mode="blend",
                 depth_write=True,
             )
         else:
@@ -88,12 +88,12 @@ class Image3D(Visualization):
                 affine=self.affine,
                 interpolation=self.interpolation,
                 value_range=self.value_range,
-                alpha_mode="solid",
+                alpha_mode="blend",
                 depth_write=True,
             )
         self._apply_colormap(self.colormap)
         self.bounds = self._slicer.get_bounding_box()
-        self.state = np.mean(self.bounds, axis=0).astype(int)
+        self.state = np.mean(self.bounds, axis=0)
         show_slices(self._slicer, self.state)
         self.render()
 
@@ -104,8 +104,12 @@ class Image3D(Visualization):
 
     def _apply_colormap(self, colormap):
         self.colormap = colormap
-        for actor in self._slicer.children:
-            actor.material.map = getattr(gfx.cm, self.colormap.lower())
+        if self.colormap.lower() == "gray":
+            for actor in self._slicer.children:
+                actor.material.map = None
+        else:
+            for actor in self._slicer.children:
+                actor.material.map = getattr(gfx.cm, self.colormap.lower())
 
     @property
     def actor(self):
@@ -124,12 +128,6 @@ class Image3D(Visualization):
         )
         if changed:
             self.opacity = new
-            if self.opacity == 100:
-                for actor in self.actor.children:
-                    actor.material.alpha_mode = "solid"
-            else:
-                for actor in self.actor.children:
-                    actor.material.alpha_mode = "bayer"
             set_group_opacity(self._slicer, self.opacity / 100.0)
 
         imgui.spacing()
@@ -148,7 +146,7 @@ class Image3D(Visualization):
                     thin_slider,
                     (label, self.state[axis], min_bound, max_bound),
                     {
-                        "value_type": "int",
+                        "value_type": "float",
                         "text_format": ".0f",
                         "step": 1,
                     },
