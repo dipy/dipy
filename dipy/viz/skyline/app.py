@@ -101,8 +101,9 @@ class Skyline:
                 self.UI_window.add(fname, surface3d.renderer)
         self.active_image = None
         if self._image_visualizations:
-            self._image_visualizations[0].active = True
-            self.active_image = self._image_visualizations[0]
+            self._image_visualizations[-1].active = True
+            self.active_image = self._image_visualizations[-1]
+            self._arrange_image_actors()
         self.window._imgui.set_gui(self.draw_ui)
         self.before_render()
         self.window.start()
@@ -125,17 +126,16 @@ class Skyline:
                 self.visualizations.remove(viz)
 
     def _arrange_image_actors(self):
-        prev_active = self.active_image
-        for viz in self._image_visualizations:
+        for idx, viz in enumerate(self._image_visualizations):
             if viz.active:
                 self.active_image = viz
+            else:
+                show_slices(viz.actor, np.round(viz.state) + (idx * 0.002))
 
-        if prev_active is not None and prev_active != self.active_image:
-            prev_active.state = np.round(prev_active.state)
-            show_slices(prev_active.actor, prev_active.state)
-            self.active_image.state = np.round(self.active_image.state) + 0.01
-            show_slices(self.active_image.actor, self.active_image.state)
-            self.window.render()
+        show_slices(
+            self.active_image.actor,
+            self.active_image.state + (len(self._image_visualizations) * 0.002),
+        )
 
     def draw_ui(self):
         self.UI_window.render()
