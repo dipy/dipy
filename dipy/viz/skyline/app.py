@@ -3,7 +3,6 @@ from pathlib import Path
 from fury.actor import Actor, show_slices
 from fury.colormap import distinguishable_colormap
 from fury.io import load_image_as_wgpu_texture_view
-import numpy as np
 
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO
@@ -11,6 +10,7 @@ from dipy.viz.skyline.render.image import Image3D
 from dipy.viz.skyline.render.peak import Peak3D
 from dipy.viz.skyline.render.renderer import create_window
 from dipy.viz.skyline.render.roi import ROI3D
+from dipy.viz.skyline.render.streamline import Streamline3D
 from dipy.viz.skyline.render.surface import Surface
 
 
@@ -22,6 +22,7 @@ class Skyline:
         peaks=None,
         rois=None,
         surfaces=None,
+        tractograms=None,
     ):
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
@@ -38,6 +39,7 @@ class Skyline:
         self._peak_visualizations = []
         self._roi_visualizations = []
         self._surface_visualizations = []
+        self._tractogram_visualizations = []
         gpu_texture = load_image_as_wgpu_texture_view(str(LOGO), self.window.device)
         logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
 
@@ -99,10 +101,24 @@ class Skyline:
                 )
                 self._surface_visualizations.append(surface3d)
                 self.UI_window.add(fname, surface3d.renderer)
+        if tractograms is not None:
+            for idx, (sft, path) in enumerate(tractograms):
+                color = next(self._color_gen)
+                fname = Path(path).name if path is not None else f"Tractogram {idx}"
+                streamline3d = Streamline3D(
+                    fname,
+                    sft,
+                    line_type="tube",
+                    color=color,
+                    render_callback=self.before_render,
+                )
+                self._tractogram_visualizations.append(streamline3d)
+                self.UI_window.add(fname, streamline3d.renderer)
         self.active_image = None
         if self._image_visualizations:
-            self._image_visualizations[0].active = True
-            self.active_image = self._image_visualizations[0]
+            self._image_visualizations[-1].active = True
+            self.active_image = self._image_visualizations[-1]
+            self._arrange_image_actors()
         self.window._imgui.set_gui(self.draw_ui)
         self.before_render()
         self.window.start()
@@ -125,21 +141,21 @@ class Skyline:
                 self.visualizations.remove(viz)
 
     def _arrange_image_actors(self):
-        prev_active = self.active_image
         for viz in self._image_visualizations:
             if viz.active:
+                show_slices(
+                    self.active_image.actor,
+                    self.active_image.state,
+                )
                 self.active_image = viz
-
-        if prev_active is not None and prev_active != self.active_image:
-            prev_active.state = np.round(prev_active.state)
-            show_slices(prev_active.actor, prev_active.state)
-            self.active_image.state = np.round(self.active_image.state) + 0.01
-            show_slices(self.active_image.actor, self.active_image.state)
-            self.window.render()
+        show_slices(
+            self.active_image.actor,
+            self.active_image.state + (len(self._image_visualizations) * 0.1),
+        )
 
     def draw_ui(self):
         self.UI_window.render()
-        self._arrange_image_actors()
+        self.active_image and self._arrange_image_actors()
 
     def before_render(self):
         self._refresh_ui()
@@ -163,11 +179,18 @@ class Skyline:
             + self._peak_visualizations
             + self._roi_visualizations
             + self._surface_visualizations
+            + self._tractogram_visualizations
         )
 
 
 def skyline(
-    *, visualizer_type="standalone", images=None, peaks=None, rois=None, surfaces=None
+    *,
+    visualizer_type="standalone",
+    images=None,
+    peaks=None,
+    rois=None,
+    surfaces=None,
+    tractograms=None,
 ):
     """Launch Skyline GUI.
 
@@ -187,6 +210,8 @@ def skyline(
         List of path for each ROI to be added to the Skyline viewer.
     surfaces : list, optional
         List of path for each surface to be added to the Skyline viewer.
+    tractograms : list, optional
+        List of path for each tractogram to be added to the Skyline viewer.
     """
     Skyline(
         visualizer_type=visualizer_type,
@@ -194,4 +219,5 @@ def skyline(
         peaks=peaks,
         rois=rois,
         surfaces=surfaces,
+        tractograms=tractograms,
     )

@@ -4,7 +4,8 @@ python_sources = [
   'image.py',
   'peak.py',
   'roi.py',
-  'surface.py'
+  'surface.py',
+  'streamline.py'
   ]
 
 py3.install_sources(
