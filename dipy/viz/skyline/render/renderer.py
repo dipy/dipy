@@ -11,6 +11,7 @@ class Visualization:
     def __init__(self, name, render_callback):
         self._render_callback = render_callback
         self.name = name
+        self.active = False
 
     def render(self):
         if self._render_callback is not None:
@@ -30,11 +31,11 @@ class Visualization:
         is_open : bool
             If the UI section is open
         """
-        is_open, is_visible, is_removed = render_section_header(
+        is_open, is_visible, is_removed, is_selected = render_section_header(
             name, is_open=is_open, is_visible=self.actor.visible
         )
         self.actor.visible = is_visible
-
+        self.active = is_selected
         if is_open and is_visible:
             padding = 20
             imgui.begin_group()
