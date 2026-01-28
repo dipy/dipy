@@ -299,35 +299,26 @@ class SkylineFlow(Workflow):
         return "skyline"
 
     def run(
-        self, *, images=None, peaks=None, rois=None, surfaces=None, tractograms=None
+        self,
+        input_files,
+        *,
+        rois=None,
     ):
         """Launch Skyline GUI.
 
         Parameters
         ----------
-        images : variable str, optional
-            Tuple of path for each image to be added to the Skyline viewer.
-        peaks : variable str, optional
-            Tuple of path for each peak to be added to the Skyline viewer.
+        input_files : variable str, optional
+            Tuple of path for each image, peak, surface or tractogram to be added to
+            the Skyline viewer.
         rois : variable str, optional
             Tuple of path for each ROI to be added to the Skyline viewer.
-        surfaces : variable str, optional
-            Tuple of path for each surface to be added to the Skyline viewer.
-        tractograms : variable str, optional
-            Tuple of path for each tractogram to be added to the Skyline viewer.
+
         """
         super(SkylineFlow, self).__init__(force=True)
 
-        if images is None:
-            images = []
-        if peaks is None:
-            peaks = []
         if rois is None:
             rois = []
-        if surfaces is None:
-            surfaces = []
-        if tractograms is None:
-            tractograms = []
 
         skyline_images = []
         skyline_peaks = []
@@ -335,46 +326,22 @@ class SkylineFlow(Workflow):
         skyline_surfaces = []
         skyline_tractograms = []
 
-        for fname in images:
+        io_it = self.get_io_iterator()
+        for input_output in io_it:
+            print(input_output)
+            fname = input_output
+
+            logger.info(f"Loading file ... \n {fname}\n")
             _, ext = split_filename_extension(fname)
             ext = ext.lower()
+
             if ext in [".nii.gz", ".nii"]:
                 data, affine = load_nifti(fname)
                 skyline_images.append((data, affine, fname))
-            else:
-                logger.error(
-                    f"File extension '{ext}' is not supported for images in Skyline."
-                )
-                sys.exit(1)
-
-        for fname in peaks:
-            _, ext = split_filename_extension(fname)
-            ext = ext.lower()
-            if ext == ".pam5":
+            elif ext == ".pam5":
                 pam = load_pam(fname)
                 skyline_peaks.append((pam, fname))
-            else:
-                logger.error(
-                    f"File extension '{ext}' is not supported for peaks in Skyline."
-                )
-                sys.exit(1)
-
-        for fname in rois:
-            _, ext = split_filename_extension(fname)
-            ext = ext.lower()
-            if ext in [".nii.gz", ".nii"]:
-                data, affine = load_nifti(fname)
-                skyline_rois.append((data, affine, fname))
-            else:
-                logger.error(
-                    f"File extension '{ext}' is not supported for ROIs in Skyline."
-                )
-                sys.exit(1)
-
-        for fname in surfaces:
-            _, ext = split_filename_extension(fname)
-            ext = ext.lower()
-            if ext == ".pial":
+            elif ext == ".pial":
                 surface = load_pial(fname)
                 if surface:
                     vertices, faces = surface
@@ -387,22 +354,22 @@ class SkylineFlow(Workflow):
                     skyline_surfaces.append((vertices, faces, fname))
                 else:
                     warn(f"{fname} does not have any surface geometry.", stacklevel=2)
-            else:
-                logger.error(
-                    f"File extension '{ext}' is not supported for surfaces in Skyline."
-                )
-                sys.exit(1)
-
-        for fname in tractograms:
-            _, ext = split_filename_extension(fname)
-            ext = ext.lower()
-            if ext in [".trk", ".trx"]:
+            elif ext in [".trk", ".trx"]:
                 sft = load_tractogram(fname, "same", bbox_valid_check=False)
                 skyline_tractograms.append((sft, fname))
             else:
+                logger.error(f"File extension '{ext}' is not supported in Skyline.")
+                sys.exit(1)
+
+        for fname in rois:
+            _, ext = split_filename_extension(fname)
+            ext = ext.lower()
+            if ext in [".nii.gz", ".nii"]:
+                data, affine = load_nifti(fname)
+                skyline_rois.append((data, affine, fname))
+            else:
                 logger.error(
-                    f"File extension '{ext}' is not supported for "
-                    "tractograms in Skyline."
+                    f"File extension '{ext}' is not supported for ROIs in Skyline."
                 )
                 sys.exit(1)
 

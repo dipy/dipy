@@ -108,8 +108,9 @@ class Skyline:
                 streamline3d = Streamline3D(
                     fname,
                     sft,
-                    line_type="tube",
+                    line_type="line",
                     color=color,
+                    device=self.window.device,
                     render_callback=self.before_render,
                 )
                 self._tractogram_visualizations.append(streamline3d)
