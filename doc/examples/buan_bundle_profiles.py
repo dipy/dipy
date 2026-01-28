@@ -21,6 +21,7 @@ import nibabel as nib
 from dipy.stats.analysis import assignment_map
 from dipy.io.streamline import load_tractogram
 from dipy.stats.analysis import buan_profile
+from dipy.viz.plotting import bundle_profile_plot
 from fury import actor, window
 
 ###############################################################################
@@ -109,15 +110,10 @@ profile = buan_profile(
 ###############################################################################
 # Plot the along-tract FA profile
 
-import matplotlib.pyplot as plt
-
-plt.figure(figsize=(8, 4))
-plt.plot(profile, lw=2)
-plt.xlabel("Along-tract segment")
-plt.ylabel("Fractional Anisotropy (FA)")
-plt.title("BUAN Weighted Mean FA Profile (AF_L)")
-plt.tight_layout()
-plt.savefig("af_l_buan_profile.png", dpi=300)
+x = np.arange(n_segments)
+bundle_profile_plot(x, profile, ylabel='Fractional Anisotropy (FA)',
+                    title='BUAN Weighted Mean FA Profile (AF_L)',
+                    save_path='af_l_buan_profile.png')
 
 ###############################################################################
 # References
