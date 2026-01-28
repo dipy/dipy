@@ -1,11 +1,8 @@
-import sys
-
 from fury.actor import set_group_opacity, show_slices, volume_slicer
 from fury.lib import gfx
 from imgui_bundle import imgui
 import numpy as np
 
-from dipy.utils.logging import logger
 from dipy.viz.skyline.UI.elements import (
     dropdown,
     render_group,
@@ -39,11 +36,10 @@ class Image3D(Visualization):
             and self.dwi.ndim == 4
             and (self.dwi.shape[3] != 3 and self.dwi.shape[3] != 4)
         ):
-            logger.error(
+            ValueError(
                 "When specifying rgb=True, the last dimension of the volume "
                 "must be 3 (RGB) or 4 (RGBA)."
             )
-            sys.exit(1)
         self.rgb = rgb
 
         self._has_directions = self.dwi.ndim == 4 and not rgb
