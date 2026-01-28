@@ -184,5 +184,5 @@ def test_buan_profile():
         empty_bundle,
         data,
         affine,
-        10,
+        no_disks=10,
     )
