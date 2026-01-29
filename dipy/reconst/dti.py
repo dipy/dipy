@@ -1337,6 +1337,8 @@ def iter_fit_tensor(*, step=1e4):
                 weights = weights.reshape(-1, weights.shape[-1])
             if design_matrix.shape[-1] == 22:  # DKI
                 sz = 22
+            elif design_matrix.shape[-1] == 28:  # QTI
+                sz = 28 #if kwargs.get("return_lower_triangular", False) 
             else:  # DTI
                 sz = 7 if kwargs.get("return_lower_triangular", False) else 12
             dtiparams = np.empty((size, sz), dtype=np.float64)
@@ -1357,6 +1359,10 @@ def iter_fit_tensor(*, step=1e4):
                         )
                     )
                 else:
+                    D, E = fit_tensor(
+                        design_matrix, data[i : i + step], *args, **kwargs
+                    )
+                    print("D.shape in the wrapper", D.shape)
                     dtiparams[i : i + step], extra_i = fit_tensor(
                         design_matrix, data[i : i + step], *args, **kwargs
                     )
@@ -1481,6 +1487,8 @@ def wls_fit_tensor(
     else:
         w = np.sqrt(weights)
 
+    print(w.shape, data.shape, log_s.shape)
+
     # the weighted problem design_matrix * w is much larger (differs per voxel)
     if return_leverages is False:
         fit_result = np.einsum(
@@ -1498,6 +1506,7 @@ def wls_fit_tensor(
         leverages = {"leverages": leverages}
 
     if return_lower_triangular:
+        print("fit_results shape:", fit_result.shape)
         return fit_result, leverages
 
     if return_S0_hat:
@@ -2193,12 +2202,14 @@ def iterative_fit_tensor(
     # Detect if number of parameters corresponds to dti
     npa = p + 5
     dti = npa == 12
+    qti = p == 28
 
     w, robust = None, None  # w = None means wls_fit_tensor uses WLS weights
     D, extra, leverages = None, None, None  # initialize, for clarity
     TDX = num_iter
     for rdx in range(1, TDX + 1):
         if rdx > 1:
+            print("rdx > 1:", design_matrix.shape, D.shape)
             log_pred_sig = np.dot(design_matrix, D.T).T
             pred_sig = np.exp(log_pred_sig)
             w, robust = weights_method(
@@ -2214,6 +2225,7 @@ def iterative_fit_tensor(
                 return_leverages=True,
             )
             leverages = extra["leverages"]  # for WLS, update leverages
+            print("here what is D shape?", D.shape)  # FIXME: proves it's the iter wrapper that is messing shape up
 
         if fit_type == "NLLS":
             D, extra = nlls_fit_tensor(
@@ -2227,6 +2239,11 @@ def iterative_fit_tensor(
             )
             if rdx == 1:  # for NLLS, leverages from OLS, so they never change
                 leverages = extra["leverages"]
+
+    print("D.shape:", D.shape)
+    if qti:
+        print("here for QTI return?")
+        return D
 
     # Convert diffusion tensor parameters to the evals and the evecs:
     evals, evecs = decompose_tensor(
