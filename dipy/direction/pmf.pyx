@@ -6,7 +6,6 @@ import numpy as np
 cimport numpy as cnp
 
 from dipy.reconst import shm
-from dipy.direction.peak_direction cimport PeakDirectionGen
 
 from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from libc.stdlib cimport malloc, free
@@ -158,50 +157,83 @@ cdef class SHCoeffPmfGen(PmfGen):
 
 
 cdef class SimplePeakGen(PmfGen):
-    """Wrapper class to make PeakDirectionGen compatible with PmfGen interface.
+    """PmfGen subclass for sphere-based peak data (EUDX-style tracking).
 
-    This class allows sphere-based peak data (EUDX-style) to work with the
-    generic tracking framework. It wraps a PeakDirectionGen instance and
-    provides the PmfGen interface required by the tractogram generator.
+    This class stores peak indices and values for EUDX-style tracking,
+    providing the PmfGen interface required by the tractogram generator.
 
     Parameters
     ----------
-    peak_data : PeakDirectionGen
-        Peak direction data container with sphere-based representation.
+    peak_indices : ndarray, shape (X, Y, Z, npeaks)
+        Indices into odf_vertices for each peak at each voxel.
+    peak_values : ndarray, shape (X, Y, Z, npeaks)
+        Peak strength values (QA, GFA, etc.) at each voxel.
+    odf_vertices : ndarray, shape (N_vertices, 3)
+        Sphere vertices representing possible peak directions.
     sphere : Sphere
         Sphere object (used for interface compatibility).
 
     Notes
     -----
-    This wrapper enables EUDX tracking to use the parallel generic_tracking
+    This class enables EUDX tracking to use the parallel generic_tracking
     infrastructure while maintaining backward compatibility with sphere-based
     peak representation.
     """
 
-    def __init__(self, PeakDirectionGen peak_data, object sphere):
+    def __init__(self,
+                 double[:, :, :, :] peak_indices,
+                 double[:, :, :, :] peak_values,
+                 double[:, :] odf_vertices,
+                 object sphere):
         """Initialize SimplePeakGen with peak data.
 
         Parameters
         ----------
-        peak_data : PeakDirectionGen
-            Peak data container.
+        peak_indices : memoryview, shape (X, Y, Z, npeaks)
+            Indices into odf_vertices.
+        peak_values : memoryview, shape (X, Y, Z, npeaks)
+            Peak strength values.
+        odf_vertices : memoryview, shape (N_vertices, 3)
+            Sphere vertices.
         sphere : Sphere
             Sphere object.
         """
         cdef int i
 
+        if (peak_indices.shape[0] != peak_values.shape[0] or
+            peak_indices.shape[1] != peak_values.shape[1] or
+            peak_indices.shape[2] != peak_values.shape[2]):
+            raise ValueError(
+                "peak_indices and peak_values must have matching spatial dimensions"
+            )
+        if peak_indices.shape[3] != peak_values.shape[3]:
+            raise ValueError(
+                "peak_indices and peak_values must have same number of peaks"
+            )
+
         cdef cnp.ndarray dummy_data = np.zeros((1, 1, 1, sphere.vertices.shape[0]))
         PmfGen.__init__(self, dummy_data, sphere)
 
-        self.peak_data = peak_data
-        self.peak_indices_ptr = &peak_data.peak_indices[0, 0, 0, 0]
-        self.peak_values_ptr = &peak_data.peak_values[0, 0, 0, 0]
-        self.odf_vertices_ptr = &peak_data.odf_vertices[0, 0]
-        self.max_peaks = peak_data.max_peaks
+        self.peak_indices = peak_indices
+        self.peak_values = peak_values
+        self.odf_vertices = odf_vertices
+        self.max_peaks = peak_indices.shape[3]
 
-        for i in range(4):
-            self.peak_shape[i] = peak_data.shape[i]
-            self.peak_strides[i] = peak_data.strides[i]
+        self.peak_indices_ptr = &peak_indices[0, 0, 0, 0]
+        self.peak_values_ptr = &peak_values[0, 0, 0, 0]
+        self.odf_vertices_ptr = &odf_vertices[0, 0]
+
+        self.peak_shape[0] = peak_indices.shape[0]
+        self.peak_shape[1] = peak_indices.shape[1]
+        self.peak_shape[2] = peak_indices.shape[2]
+        self.peak_shape[3] = self.max_peaks
+
+        cdef cnp.ndarray indices_arr = np.asarray(peak_indices)
+        cdef cnp.npy_intp[:] arr_strides = <cnp.npy_intp[:4]>(<cnp.npy_intp*>indices_arr.strides)
+        self.peak_strides[0] = arr_strides[0]
+        self.peak_strides[1] = arr_strides[1]
+        self.peak_strides[2] = arr_strides[2]
+        self.peak_strides[3] = arr_strides[3]
 
     cdef double* get_pmf_c(self, double* point, double* out) noexcept nogil:
         """Get PMF at a point.

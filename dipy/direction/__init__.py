@@ -1,6 +1,5 @@
 from .bootstrap_direction_getter import BootDirectionGetter
 from .closest_peak_direction_getter import ClosestPeakDirectionGetter
-from .peak_direction import PeakDirectionGen
 from .peaks import (
     PeaksAndMetrics,
     peak_directions,
@@ -19,7 +18,6 @@ __all__ = [
     "BootDirectionGetter",
     "ClosestPeakDirectionGetter",
     "DeterministicMaximumDirectionGetter",
-    "PeakDirectionGen",
     "ProbabilisticDirectionGetter",
     "PTTDirectionGetter",
     "PeaksAndMetrics",

@@ -1,7 +1,6 @@
 cython_sources = [
   'bootstrap_direction_getter',
   'closest_peak_direction_getter',
-  'peak_direction',
   'pmf',
   'probabilistic_direction_getter',
   'ptt_direction_getter',
@@ -9,7 +8,6 @@ cython_sources = [
 
 cython_headers = [
   'closest_peak_direction_getter.pxd',
-  'peak_direction.pxd',
   'pmf.pxd',
   'probabilistic_direction_getter.pxd',
   ]

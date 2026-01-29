@@ -1,6 +1,5 @@
 cimport numpy as np
 cimport numpy as cnp
-from dipy.direction.peak_direction cimport PeakDirectionGen
 
 cdef class PmfGen:
     cdef:
@@ -28,7 +27,9 @@ cdef class SHCoeffPmfGen(PmfGen):
 
 cdef class SimplePeakGen(PmfGen):
     cdef:
-        PeakDirectionGen peak_data
+        double[:, :, :, :] peak_indices
+        double[:, :, :, :] peak_values
+        double[:, :] odf_vertices
         double* peak_indices_ptr
         double* peak_values_ptr
         double* odf_vertices_ptr

@@ -15,8 +15,7 @@ import numpy as np
 cimport numpy as cnp
 
 from dipy.core.interpolation cimport _trilinear_interpolation_iso, offset
-from dipy.direction.pmf cimport PmfGen, SimplePeakGen
-from dipy.direction.peak_direction cimport PeakDirectionGen
+from dipy.direction.pmf cimport PmfGen
 from dipy.utils.fast_numpy cimport (
     copy_point,
     cross,
@@ -863,7 +862,7 @@ cdef TrackerStatus eudx_propagator(double* point,
     stream_data : double*
         Streamline data persistent across tracking steps.
     pmf_gen : PmfGen
-        SimplePeakGen wrapper containing peak data.
+        PMF generator (unused, peak data accessed via params.eudx).
     rng : RNGState*
         Random number generator state.
 
