@@ -2243,7 +2243,7 @@ def iterative_fit_tensor(
     print("D.shape:", D.shape)
     if qti:
         print("here for QTI return?")
-        return D
+        return D, extra
 
     # Convert diffusion tensor parameters to the evals and the evecs:
     evals, evecs = decompose_tensor(

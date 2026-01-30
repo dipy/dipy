@@ -725,14 +725,17 @@ def _sdpdc_fit(X, data_masked, cvxpy_solver, weights=None, return_leverages=True
 
     # NOTE: there is data scaling here, but bvals may need scaling beforehand
     scale = np.maximum(np.max(data_masked, axis=1, keepdims=True), 1)
+    #scale = np.ones_like(scale)  # NOTE: checking if issues here...
     data_masked = data_masked / scale
     # data_masked should already have had MIN_POSITIVE_SIGNAL applied to it
     # but then, we may need to reapply, since we a scaling...
     # also, note that this scaling is PER VOXEL
+    # if we do scale, we should make sure to re-apply MIN_POSITIVE_SIGNAL
     data_masked[data_masked < MIN_POSITIVE_SIGNAL] = MIN_POSITIVE_SIGNAL
     log_data = np.log(data_masked)
     params_masked = np.zeros((size, 28))
 
+    # FIXME: this is why X_inv is an input in other functions I modified, to save repeat operation
     X_inv = np.linalg.pinv(X.T @ X)  # Independent of data
     params_ols = (X_inv @ X.T @ log_data[..., np.newaxis])[..., 0]
     if weights is None:
@@ -750,16 +753,22 @@ def _sdpdc_fit(X, data_masked, cvxpy_solver, weights=None, return_leverages=True
     prob = cp.Problem(objective, constraints)
     unconstrained = cp.Problem(objective)
 
+    # TODO: need to define unconstrained soltuion in order to test if feasible, may not really help with time though
+    #feas_constraints = []
+    #feasibility = cp.Minimize(0)
+    #feas = cp.Problem(constraints)
+
     for i in range(0, size, 1):
         #vox_data = data_masked[i : i + 1, :].T
-        vox_C = C[i : i + 1, :].T  # use OLS predicted signal for weights
+        vox_C = C[i : i + 1, :].T
         vox_log_data = log_data[i : i + 1, :].T
-        vox_log_data[np.isinf(vox_log_data)] = 0
-        # NOTE: I replaced vox_data with vox_C (OLS signal predictions)
+        #vox_log_data[np.isinf(vox_log_data)] = 0  # NOTE: seems silly, is handled by MIN_POSITIVE_SIGNAL
         y.value = vox_C * vox_log_data
         A_val = vox_C * X
 
         A.value = A_val
+
+        # TODO: can we run a feasibility check here? Make a constrained problem with no target, like in DKI, and only sovel constrained if not already satisfied?
 
         # Suppress SCS CSC warning only for small matrices
         with catch_warnings():
