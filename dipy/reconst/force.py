@@ -33,6 +33,22 @@ from concurrent.futures import ProcessPoolExecutor
 from dipy.reconst.base import ReconstModel
 from dipy.data import default_sphere
 
+try:
+    from tqdm import tqdm
+    HAS_TQDM = True
+except ImportError:
+    HAS_TQDM = False
+    def tqdm(x, **kwargs):
+        return x
+
+# Detect available search backend
+_SEARCH_BACKEND = "numpy"
+try:
+    from dipy.reconst._force_search import search_inner_product as _cython_search
+    _SEARCH_BACKEND = "cython-blas"
+except ImportError:
+    _cython_search = None
+
 
 class SignalIndex:
     """
@@ -130,11 +146,10 @@ class SignalIndex:
 
         k = min(k, self.ntotal)
 
-        # Try optimized Cython search (uses SciPy BLAS + streaming heap)
-        try:
-            from dipy.reconst._force_search import search_inner_product
-            distances, indices = search_inner_product(x, self._xb, k)
-        except ImportError:
+        # Use optimized Cython search if available (SciPy BLAS + streaming heap)
+        if _cython_search is not None:
+            distances, indices = _cython_search(x, self._xb, k)
+        else:
             # Fallback to NumPy implementation
             scores = x @ self._xb.T
             indices = np.argsort(-scores, axis=1)[:, :k]
@@ -151,6 +166,11 @@ class SignalIndex:
 
     def __repr__(self):
         return f"SignalIndex(d={self.d}, ntotal={self.ntotal})"
+
+    @staticmethod
+    def get_backend():
+        """Return the search backend being used ('cython-blas' or 'numpy')."""
+        return _SEARCH_BACKEND
 
 
 def normalize_signals(signals):
@@ -403,6 +423,8 @@ class FORCEModel(ReconstModel):
         Softmax temperature for posterior. Default is 2000.0.
     compute_odf : bool, optional
         Compute posterior ODF maps. Default is False.
+    verbose : bool, optional
+        Show progress bar and status messages. Default is False.
     """
 
     def __init__(
@@ -414,6 +436,7 @@ class FORCEModel(ReconstModel):
         use_posterior=False,
         posterior_beta=2000.0,
         compute_odf=False,
+        verbose=False,
     ):
         self.gtab = gtab
         self.simulations = simulations
@@ -422,6 +445,7 @@ class FORCEModel(ReconstModel):
         self.use_posterior = use_posterior
         self.posterior_beta = posterior_beta
         self.compute_odf = compute_odf
+        self.verbose = verbose
 
         self._index = None
         self._penalty_array = None
@@ -536,6 +560,12 @@ class FORCEModel(ReconstModel):
                 "No simulations loaded. Call generate() or provide simulations."
             )
 
+        if self.verbose:
+            backend = SignalIndex.get_backend()
+            mode = "posterior" if self.use_posterior else "best-match"
+            print(f"FORCE fitting: {mode} mode, k={self.n_neighbors}, "
+                  f"search backend={backend}")
+
         return FORCEFit(self, data, mask)
 
 
@@ -572,26 +602,45 @@ class FORCEFit:
         data_flat = self.data.reshape(-1, n_gradients).astype(np.float32)
         mask_flat = self.mask.reshape(-1)
         valid_idx = np.where(mask_flat)[0]
+        n_valid = len(valid_idx)
+
+        verbose = self.model.verbose
 
         # Normalize query signals
+        if verbose:
+            print(f"Processing {n_valid:,} voxels...")
         valid_data = data_flat[valid_idx]
         norms = np.linalg.norm(valid_data, axis=1, keepdims=True)
         norms[norms == 0] = 1.0
         query_norm = np.ascontiguousarray(valid_data / norms)
 
-        # Perform search
-        D, I = self.model._index.search(query_norm, k=self.model.n_neighbors)
-
-        # Apply penalty
-        S = D - self.model._penalty_array[I]
-
         # Initialize output maps
         self._init_output_maps(n_voxels, shape)
 
-        if self.model.use_posterior:
-            self._posterior_aggregation(valid_idx, I, S)
-        else:
-            self._best_match(valid_idx, I, S)
+        # Process in batches with progress bar
+        batch_size = 50000
+        n_batches = (n_valid + batch_size - 1) // batch_size
+
+        iterator = range(n_batches)
+        if verbose and HAS_TQDM:
+            iterator = tqdm(iterator, desc="Matching", unit="batch")
+
+        for batch_idx in iterator:
+            start = batch_idx * batch_size
+            end = min(start + batch_size, n_valid)
+            batch_query = query_norm[start:end]
+            batch_valid_idx = valid_idx[start:end]
+
+            # Perform search for this batch
+            D, I = self.model._index.search(batch_query, k=self.model.n_neighbors)
+
+            # Apply penalty
+            S = D - self.model._penalty_array[I]
+
+            if self.model.use_posterior:
+                self._posterior_aggregation(batch_valid_idx, I, S)
+            else:
+                self._best_match(batch_valid_idx, I, S)
 
         # Reshape to original shape
         self._reshape_outputs(shape)
