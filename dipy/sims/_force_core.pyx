@@ -435,3 +435,137 @@ cpdef tuple generate_two_fibers(
         [fiber_frac1, 1.0 - fiber_frac1, 0.0],
         f_in.tolist(),
     )
+
+
+cpdef tuple generate_three_fibers(
+    cnp.ndarray[DTYPE_t, ndim=2] target_sphere,
+    cnp.ndarray[DTYPE_t, ndim=3] evecs,
+    object bingham_sf,
+    cnp.ndarray[DTYPE_t, ndim=1] odi_list,
+    cnp.ndarray[DTYPE_t, ndim=1] bvals,
+    cnp.ndarray[DTYPE_t, ndim=2] bvecs,
+    object multi_tensor_func,
+    bint tortuosity
+):
+    """
+    Generate diffusion signal for three crossing fiber populations.
+
+    Parameters
+    ----------
+    target_sphere : ndarray (N, 3)
+        Unit sphere vertices.
+    evecs : ndarray (N, 3, 3)
+        Eigenvector matrices for each sphere direction.
+    bingham_sf : dict
+        Pre-computed Bingham spherical functions.
+    odi_list : ndarray
+        List of orientation dispersion index values.
+    bvals : ndarray
+        B-values.
+    bvecs : ndarray (M, 3)
+        Gradient directions.
+    multi_tensor_func : callable
+        Function to compute multi-tensor signal.
+    tortuosity : bool
+        Whether to use tortuosity constraint.
+
+    Returns
+    -------
+    tuple
+        Signal and associated parameters.
+    """
+    cdef:
+        Py_ssize_t n_dirs = target_sphere.shape[0]
+        double S0 = 100.0
+        double d_par, d_perp_extra
+        double wm_nd = 0.0
+        double wm_d_perp = 0.0
+        int k
+        int idx0, idx1, idx2
+
+    f_in = np.random.uniform(0.6, 0.9, 3).astype(np.float64)
+    fiber_fracs = np.random.dirichlet([1.0, 1.0, 1.0]).astype(np.float64)
+    while np.any(fiber_fracs < 0.2):
+        fiber_fracs = np.random.dirichlet([1.0, 1.0, 1.0]).astype(np.float64)
+
+    d_par = sample_wm_d_par()
+    if tortuosity:
+        d_perp_extra = get_dperp_extra(d_par, float(f_in[0]))
+    else:
+        d_perp_extra = sample_wm_d_perp()
+
+    labels = np.zeros(n_dirs, dtype=np.uint8)
+
+    mevals_ex = np.zeros_like(target_sphere, dtype=np.float64)
+    mevals_ex[:, 0] = d_par
+    mevals_ex[:, 1] = d_perp_extra
+    mevals_ex[:, 2] = d_perp_extra
+
+    mevals_in = np.zeros_like(target_sphere, dtype=np.float64)
+    mevals_in[:, 0] = d_par
+    mevals_in[:, 1] = 0.0
+    mevals_in[:, 2] = 0.0
+
+    index = np.random.randint(0, n_dirs, 3)
+    while (
+        not is_angle_valid(
+            angle_between(target_sphere[index[0]], target_sphere[index[1]]),
+            threshold=60
+        )
+        or not is_angle_valid(
+            angle_between(target_sphere[index[0]], target_sphere[index[2]]),
+            threshold=60
+        )
+        or not is_angle_valid(
+            angle_between(target_sphere[index[1]], target_sphere[index[2]]),
+            threshold=60
+        )
+    ):
+        index = np.random.randint(0, n_dirs, 3)
+
+    idx0 = int(index[0])
+    idx1 = int(index[1])
+    idx2 = int(index[2])
+
+    true_stick1 = target_sphere[idx0]
+    true_stick2 = target_sphere[idx1]
+    true_stick3 = target_sphere[idx2]
+
+    factor = float(np.random.choice(odi_list))
+
+    fodf = np.zeros(n_dirs, dtype=np.float64)
+    S = np.zeros(bvals.shape[0], dtype=np.float64)
+
+    for k in range(3):
+        fodf_gt = bingham_sf[int(index[k])][factor]
+        fodf_gt = np.ascontiguousarray(fodf_gt, dtype=np.float64)
+        fodf_gt = fodf_gt / np.sum(fodf_gt)
+
+        fodf += fiber_fracs[k] * fodf_gt
+
+        S_in = multi_tensor_func(mevals_in, evecs, fodf_gt * 100.0, bvals, bvecs)
+        S_ex = multi_tensor_func(mevals_ex, evecs, fodf_gt * 100.0, bvals, bvecs)
+
+        S += fiber_fracs[k] * (float(f_in[k]) * S_in + (1.0 - float(f_in[k])) * S_ex)
+
+    labels[_closest_direction(target_sphere, true_stick1)] = 1
+    labels[_closest_direction(target_sphere, true_stick2)] = 1
+    labels[_closest_direction(target_sphere, true_stick3)] = 1
+
+    for k in range(3):
+        wm_nd += fiber_fracs[k] * float(f_in[k])
+        wm_d_perp += fiber_fracs[k] * (1.0 - float(f_in[k])) * d_perp_extra
+
+    return (
+        S * S0,
+        labels,
+        3,
+        factor,
+        0.0,
+        wm_nd,
+        fodf,
+        d_par,
+        wm_d_perp,
+        fiber_fracs.tolist(),
+        f_in.tolist(),
+    )
