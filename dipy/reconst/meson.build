@@ -20,7 +20,7 @@ foreach ext: cython_sources
   py3.extension_module(ext,
     cython_gen.process(ext + '.pyx'),
     c_args: cython_c_args,
-    include_directories: [incdir_numpy, inc_local],
+    include_directories: [incdir_numpy, inc_local, inc_scipy],
     dependencies: [omp],
     install: true,
     subdir: 'dipy/reconst'
