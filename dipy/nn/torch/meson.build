@@ -3,6 +3,7 @@ python_sources = [
   'evac.py',
   'histo_resdnn.py',
   'deepn4.py',
+  'synb0.py',
   ]
 
 

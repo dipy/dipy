@@ -594,6 +594,26 @@ fetch_resdnn_torch_weights = _make_fetcher(
     doc="Download ResDNN Pytorch model weights for Nath et. al 2018",
 )
 
+fetch_synb0_torch_weights = _make_fetcher(
+    "fetch_synb0_torch_weights",
+    Path(dipy_home) / "synb0",
+    "https://ndownloader.figshare.com/files/",
+    ["60555233", "60555227", "60555230", "60676858", "60676861"],
+    [
+        Path("synb0_default_weights1.h5"),
+        Path("synb0_default_weights2.h5"),
+        Path("synb0_default_weights3.h5"),
+        Path("synb0_default_weights4.h5"),
+        Path("synb0_default_weights5.h5"),
+    ],
+    md5_list=["35bb00294e15bb61a3953dfc92c9ecf9",
+              "81c8320d494034538f31dc4e78cb30df",
+              "08e72dc41fcee86e2c5248b9920552cb",
+              "0ac4438cbbc63ac8ce4d0f0213e4239a",
+              "44808a9e4007c6ff3ebdd8fa5f8cb0a0"],
+    doc="Download Synb0 Pytorch model weights for Schilling et. al 2019",
+)
+
 fetch_synb0_weights = _make_fetcher(
     "fetch_synb0_weights",
     Path(dipy_home) / "synb0",
@@ -2106,6 +2126,14 @@ def get_fnames(*, name="small_64D", include_optional=False):
         return wraw
     if name == "synb0_default_weights":
         _, folder = fetch_synb0_weights()
+        w1 = Path(folder) / "synb0_default_weights1.h5"
+        w2 = Path(folder) / "synb0_default_weights2.h5"
+        w3 = Path(folder) / "synb0_default_weights3.h5"
+        w4 = Path(folder) / "synb0_default_weights4.h5"
+        w5 = Path(folder) / "synb0_default_weights5.h5"
+        return w1, w2, w3, w4, w5
+    if name == "synb0_default_torch_weights":
+        _, folder = fetch_synb0_torch_weights()
         w1 = Path(folder) / "synb0_default_weights1.h5"
         w2 = Path(folder) / "synb0_default_weights2.h5"
         w3 = Path(folder) / "synb0_default_weights3.h5"

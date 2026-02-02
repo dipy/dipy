@@ -48,6 +48,7 @@ from dipy.data.fetcher import (
     fetch_syn_data,
     fetch_synb0_test,
     fetch_synb0_weights,
+    fetch_synb0_torch_weights,
     fetch_taiwan_ntu_dsi,
     fetch_target_tractogram_hcp,
     fetch_tissue_data,
