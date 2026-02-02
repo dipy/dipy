@@ -96,3 +96,29 @@ def test_get_default_diffusivity_config():
     assert config["csf_d"] > 0
     assert config["wm_d_par_range"][0] > 0
     assert config["wm_d_par_range"][1] >= config["wm_d_par_range"][0]
+
+
+def test_smallest_shell_bval():
+    """Test smallest shell b-value finding."""
+    from dipy.sims.force import smallest_shell_bval
+
+    bvals = np.array([0, 0, 1000, 1000, 2000, 2000, 3000])
+
+    min_shell, mask = smallest_shell_bval(bvals)
+
+    assert min_shell == 1000
+    assert mask.sum() == 2
+    assert mask[2] and mask[3]
+
+
+def test_smallest_shell_bval_no_nonzero():
+    """Test smallest_shell_bval raises for all-zero bvals."""
+    from dipy.sims.force import smallest_shell_bval
+
+    bvals = np.array([0, 0, 10, 20, 30])  # all below threshold
+
+    try:
+        smallest_shell_bval(bvals)
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "No non-b0 volumes" in str(e)
