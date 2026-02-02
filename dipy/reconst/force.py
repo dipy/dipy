@@ -41,6 +41,12 @@ except ImportError:
     def tqdm(x, **kwargs):
         return x
 
+try:
+    import ray
+    HAS_RAY = True
+except ImportError:
+    HAS_RAY = False
+
 # Detect available search backend
 _SEARCH_BACKEND = "numpy"
 try:
@@ -425,6 +431,11 @@ class FORCEModel(ReconstModel):
         Compute posterior ODF maps. Default is False.
     verbose : bool, optional
         Show progress bar and status messages. Default is False.
+    num_cpus : int, optional
+        Number of CPUs for Ray parallel fitting. Default is 1 (no Ray).
+        If > 1, uses Ray for parallel chunk processing.
+    chunk_size : int, optional
+        Number of voxels per chunk for parallel processing. Default is 10000.
     """
 
     def __init__(
@@ -437,6 +448,8 @@ class FORCEModel(ReconstModel):
         posterior_beta=2000.0,
         compute_odf=False,
         verbose=False,
+        num_cpus=1,
+        chunk_size=10000,
     ):
         self.gtab = gtab
         self.simulations = simulations
@@ -446,6 +459,8 @@ class FORCEModel(ReconstModel):
         self.posterior_beta = posterior_beta
         self.compute_odf = compute_odf
         self.verbose = verbose
+        self.num_cpus = num_cpus
+        self.chunk_size = chunk_size
 
         self._index = None
         self._penalty_array = None
@@ -563,8 +578,9 @@ class FORCEModel(ReconstModel):
         if self.verbose:
             backend = SignalIndex.get_backend()
             mode = "posterior" if self.use_posterior else "best-match"
+            parallel = f"Ray ({self.num_cpus} CPUs)" if self.num_cpus > 1 else "sequential"
             print(f"FORCE fitting: {mode} mode, k={self.n_neighbors}, "
-                  f"search backend={backend}")
+                  f"search backend={backend}, parallel={parallel}")
 
         return FORCEFit(self, data, mask)
 
@@ -605,6 +621,8 @@ class FORCEFit:
         n_valid = len(valid_idx)
 
         verbose = self.model.verbose
+        num_cpus = self.model.num_cpus
+        chunk_size = self.model.chunk_size
 
         # Normalize query signals
         if verbose:
@@ -617,21 +635,31 @@ class FORCEFit:
         # Initialize output maps
         self._init_output_maps(n_voxels, shape)
 
-        # Process in batches with progress bar
-        batch_size = 50000
-        n_batches = (n_valid + batch_size - 1) // batch_size
+        if num_cpus > 1 and HAS_RAY:
+            self._fit_ray_parallel(valid_idx, query_norm, chunk_size, num_cpus)
+        else:
+            self._fit_sequential(valid_idx, query_norm, chunk_size)
 
-        iterator = range(n_batches)
+        # Reshape to original shape
+        self._reshape_outputs(shape)
+
+    def _fit_sequential(self, valid_idx, query_norm, chunk_size):
+        """Sequential fitting (no Ray)."""
+        verbose = self.model.verbose
+        n_valid = len(valid_idx)
+        n_chunks = (n_valid + chunk_size - 1) // chunk_size
+
+        iterator = range(n_chunks)
         if verbose and HAS_TQDM:
-            iterator = tqdm(iterator, desc="Matching", unit="batch")
+            iterator = tqdm(iterator, desc="Matching", unit="chunk")
 
-        for batch_idx in iterator:
-            start = batch_idx * batch_size
-            end = min(start + batch_size, n_valid)
+        for chunk_idx in iterator:
+            start = chunk_idx * chunk_size
+            end = min(start + chunk_size, n_valid)
             batch_query = query_norm[start:end]
             batch_valid_idx = valid_idx[start:end]
 
-            # Perform search for this batch
+            # Perform search for this chunk
             D, I = self.model._index.search(batch_query, k=self.model.n_neighbors)
 
             # Apply penalty
@@ -642,8 +670,106 @@ class FORCEFit:
             else:
                 self._best_match(batch_valid_idx, I, S)
 
-        # Reshape to original shape
-        self._reshape_outputs(shape)
+    def _fit_ray_parallel(self, valid_idx, query_norm, chunk_size, num_cpus):
+        """Ray parallel fitting."""
+        verbose = self.model.verbose
+        n_valid = len(valid_idx)
+
+        # Initialize Ray
+        if not ray.is_initialized():
+            ray.init(num_cpus=num_cpus)
+
+        # Create chunks
+        n_chunks = (n_valid + chunk_size - 1) // chunk_size
+        chunks = [
+            (valid_idx[i * chunk_size : min((i + 1) * chunk_size, n_valid)],
+             query_norm[i * chunk_size : min((i + 1) * chunk_size, n_valid)])
+            for i in range(n_chunks)
+        ]
+
+        # Put shared data in Ray object store
+        signals_norm_ref = ray.put(self.model._signals_norm)
+        penalty_array_ref = ray.put(self.model._penalty_array)
+        k = self.model.n_neighbors
+
+        # Define remote search function
+        @ray.remote
+        def search_chunk(chunk_idx, chunk_valid_idx, chunk_query, 
+                        signals_norm, penalty_array, k_neighbors):
+            """Search a chunk of voxels."""
+            # Create index for this worker
+            dimension = signals_norm.shape[1]
+            index = SignalIndex(dimension)
+            index._xb = signals_norm
+            index.ntotal = len(signals_norm)
+
+            # Perform search
+            D, I = index.search(chunk_query, k_neighbors)
+
+            # Apply penalty
+            S = D - penalty_array[I]
+
+            return chunk_idx, chunk_valid_idx, I, S
+
+        # Submit initial batch of tasks
+        inflight_cap = num_cpus
+        pending = []
+        chunk_idx = 0
+
+        if verbose:
+            print(f"Submitting {n_chunks} chunks to {num_cpus} Ray workers...")
+
+        # Submit initial batch
+        while chunk_idx < min(inflight_cap, n_chunks):
+            chunk_valid_idx, chunk_query = chunks[chunk_idx]
+            pending.append(
+                search_chunk.remote(
+                    chunk_idx, chunk_valid_idx, chunk_query,
+                    signals_norm_ref, penalty_array_ref, k
+                )
+            )
+            chunk_idx += 1
+
+        # Process results as they complete
+        completed = 0
+        pbar = None
+        if verbose and HAS_TQDM:
+            pbar = tqdm(total=n_chunks, desc="Matching", unit="chunk")
+
+        while pending:
+            ready, remaining = ray.wait(pending, num_returns=1)
+            result_idx, result_valid_idx, I, S = ray.get(ready[0])
+
+            # Apply results
+            if self.model.use_posterior:
+                self._posterior_aggregation(result_valid_idx, I, S)
+            else:
+                self._best_match(result_valid_idx, I, S)
+
+            completed += 1
+            if pbar is not None:
+                pbar.update(1)
+
+            # Submit next chunk if available
+            if chunk_idx < n_chunks:
+                chunk_valid_idx, chunk_query = chunks[chunk_idx]
+                remaining.append(
+                    search_chunk.remote(
+                        chunk_idx, chunk_valid_idx, chunk_query,
+                        signals_norm_ref, penalty_array_ref, k
+                    )
+                )
+                chunk_idx += 1
+
+            pending = remaining
+
+        if pbar is not None:
+            pbar.close()
+
+        # Shutdown Ray
+        ray.shutdown()
+        if verbose:
+            print("Ray shutdown completed.")
 
     def _init_output_maps(self, n_voxels, shape):
         """Initialize output arrays."""
