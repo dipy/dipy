@@ -401,3 +401,35 @@ def generate_force_dictionary(
     }
 
     return dictionary
+
+
+def save_force_dictionary(dictionary, output_path):
+    """
+    Save FORCE dictionary to compressed NPZ file.
+
+    Parameters
+    ----------
+    dictionary : dict
+        FORCE simulation dictionary.
+    output_path : str
+        Path for output file (.npz extension).
+    """
+    np.savez_compressed(output_path, **dictionary)
+
+
+def load_force_dictionary(input_path):
+    """
+    Load FORCE dictionary from NPZ file.
+
+    Parameters
+    ----------
+    input_path : str
+        Path to dictionary file.
+
+    Returns
+    -------
+    dictionary : dict
+        FORCE simulation dictionary.
+    """
+    data = np.load(input_path, allow_pickle=False)
+    return {key: data[key] for key in data.files}
