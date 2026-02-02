@@ -1019,11 +1019,11 @@ def path_length(streamlines, affine, aoi, *, fill_value=-1):
     streamlines : seq of (N, 3) arrays
         A sequence of streamlines, path length is given in mm along the curve
         of the streamline.
-    aoi : array, 3d
-        A mask (binary array) of voxels from which to start computing distance.
     affine : array (4, 4)
         The mapping between voxel indices and the point space for seeds.
         The voxel_to_rasmm matrix, typically from a NIFTI file.
+    aoi : array, 3d
+        A mask (binary array) of voxels from which to start computing distance.
     fill_value : float
         The value of voxel in the path length map that are not connected to the
         aoi.
