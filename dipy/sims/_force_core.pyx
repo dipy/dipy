@@ -136,3 +136,83 @@ cdef inline double sample_wm_d_perp() noexcept:
 cdef inline double sample_gm_d_iso() noexcept:
     """Sample gray matter isotropic diffusivity."""
     return _sample_uniform_or_fixed(GM_D_MIN, GM_D_MAX)
+
+
+cdef Py_ssize_t _closest_direction(
+    cnp.ndarray[DTYPE_t, ndim=2] target_sphere,
+    cnp.ndarray[DTYPE_t, ndim=1] vec
+) noexcept:
+    """
+    Find the closest direction on a sphere to a given vector.
+
+    Parameters
+    ----------
+    target_sphere : ndarray (N, 3)
+        Unit sphere vertices.
+    vec : ndarray (3,)
+        Target direction vector.
+
+    Returns
+    -------
+    idx : int
+        Index of the closest direction.
+    """
+    cdef Py_ssize_t i, n = target_sphere.shape[0]
+    cdef double best = 1e300
+    cdef double dist, dx, dy, dz
+    cdef Py_ssize_t best_idx = 0
+    cdef const double[:, :] ts_mv = target_sphere
+
+    for i in range(n):
+        dx = ts_mv[i, 0] - vec[0]
+        dy = ts_mv[i, 1] - vec[1]
+        dz = ts_mv[i, 2] - vec[2]
+        dist = dx * dx + dy * dy + dz * dz
+        if dist < best:
+            best = dist
+            best_idx = i
+
+    return best_idx
+
+
+def angle_between(v1, v2):
+    """
+    Compute the angle between two vectors.
+
+    Parameters
+    ----------
+    v1 : ndarray (3,)
+        First vector.
+    v2 : ndarray (3,)
+        Second vector.
+
+    Returns
+    -------
+    angle : float
+        Angle between the two vectors in radians.
+    """
+    cos_theta = np.clip(np.dot(v1, v2), -1.0, 1.0)
+    return np.arccos(cos_theta)
+
+
+def is_angle_valid(angle, threshold=30):
+    """
+    Check if an angle satisfies minimum separation constraint.
+
+    Parameters
+    ----------
+    angle : float
+        Angle to check in radians.
+    threshold : float, optional
+        Minimum separation threshold in degrees. Default is 30.
+
+    Returns
+    -------
+    is_valid : bool
+        True if the angle satisfies the separation constraint.
+    """
+    angle_degrees = np.degrees(angle)
+    return not (
+        (-1 * threshold <= angle_degrees <= threshold) or
+        (180 - threshold <= angle_degrees <= 180 + threshold)
+    )
