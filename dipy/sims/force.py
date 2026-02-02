@@ -433,3 +433,61 @@ def load_force_dictionary(input_path):
     """
     data = np.load(input_path, allow_pickle=False)
     return {key: data[key] for key in data.files}
+
+
+def validate_diffusivity_config(config):
+    """
+    Validate diffusivity configuration dictionary.
+
+    Parameters
+    ----------
+    config : dict
+        Diffusivity configuration with keys:
+        wm_d_par_range, wm_d_perp_range, gm_d_iso_range, csf_d.
+
+    Returns
+    -------
+    valid : bool
+        True if configuration is valid.
+
+    Raises
+    ------
+    ValueError
+        If configuration is invalid.
+    """
+    required_keys = ["wm_d_par_range", "wm_d_perp_range", "gm_d_iso_range", "csf_d"]
+
+    for key in required_keys:
+        if key not in config:
+            raise ValueError(f"Missing required key: {key}")
+
+    for key in ["wm_d_par_range", "wm_d_perp_range", "gm_d_iso_range"]:
+        val = config[key]
+        if hasattr(val, "__len__"):
+            if len(val) != 2:
+                raise ValueError(f"{key} must be scalar or (min, max) tuple")
+            if val[0] > val[1]:
+                raise ValueError(f"{key} min must be <= max")
+
+    csf_d = config["csf_d"]
+    if not isinstance(csf_d, (int, float)) or csf_d <= 0:
+        raise ValueError("csf_d must be a positive number")
+
+    return True
+
+
+def get_default_diffusivity_config():
+    """
+    Get default diffusivity configuration.
+
+    Returns
+    -------
+    config : dict
+        Default diffusivity ranges for FORCE simulation.
+    """
+    return {
+        "wm_d_par_range": (2.0e-3, 3.0e-3),
+        "wm_d_perp_range": (0.3e-3, 1.5e-3),
+        "gm_d_iso_range": (0.7e-3, 1.2e-3),
+        "csf_d": 3.0e-3,
+    }
