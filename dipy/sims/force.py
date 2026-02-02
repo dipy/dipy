@@ -146,6 +146,7 @@ def _generate_batch_worker(
     Opens memmaps by path in each process and writes directly.
     """
     from dipy.sims._force_core import create_mixed_signal, set_diffusivity_ranges
+    from dipy.sims._multi_tensor_omp import multi_tensor
 
     # Unpack memmap info
     (
@@ -195,7 +196,7 @@ def _generate_batch_worker(
     for i in range(batch_size):
         idx = start_idx + i
         res = create_mixed_signal(
-            sphere, evecs, bingham, odi, bval, bvec, wm_thresh, tort
+            sphere, evecs, bingham, odi, bval, bvec, multi_tensor, wm_thresh, tort
         )
         (
             signals_mm[idx],
