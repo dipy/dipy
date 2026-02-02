@@ -3,6 +3,28 @@ FORCE Reconstruction Module
 
 Dictionary-based matching for diffusion MRI microstructure estimation.
 Implements both standard matching and posterior-based inference.
+
+The FORCEModel class provides a DIPY-compatible interface for fitting
+the FORCE model to diffusion MRI data. It supports:
+
+- Configurable number of neighbors (n_neighbors, default 50)
+- Standard best-match or posterior averaging (use_posterior flag)
+- Configurable posterior temperature (posterior_beta)
+- Optional ODF map computation (compute_odf flag)
+
+Examples
+--------
+>>> from dipy.reconst.force import FORCEModel
+>>> from dipy.sims.force import load_force_dictionary
+>>> 
+>>> dictionary = load_force_dictionary('simulated_data.npz')
+>>> model = FORCEModel(gtab, dictionary, n_neighbors=50)
+>>> fit = model.fit(data, mask=brain_mask)
+>>> fa_map = fit.fa
+
+References
+----------
+FORCE methodology paper (in preparation)
 """
 
 import numpy as np
