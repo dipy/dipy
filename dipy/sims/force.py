@@ -14,17 +14,19 @@ References
 FORCE methodology paper (in preparation)
 """
 
+import os
+import gc
+import tempfile
 import numpy as np
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from dipy.sims.voxel import all_tensor_evecs
+from dipy.data import default_sphere
 
 
 def bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
     """
     Evaluate Bingham distribution on a sphere.
-
-    The Bingham distribution models fiber orientation dispersion
-    in diffusion MRI.
 
     Parameters
     ----------
@@ -55,10 +57,7 @@ def bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
 
 def bingham_dictionary(target_sphere, odi_list):
     """
-    Generate dictionary of Bingham spherical functions.
-
-    Pre-computes Bingham distributions for all sphere directions
-    and ODI values for efficient signal simulation.
+    Generate Bingham spherical functions for all directions and ODI values.
 
     Parameters
     ----------
@@ -70,8 +69,7 @@ def bingham_dictionary(target_sphere, odi_list):
     Returns
     -------
     bingham_sf : dict
-        Nested dictionary mapping (vertex_index, odi) to
-        spherical function values.
+        Nested dictionary mapping (vertex_index, odi) to SF values.
     """
     bingham_sf = {}
     for i in range(len(target_sphere)):
@@ -98,10 +96,10 @@ def smallest_shell_bval(bvals, b0_threshold=50, shell_tolerance=50):
     ----------
     bvals : ndarray
         B-values array.
-    b0_threshold : float, optional
-        Maximum b-value to consider as b0. Default is 50.
-    shell_tolerance : float, optional
-        Tolerance for shell grouping. Default is 50.
+    b0_threshold : float
+        Maximum b-value for b0 volumes.
+    shell_tolerance : float
+        Tolerance for grouping shells.
 
     Returns
     -------
@@ -123,88 +121,110 @@ def smallest_shell_bval(bvals, b0_threshold=50, shell_tolerance=50):
 
 
 def _create_memmap(output_dir, name, dtype, shape):
-    """
-    Create a memory-mapped array file.
-
-    Parameters
-    ----------
-    output_dir : str
-        Directory for memmap files.
-    name : str
-        Name of the memmap file.
-    dtype : dtype
-        Data type for the array.
-    shape : tuple
-        Shape of the array.
-
-    Returns
-    -------
-    memmap : ndarray
-        Memory-mapped array.
-    path : str
-        Path to the memmap file.
-    """
-    import os
+    """Create a memory-mapped file."""
     path = os.path.join(output_dir, f"{name}.mmap")
     return np.memmap(path, mode="w+", dtype=dtype, shape=shape), path
 
 
-def _generate_batch_worker(args):
+def _generate_batch_worker(
+    start_idx,
+    batch_size,
+    sphere,
+    evecs,
+    bingham,
+    odi,
+    bval,
+    bvec,
+    wm_thresh,
+    tort,
+    memmap_info,
+    diffusivity_cfg,
+):
     """
     Worker function for parallel batch generation.
 
-    Parameters
-    ----------
-    args : tuple
-        (start_idx, batch_size, sphere, evecs, bingham, odi,
-         bvals, bvecs, wm_thresh, tortuosity, multi_tensor_func,
-         diffusivity_cfg, output_arrays)
-
-    Returns
-    -------
-    batch_size : int
-        Number of samples processed.
+    Opens memmaps by path in each process and writes directly.
     """
-    (
-        start_idx, batch_size, sphere, evecs, bingham, odi,
-        bvals, bvecs, wm_thresh, tortuosity, multi_tensor_func,
-        diffusivity_cfg, output_arrays
-    ) = args
-
     from dipy.sims._force_core import create_mixed_signal, set_diffusivity_ranges
 
-    # Apply diffusivity config in worker
+    # Unpack memmap info
+    (
+        signals_path, signals_shape, signals_dtype,
+        labels_path, labels_shape, labels_dtype,
+        num_fibers_path, num_fibers_shape, num_fibers_dtype,
+        dispersion_path, dispersion_shape, dispersion_dtype,
+        wm_fraction_path, wm_fraction_shape, wm_fraction_dtype,
+        gm_fraction_path, gm_fraction_shape, gm_fraction_dtype,
+        csf_fraction_path, csf_fraction_shape, csf_fraction_dtype,
+        nd_path, nd_shape, nd_dtype,
+        odfs_path, odfs_shape, odfs_dtype,
+        ufa_wm_path, ufa_wm_shape, ufa_wm_dtype,
+        ufa_voxel_path, ufa_voxel_shape, ufa_voxel_dtype,
+        fraction_array_path, fraction_array_shape, fraction_array_dtype,
+        wm_disp_path, wm_disp_shape, wm_disp_dtype,
+        wm_d_par_path, wm_d_par_shape, wm_d_par_dtype,
+        wm_d_perp_path, wm_d_perp_shape, wm_d_perp_dtype,
+        gm_d_par_path, gm_d_par_shape, gm_d_par_dtype,
+        csf_d_par_path, csf_d_par_shape, csf_d_par_dtype,
+        f_ins_path, f_ins_shape, f_ins_dtype,
+    ) = memmap_info
+
+    # Apply diffusivity ranges in worker
     set_diffusivity_ranges(**diffusivity_cfg)
 
-    (signals, labels, num_fibers, dispersion, wm_fraction,
-     gm_fraction, csf_fraction, nd, odfs, ufa_wm, ufa_voxel,
-     fraction_array, wm_disp, wm_d_par, wm_d_perp, gm_d_par,
-     csf_d_par, f_ins) = output_arrays
+    # Open memmaps in read-write mode
+    signals_mm = np.memmap(signals_path, mode="r+", dtype=signals_dtype, shape=signals_shape)
+    labels_mm = np.memmap(labels_path, mode="r+", dtype=labels_dtype, shape=labels_shape)
+    num_fibers_mm = np.memmap(num_fibers_path, mode="r+", dtype=num_fibers_dtype, shape=num_fibers_shape)
+    dispersion_mm = np.memmap(dispersion_path, mode="r+", dtype=dispersion_dtype, shape=dispersion_shape)
+    wm_fraction_mm = np.memmap(wm_fraction_path, mode="r+", dtype=wm_fraction_dtype, shape=wm_fraction_shape)
+    gm_fraction_mm = np.memmap(gm_fraction_path, mode="r+", dtype=gm_fraction_dtype, shape=gm_fraction_shape)
+    csf_fraction_mm = np.memmap(csf_fraction_path, mode="r+", dtype=csf_fraction_dtype, shape=csf_fraction_shape)
+    nd_mm = np.memmap(nd_path, mode="r+", dtype=nd_dtype, shape=nd_shape)
+    odfs_mm = np.memmap(odfs_path, mode="r+", dtype=odfs_dtype, shape=odfs_shape)
+    ufa_wm_mm = np.memmap(ufa_wm_path, mode="r+", dtype=ufa_wm_dtype, shape=ufa_wm_shape)
+    ufa_voxel_mm = np.memmap(ufa_voxel_path, mode="r+", dtype=ufa_voxel_dtype, shape=ufa_voxel_shape)
+    fraction_array_mm = np.memmap(fraction_array_path, mode="r+", dtype=fraction_array_dtype, shape=fraction_array_shape)
+    wm_disp_mm = np.memmap(wm_disp_path, mode="r+", dtype=wm_disp_dtype, shape=wm_disp_shape)
+    wm_d_par_mm = np.memmap(wm_d_par_path, mode="r+", dtype=wm_d_par_dtype, shape=wm_d_par_shape)
+    wm_d_perp_mm = np.memmap(wm_d_perp_path, mode="r+", dtype=wm_d_perp_dtype, shape=wm_d_perp_shape)
+    gm_d_par_mm = np.memmap(gm_d_par_path, mode="r+", dtype=gm_d_par_dtype, shape=gm_d_par_shape)
+    csf_d_par_mm = np.memmap(csf_d_par_path, mode="r+", dtype=csf_d_par_dtype, shape=csf_d_par_shape)
+    f_ins_mm = np.memmap(f_ins_path, mode="r+", dtype=f_ins_dtype, shape=f_ins_shape)
 
     for i in range(batch_size):
         idx = start_idx + i
         res = create_mixed_signal(
-            sphere, evecs, bingham, odi, bvals, bvecs,
-            multi_tensor_func, wm_thresh, tortuosity
+            sphere, evecs, bingham, odi, bval, bvec, wm_thresh, tort
         )
-        signals[idx] = res[0]
-        labels[idx] = res[1]
-        num_fibers[idx] = res[2]
-        dispersion[idx] = res[3]
-        wm_fraction[idx] = res[4]
-        gm_fraction[idx] = res[5]
-        csf_fraction[idx] = res[6]
-        nd[idx] = res[7]
-        odfs[idx] = res[8]
-        ufa_wm[idx] = res[9]
-        ufa_voxel[idx] = res[10]
-        fraction_array[idx] = res[11]
-        wm_disp[idx] = res[12]
-        wm_d_par[idx] = res[13]
-        wm_d_perp[idx] = res[14]
-        gm_d_par[idx] = res[15]
-        csf_d_par[idx] = res[16]
-        f_ins[idx] = res[17]
+        (
+            signals_mm[idx],
+            labels_mm[idx],
+            num_fibers_mm[idx],
+            dispersion_mm[idx],
+            wm_fraction_mm[idx],
+            gm_fraction_mm[idx],
+            csf_fraction_mm[idx],
+            nd_mm[idx],
+            odfs_mm[idx],
+            ufa_wm_mm[idx],
+            ufa_voxel_mm[idx],
+            fraction_array_mm[idx],
+            wm_disp_mm[idx],
+            wm_d_par_mm[idx],
+            wm_d_perp_mm[idx],
+            gm_d_par_mm[idx],
+            csf_d_par_mm[idx],
+            f_ins_mm[idx],
+        ) = res
+
+    # Flush memmaps
+    for mm in [signals_mm, labels_mm, num_fibers_mm, dispersion_mm,
+               wm_fraction_mm, gm_fraction_mm, csf_fraction_mm, nd_mm,
+               odfs_mm, ufa_wm_mm, ufa_voxel_mm, fraction_array_mm,
+               wm_disp_mm, wm_d_par_mm, wm_d_perp_mm, gm_d_par_mm,
+               csf_d_par_mm, f_ins_mm]:
+        mm.flush()
 
     return batch_size
 
@@ -223,7 +243,7 @@ def generate_force_simulations(
     dtype=np.float32,
     compute_dti=True,
     compute_dki=False,
-    verbose=False,
+    verbose=True,
 ):
     """
     Generate FORCE simulations.
@@ -248,14 +268,12 @@ def generate_force_simulations(
         Minimum WM fraction to include fiber labels. Default is 0.5.
     tortuosity : bool, optional
         Use tortuosity constraint for perpendicular diffusivity.
-        Default is False.
     odi_range : tuple, optional
-        (min, max) orientation dispersion index range. Default is (0.01, 0.3).
+        (min, max) orientation dispersion index range.
     num_odi_values : int, optional
         Number of ODI values to sample. Default is 10.
     diffusivity_config : dict, optional
-        Custom diffusivity ranges. Keys: wm_d_par_range, wm_d_perp_range,
-        gm_d_iso_range, csf_d.
+        Custom diffusivity ranges.
     dtype : dtype, optional
         Data type for outputs. Default is np.float32.
     compute_dti : bool, optional
@@ -263,22 +281,16 @@ def generate_force_simulations(
     compute_dki : bool, optional
         Compute DKI metrics (AK, RK, MK, KFA). Default is False.
     verbose : bool, optional
-        Enable progress output. Default is False.
+        Enable progress output. Default is True.
 
     Returns
     -------
     simulations : dict
         Simulations containing signals and parameters.
     """
-    import os
-    import tempfile
-    from concurrent.futures import ProcessPoolExecutor, as_completed
-
-    from dipy.data import default_sphere
+    from tqdm import tqdm
     from dipy.reconst import dti
-
     from dipy.sims._force_core import set_diffusivity_ranges
-    from dipy.sims._multi_tensor_omp import multi_tensor
 
     # Setup output directory
     if output_dir is None:
@@ -313,101 +325,171 @@ def generate_force_simulations(
     odi_list = np.linspace(odi_range[0], odi_range[1], num_odi_values).astype(np.float64)
     bingham_sf = bingham_dictionary(target_sphere, odi_list)
 
-    # Allocate output arrays
-    signals = np.zeros((num_simulations, n_bvals), dtype=dtype)
-    labels = np.zeros((num_simulations, n_dirs), dtype=np.uint8)
-    num_fibers = np.zeros(num_simulations, dtype=dtype)
-    dispersion = np.zeros(num_simulations, dtype=dtype)
-    wm_fraction = np.zeros(num_simulations, dtype=dtype)
-    gm_fraction = np.zeros(num_simulations, dtype=dtype)
-    csf_fraction = np.zeros(num_simulations, dtype=dtype)
-    nd = np.zeros(num_simulations, dtype=dtype)
-    odfs = np.zeros((num_simulations, n_dirs), dtype=np.float16)
-    ufa_wm = np.zeros(num_simulations, dtype=dtype)
-    ufa_voxel = np.zeros(num_simulations, dtype=dtype)
-    fraction_array = np.zeros((num_simulations, 3), dtype=dtype)
-    wm_disp = np.zeros(num_simulations, dtype=dtype)
-    wm_d_par = np.zeros(num_simulations, dtype=dtype)
-    wm_d_perp = np.zeros(num_simulations, dtype=dtype)
-    gm_d_par = np.zeros(num_simulations, dtype=dtype)
-    csf_d_par = np.zeros(num_simulations, dtype=dtype)
-    f_ins = np.zeros((num_simulations, 3), dtype=dtype)
+    label_dtype = np.uint8
 
-    output_arrays = (
-        signals, labels, num_fibers, dispersion, wm_fraction,
-        gm_fraction, csf_fraction, nd, odfs, ufa_wm, ufa_voxel,
-        fraction_array, wm_disp, wm_d_par, wm_d_perp, gm_d_par,
-        csf_d_par, f_ins
+    # Create memmaps for large arrays
+    memmap_paths = {}
+
+    def create_mm(name, dt, shape):
+        mm, path = _create_memmap(output_dir, name, dt, shape)
+        memmap_paths[name] = path
+        return mm
+
+    signals_mm = create_mm("signals", dtype, (num_simulations, n_bvals))
+    labels_mm = create_mm("labels", label_dtype, (num_simulations, n_dirs))
+    num_fibers_mm = create_mm("num_fibers", dtype, (num_simulations,))
+    dispersion_mm = create_mm("dispersion", dtype, (num_simulations,))
+    wm_fraction_mm = create_mm("wm_fraction", dtype, (num_simulations,))
+    gm_fraction_mm = create_mm("gm_fraction", dtype, (num_simulations,))
+    csf_fraction_mm = create_mm("csf_fraction", dtype, (num_simulations,))
+    nd_mm = create_mm("nd", dtype, (num_simulations,))
+    odfs_mm = create_mm("odfs", np.float16, (num_simulations, n_dirs))
+    ufa_wm_mm = create_mm("ufa_wm", dtype, (num_simulations,))
+    ufa_voxel_mm = create_mm("ufa_voxel", dtype, (num_simulations,))
+    fraction_array_mm = create_mm("fraction_array", dtype, (num_simulations, 3))
+    wm_disp_mm = create_mm("wm_disp", dtype, (num_simulations,))
+    wm_d_par_mm = create_mm("wm_d_par", dtype, (num_simulations,))
+    wm_d_perp_mm = create_mm("wm_d_perp", dtype, (num_simulations,))
+    gm_d_par_mm = create_mm("gm_d_par", dtype, (num_simulations,))
+    csf_d_par_mm = create_mm("csf_d_par", dtype, (num_simulations,))
+    f_ins_mm = create_mm("f_ins", dtype, (num_simulations, 3))
+
+    memmaps = [
+        signals_mm, labels_mm, num_fibers_mm, dispersion_mm,
+        wm_fraction_mm, gm_fraction_mm, csf_fraction_mm, nd_mm,
+        odfs_mm, ufa_wm_mm, ufa_voxel_mm, fraction_array_mm,
+        wm_disp_mm, wm_d_par_mm, wm_d_perp_mm, gm_d_par_mm,
+        csf_d_par_mm, f_ins_mm,
+    ]
+
+    # Build batch specs
+    num_batches_full = num_simulations // batch_size
+    remainder = num_simulations % batch_size
+    total_batches = num_batches_full + (1 if remainder > 0 else 0)
+
+    batch_specs = []
+    current_start = 0
+    for batch_idx in range(total_batches):
+        bs = batch_size if batch_idx < num_batches_full else remainder
+        batch_specs.append((current_start, bs))
+        current_start += bs
+
+    # Pack memmap info for workers
+    memmap_info = (
+        memmap_paths["signals"], (num_simulations, n_bvals), dtype,
+        memmap_paths["labels"], (num_simulations, n_dirs), label_dtype,
+        memmap_paths["num_fibers"], (num_simulations,), dtype,
+        memmap_paths["dispersion"], (num_simulations,), dtype,
+        memmap_paths["wm_fraction"], (num_simulations,), dtype,
+        memmap_paths["gm_fraction"], (num_simulations,), dtype,
+        memmap_paths["csf_fraction"], (num_simulations,), dtype,
+        memmap_paths["nd"], (num_simulations,), dtype,
+        memmap_paths["odfs"], (num_simulations, n_dirs), np.float16,
+        memmap_paths["ufa_wm"], (num_simulations,), dtype,
+        memmap_paths["ufa_voxel"], (num_simulations,), dtype,
+        memmap_paths["fraction_array"], (num_simulations, 3), dtype,
+        memmap_paths["wm_disp"], (num_simulations,), dtype,
+        memmap_paths["wm_d_par"], (num_simulations,), dtype,
+        memmap_paths["wm_d_perp"], (num_simulations,), dtype,
+        memmap_paths["gm_d_par"], (num_simulations,), dtype,
+        memmap_paths["csf_d_par"], (num_simulations,), dtype,
+        memmap_paths["f_ins"], (num_simulations, 3), dtype,
     )
 
-    # Generate simulations
-    from dipy.sims._force_core import create_mixed_signal
+    # Run simulations with progress bar
+    pbar = tqdm(total=num_simulations, desc="Simulating", disable=not verbose)
 
-    for idx in range(num_simulations):
-        res = create_mixed_signal(
-            target_sphere, evecs, bingham_sf, odi_list,
-            bvals, bvecs, multi_tensor, wm_threshold, tortuosity
-        )
-        signals[idx] = res[0]
-        labels[idx] = res[1]
-        num_fibers[idx] = res[2]
-        dispersion[idx] = res[3]
-        wm_fraction[idx] = res[4]
-        gm_fraction[idx] = res[5]
-        csf_fraction[idx] = res[6]
-        nd[idx] = res[7]
-        odfs[idx] = res[8]
-        ufa_wm[idx] = res[9]
-        ufa_voxel[idx] = res[10]
-        fraction_array[idx] = res[11]
-        wm_disp[idx] = res[12]
-        wm_d_par[idx] = res[13]
-        wm_d_perp[idx] = res[14]
-        gm_d_par[idx] = res[15]
-        csf_d_par[idx] = res[16]
-        f_ins[idx] = res[17]
+    with ProcessPoolExecutor(max_workers=num_cpus) as executor:
+        futures = {
+            executor.submit(
+                _generate_batch_worker,
+                start_idx,
+                bs,
+                target_sphere,
+                evecs,
+                bingham_sf,
+                odi_list,
+                bvals,
+                bvecs,
+                wm_threshold,
+                tortuosity,
+                memmap_info,
+                diffusivity_config,
+            ): (start_idx, bs)
+            for start_idx, bs in batch_specs
+        }
 
-    # Compute DTI metrics if requested
+        for future in as_completed(futures):
+            batch_done = future.result()
+            pbar.update(batch_done)
+
+    pbar.close()
+
+    # Flush memmaps
+    for mm in memmaps:
+        mm.flush()
+
+    # Compute DTI metrics
     fa_dti = np.zeros(num_simulations, dtype=dtype)
     md_dti = np.zeros(num_simulations, dtype=dtype)
     rd_dti = np.zeros(num_simulations, dtype=dtype)
 
     if compute_dti:
+        from dipy.core.gradients import gradient_table as gt_func
+
         min_b, shell_mask = smallest_shell_bval(bvals)
         b0_mask = bvals <= 50
         use_mask = shell_mask | b0_mask
 
-        from dipy.core.gradients import gradient_table
-        gtab_small = gradient_table(bvals[use_mask], bvecs=bvecs[use_mask])
+        gtab_small = gt_func(bvals[use_mask], bvecs=bvecs[use_mask])
         dti_model = dti.TensorModel(gtab_small)
 
         dti_batch_size = 2000
+        pbar = tqdm(total=num_simulations, desc="DTI fitting", disable=not verbose)
+
         for start in range(0, num_simulations, dti_batch_size):
             end = min(start + dti_batch_size, num_simulations)
-            data_batch = signals[start:end][:, use_mask]
+            data_batch = signals_mm[start:end][:, use_mask]
             dti_fit = dti_model.fit(data_batch)
             fa_dti[start:end] = dti_fit.fa.astype(dtype)
             md_dti[start:end] = dti_fit.md.astype(dtype)
             rd_dti[start:end] = dti_fit.rd.astype(dtype)
+            pbar.update(end - start)
 
-    # Build output simulations
+        pbar.close()
+
+    # Build output simulations dict
     simulations = {
-        "signals": signals,
-        "labels": labels,
-        "num_fibers": num_fibers,
-        "dispersion": dispersion,
-        "wm_fraction": wm_fraction,
-        "gm_fraction": gm_fraction,
-        "csf_fraction": csf_fraction,
-        "nd": nd,
-        "odfs": odfs,
+        "signals": np.array(signals_mm),
+        "labels": np.array(labels_mm),
+        "num_fibers": np.array(num_fibers_mm),
+        "dispersion": np.array(dispersion_mm),
+        "wm_fraction": np.array(wm_fraction_mm),
+        "gm_fraction": np.array(gm_fraction_mm),
+        "csf_fraction": np.array(csf_fraction_mm),
+        "nd": np.array(nd_mm),
+        "odfs": np.array(odfs_mm),
         "fa": fa_dti,
         "md": md_dti,
         "rd": rd_dti,
-        "ufa_wm": ufa_wm,
-        "ufa_voxel": ufa_voxel,
-        "fraction_array": fraction_array,
+        "ufa_wm": np.array(ufa_wm_mm),
+        "ufa_voxel": np.array(ufa_voxel_mm),
+        "fraction_array": np.array(fraction_array_mm),
     }
+
+    # Cleanup memmaps
+    for mm in memmaps:
+        del mm
+    gc.collect()
+
+    for name, path in memmap_paths.items():
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+        except OSError:
+            pass
+
+    gc.collect()
 
     return simulations
 
