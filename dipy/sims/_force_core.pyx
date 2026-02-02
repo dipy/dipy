@@ -86,3 +86,30 @@ cdef inline double get_dperp_extra(double d_par, double f_intra) noexcept:
         Extra-axonal perpendicular diffusivity.
     """
     return d_par * (1.0 - f_intra) / (1.0 + f_intra)
+
+
+cdef inline double fa_stick_zeppelin(double d_par, double d_perp, double f_intra) noexcept:
+    """
+    Compute microFA for stick-zeppelin model.
+
+    Calculates microscopic fractional anisotropy for a mixture of
+    sticks (Da, 0, 0) and zeppelins (Da, dperp_ex, dperp_ex).
+
+    Parameters
+    ----------
+    d_par : double
+        Parallel diffusivity.
+    d_perp : double
+        Perpendicular diffusivity.
+    f_intra : double
+        Intra-axonal volume fraction.
+
+    Returns
+    -------
+    ufa : double
+        Microscopic fractional anisotropy.
+    """
+    cdef double e = 1.0 - f_intra
+    cdef double num = d_par - e * d_perp
+    cdef double den = (d_par * d_par + 2.0 * (e * e) * d_perp * d_perp) ** 0.5
+    return num / den
