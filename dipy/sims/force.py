@@ -1,12 +1,12 @@
 """
 FORCE: Fast Orientation Reconstruction and Compartment Estimation
 
-This module provides signal simulation for dictionary-based diffusion MRI
+This module provides signal simulation for matching-based diffusion MRI
 reconstruction using multi-compartment tissue models.
 
-The FORCE method generates a dictionary of simulated signals representing
+The FORCE method generates a library of simulated signals representing
 various tissue configurations (white matter with 1-3 fibers, gray matter,
-CSF) and uses this dictionary to reconstruct microstructural parameters
+CSF) and uses this library to reconstruct microstructural parameters
 from real diffusion MRI data.
 
 References
@@ -209,7 +209,7 @@ def _generate_batch_worker(args):
     return batch_size
 
 
-def generate_force_dictionary(
+def generate_force_simulations(
     gtab,
     num_simulations=100000,
     output_dir=None,
@@ -226,10 +226,10 @@ def generate_force_dictionary(
     verbose=False,
 ):
     """
-    Generate FORCE simulation dictionary.
+    Generate FORCE simulations.
 
-    Creates a dictionary of simulated diffusion MRI signals with
-    corresponding microstructural parameters for dictionary-based
+    Creates a library of simulated diffusion MRI signals with
+    corresponding microstructural parameters for matching-based
     reconstruction.
 
     Parameters
@@ -267,8 +267,8 @@ def generate_force_dictionary(
 
     Returns
     -------
-    dictionary : dict
-        Dictionary containing simulated signals and parameters.
+    simulations : dict
+        Simulations containing signals and parameters.
     """
     import os
     import tempfile
@@ -390,8 +390,8 @@ def generate_force_dictionary(
             md_dti[start:end] = dti_fit.md.astype(dtype)
             rd_dti[start:end] = dti_fit.rd.astype(dtype)
 
-    # Build output dictionary
-    dictionary = {
+    # Build output simulations
+    simulations = {
         "signals": signals,
         "labels": labels,
         "num_fibers": num_fibers,
@@ -409,36 +409,36 @@ def generate_force_dictionary(
         "fraction_array": fraction_array,
     }
 
-    return dictionary
+    return simulations
 
 
-def save_force_dictionary(dictionary, output_path):
+def save_force_simulations(simulations, output_path):
     """
-    Save FORCE dictionary to compressed NPZ file.
+    Save FORCE simulations to compressed NPZ file.
 
     Parameters
     ----------
-    dictionary : dict
-        FORCE simulation dictionary.
+    simulations : dict
+        FORCE simulations.
     output_path : str
         Path for output file (.npz extension).
     """
-    np.savez_compressed(output_path, **dictionary)
+    np.savez_compressed(output_path, **simulations)
 
 
-def load_force_dictionary(input_path):
+def load_force_simulations(input_path):
     """
-    Load FORCE dictionary from NPZ file.
+    Load FORCE simulations from NPZ file.
 
     Parameters
     ----------
     input_path : str
-        Path to dictionary file.
+        Path to simulations file.
 
     Returns
     -------
-    dictionary : dict
-        FORCE simulation dictionary.
+    simulations : dict
+        FORCE simulations.
     """
     data = np.load(input_path, allow_pickle=False)
     return {key: data[key] for key in data.files}

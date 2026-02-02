@@ -1,8 +1,8 @@
 """
 FORCE Reconstruction Module
 
-Dictionary-based matching for diffusion MRI microstructure estimation.
-Implements both standard matching and posterior-based inference.
+Signal matching based reconstruction for diffusion MRI microstructure
+estimation. Implements both standard matching and posterior-based inference.
 
 The FORCEModel class provides a DIPY-compatible interface for fitting
 the FORCE model to diffusion MRI data. It supports:
@@ -15,10 +15,10 @@ the FORCE model to diffusion MRI data. It supports:
 Examples
 --------
 >>> from dipy.reconst.force import FORCEModel
->>> from dipy.sims.force import load_force_dictionary
->>> 
->>> dictionary = load_force_dictionary('simulated_data.npz')
->>> model = FORCEModel(gtab, dictionary, n_neighbors=50)
+>>> from dipy.sims.force import load_force_simulations
+>>>
+>>> simulations = load_force_simulations('simulated_data.npz')
+>>> model = FORCEModel(gtab, simulations, n_neighbors=50)
 >>> fit = model.fit(data, mask=brain_mask)
 >>> fa_map = fit.fa
 
@@ -28,10 +28,129 @@ FORCE methodology paper (in preparation)
 """
 
 import numpy as np
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor
 
 from dipy.reconst.base import ReconstModel
-from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.data import default_sphere
+
+
+class SignalIndex:
+    """
+    Index for inner product similarity search.
+
+    Pure NumPy implementation. For high-performance search,
+    compile the Cython _force_search module.
+
+    Parameters
+    ----------
+    d : int
+        Dimension of vectors.
+    """
+
+    def __init__(self, d):
+        if d <= 0:
+            raise ValueError(f"Dimension must be positive, got {d}")
+        self.d = int(d)
+        self.ntotal = 0
+        self._xb = None
+
+    def add(self, x):
+        """
+        Add vectors to the index.
+
+        Parameters
+        ----------
+        x : array-like (n, d)
+            Vectors to add, will be converted to float32 C-contiguous.
+        """
+        x = np.ascontiguousarray(x, dtype=np.float32)
+
+        if x.ndim == 1:
+            if len(x) != self.d:
+                raise ValueError(
+                    f"Vector dimension {len(x)} != index dimension {self.d}"
+                )
+            x = x.reshape(1, -1)
+
+        if x.ndim != 2:
+            raise ValueError(f"Expected 1D or 2D array, got {x.ndim}D")
+
+        if x.shape[1] != self.d:
+            raise ValueError(
+                f"Vector dimension {x.shape[1]} != index dimension {self.d}"
+            )
+
+        if self._xb is None:
+            self._xb = x.copy()
+        else:
+            self._xb = np.vstack([self._xb, x])
+
+        self.ntotal = len(self._xb)
+
+    def search(self, x, k):
+        """
+        Search for k nearest neighbors by inner product.
+
+        Parameters
+        ----------
+        x : array-like (n, d) or (d,)
+            Query vectors.
+        k : int
+            Number of neighbors.
+
+        Returns
+        -------
+        distances : ndarray (n, k)
+            Inner products (descending order).
+        indices : ndarray (n, k)
+            Neighbor indices.
+        """
+        if self.ntotal == 0:
+            raise RuntimeError("Cannot search empty index")
+
+        x = np.ascontiguousarray(x, dtype=np.float32)
+
+        if x.ndim == 1:
+            if len(x) != self.d:
+                raise ValueError(
+                    f"Query dimension {len(x)} != index dimension {self.d}"
+                )
+            x = x.reshape(1, -1)
+
+        if x.ndim != 2:
+            raise ValueError(f"Expected 1D or 2D array, got {x.ndim}D")
+
+        if x.shape[1] != self.d:
+            raise ValueError(
+                f"Query dimension {x.shape[1]} != index dimension {self.d}"
+            )
+
+        if k <= 0:
+            raise ValueError(f"k must be positive, got {k}")
+
+        k = min(k, self.ntotal)
+
+        # Try to use optimized Cython search if available
+        try:
+            from dipy.reconst._force_search import search_inner_product
+            distances, indices = search_inner_product(x, self._xb, k)
+        except ImportError:
+            # Fallback to NumPy implementation
+            scores = x @ self._xb.T
+            indices = np.argsort(-scores, axis=1)[:, :k]
+            distances = np.take_along_axis(scores, indices, axis=1)
+            distances = distances.astype(np.float32)
+            indices = indices.astype(np.int64)
+
+        return distances, indices
+
+    def reset(self):
+        """Remove all vectors from the index."""
+        self._xb = None
+        self.ntotal = 0
+
+    def __repr__(self):
+        return f"SignalIndex(d={self.d}, ntotal={self.ntotal})"
 
 
 def normalize_signals(signals):
@@ -52,6 +171,26 @@ def normalize_signals(signals):
     norms = np.linalg.norm(signals, axis=1, keepdims=True)
     norms[norms == 0] = 1.0
     return np.ascontiguousarray(signals / norms)
+
+
+def create_signal_index(signals_norm):
+    """
+    Create index for cosine similarity search.
+
+    Parameters
+    ----------
+    signals_norm : ndarray (N, M)
+        L2-normalized library signals.
+
+    Returns
+    -------
+    index : SignalIndex
+        Search index.
+    """
+    dimension = signals_norm.shape[1]
+    index = SignalIndex(dimension)
+    index.add(signals_norm)
+    return index
 
 
 def softmax_stable(x, axis=1):
@@ -87,16 +226,18 @@ def compute_uncertainty_ambiguity(scores):
     Returns
     -------
     uncertainty : ndarray (N,)
-        IQR of scores (Eq 14 from FORCE paper).
+        IQR of scores.
     ambiguity : ndarray (N,)
-        Fraction above half-max (Eq 15 from FORCE paper).
+        Fraction above half-max.
     """
     p75 = np.percentile(scores, 75, axis=1)
     p25 = np.percentile(scores, 25, axis=1)
     uncertainty = (p75 - p25).astype(np.float32)
 
     half = 0.5 * np.max(scores, axis=1)
-    ambiguity = (np.sum(scores > half[:, None], axis=1) / scores.shape[1]).astype(np.float32)
+    ambiguity = (np.sum(scores > half[:, None], axis=1) / scores.shape[1]).astype(
+        np.float32
+    )
     return uncertainty, ambiguity
 
 
@@ -132,11 +273,7 @@ def labels_to_peak_indices(labels_binary, max_peaks=3):
 
 
 def pick_top_peaks_from_weights(
-    weights,
-    sphere_dirs,
-    n_peaks=5,
-    top_m=30,
-    min_separation_angle=45.0
+    weights, sphere_dirs, n_peaks=5, top_m=30, min_separation_angle=45.0
 ):
     """
     Extract discrete peaks from directional weights.
@@ -202,148 +339,60 @@ def pick_top_peaks_from_weights(
     return peak_dirs, peak_inds, peak_vals
 
 
-class IndexFlatIP:
+def postprocess_peaks(preds, target_sphere, fracs):
     """
-    Flat index for inner product similarity search.
-
-    Pure NumPy implementation providing FAISS-like interface.
-    For production use, compile the Cython _force_search module.
+    Convert binary peak masks to exactly 5 peaks per sample.
 
     Parameters
     ----------
-    d : int
-        Dimension of vectors.
-    """
-
-    def __init__(self, d):
-        if d <= 0:
-            raise ValueError(f"Dimension must be positive, got {d}")
-        self.d = int(d)
-        self.ntotal = 0
-        self._xb = None
-
-    def add(self, x):
-        """Add vectors to the index."""
-        x = np.ascontiguousarray(x, dtype=np.float32)
-
-        if x.ndim == 1:
-            x = x.reshape(1, -1)
-
-        if x.shape[1] != self.d:
-            raise ValueError(
-                f"Vector dimension {x.shape[1]} != index dimension {self.d}"
-            )
-
-        if self._xb is None:
-            self._xb = x.copy()
-        else:
-            self._xb = np.vstack([self._xb, x])
-
-        self.ntotal = len(self._xb)
-
-    def search(self, x, k):
-        """
-        Search for k nearest neighbors by inner product.
-
-        Parameters
-        ----------
-        x : ndarray (n, d)
-            Query vectors.
-        k : int
-            Number of neighbors.
-
-        Returns
-        -------
-        distances : ndarray (n, k)
-            Inner products (descending).
-        indices : ndarray (n, k)
-            Neighbor indices.
-        """
-        if self.ntotal == 0:
-            raise RuntimeError("Cannot search empty index")
-
-        x = np.ascontiguousarray(x, dtype=np.float32)
-        if x.ndim == 1:
-            x = x.reshape(1, -1)
-
-        k = min(k, self.ntotal)
-
-        scores = x @ self._xb.T
-        indices = np.argsort(-scores, axis=1)[:, :k]
-        distances = np.take_along_axis(scores, indices, axis=1)
-
-        return distances.astype(np.float32), indices.astype(np.int64)
-
-    def reset(self):
-        """Remove all vectors."""
-        self._xb = None
-        self.ntotal = 0
-
-
-def create_faiss_index(signals_norm):
-    """
-    Create FAISS-like index for cosine similarity search.
-
-    Parameters
-    ----------
-    signals_norm : ndarray (N, M)
-        L2-normalized library signals.
+    preds : ndarray (N, D)
+        Binary peak masks.
+    target_sphere : ndarray (D, 3)
+        Sphere directions.
+    fracs : ndarray (N, max_peaks)
+        Fiber fractions.
 
     Returns
     -------
-    index : IndexFlatIP
-        Search index.
+    peaks_output : ndarray (N, 5, 3)
+        Peak directions.
+    peak_indices : ndarray (N, 5)
+        Peak indices.
+    peak_values : ndarray (N, 5)
+        Peak values.
     """
-    dimension = signals_norm.shape[1]
-    index = IndexFlatIP(dimension)
-    index.add(signals_norm)
-    return index
+    n = preds.shape[0]
+    peaks_output = np.zeros((n, 5, 3), dtype=np.float32)
+    peak_indices = np.full((n, 5), -1, dtype=np.int32)
+    peak_vals = np.zeros((n, 5), dtype=np.float32)
 
+    for i in range(n):
+        coords = target_sphere[preds[i] == 1]
+        indices = np.where(preds[i] == 1)[0]
 
-def force_search(
-    index,
-    query_signals_norm,
-    penalty_array,
-    n_neighbors=50
-):
-    """
-    Perform FORCE matching search.
+        num = min(len(coords), 5)
+        if num > 0:
+            peaks_output[i, :num] = coords[:num]
+            peak_indices[i, :num] = indices[:num]
+        num_fracs = min(5, fracs[i].shape[0])
+        peak_vals[i, :num_fracs] = fracs[i][:num_fracs]
 
-    Parameters
-    ----------
-    index : IndexFlatIP
-        Search index with library signals.
-    query_signals_norm : ndarray (N, M)
-        L2-normalized query signals.
-    penalty_array : ndarray
-        Penalty values for each library entry.
-    n_neighbors : int
-        Number of neighbors to retrieve.
-
-    Returns
-    -------
-    indices : ndarray (N, n_neighbors)
-        Matched library indices.
-    scores : ndarray (N, n_neighbors)
-        Penalized match scores.
-    """
-    D, I = index.search(query_signals_norm, k=n_neighbors)
-    S = D - penalty_array[I]
-    return I.astype(np.int32), S.astype(np.float32)
+    return peaks_output, peak_indices, peak_vals
 
 
 class FORCEModel(ReconstModel):
     """
     FORCE reconstruction model.
 
-    Dictionary-based matching for microstructure estimation.
+    Signal matching based microstructure estimation.
 
     Parameters
     ----------
     gtab : GradientTable
         Gradient table.
-    dictionary : dict
-        Pre-computed FORCE dictionary with signals and parameters.
+    simulations : dict or None
+        Pre-computed FORCE simulations with signals and parameters.
+        If None, call generate() to create simulations.
     penalty : float, optional
         Penalty weight for fiber complexity. Default is 1e-5.
     n_neighbors : int, optional
@@ -359,7 +408,7 @@ class FORCEModel(ReconstModel):
     def __init__(
         self,
         gtab,
-        dictionary,
+        simulations=None,
         penalty=1e-5,
         n_neighbors=50,
         use_posterior=False,
@@ -367,33 +416,99 @@ class FORCEModel(ReconstModel):
         compute_odf=False,
     ):
         self.gtab = gtab
-        self.dictionary = dictionary
+        self.simulations = simulations
         self.penalty = penalty
         self.n_neighbors = n_neighbors
         self.use_posterior = use_posterior
         self.posterior_beta = posterior_beta
         self.compute_odf = compute_odf
 
-        # Prepare library
+        self._index = None
+        self._penalty_array = None
+        self._signals_norm = None
+
+        if simulations is not None:
+            self._prepare_library()
+
+    def generate(
+        self,
+        n_wm_1fiber=100000,
+        n_wm_2fiber=100000,
+        n_wm_3fiber=50000,
+        n_gm=20000,
+        n_csf=10000,
+        sphere=None,
+        output_path=None,
+        **kwargs
+    ):
+        """
+        Generate simulations for matching.
+
+        Parameters
+        ----------
+        n_wm_1fiber : int
+            Number of single fiber WM simulations.
+        n_wm_2fiber : int
+            Number of two fiber crossing simulations.
+        n_wm_3fiber : int
+            Number of three fiber crossing simulations.
+        n_gm : int
+            Number of gray matter simulations.
+        n_csf : int
+            Number of CSF simulations.
+        sphere : Sphere, optional
+            Sphere for ODF directions. Default is default_sphere.
+        output_path : str, optional
+            Path to save simulations.
+        **kwargs
+            Additional parameters passed to generate_force_simulations.
+
+        Returns
+        -------
+        self : FORCEModel
+            Model with simulations loaded.
+        """
+        from dipy.sims.force import generate_force_simulations, save_force_simulations
+
+        if sphere is None:
+            sphere = default_sphere
+
+        self.simulations = generate_force_simulations(
+            self.gtab,
+            sphere,
+            n_wm_1fiber=n_wm_1fiber,
+            n_wm_2fiber=n_wm_2fiber,
+            n_wm_3fiber=n_wm_3fiber,
+            n_gm=n_gm,
+            n_csf=n_csf,
+            **kwargs
+        )
+
+        if output_path is not None:
+            save_force_simulations(self.simulations, output_path)
+
         self._prepare_library()
+        return self
 
     def _prepare_library(self):
         """Prepare library for matching."""
-        signals = self.dictionary["signals"]
+        signals = self.simulations["signals"]
 
         # Normalize library signals
         lib_norm = np.linalg.norm(signals, axis=1, keepdims=True)
         lib_norm[lib_norm == 0] = 1.0
-        self.signals_norm = np.ascontiguousarray(
+        self._signals_norm = np.ascontiguousarray(
             (signals / lib_norm).astype(np.float32)
         )
 
         # Build index
-        self.index = create_faiss_index(self.signals_norm)
+        self._index = create_signal_index(self._signals_norm)
 
         # Penalty array
-        num_fibers = self.dictionary.get("num_fibers", np.zeros(len(signals)))
-        self.penalty_array = (self.penalty * num_fibers).astype(np.float32)
+        num_fibers = self.simulations.get(
+            "num_fibers", np.zeros(len(signals), dtype=np.float32)
+        )
+        self._penalty_array = (self.penalty * num_fibers).astype(np.float32)
 
     def fit(self, data, mask=None):
         """
@@ -411,6 +526,11 @@ class FORCEModel(ReconstModel):
         fit : FORCEFit
             Fitted model.
         """
+        if self.simulations is None:
+            raise RuntimeError(
+                "No simulations loaded. Call generate() or provide simulations."
+            )
+
         return FORCEFit(self, data, mask)
 
 
@@ -431,7 +551,9 @@ class FORCEFit:
     def __init__(self, model, data, mask=None):
         self.model = model
         self.data = data
-        self.mask = mask if mask is not None else np.ones(data.shape[:-1], dtype=bool)
+        self.mask = (
+            mask if mask is not None else np.ones(data.shape[:-1], dtype=bool)
+        )
 
         self._fit()
 
@@ -453,12 +575,10 @@ class FORCEFit:
         query_norm = np.ascontiguousarray(valid_data / norms)
 
         # Perform search
-        I, S = force_search(
-            self.model.index,
-            query_norm,
-            self.model.penalty_array,
-            n_neighbors=self.model.n_neighbors
-        )
+        D, I = self.model._index.search(query_norm, k=self.model.n_neighbors)
+
+        # Apply penalty
+        S = D - self.model._penalty_array[I]
 
         # Initialize output maps
         self._init_output_maps(n_voxels, shape)
@@ -466,14 +586,14 @@ class FORCEFit:
         if self.model.use_posterior:
             self._posterior_aggregation(valid_idx, I, S)
         else:
-            self._best_match(valid_idx, I)
+            self._best_match(valid_idx, I, S)
 
         # Reshape to original shape
         self._reshape_outputs(shape)
 
     def _init_output_maps(self, n_voxels, shape):
         """Initialize output arrays."""
-        d = self.model.dictionary
+        d = self.model.simulations
 
         self._fa = np.zeros(n_voxels, dtype=np.float32)
         self._md = np.zeros(n_voxels, dtype=np.float32)
@@ -483,15 +603,19 @@ class FORCEFit:
         self._csf_fraction = np.zeros(n_voxels, dtype=np.float32)
         self._num_fibers = np.zeros(n_voxels, dtype=np.float32)
         self._dispersion = np.zeros(n_voxels, dtype=np.float32)
+        self._nd = np.zeros(n_voxels, dtype=np.float32)
 
         if "ufa_wm" in d:
             self._ufa_wm = np.zeros(n_voxels, dtype=np.float32)
             self._ufa_voxel = np.zeros(n_voxels, dtype=np.float32)
 
-    def _best_match(self, valid_idx, I):
+    def _best_match(self, valid_idx, I, S):
         """Use best match for each voxel."""
-        d = self.model.dictionary
-        best_idx = I[:, 0]
+        d = self.model.simulations
+
+        # Find best match after penalty
+        best = np.argmax(S, axis=1)
+        best_idx = I[np.arange(len(best)), best]
 
         self._fa[valid_idx] = d["fa"][best_idx]
         self._md[valid_idx] = d["md"][best_idx]
@@ -501,6 +625,7 @@ class FORCEFit:
         self._csf_fraction[valid_idx] = d["csf_fraction"][best_idx]
         self._num_fibers[valid_idx] = d["num_fibers"][best_idx]
         self._dispersion[valid_idx] = d["dispersion"][best_idx]
+        self._nd[valid_idx] = d["nd"][best_idx]
 
         if "ufa_wm" in d:
             self._ufa_wm[valid_idx] = d["ufa_wm"][best_idx]
@@ -508,7 +633,7 @@ class FORCEFit:
 
     def _posterior_aggregation(self, valid_idx, I, S):
         """Use posterior averaging."""
-        d = self.model.dictionary
+        d = self.model.simulations
         w = softmax_stable(self.model.posterior_beta * S, axis=1)
 
         self._fa[valid_idx] = np.sum(w * d["fa"][I], axis=1)
@@ -519,6 +644,7 @@ class FORCEFit:
         self._csf_fraction[valid_idx] = np.sum(w * d["csf_fraction"][I], axis=1)
         self._num_fibers[valid_idx] = np.sum(w * d["num_fibers"][I], axis=1)
         self._dispersion[valid_idx] = np.sum(w * d["dispersion"][I], axis=1)
+        self._nd[valid_idx] = np.sum(w * d["nd"][I], axis=1)
 
         if "ufa_wm" in d:
             self._ufa_wm[valid_idx] = np.sum(w * d["ufa_wm"][I], axis=1)
@@ -534,6 +660,7 @@ class FORCEFit:
         self._csf_fraction = self._csf_fraction.reshape(shape)
         self._num_fibers = self._num_fibers.reshape(shape)
         self._dispersion = self._dispersion.reshape(shape)
+        self._nd = self._nd.reshape(shape)
 
         if hasattr(self, "_ufa_wm"):
             self._ufa_wm = self._ufa_wm.reshape(shape)
@@ -578,6 +705,11 @@ class FORCEFit:
     def dispersion(self):
         """Orientation dispersion map."""
         return self._dispersion
+
+    @property
+    def nd(self):
+        """Neurite density map."""
+        return self._nd
 
     @property
     def ufa_wm(self):
@@ -635,7 +767,7 @@ def posterior_mean_signal(signals, weights, indices):
 
     result = np.zeros((n_query, n_grad), dtype=np.float32)
     for kk in range(k):
-        result += weights[:, kk:kk+1] * signals[indices[:, kk]]
+        result += weights[:, kk : kk + 1] * signals[indices[:, kk]]
 
     return result
 
@@ -666,60 +798,8 @@ def posterior_odf(odfs, weights, indices, n_dirs):
     result = np.zeros((n_query, n_dirs), dtype=np.float32)
     for kk in range(k):
         odf_k = odfs[indices[:, kk]].astype(np.float32)
-        # Normalize each candidate ODF
-        odf_k /= (np.max(odf_k, axis=1, keepdims=True) + 1e-12)
-        result += weights[:, kk:kk+1] * odf_k
+        odf_k /= np.max(odf_k, axis=1, keepdims=True) + 1e-12
+        result += weights[:, kk : kk + 1] * odf_k
 
-    # Normalize final ODF
-    result /= (np.max(result, axis=1, keepdims=True) + 1e-12)
+    result /= np.max(result, axis=1, keepdims=True) + 1e-12
     return result
-
-
-def compute_directional_weights(
-    peak_indices,
-    fractions,
-    weights,
-    indices,
-    n_neighbors,
-    n_dirs
-):
-    """
-    Compute directional weights on sphere from matched peaks.
-
-    Parameters
-    ----------
-    peak_indices : ndarray (N_lib, max_peaks)
-        Peak direction indices for each library entry.
-    fractions : ndarray (N_lib, max_peaks)
-        Fiber fractions for each library entry.
-    weights : ndarray (N_query, K)
-        Posterior weights.
-    indices : ndarray (N_query, K)
-        Neighbor indices.
-    n_neighbors : int
-        Number of neighbors.
-    n_dirs : int
-        Number of sphere directions.
-
-    Returns
-    -------
-    dir_weights : ndarray (N_query, n_dirs)
-        Directional weights on sphere.
-    """
-    n_query = indices.shape[0]
-    max_peaks = peak_indices.shape[1]
-
-    dir_weights = np.zeros((n_query, n_dirs), dtype=np.float32)
-
-    pk = peak_indices[indices]
-    fr = fractions[indices]
-    contrib = weights[:, :, None] * fr
-
-    rows = np.repeat(np.arange(n_query, dtype=np.int32), n_neighbors * max_peaks)
-    cols = pk.reshape(-1).astype(np.int32)
-    vals = contrib.reshape(-1).astype(np.float32)
-
-    mask = cols >= 0
-    np.add.at(dir_weights, (rows[mask], cols[mask]), vals[mask])
-
-    return dir_weights

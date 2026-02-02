@@ -9,9 +9,8 @@ from dipy.reconst.force import (
     compute_uncertainty_ambiguity,
     labels_to_peak_indices,
     pick_top_peaks_from_weights,
-    IndexFlatIP,
-    create_faiss_index,
-    force_search,
+    SignalIndex,
+    create_signal_index,
 )
 
 
@@ -98,9 +97,9 @@ def test_pick_top_peaks_from_weights():
     assert peak_vals[0] == 1.0
 
 
-def test_index_flat_ip():
-    """Test IndexFlatIP inner product search."""
-    index = IndexFlatIP(10)
+def test_signal_index():
+    """Test SignalIndex inner product search."""
+    index = SignalIndex(10)
 
     # Add some vectors
     vectors = np.random.randn(100, 10).astype(np.float32)
@@ -120,32 +119,29 @@ def test_index_flat_ip():
         assert np.all(D[i, :-1] >= D[i, 1:])
 
 
-def test_create_faiss_index():
-    """Test FAISS index creation."""
+def test_create_signal_index():
+    """Test signal index creation."""
     signals = np.random.randn(100, 50).astype(np.float32)
     signals_norm = signals / np.linalg.norm(signals, axis=1, keepdims=True)
 
-    index = create_faiss_index(signals_norm)
+    index = create_signal_index(signals_norm)
 
     assert index.ntotal == 100
     assert index.d == 50
 
 
-def test_force_search():
-    """Test FORCE matching search."""
+def test_signal_search():
+    """Test signal matching search."""
     # Create mock index
     signals = np.random.randn(100, 50).astype(np.float32)
     signals_norm = signals / np.linalg.norm(signals, axis=1, keepdims=True)
-    index = create_faiss_index(signals_norm)
+    index = create_signal_index(signals_norm)
 
     # Query signals
     query = np.random.randn(10, 50).astype(np.float32)
     query_norm = query / np.linalg.norm(query, axis=1, keepdims=True)
 
-    # Penalty array
-    penalty = np.random.rand(100).astype(np.float32) * 0.01
+    D, I = index.search(query_norm, k=20)
 
-    I, S = force_search(index, query_norm, penalty, n_neighbors=20)
-
+    assert D.shape == (10, 20)
     assert I.shape == (10, 20)
-    assert S.shape == (10, 20)
