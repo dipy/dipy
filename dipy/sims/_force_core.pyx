@@ -312,3 +312,126 @@ cpdef tuple generate_single_fiber(
         [1.0, 0.0, 0.0],
         [f_intra],
     )
+
+
+cpdef tuple generate_two_fibers(
+    cnp.ndarray[DTYPE_t, ndim=2] target_sphere,
+    cnp.ndarray[DTYPE_t, ndim=3] evecs,
+    object bingham_sf,
+    cnp.ndarray[DTYPE_t, ndim=1] odi_list,
+    cnp.ndarray[DTYPE_t, ndim=1] bvals,
+    cnp.ndarray[DTYPE_t, ndim=2] bvecs,
+    object multi_tensor_func,
+    bint tortuosity
+):
+    """
+    Generate diffusion signal for two crossing fiber populations.
+
+    Parameters
+    ----------
+    target_sphere : ndarray (N, 3)
+        Unit sphere vertices.
+    evecs : ndarray (N, 3, 3)
+        Eigenvector matrices for each sphere direction.
+    bingham_sf : dict
+        Pre-computed Bingham spherical functions.
+    odi_list : ndarray
+        List of orientation dispersion index values.
+    bvals : ndarray
+        B-values.
+    bvecs : ndarray (M, 3)
+        Gradient directions.
+    multi_tensor_func : callable
+        Function to compute multi-tensor signal.
+    tortuosity : bool
+        Whether to use tortuosity constraint.
+
+    Returns
+    -------
+    tuple
+        Signal and associated parameters.
+    """
+    cdef:
+        Py_ssize_t n_dirs = target_sphere.shape[0]
+        double S0 = 100.0
+        double d_par, d_perp_extra
+        double fiber_frac1
+        double wm_nd, wm_d_perp
+        int i
+        int idx0, idx1
+
+    f_in = np.random.uniform(0.6, 0.9, 2).astype(np.float64)
+    fiber_frac1 = float(np.random.uniform(0.2, 0.8))
+    fiber_fractions = [fiber_frac1, 1.0 - fiber_frac1]
+
+    d_par = sample_wm_d_par()
+    if tortuosity:
+        d_perp_extra = get_dperp_extra(d_par, float(f_in[0]))
+    else:
+        d_perp_extra = sample_wm_d_perp()
+
+    labels = np.zeros(n_dirs, dtype=np.uint8)
+
+    mevals_ex = np.zeros_like(target_sphere, dtype=np.float64)
+    mevals_ex[:, 0] = d_par
+    mevals_ex[:, 1] = d_perp_extra
+    mevals_ex[:, 2] = d_perp_extra
+
+    mevals_in = np.zeros_like(target_sphere, dtype=np.float64)
+    mevals_in[:, 0] = d_par
+    mevals_in[:, 1] = 0.0
+    mevals_in[:, 2] = 0.0
+
+    index = np.random.randint(0, n_dirs, 2)
+    while not is_angle_valid(
+        angle_between(target_sphere[index[0]], target_sphere[index[1]])
+    ):
+        index = np.random.randint(0, n_dirs, 2)
+
+    idx0 = int(index[0])
+    idx1 = int(index[1])
+    true_stick1 = target_sphere[idx0]
+    true_stick2 = target_sphere[idx1]
+
+    factor = float(np.random.choice(odi_list))
+
+    S = np.zeros(bvals.shape[0], dtype=np.float64)
+    fodf = np.zeros(n_dirs, dtype=np.float64)
+
+    for i in range(2):
+        fodf_gt = bingham_sf[int(index[i])][factor]
+        fodf_gt = np.ascontiguousarray(fodf_gt, dtype=np.float64)
+        fodf_gt = fodf_gt / np.sum(fodf_gt)
+
+        fodf += fiber_fractions[i] * fodf_gt
+
+        S_in = multi_tensor_func(mevals_in, evecs, fodf_gt * 100.0, bvals, bvecs)
+        S_ex = multi_tensor_func(mevals_ex, evecs, fodf_gt * 100.0, bvals, bvecs)
+
+        f_intra = float(f_in[i])
+        f_extra = 1.0 - f_intra
+
+        S += fiber_fractions[i] * (f_intra * S_in + f_extra * S_ex)
+
+    labels[_closest_direction(target_sphere, true_stick1)] = 1
+    labels[_closest_direction(target_sphere, true_stick2)] = 1
+
+    wm_nd = fiber_fractions[0] * float(f_in[0]) + fiber_fractions[1] * float(f_in[1])
+    wm_d_perp = (
+        fiber_fractions[0] * (1.0 - float(f_in[0])) * d_perp_extra
+        + fiber_fractions[1] * (1.0 - float(f_in[1])) * d_perp_extra
+    )
+
+    return (
+        S * S0,
+        labels,
+        2,
+        factor,
+        0.0,
+        wm_nd,
+        fodf,
+        d_par,
+        wm_d_perp,
+        [fiber_frac1, 1.0 - fiber_frac1, 0.0],
+        f_in.tolist(),
+    )
