@@ -710,3 +710,154 @@ cpdef tuple create_csf_signal(
         d,
         d,
     )
+
+
+cpdef tuple create_mixed_signal(
+    cnp.ndarray[DTYPE_t, ndim=2] target_sphere,
+    cnp.ndarray[DTYPE_t, ndim=3] evecs,
+    object bingham_sf,
+    cnp.ndarray[DTYPE_t, ndim=1] odi_list,
+    cnp.ndarray[DTYPE_t, ndim=1] bvals,
+    cnp.ndarray[DTYPE_t, ndim=2] bvecs,
+    object multi_tensor_func,
+    double wm_threshold,
+    bint tortuosity
+):
+    """
+    Create mixed WM/GM/CSF tissue signal.
+
+    This is the main simulation function that generates realistic
+    voxel signals with mixed tissue contributions.
+
+    Parameters
+    ----------
+    target_sphere : ndarray (N, 3)
+        Unit sphere vertices.
+    evecs : ndarray (N, 3, 3)
+        Eigenvector matrices for each sphere direction.
+    bingham_sf : dict
+        Pre-computed Bingham spherical functions.
+    odi_list : ndarray
+        List of orientation dispersion index values.
+    bvals : ndarray
+        B-values.
+    bvecs : ndarray (M, 3)
+        Gradient directions.
+    multi_tensor_func : callable
+        Function to compute multi-tensor signal.
+    wm_threshold : float
+        Minimum WM fraction to include fiber labels.
+    tortuosity : bool
+        Whether to use tortuosity constraint.
+
+    Returns
+    -------
+    tuple
+        (signal, labels, num_fibers, dispersion, wm_fraction,
+         gm_fraction, csf_fraction, neurite_density, odf,
+         ufa_wm, ufa_voxel, fiber_fractions, wm_disp,
+         wm_d_par, wm_d_perp, gm_d_par, csf_d_par, f_ins)
+    """
+    cdef:
+        Py_ssize_t n_dirs = target_sphere.shape[0]
+        double wm_fraction
+        double gm_fraction
+        double csf_fraction
+        int num_fiber
+        double odi
+        double nd
+        double ufa_wm = 0.0
+        double ufa_voxel
+        int k
+
+    fractions = np.random.dirichlet([2.0, 1.0, 1.0]).astype(np.float64)
+    wm_fraction = float(fractions[0])
+    gm_fraction = float(fractions[1])
+    csf_fraction = float(fractions[2])
+
+    num_fiber = int(np.random.choice([1, 2, 3], p=[0.1, 0.2, 0.7]))
+
+    wm_result = create_wm_signal(
+        num_fiber,
+        target_sphere,
+        evecs,
+        bingham_sf,
+        odi_list,
+        bvals,
+        bvecs,
+        multi_tensor_func,
+        tortuosity,
+    )
+    wm_signal = wm_result[0]
+    wm_label = wm_result[1]
+    wm_num_fib = wm_result[2]
+    wm_disp = wm_result[3]
+    wm_nd = wm_result[5]
+    wm_odf = wm_result[6]
+    wm_d_par = wm_result[7]
+    wm_d_perp = wm_result[8]
+    fracs = wm_result[9]
+    f_ins = wm_result[10]
+
+    gm_result = create_gm_signal(bvals, target_sphere)
+    gm_signal = gm_result[0]
+    gm_disp = gm_result[3]
+    gm_nd = gm_result[5]
+    gm_d_par = gm_result[7]
+
+    csf_result = create_csf_signal(bvals, target_sphere)
+    csf_signal = csf_result[0]
+    csf_d_par = csf_result[7]
+
+    odi = wm_fraction * float(wm_disp) + gm_fraction * float(gm_disp) + csf_fraction * 1.0
+    nd = wm_fraction * float(wm_nd) + gm_fraction * float(gm_nd)
+
+    combined_signal = (
+        wm_fraction * wm_signal
+        + gm_fraction * gm_signal
+        + csf_fraction * csf_signal
+    )
+
+    if wm_fraction > wm_threshold:
+        combined_odf = 50.0 * wm_fraction * wm_odf
+    else:
+        wm_label = np.zeros(n_dirs, dtype=np.uint8)
+        combined_odf = np.zeros(n_dirs, dtype=np.float16)
+
+    for k in range(wm_num_fib):
+        ufa_wm += fa_stick_zeppelin(
+            float(wm_d_par),
+            float(wm_d_perp),
+            float(f_ins[k]),
+        ) * float(fracs[k])
+
+    ufa_voxel = ufa_wm * wm_fraction
+
+    frac_arr = np.zeros(3, dtype=np.float32)
+    for k in range(min(3, len(fracs))):
+        frac_arr[k] = float(fracs[k])
+
+    f_ins_arr = np.zeros(3, dtype=np.float32)
+    for k in range(min(3, len(f_ins))):
+        f_ins_arr[k] = float(f_ins[k])
+
+    return (
+        combined_signal,
+        wm_label,
+        wm_num_fib,
+        odi,
+        wm_fraction,
+        gm_fraction,
+        csf_fraction,
+        nd,
+        combined_odf.astype(np.float16),
+        float(ufa_wm),
+        float(ufa_voxel),
+        frac_arr,
+        float(wm_disp),
+        float(wm_d_par),
+        float(wm_d_perp),
+        float(gm_d_par),
+        float(csf_d_par),
+        f_ins_arr,
+    )
