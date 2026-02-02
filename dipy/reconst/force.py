@@ -587,3 +587,32 @@ def compute_entropy(weights):
         Shannon entropy for each sample.
     """
     return (-np.sum(weights * np.log(weights + 1e-12), axis=1)).astype(np.float32)
+
+
+def posterior_mean_signal(signals, weights, indices):
+    """
+    Compute posterior mean signal from neighbors.
+
+    Parameters
+    ----------
+    signals : ndarray (N_lib, M)
+        Library signals.
+    weights : ndarray (N_query, K)
+        Posterior weights.
+    indices : ndarray (N_query, K)
+        Neighbor indices.
+
+    Returns
+    -------
+    mean_signal : ndarray (N_query, M)
+        Posterior mean signals.
+    """
+    n_query = indices.shape[0]
+    n_grad = signals.shape[1]
+    k = indices.shape[1]
+
+    result = np.zeros((n_query, n_grad), dtype=np.float32)
+    for kk in range(k):
+        result += weights[:, kk:kk+1] * signals[indices[:, kk]]
+
+    return result
