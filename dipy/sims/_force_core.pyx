@@ -67,3 +67,22 @@ def set_diffusivity_ranges(
     WM_D_PERP_MIN, WM_D_PERP_MAX = _validate_val_or_pair("wm_d_perp_range", wm_d_perp_range)
     GM_D_MIN, GM_D_MAX = _validate_val_or_pair("gm_d_iso_range", gm_d_iso_range)
     CSF_D = float(csf_d)
+
+
+cdef inline double get_dperp_extra(double d_par, double f_intra) noexcept:
+    """
+    Compute extra-axonal perpendicular diffusivity using tortuosity model.
+
+    Parameters
+    ----------
+    d_par : double
+        Parallel diffusivity.
+    f_intra : double
+        Intra-axonal volume fraction.
+
+    Returns
+    -------
+    d_perp : double
+        Extra-axonal perpendicular diffusivity.
+    """
+    return d_par * (1.0 - f_intra) / (1.0 + f_intra)
