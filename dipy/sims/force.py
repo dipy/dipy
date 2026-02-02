@@ -3,6 +3,15 @@ FORCE: Fast Orientation Reconstruction and Compartment Estimation
 
 This module provides signal simulation for dictionary-based diffusion MRI
 reconstruction using multi-compartment tissue models.
+
+The FORCE method generates a dictionary of simulated signals representing
+various tissue configurations (white matter with 1-3 fibers, gray matter,
+CSF) and uses this dictionary to reconstruct microstructural parameters
+from real diffusion MRI data.
+
+References
+----------
+FORCE methodology paper (in preparation)
 """
 
 import numpy as np
