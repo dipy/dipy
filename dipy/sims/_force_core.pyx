@@ -113,3 +113,26 @@ cdef inline double fa_stick_zeppelin(double d_par, double d_perp, double f_intra
     cdef double num = d_par - e * d_perp
     cdef double den = (d_par * d_par + 2.0 * (e * e) * d_perp * d_perp) ** 0.5
     return num / den
+
+
+cdef inline double _sample_uniform_or_fixed(double lo, double hi) noexcept:
+    """Sample uniformly from [lo, hi] or return fixed value if lo == hi."""
+    if lo == hi:
+        return lo
+    else:
+        return float(np.random.uniform(lo, hi))
+
+
+cdef inline double sample_wm_d_par() noexcept:
+    """Sample white matter parallel diffusivity."""
+    return _sample_uniform_or_fixed(WM_D_PAR_MIN, WM_D_PAR_MAX)
+
+
+cdef inline double sample_wm_d_perp() noexcept:
+    """Sample white matter perpendicular diffusivity."""
+    return _sample_uniform_or_fixed(WM_D_PERP_MIN, WM_D_PERP_MAX)
+
+
+cdef inline double sample_gm_d_iso() noexcept:
+    """Sample gray matter isotropic diffusivity."""
+    return _sample_uniform_or_fixed(GM_D_MIN, GM_D_MAX)
