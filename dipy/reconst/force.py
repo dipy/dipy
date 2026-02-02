@@ -432,36 +432,42 @@ class FORCEModel(ReconstModel):
 
     def generate(
         self,
-        n_wm_1fiber=100000,
-        n_wm_2fiber=100000,
-        n_wm_3fiber=50000,
-        n_gm=20000,
-        n_csf=10000,
-        sphere=None,
+        num_simulations=100000,
         output_path=None,
-        **kwargs
+        num_cpus=1,
+        wm_threshold=0.5,
+        tortuosity=False,
+        odi_range=(0.01, 0.3),
+        diffusivity_config=None,
+        compute_dti=True,
+        compute_dki=False,
+        verbose=False,
     ):
         """
         Generate simulations for matching.
 
         Parameters
         ----------
-        n_wm_1fiber : int
-            Number of single fiber WM simulations.
-        n_wm_2fiber : int
-            Number of two fiber crossing simulations.
-        n_wm_3fiber : int
-            Number of three fiber crossing simulations.
-        n_gm : int
-            Number of gray matter simulations.
-        n_csf : int
-            Number of CSF simulations.
-        sphere : Sphere, optional
-            Sphere for ODF directions. Default is default_sphere.
+        num_simulations : int
+            Number of simulated voxels. Default is 100000.
         output_path : str, optional
-            Path to save simulations.
-        **kwargs
-            Additional parameters passed to generate_force_simulations.
+            Path to save simulations (.npz).
+        num_cpus : int
+            Number of CPU cores for parallel processing.
+        wm_threshold : float
+            Minimum WM fraction to include fiber labels.
+        tortuosity : bool
+            Use tortuosity constraint for perpendicular diffusivity.
+        odi_range : tuple
+            (min, max) orientation dispersion index range.
+        diffusivity_config : dict, optional
+            Custom diffusivity ranges.
+        compute_dti : bool
+            Compute DTI metrics (FA, MD, RD).
+        compute_dki : bool
+            Compute DKI metrics (AK, RK, MK, KFA).
+        verbose : bool
+            Enable progress output.
 
         Returns
         -------
@@ -470,18 +476,17 @@ class FORCEModel(ReconstModel):
         """
         from dipy.sims.force import generate_force_simulations, save_force_simulations
 
-        if sphere is None:
-            sphere = default_sphere
-
         self.simulations = generate_force_simulations(
             self.gtab,
-            sphere,
-            n_wm_1fiber=n_wm_1fiber,
-            n_wm_2fiber=n_wm_2fiber,
-            n_wm_3fiber=n_wm_3fiber,
-            n_gm=n_gm,
-            n_csf=n_csf,
-            **kwargs
+            num_simulations=num_simulations,
+            num_cpus=num_cpus,
+            wm_threshold=wm_threshold,
+            tortuosity=tortuosity,
+            odi_range=odi_range,
+            diffusivity_config=diffusivity_config,
+            compute_dti=compute_dti,
+            compute_dki=compute_dki,
+            verbose=verbose,
         )
 
         if output_path is not None:
