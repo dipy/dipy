@@ -239,35 +239,53 @@ def compare_qti_maps(
     plt.show()
 
 
-def bundle_shape_profile(x, shape_profile, std):
-    """Plot bundlewarp bundle shape profile.
+def bundle_profile_plot(x, profile, ylabel, *, title='Bundle Profile', 
+                        std=None, save_path=None, show=True):
+    """Plot bundle profile.
 
     Parameters
     ----------
     x : np.ndarray
         Integer array containing x-axis
-    shape_profile : np.ndarray
-        Float array containing bundlewarp displacement magnitudes along the
-        length of the bundle
-    std : np.ndarray
+    profile : np.ndarray
+        Float array containing bundle profile
+    ylabel : str
+        ylabel for the plot
+    title : str, optional
+        Plot title
+    std : np.ndarray, optional
         Float array containing standard deviations
+    save_path : str, optional
+        If provided, save the figure to this path (e.g., "profile.png")
+    show : bool, optional
+        Whether to display the plot (default: True)
+    
     """
     fig, ax = plt.subplots(figsize=(8, 6), dpi=300)
-    std_1 = shape_profile + std
-    std_2 = shape_profile - std
+        
     ax.plot(
-        x, shape_profile, "-", label="Mean", color="Purple", linewidth=3, markersize=12
+        x, profile, "-", label="Mean", color="Purple", linewidth=3, markersize=12
     )
-    ax.fill_between(x, std_1, std_2, alpha=0.2, label="Std", color="Purple")
-
+    
+    if std is not None:
+        std_1 = profile + std
+        std_2 = profile - std
+        ax.fill_between(x, std_1, std_2, alpha=0.2, label="Std", color="Purple")
+        plt.ylim(0, max(std_1) + 2)
+        
     plt.xticks(x)
-    plt.ylim(0, max(std_1) + 2)
-
-    plt.ylabel("Average Displacement")
+    plt.ylabel(ylabel)
     plt.xlabel("Segment Number")
-    plt.title("Bundle Shape Profile")
+    plt.title(title)
     plt.legend(loc=2)
-    plt.show()
+
+    if save_path is not None:
+        fig.savefig(save_path, bbox_inches="tight")
+
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
 
 def image_mosaic(
