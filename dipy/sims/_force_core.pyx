@@ -669,3 +669,44 @@ cpdef tuple create_gm_signal(
         d,
         d,
     )
+
+
+cpdef tuple create_csf_signal(
+    cnp.ndarray[DTYPE_t, ndim=1] bvals,
+    cnp.ndarray[DTYPE_t, ndim=2] target_sphere
+):
+    """
+    Create CSF free water diffusion signal.
+
+    Parameters
+    ----------
+    bvals : ndarray
+        B-values.
+    target_sphere : ndarray (N, 3)
+        Unit sphere vertices.
+
+    Returns
+    -------
+    tuple
+        (signal, labels, num_fibers, placeholder, free_water_fraction,
+         placeholder, odf, d_par, d_perp)
+    """
+    cdef:
+        Py_ssize_t n_dirs = target_sphere.shape[0]
+        double d = CSF_D
+
+    signal = np.exp(-bvals * d) * 100.0
+    labels = np.zeros(n_dirs, dtype=np.uint8)
+    csf_odf = np.zeros(n_dirs, dtype=np.float64)
+
+    return (
+        signal,
+        labels,
+        0,
+        1.0,
+        1.0,
+        0.0,
+        csf_odf,
+        d,
+        d,
+    )
