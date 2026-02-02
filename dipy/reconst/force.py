@@ -130,12 +130,17 @@ class SignalIndex:
 
         k = min(k, self.ntotal)
 
-        # Inner product search
-        scores = x @ self._xb.T
-        indices = np.argsort(-scores, axis=1)[:, :k]
-        distances = np.take_along_axis(scores, indices, axis=1)
-        distances = distances.astype(np.float32)
-        indices = indices.astype(np.int64)
+        # Try optimized Cython search (uses SciPy BLAS + streaming heap)
+        try:
+            from dipy.reconst._force_search import search_inner_product
+            distances, indices = search_inner_product(x, self._xb, k)
+        except ImportError:
+            # Fallback to NumPy implementation
+            scores = x @ self._xb.T
+            indices = np.argsort(-scores, axis=1)[:, :k]
+            distances = np.take_along_axis(scores, indices, axis=1)
+            distances = distances.astype(np.float32)
+            indices = indices.astype(np.int64)
 
         return distances, indices
 
