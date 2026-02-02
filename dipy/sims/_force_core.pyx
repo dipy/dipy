@@ -569,3 +569,62 @@ cpdef tuple generate_three_fibers(
         fiber_fracs.tolist(),
         f_in.tolist(),
     )
+
+
+cpdef tuple create_wm_signal(
+    int num_fib,
+    cnp.ndarray[DTYPE_t, ndim=2] target_sphere,
+    cnp.ndarray[DTYPE_t, ndim=3] evecs,
+    object bingham_sf,
+    cnp.ndarray[DTYPE_t, ndim=1] odi_list,
+    cnp.ndarray[DTYPE_t, ndim=1] bvals,
+    cnp.ndarray[DTYPE_t, ndim=2] bvecs,
+    object multi_tensor_func,
+    bint tortuosity
+):
+    """
+    Create white matter signal with specified number of fibers.
+
+    Parameters
+    ----------
+    num_fib : int
+        Number of fiber populations (1, 2, or 3).
+    target_sphere : ndarray (N, 3)
+        Unit sphere vertices.
+    evecs : ndarray (N, 3, 3)
+        Eigenvector matrices for each sphere direction.
+    bingham_sf : dict
+        Pre-computed Bingham spherical functions.
+    odi_list : ndarray
+        List of orientation dispersion index values.
+    bvals : ndarray
+        B-values.
+    bvecs : ndarray (M, 3)
+        Gradient directions.
+    multi_tensor_func : callable
+        Function to compute multi-tensor signal.
+    tortuosity : bool
+        Whether to use tortuosity constraint.
+
+    Returns
+    -------
+    tuple
+        Signal and associated parameters.
+    """
+    if num_fib == 1:
+        return generate_single_fiber(
+            target_sphere, evecs, bingham_sf, odi_list,
+            bvals, bvecs, multi_tensor_func, tortuosity
+        )
+    elif num_fib == 2:
+        return generate_two_fibers(
+            target_sphere, evecs, bingham_sf, odi_list,
+            bvals, bvecs, multi_tensor_func, tortuosity
+        )
+    elif num_fib == 3:
+        return generate_three_fibers(
+            target_sphere, evecs, bingham_sf, odi_list,
+            bvals, bvecs, multi_tensor_func, tortuosity
+        )
+    else:
+        raise ValueError("num_fib must be 1, 2 or 3")
