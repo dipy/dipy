@@ -616,3 +616,38 @@ def posterior_mean_signal(signals, weights, indices):
         result += weights[:, kk:kk+1] * signals[indices[:, kk]]
 
     return result
+
+
+def posterior_odf(odfs, weights, indices, n_dirs):
+    """
+    Compute posterior ODF from neighbors.
+
+    Parameters
+    ----------
+    odfs : ndarray (N_lib, D)
+        Library ODFs.
+    weights : ndarray (N_query, K)
+        Posterior weights.
+    indices : ndarray (N_query, K)
+        Neighbor indices.
+    n_dirs : int
+        Number of sphere directions.
+
+    Returns
+    -------
+    odf : ndarray (N_query, D)
+        Posterior mean ODFs.
+    """
+    n_query = indices.shape[0]
+    k = indices.shape[1]
+
+    result = np.zeros((n_query, n_dirs), dtype=np.float32)
+    for kk in range(k):
+        odf_k = odfs[indices[:, kk]].astype(np.float32)
+        # Normalize each candidate ODF
+        odf_k /= (np.max(odf_k, axis=1, keepdims=True) + 1e-12)
+        result += weights[:, kk:kk+1] * odf_k
+
+    # Normalize final ODF
+    result /= (np.max(result, axis=1, keepdims=True) + 1e-12)
+    return result
