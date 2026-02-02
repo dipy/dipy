@@ -126,3 +126,68 @@ def multi_tensor(
                     S[j] += tmp_S_one[j] * frac
 
     return np.asarray(S)
+
+
+def multi_tensor_batch(
+    signals_out,
+    const double[:, :, ::1] mevals_batch,
+    const double[:, :, :, ::1] evecs_batch,
+    const double[:, ::1] fractions_batch,
+    const double[::1] bvals,
+    const double[:, ::1] bvecs,
+    int n_threads=1
+):
+    """
+    Compute multi-tensor signals for a batch of voxels.
+
+    This function is optimized for processing multiple voxels
+    and can utilize OpenMP parallelization.
+
+    Parameters
+    ----------
+    signals_out : ndarray (B, M)
+        Output array for computed signals.
+    mevals_batch : ndarray (B, N, 3)
+        Eigenvalues for each tensor in each voxel.
+    evecs_batch : ndarray (B, N, 3, 3)
+        Eigenvectors for each tensor in each voxel.
+    fractions_batch : ndarray (B, N)
+        Volume fractions for each voxel.
+    bvals : ndarray (M,)
+        B-values.
+    bvecs : ndarray (M, 3)
+        Gradient directions.
+    n_threads : int, optional
+        Number of OpenMP threads. Default is 1.
+
+    Returns
+    -------
+    signals_out : ndarray (B, M)
+        Computed signals (same as input, modified in place).
+    """
+    cdef:
+        int batch_idx, i, j
+        int batch_size = mevals_batch.shape[0]
+        int n_tensors = mevals_batch.shape[1]
+        int n_grads = bvals.shape[0]
+        double[:, ::1] out_view = signals_out
+        double[::1] tmp_signal
+        double frac
+
+    for batch_idx in range(batch_size):
+        tmp_signal = np.zeros(n_grads, dtype=np.float64)
+
+        for i in range(n_tensors):
+            frac = fractions_batch[batch_idx, i] / 100.0
+            if frac > 0:
+                single_tensor(
+                    mevals_batch[batch_idx, i],
+                    evecs_batch[batch_idx, i],
+                    bvals,
+                    bvecs,
+                    tmp_signal
+                )
+                for j in range(n_grads):
+                    out_view[batch_idx, j] += tmp_signal[j] * frac
+
+    return signals_out
