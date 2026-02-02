@@ -628,3 +628,44 @@ cpdef tuple create_wm_signal(
         )
     else:
         raise ValueError("num_fib must be 1, 2 or 3")
+
+
+cpdef tuple create_gm_signal(
+    cnp.ndarray[DTYPE_t, ndim=1] bvals,
+    cnp.ndarray[DTYPE_t, ndim=2] target_sphere
+):
+    """
+    Create gray matter isotropic diffusion signal.
+
+    Parameters
+    ----------
+    bvals : ndarray
+        B-values.
+    target_sphere : ndarray (N, 3)
+        Unit sphere vertices.
+
+    Returns
+    -------
+    tuple
+        (signal, labels, num_fibers, dispersion, placeholder,
+         neurite_density, odf, d_par, d_perp)
+    """
+    cdef:
+        Py_ssize_t n_dirs = target_sphere.shape[0]
+        double d = sample_gm_d_iso()
+
+    signal = np.exp(-bvals * d) * 100.0
+    labels = np.zeros(n_dirs, dtype=np.uint8)
+    gm_odf = np.ones(n_dirs, dtype=np.float64) / float(n_dirs)
+
+    return (
+        signal,
+        labels,
+        0,
+        1.0,
+        0.0,
+        0.0,
+        gm_odf,
+        d,
+        d,
+    )
