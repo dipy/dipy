@@ -52,3 +52,47 @@ def test_bingham_dictionary_structure():
         assert isinstance(result[i], dict)
         for odi in odi_list:
             assert odi in result[i]
+
+
+def test_validate_diffusivity_config_valid():
+    """Test validation of valid diffusivity config."""
+    config = get_default_diffusivity_config()
+    assert validate_diffusivity_config(config) is True
+
+
+def test_validate_diffusivity_config_missing_key():
+    """Test validation fails for missing keys."""
+    config = {"wm_d_par_range": (2e-3, 3e-3)}
+
+    try:
+        validate_diffusivity_config(config)
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "Missing required key" in str(e)
+
+
+def test_validate_diffusivity_config_invalid_range():
+    """Test validation fails for invalid range."""
+    config = get_default_diffusivity_config()
+    config["wm_d_par_range"] = (3e-3, 2e-3)  # min > max
+
+    try:
+        validate_diffusivity_config(config)
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "min must be <= max" in str(e)
+
+
+def test_get_default_diffusivity_config():
+    """Test default config has all required keys."""
+    config = get_default_diffusivity_config()
+
+    assert "wm_d_par_range" in config
+    assert "wm_d_perp_range" in config
+    assert "gm_d_iso_range" in config
+    assert "csf_d" in config
+
+    # Check reasonable values
+    assert config["csf_d"] > 0
+    assert config["wm_d_par_range"][0] > 0
+    assert config["wm_d_par_range"][1] >= config["wm_d_par_range"][0]
