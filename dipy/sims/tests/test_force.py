@@ -122,3 +122,25 @@ def test_smallest_shell_bval_no_nonzero():
         assert False, "Should have raised ValueError"
     except ValueError as e:
         assert "No non-b0 volumes" in str(e)
+
+
+def test_save_load_force_dictionary(tmp_path):
+    """Test saving and loading FORCE dictionary."""
+    from dipy.sims.force import save_force_dictionary, load_force_dictionary
+
+    # Create test dictionary
+    test_dict = {
+        "signals": np.random.randn(10, 100).astype(np.float32),
+        "labels": np.random.randint(0, 2, (10, 50)).astype(np.uint8),
+        "fa": np.random.rand(10).astype(np.float32),
+    }
+
+    output_path = tmp_path / "test_dict.npz"
+    save_force_dictionary(test_dict, str(output_path))
+
+    # Load and verify
+    loaded = load_force_dictionary(str(output_path))
+
+    assert set(loaded.keys()) == set(test_dict.keys())
+    for key in test_dict:
+        np.testing.assert_array_equal(loaded[key], test_dict[key])
