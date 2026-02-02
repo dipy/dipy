@@ -651,3 +651,53 @@ def posterior_odf(odfs, weights, indices, n_dirs):
     # Normalize final ODF
     result /= (np.max(result, axis=1, keepdims=True) + 1e-12)
     return result
+
+
+def compute_directional_weights(
+    peak_indices,
+    fractions,
+    weights,
+    indices,
+    n_neighbors,
+    n_dirs
+):
+    """
+    Compute directional weights on sphere from matched peaks.
+
+    Parameters
+    ----------
+    peak_indices : ndarray (N_lib, max_peaks)
+        Peak direction indices for each library entry.
+    fractions : ndarray (N_lib, max_peaks)
+        Fiber fractions for each library entry.
+    weights : ndarray (N_query, K)
+        Posterior weights.
+    indices : ndarray (N_query, K)
+        Neighbor indices.
+    n_neighbors : int
+        Number of neighbors.
+    n_dirs : int
+        Number of sphere directions.
+
+    Returns
+    -------
+    dir_weights : ndarray (N_query, n_dirs)
+        Directional weights on sphere.
+    """
+    n_query = indices.shape[0]
+    max_peaks = peak_indices.shape[1]
+
+    dir_weights = np.zeros((n_query, n_dirs), dtype=np.float32)
+
+    pk = peak_indices[indices]
+    fr = fractions[indices]
+    contrib = weights[:, :, None] * fr
+
+    rows = np.repeat(np.arange(n_query, dtype=np.int32), n_neighbors * max_peaks)
+    cols = pk.reshape(-1).astype(np.int32)
+    vals = contrib.reshape(-1).astype(np.float32)
+
+    mask = cols >= 0
+    np.add.at(dir_weights, (rows[mask], cols[mask]), vals[mask])
+
+    return dir_weights
