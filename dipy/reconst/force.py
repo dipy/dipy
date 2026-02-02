@@ -44,6 +44,35 @@ except ImportError:
 try:
     import ray
     HAS_RAY = True
+    
+    # Define Ray remote functions at module level for better performance
+    @ray.remote
+    def _ray_search_best_match(index, chunk_valid_idx, chunk_query, 
+                               penalty_array, k_neighbors):
+        """Search chunk and return best match indices + diagnostics."""
+        D, I = index.search(chunk_query, k_neighbors)
+        S = D - penalty_array[I]
+        
+        # Compute uncertainty and ambiguity from scores
+        p75 = np.percentile(S, 75, axis=1)
+        p25 = np.percentile(S, 25, axis=1)
+        uncertainty = (p75 - p25).astype(np.float32)
+        half = 0.5 * np.max(S, axis=1)
+        ambiguity = (np.sum(S > half[:, None], axis=1) / S.shape[1]).astype(np.float32)
+        
+        # Best match
+        best = np.argmax(S, axis=1)
+        final_indices = I[np.arange(len(best)), best]
+        return chunk_valid_idx, final_indices, uncertainty, ambiguity
+
+    @ray.remote
+    def _ray_search_posterior(index, chunk_valid_idx, chunk_query, 
+                              penalty_array, k_neighbors):
+        """Search chunk and return I, S for posterior averaging."""
+        D, I = index.search(chunk_query, k_neighbors)
+        S = D - penalty_array[I]
+        return chunk_valid_idx, I.astype(np.int32, copy=False), S.astype(np.float32, copy=False)
+
 except ImportError:
     HAS_RAY = False
 
@@ -671,15 +700,16 @@ class FORCEFit:
                 self._best_match(batch_valid_idx, I, S)
 
     def _fit_ray_parallel(self, valid_idx, query_norm, chunk_size, num_cpus):
-        """Ray parallel fitting."""
+        """Ray parallel fitting (matches FORCEv2.py pattern)."""
         verbose = self.model.verbose
         n_valid = len(valid_idx)
+        use_posterior = self.model.use_posterior
 
         # Initialize Ray
         if not ray.is_initialized():
-            ray.init(num_cpus=num_cpus)
+            ray.init(num_cpus=num_cpus, ignore_reinit_error=True)
 
-        # Create chunks
+        # Create chunks (like FORCEv2.py line 314-317)
         n_chunks = (n_valid + chunk_size - 1) // chunk_size
         chunks = [
             (valid_idx[i * chunk_size : min((i + 1) * chunk_size, n_valid)],
@@ -687,81 +717,67 @@ class FORCEFit:
             for i in range(n_chunks)
         ]
 
-        # Put shared data in Ray object store
-        signals_norm_ref = ray.put(self.model._signals_norm)
-        penalty_array_ref = ray.put(self.model._penalty_array)
+        # Put penalty array in object store (like FORCEv2.py line 243)
+        penalty_ref = ray.put(self.model._penalty_array)
         k = self.model.n_neighbors
+        index = self.model._index  # Pass directly like FORCEv2.py
 
-        # Define remote search function
-        @ray.remote
-        def search_chunk(chunk_idx, chunk_valid_idx, chunk_query, 
-                        signals_norm, penalty_array, k_neighbors):
-            """Search a chunk of voxels."""
-            # Create index for this worker
-            dimension = signals_norm.shape[1]
-            index = SignalIndex(dimension)
-            index._xb = signals_norm
-            index.ntotal = len(signals_norm)
+        # Use module-level remote functions (defined at import time)
+        search_fn = _ray_search_posterior if use_posterior else _ray_search_best_match
 
-            # Perform search
-            D, I = index.search(chunk_query, k_neighbors)
-
-            # Apply penalty
-            S = D - penalty_array[I]
-
-            return chunk_idx, chunk_valid_idx, I, S
-
-        # Submit initial batch of tasks
-        inflight_cap = num_cpus
-        pending = []
-        chunk_idx = 0
+        # Inflight cap like FORCEv2.py (line 324: inflight_cap = 20)
+        inflight_cap = min(20, num_cpus * 2)
+        inflight = []
 
         if verbose:
-            print(f"Submitting {n_chunks} chunks to {num_cpus} Ray workers...")
+            print(f"Submitting {n_chunks} chunks (inflight_cap={inflight_cap})...")
 
-        # Submit initial batch
-        while chunk_idx < min(inflight_cap, n_chunks):
-            chunk_valid_idx, chunk_query = chunks[chunk_idx]
-            pending.append(
-                search_chunk.remote(
-                    chunk_idx, chunk_valid_idx, chunk_query,
-                    signals_norm_ref, penalty_array_ref, k
-                )
-            )
-            chunk_idx += 1
-
-        # Process results as they complete
-        completed = 0
         pbar = None
         if verbose and HAS_TQDM:
             pbar = tqdm(total=n_chunks, desc="Matching", unit="chunk")
 
-        while pending:
-            ready, remaining = ray.wait(pending, num_returns=1)
-            result_idx, result_valid_idx, I, S = ray.get(ready[0])
-
-            # Apply results
-            if self.model.use_posterior:
-                self._posterior_aggregation(result_valid_idx, I, S)
-            else:
-                self._best_match(result_valid_idx, I, S)
-
-            completed += 1
-            if pbar is not None:
-                pbar.update(1)
-
-            # Submit next chunk if available
-            if chunk_idx < n_chunks:
-                chunk_valid_idx, chunk_query = chunks[chunk_idx]
-                remaining.append(
-                    search_chunk.remote(
-                        chunk_idx, chunk_valid_idx, chunk_query,
-                        signals_norm_ref, penalty_array_ref, k
-                    )
+        # Submit and process like FORCEv2.py (line 328-341)
+        for ci, (chunk_valid_idx, chunk_query) in enumerate(chunks):
+            inflight.append(
+                search_fn.remote(
+                    index, chunk_valid_idx, chunk_query,
+                    penalty_ref, k
                 )
-                chunk_idx += 1
+            )
 
-            pending = remaining
+            # Process batch when inflight is full (like FORCEv2.py line 339-341)
+            if len(inflight) >= inflight_cap:
+                results = ray.get(inflight)
+                inflight = []
+
+                for result in results:
+                    if use_posterior:
+                        result_valid_idx, I, S = result
+                        self._posterior_aggregation(result_valid_idx, I, S)
+                    else:
+                        result_valid_idx, final_indices, U, A = result
+                        self._uncertainty[result_valid_idx] = U
+                        self._ambiguity[result_valid_idx] = A
+                        self._best_match_direct(result_valid_idx, final_indices)
+
+                    if pbar is not None:
+                        pbar.update(1)
+
+        # Drain remaining (like FORCEv2.py line 438-441)
+        if len(inflight) > 0:
+            results = ray.get(inflight)
+            for result in results:
+                if use_posterior:
+                    result_valid_idx, I, S = result
+                    self._posterior_aggregation(result_valid_idx, I, S)
+                else:
+                    result_valid_idx, final_indices, U, A = result
+                    self._uncertainty[result_valid_idx] = U
+                    self._ambiguity[result_valid_idx] = A
+                    self._best_match_direct(result_valid_idx, final_indices)
+
+                if pbar is not None:
+                    pbar.update(1)
 
         if pbar is not None:
             pbar.close()
@@ -789,13 +805,29 @@ class FORCEFit:
             self._ufa_wm = np.zeros(n_voxels, dtype=np.float32)
             self._ufa_voxel = np.zeros(n_voxels, dtype=np.float32)
 
+        # Diagnostics: uncertainty and ambiguity from scores (both modes)
+        self._uncertainty = np.zeros(n_voxels, dtype=np.float32)
+        self._ambiguity = np.zeros(n_voxels, dtype=np.float32)
+        
+        # Entropy only for posterior mode (requires posterior weights)
+        if self.model.use_posterior:
+            self._entropy = np.zeros(n_voxels, dtype=np.float32)
+
     def _best_match(self, valid_idx, I, S):
-        """Use best match for each voxel."""
-        d = self.model.simulations
+        """Use best match for each voxel (from I, S arrays)."""
+        # Compute uncertainty and ambiguity from scores
+        U, A = compute_uncertainty_ambiguity(S)
+        self._uncertainty[valid_idx] = U
+        self._ambiguity[valid_idx] = A
 
         # Find best match after penalty
         best = np.argmax(S, axis=1)
         best_idx = I[np.arange(len(best)), best]
+        self._best_match_direct(valid_idx, best_idx)
+
+    def _best_match_direct(self, valid_idx, best_idx):
+        """Use pre-computed best match indices directly (faster for Ray)."""
+        d = self.model.simulations
 
         self._fa[valid_idx] = d["fa"][best_idx]
         self._md[valid_idx] = d["md"][best_idx]
@@ -816,6 +848,13 @@ class FORCEFit:
         d = self.model.simulations
         w = softmax_stable(self.model.posterior_beta * S, axis=1)
 
+        # Posterior diagnostics (like FORCEv2.py lines 348-351)
+        U, A = compute_uncertainty_ambiguity(S)
+        self._uncertainty[valid_idx] = U
+        self._ambiguity[valid_idx] = A
+        self._entropy[valid_idx] = (-np.sum(w * np.log(w + 1e-12), axis=1)).astype(np.float32)
+
+        # Posterior means
         self._fa[valid_idx] = np.sum(w * d["fa"][I], axis=1)
         self._md[valid_idx] = np.sum(w * d["md"][I], axis=1)
         self._rd[valid_idx] = np.sum(w * d["rd"][I], axis=1)
@@ -845,6 +884,14 @@ class FORCEFit:
         if hasattr(self, "_ufa_wm"):
             self._ufa_wm = self._ufa_wm.reshape(shape)
             self._ufa_voxel = self._ufa_voxel.reshape(shape)
+
+        # Always reshape uncertainty and ambiguity (available in both modes)
+        self._uncertainty = self._uncertainty.reshape(shape)
+        self._ambiguity = self._ambiguity.reshape(shape)
+        
+        # Entropy only in posterior mode
+        if hasattr(self, "_entropy"):
+            self._entropy = self._entropy.reshape(shape)
 
     @property
     def fa(self):
@@ -903,6 +950,23 @@ class FORCEFit:
         """Voxel-averaged microFA."""
         if hasattr(self, "_ufa_voxel"):
             return self._ufa_voxel
+        return None
+
+    @property
+    def uncertainty(self):
+        """Uncertainty map (IQR of penalized scores)."""
+        return self._uncertainty
+
+    @property
+    def ambiguity(self):
+        """Ambiguity map (fraction above half-max)."""
+        return self._ambiguity
+
+    @property
+    def entropy(self):
+        """Entropy map (Shannon entropy of posterior weights, posterior mode only)."""
+        if hasattr(self, "_entropy"):
+            return self._entropy
         return None
 
 
