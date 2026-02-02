@@ -42,3 +42,40 @@ def bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
         - k2 * vertices.dot(minor_axis) ** 2
     )
     return sf.T
+
+
+def bingham_dictionary(target_sphere, odi_list):
+    """
+    Generate dictionary of Bingham spherical functions.
+
+    Pre-computes Bingham distributions for all sphere directions
+    and ODI values for efficient signal simulation.
+
+    Parameters
+    ----------
+    target_sphere : ndarray (N, 3)
+        Unit sphere vertices.
+    odi_list : ndarray
+        List of orientation dispersion index values.
+
+    Returns
+    -------
+    bingham_sf : dict
+        Nested dictionary mapping (vertex_index, odi) to
+        spherical function values.
+    """
+    bingham_sf = {}
+    for i in range(len(target_sphere)):
+        vertex_key = tuple(target_sphere[i])
+        bingham_sf[i] = {}
+
+        for odi in odi_list:
+            k = 1 / np.tan(np.pi / 2 * odi)
+            evecs = all_tensor_evecs(vertex_key)
+            major_axis, minor_axis = evecs[:, 1], evecs[:, 2]
+
+            bingham_sf[i][odi] = bingham_to_sf(
+                1, k, k, major_axis, minor_axis, target_sphere
+            )
+
+    return bingham_sf
