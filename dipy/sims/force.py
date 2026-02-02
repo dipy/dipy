@@ -79,3 +79,35 @@ def bingham_dictionary(target_sphere, odi_list):
             )
 
     return bingham_sf
+
+
+def smallest_shell_bval(bvals, b0_threshold=50, shell_tolerance=50):
+    """
+    Find the smallest non-zero b-value shell.
+
+    Parameters
+    ----------
+    bvals : ndarray
+        B-values array.
+    b0_threshold : float, optional
+        Maximum b-value to consider as b0. Default is 50.
+    shell_tolerance : float, optional
+        Tolerance for shell grouping. Default is 50.
+
+    Returns
+    -------
+    min_shell : float
+        Smallest non-zero shell b-value.
+    shell_mask : ndarray
+        Boolean mask for volumes in that shell.
+    """
+    bvals = np.asarray(bvals, dtype=float)
+    non_b0 = bvals > b0_threshold
+    if not np.any(non_b0):
+        raise ValueError("No non-b0 volumes found.")
+    rounded = np.round(bvals[non_b0] / shell_tolerance) * shell_tolerance
+    min_shell = float(np.min(rounded))
+    shell_mask = np.isclose(
+        np.round(bvals / shell_tolerance) * shell_tolerance, min_shell
+    )
+    return min_shell, shell_mask
