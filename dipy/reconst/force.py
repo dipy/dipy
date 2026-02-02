@@ -570,3 +570,20 @@ class FORCEFit:
         if hasattr(self, "_ufa_voxel"):
             return self._ufa_voxel
         return None
+
+
+def compute_entropy(weights):
+    """
+    Compute entropy of posterior weights.
+
+    Parameters
+    ----------
+    weights : ndarray (N, K)
+        Posterior weights for K neighbors.
+
+    Returns
+    -------
+    entropy : ndarray (N,)
+        Shannon entropy for each sample.
+    """
+    return (-np.sum(weights * np.log(weights + 1e-12), axis=1)).astype(np.float32)
