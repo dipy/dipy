@@ -74,3 +74,55 @@ cdef inline void single_tensor(
                D11 * by * by + 2 * D12 * by * bz + D22 * bz * bz)
 
         S[i] = S0 * exp(-bvals[i] * val)
+
+
+def multi_tensor(
+    const double[:, ::1] mevals,
+    const double[:, :, ::1] evecs,
+    const double[::1] fractions,
+    const double[::1] bvals,
+    const double[:, ::1] bvecs
+):
+    """
+    Compute multi-tensor diffusion signal.
+
+    Accumulates signal contributions from multiple diffusion tensors
+    weighted by their volume fractions.
+
+    Parameters
+    ----------
+    mevals : ndarray (N, 3)
+        Eigenvalues for each tensor.
+    evecs : ndarray (N, 3, 3)
+        Eigenvectors for each tensor.
+    fractions : ndarray (N,)
+        Volume fractions (should sum to 100).
+    bvals : ndarray (M,)
+        B-values.
+    bvecs : ndarray (M, 3)
+        Gradient directions.
+
+    Returns
+    -------
+    signal : ndarray (M,)
+        Combined multi-tensor signal.
+    """
+    cdef:
+        int i, j
+        int n = bvals.shape[0]
+        int n_tensors = fractions.shape[0]
+        double[::1] S = np.zeros(n, dtype=np.float64)
+        double[::1] tmp_S_one = np.zeros(n, dtype=np.float64)
+        double frac
+
+    with nogil:
+        for i in range(n_tensors):
+            single_tensor(mevals[i], evecs[i], bvals, bvecs, tmp_S_one)
+
+            frac = fractions[i] / 100.0
+
+            if frac > 0:
+                for j in range(n):
+                    S[j] += tmp_S_one[j] * frac
+
+    return np.asarray(S)
