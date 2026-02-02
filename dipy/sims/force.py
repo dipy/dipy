@@ -111,3 +111,30 @@ def smallest_shell_bval(bvals, b0_threshold=50, shell_tolerance=50):
         np.round(bvals / shell_tolerance) * shell_tolerance, min_shell
     )
     return min_shell, shell_mask
+
+
+def _create_memmap(output_dir, name, dtype, shape):
+    """
+    Create a memory-mapped array file.
+
+    Parameters
+    ----------
+    output_dir : str
+        Directory for memmap files.
+    name : str
+        Name of the memmap file.
+    dtype : dtype
+        Data type for the array.
+    shape : tuple
+        Shape of the array.
+
+    Returns
+    -------
+    memmap : ndarray
+        Memory-mapped array.
+    path : str
+        Path to the memmap file.
+    """
+    import os
+    path = os.path.join(output_dir, f"{name}.mmap")
+    return np.memmap(path, mode="w+", dtype=dtype, shape=shape), path
