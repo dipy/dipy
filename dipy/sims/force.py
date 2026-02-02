@@ -138,3 +138,63 @@ def _create_memmap(output_dir, name, dtype, shape):
     import os
     path = os.path.join(output_dir, f"{name}.mmap")
     return np.memmap(path, mode="w+", dtype=dtype, shape=shape), path
+
+
+def _generate_batch_worker(args):
+    """
+    Worker function for parallel batch generation.
+
+    Parameters
+    ----------
+    args : tuple
+        (start_idx, batch_size, sphere, evecs, bingham, odi,
+         bvals, bvecs, wm_thresh, tortuosity, multi_tensor_func,
+         diffusivity_cfg, output_arrays)
+
+    Returns
+    -------
+    batch_size : int
+        Number of samples processed.
+    """
+    (
+        start_idx, batch_size, sphere, evecs, bingham, odi,
+        bvals, bvecs, wm_thresh, tortuosity, multi_tensor_func,
+        diffusivity_cfg, output_arrays
+    ) = args
+
+    from dipy.sims._force_core import create_mixed_signal, set_diffusivity_ranges
+
+    # Apply diffusivity config in worker
+    set_diffusivity_ranges(**diffusivity_cfg)
+
+    (signals, labels, num_fibers, dispersion, wm_fraction,
+     gm_fraction, csf_fraction, nd, odfs, ufa_wm, ufa_voxel,
+     fraction_array, wm_disp, wm_d_par, wm_d_perp, gm_d_par,
+     csf_d_par, f_ins) = output_arrays
+
+    for i in range(batch_size):
+        idx = start_idx + i
+        res = create_mixed_signal(
+            sphere, evecs, bingham, odi, bvals, bvecs,
+            multi_tensor_func, wm_thresh, tortuosity
+        )
+        signals[idx] = res[0]
+        labels[idx] = res[1]
+        num_fibers[idx] = res[2]
+        dispersion[idx] = res[3]
+        wm_fraction[idx] = res[4]
+        gm_fraction[idx] = res[5]
+        csf_fraction[idx] = res[6]
+        nd[idx] = res[7]
+        odfs[idx] = res[8]
+        ufa_wm[idx] = res[9]
+        ufa_voxel[idx] = res[10]
+        fraction_array[idx] = res[11]
+        wm_disp[idx] = res[12]
+        wm_d_par[idx] = res[13]
+        wm_d_perp[idx] = res[14]
+        gm_d_par[idx] = res[15]
+        csf_d_par[idx] = res[16]
+        f_ins[idx] = res[17]
+
+    return batch_size
