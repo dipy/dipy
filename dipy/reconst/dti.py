@@ -22,6 +22,32 @@ from dipy.reconst.weights_method import (
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.parallel import paramap
 
+
+def lower_triangular_to_cholesky(tensor_elements):
+    """Performs Cholesky decomposition of the diffusion tensor
+    """
+    R0 = np.sqrt(tensor_elements[0])
+    R3 = tensor_elements[1] / R0
+    R1 = np.sqrt(tensor_elements[2] - R3**2)
+    R5 = tensor_elements[3] / R0
+    R4 = (tensor_elements[4] - R3 * R5) / R1
+    R2 = np.sqrt(tensor_elements[5] - R4**2 - R5**2)
+
+    return np.array([R0, R1, R2, R3, R4, R5])
+
+
+def cholesky_to_lower_triangular(R):
+    """Convert Cholesky decomposition elements to the diffusion tensor elements
+    """
+    Dxx = R[0] ** 2
+    Dxy = R[0] * R[3]
+    Dyy = R[1] ** 2 + R[3] ** 2
+    Dxz = R[0] * R[5]
+    Dyz = R[1] * R[4] + R[3] * R[5]
+    Dzz = R[2] ** 2 + R[4] ** 2 + R[5] ** 2
+    return np.array([Dxx, Dxy, Dyy, Dxz, Dyz, Dzz])
+
+
 MIN_POSITIVE_SIGNAL = 0.0001
 
 ols_resort_msg = "Resorted to OLS solution in some voxels"
@@ -108,7 +134,8 @@ def geodesic_anisotropy(evals, *, axis=-1):
     evals : array-like
         Eigenvalues of a diffusion tensor.
     axis : int, optional
-        Axis of `evals` which contains 3 eigenvalues.
+        Axis of `
+        ` which contains 3 eigenvalues.
 
     Returns
     -------
@@ -1624,7 +1651,7 @@ def _ols_fit_matrix(design_matrix):
 class _NllsHelper:
     r"""Class with member functions to return nlls error and derivative."""
 
-    def err_func(self, tensor, design_matrix, data, weights=None):
+    def err_func(self, tensor, design_matrix, data, weights=None, cholesky=False):
         r"""
         Error function for the non-linear least-squares fit of the tensor.
 
@@ -1644,6 +1671,15 @@ class _NllsHelper:
             squared residuals such that $S = \sum_i w_i r_i^2$.
 
         """
+        #Cholesky decomposition if requested ---------------------------
+        if cholesky:
+            r_params = tensor[:6]
+            s0_param = tensor[6:]
+            d_params = cholesky_to_lower_triangular(r_params)
+            tensor = np.concatenate((d_params, s0_param))
+        
+        #----------------------------------------------------------------
+        
         # This is the predicted signal given the params:
         y = np.exp(np.dot(design_matrix, tensor))
         self.y = y  # cache the results
@@ -1762,6 +1798,7 @@ def nlls_fit_tensor(
     return_lower_triangular=False,
     return_leverages=False,
     init_params=None,
+    cholesky=False
 ):
     r"""
     Fit the cumulant expansion params (e.g. DTI, DKI) using non-linear
@@ -1815,14 +1852,16 @@ def nlls_fit_tensor(
     # Detect if number of parameters corresponds to dti
     dti = npa == 12
 
-    # Flatten for the iteration over voxels:
+    # Flatten data for the iteration over voxels:
     flat_data = data.reshape((-1, data.shape[-1]))
+    
+    # Flatten weights for the iteration over voxels:
     weights = weights.reshape((-1, weights.shape[-1])) if weights is not None else None
     if weights is not None:
         assert weights.shape == flat_data.shape, "Weights shape mismatch"
 
+    # Use the OLS method parameters as the starting point for nlls
     if init_params is None:
-        # Use the OLS method parameters as the starting point for nlls
         D, extra = ols_fit_tensor(
             design_matrix,
             flat_data,
@@ -1854,11 +1893,28 @@ def nlls_fit_tensor(
 
     if return_S0_hat:
         model_S0 = np.empty((flat_data.shape[0], 1))
+
+    # Start processing voxels
     for vox in range(flat_data.shape[0]):
+
+        # Check if voxel only contains zeros 
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")
 
         start_params = ols_params[vox]
+
+        if cholesky:
+            tensor_ols = start_params[:6]
+            s0_param = start_params[6:]
+
+            # remove possible zero eigen-value in starting pars for cholesky
+            evals, evecs = decompose_tensor(from_lower_triangular(tensor_ols))
+            evals = np.maximum(evals, 2e-7)
+
+            dt_clean = lower_triangular(vec_val_vect(evecs, evals))
+
+            r_params = lower_triangular_to_cholesky(dt_clean)
+            start_params = np.concatenate((r_params, s0_param))
 
         weights_vox = weights[vox] if weights is not None else None
 
@@ -1867,9 +1923,14 @@ def nlls_fit_tensor(
             this_param, status = opt.leastsq(
                 err_func,
                 start_params,
-                args=(design_matrix, flat_data[vox], weights_vox),
-                Dfun=jac_func,
+                args=(design_matrix, flat_data[vox], weights_vox, cholesky),
+                Dfun=jac_func if not cholesky else None,
             )
+
+            if cholesky:
+                r_result = this_param[:6]
+                d_result = cholesky_to_lower_triangular(r_result)
+                this_param = np.concatenate((d_result, this_param[6:]))
 
             flat_params[vox] = this_param
 
@@ -1878,6 +1939,7 @@ def nlls_fit_tensor(
                 from_lower_triangular(this_param[:6]),
                 min_diffusivity=tol / -design_matrix.min(),
             )
+
             params[vox, :3] = evals
             params[vox, 3:12] = evecs.ravel()
 
