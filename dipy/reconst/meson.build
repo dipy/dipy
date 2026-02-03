@@ -1,6 +1,4 @@
 cython_sources = [
-  '_force_heap',
-  '_force_search',
   'dirspeed',
   'dkispeed',
   'eudx_direction_getter',
@@ -26,6 +24,38 @@ foreach ext: cython_sources
     subdir: 'dipy/reconst'
   )
 endforeach
+
+# Build FORCE extensions with full optimizations (matching FORCE/setup_fast.py)
+# -O3: aggressive optimizations, -march=native: CPU-specific AVX2/FMA, -ffast-math: fast FP
+# These flags are applied to both compile AND link args (like setup_fast.py lines 56-61)
+force_optimization_args = ['-O3', '-march=native', '-ffast-math']
+
+# Build _force_heap with full optimizations (used by _force_search)
+py3.extension_module('_force_heap',
+  cython_gen_cpp.process('_force_heap.pyx'),
+  cpp_args: cython_cpp_args + force_optimization_args,
+  link_args: force_optimization_args,
+  include_directories: [incdir_numpy, inc_local, inc_scipy],
+  dependencies: [omp],
+  install: true,
+  subdir: 'dipy/reconst'
+)
+
+# Build _force_search with FAISS SIMD C++ source
+# This extension requires the distances_simd.cpp for AVX2/FMA optimized operations
+force_src_inc = include_directories('force_src')
+py3.extension_module('_force_search',
+  [
+    cython_gen_cpp.process('_force_search.pyx'),
+    'force_src/distances_simd.cpp',
+  ],
+  cpp_args: cython_cpp_args + force_optimization_args,
+  link_args: force_optimization_args,
+  include_directories: [incdir_numpy, inc_local, inc_scipy, force_src_inc],
+  dependencies: [omp],
+  install: true,
+  subdir: 'dipy/reconst'
+)
 
 
 python_sources = ['__init__.py',

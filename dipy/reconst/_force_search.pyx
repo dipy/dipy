@@ -2,11 +2,14 @@
 # cython: language_level=3, boundscheck=False, wraparound=False, cdivision=True
 # cython: initializedcheck=False, nonecheck=False
 """
-High-performance k-NN search using SciPy BLAS.
+High-performance k-NN search using FAISS-style streaming approach.
 
 Based on FORCE vec_search implementation:
-- SciPy BLAS (sgemm) for fast matrix multiplication
+- FAISS SIMD (AVX2/FMA) for small batches
+- SciPy BLAS (sgemm) for large batches
 - Parallel heap for memory-efficient top-k selection
+
+Memory usage: O(n_queries * chunk_size) instead of O(n_queries * n_database)
 """
 
 import numpy as np
@@ -18,6 +21,12 @@ from libc.stdlib cimport malloc, free
 # Import SciPy BLAS
 from scipy.linalg.cython_blas cimport sgemm
 
+# Import FAISS SIMD functions
+cdef extern from "force_src/distances.h" namespace "faiss" nogil:
+    float fvec_inner_product(const float* x, const float* y, size_t d)
+    float fvec_L2sqr(const float* x, const float* y, size_t d)
+    float fvec_norm_L2sqr(const float* x, size_t d)
+
 # Import heap functions from local module
 from dipy.reconst._force_heap cimport (
     select_top_k_parallel,
@@ -27,8 +36,40 @@ from dipy.reconst._force_heap cimport (
 )
 
 
-# Database chunk size for streaming
+# Database chunk size for streaming (FAISS-style)
+# This bounds memory to: n_queries * CHUNK_SIZE * 4 bytes
+# With 2000 queries and 8192 chunk: ~64 MB per batch (vs 4GB for full matrix)
 cdef size_t DB_CHUNK_SIZE = 8192
+
+# Threshold for choosing between SIMD and BLAS for small operations
+cdef size_t BLAS_THRESHOLD = 500
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef void compute_distances_simd(
+    const float[:, ::1] queries,
+    const float[:, ::1] database,
+    float* distances
+) noexcept nogil:
+    """
+    Compute all inner products using FAISS SIMD.
+    Used for small batches where BLAS overhead is too high.
+    """
+    cdef size_t n_queries = queries.shape[0]
+    cdef size_t n_database = database.shape[0]
+    cdef size_t d = queries.shape[1]
+    cdef size_t i, j
+
+    # Parallel loop over queries
+    for i in prange(n_queries, schedule='static', nogil=True):
+        for j in range(n_database):
+            distances[i * n_database + j] = fvec_inner_product(
+                &queries[i, 0],
+                &database[j, 0],
+                d
+            )
 
 
 @cython.boundscheck(False)
@@ -104,7 +145,9 @@ cdef void knn_inner_product_streaming(
     cdef size_t d = queries.shape[1]
 
     cdef size_t chunk_start, chunk_end, chunk_size
+    cdef size_t batch_size
     cdef float* distances = NULL
+    cdef bint use_simd
 
     # Step 1: Initialize heaps with -inf values
     heap_init_parallel(
@@ -115,6 +158,7 @@ cdef void knn_inner_product_streaming(
     )
 
     # Allocate buffer for one chunk worth of distances
+    # This is the key memory optimization - only allocate for chunk, not full DB
     cdef size_t max_chunk = DB_CHUNK_SIZE
     if max_chunk > n_database:
         max_chunk = n_database
@@ -133,19 +177,29 @@ cdef void knn_inner_product_streaming(
                 chunk_end = n_database
             chunk_size = chunk_end - chunk_start
 
-            # Compute distances for this chunk using BLAS
-            compute_distances_blas(
-                queries,
-                database[chunk_start:chunk_end],
-                distances
-            )
+            batch_size = n_queries * chunk_size
+            use_simd = batch_size < BLAS_THRESHOLD
+
+            # Compute distances for this chunk
+            if use_simd:
+                compute_distances_simd(
+                    queries,
+                    database[chunk_start:chunk_end],
+                    distances
+                )
+            else:
+                compute_distances_blas(
+                    queries,
+                    database[chunk_start:chunk_end],
+                    distances
+                )
 
             # Update heaps with this chunk's distances
             heap_update_batch_parallel(
                 distances,
                 n_queries,
                 chunk_size,
-                chunk_start,
+                chunk_start,  # offset for global indices
                 k,
                 &distances_out[0, 0],
                 &indices_out[0, 0]
@@ -176,8 +230,10 @@ def search_inner_product(
     """
     Search for k-nearest neighbors using inner product.
 
-    Uses SciPy BLAS for matrix multiplication and streaming
-    heap for memory-efficient top-k selection.
+    Uses FAISS-style streaming approach:
+    - FAISS SIMD (AVX2/FMA) for small batches
+    - SciPy BLAS (sgemm) for large batches
+    - Streaming heap updates for memory-efficient top-k
 
     Parameters
     ----------
@@ -231,3 +287,67 @@ def search_inner_product(
         )
 
     return distances, indices
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def inner_product_single(
+    float[::1] x not None,
+    float[::1] y not None
+):
+    """
+    Compute inner product between two vectors using FAISS SIMD.
+
+    Uses AVX2/FMA instructions for 3-4x speedup over naive code.
+
+    Parameters
+    ----------
+    x, y : float32 memoryviews (d,)
+        Input vectors (C-contiguous)
+
+    Returns
+    -------
+    float
+        Inner product
+    """
+    cdef int d = x.shape[0]
+
+    if x.shape[0] != y.shape[0]:
+        raise ValueError(f"Dimension mismatch: {x.shape[0]} != {y.shape[0]}")
+
+    cdef float result
+    with nogil:
+        result = fvec_inner_product(&x[0], &y[0], d)
+
+    return result
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def l2sqr_single(
+    float[::1] x not None,
+    float[::1] y not None
+):
+    """
+    Compute squared L2 distance using FAISS SIMD.
+
+    Parameters
+    ----------
+    x, y : float32 memoryviews (d,)
+        Input vectors
+
+    Returns
+    -------
+    float
+        Squared L2 distance
+    """
+    cdef int d = x.shape[0]
+
+    if x.shape[0] != y.shape[0]:
+        raise ValueError(f"Dimension mismatch: {x.shape[0]} != {y.shape[0]}")
+
+    cdef float result
+    with nogil:
+        result = fvec_L2sqr(&x[0], &y[0], d)
+
+    return result

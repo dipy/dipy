@@ -45,33 +45,31 @@ try:
     import ray
     HAS_RAY = True
     
-    # Define Ray remote functions at module level for better performance
+    # Define Ray remote functions at module level (EXACTLY like matching.py)
+    # Keep these minimal - just search and return indices
     @ray.remote
-    def _ray_search_best_match(index, chunk_valid_idx, chunk_query, 
+    def _ray_search_best_match(index, chunk_indices, chunk_query_norm, 
                                penalty_array, k_neighbors):
-        """Search chunk and return best match indices + diagnostics."""
-        D, I = index.search(chunk_query, k_neighbors)
-        S = D - penalty_array[I]
-        
-        # Compute uncertainty and ambiguity from scores
-        p75 = np.percentile(S, 75, axis=1)
-        p25 = np.percentile(S, 25, axis=1)
-        uncertainty = (p75 - p25).astype(np.float32)
-        half = 0.5 * np.max(S, axis=1)
-        ambiguity = (np.sum(S > half[:, None], axis=1) / S.shape[1]).astype(np.float32)
-        
-        # Best match
-        best = np.argmax(S, axis=1)
+        """
+        FAISS-style search with penalty adjustment (EXACTLY like matching.py).
+        Returns: chunk_indices, final_indices (minimal data transfer)
+        """
+        D, I = index.search(chunk_query_norm, k_neighbors)
+        D = D - penalty_array[I]
+        best = np.argmax(D, axis=1)
         final_indices = I[np.arange(len(best)), best]
-        return chunk_valid_idx, final_indices, uncertainty, ambiguity
+        return chunk_indices, final_indices
 
     @ray.remote
-    def _ray_search_posterior(index, chunk_valid_idx, chunk_query, 
+    def _ray_search_posterior(index, chunk_indices, chunk_query_norm, 
                               penalty_array, k_neighbors):
-        """Search chunk and return I, S for posterior averaging."""
-        D, I = index.search(chunk_query, k_neighbors)
+        """
+        FAISS-style search for posterior mode.
+        Returns: chunk_indices, I, S
+        """
+        D, I = index.search(chunk_query_norm, k_neighbors)
         S = D - penalty_array[I]
-        return chunk_valid_idx, I.astype(np.int32, copy=False), S.astype(np.float32, copy=False)
+        return chunk_indices, I.astype(np.int32, copy=False), S.astype(np.float32, copy=False)
 
 except ImportError:
     HAS_RAY = False
@@ -563,6 +561,32 @@ class FORCEModel(ReconstModel):
         self._prepare_library()
         return self
 
+    def load(self, input_path):
+        """
+        Load pre-computed simulations from file.
+
+        Parameters
+        ----------
+        input_path : str
+            Path to simulations file (.npz).
+
+        Returns
+        -------
+        self : FORCEModel
+            Model with simulations loaded.
+
+        Examples
+        --------
+        >>> model = FORCEModel(gtab, n_neighbors=50)
+        >>> model.load('simulated_data.npz')
+        >>> fit = model.fit(data, mask=mask)
+        """
+        from dipy.sims.force import load_force_simulations
+
+        self.simulations = load_force_simulations(input_path)
+        self._prepare_library()
+        return self
+
     def _prepare_library(self):
         """Prepare library for matching."""
         signals = self.simulations["signals"]
@@ -607,7 +631,13 @@ class FORCEModel(ReconstModel):
         if self.verbose:
             backend = SignalIndex.get_backend()
             mode = "posterior" if self.use_posterior else "best-match"
-            parallel = f"Ray ({self.num_cpus} CPUs)" if self.num_cpus > 1 else "sequential"
+            # Check ACTUAL Ray availability, not just num_cpus
+            if self.num_cpus > 1 and HAS_RAY:
+                parallel = f"Ray ({self.num_cpus} CPUs)"
+            elif self.num_cpus > 1 and not HAS_RAY:
+                parallel = f"sequential (Ray unavailable, requested {self.num_cpus} CPUs)"
+            else:
+                parallel = "sequential"
             print(f"FORCE fitting: {mode} mode, k={self.n_neighbors}, "
                   f"search backend={backend}, parallel={parallel}")
 
@@ -700,84 +730,94 @@ class FORCEFit:
                 self._best_match(batch_valid_idx, I, S)
 
     def _fit_ray_parallel(self, valid_idx, query_norm, chunk_size, num_cpus):
-        """Ray parallel fitting (matches FORCEv2.py pattern)."""
+        """Ray parallel fitting (EXACTLY like matching.py pattern)."""
         verbose = self.model.verbose
         n_valid = len(valid_idx)
+        n_voxels = len(self._fa)  # Total voxels (flattened)
         use_posterior = self.model.use_posterior
 
-        # Initialize Ray
+        # Initialize Ray (like matching.py line 101)
         if not ray.is_initialized():
-            ray.init(num_cpus=num_cpus, ignore_reinit_error=True)
+            ray.init(num_cpus=num_cpus)
 
-        # Create chunks (like FORCEv2.py line 314-317)
+        # Create chunks as indices only (like matching.py lines 211-214)
+        # DON'T pre-copy data - fetch at submit time
         n_chunks = (n_valid + chunk_size - 1) // chunk_size
         chunks = [
-            (valid_idx[i * chunk_size : min((i + 1) * chunk_size, n_valid)],
-             query_norm[i * chunk_size : min((i + 1) * chunk_size, n_valid)])
+            valid_idx[i * chunk_size : min((i + 1) * chunk_size, n_valid)]
             for i in range(n_chunks)
         ]
 
-        # Put penalty array in object store (like FORCEv2.py line 243)
+        # Put index and data in object store (like matching.py lines 199-204)
+        index_ref = ray.put(self.model._index)
         penalty_ref = ray.put(self.model._penalty_array)
+        query_norm_ref = ray.put(query_norm)  # Put normalized queries in store
         k = self.model.n_neighbors
-        index = self.model._index  # Pass directly like FORCEv2.py
 
-        # Use module-level remote functions (defined at import time)
+        # For best-match mode: create index_map to store results (like matching.py line 217)
+        # This is the key optimization - store indices only, fetch data at end
+        if not use_posterior:
+            index_map = np.zeros(n_voxels, dtype=np.int32)
+
+        # Use module-level remote functions
         search_fn = _ray_search_posterior if use_posterior else _ray_search_best_match
 
-        # Inflight cap like FORCEv2.py (line 324: inflight_cap = 20)
-        inflight_cap = min(20, num_cpus * 2)
-        inflight = []
+        # inflight_cap = num_cpus (like matching.py line 221)
+        inflight_cap = num_cpus
+        res = []
+        chunk_idx = 0
 
         if verbose:
-            print(f"Submitting {n_chunks} chunks (inflight_cap={inflight_cap})...")
+            print(f"Submitting {n_chunks} chunks to {num_cpus} workers...")
 
+        # Submit initial batch (like matching.py lines 225-229)
+        # Fetch query data at submit time using chunk indices
+        while chunk_idx < min(inflight_cap, n_chunks):
+            chunk = chunks[chunk_idx]
+            # Map chunk (voxel indices) to query_norm indices
+            # valid_idx[i] -> query_norm[i], so we need inverse mapping
+            query_start = chunk_idx * chunk_size
+            query_end = min(query_start + chunk_size, n_valid)
+            chunk_query = query_norm[query_start:query_end]
+            res.append(
+                search_fn.remote(index_ref, chunk, chunk_query, penalty_ref, k)
+            )
+            chunk_idx += 1
+
+        # Process results as they complete (like matching.py lines 232-247)
         pbar = None
         if verbose and HAS_TQDM:
             pbar = tqdm(total=n_chunks, desc="Matching", unit="chunk")
 
-        # Submit and process like FORCEv2.py (line 328-341)
-        for ci, (chunk_valid_idx, chunk_query) in enumerate(chunks):
-            inflight.append(
-                search_fn.remote(
-                    index, chunk_valid_idx, chunk_query,
-                    penalty_ref, k
+        while res:
+            # Wait for at least one task to complete
+            ready, remaining = ray.wait(res, num_returns=1)
+
+            # Process completed task
+            result = ray.get(ready[0])
+            if use_posterior:
+                result_valid_idx, I, S = result
+                self._posterior_aggregation(result_valid_idx, I, S)
+            else:
+                # Like matching.py line 238: just store indices
+                result_valid_idx, final_indices = result
+                index_map[result_valid_idx] = final_indices
+
+            if pbar is not None:
+                pbar.update(1)
+
+            # Submit next chunk if available
+            if chunk_idx < n_chunks:
+                chunk = chunks[chunk_idx]
+                query_start = chunk_idx * chunk_size
+                query_end = min(query_start + chunk_size, n_valid)
+                chunk_query = query_norm[query_start:query_end]
+                remaining.append(
+                    search_fn.remote(index_ref, chunk, chunk_query, penalty_ref, k)
                 )
-            )
+                chunk_idx += 1
 
-            # Process batch when inflight is full (like FORCEv2.py line 339-341)
-            if len(inflight) >= inflight_cap:
-                results = ray.get(inflight)
-                inflight = []
-
-                for result in results:
-                    if use_posterior:
-                        result_valid_idx, I, S = result
-                        self._posterior_aggregation(result_valid_idx, I, S)
-                    else:
-                        result_valid_idx, final_indices, U, A = result
-                        self._uncertainty[result_valid_idx] = U
-                        self._ambiguity[result_valid_idx] = A
-                        self._best_match_direct(result_valid_idx, final_indices)
-
-                    if pbar is not None:
-                        pbar.update(1)
-
-        # Drain remaining (like FORCEv2.py line 438-441)
-        if len(inflight) > 0:
-            results = ray.get(inflight)
-            for result in results:
-                if use_posterior:
-                    result_valid_idx, I, S = result
-                    self._posterior_aggregation(result_valid_idx, I, S)
-                else:
-                    result_valid_idx, final_indices, U, A = result
-                    self._uncertainty[result_valid_idx] = U
-                    self._ambiguity[result_valid_idx] = A
-                    self._best_match_direct(result_valid_idx, final_indices)
-
-                if pbar is not None:
-                    pbar.update(1)
+            res = remaining
 
         if pbar is not None:
             pbar.close()
@@ -786,6 +826,14 @@ class FORCEFit:
         ray.shutdown()
         if verbose:
             print("Ray shutdown completed.")
+
+        # For best-match mode: fetch all data at once (like matching.py lines 252-285)
+        # This is MUCH faster than fetching per-chunk
+        if not use_posterior:
+            if verbose:
+                print("Fetching data from library using matched indices...")
+            lib_indices = index_map[valid_idx]
+            self._fetch_all_data(valid_idx, lib_indices)
 
     def _init_output_maps(self, n_voxels, shape):
         """Initialize output arrays."""
@@ -815,33 +863,34 @@ class FORCEFit:
 
     def _best_match(self, valid_idx, I, S):
         """Use best match for each voxel (from I, S arrays)."""
-        # Compute uncertainty and ambiguity from scores
-        U, A = compute_uncertainty_ambiguity(S)
-        self._uncertainty[valid_idx] = U
-        self._ambiguity[valid_idx] = A
-
         # Find best match after penalty
         best = np.argmax(S, axis=1)
         best_idx = I[np.arange(len(best)), best]
-        self._best_match_direct(valid_idx, best_idx)
+        
+        # Fetch data for this batch
+        self._fetch_all_data(valid_idx, best_idx)
 
-    def _best_match_direct(self, valid_idx, best_idx):
-        """Use pre-computed best match indices directly (faster for Ray)."""
+    def _fetch_all_data(self, valid_idx, lib_indices):
+        """
+        Fetch all data from library at once (like matching.py lines 264-285).
+        
+        This is the key optimization - one batch fetch instead of per-chunk.
+        """
         d = self.model.simulations
 
-        self._fa[valid_idx] = d["fa"][best_idx]
-        self._md[valid_idx] = d["md"][best_idx]
-        self._rd[valid_idx] = d["rd"][best_idx]
-        self._wm_fraction[valid_idx] = d["wm_fraction"][best_idx]
-        self._gm_fraction[valid_idx] = d["gm_fraction"][best_idx]
-        self._csf_fraction[valid_idx] = d["csf_fraction"][best_idx]
-        self._num_fibers[valid_idx] = d["num_fibers"][best_idx]
-        self._dispersion[valid_idx] = d["dispersion"][best_idx]
-        self._nd[valid_idx] = d["nd"][best_idx]
+        self._fa[valid_idx] = d["fa"][lib_indices]
+        self._md[valid_idx] = d["md"][lib_indices]
+        self._rd[valid_idx] = d["rd"][lib_indices]
+        self._wm_fraction[valid_idx] = d["wm_fraction"][lib_indices]
+        self._gm_fraction[valid_idx] = d["gm_fraction"][lib_indices]
+        self._csf_fraction[valid_idx] = d["csf_fraction"][lib_indices]
+        self._num_fibers[valid_idx] = d["num_fibers"][lib_indices]
+        self._dispersion[valid_idx] = d["dispersion"][lib_indices]
+        self._nd[valid_idx] = d["nd"][lib_indices]
 
         if "ufa_wm" in d:
-            self._ufa_wm[valid_idx] = d["ufa_wm"][best_idx]
-            self._ufa_voxel[valid_idx] = d["ufa_voxel"][best_idx]
+            self._ufa_wm[valid_idx] = d["ufa_wm"][lib_indices]
+            self._ufa_voxel[valid_idx] = d["ufa_voxel"][lib_indices]
 
     def _posterior_aggregation(self, valid_idx, I, S):
         """Use posterior averaging."""
