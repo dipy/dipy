@@ -496,9 +496,7 @@ class Horizon:
                 streamlines = sft.streamlines
 
                 if len(streamlines) == 0:
-                    logger.warning(
-                        f"Tractogram {t} is empty and will be skipped."
-                    )
+                    logger.warning(f"Tractogram {t} is empty and will be skipped.")
                     continue
 
                 if "tracts" in self.random_colors:
