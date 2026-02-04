@@ -183,13 +183,21 @@ class HorizonFlow(Workflow):
             _, ext = split_filename_extension(fname)
             ext = ext.lower()
 
-            if ext in [".trk", ".trx"]:
-                sft = load_tractogram(fname, "same", bbox_valid_check=False)
-                tractograms.append(sft)
+           if ext in [".trk", ".trx"]:
+    sft = load_tractogram(fname, "same", bbox_valid_check=False)
 
-            if ext in [".dpy", ".tck", ".vtk", ".vtp", ".fib"]:
-                sft = load_tractogram(fname, emergency_ref)
-                tractograms.append(sft)
+    # Fail gracefully if the tractogram contains no streamlines
+    if len(sft.streamlines) == 0:
+        raise ValueError(
+            f"Tractogram file '{fname}' contains no streamlines. "
+            "Please provide a valid non-empty tractogram."
+        )
+
+    tractograms.append(sft)
+
+if ext in [".dpy", ".tck", ".vtk", ".vtp", ".fib"]:
+    sft = load_tractogram(fname, emergency_ref)
+    tractograms.append(sft)
 
             if ext in [".nii.gz", ".nii"]:
                 data, affine = load_nifti(fname)
