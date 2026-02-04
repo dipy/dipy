@@ -228,6 +228,49 @@ def test_horizon_wrong_dtype_images():
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@set_random_number_generator()
+def test_horizon_empty_tractogram(rng):
+    """Test that empty tractograms are handled gracefully without errors."""
+    # Create an empty streamlines container
+    empty_streamlines = Streamlines()
+    empty_streamlines.shrink_data()
+
+    affine = np.array(
+        [
+            [1.0, 0.0, 0.0, -98.0],
+            [0.0, 1.0, 0.0, -134.0],
+            [0.0, 0.0, 1.0, -72.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+
+    data = 255 * rng.random((197, 233, 189))
+    vox_size = (1.0, 1.0, 1.0)
+
+    header = create_nifti_header(affine, data.shape, vox_size)
+    sft = StatefulTractogram(empty_streamlines, header, Space.RASMM)
+
+    tractograms = [sft]
+    images = [(data, affine, "/test/filename.nii.gz")]
+
+    # This should not raise an error, but should skip the empty tractogram
+    # with a warning
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        with TemporaryDirectory() as out_dir:
+            horizon(
+                tractograms=tractograms,
+                images=images,
+                cluster=False,
+                world_coords=True,
+                interactive=False,
+                out_png=Path(out_dir) / "empty-tractogram.png",
+            )
+        # Check that a warning was raised about empty tractogram
+        check_for_warnings(w, "Tractogram")
+
+
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 @set_random_number_generator(42)
 def test_roi_images(rng):
     img1 = rng.random((5, 5, 5))

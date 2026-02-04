@@ -495,6 +495,12 @@ class Horizon:
             for t, sft in enumerate(self.tractograms):
                 streamlines = sft.streamlines
 
+                if len(streamlines) == 0:
+                    logger.warning(
+                        f"Tractogram {t} is empty and will be skipped."
+                    )
+                    continue
+
                 if "tracts" in self.random_colors:
                     colors = next(self.color_gen)
                 else:
