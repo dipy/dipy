@@ -1362,7 +1362,6 @@ def iter_fit_tensor(*, step=1e4):
                     D, E = fit_tensor(
                         design_matrix, data[i : i + step], *args, **kwargs
                     )
-                    print("D.shape in the wrapper", D.shape)
                     dtiparams[i : i + step], extra_i = fit_tensor(
                         design_matrix, data[i : i + step], *args, **kwargs
                     )

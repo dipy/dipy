@@ -371,12 +371,16 @@ def test_ls_sdp_fits(rng):
         _, extra = qti._ols_fit(X, data[mask], step=step, return_leverages=True)
         npt.assert_equal("leverages" in extra, True)
         npt.assert_almost_equal(extra["leverages"][mask].sum(-1), np.ones(mask.shape[0])*28)  # ensure leverages sum to 28
+        _, extra = qti._ols_fit(X, data[mask], step=step, return_leverages=False)
+        npt.assert_equal(extra, None)
         _, extra = qti._wls_fit(X, data[mask], step=step, return_leverages=True)
         npt.assert_equal("leverages" in extra, True)
         npt.assert_almost_equal(extra["leverages"][mask].sum(-1), np.ones(mask.shape[0])*28)  # ensure leverages sum to 28
     _, extra = qti._sdpdc_fit(X, data[mask], cvxpy_solver="SCS", return_leverages=True)
     npt.assert_equal("leverages" in extra, True)
     npt.assert_almost_equal(extra["leverages"][mask].sum(-1), np.ones(mask.shape[0])*28)  # ensure leverages sum to 28
+    _, extra = qti._sdpdc_fit(X, data[mask], cvxpy_solver="SCS", return_leverages=False)
+    npt.assert_equal(extra, None)
     
     # test of WLS given explicit weights=signal^2 is same as calling without weights
     npt.assert_almost_equal(
@@ -395,32 +399,35 @@ def test_ls_sdp_fits(rng):
     data_corrupt = data_corrupt + noise
     data_corrupt[..., -1] *= 5  # corrupt a signal
 
-    # fit with WLS, show fitted params are different
-    qtimodel = qti.QtiModel(gtab, fit_method="WLS")
-    qtifit = qtimodel.fit(data_corrupt)
-    npt.assert_raises(AssertionError, npt.assert_almost_equal, qtifit.params, params)
-    # fit with SDPdc (constraints), show fitted params are different
-    qtimodel = qti.QtiModel(gtab, fit_method="SDPdc")
-    qtifit = qtimodel.fit(data_corrupt)
-    npt.assert_raises(AssertionError, npt.assert_almost_equal, qtifit.params, params)
+    for MASK in [mask, None]:
+        # fit with WLS, show fitted params are different
+        qtimodel = qti.QtiModel(gtab, fit_method="WLS")
+        qtifit = qtimodel.fit(data_corrupt, mask=MASK)
+        npt.assert_raises(AssertionError, npt.assert_almost_equal, qtifit.params, params)
+        # fit with SDPdc (constraints), show fitted params are different
+        qtimodel = qti.QtiModel(gtab, fit_method="SDPdc")
+        qtifit = qtimodel.fit(data_corrupt, mask=MASK)
+        npt.assert_raises(AssertionError, npt.assert_almost_equal, qtifit.params, params)
 
-    # robust fitting via iterative_fit
-    def wm(*args):
-        return weights_method_wls_m_est(
-            *args, m_est="gm", cutoff=3
-        )
-    kwargs = {"weights_method": wm, "num_iter": 10}
-    # fit with WLS, i.e. RWLS
-    qtimodel_r = qti.QtiModel(gtab, fit_method="WLS", **kwargs)
-    qtifit_r = qtimodel_r.fit(data_corrupt)
-    npt.assert_equal(qtimodel_r.extra["robust"][..., -1], False)
-    # fit with SDPdc (constraints), i.e. RCWLS
-    qtimodel_rc = qti.QtiModel(gtab, fit_method="SDPdc", **kwargs)
-    qtifit_rc = qtimodel_rc.fit(data_corrupt)
-    npt.assert_equal(qtimodel_rc.extra["robust"][..., -1], False)
-
-    # TODO: need to test the iterative_fit function in other ways
-
+        # robust fitting via iterative_fit
+        def wm(*args):
+            return weights_method_wls_m_est(
+                *args, m_est="gm", cutoff=3
+            )
+        # fit with WLS, i.e. RWLS
+        kwargs = {"weights_method": wm, "num_iter": 10}
+        qtimodel_r = qti.QtiModel(gtab, fit_method="WLS", **kwargs)
+        qtifit_r = qtimodel_r.fit(data_corrupt, mask=MASK)
+        npt.assert_equal(qtimodel_r.extra["robust"][..., -1], False)
+        # fit with WLS, i.e. RWLS, but too small num_iter raises error
+        kwargs = {"weights_method": wm, "num_iter": 1}
+        qtimodel_r = qti.QtiModel(gtab, fit_method="WLS", **kwargs)
+        npt.assert_raises(ValueError, qtimodel_r.fit, data_corrupt, mask=MASK)
+        # fit with SDPdc (constraints), i.e. RCWLS
+        kwargs = {"weights_method": wm}  # test without num_iter (use default)
+        qtimodel_rc = qti.QtiModel(gtab, fit_method="SDPdc", **kwargs)
+        qtifit_rc = qtimodel_rc.fit(data_corrupt, mask=MASK)
+        npt.assert_equal(qtimodel_rc.extra["robust"][..., -1], False)
 
 
 @set_random_number_generator(123)

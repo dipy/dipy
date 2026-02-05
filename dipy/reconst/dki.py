@@ -2715,10 +2715,7 @@ def ls_fit_dki(
         result = np.dot(inv_W_A_W, y)
 
         if return_leverages:
-            # NOTE: may not need modification of design_matrix -> W_A, because gets dotted with W 
-            #       : (A W^2 A)^-1 W A W  : so I can have design_matrix at the front, got enough W on the back
             leverages = np.einsum("ij,ji->i", design_matrix, inv_W_A_W)
-            #leverages = np.einsum("ij,jk->ik", W_A, inv_W_A_W)  # NOTE: should it be this? Surely not because has extra W out back
 
     else:
         # DKI ordinary linear least square solution
@@ -2834,8 +2831,7 @@ def cls_fit_dki(
 
         if return_leverages:
             inv_W_A_W = np.linalg.pinv(A).dot(W)
-            #leverages = np.einsum("ij,ji->i", design_matrix, inv_W_A_W)
-            leverages = np.einsum("ij,jk->ik", A, inv_W_A_W)  # NOTE: this was probably the correct expression 
+            leverages = np.einsum("ij,ji->i", design_matrix, inv_W_A_W)
 
     # Solve sdp
     result = sdp.solve(A, y, check=True, solver=cvxpy_solver)
