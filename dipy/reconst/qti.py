@@ -551,7 +551,7 @@ def design_matrix(btens):
 
 
 @warning_for_keywords()
-def _ols_fit(X, data_masked, *, step=int(1e4)):
+def _ols_fit(X, data_masked, *, step=int(1e4), return_leverages=False):
     """Estimate the model parameters using ordinary least squares.
 
     Parameters
@@ -588,7 +588,14 @@ def _ols_fit(X, data_masked, *, step=int(1e4)):
             S = np.log(data_masked[i : i + step])[..., np.newaxis]
             params_masked[i : i + step] = (X_inv @ X.T @ S)[..., 0]
 
-    extra = None
+    if return_leverages:
+        extra = {}
+        tmp = np.zeros_like(data_masked)
+        tmp[:] = np.einsum("ij,...ji->...i", X, np.linalg.pinv(X)[None, :])
+        extra["leverages"] = tmp
+    else:
+        extra = None
+
     return params_masked, extra
     #params[np.where(mask.ravel())] = params_masked
     #params = params.reshape((mask.shape + (28,)))
@@ -622,49 +629,79 @@ def _wls_fit(X, data_masked, *, weights=None, step=int(1e4), return_leverages=Fa
     """
     #params = np.zeros((np.prod(mask.shape), 28)) * np.nan
     #data_masked = data[mask]
-    size = len(data_masked)
+    size = data_masked.shape[0]
     X_inv = np.linalg.pinv(X.T @ X)  # Independent of data
 
-    # FIXME: for WLS, leverages are not data independent, but we'll do this here for now
-    if return_leverages:
-        inverse_design_matrix = np.linalg.pinv(X)
-        leverages = np.einsum("ij,ji->i", X, inverse_design_matrix)
-        #leverages = np.einsum("ij,ji->i", design_matrix, inv_W_A_W)
+#    # NOTE: no need to have if/else based on if step > size ...
+#    if step >= size:  # Fit over all data simultaneously
+#        S = np.log(data_masked)#[..., np.newaxis]
+#
+#        if weights is None:  # calculate weights
+#            # measured signal
+#            #C = data_masked[:, np.newaxis, :]
+#            # OLS prediction of signal
+#            params_ols = (X_inv @ X.T @ S[..., None])[..., 0]  # last dim has size 1
+#            W = np.exp((X @ params_ols.T).T)#[:, np.newaxis, :]
+#        else:
+#            W = np.sqrt(weights)#[:, np.newaxis, :]
+#
+#        # copied over from dti.py
+#        if return_leverages:
+#            tmp = np.einsum(
+#                "...ij,...j->...ij", np.linalg.pinv(X * W[..., None]), W
+#            )
+#            fit_result = np.einsum("...ij,...j", tmp, S)
+#            leverages_i = np.einsum("ij,...ji->...i", X, tmp)
+#        else:
+#            fit_result = np.einsum(
+#                "...ij,...j", np.linalg.pinv(X * W[..., None]), W * S
+#            )
+#
+#        B = X.T * W**2  # NOTE: added a square... should make it correct now
+#        A = np.linalg.pinv(B @ X)
+#        params_masked = (A @ B @ S)[..., 0]
+#    else:  # Iterate over data
 
-    if step >= size:  # Fit over all data simultaneously
-        S = np.log(data_masked)[..., np.newaxis]
+    params_masked = np.zeros((size, 28))
+    if return_leverages:
+        leverages = np.zeros_like(data_masked) #size, dtype=float) 
+
+    for i in range(0, size, step):
+        S = np.log(data_masked[i : i + step])#[..., np.newaxis]
 
         if weights is None:  # calculate weights
-            # measured signal
-            #C = data_masked[:, np.newaxis, :]
             # OLS prediction of signal
-            params_ols = (X_inv @ X.T @ S)[..., 0]
-            W = np.exp((X @ params_ols.T).T)[:, np.newaxis, :]
+            params_ols = (X_inv @ X.T @ S[..., None])[..., 0]  # last dim has size 1
+            W = np.exp((X @ params_ols.T).T)#[:, np.newaxis, :]
         else:
-            W = np.sqrt(weights)[:, np.newaxis, :]
+            W = np.sqrt(weights[i : i + step])#[:, np.newaxis, :]
 
-        B = X.T * W
-        A = np.linalg.pinv(B @ X)
-        params_masked = (A @ B @ S)[..., 0]
-    else:  # Iterate over data
-        params_masked = np.zeros((size, 28))
-        for i in range(0, size, step):
-            S = np.log(data_masked[i : i + step])[..., np.newaxis]
+        # copied over from dti.py
+        if return_leverages:
+            tmp = np.einsum(
+                "...ij,...j->...ij", np.linalg.pinv(X * W[..., None]), W
+            )
+            fit_result = np.einsum("...ij,...j", tmp, S)
+            leverages_i = np.einsum("ij,...ji->...i", X, tmp)
+        else:
+            fit_result = np.einsum(
+                "...ij,...j", np.linalg.pinv(X * W[..., None]), W * S
+            )
 
-            if weights is None:  # calculate weights
-                # measured signal
-                #C = data_masked[i : i + step][:, np.newaxis, :]
-                # OLS prediction of signal
-                params_ols = (X_inv @ X.T @ S)[..., 0]
-                W = np.exp((X @ params_ols.T).T)[:, np.newaxis, :]
-            else:
-                W = np.sqrt(weights[i : i + step])[:, np.newaxis, :]
+        # previous implementation was wrong, need W**2 not W below
+        # B = X.T * W[:, np.newaxis, :]**2  # NOTE: previously missing square 
+        # A = np.linalg.pinv(B @ X)
+        # params_masked[i : i + step] = (A @ B @ S[..., None])[..., 0]
+        # print("all close?", np.allclose(fit_result, params_masked[i : i + step]))
 
-            B = X.T * W
-            A = np.linalg.pinv(B @ X)
-            params_masked[i : i + step] = (A @ B @ S)[..., 0]
+        params_masked[i : i + step] = fit_result
+        if return_leverages:
+            print("levegages_i.shape:", leverages_i.shape)
+            print("levegages.shape:", leverages.shape)
+            leverages[i : i + step] = leverages_i  # FIXME: by first dim is voxels, leverage_i should be 2D..?
 
     if return_leverages:
+        print("leverages just before return from _wls_fit:", leverages)
         extra = {"leverages": leverages}
     else:
         extra = None
@@ -718,6 +755,7 @@ def _sdpdc_fit(X, data_masked, cvxpy_solver, weights=None, return_leverages=True
     #data_masked = data[mask]
     size, nvols = data_masked.shape
 
+    # NOTE: missing the dependance on the weights, needs fixing
     if return_leverages:
         inverse_design_matrix = np.linalg.pinv(X)
         leverages = np.einsum("ij,ji->i", X, inverse_design_matrix)
@@ -735,13 +773,20 @@ def _sdpdc_fit(X, data_masked, cvxpy_solver, weights=None, return_leverages=True
     log_data = np.log(data_masked)
     params_masked = np.zeros((size, 28))
 
-    # FIXME: this is why X_inv is an input in other functions I modified, to save repeat operation
-    X_inv = np.linalg.pinv(X.T @ X)  # Independent of data
-    params_ols = (X_inv @ X.T @ log_data[..., np.newaxis])[..., 0]
+    # FIXME: this is why X_inv is an input in other functions I modified, to save repeat operation of X_inv, multiple recals in iteration
     if weights is None:
-        C = np.exp((X @ params_ols.T).T)
+        X_inv = np.linalg.pinv(X.T @ X)  # Independent of data
+        params_ols = (X_inv @ X.T @ log_data[..., np.newaxis])[..., 0]
+        W = np.exp((X @ params_ols.T).T)
     else:
-        C = np.sqrt(weights)
+        W = np.sqrt(weights)
+
+    if return_leverages:
+        A = X * W[..., None]
+        inv_W_A_W  = np.einsum(
+            "...ij,...j->...ij", np.linalg.pinv(A), W
+        )
+        leverages = np.einsum("ij,...ji->...i", X, inv_W_A_W)  # sums to 28
 
     x = cp.Variable((28, 1))
     y = cp.Parameter((nvols, 1))
@@ -760,11 +805,11 @@ def _sdpdc_fit(X, data_masked, cvxpy_solver, weights=None, return_leverages=True
 
     for i in range(0, size, 1):
         #vox_data = data_masked[i : i + 1, :].T
-        vox_C = C[i : i + 1, :].T
+        vox_W = W[i : i + 1, :].T
         vox_log_data = log_data[i : i + 1, :].T
         #vox_log_data[np.isinf(vox_log_data)] = 0  # NOTE: seems silly, is handled by MIN_POSITIVE_SIGNAL
-        y.value = vox_C * vox_log_data
-        A_val = vox_C * X
+        y.value = vox_W * vox_log_data
+        A_val = vox_W * X
 
         A.value = A_val
 
@@ -918,17 +963,27 @@ class QtiModel(ReconstModel):
             params_in_mask, extra = self.iterative_fit(
                 self.X,
                 data_in_mask,
-                #mask=mask,
                 num_iter=self.kwargs["num_iter"],
                 weights_method=self.kwargs["weights_method"],
                 cvxpy_solver=self.cvxpy_solver,  # NOTE: since we need iterative_fit tensor to work for WLS and CWLS
             )
 
+        print("data_in_mask:", data_in_mask.shape)
+        print("mask shape:", mask.shape)
+
         params = np.zeros(img_shape + (params_in_mask.shape[-1],))
         params[mask] = params_in_mask
 
         if extra is not None:
-            self.extra = extra
+            for key in extra:
+                print("key:", key)
+                tmp_extra = np.zeros(img_shape + extra[key].shape[1:]) 
+                print(data.shape)
+                print(img_shape)
+                print(extra[key].shape) ## why is this of shape signal, not including the rest?
+                print(tmp_extra.shape)
+                tmp_extra[mask] = extra[key]
+                self.extra[key] = tmp_extra
 
         return QtiFit(params)
 
@@ -1020,6 +1075,7 @@ class QtiModel(ReconstModel):
             #    data_thres, mask=mask, weights=w, return_leverages=True
             #)
             leverages = extra["leverages"]
+            print("iterative_fit leverages:", leverages.shape)
 
         extra = {"robust": robust}
         return params_in_mask, extra

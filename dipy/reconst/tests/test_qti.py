@@ -367,11 +367,16 @@ def test_ls_sdp_fits(rng):
             )
 
     # check if leverages are returned when requested
-    # _, extra = qti._ols_fit(X, data[mask], step=1)[0]  # NOTE: ols can't return leverages
-    _, extra =  qti._wls_fit(X, data[mask], step=1, return_leverages=True)
-    npt.assert_equal("leverages" in extra, True)
+    for step in [1, 10]:
+        _, extra = qti._ols_fit(X, data[mask], step=step, return_leverages=True)
+        npt.assert_equal("leverages" in extra, True)
+        npt.assert_almost_equal(extra["leverages"][mask].sum(-1), np.ones(mask.shape[0])*28)  # ensure leverages sum to 28
+        _, extra = qti._wls_fit(X, data[mask], step=step, return_leverages=True)
+        npt.assert_equal("leverages" in extra, True)
+        npt.assert_almost_equal(extra["leverages"][mask].sum(-1), np.ones(mask.shape[0])*28)  # ensure leverages sum to 28
     _, extra = qti._sdpdc_fit(X, data[mask], cvxpy_solver="SCS", return_leverages=True)
     npt.assert_equal("leverages" in extra, True)
+    npt.assert_almost_equal(extra["leverages"][mask].sum(-1), np.ones(mask.shape[0])*28)  # ensure leverages sum to 28
     
     # test of WLS given explicit weights=signal^2 is same as calling without weights
     npt.assert_almost_equal(
@@ -384,16 +389,12 @@ def test_ls_sdp_fits(rng):
     )
 
     # test robust QTI - robust fitting without noise makes no sense, so hard to test
-    # FIXME: the 'robust' extra is not coming out the same shape as the data prior to masking
-    # robust fitting without noise in signal isn't really sensible... how to make sensible tests?
-    data_corrupt = 10*data.copy()  # we could make a copy,copy (stack) array (and gtab) and corrupt only one thing...
-    noise = 0.01 * np.random.normal(size=data_corrupt.shape)  # NOTE: noise must be reasonably size wrt signal, which has S=1
-    data_corrupt = data_corrupt + noise  # error, or weights irrelevant
-    data_corrupt[..., -1] *= 5  # corrupt a signal - can't be so severe that we fail to fit
-    robust_signals = np.ones(data_corrupt.shape).astype(bool)
-    robust_signals[..., -1] = False  # corrupted signal, lets see if we can detect it later
-    # non-robust fitting should fail
-    # ------------------------------
+    # robust fitting without noise doesn't make sense 
+    data_corrupt = data.copy()
+    noise = 0.01 * np.random.normal(size=data_corrupt.shape)
+    data_corrupt = data_corrupt + noise
+    data_corrupt[..., -1] *= 5  # corrupt a signal
+
     # fit with WLS, show fitted params are different
     qtimodel = qti.QtiModel(gtab, fit_method="WLS")
     qtifit = qtimodel.fit(data_corrupt)
@@ -402,30 +403,24 @@ def test_ls_sdp_fits(rng):
     qtimodel = qti.QtiModel(gtab, fit_method="SDPdc")
     qtifit = qtimodel.fit(data_corrupt)
     npt.assert_raises(AssertionError, npt.assert_almost_equal, qtifit.params, params)
-    # keywords needed to trigger iterative_fit
-    # ----------------------------------------
+
+    # robust fitting via iterative_fit
     def wm(*args):
-        # super generous cut-off, should find only the real outlier
-        # even with cutoff 5, sometimes we still find outliers even if not making any...
-        # never saw this before, is a bit strange
-        # might be related to MIN_POSITIVE_SIGNAL effects
-        # could also be number of paramers compared to observations (i.e. gtab design)
         return weights_method_wls_m_est(
-            *args, m_est="gm", cutoff=10
+            *args, m_est="gm", cutoff=3
         )
     kwargs = {"weights_method": wm, "num_iter": 10}
-    # fit with WLS with weights_method (triggers iterative_fit)
+    # fit with WLS, i.e. RWLS
     qtimodel_r = qti.QtiModel(gtab, fit_method="WLS", **kwargs)
     qtifit_r = qtimodel_r.fit(data_corrupt)
-    # NOTE: something about the use of a mask, abnd the shape of saved extra[robust], is the issue
-    npt.assert_almost_equal(qtimodel_r.extra["robust"], robust_signals)
-    #npt.assert_almost_equal(qtifit_r.params, params)  # robust fit failing to be equal to non-robust... but is that inevitable if we remove a signal?
-    # fit with SDPdc (constraints) with weights method (triggers iterative_fit)
-    #qtimodel_r = qti.QtiModel(gtab, fit_method="SDPdc", **kwargs)
-    #qtifit_r = qtimodel_r.fit(data_corrupt, mask=mask)
-    #npt.assert_almost_equal(qtifit_r.params, params)
+    npt.assert_equal(qtimodel_r.extra["robust"][..., -1], False)
+    # fit with SDPdc (constraints), i.e. RCWLS
+    qtimodel_rc = qti.QtiModel(gtab, fit_method="SDPdc", **kwargs)
+    qtifit_rc = qtimodel_rc.fit(data_corrupt)
+    npt.assert_equal(qtimodel_rc.extra["robust"][..., -1], False)
 
     # TODO: need to test the iterative_fit function in other ways
+
 
 
 @set_random_number_generator(123)
