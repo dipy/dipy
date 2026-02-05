@@ -2235,6 +2235,7 @@ def iterative_fit_tensor(
                 leverages = extra["leverages"]
 
     if qti:
+        extra = {"robust": robust}
         return D, extra
 
     # Convert diffusion tensor parameters to the evals and the evecs:

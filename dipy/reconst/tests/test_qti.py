@@ -7,6 +7,7 @@ from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, disperse_charges
 from dipy.reconst.dti import fractional_anisotropy
 import dipy.reconst.qti as qti
+import dipy.reconst.dti as dti
 from dipy.sims.voxel import vec2vec_rotmat
 from dipy.testing import assert_warns
 from dipy.testing.decorators import set_random_number_generator
@@ -373,9 +374,15 @@ def test_ls_sdp_fits(rng):
         npt.assert_almost_equal(extra["leverages"][mask].sum(-1), np.ones(mask.shape[0])*28)  # ensure leverages sum to 28
         _, extra = qti._ols_fit(X, data[mask], step=step, return_leverages=False)
         npt.assert_equal(extra, None)
-        _, extra = qti._wls_fit(X, data[mask], step=step, return_leverages=True)
+        params, extra = qti._wls_fit(X, data[mask], step=step, return_leverages=True)
         npt.assert_equal("leverages" in extra, True)
         npt.assert_almost_equal(extra["leverages"][mask].sum(-1), np.ones(mask.shape[0])*28)  # ensure leverages sum to 28
+
+    # test against dti wls fitter...
+    params_dti, extra_dti = dti.wls_fit_tensor(X, data[mask], return_lower_triangular=True, return_leverages=True)
+    npt.assert_almost_equal(extra_dti["leverages"], extra["leverages"]) 
+    npt.assert_almost_equal(params_dti, params)
+
     _, extra = qti._sdpdc_fit(X, data[mask], cvxpy_solver="SCS", return_leverages=True)
     npt.assert_equal("leverages" in extra, True)
     npt.assert_almost_equal(extra["leverages"][mask].sum(-1), np.ones(mask.shape[0])*28)  # ensure leverages sum to 28
@@ -399,6 +406,10 @@ def test_ls_sdp_fits(rng):
     data_corrupt = data_corrupt + noise
     data_corrupt[..., -1] *= 5  # corrupt a signal
 
+
+    # TODO: need to test calling iterative_fit directly
+
+
     for MASK in [mask, None]:
         # fit with WLS, show fitted params are different
         qtimodel = qti.QtiModel(gtab, fit_method="WLS")
@@ -409,22 +420,23 @@ def test_ls_sdp_fits(rng):
         qtifit = qtimodel.fit(data_corrupt, mask=MASK)
         npt.assert_raises(AssertionError, npt.assert_almost_equal, qtifit.params, params)
 
-        # robust fitting via iterative_fit
-        def wm(*args):
-            return weights_method_wls_m_est(
-                *args, m_est="gm", cutoff=3
-            )
         # fit with WLS, i.e. RWLS
-        kwargs = {"weights_method": wm, "num_iter": 10}
+        kwargs = {"weights_method": weights_method_wls_m_est, "num_iter": 10}
         qtimodel_r = qti.QtiModel(gtab, fit_method="WLS", **kwargs)
         qtifit_r = qtimodel_r.fit(data_corrupt, mask=MASK)
         npt.assert_equal(qtimodel_r.extra["robust"][..., -1], False)
+        # use the RWLS method from dti.py - should match qti_model_r above
+        qtimodel_dti = qti.QtiModel(gtab, fit_method="RWLS", num_iter=10)
+        qtifit_dti = qtimodel_dti.fit(data_corrupt, mask=MASK)
+        npt.assert_almost_equal(qtimodel_r.extra["robust"], qtimodel_dti.extra["robust"])
+        npt.assert_almost_equal(qtifit_dti.params, qtifit_r.params)
+
         # fit with WLS, i.e. RWLS, but too small num_iter raises error
-        kwargs = {"weights_method": wm, "num_iter": 1}
-        qtimodel_r = qti.QtiModel(gtab, fit_method="WLS", **kwargs)
-        npt.assert_raises(ValueError, qtimodel_r.fit, data_corrupt, mask=MASK)
+        kwargs = {"weights_method": weights_method_wls_m_est, "num_iter": 1}
+        qtimodel_r1 = qti.QtiModel(gtab, fit_method="WLS", **kwargs)
+        npt.assert_raises(ValueError, qtimodel_r1.fit, data_corrupt, mask=MASK)
         # fit with SDPdc (constraints), i.e. RCWLS
-        kwargs = {"weights_method": wm}  # test without num_iter (use default)
+        kwargs = {"weights_method": weights_method_wls_m_est}  # test without num_iter (use default)
         qtimodel_rc = qti.QtiModel(gtab, fit_method="SDPdc", **kwargs)
         qtifit_rc = qtimodel_rc.fit(data_corrupt, mask=MASK)
         npt.assert_equal(qtimodel_rc.extra["robust"][..., -1], False)

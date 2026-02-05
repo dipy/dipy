@@ -885,7 +885,7 @@ class QtiModel(ReconstModel):
                 )
             else:
                 params_in_mask, extra = self.fit_method(
-                    self.X, data_in_mask
+                    self.X, data_in_mask, *self.args, **self.kwargs
                 )
 
         else:
@@ -893,8 +893,7 @@ class QtiModel(ReconstModel):
                 self.X,
                 data_in_mask,
                 num_iter=self.kwargs["num_iter"],
-                weights_method=self.kwargs["weights_method"],
-                cvxpy_solver=self.cvxpy_solver
+                weights_method=self.kwargs["weights_method"]
             )
 
         params = np.zeros(img_shape + (params_in_mask.shape[-1],))
@@ -915,7 +914,6 @@ class QtiModel(ReconstModel):
         *,
         num_iter=4,
         weights_method=weights_method_wls_m_est,
-        cvxpy_solver="SCS", 
     ):
         """Iteratively Reweighted fitting for the QTI model.
 
@@ -936,8 +934,6 @@ class QtiModel(ReconstModel):
                              design_matrix, leverages,
                              idx, num_iter,
                              robust)
-        cvxpy_solver: str, optionals
-            solver for the SDP formulation. default: 'SCS'
 
         Notes
         -----
@@ -1449,5 +1445,5 @@ common_fit_methods = {
     "OLS": _ols_fit,
     "WLS": _wls_fit,
     "SDPdc": _sdpdc_fit,
-    "RWLS": robust_fit_tensor_wls,  # NOTE this worked when I was hacking a solution
+    "RWLS": robust_fit_tensor_wls,
 }
