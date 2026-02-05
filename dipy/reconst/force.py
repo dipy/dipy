@@ -386,9 +386,15 @@ class FORCEModel(ReconstModel):
         compute_odf=False,
         verbose=False,
     ):
-        """
-        FORCE (Fingerprinting-based Orientation and Reconstruction for
-        Characterization of microEnvironments) model.
+        r"""
+        FORCE (FORward modeling for Complex microstructure Estimation) model
+        :footcite:p:`Shah2025`.
+
+        FORCE is a forward modeling paradigm that reframes how diffusion data
+        is analyzed. Instead of inverting the measured signal, FORCE simulates
+        a large set of biologically plausible intra-voxel fiber configurations
+        and tissue compositions. It then identifies the best-matching simulation
+        for each voxel by operating directly in the signal space.
 
         Parameters
         ----------
@@ -418,6 +424,10 @@ class FORCEModel(ReconstModel):
         >>> fit = model.fit(data, mask=mask, engine="ray", n_jobs=4)
 
         Available engines: "serial", "ray", "joblib", "dask".
+
+        References
+        ----------
+        .. footbibliography::
         """
         self.gtab = gtab
         self.simulations = simulations
