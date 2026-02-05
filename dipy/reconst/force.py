@@ -28,67 +28,19 @@ FORCE methodology paper (in preparation)
 """
 
 import numpy as np
-from concurrent.futures import ProcessPoolExecutor
 
-from dipy.reconst.base import ReconstModel
+from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.data import default_sphere
-
-try:
-    from tqdm import tqdm
-    HAS_TQDM = True
-except ImportError:
-    HAS_TQDM = False
-    def tqdm(x, **kwargs):
-        return x
-
-try:
-    import ray
-    HAS_RAY = True
-    
-    # Define Ray remote functions at module level (EXACTLY like matching.py)
-    # Keep these minimal - just search and return indices
-    @ray.remote
-    def _ray_search_best_match(index, chunk_indices, chunk_query_norm, 
-                               penalty_array, k_neighbors):
-        """
-        FAISS-style search with penalty adjustment (EXACTLY like matching.py).
-        Returns: chunk_indices, final_indices (minimal data transfer)
-        """
-        D, I = index.search(chunk_query_norm, k_neighbors)
-        D = D - penalty_array[I]
-        best = np.argmax(D, axis=1)
-        final_indices = I[np.arange(len(best)), best]
-        return chunk_indices, final_indices
-
-    @ray.remote
-    def _ray_search_posterior(index, chunk_indices, chunk_query_norm, 
-                              penalty_array, k_neighbors):
-        """
-        FAISS-style search for posterior mode.
-        Returns: chunk_indices, I, S
-        """
-        D, I = index.search(chunk_query_norm, k_neighbors)
-        S = D - penalty_array[I]
-        return chunk_indices, I.astype(np.int32, copy=False), S.astype(np.float32, copy=False)
-
-except ImportError:
-    HAS_RAY = False
-
-# Detect available search backend
-_SEARCH_BACKEND = "numpy"
-try:
-    from dipy.reconst._force_search import search_inner_product as _cython_search
-    _SEARCH_BACKEND = "cython-blas"
-except ImportError:
-    _cython_search = None
+from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst._force_search import search_inner_product as _cython_search
 
 
 class SignalIndex:
     """
     Index for inner product similarity search.
 
-    Pure NumPy implementation. For high-performance search,
-    compile the Cython _force_search module.
+    Uses optimized Cython BLAS for fast matrix multiplication
+    and streaming heap for memory-efficient top-k selection.
 
     Parameters
     ----------
@@ -179,16 +131,8 @@ class SignalIndex:
 
         k = min(k, self.ntotal)
 
-        # Use optimized Cython search if available (SciPy BLAS + streaming heap)
-        if _cython_search is not None:
-            distances, indices = _cython_search(x, self._xb, k)
-        else:
-            # Fallback to NumPy implementation
-            scores = x @ self._xb.T
-            indices = np.argsort(-scores, axis=1)[:, :k]
-            distances = np.take_along_axis(scores, indices, axis=1)
-            distances = distances.astype(np.float32)
-            indices = indices.astype(np.int64)
+        # Use optimized Cython search (SciPy BLAS + streaming heap)
+        distances, indices = _cython_search(x, self._xb, k)
 
         return distances, indices
 
@@ -199,11 +143,6 @@ class SignalIndex:
 
     def __repr__(self):
         return f"SignalIndex(d={self.d}, ntotal={self.ntotal})"
-
-    @staticmethod
-    def get_backend():
-        """Return the search backend being used ('cython-blas' or 'numpy')."""
-        return _SEARCH_BACKEND
 
 
 def normalize_signals(signals):
@@ -434,36 +373,7 @@ def postprocess_peaks(preds, target_sphere, fracs):
 
 
 class FORCEModel(ReconstModel):
-    """
-    FORCE reconstruction model.
-
-    Signal matching based microstructure estimation.
-
-    Parameters
-    ----------
-    gtab : GradientTable
-        Gradient table.
-    simulations : dict or None
-        Pre-computed FORCE simulations with signals and parameters.
-        If None, call generate() to create simulations.
-    penalty : float, optional
-        Penalty weight for fiber complexity. Default is 1e-5.
-    n_neighbors : int, optional
-        Number of neighbors for matching. Default is 50.
-    use_posterior : bool, optional
-        Use posterior averaging instead of best match. Default is False.
-    posterior_beta : float, optional
-        Softmax temperature for posterior. Default is 2000.0.
-    compute_odf : bool, optional
-        Compute posterior ODF maps. Default is False.
-    verbose : bool, optional
-        Show progress bar and status messages. Default is False.
-    num_cpus : int, optional
-        Number of CPUs for Ray parallel fitting. Default is 1 (no Ray).
-        If > 1, uses Ray for parallel chunk processing.
-    chunk_size : int, optional
-        Number of voxels per chunk for parallel processing. Default is 10000.
-    """
+    """FORCE reconstruction model for signal matching based microstructure."""
 
     def __init__(
         self,
@@ -475,9 +385,40 @@ class FORCEModel(ReconstModel):
         posterior_beta=2000.0,
         compute_odf=False,
         verbose=False,
-        num_cpus=1,
-        chunk_size=10000,
     ):
+        """
+        FORCE (Fingerprinting-based Orientation and Reconstruction for
+        Characterization of microEnvironments) model.
+
+        Parameters
+        ----------
+        gtab : GradientTable
+            Gradient table.
+        simulations : dict or None, optional
+            Pre-computed FORCE simulations with signals and parameters.
+            If None, call generate() to create simulations.
+        penalty : float, optional
+            Penalty weight for fiber complexity. Default is 1e-5.
+        n_neighbors : int, optional
+            Number of neighbors for matching. Default is 50.
+        use_posterior : bool, optional
+            Use posterior averaging instead of best match. Default is False.
+        posterior_beta : float, optional
+            Softmax temperature for posterior. Default is 2000.0.
+        compute_odf : bool, optional
+            Compute posterior ODF maps. Default is False.
+        verbose : bool, optional
+            Show progress bar and status messages. Default is False.
+
+        Notes
+        -----
+        The fit method uses the @multi_voxel_fit decorator which supports
+        parallel execution. Pass `engine` and `n_jobs` kwargs to the fit method:
+
+        >>> fit = model.fit(data, mask=mask, engine="ray", n_jobs=4)
+
+        Available engines: "serial", "ray", "joblib", "dask".
+        """
         self.gtab = gtab
         self.simulations = simulations
         self.penalty = penalty
@@ -486,8 +427,6 @@ class FORCEModel(ReconstModel):
         self.posterior_beta = posterior_beta
         self.compute_odf = compute_odf
         self.verbose = verbose
-        self.num_cpus = num_cpus
-        self.chunk_size = chunk_size
 
         self._index = None
         self._penalty_array = None
@@ -607,416 +546,234 @@ class FORCEModel(ReconstModel):
         )
         self._penalty_array = (self.penalty * num_fibers).astype(np.float32)
 
-    def fit(self, data, mask=None):
+    @multi_voxel_fit
+    def fit(self, data, *, mask=None, **kwargs):
         """
         Fit model to data.
 
         Parameters
         ----------
         data : ndarray
-            Diffusion data.
+            Diffusion data for a single voxel (1D) or multiple voxels (ND).
         mask : ndarray, optional
-            Brain mask.
+            Brain mask (for multi-voxel data).
+        **kwargs : dict
+            Additional arguments passed to multi_voxel_fit decorator:
+            - engine : str, optional
+                Parallel engine: "serial", "ray", "joblib", "dask".
+            - n_jobs : int, optional
+                Number of parallel jobs.
+            - verbose : bool, optional
+                Show progress bar.
 
         Returns
         -------
         fit : FORCEFit
-            Fitted model.
+            Fitted model for a single voxel.
+
+        Notes
+        -----
+        This method is decorated with @multi_voxel_fit which handles:
+        - Multi-voxel iteration (serial or parallel)
+        - Mask application
+        - Results aggregation into MultiVoxelFit
+
+        For parallel execution, use:
+        >>> fit = model.fit(data, mask=mask, engine="ray", n_jobs=4)
         """
         if self.simulations is None:
             raise RuntimeError(
                 "No simulations loaded. Call generate() or provide simulations."
             )
 
-        if self.verbose:
-            backend = SignalIndex.get_backend()
-            mode = "posterior" if self.use_posterior else "best-match"
-            # Check ACTUAL Ray availability, not just num_cpus
-            if self.num_cpus > 1 and HAS_RAY:
-                parallel = f"Ray ({self.num_cpus} CPUs)"
-            elif self.num_cpus > 1 and not HAS_RAY:
-                parallel = f"sequential (Ray unavailable, requested {self.num_cpus} CPUs)"
-            else:
-                parallel = "sequential"
-            print(f"FORCE fitting: {mode} mode, k={self.n_neighbors}, "
-                  f"search backend={backend}, parallel={parallel}")
+        # Normalize the single voxel signal
+        data = data.astype(np.float32)
+        norm = np.linalg.norm(data)
+        if norm == 0:
+            norm = 1.0
+        query_norm = (data / norm).reshape(1, -1)
 
-        return FORCEFit(self, data, mask)
+        # Perform k-NN search for this single voxel
+        D, I = self._index.search(query_norm, k=self.n_neighbors)
+        S = D - self._penalty_array[I]
 
-
-class FORCEFit:
-    """
-    FORCE model fit results.
-
-    Parameters
-    ----------
-    model : FORCEModel
-        The FORCE model.
-    data : ndarray
-        Diffusion data.
-    mask : ndarray, optional
-        Brain mask.
-    """
-
-    def __init__(self, model, data, mask=None):
-        self.model = model
-        self.data = data
-        self.mask = (
-            mask if mask is not None else np.ones(data.shape[:-1], dtype=bool)
-        )
-
-        self._fit()
-
-    def _fit(self):
-        """Perform matching."""
-        shape = self.data.shape[:-1]
-        n_voxels = np.prod(shape)
-        n_gradients = self.data.shape[-1]
-
-        # Flatten data
-        data_flat = self.data.reshape(-1, n_gradients).astype(np.float32)
-        mask_flat = self.mask.reshape(-1)
-        valid_idx = np.where(mask_flat)[0]
-        n_valid = len(valid_idx)
-
-        verbose = self.model.verbose
-        num_cpus = self.model.num_cpus
-        chunk_size = self.model.chunk_size
-
-        # Normalize query signals
-        if verbose:
-            print(f"Processing {n_valid:,} voxels...")
-        valid_data = data_flat[valid_idx]
-        norms = np.linalg.norm(valid_data, axis=1, keepdims=True)
-        norms[norms == 0] = 1.0
-        query_norm = np.ascontiguousarray(valid_data / norms)
-
-        # Initialize output maps
-        self._init_output_maps(n_voxels, shape)
-
-        if num_cpus > 1 and HAS_RAY:
-            self._fit_ray_parallel(valid_idx, query_norm, chunk_size, num_cpus)
-        else:
-            self._fit_sequential(valid_idx, query_norm, chunk_size)
-
-        # Reshape to original shape
-        self._reshape_outputs(shape)
-
-    def _fit_sequential(self, valid_idx, query_norm, chunk_size):
-        """Sequential fitting (no Ray)."""
-        verbose = self.model.verbose
-        n_valid = len(valid_idx)
-        n_chunks = (n_valid + chunk_size - 1) // chunk_size
-
-        iterator = range(n_chunks)
-        if verbose and HAS_TQDM:
-            iterator = tqdm(iterator, desc="Matching", unit="chunk")
-
-        for chunk_idx in iterator:
-            start = chunk_idx * chunk_size
-            end = min(start + chunk_size, n_valid)
-            batch_query = query_norm[start:end]
-            batch_valid_idx = valid_idx[start:end]
-
-            # Perform search for this chunk
-            D, I = self.model._index.search(batch_query, k=self.model.n_neighbors)
-
-            # Apply penalty
-            S = D - self.model._penalty_array[I]
-
-            if self.model.use_posterior:
-                self._posterior_aggregation(batch_valid_idx, I, S)
-            else:
-                self._best_match(batch_valid_idx, I, S)
-
-    def _fit_ray_parallel(self, valid_idx, query_norm, chunk_size, num_cpus):
-        """Ray parallel fitting (EXACTLY like matching.py pattern)."""
-        verbose = self.model.verbose
-        n_valid = len(valid_idx)
-        n_voxels = len(self._fa)  # Total voxels (flattened)
-        use_posterior = self.model.use_posterior
-
-        # Initialize Ray (like matching.py line 101)
-        if not ray.is_initialized():
-            ray.init(num_cpus=num_cpus)
-
-        # Create chunks as indices only (like matching.py lines 211-214)
-        # DON'T pre-copy data - fetch at submit time
-        n_chunks = (n_valid + chunk_size - 1) // chunk_size
-        chunks = [
-            valid_idx[i * chunk_size : min((i + 1) * chunk_size, n_valid)]
-            for i in range(n_chunks)
-        ]
-
-        # Put index and data in object store (like matching.py lines 199-204)
-        index_ref = ray.put(self.model._index)
-        penalty_ref = ray.put(self.model._penalty_array)
-        query_norm_ref = ray.put(query_norm)  # Put normalized queries in store
-        k = self.model.n_neighbors
-
-        # For best-match mode: create index_map to store results (like matching.py line 217)
-        # This is the key optimization - store indices only, fetch data at end
-        if not use_posterior:
-            index_map = np.zeros(n_voxels, dtype=np.int32)
-
-        # Use module-level remote functions
-        search_fn = _ray_search_posterior if use_posterior else _ray_search_best_match
-
-        # inflight_cap = num_cpus (like matching.py line 221)
-        inflight_cap = num_cpus
-        res = []
-        chunk_idx = 0
-
-        if verbose:
-            print(f"Submitting {n_chunks} chunks to {num_cpus} workers...")
-
-        # Submit initial batch (like matching.py lines 225-229)
-        # Fetch query data at submit time using chunk indices
-        while chunk_idx < min(inflight_cap, n_chunks):
-            chunk = chunks[chunk_idx]
-            # Map chunk (voxel indices) to query_norm indices
-            # valid_idx[i] -> query_norm[i], so we need inverse mapping
-            query_start = chunk_idx * chunk_size
-            query_end = min(query_start + chunk_size, n_valid)
-            chunk_query = query_norm[query_start:query_end]
-            res.append(
-                search_fn.remote(index_ref, chunk, chunk_query, penalty_ref, k)
-            )
-            chunk_idx += 1
-
-        # Process results as they complete (like matching.py lines 232-247)
-        pbar = None
-        if verbose and HAS_TQDM:
-            pbar = tqdm(total=n_chunks, desc="Matching", unit="chunk")
-
-        while res:
-            # Wait for at least one task to complete
-            ready, remaining = ray.wait(res, num_returns=1)
-
-            # Process completed task
-            result = ray.get(ready[0])
-            if use_posterior:
-                result_valid_idx, I, S = result
-                self._posterior_aggregation(result_valid_idx, I, S)
-            else:
-                # Like matching.py line 238: just store indices
-                result_valid_idx, final_indices = result
-                index_map[result_valid_idx] = final_indices
-
-            if pbar is not None:
-                pbar.update(1)
-
-            # Submit next chunk if available
-            if chunk_idx < n_chunks:
-                chunk = chunks[chunk_idx]
-                query_start = chunk_idx * chunk_size
-                query_end = min(query_start + chunk_size, n_valid)
-                chunk_query = query_norm[query_start:query_end]
-                remaining.append(
-                    search_fn.remote(index_ref, chunk, chunk_query, penalty_ref, k)
-                )
-                chunk_idx += 1
-
-            res = remaining
-
-        if pbar is not None:
-            pbar.close()
-
-        # Shutdown Ray
-        ray.shutdown()
-        if verbose:
-            print("Ray shutdown completed.")
-
-        # For best-match mode: fetch all data at once (like matching.py lines 252-285)
-        # This is MUCH faster than fetching per-chunk
-        if not use_posterior:
-            if verbose:
-                print("Fetching data from library using matched indices...")
-            lib_indices = index_map[valid_idx]
-            self._fetch_all_data(valid_idx, lib_indices)
-
-    def _init_output_maps(self, n_voxels, shape):
-        """Initialize output arrays."""
-        d = self.model.simulations
-
-        self._fa = np.zeros(n_voxels, dtype=np.float32)
-        self._md = np.zeros(n_voxels, dtype=np.float32)
-        self._rd = np.zeros(n_voxels, dtype=np.float32)
-        self._wm_fraction = np.zeros(n_voxels, dtype=np.float32)
-        self._gm_fraction = np.zeros(n_voxels, dtype=np.float32)
-        self._csf_fraction = np.zeros(n_voxels, dtype=np.float32)
-        self._num_fibers = np.zeros(n_voxels, dtype=np.float32)
-        self._dispersion = np.zeros(n_voxels, dtype=np.float32)
-        self._nd = np.zeros(n_voxels, dtype=np.float32)
-
-        if "ufa_wm" in d:
-            self._ufa_wm = np.zeros(n_voxels, dtype=np.float32)
-            self._ufa_voxel = np.zeros(n_voxels, dtype=np.float32)
-
-        # Diagnostics: uncertainty and ambiguity from scores (both modes)
-        self._uncertainty = np.zeros(n_voxels, dtype=np.float32)
-        self._ambiguity = np.zeros(n_voxels, dtype=np.float32)
-        
-        # Entropy only for posterior mode (requires posterior weights)
-        if self.model.use_posterior:
-            self._entropy = np.zeros(n_voxels, dtype=np.float32)
-
-    def _best_match(self, valid_idx, I, S):
-        """Use best match for each voxel (from I, S arrays)."""
-        # Find best match after penalty
-        best = np.argmax(S, axis=1)
-        best_idx = I[np.arange(len(best)), best]
-        
-        # Fetch data for this batch
-        self._fetch_all_data(valid_idx, best_idx)
-
-    def _fetch_all_data(self, valid_idx, lib_indices):
-        """
-        Fetch all data from library at once (like matching.py lines 264-285).
-        
-        This is the key optimization - one batch fetch instead of per-chunk.
-        """
-        d = self.model.simulations
-
-        self._fa[valid_idx] = d["fa"][lib_indices]
-        self._md[valid_idx] = d["md"][lib_indices]
-        self._rd[valid_idx] = d["rd"][lib_indices]
-        self._wm_fraction[valid_idx] = d["wm_fraction"][lib_indices]
-        self._gm_fraction[valid_idx] = d["gm_fraction"][lib_indices]
-        self._csf_fraction[valid_idx] = d["csf_fraction"][lib_indices]
-        self._num_fibers[valid_idx] = d["num_fibers"][lib_indices]
-        self._dispersion[valid_idx] = d["dispersion"][lib_indices]
-        self._nd[valid_idx] = d["nd"][lib_indices]
-
-        if "ufa_wm" in d:
-            self._ufa_wm[valid_idx] = d["ufa_wm"][lib_indices]
-            self._ufa_voxel[valid_idx] = d["ufa_voxel"][lib_indices]
-
-    def _posterior_aggregation(self, valid_idx, I, S):
-        """Use posterior averaging."""
-        d = self.model.simulations
-        w = softmax_stable(self.model.posterior_beta * S, axis=1)
-
-        # Posterior diagnostics (like FORCEv2.py lines 348-351)
+        # Compute diagnostics
         U, A = compute_uncertainty_ambiguity(S)
-        self._uncertainty[valid_idx] = U
-        self._ambiguity[valid_idx] = A
-        self._entropy[valid_idx] = (-np.sum(w * np.log(w + 1e-12), axis=1)).astype(np.float32)
 
-        # Posterior means
-        self._fa[valid_idx] = np.sum(w * d["fa"][I], axis=1)
-        self._md[valid_idx] = np.sum(w * d["md"][I], axis=1)
-        self._rd[valid_idx] = np.sum(w * d["rd"][I], axis=1)
-        self._wm_fraction[valid_idx] = np.sum(w * d["wm_fraction"][I], axis=1)
-        self._gm_fraction[valid_idx] = np.sum(w * d["gm_fraction"][I], axis=1)
-        self._csf_fraction[valid_idx] = np.sum(w * d["csf_fraction"][I], axis=1)
-        self._num_fibers[valid_idx] = np.sum(w * d["num_fibers"][I], axis=1)
-        self._dispersion[valid_idx] = np.sum(w * d["dispersion"][I], axis=1)
-        self._nd[valid_idx] = np.sum(w * d["nd"][I], axis=1)
+        if self.use_posterior:
+            # Posterior averaging
+            w = softmax_stable(self.posterior_beta * S, axis=1)
+            entropy = float(-np.sum(w * np.log(w + 1e-12)))
+            
+            # Weighted average of library parameters
+            params = self._compute_posterior_params(I[0], w[0])
+            params["uncertainty"] = float(U[0])
+            params["ambiguity"] = float(A[0])
+            params["entropy"] = entropy
+        else:
+            # Best match
+            best = np.argmax(S[0])
+            lib_idx = I[0, best]
+            
+            params = self._fetch_library_params(lib_idx)
+            params["uncertainty"] = float(U[0])
+            params["ambiguity"] = float(A[0])
+            params["entropy"] = None
+
+        return FORCEFit(self, params)
+
+    def _fetch_library_params(self, lib_idx):
+        """Fetch parameters for a single library entry."""
+        d = self.simulations
+        params = {
+            "fa": float(d["fa"][lib_idx]),
+            "md": float(d["md"][lib_idx]),
+            "rd": float(d["rd"][lib_idx]),
+            "wm_fraction": float(d["wm_fraction"][lib_idx]),
+            "gm_fraction": float(d["gm_fraction"][lib_idx]),
+            "csf_fraction": float(d["csf_fraction"][lib_idx]),
+            "num_fibers": float(d["num_fibers"][lib_idx]),
+            "dispersion": float(d["dispersion"][lib_idx]),
+            "nd": float(d["nd"][lib_idx]),
+        }
 
         if "ufa_wm" in d:
-            self._ufa_wm[valid_idx] = np.sum(w * d["ufa_wm"][I], axis=1)
-            self._ufa_voxel[valid_idx] = np.sum(w * d["ufa_voxel"][I], axis=1)
+            params["ufa_wm"] = float(d["ufa_wm"][lib_idx])
+            params["ufa_voxel"] = float(d["ufa_voxel"][lib_idx])
 
-    def _reshape_outputs(self, shape):
-        """Reshape outputs to original data shape."""
-        self._fa = self._fa.reshape(shape)
-        self._md = self._md.reshape(shape)
-        self._rd = self._rd.reshape(shape)
-        self._wm_fraction = self._wm_fraction.reshape(shape)
-        self._gm_fraction = self._gm_fraction.reshape(shape)
-        self._csf_fraction = self._csf_fraction.reshape(shape)
-        self._num_fibers = self._num_fibers.reshape(shape)
-        self._dispersion = self._dispersion.reshape(shape)
-        self._nd = self._nd.reshape(shape)
+        if "ak" in d:
+            params["ak"] = float(d["ak"][lib_idx])
+            params["rk"] = float(d["rk"][lib_idx])
+            params["mk"] = float(d["mk"][lib_idx])
+            params["kfa"] = float(d["kfa"][lib_idx])
 
-        if hasattr(self, "_ufa_wm"):
-            self._ufa_wm = self._ufa_wm.reshape(shape)
-            self._ufa_voxel = self._ufa_voxel.reshape(shape)
+        return params
 
-        # Always reshape uncertainty and ambiguity (available in both modes)
-        self._uncertainty = self._uncertainty.reshape(shape)
-        self._ambiguity = self._ambiguity.reshape(shape)
-        
-        # Entropy only in posterior mode
-        if hasattr(self, "_entropy"):
-            self._entropy = self._entropy.reshape(shape)
+    def _compute_posterior_params(self, indices, weights):
+        """Compute weighted average of library parameters."""
+        d = self.simulations
+        params = {
+            "fa": float(np.sum(weights * d["fa"][indices])),
+            "md": float(np.sum(weights * d["md"][indices])),
+            "rd": float(np.sum(weights * d["rd"][indices])),
+            "wm_fraction": float(np.sum(weights * d["wm_fraction"][indices])),
+            "gm_fraction": float(np.sum(weights * d["gm_fraction"][indices])),
+            "csf_fraction": float(np.sum(weights * d["csf_fraction"][indices])),
+            "num_fibers": float(np.sum(weights * d["num_fibers"][indices])),
+            "dispersion": float(np.sum(weights * d["dispersion"][indices])),
+            "nd": float(np.sum(weights * d["nd"][indices])),
+        }
+
+        if "ufa_wm" in d:
+            params["ufa_wm"] = float(np.sum(weights * d["ufa_wm"][indices]))
+            params["ufa_voxel"] = float(np.sum(weights * d["ufa_voxel"][indices]))
+
+        if "ak" in d:
+            params["ak"] = float(np.sum(weights * d["ak"][indices]))
+            params["rk"] = float(np.sum(weights * d["rk"][indices]))
+            params["mk"] = float(np.sum(weights * d["mk"][indices]))
+            params["kfa"] = float(np.sum(weights * d["kfa"][indices]))
+
+        return params
+
+
+class FORCEFit(ReconstFit):
+    """FORCE model fit results for a single voxel."""
+
+    def __init__(self, model, params):
+        """Initialize a FORCEFit class instance."""
+        self.model = model
+        self._params = params
 
     @property
     def fa(self):
-        """Fractional anisotropy map."""
-        return self._fa
+        """Fractional anisotropy."""
+        return self._params["fa"]
 
     @property
     def md(self):
-        """Mean diffusivity map."""
-        return self._md
+        """Mean diffusivity."""
+        return self._params["md"]
 
     @property
     def rd(self):
-        """Radial diffusivity map."""
-        return self._rd
+        """Radial diffusivity."""
+        return self._params["rd"]
 
     @property
     def wm_fraction(self):
-        """White matter fraction map."""
-        return self._wm_fraction
+        """White matter fraction."""
+        return self._params["wm_fraction"]
 
     @property
     def gm_fraction(self):
-        """Gray matter fraction map."""
-        return self._gm_fraction
+        """Gray matter fraction."""
+        return self._params["gm_fraction"]
 
     @property
     def csf_fraction(self):
-        """CSF fraction map."""
-        return self._csf_fraction
+        """CSF fraction."""
+        return self._params["csf_fraction"]
 
     @property
     def num_fibers(self):
-        """Number of fibers map."""
-        return self._num_fibers
+        """Number of fibers."""
+        return self._params["num_fibers"]
 
     @property
     def dispersion(self):
-        """Orientation dispersion map."""
-        return self._dispersion
+        """Orientation dispersion."""
+        return self._params["dispersion"]
 
     @property
     def nd(self):
-        """Neurite density map."""
-        return self._nd
+        """Neurite density."""
+        return self._params["nd"]
 
     @property
     def ufa_wm(self):
         """microFA in white matter."""
-        if hasattr(self, "_ufa_wm"):
-            return self._ufa_wm
-        return None
+        return self._params.get("ufa_wm", None)
 
     @property
     def ufa_voxel(self):
         """Voxel-averaged microFA."""
-        if hasattr(self, "_ufa_voxel"):
-            return self._ufa_voxel
-        return None
+        return self._params.get("ufa_voxel", None)
+
+    @property
+    def ak(self):
+        """Axial kurtosis (DKI)."""
+        return self._params.get("ak", None)
+
+    @property
+    def rk(self):
+        """Radial kurtosis (DKI)."""
+        return self._params.get("rk", None)
+
+    @property
+    def mk(self):
+        """Mean kurtosis (DKI)."""
+        return self._params.get("mk", None)
+
+    @property
+    def kfa(self):
+        """Kurtosis fractional anisotropy (DKI)."""
+        return self._params.get("kfa", None)
 
     @property
     def uncertainty(self):
-        """Uncertainty map (IQR of penalized scores)."""
-        return self._uncertainty
+        """Uncertainty (IQR of penalized scores)."""
+        return self._params["uncertainty"]
 
     @property
     def ambiguity(self):
-        """Ambiguity map (fraction above half-max)."""
-        return self._ambiguity
+        """Ambiguity (fraction above half-max)."""
+        return self._params["ambiguity"]
 
     @property
     def entropy(self):
-        """Entropy map (Shannon entropy of posterior weights, posterior mode only)."""
-        if hasattr(self, "_entropy"):
-            return self._entropy
-        return None
+        """Entropy (posterior mode only)."""
+        return self._params.get("entropy", None)
 
 
 def compute_entropy(weights):
