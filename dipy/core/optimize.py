@@ -557,10 +557,7 @@ class PositiveDefiniteLeastSquares:
                     return np.asarray(self._h.value).squeeze()
 
             # Solve constrained problem
-            with warnings.catch_warnings():
-                if self._y.value.shape[0] < 1000:
-                    warnings.filterwarnings("ignore", message="Converting A to a CSC")
-                self.problem.solve(**kwargs)
+            self.problem.solve(**kwargs)
 
             # Check solution status
             status = self.problem.status
