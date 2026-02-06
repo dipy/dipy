@@ -267,7 +267,7 @@ def test_horizon_empty_tractogram(rng):
                 out_png=Path(out_dir) / "empty-tractogram.png",
             )
         # Check that a warning was raised about empty tractogram
-        check_for_warnings(w, "Tractogram")
+        check_for_warnings(w, "Tractogram 0 is empty and will be skipped.")
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
