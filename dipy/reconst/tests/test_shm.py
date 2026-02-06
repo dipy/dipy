@@ -54,6 +54,27 @@ from dipy.reconst.shm import (
 from dipy.sims.voxel import multi_tensor_odf, single_tensor
 from dipy.testing import assert_true
 
+def test_anisotropic_power_non_negative():
+    from dipy.reconst.shm import anisotropic_power
+    import numpy as np
+
+    rng = np.random.default_rng(42)
+    sh_coeffs = rng.normal(size=(10, 15))  # 10 voxels, SH coeffs
+
+    ap = anisotropic_power(sh_coeffs, non_negative=True)
+
+    assert np.all(ap >= 0)
+
+def test_anisotropic_power_negative_allowed():
+    from dipy.reconst.shm import anisotropic_power
+    import numpy as np
+
+    rng = np.random.default_rng(0)
+    sh_coeffs = rng.normal(size=(5, 15))
+
+    ap = anisotropic_power(sh_coeffs, non_negative=False)
+
+    assert np.any(ap < 0)
 
 def test_order_from_ncoeff():
     # Just try some out:
