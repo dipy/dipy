@@ -201,6 +201,7 @@ position = 23
 enable = true
 files = [
     "bundle_extraction.py",
+    "segment_quickbundlesx.py",
     "segment_clustering_features.py",
     "segment_clustering_metrics.py",
     "segment_extending_clustering_framework.py",

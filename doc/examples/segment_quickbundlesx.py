@@ -8,8 +8,8 @@ of streamlines. QuickBundlesX extends QuickBundles
 :footcite:p:`Garyfallidis2012a` by building clustering hierarchies at multiple
 threshold levels.
 
-The `qbx_and_merge` function is the main public interface for using QuickBundlesX in
-DIPY and is what the DIPY Horizon visualization tool uses internally.
+The `qbx_and_merge` function is the recommended way to use QuickBundlesX
+in DIPY and is what the DIPY Horizon visualization tool uses internally.
 
 First import the necessary modules.
 """
@@ -39,19 +39,20 @@ streamlines = fornix.streamlines
 # to be considered part of a cluster. QuickBundlesX builds a hierarchy by
 # clustering at each threshold level, from coarse (40mm) to fine (10mm).
 # The function automatically resamples streamlines to have the same number
-# of points.
+# of points. We set a fixed random seed for reproducibility.
 
+rng = np.random.default_rng(42)
 thresholds = [40, 30, 25, 20, 10]
-clusters = qbx_and_merge(streamlines, thresholds)
+clusters = qbx_and_merge(streamlines, thresholds, rng=rng)
 
 ###############################################################################
 # `clusters` is a `ClusterMap` object which contains attributes that
 # provide information about the clustering result.
 
 print("Nb. clusters:", len(clusters))
-print("Cluster sizes:", list(map(len, clusters)))
 cluster_sizes = [len(c) for c in clusters]
-print("Large clusters:", [c for c in clusters if len(c) >= 10])
+print("Cluster sizes:", cluster_sizes)
+print("Large clusters:", [c for c, size in zip(clusters, cluster_sizes) if size >= 10])
 
 ###############################################################################
 # Let's visualize the clusters by assigning a color to each cluster.
@@ -87,11 +88,11 @@ if interactive:
 
 # For coarse segmentation
 coarse_thresholds = [40, 30, 25]
-coarse_clusters = qbx_and_merge(streamlines, coarse_thresholds)
+coarse_clusters = qbx_and_merge(streamlines, coarse_thresholds, rng=rng)
 
 # For fine-grained analysis
 fine_thresholds = [40, 30, 25, 20, 15, 10, 5]
-fine_clusters = qbx_and_merge(streamlines, fine_thresholds)
+fine_clusters = qbx_and_merge(streamlines, fine_thresholds, rng=rng)
 
 print("\nCoarse clustering:", len(coarse_clusters), "clusters")
 print("Fine clustering:", len(fine_clusters), "clusters")
