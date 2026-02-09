@@ -28,8 +28,7 @@ else:
         pass
 
     logger.warning(
-        "This model requires PyTorch. "
-        "Please install PyTorch using pip or conda."
+        "This model requires PyTorch. Please install PyTorch using pip or conda."
     )
 
 
@@ -37,97 +36,117 @@ class UNet3D(Module):
     def __init__(self, n_in, n_out):
         super(UNet3D, self).__init__()
         # Encoder
-        self.ec0 = self.encoder_block(      n_in,    32, kernel_size=3, stride=1, padding=1)
-        self.ec1 = self.encoder_block(        32,    64, kernel_size=3, stride=1, padding=1)
+        self.ec0 = self.encoder_block(n_in, 32, kernel_size=3, stride=1, padding=1)
+        self.ec1 = self.encoder_block(32, 64, kernel_size=3, stride=1, padding=1)
         self.pool0 = MaxPool3d(2)
-        self.ec2 = self.encoder_block(        64,    64, kernel_size=3, stride=1, padding=1)
-        self.ec3 = self.encoder_block(        64,   128, kernel_size=3, stride=1, padding=1)
+        self.ec2 = self.encoder_block(64, 64, kernel_size=3, stride=1, padding=1)
+        self.ec3 = self.encoder_block(64, 128, kernel_size=3, stride=1, padding=1)
         self.pool1 = MaxPool3d(2)
-        self.ec4 = self.encoder_block(       128,   128, kernel_size=3, stride=1, padding=1)
-        self.ec5 = self.encoder_block(       128,   256, kernel_size=3, stride=1, padding=1)
+        self.ec4 = self.encoder_block(128, 128, kernel_size=3, stride=1, padding=1)
+        self.ec5 = self.encoder_block(128, 256, kernel_size=3, stride=1, padding=1)
         self.pool2 = MaxPool3d(2)
-        self.ec6 = self.encoder_block(       256,   256, kernel_size=3, stride=1, padding=1)
-        self.ec7 = self.encoder_block(       256,   512, kernel_size=3, stride=1, padding=1)
-        self.el  =          Conv3d(       512,   512, kernel_size=1, stride=1, padding=0)
+        self.ec6 = self.encoder_block(256, 256, kernel_size=3, stride=1, padding=1)
+        self.ec7 = self.encoder_block(256, 512, kernel_size=3, stride=1, padding=1)
+        self.el = Conv3d(512, 512, kernel_size=1, stride=1, padding=0)
 
         # Decoder
-        self.dc9 = self.decoder_block(       512,   512, kernel_size=2, stride=2, padding=0)
-        self.dc8 = self.decoder_block( 512 + 256,   256, kernel_size=3, stride=1, padding=1)
-        self.dc7 = self.decoder_block(       256,   256, kernel_size=3, stride=1, padding=1)
-        self.dc6 = self.decoder_block(       256,   256, kernel_size=2, stride=2, padding=0)
-        self.dc5 = self.decoder_block( 256 + 128,   128, kernel_size=3, stride=1, padding=1)
-        self.dc4 = self.decoder_block(       128,   128, kernel_size=3, stride=1, padding=1)
-        self.dc3 = self.decoder_block(       128,   128, kernel_size=2, stride=2, padding=0)
-        self.dc2 = self.decoder_block(  128 + 64,    64, kernel_size=3, stride=1, padding=1)
-        self.dc1 = self.decoder_block(        64,    64, kernel_size=3, stride=1, padding=1)
-        self.dc0 = self.decoder_block(        64, n_out, kernel_size=1, stride=1, padding=0)
-        self.dl  = ConvTranspose3d(     n_out, n_out, kernel_size=1, stride=1, padding=0)
+        self.dc9 = self.decoder_block(512, 512, kernel_size=2, stride=2, padding=0)
+        self.dc8 = self.decoder_block(
+            512 + 256, 256, kernel_size=3, stride=1, padding=1
+        )
+        self.dc7 = self.decoder_block(256, 256, kernel_size=3, stride=1, padding=1)
+        self.dc6 = self.decoder_block(256, 256, kernel_size=2, stride=2, padding=0)
+        self.dc5 = self.decoder_block(
+            256 + 128, 128, kernel_size=3, stride=1, padding=1
+        )
+        self.dc4 = self.decoder_block(128, 128, kernel_size=3, stride=1, padding=1)
+        self.dc3 = self.decoder_block(128, 128, kernel_size=2, stride=2, padding=0)
+        self.dc2 = self.decoder_block(128 + 64, 64, kernel_size=3, stride=1, padding=1)
+        self.dc1 = self.decoder_block(64, 64, kernel_size=3, stride=1, padding=1)
+        self.dc0 = self.decoder_block(64, n_out, kernel_size=1, stride=1, padding=0)
+        self.dl = ConvTranspose3d(n_out, n_out, kernel_size=1, stride=1, padding=0)
 
     def encoder_block(self, in_channels, out_channels, kernel_size, stride, padding):
         layer = Sequential(
-            Conv3d(in_channels, out_channels, kernel_size, stride=stride, padding=padding, bias=False),
+            Conv3d(
+                in_channels,
+                out_channels,
+                kernel_size,
+                stride=stride,
+                padding=padding,
+                bias=False,
+            ),
             InstanceNorm3d(out_channels),
-            LeakyReLU())
+            LeakyReLU(),
+        )
         return layer
 
     def decoder_block(self, in_channels, out_channels, kernel_size, stride, padding):
         layer = Sequential(
-            ConvTranspose3d(in_channels, out_channels, kernel_size, stride=stride, padding=padding, bias=False),
+            ConvTranspose3d(
+                in_channels,
+                out_channels,
+                kernel_size,
+                stride=stride,
+                padding=padding,
+                bias=False,
+            ),
             InstanceNorm3d(out_channels),
-            LeakyReLU())
+            LeakyReLU(),
+        )
         return layer
 
     def forward(self, x):
         # Encode
-        e0   = self.ec0(x)
+        e0 = self.ec0(x)
         syn0 = self.ec1(e0)
         del e0
 
-        e1   = self.pool0(syn0)
-        e2   = self.ec2(e1)
+        e1 = self.pool0(syn0)
+        e2 = self.ec2(e1)
         syn1 = self.ec3(e2)
         del e1, e2
 
-        e3   = self.pool1(syn1)
-        e4   = self.ec4(e3)
+        e3 = self.pool1(syn1)
+        e4 = self.ec4(e3)
         syn2 = self.ec5(e4)
         del e3, e4
 
-        e5   = self.pool2(syn2)
-        e6   = self.ec6(e5)
-        e7   = self.ec7(e6)
+        e5 = self.pool2(syn2)
+        e6 = self.ec6(e5)
+        e7 = self.ec7(e6)
 
         # Last layer without relu
-        el   = self.el(e7)
+        el = self.el(e7)
         del e5, e6, e7
 
         # Decode
-        d9   = torch.cat((self.dc9(el), syn2), 1)
+        d9 = torch.cat((self.dc9(el), syn2), 1)
         del el, syn2
 
-        d8   = self.dc8(d9)
-        d7   = self.dc7(d8)
+        d8 = self.dc8(d9)
+        d7 = self.dc7(d8)
         del d9, d8
 
-        d6   = torch.cat((self.dc6(d7), syn1), 1)
+        d6 = torch.cat((self.dc6(d7), syn1), 1)
         del d7, syn1
 
-        d5   = self.dc5(d6)
-        d4   = self.dc4(d5)
+        d5 = self.dc5(d6)
+        d4 = self.dc4(d5)
         del d6, d5
 
-        d3   = torch.cat((self.dc3(d4), syn0), 1)
+        d3 = torch.cat((self.dc3(d4), syn0), 1)
         del d4, syn0
 
-        d2   = self.dc2(d3)
-        d1   = self.dc1(d2)
+        d2 = self.dc2(d3)
+        d1 = self.dc1(d2)
         del d3, d2
 
-        d0   = self.dc0(d1)
+        d0 = self.dc0(d1)
         del d1
 
         # Last layer without relu
-        out  = self.dl(d0)
+        out = self.dl(d0)
 
         return out
 
@@ -179,9 +198,7 @@ class Synb0:
 
         # Initialize the model
         self.model = UNet3D(n_in=2, n_out=1)
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
         self.model.eval()
 
@@ -285,8 +302,7 @@ class Synb0:
             or b0.shape != T1.shape
         ):
             raise ValueError(
-                "Expected shape (batch, 77, 91, 77) or "
-                "(77, 91, 77) for both inputs"
+                "Expected shape (batch, 77, 91, 77) or (77, 91, 77) for both inputs"
             )
 
         dim = len(b0.shape)
@@ -323,15 +339,16 @@ class Synb0:
             mean_pred = np.zeros(shape + (5,), dtype=np.float32)
             for i in range(5):
                 self.fetch_default_weights(i)
-                # Stack and prepare input: (batch, 80, 96, 80, 2) -> (batch, 2, 80, 96, 80)
+                # Stack and prepare input: (batch, 80, 96, 80, 2)
+                # -> (batch, 2, 80, 96, 80)
                 temp = np.stack([b0, T1], axis=-1)
                 input_data = np.moveaxis(temp, -1, 1).astype(np.float32)
 
                 prediction = np.zeros((shape[0], 1, 80, 96, 80), dtype=np.float32)
                 for batch_idx in range(batch_size, shape[0] + 1, batch_size):
-                    temp_input = input_data[batch_idx - batch_size: batch_idx]
+                    temp_input = input_data[batch_idx - batch_size : batch_idx]
                     temp_pred = self.__predict(temp_input)
-                    prediction[batch_idx - batch_size: batch_idx] = temp_pred
+                    prediction[batch_idx - batch_size : batch_idx] = temp_pred
 
                 remainder = np.mod(shape[0], batch_size)
                 if remainder != 0:
@@ -356,9 +373,9 @@ class Synb0:
 
             prediction = np.zeros((shape[0], 1, 80, 96, 80), dtype=np.float32)
             for batch_idx in range(batch_size, shape[0] + 1, batch_size):
-                temp_input = input_data[batch_idx - batch_size: batch_idx]
+                temp_input = input_data[batch_idx - batch_size : batch_idx]
                 temp_pred = self.__predict(temp_input)
-                prediction[batch_idx - batch_size: batch_idx] = temp_pred
+                prediction[batch_idx - batch_size : batch_idx] = temp_pred
 
             remainder = np.mod(shape[0], batch_size)
             if remainder != 0:

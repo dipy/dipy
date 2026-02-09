@@ -606,11 +606,13 @@ fetch_synb0_torch_weights = _make_fetcher(
         Path("synb0_default_weights4.h5"),
         Path("synb0_default_weights5.h5"),
     ],
-    md5_list=["0ac4438cbbc63ac8ce4d0f0213e4239a",
-              "35bb00294e15bb61a3953dfc92c9ecf9",
-              "81c8320d494034538f31dc4e78cb30df",
-              "08e72dc41fcee86e2c5248b9920552cb",
-              "44808a9e4007c6ff3ebdd8fa5f8cb0a0"],
+    md5_list=[
+        "0ac4438cbbc63ac8ce4d0f0213e4239a",
+        "35bb00294e15bb61a3953dfc92c9ecf9",
+        "81c8320d494034538f31dc4e78cb30df",
+        "08e72dc41fcee86e2c5248b9920552cb",
+        "44808a9e4007c6ff3ebdd8fa5f8cb0a0",
+    ],
     doc="Download Synb0 Pytorch model weights for Schilling et. al 2019",
 )
 
@@ -644,6 +646,24 @@ fetch_synb0_test = _make_fetcher(
     [Path("test_input_synb0.npz"), Path("test_output_synb0.npz")],
     md5_list=["987203aa73de2dac8770f39ed506dc0c", "515544fbcafd9769785502821b47b661"],
     doc="Download Synb0 test data for Schilling et. al 2019",
+)
+
+fetch_mni_resized_templates = _make_fetcher(
+    "fetch_mni_resized_templates",
+    Path(dipy_home) / "mni_resized",
+    "https://ndownloader.figshare.com/files/",
+    ["61672486", "61672489", "61672492"],
+    [
+        Path("mni_icbm152_t2_tal_nlin_asym_09c_2_5.nii.gz"),
+        Path("mni_icbm152_t1_tal_nlin_asym_09c_2_5.nii.gz"),
+        Path("mni_icbm152_t1_tal_nlin_asym_09c_mask_2_5.nii.gz"),
+    ],
+    md5_list=[
+        "4d0096fdba03e0c9aee79552cbb419e0",
+        "78633c9a826f7cabc7496e3297773276",
+        "f369f267e41a59dc7d1ef89da004e337",
+    ],
+    doc="Download resized MNI templates for Synbo input",
 )
 
 fetch_deepn4_tf_weights = _make_fetcher(
@@ -2124,6 +2144,12 @@ def get_fnames(*, name="small_64D", include_optional=False):
         files, folder = fetch_resdnn_torch_weights()
         wraw = Path(folder) / "histo_weights.pth"
         return wraw
+    if name == "mni_resized_templates":
+        files, folder = fetch_mni_resized_templates()
+        t1 = Path(folder) / "mni_icbm152_t1_tal_nlin_asym_09c_2_5.nii.gz"
+        t2 = Path(folder) / "mni_icbm152_t2_tal_nlin_asym_09c_2_5.nii.gz"
+        t1_mask = Path(folder) / "mni_icbm152_t1_tal_nlin_asym_09c_mask_2_5.nii.gz"
+        return t1, t2, t1_mask
     if name == "synb0_default_weights":
         _, folder = fetch_synb0_weights()
         w1 = Path(folder) / "synb0_default_weights1.h5"

@@ -3,23 +3,29 @@ Distortion Correction Module
 
 This module provides tools for correcting various types of distortions
 in diffusion MRI data, including susceptibility-induced distortions
-using the Synb0-DISCO method.
+using the Synb0-SyN method.
 
 References
 ----------
-.. [1] Schilling, K. G., et al. (2019). "Synthesized b0 for diffusion
+.. [1] Chigurupati, S., et al. (2024). "Fast susceptibility distortion correction
+       for diffusion MRI using style transfer and nonrigid registration."
+       Proceedings of ISMRM.
+.. [2] Schilling, K. G., et al. (2019). "Synthesized b0 for diffusion
        distortion correction (Synb0-DisCo)." Magnetic Resonance Imaging,
        64, 62-70.
-.. [2] Schilling, K. G., et al. (2020). "Distortion correction of
+.. [3] Schilling, K. G., et al. (2020). "Distortion correction of
        diffusion weighted MRI without reverse phase-encoding scans or
        field-maps." PLOS ONE, 15(7), e0236659.
 """
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.align import affine_registration
+from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
+from dipy.align.metrics import CCMetric
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti
 from dipy.utils.logging import logger
-from dipy.utils.optpkg import optional_package
 
 # Try to import Synb0 - the backend (torch/tf) is selected automatically
 # based on DIPY_NN_BACKEND environment variable
@@ -30,293 +36,166 @@ try:
 except ImportError:
     HAVE_SYNB0 = False
     logger.warning(
-        "Synb0 model not available. Install PyTorch or TensorFlow to use "
+        "Synb0 model not available. Install PyTorch or TensorFlow to use."
+        "(pip install dipy[ml])"
         "Synb0-DISCO distortion correction."
     )
 
 
-def dummy_distortion_correction(data, affine=None, b0_threshold=50):
-    """
-    Dummy function for distortion correction.
-
-    This is a placeholder function that will be replaced with actual
-    distortion correction algorithms. Currently, it just returns the
-    input data unchanged.
-
-    Parameters
-    ----------
-    data : ndarray
-        The input diffusion MRI data to be corrected.
-        Shape should be (X, Y, Z, N) where N is the number of volumes.
-    affine : ndarray, optional
-        The 4x4 affine transformation matrix. If None, an identity
-        matrix is used.
-    b0_threshold : float, optional
-        The threshold below which a b-value is considered as b0.
-        Default is 50.
-
-    Returns
-    -------
-    corrected_data : ndarray
-        The corrected data (currently just a copy of input data).
-    corrected_affine : ndarray
-        The corrected affine transformation matrix.
-
-    Notes
-    -----
-    This is a dummy implementation. Future versions will include:
-    - Susceptibility-induced distortion correction
-    - Eddy current correction
-    - Motion correction integration
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from dipy.correct.disco import dummy_distortion_correction
-    >>> data = np.random.rand(10, 10, 10, 32)
-    >>> corrected_data, corrected_affine = dummy_distortion_correction(data)
-    >>> corrected_data.shape
-    (10, 10, 10, 32)
-    """
-    # Create default affine if not provided
-    if affine is None:
-        affine = np.eye(4)
-
-    # For now, just return a copy of the data and affine
-    # This is where actual distortion correction would happen
-    corrected_data = np.copy(data)
-    corrected_affine = np.copy(affine)
-
-    # Placeholder for future implementation
-    # TODO: Implement actual distortion correction algorithm
-    # - Estimate distortion field
-    # - Apply correction
-    # - Update affine transformation if needed
-
-    return corrected_data, corrected_affine
-
-
-def estimate_distortion_field(b0_image, phase_encoding_direction='y'):
-    """
-    Dummy function to estimate the distortion field.
-
-    This is a placeholder for distortion field estimation.
-
-    Parameters
-    ----------
-    b0_image : ndarray
-        The b0 (non-diffusion weighted) image.
-    phase_encoding_direction : str, optional
-        The phase encoding direction ('x', 'y', or 'z').
-        Default is 'y'.
-
-    Returns
-    -------
-    distortion_field : ndarray
-        The estimated distortion field (currently zeros).
-
-    Notes
-    -----
-    This is a dummy implementation. Future versions will include
-    actual field estimation algorithms.
-    """
-    # Return a zero field for now
-    distortion_field = np.zeros_like(b0_image)
-
-    return distortion_field
-
-
-@warning_for_keywords()
-def synb0_predict(b0, T1, *, batch_size=None, average=True, verbose=False):
-    """
-    Synthesize an undistorted b0 image using Synb0-DISCO.
-
-    This function uses the Synb0 deep learning model to synthesize an
-    undistorted b0 image from a distorted b0 and a T1-weighted image.
-    The backend (PyTorch or TensorFlow) is selected based on the
-    DIPY_NN_BACKEND environment variable.
-
-    Parameters
-    ----------
-    b0 : ndarray (batch, 77, 91, 77) or (77, 91, 77)
-        Distorted b0 (non-diffusion weighted) image.
-        For a single image, input should be a 3D array. If multiple images,
-        there should also be a batch dimension.
-
-    T1 : ndarray (batch, 77, 91, 77) or (77, 91, 77)
-        T1-weighted structural image that should be in the same space
-        as the desired undistorted b0.
-        For a single image, input should be a 3D array. If multiple images,
-        there should also be a batch dimension.
-
-    batch_size : int, optional
-        Number of images per prediction pass. Only available if data
-        is provided with a batch dimension.
-        Consider lowering it if you get an out of memory error.
-        Increase it if you want it to be faster and have a lot of data.
-        If None, batch_size will be set to 1.
-        Default is None.
-
-    average : bool, optional
-        Whether to average the prediction of 5 different models as in
-        the original Synb0-Disco pipeline. If False, uses only the loaded
-        weights for prediction.
-        Default is True.
-
-    verbose : bool, optional
-        Whether to show information about the processing.
-        Default is False.
-
-    Returns
-    -------
-    pred_output : ndarray (...) or (batch, ...)
-        Synthesized undistorted b0 image(s) with the same shape as input.
-
-    Raises
-    ------
-    ImportError
-        If neither PyTorch nor TensorFlow is available.
-    ValueError
-        If input shapes are incorrect.
-
-    Notes
-    -----
-    The input images should be pre-processed and registered to MNI space
-    (77, 91, 77) with the standard Synb0-DISCO preprocessing pipeline.
-    This function performs only the neural network inference part.
-
-    The backend selection priority is:
-    1. DIPY_NN_BACKEND environment variable ('torch' or 'tf')
-    2. PyTorch if available and DIPY_NN_BACKEND not set
-    3. TensorFlow if PyTorch not available
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from dipy.correct.disco import synb0_predict
-    >>> # Create dummy data (in practice, use real pre-processed images)
-    >>> b0 = np.random.rand(77, 91, 77) * 1000
-    >>> T1 = np.random.rand(77, 91, 77) * 150
-    >>> # Predict undistorted b0 (requires trained weights)
-    >>> # b0_corrected = synb0_predict(b0, T1, average=False)
-
-    References
-    ----------
-    .. [1] Schilling, K. G., et al. (2019). "Synthesized b0 for diffusion
-           distortion correction (Synb0-DisCo)." Magnetic Resonance
-           Imaging, 64, 62-70.
-    """
-    if not HAVE_SYNB0:
-        raise ImportError(
-            "Synb0 model not available. Install PyTorch or TensorFlow:\n"
-            "  pip install torch  # for PyTorch backend\n"
-            "  pip install tensorflow  # for TensorFlow backend\n"
-            "Set DIPY_NN_BACKEND='torch' or 'tf' to choose backend."
-        )
-
-    # Create model and run prediction
-    model = Synb0(verbose=verbose)
-
-    prediction = model.predict(b0, T1, batch_size=batch_size, average=average)
-
-    return prediction
-
-
-@warning_for_keywords()
-def synb0_distortion_correction(
-    b0_image,
-    T1_image,
-    *,
-    average=True,
-    verbose=False,
+def synb0_syn(
+    dwi,
+    T1,
+    dwi_affine,
+    T1_affine,
+    b0_index=0,
+    dwi_mask=None,
+    T1_mask=None,
+    return_field=False,
+    **kwargs,
 ):
     """
-    Perform susceptibility distortion correction using Synb0-DISCO.
+    Perform Synb0-SyN distortion correction on a diffusion MRI dataset.
 
     This function synthesizes an undistorted b0 image using the Synb0
-    deep learning model. It provides a simplified interface to the
-    synb0_predict function.
+    deep learning model and applies nonrigid registration to correct
+    distortions in the diffusion MRI data. It provides a simplified
+    interface to the full Synb0-SyN pipeline.
 
     Parameters
     ----------
-    b0_image : ndarray (77, 91, 77)
-        A distorted b0 (non-diffusion weighted) image in MNI space.
+    dwi : ndarray (X, Y, Z, N) / (X, Y, X)
+        The input diffusion MRI data with shape (X, Y, Z) where N is
+        the number of volumes.
 
-    T1_image : ndarray (77, 91, 77)
-        A T1-weighted structural image registered to MNI space.
+    T1 : ndarray (X, Y, Z)
+        The T1-weighted structural image that should be in the same space
+        as the desired undistorted b0.
 
-    average : bool, optional
-        Whether to average predictions from 5 different models as in
-        the original Synb0-DISCO pipeline.
-        Default is True.
+    b0_index : int, optional
+        The index of the b0 volume in the DWI data. Default is 0.
 
-    verbose : bool, optional
-        Whether to show processing information.
-        Default is False.
+    dwi_mask : ndarray (X, Y, Z), optional
+        A binary mask for the DWI data. If None, no masking is applied.
+        Default is None.
 
-    Returns
-    -------
-    b0_undistorted : ndarray (77, 91, 77)
-        The synthesized undistorted b0 image.
+    T1_mask : ndarray (X, Y, Z), optional
+        A binary mask for the T1 image. If None, no masking is applied.
+        Default is None.
 
-    Raises
-    ------
-    ImportError
-        If neither PyTorch nor TensorFlow is available.
-    ValueError
-        If input shapes are incorrect.
+    return_field : bool, optional
+        Whether to return the estimated distortion field along with the
+        corrected DWI data. Default is False.
 
-    Notes
-    -----
-    This is a simplified interface. The full Synb0-DISCO pipeline involves:
-
-    1. Skull stripping and normalization of both b0 and T1
-    2. Registration to MNI152 template space (77, 91, 77)
-    3. Neural network inference (this function)
-    4. Transformation back to native space
-    5. Optional TOPUP integration for final correction
-
-    This function performs only step 3. For the complete pipeline,
-    additional preprocessing and postprocessing steps are required.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from dipy.correct.disco import synb0_distortion_correction
-    >>> # Assuming preprocessed images in MNI space
-    >>> b0_mni = np.random.rand(77, 91, 77) * 1000
-    >>> T1_mni = np.random.rand(77, 91, 77) * 150
-    >>> # Get undistorted b0 (requires trained weights)
-    >>> # b0_undistorted = synb0_distortion_correction(b0_mni, T1_mni,
-    >>> #                                               average=False)
-
-    References
-    ----------
-    .. [1] Schilling, K. G., et al. (2019). "Synthesized b0 for diffusion
-           distortion correction (Synb0-DisCo)." Magnetic Resonance
-           Imaging, 64, 62-70.
-    .. [2] Schilling, K. G., et al. (2020). "Distortion correction of
-           diffusion weighted MRI without reverse phase-encoding scans or
-           field-maps." PLOS ONE, 15(7), e0236659.
+    kwargs :
+        Additional keyword arguments to pass to synb0_predict and
+        nonrigid registration functions.
     """
-    # Input validation
-    if b0_image.shape != (77, 91, 77):
-        raise ValueError(
-            f"b0_image must have shape (77, 91, 77) (MNI space), "
-            f"got {b0_image.shape}. Please preprocess and register "
-            f"your data to MNI space first."
-        )
-
-    if T1_image.shape != (77, 91, 77):
-        raise ValueError(
-            f"T1_image must have shape (77, 91, 77) (MNI space), "
-            f"got {T1_image.shape}. Please preprocess and register "
-            f"your data to MNI space first."
-        )
-
-    # Synthesize undistorted b0
-    b0_undistorted = synb0_predict(
-        b0_image, T1_image, average=average, verbose=verbose
+    if dwi.shape.length == 4:
+        dwi = dwi[..., b0_index]
+    mni_t1_path, mni_t2_path, mni_mask_path = get_fnames("mni_resized_templates")
+    mni_t1, mni_t1_affine = load_nifti(mni_t1_path)
+    mni_t2, mni_t2_affine = load_nifti(mni_t2_path)
+    mni_mask, mni_mask_affine = load_nifti(mni_mask_path)
+    mni_mask = mni_mask.astype(np.int32)
+    print(
+        "Shapes of T1, DWI, MNI T1, and MNI mask:",
+        T1.shape,
+        dwi.shape,
+        mni_t1.shape,
+        mni_mask.shape,
+    )
+    masked_mni_t1 = mni_t1 * mni_mask
+    print("Shapes of T1 and MNI T1:", T1.shape, mni_t1.shape)
+    level_iters = [10000, 1000]
+    sigmas = [3.0, 1.0]
+    factors = [4, 2]
+    pipeline = ["center_of_mass", "translation", "rigid", "affine"]
+    xformed_data, reg_affine = affine_registration(
+        T1,
+        mni_t1,
+        moving_affine=T1_affine,
+        static_affine=mni_t1_affine,
+        nbins=32,
+        metric="MI",
+        pipeline=pipeline,
+        level_iters=level_iters,
+        sigmas=sigmas,
+        factors=factors,
+        moving_mask=T1_mask,
+        static_mask=mni_mask,
     )
 
-    return b0_undistorted
+    metric = CCMetric(3)
+    level_iters_syn = [200, 200, 100]
+    sdr = SymmetricDiffeomorphicRegistration(metric, level_iters_syn)
+    mapping = sdr.optimize(masked_mni_t1, T1, mni_t1_affine, T1_affine, reg_affine)
+    T1_reg_to_template = mapping.transform(T1)
+    if T1_mask is not None:
+        T1_mask = np.ascontiguousarray(np.asarray(T1_mask, dtype=np.float32))
+        T1_mask_reg_to_template = (
+            mapping.transform(T1_mask, interpolation="nearest") > 0.5
+        )
+        masked_T1_reg_to_template = T1_reg_to_template * T1_mask_reg_to_template
+    else:
+        masked_T1_reg_to_template = T1_reg_to_template
+
+    xformed_data, reg_affine = affine_registration(
+        dwi,
+        mni_t2,
+        moving_affine=dwi_affine,
+        static_affine=mni_t1_affine,
+        nbins=32,
+        metric="MI",
+        pipeline=pipeline,
+        level_iters=level_iters,
+        sigmas=sigmas,
+        factors=factors,
+        moving_mask=dwi_mask,
+        static_mask=mni_mask,
+    )
+
+    if dwi_mask is not None:
+        masked_dwi = dwi * dwi_mask
+    else:
+        masked_dwi = dwi
+    masked_mni_t2 = mni_t2 * mni_mask
+
+    metric = CCMetric(3)
+    level_iters_syn = [200, 200, 100]
+    sdr = SymmetricDiffeomorphicRegistration(metric, level_iters_syn)
+    mapping = sdr.optimize(
+        masked_mni_t2, masked_dwi, mni_t1_affine, dwi_affine, reg_affine
+    )
+    dwi_reg_to_template = mapping.transform(dwi)
+    if dwi_mask is not None:
+        dwi_mask_f = np.ascontiguousarray(np.asarray(dwi_mask, dtype=np.float32))
+        dwi_mask_reg_to_template = (
+            mapping.transform(dwi_mask_f, interpolation="nearest") > 0.5
+        )
+        masked_dwi_reg_to_template = dwi_reg_to_template * dwi_mask_reg_to_template
+    else:
+        masked_dwi_reg_to_template = dwi_reg_to_template
+    synb0 = Synb0()
+    binf = synb0.predict(masked_dwi_reg_to_template, masked_T1_reg_to_template)
+    ori_binf = mapping.transform_inverse(binf)
+
+    sdr = SymmetricDiffeomorphicRegistration(
+        metric=CCMetric(3), level_iters=[200, 200, 100]
+    )
+    pre_align = np.eye(4)
+    mapping = sdr.optimize(
+        static=ori_binf,
+        moving=dwi[..., 0],
+        static_grid2world=dwi_affine,
+        moving_grid2world=dwi_affine,
+        prealign=pre_align,
+    )
+    dwi_to_binf = dwi.copy()
+    for i in range(dwi.shape[-1]):
+        dwi_to_binf[..., i] = mapping.transform(dwi[..., i])
+
+    if return_field:
+        field = mapping.get_forward_field()
+        return dwi_to_binf, field
+    else:
+        return dwi_to_binf
