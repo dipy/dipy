@@ -1017,7 +1017,7 @@ class DiffeomorphicMap:
         )
 
         # Simplify the backward transform
-        C = self.codomain_world2grid
+        C = self.codomain_grid2world
         Pinv = self.prealign_inv
         Dinv = self.domain_world2grid
 
