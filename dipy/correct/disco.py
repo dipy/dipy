@@ -90,7 +90,7 @@ def synb0_syn(
         Additional keyword arguments to pass to synb0_predict and
         nonrigid registration functions.
     """
-    if dwi.shape.length == 4:
+    if dwi.ndim == 4:
         dwi = dwi[..., b0_index]
     mni_t1_path, mni_t2_path, mni_mask_path = get_fnames("mni_resized_templates")
     mni_t1, mni_t1_affine = load_nifti(mni_t1_path)
@@ -185,14 +185,13 @@ def synb0_syn(
     pre_align = np.eye(4)
     mapping = sdr.optimize(
         static=ori_binf,
-        moving=dwi[..., 0],
+        moving=dwi,
         static_grid2world=dwi_affine,
         moving_grid2world=dwi_affine,
         prealign=pre_align,
     )
     dwi_to_binf = dwi.copy()
-    for i in range(dwi.shape[-1]):
-        dwi_to_binf[..., i] = mapping.transform(dwi[..., i])
+    dwi_to_binf = mapping.transform(dwi)
 
     if return_field:
         field = mapping.get_forward_field()
