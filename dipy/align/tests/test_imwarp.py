@@ -344,6 +344,15 @@ def test_diffeomorphic_map_simplification_3d():
     assert_equal(simplified.codomain_world2grid, None)
     assert_equal(simplified.disp_world2grid, None)
 
+    # Now do the same test for the backwards transform
+    domain_sphere = vfu.create_sphere(
+        domain_shape[0], domain_shape[1], domain_shape[2], radius
+    )
+    expected = diff_map.transform(domain_sphere, interpolation="linear")
+    warped = simplified.transform(domain_sphere, interpolation="linear")
+
+    assert_array_almost_equal(warped, expected)
+
 
 def test_optimizer_exceptions():
     r"""Test exceptions from SyN"""
