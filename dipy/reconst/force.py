@@ -1,31 +1,6 @@
-"""
-FORCE Reconstruction Module
-
-Signal matching based reconstruction for diffusion MRI microstructure
-estimation. Implements both standard matching and posterior-based inference.
-
-The FORCEModel class provides a DIPY-compatible interface for fitting
-the FORCE model to diffusion MRI data. It supports:
-
-- Configurable number of neighbors (n_neighbors, default 50)
-- Standard best-match or posterior averaging (use_posterior flag)
-- Configurable posterior temperature (posterior_beta)
-- Optional ODF map computation (compute_odf flag)
-
-Examples
---------
->>> from dipy.reconst.force import FORCEModel
->>> from dipy.sims.force import load_force_simulations
->>>
->>> simulations = load_force_simulations('simulated_data.npz')
->>> model = FORCEModel(gtab, simulations, n_neighbors=50)
->>> fit = model.fit(data, mask=brain_mask)
->>> fa_map = fit.fa
-
-References
-----------
-FORCE methodology paper (in preparation)
-"""
+import json
+import os
+from pathlib import Path
 
 import numpy as np
 
@@ -33,6 +8,195 @@ from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.data import default_sphere
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst._force_search import search_inner_product as _cython_search
+
+
+def _get_force_cache_dir():
+    """Return the FORCE simulation cache directory inside .dipy.
+
+    Uses ``DIPY_HOME`` environment variable if set, otherwise defaults
+    to ``~/.dipy/force_simulations``.
+
+    Returns
+    -------
+    cache_dir : Path
+        Path to the cache directory (created if it does not exist).
+    """
+    if "DIPY_HOME" in os.environ:
+        dipy_home = Path(os.environ["DIPY_HOME"])
+    else:
+        dipy_home = Path("~").expanduser() / ".dipy"
+    cache_dir = dipy_home / "force_simulations"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir
+
+
+def _gtab_matches(entry_bvals, entry_bvecs, gtab, bval_tol=10.0,
+                  bvec_tol=1e-3):
+    """Check whether stored bvals/bvecs match a GradientTable.
+
+    Parameters
+    ----------
+    entry_bvals : list
+        Stored b-values from the cache registry.
+    entry_bvecs : list of list
+        Stored b-vectors from the cache registry.
+    gtab : GradientTable
+        Gradient table to compare against.
+    bval_tol : float, optional
+        Absolute tolerance for b-value comparison. Default is 10.0.
+    bvec_tol : float, optional
+        Absolute tolerance for b-vector coordinate comparison.
+        Default is 1e-3.
+
+    Returns
+    -------
+    match : bool
+        True if the stored and passed bvals/bvecs agree within tolerance.
+    """
+    stored_bvals = np.asarray(entry_bvals, dtype=np.float64)
+    stored_bvecs = np.asarray(entry_bvecs, dtype=np.float64)
+    current_bvals = np.asarray(gtab.bvals, dtype=np.float64)
+    current_bvecs = np.asarray(gtab.bvecs, dtype=np.float64)
+
+    if stored_bvals.shape != current_bvals.shape:
+        return False
+    if stored_bvecs.shape != current_bvecs.shape:
+        return False
+
+    return (np.allclose(stored_bvals, current_bvals, atol=bval_tol) and
+            np.allclose(stored_bvecs, current_bvecs, atol=bvec_tol))
+
+
+def _diffusivity_matches(entry_config, current_config):
+    """Check whether two diffusivity configurations are equivalent.
+
+    Parameters
+    ----------
+    entry_config : dict
+        Stored diffusivity configuration.
+    current_config : dict
+        Current diffusivity configuration.
+
+    Returns
+    -------
+    match : bool
+        True if all keys and values are identical.
+    """
+    if set(entry_config.keys()) != set(current_config.keys()):
+        return False
+    for key in entry_config:
+        stored = entry_config[key]
+        current = current_config[key]
+        # Both may be lists/tuples (ranges) or scalars
+        if isinstance(stored, (list, tuple)):
+            if not isinstance(current, (list, tuple)):
+                return False
+            if len(stored) != len(current):
+                return False
+            if not all(np.isclose(s, c) for s, c in zip(stored, current)):
+                return False
+        else:
+            if not np.isclose(stored, current):
+                return False
+    return True
+
+
+def _load_cache_registry(cache_dir):
+    """Load the cache registry JSON from *cache_dir*.
+
+    Returns an empty list if the file does not exist yet.
+    """
+    registry_path = cache_dir / "cache_registry.json"
+    if registry_path.exists():
+        with open(registry_path, "r") as f:
+            return json.load(f)
+    return []
+
+
+def _save_cache_registry(cache_dir, registry):
+    """Persist *registry* as JSON in *cache_dir*."""
+    registry_path = cache_dir / "cache_registry.json"
+    with open(registry_path, "w") as f:
+        json.dump(registry, f, indent=2)
+
+
+def _find_cached_simulation(cache_dir, gtab, diffusivity_config,
+                            num_simulations):
+    """Search the registry for a simulation matching the given parameters.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Cache directory.
+    gtab : GradientTable
+        Gradient table.
+    diffusivity_config : dict
+        Diffusivity ranges used for generation.
+    num_simulations : int
+        Number of simulations requested.
+
+    Returns
+    -------
+    path : str or None
+        Path to the cached ``.npz`` file, or None if no match found.
+    """
+    registry = _load_cache_registry(cache_dir)
+    for entry in registry:
+        if entry["num_simulations"] != num_simulations:
+            continue
+        if not _gtab_matches(entry["bvals"], entry["bvecs"], gtab):
+            continue
+        if not _diffusivity_matches(entry["diffusivity_config"],
+                                    diffusivity_config):
+            continue
+        candidate = cache_dir / entry["filename"]
+        if candidate.exists():
+            return str(candidate)
+    return None
+
+
+def _register_cached_simulation(cache_dir, gtab, diffusivity_config,
+                                num_simulations, filename):
+    """Add a new entry to the cache registry.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Cache directory.
+    gtab : GradientTable
+        Gradient table.
+    diffusivity_config : dict
+        Diffusivity ranges.
+    num_simulations : int
+        Number of simulations.
+    filename : str
+        Filename of the saved ``.npz`` inside *cache_dir*.
+    """
+    registry = _load_cache_registry(cache_dir)
+
+    # Convert numpy types to plain Python for JSON serialisation
+    def _to_json(obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, (np.floating, np.integer)):
+            return obj.item()
+        if isinstance(obj, tuple):
+            return list(obj)
+        return obj
+
+    config_json = {}
+    for k, v in diffusivity_config.items():
+        config_json[k] = _to_json(v)
+
+    entry = {
+        "bvals": np.asarray(gtab.bvals, dtype=np.float64).tolist(),
+        "bvecs": np.asarray(gtab.bvecs, dtype=np.float64).tolist(),
+        "diffusivity_config": config_json,
+        "num_simulations": int(num_simulations),
+        "filename": filename,
+    }
+    registry.append(entry)
+    _save_cache_registry(cache_dir, registry)
 
 
 class SignalIndex:
@@ -457,16 +621,31 @@ class FORCEModel(ReconstModel):
         compute_dti=True,
         compute_dki=False,
         verbose=False,
+        use_cache=True,
     ):
         """
         Generate simulations for matching.
+
+        When ``output_path`` is ``None`` (the default) and
+        ``use_cache`` is ``True``, simulations are cached in
+        ``~/.dipy/force_simulations/`` (or ``$DIPY_HOME``).  A
+        registry file (``cache_registry.json``) keeps track of the
+        bvals, bvecs, diffusivity configuration and number of
+        simulations for each cached file.  If a cached simulation that
+        matches the current gradient table (within tolerance) and
+        diffusivity configuration already exists, it is loaded from
+        disk and generation is skipped.
+
+        Set ``use_cache=False`` to force regeneration even when a
+        matching cached simulation exists.
 
         Parameters
         ----------
         num_simulations : int
             Number of simulated voxels. Default is 100000.
         output_path : str, optional
-            Path to save simulations (.npz).
+            Path to save simulations (.npz).  When None, defaults to
+            ``~/.dipy/force_simulations/`` and uses caching.
         num_cpus : int
             Number of CPU cores for parallel processing.
         wm_threshold : float
@@ -483,14 +662,39 @@ class FORCEModel(ReconstModel):
             Compute DKI metrics (AK, RK, MK, KFA).
         verbose : bool
             Enable progress output.
+        use_cache : bool, optional
+            Whether to use cached simulations when ``output_path`` is
+            None.  Set to ``False`` to always regenerate.
+            Default is True.
 
         Returns
         -------
         self : FORCEModel
             Model with simulations loaded.
         """
-        from dipy.sims.force import generate_force_simulations, save_force_simulations
+        from dipy.sims.force import (generate_force_simulations,
+                                     get_default_diffusivity_config,
+                                     load_force_simulations,
+                                     save_force_simulations)
 
+        # Resolve the diffusivity config that will actually be used
+        resolved_config = (diffusivity_config if diffusivity_config is not None
+                           else get_default_diffusivity_config())
+
+        # --- Cache logic when no explicit output_path is given ----------
+        if output_path is None and use_cache:
+            cache_dir = _get_force_cache_dir()
+            cached = _find_cached_simulation(
+                cache_dir, self.gtab, resolved_config, num_simulations,
+            )
+            if cached is not None:
+                if verbose:
+                    print(f"[FORCE] Loading cached simulations from {cached}")
+                self.simulations = load_force_simulations(cached)
+                self._prepare_library()
+                return self
+
+        # --- Generate new simulations -----------------------------------
         self.simulations = generate_force_simulations(
             self.gtab,
             num_simulations=num_simulations,
@@ -506,6 +710,20 @@ class FORCEModel(ReconstModel):
 
         if output_path is not None:
             save_force_simulations(self.simulations, output_path)
+        else:
+            # Save into the .dipy cache and register
+            cache_dir = _get_force_cache_dir()
+            idx = len(_load_cache_registry(cache_dir))
+            filename = f"force_sim_{idx}.npz"
+            save_force_simulations(self.simulations,
+                                   str(cache_dir / filename))
+            _register_cached_simulation(
+                cache_dir, self.gtab, resolved_config,
+                num_simulations, filename,
+            )
+            if verbose:
+                print(f"[FORCE] Cached simulations to "
+                      f"{cache_dir / filename}")
 
         self._prepare_library()
         return self
@@ -657,6 +875,15 @@ class FORCEModel(ReconstModel):
             params["mk"] = float(d["mk"][lib_idx])
             params["kfa"] = float(d["kfa"][lib_idx])
 
+        # ODF (if requested and available)
+        if self.compute_odf and "odfs" in d:
+            params["odf"] = d["odfs"][lib_idx].astype(np.float32)
+        else:
+            params["odf"] = None
+
+        # Predicted signal (cleaned_dwi) - the matched library signal
+        params["predicted_signal"] = d["signals"][lib_idx].astype(np.float32)
+
         return params
 
     def _compute_posterior_params(self, indices, weights):
@@ -683,6 +910,26 @@ class FORCEModel(ReconstModel):
             params["rk"] = float(np.sum(weights * d["rk"][indices]))
             params["mk"] = float(np.sum(weights * d["mk"][indices]))
             params["kfa"] = float(np.sum(weights * d["kfa"][indices]))
+
+        # Posterior ODF (if requested and available)
+        if self.compute_odf and "odfs" in d:
+            # Weighted average of ODFs
+            odf = np.zeros(d["odfs"].shape[1], dtype=np.float32)
+            for i, idx in enumerate(indices):
+                odf_i = d["odfs"][idx].astype(np.float32)
+                odf_i /= np.max(odf_i) + 1e-12  # Normalize
+                odf += weights[i] * odf_i
+            odf /= np.max(odf) + 1e-12  # Normalize final
+            params["odf"] = odf
+        else:
+            params["odf"] = None
+
+        # Posterior mean signal (cleaned_dwi)
+        n_grad = d["signals"].shape[1]
+        predicted_signal = np.zeros(n_grad, dtype=np.float32)
+        for i, idx in enumerate(indices):
+            predicted_signal += weights[i] * d["signals"][idx]
+        params["predicted_signal"] = predicted_signal
 
         return params
 
@@ -769,6 +1016,16 @@ class FORCEFit(ReconstFit):
     def kfa(self):
         """Kurtosis fractional anisotropy (DKI)."""
         return self._params.get("kfa", None)
+
+    @property
+    def odf(self):
+        """Orientation distribution function."""
+        return self._params.get("odf", None)
+
+    @property
+    def predicted_signal(self):
+        """Predicted signal from matched library entry (cleaned DWI)."""
+        return self._params.get("predicted_signal", None)
 
     @property
     def uncertainty(self):
