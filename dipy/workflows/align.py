@@ -1,4 +1,6 @@
+import os
 from pathlib import Path
+import shutil
 from warnings import warn
 
 import numpy as np
@@ -154,7 +156,16 @@ class ResliceFlow(Workflow):
                 try:
                     link_file.symlink_to(source_file.resolve())
                 except OSError:
-                    logger.error(f"Symlink {outpfile} creation failed")
+                    # Symlinks may need elevated privileges on Windows; try a hard
+                    # link before falling back to copying large volumes.
+                    try:
+                        os.link(source_file, link_file)
+                        logger.info(f"Hard link created for {outpfile}")
+                    except OSError:
+                        shutil.copy(source_file, link_file)
+                        logger.warning(
+                            f"Link creation for {outpfile} failed, copied instead."
+                        )
                 continue
             else:
                 new_data, new_affine = reslice(
