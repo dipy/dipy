@@ -1011,7 +1011,9 @@ def test_eudx_tracker():
         np.array([4.0, 4.0, 1.0]),
     ]
 
-    streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.0)
+    streamlines = assert_warns(
+        DeprecationWarning, LocalTracking, dg, sc, seeds, np.eye(4), 1.0
+    )
 
     expected = [
         np.array(
