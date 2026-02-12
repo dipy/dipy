@@ -4,6 +4,7 @@ from inspect import getmembers, isfunction
 import os
 from pathlib import Path
 import re
+import shutil
 import sys
 import warnings
 
@@ -806,7 +807,16 @@ class ExtractB0Flow(Workflow):
                 try:
                     link_file.symlink_to(source_file.resolve())
                 except OSError:
-                    logger.error(f"Symlink {ob0} creation failed")
+                    # On Windows creating symlinks requires extra privileges; use a
+                    # hard link first to avoid duplicating potentially large data.
+                    try:
+                        os.link(source_file, link_file)
+                        logger.info(f"Hard link created for {ob0}")
+                    except OSError:
+                        shutil.copy(source_file, link_file)
+                        logger.warning(
+                            f"Link creation for {ob0} failed, copied instead."
+                        )
                 continue
 
             b0s_result = extract_b0(
