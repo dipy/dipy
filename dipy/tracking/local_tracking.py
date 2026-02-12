@@ -11,7 +11,27 @@ from dipy.tracking.stopping_criterion import (
     AnatomicalStoppingCriterion,
     StreamlineStatus,
 )
+from dipy.utils.deprecator import deprecate_with_version
 from dipy.utils import fast_numpy
+
+
+@deprecate_with_version(
+    "Using EuDXDirectionGetter-based objects (e.g., PeaksAndMetrics) as "
+    "direction_getter in LocalTracking is deprecated. "
+    "Please use dipy.tracking.tracker.eudx_tracking instead.",
+    since="1.12.0",
+    until="2.0.0",
+)
+def _warn_old_eudx_localtracking_api():
+    pass
+
+
+def _is_eudx_direction_getter(direction_getter):
+    return any(
+        cls.__name__ == "EuDXDirectionGetter"
+        and cls.__module__ == "dipy.reconst.eudx_direction_getter"
+        for cls in type(direction_getter).__mro__
+    )
 
 
 class LocalTracking:
@@ -113,6 +133,9 @@ class LocalTracking:
         self.unidirectional = unidirectional
         self.randomize_forward_direction = randomize_forward_direction
         self.initial_directions = initial_directions
+
+        if _is_eudx_direction_getter(direction_getter):
+            _warn_old_eudx_localtracking_api()
 
         if affine.shape != (4, 4):
             raise ValueError("affine should be a (4, 4) array.")
