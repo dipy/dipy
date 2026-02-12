@@ -5,9 +5,14 @@
 import numpy as np
 cimport numpy as cnp
 
+from dipy.core.sphere import Sphere
 from dipy.reconst import shm
 
-from dipy.core.interpolation cimport trilinear_interpolate4d_c
+from dipy.core.interpolation cimport (
+    _trilinear_interpolation_iso,
+    offset,
+    trilinear_interpolate4d_c,
+)
 from libc.stdlib cimport malloc, free
 
 cdef extern from "stdlib.h" nogil:
@@ -199,6 +204,9 @@ cdef class SimplePeakGen(PmfGen):
             Sphere object.
         """
         cdef int i
+        cdef cnp.ndarray dummy_data
+        cdef cnp.ndarray odf_vertices_arr
+        cdef cnp.ndarray sphere_vertices_arr
 
         if (peak_indices.shape[0] != peak_values.shape[0] or
             peak_indices.shape[1] != peak_values.shape[1] or
@@ -211,8 +219,16 @@ cdef class SimplePeakGen(PmfGen):
                 "peak_indices and peak_values must have same number of peaks"
             )
 
-        cdef cnp.ndarray dummy_data = np.zeros((1, 1, 1, sphere.vertices.shape[0]))
+        dummy_data = np.zeros((1, 1, 1, odf_vertices.shape[0]))
+        odf_vertices_arr = np.asarray(odf_vertices, dtype=float, order="C")
         PmfGen.__init__(self, dummy_data, sphere)
+        self.vertices = odf_vertices_arr
+        self.pmf = np.zeros(self.vertices.shape[0])
+        sphere_vertices_arr = np.asarray(sphere.vertices, dtype=float, order="C")
+        if np.array_equal(sphere_vertices_arr, odf_vertices_arr):
+            self.sphere = sphere
+        else:
+            self.sphere = Sphere(xyz=odf_vertices_arr)
 
         self.peak_indices = peak_indices
         self.peak_values = peak_values
@@ -250,7 +266,40 @@ cdef class SimplePeakGen(PmfGen):
         out : double*
             Pointer to output array.
         """
-        memset(out, 0, self.pmf.shape[0] * sizeof(double))
+        cdef:
+            cnp.npy_intp i, j, m
+            cnp.npy_intp off
+            cnp.npy_intp peak_index
+            cnp.npy_intp len_pmf = self.pmf.shape[0]
+            cnp.npy_intp index[24]
+            cnp.npy_intp xyz[4]
+            double peak_value
+            double weights[8]
+
+        memset(out, 0, len_pmf * sizeof(double))
+        _trilinear_interpolation_iso(point, weights, index)
+
+        # Match trilinear_interpolate4d_c behavior: out-of-bounds => zeros.
+        for i in range(3):
+            if index[i] < 0 or index[7 * 3 + i] >= self.peak_shape[i]:
+                return out
+
+        for m in range(8):
+            for i in range(3):
+                xyz[i] = index[m * 3 + i]
+
+            for j in range(self.max_peaks):
+                xyz[3] = j
+                off = offset(xyz, <cnp.npy_intp*>self.peak_strides, 4, 8)
+                peak_value = self.peak_values_ptr[off]
+                if peak_value <= 0:
+                    continue
+
+                peak_index = <cnp.npy_intp>self.peak_indices_ptr[off]
+                if peak_index < 0 or peak_index >= len_pmf:
+                    continue
+
+                out[peak_index] += weights[m] * peak_value
         return out
 
     cdef double get_pmf_value_c(self, double* point, double* xyz) noexcept nogil:
@@ -261,5 +310,37 @@ cdef class SimplePeakGen(PmfGen):
         value : double
             PMF value.
         """
-        return 0.0
+        cdef:
+            cnp.npy_intp closest_idx = self.find_closest(xyz)
+            cnp.npy_intp i, j, m
+            cnp.npy_intp off
+            cnp.npy_intp peak_index
+            cnp.npy_intp index[24]
+            cnp.npy_intp xyz_idx[4]
+            double peak_value
+            double weights[8]
+            double pmf_value = 0
 
+        _trilinear_interpolation_iso(point, weights, index)
+
+        # Match trilinear_interpolate4d_c behavior: out-of-bounds => 0.
+        for i in range(3):
+            if index[i] < 0 or index[7 * 3 + i] >= self.peak_shape[i]:
+                return 0.0
+
+        for m in range(8):
+            for i in range(3):
+                xyz_idx[i] = index[m * 3 + i]
+
+            for j in range(self.max_peaks):
+                xyz_idx[3] = j
+                off = offset(xyz_idx, <cnp.npy_intp*>self.peak_strides, 4, 8)
+                peak_value = self.peak_values_ptr[off]
+                if peak_value <= 0:
+                    continue
+
+                peak_index = <cnp.npy_intp>self.peak_indices_ptr[off]
+                if peak_index == closest_idx:
+                    pmf_value += weights[m] * peak_value
+
+        return pmf_value

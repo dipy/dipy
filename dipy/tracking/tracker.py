@@ -65,21 +65,23 @@ def generic_tracking(
     sphere = sphere or default_sphere
 
     if selected_pmf["name"] == "peaks":
-        pam = peaks
-        if not hasattr(pam, "peak_indices") or not hasattr(pam, "peak_values"):
+        peak_data = selected_pmf["value"]
+        if not hasattr(peak_data, "peak_indices") or not hasattr(
+            peak_data, "peak_values"
+        ):
             raise ValueError(
                 "peaks must be a PeaksAndMetrics object with "
                 "peak_indices and peak_values attributes"
             )
 
-        if hasattr(pam, "odf_vertices") and pam.odf_vertices is not None:
-            odf_vertices = pam.odf_vertices
+        if hasattr(peak_data, "odf_vertices") and peak_data.odf_vertices is not None:
+            odf_vertices = peak_data.odf_vertices
         else:
             odf_vertices = sphere.vertices
 
         pmf_gen = selected_pmf["cls"](
-            np.asarray(pam.peak_indices, dtype=float, order="C"),
-            np.asarray(pam.peak_values, dtype=float, order="C"),
+            np.asarray(peak_data.peak_indices, dtype=float, order="C"),
+            np.asarray(peak_data.peak_values, dtype=float, order="C"),
             np.asarray(odf_vertices, dtype=float, order="C"),
             sphere,
         )
@@ -114,20 +116,20 @@ def generic_tracking(
             seed_voxels = np.round(seed_voxels).astype(int)
 
             seed_voxels[:, 0] = np.clip(
-                seed_voxels[:, 0], 0, pam.peak_indices.shape[0] - 1
+                seed_voxels[:, 0], 0, peak_data.peak_indices.shape[0] - 1
             )
             seed_voxels[:, 1] = np.clip(
-                seed_voxels[:, 1], 0, pam.peak_indices.shape[1] - 1
+                seed_voxels[:, 1], 0, peak_data.peak_indices.shape[1] - 1
             )
             seed_voxels[:, 2] = np.clip(
-                seed_voxels[:, 2], 0, pam.peak_indices.shape[2] - 1
+                seed_voxels[:, 2], 0, peak_data.peak_indices.shape[2] - 1
             )
 
-            seed_peak_indices = pam.peak_indices[
+            seed_peak_indices = peak_data.peak_indices[
                 seed_voxels[:, 0], seed_voxels[:, 1], seed_voxels[:, 2]
             ].astype(int)
 
-            seed_peak_values = pam.peak_values[
+            seed_peak_values = peak_data.peak_values[
                 seed_voxels[:, 0], seed_voxels[:, 1], seed_voxels[:, 2]
             ]
 
