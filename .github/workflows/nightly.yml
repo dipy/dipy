@@ -34,6 +34,7 @@ jobs:
     name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
     if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -82,6 +83,7 @@ jobs:
     name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
     if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -130,6 +132,7 @@ jobs:
     name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
     if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -171,6 +174,7 @@ jobs:
     if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
     needs: [build_linux_wheels]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -203,6 +207,7 @@ jobs:
       needs: [build_linux_wheels, build_osx_wheels, build_windows_wheels]
       if: ${{ always() }} && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
       runs-on: ubuntu-latest
+      timeout-minutes: 10
       steps:
       - uses: actions/download-artifact@v7
         id: download
