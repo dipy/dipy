@@ -136,6 +136,4 @@ def test_pmf_from_peaks_invalid_point():
     npt.assert_array_equal(
         pmfgen.get_pmf(invalid_point), np.zeros(len(sphere.vertices))
     )
-    npt.assert_allclose(
-        pmfgen.get_pmf_value(invalid_point, sphere.vertices[0]), 0.0
-    )
+    npt.assert_allclose(pmfgen.get_pmf_value(invalid_point, sphere.vertices[0]), 0.0)

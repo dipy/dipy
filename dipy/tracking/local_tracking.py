@@ -11,8 +11,8 @@ from dipy.tracking.stopping_criterion import (
     AnatomicalStoppingCriterion,
     StreamlineStatus,
 )
-from dipy.utils.deprecator import deprecate_with_version
 from dipy.utils import fast_numpy
+from dipy.utils.deprecator import deprecate_with_version
 
 
 @deprecate_with_version(
