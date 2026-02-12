@@ -472,7 +472,7 @@ class IvimModelTRR(ReconstModel):
             If the data was a 3D image of 10x10x10 grid with 21 bvalues,
             the multi_voxel decorator will run the single voxel fitting
             on all the 1000 voxels to get the parameters in
-            IvimFit.model_paramters. The shape of the parameter array
+            IvimFit.model_parameters. The shape of the parameter array
             will be (data[:-1], 4).
 
         x0 : array

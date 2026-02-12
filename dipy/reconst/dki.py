@@ -544,7 +544,7 @@ def directional_kurtosis(
         `min_diffusivity`. Default = 0
     min_kurtosis : float, optional
         Because high-amplitude negative values of kurtosis are not physically
-        and biologicaly pluasible, and these cause artefacts in
+        and biologically plausible, and these cause artifacts in
         kurtosis-based measures, directional kurtosis values smaller than
         `min_kurtosis` are replaced with `min_kurtosis`.
         (theoretical kurtosis limit for regions that consist of water confined
@@ -609,7 +609,7 @@ def apparent_kurtosis_coef(
         `min_diffusivity`.
     min_kurtosis : float, optional
         Because high-amplitude negative values of kurtosis are not physically
-        and biologicaly pluasible, and these cause artefacts in
+        and biologically plausible, and these cause artifacts in
         kurtosis-based measures, directional kurtosis values smaller than
         `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
         (theoretical kurtosis limit for regions that consist of water confined
