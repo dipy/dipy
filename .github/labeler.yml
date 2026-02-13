@@ -133,7 +133,6 @@ type:infrastructure:
     - ".gitattributes"
     - ".gitignore"
     - ".mailmap"
-    - ".mailmap"
     - ".pre-commit-config.yaml"
     - "Makefile"
     - "pyproject.toml"
