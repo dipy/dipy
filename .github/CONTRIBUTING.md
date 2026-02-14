@@ -30,8 +30,8 @@ and [GitHub Actions](https://github.com/dipy/dipy/actions)
 for continuous integration.
 
 If you are adding code into a module that already has a 'test' file (e.g., if
-you are adding code into ``dipy/tracking/streamline.py``), add additional tests
-into the respective file (e.g., ``dipy/tracking/tests/test_streamline.py ``).
+you are adding code into `dipy/tracking/streamline.py`), add additional tests
+into the respective file (e.g., `dipy/tracking/tests/test_streamline.py `).
 
 New contributions are required to have as close to 100% code coverage as
 possible. This means that the tests written cause each and every statement in
@@ -44,18 +44,18 @@ When running:
 
 You will get the usual output of pytest, but also a table that indicates the test
 coverage in each module: the percentage of coverage and also the lines of code
-that are not run in the tests. You can also see the test coverage in the Travis
-run corresponding to the PR (in the log for the machine with ``COVERAGE=1``).
+that are not run in the tests. You can also see the test coverage in the GitHub
+Actions run corresponding to the PR (in the log for the job with `COVERAGE=1`).
 
 If your contributions are to a single module, you can see test and
 coverage results for only that module without running all of the DIPY
-tests. For example, if you are adding code to ``dipy/core/geometry.py``,
+tests. For example, if you are adding code to `dipy/core/geometry.py`,
 you can use:
 
     coverage run --source=dipy.core.geometry -m pytest -s --doctest-modules --verbose dipy/core/tests/test_geometry.py
 
-You can then use ``coverage report`` to view the results, or use
-``coverage html`` and open htmlcov/index.html in your browser for a
+You can then use `coverage report` to view the results, or use
+`coverage html` and open htmlcov/index.html in your browser for a
 nicely formatted interactive coverage report.
 
 Contributions to tests that extend test coverage in older modules that are not
@@ -65,7 +65,6 @@ fully covered are very welcome!
 
 Code contributions should be formatted according to the [DIPY Coding Style Guideline](../doc/devel/coding_style_guideline.rst).
 Please, read the document to conform your code contributions to the DIPY standard.
-
 
 ### Documentation
 
