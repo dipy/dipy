@@ -13,12 +13,12 @@ on:
     #        │ │ │ ┌───────────── month (1 - 12 or JAN-DEC)
     #        │ │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
     #        │ │ │ │ │
-    - cron: "0 0 * * 0,3"  # Every Sunday and Wednesday at midnight
+    - cron: "0 0 * * 0,3" # Every Sunday and Wednesday at midnight
 
 env:
   BUILD_COMMIT: "master"
   CIBW_BUILD_VERBOSITY: 2
-  CIBW_TEST_REQUIRES: "-r requirements/build.txt pytest==8.0.0"
+  CIBW_TEST_REQUIRES: "-r requirements/build.txt pytest>=8.0.0"
   CIBW_TEST_COMMAND: pytest --pyargs dipy
   CIBW_CONFIG_SETTINGS: "compile-args=-v"
 
@@ -64,19 +64,19 @@ jobs:
       - name: Build the wheel
         run: python -m cibuildwheel --output-dir dist
         env:
-            CIBW_BUILD: ${{ matrix.cibw_python }}
-            CIBW_ARCHS_LINUX: ${{ matrix.cibw_arch }}
-            CIBW_SKIP: "*-musllinux_*"
-            CIBW_TEST_SKIP: "*"  # "*_aarch64"
-            CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.cibw_manylinux }}
-            CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.cibw_manylinux }}
-            CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
+          CIBW_BUILD: ${{ matrix.cibw_python }}
+          CIBW_ARCHS_LINUX: ${{ matrix.cibw_arch }}
+          CIBW_SKIP: "*-musllinux_*"
+          CIBW_TEST_SKIP: "*" # "*_aarch64"
+          CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.cibw_manylinux }}
+          CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.cibw_manylinux }}
+          CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
       - name: Rename Python version
         run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
-            path: ./dist/*.whl
+          name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
+          path: ./dist/*.whl
 
   build_osx_wheels:
     name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
@@ -113,18 +113,18 @@ jobs:
       - name: Build the wheel
         run: python -m cibuildwheel --output-dir dist
         env:
-            CIBW_BEFORE_ALL_MACOS: "brew install llvm libomp"
-            CIBW_BUILD: ${{ matrix.cibw_python }}
-            CIBW_ARCHS_MACOS: ${{ matrix.cibw_arch }}
-            CIBW_TEST_SKIP: "*"  # "*_aarch64 *-macosx_arm64"
-            CIBW_ENVIRONMENT_MACOS: ${{ matrix.compiler_env }}
-            CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
+          CIBW_BEFORE_ALL_MACOS: "brew install llvm libomp"
+          CIBW_BUILD: ${{ matrix.cibw_python }}
+          CIBW_ARCHS_MACOS: ${{ matrix.cibw_arch }}
+          CIBW_TEST_SKIP: "*" # "*_aarch64 *-macosx_arm64"
+          CIBW_ENVIRONMENT_MACOS: ${{ matrix.compiler_env }}
+          CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
       - name: Rename Python version
         run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
-            path: ./dist/*.whl
+          name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
+          path: ./dist/*.whl
 
   build_windows_wheels:
     name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
@@ -154,17 +154,17 @@ jobs:
       - name: Build the wheel
         run: python -m cibuildwheel --output-dir dist
         env:
-            CIBW_BUILD: ${{ matrix.cibw_python }}
-            CIBW_ARCHS_WINDOWS: ${{ matrix.cibw_arch }}
-            CIBW_CONFIG_SETTINGS: "setup-args=--vsenv compile-args=-v"
-            CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
+          CIBW_BUILD: ${{ matrix.cibw_python }}
+          CIBW_ARCHS_WINDOWS: ${{ matrix.cibw_arch }}
+          CIBW_CONFIG_SETTINGS: "setup-args=--vsenv compile-args=-v"
+          CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
       - name: Rename Python version
         shell: bash
         run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_arch }}
-            path: ./dist/*.whl
+          name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_arch }}
+          path: ./dist/*.whl
 
   test_wheels:
     name: Test wheels
@@ -197,13 +197,13 @@ jobs:
           python -c "from dipy.align.imaffine import AffineMap"
 
   upload_anaconda:
-      permissions:
-        contents: write # for softprops/action-gh-release to create GitHub release
-      name: Upload to Anaconda
-      needs: [build_linux_wheels, build_osx_wheels, build_windows_wheels]
-      if: ${{ always() }} && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
-      runs-on: ubuntu-latest
-      steps:
+    permissions:
+      contents: write # for softprops/action-gh-release to create GitHub release
+    name: Upload to Anaconda
+    needs: [build_linux_wheels, build_osx_wheels, build_windows_wheels]
+    if: ${{ always() }} && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
       - uses: actions/download-artifact@v7
         id: download
         with:
