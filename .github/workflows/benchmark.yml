@@ -33,9 +33,9 @@ jobs:
         pip install .[dev,test,ml,extra,benchmark]
     - name: Set threading parameters for reliable benchmarking
       run: |
-        export OPENBLAS_NUM_THREADS=1
-        export MKL_NUM_THREADS=1
-        export OMP_NUM_THREADS=1
+        echo "OPENBLAS_NUM_THREADS=1" >> $GITHUB_ENV
+        echo "MKL_NUM_THREADS=1" >> $GITHUB_ENV
+        echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
     - name: Run benchmarks
       run: |
         asv machine --yes --config ${GITHUB_WORKSPACE}/benchmarks/asv.conf.json
