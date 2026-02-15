@@ -389,13 +389,13 @@ html_theme_options = {
             "links": [
                 {
                     "name": "Nipy Projects",
-                    "link": "http://nipy.org/",
+                    "link": "https://nipy.org/",
                     "link_type": "external",
                 },
-                {"name": "FURY", "link": "http://fury.gl/", "link_type": "external"},
+                {"name": "FURY", "link": "https://fury.gl/", "link_type": "external"},
                 {
                     "name": "Nibabel",
-                    "link": "http://nipy.org/nibabel",
+                    "link": "https://nipy.org/nibabel",
                     "link_type": "external",
                 },
                 {
