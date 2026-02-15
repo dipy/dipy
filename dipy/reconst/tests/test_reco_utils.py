@@ -29,7 +29,7 @@ def test_argmax_from_countarrs():
     #
     # The tests below cause odd errors and segfaults with numpy SVN
     # vintage June 2010 (sometime after 1.4.0 release) - see
-    # http://groups.google.com/group/cython-users/browse_thread/thread/624c696293b7fe44?pli=1
+    # https://groups.google.com/group/cython-users/browse_thread/thread/624c696293b7fe44?pli=1
     """
     yield assert_raises(ValueError,
                         argmax_from_countarrs,

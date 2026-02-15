@@ -37,7 +37,7 @@ Past Announcements
 - :doc:`DIPY 0.7.1 <release_notes/release0.7>` Released!, 16 January, 2014.
 - :doc:`DIPY 0.7.0 <release_notes/release0.7>` Released!, 23 December, 2013.
 - **Spherical Deconvolution** algorithms are now included in the current development version 0.7.0dev. See the examples in :ref:`gallery <examples>`, 24 June 2013.
-- A team of DIPY developers **wins** the `IEEE ISBI HARDI challenge <http://hardi.epfl.ch/static/events/2013_ISBI/workshop.html#results>`_, 7 April, 2013.
+- A team of DIPY developers **wins** the `IEEE ISBI HARDI challenge <https://hardi.epfl.ch/static/events/2013_ISBI/workshop.html#results>`_, 7 April, 2013.
 - **Hands on DIPY** seminar took place at the dMRI course of the CREATE-MIA summer school, 5-7 June, McGill, Montreal, 2013.
 - :doc:`DIPY 0.6.0 <release_notes/release0.6>` Released!, 30 March, 2013.
 - **DIPY 3rd Sprint**, Berkeley, CA, 8-18 April, 2013.
