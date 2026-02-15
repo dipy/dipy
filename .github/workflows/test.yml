@@ -13,6 +13,9 @@ concurrency:
   group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   stable:
     uses: ./.github/workflows/test_template.yml
