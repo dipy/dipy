@@ -4,6 +4,8 @@ import warnings
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.app import horizon
 
+__all__ = ["horizon"]
+
 fury_pckg_msg = (
     "You do not have FURY installed. Some visualization functions might not "
     "work for you. Please install or upgrade FURY using pip install -U fury. "

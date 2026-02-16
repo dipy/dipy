@@ -12,6 +12,23 @@ from numpy.testing import assert_array_equal
 # set path to example data
 IO_DATA_PATH = Path(__file__).resolve().parent / ".." / "io" / "tests" / "data"
 
+__all__ = [
+    "IO_DATA_PATH",
+    "assert_operator",
+    "assert_greater_equal",
+    "assert_greater",
+    "assert_less_equal",
+    "assert_less",
+    "assert_true",
+    "assert_false",
+    "assert_not_equal",
+    "assert_arrays_equal",
+    "assert_percent_almost_equal",
+    "clear_and_catch_warnings",
+    "check_for_warnings",
+    "assert_warns",
+]
+
 
 def assert_operator(value1, value2, msg="", op=operator.eq):
     """Check Boolean statement."""
