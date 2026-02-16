@@ -1,8 +1,6 @@
 import numpy as np
 from numpy.testing import (
     assert_,
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_array_equal,
 )
 
@@ -60,22 +58,22 @@ def test_check_directions():
     # Testing spherical angles for two principal coordinate axis
     angles = [(0, 0)]  # axis z
     sticks = _check_directions(angles)
-    assert_array_almost_equal(sticks, [[0, 0, 1]])
+    assert_allclose(sticks, [[0, 0, 1]])
     angles = [(0, 90)]  # axis z again (phi can be anything it theta is zero)
     sticks = _check_directions(angles)
-    assert_array_almost_equal(sticks, [[0, 0, 1]])
+    assert_allclose(sticks, [[0, 0, 1]])
     angles = [(90, 0)]  # axis x
     sticks = _check_directions(angles)
-    assert_array_almost_equal(sticks, [[1, 0, 0]])
+    assert_allclose(sticks, [[1, 0, 0]])
     # Testing if directions are already given in cartesian coordinates
     angles = [(0, 0, 1)]
     sticks = _check_directions(angles)
-    assert_array_almost_equal(sticks, [[0, 0, 1]])
+    assert_allclose(sticks, [[0, 0, 1]])
     # Testing more than one direction simultaneously
     angles = np.array([[90, 0], [30, 0]])
     sticks = _check_directions(angles)
     ref_vec = [np.sin(np.pi * 30 / 180), 0, np.cos(np.pi * 30 / 180)]
-    assert_array_almost_equal(sticks, [[1, 0, 0], ref_vec])
+    assert_allclose(sticks, [[1, 0, 0], ref_vec])
     # Testing directions not aligned to planes x = 0, y = 0, or z = 0
     the1 = 0
     phi1 = 90
@@ -93,7 +91,7 @@ def test_check_directions():
         np.sin(np.pi * the2 / 180) * np.sin(np.pi * phi2 / 180),
         np.cos(np.pi * the2 / 180),
     )
-    assert_array_almost_equal(sticks, [ref_vec1, ref_vec2])
+    assert_allclose(sticks, [ref_vec1, ref_vec2])
 
 
 def test_sticks_and_ball():
@@ -112,14 +110,14 @@ def test_sticks_and_ball():
     S_st = single_tensor(
         gtab, 1, evals=[d, 0, 0], evecs=[[0, 0, 0], [0, 0, 0], [1, 0, 0]]
     )
-    assert_array_almost_equal(S, S_st)
+    assert_allclose(S, S_st)
 
 
 def test_single_tensor():
     evals = np.array([1.4, 0.35, 0.35]) * 10 ** (-3)
     evecs = np.eye(3)
     S = single_tensor(gtab, 100, evals=evals, evecs=evecs, snr=None)
-    assert_array_almost_equal(S[gtab.b0s_mask], 100)
+    assert_allclose(S[gtab.b0s_mask], 100)
     assert_(np.mean(S[~gtab.b0s_mask]) < 100)
 
     from dipy.reconst.dti import TensorModel
@@ -127,7 +125,7 @@ def test_single_tensor():
     m = TensorModel(gtab)
     t = m.fit(S)
 
-    assert_array_almost_equal(t.fa, 0.707, decimal=3)
+    assert_allclose(t.fa, 0.707, atol=1e-3, rtol=0)
 
 
 def test_multi_tensor():
@@ -152,7 +150,7 @@ def test_multi_tensor():
         gtab, mevals, S0=100, angles=[(90, 45), (45, 90)], fractions=[50, 50], snr=None
     )
 
-    assert_array_almost_equal(S, Ssingle)
+    assert_allclose(S, Ssingle)
 
 
 @set_random_number_generator(2000)
@@ -165,7 +163,7 @@ def test_snr(rng=None):
         for _ in range(1000):
             s_noise = add_noise(s, snr, 1, noise_type="rician", rng=rng)
 
-        assert_array_almost_equal(np.var(s_noise - s), sigma**2, decimal=2)
+        assert_allclose(np.var(s_noise - s), sigma**2, atol=1e-2, rtol=0)
 
 
 def test_all_tensor_evecs():
@@ -180,7 +178,7 @@ def test_all_tensor_evecs():
         ]
     ).T
 
-    assert_array_almost_equal(all_tensor_evecs(e0), desired)
+    assert_allclose(all_tensor_evecs(e0), desired)
 
 
 def test_kurtosis_elements():
@@ -246,14 +244,9 @@ def test_kurtosis_elements():
             for k in xyz:
                 for ell in xyz:
                     key = (i + 1) * (j + 1) * (k + 1) * (ell + 1)
-                    assert_almost_equal(
-                        kurtosis_element(mD, frac, i, k, j, ell), kt_ref[key]
-                    )
+                    assert_allclose(kurtosis_element(mD, frac, i, k, j, ell), kt_ref[key])
                     # Testing optional function inputs
-                    assert_almost_equal(
-                        kurtosis_element(mD, frac, i, k, j, ell),
-                        kurtosis_element(mD, frac, i, k, j, ell, DT=D, MD=MD),
-                    )
+                    assert_allclose(kurtosis_element(mD, frac, i, k, j, ell), kurtosis_element(mD, frac, i, k, j, ell, DT=D, MD=MD), )
 
 
 def test_DKI_simulations_aligned_fibers():
@@ -312,20 +305,20 @@ def test_DKI_simulations_aligned_fibers():
     gtab_axis = gradient_table(bvals, bvecs=bvecs)
     # axis x
     S_fx = dki_signal(gtab_axis, dt_fx, kt_fx, S0=100)
-    assert_array_almost_equal(S_fx[0:3], [100, 100, 100])  # test S f0r b=0
+    assert_allclose(S_fx[0:3], [100, 100, 100])  # test S f0r b=0
     # axis y
     S_fy = dki_signal(gtab_axis, dt_fy, kt_fy, S0=100)
-    assert_array_almost_equal(S_fy[0:3], [100, 100, 100])  # test S f0r b=0
+    assert_allclose(S_fy[0:3], [100, 100, 100])  # test S f0r b=0
     # axis z
     S_fz = dki_signal(gtab_axis, dt_fz, kt_fz, S0=100)
-    assert_array_almost_equal(S_fz[0:3], [100, 100, 100])  # test S f0r b=0
+    assert_allclose(S_fz[0:3], [100, 100, 100])  # test S f0r b=0
 
     # test S for b = 1000
-    assert_array_almost_equal([S_fx[3], S_fx[4], S_fx[5]], [S_fy[4], S_fy[3], S_fy[5]])
-    assert_array_almost_equal([S_fx[3], S_fx[4], S_fx[5]], [S_fz[5], S_fz[3], S_fz[4]])
+    assert_allclose([S_fx[3], S_fx[4], S_fx[5]], [S_fy[4], S_fy[3], S_fy[5]])
+    assert_allclose([S_fx[3], S_fx[4], S_fx[5]], [S_fz[5], S_fz[3], S_fz[4]])
     # test S for b = 2000
-    assert_array_almost_equal([S_fx[6], S_fx[7], S_fx[8]], [S_fy[7], S_fy[6], S_fy[8]])
-    assert_array_almost_equal([S_fx[6], S_fx[7], S_fx[8]], [S_fz[8], S_fz[6], S_fz[7]])
+    assert_allclose([S_fx[6], S_fx[7], S_fx[8]], [S_fy[7], S_fy[6], S_fy[8]])
+    assert_allclose([S_fx[6], S_fx[7], S_fx[8]], [S_fz[8], S_fz[6], S_fz[7]])
 
 
 def test_DKI_crossing_fibers_simulations():
@@ -378,11 +371,9 @@ def test_DKI_crossing_fibers_simulations():
         0.0133414,
         -0.017441,
     ]
-    assert_array_almost_equal(dt, dt_ref)
-    assert_array_almost_equal(kt, kt_ref)
-    assert_array_almost_equal(
-        signal, dki_signal(gtab_2s, dt_ref, kt_ref, S0=1.0, snr=None), decimal=5
-    )
+    assert_allclose(dt, dt_ref)
+    assert_allclose(kt, kt_ref)
+    assert_allclose(signal, dki_signal(gtab_2s, dt_ref, kt_ref, S0=1.0, snr=None), atol=1e-5, rtol=0)
 
 
 def test_single_tensor_btens():
@@ -396,14 +387,14 @@ def test_single_tensor_btens():
     evals = np.array([1.4, 0.35, 0.35]) * 10 ** (-3)
     S_ref = single_tensor(gtab, 100, evals=evals, evecs=evecs, snr=None)
     S_btens = single_tensor(gtab_lte, 100, evals=evals, evecs=evecs, snr=None)
-    assert_array_almost_equal(S_ref, S_btens)
+    assert_allclose(S_ref, S_btens)
 
     # Check if signals produced with STE btensor gives signals that matches
     # the signal decay for mean diffusivity
     md = np.sum(evals) / 3
     S_ref = 100 * np.exp(-gtab.bvals * md)
     S_btens = single_tensor(gtab_ste, 100, evals=evals, evecs=evecs, snr=None)
-    assert_array_almost_equal(S_ref, S_btens)
+    assert_allclose(S_ref, S_btens)
 
 
 def test_multi_tensor_btens():
@@ -429,4 +420,4 @@ def test_multi_tensor_btens():
         snr=None,
     )
 
-    assert_array_almost_equal(S, Ssingle)
+    assert_allclose(S, Ssingle)

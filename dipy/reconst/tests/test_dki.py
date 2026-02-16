@@ -5,8 +5,6 @@ import warnings
 
 import numpy as np
 from numpy.testing import (
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_array_equal,
     assert_raises,
 )
@@ -156,9 +154,9 @@ def test_split_dki_param():
     dkiF = dkiM.fit(DWI)
     evals, evecs, kt = dki.split_dki_param(dkiF.model_params)
 
-    assert_array_almost_equal(evals, dkiF.evals)
-    assert_array_almost_equal(evecs, dkiF.evecs)
-    assert_array_almost_equal(kt, dkiF.kt)
+    assert_allclose(evals, dkiF.evals)
+    assert_allclose(evecs, dkiF.evecs)
+    assert_allclose(kt, dkiF.kt)
 
 
 def test_dki_fits():
@@ -172,21 +170,21 @@ def test_dki_fits():
     dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="OLS")
     dkiF = dkiM.fit(signal_cross)
 
-    assert_array_almost_equal(dkiF.model_params, crossing_ref)
+    assert_allclose(dkiF.model_params, crossing_ref)
     dkiF = dkiM.fit(signal_cross, mask=mask_signal_cross)
-    assert_array_almost_equal(dkiF.model_params, crossing_ref)
+    assert_allclose(dkiF.model_params, crossing_ref)
 
     # OLS fitting with return leverages
     dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="OLS", return_leverages=True)
     dkiF = dkiM.fit(signal_cross)
     leverages = dkiM.extra["leverages"]
-    assert_almost_equal(leverages.sum(), np.array([22.0]))
+    assert_allclose(leverages.sum(), np.array([22.0]))
 
     # WLS fitting
     dki_wlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
     dki_wlsF = dki_wlsM.fit(signal_cross)
 
-    assert_array_almost_equal(dki_wlsF.model_params, crossing_ref)
+    assert_allclose(dki_wlsF.model_params, crossing_ref)
 
     # Test wls given S^2 weights argument, matches default wls
     design_matrix = dki_design_matrix(gtab_2s)
@@ -220,7 +218,7 @@ def test_dki_fits():
         return_lower_triangular=True,
         weights=pred_s**2,
     )  # S^2 weights
-    assert_almost_equal(D_w, D_W)
+    assert_allclose(D_w, D_W)
     # wls calculation, but passing incorrect weights
     D_W, _ = ls_fit_dki(
         design_matrix,
@@ -237,7 +235,7 @@ def test_dki_fits():
     inv_AT_W_A = np.linalg.pinv(np.dot(AT_W, design_matrix))
     AT_W_LS = np.dot(AT_W, np.log(YN).squeeze())
     result = np.dot(inv_AT_W_A, AT_W_LS)
-    assert_almost_equal(D_w.squeeze(), result)
+    assert_allclose(D_w.squeeze(), result)
 
     if have_cvxpy:
         # CLS fitting
@@ -246,7 +244,7 @@ def test_dki_fits():
         )
         dki_clsF = dki_clsM.fit(signal_cross)
 
-        assert_array_almost_equal(dki_clsF.model_params, crossing_ref)
+        assert_allclose(dki_clsF.model_params, crossing_ref)
 
         # CWLS fitting
         dki_cwlsM = dki.DiffusionKurtosisModel(
@@ -254,7 +252,7 @@ def test_dki_fits():
         )
         dki_cwlsF = dki_cwlsM.fit(signal_cross)
 
-        assert_array_almost_equal(dki_cwlsF.model_params, crossing_ref)
+        assert_allclose(dki_cwlsF.model_params, crossing_ref)
     else:
         assert_raises(
             TripWireError, dki.DiffusionKurtosisModel, gtab_2s, fit_method="CLS"
@@ -267,9 +265,9 @@ def test_dki_fits():
     if have_cvxpy:
         dki_nlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="NLS")
         dki_nlsF = dki_nlsM.fit(signal_cross)
-        assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
+        assert_allclose(dki_nlsF.model_params, crossing_ref)
         dki_nlsF = dki_nlsM.fit(signal_cross, mask=mask_signal_cross)
-        assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
+        assert_allclose(dki_nlsF.model_params, crossing_ref)
     else:
         assert_raises(
             TripWireError, dki.DiffusionKurtosisModel, gtab_2s, fit_method="NLS"
@@ -278,7 +276,7 @@ def test_dki_fits():
     # Restore fitting
     dki_rtM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="RESTORE", sigma=2)
     dki_rtF = dki_rtM.fit(signal_cross)
-    assert_array_almost_equal(dki_rtF.model_params, crossing_ref)
+    assert_allclose(dki_rtF.model_params, crossing_ref)
 
     # Test single voxel return_S0
     if have_cvxpy:
@@ -286,7 +284,7 @@ def test_dki_fits():
             gtab_2s, fit_method="NLS", return_S0_hat=True, cvxpy_solver=cvxpy.CLARABEL
         )
         dki_nlsF = dki_nlsM.fit(signal_cross)
-        assert_array_almost_equal(dki_nlsF.model_S0, S0)
+        assert_allclose(dki_nlsF.model_S0, S0)
     else:
         assert_raises(
             TripWireError, dki.DiffusionKurtosisModel, gtab_2s, fit_method="NLS"
@@ -297,21 +295,21 @@ def test_dki_fits():
     mask_signal_multi[1, 1, ...] = 0
 
     dkiF_multi = dkiM.fit(DWI)
-    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+    assert_allclose(dkiF_multi.model_params, multi_params)
 
     dkiF_multi = dki_wlsM.fit(DWI)
-    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+    assert_allclose(dkiF_multi.model_params, multi_params)
 
     dkiF_multi = dki_rtM.fit(DWI)
-    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+    assert_allclose(dkiF_multi.model_params, multi_params)
 
     if have_cvxpy:
         dkiF_multi = dki_nlsM.fit(DWI)
-        assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+        assert_allclose(dkiF_multi.model_params, multi_params)
         dkiF_multi = dki_nlsM.fit(DWI, mask=mask_signal_multi)
         masked_multi_params = multi_params.copy()
         masked_multi_params[1, 1, ...] = 0
-        assert_array_almost_equal(dkiF_multi.model_params, masked_multi_params)
+        assert_allclose(dkiF_multi.model_params, masked_multi_params)
 
     # testing return of S0
     if have_cvxpy:
@@ -329,7 +327,7 @@ def test_dki_fits():
         dki_S0F = dki_S0M.fit(DWI)
         dki_S0F_S0 = dki_S0F.model_S0
 
-        assert_array_almost_equal(dki_S0F_S0, np.full(dki_S0F_S0.shape, S0))
+        assert_allclose(dki_S0F_S0, np.full(dki_S0F_S0.shape, S0))
 
     for fit_method in tested_methods:
         kwargs = {}
@@ -344,7 +342,7 @@ def test_dki_fits():
         dki_S0F = dki_S0M.fit(DWI)
         dki_S0F_S0 = dki_S0F.model_S0
 
-        assert_array_almost_equal(dki_S0F_S0, np.full(dki_S0F_S0.shape, S0))
+        assert_allclose(dki_S0F_S0, np.full(dki_S0F_S0.shape, S0))
 
     # testing robust fitting by with WLS and CWLS (needs noisy data)
     # --------==============----------------------==================
@@ -440,42 +438,42 @@ def test_apparent_kurtosis_coef():
 
     # check all direction
     for d in range(len(gtab.bvecs[gtab.bvals > 0])):
-        assert_array_almost_equal(AKC[d], Kref_sphere)
+        assert_allclose(AKC[d], Kref_sphere)
 
 
 def test_dki_predict():
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     pred = dkiM.predict(crossing_ref, S0=100)
 
-    assert_array_almost_equal(pred, signal_cross)
+    assert_allclose(pred, signal_cross)
 
     # just to check that it works with more than one voxel:
     pred_multi = dkiM.predict(multi_params, S0=100)
-    assert_array_almost_equal(pred_multi, DWI)
+    assert_allclose(pred_multi, DWI)
 
     # Check that it works with more than one voxel, and with a different S0
     # in each voxel:
     pred_multi = dkiM.predict(multi_params, S0=100 * np.ones(pred_multi.shape[:3]))
-    assert_array_almost_equal(pred_multi, DWI)
+    assert_allclose(pred_multi, DWI)
 
     # check the function predict of the DiffusionKurtosisFit object
     dkiF = dkiM.fit(DWI)
     pred_multi = dkiF.predict(gtab_2s, S0=100)
-    assert_array_almost_equal(pred_multi, DWI)
+    assert_allclose(pred_multi, DWI)
 
     dkiF = dkiM.fit(pred_multi)
     pred_from_fit = dkiF.predict(dkiM.gtab, S0=100)
-    assert_array_almost_equal(pred_from_fit, DWI)
+    assert_allclose(pred_from_fit, DWI)
 
     # Test the module function:
     pred = dki.dki_prediction(crossing_ref, gtab_2s, S0=100)
-    assert_array_almost_equal(pred, signal_cross)
+    assert_allclose(pred, signal_cross)
 
     # Test the module function with S0 volume:
     pred = dki.dki_prediction(
         multi_params, gtab_2s, S0=100 * np.ones(multi_params.shape[:3])
     )
-    assert_array_almost_equal(pred, DWI)
+    assert_allclose(pred, DWI)
 
 
 def test_carlson_rf():
@@ -497,7 +495,7 @@ def test_carlson_rf():
     RF = carlson_rf(x, y, z)
 
     # Compare
-    assert_array_almost_equal(RF, RF_ref)
+    assert_allclose(RF, RF_ref)
 
     # Complex values
     x = np.array([1j, 1j - 1, 1j, 1j - 1])
@@ -517,7 +515,7 @@ def test_carlson_rf():
     RF = carlson_rf(x, y, z, errtol=3e-5)
 
     # Compare
-    assert_array_almost_equal(RF, RF_ref)
+    assert_allclose(RF, RF_ref)
 
 
 def test_carlson_rd():
@@ -537,7 +535,7 @@ def test_carlson_rd():
     RD = carlson_rd(x, y, z, errtol=1e-5)
 
     # Compare
-    assert_array_almost_equal(RD, RD_ref)
+    assert_allclose(RD, RD_ref)
 
     # Complex values (testing in 2D format)
     x = np.array([[1j, 0.0], [0.0, -2 - 1j]])
@@ -555,7 +553,7 @@ def test_carlson_rd():
     RD = carlson_rd(x, y, z, errtol=1e-5)
 
     # Compare
-    assert_array_almost_equal(RD, RD_ref)
+    assert_allclose(RD, RD_ref)
 
 
 def test_Wrotate_single_fiber():
@@ -588,7 +586,7 @@ def test_Wrotate_single_fiber():
         gtab_2s, mevals, angles=angles, fractions=frac, snr=None
     )
 
-    assert_array_almost_equal(kt_rotated, kt_ref)
+    assert_allclose(kt_rotated, kt_ref)
 
 
 def test_Wrotate_crossing_fibers():
@@ -631,7 +629,7 @@ def test_Wrotate_crossing_fibers():
     )
 
     # Compare rotated with the reference
-    assert_array_almost_equal(kt_rotated, kt_ref)
+    assert_allclose(kt_rotated, kt_ref)
 
 
 def test_Wcons():
@@ -708,7 +706,7 @@ def test_Wcons():
     Wfit = Wfit.reshape(-1)
     W4D = W4D.reshape(-1)
 
-    assert_array_almost_equal(W4D, Wfit)
+    assert_allclose(W4D, Wfit)
 
 
 def test_spherical_dki_statistics():
@@ -728,27 +726,27 @@ def test_spherical_dki_statistics():
 
     # Mean kurtosis analytical solution
     MK_multi = mean_kurtosis(MParam, analytical=True)
-    assert_array_almost_equal(MK_multi, MRef)
+    assert_allclose(MK_multi, MRef)
 
     # radial kurtosis analytical solution
     RK_multi = radial_kurtosis(MParam, analytical=True)
-    assert_array_almost_equal(RK_multi, MRef)
+    assert_allclose(RK_multi, MRef)
 
     # axial kurtosis analytical solution
     AK_multi = axial_kurtosis(MParam, analytical=True)
-    assert_array_almost_equal(AK_multi, MRef)
+    assert_allclose(AK_multi, MRef)
 
     # mean kurtosis tensor
     MSK_multi = mean_kurtosis_tensor(MParam)
-    assert_array_almost_equal(MSK_multi, MRef)
+    assert_allclose(MSK_multi, MRef)
 
     # radial kurtosis tensor
     RKT_multi = radial_tensor_kurtosis(MParam)
-    assert_array_almost_equal(RKT_multi, MRef)
+    assert_allclose(RKT_multi, MRef)
 
     # kurtosis fractional anisotropy (isotropic case kfa=0)
     KFA_multi = kurtosis_fractional_anisotropy(MParam)
-    assert_array_almost_equal(KFA_multi, 0 * MRef)
+    assert_allclose(KFA_multi, 0 * MRef)
 
 
 def test_single_voxel_DKI_stats():
@@ -794,20 +792,20 @@ def test_single_voxel_DKI_stats():
     RTKe1 = radial_tensor_kurtosis(dki_par)
     MKTe1 = mean_kurtosis_tensor(dki_par)
     e1_vals = np.array([ADe1, AKe1, RDe1, RKe1, RTKe1, MKTe1])
-    assert_array_almost_equal(e1_vals, ref_vals)
+    assert_allclose(e1_vals, ref_vals)
 
     # Estimates using the kurtosis class object
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal)
     e2_vals = np.array([dkiF.ad, dkiF.ak(), dkiF.rd, dkiF.rk(), dkiF.rtk(), dkiF.mkt()])
-    assert_array_almost_equal(e2_vals, ref_vals)
+    assert_allclose(e2_vals, ref_vals)
 
     # test MK (note this test correspond to the MK singularity L2==L3)
     MK_as = dkiF.mk()
     sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
     MK_nm = np.mean(dkiF.akc(sph))
 
-    assert_array_almost_equal(MK_as, MK_nm, decimal=1)
+    assert_allclose(MK_as, MK_nm, atol=1e-1, rtol=0)
 
 
 def test_compare_analytical_and_numerical_methods():
@@ -821,17 +819,17 @@ def test_compare_analytical_and_numerical_methods():
     # MK analytical and numerical solution
     MK_as = dkiF.rk(analytical=True)
     MK_nm = dkiF.rk(analytical=False)
-    assert_array_almost_equal(MK_as, MK_nm)
+    assert_allclose(MK_as, MK_nm)
 
     # RK analytical and numerical solution
     RK_as = dkiF.rk(analytical=True)
     RK_nm = dkiF.rk(analytical=False)
-    assert_array_almost_equal(RK_as, RK_nm)
+    assert_allclose(RK_as, RK_nm)
 
     # AK analytical and numerical solution
     AK_as = dkiF.ak(analytical=True)
     AK_nm = dkiF.ak(analytical=False)
-    assert_array_almost_equal(AK_as, AK_nm)
+    assert_allclose(AK_as, AK_nm)
 
 
 def test_MK_singularities():
@@ -858,7 +856,7 @@ def test_MK_singularities():
         MK_an = dkiF.mk(analytical=True)
         MK_nm = dkiF.mk(analytical=False)
 
-        assert_almost_equal(MK_an, MK_nm, decimal=3)
+        assert_allclose(MK_an, MK_nm, atol=1e-3, rtol=0)
 
         # test singularity L1 == L3 and L1 != L2
         # since L1 is defined as the larger eigenvalue and L3 the smallest
@@ -881,7 +879,7 @@ def test_MK_singularities():
         MK_an = dki.mean_kurtosis(dki_params, analytical=True)
         MK_nm = dki.mean_kurtosis(dki_params, analytical=False)
 
-        assert_almost_equal(MK_an, MK_nm, decimal=3)
+        assert_allclose(MK_an, MK_nm, atol=1e-3, rtol=0)
 
 
 def test_dki_errors():
@@ -893,7 +891,7 @@ def test_dki_errors():
     # try case with correct min_signal
     dkiM = dki.DiffusionKurtosisModel(gtab_2s, min_signal=1)
     dkiF = dkiM.fit(DWI)
-    assert_array_almost_equal(dkiF.model_params, multi_params)
+    assert_allclose(dkiF.model_params, multi_params)
 
     # third error is if a given mask do not have same shape as data
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
@@ -904,7 +902,7 @@ def test_dki_errors():
     mask_correct[1, 1] = False
     multi_params[1, 1] = np.zeros(27)
     dkiF = dkiM.fit(DWI, mask=mask_correct)
-    assert_array_almost_equal(dkiF.model_params, multi_params)
+    assert_allclose(dkiF.model_params, multi_params)
     # test incorrect mask ("multi-voxel" fit types)
     mask_not_correct = np.array([[True, True, False], [True, False, False]])
     assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
@@ -944,7 +942,7 @@ def test_dki_errors():
                 gtab_2s, fit_method="CLS", convexity_level=6
             )
             check_for_warnings(l_warns, "Maximum convexity_level supported is 4.")
-            assert_almost_equal(dkim.convexity_level, 4)
+            assert_allclose(dkim.convexity_level, 4)
 
 
 def test_kurtosis_maximum():
@@ -973,7 +971,7 @@ def test_kurtosis_maximum():
 
     yaxis = np.array([0.0, 1.0, 0.0])
     cos_angle = np.abs(np.dot(max_dir[0], yaxis))
-    assert_almost_equal(cos_angle, 1.0)
+    assert_allclose(cos_angle, 1.0)
 
     # TEST 2
     # test the function on cases of well aligned fibers oriented in a random
@@ -1014,31 +1012,31 @@ def test_kurtosis_maximum():
     # check if max direction is perpendicular to fiber direction
     fdir = np.array([sphere2cart(1.0, np.deg2rad(theta), np.deg2rad(phi))])
     cos_angle = np.abs(np.dot(max_dir[0], fdir[0]))
-    assert_almost_equal(cos_angle, 0.0, decimal=5)
+    assert_allclose(cos_angle, 0.0, atol=1e-5, rtol=0)
 
     # check if max direction is equal to expected value
-    assert_almost_equal(k_max, RK)
-    assert_almost_equal(dkiF.kmax(sphere=sphere, gtol=1e-5), RK)
+    assert_allclose(k_max, RK)
+    assert_allclose(dkiF.kmax(sphere=sphere, gtol=1e-5), RK)
 
     # According to Neto Henriques et al., 2015 (NeuroImage 111: 85-99),
     # e.g. see figure 1 of this article, kurtosis maxima for the first test is
     # also equal to the maxima kurtosis value of well-aligned fibers, since
     # simulations parameters (apart from fiber directions) are equal
-    assert_almost_equal(k_max_cross, RK)
+    assert_allclose(k_max_cross, RK)
 
     # Test 3 - Test performance when kurtosis is spherical - this case, can be
     # problematic since a spherical kurtosis does not have an maximum
     k_max, max_dir = dki._voxel_kurtosis_maximum(
         dt_sph, np.mean(evals_sph), kt_sph, sphere, gtol=1e-2
     )
-    assert_almost_equal(k_max, Kref_sphere)
+    assert_allclose(k_max, Kref_sphere)
 
     # Test 4 - Test performance when kt have all elements zero - this case, can
     # be problematic this case does not have an maximum
     k_max, max_dir = dki._voxel_kurtosis_maximum(
         dt_sph, np.mean(evals_sph), np.zeros(15), sphere, gtol=1e-2
     )
-    assert_almost_equal(k_max, 0.0)
+    assert_allclose(k_max, 0.0)
 
 
 def test_multi_voxel_kurtosis_maximum():
@@ -1085,18 +1083,18 @@ def test_multi_voxel_kurtosis_maximum():
 
     # TEST - when no sphere is given
     k_max = dki.kurtosis_maximum(dkiF.model_params)
-    assert_almost_equal(k_max, RK, decimal=4)
+    assert_allclose(k_max, RK, atol=1e-4, rtol=0)
 
     # TEST - when sphere is given
     k_max = dki.kurtosis_maximum(dkiF.model_params, sphere=default_sphere)
-    assert_almost_equal(k_max, RK, decimal=4)
+    assert_allclose(k_max, RK, atol=1e-4, rtol=0)
 
     # TEST - when mask is given
     mask = np.ones((2, 2, 2), dtype="bool")
     mask[1, 1, 1] = 0
     RK[1, 1, 1] = 0
     k_max = dki.kurtosis_maximum(dkiF.model_params, mask=mask)
-    assert_almost_equal(k_max, RK, decimal=4)
+    assert_allclose(k_max, RK, atol=1e-4, rtol=0)
 
     # TEST if wrong mask is given
     mask_not_correct = np.array([[True, True, False], [True, False, False]])
@@ -1117,7 +1115,7 @@ def test_kurtosis_fa():
 
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal)
-    assert_almost_equal(dkiF.kfa, np.sqrt(4 / 5))
+    assert_allclose(dkiF.kfa, np.sqrt(4 / 5))
 
     # KFA = sqrt(13/5) for systems of two tensors with same AD and RD values
     # See appendix of Gleen et al., 2015 Quantitative assessment of diffusional
@@ -1132,7 +1130,7 @@ def test_kurtosis_fa():
 
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal)
-    assert_almost_equal(dkiF.kfa, np.sqrt(13 / 15))
+    assert_allclose(dkiF.kfa, np.sqrt(13 / 15))
 
     # KFA = 0 if MKT = 0
     mevals = np.array([[0.003, 0.001, 0.001], [0.003, 0.001, 0.001]])
@@ -1145,4 +1143,4 @@ def test_kurtosis_fa():
 
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal)
-    assert_almost_equal(dkiF.kfa, 0)
+    assert_allclose(dkiF.kfa, 0)

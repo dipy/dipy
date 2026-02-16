@@ -3,7 +3,7 @@ import sys
 import warnings
 
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_equal, assert_raises
+from numpy.testing import assert_allclose, assert_equal, assert_raises
 import pytest
 
 from dipy.core.gradients import gradient_table
@@ -142,7 +142,7 @@ def test_default_weights(monkeypatch):
         resdnn_model = resdnn.HistoResDNN()
         resdnn_model.fetch_default_weights()
         results_arr = resdnn_model._HistoResDNN__predict(input_arr)
-        assert_almost_equal(results_arr, target_arr, decimal=6)
+        assert_allclose(results_arr, target_arr, atol=1e-6, rtol=0)
 
 
 @pytest.mark.skipif(not have_nn, reason="Requires TensorFlow or Torch")

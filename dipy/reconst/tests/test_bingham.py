@@ -2,8 +2,6 @@ import warnings
 
 import numpy as np
 from numpy.testing import (
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_array_less,
 )
 
@@ -49,36 +47,32 @@ def test_bingham_fit():
     # Test if maximum amplitude is in the expected Bingham main direction
     # which should be perpendicular to both ma_axis and mi_axis
     odf_test = _single_bingham_to_sf(f0, k1, k2, ma_axis, mi_axis, peak_dir)
-    assert_almost_equal(odf_test, f0)
+    assert_allclose(odf_test, f0)
 
     # Test Bingham fit on full sampled GT Bingham function
     odf_gt = _single_bingham_to_sf(f0, k1, k2, ma_axis, mi_axis, sphere.vertices)
     a0, c1, c2, mu0, mu1, mu2 = _bingham_fit_peak(odf_gt, peak_dir, sphere, 45)
 
     # check scalar parameters
-    assert_almost_equal(a0, f0, decimal=3)
-    assert_almost_equal(c1, k1, decimal=3)
-    assert_almost_equal(c2, k2, decimal=3)
+    assert_allclose(a0, f0, atol=1e-3, rtol=0)
+    assert_allclose(c1, k1, atol=1e-3, rtol=0)
+    assert_allclose(c2, k2, atol=1e-3, rtol=0)
 
     # check if measured peak direction and dispersion axis are aligned to their
     # respective GT
     Mus = np.array([mu0, mu1, mu2])
     Mus_ref = np.array([peak_dir, ma_axis, mi_axis])
-    assert_array_almost_equal(
-        np.abs(np.diag(np.dot(Mus, Mus_ref))), np.ones(3), decimal=5
-    )
+    assert_allclose(np.abs(np.diag(np.dot(Mus, Mus_ref))), np.ones(3), atol=1e-5, rtol=0)
 
     # check the same for bingham_fit_odf
     fits, n = _single_sf_to_bingham(odf_gt, sphere, max_search_angle=45)
-    assert_almost_equal(fits[0][0], f0, decimal=3)
-    assert_almost_equal(fits[0][1], k1, decimal=3)
-    assert_almost_equal(fits[0][2], k2, decimal=3)
+    assert_allclose(fits[0][0], f0, atol=1e-3, rtol=0)
+    assert_allclose(fits[0][1], k1, atol=1e-3, rtol=0)
+    assert_allclose(fits[0][2], k2, atol=1e-3, rtol=0)
     Mus = np.array([fits[0][3], fits[0][4], fits[0][5]])
     # I had to decrease the precision in the assert below because main peak
     # direction is now calculated (before the GT direction was given)
-    assert_array_almost_equal(
-        np.abs(np.diag(np.dot(Mus, Mus_ref))), np.ones(3), decimal=5
-    )
+    assert_allclose(np.abs(np.diag(np.dot(Mus, Mus_ref))), np.ones(3), atol=1e-5, rtol=0)
 
 
 def test_bingham_metrics():
@@ -104,14 +98,14 @@ def test_bingham_metrics():
     ref_pars[0, 6:9] = ref_pars[1, 6:9] = axis1
     ref_pars[0, 9:12] = ref_pars[1, 9:12] = axis2
     bpars = _convert_bingham_pars(fits, 2)
-    assert_array_almost_equal(bpars, ref_pars)
+    assert_allclose(bpars, ref_pars)
 
     # TEST: Bingham Fiber density
     # As the amplitude of the first bingham function is 3 times higher than
     # the second, its surface integral have to be also 3 times larger.
     fd = bingham_fiber_density(bpars)
 
-    assert_almost_equal(fd[0] / fd[1], 3)
+    assert_allclose(fd[0] / fd[1], 3)
 
     # Fiber density using the default sphere should be close to the fd obtained
     # using a high-resolution sphere (2621442 vertices)
@@ -120,7 +114,7 @@ def test_bingham_metrics():
     # We must lower the precision for the test to pass, but still shows that
     # the fiber density is precise up to 4 decimals using only 0.39% of the
     # samples (10242 versus 2621442 vertices)
-    assert_array_almost_equal(fd, fd_hires, decimal=4)
+    assert_allclose(fd, fd_hires, atol=1e-4, rtol=0)
 
     # Rotating the Bingham distribution should not bias the FD estimate
     xfits = [
@@ -131,8 +125,8 @@ def test_bingham_metrics():
     xpars = _convert_bingham_pars(xfits, 3)
     xfd = bingham_fiber_density(xpars)
 
-    assert_almost_equal(xfd[0], xfd[1])
-    assert_almost_equal(xfd[0], xfd[2])
+    assert_allclose(xfd[0], xfd[1])
+    assert_allclose(xfd[0], xfd[2])
 
     # If the Bingham function is a sphere of unit radius, the
     # fiber density should be 4*np.pi.
@@ -141,17 +135,17 @@ def test_bingham_metrics():
 
     fd_sphere = bingham_fiber_density(sphere_pars)
 
-    assert_almost_equal(fd_sphere[0], 4.0 * np.pi)
+    assert_allclose(fd_sphere[0], 4.0 * np.pi)
 
     # TEST: k2odi and odi2k conversions
-    assert_almost_equal(odi2k(k2odi(np.array(k1))), k1)
-    assert_almost_equal(odi2k(k2odi(np.array(k2))), k2)
+    assert_allclose(odi2k(k2odi(np.array(k1))), k1)
+    assert_allclose(odi2k(k2odi(np.array(k2))), k2)
 
     # TEST: Fiber spread
     f0s = np.array([f0_lobe1, f0_lobe2])
     fs = bingham_fiber_spread(f0s, fd)
 
-    assert_array_almost_equal(fs, fd / f0s)
+    assert_allclose(fs, fd / f0s)
 
 
 def test_bingham_from_odf():
@@ -169,26 +163,26 @@ def test_bingham_from_odf():
     bim = sf_to_bingham(multi_odfs, sphere, npeaks=2, max_search_angle=45)
 
     # check model_params
-    assert_almost_equal(bim.model_params[0, 0, 0, 0, 0], f0, decimal=3)
-    assert_almost_equal(bim.model_params[0, 0, 0, 0, 1], k1, decimal=3)
-    assert_almost_equal(bim.model_params[0, 0, 0, 0, 2], k2, decimal=3)
+    assert_allclose(bim.model_params[0, 0, 0, 0, 0], f0, atol=1e-3, rtol=0)
+    assert_allclose(bim.model_params[0, 0, 0, 0, 1], k1, atol=1e-3, rtol=0)
+    assert_allclose(bim.model_params[0, 0, 0, 0, 2], k2, atol=1e-3, rtol=0)
     # check if estimates for a second lobe are zero (note that a single peak
     # ODF is assumed here for this test GT)
-    assert_array_almost_equal(bim.model_params[0, 0, 0, 1], np.zeros(12))
+    assert_allclose(bim.model_params[0, 0, 0, 1], np.zeros(12))
 
     # check if we have estimates in the right lobe for all voxels
     peak_v = bim.model_params[0, 0, 0, 0, 0]
-    assert_array_almost_equal(bim.amplitude_lobe[..., 0], peak_v * np.ones((2, 2, 1)))
-    assert_array_almost_equal(bim.amplitude_lobe[..., 1], np.zeros((2, 2, 1)))
+    assert_allclose(bim.amplitude_lobe[..., 0], peak_v * np.ones((2, 2, 1)))
+    assert_allclose(bim.amplitude_lobe[..., 1], np.zeros((2, 2, 1)))
 
     # check kappas
-    assert_almost_equal(bim.kappa1_lobe[0, 0, 0, 0], k1, decimal=3)
-    assert_almost_equal(bim.kappa2_lobe[0, 0, 0, 0], k2, decimal=3)
-    assert_almost_equal(bim.kappa_total_lobe[0, 0, 0, 0], np.sqrt(k1 * k2), decimal=3)
+    assert_allclose(bim.kappa1_lobe[0, 0, 0, 0], k1, atol=1e-3, rtol=0)
+    assert_allclose(bim.kappa2_lobe[0, 0, 0, 0], k2, atol=1e-3, rtol=0)
+    assert_allclose(bim.kappa_total_lobe[0, 0, 0, 0], np.sqrt(k1 * k2), atol=1e-3, rtol=0)
 
     # check ODI
-    assert_almost_equal(bim.odi1_lobe[0, 0, 0, 0], k2odi(np.array(k1)), decimal=3)
-    assert_almost_equal(bim.odi2_lobe[0, 0, 0, 0], k2odi(np.array(k2)), decimal=3)
+    assert_allclose(bim.odi1_lobe[0, 0, 0, 0], k2odi(np.array(k1)), atol=1e-3, rtol=0)
+    assert_allclose(bim.odi2_lobe[0, 0, 0, 0], k2odi(np.array(k2)), atol=1e-3, rtol=0)
     # ODI2 < ODI total < ODI1
     assert_array_less(bim.odi2_lobe[..., 0], bim.odi1_lobe[..., 0])
     assert_array_less(bim.odi2_lobe[..., 0], bim.odi_total_lobe[..., 0])
@@ -196,22 +190,22 @@ def test_bingham_from_odf():
 
     # check fiber_density estimates (larger than zero for lobe 0)
     assert_array_less(np.zeros((2, 2, 1)), bim.fd_lobe[:, :, :, 0])
-    assert_almost_equal(np.zeros((2, 2, 1)), bim.fd_lobe[:, :, :, 1])
+    assert_allclose(np.zeros((2, 2, 1)), bim.fd_lobe[:, :, :, 1])
 
     # check global metrics: since this simulations only have one lobe, global
     # metrics have to give the same values than their counterparts for lobe 1
-    assert_almost_equal(bim.odi1_voxel, bim.odi1_lobe[..., 0])
-    assert_almost_equal(bim.odi2_voxel, bim.odi2_lobe[..., 0])
-    assert_almost_equal(bim.odi_total_voxel, bim.odi_total_lobe[..., 0])
-    assert_almost_equal(bim.fd_voxel, bim.fd_lobe[..., 0])
+    assert_allclose(bim.odi1_voxel, bim.odi1_lobe[..., 0])
+    assert_allclose(bim.odi2_voxel, bim.odi2_lobe[..., 0])
+    assert_allclose(bim.odi_total_voxel, bim.odi_total_lobe[..., 0])
+    assert_allclose(bim.fd_voxel, bim.fd_lobe[..., 0])
 
     # check fiber spread
     fs_v = bim.fd_lobe[0, 0, 0, 0] / peak_v
-    assert_almost_equal(bim.fs_lobe[..., 0], fs_v)
+    assert_allclose(bim.fs_lobe[..., 0], fs_v)
 
     # check reconstructed odf
     reconst_odf = bim.odf(sphere)
-    assert_almost_equal(reconst_odf[0, 0, 0], odf, decimal=2)
+    assert_allclose(reconst_odf[0, 0, 0], odf, atol=1e-2, rtol=0)
 
 
 def test_bingham_from_sh():
@@ -225,7 +219,7 @@ def test_bingham_from_sh():
     bim_odf = sf_to_bingham(odf, sphere, npeaks=2, max_search_angle=45)
     sh = sf_to_sh(odf, sphere, sh_order_max=16, legacy=False)
     bim_sh = sh_to_bingham(sh, sphere, legacy=False, npeaks=2, max_search_angle=45)
-    assert_array_almost_equal(bim_sh.model_params, bim_odf.model_params, decimal=3)
+    assert_allclose(bim_sh.model_params, bim_odf.model_params, atol=1e-3, rtol=0)
 
 
 def test_sh_to_bingham_handles_empty_voxels():

@@ -15,7 +15,6 @@ import warnings
 import numpy as np
 from numpy.testing import (
     assert_,
-    assert_array_almost_equal,
     assert_array_equal,
     assert_array_less,
     assert_equal,
@@ -250,13 +249,13 @@ def test_single_voxel_fit():
 
     assert_array_equal(est_signal.shape, data_single.shape)
 
-    assert_array_almost_equal(ivim_fit_single.model_params, params_trr)
-    assert_array_almost_equal(est_signal, data_single)
+    assert_allclose(ivim_fit_single.model_params, params_trr)
+    assert_allclose(est_signal, data_single)
 
     # Test predict function for single voxel
     p = ivim_fit_single.predict(gtab)
     assert_array_equal(p.shape, data_single.shape)
-    assert_array_almost_equal(p, data_single)
+    assert_allclose(p, data_single)
 
 
 def test_multivoxel():
@@ -270,8 +269,8 @@ def test_multivoxel():
 
     est_signal = ivim_fit_multi.predict(gtab, S0=1.0)
     assert_array_equal(est_signal.shape, data_multi.shape)
-    assert_array_almost_equal(ivim_fit_multi.model_params, ivim_params_trr)
-    assert_array_almost_equal(est_signal, data_multi)
+    assert_allclose(ivim_fit_multi.model_params, ivim_params_trr)
+    assert_allclose(est_signal, data_multi)
 
 
 def test_ivim_errors():
@@ -288,8 +287,8 @@ def test_ivim_errors():
     ivim_fit = ivim_model_trr.fit(data_multi)
     est_signal = ivim_fit.predict(gtab, S0=1.0)
     assert_array_equal(est_signal.shape, data_multi.shape)
-    assert_array_almost_equal(ivim_fit.model_params, ivim_params_trr)
-    assert_array_almost_equal(est_signal, data_multi)
+    assert_allclose(ivim_fit.model_params, ivim_params_trr)
+    assert_allclose(est_signal, data_multi)
 
 
 def test_mask():
@@ -302,8 +301,8 @@ def test_mask():
     ivim_fit = ivim_model_trr.fit(data_multi, mask=mask_correct)
     est_signal = ivim_fit.predict(gtab, S0=1.0)
     assert_array_equal(est_signal.shape, data_multi.shape)
-    assert_array_almost_equal(est_signal, data_multi)
-    assert_array_almost_equal(ivim_fit.model_params, ivim_params_trr)
+    assert_allclose(est_signal, data_multi)
+    assert_allclose(ivim_fit.model_params, ivim_params_trr)
     assert_raises(ValueError, ivim_model_trr.fit, data_multi, mask=mask_not_correct)
 
 
@@ -326,8 +325,8 @@ def test_with_higher_S0():
 
     est_signal = ivim_fit.predict(gtab)
     assert_array_equal(est_signal.shape, data_single2.shape)
-    assert_array_almost_equal(est_signal, data_single2)
-    assert_array_almost_equal(ivim_fit.model_params, params2)
+    assert_allclose(est_signal, data_single2)
+    assert_allclose(ivim_fit.model_params, params2)
 
 
 def test_b0_threshold_greater_than0():
@@ -401,13 +400,11 @@ def test_predict():
     The predict method is already used in previous tests for estimation of the
     signal. But here, we will test is separately.
     """
-    assert_array_almost_equal(ivim_fit_single.predict(gtab), data_single)
-    assert_array_almost_equal(
-        ivim_model_trr.predict(ivim_fit_single.model_params, gtab), data_single
-    )
+    assert_allclose(ivim_fit_single.predict(gtab), data_single)
+    assert_allclose(ivim_model_trr.predict(ivim_fit_single.model_params, gtab), data_single)
 
     ivim_fit_multi = ivim_model_trr.fit(data_multi)
-    assert_array_almost_equal(ivim_fit_multi.predict(gtab), data_multi)
+    assert_allclose(ivim_fit_multi.predict(gtab), data_multi)
 
 
 def test_fit_object():
@@ -416,7 +413,7 @@ def test_fit_object():
     """
     assert_raises(IndexError, ivim_fit_single.__getitem__, (-0.1, 0, 0))
     # Check if the S0 called is matching
-    assert_array_almost_equal(ivim_fit_single.__getitem__(0).model_params, 1000.0)
+    assert_allclose(ivim_fit_single.__getitem__(0).model_params, 1000.0)
 
     ivim_fit_multi = ivim_model_trr.fit(data_multi)
     # Should raise a TypeError if the arguments are not passed as tuple
@@ -428,9 +425,7 @@ def test_fit_object():
     assert_raises(IndexError, ivim_fit_multi.__getitem__, [-100, 0])
     assert_raises(IndexError, ivim_fit_multi.__getitem__, (1, 0, 0, 3, 4))
     # Check if the get item returns the S0 value for voxel (1,0,0)
-    assert_array_almost_equal(
-        ivim_fit_multi.__getitem__((1, 0, 0)).model_params[0], data_multi[1, 0, 0][0]
-    )
+    assert_allclose(ivim_fit_multi.__getitem__((1, 0, 0)).model_params[0], data_multi[1, 0, 0][0])
 
 
 def test_shape():
@@ -500,34 +495,32 @@ def test_S0():
     """
     Test if the `IvimFit` class returns the correct S0
     """
-    assert_array_almost_equal(ivim_fit_single.S0_predicted, S0)
-    assert_array_almost_equal(ivim_fit_multi.S0_predicted, ivim_params_trr[..., 0])
+    assert_allclose(ivim_fit_single.S0_predicted, S0)
+    assert_allclose(ivim_fit_multi.S0_predicted, ivim_params_trr[..., 0])
 
 
 def test_perfusion_fraction():
     """
     Test if the `IvimFit` class returns the correct f
     """
-    assert_array_almost_equal(ivim_fit_single.perfusion_fraction, f)
-    assert_array_almost_equal(
-        ivim_fit_multi.perfusion_fraction, ivim_params_trr[..., 1]
-    )
+    assert_allclose(ivim_fit_single.perfusion_fraction, f)
+    assert_allclose(ivim_fit_multi.perfusion_fraction, ivim_params_trr[..., 1])
 
 
 def test_D_star():
     """
     Test if the `IvimFit` class returns the correct D_star
     """
-    assert_array_almost_equal(ivim_fit_single.D_star, D_star)
-    assert_array_almost_equal(ivim_fit_multi.D_star, ivim_params_trr[..., 2])
+    assert_allclose(ivim_fit_single.D_star, D_star)
+    assert_allclose(ivim_fit_multi.D_star, ivim_params_trr[..., 2])
 
 
 def test_D():
     """
     Test if the `IvimFit` class returns the correct D
     """
-    assert_array_almost_equal(ivim_fit_single.D, D)
-    assert_array_almost_equal(ivim_fit_multi.D, ivim_params_trr[..., 3])
+    assert_allclose(ivim_fit_single.D, D)
+    assert_allclose(ivim_fit_multi.D, ivim_params_trr[..., 3])
 
 
 def test_estimate_linear_fit():
@@ -535,19 +528,13 @@ def test_estimate_linear_fit():
     Test the linear estimates considering a single exponential fit.
     """
     data_single_exponential_D = single_exponential(S0, D, gtab.bvals)
-    assert_array_almost_equal(
-        ivim_model_trr.estimate_linear_fit(
+    assert_allclose(ivim_model_trr.estimate_linear_fit(
             data_single_exponential_D, split_b=500.0, less_than=False
-        ),
-        (S0, D),
-    )
+        ), (S0, D), )
     data_single_exponential_D_star = single_exponential(S0, D_star, gtab.bvals)
-    assert_array_almost_equal(
-        ivim_model_trr.estimate_linear_fit(
+    assert_allclose(ivim_model_trr.estimate_linear_fit(
             data_single_exponential_D_star, split_b=100.0, less_than=True
-        ),
-        (S0, D_star),
-    )
+        ), (S0, D_star), )
 
 
 def test_estimate_f_D_star():
@@ -556,9 +543,7 @@ def test_estimate_f_D_star():
     non-linear fit.
     """
     params_f_D = f + 0.001, D + 0.0001
-    assert_array_almost_equal(
-        ivim_model_trr.estimate_f_D_star(params_f_D, data_single, S0, D), (f, D_star)
-    )
+    assert_allclose(ivim_model_trr.estimate_f_D_star(params_f_D, data_single, S0, D), (f, D_star))
 
 
 def test_fit_one_stage():
@@ -597,8 +582,8 @@ def test_fit_one_stage():
         343.45531017,
     ]
 
-    assert_array_almost_equal(fit.model_params, linear_fit_params)
-    assert_array_almost_equal(fit.predict(gtab), linear_fit_signal)
+    assert_allclose(fit.model_params, linear_fit_params)
+    assert_allclose(fit.predict(gtab), linear_fit_signal)
 
 
 def test_leastsq_failing():
@@ -622,8 +607,8 @@ def test_leastsq_failing():
         )
 
     # Test for the S0 and D values
-    assert_array_almost_equal(fit_single.S0_predicted, 4356.268901117833)
-    assert_array_almost_equal(fit_single.D, 6.936684e-04)
+    assert_allclose(fit_single.S0_predicted, 4356.268901117833)
+    assert_allclose(fit_single.D, 6.936684e-04)
 
 
 def test_leastsq_error():
@@ -640,7 +625,7 @@ def test_leastsq_error():
         assert_("" in str(w[-1].message))
         assert_("x0 is unfeasible" in str(w[-1].message))
 
-    assert_array_almost_equal(fit, [-1, -1, -1, -1])
+    assert_allclose(fit, [-1, -1, -1, -1])
 
 
 @needs_cvxpy
@@ -649,7 +634,7 @@ def test_perfusion_fraction_vp():
     Test if the `IvimFit` class returns the correct f
     """
     ivim_fit_VP = ivim_model_VP.fit(data_single)
-    assert_array_almost_equal(ivim_fit_VP.perfusion_fraction, f_VP, decimal=2)
+    assert_allclose(ivim_fit_VP.perfusion_fraction, f_VP, atol=1e-2, rtol=0)
 
 
 @needs_cvxpy
@@ -658,7 +643,7 @@ def test_D_star_vp():
     Test if the `IvimFit` class returns the correct D_star
     """
     ivim_fit_VP = ivim_model_VP.fit(data_single)
-    assert_array_almost_equal(ivim_fit_VP.D_star, D_star_VP, decimal=4)
+    assert_allclose(ivim_fit_VP.D_star, D_star_VP, atol=1e-4, rtol=0)
 
 
 @needs_cvxpy
@@ -667,4 +652,4 @@ def test_D_vp():
     Test if the `IvimFit` class returns the correct D
     """
     ivim_fit_VP = ivim_model_VP.fit(data_single)
-    assert_array_almost_equal(ivim_fit_VP.D, D_VP, decimal=4)
+    assert_allclose(ivim_fit_VP.D, D_VP, atol=1e-4, rtol=0)

@@ -46,4 +46,4 @@ def test_fbc():
     )
 
     # check mean RFBC against tested value
-    npt.assert_almost_equal(np.mean(rfbc_orig), 1.0500466494329224, decimal=4)
+    npt.assert_allclose(np.mean(rfbc_orig), 1.0500466494329224, atol=1e-4, rtol=0)

@@ -1,6 +1,6 @@
 import nibabel as nib
 import numpy as np
-from numpy.testing import assert_, assert_almost_equal, assert_equal, assert_raises
+from numpy.testing import assert_, assert_allclose, assert_equal, assert_raises
 
 from dipy.align.reslice import reslice
 from dipy.data import get_fnames
@@ -19,7 +19,7 @@ def test_resample():
     )
     img2 = nib.Nifti1Image(data2, affine2)
     new_zooms_confirmed = img2.header.get_zooms()[:3]
-    assert_almost_equal(new_zooms, new_zooms_confirmed)
+    assert_allclose(new_zooms, new_zooms_confirmed)
 
     # test that shape changes correctly for the first 3 dimensions (check 4D)
     new_zooms = (1, 1, 1.0)
@@ -45,18 +45,18 @@ def test_resample():
     data2, affine2 = reslice(data, affine, zooms, new_zooms)
     for i in range(data.shape[-1]):
         _data, _affine = reslice(data[..., i], affine, zooms, new_zooms)
-        assert_almost_equal(data2[..., i], _data)
-        assert_almost_equal(affine2, _affine)
+        assert_allclose(data2[..., i], _data)
+        assert_allclose(affine2, _affine)
 
     # check use of multiprocessing pool of specified size
     data3, affine3 = reslice(data, affine, zooms, new_zooms, num_processes=4)
-    assert_almost_equal(data2, data3)
-    assert_almost_equal(affine2, affine3)
+    assert_allclose(data2, data3)
+    assert_allclose(affine2, affine3)
 
     # check use of multiprocessing pool of autoconfigured size
     data3, affine3 = reslice(data, affine, zooms, new_zooms, num_processes=-1)
-    assert_almost_equal(data2, data3)
-    assert_almost_equal(affine2, affine3)
+    assert_allclose(data2, data3)
+    assert_allclose(affine2, affine3)
 
     # test invalid values of num_threads
     assert_raises(ValueError, reslice, data, affine, zooms, new_zooms, num_processes=0)

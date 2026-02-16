@@ -3,7 +3,7 @@
 import warnings
 
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_equal
+from numpy.testing import assert_allclose, assert_equal
 import pytest
 
 from dipy.core.sphere_stats import angular_similarity
@@ -66,11 +66,11 @@ def test_forecast_positive_constrain():
             category=PendingDeprecationWarning,
         )
         fodf = f_fit.odf(sphere, clip_negative=False)
-    assert_almost_equal(fodf[fodf < 0].sum(), 0, 2)
+    assert_allclose(fodf[fodf < 0].sum(), 0, atol=1e-2, rtol=0)
 
     coeff = f_fit.sh_coeff
     c0 = np.sqrt(1.0 / (4 * np.pi))
-    assert_almost_equal(coeff[0], c0, 5)
+    assert_allclose(coeff[0], c0, atol=1e-5, rtol=0)
 
 
 def test_forecast_csd():
@@ -140,7 +140,7 @@ def test_forecast_odf():
         fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
     )
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
+    assert_allclose(angular_similarity(directions, data.sticks), 2, atol=1e-1, rtol=0)
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -161,7 +161,7 @@ def test_forecast_odf():
         fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
     )
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
+    assert_allclose(angular_similarity(directions, data.sticks), 2, atol=1e-1, rtol=0)
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -182,7 +182,7 @@ def test_forecast_odf():
         fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
     )
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
+    assert_allclose(angular_similarity(directions, data.sticks), 2, atol=1e-1, rtol=0)
 
     # stronger regularization is required for high order SH
     with warnings.catch_warnings():
@@ -206,7 +206,7 @@ def test_forecast_odf():
         fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
     )
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
+    assert_allclose(angular_similarity(directions, data.sticks), 2, atol=1e-1, rtol=0)
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -229,7 +229,7 @@ def test_forecast_odf():
         fodf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
     )
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, data.sticks), 2, 1)
+    assert_allclose(angular_similarity(directions, data.sticks), 2, atol=1e-1, rtol=0)
 
 
 def test_forecast_indices():
@@ -248,8 +248,8 @@ def test_forecast_indices():
     d_par = f_fit.dpar
     d_perp = f_fit.dperp
 
-    assert_almost_equal(d_par, data.mevals[0, 0], 5)
-    assert_almost_equal(d_perp, data.mevals[0, 1], 5)
+    assert_allclose(d_par, data.mevals[0, 0], atol=1e-5, rtol=0)
+    assert_allclose(d_perp, data.mevals[0, 1], atol=1e-5, rtol=0)
 
     gt_fa = np.sqrt(
         0.5
@@ -258,8 +258,8 @@ def test_forecast_indices():
     )
     gt_md = (data.mevals[0, 0] + 2 * data.mevals[0, 1]) / 3.0
 
-    assert_almost_equal(f_fit.fractional_anisotropy(), gt_fa, 2)
-    assert_almost_equal(f_fit.mean_diffusivity(), gt_md, 5)
+    assert_allclose(f_fit.fractional_anisotropy(), gt_fa, atol=1e-2, rtol=0)
+    assert_allclose(f_fit.mean_diffusivity(), gt_md, atol=1e-5, rtol=0)
 
     # check isotropic tensor
     mevals = np.array(([0.003, 0.003, 0.003], [0.003, 0.003, 0.003]))
@@ -285,10 +285,10 @@ def test_forecast_indices():
     d_par = f_fit.dpar
     d_perp = f_fit.dperp
 
-    assert_almost_equal(d_par, 3e-03, 5)
-    assert_almost_equal(d_perp, 3e-03, 5)
-    assert_almost_equal(f_fit.fractional_anisotropy(), 0.0, 5)
-    assert_almost_equal(f_fit.mean_diffusivity(), 3e-03, 10)
+    assert_allclose(d_par, 3e-03, atol=1e-5, rtol=0)
+    assert_allclose(d_perp, 3e-03, atol=1e-5, rtol=0)
+    assert_allclose(f_fit.fractional_anisotropy(), 0.0, atol=1e-5, rtol=0)
+    assert_allclose(f_fit.mean_diffusivity(), 3e-03, atol=1e-10, rtol=0)
 
 
 def test_forecast_predict():
@@ -312,7 +312,7 @@ def test_forecast_predict():
 
     mse = np.sum((S - data.S / 100.0) ** 2) / len(S)
 
-    assert_almost_equal(mse, 0.0, 3)
+    assert_allclose(mse, 0.0, atol=1e-3, rtol=0)
 
 
 def test_multivox_forecast():
@@ -354,10 +354,10 @@ def test_multivox_forecast():
     assert_equal(S_predict.shape, S.shape)
 
     mse1 = np.sum((S_predict[0, 0, 0] - S[0, 0, 0]) ** 2) / len(gtab.bvals)
-    assert_almost_equal(mse1, 0.0, 3)
+    assert_allclose(mse1, 0.0, atol=1e-3, rtol=0)
 
     mse2 = np.sum((S_predict[1, 0, 0] - S[1, 0, 0]) ** 2) / len(gtab.bvals)
-    assert_almost_equal(mse2, 0.0, 3)
+    assert_allclose(mse2, 0.0, atol=1e-3, rtol=0)
 
     mse3 = np.sum((S_predict[2, 0, 0] - S[2, 0, 0]) ** 2) / len(gtab.bvals)
-    assert_almost_equal(mse3, 0.0, 3)
+    assert_allclose(mse3, 0.0, atol=1e-3, rtol=0)

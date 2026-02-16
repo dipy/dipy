@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_raises
+from numpy.testing import assert_allclose, assert_raises
 
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
@@ -64,7 +64,7 @@ def test_fss_radius_search():
     assert_arrays_equal(np.sort(rs_f2_in_f1.col), np.sort(rs_f1_in_f2.row))
 
     # Verify if resulting distances are the same
-    assert_almost_equal(np.sort(np.abs(rs_f2_in_f1.data)), np.sort(rs_f1_in_f2.data))
+    assert_allclose(np.sort(np.abs(rs_f2_in_f1.data)), np.sort(rs_f1_in_f2.data))
 
     # Verify that minimum are the same from f1 to f2
     r1_a, r1_b, r1_d = nearest_from_matrix_row(rs_f2_in_f1)
@@ -78,7 +78,7 @@ def test_fss_radius_search():
     r4_a, r4_b, r4_d = nearest_from_matrix_row(rs_f1_in_f2)
     assert_arrays_equal(r3_a, r4_a)
     assert_arrays_equal(r3_b, r4_b)
-    assert_almost_equal(r3_d, r4_d)
+    assert_allclose(r3_d, r4_d)
 
     # Test with unidirectional search (bidirectional=False)
     fss_sd = FastStreamlineSearch(
@@ -131,10 +131,10 @@ def test_fss_single_point_slines():
     assert_true(res.nnz == 4)
     mat = res.toarray()
     dist = mean_euclidean_distance(slines[0], slines[1])
-    assert_almost_equal(mat[0, 0], 0.0)
-    assert_almost_equal(mat[1, 1], 0.0)
-    assert_almost_equal(mat[1, 0], dist)
-    assert_almost_equal(mat[0, 1], dist)
+    assert_allclose(mat[0, 0], 0.0)
+    assert_allclose(mat[1, 1], 0.0)
+    assert_allclose(mat[1, 0], dist)
+    assert_allclose(mat[0, 1], dist)
 
 
 def test_fss_empty_results():

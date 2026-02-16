@@ -62,13 +62,13 @@ def test_sphere_construct():
     x, y, z = verts.T
     s2 = Sphere(x=x, y=y, z=z)
 
-    nt.assert_array_almost_equal(s0.theta, s1.theta)
-    nt.assert_array_almost_equal(s0.theta, s2.theta)
-    nt.assert_array_almost_equal(s0.theta, theta)
+    nt.assert_allclose(s0.theta, s1.theta)
+    nt.assert_allclose(s0.theta, s2.theta)
+    nt.assert_allclose(s0.theta, theta)
 
-    nt.assert_array_almost_equal(s0.phi, s1.phi)
-    nt.assert_array_almost_equal(s0.phi, s2.phi)
-    nt.assert_array_almost_equal(s0.phi, phi)
+    nt.assert_allclose(s0.phi, s1.phi)
+    nt.assert_allclose(s0.phi, s2.phi)
+    nt.assert_allclose(s0.phi, phi)
 
 
 def array_to_set(a):
@@ -113,10 +113,10 @@ def test_faces_from_sphere_vertices():
 
 def test_sphere_attrs():
     s = Sphere(xyz=verts)
-    nt.assert_array_almost_equal(s.vertices, verts)
-    nt.assert_array_almost_equal(s.x, verts[:, 0])
-    nt.assert_array_almost_equal(s.y, verts[:, 1])
-    nt.assert_array_almost_equal(s.z, verts[:, 2])
+    nt.assert_allclose(s.vertices, verts)
+    nt.assert_allclose(s.x, verts[:, 0])
+    nt.assert_allclose(s.y, verts[:, 1])
+    nt.assert_allclose(s.z, verts[:, 2])
 
 
 def test_edges_faces():
@@ -205,13 +205,13 @@ def test_hemisphere_constructor():
     uniq_verts = verts[::2].T
     rU, thetaU, phiU = cart2sphere(*uniq_verts)
 
-    nt.assert_array_almost_equal(s0.theta, s1.theta)
-    nt.assert_array_almost_equal(s0.theta, s2.theta)
-    nt.assert_array_almost_equal(s0.theta, thetaU)
+    nt.assert_allclose(s0.theta, s1.theta)
+    nt.assert_allclose(s0.theta, s2.theta)
+    nt.assert_allclose(s0.theta, thetaU)
 
-    nt.assert_array_almost_equal(s0.phi, s1.phi)
-    nt.assert_array_almost_equal(s0.phi, s2.phi)
-    nt.assert_array_almost_equal(s0.phi, phiU)
+    nt.assert_allclose(s0.phi, s1.phi)
+    nt.assert_allclose(s0.phi, s2.phi)
+    nt.assert_allclose(s0.phi, phiU)
 
 
 def test_mirror():
@@ -294,30 +294,30 @@ def test_hemisphere_faces():
 def test_get_force():
     charges = np.array([[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0]])
     force, pot = _get_forces(charges)
-    nt.assert_array_almost_equal(force, 0)
+    nt.assert_allclose(force, 0)
 
     charges = np.array([[1, -0.1, 0], [1, 0, 0]])
     force, pot = _get_forces(charges)
-    nt.assert_array_almost_equal(force[1, [0, 2]], 0)
+    nt.assert_allclose(force[1, [0, 2]], 0)
     nt.assert_(force[1, 1] > 0)
 
 
 def test_disperse_charges():
     charges = np.array([[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0]])
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 10)
-    nt.assert_array_almost_equal(charges, d_sphere.vertices)
+    nt.assert_allclose(charges, d_sphere.vertices)
 
     charges = np.array([[3.0 / 5, 4.0 / 5, 0], [4.0 / 5, 3.0 / 5, 0]])
     expected_charges = np.array([[0, 1.0, 0], [1.0, 0, 0]])
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, const=0.2)
-    nt.assert_array_almost_equal(expected_charges, d_sphere.vertices)
+    nt.assert_allclose(expected_charges, d_sphere.vertices)
     for ii in range(1, len(pot)):
         # check that the potential of the system is going down
         nt.assert_(pot[ii] - pot[ii - 1] <= 0)
 
     # Check that the disperse_charges does not blow up with a large constant
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, const=20.0)
-    nt.assert_array_almost_equal(expected_charges, d_sphere.vertices)
+    nt.assert_allclose(expected_charges, d_sphere.vertices)
     for ii in range(1, len(pot)):
         # check that the potential of the system is going down
         nt.assert_(pot[ii] - pot[ii - 1] <= 0)
@@ -333,7 +333,7 @@ def test_disperse_charges():
     # check that the resulting charges all lie on the unit sphere
     d_charges = d_sphere.vertices
     norms = np.sqrt((d_charges * d_charges).sum(-1))
-    nt.assert_array_almost_equal(norms, 1)
+    nt.assert_allclose(norms, 1)
 
 
 def test_disperse_charges_alt():
@@ -371,7 +371,7 @@ def test_fibonacci_sphere(rng):
         nt.assert_array_equal(points1, points2)
 
     # Check for near closeness to 0
-    nt.assert_almost_equal(np.mean(np.mean(points, axis=0)), 0, decimal=2)
+    nt.assert_allclose(np.mean(np.mean(points, axis=0)), 0, atol=1e-2, rtol=0)
 
 
 @set_random_number_generator()
@@ -387,4 +387,4 @@ def test_fibonacci_hemisphere(rng):
         nt.assert_array_equal(points1, points2)
 
     # Check for near closeness to 0
-    nt.assert_almost_equal(np.mean(points, axis=0)[2], 0, decimal=2)
+    nt.assert_allclose(np.mean(points, axis=0)[2], 0, atol=1e-2, rtol=0)

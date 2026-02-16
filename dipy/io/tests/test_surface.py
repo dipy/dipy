@@ -56,7 +56,7 @@ def test_pial_load_save():
             sfs, Path(tmpdir) / "lh.pial", ref_pial=FILEPATH_DIX["naf_lh.pial"]
         )
         data_save = nib.freesurfer.read_geometry(Path(tmpdir) / "lh.pial")
-    npt.assert_almost_equal(data_raw[0], data_save[0], decimal=5)
+    npt.assert_allclose(data_raw[0], data_save[0], atol=1e-5, rtol=0)
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
@@ -81,7 +81,7 @@ def test_vtk_matching_space(space, origin):
         sfs.to_rasmm()
         sfs.to_center()
         save_vertices = sfs.vertices.copy()
-        npt.assert_almost_equal(ref_vertices, save_vertices, decimal=5)
+        npt.assert_allclose(ref_vertices, save_vertices, atol=1e-5, rtol=0)
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
@@ -109,7 +109,7 @@ def test_gifti_matching_space(type, fname, space, origin):
         sfs.to_rasmm()
         sfs.to_center()
         save_vertices = sfs.vertices.copy()
-        npt.assert_almost_equal(ref_vertices, save_vertices, decimal=5)
+        npt.assert_allclose(ref_vertices, save_vertices, atol=1e-5, rtol=0)
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")

@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_allclose
 
 from dipy.align import crosscorr as cc, floating
 from dipy.testing.decorators import set_random_number_generator
@@ -18,7 +18,7 @@ def test_cc_factors_2d():
     for radius in [0, 1, 3, 6]:
         factors = np.asarray(cc.precompute_cc_factors_2d(a, b, radius))
         expected = np.asarray(cc.precompute_cc_factors_2d_test(a, b, radius))
-        assert_array_almost_equal(factors, expected)
+        assert_allclose(factors, expected)
 
 
 def test_cc_factors_3d():
@@ -34,7 +34,7 @@ def test_cc_factors_3d():
     for radius in [0, 1, 3, 6]:
         factors = np.asarray(cc.precompute_cc_factors_3d(a, b, radius))
         expected = np.asarray(cc.precompute_cc_factors_3d_test(a, b, radius))
-        assert_array_almost_equal(factors, expected, decimal=5)
+        assert_allclose(factors, expected, atol=1e-5, rtol=0)
 
 
 @set_random_number_generator(1147572)
@@ -98,14 +98,14 @@ def test_compute_cc_steps_2d(rng):
     factor = (-2.0 * sfm / (sff * smm)) * (_J - (sfm / sff) * _I)
     expected[..., 1] = factor * gradF[..., 1]
     actual, energy = cc.compute_cc_forward_step_2d(gradF, factors, 0)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
     for radius in range(1, 5):
         expected[:radius, ...] = 0
         expected[:, :radius, ...] = 0
         expected[-radius::, ...] = 0
         expected[:, -radius::, ...] = 0
         actual, energy = cc.compute_cc_forward_step_2d(gradF, factors, radius)
-        assert_array_almost_equal(actual, expected)
+        assert_allclose(actual, expected)
 
     # test the backward step against the exact expression
     factor = (-2.0 * sfm / (sff * smm)) * (_I - (sfm / smm) * _J)
@@ -113,14 +113,14 @@ def test_compute_cc_steps_2d(rng):
     factor = (-2.0 * sfm / (sff * smm)) * (_I - (sfm / smm) * _J)
     expected[..., 1] = factor * gradG[..., 1]
     actual, energy = cc.compute_cc_backward_step_2d(gradG, factors, 0)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
     for radius in range(1, 5):
         expected[:radius, ...] = 0
         expected[:, :radius, ...] = 0
         expected[-radius::, ...] = 0
         expected[:, -radius::, ...] = 0
         actual, energy = cc.compute_cc_backward_step_2d(gradG, factors, radius)
-        assert_array_almost_equal(actual, expected)
+        assert_allclose(actual, expected)
 
 
 @set_random_number_generator(12465825)
@@ -185,7 +185,7 @@ def test_compute_cc_steps_3d(rng):
     expected[..., 1] = factor * gradF[..., 1]
     expected[..., 2] = factor * gradF[..., 2]
     actual, energy = cc.compute_cc_forward_step_3d(gradF, factors, 0)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
     for radius in range(1, 5):
         expected[:radius, ...] = 0
         expected[:, :radius, ...] = 0
@@ -194,7 +194,7 @@ def test_compute_cc_steps_3d(rng):
         expected[:, -radius::, ...] = 0
         expected[:, :, -radius::, ...] = 0
         actual, energy = cc.compute_cc_forward_step_3d(gradF, factors, radius)
-        assert_array_almost_equal(actual, expected)
+        assert_allclose(actual, expected)
 
     # test the backward step against the exact expression
     factor = (-2.0 * sfm / (sff * smm)) * (_I - (sfm / smm) * _J)
@@ -202,7 +202,7 @@ def test_compute_cc_steps_3d(rng):
     expected[..., 1] = factor * gradG[..., 1]
     expected[..., 2] = factor * gradG[..., 2]
     actual, energy = cc.compute_cc_backward_step_3d(gradG, factors, 0)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
     for radius in range(1, 5):
         expected[:radius, ...] = 0
         expected[:, :radius, ...] = 0
@@ -211,4 +211,4 @@ def test_compute_cc_steps_3d(rng):
         expected[:, -radius::, ...] = 0
         expected[:, :, -radius::, ...] = 0
         actual, energy = cc.compute_cc_backward_step_3d(gradG, factors, radius)
-        assert_array_almost_equal(actual, expected)
+        assert_allclose(actual, expected)

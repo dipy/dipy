@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.testing import (
-    assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
@@ -50,7 +49,7 @@ def test_param_to_matrix_2d(rng):
     st = np.sin(angle)
     expected = np.array([[ct, -st, 0], [st, ct, 0], [0, 0, 1]])
     actual = transform.param_to_matrix(theta)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
 
     # Test rigid matrix 2D
     transform = regtransforms[("RIGID", 2)]
@@ -60,7 +59,7 @@ def test_param_to_matrix_2d(rng):
     st = np.sin(angle)
     expected = np.array([[ct, -st, dx], [st, ct, dy], [0, 0, 1]])
     actual = transform.param_to_matrix(theta)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
 
     # Test scaling matrix 2D
     transform = regtransforms[("SCALING", 2)]
@@ -68,7 +67,7 @@ def test_param_to_matrix_2d(rng):
     theta = np.array([factor])
     expected = np.array([[factor, 0, 0], [0, factor, 0], [0, 0, 1]])
     actual = transform.param_to_matrix(theta)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
 
     # Test rigid isoscaling matrix 2D
     transform = regtransforms[("RIGIDISOSCALING", 2)]
@@ -80,7 +79,7 @@ def test_param_to_matrix_2d(rng):
         [[ct * factor, -st * factor, dx], [st * factor, ct * factor, dy], [0, 0, 1]]
     )
     actual = transform.param_to_matrix(theta)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
 
     # Test rigid scaling matrix 2D
     transform = regtransforms[("RIGIDSCALING", 2)]
@@ -90,7 +89,7 @@ def test_param_to_matrix_2d(rng):
     st = np.sin(angle)
     expected = np.array([[ct * sx, -st * sx, dx], [st * sy, ct * sy, dy], [0, 0, 1]])
     actual = transform.param_to_matrix(theta)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
 
     # Test affine 2D
     transform = regtransforms[("AFFINE", 2)]
@@ -99,7 +98,7 @@ def test_param_to_matrix_2d(rng):
     expected[0, :] = theta[:3]
     expected[1, :] = theta[3:6]
     actual = transform.param_to_matrix(theta)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
 
     # Verify that ValueError is raised if incorrect number of parameters
     for transform in regtransforms.values():
@@ -141,7 +140,7 @@ def test_param_to_matrix_3d(rng):
     expected = np.eye(4)
     expected[:3, :3] = R[:3, :3]
     actual = transform.param_to_matrix(theta)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
 
     # Test rigid matrix 3D
     transform = regtransforms[("RIGID", 3)]
@@ -151,7 +150,7 @@ def test_param_to_matrix_3d(rng):
     expected[:3, :3] = R[:3, :3]
     expected[:3, 3] = theta[3:6]
     actual = transform.param_to_matrix(theta)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
 
     # Test rigid isoscaling matrix 3D
     transform = regtransforms[("RIGIDISOSCALING", 3)]
@@ -161,7 +160,7 @@ def test_param_to_matrix_3d(rng):
     expected[:3, :3] = R[:3, :3] * theta[6]
     expected[:3, 3] = theta[3:6]
     actual = transform.param_to_matrix(theta)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
 
     # Test rigid scaling matrix 3D
     transform = regtransforms[("RIGIDSCALING", 3)]
@@ -174,7 +173,7 @@ def test_param_to_matrix_3d(rng):
     expected[:3, :3] = R[:3, :3]
     expected[:3, 3] = theta[3:6]
     actual = transform.param_to_matrix(theta)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
 
     # Test scaling matrix 3D
     transform = regtransforms[("SCALING", 3)]
@@ -184,7 +183,7 @@ def test_param_to_matrix_3d(rng):
         [[factor, 0, 0, 0], [0, factor, 0, 0], [0, 0, factor, 0], [0, 0, 0, 1]]
     )
     actual = transform.param_to_matrix(theta)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
 
     # Test affine 3D
     transform = regtransforms[("AFFINE", 3)]
@@ -194,7 +193,7 @@ def test_param_to_matrix_3d(rng):
     expected[1, :] = theta[4:8]
     expected[2, :] = theta[8:12]
     actual = transform.param_to_matrix(theta)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
 
     # Verify that ValueError is raised if incorrect number of parameters
     for transform in regtransforms.values():
@@ -211,7 +210,7 @@ def test_identity_parameters():
 
         expected = np.eye(dim + 1)
         actual = transform.param_to_matrix(theta)
-        assert_array_almost_equal(actual, expected)
+        assert_allclose(actual, expected)
 
 
 @set_random_number_generator()
@@ -242,7 +241,7 @@ def test_jacobian_functions(rng):
                 g = (dT - T).dot(x_hom) / h
                 expected[:, i] = g[:dim]
 
-            assert_array_almost_equal(actual, expected, decimal=5)
+            assert_allclose(actual, expected, atol=1e-5, rtol=0)
 
     # Test ValueError is raised when theta parameter doesn't have the right
     # length

@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_, assert_array_almost_equal, assert_raises
+from numpy.testing import assert_, assert_allclose, assert_raises
 
 from dipy.denoise.gibbs import (
     _gibbs_removal_1d,
@@ -54,16 +54,16 @@ def test_parallel():
     # Test 3d case
     output_3d_parallel = gibbs_removal(input_3d, inplace=False, num_processes=2)
     output_3d_no_parallel = gibbs_removal(input_3d, inplace=False, num_processes=1)
-    assert_array_almost_equal(output_3d_parallel, output_3d_no_parallel)
+    assert_allclose(output_3d_parallel, output_3d_no_parallel)
 
     # Test 4d case
     output_4d_parallel = gibbs_removal(input_4d, inplace=False, num_processes=2)
     output_4d_no_parallel = gibbs_removal(input_4d, inplace=False, num_processes=1)
-    assert_array_almost_equal(output_4d_parallel, output_4d_no_parallel)
+    assert_allclose(output_4d_parallel, output_4d_no_parallel)
 
     # Test num_processes=None case
     output_4d_all_cpu = gibbs_removal(input_4d, inplace=False, num_processes=None)
-    assert_array_almost_equal(output_4d_all_cpu, output_4d_no_parallel)
+    assert_allclose(output_4d_all_cpu, output_4d_no_parallel)
 
 
 def test_inplace():
@@ -77,21 +77,21 @@ def test_inplace():
     assert_raises(AssertionError, assert_array_almost_equal, input_2d, output_2d)
 
     output_2d = gibbs_removal(input_2d, inplace=True)
-    assert_array_almost_equal(input_2d, output_2d)
+    assert_allclose(input_2d, output_2d)
 
     # Test 3d case
     output_3d = gibbs_removal(input_3d, inplace=False)
     assert_raises(AssertionError, assert_array_almost_equal, input_3d, output_3d)
 
     output_3d = gibbs_removal(input_3d, inplace=True)
-    assert_array_almost_equal(input_3d, output_3d)
+    assert_allclose(input_3d, output_3d)
 
     # Test 4d case
     output_4d = gibbs_removal(input_4d, inplace=False)
     assert_raises(AssertionError, assert_array_almost_equal, input_4d, output_4d)
 
     output_4d = gibbs_removal(input_4d, inplace=True)
-    assert_array_almost_equal(input_4d, output_4d)
+    assert_allclose(input_4d, output_4d)
 
 
 def test_gibbs_2d():
@@ -102,7 +102,7 @@ def test_gibbs_2d():
 
     # Test if gibbs_removal works for 2D data
     image_cor2 = gibbs_removal(image_gibbs, inplace=False)
-    assert_array_almost_equal(image_cor2, image_cor)
+    assert_allclose(image_cor2, image_cor)
 
 
 def test_gibbs_3d():
@@ -111,8 +111,8 @@ def test_gibbs_3d():
     image3d[:, :, 1] = image_gibbs
 
     image3d_cor = gibbs_removal(image3d, slice_axis=2)
-    assert_array_almost_equal(image3d_cor[:, :, 0], image_cor)
-    assert_array_almost_equal(image3d_cor[:, :, 1], image_cor)
+    assert_allclose(image3d_cor[:, :, 0], image_cor)
+    assert_allclose(image3d_cor[:, :, 1], image_cor)
 
 
 def test_gibbs_4d():
@@ -123,23 +123,23 @@ def test_gibbs_4d():
     image4d[:, :, 1, 1] = image_gibbs
 
     image4d_cor = gibbs_removal(image4d)
-    assert_array_almost_equal(image4d_cor[:, :, 0, 0], image_cor)
-    assert_array_almost_equal(image4d_cor[:, :, 1, 0], image_cor)
-    assert_array_almost_equal(image4d_cor[:, :, 0, 1], image_cor)
-    assert_array_almost_equal(image4d_cor[:, :, 1, 1], image_cor)
+    assert_allclose(image4d_cor[:, :, 0, 0], image_cor)
+    assert_allclose(image4d_cor[:, :, 1, 0], image_cor)
+    assert_allclose(image4d_cor[:, :, 0, 1], image_cor)
+    assert_allclose(image4d_cor[:, :, 1, 1], image_cor)
 
 
 def test_swapped_gibbs_2d():
     # 2D case: In this case slice_axis is a dummy variable. Since data is
     # already a single 2D image, to axis swapping is required
     image_cor0 = gibbs_removal(image_gibbs, slice_axis=0, inplace=False)
-    assert_array_almost_equal(image_cor0, image_cor)
+    assert_allclose(image_cor0, image_cor)
 
     image_cor1 = gibbs_removal(image_gibbs, slice_axis=1, inplace=False)
-    assert_array_almost_equal(image_cor1, image_cor)
+    assert_allclose(image_cor1, image_cor)
 
     image_cor2 = gibbs_removal(image_gibbs, slice_axis=2, inplace=False)
-    assert_array_almost_equal(image_cor2, image_cor)
+    assert_allclose(image_cor2, image_cor)
 
 
 def test_swapped_gibbs_3d():
@@ -148,16 +148,16 @@ def test_swapped_gibbs_3d():
     image3d[:, 1, :] = image_gibbs
 
     image3d_cor = gibbs_removal(image3d, slice_axis=1)
-    assert_array_almost_equal(image3d_cor[:, 0, :], image_cor)
-    assert_array_almost_equal(image3d_cor[:, 1, :], image_cor)
+    assert_allclose(image3d_cor[:, 0, :], image_cor)
+    assert_allclose(image3d_cor[:, 1, :], image_cor)
 
     image3d = np.zeros((2, 6 * Nre, 6 * Nre))
     image3d[0, :, :] = image_gibbs
     image3d[1, :, :] = image_gibbs
 
     image3d_cor = gibbs_removal(image3d, slice_axis=0)
-    assert_array_almost_equal(image3d_cor[0, :, :], image_cor)
-    assert_array_almost_equal(image3d_cor[1, :, :], image_cor)
+    assert_allclose(image3d_cor[0, :, :], image_cor)
+    assert_allclose(image3d_cor[1, :, :], image_cor)
 
 
 def test_swapped_gibbs_4d():
@@ -168,10 +168,10 @@ def test_swapped_gibbs_4d():
     image4d[1, :, :, 1] = image_gibbs
 
     image4d_cor = gibbs_removal(image4d, slice_axis=0)
-    assert_array_almost_equal(image4d_cor[0, :, :, 0], image_cor)
-    assert_array_almost_equal(image4d_cor[1, :, :, 0], image_cor)
-    assert_array_almost_equal(image4d_cor[0, :, :, 1], image_cor)
-    assert_array_almost_equal(image4d_cor[1, :, :, 1], image_cor)
+    assert_allclose(image4d_cor[0, :, :, 0], image_cor)
+    assert_allclose(image4d_cor[1, :, :, 0], image_cor)
+    assert_allclose(image4d_cor[0, :, :, 1], image_cor)
+    assert_allclose(image4d_cor[1, :, :, 1], image_cor)
 
 
 def test_gibbs_errors():

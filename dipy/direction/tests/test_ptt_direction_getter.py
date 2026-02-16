@@ -82,9 +82,7 @@ def test_ptt_tracking():
         minlen=1,
     )
     streams = Streamlines(streamline_generator)
-    npt.assert_almost_equal(
-        np.linalg.norm(streams[0][0] - streams[0][1]), 0.2, decimal=1
-    )
+    npt.assert_allclose(np.linalg.norm(streams[0][0] - streams[0][1]), 0.2, atol=1e-1, rtol=0)
     npt.assert_equal(len(streams), 10)
     npt.assert_(np.all([len(s) <= 3 for s in streams]))
 

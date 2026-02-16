@@ -1,8 +1,6 @@
 from nibabel.affines import apply_affine, from_matvec
 import numpy as np
 from numpy.testing import (
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
@@ -74,8 +72,8 @@ def test_random_displacement_field_2d(rng):
             W = np.apply_along_axis(to_world2grid.dot, 0, Z)[0:2, ...]
 
             # Verify the claimed assignments are correct
-            assert_array_almost_equal(W[0, ...], assignment[..., 0], 5)
-            assert_array_almost_equal(W[1, ...], assignment[..., 1], 5)
+            assert_allclose(W[0, ...], assignment[..., 0], atol=1e-5, rtol=0)
+            assert_allclose(W[1, ...], assignment[..., 1], atol=1e-5, rtol=0)
 
     # Test exception is raised when the affine transform matrix is not valid
     valid = np.zeros((2, 3), dtype=np.float64)
@@ -171,9 +169,9 @@ def test_random_displacement_field_3d(rng):
             W = np.apply_along_axis(to_world2grid.dot, 0, Z)[0:3, ...]
 
             # Verify the claimed assignments are correct
-            assert_array_almost_equal(W[0, ...], assignment[..., 0], 5)
-            assert_array_almost_equal(W[1, ...], assignment[..., 1], 5)
-            assert_array_almost_equal(W[2, ...], assignment[..., 2], 5)
+            assert_allclose(W[0, ...], assignment[..., 0], atol=1e-5, rtol=0)
+            assert_allclose(W[1, ...], assignment[..., 1], atol=1e-5, rtol=0)
+            assert_allclose(W[2, ...], assignment[..., 2], atol=1e-5, rtol=0)
 
     # Test exception is raised when the affine transform matrix is not valid
     valid = np.zeros((3, 4), dtype=np.float64)
@@ -219,8 +217,8 @@ def test_harmonic_fields_2d():
                     expected_d_inv[i, j, 1] = b * np.cos(m * theta) * jj
 
             actual_d, actual_d_inv = vfu.create_harmonic_fields_2d(nrows, ncols, b, m)
-            assert_array_almost_equal(expected_d, actual_d)
-            assert_array_almost_equal(expected_d_inv, expected_d_inv)
+            assert_allclose(expected_d, actual_d)
+            assert_allclose(expected_d_inv, expected_d_inv)
 
 
 def test_harmonic_fields_3d():
@@ -257,8 +255,8 @@ def test_harmonic_fields_3d():
             actual_d, actual_d_inv = vfu.create_harmonic_fields_3d(
                 nslices, nrows, ncols, b, m
             )
-            assert_array_almost_equal(expected_d, actual_d)
-            assert_array_almost_equal(expected_d_inv, expected_d_inv)
+            assert_allclose(expected_d, actual_d)
+            assert_allclose(expected_d_inv, expected_d_inv)
 
 
 def test_circle():
@@ -275,7 +273,7 @@ def test_circle():
     for radius in [0, 7, 17, 32]:
         expected = nrm <= radius
         actual = vfu.create_circle(sh[0], sh[1], radius)
-        assert_array_almost_equal(actual, expected)
+        assert_allclose(actual, expected)
 
 
 def test_sphere():
@@ -295,7 +293,7 @@ def test_sphere():
     for radius in [0, 7, 17, 32]:
         expected = nrm <= radius
         actual = vfu.create_sphere(sh[0], sh[1], sh[2], radius)
-        assert_array_almost_equal(actual, expected)
+        assert_allclose(actual, expected)
 
 
 def test_warping_2d():
@@ -379,7 +377,7 @@ def test_warping_2d():
                 affine_disp=C,
                 out_shape=np.array(sh, dtype=np.int32),
             )
-            assert_array_almost_equal(warped, expected)
+            assert_allclose(warped, expected)
 
             # Test nearest neighbor interpolation
             expected = map_coordinates(circle, W, order=0)
@@ -391,7 +389,7 @@ def test_warping_2d():
                 affine_disp=C,
                 out_shape=np.array(sh, dtype=np.int32),
             )
-            assert_array_almost_equal(warped, expected)
+            assert_allclose(warped, expected)
 
     # Test exception is raised when the affine transform matrix is not valid
     val = np.zeros((2, 3), dtype=np.float64)
@@ -552,7 +550,7 @@ def test_warping_3d():
                 affine_disp=C,
                 out_shape=np.array(sh, dtype=np.int32),
             )
-            assert_array_almost_equal(warped, expected, decimal=5)
+            assert_allclose(warped, expected, atol=1e-5, rtol=0)
 
             # Test nearest neighbor interpolation
             expected = map_coordinates(sphere, W, order=0)
@@ -564,7 +562,7 @@ def test_warping_3d():
                 affine_disp=C,
                 out_shape=np.array(sh, dtype=np.int32),
             )
-            assert_array_almost_equal(warped, expected, decimal=5)
+            assert_allclose(warped, expected, atol=1e-5, rtol=0)
 
     # Test exception is raised when the affine transform matrix is not valid
     val = np.zeros((3, 4), dtype=np.float64)
@@ -680,14 +678,14 @@ def test_affine_transforms_2d():
             warped = vfu.transform_2d_affine(
                 circle, np.array(d_shape, dtype=np.int32), affine=gt_affine
             )
-            assert_array_almost_equal(warped, expected)
+            assert_allclose(warped, expected)
 
             # Test affine warping with nearest-neighbor interpolation
             expected = map_coordinates(circle, Y, order=0)
             warped = vfu.transform_2d_affine_nn(
                 circle, np.array(d_shape, dtype=np.int32), affine=gt_affine
             )
-            assert_array_almost_equal(warped, expected)
+            assert_allclose(warped, expected)
 
     # Test the affine = None case
     warped = vfu.transform_2d_affine(
@@ -773,14 +771,14 @@ def test_affine_transforms_3d():
             transformed = vfu.transform_3d_affine(
                 sphere, np.array(d_shape, dtype=np.int32), affine=gt_affine
             )
-            assert_array_almost_equal(transformed, expected)
+            assert_allclose(transformed, expected)
 
             # Test affine transform with nearest-neighbor interpolation
             expected = map_coordinates(sphere, Y, order=0)
             transformed = vfu.transform_3d_affine_nn(
                 sphere, np.array(d_shape, dtype=np.int32), affine=gt_affine
             )
-            assert_array_almost_equal(transformed, expected)
+            assert_allclose(transformed, expected)
 
     # Test the affine = None case
     transformed = vfu.transform_3d_affine(
@@ -890,7 +888,7 @@ def test_compose_vector_fields_2d(rng):
                 affine_disp=premult_disp,
             )
         )
-        assert_array_almost_equal(warped, expected)
+        assert_allclose(warped, expected)
 
         # test also using nearest neighbor interpolation
         warped = np.array(
@@ -902,7 +900,7 @@ def test_compose_vector_fields_2d(rng):
                 affine_disp=premult_disp,
             )
         )
-        assert_array_almost_equal(warped, expected)
+        assert_allclose(warped, expected)
 
         # test updating the displacement field instead of creating a new one
         composition = disp1.copy()
@@ -924,7 +922,7 @@ def test_compose_vector_fields_2d(rng):
                 affine_disp=premult_disp,
             )
         )
-        assert_array_almost_equal(warped, expected)
+        assert_allclose(warped, expected)
 
         # test also using nearest neighbor interpolation
         warped = np.array(
@@ -936,7 +934,7 @@ def test_compose_vector_fields_2d(rng):
                 affine_disp=premult_disp,
             )
         )
-        assert_array_almost_equal(warped, expected)
+        assert_allclose(warped, expected)
 
     # Test non-overlapping case
     x_0 = np.asarray(range(input_shape[0]))
@@ -952,12 +950,12 @@ def test_compose_vector_fields_2d(rng):
     composition, stats = vfu.compose_vector_fields_2d(
         disp1, disp2, None, None, 1.0, None
     )
-    assert_array_almost_equal(composition, np.zeros_like(composition))
+    assert_allclose(composition, np.zeros_like(composition))
 
     # test updating the displacement field instead of creating a new one
     composition = disp1.copy()
     vfu.compose_vector_fields_2d(composition, disp2, None, None, 1.0, composition)
-    assert_array_almost_equal(composition, np.zeros_like(composition))
+    assert_allclose(composition, np.zeros_like(composition))
 
     # Test exception is raised when the affine transform matrix is not valid
     valid = np.zeros((2, 3), dtype=np.float64)
@@ -1072,7 +1070,7 @@ def test_compose_vector_fields_3d(rng):
                 affine_disp=premult_disp,
             )
         )
-        assert_array_almost_equal(warped, expected)
+        assert_allclose(warped, expected)
 
         # test also using nearest neighbor interpolation
         warped = np.array(
@@ -1084,7 +1082,7 @@ def test_compose_vector_fields_3d(rng):
                 affine_disp=premult_disp,
             )
         )
-        assert_array_almost_equal(warped, expected)
+        assert_allclose(warped, expected)
 
         # test updating the displacement field instead of creating a new one
         composition = disp1.copy()
@@ -1106,7 +1104,7 @@ def test_compose_vector_fields_3d(rng):
                 affine_disp=premult_disp,
             )
         )
-        assert_array_almost_equal(warped, expected)
+        assert_allclose(warped, expected)
 
         # test also using nearest neighbor interpolation
         warped = np.array(
@@ -1118,7 +1116,7 @@ def test_compose_vector_fields_3d(rng):
                 affine_disp=premult_disp,
             )
         )
-        assert_array_almost_equal(warped, expected)
+        assert_allclose(warped, expected)
 
     # Test non-overlapping case
     x_0 = np.asarray(range(input_shape[0]))
@@ -1137,12 +1135,12 @@ def test_compose_vector_fields_3d(rng):
     composition, stats = vfu.compose_vector_fields_3d(
         disp1, disp2, None, None, 1.0, None
     )
-    assert_array_almost_equal(composition, np.zeros_like(composition))
+    assert_allclose(composition, np.zeros_like(composition))
 
     # test updating the displacement field instead of creating a new one
     composition = disp1.copy()
     vfu.compose_vector_fields_3d(composition, disp2, None, None, 1.0, composition)
-    assert_array_almost_equal(composition, np.zeros_like(composition))
+    assert_allclose(composition, np.zeros_like(composition))
 
     # Test exception is raised when the affine transform matrix is not valid
     valid = np.zeros((3, 4), dtype=np.float64)
@@ -1209,8 +1207,8 @@ def test_invert_vector_field_2d():
             mapping.forward = dcopy
             mapping.backward = inv_approx
             residual, stats = mapping.compute_inversion_error()
-            assert_almost_equal(stats[1], 0, decimal=4)
-            assert_almost_equal(stats[2], 0, decimal=4)
+            assert_allclose(stats[1], 0, atol=1e-4, rtol=0)
+            assert_allclose(stats[2], 0, atol=1e-4, rtol=0)
 
     # Test exception is raised when the affine transform matrix is not valid
     invalid = np.zeros((2, 2), dtype=np.float64)
@@ -1281,8 +1279,8 @@ def test_invert_vector_field_3d():
             mapping.forward = dcopy
             mapping.backward = inv_approx
             residual, stats = mapping.compute_inversion_error()
-            assert_almost_equal(stats[1], 0, decimal=3)
-            assert_almost_equal(stats[2], 0, decimal=3)
+            assert_allclose(stats[1], 0, atol=1e-3, rtol=0)
+            assert_allclose(stats[2], 0, atol=1e-3, rtol=0)
 
     # Test exception is raised when the affine transform matrix is not valid
     invalid = np.zeros((3, 3), dtype=np.float64)
@@ -1313,7 +1311,7 @@ def test_resample_vector_field_2d():
     expanded = vfu.resample_displacement_field_2d(d, factors, domain_shape)
     subsampled = expanded[::2, ::2, :]
 
-    assert_array_almost_equal(d, subsampled)
+    assert_allclose(d, subsampled)
 
 
 def test_resample_vector_field_3d():
@@ -1332,7 +1330,7 @@ def test_resample_vector_field_3d():
     expanded = vfu.resample_displacement_field_3d(d, factors, domain_shape)
     subsampled = expanded[::2, ::2, ::2, :]
 
-    assert_array_almost_equal(d, subsampled)
+    assert_allclose(d, subsampled)
 
 
 @set_random_number_generator(8315759)
@@ -1364,7 +1362,7 @@ def test_downsample_scalar_field_2d(rng):
                 expected[:, -1] *= 2
 
             actual = np.array(vfu.downsample_scalar_field_2d(image[:nr, :nc]))
-            assert_array_almost_equal(expected, actual)
+            assert_allclose(expected, actual)
 
 
 @set_random_number_generator(2115556)
@@ -1396,7 +1394,7 @@ def test_downsample_displacement_field_2d(rng):
                 expected[:, -1, :] *= 2
 
             actual = vfu.downsample_displacement_field_2d(field[:nr, :nc, :])
-            assert_array_almost_equal(expected, actual)
+            assert_allclose(expected, actual)
 
 
 @set_random_number_generator(8315759)
@@ -1438,7 +1436,7 @@ def test_downsample_scalar_field_3d(rng):
                     expected[:, :, -1] *= 2
 
                 actual = vfu.downsample_scalar_field_3d(image[:ns, :nr, :nc])
-                assert_array_almost_equal(expected, actual)
+                assert_allclose(expected, actual)
 
 
 @set_random_number_generator(8315759)
@@ -1480,7 +1478,7 @@ def test_downsample_displacement_field_3d(rng):
                     expected[:, :, -1, :] *= 2
 
                 actual = vfu.downsample_displacement_field_3d(field[:ns, :nr, :nc])
-                assert_array_almost_equal(expected, actual)
+                assert_allclose(expected, actual)
 
 
 def test_reorient_vector_field_2d():
@@ -1500,7 +1498,7 @@ def test_reorient_vector_field_2d():
     vfu.reorient_vector_field_2d(d, affine)
 
     # verify almost equal
-    assert_array_almost_equal(d, expected)
+    assert_allclose(d, expected)
 
     # Test exception is raised when the affine transform matrix is not valid
     invalid = np.zeros((2, 2), dtype=np.float64)
@@ -1526,7 +1524,7 @@ def test_reorient_vector_field_3d():
     vfu.reorient_vector_field_3d(d, affine)
 
     # verify almost equal
-    assert_array_almost_equal(d, expected)
+    assert_allclose(d, expected)
 
     # the vector field rotated 90 degrees around the first axis
     expected[..., 0] = dinv[..., 0]
@@ -1539,7 +1537,7 @@ def test_reorient_vector_field_3d():
     vfu.reorient_vector_field_3d(dinv, affine)
 
     # verify almost equal
-    assert_array_almost_equal(dinv, expected)
+    assert_allclose(dinv, expected)
 
     # Test exception is raised when the affine transform matrix is not valid
     invalid = np.zeros((3, 3), dtype=np.float64)
@@ -1558,13 +1556,13 @@ def test_reorient_random_vector_fields(rng):
         arr_32 = arr.astype(floating)
         affine = from_matvec(rng.normal(size=(n_dims, n_dims)), np.zeros(n_dims))
         func(arr_32, affine)
-        assert_almost_equal(arr_32, apply_affine(affine, arr), 6)
+        assert_allclose(arr_32, apply_affine(affine, arr), atol=1e-6, rtol=0)
         # Reorient reorients without translation
         trans = np.arange(n_dims) + 2
         affine[:-1, -1] = trans
         arr_32 = arr.astype(floating)
         func(arr_32, affine)
-        assert_almost_equal(arr_32, apply_affine(affine, arr) - trans, 6)
+        assert_allclose(arr_32, apply_affine(affine, arr) - trans, atol=1e-6, rtol=0)
 
         # Test exception is raised when the affine transform is not valid
         invalid = np.eye(n_dims)

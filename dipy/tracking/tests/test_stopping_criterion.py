@@ -222,12 +222,8 @@ def test_cmc_stopping_criterion():
     # Test constructors
     for idx in np.ndindex(wm.shape):
         idx = np.asarray(idx, dtype="float64")
-        npt.assert_almost_equal(
-            cmc_tc.get_include(idx), cmc_tc_from_pve.get_include(idx)
-        )
-        npt.assert_almost_equal(
-            cmc_tc.get_exclude(idx), cmc_tc_from_pve.get_exclude(idx)
-        )
+        npt.assert_allclose(cmc_tc.get_include(idx), cmc_tc_from_pve.get_include(idx))
+        npt.assert_allclose(cmc_tc.get_exclude(idx), cmc_tc_from_pve.get_exclude(idx))
 
     # Test voxel center
     for ind in ndindex(wm.shape):

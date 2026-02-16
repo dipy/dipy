@@ -65,9 +65,9 @@ def test_EuDXDirectionGetter(rng):
                 state, nd = get_direction(peaks, point, up)
                 npt.assert_equal(state, 0)
                 expected_dir = peaks.peak_dirs[i, j, k, 0]
-                npt.assert_array_almost_equal(nd, expected_dir)
+                npt.assert_allclose(nd, expected_dir)
                 state, nd = get_direction(peaks, point, down)
-                npt.assert_array_almost_equal(nd, -expected_dir)
+                npt.assert_allclose(nd, -expected_dir)
 
                 # Check that we can get directions at non-integer points
                 point += rng.random(3)
@@ -78,7 +78,7 @@ def test_EuDXDirectionGetter(rng):
                 point -= 0.5
                 initial_dir = peaks.initial_direction(point)
                 # It should be a (1, 3) array
-                npt.assert_array_almost_equal(initial_dir, [expected_dir])
+                npt.assert_allclose(initial_dir, [expected_dir])
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -98,5 +98,5 @@ def test_EuDXDirectionGetter(rng):
     point = np.array([1, 1, 1], dtype=float)
 
     # it should have one direction
-    npt.assert_array_almost_equal(len(peaks1.initial_direction(point)), 1)
-    npt.assert_array_almost_equal(len(peaks.initial_direction(point)), 1)
+    npt.assert_allclose(len(peaks1.initial_direction(point)), 1)
+    npt.assert_allclose(len(peaks.initial_direction(point)), 1)

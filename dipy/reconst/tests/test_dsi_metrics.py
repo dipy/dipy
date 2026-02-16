@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_almost_equal
+from numpy.testing import assert_allclose
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
@@ -18,7 +18,7 @@ def test_dsi_metrics():
     rtop_signal_norm = dsmodel.fit(data).rtop_signal()
     dsmodel.fit(data).rtop_pdf()
     rtop_pdf = dsmodel.fit(data).rtop_pdf(normalized=False)
-    assert_almost_equal(rtop_signal_norm, rtop_pdf, 6)
+    assert_allclose(rtop_signal_norm, rtop_pdf, atol=1e-6, rtol=0)
     dsmodel = DiffusionSpectrumModel(gtab, qgrid_size=21, filter_width=4500)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
     S_0, _ = multi_tensor(
@@ -34,4 +34,4 @@ def test_dsi_metrics():
     )
     MSD_norm_0 = dsmodel.fit(S_0).msd_discrete(normalized=True)
     MSD_norm_1 = dsmodel.fit(S_1).msd_discrete(normalized=True)
-    assert_almost_equal(MSD_norm_0, 0.5 * MSD_norm_1, 4)
+    assert_allclose(MSD_norm_0, 0.5 * MSD_norm_1, atol=1e-4, rtol=0)

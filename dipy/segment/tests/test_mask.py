@@ -1,7 +1,7 @@
 import warnings
 
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_equal, assert_raises
+from numpy.testing import assert_allclose, assert_equal, assert_raises
 import pytest
 from scipy.ndimage import binary_dilation, generate_binary_structure, median_filter
 
@@ -103,7 +103,7 @@ def test_median_otsu():
     data2_masked, mask2 = median_otsu(
         data2, median_radius=3, numpass=2, vol_idx=[0, 1], dilate=None
     )
-    assert_almost_equal(mask.sum(), mask2.sum())
+    assert_allclose(mask.sum(), mask2.sum())
 
     _, mask3 = median_otsu(data2, median_radius=3, numpass=2, vol_idx=[0, 1], dilate=1)
     assert_equal(mask2.sum() < mask3.sum(), True)

@@ -3,7 +3,7 @@
 import sys
 
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_equal
+from numpy.testing import assert_allclose, assert_array_equal, assert_equal
 
 from dipy.testing import assert_false, assert_true
 from dipy.testing.decorators import set_random_number_generator
@@ -34,4 +34,4 @@ def test_pinv(rng):
     for i in range(4):
         for j in range(4):
             for k in range(4):
-                assert_array_almost_equal(_pinv[i, j, k], np.linalg.pinv(arr[i, j, k]))
+                assert_allclose(_pinv[i, j, k], np.linalg.pinv(arr[i, j, k]))

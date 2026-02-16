@@ -100,10 +100,10 @@ def test_GradientTable():
 
     gt = GradientTable(gradients, b0_threshold=0)
     npt.assert_("B-values shape (5,)" in gt.__str__())
-    npt.assert_array_almost_equal(gt.bvals, expected_bvals)
+    npt.assert_allclose(gt.bvals, expected_bvals)
     npt.assert_array_equal(gt.b0s_mask, expected_b0s_mask)
-    npt.assert_array_almost_equal(gt.bvecs, expected_bvecs)
-    npt.assert_array_almost_equal(gt.gradients, gradients)
+    npt.assert_allclose(gt.bvecs, expected_bvecs)
+    npt.assert_allclose(gt.gradients, gradients)
 
     gt = GradientTable(gradients, b0_threshold=1)
     npt.assert_array_equal(gt.b0s_mask, [1, 1, 1, 0, 0])
@@ -142,12 +142,12 @@ def test_GradientTable_btensor_calculation():
     npt.assert_equal(gt.btens.shape[0], gt.bvals.shape[0])
     for i, (bval, bten) in enumerate(zip(gt.bvals, gt.btens)):
         # Check that the b tensor magnitude is correct
-        npt.assert_almost_equal(np.trace(bten), bval)
+        npt.assert_allclose(np.trace(bten), bval)
         # Check that the b tensor orientation is correct
         if bval != 0:
             evals, evecs = np.linalg.eig(bten)
             dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), gt.bvecs[i])
-            npt.assert_almost_equal(np.abs(dot_prod), 1)
+            npt.assert_allclose(np.abs(dot_prod), 1)
 
     # Check btens input option 1
     for btens in ["LTE", "PTE", "STE", "CTE"]:
@@ -156,18 +156,18 @@ def test_GradientTable_btensor_calculation():
         npt.assert_equal(gt.bvals.shape[0], gt.btens.shape[0])
         for bval, bvec, bten in zip(gt.bvals, gt.bvecs, gt.btens):
             # Check that the b tensor magnitude is correct
-            npt.assert_almost_equal(np.trace(bten), bval)
+            npt.assert_allclose(np.trace(bten), bval)
             # Check that the b tensor orientation is correct
             if btens == ("LTE" or "CTE"):
                 if bval != 0:
                     evals, evecs = np.linalg.eig(bten)
                     dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
-                    npt.assert_almost_equal(np.abs(dot_prod), 1)
+                    npt.assert_allclose(np.abs(dot_prod), 1)
             elif btens == "PTE":
                 if bval != 0:
                     evals, evecs = np.linalg.eig(bten)
                     dot_prod = np.dot(np.real(evecs[:, np.argmin(evals)]), bvec)
-                    npt.assert_almost_equal(np.abs(dot_prod), 1)
+                    npt.assert_allclose(np.abs(dot_prod), 1)
 
     # Check btens input option 2
     btens = np.array(["LTE", "PTE", "STE", "CTE", "LTE", "PTE"])
@@ -176,18 +176,18 @@ def test_GradientTable_btensor_calculation():
     npt.assert_equal(gt.bvals.shape[0], gt.btens.shape[0])
     for i, (bval, bvec, bten) in enumerate(zip(gt.bvals, gt.bvecs, gt.btens)):
         # Check that the b tensor magnitude is correct
-        npt.assert_almost_equal(np.trace(bten), bval)
+        npt.assert_allclose(np.trace(bten), bval)
         # Check that the b tensor orientation is correct
         if btens[i] == ("LTE" or "CTE"):
             if bval != 0:
                 evals, evecs = np.linalg.eig(bten)
                 dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
-                npt.assert_almost_equal(np.abs(dot_prod), 1)
+                npt.assert_allclose(np.abs(dot_prod), 1)
         elif btens[i] == "PTE":
             if bval != 0:
                 evals, evecs = np.linalg.eig(bten)
                 dot_prod = np.dot(np.real(evecs[:, np.argmin(evals)]), bvec)
-                npt.assert_almost_equal(np.abs(dot_prod), 1)
+                npt.assert_allclose(np.abs(dot_prod), 1)
 
     # Check btens input option 3
     btens = np.array([np.eye(3, 3) for i in range(6)])
@@ -231,8 +231,8 @@ def test_gradient_table_from_qvals_bvecs():
     gradient_strength_expected = (
         qvals * 2 * np.pi / (small_delta * WATER_GYROMAGNETIC_RATIO)
     )
-    npt.assert_almost_equal(gt.gradient_strength, gradient_strength_expected)
-    npt.assert_almost_equal(gt.bvals, bvals_expected)
+    npt.assert_allclose(gt.gradient_strength, gradient_strength_expected)
+    npt.assert_allclose(gt.bvals, bvals_expected)
 
 
 def test_gradient_table_from_gradient_strength_bvecs():
@@ -259,8 +259,8 @@ def test_gradient_table_from_gradient_strength_bvecs():
         gradient_strength * WATER_GYROMAGNETIC_RATIO * small_delta / (2 * np.pi)
     )
     bvals_expected = (qvals_expected * 2 * np.pi) ** 2 * (big_delta - small_delta / 3.0)
-    npt.assert_almost_equal(gt.qvals, qvals_expected)
-    npt.assert_almost_equal(gt.bvals, bvals_expected)
+    npt.assert_allclose(gt.qvals, qvals_expected)
+    npt.assert_allclose(gt.bvals, bvals_expected)
 
 
 def test_gradient_table_from_bvals_bvecs():
@@ -410,7 +410,7 @@ def test_qvalues():
     )
     qvals = np.sqrt(bvals / 6) / (2 * np.pi)
     bt = gradient_table(bvals, bvecs=bvecs, big_delta=8, small_delta=6)
-    npt.assert_almost_equal(bt.qvals, qvals)
+    npt.assert_allclose(bt.qvals, qvals)
 
 
 @set_random_number_generator()
@@ -472,12 +472,12 @@ def test_reorient_bvecs(rng):
     new_gt = reorient_bvecs(gt_rot, full_affines)
     # At the end of all this, we should be able to recover the original
     # vectors
-    npt.assert_almost_equal(gt.bvecs, new_gt.bvecs)
+    npt.assert_allclose(gt.bvecs, new_gt.bvecs)
 
     # We should be able to pass just the 3-by-3 rotation components to the same
     # effect
     new_gt = reorient_bvecs(gt_rot, np.array(rotation_affines)[:3, :3])
-    npt.assert_almost_equal(gt.bvecs, new_gt.bvecs)
+    npt.assert_allclose(gt.bvecs, new_gt.bvecs)
 
     # Verify that giving the wrong number of affines raises an error:
     full_affines = np.concatenate([full_affines, np.zeros((4, 4, 1))], axis=-1)
@@ -520,12 +520,12 @@ def test_generate_bvecs(rng):
     # Test if the generated b-vectors are unit vectors
     bvecs = generate_bvecs(100, rng=rng)
     norm = [np.linalg.norm(v) for v in bvecs]
-    npt.assert_almost_equal(norm, np.ones(100))
+    npt.assert_allclose(norm, np.ones(100))
 
     # Test if two generated vectors are almost orthogonal
     bvecs_2 = generate_bvecs(2, rng=rng)
     cos_theta = np.dot(bvecs_2[0], bvecs_2[1])
-    npt.assert_almost_equal(cos_theta, 0.0, decimal=6)
+    npt.assert_allclose(cos_theta, 0.0, atol=1e-6, rtol=0)
 
 
 def test_getitem_idx():
@@ -577,109 +577,109 @@ def test_getitem_idx():
 def test_round_bvals():
     bvals_gt = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
     b = round_bvals(bvals_gt)
-    npt.assert_array_almost_equal(bvals_gt, b)
+    npt.assert_allclose(bvals_gt, b)
 
     bvals = np.array([995, 995, 995, 995, 2005, 2005, 2005, 2005, 0])
     # We don't consider differences this small to be sufficient:
     b = round_bvals(bvals)
-    npt.assert_array_almost_equal(bvals_gt, b)
+    npt.assert_allclose(bvals_gt, b)
 
     # Unless you specify that you are interested in this magnitude of changes:
     b = round_bvals(bvals, bmag=0)
-    npt.assert_array_almost_equal(bvals, b)
+    npt.assert_allclose(bvals, b)
 
     # Case that b-values are in ms/um2
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005, 0])
     b = round_bvals(bvals)
     bvals_gt = np.array([1, 1, 1, 1, 2, 2, 2, 2, 0])
-    npt.assert_array_almost_equal(bvals_gt, b)
+    npt.assert_allclose(bvals_gt, b)
 
 
 def test_unique_bvals_tolerance():
     bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
     ubvals_gt = np.array([0, 1000, 2000])
     b = unique_bvals_tolerance(bvals)
-    npt.assert_array_almost_equal(ubvals_gt, b)
+    npt.assert_allclose(ubvals_gt, b)
 
     # Testing the tolerance factor on many b-values that are within tol.
     bvals = np.array([950, 980, 995, 1000, 1000, 1010, 1999, 2000, 2001, 0])
     ubvals_gt = np.array([0, 950, 1000, 2001])
     b = unique_bvals_tolerance(bvals)
-    npt.assert_array_almost_equal(ubvals_gt, b)
+    npt.assert_allclose(ubvals_gt, b)
 
     # All unique b-values are kept if tolerance is set to zero:
     bvals = np.array([990, 990, 1000, 1000, 2000, 2000, 2050, 2050, 0])
     ubvals_gt = np.array([0, 990, 1000, 2000, 2050])
     b = unique_bvals_tolerance(bvals, tol=0)
-    npt.assert_array_almost_equal(ubvals_gt, b)
+    npt.assert_allclose(ubvals_gt, b)
 
     # Case that b-values are in ms/um2
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005, 0])
     b = unique_bvals_tolerance(bvals, tol=0.5)
     ubvals_gt = np.array([0, 0.995, 2.005])
-    npt.assert_array_almost_equal(ubvals_gt, b)
+    npt.assert_allclose(ubvals_gt, b)
 
 
 def test_get_bval_indices():
     bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
     indices_gt = np.array([0, 1, 2, 3])
     indices = get_bval_indices(bvals, 1000)
-    npt.assert_array_almost_equal(indices_gt, indices)
+    npt.assert_allclose(indices_gt, indices)
 
     # Testing the tolerance factor on many b-values that are within tol.
     bvals = np.array([950, 980, 995, 1000, 1000, 1010, 1999, 2000, 2001, 0])
     indices_gt = np.array([0])
     indices = get_bval_indices(bvals, 950, tol=20)
-    npt.assert_array_almost_equal(indices_gt, indices)
+    npt.assert_allclose(indices_gt, indices)
     indices_gt = np.array([1, 2, 3, 4, 5])
     indices = get_bval_indices(bvals, 1000, tol=20)
-    npt.assert_array_almost_equal(indices_gt, indices)
+    npt.assert_allclose(indices_gt, indices)
     indices_gt = np.array([6, 7, 8])
     indices = get_bval_indices(bvals, 2001, tol=20)
-    npt.assert_array_almost_equal(indices_gt, indices)
+    npt.assert_allclose(indices_gt, indices)
 
     # All unique b-values indices are returned if tolerance is set to zero:
     bvals = np.array([990, 990, 1000, 1000, 2000, 2000, 2050, 2050, 0])
     indices_gt = np.array([2, 3])
     indices = get_bval_indices(bvals, 1000, tol=0)
-    npt.assert_array_almost_equal(indices_gt, indices)
+    npt.assert_allclose(indices_gt, indices)
 
     # Case that b-values are in ms/um2
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005, 0])
     indices_gt = np.array([0, 1, 2, 3])
     indices = get_bval_indices(bvals, 0.995, tol=0.5)
-    npt.assert_array_almost_equal(indices_gt, indices)
+    npt.assert_allclose(indices_gt, indices)
 
 
 def test_unique_bvals_magnitude():
     bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
     ubvals_gt = np.array([0, 1000, 2000])
     b = unique_bvals_magnitude(bvals)
-    npt.assert_array_almost_equal(ubvals_gt, b)
+    npt.assert_allclose(ubvals_gt, b)
 
     bvals = np.array([995, 995, 995, 995, 2005, 2005, 2005, 2005, 0])
     # Case that b-values are rounded:
     b = unique_bvals_magnitude(bvals)
-    npt.assert_array_almost_equal(ubvals_gt, b)
+    npt.assert_allclose(ubvals_gt, b)
 
     # b-values are not rounded if you specific the magnitude of the values
     # precision:
     b = unique_bvals_magnitude(bvals, bmag=0)
-    npt.assert_array_almost_equal(b, np.array([0, 995, 2005]))
+    npt.assert_allclose(b, np.array([0, 995, 2005]))
 
     # Case that b-values are in ms/um2
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005, 0])
     b = unique_bvals_magnitude(bvals)
     ubvals_gt = np.array([0, 1, 2])
-    npt.assert_array_almost_equal(ubvals_gt, b)
+    npt.assert_allclose(ubvals_gt, b)
 
     # Test case that optional parameter round_bvals is set to true
     bvals = np.array([995, 1000, 1004, 1000, 2001, 2000, 1988, 2017, 0])
     ubvals_gt = np.array([0, 1000, 2000])
     rbvals_gt = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
     ub, rb = unique_bvals_magnitude(bvals, rbvals=True)
-    npt.assert_array_almost_equal(ubvals_gt, ub)
-    npt.assert_array_almost_equal(rbvals_gt, rb)
+    npt.assert_allclose(ubvals_gt, ub)
+    npt.assert_allclose(rbvals_gt, rb)
 
 
 def test_check_multi_b():
@@ -740,9 +740,9 @@ def test_btens_to_params(rng):
     for i, tensor in enumerate(base_tensors):
         i_bval, i_bdelta, i_b_eta = btens_to_params(tensor)
 
-        npt.assert_array_almost_equal(i_bval, expected_bvals[i])
-        npt.assert_array_almost_equal(i_bdelta, expected_bdeltas[i])
-        npt.assert_array_almost_equal(i_b_eta, expected_b_etas[i])
+        npt.assert_allclose(i_bval, expected_bvals[i])
+        npt.assert_allclose(i_bdelta, expected_bdeltas[i])
+        npt.assert_allclose(i_b_eta, expected_b_etas[i])
 
     # Test function on a 3D input
     base_tensors_array = np.empty((4, 3, 3))
@@ -753,9 +753,9 @@ def test_btens_to_params(rng):
 
     bvals, bdeltas, b_etas = btens_to_params(base_tensors_array)
 
-    npt.assert_array_almost_equal(bvals, expected_bvals)
-    npt.assert_array_almost_equal(bdeltas, expected_bdeltas)
-    npt.assert_array_almost_equal(b_etas, expected_b_etas)
+    npt.assert_allclose(bvals, expected_bvals)
+    npt.assert_allclose(bdeltas, expected_bdeltas)
+    npt.assert_allclose(b_etas, expected_b_etas)
 
     # -----------------------------------------------------
     # Test function after rotating+scaling baseline tensors
@@ -780,9 +780,9 @@ def test_btens_to_params(rng):
                 tensor_rot_i = np.matmul(np.matmul(R_i, tensor), R_i.T)
                 i_bval, i_bdelta, i_b_eta = btens_to_params(tensor_rot_i * scale)
 
-                npt.assert_array_almost_equal(i_bval, ebs[i])
-                npt.assert_array_almost_equal(i_bdelta, expected_bdeltas[i])
-                npt.assert_array_almost_equal(i_b_eta, expected_b_etas[i])
+                npt.assert_allclose(i_bval, ebs[i])
+                npt.assert_allclose(i_bdelta, expected_bdeltas[i])
+                npt.assert_allclose(i_b_eta, expected_b_etas[i])
 
     # Input can't be string
     npt.assert_raises(ValueError, btens_to_params, "LTE")
@@ -819,7 +819,7 @@ def test_params_to_btens():
 
     for i, (bval, bdelta, b_eta) in enumerate(zip(bvals, bdeltas, b_etas)):
         btens = params_to_btens(bval, bdelta, b_eta)
-        npt.assert_array_almost_equal(btens, expected_btens[i])
+        npt.assert_allclose(btens, expected_btens[i])
 
     # Additional tests
     bvals = [1.7, 0.4, 2.3]
@@ -834,7 +834,7 @@ def test_params_to_btens():
 
     for i, (bval, bdelta, b_eta) in enumerate(zip(bvals, bdeltas, b_etas)):
         btens = params_to_btens(bval, bdelta, b_eta)
-        npt.assert_array_almost_equal(btens, expected_btens[i])
+        npt.assert_allclose(btens, expected_btens[i])
 
     # Tests to trigger value errors
     # 1: wrong input type
@@ -1032,13 +1032,13 @@ def test_extract_b0():
     # Test extracting mean b0 volume
     result_mean = extract_b0(dwi, b0_mask, strategy="mean")
     npt.assert_equal(result_mean.shape, dwi.shape[:-1])
-    npt.assert_almost_equal(result_mean, expected_mean)
+    npt.assert_allclose(result_mean, expected_mean)
 
     # Test contiguous grouping
     result_grouped = extract_b0(dwi, b0_mask, group_contiguous_b0=True, strategy="mean")
     npt.assert_equal(result_grouped.shape[-1], 2)  # 2 groups expected
-    npt.assert_almost_equal(result_grouped[..., 0], result_first)
-    npt.assert_almost_equal(result_grouped[..., 1], dwi[..., 2:4].mean(axis=-1))
+    npt.assert_allclose(result_grouped[..., 0], result_first)
+    npt.assert_allclose(result_grouped[..., 1], dwi[..., 2:4].mean(axis=-1))
 
     npt.assert_raises(ValueError, extract_b0, dwi, b0_mask, strategy="max")
     npt.assert_raises(ValueError, extract_b0, dwi[..., 0], b0_mask)

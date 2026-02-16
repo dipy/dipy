@@ -142,7 +142,7 @@ def test_affine_registration():
     )
 
     # We don't ask for much:
-    npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
+    npt.assert_allclose(affine_mat[:3, :3], np.eye(3), atol=1e-1, rtol=0)
 
     # [center_of_mass] + ret_metric=True should raise an error
     with pytest.raises(ValueError):
@@ -183,7 +183,7 @@ def test_affine_registration():
             factors=[2, 1],
             pipeline=[func],
         )
-        npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
+        npt.assert_allclose(affine_mat[:3, :3], np.eye(3), atol=1e-1, rtol=0)
 
     # Bad method
     with pytest.raises(ValueError, match=r"^pipeline\[0\] must be one.*foo.*"):
@@ -244,7 +244,7 @@ def test_affine_registration():
     moving_img = nib.Nifti1Image(moving, moving_affine)
     static_img = nib.Nifti1Image(static, static_affine)
     xformed, affine_mat = affine_registration(moving_img, static_img)
-    npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
+    npt.assert_allclose(affine_mat[:3, :3], np.eye(3), atol=1e-1, rtol=0)
 
     # Using strings with full paths as inputs also works:
     t1_name, b0_name = dpd.get_fnames(name="syn_data")
@@ -253,7 +253,7 @@ def test_affine_registration():
     xformed, affine_mat = affine_registration(
         moving, static, level_iters=[5, 5], sigmas=[3, 1], factors=[4, 2]
     )
-    npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
+    npt.assert_allclose(affine_mat[:3, :3], np.eye(3), atol=1e-1, rtol=0)
 
 
 def test_single_transforms():
@@ -281,7 +281,7 @@ def test_single_transforms():
             factors=[2, 1],
         )
         # We don't ask for much:
-        npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
+        npt.assert_allclose(affine_mat[:3, :3], np.eye(3), atol=1e-1, rtol=0)
 
 
 def test_register_series():
@@ -327,9 +327,9 @@ def test_streamline_registration(rng):
     affine_mat[:3, 3] = rng.standard_normal(3)
     sl2 = list(transform_tracking_output(sl1, affine_mat))
     aligned, matrix = streamline_registration(sl2, sl1)
-    npt.assert_almost_equal(matrix, np.linalg.inv(affine_mat))
-    npt.assert_almost_equal(aligned[0], sl1[0])
-    npt.assert_almost_equal(aligned[1], sl1[1])
+    npt.assert_allclose(matrix, np.linalg.inv(affine_mat))
+    npt.assert_allclose(aligned[0], sl1[0])
+    npt.assert_allclose(aligned[1], sl1[1])
 
     # We assume the two tracks come from the same space, but it might have
     # some affine associated with it:
@@ -368,8 +368,8 @@ def test_streamline_registration(rng):
                 save_tractogram(tgm2, fname2, bbox_valid_check=False)
 
             aligned, matrix = streamline_registration(fname2, fname1)
-            npt.assert_almost_equal(aligned[0], sl1[0], decimal=5)
-            npt.assert_almost_equal(aligned[1], sl1[1], decimal=5)
+            npt.assert_allclose(aligned[0], sl1[0], atol=1e-5, rtol=0)
+            npt.assert_allclose(aligned[1], sl1[1], atol=1e-5, rtol=0)
 
 
 def test_register_dwi_series_multi_b0():

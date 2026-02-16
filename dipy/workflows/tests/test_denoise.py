@@ -40,7 +40,7 @@ def test_nlmeans_flow():
         assert_true(Path(denoised_path).is_file())
         denoised_data, denoised_affine = load_nifti(denoised_path)
         npt.assert_equal(denoised_data.shape, volume.shape)
-        npt.assert_array_almost_equal(denoised_affine, affine)
+        npt.assert_allclose(denoised_affine, affine)
 
 
 @needs_sklearn

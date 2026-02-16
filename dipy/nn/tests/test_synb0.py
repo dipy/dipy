@@ -4,7 +4,7 @@ import sys
 import warnings
 
 import numpy as np
-from numpy.testing import assert_almost_equal
+from numpy.testing import assert_allclose
 import pytest
 
 from dipy.data import get_fnames
@@ -46,7 +46,7 @@ def test_default_weights():
     synb0_model = synb0_mod.Synb0()
     synb0_model.fetch_default_weights(0)
     results_arr = synb0_model.predict(input_arr1, input_arr2, average=False)
-    assert_almost_equal(results_arr, target_arr, decimal=1)
+    assert_allclose(results_arr, target_arr, atol=1e-1, rtol=0)
 
 
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
@@ -60,4 +60,4 @@ def test_default_weights_batch():
     results_arr = synb0_model.predict(
         input_arr1, input_arr2, batch_size=2, average=False
     )
-    assert_almost_equal(results_arr, target_arr, decimal=1)
+    assert_allclose(results_arr, target_arr, atol=1e-1, rtol=0)

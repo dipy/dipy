@@ -3,7 +3,6 @@ import warnings
 import numpy as np
 from numpy.testing import (
     assert_,
-    assert_array_almost_equal,
     assert_equal,
     assert_raises,
 )
@@ -114,7 +113,7 @@ def rfiw_phantom(gtab, snr=None, rng=None):
 def test_lpca_static():
     S0 = 100 * np.ones((20, 20, 20, 20), dtype="f8")
     S0ns = localpca(S0, sigma=np.ones((20, 20, 20), dtype=np.float64))
-    assert_array_almost_equal(S0, S0ns)
+    assert_allclose(S0, S0ns)
 
 
 @set_random_number_generator()
@@ -233,7 +232,7 @@ def test_phantom(rng):
 
     # Check if the results of different PCA methods (eig, svd) are similar
     DWI_den_svd = localpca(DWI, sigma=sigma, pca_method="svd", patch_radius=3)
-    assert_array_almost_equal(DWI_den, DWI_den_svd)
+    assert_allclose(DWI_den, DWI_den_svd)
 
     assert_raises(ValueError, localpca, DWI, sigma=sigma, pca_method="empty")
 
@@ -468,7 +467,7 @@ def test_mppca_returned_sigma(rng):
                 return_sigma=True,
             )
 
-        assert_array_almost_equal(rsigma, sigma)
+        assert_allclose(rsigma, sigma)
 
         # DWIden1 should be very similar to DWIden0
         rmse_den = np.sum(np.abs(DWIden1 - DWIden0)) / np.sum(np.abs(DWIden0))

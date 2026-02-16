@@ -2,8 +2,6 @@ import warnings
 
 import numpy as np
 from numpy.testing import (
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
 )
@@ -157,7 +155,7 @@ def test_bundles_distances_mdf(verbose=False):
     tracksB = [xyz1A, xyz1A]
 
     DM2 = pf.bundles_distances_mdf(tracksA, tracksB)
-    assert_array_almost_equal(DM2, np.zeros((2, 2)))
+    assert_allclose(DM2, np.zeros((2, 2)))
 
     tracksA = [xyz1A, xyz3A]
     tracksB = [xyz2A]
@@ -166,7 +164,7 @@ def test_bundles_distances_mdf(verbose=False):
     if verbose:
         print(DM2)
 
-    # assert_array_almost_equal(DM2,np.zeros((2,2)))
+    # assert_allclose(DM2, np.zeros((2,2)))
     DM = np.zeros(DM2.shape)
     for a, ta in enumerate(tracksA):
         for b, tb in enumerate(tracksB):
@@ -184,7 +182,7 @@ def test_bundles_distances_mdf(verbose=False):
         for t in tracksB:
             print(t)
 
-    assert_array_almost_equal(DM, DM2, 4)
+    assert_allclose(DM, DM2, atol=1e-4, rtol=0)
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=UserWarning)
@@ -205,7 +203,7 @@ def test_mam_distances():
     xyz1 = xyz1.astype("float32")
     xyz2 = xyz2.astype("float32")
     zd2 = pf.mam_distances(xyz1, xyz2)
-    assert_almost_equal(zd2[0], 1.76135602742)
+    assert_allclose(zd2[0], 1.76135602742)
 
 
 def test_approx_ei_traj():
@@ -237,9 +235,7 @@ def test_approx_mdl_traj():
     xyza2 = pf.approximate_mdl_trajectory(xyz, alpha=2.0)
     assert_equal(len(xyza1), 10)
     assert_equal(len(xyza2), 8)
-    assert_array_almost_equal(
-        xyza1,
-        np.array(
+    assert_allclose(xyza1, np.array(
             [
                 [0.00000000e00, 1.00000000e00, 0.00000000e00],
                 [9.39692621e-01, 3.42020143e-01, 1.22173048e00],
@@ -252,12 +248,9 @@ def test_approx_mdl_traj():
                 [-3.42020143e-01, -9.39692621e-01, 9.77384381e00],
                 [-1.00000000e00, -4.28626380e-16, 1.09955743e01],
             ]
-        ),
-    )
+        ), )
 
-    assert_array_almost_equal(
-        xyza2,
-        np.array(
+    assert_allclose(xyza2, np.array(
             [
                 [0.00000000e00, 1.00000000e00, 0.00000000e00],
                 [9.95471923e-01, -9.50560433e-02, 1.66599610e00],
@@ -268,8 +261,7 @@ def test_approx_mdl_traj():
                 [-5.40640817e-01, -8.41253533e-01, 9.99597663e00],
                 [-1.00000000e00, -4.28626380e-16, 1.09955743e01],
             ]
-        ),
-    )
+        ), )
 
 
 def test_point_track_sq_distance():
@@ -332,14 +324,14 @@ def test_cut_plane():
         [2.0, 2.5, 2.5, 0.81649655, 2.0],
     ]
     hitx = pf.cut_plane(bundlex, refx)
-    assert_array_almost_equal(hitx[0], expected_hit0)
-    assert_array_almost_equal(hitx[1], expected_hit1)
+    assert_allclose(hitx[0], expected_hit0)
+    assert_allclose(hitx[1], expected_hit1)
     # check that algorithm allows types other than float32
     bundlex[0] = np.asarray(bundlex[0], dtype=np.float64)
     hitx = pf.cut_plane(bundlex, refx)
-    assert_array_almost_equal(hitx[0], expected_hit0)
-    assert_array_almost_equal(hitx[1], expected_hit1)
+    assert_allclose(hitx[0], expected_hit0)
+    assert_allclose(hitx[1], expected_hit1)
     refx = np.asarray(refx, dtype=np.float64)
     hitx = pf.cut_plane(bundlex, refx)
-    assert_array_almost_equal(hitx[0], expected_hit0)
-    assert_array_almost_equal(hitx[1], expected_hit1)
+    assert_allclose(hitx[0], expected_hit0)
+    assert_allclose(hitx[1], expected_hit1)

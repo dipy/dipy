@@ -201,7 +201,7 @@ def io_tractogram(extension):
         npt.assert_array_equal(in_voxel_sizes, voxel_sizes)
         npt.assert_array_equal(in_dimensions, dimensions)
         npt.assert_equal(len(sft), len(STREAMLINES))
-        npt.assert_array_almost_equal(sft.streamlines[1], STREAMLINE, decimal=4)
+        npt.assert_allclose(sft.streamlines[1], STREAMLINE, atol=1e-4, rtol=0)
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
@@ -229,7 +229,7 @@ def test_vtk_matching_space(space, origin):
         sfs.to_rasmm()
         sfs.to_center()
         save_coords = sfs.streamlines._data.copy()
-        npt.assert_almost_equal(ref_coords, save_coords, decimal=5)
+        npt.assert_allclose(ref_coords, save_coords, atol=1e-5, rtol=0)
 
 
 @pytest.mark.parametrize("ext", ["trk", "tck", "trx", "dpy"])
@@ -252,7 +252,7 @@ def test_low_io_vtk():
         save_vtk_streamlines(STREAMLINES, fname, binary=True)
         tracks = load_vtk_streamlines(fname)
         npt.assert_equal(len(tracks), len(STREAMLINES))
-        npt.assert_array_almost_equal(tracks[1], STREAMLINE, decimal=4)
+        npt.assert_allclose(tracks[1], STREAMLINE, atol=1e-4, rtol=0)
 
 
 def trk_loader(filename):

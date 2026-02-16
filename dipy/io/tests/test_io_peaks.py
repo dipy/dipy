@@ -73,7 +73,7 @@ def test_io_peaks(rng):
 
         npt.assert_equal(pam3.total_weight, pam.total_weight)
         npt.assert_equal(pam3.ang_thr, pam.ang_thr)
-        npt.assert_array_almost_equal(pam3.sphere.vertices, pam.sphere.vertices)
+        npt.assert_allclose(pam3.sphere.vertices, pam.sphere.vertices)
 
         fname3 = Path(tmpdir) / "test3.pam5"
         pam4 = PeaksAndMetrics()
@@ -216,7 +216,7 @@ def test_tensor_to_pam():
 
         npt.assert_array_equal(pam.peak_values, pam2.peak_values)
         npt.assert_array_equal(pam.peak_dirs, pam2.peak_dirs)
-        npt.assert_array_almost_equal(pam.peak_indices, pam2.peak_indices)
+        npt.assert_allclose(pam.peak_indices, pam2.peak_indices)
         del pam
 
 

@@ -5,8 +5,6 @@ import random
 
 import numpy as np
 from numpy.testing import (
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
@@ -38,23 +36,23 @@ from dipy.testing.spherepoints import sphere_points
 def test_vector_norm():
     A = np.array([[1, 0, 0], [3, 4, 0], [0, 5, 12], [1, 2, 3]])
     expected = np.array([1, 5, 13, np.sqrt(14)])
-    assert_array_almost_equal(vector_norm(A), expected)
+    assert_allclose(vector_norm(A), expected)
     expected.shape = (4, 1)
-    assert_array_almost_equal(vector_norm(A, keepdims=True), expected)
-    assert_array_almost_equal(vector_norm(A.T, axis=0, keepdims=True), expected.T)
+    assert_allclose(vector_norm(A, keepdims=True), expected)
+    assert_allclose(vector_norm(A.T, axis=0, keepdims=True), expected.T)
 
 
 def test_sphere_cart():
     # test arrays of points
     rs, thetas, phis = cart2sphere(*sphere_points.T)
     xyz = sphere2cart(rs, thetas, phis)
-    assert_array_almost_equal(xyz, sphere_points.T)
+    assert_allclose(xyz, sphere_points.T)
     # test radius estimation
     big_sph_pts = sphere_points * 10.4
     rs, thetas, phis = cart2sphere(*big_sph_pts.T)
-    assert_array_almost_equal(rs, 10.4)
+    assert_allclose(rs, 10.4)
     xyz = sphere2cart(rs, thetas, phis)
-    assert_array_almost_equal(xyz, big_sph_pts.T, decimal=6)
+    assert_allclose(xyz, big_sph_pts.T, atol=1e-6, rtol=0)
     # test that result shapes match
     x, y, z = big_sph_pts.T
     r, theta, phi = cart2sphere(x[:1], y[:1], z)
@@ -67,11 +65,11 @@ def test_sphere_cart():
     pt = sphere_points[3]
     r, theta, phi = cart2sphere(*pt)
     xyz = sphere2cart(r, theta, phi)
-    assert_array_almost_equal(xyz, pt)
+    assert_allclose(xyz, pt)
 
     # Test full circle on x=1, y=1, z=1
     x, y, z = sphere2cart(*cart2sphere(1.0, 1.0, 1.0))
-    assert_array_almost_equal((x, y, z), (1.0, 1.0, 1.0))
+    assert_allclose((x, y, z), (1.0, 1.0, 1.0))
 
 
 def test_invert_transform():
@@ -81,41 +79,41 @@ def test_invert_transform():
     x, y, z = sphere2cart(1, theta, phi)  # Let's assume they're all unit vecs
     r, new_theta, new_phi = cart2sphere(x, y, z)  # Transform back
 
-    assert_array_almost_equal(theta, new_theta)
-    assert_array_almost_equal(phi, new_phi)
+    assert_allclose(theta, new_theta)
+    assert_allclose(phi, new_phi)
 
 
 def test_nearest_pos_semi_def():
     B = np.diag(np.array([1, 2, 3]))
-    assert_array_almost_equal(B, nearest_pos_semi_def(B))
+    assert_allclose(B, nearest_pos_semi_def(B))
     B = np.diag(np.array([0, 2, 3]))
-    assert_array_almost_equal(B, nearest_pos_semi_def(B))
+    assert_allclose(B, nearest_pos_semi_def(B))
     B = np.diag(np.array([0, 0, 3]))
-    assert_array_almost_equal(B, nearest_pos_semi_def(B))
+    assert_allclose(B, nearest_pos_semi_def(B))
     B = np.diag(np.array([-1, 2, 3]))
     Bpsd = np.array([[0.0, 0.0, 0.0], [0.0, 1.75, 0.0], [0.0, 0.0, 2.75]])
-    assert_array_almost_equal(Bpsd, nearest_pos_semi_def(B))
+    assert_allclose(Bpsd, nearest_pos_semi_def(B))
     B = np.diag(np.array([-1, -2, 3]))
     Bpsd = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-    assert_array_almost_equal(Bpsd, nearest_pos_semi_def(B))
+    assert_allclose(Bpsd, nearest_pos_semi_def(B))
     B = np.diag(np.array([-1.0e-11, 0, 1000]))
     Bpsd = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1000.0]])
-    assert_array_almost_equal(Bpsd, nearest_pos_semi_def(B))
+    assert_allclose(Bpsd, nearest_pos_semi_def(B))
     B = np.diag(np.array([-1, -2, -3]))
     Bpsd = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
-    assert_array_almost_equal(Bpsd, nearest_pos_semi_def(B))
+    assert_allclose(Bpsd, nearest_pos_semi_def(B))
 
 
 def test_cart_distance():
     a = [0, 1]
     b = [1, 0]
-    assert_array_almost_equal(cart_distance(a, b), np.sqrt(2))
-    assert_array_almost_equal(cart_distance([1, 0], [-1, 0]), 2)
+    assert_allclose(cart_distance(a, b), np.sqrt(2))
+    assert_allclose(cart_distance([1, 0], [-1, 0]), 2)
     pts1 = [2, 1, 0]
     pts2 = [0, 1, -2]
-    assert_array_almost_equal(cart_distance(pts1, pts2), np.sqrt(8))
+    assert_allclose(cart_distance(pts1, pts2), np.sqrt(8))
     pts2 = [[0, 1, -2], [-2, 1, 0]]
-    assert_array_almost_equal(cart_distance(pts1, pts2), [np.sqrt(8), 4])
+    assert_allclose(cart_distance(pts1, pts2), [np.sqrt(8), 4])
 
 
 def test_sphere_distance():
@@ -137,10 +135,10 @@ def test_sphere_distance():
     cdists = np.r_[0, csums, csums[-2::-1]]
     # check approximation close to calculated
     sph_d = sphere_distance([0, radius], np.c_[x, y])
-    assert_array_almost_equal(cdists, sph_d)
+    assert_allclose(cdists, sph_d)
     # Now check with passed radius
     sph_d = sphere_distance([0, radius], np.c_[x, y], radius=radius)
-    assert_array_almost_equal(cdists, sph_d)
+    assert_allclose(cdists, sph_d)
     # Check points not on surface raises error when asked for
     assert_raises(ValueError, sphere_distance, [1, 0], [0, 2])
     # Not when check is disabled
@@ -153,15 +151,15 @@ def test_sphere_distance():
 def test_vector_cosine(rng):
     a = [0, 1]
     b = [1, 0]
-    assert_array_almost_equal(vector_cosine(a, b), 0)
-    assert_array_almost_equal(vector_cosine([1, 0], [-1, 0]), -1)
-    assert_array_almost_equal(vector_cosine([1, 0], [1, 1]), 1 / np.sqrt(2))
-    assert_array_almost_equal(vector_cosine([2, 0], [-4, 0]), -1)
+    assert_allclose(vector_cosine(a, b), 0)
+    assert_allclose(vector_cosine([1, 0], [-1, 0]), -1)
+    assert_allclose(vector_cosine([1, 0], [1, 1]), 1 / np.sqrt(2))
+    assert_allclose(vector_cosine([2, 0], [-4, 0]), -1)
     pts1 = [2, 1, 0]
     pts2 = [-2, -1, 0]
-    assert_array_almost_equal(vector_cosine(pts1, pts2), -1)
+    assert_allclose(vector_cosine(pts1, pts2), -1)
     pts2 = [[-2, -1, 0], [2, 1, 0]]
-    assert_array_almost_equal(vector_cosine(pts1, pts2), [-1, 1])
+    assert_allclose(vector_cosine(pts1, pts2), [-1, 1])
     # test relationship with correlation
     # not the same if non-zero vector mean
     a = rng.uniform(size=(100,))
@@ -173,7 +171,7 @@ def test_vector_cosine(rng):
     a_dm = a - np.mean(a)
     b_dm = b - np.mean(b)
     vcos = vector_cosine(a_dm, b_dm)
-    assert_array_almost_equal(cc, vcos)
+    assert_allclose(cc, vcos)
 
 
 def test_lambert_equal_area_projection_polar():
@@ -181,10 +179,7 @@ def test_lambert_equal_area_projection_polar():
     phi = np.linspace(0, 2 * np.pi, 10)
     # points sit on circle with co-latitude pi/3 (60 degrees)
     leap = lambert_equal_area_projection_polar(theta, phi)
-    assert_array_almost_equal(
-        np.sqrt(np.sum(leap**2, axis=1)),
-        np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]),
-    )
+    assert_allclose(np.sqrt(np.sum(leap**2, axis=1)), np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), )
     # points map onto the circle of radius 1
 
 
@@ -198,26 +193,21 @@ def test_lambert_equal_area_projection_cart():
 
     leap = lambert_equal_area_projection_polar(theta, phi)
     r2 = np.sqrt(2)
-    assert_array_almost_equal(
-        np.sqrt(np.sum(leap**2, axis=1)), np.array([r2, r2, 0, r2, r2, 2])
-    )
+    assert_allclose(np.sqrt(np.sum(leap**2, axis=1)), np.array([r2, r2, 0, r2, r2, 2]))
     # x and y =+/-1 map onto circle of radius sqrt(2)
     # z=1 maps to origin, and z=-1 maps to (an arbitrary point on) the
     # outer circle of radius 2
 
 
 def test_circumradius():
-    assert_array_almost_equal(
-        np.sqrt(0.5),
-        circumradius(np.array([0, 2, 0]), np.array([2, 0, 0]), np.array([0, 0, 0])),
-    )
+    assert_allclose(np.sqrt(0.5), circumradius(np.array([0, 2, 0]), np.array([2, 0, 0]), np.array([0, 0, 0])), )
 
 
 def test_vec2vec_rotmat():
     a = np.array([1, 0, 0])
     for b in np.array([[0, 0, 1], [-1, 0, 0], [1, 0, 0]]):
         R = vec2vec_rotmat(a, b)
-        assert_array_almost_equal(np.dot(R, a), b)
+        assert_allclose(np.dot(R, a), b)
 
     # These vectors are not unit norm
     c = np.array([0.33950729, 0.92041729, 0.1938216])
@@ -228,8 +218,8 @@ def test_vec2vec_rotmat():
     d_norm = d / np.linalg.norm(d)
     R2 = vec2vec_rotmat(c_norm, d_norm)
 
-    assert_array_almost_equal(R1, R2, decimal=1)
-    assert_array_almost_equal(np.diag(R1), np.diag(R2), decimal=3)
+    assert_allclose(R1, R2, atol=1e-1, rtol=0)
+    assert_allclose(np.diag(R1), np.diag(R2), atol=1e-3, rtol=0)
 
     # we are catching collinear vectors
     # but in the case where they are not
@@ -243,9 +233,9 @@ def test_vec2vec_rotmat():
     g = np.array([1.001, 0.0, 0])
     R4 = vec2vec_rotmat(e, g)
 
-    assert_array_almost_equal(R3, R4, decimal=1)
+    assert_allclose(R3, R4, atol=1e-1, rtol=0)
 
-    assert_array_almost_equal(np.diag(R3), np.diag(R4), decimal=3)
+    assert_allclose(np.diag(R3), np.diag(R4), atol=1e-3, rtol=0)
 
 
 def test_compose_transformations():
@@ -276,11 +266,11 @@ def test_compose_decompose_matrix(rng):
                     )
                     sc, sh, ang, trans, _ = decompose_matrix(mat)
 
-                    assert_array_almost_equal(translate, trans)
-                    assert_array_almost_equal(angles, ang)
+                    assert_allclose(translate, trans)
+                    assert_allclose(angles, ang)
 
-                    assert_array_almost_equal(shears, sh)
-                    assert_array_almost_equal(scale, sc)
+                    assert_allclose(shears, sh)
+                    assert_allclose(scale, sc)
 
 
 def test_perpendicular_directions():
@@ -303,7 +293,7 @@ def test_perpendicular_directions():
         # check if all directions are perpendicular to vector v
         for d in pd:
             cos_angle = np.dot(d, vector_v)
-            assert_almost_equal(cos_angle, 0)
+            assert_allclose(cos_angle, 0)
 
         # check if directions are sampled by multiples of 2*pi / num
         delta_a = 2.0 * np.pi / num
@@ -312,7 +302,7 @@ def test_perpendicular_directions():
             rest = angle % delta_a
             if rest > delta_a * 0.99:  # To correct cases of negative error
                 rest = rest - delta_a
-            assert_almost_equal(rest, 0)
+            assert_allclose(rest, 0)
 
 
 def _rotation_from_angles(r):
@@ -351,12 +341,12 @@ def test_dist_to_corner(rng):
     # Calculate the distance with the pythagorean theorem:
     pythagoras = np.sqrt(np.sum((np.diag(affine)[:-1] / 2) ** 2))
     # Compare to calculation with this function:
-    assert_array_almost_equal(dist_to_corner(affine), pythagoras)
+    assert_allclose(dist_to_corner(affine), pythagoras)
     # Apply a rotation to the matrix, just to demonstrate the calculation is
     # robust to that:
     R = _rotation_from_angles(rng.random(3) * np.pi)
     new_aff = np.vstack([np.dot(R, affine[:3, :]), [0, 0, 0, 1]])
-    assert_array_almost_equal(dist_to_corner(new_aff), pythagoras)
+    assert_allclose(dist_to_corner(new_aff), pythagoras)
 
 
 def test_is_hemispherical():

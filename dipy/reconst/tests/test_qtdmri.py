@@ -3,8 +3,6 @@ import warnings
 import numpy as np
 from numpy.testing import (
     assert_,
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_equal,
     assert_raises,
 )
@@ -167,10 +165,10 @@ def test_orthogonality_temporal_basis_functions():
         tmax,
     )
 
-    assert_almost_equal(int1, 0.0)
-    assert_almost_equal(int2, 0.0)
-    assert_almost_equal(int3, 0.0)
-    assert_almost_equal(int4, 0.0)
+    assert_allclose(int1, 0.0)
+    assert_allclose(int2, 0.0)
+    assert_allclose(int3, 0.0)
+    assert_allclose(int4, 0.0)
 
 
 def test_normalization_time():
@@ -200,9 +198,9 @@ def test_normalization_time():
         tmax,
     )[0]
 
-    assert_almost_equal(int0, 1.0)
-    assert_almost_equal(int1, 1.0)
-    assert_almost_equal(int2, 1.0)
+    assert_allclose(int0, 1.0)
+    assert_allclose(int1, 1.0)
+    assert_allclose(int2, 1.0)
 
 
 def test_anisotropic_isotropic_equivalence(radial_order=4, time_order=2):
@@ -245,9 +243,7 @@ def test_anisotropic_isotropic_equivalence(radial_order=4, time_order=2):
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        assert_array_almost_equal(
-            qtdmri_fit_cart.fitted_signal(), qtdmri_fit_sphere.fitted_signal()
-        )
+        assert_allclose(qtdmri_fit_cart.fitted_signal(), qtdmri_fit_sphere.fitted_signal())
 
     # same PDF reconstruction
     rt_grid = qtdmri.create_rt_space_grid(5, 20e-3, 5, 0.02, 0.05)
@@ -259,29 +255,26 @@ def test_anisotropic_isotropic_equivalence(radial_order=4, time_order=2):
             category=PendingDeprecationWarning,
         )
         pdf_iso = qtdmri_fit_sphere.pdf(rt_grid)
-    assert_array_almost_equal(pdf_aniso / pdf_aniso.max(), pdf_iso / pdf_aniso.max())
+    assert_allclose(pdf_aniso / pdf_aniso.max(), pdf_iso / pdf_aniso.max())
 
     # same norm of the Laplacian
     norm_laplacian_aniso = qtdmri_fit_cart.norm_of_laplacian_signal()
     norm_laplacian_iso = qtdmri_fit_sphere.norm_of_laplacian_signal()
-    assert_almost_equal(
-        norm_laplacian_aniso / norm_laplacian_aniso,
-        norm_laplacian_iso / norm_laplacian_aniso,
-    )
+    assert_allclose(norm_laplacian_aniso / norm_laplacian_aniso, norm_laplacian_iso / norm_laplacian_aniso, )
 
     # all q-space index is the same for arbitrary tau
     tau = 0.02
-    assert_almost_equal(qtdmri_fit_cart.rtop(tau), qtdmri_fit_sphere.rtop(tau))
+    assert_allclose(qtdmri_fit_cart.rtop(tau), qtdmri_fit_sphere.rtop(tau))
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        assert_almost_equal(qtdmri_fit_cart.rtap(tau), qtdmri_fit_sphere.rtap(tau))
-        assert_almost_equal(qtdmri_fit_cart.rtpp(tau), qtdmri_fit_sphere.rtpp(tau))
-    assert_almost_equal(qtdmri_fit_cart.msd(tau), qtdmri_fit_sphere.msd(tau))
-    assert_almost_equal(qtdmri_fit_cart.qiv(tau), qtdmri_fit_sphere.qiv(tau))
+        assert_allclose(qtdmri_fit_cart.rtap(tau), qtdmri_fit_sphere.rtap(tau))
+        assert_allclose(qtdmri_fit_cart.rtpp(tau), qtdmri_fit_sphere.rtpp(tau))
+    assert_allclose(qtdmri_fit_cart.msd(tau), qtdmri_fit_sphere.msd(tau))
+    assert_allclose(qtdmri_fit_cart.qiv(tau), qtdmri_fit_sphere.qiv(tau))
 
     # ODF estimation is the same
     sphere = get_sphere()
@@ -291,10 +284,7 @@ def test_anisotropic_isotropic_equivalence(radial_order=4, time_order=2):
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        assert_array_almost_equal(
-            qtdmri_fit_cart.odf(sphere, tau, s=0),
-            qtdmri_fit_sphere.odf(sphere, tau, s=0),
-        )
+        assert_allclose(qtdmri_fit_cart.odf(sphere, tau, s=0), qtdmri_fit_sphere.odf(sphere, tau, s=0), )
 
 
 def test_cartesian_normalization(radial_order=4, time_order=2):
@@ -318,20 +308,14 @@ def test_cartesian_normalization(radial_order=4, time_order=2):
     )
     qtdmri_fit_aniso = qtdmri_mod_aniso.fit(S)
     qtdmri_fit_aniso_norm = qtdmri_mod_aniso_norm.fit(S)
-    assert_array_almost_equal(
-        qtdmri_fit_aniso.fitted_signal(), qtdmri_fit_aniso_norm.fitted_signal()
-    )
+    assert_allclose(qtdmri_fit_aniso.fitted_signal(), qtdmri_fit_aniso_norm.fitted_signal())
     rt_grid = qtdmri.create_rt_space_grid(5, 20e-3, 5, 0.02, 0.05)
     pdf_aniso = qtdmri_fit_aniso.pdf(rt_grid)
     pdf_aniso_norm = qtdmri_fit_aniso_norm.pdf(rt_grid)
-    assert_array_almost_equal(
-        pdf_aniso / pdf_aniso.max(), pdf_aniso_norm / pdf_aniso.max()
-    )
+    assert_allclose(pdf_aniso / pdf_aniso.max(), pdf_aniso_norm / pdf_aniso.max())
     norm_laplacian = qtdmri_fit_aniso.norm_of_laplacian_signal()
     norm_laplacian_norm = qtdmri_fit_aniso_norm.norm_of_laplacian_signal()
-    assert_array_almost_equal(
-        norm_laplacian / norm_laplacian, norm_laplacian_norm / norm_laplacian
-    )
+    assert_allclose(norm_laplacian / norm_laplacian, norm_laplacian_norm / norm_laplacian)
 
 
 def test_spherical_normalization(radial_order=4, time_order=2):
@@ -361,9 +345,7 @@ def test_spherical_normalization(radial_order=4, time_order=2):
         )
         qtdmri_fit = qtdmri_mod_aniso.fit(S)
         qtdmri_fit_norm = qtdmri_mod_aniso_norm.fit(S)
-        assert_array_almost_equal(
-            qtdmri_fit.fitted_signal(), qtdmri_fit_norm.fitted_signal()
-        )
+        assert_allclose(qtdmri_fit.fitted_signal(), qtdmri_fit_norm.fitted_signal())
 
     rt_grid = qtdmri.create_rt_space_grid(5, 20e-3, 5, 0.02, 0.05)
     with warnings.catch_warnings():
@@ -374,13 +356,11 @@ def test_spherical_normalization(radial_order=4, time_order=2):
         )
         pdf = qtdmri_fit.pdf(rt_grid)
         pdf_norm = qtdmri_fit_norm.pdf(rt_grid)
-    assert_array_almost_equal(pdf / pdf.max(), pdf_norm / pdf.max())
+    assert_allclose(pdf / pdf.max(), pdf_norm / pdf.max())
 
     norm_laplacian = qtdmri_fit.norm_of_laplacian_signal()
     norm_laplacian_norm = qtdmri_fit_norm.norm_of_laplacian_signal()
-    assert_array_almost_equal(
-        norm_laplacian / norm_laplacian, norm_laplacian_norm / norm_laplacian
-    )
+    assert_allclose(norm_laplacian / norm_laplacian, norm_laplacian_norm / norm_laplacian)
 
 
 def test_anisotropic_reduced_MSE(radial_order=0, time_order=0):
@@ -444,7 +424,7 @@ def test_calling_cartesian_laplacian_with_precomputed_matrices(
         part4_ut_precomp=part4_reg_mat_tau,
     )
     laplacian_matrix_regular = qtdmri.qtdmri_laplacian_reg_matrix(ind_mat, us, ut)
-    assert_array_almost_equal(laplacian_matrix_precomputed, laplacian_matrix_regular)
+    assert_allclose(laplacian_matrix_precomputed, laplacian_matrix_regular)
 
 
 def test_calling_spherical_laplacian_with_precomputed_matrices(
@@ -471,7 +451,7 @@ def test_calling_spherical_laplacian_with_precomputed_matrices(
     laplacian_matrix_regular = qtdmri.qtdmri_isotropic_laplacian_reg_matrix(
         ind_mat, us, ut
     )
-    assert_array_almost_equal(laplacian_matrix_precomp, laplacian_matrix_regular)
+    assert_allclose(laplacian_matrix_precomp, laplacian_matrix_regular)
 
 
 @needs_cvxpy
@@ -491,7 +471,7 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     E_q0_first_tau = fitted_signal[
         np.all([tau == tau.min(), gtab_4d.b0s_mask], axis=0)
     ].item()
-    assert_almost_equal(float(E_q0_first_tau), 1.0)
+    assert_allclose(float(E_q0_first_tau), 1.0)
 
     # now with cvxpy regularization cartesian
     qtdmri_mod_lap = qtdmri.QtdmriModel(
@@ -509,8 +489,8 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     E_q0_last_tau = fitted_signal[
         np.all([tau == tau.max(), gtab_4d.b0s_mask], axis=0)
     ].item()
-    assert_almost_equal(E_q0_first_tau, 1.0)
-    assert_almost_equal(E_q0_last_tau, 1.0)
+    assert_allclose(E_q0_first_tau, 1.0)
+    assert_allclose(E_q0_last_tau, 1.0)
 
     # check if odf in spherical harmonics for cartesian raises an error
     try:
@@ -542,15 +522,15 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     E_q0_last_tau = fitted_signal[
         np.all([tau == tau.max(), gtab_4d.b0s_mask], axis=0)
     ].item()
-    assert_almost_equal(float(E_q0_first_tau), 1.0)
-    assert_almost_equal(float(E_q0_last_tau), 1.0)
+    assert_allclose(float(E_q0_first_tau), 1.0)
+    assert_allclose(float(E_q0_last_tau), 1.0)
 
     # test if marginal ODF integral in sh is equal to one
     # Integral of Y00 spherical harmonic is 1 / (2 * np.sqrt(np.pi))
     # division with this results in normalization
     odf_sh = qtdmri_fit_lap.odf_sh(s=0, tau=tau.max())
     odf_integral = odf_sh[0] * (2 * np.sqrt(np.pi))
-    assert_almost_equal(odf_integral, 1.0)
+    assert_allclose(odf_integral, 1.0)
 
 
 @needs_cvxpy

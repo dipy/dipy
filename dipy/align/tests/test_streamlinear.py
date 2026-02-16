@@ -1,8 +1,6 @@
 import numpy as np
 from numpy.testing import (
     assert_,
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_equal,
     assert_raises,
 )
@@ -65,7 +63,7 @@ def fornix_streamlines(no_pts=12):
 def evaluate_convergence(bundle, new_bundle2):
     pts_static = np.concatenate(bundle, axis=0)
     pts_moved = np.concatenate(new_bundle2, axis=0)
-    assert_array_almost_equal(pts_static, pts_moved, 3)
+    assert_allclose(pts_static, pts_moved, atol=1e-3, rtol=0)
 
 
 def test_rigid_parallel_lines():
@@ -179,8 +177,8 @@ def test_stream_rigid():
     moved2 = transform_streamlines(moving, srm.matrix)
     moved3 = srm.transform(moving)
 
-    assert_array_almost_equal(moved[0], moved2[0], decimal=3)
-    assert_array_almost_equal(moved2[0], moved3[0], decimal=3)
+    assert_allclose(moved[0], moved2[0], atol=1e-3, rtol=0)
+    assert_allclose(moved2[0], moved3[0], atol=1e-3, rtol=0)
 
 
 def test_min_vs_min_fast_precision():
@@ -242,7 +240,7 @@ def test_efficient_bmd():
     streamlines2 = relist_streamlines(points2, offsets)
     D2 = distance_matrix_mdf(streamlines, streamlines2)
 
-    assert_array_almost_equal(D, D2)
+    assert_allclose(D, D2)
 
     cols = D2.shape[1]
     rows = D2.shape[0]
@@ -259,7 +257,7 @@ def test_efficient_bmd():
     dist2 = _bundle_minimum_distance(
         points, points2, len(offsets), len(offsets), a.shape[0]
     )
-    assert_almost_equal(dist, dist2)
+    assert_allclose(dist, dist2)
 
 
 @set_random_number_generator()
@@ -295,7 +293,7 @@ def test_openmp_locks(rng):
 
     dist2 = _bundle_minimum_distance(points, points2, len(offsets), len(offsets2), pts)
 
-    assert_almost_equal(dist1, dist2, 6)
+    assert_allclose(dist1, dist2, atol=1e-6, rtol=0)
 
 
 def test_from_to_rigid():
@@ -303,7 +301,7 @@ def test_from_to_rigid():
     mat = compose_matrix44(t)
     vec = decompose_matrix44(mat, size=6)
 
-    assert_array_almost_equal(t, vec)
+    assert_allclose(t, vec)
 
     t = np.array([0, 0, 0, 180, 0.0, 0.0])
 
@@ -312,7 +310,7 @@ def test_from_to_rigid():
 
     vec = decompose_matrix44(mat, size=6)
 
-    assert_array_almost_equal(-t, vec)
+    assert_allclose(-t, vec)
 
 
 def test_matrix44():
@@ -456,11 +454,11 @@ def test_compose_decompose_matrix44(rng):
     for _ in range(20):
         x0 = rng.random(12)
         mat = compose_matrix44(x0[:6])
-        assert_array_almost_equal(x0[:6], decompose_matrix44(mat, size=6))
+        assert_allclose(x0[:6], decompose_matrix44(mat, size=6))
         mat = compose_matrix44(x0[:7])
-        assert_array_almost_equal(x0[:7], decompose_matrix44(mat, size=7))
+        assert_allclose(x0[:7], decompose_matrix44(mat, size=7))
         mat = compose_matrix44(x0[:12])
-        assert_array_almost_equal(x0[:12], decompose_matrix44(mat, size=12))
+        assert_allclose(x0[:12], decompose_matrix44(mat, size=12))
 
     assert_raises(ValueError, decompose_matrix44, mat, size=20)
 

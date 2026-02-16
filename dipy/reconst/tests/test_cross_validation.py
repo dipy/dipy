@@ -52,7 +52,7 @@ def test_dti_xval():
     dm = dti.TensorModel(gtab, fit_method="LS")
     kf_xval = xval.kfold_xval(dm, S, 2)
     cod = xval.coeff_of_determination(S, kf_xval)
-    npt.assert_array_almost_equal(cod, np.ones(kf_xval.shape[:-1]) * 100)
+    npt.assert_allclose(cod, np.ones(kf_xval.shape[:-1]) * 100)
 
     # Test with 2D data for use of a mask
     S = np.array([[S, S], [S, S]])
@@ -60,7 +60,7 @@ def test_dti_xval():
     mask[1, 1] = 0
     kf_xval = xval.kfold_xval(dm, S, 2, mask=mask)
     cod2d = xval.coeff_of_determination(S, kf_xval)
-    npt.assert_array_almost_equal(np.round(cod2d[0, 0]), cod)
+    npt.assert_allclose(np.round(cod2d[0, 0]), cod)
 
 
 @set_random_number_generator(12345)
@@ -105,7 +105,7 @@ def test_csd_xval(rng):
     csd_cod = 97  # pre-computed by hand for this random seed
 
     # We're going to be really lenient here:
-    npt.assert_array_almost_equal(np.round(cod), csd_cod)
+    npt.assert_allclose(np.round(cod), csd_cod)
     # Test for sD data with more than one voxel for use of a mask:
     S = np.array([[S, S], [S, S]])
     mask = np.ones(S.shape[:-1], dtype=bool)
@@ -121,7 +121,7 @@ def test_csd_xval(rng):
         )
 
     cod = xval.coeff_of_determination(S, kf_xval)
-    npt.assert_array_almost_equal(np.round(cod[0]), csd_cod)
+    npt.assert_allclose(np.round(cod[0]), csd_cod)
 
 
 def test_no_predict():

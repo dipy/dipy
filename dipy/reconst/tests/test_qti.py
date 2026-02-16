@@ -25,8 +25,8 @@ def test_from_3x3_to_6x1():
             [3.53553391, 2.82842712, 3],
         )
     )
-    npt.assert_array_almost_equal(qti.from_3x3_to_6x1(T), V)
-    npt.assert_array_almost_equal(qti.from_3x3_to_6x1(qti.from_6x1_to_3x3(V)), V)
+    npt.assert_allclose(qti.from_3x3_to_6x1(T), V)
+    npt.assert_allclose(qti.from_3x3_to_6x1(qti.from_6x1_to_3x3(V)), V)
     npt.assert_raises(ValueError, qti.from_3x3_to_6x1, T[0:1])
     assert_warns(Warning, qti.from_3x3_to_6x1, T + np.arange(3))
 
@@ -41,8 +41,8 @@ def test_from_6x1_to_3x3():
             [3.53553391, 2.82842712, 3],
         )
     )
-    npt.assert_array_almost_equal(qti.from_6x1_to_3x3(V), T)
-    npt.assert_array_almost_equal(qti.from_6x1_to_3x3(qti.from_3x3_to_6x1(T)), T)
+    npt.assert_allclose(qti.from_6x1_to_3x3(V), T)
+    npt.assert_allclose(qti.from_6x1_to_3x3(qti.from_3x3_to_6x1(T)), T)
     npt.assert_raises(ValueError, qti.from_6x1_to_3x3, T)
 
 
@@ -59,8 +59,8 @@ def test_from_6x6_to_21x1():
             [6.36396103, 8.48528137, 10.60660172, 14.8492424, 14.14213562, 18],
         )
     )
-    npt.assert_array_almost_equal(qti.from_6x6_to_21x1(T), V)
-    npt.assert_array_almost_equal(qti.from_6x6_to_21x1(qti.from_21x1_to_6x6(V)), V)
+    npt.assert_allclose(qti.from_6x6_to_21x1(T), V)
+    npt.assert_allclose(qti.from_6x6_to_21x1(qti.from_21x1_to_6x6(V)), V)
     npt.assert_raises(ValueError, qti.from_6x6_to_21x1, T[0:1])
     assert_warns(Warning, qti.from_6x6_to_21x1, T + np.arange(6))
 
@@ -78,8 +78,8 @@ def test_from_21x1_to_6x6():
             [6.36396103, 8.48528137, 10.60660172, 14.8492424, 14.14213562, 18],
         )
     )
-    npt.assert_array_almost_equal(qti.from_21x1_to_6x6(V), T)
-    npt.assert_array_almost_equal(qti.from_21x1_to_6x6(qti.from_6x6_to_21x1(T)), T)
+    npt.assert_allclose(qti.from_21x1_to_6x6(V), T)
+    npt.assert_allclose(qti.from_21x1_to_6x6(qti.from_6x6_to_21x1(T)), T)
     npt.assert_raises(ValueError, qti.from_21x1_to_6x6, T)
 
 
@@ -94,10 +94,8 @@ def test_cvxpy_1x6_to_3x3():
                 [3.53553391, 2.82842712, 3],
             )
         )
-        npt.assert_array_almost_equal(qti.cvxpy_1x6_to_3x3(V).value, T)
-        npt.assert_array_almost_equal(
-            qti.cvxpy_1x6_to_3x3(qti.from_3x3_to_6x1(T)).value, T
-        )
+        npt.assert_allclose(qti.cvxpy_1x6_to_3x3(V).value, T)
+        npt.assert_allclose(qti.cvxpy_1x6_to_3x3(qti.from_3x3_to_6x1(T)).value, T)
 
 
 def test_cvxpy_1x21_to_6x6():
@@ -114,10 +112,8 @@ def test_cvxpy_1x21_to_6x6():
                 [6.36396103, 8.48528137, 10.60660172, 14.8492424, 14.14213562, 18],
             )
         )
-        npt.assert_array_almost_equal(qti.cvxpy_1x21_to_6x6(V).value, T)
-        npt.assert_array_almost_equal(
-            qti.cvxpy_1x21_to_6x6(qti.from_6x6_to_21x1(T)).value, T
-        )
+        npt.assert_allclose(qti.cvxpy_1x21_to_6x6(V).value, T)
+        npt.assert_allclose(qti.cvxpy_1x21_to_6x6(qti.from_6x6_to_21x1(T)).value, T)
 
 
 def test_helper_tensors():
@@ -173,7 +169,7 @@ def test_dtd_covariance():
     DTD = _isotropic_DTD()
     C = np.zeros((6, 6))
     C[0:3, 0:3] = 0.98116667
-    npt.assert_almost_equal(qti.dtd_covariance(DTD), C)
+    npt.assert_allclose(qti.dtd_covariance(DTD), C)
 
     # Covariance of anisotropic tensors (Figure 1 in Westin's paper)
     DTD = _anisotropic_DTD()
@@ -185,7 +181,7 @@ def test_dtd_covariance():
             [-2 / 45, -2 / 45, 4 / 45],
         ]
     )
-    npt.assert_almost_equal(qti.dtd_covariance(DTD), C)
+    npt.assert_allclose(qti.dtd_covariance(DTD), C)
 
 
 def test_qti_signal():
@@ -227,35 +223,17 @@ def test_qti_signal():
     # Isotropic diffusion and no 2nd order effects
     D = np.eye(3)
     C = np.zeros((6, 6))
-    npt.assert_almost_equal(
-        qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="LTE"), D, C),
-        np.ones(6) * np.exp(-1),
-    )
-    npt.assert_almost_equal(
-        qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="LTE"), D, C),
-        qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="PTE"), D, C),
-    )
-    npt.assert_almost_equal(
-        qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="LTE"), D, C),
-        qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="STE"), D, C),
-    )
+    npt.assert_allclose(qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="LTE"), D, C), np.ones(6) * np.exp(-1), )
+    npt.assert_allclose(qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="LTE"), D, C), qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="PTE"), D, C), )
+    npt.assert_allclose(qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="LTE"), D, C), qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="STE"), D, C), )
 
     # Anisotropic sticks aligned with the bvecs
     DTD = _anisotropic_DTD()
     D = np.mean(DTD, axis=0)
     C = qti.dtd_covariance(DTD)
-    npt.assert_almost_equal(
-        qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="LTE"), D, C),
-        np.ones(6) * 0.7490954,
-    )
-    npt.assert_almost_equal(
-        qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="PTE"), D, C),
-        np.ones(6) * 0.72453716,
-    )
-    npt.assert_almost_equal(
-        qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="STE"), D, C),
-        np.ones(6) * 0.71653131,
-    )
+    npt.assert_allclose(qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="LTE"), D, C), np.ones(6) * 0.7490954, )
+    npt.assert_allclose(qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="PTE"), D, C), np.ones(6) * 0.72453716, )
+    npt.assert_allclose(qti.qti_signal(gradient_table(bvals, bvecs=bvecs, btens="STE"), D, C), np.ones(6) * 0.71653131, )
 
 
 def test_design_matrix():
@@ -265,9 +243,7 @@ def test_design_matrix():
     btens[0, 2, 2] = 0
     btens[1, 0, 0] = 0
     X = qti.design_matrix(btens)
-    npt.assert_almost_equal(
-        X,
-        np.array(
+    npt.assert_allclose(X, np.array(
             [
                 [1.0, 1.0, 1.0],
                 [-1.0, -0.0, -1.0],
@@ -298,8 +274,7 @@ def test_design_matrix():
                 [0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0],
             ]
-        ).T,
-    )
+        ).T, )
 
 
 def _qti_gtab(rng):
@@ -351,18 +326,16 @@ def test_ls_sdp_fits(rng):
         ).T
         data = qti.qti_signal(gtab, D, C)[np.newaxis, :]
         mask = np.ones(1).astype(bool)
-        npt.assert_almost_equal(qti._ols_fit(data, mask, X), params)
-        npt.assert_almost_equal(qti._wls_fit(data, mask, X), params)
+        npt.assert_allclose(qti._ols_fit(data, mask, X), params)
+        npt.assert_allclose(qti._wls_fit(data, mask, X), params)
         data = np.vstack((data, data))
         mask = np.ones(2).astype(bool)
         params = np.vstack((params, params))
-        npt.assert_almost_equal(qti._ols_fit(data, mask, X, step=1), params)
-        npt.assert_almost_equal(qti._wls_fit(data, mask, X, step=1), params)
+        npt.assert_allclose(qti._ols_fit(data, mask, X, step=1), params)
+        npt.assert_allclose(qti._wls_fit(data, mask, X, step=1), params)
 
         if have_cvxpy:
-            npt.assert_almost_equal(
-                qti._sdpdc_fit(data, mask, X, cvxpy_solver="SCS"), params, decimal=1
-            )
+            npt.assert_allclose(qti._sdpdc_fit(data, mask, X, cvxpy_solver="SCS"), params, atol=1e-1, rtol=0)
 
 
 @set_random_number_generator(123)
@@ -379,7 +352,7 @@ def test_qti_model(rng):
     # Design matrix calculation
     gtab = _qti_gtab(rng)
     qtimodel = qti.QtiModel(gtab)
-    npt.assert_almost_equal(qtimodel.X, qti.design_matrix(gtab.btens))
+    npt.assert_allclose(qtimodel.X, qti.design_matrix(gtab.btens))
 
 
 @set_random_number_generator(4321)
@@ -478,22 +451,22 @@ def test_qti_fit(rng):
                     qtifit.predict,
                     gradient_table(np.zeros(3), bvecs=np.zeros((3, 3))),
                 )
-                npt.assert_almost_equal(qtifit.predict(gtab), data, decimal=1)
-                npt.assert_almost_equal(qtifit.S0_hat, S0, decimal=2)
-                npt.assert_almost_equal(qtifit.md, md, decimal=2)
-                npt.assert_almost_equal(qtifit.v_md, v_md, decimal=2)
-                npt.assert_almost_equal(qtifit.v_shear, v_shear, decimal=2)
-                npt.assert_almost_equal(qtifit.v_iso, v_iso, decimal=2)
-                npt.assert_almost_equal(qtifit.c_md, c_md, decimal=2)
-                npt.assert_almost_equal(qtifit.c_mu, c_mu, decimal=2)
-                npt.assert_almost_equal(qtifit.ufa, ufa, decimal=2)
-                npt.assert_almost_equal(qtifit.c_m, c_m, decimal=2)
-                npt.assert_almost_equal(qtifit.fa, fa, decimal=2)
-                npt.assert_almost_equal(qtifit.c_c, c_c, decimal=2)
-                npt.assert_almost_equal(qtifit.mk, mk, decimal=2)
-                npt.assert_almost_equal(qtifit.k_bulk, k_bulk, decimal=2)
-                npt.assert_almost_equal(qtifit.k_shear, k_shear, decimal=2)
-                npt.assert_almost_equal(qtifit.k_mu, k_mu, decimal=2)
+                npt.assert_allclose(qtifit.predict(gtab), data, atol=1e-1, rtol=0)
+                npt.assert_allclose(qtifit.S0_hat, S0, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.md, md, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.v_md, v_md, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.v_shear, v_shear, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.v_iso, v_iso, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.c_md, c_md, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.c_mu, c_mu, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.ufa, ufa, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.c_m, c_m, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.fa, fa, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.c_c, c_c, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.mk, mk, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.k_bulk, k_bulk, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.k_shear, k_shear, atol=1e-2, rtol=0)
+                npt.assert_allclose(qtifit.k_mu, k_mu, atol=1e-2, rtol=0)
     else:
         for fit_method in ["OLS", "WLS"]:
             qtimodel = qti.QtiModel(gtab, fit_method=fit_method)
@@ -507,19 +480,19 @@ def test_qti_fit(rng):
                     qtifit.predict,
                     gradient_table(np.zeros(3), bvecs=np.zeros((3, 3))),
                 )
-                npt.assert_almost_equal(qtifit.predict(gtab), data)
-                npt.assert_almost_equal(qtifit.S0_hat, S0)
-                npt.assert_almost_equal(qtifit.md, md)
-                npt.assert_almost_equal(qtifit.v_md, v_md)
-                npt.assert_almost_equal(qtifit.v_shear, v_shear)
-                npt.assert_almost_equal(qtifit.v_iso, v_iso)
-                npt.assert_almost_equal(qtifit.c_md, c_md)
-                npt.assert_almost_equal(qtifit.c_mu, c_mu)
-                npt.assert_almost_equal(qtifit.ufa, ufa)
-                npt.assert_almost_equal(qtifit.c_m, c_m)
-                npt.assert_almost_equal(qtifit.fa, fa)
-                npt.assert_almost_equal(qtifit.c_c, c_c)
-                npt.assert_almost_equal(qtifit.mk, mk)
-                npt.assert_almost_equal(qtifit.k_bulk, k_bulk)
-                npt.assert_almost_equal(qtifit.k_shear, k_shear)
-                npt.assert_almost_equal(qtifit.k_mu, k_mu)
+                npt.assert_allclose(qtifit.predict(gtab), data)
+                npt.assert_allclose(qtifit.S0_hat, S0)
+                npt.assert_allclose(qtifit.md, md)
+                npt.assert_allclose(qtifit.v_md, v_md)
+                npt.assert_allclose(qtifit.v_shear, v_shear)
+                npt.assert_allclose(qtifit.v_iso, v_iso)
+                npt.assert_allclose(qtifit.c_md, c_md)
+                npt.assert_allclose(qtifit.c_mu, c_mu)
+                npt.assert_allclose(qtifit.ufa, ufa)
+                npt.assert_allclose(qtifit.c_m, c_m)
+                npt.assert_allclose(qtifit.fa, fa)
+                npt.assert_allclose(qtifit.c_c, c_c)
+                npt.assert_allclose(qtifit.mk, mk)
+                npt.assert_allclose(qtifit.k_bulk, k_bulk)
+                npt.assert_allclose(qtifit.k_shear, k_shear)
+                npt.assert_allclose(qtifit.k_mu, k_mu)

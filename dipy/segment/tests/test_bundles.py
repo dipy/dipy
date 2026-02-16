@@ -1,7 +1,7 @@
 import warnings
 
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_equal
+from numpy.testing import assert_allclose, assert_equal
 
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
@@ -123,7 +123,7 @@ def test_rb_slr_threads(rng):
     # check if the bundle is recognized correctly
     # multi-threading prevent an exact match
     for row in D:
-        assert_almost_equal(row.min(), 0, decimal=4)
+        assert_allclose(row.min(), 0, atol=1e-4, rtol=0)
 
 
 def test_rb_no_verbose_and_mam():

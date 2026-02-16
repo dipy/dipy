@@ -1,8 +1,6 @@
 import numpy as np
 from numpy.testing import (
     assert_,
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_equal,
 )
 
@@ -31,8 +29,8 @@ def test_inv_nchi():
     lambdaMinus = _inv_nchi_cdf(N, K, alpha / 2)
     lambdaPlus = _inv_nchi_cdf(N, K, 1 - alpha / 2)
 
-    assert_almost_equal(lambdaMinus, 6.464855180579397)
-    assert_almost_equal(lambdaPlus, 9.722849086419043)
+    assert_allclose(lambdaMinus, 6.464855180579397)
+    assert_allclose(lambdaPlus, 9.722849086419043)
 
 
 @set_random_number_generator()
@@ -43,7 +41,7 @@ def test_piesno(rng):
     sigma = piesno(
         test_piesno_data, N=8, alpha=0.01, step=1, eps=1e-10, return_mask=False
     )
-    assert_almost_equal(sigma, 0.010749458025559)
+    assert_allclose(sigma, 0.010749458025559)
 
     noise1 = (rng.standard_normal((100, 100, 100)) * 50) + 10
     noise2 = (rng.standard_normal((100, 100, 100)) * 50) + 10
@@ -126,7 +124,7 @@ def test_piesno_type():
         data[:, i, :] = i * 26
 
     sigma = piesno(data, N=2, alpha=0.01, step=1, eps=1e-10, return_mask=False)
-    assert_almost_equal(sigma, 79.970003117424739)
+    assert_allclose(sigma, 79.970003117424739)
 
 
 def test_estimate_sigma():
@@ -145,47 +143,39 @@ def test_estimate_sigma():
     arr = np.zeros((3, 3, 3))
     arr[0, 0, 0] = 1
     sigma = estimate_sigma(arr, disable_background_masking=False, N=1)
-    assert_array_almost_equal(
-        sigma, (0.10286889997472792 / np.sqrt(0.42920367320510366))
-    )
+    assert_allclose(sigma, (0.10286889997472792 / np.sqrt(0.42920367320510366)))
 
     arr = np.zeros((3, 3, 3, 3))
     arr[0, 0, 0] = 1
     sigma = estimate_sigma(arr, disable_background_masking=False, N=1)
-    assert_array_almost_equal(
-        sigma,
-        np.array(
+    assert_allclose(sigma, np.array(
             [
                 0.10286889997472792 / np.sqrt(0.42920367320510366),
                 0.10286889997472792 / np.sqrt(0.42920367320510366),
                 0.10286889997472792 / np.sqrt(0.42920367320510366),
             ]
-        ),
-    )
+        ), )
 
     arr = np.zeros((3, 3, 3))
     arr[0, 0, 0] = 1
     sigma = estimate_sigma(arr, disable_background_masking=True, N=4)
-    assert_array_almost_equal(sigma, 0.46291005 / np.sqrt(0.4834941393603609))
+    assert_allclose(sigma, 0.46291005 / np.sqrt(0.4834941393603609))
 
     arr = np.zeros((3, 3, 3))
     arr[0, 0, 0] = 1
     sigma = estimate_sigma(arr, disable_background_masking=True, N=0)
-    assert_array_almost_equal(sigma, 0.46291005 / np.sqrt(1))
+    assert_allclose(sigma, 0.46291005 / np.sqrt(1))
     arr = np.zeros((3, 3, 3, 3))
 
     arr[0, 0, 0] = 1
     sigma = estimate_sigma(arr, disable_background_masking=True, N=12)
-    assert_array_almost_equal(
-        sigma,
-        np.array(
+    assert_allclose(sigma, np.array(
             [
                 0.46291005 / np.sqrt(0.4946862482541263),
                 0.46291005 / np.sqrt(0.4946862482541263),
                 0.46291005 / np.sqrt(0.4946862482541263),
             ]
-        ),
-    )
+        ), )
 
 
 @set_random_number_generator(1984)
@@ -224,7 +214,7 @@ def test_pca_noise_estimate(rng):
                             images_as_samples=images_as_samples,
                         )
                         # print("sigma_est:", sigma_est)
-                        assert_array_almost_equal(np.mean(sigma_est), sigma, decimal=1)
+                        assert_allclose(np.mean(sigma_est), sigma, atol=1e-1, rtol=0)
 
         # check that Rician corrects produces larger noise estimate
         assert_(

@@ -29,13 +29,13 @@ def test_pmf_val(rng):
         pmf = pmfgen.get_pmf(point)
         pmf_2 = pmfgen.get_pmf(point, out)
 
-        npt.assert_array_almost_equal(pmf, out)
-        npt.assert_array_almost_equal(pmf, pmf_2)
+        npt.assert_allclose(pmf, out)
+        npt.assert_allclose(pmf, pmf_2)
         # Create a direction vector close to the vertex idx
         xyz = sphere.vertices[idx] + rng.random([3]) / 100
         pmf_idx = pmfgen.get_pmf_value(point, xyz)
         # Test that the pmf sampled for the direction xyz is correct
-        npt.assert_array_almost_equal(pmf[idx], pmf_idx)
+        npt.assert_allclose(pmf[idx], pmf_idx)
 
 
 def test_pmf_from_sh():
@@ -53,7 +53,7 @@ def test_pmf_from_sh():
     pmf = pmfgen.get_pmf(np.array([0, 0, 0], dtype="float"))
     out = pmfgen.get_pmf(np.array([0, 0, 0], dtype="float"), out)
     npt.assert_equal(np.sum(pmf) > 0, True)
-    npt.assert_array_almost_equal(pmf, out)
+    npt.assert_allclose(pmf, out)
 
     # Test that the pmf is 0 for invalid Points
     npt.assert_array_equal(
@@ -75,7 +75,7 @@ def test_pmf_from_array():
     pmf = pmfgen.get_pmf(np.array([0, 0, 0], dtype="float"))
     out = pmfgen.get_pmf(np.array([0, 0, 0], dtype="float"), out)
     npt.assert_equal(np.sum(pmf) > 0, True)
-    npt.assert_array_almost_equal(pmf, out)
+    npt.assert_allclose(pmf, out)
 
     # Test that the pmf is 0 for invalid Points
     npt.assert_array_equal(

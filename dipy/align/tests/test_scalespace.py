@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_raises
+from numpy.testing import assert_allclose, assert_array_equal, assert_raises
 import scipy as sp
 
 from dipy.align import floating
@@ -47,26 +47,26 @@ def test_scale_space():
                     expected.max() - expected.min()
                 )
                 actual = ss.get_image(level)
-                assert_array_almost_equal(actual, expected)
+                assert_allclose(actual, expected)
 
                 # Verify scalings and spacings are consistent
                 spacings = ss.get_spacing(level)
                 scalings = ss.get_scaling(level)
                 expected = ss.get_spacing(0) * scalings
                 actual = ss.get_spacing(level)
-                assert_array_almost_equal(actual, expected)
+                assert_allclose(actual, expected)
 
                 # Verify affine and affine_inv are consistent
                 affine = ss.get_affine(level)
                 affine_inv = ss.get_affine_inv(level)
                 expected = np.eye(1 + dim)
                 actual = affine.dot(affine_inv)
-                assert_array_almost_equal(actual, expected)
+                assert_allclose(actual, expected)
 
                 # Verify affine consistent with spacings
                 exp_dir, expected_sp = get_direction_and_spacings(affine, dim)
                 actual_sp = spacings
-                assert_array_almost_equal(actual_sp, expected_sp)
+                assert_allclose(actual_sp, expected_sp)
 
 
 @set_random_number_generator(2022966)

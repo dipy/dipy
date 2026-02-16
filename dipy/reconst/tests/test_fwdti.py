@@ -1,7 +1,7 @@
 """Testing Free Water Elimination Model"""
 
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_array_almost_equal, assert_raises
+from numpy.testing import assert_allclose, assert_raises
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
@@ -102,9 +102,9 @@ def test_fwdti_singlevoxel():
     Ffwe = fwefit.f
     MDfwe = fwefit.md
 
-    assert_almost_equal(FAdti, FAfwe, decimal=3)
-    assert_almost_equal(Ffwe, gtf, decimal=3)
-    assert_almost_equal(MDfwe, MDdti, decimal=3)
+    assert_allclose(FAdti, FAfwe, atol=1e-3, rtol=0)
+    assert_allclose(Ffwe, gtf, atol=1e-3, rtol=0)
+    assert_allclose(MDfwe, MDdti, atol=1e-3, rtol=0)
 
     # Test non-linear fit
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, fit_method="NLS", cholesky=False)
@@ -113,9 +113,9 @@ def test_fwdti_singlevoxel():
     Ffwe = fwefit.f
     MDfwe = fwefit.md
 
-    assert_almost_equal(FAdti, FAfwe)
-    assert_almost_equal(Ffwe, gtf)
-    assert_almost_equal(MDfwe, MDdti)
+    assert_allclose(FAdti, FAfwe)
+    assert_allclose(Ffwe, gtf)
+    assert_allclose(MDfwe, MDdti)
 
     # Test cholesky
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, fit_method="NLS", cholesky=True)
@@ -124,9 +124,9 @@ def test_fwdti_singlevoxel():
     Ffwe = fwefit.f
     MDfwe = fwefit.md
 
-    assert_almost_equal(FAdti, FAfwe)
-    assert_almost_equal(Ffwe, gtf)
-    assert_almost_equal(MDfwe, MDfwe)
+    assert_allclose(FAdti, FAfwe)
+    assert_allclose(Ffwe, gtf)
+    assert_allclose(MDfwe, MDfwe)
 
 
 def test_fwdti_precision():
@@ -147,9 +147,9 @@ def test_fwdti_precision():
     Ffwe = fwefit.f
     MDfwe = fwefit.md
 
-    assert_almost_equal(FAdti, FAfwe, decimal=3)
-    assert_almost_equal(Ffwe, gtf, decimal=3)
-    assert_almost_equal(MDfwe, MDdti, decimal=5)
+    assert_allclose(FAdti, FAfwe, atol=1e-3, rtol=0)
+    assert_allclose(Ffwe, gtf, atol=1e-3, rtol=0)
+    assert_allclose(MDfwe, MDdti, atol=1e-5, rtol=0)
 
 
 def test_fwdti_multi_voxel():
@@ -159,9 +159,9 @@ def test_fwdti_multi_voxel():
     Ffwe = fwefit.f
     MDfwe = fwefit.md
 
-    assert_almost_equal(FAfwe, FAref)
-    assert_almost_equal(Ffwe, GTF)
-    assert_almost_equal(MDfwe, MDref)
+    assert_allclose(FAfwe, FAref)
+    assert_allclose(Ffwe, GTF)
+    assert_allclose(MDfwe, MDref)
 
     # Test Cholesky
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, fit_method="NLS", cholesky=True)
@@ -170,9 +170,9 @@ def test_fwdti_multi_voxel():
     Ffwe = fwefit.f
     MDfwe = fwefit.md
 
-    assert_almost_equal(FAfwe, FAref)
-    assert_almost_equal(Ffwe, GTF)
-    assert_almost_equal(MDfwe, MDref)
+    assert_allclose(FAfwe, FAref)
+    assert_allclose(Ffwe, GTF)
+    assert_allclose(MDfwe, MDref)
 
 
 def test_fwdti_predictions():
@@ -192,26 +192,26 @@ def test_fwdti_predictions():
     R = R.reshape(9)
     model_params = np.concatenate(([0.0017, 0.0003, 0.0003], R, [gtf]), axis=0)
     S_pred1 = fwdti_prediction(model_params, gtab_2s, S0=100)
-    assert_array_almost_equal(S_pred1, S_conta)
+    assert_allclose(S_pred1, S_conta)
 
     # Testing in model class
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s)
     S_pred2 = fwdm.predict(model_params, S0=100)
-    assert_array_almost_equal(S_pred2, S_conta)
+    assert_allclose(S_pred2, S_conta)
 
     # Testing in fit class
     fwefit = fwdm.fit(S_conta)
     S_pred3 = fwefit.predict(gtab_2s, S0=100)
-    assert_array_almost_equal(S_pred3, S_conta, decimal=5)
+    assert_allclose(S_pred3, S_conta, atol=1e-5, rtol=0)
 
     # Multi voxel simulation
     S_pred1 = fwdti_prediction(model_params_mv, gtab_2s, S0=100)  # function
-    assert_array_almost_equal(S_pred1, DWI)
+    assert_allclose(S_pred1, DWI)
     S_pred2 = fwdm.predict(model_params_mv, S0=100)  # Model class
-    assert_array_almost_equal(S_pred2, DWI)
+    assert_allclose(S_pred2, DWI)
     fwefit = fwdm.fit(DWI)  # Fit class
     S_pred3 = fwefit.predict(gtab_2s, S0=100)
-    assert_array_almost_equal(S_pred3, DWI)
+    assert_allclose(S_pred3, DWI)
 
 
 def test_fwdti_errors():
@@ -231,8 +231,8 @@ def test_fwdti_errors():
     correct_mask[0, :, :] = 1
     correct_mask = correct_mask > 0
     fwdtiF = fwdtiM.fit(DWI, mask=correct_mask)
-    assert_array_almost_equal(fwdtiF.fa, FAref)
-    assert_array_almost_equal(fwdtiF.f, GTF)
+    assert_allclose(fwdtiF.fa, FAref)
+    assert_allclose(fwdtiF.f, GTF)
 
     # 4th error - if a sigma is selected by no value of sigma is given
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, fit_method="NLS", weighting="sigma")
@@ -256,12 +256,12 @@ def test_fwdti_restore():
         gtab_2s, fit_method="NLS", weighting="sigma", sigma=4
     )
     fwdtiF = fwdm.fit(S_conta)
-    assert_array_almost_equal(fwdtiF.fa, FAdti)
-    assert_array_almost_equal(fwdtiF.f, gtf)
+    assert_allclose(fwdtiF.fa, FAdti)
+    assert_allclose(fwdtiF.f, gtf)
     fwdm2 = fwdti.FreeWaterTensorModel(gtab_2s, fit_method="NLS", weighting="gmm")
     fwdtiF2 = fwdm2.fit(S_conta)
-    assert_array_almost_equal(fwdtiF2.fa, FAdti)
-    assert_array_almost_equal(fwdtiF2.f, gtf)
+    assert_allclose(fwdtiF2.fa, FAdti)
+    assert_allclose(fwdtiF2.f, gtf)
 
 
 def test_cholesky_functions():
@@ -270,7 +270,7 @@ def test_cholesky_functions():
     )
     R = lower_triangular_to_cholesky(dt)
     tensor = cholesky_to_lower_triangular(R)
-    assert_array_almost_equal(dt, tensor)
+    assert_allclose(dt, tensor)
 
 
 def test_fwdti_jac_multi_voxel():
@@ -283,7 +283,7 @@ def test_fwdti_jac_multi_voxel():
     )
     fwefit = fwdm.fit(DWI[0, :, :])
     Ffwe = fwefit.f
-    assert_array_almost_equal(Ffwe, GTF[0, :])
+    assert_allclose(Ffwe, GTF[0, :])
 
     # with f transform
     fwdm = fwdti.FreeWaterTensorModel(
@@ -291,21 +291,21 @@ def test_fwdti_jac_multi_voxel():
     )
     fwefit = fwdm.fit(DWI[0, :, :])
     Ffwe = fwefit.f
-    assert_array_almost_equal(Ffwe, GTF[0, :])
+    assert_allclose(Ffwe, GTF[0, :])
 
 
 def test_standalone_functions():
     # WLS procedure
     params = wls_fit_tensor(gtab_2s, DWI)
-    assert_array_almost_equal(params[..., 12], GTF)
+    assert_allclose(params[..., 12], GTF)
     fa = fractional_anisotropy(params[..., :3])
-    assert_array_almost_equal(fa, FAref)
+    assert_allclose(fa, FAref)
 
     # NLS procedure
     params = nls_fit_tensor(gtab_2s, DWI)
-    assert_array_almost_equal(params[..., 12], GTF)
+    assert_allclose(params[..., 12], GTF)
     fa = fractional_anisotropy(params[..., :3])
-    assert_array_almost_equal(fa, FAref)
+    assert_allclose(fa, FAref)
 
 
 def test_md_regularization():
@@ -323,9 +323,9 @@ def test_md_regularization():
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, fit_method="NLS")
     fwefit = fwdm.fit(S_conta)
 
-    assert_array_almost_equal(fwefit.fa, 0.0)
-    assert_array_almost_equal(fwefit.md, 0.0)
-    assert_array_almost_equal(fwefit.f, 1.0)
+    assert_allclose(fwefit.fa, 0.0)
+    assert_allclose(fwefit.md, 0.0)
+    assert_allclose(fwefit.f, 1.0)
 
     # multi voxel
     DWI[0, 1, 1] = S_conta
@@ -334,9 +334,9 @@ def test_md_regularization():
     MDref[0, 1, 1] = 0
 
     fwefit = fwdm.fit(DWI)
-    assert_array_almost_equal(fwefit.fa, FAref)
-    assert_array_almost_equal(fwefit.md, MDref)
-    assert_array_almost_equal(fwefit.f, GTF)
+    assert_allclose(fwefit.fa, FAref)
+    assert_allclose(fwefit.md, MDref)
+    assert_allclose(fwefit.f, GTF)
 
 
 def test_negative_s0():
@@ -354,9 +354,9 @@ def test_negative_s0():
     S_conta[gtab_2s.bvals == 0] = -100
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, fit_method="NLS")
     fwefit = fwdm.fit(S_conta)
-    assert_array_almost_equal(fwefit.fa, 0.0)
-    assert_array_almost_equal(fwefit.md, 0.0)
-    assert_array_almost_equal(fwefit.f, 0.0)
+    assert_allclose(fwefit.fa, 0.0)
+    assert_allclose(fwefit.md, 0.0)
+    assert_allclose(fwefit.f, 0.0)
 
     # multi voxel
     DWI[0, 0, 1, gtab_2s.bvals == 0] = -100
@@ -364,6 +364,6 @@ def test_negative_s0():
     FAref[0, 0, 1] = 0
     MDref[0, 0, 1] = 0
     fwefit = fwdm.fit(DWI)
-    assert_array_almost_equal(fwefit.fa, FAref)
-    assert_array_almost_equal(fwefit.md, MDref)
-    assert_array_almost_equal(fwefit.f, GTF)
+    assert_allclose(fwefit.fa, FAref)
+    assert_allclose(fwefit.md, MDref)
+    assert_allclose(fwefit.f, GTF)

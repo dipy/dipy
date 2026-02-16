@@ -144,7 +144,7 @@ def test_split_flow():
         assert_true(Path(split_path).is_file())
         split_data, split_affine = load_nifti(split_path)
         npt.assert_equal(split_data.shape, volume[..., 0].shape)
-        npt.assert_array_almost_equal(split_affine, affine)
+        npt.assert_allclose(split_affine, affine)
 
 
 def test_concatenate_flow():
@@ -203,7 +203,7 @@ def test_convert_sh_flow():
         img_out, _ = load_nifti(filepath_out)
 
         # Compare
-        npt.assert_array_almost_equal(img_out, expected_img_out)
+        npt.assert_allclose(img_out, expected_img_out)
 
 
 def test_convert_tractogram_flow():
@@ -272,7 +272,7 @@ def test_convert_tensors_flow():
         )
 
         img_out, _ = load_nifti(filepath_out)
-        npt.assert_array_almost_equal(img_out, expected_img_out)
+        npt.assert_allclose(img_out, expected_img_out)
 
 
 def generate_random_pam():
@@ -315,9 +315,9 @@ def test_niftis_to_pam_flow():
 
         res_pam = load_pam(pam_file)
         npt.assert_array_equal(pam.affine, res_pam.affine)
-        npt.assert_array_almost_equal(pam.peak_dirs, res_pam.peak_dirs)
-        npt.assert_array_almost_equal(pam.peak_values, res_pam.peak_values)
-        npt.assert_array_almost_equal(pam.peak_indices, res_pam.peak_indices)
+        npt.assert_allclose(pam.peak_dirs, res_pam.peak_dirs)
+        npt.assert_allclose(pam.peak_values, res_pam.peak_values)
+        npt.assert_allclose(pam.peak_indices, res_pam.peak_indices)
 
 
 def test_tensor_to_pam_flow():
@@ -344,8 +344,8 @@ def test_tensor_to_pam_flow():
 
         pam = load_pam(pam_file)
         npt.assert_array_equal(pam.affine, affine)
-        npt.assert_array_almost_equal(pam.peak_dirs[..., :3, :], df.evecs)
-        npt.assert_array_almost_equal(pam.peak_values[..., :3], df.evals)
+        npt.assert_allclose(pam.peak_dirs[..., :3, :], df.evecs)
+        npt.assert_allclose(pam.peak_values[..., :3], df.evals)
 
 
 def test_pam_to_niftis_flow():

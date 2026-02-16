@@ -815,25 +815,25 @@ def test_path_length(rng):
     pl = path_length(streamlines, np.eye(4), aoi)
     expected = x.copy() * np.sqrt(3)
     # expected[0] = np.inf
-    npt.assert_array_almost_equal(pl[x, x, x], expected)
+    npt.assert_allclose(pl[x, x, x], expected)
 
     aoi[19, 19, 19] = 1
     pl = path_length(streamlines, np.eye(4), aoi)
     expected = np.minimum(expected, expected[::-1])
-    npt.assert_array_almost_equal(pl[x, x, x], expected)
+    npt.assert_allclose(pl[x, x, x], expected)
 
     aoi[19, 19, 19] = 0
     aoi[1, 1, 1] = 1
     pl = path_length(streamlines, np.eye(4), aoi)
     expected = (x - 1) * np.sqrt(3)
     expected[0] = 0
-    npt.assert_array_almost_equal(pl[x, x, x], expected)
+    npt.assert_allclose(pl[x, x, x], expected)
 
     z = np.zeros(x.shape, x.dtype)
     streamlines.append(np.array([x, z, z]).T)
     pl = path_length(streamlines, np.eye(4), aoi)
-    npt.assert_array_almost_equal(pl[x, x, x], expected)
-    npt.assert_array_almost_equal(pl[x, 0, 0], x)
+    npt.assert_allclose(pl[x, x, x], expected)
+    npt.assert_allclose(pl[x, 0, 0], x)
 
     # Only streamlines that pass through aoi contribute to path length so if
     # all streamlines are duds, plm will be all inf.
@@ -846,10 +846,10 @@ def test_path_length(rng):
         assert (rando < 19.5).all()
         streamlines.append(rando)
     pl = path_length(streamlines, np.eye(4), aoi)
-    npt.assert_array_almost_equal(pl, -1)
+    npt.assert_allclose(pl, -1)
 
     pl = path_length(streamlines, np.eye(4), aoi, fill_value=-12.0)
-    npt.assert_array_almost_equal(pl, -12.0)
+    npt.assert_allclose(pl, -12.0)
 
 
 def test_min_at():
@@ -870,10 +870,10 @@ def test_curvature_angle():
 
     for theta, step, curve in zip(angle, step_size, curvature):
         res_angle = max_angle_from_curvature(curve, step)
-        npt.assert_almost_equal(res_angle, theta)
+        npt.assert_allclose(res_angle, theta)
 
         res_curvature = min_radius_curvature_from_angle(theta, step)
-        npt.assert_almost_equal(res_curvature, curve)
+        npt.assert_allclose(res_curvature, curve)
 
     # special case
     with pytest.warns(UserWarning):

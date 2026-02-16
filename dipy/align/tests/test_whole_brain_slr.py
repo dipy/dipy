@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_equal, assert_raises
+from numpy.testing import assert_allclose, assert_equal, assert_raises
 
 from dipy.align.streamlinear import (
     compose_matrix44,
@@ -50,7 +50,7 @@ def test_whole_brain_slr():
 
     assert_equal(d1m_minsum < d12_minsum, True)
 
-    assert_array_almost_equal(transform[:3, 3], [-50, -0, -0], 2)
+    assert_allclose(transform[:3, 3], [-50, -0, -0], atol=1e-2, rtol=0)
 
     # check rotation
 
@@ -72,7 +72,7 @@ def test_whole_brain_slr():
 
     # we can also check the quality by looking at the decomposed transform
 
-    assert_array_almost_equal(decompose_matrix44(transform)[3], -15, 2)
+    assert_allclose(decompose_matrix44(transform)[3], -15, atol=1e-2, rtol=0)
 
     moved, transform, qb_centroids1, qb_centroids2 = slr_with_qbx(
         f1,
@@ -88,7 +88,7 @@ def test_whole_brain_slr():
 
     # we can also check the quality by looking at the decomposed transform
 
-    assert_array_almost_equal(decompose_matrix44(transform)[3], -15, 2)
+    assert_allclose(decompose_matrix44(transform)[3], -15, atol=1e-2, rtol=0)
 
 
 def test_slr_one_streamline():

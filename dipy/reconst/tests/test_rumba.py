@@ -4,7 +4,6 @@ import numpy as np
 from numpy.testing import (
     assert_,
     assert_allclose,
-    assert_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
@@ -74,7 +73,7 @@ def test_rumba():
             odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
         )
         assert_equal(len(directions), 2)
-        assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
+        assert_allclose(angular_similarity(directions, golden_directions), 2, atol=1e-1, rtol=0)
 
     # Test on data with 1, 2, 3, or no peaks
     sb_dummies = sticks_and_ball_dummies(gtab)
@@ -147,7 +146,7 @@ def test_recursive_rumba():
         odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
     )
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
+    assert_allclose(angular_similarity(directions, golden_directions), 2, atol=1e-1, rtol=0)
 
 
 def test_multishell_rumba():
@@ -174,7 +173,7 @@ def test_multishell_rumba():
         odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
     )
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
+    assert_allclose(angular_similarity(directions, golden_directions), 2, atol=1e-1, rtol=0)
 
 
 def test_mvoxel_rumba():
@@ -231,8 +230,8 @@ def test_mvoxel_rumba():
         # Verify properties of fODF and volume fractions
         assert_equal(f_iso, f_gm + f_csf)
         assert_equal(combined, odf + f_iso[..., None] / len(sphere.vertices))
-        assert_almost_equal(f_iso + f_wm, np.ones(f_iso.shape))
-        assert_almost_equal(np.sum(combined, axis=3), np.ones(f_iso.shape))
+        assert_allclose(f_iso + f_wm, np.ones(f_iso.shape))
+        assert_allclose(np.sum(combined, axis=3), np.ones(f_iso.shape))
         assert_equal(np.sum(odf, axis=3), f_wm)
 
 
@@ -298,7 +297,7 @@ def test_global_fit():
             odf[0, 0, 0], sphere, relative_peak_threshold=0.35, min_separation_angle=25
         )
         assert_equal(len(directions), 2)
-        assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
+        assert_allclose(angular_similarity(directions, golden_directions), 2, atol=1e-1, rtol=0)
 
     # Test on data with 1, 2, 3, or no peaks
     sb_dummies = sticks_and_ball_dummies(gtab)
@@ -389,8 +388,8 @@ def test_mvoxel_global_fit():
         # Verify normalization
         assert_equal(f_iso, f_gm + f_csf)
         assert_equal(combined, odf + f_iso[..., None] / len(sphere.vertices))
-        assert_almost_equal(f_iso + f_wm, np.ones(f_iso.shape))
-        assert_almost_equal(np.sum(combined, axis=3), np.ones(f_iso.shape))
+        assert_allclose(f_iso + f_wm, np.ones(f_iso.shape))
+        assert_allclose(np.sum(combined, axis=3), np.ones(f_iso.shape))
         assert_equal(np.sum(odf, axis=3), f_wm)
 
 
@@ -427,7 +426,7 @@ def test_generate_kernel():
         fractions=[fi],
         snr=None,
     )
-    assert_almost_equal(kernel[:, 0], S)
+    assert_allclose(kernel[:, 0], S)
 
     # Multi-shell version
     ms_eigenval_count = len(unique_bvals_tolerance(gtab.bvals)) - 1
@@ -436,7 +435,7 @@ def test_generate_kernel():
         gtab, sphere, wm_response_multi, gm_response, csf_response
     )
     assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices) + 2))
-    assert_almost_equal(kernel, kernel_multi)
+    assert_allclose(kernel, kernel_multi)
 
     # Test optional isotropic compartment; should cause last column of zeroes
     kernel = generate_kernel(

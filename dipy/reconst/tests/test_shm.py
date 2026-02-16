@@ -6,7 +6,6 @@ import numpy as np
 import numpy.linalg as npl
 import numpy.testing as npt
 from numpy.testing import (
-    assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
@@ -105,59 +104,41 @@ def test_real_sh_descoteaux_from_index():
             category=PendingDeprecationWarning,
         )
 
-        assert_array_almost_equal(rsh(0, 0, 0, 0), 0.5 / sqrt(pi))
-        assert_array_almost_equal(
-            rsh(-2, 2, pi / 5, pi / 3),
-            0.25
+        assert_allclose(rsh(0, 0, 0, 0), 0.5 / sqrt(pi))
+        assert_allclose(rsh(-2, 2, pi / 5, pi / 3), 0.25
             * sqrt(15.0 / (2.0 * pi))
             * (sin(pi / 5.0)) ** 2.0
             * cos(0 + 2.0 * pi / 3)
-            * sqrt(2),
-        )
-        assert_array_almost_equal(
-            rsh(2, 2, pi / 5, pi / 3),
-            -1
+            * sqrt(2), )
+        assert_allclose(rsh(2, 2, pi / 5, pi / 3), -1
             * 0.25
             * sqrt(15.0 / (2.0 * pi))
             * (sin(pi / 5.0)) ** 2.0
             * sin(0 - 2.0 * pi / 3)
-            * sqrt(2),
-        )
-        assert_array_almost_equal(
-            rsh(-2, 2, pi / 2, pi),
-            0.25
+            * sqrt(2), )
+        assert_allclose(rsh(-2, 2, pi / 2, pi), 0.25
             * sqrt(15 / (2.0 * pi))
             * cos(2.0 * pi)
             * sin(pi / 2.0) ** 2.0
-            * sqrt(2),
-        )
-        assert_array_almost_equal(
-            rsh(2, 4, pi / 3.0, pi / 4.0),
-            -1
+            * sqrt(2), )
+        assert_allclose(rsh(2, 4, pi / 3.0, pi / 4.0), -1
             * (3.0 / 8.0)
             * sqrt(5.0 / (2.0 * pi))
             * sin(0 - 2.0 * pi / 4.0)
             * sin(pi / 3.0) ** 2.0
             * (7.0 * cos(pi / 3.0) ** 2.0 - 1)
-            * sqrt(2),
-        )
-        assert_array_almost_equal(
-            rsh(-4, 4, pi / 6.0, pi / 8.0),
-            (3.0 / 16.0)
+            * sqrt(2), )
+        assert_allclose(rsh(-4, 4, pi / 6.0, pi / 8.0), (3.0 / 16.0)
             * sqrt(35.0 / (2.0 * pi))
             * cos(0 + 4.0 * pi / 8.0)
             * sin(pi / 6.0) ** 4.0
-            * sqrt(2),
-        )
-        assert_array_almost_equal(
-            rsh(4, 4, pi / 6.0, pi / 8.0),
-            -1
+            * sqrt(2), )
+        assert_allclose(rsh(4, 4, pi / 6.0, pi / 8.0), -1
             * (3.0 / 16.0)
             * sqrt(35.0 / (2.0 * pi))
             * sin(0 - 4.0 * pi / 8.0)
             * sin(pi / 6.0) ** 4.0
-            * sqrt(2),
-        )
+            * sqrt(2), )
 
     aa = np.ones((3, 1, 1, 1))
     bb = np.ones((1, 4, 1, 1))
@@ -203,7 +184,7 @@ def test_real_sym_sh_mrtrix():
     npt.assert_(tournier07_legacy_msg in str(w[1].message))
 
     func = np.dot(coef, basis.T)
-    assert_array_almost_equal(func, expected, 4)
+    assert_allclose(func, expected, atol=1e-4, rtol=0)
 
 
 def test_real_sym_sh_basis():
@@ -232,7 +213,7 @@ def test_real_sym_sh_basis():
     npt.assert_(issubclass(w[1].category, PendingDeprecationWarning))
     npt.assert_(descoteaux07_legacy_msg in str(w[1].message))
 
-    assert_array_almost_equal(descoteaux07_basis, expected)
+    assert_allclose(descoteaux07_basis, expected)
 
 
 def test_real_sh_descoteaux1():
@@ -258,7 +239,7 @@ def test_real_sh_descoteaux1():
     npt.assert_(issubclass(w[0].category, PendingDeprecationWarning))
     npt.assert_(descoteaux07_legacy_msg in str(w[0].message))
 
-    assert_array_almost_equal(descoteaux07_basis, expected)
+    assert_allclose(descoteaux07_basis, expected)
 
 
 def test_real_sh_tournier():
@@ -291,7 +272,7 @@ def test_real_sh_tournier():
     sh_coefs = np.dot(invB, sf)
     sf_approx = np.dot(B, sh_coefs)
 
-    assert_array_almost_equal(sf_approx, sf, 2)
+    assert_allclose(sf_approx, sf, atol=1e-2, rtol=0)
 
 
 def test_real_sh_descoteaux2():
@@ -324,7 +305,7 @@ def test_real_sh_descoteaux2():
     sh_coefs = np.dot(invB, sf)
     sf_approx = np.dot(B, sh_coefs)
 
-    assert_array_almost_equal(sf_approx, sf, 2)
+    assert_allclose(sf_approx, sf, atol=1e-2, rtol=0)
 
 
 def test_sh_to_sf_matrix():
@@ -352,9 +333,9 @@ def test_sh_to_sf_matrix():
 
         B3 = sh_to_sf_matrix(sphere, return_inv=False)
 
-    assert_array_almost_equal(B1, B2.T)
-    assert_array_almost_equal(invB1, invB2.T)
-    assert_array_almost_equal(B3, B1)
+    assert_allclose(B1, B2.T)
+    assert_allclose(invB1, invB2.T)
+    assert_allclose(B3, B1)
     assert_raises(ValueError, sh_to_sf_matrix, sphere, basis_type="")
 
 
@@ -376,20 +357,20 @@ def test_smooth_pinv():
     L = np.zeros(len(m_values))
     C = smooth_pinv(B, L)
     D = np.dot(npl.inv(np.dot(B.T, B)), B.T)
-    assert_array_almost_equal(C, D)
+    assert_allclose(C, D)
 
     L = l_values * (l_values + 1) * 0.05
     C = smooth_pinv(B, L)
     L = np.diag(L)
     D = np.dot(npl.inv(np.dot(B.T, B) + L * L), B.T)
 
-    assert_array_almost_equal(C, D)
+    assert_allclose(C, D)
 
     L = np.arange(len(l_values)) * 0.05
     C = smooth_pinv(B, L)
     L = np.diag(L)
     D = np.dot(npl.inv(np.dot(B.T, B) + L * L), B.T)
-    assert_array_almost_equal(C, D)
+    assert_allclose(C, D)
 
 
 def test_normalize_data():
@@ -400,29 +381,29 @@ def test_normalize_data():
     assert_raises(ValueError, normalize_data, sig, where_b0, out=sig)
 
     norm_sig = normalize_data(sig, where_b0, min_signal=1)
-    assert_array_almost_equal(norm_sig, sig / 65.0)
+    assert_allclose(norm_sig, sig / 65.0)
     norm_sig = normalize_data(sig, where_b0, min_signal=5)
-    assert_array_almost_equal(norm_sig[-5:], 5 / 65.0)
+    assert_allclose(norm_sig[-5:], 5 / 65.0)
 
     where_b0[[0, 1]] = [True, True]
     norm_sig = normalize_data(sig, where_b0, min_signal=1)
-    assert_array_almost_equal(norm_sig, sig / 64.5)
+    assert_allclose(norm_sig, sig / 64.5)
     norm_sig = normalize_data(sig, where_b0, min_signal=5)
-    assert_array_almost_equal(norm_sig[-5:], 5 / 64.5)
+    assert_allclose(norm_sig[-5:], 5 / 64.5)
 
     sig = sig * np.ones((2, 3, 1))
 
     where_b0[[0, 1]] = [True, False]
     norm_sig = normalize_data(sig, where_b0, min_signal=1)
-    assert_array_almost_equal(norm_sig, sig / 65.0)
+    assert_allclose(norm_sig, sig / 65.0)
     norm_sig = normalize_data(sig, where_b0, min_signal=5)
-    assert_array_almost_equal(norm_sig[..., -5:], 5 / 65.0)
+    assert_allclose(norm_sig[..., -5:], 5 / 65.0)
 
     where_b0[[0, 1]] = [True, True]
     norm_sig = normalize_data(sig, where_b0, min_signal=1)
-    assert_array_almost_equal(norm_sig, sig / 64.5)
+    assert_allclose(norm_sig, sig / 64.5)
     norm_sig = normalize_data(sig, where_b0, min_signal=5)
-    assert_array_almost_equal(norm_sig[..., -5:], 5 / 64.5)
+    assert_allclose(norm_sig[..., -5:], 5 / 64.5)
 
 
 def make_fake_signal():
@@ -478,10 +459,10 @@ class TestQballModel:
         assert_equal(len(directions), n)
         # Check directions are unit vectors
         cos_similarity = (directions * directions).sum(-1)
-        assert_array_almost_equal(cos_similarity, np.ones(n))
+        assert_allclose(cos_similarity, np.ones(n))
         # Check the directions == expected or -expected
         cos_similarity = (directions * expected).sum(-1)
-        assert_array_almost_equal(abs(cos_similarity), np.ones(n))
+        assert_allclose(abs(cos_similarity), np.ones(n))
 
         # Test normalize data
         with warnings.catch_warnings():
@@ -506,7 +487,7 @@ class TestQballModel:
 
             odf_with_norm = fit.odf(sphere)
 
-        assert_array_almost_equal(odf, odf_with_norm)
+        assert_allclose(odf, odf_with_norm)
 
     def test_mulit_voxel_fit(self):
         signal, gtab, expected = make_fake_signal()
@@ -604,7 +585,7 @@ class TestQballModel:
 
             gfa_odf = odf.gfa(fit.odf(sphere))
 
-        assert_array_almost_equal(gfa_shm, gfa_odf, 3)
+        assert_allclose(gfa_shm, gfa_odf, atol=1e-3, rtol=0)
 
         # gfa should be 0 if all coefficients are 0 (masked areas)
         mask = np.zeros(signal.shape[:-1])
@@ -676,7 +657,7 @@ def test_hat_and_lcr():
 
     H = hat(B)
     B_hat = np.dot(H, B)
-    assert_array_almost_equal(B, B_hat)
+    assert_allclose(B, B_hat)
 
     R = lcr_matrix(H)
     d = np.arange(len(hemi.theta))
@@ -686,10 +667,10 @@ def test_hat_and_lcr():
     r -= r.mean()
 
     r2 = np.dot(R, d)
-    assert_array_almost_equal(r, r2)
+    assert_allclose(r, r2)
 
     r3 = np.dot(d, R.T)
-    assert_array_almost_equal(r, r3)
+    assert_allclose(r, r3)
 
 
 def test_bootstrap_array():
@@ -700,8 +681,8 @@ def test_bootstrap_array():
     d = np.arange(1, 6)
     dhat = np.dot(H, d)
 
-    assert_array_almost_equal(bootstrap_data_voxel(dhat, H, R), dhat)
-    assert_array_almost_equal(bootstrap_data_array(dhat, H, R), dhat)
+    assert_allclose(bootstrap_data_voxel(dhat, H, R), dhat)
+    assert_allclose(bootstrap_data_array(dhat, H, R), dhat)
 
 
 def test_ResidualBootstrapWrapper():
@@ -716,15 +697,15 @@ def test_ResidualBootstrapWrapper():
     where_dwi = np.ones(len(H), dtype=bool)
 
     boot_obj = ResidualBootstrapWrapper(signal_object, B, where_dwi, min_signal=ms)
-    assert_array_almost_equal(boot_obj[0], dhat[0].clip(ms, 1))
-    assert_array_almost_equal(boot_obj[1], dhat[1].clip(ms, 1))
+    assert_allclose(boot_obj[0], dhat[0].clip(ms, 1))
+    assert_allclose(boot_obj[1], dhat[1].clip(ms, 1))
 
     dhat = np.column_stack([[0.6, 0.7], dhat])
     signal_object = NearestNeighborInterpolator(dhat, (1,))
     where_dwi = np.concatenate([[False], where_dwi])
     boot_obj = ResidualBootstrapWrapper(signal_object, B, where_dwi, min_signal=ms)
-    assert_array_almost_equal(boot_obj[0], dhat[0].clip(ms, 1))
-    assert_array_almost_equal(boot_obj[1], dhat[1].clip(ms, 1))
+    assert_allclose(boot_obj[0], dhat[0].clip(ms, 1))
+    assert_allclose(boot_obj[1], dhat[1].clip(ms, 1))
 
 
 def test_sf_to_sh():
@@ -747,7 +728,7 @@ def test_sf_to_sh():
             odf_sh, hemisphere, sh_order_max=8, basis_type="tournier07"
         )
 
-    assert_array_almost_equal(odf, odf_reconst, 2)
+    assert_allclose(odf, odf_reconst, atol=1e-2, rtol=0)
 
     # Legacy definition
     with warnings.catch_warnings():
@@ -762,7 +743,7 @@ def test_sf_to_sh():
             odf_sh, hemisphere, sh_order_max=8, basis_type="tournier07", legacy=True
         )
 
-    assert_array_almost_equal(odf, odf_reconst, 2)
+    assert_allclose(odf, odf_reconst, atol=1e-2, rtol=0)
 
     # Descoteaux basis
     with warnings.catch_warnings():
@@ -777,7 +758,7 @@ def test_sf_to_sh():
             odf_sh, hemisphere, sh_order_max=8, basis_type="descoteaux07"
         )
 
-    assert_array_almost_equal(odf, odf_reconst, 2)
+    assert_allclose(odf, odf_reconst, atol=1e-2, rtol=0)
 
     # Legacy definition
     with warnings.catch_warnings():
@@ -794,7 +775,7 @@ def test_sf_to_sh():
             odf_sh, hemisphere, sh_order_max=8, basis_type="descoteaux07", legacy=True
         )
 
-    assert_array_almost_equal(odf, odf_reconst, 2)
+    assert_allclose(odf, odf_reconst, atol=1e-2, rtol=0)
 
     # We now create an asymmetric signal
     # to try out our full SH basis
@@ -822,7 +803,7 @@ def test_sf_to_sh():
             odf_sh, sphere, sh_order_max=10, basis_type="tournier07", full_basis=True
         )
 
-    assert_array_almost_equal(odf_reconst, asym_odf, 2)
+    assert_allclose(odf_reconst, asym_odf, atol=1e-2, rtol=0)
 
     # Legacy definition
     with warnings.catch_warnings():
@@ -847,7 +828,7 @@ def test_sf_to_sh():
             legacy=True,
         )
 
-    assert_array_almost_equal(odf_reconst, asym_odf, 2)
+    assert_allclose(odf_reconst, asym_odf, atol=1e-2, rtol=0)
 
     # Descoteaux basis
     with warnings.catch_warnings():
@@ -868,7 +849,7 @@ def test_sf_to_sh():
             odf_sh, sphere, sh_order_max=10, basis_type="descoteaux07", full_basis=True
         )
 
-    assert_array_almost_equal(odf_reconst, asym_odf, 2)
+    assert_allclose(odf_reconst, asym_odf, atol=1e-2, rtol=0)
 
     # Legacy definition
     with warnings.catch_warnings():
@@ -895,7 +876,7 @@ def test_sf_to_sh():
             legacy=True,
         )
 
-    assert_array_almost_equal(odf_reconst, asym_odf, 2)
+    assert_allclose(odf_reconst, asym_odf, atol=1e-2, rtol=0)
 
     # An invalid basis name should raise an error
     assert_raises(ValueError, sh_to_sf, odf, hemisphere, basis_type="")
@@ -914,7 +895,7 @@ def test_sf_to_sh():
         odf2d_sh = sf_to_sh(odf2d, hemisphere, sh_order_max=8)
         odf2d_sf = sh_to_sf(odf2d_sh, hemisphere, sh_order_max=8)
 
-    assert_array_almost_equal(odf2d, odf2d_sf, 2)
+    assert_allclose(odf2d, odf2d_sf, atol=1e-2, rtol=0)
 
 
 def test_faster_sph_harm():
@@ -1065,11 +1046,11 @@ def test_faster_sph_harm():
         m_values, l_values, theta[:, None], phi[:, None], use_scipy=True
     )
 
-    assert_array_almost_equal(sh, sh2, 8)
+    assert_allclose(sh, sh2, atol=1e-8, rtol=0)
     sh = spherical_harmonics(
         m_values, l_values, theta[:, None], phi[:, None], use_scipy=False
     )
-    assert_array_almost_equal(sh, sh2, 8)
+    assert_allclose(sh, sh2, atol=1e-8, rtol=0)
 
 
 def test_anisotropic_power():
@@ -1084,11 +1065,9 @@ def test_anisotropic_power():
 
             answers = [analytic] * 3
             apvals = anisotropic_power(coeffs, norm_factor=norm_factor)
-            assert_array_almost_equal(apvals, answers)
+            assert_allclose(apvals, answers)
             # Test that this works for single voxel arrays as well:
-            assert_array_almost_equal(
-                anisotropic_power(coeffs[1], norm_factor=norm_factor), answers[1]
-            )
+            assert_allclose(anisotropic_power(coeffs[1], norm_factor=norm_factor), answers[1])
 
     # Test that even when we look at an all-zeros voxel, this
     # avoids a log-of-zero warning:
@@ -1140,7 +1119,7 @@ def test_convert_sh_to_full_basis():
             full_sh_coeffs, hemisphere, sh_order_max=8, full_basis=True
         )
 
-    assert_array_almost_equal(odf, odf_reconst, 2)
+    assert_allclose(odf, odf_reconst, atol=1e-2, rtol=0)
 
 
 def test_convert_sh_from_legacy():
@@ -1160,7 +1139,7 @@ def test_convert_sh_from_legacy():
     converted_coeffs = convert_sh_from_legacy(sh_coeffs, "descoteaux07")
     expected_coeffs = sf_to_sh(odf, hemisphere, sh_order_max=8, legacy=False)
 
-    assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
+    assert_allclose(converted_coeffs, expected_coeffs, atol=1e-2, rtol=0)
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -1175,7 +1154,7 @@ def test_convert_sh_from_legacy():
         odf, hemisphere, sh_order_max=8, basis_type="tournier07", legacy=False
     )
 
-    assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
+    assert_allclose(converted_coeffs, expected_coeffs, atol=1e-2, rtol=0)
 
     # 2D case
     odfs = np.array([odf, odf])
@@ -1204,7 +1183,7 @@ def test_convert_sh_from_legacy():
         legacy=False,
     )
 
-    assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
+    assert_allclose(converted_coeffs, expected_coeffs, atol=1e-2, rtol=0)
     assert_raises(ValueError, convert_sh_from_legacy, sh_coeffs, "", full_basis=True)
 
 
@@ -1226,7 +1205,7 @@ def test_convert_sh_to_legacy():
 
         expected_coeffs = sf_to_sh(odf, hemisphere, sh_order_max=8, legacy=True)
 
-    assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
+    assert_allclose(converted_coeffs, expected_coeffs, atol=1e-2, rtol=0)
 
     sh_coeffs = sf_to_sh(
         odf, hemisphere, sh_order_max=8, basis_type="tournier07", legacy=False
@@ -1242,7 +1221,7 @@ def test_convert_sh_to_legacy():
             odf, hemisphere, sh_order_max=8, basis_type="tournier07", legacy=True
         )
 
-    assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
+    assert_allclose(converted_coeffs, expected_coeffs, atol=1e-2, rtol=0)
 
     # 2D case
     odfs = np.array([odf, odf])
@@ -1269,7 +1248,7 @@ def test_convert_sh_to_legacy():
             full_basis=True,
         )
 
-    assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
+    assert_allclose(converted_coeffs, expected_coeffs, atol=1e-2, rtol=0)
     assert_raises(ValueError, convert_sh_to_legacy, sh_coeffs, "", full_basis=True)
 
 

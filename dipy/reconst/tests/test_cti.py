@@ -1,7 +1,7 @@
 import math
 
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_raises
+from numpy.testing import assert_allclose, assert_raises
 
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, disperse_charges
@@ -202,7 +202,7 @@ def test_cti_prediction():
         # check the function predict of the CorrelationTensorFit object
         ctiF = ctiM.fit(cti_pred_signals)
         ctiF_pred = ctiF.predict(gtab1, gtab2, S0=S0)
-        assert_array_almost_equal(ctiF_pred, cti_pred_signals)
+        assert_allclose(ctiF_pred, cti_pred_signals)
 
 
 def test_split_cti_param():
@@ -223,8 +223,8 @@ def test_split_cti_param():
         ctiF = ctiM.fit(cti_pred_signals)
         evals, evecs, kt, ct = cti.split_cti_params(ctiF.model_params)
 
-        assert_array_almost_equal(evals, ctiF.evals)
-        assert_array_almost_equal(evecs, ctiF.evecs)
+        assert_allclose(evals, ctiF.evals)
+        assert_allclose(evecs, ctiF.evecs)
         assert np.allclose(kt, ctiF.kt), "kt doesn't match in test_split_cti_param "
         assert np.allclose(ct, ctiF.ct), "ct doesn't match in test_split_cti_param"
 
@@ -249,8 +249,8 @@ def test_cti_fits():
         cti_pred_signals = ctiM.predict(cti_params, S0=S0)
         ctiF = ctiM.fit(cti_pred_signals)
         evals, evecs, kt, ct = cti.split_cti_params(ctiF.model_params)
-        assert_array_almost_equal(evals, ctiF.evals)
-        assert_array_almost_equal(evecs, ctiF.evecs)
+        assert_allclose(evals, ctiF.evals)
+        assert_allclose(evecs, ctiF.evecs)
         assert np.allclose(kt, ctiF.kt), "kt doesn't match in test_split_cti_param "
         assert np.allclose(ct, ctiF.ct), "ct doesn't match in test_split_cti_param"
 

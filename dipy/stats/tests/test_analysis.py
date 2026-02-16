@@ -16,11 +16,11 @@ def test_gaussian_weights():
     bundle = Streamlines([np.array([x, y, z]).T + 1, np.array([x, y, z]).T - 1])
     # In this case, all nodes receives an equal weight of 0.5:
     w = gaussian_weights(bundle, n_points=10)
-    npt.assert_almost_equal(w, np.ones((len(bundle), 10)) * 0.5)
+    npt.assert_allclose(w, np.ones((len(bundle), 10)) * 0.5)
 
     # Test when asked to return Mahalanobis, instead of weights
     w = gaussian_weights(bundle, n_points=10, return_mahalnobis=True)
-    npt.assert_almost_equal(w, np.ones((len(bundle), 10)))
+    npt.assert_allclose(w, np.ones((len(bundle), 10)))
 
     # Here, some nodes are twice as far from the mean as others
     bundle = Streamlines(
@@ -34,8 +34,8 @@ def test_gaussian_weights():
     w = gaussian_weights(bundle, n_points=10)
 
     # And their weights should be halved:
-    npt.assert_almost_equal(w[0], w[1] / 2)
-    npt.assert_almost_equal(w[-1], w[2] / 2)
+    npt.assert_allclose(w[0], w[1] / 2)
+    npt.assert_allclose(w[-1], w[2] / 2)
 
     # Test the situation where all the streamlines have an identical node:
     arr1 = np.array([x, y, z]).T + 2

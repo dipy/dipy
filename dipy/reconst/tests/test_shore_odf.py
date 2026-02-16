@@ -46,7 +46,7 @@ def test_shore_odf():
         odf_from_sh = sh_to_sf(
             odf_sh, sphere, sh_order_max=6, basis_type=None, legacy=True
         )
-    npt.assert_almost_equal(odf, odf_from_sh, 10)
+    npt.assert_allclose(odf, odf_from_sh, atol=1e-10, rtol=0)
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -55,15 +55,13 @@ def test_shore_odf():
             category=PendingDeprecationWarning,
         )
         expected_phi = shore_matrix(radial_order=6, zeta=700, gtab=gtab)
-    npt.assert_array_almost_equal(
-        np.dot(expected_phi, asmfit.shore_coeff), asmfit.fitted_signal()
-    )
+    npt.assert_allclose(np.dot(expected_phi, asmfit.shore_coeff), asmfit.fitted_signal())
 
     directions, _, _ = peak_directions(
         odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
     )
     npt.assert_equal(len(directions), 2)
-    npt.assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
+    npt.assert_allclose(angular_similarity(directions, golden_directions), 2, atol=1e-1, rtol=0)
 
     # 5 subdivisions
     with warnings.catch_warnings():
@@ -77,7 +75,7 @@ def test_shore_odf():
         odf, sphere2, relative_peak_threshold=0.35, min_separation_angle=25
     )
     npt.assert_equal(len(directions), 2)
-    npt.assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
+    npt.assert_allclose(angular_similarity(directions, golden_directions), 2, atol=1e-1, rtol=0)
 
     sb_dummies = sticks_and_ball_dummies(gtab)
     for sbd in sb_dummies:

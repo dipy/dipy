@@ -42,25 +42,25 @@ def test_trilinear_interpolate(rng):
     point = np.array([2.1, 4.8, 3.3])
     out = trilinear_interpolate4d(data, point)
     expected = [linear_function(*point), 99.0]
-    npt.assert_array_almost_equal(out, expected)
+    npt.assert_allclose(out, expected)
 
     # Pass in out ourselves
     out[:] = -1
     trilinear_interpolate4d(data.astype(float), point.astype(float), out=out)
-    npt.assert_array_almost_equal(out, expected)
+    npt.assert_allclose(out, expected)
 
     # use a point close to an edge
     point = np.array([-0.1, -0.1, -0.1])
     expected = [0.0, 99.0]
     out = trilinear_interpolate4d(data, point)
-    npt.assert_array_almost_equal(out, expected)
+    npt.assert_allclose(out, expected)
 
     # different edge
     point = np.array([2.4, 5.4, 3.3])
     # On the edge 5.4 get treated as the max y value, 5.
     expected = [linear_function(point[0], 5.0, point[2]), 99.0]
     out = trilinear_interpolate4d(data, point)
-    npt.assert_array_almost_equal(out, expected)
+    npt.assert_allclose(out, expected)
 
     # Test index errors
     point = np.array([2.4, 5.5, 3.3])
@@ -90,7 +90,7 @@ def test_interpolate_scalar_2d(rng):
     # Call the reference implementation
     expected = map_coordinates(extended_image, extended_locations.transpose(), order=1)
 
-    npt.assert_array_almost_equal(expected, interp)
+    npt.assert_allclose(expected, interp)
 
     # Test interpolation stability along the boundary
     epsilon = 5e-8
@@ -103,12 +103,12 @@ def test_interpolate_scalar_2d(rng):
 
             locations[:, k] = offset
             expected = map_coordinates(image, locations.transpose(), order=1)
-            npt.assert_array_almost_equal(expected, interp)
+            npt.assert_allclose(expected, interp)
             if offset == 0:
                 expected_flag = np.array(delta >= 0, dtype=np.int32)
             else:
                 expected_flag = np.array(delta <= 0, dtype=np.int32)
-            npt.assert_array_almost_equal(expected_flag, inside)
+            npt.assert_allclose(expected_flag, inside)
 
 
 @set_random_number_generator(1924781)
@@ -127,7 +127,7 @@ def test_interpolate_scalar_nn_2d(rng):
     # Call the reference implementation
     expected = map_coordinates(image, locations.transpose(), order=0)
 
-    npt.assert_array_almost_equal(expected, interp)
+    npt.assert_allclose(expected, interp)
 
     # Test the 'inside' flag
     for i in range(nsamples):
@@ -155,7 +155,7 @@ def test_interpolate_scalar_nn_3d(rng):
     # Call the reference implementation
     expected = map_coordinates(image, locations.transpose(), order=0)
 
-    npt.assert_array_almost_equal(expected, interp)
+    npt.assert_allclose(expected, interp)
 
     # Test the 'inside' flag
     for i in range(nsamples):
@@ -188,7 +188,7 @@ def test_interpolate_scalar_3d(rng):
     # Call the reference implementation
     expected = map_coordinates(extended_image, extended_locations.transpose(), order=1)
 
-    npt.assert_array_almost_equal(expected, interp)
+    npt.assert_allclose(expected, interp)
 
     # Test interpolation stability along the boundary
     epsilon = 5e-8
@@ -202,13 +202,13 @@ def test_interpolate_scalar_3d(rng):
 
             locations[:, k] = offset
             expected = map_coordinates(image, locations.transpose(), order=1)
-            npt.assert_array_almost_equal(expected, interp)
+            npt.assert_allclose(expected, interp)
 
             if offset == 0:
                 expected_flag = np.array(delta >= 0, dtype=np.int32)
             else:
                 expected_flag = np.array(delta <= 0, dtype=np.int32)
-            npt.assert_array_almost_equal(expected_flag, inside)
+            npt.assert_allclose(expected_flag, inside)
 
 
 @set_random_number_generator(7711219)
@@ -235,7 +235,7 @@ def test_interpolate_vector_3d(rng):
             extended_field[..., i], extended_locations.transpose(), order=1
         )
 
-    npt.assert_array_almost_equal(expected, interp)
+    npt.assert_allclose(expected, interp)
 
     # Test interpolation stability along the boundary
     epsilon = 5e-8
@@ -252,13 +252,13 @@ def test_interpolate_vector_3d(rng):
                 expected[..., i] = map_coordinates(
                     field[..., i], locations.transpose(), order=1
                 )
-            npt.assert_array_almost_equal(expected, interp)
+            npt.assert_allclose(expected, interp)
 
             if offset == 0:
                 expected_flag = np.array(delta >= 0, dtype=np.int32)
             else:
                 expected_flag = np.array(delta <= 0, dtype=np.int32)
-            npt.assert_array_almost_equal(expected_flag, inside)
+            npt.assert_allclose(expected_flag, inside)
 
 
 @set_random_number_generator(1271244)
@@ -284,7 +284,7 @@ def test_interpolate_vector_2d(rng):
             extended_field[..., i], extended_locations.transpose(), order=1
         )
 
-    npt.assert_array_almost_equal(expected, interp)
+    npt.assert_allclose(expected, interp)
 
     # Test interpolation stability along the boundary
     epsilon = 5e-8
@@ -300,13 +300,13 @@ def test_interpolate_vector_2d(rng):
                 expected[..., i] = map_coordinates(
                     field[..., i], locations.transpose(), order=1
                 )
-            npt.assert_array_almost_equal(expected, interp)
+            npt.assert_allclose(expected, interp)
 
             if offset == 0:
                 expected_flag = np.array(delta >= 0, dtype=np.int32)
             else:
                 expected_flag = np.array(delta <= 0, dtype=np.int32)
-            npt.assert_array_almost_equal(expected_flag, inside)
+            npt.assert_allclose(expected_flag, inside)
 
 
 def test_NearestNeighborInterpolator():
@@ -341,16 +341,16 @@ def test_TriLinearInterpolator():
         y = b.flat[ii]
         z = c.flat[ii]
         expected_result = x + y + z + o.ravel()
-        npt.assert_array_almost_equal(tli[x, y, z], expected_result, decimal=5)
+        npt.assert_allclose(tli[x, y, z], expected_result, atol=1e-5, rtol=0)
         ind = np.array([x, y, z])
-        npt.assert_array_almost_equal(tli[ind], expected_result)
+        npt.assert_allclose(tli[ind], expected_result)
 
     # Index at 0
     expected_value = np.arange(4) + 1.5
-    npt.assert_array_almost_equal(tli[0, 0, 0], expected_value)
+    npt.assert_allclose(tli[0, 0, 0], expected_value)
     # Index at shape
     expected_value = np.arange(4) + (6.5 * 3)
-    npt.assert_array_almost_equal(tli[7, 7, 7], expected_value)
+    npt.assert_allclose(tli[7, 7, 7], expected_value)
 
     npt.assert_raises(OutsideImage, tli.__getitem__, (-0.1, 0, 0))
     npt.assert_raises(OutsideImage, tli.__getitem__, (0, 7.01, 0))
@@ -367,7 +367,7 @@ def test_trilinear_interp_cubic_voxels():
     A[7, 7, 7] = 2
     points = np.array([[0, 0, 0], [7.0, 7.5, 7.0], [3.5, 3.5, 3.5]])
     map_coordinates_trilinear_iso(A, points, strides, 3, B)
-    npt.assert_array_almost_equal(B, np.array([1.0, 1.5, 1.0]))
+    npt.assert_allclose(B, np.array([1.0, 1.5, 1.0]))
     # All of the input array, points array, strides array and output array must
     # be C-contiguous.  Check by passing in versions that aren't C contiguous
     npt.assert_raises(

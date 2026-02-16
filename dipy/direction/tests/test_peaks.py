@@ -6,8 +6,6 @@ import warnings
 import numpy as np
 from numpy.testing import (
     assert_,
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
@@ -41,14 +39,14 @@ def test_peak_directions_nl():
 
     directions, values = peak_directions_nl(discrete_eval)
     assert_equal(directions.shape, (4, 3))
-    assert_array_almost_equal(abs(directions), 1 / np.sqrt(3))
+    assert_allclose(abs(directions), 1 / np.sqrt(3))
     assert_array_equal(values, abs(directions).sum(-1))
 
     # Test using a different sphere
     sphere = unit_icosahedron.subdivide(n=4)
     directions, values = peak_directions_nl(discrete_eval, sphere=sphere)
     assert_equal(directions.shape, (4, 3))
-    assert_array_almost_equal(abs(directions), 1 / np.sqrt(3))
+    assert_allclose(abs(directions), 1 / np.sqrt(3))
     assert_array_equal(values, abs(directions).sum(-1))
 
     # Test the relative_peak_threshold
@@ -69,7 +67,7 @@ def test_peak_directions_nl():
 
     directions, values = peak_directions_nl(discrete_eval, relative_peak_threshold=0.8)
     assert_equal(directions.shape, (1, 3))
-    assert_almost_equal(values, 4 * 3 / np.sqrt(3))
+    assert_allclose(values, 4 * 3 / np.sqrt(3))
 
     # Test odfs with large areas of zero
     def discrete_eval(sphere):
@@ -86,7 +84,7 @@ def test_peak_directions_nl():
 
     directions, values = peak_directions_nl(discrete_eval, relative_peak_threshold=0.8)
     assert_equal(directions.shape, (1, 3))
-    assert_almost_equal(values, 3 * 3 / np.sqrt(3))
+    assert_allclose(values, 3 * 3 / np.sqrt(3))
 
 
 _sphere = create_unit_hemisphere(recursion_level=4)
@@ -204,7 +202,7 @@ def test_peak_directions_thorough():
     directions, values, indices = peak_directions(
         odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
     )
-    assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
+    assert_allclose(angular_similarity(directions, sticks), 2, atol=1e-2, rtol=0)
 
     # two unequal fibers
     fractions = [75, 25]
@@ -213,12 +211,12 @@ def test_peak_directions_thorough():
     directions, values, indices = peak_directions(
         odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
     )
-    assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
+    assert_allclose(angular_similarity(directions, sticks), 1, atol=1e-2, rtol=0)
 
     directions, values, indices = peak_directions(
         odf_gt, sphere, relative_peak_threshold=0.20, min_separation_angle=25.0
     )
-    assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
+    assert_allclose(angular_similarity(directions, sticks), 2, atol=1e-2, rtol=0)
 
     # two equal fibers short angle (simulating very sharp ODF)
     mevals = np.array(([0.0045, 0.0003, 0.0003], [0.0045, 0.0003, 0.0003]))
@@ -229,13 +227,13 @@ def test_peak_directions_thorough():
     directions, values, indices = peak_directions(
         odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
     )
-    assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
+    assert_allclose(angular_similarity(directions, sticks), 1, atol=1e-2, rtol=0)
 
     directions, values, indices = peak_directions(
         odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=15.0
     )
 
-    assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
+    assert_allclose(angular_similarity(directions, sticks), 2, atol=1e-2, rtol=0)
 
     # 1 fiber
     mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
@@ -246,7 +244,7 @@ def test_peak_directions_thorough():
     directions, values, indices = peak_directions(
         odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=15.0
     )
-    assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
+    assert_allclose(angular_similarity(directions, sticks), 1, atol=1e-2, rtol=0)
 
     AE = np.rad2deg(np.arccos(np.dot(directions[0], sticks[0])))
     assert_(abs(AE) < 2.0 or abs(AE - 180) < 2.0)
@@ -262,7 +260,7 @@ def test_peak_directions_thorough():
     directions, values, indices = peak_directions(
         odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
     )
-    assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
+    assert_allclose(angular_similarity(directions, sticks), 2, atol=1e-2, rtol=0)
 
     # two equal fibers and one faulty
     mevals = np.array(
@@ -275,7 +273,7 @@ def test_peak_directions_thorough():
     directions, values, indices = peak_directions(
         odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
     )
-    assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
+    assert_allclose(angular_similarity(directions, sticks), 2, atol=1e-2, rtol=0)
 
     # two equal fibers and one very very annoying one
     mevals = np.array(
@@ -288,7 +286,7 @@ def test_peak_directions_thorough():
     directions, values, indices = peak_directions(
         odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
     )
-    assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
+    assert_allclose(angular_similarity(directions, sticks), 2, atol=1e-2, rtol=0)
 
     # three peaks and one faulty
     mevals = np.array(
@@ -306,7 +304,7 @@ def test_peak_directions_thorough():
     directions, values, indices = peak_directions(
         odf_gt, sphere, relative_peak_threshold=0.5, min_separation_angle=25.0
     )
-    assert_almost_equal(angular_similarity(directions, sticks), 3, 2)
+    assert_allclose(angular_similarity(directions, sticks), 3, atol=1e-2, rtol=0)
 
     # four peaks
     mevals = np.array(
@@ -324,7 +322,7 @@ def test_peak_directions_thorough():
     directions, values, indices = peak_directions(
         odf_gt, sphere, relative_peak_threshold=0.15, min_separation_angle=5.0
     )
-    assert_almost_equal(angular_similarity(directions, sticks), 4, 2)
+    assert_allclose(angular_similarity(directions, sticks), 4, atol=1e-2, rtol=0)
 
     # four difficult peaks
     mevals = np.array(
@@ -342,7 +340,7 @@ def test_peak_directions_thorough():
     directions, values, indices = peak_directions(
         odf_gt, sphere, relative_peak_threshold=0, min_separation_angle=0
     )
-    assert_almost_equal(angular_similarity(directions, sticks), 4, 1)
+    assert_allclose(angular_similarity(directions, sticks), 4, atol=1e-1, rtol=0)
 
     # test the asymmetric case
     directions, values, indices = peak_directions(
@@ -353,7 +351,7 @@ def test_peak_directions_thorough():
         is_symmetric=False,
     )
     expected = np.concatenate([sticks, -sticks], axis=0)
-    assert_almost_equal(angular_similarity(directions, expected), 8, 1)
+    assert_allclose(angular_similarity(directions, expected), 8, atol=1e-1, rtol=0)
 
     odf_gt, sticks, hsphere = _create_mt_sim(
         mevals, angles, fractions, 100, None, half_sphere=True
@@ -451,7 +449,7 @@ def test_difference_with_minmax():
     )
 
     assert_equal(len(values_4), 3)
-    assert_almost_equal(values_1, values_4)
+    assert_allclose(values_1, values_4)
 
 
 @set_random_number_generator()
@@ -698,15 +696,15 @@ def test_peaksFromModelParallel():
         for pam in [pam_multi, pam_multi_inv1, pam_multi_inv2]:
             assert_equal(pam.gfa.dtype, pam_single.gfa.dtype)
             assert_equal(pam.gfa.shape, pam_single.gfa.shape)
-            assert_array_almost_equal(pam.gfa, pam_single.gfa)
+            assert_allclose(pam.gfa, pam_single.gfa)
 
             assert_equal(pam.qa.dtype, pam_single.qa.dtype)
             assert_equal(pam.qa.shape, pam_single.qa.shape)
-            assert_array_almost_equal(pam.qa, pam_single.qa)
+            assert_allclose(pam.qa, pam_single.qa)
 
             assert_equal(pam.peak_values.dtype, pam_single.peak_values.dtype)
             assert_equal(pam.peak_values.shape, pam_single.peak_values.shape)
-            assert_array_almost_equal(pam.peak_values, pam_single.peak_values)
+            assert_allclose(pam.peak_values, pam_single.peak_values)
 
             assert_equal(pam.peak_indices.dtype, pam_single.peak_indices.dtype)
             assert_equal(pam.peak_indices.shape, pam_single.peak_indices.shape)
@@ -714,15 +712,15 @@ def test_peaksFromModelParallel():
 
             assert_equal(pam.peak_dirs.dtype, pam_single.peak_dirs.dtype)
             assert_equal(pam.peak_dirs.shape, pam_single.peak_dirs.shape)
-            assert_array_almost_equal(pam.peak_dirs, pam_single.peak_dirs)
+            assert_allclose(pam.peak_dirs, pam_single.peak_dirs)
 
             assert_equal(pam.shm_coeff.dtype, pam_single.shm_coeff.dtype)
             assert_equal(pam.shm_coeff.shape, pam_single.shm_coeff.shape)
-            assert_array_almost_equal(pam.shm_coeff, pam_single.shm_coeff)
+            assert_allclose(pam.shm_coeff, pam_single.shm_coeff)
 
             assert_equal(pam.odf.dtype, pam_single.odf.dtype)
             assert_equal(pam.odf.shape, pam_single.odf.shape)
-            assert_array_almost_equal(pam.odf, pam_single.odf)
+            assert_allclose(pam.odf, pam_single.odf)
 
 
 def test_peaks_shm_coeff():
@@ -754,7 +752,7 @@ def test_peaks_shm_coeff():
         )
     # Test that spherical harmonic coefficients return back correctly
     odf2 = np.dot(pam.shm_coeff, pam.B)
-    assert_array_almost_equal(pam.odf, odf2)
+    assert_allclose(pam.odf, odf2)
     assert_equal(pam.shm_coeff.shape[-1], 45)
 
     with warnings.catch_warnings():
@@ -784,7 +782,7 @@ def test_peaks_shm_coeff():
         )
 
     odf2 = np.dot(pam.shm_coeff, pam.B)
-    assert_array_almost_equal(pam.odf, odf2)
+    assert_allclose(pam.odf, odf2)
 
 
 @set_random_number_generator()
@@ -862,7 +860,7 @@ def test_peaks_from_positions():
         npeaks=npeaks,
     )
     peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
-    assert_array_almost_equal(pam.peak_dirs, peaks)
+    assert_allclose(pam.peak_dirs, peaks)
 
     # test the peaks at each voxel using float coordinates
     peaks = peaks_from_positions(
@@ -875,7 +873,7 @@ def test_peaks_from_positions():
         npeaks=npeaks,
     )
     peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
-    assert_array_almost_equal(pam.peak_dirs, peaks)
+    assert_allclose(pam.peak_dirs, peaks)
 
     # test the peaks at each voxel using double coordinates
     peaks = peaks_from_positions(
@@ -888,7 +886,7 @@ def test_peaks_from_positions():
         npeaks=npeaks,
     )
     peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
-    assert_array_almost_equal(pam.peak_dirs, peaks)
+    assert_allclose(pam.peak_dirs, peaks)
 
     # test the peaks at each voxel using SimplePmfGen
     pmf_gen = SimplePmfGen(pam.odf, default_sphere)
@@ -903,7 +901,7 @@ def test_peaks_from_positions():
         npeaks=npeaks,
     )
     peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
-    assert_array_almost_equal(pam.peak_dirs, peaks, decimal=3)
+    assert_allclose(pam.peak_dirs, peaks, atol=1e-3, rtol=0)
 
     # test the peaks at each voxel using SHCoeffPmfGen
     with warnings.catch_warnings():
@@ -926,7 +924,7 @@ def test_peaks_from_positions():
         npeaks=npeaks,
     )
     peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
-    assert_array_almost_equal(pam.peak_dirs, peaks, decimal=3)
+    assert_allclose(pam.peak_dirs, peaks, atol=1e-3, rtol=0)
 
     # test the peaks with a full sphere
     with warnings.catch_warnings():
@@ -958,7 +956,7 @@ def test_peaks_from_positions():
         npeaks=npeaks,
     )
     peaks = np.array(peaks).reshape((3, 3, 3, 5, 3))
-    assert_array_almost_equal(pam_full_sphere.peak_dirs, peaks, decimal=3)
+    assert_allclose(pam_full_sphere.peak_dirs, peaks, atol=1e-3, rtol=0)
 
     # test the peaks extraction at the mid point between 2 voxels
     odfs = [pam.odf[0, 0, 0], pam.odf[0, 0, 0]]
@@ -1000,7 +998,7 @@ def test_peaks_from_positions():
         min_separation_angle=min_angle,
         npeaks=npeaks,
     )
-    assert_array_almost_equal(peaks_eye, peaks)
+    assert_allclose(peaks_eye, peaks)
 
     # test with invalid seed coordinates
     affine = np.eye(4)

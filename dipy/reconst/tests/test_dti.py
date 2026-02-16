@@ -60,8 +60,8 @@ def test_tensor_algebra(rng):
     t_det = dti.determinant(test_arr)
     t_norm = dti.norm(test_arr)
     for i, x in enumerate(test_arr):
-        npt.assert_almost_equal(np.linalg.det(x), t_det[i])
-        npt.assert_almost_equal(np.linalg.norm(x), t_norm[i])
+        npt.assert_allclose(np.linalg.det(x), t_det[i])
+        npt.assert_allclose(np.linalg.norm(x), t_norm[i])
 
 
 def test_odf_with_zeros():
@@ -91,7 +91,7 @@ def test_mode_with_isotropic():
     q_form[1, 1, 0, 0] = 1
     q_form[1, 1, 1, 1] = 2
     q_form[1, 1, 2, 2] = 2
-    npt.assert_array_almost_equal(mode(q_form), np.array([[0, 0], [1, -1]]))
+    npt.assert_allclose(mode(q_form), np.array([[0, 0], [1, -1]]))
 
 
 def test_tensor_model():
@@ -118,9 +118,7 @@ def test_tensor_model():
             relative_data = data[0, 0, 0] / np.mean(data[0, 0, 0, gtab.b0s_mask])
 
             dtifit_to_relative = dm_to_relative.fit(relative_data)
-            npt.assert_almost_equal(
-                dtifit.fa[0, 0, 0], dtifit_to_relative.fa, decimal=3
-            )
+            npt.assert_allclose(dtifit.fa[0, 0, 0], dtifit_to_relative.fa, atol=1e-3, rtol=0)
 
     # And smoke-test that all these operations return sensibly-shaped arrays:
     npt.assert_equal(dtifit.fa.shape, data.shape[:3])
@@ -155,14 +153,12 @@ def test_tensor_model():
     # Check that eigenvalues and eigenvectors are properly sorted through
     # that previous operation:
     for i in range(3):
-        npt.assert_array_almost_equal(
-            np.dot(tensor, evecs[:, i]), evals[i] * evecs[:, i]
-        )
+        npt.assert_allclose(np.dot(tensor, evecs[:, i]), evals[i] * evecs[:, i])
     # Design Matrix
     X = dti.design_matrix(gtab)
     # Signals
     Y = np.exp(np.dot(X, D))
-    npt.assert_almost_equal(Y[0], b0)
+    npt.assert_allclose(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
     # Test fitting with different methods:
@@ -172,8 +168,8 @@ def test_tensor_model():
         tensor_fit = tensor_model.fit(Y)
         assert tensor_fit.model is tensor_model
         npt.assert_equal(tensor_fit.shape, Y.shape[:-1])
-        npt.assert_array_almost_equal(tensor_fit.evals[0], evals)
-        npt.assert_array_almost_equal(tensor_fit.S0_hat, b0, decimal=3)
+        npt.assert_allclose(tensor_fit.evals[0], evals)
+        npt.assert_allclose(tensor_fit.S0_hat, b0, atol=1e-3, rtol=0)
         # Test that the eigenvectors are correct, one-by-one:
         for i in range(3):
             # Eigenvectors have intrinsic sign ambiguity
@@ -189,12 +185,10 @@ def test_tensor_model():
 
         err_msg = "Calculation of tensor from Y does not compare to "
         err_msg += "analytical solution"
-        npt.assert_array_almost_equal(
-            tensor_fit.quadratic_form[0], tensor, err_msg=err_msg
-        )
+        npt.assert_allclose(tensor_fit.quadratic_form[0], tensor, err_msg=err_msg)
 
-        npt.assert_almost_equal(tensor_fit.md[0], md)
-        npt.assert_array_almost_equal(tensor_fit.mode, mode, decimal=5)
+        npt.assert_allclose(tensor_fit.md[0], md)
+        npt.assert_allclose(tensor_fit.mode, mode, atol=1e-5, rtol=0)
         npt.assert_equal(tensor_fit.directions.shape[-2], 1)
         npt.assert_equal(tensor_fit.directions.shape[-1], 3)
 
@@ -227,19 +221,19 @@ def test_tensor_model():
 
     tensor_model = dti.TensorModel(gtab)
     fit = tensor_model.fit(data)
-    npt.assert_array_almost_equal(fit[0].evals, evals)
+    npt.assert_allclose(fit[0].evals, evals)
 
     # Return S0_test
     tensor_model = dti.TensorModel(gtab, return_S0_hat=True)
     fit = tensor_model.fit(data)
-    npt.assert_array_almost_equal(fit[0].evals, evals)
-    npt.assert_array_almost_equal(fit[0].S0_hat, b0)
+    npt.assert_allclose(fit[0].evals, evals)
+    npt.assert_allclose(fit[0].S0_hat, b0)
 
     # Evals should be high for high diffusion voxel
     assert all(fit[1].evals > evals[0] * 0.9)
 
     # Evals should be zero where data is masked
-    npt.assert_array_almost_equal(fit[2].evals, 0.0)
+    npt.assert_allclose(fit[2].evals, 0.0)
 
 
 def test_indexing_on_tensor_fit():
@@ -298,13 +292,13 @@ def test_diffusivities():
     plan = planarity(dmfit.evals)
     spher = sphericity(dmfit.evals)
 
-    npt.assert_almost_equal(md, (0.0015 + 0.0003 + 0.0001) / 3)
-    npt.assert_almost_equal(Trace, (0.0015 + 0.0003 + 0.0001))
-    npt.assert_almost_equal(ad, 0.0015)
-    npt.assert_almost_equal(rd, (0.0003 + 0.0001) / 2)
-    npt.assert_almost_equal(lin, (0.0015 - 0.0003) / Trace)
-    npt.assert_almost_equal(plan, 2 * (0.0003 - 0.0001) / Trace)
-    npt.assert_almost_equal(spher, (3 * 0.0001) / Trace)
+    npt.assert_allclose(md, (0.0015 + 0.0003 + 0.0001) / 3)
+    npt.assert_allclose(Trace, (0.0015 + 0.0003 + 0.0001))
+    npt.assert_allclose(ad, 0.0015)
+    npt.assert_allclose(rd, (0.0003 + 0.0001) / 2)
+    npt.assert_allclose(lin, (0.0015 - 0.0003) / Trace)
+    npt.assert_allclose(plan, 2 * (0.0003 - 0.0001) / Trace)
+    npt.assert_allclose(spher, (3 * 0.0001) / Trace)
 
 
 def test_color_fa():
@@ -381,7 +375,7 @@ def test_wls_and_ls_fit():
     X = dti.design_matrix(gtab)
     # Signals
     Y = np.exp(np.dot(X, D))
-    npt.assert_almost_equal(Y[0], b0)
+    npt.assert_allclose(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
     # Testing WLS Fit on single voxel
@@ -393,35 +387,31 @@ def test_wls_and_ls_fit():
     model = TensorModel(gtab, fit_method="WLS", return_S0_hat=True)
     tensor_est = model.fit(Y)
     npt.assert_equal(tensor_est.shape, Y.shape[:-1])
-    npt.assert_array_almost_equal(tensor_est.evals[0], evals)
-    npt.assert_array_almost_equal(
-        tensor_est.quadratic_form[0],
-        tensor,
-        err_msg="Calculation of tensor from Y does not compare to analytical solution",
-    )
-    npt.assert_almost_equal(tensor_est.md[0], md)
-    npt.assert_array_almost_equal(tensor_est.S0_hat[0], b0, decimal=3)
+    npt.assert_allclose(tensor_est.evals[0], evals)
+    npt.assert_allclose(tensor_est.quadratic_form[0], tensor, err_msg="Calculation of tensor from Y does not compare to analytical solution", )
+    npt.assert_allclose(tensor_est.md[0], md)
+    npt.assert_allclose(tensor_est.S0_hat[0], b0, atol=1e-3, rtol=0)
 
     # Test that we can fit a single voxel's worth of data (a 1d array)
     y = Y[0]
     tensor_est = model.fit(y)
     npt.assert_equal(tensor_est.shape, ())
-    npt.assert_array_almost_equal(tensor_est.evals, evals)
-    npt.assert_array_almost_equal(tensor_est.quadratic_form, tensor)
-    npt.assert_almost_equal(tensor_est.md, md)
-    npt.assert_array_almost_equal(tensor_est.lower_triangular(b0=b0), D)
+    npt.assert_allclose(tensor_est.evals, evals)
+    npt.assert_allclose(tensor_est.quadratic_form, tensor)
+    npt.assert_allclose(tensor_est.md, md)
+    npt.assert_allclose(tensor_est.lower_triangular(b0=b0), D)
 
     # Test using fit_method='LS'
     model = TensorModel(gtab, fit_method="LS")
     tensor_est = model.fit(y)
     npt.assert_equal(tensor_est.shape, ())
-    npt.assert_array_almost_equal(tensor_est.evals, evals)
-    npt.assert_array_almost_equal(tensor_est.quadratic_form, tensor)
-    npt.assert_almost_equal(tensor_est.md, md)
-    npt.assert_array_almost_equal(tensor_est.lower_triangular(b0=b0), D)
-    npt.assert_array_almost_equal(tensor_est.linearity, linearity(evals))
-    npt.assert_array_almost_equal(tensor_est.planarity, planarity(evals))
-    npt.assert_array_almost_equal(tensor_est.sphericity, sphericity(evals))
+    npt.assert_allclose(tensor_est.evals, evals)
+    npt.assert_allclose(tensor_est.quadratic_form, tensor)
+    npt.assert_allclose(tensor_est.md, md)
+    npt.assert_allclose(tensor_est.lower_triangular(b0=b0), D)
+    npt.assert_allclose(tensor_est.linearity, linearity(evals))
+    npt.assert_allclose(tensor_est.planarity, planarity(evals))
+    npt.assert_allclose(tensor_est.sphericity, sphericity(evals))
 
     # testing that leverages are returned on request
     for fit_method in ["LS", "WLS"]:
@@ -441,7 +431,7 @@ def test_wls_and_ls_fit():
 
         # test value of leverage is 7 (in this case, for DTI)
         leverages = tensor_est.model.extra["leverages"]
-        npt.assert_almost_equal(leverages.sum(axis=1), np.array([7.0]))
+        npt.assert_allclose(leverages.sum(axis=1), np.array([7.0]))
 
     # Test wls given S^2 weights argument, matches default wls
     design_matrix = dti.design_matrix(gtab)
@@ -455,7 +445,7 @@ def test_wls_and_ls_fit():
     D_W, _ = wls_fit_tensor(
         design_matrix, YN, return_lower_triangular=True, weights=pred_s**2
     )  # weights match WLS default
-    npt.assert_almost_equal(D_w, D_W)
+    npt.assert_allclose(D_w, D_W)
     # wls calculation, but passing incorrect weights
     D_W, _ = wls_fit_tensor(
         design_matrix, YN, return_lower_triangular=True, weights=pred_s**1
@@ -468,7 +458,7 @@ def test_wls_and_ls_fit():
     inv_AT_W_A = np.linalg.pinv(np.dot(AT_W, design_matrix))
     AT_W_LS = np.dot(AT_W, np.log(YN).squeeze())
     result = np.dot(inv_AT_W_A, AT_W_LS)
-    npt.assert_almost_equal(D_w.squeeze(), result)
+    npt.assert_allclose(D_w.squeeze(), result)
 
     # force use of iter_fit_tensor without making a large test
     D_o, extra = ols_fit_tensor(
@@ -500,7 +490,7 @@ def test_rwls_rnlls_irls_fit():
     X = dti.design_matrix(gtab)
     # Signals
     Y = np.exp(np.dot(X, D))
-    npt.assert_almost_equal(Y[0], b0)
+    npt.assert_allclose(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
     noise = 1 * np.random.normal(size=Y.shape)
@@ -562,11 +552,9 @@ def test_rwls_rnlls_irls_fit():
         npt.assert_equal(tensor_est_R2.model.extra["robust"].shape, YN.shape)
         npt.assert_equal(tensor_est_R2.model.extra["robust"][0, -1], 0)
 
-        npt.assert_almost_equal(tensor_est_R1.evals[0], tensor_est_R2.evals[0])
+        npt.assert_allclose(tensor_est_R1.evals[0], tensor_est_R2.evals[0])
 
-        npt.assert_almost_equal(
-            tensor_est_R1.quadratic_form[0], tensor_est_R2.quadratic_form[0]
-        )
+        npt.assert_allclose(tensor_est_R1.quadratic_form[0], tensor_est_R2.quadratic_form[0])
 
     # test that error is raised if not enough data
     model = TensorModel(gtab, fit_method="RWLS", num_iter=10)
@@ -663,9 +651,9 @@ def test_all_constant():
     fit_methods = ["LS", "OLS", "NNLS", "RESTORE"]
     for _ in fit_methods:
         dm = dti.TensorModel(gtab)
-        npt.assert_almost_equal(dm.fit(100 * np.ones(bvals.shape[0])).fa, 0)
+        npt.assert_allclose(dm.fit(100 * np.ones(bvals.shape[0])).fa, 0)
         # Doesn't matter if the signal is smaller than 1:
-        npt.assert_almost_equal(dm.fit(0.4 * np.ones(bvals.shape[0])).fa, 0)
+        npt.assert_allclose(dm.fit(0.4 * np.ones(bvals.shape[0])).fa, 0)
 
 
 def test_all_zeros():
@@ -675,7 +663,7 @@ def test_all_zeros():
     for _ in fit_methods:
         dm = dti.TensorModel(gtab)
         evals = dm.fit(np.zeros(bvals.shape[0])).evals
-        npt.assert_array_almost_equal(evals, 0)
+        npt.assert_allclose(evals, 0)
 
 
 def test_mask():
@@ -693,7 +681,7 @@ def test_mask():
         npt.assert_array_equal(dtifit_w_mask.evecs[~mask], 0)
         npt.assert_array_equal(dtifit_w_mask.fa[~mask], 0)
         # Except for the one voxel that was selected by the mask:
-        npt.assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
+        npt.assert_allclose(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
 
         # Test with returning S0_hat
         dm = dti.TensorModel(gtab, fit_method=fit_type, return_S0_hat=True)
@@ -712,10 +700,8 @@ def test_mask():
             npt.assert_array_equal(dtifit_w_mask.fa[~mask], 0)
             npt.assert_array_equal(dtifit_w_mask.S0_hat[~mask], 0)
             # Except for the one voxel that was selected by the mask:
-            npt.assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
-            npt.assert_almost_equal(
-                dtifit_w_mask.S0_hat[0, 0, 0], dtifit.S0_hat[0, 0, 0]
-            )
+            npt.assert_allclose(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
+            npt.assert_allclose(dtifit_w_mask.S0_hat[0, 0, 0], dtifit.S0_hat[0, 0, 0])
 
 
 @set_random_number_generator()
@@ -804,26 +790,26 @@ def test_nlls_fit_tensor():
     tensor_model = dti.TensorModel(gtab, fit_method="NLLS")
     tensor_est = tensor_model.fit(Y)
     npt.assert_equal(tensor_est.shape, Y.shape[:-1])
-    npt.assert_array_almost_equal(tensor_est.evals[0], evals)
-    npt.assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
-    npt.assert_almost_equal(tensor_est.md[0], md)
+    npt.assert_allclose(tensor_est.evals[0], evals)
+    npt.assert_allclose(tensor_est.quadratic_form[0], tensor)
+    npt.assert_allclose(tensor_est.md[0], md)
 
     # You can also do this without the Jacobian (though it's slower):
     tensor_model = dti.TensorModel(gtab, fit_method="NLLS", jac=False)
     tensor_est = tensor_model.fit(Y)
     npt.assert_equal(tensor_est.shape, Y.shape[:-1])
-    npt.assert_array_almost_equal(tensor_est.evals[0], evals)
-    npt.assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
-    npt.assert_almost_equal(tensor_est.md[0], md)
+    npt.assert_allclose(tensor_est.evals[0], evals)
+    npt.assert_allclose(tensor_est.quadratic_form[0], tensor)
+    npt.assert_allclose(tensor_est.md[0], md)
 
     # Using weights:
     weights = 2 * np.ones_like(Y, dtype=np.float32)
     tensor_model = dti.TensorModel(gtab, fit_method="NLLS", weights=weights)
     tensor_est = tensor_model.fit(Y)
     npt.assert_equal(tensor_est.shape, Y.shape[:-1])
-    npt.assert_array_almost_equal(tensor_est.evals[0], evals)
-    npt.assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
-    npt.assert_almost_equal(tensor_est.md[0], md)
+    npt.assert_allclose(tensor_est.evals[0], evals)
+    npt.assert_allclose(tensor_est.quadratic_form[0], tensor)
+    npt.assert_allclose(tensor_est.md[0], md)
 
     # Use NLLS with some actual 4D data:
     data, bvals, bvecs = get_fnames(name="small_25")
@@ -834,7 +820,7 @@ def test_nlls_fit_tensor():
     tm2 = dti.TensorModel(gtab)
     tf2 = tm2.fit(dd)
 
-    npt.assert_array_almost_equal(tf1.fa, tf2.fa, decimal=1)
+    npt.assert_allclose(tf1.fa, tf2.fa, atol=1e-1, rtol=0)
 
     # Reduce amount of data, to cause NLLS to fail
     gtab_less = grad.gradient_table(gtab.bvals[0:3], bvecs=gtab.bvecs[0:3, :])
@@ -889,10 +875,8 @@ def test_restore():
                 )
 
                 tensor_est = tensor_model.fit(this_y)
-                npt.assert_array_almost_equal(tensor_est.evals[0], evals, decimal=3)
-                npt.assert_array_almost_equal(
-                    tensor_est.quadratic_form[0], tensor, decimal=3
-                )
+                npt.assert_allclose(tensor_est.evals[0], evals, atol=1e-3, rtol=0)
+                npt.assert_allclose(tensor_est.quadratic_form[0], tensor, atol=1e-3, rtol=0)
 
                 # test recording of robust signals
                 npt.assert_equal(tensor_est.model.extra["robust"].shape, Y.shape)
@@ -910,7 +894,7 @@ def test_restore():
         gtab, fit_method="restore", sigma=0.0001, return_S0_hat=True
     )
     tmf = tensor_model.fit(Y.copy())
-    npt.assert_almost_equal(tmf[0].S0_hat, b0)
+    npt.assert_allclose(tmf[0].S0_hat, b0)
 
     # Test warning for failure of NLLS method, resort to OLS result
     # (reason for failure: too few data points for NLLS, due to negative sigma)
@@ -942,14 +926,12 @@ def test_adc():
 
     pdd0 = dtifit.evecs[0, 0, 0, 0]
     sphere_pdd0 = dps.Sphere(x=pdd0[0], y=pdd0[1], z=pdd0[2])
-    npt.assert_array_almost_equal(
-        dtifit.adc(sphere_pdd0)[0, 0, 0], dtifit.ad[0, 0, 0], decimal=4
-    )
+    npt.assert_allclose(dtifit.adc(sphere_pdd0)[0, 0, 0], dtifit.ad[0, 0, 0], atol=1e-4, rtol=0)
 
     # Test that it works for cases in which the data is 1D
     dtifit = dm.fit(data[0, 0, 0])
     sphere_pdd0 = dps.Sphere(x=pdd0[0], y=pdd0[1], z=pdd0[2])
-    npt.assert_array_almost_equal(dtifit.adc(sphere_pdd0), dtifit.ad, decimal=4)
+    npt.assert_allclose(dtifit.adc(sphere_pdd0), dtifit.ad, atol=1e-4, rtol=0)
 
 
 def test_predict():
@@ -970,9 +952,9 @@ def test_predict():
 
     dm = dti.TensorModel(gtab, fit_method="LS", return_S0_hat=True)
     dmfit = dm.fit(S)
-    npt.assert_array_almost_equal(dmfit.predict(gtab, S0=100), S)
-    npt.assert_array_almost_equal(dmfit.predict(gtab), S)
-    npt.assert_array_almost_equal(dm.predict(dmfit.model_params, S0=100), S)
+    npt.assert_allclose(dmfit.predict(gtab, S0=100), S)
+    npt.assert_allclose(dmfit.predict(gtab), S)
+    npt.assert_allclose(dm.predict(dmfit.model_params, S0=100), S)
 
     fdata, fbvals, fbvecs = get_fnames()
     data = load_nifti_data(fdata)
@@ -1042,7 +1024,7 @@ def test_eig_from_lo_tri():
     dmfit = dm.fit(S)
 
     lo_tri = lower_triangular(dmfit.quadratic_form)
-    npt.assert_array_almost_equal(dti.eig_from_lo_tri(lo_tri), dmfit.model_params)
+    npt.assert_allclose(dti.eig_from_lo_tri(lo_tri), dmfit.model_params)
 
 
 def test_min_signal_alone():
@@ -1054,9 +1036,7 @@ def test_min_signal_alone():
     ten_model = dti.TensorModel(gtab)
     fit_alone = ten_model.fit(data[idx])
     fit_together = ten_model.fit(data)
-    npt.assert_array_almost_equal(
-        fit_together.model_params[idx], fit_alone.model_params, decimal=12
-    )
+    npt.assert_allclose(fit_together.model_params[idx], fit_alone.model_params, atol=1e-12, rtol=0)
 
 
 def test_decompose_tensor_nan():
@@ -1068,15 +1048,15 @@ def test_decompose_tensor_nan():
     lfine, vfine = _decompose_tensor_nan(
         from_lower_triangular(D_fine), from_lower_triangular(D_alter)
     )
-    npt.assert_array_almost_equal(lfine, np.array([1.7e-3, 0.3e-3, 0.2e-3]))
-    npt.assert_array_almost_equal(vfine, vref)
+    npt.assert_allclose(lfine, np.array([1.7e-3, 0.3e-3, 0.2e-3]))
+    npt.assert_allclose(vfine, vref)
 
     lref, vref = decompose_tensor(from_lower_triangular(D_alter))
     lalter, valter = _decompose_tensor_nan(
         from_lower_triangular(D_nan), from_lower_triangular(D_alter)
     )
-    npt.assert_array_almost_equal(lalter, np.array([1.6e-3, 0.4e-3, 0.3e-3]))
-    npt.assert_array_almost_equal(valter, vref)
+    npt.assert_allclose(lalter, np.array([1.6e-3, 0.4e-3, 0.3e-3]))
+    npt.assert_allclose(valter, vref)
 
 
 def test_design_matrix_lte():
@@ -1086,7 +1066,7 @@ def test_design_matrix_lte():
 
     B_btens_none = dti.design_matrix(gtab_btens_none)
     B_btens_lte = dti.design_matrix(gtab_btens_lte)
-    npt.assert_array_almost_equal(B_btens_none, B_btens_lte, decimal=1)
+    npt.assert_allclose(B_btens_none, B_btens_lte, atol=1e-1, rtol=0)
 
 
 def test_extra_return():

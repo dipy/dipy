@@ -1,7 +1,7 @@
 """Testing track_metrics module"""
 
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_equal
+from numpy.testing import assert_allclose, assert_equal
 
 from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking import distances as pf, metrics as tm
@@ -41,9 +41,9 @@ def test_segment_intersection():
 def test_normalized_3vec():
     vec = [1, 2, 3]
     l2n = np.sqrt(np.dot(vec, vec))
-    assert_array_almost_equal(l2n, pf.norm_3vec(vec))
+    assert_allclose(l2n, pf.norm_3vec(vec))
     nvec = pf.normalized_3vec(vec)
-    assert_array_almost_equal(np.array(vec) / l2n, nvec)
+    assert_allclose(np.array(vec) / l2n, nvec)
     vec = np.array([[1, 2, 3]])
     assert_equal(vec.shape, (1, 3))
     assert_equal(pf.normalized_3vec(vec).shape, (3,))
@@ -52,19 +52,19 @@ def test_normalized_3vec():
 def test_inner_3vecs():
     vec1 = [1, 2.3, 3]
     vec2 = [2, 3, 4.3]
-    assert_array_almost_equal(np.inner(vec1, vec2), pf.inner_3vecs(vec1, vec2))
+    assert_allclose(np.inner(vec1, vec2), pf.inner_3vecs(vec1, vec2))
     vec2 = [2, -3, 4.3]
-    assert_array_almost_equal(np.inner(vec1, vec2), pf.inner_3vecs(vec1, vec2))
+    assert_allclose(np.inner(vec1, vec2), pf.inner_3vecs(vec1, vec2))
 
 
 def test_add_sub_3vecs():
     vec1 = np.array([1, 2.3, 3])
     vec2 = np.array([2, 3, 4.3])
-    assert_array_almost_equal(vec1 - vec2, pf.sub_3vecs(vec1, vec2))
-    assert_array_almost_equal(vec1 + vec2, pf.add_3vecs(vec1, vec2))
+    assert_allclose(vec1 - vec2, pf.sub_3vecs(vec1, vec2))
+    assert_allclose(vec1 + vec2, pf.add_3vecs(vec1, vec2))
     vec2 = [2, -3, 4.3]
-    assert_array_almost_equal(vec1 - vec2, pf.sub_3vecs(vec1, vec2))
-    assert_array_almost_equal(vec1 + vec2, pf.add_3vecs(vec1, vec2))
+    assert_allclose(vec1 - vec2, pf.sub_3vecs(vec1, vec2))
+    assert_allclose(vec1 + vec2, pf.add_3vecs(vec1, vec2))
 
 
 def test_winding():

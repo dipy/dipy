@@ -2,7 +2,6 @@
 
 import numpy as np
 from numpy.testing import (
-    assert_almost_equal,
     assert_equal,
     assert_raises,
 )
@@ -167,13 +166,13 @@ def test_weights_funcs(rng):
                         # for second-to-last and last iter, robust not None
                         assert_equal(robust.shape, Y.shape)
                         # check that the super-outlier has 0 weight
-                        assert_almost_equal(weights[0], 0)
+                        assert_allclose(weights[0], 0)
 
                     if idx == NUM_ITER and fit_type == "nlls":
                         # for last iter, robust not None
                         assert_equal(robust.shape, Y.shape)
                         # check that the super-outlier has 0 weight
-                        assert_almost_equal(weights[0], 0)
+                        assert_allclose(weights[0], 0)
 
                     if idx < NUM_ITER - 1:  # iter okay for both wls & nlls
                         assert_equal(robust, None)

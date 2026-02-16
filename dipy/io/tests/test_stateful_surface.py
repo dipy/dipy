@@ -237,7 +237,7 @@ def test_random_space_transformations():
     # Return to initial space and compare
     sfs.to_rasmm()
     sfs.to_center()
-    npt.assert_almost_equal(initial_vertices, sfs.vertices, decimal=5)
+    npt.assert_allclose(initial_vertices, sfs.vertices, atol=1e-5, rtol=0)
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
@@ -441,4 +441,4 @@ def test_save_load_many_times(extension):
             )
 
         # Final vertices should match original
-        npt.assert_almost_equal(ref_vertices, sfs.vertices, decimal=5)
+        npt.assert_allclose(ref_vertices, sfs.vertices, atol=1e-5, rtol=0)

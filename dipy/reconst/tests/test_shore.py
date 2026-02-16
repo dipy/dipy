@@ -68,7 +68,7 @@ def test_shore_positive_constrain():
         )
         asmfit = asm.fit(data.S)
         eap = asmfit.pdf_grid(11, 20e-03)
-    npt.assert_almost_equal(eap[eap < 0].sum(), 0, 3)
+    npt.assert_allclose(eap[eap < 0].sum(), 0, atol=1e-3, rtol=0)
 
 
 def test_shore_fitting_no_constrain_e0():
@@ -86,7 +86,7 @@ def test_shore_fitting_no_constrain_e0():
             category=PendingDeprecationWarning,
         )
         asmfit = asm.fit(data.S)
-    npt.assert_almost_equal(compute_e0(asmfit), 1)
+    npt.assert_allclose(compute_e0(asmfit), 1)
 
 
 @needs_cvxpy
@@ -106,7 +106,7 @@ def test_shore_fitting_constrain_e0():
             category=PendingDeprecationWarning,
         )
         asmfit = asm.fit(data.S)
-    npt.assert_almost_equal(compute_e0(asmfit), 1)
+    npt.assert_allclose(compute_e0(asmfit), 1)
 
 
 def compute_e0(shorefit):

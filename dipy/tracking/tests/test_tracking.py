@@ -531,7 +531,7 @@ def test_particle_filtering_tractography(rng):
         )
         for s in pft_streamlines:
             for i in range(len(s) - 1):
-                npt.assert_almost_equal(np.linalg.norm(s[i] - s[i + 1]), step_size)
+                npt.assert_allclose(np.linalg.norm(s[i] - s[i + 1]), step_size)
 
     # Test that all points are within the image volume
     seeds = seeds_from_mask(np.ones(simple_wm.shape), np.eye(4), density=1)

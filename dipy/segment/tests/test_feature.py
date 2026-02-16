@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.testing import (
-    assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
@@ -89,9 +88,7 @@ def test_feature_resample():
                 # Test method extract
                 features = feature.extract(s)
                 assert_equal(features.shape, (nb_points, s.shape[1]))
-                assert_array_almost_equal(
-                    features, set_number_of_points(s, nb_points=nb_points)
-                )
+                assert_allclose(features, set_number_of_points(s, nb_points=nb_points))
 
             # This feature type is not order invariant
             assert_false(feature.is_order_invariant)
@@ -124,14 +121,14 @@ def test_feature_center_of_mass():
             # Test method extract
             features = feature.extract(s)
             assert_equal(features.shape, (1, s.shape[1]))
-            assert_array_almost_equal(features, np.mean(s, axis=0)[None, :])
+            assert_allclose(features, np.mean(s, axis=0)[None, :])
 
         # This feature type is order invariant
         assert_true(feature.is_order_invariant)
         for s in [s1, s2, s3, s4]:
             features = feature.extract(s)
             features_flip = feature.extract(s[::-1])
-            assert_array_almost_equal(features, features_flip)
+            assert_allclose(features, features_flip)
 
 
 def test_feature_midpoint():
@@ -154,7 +151,7 @@ def test_feature_midpoint():
             # Test method extract
             features = feature.extract(s)
             assert_equal(features.shape, (1, s.shape[1]))
-            assert_array_almost_equal(features, s[len(s) // 2][None, :])
+            assert_allclose(features, s[len(s) // 2][None, :])
 
         # This feature type is not order invariant
         assert_false(feature.is_order_invariant)
@@ -189,14 +186,14 @@ def test_feature_arclength():
             # Test method extract
             features = feature.extract(s)
             assert_equal(features.shape, (1, 1))
-            assert_array_almost_equal(features, length(s)[None, None])
+            assert_allclose(features, length(s)[None, None])
 
         # This feature type is order invariant
         assert_true(feature.is_order_invariant)
         for s in [s1, s2, s3, s4]:
             features = feature.extract(s)
             features_flip = feature.extract(s[::-1])
-            assert_array_almost_equal(features, features_flip)
+            assert_allclose(features, features_flip)
 
 
 def test_feature_vector_of_endpoints():
@@ -223,7 +220,7 @@ def test_feature_vector_of_endpoints():
             # Test method extract
             features = feature.extract(s)
             assert_equal(features.shape, (1, s.shape[1]))
-            assert_array_almost_equal(features, s[[-1]] - s[[0]])
+            assert_allclose(features, s[[-1]] - s[[0]])
 
         # This feature type is not order invariant
         assert_false(feature.is_order_invariant)
@@ -231,7 +228,7 @@ def test_feature_vector_of_endpoints():
             features = feature.extract(s)
             features_flip = feature.extract(s[::-1])
             # The flip features are simply the negative of the features.
-            assert_array_almost_equal(features, -features_flip)
+            assert_allclose(features, -features_flip)
 
 
 @set_random_number_generator(1234)

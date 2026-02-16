@@ -3,8 +3,6 @@ from operator import mul
 
 import numpy as np
 from numpy.testing import (
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
@@ -99,7 +97,7 @@ def test_cubic_spline():
             else:
                 expected.append(0.0)
     actual = cubic_spline(np.array(in_list, dtype=np.float64))
-    assert_array_almost_equal(actual, np.array(expected, dtype=np.float64))
+    assert_allclose(actual, np.array(expected, dtype=np.float64))
 
 
 def test_cubic_spline_derivative():
@@ -122,7 +120,7 @@ def test_cubic_spline_derivative():
     s_h = np.array(cubic_spline(input_h))
     expected = (s_h - s) / h
     actual = cubic_spline_derivative(in_list)
-    assert_array_almost_equal(actual, expected)
+    assert_allclose(actual, expected)
 
 
 def test_parzen_joint_histogram():
@@ -151,21 +149,21 @@ def test_parzen_joint_histogram():
 
                 # Test bin_normalize_static at the boundary
                 normalized = P.bin_normalize_static(min_int)
-                assert_almost_equal(normalized, P.padding)
+                assert_allclose(normalized, P.padding)
                 index = P.bin_index(normalized)
                 assert_equal(index, P.padding)
                 normalized = P.bin_normalize_static(max_int)
-                assert_almost_equal(normalized, nbins - P.padding)
+                assert_allclose(normalized, nbins - P.padding)
                 index = P.bin_index(normalized)
                 assert_equal(index, nbins - 1 - P.padding)
 
                 # Test bin_normalize_moving at the boundary
                 normalized = P.bin_normalize_moving(fact * min_int)
-                assert_almost_equal(normalized, P.padding)
+                assert_allclose(normalized, P.padding)
                 index = P.bin_index(normalized)
                 assert_equal(index, P.padding)
                 normalized = P.bin_normalize_moving(fact * max_int)
-                assert_almost_equal(normalized, nbins - P.padding)
+                assert_allclose(normalized, nbins - P.padding)
                 index = P.bin_index(normalized)
                 assert_equal(index, nbins - 1 - P.padding)
 
@@ -244,24 +242,24 @@ def test_parzen_densities(rng):
         # Verify joint distributions
         expected_joint_dense /= expected_joint_dense.sum()
         expected_joint_sparse /= expected_joint_sparse.sum()
-        assert_array_almost_equal(actual_joint_dense, expected_joint_dense)
-        assert_array_almost_equal(actual_joint_sparse, expected_joint_sparse)
+        assert_allclose(actual_joint_dense, expected_joint_dense)
+        assert_allclose(actual_joint_sparse, expected_joint_sparse)
 
         # Verify moving marginals
         expected_mmarginal_dense = expected_joint_dense.sum(0)
         expected_mmarginal_dense /= expected_mmarginal_dense.sum()
         expected_mmarginal_sparse = expected_joint_sparse.sum(0)
         expected_mmarginal_sparse /= expected_mmarginal_sparse.sum()
-        assert_array_almost_equal(actual_mmarginal_dense, expected_mmarginal_dense)
-        assert_array_almost_equal(actual_mmarginal_sparse, expected_mmarginal_sparse)
+        assert_allclose(actual_mmarginal_dense, expected_mmarginal_dense)
+        assert_allclose(actual_mmarginal_sparse, expected_mmarginal_sparse)
 
         # Verify static marginals
         expected_smarginal_dense = expected_joint_dense.sum(1)
         expected_smarginal_dense /= expected_smarginal_dense.sum()
         expected_smarginal_sparse = expected_joint_sparse.sum(1)
         expected_smarginal_sparse /= expected_smarginal_sparse.sum()
-        assert_array_almost_equal(actual_smarginal_dense, expected_smarginal_dense)
-        assert_array_almost_equal(actual_smarginal_sparse, expected_smarginal_sparse)
+        assert_allclose(actual_smarginal_dense, expected_smarginal_dense)
+        assert_allclose(actual_smarginal_sparse, expected_smarginal_sparse)
 
 
 def setup_random_transform(transform, rfactor, nslices=45, sigma=1, rng=None):

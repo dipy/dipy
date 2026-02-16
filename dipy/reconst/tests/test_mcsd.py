@@ -118,7 +118,7 @@ def test_mcsd_model_delta():
             g = GradientTable(default_sphere.vertices * s)
             signal = model.predict(wm_delta, gtab=g)
             expected = np.dot(response.response[i, iso:], B.T)
-            npt.assert_array_almost_equal(signal, expected)
+            npt.assert_allclose(signal, expected)
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -129,7 +129,7 @@ def test_mcsd_model_delta():
         signal = model.predict(wm_delta, gtab=gtab)
     fit = model.fit(signal)
     m = model.m_values
-    npt.assert_array_almost_equal(fit.shm_coeff[m != 0], 0.0, 2)
+    npt.assert_allclose(fit.shm_coeff[m != 0], 0.0, atol=1e-2, rtol=0)
 
 
 @needs_cvxpy
@@ -163,7 +163,7 @@ def test_MultiShellDeconvModel_response():
         model_2 = MultiShellDeconvModel(gtab, responses, sh_order_max=sh_order_max)
     response_1 = model_1.response.response
     response_2 = model_2.response.response
-    npt.assert_array_almost_equal(response_1, response_2, 0)
+    npt.assert_allclose(response_1, response_2, atol=1, rtol=0)
 
     npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, np.ones((4, 3, 4)))
     npt.assert_raises(
@@ -214,8 +214,8 @@ def test_MultiShellDeconvModel():
         )
         S_pred_model = model.predict(fit.all_shm_coeff)
 
-    npt.assert_array_almost_equal(S_pred_fit, S_pred_model, 0)
-    npt.assert_array_almost_equal(S_pred_fit, signal, 0)
+    npt.assert_allclose(S_pred_fit, S_pred_model, atol=1, rtol=0)
+    npt.assert_allclose(S_pred_fit, signal, atol=1, rtol=0)
 
 
 @needs_cvxpy
@@ -252,7 +252,7 @@ def test_MSDeconvFit():
     fit = model.fit(signal)
 
     # Testing volume fractions
-    npt.assert_array_almost_equal(fit.volume_fractions, vf, 1)
+    npt.assert_allclose(fit.volume_fractions, vf, atol=1e-1, rtol=0)
 
 
 def test_multi_shell_fiber_response():
@@ -327,9 +327,9 @@ def test_mask_for_response_msmt(rng):
     masks_sum = int(np.sum(wm_mask) + np.sum(gm_mask) + np.sum(csf_mask))
     npt.assert_equal(masks_sum != 0, True)
 
-    npt.assert_array_almost_equal(masks_gt[0], wm_mask)
-    npt.assert_array_almost_equal(masks_gt[1], gm_mask)
-    npt.assert_array_almost_equal(masks_gt[2], csf_mask)
+    npt.assert_allclose(masks_gt[0], wm_mask)
+    npt.assert_allclose(masks_gt[1], gm_mask)
+    npt.assert_allclose(masks_gt[2], csf_mask)
 
 
 @set_random_number_generator()
@@ -400,18 +400,18 @@ def test_response_from_mask_msmt(rng):
     # Verifying that csf's response is greater than gm's
     npt.assert_equal(np.sum(response_csf[:, :3]) > np.sum(response_gm[:, :3]), True)
     # Verifying that csf and gm are described by spheres
-    npt.assert_almost_equal(response_csf[:, 1], response_csf[:, 2])
+    npt.assert_allclose(response_csf[:, 1], response_csf[:, 2])
     npt.assert_allclose(response_csf[:, 0], response_csf[:, 1], rtol=1, atol=0)
-    npt.assert_almost_equal(response_gm[:, 1], response_gm[:, 2])
+    npt.assert_allclose(response_gm[:, 1], response_gm[:, 2])
     npt.assert_allclose(response_gm[:, 0], response_gm[:, 1], rtol=1, atol=0)
     # Verifying that wm is anisotropic in one direction
-    npt.assert_almost_equal(response_wm[:, 1], response_wm[:, 2])
+    npt.assert_allclose(response_wm[:, 1], response_wm[:, 2])
     npt.assert_equal(response_wm[:, 0] > 2.5 * response_wm[:, 1], True)
 
     # Verifying with ground truth for the first bvalue
-    npt.assert_array_almost_equal(response_wm[0], responses_gt[0], 1)
-    npt.assert_array_almost_equal(response_gm[0], responses_gt[1], 1)
-    npt.assert_array_almost_equal(response_csf[0], responses_gt[2], 1)
+    npt.assert_allclose(response_wm[0], responses_gt[0], atol=1e-1, rtol=0)
+    npt.assert_allclose(response_gm[0], responses_gt[1], atol=1e-1, rtol=0)
+    npt.assert_allclose(response_csf[0], responses_gt[2], atol=1e-1, rtol=0)
 
 
 @set_random_number_generator()

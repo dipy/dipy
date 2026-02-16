@@ -3,7 +3,6 @@ from time import time
 import numpy as np
 from numpy.testing import (
     assert_,
-    assert_array_almost_equal,
     assert_equal,
     assert_raises,
 )
@@ -29,7 +28,7 @@ def test_nlmeans_static():
     """Test static image denoising with classic method."""
     S0 = 100 * np.ones((20, 20, 20), dtype="f8")
     S0n = nlmeans(S0, sigma=1.0, rician=False, method="classic")
-    assert_array_almost_equal(S0, S0n)
+    assert_allclose(S0, S0n)
 
 
 def test_nlmeans_wrong():
@@ -123,7 +122,7 @@ def test_nlmeans_4d_3dsigma_and_threads():
     duration_all_core = time() - t
     print(duration_all_core)
 
-    assert_array_almost_equal(new_data, new_data2)
+    assert_allclose(new_data, new_data2)
 
     if cpu_count() > 2:
         assert_greater(duration_1core, duration_all_core)
@@ -181,7 +180,7 @@ def test_default_block_radius():
     result_blockwise = nlmeans(S0, sigma=1.0, method="blockwise")
     assert result_blockwise.shape == S0.shape
 
-    assert_array_almost_equal(result_classic, S0, decimal=0)
+    assert_allclose(result_classic, S0, atol=1, rtol=0)
     assert np.abs(np.mean(result_blockwise) - 100) < 5
     assert np.all(result_blockwise >= 0)
 

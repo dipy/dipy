@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.testing import (
-    assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
@@ -114,41 +113,31 @@ def test_compute_em_demons_step_2d(rng):
 
     # Test sigma_i_sq == inf
     try:
-        assert_array_almost_equal(
-            actual[random_labels == 0], expected[random_labels == 0]
-        )
+        assert_allclose(actual[random_labels == 0], expected[random_labels == 0])
     except AssertionError as e:
         raise AssertionError("Failed for sigma_i_sq == inf") from e
 
     # Test sigma_i_sq == 0 and gradient != 0
     try:
-        assert_array_almost_equal(
-            actual[random_labels == 1], expected[random_labels == 1]
-        )
+        assert_allclose(actual[random_labels == 1], expected[random_labels == 1])
     except AssertionError as e:
         raise AssertionError("Failed for sigma_i_sq == 0 and gradient != 0") from e
 
     # Test sigma_i_sq == 0 and gradient == 0
     try:
-        assert_array_almost_equal(
-            actual[random_labels == 2], expected[random_labels == 2]
-        )
+        assert_allclose(actual[random_labels == 2], expected[random_labels == 2])
     except AssertionError as e:
         raise AssertionError("Failed for sigma_i_sq == 0 and gradient == 0") from e
 
     # Test sigma_i_sq != 0 and gradient == 0
     try:
-        assert_array_almost_equal(
-            actual[random_labels == 3], expected[random_labels == 3]
-        )
+        assert_allclose(actual[random_labels == 3], expected[random_labels == 3])
     except AssertionError as e:
         raise AssertionError("Failed for sigma_i_sq != 0 and gradient == 0 ") from e
 
     # Test sigma_i_sq != 0 and gradient != 0
     try:
-        assert_array_almost_equal(
-            actual[random_labels == 4], expected[random_labels == 4]
-        )
+        assert_allclose(actual[random_labels == 4], expected[random_labels == 4])
     except AssertionError as e:
         raise AssertionError("Failed for sigma_i_sq != 0 and gradient != 0") from e
 
@@ -262,41 +251,31 @@ def test_compute_em_demons_step_3d(rng):
 
     # Test sigma_i_sq == inf
     try:
-        assert_array_almost_equal(
-            actual[random_labels == 0], expected[random_labels == 0]
-        )
+        assert_allclose(actual[random_labels == 0], expected[random_labels == 0])
     except AssertionError as e:
         raise AssertionError("Failed for sigma_i_sq == inf") from e
 
     # Test sigma_i_sq == 0 and gradient != 0
     try:
-        assert_array_almost_equal(
-            actual[random_labels == 1], expected[random_labels == 1]
-        )
+        assert_allclose(actual[random_labels == 1], expected[random_labels == 1])
     except AssertionError as e:
         raise AssertionError("Failed for sigma_i_sq == 0 and gradient != 0") from e
 
     # Test sigma_i_sq == 0 and gradient == 0
     try:
-        assert_array_almost_equal(
-            actual[random_labels == 2], expected[random_labels == 2]
-        )
+        assert_allclose(actual[random_labels == 2], expected[random_labels == 2])
     except AssertionError as e:
         raise AssertionError("Failed for sigma_i_sq == 0 and gradient == 0") from e
 
     # Test sigma_i_sq != 0 and gradient == 0
     try:
-        assert_array_almost_equal(
-            actual[random_labels == 3], expected[random_labels == 3]
-        )
+        assert_allclose(actual[random_labels == 3], expected[random_labels == 3])
     except AssertionError as e:
         raise AssertionError("Failed for sigma_i_sq != 0 and gradient == 0 ") from e
 
     # Test sigma_i_sq != 0 and gradient != 0
     try:
-        assert_array_almost_equal(
-            actual[random_labels == 4], expected[random_labels == 4]
-        )
+        assert_allclose(actual[random_labels == 4], expected[random_labels == 4])
     except AssertionError as e:
         raise AssertionError("Failed for sigma_i_sq != 0 and gradient != 0") from e
 
@@ -345,7 +324,7 @@ def test_quantize_positive_2d(rng):
     out, levels, hist = em.quantize_positive_2d(input_image, num_levels)
     levels = np.asarray(levels)
     assert_array_equal(out, true_quantization)
-    assert_array_almost_equal(levels, true_levels)
+    assert_allclose(levels, true_levels)
     for i in range(num_levels):
         current_bin = np.asarray(true_quantization == i).sum()
         assert_equal(hist[i], current_bin)
@@ -405,7 +384,7 @@ def test_quantize_positive_3d(rng):
     out, levels, hist = em.quantize_positive_3d(input_image, num_levels)
     levels = np.asarray(levels)
     assert_array_equal(out, true_quantization)
-    assert_array_almost_equal(levels, true_levels)
+    assert_allclose(levels, true_levels)
     for i in range(num_levels):
         current_bin = np.asarray(true_quantization == i).sum()
         assert_equal(hist[i], current_bin)
@@ -443,8 +422,8 @@ def test_compute_masked_class_stats_2d(rng):
 
     mask = np.ones(shape, dtype=np.int32)
     means, std_dev = em.compute_masked_class_stats_2d(mask, values, 10, labels)
-    assert_array_almost_equal(means, expected_means, decimal=4)
-    assert_array_almost_equal(std_dev, expected_vars, decimal=4)
+    assert_allclose(means, expected_means, atol=1e-4, rtol=0)
+    assert_allclose(std_dev, expected_vars, atol=1e-4, rtol=0)
 
 
 @set_random_number_generator(1246592)
@@ -470,5 +449,5 @@ def test_compute_masked_class_stats_3d(rng):
 
     mask = np.ones(shape, dtype=np.int32)
     means, std_dev = em.compute_masked_class_stats_3d(mask, values, 10, labels)
-    assert_array_almost_equal(means, expected_means, decimal=4)
-    assert_array_almost_equal(std_dev, expected_vars, decimal=4)
+    assert_allclose(means, expected_means, atol=1e-4, rtol=0)
+    assert_allclose(std_dev, expected_vars, atol=1e-4, rtol=0)

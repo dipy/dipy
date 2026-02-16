@@ -1,7 +1,7 @@
 import itertools
 
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_raises
+from numpy.testing import assert_allclose, assert_array_equal, assert_raises
 from scipy import ndimage
 
 from dipy.align import floating
@@ -154,8 +154,8 @@ def test_em_demons_step_2d():
     expected_bwd[..., 0] = ndimage.gaussian_filter(expected_bwd[..., 0], 3.0)
     expected_bwd[..., 1] = ndimage.gaussian_filter(expected_bwd[..., 1], 3.0)
 
-    assert_array_almost_equal(actual_forward, expected_fwd)
-    assert_array_almost_equal(actual_backward, expected_bwd)
+    assert_allclose(actual_forward, expected_fwd)
+    assert_allclose(actual_backward, expected_bwd)
 
 
 def test_em_demons_step_3d():
@@ -250,5 +250,5 @@ def test_em_demons_step_3d():
     expected_bwd[..., 1] = ndimage.gaussian_filter(expected_bwd[..., 1], 3.0)
     expected_bwd[..., 2] = ndimage.gaussian_filter(expected_bwd[..., 2], 3.0)
 
-    assert_array_almost_equal(actual_forward, expected_fwd)
-    assert_array_almost_equal(actual_backward, expected_bwd)
+    assert_allclose(actual_forward, expected_fwd)
+    assert_allclose(actual_backward, expected_bwd)

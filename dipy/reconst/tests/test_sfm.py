@@ -50,15 +50,12 @@ def test_sfm():
             sffit3 = sfmodel.fit(data, num_processes=n_procs)
             pred3 = sffit3.predict(gtab=gtab)
             odf3 = sffit3.odf(sphere)
-            npt.assert_almost_equal(pred3, pred2, decimal=2)
-            npt.assert_almost_equal(pred3[0, 0, 0], pred1, decimal=2)
-            npt.assert_almost_equal(odf3[0, 0, 0], odf1, decimal=2)
-            npt.assert_almost_equal(odf3[0, 0, 0], odf2[0, 0, 0], decimal=2)
+            npt.assert_allclose(pred3, pred2, atol=1e-2, rtol=0)
+            npt.assert_allclose(pred3[0, 0, 0], pred1, atol=1e-2, rtol=0)
+            npt.assert_allclose(odf3[0, 0, 0], odf1, atol=1e-2, rtol=0)
+            npt.assert_allclose(odf3[0, 0, 0], odf2[0, 0, 0], atol=1e-2, rtol=0)
             # Fit zeros and you will get back zeros
-            npt.assert_almost_equal(
-                sfmodel.fit(np.zeros(data[0, 0, 0].shape), num_processes=n_procs).beta,
-                np.zeros(sfmodel.design_matrix[0].shape[-1]),
-            )
+            npt.assert_allclose(sfmodel.fit(np.zeros(data[0, 0, 0].shape), num_processes=n_procs).beta, np.zeros(sfmodel.design_matrix[0].shape[-1]), )
 
 
 @needs_sklearn

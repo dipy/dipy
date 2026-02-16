@@ -6,8 +6,6 @@ import warnings
 import numpy as np
 from numpy.testing import (
     assert_,
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_equal,
     assert_raises,
 )
@@ -84,10 +82,10 @@ def test_orthogonality_basis_functions():
     )[0]
 
     # checking for first 5 basis functions if they are indeed orthogonal
-    assert_almost_equal(int1, 0.0)
-    assert_almost_equal(int2, 0.0)
-    assert_almost_equal(int3, 0.0)
-    assert_almost_equal(int4, 0.0)
+    assert_allclose(int1, 0.0)
+    assert_allclose(int2, 0.0)
+    assert_allclose(int3, 0.0)
+    assert_allclose(int4, 0.0)
 
     # do the same for the isotropic mapmri basis functions
     # we already know the spherical harmonics are orthonormal
@@ -125,10 +123,10 @@ def test_orthogonality_basis_functions():
         )[0]
 
     # checking for first 5 basis functions if they are indeed orthogonal
-    assert_almost_equal(int1, 0.0)
-    assert_almost_equal(int2, 0.0)
-    assert_almost_equal(int3, 0.0)
-    assert_almost_equal(int4, 0.0)
+    assert_allclose(int1, 0.0)
+    assert_allclose(int2, 0.0)
+    assert_allclose(int3, 0.0)
+    assert_allclose(int4, 0.0)
 
 
 def test_mapmri_number_of_coefficients(radial_order=6):
@@ -191,7 +189,7 @@ def test_mapmri_signal_fitting(radial_order=6):
     # test the signal reconstruction
     S = S / S[0]
     nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
-    assert_almost_equal(nmse_signal, 0.0, 3)
+    assert_allclose(nmse_signal, 0.0, atol=1e-3, rtol=0)
 
     # Test with multidimensional signals:
     mapm = MapmriModel(gtab, radial_order=radial_order, laplacian_weighting=0.02)
@@ -203,7 +201,7 @@ def test_mapmri_signal_fitting(radial_order=6):
         S_reconst = mapfit.predict(gtab, S0=S0)
         # test the signal reconstruction for one voxel:
         nmse_signal = np.sqrt(np.sum((S - S_reconst[0, 0, 0]) ** 2)) / (S.sum())
-        assert_almost_equal(nmse_signal, 0.0, 3)
+        assert_allclose(nmse_signal, 0.0, atol=1e-3, rtol=0)
 
     # do the same for isotropic implementation
     with warnings.catch_warnings():
@@ -230,7 +228,7 @@ def test_mapmri_signal_fitting(radial_order=6):
     # test the signal reconstruction
     S = S / S[0]
     nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
-    assert_almost_equal(nmse_signal, 0.0, 3)
+    assert_allclose(nmse_signal, 0.0, atol=1e-3, rtol=0)
 
     # do the same without the positivity constraint:
     with warnings.catch_warnings():
@@ -259,7 +257,7 @@ def test_mapmri_signal_fitting(radial_order=6):
     # test the signal reconstruction
     S = S / S[0]
     nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
-    assert_almost_equal(nmse_signal, 0.0, 3)
+    assert_allclose(nmse_signal, 0.0, atol=1e-3, rtol=0)
 
     # Repeat with a gtab with big_delta and small_delta:
     gtab.big_delta = 5
@@ -290,7 +288,7 @@ def test_mapmri_signal_fitting(radial_order=6):
     # test the signal reconstruction
     S = S / S[0]
     nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
-    assert_almost_equal(nmse_signal, 0.0, 3)
+    assert_allclose(nmse_signal, 0.0, atol=1e-3, rtol=0)
 
     if mapmri.have_cvxpy:
         # Positivity constraint and anisotropic scaling:
@@ -321,7 +319,7 @@ def test_mapmri_signal_fitting(radial_order=6):
         # test the signal reconstruction
         S = S / S[0]
         nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
-        assert_almost_equal(nmse_signal, 0.0, 3)
+        assert_allclose(nmse_signal, 0.0, atol=1e-3, rtol=0)
 
         # Positivity constraint and anisotropic scaling:
         with warnings.catch_warnings():
@@ -351,7 +349,7 @@ def test_mapmri_signal_fitting(radial_order=6):
         # test the signal reconstruction
         S = S / S[0]
         nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
-        assert_almost_equal(nmse_signal, 0.0, 2)
+        assert_allclose(nmse_signal, 0.0, atol=1e-2, rtol=0)
 
 
 @set_random_number_generator(1234)
@@ -418,10 +416,7 @@ def test_mapmri_isotropic_static_scale_factor(radial_order=6, rng=None):
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        assert_almost_equal(
-            mapf_scale_stat_reg_stat.fitted_signal(),
-            mapf_scale_adapt_reg_stat.fitted_signal(),
-        )
+        assert_allclose(mapf_scale_stat_reg_stat.fitted_signal(), mapf_scale_adapt_reg_stat.fitted_signal(), )
 
 
 def test_mapmri_signal_fitting_over_radial_order(order_max=8):
@@ -460,12 +455,12 @@ def test_mapmri_pdf_integral_unity(radial_order=6):
         n1, n2, n3 = indices[i]
         integral += c_map[i] * int_func(n1) * int_func(n2) * int_func(n3)
 
-    assert_almost_equal(integral, 1.0, 3)
+    assert_allclose(integral, 1.0, atol=1e-3, rtol=0)
 
     # test if numerical integral of odf is equal to one
     odf = mapfit.odf(sphere, s=0)
     odf_sum = odf.sum() / sphere.vertices.shape[0] * (4 * np.pi)
-    assert_almost_equal(odf_sum, 1.0, 2)
+    assert_allclose(odf_sum, 1.0, atol=1e-2, rtol=0)
 
     # do the same for isotropic implementation
     radius_max = 0.04  # 40 microns
@@ -495,7 +490,7 @@ def test_mapmri_pdf_integral_unity(radial_order=6):
 
     point_volume = (radius_max / (gridsize // 2)) ** 3
     integral = pdf.sum() * point_volume * 2
-    assert_almost_equal(integral, 1.0, 3)
+    assert_allclose(integral, 1.0, atol=1e-3, rtol=0)
 
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -505,7 +500,7 @@ def test_mapmri_pdf_integral_unity(radial_order=6):
         )
         odf = mapfit.odf(sphere, s=0)
     odf_sum = odf.sum() / sphere.vertices.shape[0] * (4 * np.pi)
-    assert_almost_equal(odf_sum, 1.0, 2)
+    assert_allclose(odf_sum, 1.0, atol=1e-2, rtol=0)
 
 
 def test_mapmri_compare_fitted_pdf_with_multi_tensor(radial_order=6):
@@ -529,7 +524,7 @@ def test_mapmri_compare_fitted_pdf_with_multi_tensor(radial_order=6):
     pdf_map = mapfit.pdf(r_points)
 
     nmse_pdf = np.sqrt(np.sum((pdf_mt - pdf_map) ** 2)) / (pdf_mt.sum())
-    assert_almost_equal(nmse_pdf, 0.0, 2)
+    assert_allclose(nmse_pdf, 0.0, atol=1e-2, rtol=0)
 
 
 def test_mapmri_metrics_anisotropic(radial_order=6):
@@ -554,9 +549,9 @@ def test_mapmri_metrics_anisotropic(radial_order=6):
         (l2 * l3 + l1 * (l2 + l3)) * tau**2
     )
 
-    assert_almost_equal(mapfit.rtap(), rtap_gt, 5)
-    assert_almost_equal(mapfit.rtpp(), rtpp_gt, 5)
-    assert_almost_equal(mapfit.rtop(), rtop_gt, 5)
+    assert_allclose(mapfit.rtap(), rtap_gt, atol=1e-5, rtol=0)
+    assert_allclose(mapfit.rtpp(), rtpp_gt, atol=1e-5, rtol=0)
+    assert_allclose(mapfit.rtop(), rtop_gt, atol=1e-5, rtol=0)
     with warnings.catch_warnings(record=True) as w:
         ng = mapfit.ng()
         ng_parallel = mapfit.ng_parallel()
@@ -569,11 +564,11 @@ def test_mapmri_metrics_anisotropic(radial_order=6):
                 in str(l_w.message).lower()
             )
 
-    assert_almost_equal(ng, 0.0, 5)
-    assert_almost_equal(ng_parallel, 0.0, 5)
-    assert_almost_equal(ng_perpendicular, 0.0, 5)
-    assert_almost_equal(mapfit.msd(), msd_gt, 5)
-    assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
+    assert_allclose(ng, 0.0, atol=1e-5, rtol=0)
+    assert_allclose(ng_parallel, 0.0, atol=1e-5, rtol=0)
+    assert_allclose(ng_perpendicular, 0.0, atol=1e-5, rtol=0)
+    assert_allclose(mapfit.msd(), msd_gt, atol=1e-5, rtol=0)
+    assert_allclose(mapfit.qiv(), qiv_gt, atol=1e-5, rtol=0)
 
 
 def test_mapmri_metrics_isotropic(radial_order=6):
@@ -616,11 +611,11 @@ def test_mapmri_metrics_isotropic(radial_order=6):
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        assert_almost_equal(mapfit.rtap(), rtap_gt, 5)
-        assert_almost_equal(mapfit.rtpp(), rtpp_gt, 5)
-    assert_almost_equal(mapfit.rtop(), rtop_gt, 4)
-    assert_almost_equal(mapfit.msd(), msd_gt, 5)
-    assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
+        assert_allclose(mapfit.rtap(), rtap_gt, atol=1e-5, rtol=0)
+        assert_allclose(mapfit.rtpp(), rtpp_gt, atol=1e-5, rtol=0)
+    assert_allclose(mapfit.rtop(), rtop_gt, atol=1e-4, rtol=0)
+    assert_allclose(mapfit.msd(), msd_gt, atol=1e-5, rtol=0)
+    assert_allclose(mapfit.qiv(), qiv_gt, atol=1e-5, rtol=0)
 
 
 def test_mapmri_laplacian_anisotropic(radial_order=6):
@@ -647,7 +642,7 @@ def test_mapmri_laplacian_anisotropic(radial_order=6):
     coef = mapfit._mapmri_coef
     norm_of_laplacian = np.dot(np.dot(coef, laplacian_matrix), coef)
 
-    assert_almost_equal(norm_of_laplacian, norm_of_laplacian_gt)
+    assert_allclose(norm_of_laplacian, norm_of_laplacian_gt)
 
 
 def test_mapmri_laplacian_isotropic(radial_order=6):
@@ -685,7 +680,7 @@ def test_mapmri_laplacian_isotropic(radial_order=6):
     coef = mapfit._mapmri_coef
     norm_of_laplacian = np.dot(np.dot(coef, laplacian_matrix), coef)
 
-    assert_almost_equal(norm_of_laplacian, norm_of_laplacian_gt)
+    assert_allclose(norm_of_laplacian, norm_of_laplacian_gt)
 
 
 def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
@@ -725,15 +720,13 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     # if the same isotropic scale factors are used
     s_fitted_aniso = np.dot(M_aniso, coef_aniso)
     s_fitted_iso = np.dot(M_iso, coef_iso)
-    assert_array_almost_equal(s_fitted_aniso, s_fitted_iso)
+    assert_allclose(s_fitted_aniso, s_fitted_iso)
 
     # the same test for the PDF
     pdf_fitted_aniso = np.dot(K_aniso, coef_aniso)
     pdf_fitted_iso = np.dot(K_iso, coef_iso)
 
-    assert_array_almost_equal(
-        pdf_fitted_aniso / pdf_fitted_iso, np.ones_like(pdf_fitted_aniso), 3
-    )
+    assert_allclose(pdf_fitted_aniso / pdf_fitted_iso, np.ones_like(pdf_fitted_aniso), atol=1e-3, rtol=0)
 
     # test if the implemented version also produces the same result
     with warnings.catch_warnings():
@@ -753,7 +746,7 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     # normalize non-implemented fitted signal with b0 value
     s_fitted_aniso_norm = s_fitted_aniso / s_fitted_aniso.max()
 
-    assert_array_almost_equal(s_fitted_aniso_norm, s_fitted_implemented_isotropic)
+    assert_allclose(s_fitted_aniso_norm, s_fitted_implemented_isotropic)
 
     # test if norm of signal laplacians are the same
     laplacian_matrix_iso = mapmri.mapmri_isotropic_laplacian_reg_matrix(
@@ -767,7 +760,7 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
 
     norm_aniso = np.dot(coef_aniso, np.dot(coef_aniso, laplacian_matrix_aniso))
     norm_iso = np.dot(coef_iso, np.dot(coef_iso, laplacian_matrix_iso))
-    assert_almost_equal(norm_iso, norm_aniso)
+    assert_allclose(norm_iso, norm_aniso)
 
 
 def test_mapmri_isotropic_design_matrix_separability(radial_order=6):
@@ -788,7 +781,7 @@ def test_mapmri_isotropic_design_matrix_separability(radial_order=6):
     M_dependent = mapmri.mapmri_isotropic_M_mu_dependent(radial_order, mu, qvals)
     M_reconstructed = M_independent * M_dependent
 
-    assert_array_almost_equal(M, M_reconstructed)
+    assert_allclose(M, M_reconstructed)
 
 
 def test_estimate_radius_with_rtap(radius_gt=5e-3):
@@ -806,7 +799,7 @@ def test_estimate_radius_with_rtap(radius_gt=5e-3):
     )
     mapfit = mapmod.fit(E)
     radius_estimated = np.sqrt(1 / (np.pi * mapfit.rtap()))
-    assert_almost_equal(radius_estimated, radius_gt, 5)
+    assert_allclose(radius_estimated, radius_gt, atol=1e-5, rtol=0)
 
     # estimate radius using isotropic MAP-MRI.
     # note that the radial order is higher and the precision is lower due to
@@ -832,7 +825,7 @@ def test_estimate_radius_with_rtap(radius_gt=5e-3):
             category=PendingDeprecationWarning,
         )
         radius_estimated = np.sqrt(1 / (np.pi * mapfit.rtap()))
-    assert_almost_equal(radius_estimated, radius_gt, 4)
+    assert_allclose(radius_estimated, radius_gt, atol=1e-4, rtol=0)
 
 
 @pytest.mark.skipif(not mapmri.have_cvxpy, reason="Requires CVXPY")
@@ -998,7 +991,7 @@ def test_laplacian_regularization(radial_order=6, rng=None):
     # test if continuous GCV gives the same the one based on an array
     mapfit_laplacian_gcv = mapmod_laplacian_gcv.fit(S_noise)
     lopt_gcv = mapfit_laplacian_gcv.lopt
-    assert_almost_equal(lopt_array, lopt_gcv, 2)
+    assert_allclose(lopt_array, lopt_gcv, atol=1e-2, rtol=0)
 
     # test if laplacian reduced the norm of the laplacian in the reconstruction
     mu = mapfit_laplacian_gcv.mu
@@ -1062,7 +1055,7 @@ def test_laplacian_regularization(radial_order=6, rng=None):
     # test if continuous GCV gives the same the one based on an array
     mapfit_laplacian_gcv = mapmod_laplacian_gcv.fit(S_noise)
     lopt_gcv = mapfit_laplacian_gcv.lopt
-    assert_almost_equal(lopt_array, lopt_gcv, 2)
+    assert_allclose(lopt_array, lopt_gcv, atol=1e-2, rtol=0)
 
     # test if laplacian reduced the norm of the laplacian in the reconstruction
     mu = mapfit_laplacian_gcv.mu
@@ -1103,7 +1096,7 @@ def test_mapmri_odf(radial_order=6):
         odf, sphere, relative_peak_threshold=0.35, min_separation_angle=25
     )
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
+    assert_allclose(angular_similarity(directions, golden_directions), 2, atol=1e-1, rtol=0)
 
     # 5 subdivisions
     odf = mapfit.odf(sphere2)
@@ -1111,7 +1104,7 @@ def test_mapmri_odf(radial_order=6):
         odf, sphere2, relative_peak_threshold=0.35, min_separation_angle=25
     )
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
+    assert_allclose(angular_similarity(directions, golden_directions), 2, atol=1e-1, rtol=0)
 
     sb_dummies = sticks_and_ball_dummies(gtab)
     for sbd in sb_dummies:
@@ -1159,4 +1152,4 @@ def test_mapmri_odf(radial_order=6):
         odf_from_sh = sh_to_sf(
             odf_sh, sphere, sh_order_max=radial_order, basis_type=None, legacy=True
         )
-    assert_almost_equal(odf, odf_from_sh, 10)
+    assert_allclose(odf, odf_from_sh, atol=1e-10, rtol=0)

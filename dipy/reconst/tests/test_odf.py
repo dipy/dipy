@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_, assert_almost_equal, assert_equal
+from numpy.testing import assert_, assert_allclose, assert_equal
 
 from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
@@ -75,9 +75,9 @@ def test_gfa():
 
     # The following series follows the rule (sqrt(n-1)/((n-1)^2))
     g = gfa(np.hstack([np.ones(9), [0]]))
-    assert_almost_equal(g, np.sqrt(9.0 / 81))
+    assert_allclose(g, np.sqrt(9.0 / 81))
     g = gfa(np.hstack([np.ones(99), [0]]))
-    assert_almost_equal(g, np.sqrt(99.0 / (99.0**2)))
+    assert_allclose(g, np.sqrt(99.0 / (99.0**2)))
 
     # All-zeros returns a nan with no warning:
     g = gfa(np.zeros(10))

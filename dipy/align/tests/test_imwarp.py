@@ -1,7 +1,6 @@
 import nibabel.eulerangles as eulerangles
 import numpy as np
 from numpy.testing import (
-    assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
@@ -28,13 +27,13 @@ def test_mult_aff():
 
     C = imwarp.mult_aff(A, B)
     expected_mult = np.array([[2.0, 4.0], [6.0, 8.0]])
-    assert_array_almost_equal(C, expected_mult)
+    assert_allclose(C, expected_mult)
 
     C = imwarp.mult_aff(A, None)
-    assert_array_almost_equal(C, A)
+    assert_allclose(C, A)
 
     C = imwarp.mult_aff(None, B)
-    assert_array_almost_equal(C, B)
+    assert_allclose(C, B)
 
     C = imwarp.mult_aff(None, None)
     assert_equal(C, None)
@@ -113,21 +112,21 @@ def test_diffeomorphic_map_2d(rng):
         warped = diff_map.transform(moving_image, interpolation="linear")
         # compare the images (the linear interpolation may introduce slight
         # precision errors)
-        assert_array_almost_equal(warped, expected, decimal=5)
+        assert_allclose(warped, expected, atol=1e-5, rtol=0)
 
         # Now test the nearest neighbor interpolation
         warped = diff_map.transform(moving_image, interpolation="nearest")
         # compare the images (now we don't have to worry about precision,
         # it is n.n.)
-        assert_array_almost_equal(warped, expected)
+        assert_allclose(warped, expected)
 
         # verify the is_inverse flag
         inv = diff_map.inverse()
         warped = inv.transform_inverse(moving_image, interpolation="linear")
-        assert_array_almost_equal(warped, expected, decimal=5)
+        assert_allclose(warped, expected, atol=1e-5, rtol=0)
 
         warped = inv.transform_inverse(moving_image, interpolation="nearest")
-        assert_array_almost_equal(warped, expected)
+        assert_allclose(warped, expected)
 
     # Now test the inverse functionality
     diff_map = imwarp.DiffeomorphicMap(
@@ -148,13 +147,13 @@ def test_diffeomorphic_map_2d(rng):
         warped = diff_map.transform_inverse(moving_image, interpolation="linear")
         # compare the images (the linear interpolation may introduce slight
         # precision errors)
-        assert_array_almost_equal(warped, expected, decimal=5)
+        assert_allclose(warped, expected, atol=1e-5, rtol=0)
 
         # Now test the nearest neighbor interpolation
         warped = diff_map.transform_inverse(moving_image, interpolation="nearest")
         # compare the images (now we don't have to worry about precision,
         # it is nearest neighbour)
-        assert_array_almost_equal(warped, expected)
+        assert_allclose(warped, expected)
 
     # Verify that DiffeomorphicMap raises the appropriate exceptions when
     # the sampling information is undefined
@@ -261,7 +260,7 @@ def test_diffeomorphic_map_simplification_2d():
     warped = simplified.transform(circle, interpolation="linear")
     # verify that the simplified map is equivalent to the
     # original one
-    assert_array_almost_equal(warped, expected)
+    assert_allclose(warped, expected)
     # And of course, it must be simpler...
     assert_equal(simplified.domain_grid2world, None)
     assert_equal(simplified.codomain_grid2world, None)
@@ -335,7 +334,7 @@ def test_diffeomorphic_map_simplification_3d():
     warped = simplified.transform(sphere, interpolation="linear")
     # verify that the simplified map is equivalent to the
     # original one
-    assert_array_almost_equal(warped, expected)
+    assert_allclose(warped, expected)
     # And of course, it must be simpler...
     assert_equal(simplified.domain_grid2world, None)
     assert_equal(simplified.codomain_grid2world, None)
@@ -381,8 +380,8 @@ def test_get_direction_and_spacings():
     affine[:3, 3] = translation_gt
 
     direction, spacings = imwarp.get_direction_and_spacings(affine, 3)
-    assert_array_almost_equal(direction, direction_gt)
-    assert_array_almost_equal(spacings, spacings_gt)
+    assert_allclose(direction, direction_gt)
+    assert_allclose(spacings, spacings_gt)
 
 
 def simple_callback(sdr, status):
@@ -1184,7 +1183,7 @@ def test_coordinate_mapping(rng):
         )
         # Interpolate at warped points and verify it's equal to direct warping
         actual, inside = interpolate_f(moving_image, wpoints)
-        assert_array_almost_equal(actual, expected, decimal=5)
+        assert_allclose(actual, expected, atol=1e-5, rtol=0)
 
         if dim in [3, 4]:
             wpoints_2 = deform_streamlines(
@@ -1198,4 +1197,4 @@ def test_coordinate_mapping(rng):
                 codomain_grid2world,
             )
 
-            assert_array_almost_equal(wpoints, wpoints_2[0])
+            assert_allclose(wpoints, wpoints_2[0])

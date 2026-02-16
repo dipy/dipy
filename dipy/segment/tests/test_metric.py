@@ -2,7 +2,6 @@ import itertools
 
 import numpy as np
 from numpy.testing import (
-    assert_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
@@ -77,7 +76,7 @@ def test_metric_minimum_average_direct_flip():
 
         # Translation
         offset = np.array([0.8, 1.3, 5], dtype=dtype)
-        assert_almost_equal(metric.dist(s, s + offset), norm(offset), 5)
+        assert_allclose(metric.dist(s, s + offset), norm(offset), atol=1e-5, rtol=0)
 
         # Scaling
         M_scaling = np.diag([1.2, 2.8, 3]).astype(dtype)
@@ -85,7 +84,7 @@ def test_metric_minimum_average_direct_flip():
         s_zero_mean = s - s_mean
         s_scaled = np.dot(M_scaling, s_zero_mean.T).T + s_mean
         d = np.mean(norm((np.diag(M_scaling) - 1) * s_zero_mean, axis=1))
-        assert_almost_equal(metric.dist(s, s_scaled), d, 5)
+        assert_allclose(metric.dist(s, s_scaled), d, atol=1e-5, rtol=0)
 
         # Rotation
         from dipy.core.geometry import rodrigues_axis_rotation
@@ -101,7 +100,7 @@ def test_metric_minimum_average_direct_flip():
             2 * opposite**2 * (1 - np.cos(60.0 * np.pi / 180.0))
         ).astype(dtype)
         d = np.mean(distances)
-        assert_almost_equal(metric.dist(s, s_rotated), d, 5)
+        assert_allclose(metric.dist(s, s_rotated), d, atol=1e-5, rtol=0)
 
         # All possible pairs
         for s1, s2 in itertools.product(*[streamlines] * 2):
@@ -120,8 +119,8 @@ def test_metric_minimum_average_direct_flip():
                 if np.all(f1 == f2):
                     assert_equal(distance, 0.0)
 
-                assert_almost_equal(distance, dipysmetric.dist(metric, s1, s2))
-                assert_almost_equal(distance, dipymetric.mdf(s1, s2))
+                assert_allclose(distance, dipysmetric.dist(metric, s1, s2))
+                assert_allclose(distance, dipymetric.mdf(s1, s2))
                 assert_greater_equal(distance, 0.0)
 
         # This metric type is order invariant
@@ -138,7 +137,7 @@ def test_metric_minimum_average_direct_flip():
             f2_flip = metric.feature.extract(s2[::-1])
 
             distance = metric.dist(f1, f2)
-            assert_almost_equal(metric.dist(f1_flip, f2_flip), distance)
+            assert_allclose(metric.dist(f1_flip, f2_flip), distance)
 
             if not np.all(f1_flip == f2_flip):
                 assert_true(np.allclose(metric.dist(f1, f2_flip), distance))
@@ -201,9 +200,9 @@ def test_metric_cosine():
             if metric.are_compatible(f1.shape, f2.shape):
                 distance = metric.dist(f1, f2)
                 if np.all(f1 == f2):
-                    assert_almost_equal(distance, 0.0)
+                    assert_allclose(distance, 0.0)
 
-                assert_almost_equal(distance, dipysmetric.dist(metric, s1, s2))
+                assert_allclose(distance, dipysmetric.dist(metric, s1, s2))
                 assert_greater_equal(distance, 0.0)
                 assert_less_equal(distance, 1.0)
 
@@ -221,7 +220,7 @@ def test_metric_cosine():
             f2_flip = metric.feature.extract(s2[::-1])
 
             distance = metric.dist(f1, f2)
-            assert_almost_equal(metric.dist(f1_flip, f2_flip), distance)
+            assert_allclose(metric.dist(f1_flip, f2_flip), distance)
 
             if not np.all(f1_flip == f2_flip):
                 assert_false(metric.dist(f1, f2_flip) == distance)
@@ -281,10 +280,10 @@ def test_mean_distances(rng):
     mean_l2_dist = dipymetric.mean_euclidean_distance(a, b)
     diff_norm = np.linalg.norm(diff.reshape((-1, dim)), ord=2, axis=-1)
     mean_norm = np.mean(diff_norm.reshape((nb_slines, -1)), axis=-1)
-    assert_almost_equal(mean_l2_dist, mean_norm)
+    assert_allclose(mean_l2_dist, mean_norm)
 
     # Test Manhattan distance (L1)
     mean_l1_dist = dipymetric.mean_manhattan_distance(a, b)
     diff_norm = np.linalg.norm(diff.reshape((-1, dim)), ord=1, axis=-1)
     mean_norm = np.mean(diff_norm.reshape((nb_slines, -1)), axis=-1)
-    assert_almost_equal(mean_l1_dist, mean_norm)
+    assert_allclose(mean_l1_dist, mean_norm)

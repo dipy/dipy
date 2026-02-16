@@ -18,8 +18,8 @@ def func2(x):
 def test_optimize_new_scipy():
     opt = Optimizer(fun=func, x0=np.array([1.0, 1.0, 1.0]), method="Powell")
 
-    npt.assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
-    npt.assert_almost_equal(opt.fopt, 0)
+    npt.assert_allclose(opt.xopt, np.array([0, 0, 0]))
+    npt.assert_allclose(opt.fopt, 0)
 
     opt = Optimizer(
         fun=func,
@@ -28,8 +28,8 @@ def test_optimize_new_scipy():
         options={"maxcor": 10, "ftol": 1e-7, "gtol": 1e-5, "eps": 1e-8},
     )
 
-    npt.assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
-    npt.assert_almost_equal(opt.fopt, 0)
+    npt.assert_allclose(opt.xopt, np.array([0, 0, 0]))
+    npt.assert_allclose(opt.fopt, 0)
     npt.assert_equal(opt.evolution, None)
 
     npt.assert_equal(opt.evolution, None)
@@ -42,8 +42,8 @@ def test_optimize_new_scipy():
         evolution=False,
     )
 
-    npt.assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
-    npt.assert_almost_equal(opt.fopt, 0)
+    npt.assert_allclose(opt.xopt, np.array([0, 0, 0]))
+    npt.assert_allclose(opt.fopt, 0)
 
     opt.print_summary()
 
@@ -65,7 +65,7 @@ def test_optimize_new_scipy():
         evolution=True,
     )
 
-    npt.assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.0]))
+    npt.assert_allclose(opt.xopt, np.array([0, 0, 0, 0.0]))
 
 
 @set_random_number_generator()
@@ -107,9 +107,9 @@ def test_spdot(rng):
     B_sparse = sps.csr_matrix(B)
     dense_dot = np.dot(A, B)
     # Try all the different variations:
-    npt.assert_array_almost_equal(dense_dot, spdot(A_sparse, B_sparse).todense())
-    npt.assert_array_almost_equal(dense_dot, spdot(A, B_sparse))
-    npt.assert_array_almost_equal(dense_dot, spdot(A_sparse, B))
+    npt.assert_allclose(dense_dot, spdot(A_sparse, B_sparse).todense())
+    npt.assert_allclose(dense_dot, spdot(A, B_sparse))
+    npt.assert_allclose(dense_dot, spdot(A_sparse, B))
 
 
 @set_random_number_generator()
@@ -121,5 +121,5 @@ def test_sparse_nnls(rng):
     beta_hat = sparse_nnls(y, X)
     beta_hat_sparse = sparse_nnls(y, sps.csr_matrix(X))
     # We should be able to get back the right answer for this simple case
-    npt.assert_array_almost_equal(beta, beta_hat, decimal=1)
-    npt.assert_array_almost_equal(beta, beta_hat_sparse, decimal=1)
+    npt.assert_allclose(beta, beta_hat, atol=1e-1, rtol=0)
+    npt.assert_allclose(beta, beta_hat_sparse, atol=1e-1, rtol=0)

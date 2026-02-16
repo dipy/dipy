@@ -191,7 +191,7 @@ def test_bdg_residual(rng):
         # Two boot samples should be the same
         odf1 = boot_dg.get_pmf(np.array([1.5, 1.5, 1.5]))
         odf2 = boot_dg.get_pmf(np.array([1.5, 1.5, 1.5]))
-        npt.assert_array_almost_equal(odf1, odf2)
+        npt.assert_allclose(odf1, odf2)
 
     # A boot sample with less sh coeffs should have residuals, thus the two
     # should be different
@@ -257,7 +257,7 @@ def test_boot_pmf():
     model_pmf = tensor_model.fit(voxel).odf(hsph_updated)
 
     npt.assert_equal(len(hsph_updated.vertices), no_boot_pmf.shape[0])
-    npt.assert_array_almost_equal(no_boot_pmf, model_pmf)
+    npt.assert_allclose(no_boot_pmf, model_pmf)
 
     # test model spherical harmonic order different than bootstrap order
     with warnings.catch_warnings(record=True) as w:

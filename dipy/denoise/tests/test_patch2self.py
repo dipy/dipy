@@ -3,7 +3,6 @@ import warnings
 import numpy as np
 from numpy.testing import (
     assert_allclose,
-    assert_array_almost_equal,
     assert_equal,
     assert_raises,
 )
@@ -203,7 +202,7 @@ def test_phantom(rng):
     dwi_den2 = p2s.patch2self(dwi, model="ridge", bvals=bvals, alpha=0.7, version=1)
 
     assert_less(np.max(dwi_den2) / sigma, np.max(dwi) / sigma)
-    assert_array_almost_equal(dwi_den1, dwi_den2, decimal=0)
+    assert_allclose(dwi_den1, dwi_den2, atol=1, rtol=0)
 
     assert_raises(ValueError, p2s.patch2self, dwi, model="empty", bvals=bvals)
 

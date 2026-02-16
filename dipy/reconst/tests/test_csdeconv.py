@@ -4,8 +4,6 @@ import numpy as np
 import numpy.testing as npt
 from numpy.testing import (
     assert_,
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
 )
@@ -176,7 +174,7 @@ def test_recursive_response_calibration():
     tenfit = tenmodel.fit(S)
     FA = fractional_anisotropy(tenfit.evals)
     FA_gt = fractional_anisotropy(evals)
-    assert_almost_equal(FA, FA_gt, 1)
+    assert_allclose(FA, FA_gt, atol=1e-1, rtol=0)
 
 
 def test_mask_for_response_ssst():
@@ -189,7 +187,7 @@ def test_mask_for_response_ssst():
     # Verifies that mask is not empty:
     assert_equal(int(np.sum(mask)) != 0, True)
 
-    assert_array_almost_equal(mask_gt, mask)
+    assert_allclose(mask_gt, mask)
 
 
 def test_mask_for_response_ssst_nvoxels():
@@ -219,7 +217,7 @@ def test_response_from_mask_ssst():
 
     response, _ = response_from_mask_ssst(gtab, data, mask_gt)
 
-    assert_array_almost_equal(response[0], response_gt[0])
+    assert_allclose(response[0], response_gt[0])
     assert_equal(response[1], response_gt[1])
 
 
@@ -317,12 +315,12 @@ def test_csdeconv():
     aresponse, aratio = auto_response_ssst(
         gtab, big_S, roi_center=(5, 5, 4), roi_radii=3, fa_thr=0.5
     )
-    assert_array_almost_equal(aresponse[0], response[0])
-    assert_almost_equal(aresponse[1], 100)
-    assert_almost_equal(aratio, response[0][1] / response[0][0])
+    assert_allclose(aresponse[0], response[0])
+    assert_allclose(aresponse[1], 100)
+    assert_allclose(aratio, response[0][1] / response[0][0])
 
     auto_response_ssst(gtab, big_S, roi_radii=3, fa_thr=0.5)
-    assert_array_almost_equal(aresponse[0], response[0])
+    assert_allclose(aresponse[0], response[0])
 
 
 def test_odfdeconv():
@@ -632,7 +630,7 @@ def test_csd_predict(rng):
         )
         S = csd.predict(coeff)
     csd_fit = csd.fit(S)
-    npt.assert_array_almost_equal(coeff, csd_fit.shm_coeff)
+    npt.assert_allclose(coeff, csd_fit.shm_coeff)
 
     # Test predict on nd-data set
     S_nd = np.zeros((2, 3, 4, S.size))
@@ -646,7 +644,7 @@ def test_csd_predict(rng):
             category=PendingDeprecationWarning,
         )
         predict2 = csd.predict(fit.shm_coeff)
-    npt.assert_array_almost_equal(predict1, predict2)
+    npt.assert_allclose(predict1, predict2)
 
 
 @set_random_number_generator()
@@ -680,7 +678,7 @@ def test_csd_predict_multi(rng):
     csd_fit_multi = csd.fit(multi_S)
     S0_multi = np.mean(multi_S[..., gtab.b0s_mask], -1)
     pred_multi = csd_fit_multi.predict(S0=S0_multi)
-    npt.assert_array_almost_equal(pred_multi, multi_S)
+    npt.assert_allclose(pred_multi, multi_S)
 
 
 def test_sphere_scaling_csdmodel():
@@ -714,7 +712,7 @@ def test_sphere_scaling_csdmodel():
     csd_fit_full = model_full.fit(S)
     csd_fit_hemi = model_hemi.fit(S)
 
-    assert_array_almost_equal(csd_fit_full.shm_coeff, csd_fit_hemi.shm_coeff)
+    assert_allclose(csd_fit_full.shm_coeff, csd_fit_hemi.shm_coeff)
 
 
 def test_default_lambda_csdmodel():
@@ -758,7 +756,7 @@ def test_default_lambda_csdmodel():
                 category=PendingDeprecationWarning,
             )
             B_reg, _, _ = real_sh_descoteaux(sh_order_max, sphere.theta, sphere.phi)
-        npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg)
+        npt.assert_allclose(model_full.B_reg, expected * B_reg)
 
 
 def test_csd_superres():

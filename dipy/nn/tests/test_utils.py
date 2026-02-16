@@ -11,7 +11,7 @@ def test_norm(rng=None):
     temp = rng.random((8, 8, 8)) * 10
     temp2 = normalize(temp)
     temp2 = unnormalize(temp2, -1, 1, 0, 10)
-    np.testing.assert_almost_equal(temp, temp2, 1)
+    np.testing.assert_allclose(temp, temp2, atol=1e-1, rtol=0)
 
 
 @set_random_number_generator()
@@ -33,4 +33,4 @@ def test_transform(rng=None):
             "ignore", message=scipy_affine_txfm_msg, category=UserWarning
         )
         temp2 = recover_img(temp2, params)
-    np.testing.assert_almost_equal(np.array(temp.shape), np.array(temp2.shape))
+    np.testing.assert_allclose(np.array(temp.shape), np.array(temp2.shape))

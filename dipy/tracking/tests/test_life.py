@@ -28,19 +28,16 @@ def test_streamline_tensors():
     # Non-default eigenvalues:
     evals = [0.0012, 0.0006, 0.0004]
     streamline_tensors = life.streamline_tensors(streamline, evals=evals)
-    npt.assert_array_almost_equal(
-        streamline_tensors[0],
-        np.array([[0.0009, 0.0003, 0.0], [0.0003, 0.0009, 0.0], [0.0, 0.0, 0.0004]]),
-    )
+    npt.assert_allclose(streamline_tensors[0], np.array([[0.0009, 0.0003, 0.0], [0.0003, 0.0009, 0.0], [0.0, 0.0, 0.0004]]), )
 
     # Get the eigenvalues/eigenvectors:
     eigvals, eigvecs = la.eig(streamline_tensors[0])
     eigvecs = eigvecs[np.argsort(eigvals)[::-1]]
     eigvals = eigvals[np.argsort(eigvals)[::-1]]
 
-    npt.assert_array_almost_equal(eigvals, np.array([0.0012, 0.0006, 0.0004]))
+    npt.assert_allclose(eigvals, np.array([0.0012, 0.0006, 0.0004]))
 
-    npt.assert_array_almost_equal(eigvecs[0], np.array([0.70710678, -0.70710678, 0.0]))
+    npt.assert_allclose(eigvecs[0], np.array([0.70710678, -0.70710678, 0.0]))
     # Another small streamline
     streamline = [[1, 0, 0], [2, 0, 0], [3, 0, 0]]
     streamline_tensors = life.streamline_tensors(streamline, evals=evals)
@@ -49,9 +46,9 @@ def test_streamline_tensors():
         eigvals, eigvecs = la.eig(t)
         eigvecs = eigvecs[np.argsort(eigvals)[::-1]]
         # This one has no rotations - all tensors are simply the canonical:
-        npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[0], [1, 0, 0]))), 0)
-        npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[1], [0, 1, 0]))), 0)
-        npt.assert_almost_equal(np.rad2deg(np.arccos(np.dot(eigvecs[2], [0, 0, 1]))), 0)
+        npt.assert_allclose(np.rad2deg(np.arccos(np.dot(eigvecs[0], [1, 0, 0]))), 0)
+        npt.assert_allclose(np.rad2deg(np.arccos(np.dot(eigvecs[1], [0, 1, 0]))), 0)
+        npt.assert_allclose(np.rad2deg(np.arccos(np.dot(eigvecs[2], [0, 0, 1]))), 0)
 
 
 def test_streamline_signal():
@@ -152,14 +149,12 @@ def test_FiberFit():
     this_data = np.concatenate([data[..., gtab.b0s_mask], this_data], -1)
 
     fit = FM.fit(this_data, streamline, np.eye(4))
-    npt.assert_almost_equal(fit.predict()[1], fit.data[1], decimal=-1)
+    npt.assert_allclose(fit.predict()[1], fit.data[1], atol=10, rtol=0)
 
     # Predict with an input GradientTable
-    npt.assert_almost_equal(fit.predict(gtab=gtab)[1], fit.data[1], decimal=-1)
+    npt.assert_allclose(fit.predict(gtab=gtab)[1], fit.data[1], atol=10, rtol=0)
 
-    npt.assert_almost_equal(
-        this_data[vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2]], fit.data
-    )
+    npt.assert_allclose(this_data[vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2]], fit.data)
 
 
 def test_fit_data():

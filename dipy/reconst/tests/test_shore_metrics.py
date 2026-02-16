@@ -72,7 +72,7 @@ def test_shore_metrics():
     # test the signal reconstruction
     S = S / S[0]
     nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
-    npt.assert_almost_equal(nmse_signal, 0.0, 4)
+    npt.assert_allclose(nmse_signal, 0.0, atol=1e-4, rtol=0)
 
     # test if the analytical integral of the pdf is equal to one
     integral = 0
@@ -82,7 +82,7 @@ def test_shore_metrics():
             * (np.pi ** (-1.5) * zeta ** (-1.5) * genlaguerre(n, 0.5)(0)) ** 0.5
         )
 
-    npt.assert_almost_equal(integral, 1.0, 10)
+    npt.assert_allclose(integral, 1.0, atol=1e-10, rtol=0)
 
     # test if the integral of the pdf calculated on a discrete grid is
     # equal to one
@@ -94,7 +94,7 @@ def test_shore_metrics():
         )
         pdf_discrete = asmfit.pdf_grid(17, 40e-3)
     integral = pdf_discrete.sum()
-    npt.assert_almost_equal(integral, 1.0, 1)
+    npt.assert_allclose(integral, 1.0, atol=1e-1, rtol=0)
 
     # compare the shore pdf with the ground truth multi_tensor pdf
 
@@ -113,12 +113,12 @@ def test_shore_metrics():
     )
 
     nmse_pdf = np.sqrt(np.sum((pdf_mt - pdf_shore) ** 2)) / (pdf_mt.sum())
-    npt.assert_almost_equal(nmse_pdf, 0.0, 2)
+    npt.assert_allclose(nmse_pdf, 0.0, atol=1e-2, rtol=0)
 
     # compare the shore rtop with the ground truth multi_tensor rtop
     rtop_shore_signal = asmfit.rtop_signal()
     rtop_shore_pdf = asmfit.rtop_pdf()
-    npt.assert_almost_equal(rtop_shore_signal, rtop_shore_pdf, 9)
+    npt.assert_allclose(rtop_shore_signal, rtop_shore_pdf, atol=1e-9, rtol=0)
     rtop_mt = multi_tensor_rtop([0.5, 0.5], mevals=mevals)
     npt.assert_(rtop_mt / rtop_shore_signal > 0.95)
     npt.assert_(rtop_mt / rtop_shore_signal < 1.10)

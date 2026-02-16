@@ -1,7 +1,6 @@
 import numpy as np
 import numpy.linalg as npl
 from numpy.testing import (
-    assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
@@ -98,7 +97,7 @@ def test_transform_centers_of_mass_3d():
             actual = imaffine.transform_centers_of_mass(
                 static, static_grid2world, moving, moving_grid2world
             )
-            assert_array_almost_equal(actual.affine, expected)
+            assert_allclose(actual.affine, expected)
 
 
 def test_transform_geometric_centers_3d():
@@ -152,7 +151,7 @@ def test_transform_geometric_centers_3d():
                     actual = imaffine.transform_geometric_centers(
                         static, static_grid2world, moving, moving_grid2world
                     )
-                    assert_array_almost_equal(actual.affine, expected)
+                    assert_allclose(actual.affine, expected)
 
 
 def test_transform_origins_3d():
@@ -202,7 +201,7 @@ def test_transform_origins_3d():
                     actual = imaffine.transform_origins(
                         static, static_grid2world, moving, moving_grid2world
                     )
-                    assert_array_almost_equal(actual.affine, expected)
+                    assert_allclose(actual.affine, expected)
 
 
 @set_random_number_generator(202311)
@@ -548,8 +547,8 @@ def test_affine_map(rng):
             )
             actual_linear = affine_map.transform(img, interpolation="linear")
             actual_nn = affine_map.transform(img, interpolation="nearest")
-            assert_array_almost_equal(actual_linear, expected_linear)
-            assert_array_almost_equal(actual_nn, expected_nn)
+            assert_allclose(actual_linear, expected_linear)
+            assert_allclose(actual_nn, expected_nn)
 
             # Test set_affine with valid matrix
             affine_map.set_affine(affine)
@@ -566,7 +565,7 @@ def test_affine_map(rng):
                 # but not its reference
                 assert id(affine) != id(new_copy_affine)
                 actual = affine_map.affine.dot(affine_map.affine_inv)
-                assert_array_almost_equal(actual, np.eye(dim1 + 1))
+                assert_allclose(actual, np.eye(dim1 + 1))
 
             # Evaluate via the inverse transform
 
@@ -590,8 +589,8 @@ def test_affine_map(rng):
             )
             actual_linear = affine_map.transform_inverse(img, interpolation="linear")
             actual_nn = affine_map.transform_inverse(img, interpolation="nearest")
-            assert_array_almost_equal(actual_linear, expected_linear)
-            assert_array_almost_equal(actual_nn, expected_nn)
+            assert_allclose(actual_linear, expected_linear)
+            assert_allclose(actual_nn, expected_nn)
 
         # Verify AffineMap can not be created with non-square matrix
         non_square_shapes = [

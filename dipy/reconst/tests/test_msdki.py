@@ -5,8 +5,6 @@ import random
 import numpy as np
 from numpy.testing import (
     assert_,
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_raises,
 )
 
@@ -105,32 +103,32 @@ def test_msdki_predict():
 
     # single voxel
     pred = dkiM.predict(params_single, S0=100)
-    assert_array_almost_equal(pred, signal_sph)
+    assert_allclose(pred, signal_sph)
 
     # multi-voxel
     pred = dkiM.predict(params_multi, S0=100)
-    assert_array_almost_equal(pred[:, :, 0, :], DWI[:, :, 0, :])
+    assert_allclose(pred[:, :, 0, :], DWI[:, :, 0, :])
 
     # check the function predict of the DiffusionKurtosisFit object
     dkiF = dkiM.fit(signal_sph)
     pred_single = dkiF.predict(gtab_3s, S0=100)
-    assert_array_almost_equal(pred_single, signal_sph)
+    assert_allclose(pred_single, signal_sph)
     dkiF = dkiM.fit(DWI)
     pred_multi = dkiF.predict(gtab_3s, S0=100)
-    assert_array_almost_equal(pred_multi[:, :, 0, :], DWI[:, :, 0, :])
+    assert_allclose(pred_multi[:, :, 0, :], DWI[:, :, 0, :])
 
     # No S0
     dkiF = dkiM.fit(signal_sph)
     pred_single = dkiF.predict(gtab_3s)
-    assert_array_almost_equal(100 * pred_single, signal_sph)
+    assert_allclose(100 * pred_single, signal_sph)
     dkiF = dkiM.fit(DWI)
     pred_multi = dkiF.predict(gtab_3s)
-    assert_array_almost_equal(100 * pred_multi[:, :, 0, :], DWI[:, :, 0, :])
+    assert_allclose(100 * pred_multi[:, :, 0, :], DWI[:, :, 0, :])
 
     # SO volume
     dkiF = dkiM.fit(DWI)
     pred_multi = dkiF.predict(gtab_3s, S0=100 * np.ones(DWI.shape[:-1]))
-    assert_array_almost_equal(pred_multi[:, :, 0, :], DWI[:, :, 0, :])
+    assert_allclose(pred_multi[:, :, 0, :], DWI[:, :, 0, :])
 
 
 def test_errors():
@@ -159,7 +157,7 @@ def test_errors():
     assert_raises(IndexError, aux_test_fun, mdkiF, (0, 0, 0, 0))
     # checking if aux_test_fun runs fine
     met = aux_test_fun(mdkiF, (0, 0, 0))
-    assert_array_almost_equal(MKgt_multi[0, 0, 0], met)
+    assert_allclose(MKgt_multi[0, 0, 0], met)
 
     # Fifth error rises if wrong mask is given to awf_from_msk
     assert_raises(ValueError, awf_from_msk, MKgt_multi, mask=mask_wrong)
@@ -171,19 +169,19 @@ def test_design_matrix():
     Dgt = np.ones((4, 3))
     Dgt[:, 0] = -ub
     Dgt[:, 1] = 1.0 / 6 * ub**2
-    assert_array_almost_equal(D, Dgt)
+    assert_allclose(D, Dgt)
 
 
 def test_msignal():
     # Multi-voxel case
     ms, ng = msdki.mean_signal_bvalue(DWI, gtab_3s)
-    assert_array_almost_equal(ms, MDWI)
-    assert_array_almost_equal(ng, np.array([3, 64, 64, 64]))
+    assert_allclose(ms, MDWI)
+    assert_allclose(ng, np.array([3, 64, 64, 64]))
 
     # Single-voxel case
     ms, ng = msdki.mean_signal_bvalue(signal_sph, gtab_3s)
-    assert_array_almost_equal(ng, np.array([3, 64, 64, 64]))
-    assert_array_almost_equal(ms, msignal_sph)
+    assert_allclose(ng, np.array([3, 64, 64, 64]))
+    assert_allclose(ms, msignal_sph)
 
 
 def test_msdki_statistics():
@@ -195,22 +193,22 @@ def test_msdki_statistics():
     design_matrix = msdki.design_matrix(ub)
     msignal, ng = msdki.mean_signal_bvalue(DWI, gtab_3s, bmag=None)
     params = msdki.wls_fit_msdki(design_matrix, msignal, ng)
-    assert_array_almost_equal(params[..., 1], MKgt_multi)
-    assert_array_almost_equal(params[..., 0], MDgt_multi)
+    assert_allclose(params[..., 1], MKgt_multi)
+    assert_allclose(params[..., 0], MDgt_multi)
 
     mdkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s)
     mdkiF = mdkiM.fit(DWI)
     mk = mdkiF.msk
     md = mdkiF.msd
-    assert_array_almost_equal(MKgt_multi, mk)
-    assert_array_almost_equal(MDgt_multi, md)
+    assert_allclose(MKgt_multi, mk)
+    assert_allclose(MDgt_multi, md)
 
     # Single-tensors
     mdkiF = mdkiM.fit(signal_sph)
     mk = mdkiF.msk
     md = mdkiF.msd
-    assert_array_almost_equal(MKgt, mk)
-    assert_array_almost_equal(MDgt, md)
+    assert_allclose(MKgt, mk)
+    assert_allclose(MDgt, md)
 
     # Test with given mask
     mask = np.ones(DWI.shape[:-1])
@@ -219,18 +217,18 @@ def test_msdki_statistics():
     mdkiF = mdkiM.fit(DWI, mask=mask)
     mk = mdkiF.msk
     md = mdkiF.msd
-    assert_array_almost_equal(MKgt_multi, mk)
-    assert_array_almost_equal(MDgt_multi, md)
-    assert_array_almost_equal(MKgt_multi[v], mdkiF[v].msk)  # tuple case
-    assert_array_almost_equal(MDgt_multi[v], mdkiF[v].msd)  # tuple case
-    assert_array_almost_equal(MKgt_multi[0], mdkiF[0].msk)  # not tuple case
-    assert_array_almost_equal(MDgt_multi[0], mdkiF[0].msd)  # not tuple case
+    assert_allclose(MKgt_multi, mk)
+    assert_allclose(MDgt_multi, md)
+    assert_allclose(MKgt_multi[v], mdkiF[v].msk)  # tuple case
+    assert_allclose(MDgt_multi[v], mdkiF[v].msd)  # tuple case
+    assert_allclose(MKgt_multi[0], mdkiF[0].msk)  # not tuple case
+    assert_allclose(MDgt_multi[0], mdkiF[0].msd)  # not tuple case
 
     # Test returned S0
     mdkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s, return_S0_hat=True)
     mdkiF = mdkiM.fit(DWI)
-    assert_array_almost_equal(S0gt_multi, mdkiF.S0_hat)
-    assert_array_almost_equal(MKgt_multi[v], mdkiF[v].msk)
+    assert_allclose(S0gt_multi, mdkiF.S0_hat)
+    assert_allclose(MKgt_multi[v], mdkiF[v].msk)
 
 
 def test_kurtosis_to_smt2_conversion():
@@ -239,19 +237,19 @@ def test_kurtosis_to_smt2_conversion():
     awf0 = 0
     kexp0 = 0
     kest0 = msk_from_awf(awf0)
-    assert_almost_equal(kest0, kexp0)
+    assert_allclose(kest0, kexp0)
 
     # When awf = 1 kurtosis was to be 2.4
     awf1 = 1
     kexp1 = 2.4
     kest1 = msk_from_awf(awf1)
-    assert_almost_equal(kest1, kexp1)
+    assert_allclose(kest1, kexp1)
 
     # Check the inversion of msk_from_awf
     awf_test_array = np.linspace(0, 1, 100)
     k_exp = msk_from_awf(awf_test_array)
     awf_from_k = awf_from_msk(k_exp)
-    assert_array_almost_equal(awf_from_k, awf_test_array)
+    assert_allclose(awf_from_k, awf_test_array)
 
     # Check the awf_from_msk estimates when kurtosis is out of expected
     # interval ranges - note that under SMT2 assumption MSK is never lower
@@ -259,7 +257,7 @@ def test_kurtosis_to_smt2_conversion():
     # met kurtosis can be out of this expected range. So, if MSK is lower than
     # 0, f is set to 0 (avoiding negative f). On the other hand, if MSK is
     # higher than 2.4, f is set to the maximum value of 1.
-    assert_array_almost_equal(awf_from_msk(np.array([-0.1, 2.5])), np.array([0.0, 1.0]))
+    assert_allclose(awf_from_msk(np.array([-0.1, 2.5])), np.array([0.0, 1.0]))
 
     # if msk = np.nan, function outputs awf=np.nan
     assert_(np.isnan(awf_from_msk(np.array(np.nan))))
@@ -279,14 +277,14 @@ def test_smt2_metrics():
 
     mdkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s)
     mdkiF = mdkiM.fit(DWI)
-    assert_array_almost_equal(mdkiF.smt2f, AWFgt)
-    assert_array_almost_equal(mdkiF.smt2di, DIgt)
-    assert_array_almost_equal(mdkiF.smt2uFA[MD > 0], uFAgt)
+    assert_allclose(mdkiF.smt2f, AWFgt)
+    assert_allclose(mdkiF.smt2di, DIgt)
+    assert_allclose(mdkiF.smt2uFA[MD > 0], uFAgt)
 
     # Check if awf_from_msk when mask is given
     mask = MKgt_multi > 0
     AWF = awf_from_msk(MKgt_multi, mask=mask)
-    assert_array_almost_equal(AWF, AWFgt)
+    assert_allclose(AWF, AWFgt)
 
 
 def test_smt2_specific_cases():
@@ -297,10 +295,10 @@ def test_smt2_specific_cases():
     #     diffusion (i.e. awf=0)
     sig_gaussian = single_tensor(gtab_3s, evals=np.array([2e-3, 2e-3, 2e-3]))
     mdkiF = mdkiM.fit(sig_gaussian)
-    assert_almost_equal(mdkiF.msk, 0.0)
-    assert_almost_equal(mdkiF.msd, 2.0e-3)
-    assert_almost_equal(mdkiF.smt2f, 0)
-    assert_almost_equal(mdkiF.smt2di, 2.0e-3)
+    assert_allclose(mdkiF.msk, 0.0)
+    assert_allclose(mdkiF.msd, 2.0e-3)
+    assert_allclose(mdkiF.smt2f, 0)
+    assert_allclose(mdkiF.smt2di, 2.0e-3)
 
     # 2) Intrinsic diffusion is equal to MSD/3 for single powder-averaged stick
     #    compartment
@@ -314,7 +312,7 @@ def test_smt2_specific_cases():
     mdkiF = mdkiM.fit(signal_pa)
     # decimal is set to 1 because of finite number of directions for powder
     # average calculation
-    assert_almost_equal(mdkiF.msk, 2.4, decimal=1)
-    assert_almost_equal(mdkiF.msd * 1000, Da / 3 * 1000, decimal=1)
-    assert_almost_equal(mdkiF.smt2f, 1, decimal=1)
-    assert_almost_equal(mdkiF.smt2di, mdkiF.msd * 3, decimal=1)
+    assert_allclose(mdkiF.msk, 2.4, atol=1e-1, rtol=0)
+    assert_allclose(mdkiF.msd * 1000, Da / 3 * 1000, atol=1e-1, rtol=0)
+    assert_allclose(mdkiF.smt2f, 1, atol=1e-1, rtol=0)
+    assert_allclose(mdkiF.smt2di, mdkiF.msd * 3, atol=1e-1, rtol=0)

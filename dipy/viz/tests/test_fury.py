@@ -160,7 +160,7 @@ def test_bundle_maps(rng):
 
     report = window.analyze_scene(scene)
 
-    npt.assert_almost_equal(report.actors, 1)
+    npt.assert_allclose(report.actors, 1)
     # window.show(scene)
 
     scene.clear()

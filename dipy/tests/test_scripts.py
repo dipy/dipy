@@ -62,7 +62,7 @@ def assert_image_shape_affine(filename, shape, affine):
     assert_true(os.path.isfile(filename))
     image = nib.load(filename)
     npt.assert_equal(image.shape, shape)
-    nt.assert_array_almost_equal(image.affine, affine)
+    nt.assert_allclose(image.affine, affine)
 
 
 def test_dipy_fit_tensor_again():

@@ -82,7 +82,7 @@ def test_enhancement_kernel():
     for p in range(len(orientationlist)):
         r = np.array(orientationlist[p])
         x = np.array(positionlist[p])
-        npt.assert_almost_equal(k.evaluate_kernel(x, y, r, v), kernelvalues[p])
+        npt.assert_allclose(k.evaluate_kernel(x, y, r, v), kernelvalues[p])
 
 
 def test_spike():
@@ -147,7 +147,7 @@ def test_normalization():
         csd_enh_dsf = sh_to_sf(csd_enh, k.get_sphere(), sh_order_max=8, basis_type=None)
 
     # test if the normalization is performed correctly
-    npt.assert_almost_equal(np.amax(csd_enh_dsf), np.amax(spike))
+    npt.assert_allclose(np.amax(csd_enh_dsf), np.amax(spike))
 
 
 def test_kernel_input():

@@ -1,8 +1,6 @@
 import numpy as np
 from numpy.testing import (
     assert_allclose,
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_equal,
 )
 
@@ -548,7 +546,7 @@ def test_compute_energy_ssd_2d():
     # further investigation
     expected = ((F - G) ** 2).sum()
     actual = ssd.compute_energy_ssd_2d(np.array(F - G, dtype=floating))
-    assert_almost_equal(expected, actual)
+    assert_allclose(expected, actual)
 
 
 def test_compute_energy_ssd_3d():
@@ -583,7 +581,7 @@ def test_compute_energy_ssd_3d():
     # further investigating
     expected = ((F - G) ** 2).sum()
     actual = ssd.compute_energy_ssd_3d(np.array(F - G, dtype=floating))
-    assert_almost_equal(expected, actual)
+    assert_allclose(expected, actual)
 
 
 @set_random_number_generator(1137271)
@@ -678,7 +676,7 @@ def test_compute_ssd_demons_step_2d(rng):
             delta_field, np.array(grad_G, dtype=floating), sigma_x_sq, actual
         )
 
-        assert_array_almost_equal(actual, expected)
+        assert_allclose(actual, expected)
 
 
 @set_random_number_generator(1137271)
@@ -777,4 +775,4 @@ def test_compute_ssd_demons_step_3d(rng):
             delta_field, np.array(grad_G, dtype=floating), sigma_x_sq, actual
         )
 
-        assert_array_almost_equal(actual, expected)
+        assert_allclose(actual, expected)

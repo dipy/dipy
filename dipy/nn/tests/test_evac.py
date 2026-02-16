@@ -35,7 +35,7 @@ def test_default_weights(monkeypatch):
 
         evac_model = evac.EVACPlus()
         results_arr = evac_model.predict(input_arr, np.eye(4), return_prob=True)
-        npt.assert_almost_equal(results_arr, output_arr, decimal=2)
+        npt.assert_allclose(results_arr, output_arr, atol=1e-2, rtol=0)
 
 
 @pytest.mark.skipif(not have_nn, reason="Requires TensorFlow or Torch")
@@ -59,7 +59,7 @@ def test_default_weights_batch(monkeypatch):
         results_arr = evac_model.predict(
             input_arr, fake_affine, batch_size=2, return_prob=True
         )
-        npt.assert_almost_equal(results_arr, output_arr, decimal=2)
+        npt.assert_allclose(results_arr, output_arr, atol=1e-2, rtol=0)
 
 
 @pytest.mark.skipif(not have_nn, reason="Requires TensorFlow or Torch")

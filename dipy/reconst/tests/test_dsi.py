@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_equal, assert_raises
+from numpy.testing import assert_allclose, assert_equal, assert_raises
 
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere_stats import angular_similarity
@@ -31,14 +31,14 @@ def test_dsi():
 
     directions, _, _ = peak_directions(odf, sphere)
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
+    assert_allclose(angular_similarity(directions, golden_directions), 2, atol=1e-1, rtol=0)
 
     # 5 subdivisions
     dsfit = ds.fit(data)
     odf2 = dsfit.odf(sphere2)
     directions, _, _ = peak_directions(odf2, sphere2)
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
+    assert_allclose(angular_similarity(directions, golden_directions), 2, atol=1e-1, rtol=0)
 
     assert_equal(dsfit.pdf().shape, 3 * (ds.qgrid_size,))
     sb_dummies = sticks_and_ball_dummies(gtab)

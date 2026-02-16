@@ -6,8 +6,6 @@ from numpy.linalg import norm
 import numpy.testing as npt
 from numpy.testing import (
     assert_allclose,
-    assert_almost_equal,
-    assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
     assert_raises,
@@ -228,12 +226,12 @@ def test_set_number_of_points():
     new_streamline_python = set_number_of_points_python(streamline, nb_points)
     assert_equal(len(new_streamline_cython), nb_points)
     # Using a 5 digits precision because of streamline is in float32.
-    assert_array_almost_equal(new_streamline_cython, new_streamline_python, 5)
+    assert_allclose(new_streamline_cython, new_streamline_python, atol=1e-5, rtol=0)
 
     new_streamline_cython = set_number_of_points(streamline_64bit, nb_points=nb_points)
     new_streamline_python = set_number_of_points_python(streamline_64bit, nb_points)
     assert_equal(len(new_streamline_cython), nb_points)
-    assert_array_almost_equal(new_streamline_cython, new_streamline_python)
+    assert_allclose(new_streamline_cython, new_streamline_python)
 
     res = []
     simple_streamline = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]], "f4")
@@ -251,12 +249,12 @@ def test_set_number_of_points():
     for i, s in enumerate(streamlines):
         new_streamline_python = set_number_of_points_python(s, nb_points)
         # Using a 5 digits precision because of streamline is in float32.
-        assert_array_almost_equal(new_streamlines_cython[i], new_streamline_python, 5)
+        assert_allclose(new_streamlines_cython[i], new_streamline_python, atol=1e-5, rtol=0)
 
     # ArraySequence
     arrseq = Streamlines(streamlines)
     new_streamlines_as_seq_cython = set_number_of_points(arrseq, nb_points=nb_points)
-    assert_array_almost_equal(new_streamlines_as_seq_cython, new_streamlines_cython)
+    assert_allclose(new_streamlines_as_seq_cython, new_streamlines_cython)
 
     new_streamlines_cython = set_number_of_points(
         streamlines_64bit, nb_points=nb_points
@@ -264,12 +262,12 @@ def test_set_number_of_points():
 
     for i, s in enumerate(streamlines_64bit):
         new_streamline_python = set_number_of_points_python(s, nb_points)
-        assert_array_almost_equal(new_streamlines_cython[i], new_streamline_python)
+        assert_allclose(new_streamlines_cython[i], new_streamline_python)
 
     # ArraySequence
     arrseq = Streamlines(streamlines_64bit)
     new_streamlines_as_seq_cython = set_number_of_points(arrseq, nb_points=nb_points)
-    assert_array_almost_equal(new_streamlines_as_seq_cython, new_streamlines_cython)
+    assert_allclose(new_streamlines_as_seq_cython, new_streamlines_cython)
 
     # Test streamlines with mixed dtype
     streamlines_mixed_dtype = [
@@ -293,7 +291,7 @@ def test_set_number_of_points():
 
     for i, s in enumerate(heterogeneous_streamlines):
         new_streamline_python = set_number_of_points_python(s, nb_points)
-        assert_array_almost_equal(new_streamlines_cython[i], new_streamline_python)
+        assert_allclose(new_streamlines_cython[i], new_streamline_python)
 
     # Test streamline with integer dtype
     new_streamline = set_number_of_points(streamline.astype(np.int32))
@@ -392,59 +390,55 @@ def test_length():
     # Test length of only one streamline
     length_streamline_cython = length(streamline)
     length_streamline_python = length_python(streamline)
-    assert_almost_equal(length_streamline_cython, length_streamline_python)
+    assert_allclose(length_streamline_cython, length_streamline_python)
 
     length_streamline_cython = length(streamline_64bit)
     length_streamline_python = length_python(streamline_64bit)
-    assert_almost_equal(length_streamline_cython, length_streamline_python)
+    assert_allclose(length_streamline_cython, length_streamline_python)
 
     length_streamline_cython = length(streamline_16bit)
     length_streamline_python = length_python(streamline_16bit)
-    assert_almost_equal(length_streamline_cython, length_streamline_python, decimal=4)
+    assert_allclose(length_streamline_cython, length_streamline_python, atol=1e-4, rtol=0)
 
     # Test computing length of multiple streamlines of different nb_points
     length_streamlines_cython = length(streamlines)
 
     for i, s in enumerate(streamlines):
         length_streamline_python = length_python(s)
-        assert_array_almost_equal(
-            length_streamlines_cython[i], length_streamline_python
-        )
+        assert_allclose(length_streamlines_cython[i], length_streamline_python)
 
     length_streamlines_cython = length(streamlines_64bit)
 
     for i, s in enumerate(streamlines_64bit):
         length_streamline_python = length_python(s)
-        assert_array_almost_equal(
-            length_streamlines_cython[i], length_streamline_python
-        )
+        assert_allclose(length_streamlines_cython[i], length_streamline_python)
 
     # ArraySequence
     # Test length of only one streamline
     length_streamline_cython = length(streamline_64bit)
     length_streamline_arrseq = length(Streamlines([streamline]))
-    assert_almost_equal(length_streamline_arrseq, length_streamline_cython)
+    assert_allclose(length_streamline_arrseq, length_streamline_cython)
 
     length_streamline_cython = length(streamline_64bit)
     length_streamline_arrseq = length(Streamlines([streamline_64bit]))
-    assert_almost_equal(length_streamline_arrseq, length_streamline_cython)
+    assert_allclose(length_streamline_arrseq, length_streamline_cython)
 
     # Test computing length of multiple streamlines of different nb_points
     length_streamlines_cython = length(streamlines)
     length_streamlines_arrseq = length(Streamlines(streamlines))
-    assert_array_almost_equal(length_streamlines_arrseq, length_streamlines_cython)
+    assert_allclose(length_streamlines_arrseq, length_streamlines_cython)
 
     length_streamlines_cython = length(streamlines_64bit)
     length_streamlines_arrseq = length(Streamlines(streamlines_64bit))
-    assert_array_almost_equal(length_streamlines_arrseq, length_streamlines_cython)
+    assert_allclose(length_streamlines_arrseq, length_streamlines_cython)
 
     # Test on a sliced ArraySequence
     length_streamlines_cython = length(streamlines_64bit[::2])
     length_streamlines_arrseq = length(Streamlines(streamlines_64bit)[::2])
-    assert_array_almost_equal(length_streamlines_arrseq, length_streamlines_cython)
+    assert_allclose(length_streamlines_arrseq, length_streamlines_cython)
     length_streamlines_cython = length(streamlines[::-1])
     length_streamlines_arrseq = length(Streamlines(streamlines)[::-1])
-    assert_array_almost_equal(length_streamlines_arrseq, length_streamlines_cython)
+    assert_allclose(length_streamlines_arrseq, length_streamlines_cython)
 
     # Test streamlines having mixed dtype
     streamlines_mixed_dtype = [
@@ -461,9 +455,7 @@ def test_length():
 
     for i, s in enumerate(heterogeneous_streamlines):
         length_streamline_python = length_python(s)
-        assert_array_almost_equal(
-            length_streamlines_cython[i], length_streamline_python
-        )
+        assert_allclose(length_streamlines_cython[i], length_streamline_python)
 
     # Test streamline having integer dtype
     length_streamline = length(streamline.astype("int"))
@@ -485,17 +477,13 @@ def test_length():
         streamlines_readonly.append(s.copy())
         streamlines_readonly[-1].setflags(write=False)
 
-    assert_array_almost_equal(
-        length(streamlines_readonly), [length_python(s) for s in streamlines_readonly]
-    )
+    assert_allclose(length(streamlines_readonly), [length_python(s) for s in streamlines_readonly])
     streamlines_readonly = []
     for s in streamlines_64bit:
         streamlines_readonly.append(s.copy())
         streamlines_readonly[-1].setflags(write=False)
 
-    assert_array_almost_equal(
-        length(streamlines_readonly), [length_python(s) for s in streamlines_readonly]
-    )
+    assert_allclose(length(streamlines_readonly), [length_python(s) for s in streamlines_readonly])
 
 
 @set_random_number_generator(1234)
@@ -791,7 +779,7 @@ def test_compress_streamlines():
             special_streamline, tol_error=tol_error + 1e-4, max_segment_length=np.inf
         )
         assert_equal(len(cspecial_streamline), len(cstreamline_python))
-        assert_array_almost_equal(cspecial_streamline, cstreamline_python)
+        assert_allclose(cspecial_streamline, cstreamline_python)
 
 
 def test_compress_streamlines_identical_points():
@@ -1204,13 +1192,13 @@ def test_values_from_volume():
             ]
 
             vv = values_from_volume(data, sl1, np.eye(4))
-            npt.assert_almost_equal(vv, ans1, decimal=decimal)
+            npt.assert_allclose(vv, ans1, atol=10**-decimal, rtol=0)
 
             vv = values_from_volume(data, np.array(sl1), np.eye(4))
-            npt.assert_almost_equal(vv, ans1, decimal=decimal)
+            npt.assert_allclose(vv, ans1, atol=10**-decimal, rtol=0)
 
             vv = values_from_volume(data, Streamlines(sl1), np.eye(4))
-            npt.assert_almost_equal(vv, ans1, decimal=decimal)
+            npt.assert_allclose(vv, ans1, atol=10**-decimal, rtol=0)
 
             affine = np.eye(4)
             affine[:, 3] = [-100, 10, 1, 1]
@@ -1218,19 +1206,19 @@ def test_values_from_volume():
             x_sl2 = transform_streamlines(sl1, affine)
 
             vv = values_from_volume(data, x_sl1, affine)
-            npt.assert_almost_equal(vv, ans1, decimal=decimal)
+            npt.assert_allclose(vv, ans1, atol=10**-decimal, rtol=0)
 
             x_sl1 = transform_streamlines(sl1, affine)
             vv = values_from_volume(data, x_sl1, affine)
 
-            npt.assert_almost_equal(vv, ans1, decimal=decimal)
+            npt.assert_allclose(vv, ans1, atol=10**-decimal, rtol=0)
 
             # Test that the streamlines haven't mutated:
             l_sl2 = list(x_sl2)
             npt.assert_equal(x_sl1, l_sl2)
 
             vv = values_from_volume(data, np.array(x_sl1), affine)
-            npt.assert_almost_equal(vv, ans1, decimal=decimal)
+            npt.assert_allclose(vv, ans1, atol=10**-decimal, rtol=0)
             npt.assert_equal(np.array(x_sl1), np.array(l_sl2))
 
             # Test for lists of streamlines with different numbers of nodes:
@@ -1238,7 +1226,7 @@ def test_values_from_volume():
             ans2 = [ans1[0][:-1], ans1[1]]
             vv = values_from_volume(data, sl2, np.eye(4))
             for ii, v in enumerate(vv):
-                npt.assert_almost_equal(v, ans2[ii], decimal=decimal)
+                npt.assert_allclose(v, ans2[ii], atol=10**-decimal, rtol=0)
 
     # We raise an error if the streamlines fed don't make sense. In this
     # case, a tuple instead of a list, generator or array
@@ -1304,7 +1292,7 @@ def test_cluster_confidence():
 
     cci = cluster_confidence(test_streamlines, override=True)
 
-    assert_almost_equal(cci[0], cci[2])
+    assert_allclose(cci[0], cci[2])
     assert_true(cci[1] > cci[0])
 
     # 3 parallel streamlines

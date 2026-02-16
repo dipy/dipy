@@ -276,7 +276,7 @@ def test_image_registration(rng):
             )
 
             dist = read_distance("trans_q.txt")
-            npt.assert_almost_equal(float(dist), -0.42097809101318934, 1)
+            npt.assert_allclose(float(dist), -0.42097809101318934, atol=1e-1, rtol=0)
             check_existence(out_moved, out_affine)
 
         def test_rigid():
@@ -297,7 +297,7 @@ def test_image_registration(rng):
             )
 
             dist = read_distance("rigid_q.txt")
-            npt.assert_almost_equal(dist, -0.6900534794005155, 1)
+            npt.assert_allclose(dist, -0.6900534794005155, atol=1e-1, rtol=0)
             check_existence(out_moved, out_affine)
 
         def test_rigid_isoscaling():
@@ -318,7 +318,7 @@ def test_image_registration(rng):
             )
 
             dist = read_distance("rigid_isoscaling_q.txt")
-            npt.assert_almost_equal(dist, -0.6960044668271375, 1)
+            npt.assert_allclose(dist, -0.6960044668271375, atol=1e-1, rtol=0)
             check_existence(out_moved, out_affine)
 
         def test_rigid_scaling():
@@ -339,7 +339,7 @@ def test_image_registration(rng):
             )
 
             dist = read_distance("rigid_scaling_q.txt")
-            npt.assert_almost_equal(dist, -0.698688892993124, 1)
+            npt.assert_allclose(dist, -0.698688892993124, atol=1e-1, rtol=0)
             check_existence(out_moved, out_affine)
 
         def test_affine():
@@ -360,7 +360,7 @@ def test_image_registration(rng):
             )
 
             dist = read_distance("affine_q.txt")
-            npt.assert_almost_equal(dist, -0.7670650775914811, 1)
+            npt.assert_allclose(dist, -0.7670650775914811, atol=1e-1, rtol=0)
             check_existence(out_moved, out_affine)
 
         # Creating the erroneous behavior
@@ -410,7 +410,7 @@ def test_image_registration(rng):
             image_registration_flow.run(static_vol_idx=0, **kwargs)
 
             dist = read_distance("trans_q.txt")
-            npt.assert_almost_equal(float(dist), -0.42097809101318934, 1)
+            npt.assert_allclose(float(dist), -0.42097809101318934, atol=1e-1, rtol=0)
             check_existence(out_moved, out_affine)
 
             apply_trans.run(
@@ -447,7 +447,7 @@ def test_image_registration(rng):
             image_registration_flow.run(moving_vol_idx=0, **kwargs)
 
             dist = read_distance("trans_q.txt")
-            npt.assert_almost_equal(float(dist), -1.0002607616786339, 1)
+            npt.assert_allclose(float(dist), -1.0002607616786339, atol=1e-1, rtol=0)
             check_existence(out_moved, out_affine)
 
             apply_trans.run(

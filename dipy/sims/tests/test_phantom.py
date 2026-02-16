@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_, assert_array_almost_equal
+from numpy.testing import assert_, assert_allclose
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
@@ -53,7 +53,7 @@ def test_phantom():
         / np.sqrt(l1**2 + l2**2 + l3**2)
     )
 
-    assert_array_almost_equal(FA.max(), expected_fa, decimal=2)
+    assert_allclose(FA.max(), expected_fa, atol=1e-2, rtol=0)
 
 
 @set_random_number_generator(1980)
