@@ -490,8 +490,8 @@ def test_cascade_of_optimizations_and_threading():
     )
     slm3 = slr3.optimize(cb1, cb2, mat=slm2.matrix)
 
-    assert_(slm2.fopt < slm.fopt)
-    assert_(slm3.fopt < slm2.fopt)
+    assert slm2.fopt < slm.fopt
+    assert slm3.fopt < slm2.fopt
 
 
 @set_random_number_generator()

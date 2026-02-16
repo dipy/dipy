@@ -487,11 +487,11 @@ def test_noisy_fit():
         fit_one_stage = model_one_stage.fit(noisy_single)
         assert_equal(len(w), 3)
         for l_w in w:
-            assert_(issubclass(l_w.category, UserWarning))
-        assert_("" in str(w[0].message))
-        assert_("x0 obtained from linear fitting is not feasible" in str(w[0].message))
-        assert_("x0 is unfeasible" in str(w[1].message))
-        assert_("Bounds are violated for leastsq fitting" in str(w[2].message))
+            assert issubclass(l_w.category, UserWarning)
+        assert "" in str(w[0].message)
+        assert "x0 obtained from linear fitting is not feasible" in str(w[0].message)
+        assert "x0 is unfeasible" in str(w[1].message)
+        assert "Bounds are violated for leastsq fitting" in str(w[2].message)
 
     assert_array_less(fit_one_stage.model_params, [10000.0, 0.3, 0.01, 0.001])
 
@@ -636,9 +636,9 @@ def test_leastsq_error():
         warnings.simplefilter("always", category=UserWarning)
         fit = ivim_model_trr._leastsq(data_single, [-1, -1, -1, -1])
         assert_greater_equal(len(w), 1)
-        assert_(issubclass(w[-1].category, UserWarning))
-        assert_("" in str(w[-1].message))
-        assert_("x0 is unfeasible" in str(w[-1].message))
+        assert issubclass(w[-1].category, UserWarning)
+        assert "" in str(w[-1].message)
+        assert "x0 is unfeasible" in str(w[-1].message)
 
     assert_array_almost_equal(fit, [-1, -1, -1, -1])
 

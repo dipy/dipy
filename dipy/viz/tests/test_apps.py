@@ -166,7 +166,7 @@ def test_horizon(rng):
             )
 
         msg = "Currently native coordinates are not supported for streamlines."
-        npt.assert_(msg in str(ve.exception))
+        assert msg in str(ve.exception)
 
         # only images
         tractograms = None

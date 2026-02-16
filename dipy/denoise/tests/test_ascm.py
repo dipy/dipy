@@ -1,6 +1,6 @@
 import nibabel as nib
 import numpy as np
-from numpy.testing import assert_, assert_equal
+from numpy.testing import assert_equal
 
 import dipy.data as dpd
 from dipy.denoise.adaptive_soft_matching import adaptive_soft_matching
@@ -16,10 +16,10 @@ def test_ascm_static():
     S0n = adaptive_soft_matching(S0, S0n1, S0n2, 0)
 
     assert_equal(np.round(S0n.mean()), 100)
-    assert_(np.abs(S0n.mean() - S0.mean()) < 1.0)
+    assert np.abs(S0n.mean() - S0.mean()) < 1.0
 
     close_values = np.abs(S0n - S0) < 10.0
-    assert_(np.sum(close_values) / S0.size > 0.95)
+    assert np.sum(close_values) / S0.size > 0.95
 
 
 @set_random_number_generator()
@@ -29,15 +29,15 @@ def test_ascm_random_noise(rng):
     S0n2 = nlmeans(S0, sigma=1, rician=False, patch_radius=2, block_radius=1)
     S0n = adaptive_soft_matching(S0, S0n1, S0n2, 1)
 
-    assert_(np.abs(S0n.mean() - S0.mean()) < 3.0)
-    assert_(np.isfinite(S0n).all())
-    assert_(not np.isnan(S0n).any())
-    assert_(S0n.std() < S0.std() * 1.5)
-    assert_(S0n.min() > 0)
-    assert_(S0n.max() < 200)
+    assert np.abs(S0n.mean() - S0.mean()) < 3.0
+    assert np.isfinite(S0n).all()
+    assert not np.isnan(S0n).any()
+    assert S0n.std() < S0.std() * 1.5
+    assert S0n.min() > 0
+    assert S0n.max() < 200
 
     reasonable_values = np.abs(S0n - S0n.mean()) < 3 * S0n.std()
-    assert_(np.mean(reasonable_values) > 0.95)
+    assert np.mean(reasonable_values) > 0.95
 
 
 @set_random_number_generator()
@@ -56,14 +56,13 @@ def test_ascm_rmse_with_nlmeans(rng):
     S0n = adaptive_soft_matching(S0, S0n1, S0n2, 400)
     print("ASCM RMSE", np.sum(np.abs(S0 - S0n)) / np.sum(S0))
 
-    assert_(
+    assert (
         np.sum(np.abs(S0 - S0n)) / np.sum(S0) < np.sum(np.abs(S0 - S0n1)) / np.sum(S0)
     )
-    assert_(
-        np.sum(np.abs(S0 - S0n)) / np.sum(S0)
-        < np.sum(np.abs(S0 - S0_noise)) / np.sum(S0)
+    assert (
+        np.sum(np.abs(S0 - S0n)) / np.sum(S0) < np.sum(np.abs(S0 - S0_noise)) / np.sum(S0)
     )
-    assert_(90 < np.mean(S0n) < 110)
+    assert 90 < np.mean(S0n) < 110
 
 
 @set_random_number_generator()
@@ -83,9 +82,9 @@ def test_sharpness(rng):
     edg = np.abs(np.mean(S0n[8, 10:20, 10:20] - S0n[12, 10:20, 10:20]) - 50)
     print("Edge gradient ASCM", edg)
 
-    assert_(edg2 > edg1)
-    assert_(edg2 > edg)
-    assert_(np.abs(edg1 - edg) < 1.5)
+    assert edg2 > edg1
+    assert edg2 > edg
+    assert np.abs(edg1 - edg) < 1.5
 
 
 def test_ascm_accuracy():
@@ -112,9 +111,9 @@ def test_ascm_accuracy():
     orig_masked = test_data[mask]
 
     correlation = np.corrcoef(S0n_masked.flatten(), ref_masked.flatten())[0, 1]
-    assert_(correlation > 0.9)
+    assert correlation > 0.9
 
     mean_diff = np.abs(np.mean(S0n_masked) - np.mean(ref_masked))
-    assert_(mean_diff < 10.0)
+    assert mean_diff < 10.0
 
-    assert_(np.var(S0n_masked) < np.var(orig_masked))
+    assert np.var(S0n_masked) < np.var(orig_masked)

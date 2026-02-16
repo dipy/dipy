@@ -3,7 +3,7 @@ import os
 import sys
 import warnings
 
-from numpy.testing import assert_, assert_equal
+from numpy.testing import assert_equal
 import pytest
 
 from dipy.utils.optpkg import optional_package
@@ -60,7 +60,7 @@ def test_default_mnist_sequential():
     hist = model.fit(x_train, y_train, epochs=epochs)
     model.evaluate(x_test, y_test, verbose=2)
     accuracy = hist.history["accuracy"][0]
-    assert_(accuracy > 0.9)
+    assert accuracy > 0.9
 
 
 @pytest.mark.skipif(not have_tf, reason="Requires TensorFlow")
@@ -77,8 +77,8 @@ def test_default_mnist_slp():
     x_test_prob = slp.predict(x_test)
 
     accuracy = hist.history["accuracy"][0]
-    assert_(slp.accuracy > 0.9)
-    assert_(slp.loss < 0.4)
+    assert slp.accuracy > 0.9
+    assert slp.loss < 0.4
     assert_equal(slp.accuracy, accuracy)
     assert_equal(x_test_prob.shape, (10000, 10))
 
@@ -97,7 +97,7 @@ def test_default_mnist_mlp():
     x_test_prob = mlp.predict(x_test)
 
     accuracy = hist.history["accuracy"][0]
-    assert_(mlp.accuracy > 0.8)
-    assert_(mlp.loss < 0.4)
+    assert mlp.accuracy > 0.8
+    assert mlp.loss < 0.4
     assert_equal(mlp.accuracy, accuracy)
     assert_equal(x_test_prob.shape, (10000, 10))

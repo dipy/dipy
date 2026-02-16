@@ -262,7 +262,7 @@ def test_kurtosis_to_smt2_conversion():
     assert_array_almost_equal(awf_from_msk(np.array([-0.1, 2.5])), np.array([0.0, 1.0]))
 
     # if msk = np.nan, function outputs awf=np.nan
-    assert_(np.isnan(awf_from_msk(np.array(np.nan))))
+    assert np.isnan(awf_from_msk(np.array(np.nan)))
 
 
 def test_smt2_metrics():

@@ -99,7 +99,7 @@ def test_GradientTable():
     expected_bvecs = gradients / (expected_bvals + expected_b0s_mask)[:, None]
 
     gt = GradientTable(gradients, b0_threshold=0)
-    npt.assert_("B-values shape (5,)" in gt.__str__())
+    assert "B-values shape (5,)" in gt.__str__()
     npt.assert_array_almost_equal(gt.bvals, expected_bvals)
     npt.assert_array_equal(gt.b0s_mask, expected_b0s_mask)
     npt.assert_array_almost_equal(gt.bvecs, expected_bvecs)
@@ -495,7 +495,7 @@ def test_reorient_bvecs(rng):
     # so that the reorient_bvecs function does not throw an error itself
     new_gt = reorient_bvecs(gt, shear_affines[:3, :3], atol=1)
     bvecs_close_to_1 = abs(vector_norm(new_gt.bvecs[~gt.b0s_mask]) - 1) <= 0.001
-    npt.assert_(np.all(bvecs_close_to_1))
+    assert np.all(bvecs_close_to_1)
 
 
 def test_nan_bvecs():
@@ -511,7 +511,7 @@ def test_nan_bvecs():
         gradient_table(fbvals, bvecs=fbvecs)
         # Select only UserWarning
         selected_w = [w for w in l_warns if issubclass(w.category, UserWarning)]
-        npt.assert_(len(selected_w) == 0)
+        assert len(selected_w) == 0
 
 
 @set_random_number_generator()
@@ -686,25 +686,25 @@ def test_check_multi_b():
     bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
     bvecs = generate_bvecs(bvals.shape[-1])
     gtab = gradient_table(bvals, bvecs=bvecs)
-    npt.assert_(check_multi_b(gtab, 2, non_zero=False))
+    assert check_multi_b(gtab, 2, non_zero=False)
 
     # We don't consider differences this small to be sufficient:
     bvals = np.array([1995, 1995, 1995, 1995, 2005, 2005, 2005, 2005, 0])
     bvecs = generate_bvecs(bvals.shape[-1])
     gtab = gradient_table(bvals, bvecs=bvecs)
-    npt.assert_(not check_multi_b(gtab, 2, non_zero=True))
+    assert not check_multi_b(gtab, 2, non_zero=True)
 
     # Unless you specify that you are interested in this magnitude of changes:
-    npt.assert_(check_multi_b(gtab, 2, non_zero=True, bmag=0))
+    assert check_multi_b(gtab, 2, non_zero=True, bmag=0)
 
     # Or if you consider zero to be one of your b-values:
-    npt.assert_(check_multi_b(gtab, 2, non_zero=False))
+    assert check_multi_b(gtab, 2, non_zero=False)
 
     # Case that b-values are in ms/um2 (this should successfully pass)
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005, 0])
     bvecs = generate_bvecs(bvals.shape[-1])
     gtab = gradient_table(bvals, bvecs=bvecs)
-    npt.assert_(check_multi_b(gtab, 2, non_zero=False))
+    assert check_multi_b(gtab, 2, non_zero=False)
 
 
 @set_random_number_generator()

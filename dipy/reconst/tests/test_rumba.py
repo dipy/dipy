@@ -46,7 +46,7 @@ def test_rumba():
     with warnings.catch_warnings(record=True) as w:
         _ = RumbaSDModel(gtab, verbose=True)
         assert_equal(len(w), 1)
-        assert_(w[0].category, UserWarning)
+        assert w[0].category, UserWarning
 
     assert_raises(ValueError, RumbaSDModel, gtab, use_tv=True)
     assert_raises(ValueError, RumbaSDModel, gtab, n_iter=0)

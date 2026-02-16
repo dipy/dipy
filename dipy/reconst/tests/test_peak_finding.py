@@ -36,8 +36,8 @@ def test_local_maxima():
     odf[[point1, point2]] = 1.0
     peak_values, peak_index = local_maxima(odf, edges)
     npt.assert_array_equal(peak_values, [1.0, 1.0])
-    npt.assert_(point1 in peak_index)
-    npt.assert_(point2 in peak_index)
+    assert point1 in peak_index
+    assert point2 in peak_index
 
     # Repeat with a hemisphere
     hemisphere = HemiSphere(xyz=vertices, faces=faces)
@@ -64,8 +64,8 @@ def test_local_maxima():
     odf[[point1, point2]] = 1.0
     peak_values, peak_index = local_maxima(odf, edges)
     npt.assert_array_equal(peak_values, [1.0, 1.0])
-    npt.assert_(point1 in peak_index)
-    npt.assert_(point2 in peak_index)
+    assert point1 in peak_index
+    assert point2 in peak_index
 
     # Should raise an error if odf has nans
     odf[20] = np.nan

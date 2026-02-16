@@ -177,9 +177,9 @@ def test_out_of_grid(value, is_out_of_grid):
 
     try:
         sfs.vertices = tmp_vertices
-        npt.assert_(sfs.is_bbox_in_vox_valid() != is_out_of_grid)
+        assert sfs.is_bbox_in_vox_valid() != is_out_of_grid
     except (TypeError, ValueError):
-        npt.assert_(False)
+        assert False
 
 
 def test_invalid_empty():
@@ -196,7 +196,7 @@ def test_invalid_empty():
     try:
         sfs.is_bbox_in_vox_valid()
     except (TypeError, ValueError):
-        npt.assert_(True)
+        assert True
 
 
 def test_equality():
@@ -214,7 +214,7 @@ def test_equality():
     sfs_2.to_rasmm()
     sfs_2.to_center()
 
-    npt.assert_(sfs_1 == sfs_2)
+    assert sfs_1 == sfs_2
 
 
 def test_random_space_transformations():
@@ -291,23 +291,15 @@ def test_create_from_sfs():
     )
 
     if not (sfs_1 == sfs_2):
-        npt.assert_(
-            True,
-            msg="vertices, faces, space attributes, space, origin, "
-            "and data_per_vertex should be identical",
-        )
-
+        assert (
+            True
+        ), "vertices, faces, space attributes, space, origin, " "and data_per_vertex should be identical"
     nb_pts = sfs_1.vertices.shape[0]
     sfs_1.vertices = np.arange(nb_pts * 3).reshape((nb_pts, 3))
     if np.array_equal(sfs_1.vertices, sfs_2.vertices):
-        npt.assert_(
-            True,
-            msg="Side effect, modifying the original "
-            "StatefulTractogram after creating a new one "
-            "should not modify the new one",
-        )
-
-
+        assert (
+            True
+        ), "Side effect, modifying the original " "StatefulTractogram after creating a new one " "should not modify the new one"
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
 def test_init_dtype_dict_attributes():
     sfs = load_surface(
@@ -322,7 +314,7 @@ def test_init_dtype_dict_attributes():
         recursive_compare(dtype_dict, sfs.dtype_dict)
     except ValueError as e:
         print(e)
-        npt.assert_(False, msg=e)
+        assert False, e
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
@@ -343,7 +335,7 @@ def test_set_dtype_dict_attributes():
     try:
         recursive_compare(dtype_dict, sfs.dtype_dict)
     except ValueError:
-        npt.assert_(False, msg="dtype_dict should be identical after set.")
+        assert False, "dtype_dict should be identical after set."
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
@@ -367,12 +359,9 @@ def test_set_partial_dtype_dict_attributes():
         recursive_compare(dtype_dict["faces"], sfs.dtype_dict["faces"])
         recursive_compare(dpp_dtype_dict, sfs.dtype_dict["dpp"])
     except ValueError:
-        npt.assert_(
-            False,
-            msg="Partial use of dtype_dict should apply only to the relevant portions.",
-        )
-
-
+        assert (
+            False
+        ), "Partial use of dtype_dict should apply only to the relevant portions."
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
 def test_non_existing_dtype_dict_attributes():
     sfs = load_surface(
@@ -390,9 +379,9 @@ def test_non_existing_dtype_dict_attributes():
     sfs.dtype_dict = dtype_dict
     try:
         recursive_compare(sfs.dtype_dict, dtype_dict)
-        npt.assert_(False, msg="Fake entries in dtype_dict should not work.")
+        assert False, "Fake entries in dtype_dict should not work."
     except ValueError:
-        npt.assert_(True)
+        assert True
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
@@ -419,7 +408,7 @@ def test_from_sfs_dtype_dict_attributes():
         recursive_compare(new_sfs.dtype_dict, dtype_dict)
         recursive_compare(sfs.dtype_dict, dtype_dict)
     except ValueError:
-        npt.assert_(False, msg="from_sfs() should not modify the dtype_dict.")
+        assert False, "from_sfs() should not modify the dtype_dict."
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")

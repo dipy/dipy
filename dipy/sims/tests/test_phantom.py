@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_, assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
@@ -80,4 +80,4 @@ def test_add_noise(rng):
 
         sigma = S0 / snr
 
-        assert_(np.abs(np.var(vol_noise - vol) - sigma**2) < 1)
+        assert np.abs(np.var(vol_noise - vol) - sigma**2) < 1

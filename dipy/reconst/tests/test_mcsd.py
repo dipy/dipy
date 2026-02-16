@@ -295,10 +295,10 @@ def test_multi_shell_fiber_response():
         # Test that the number of warnings raised is greater than 1, with
         # deprecation warnings being raised from using legacy SH bases as well
         # as a warning from multi_shell_fiber_response
-        npt.assert_(len(w) > 1)
+        assert len(w) > 1
         # The last warning in list is the one from multi_shell_fiber_response
-        npt.assert_(issubclass(w[-1].category, UserWarning))
-        npt.assert_("""No b0 given. Proceeding either way.""" in str(w[-1].message))
+        assert issubclass(w[-1].category, UserWarning)
+        assert """No b0 given. Proceeding either way.""" in str(w[-1].message)
         npt.assert_equal(response.response.shape, (3, 7))
 
 
@@ -320,8 +320,8 @@ def test_mask_for_response_msmt(rng):
         )
 
     npt.assert_equal(len(w), 1)
-    npt.assert_(issubclass(w[0].category, UserWarning))
-    npt.assert_("""Some b-values are higher than 1200.""" in str(w[0].message))
+    assert issubclass(w[0].category, UserWarning)
+    assert """Some b-values are higher than 1200.""" in str(w[0].message)
 
     # Verifies that masks are not empty:
     masks_sum = int(np.sum(wm_mask) + np.sum(gm_mask) + np.sum(csf_mask))
@@ -350,8 +350,8 @@ def test_mask_for_response_msmt_nvoxels(rng):
         )
 
     npt.assert_equal(len(w), 1)
-    npt.assert_(issubclass(w[0].category, UserWarning))
-    npt.assert_("""Some b-values are higher than 1200.""" in str(w[0].message))
+    assert issubclass(w[0].category, UserWarning)
+    assert """Some b-values are higher than 1200.""" in str(w[0].message)
 
     wm_nvoxels = np.sum(wm_mask)
     gm_nvoxels = np.sum(gm_mask)
@@ -373,13 +373,13 @@ def test_mask_for_response_msmt_nvoxels(rng):
             csf_md_thr=0,
         )
         npt.assert_equal(len(w), 6)
-        npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_("""Some b-values are higher than 1200.""" in str(w[0].message))
-        npt.assert_("No voxel with a FA higher than 1 were found" in str(w[1].message))
-        npt.assert_("No voxel with a FA lower than 0 were found" in str(w[2].message))
-        npt.assert_("No voxel with a MD lower than 0 were found" in str(w[3].message))
-        npt.assert_("No voxel with a FA lower than 0 were found" in str(w[4].message))
-        npt.assert_("No voxel with a MD lower than 0 were found" in str(w[5].message))
+        assert issubclass(w[0].category, UserWarning)
+        assert """Some b-values are higher than 1200.""" in str(w[0].message)
+        assert "No voxel with a FA higher than 1 were found" in str(w[1].message)
+        assert "No voxel with a FA lower than 0 were found" in str(w[2].message)
+        assert "No voxel with a MD lower than 0 were found" in str(w[3].message)
+        assert "No voxel with a FA lower than 0 were found" in str(w[4].message)
+        assert "No voxel with a MD lower than 0 were found" in str(w[5].message)
 
     wm_nvoxels = np.sum(wm_mask)
     gm_nvoxels = np.sum(gm_mask)
@@ -432,13 +432,9 @@ def test_auto_response_msmt(rng):
             csf_md_thr=0.0032,
         )
 
-        npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_(
-            """Some b-values are higher than 1200.
-        The DTI fit might be affected. It is advised to use
-        mask_for_response_msmt with bvalues lower than 1200, followed by
-        response_from_mask_msmt with all bvalues to overcome this."""
-            in str(w[0].message)
+        assert issubclass(w[0].category, UserWarning)
+        assert (
+            """Some b-values are higher than 1200. The DTI fit might be affected. It is advised to use mask_for_response_msmt with bvalues lower than 1200, followed by response_from_mask_msmt with all bvalues to overcome this.""" in str(w[0].message)
         )
 
         mask_wm, mask_gm, mask_csf = mask_for_response_msmt(

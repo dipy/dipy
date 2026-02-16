@@ -302,12 +302,12 @@ def test_tracking_max_angle(rng):
         # local tracking
         streamlines = Streamlines(LocalTracking(dg, sc, seeds, affine, step_size))
         min_cos_sim = get_min_cos_similarity(streamlines)
-        npt.assert_(np.arccos(min_cos_sim) <= np.deg2rad(max_angle))
+        assert np.arccos(min_cos_sim) <= np.deg2rad(max_angle)
 
         # PFT tracking
         streamlines = Streamlines(ParticleFilteringTracking(dg, sc, seeds, affine, 1.0))
         min_cos_sim = get_min_cos_similarity(streamlines)
-        npt.assert_(np.arccos(min_cos_sim) <= np.deg2rad(max_angle))
+        assert np.arccos(min_cos_sim) <= np.deg2rad(max_angle)
 
 
 def test_probabilistic_odf_weighted_tracker():
@@ -372,14 +372,14 @@ def test_probabilistic_odf_weighted_tracker():
             path[1] = True
         else:
             raise AssertionError()
-    npt.assert_(all(path))
+    assert all(path)
 
     # The first path is not possible if 90 degree turns are excluded
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 80, sphere, pmf_threshold=0.1)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.0)
 
     for sl in streamlines:
-        npt.assert_(np.allclose(sl, expected[1]))
+        assert np.allclose(sl, expected[1])
 
     # The first path is not possible if pmf_threshold > 0.67
     # 0.4/0.6 < 2/3, multiplying the pmf should not change the ratio
@@ -387,7 +387,7 @@ def test_probabilistic_odf_weighted_tracker():
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.0)
 
     for sl in streamlines:
-        npt.assert_(np.allclose(sl, expected[1]))
+        assert np.allclose(sl, expected[1])
 
     # Test non WM seed position
     seeds = [[0, 0, 0], [5, 5, 5]]
@@ -395,20 +395,20 @@ def test_probabilistic_odf_weighted_tracker():
         dg, sc, seeds, np.eye(4), 0.2, max_cross=1, return_all=True
     )
     streamlines = Streamlines(streamlines)
-    npt.assert_(len(streamlines[0]) == 1)  # INVALIDPOINT
-    npt.assert_(len(streamlines[1]) == 1)  # OUTSIDEIMAGE
+    assert len(streamlines[0]) == 1  # INVALIDPOINT
+    assert len(streamlines[1]) == 1  # OUTSIDEIMAGE
 
     # Test that all points are within the image volume
     seeds = seeds_from_mask(np.ones(mask.shape), np.eye(4), density=2)
     streamline_generator = LocalTracking(dg, sc, seeds, np.eye(4), 0.5, return_all=True)
     streamlines = Streamlines(streamline_generator)
     for s in streamlines:
-        npt.assert_(np.all((s + 0.5).astype(int) >= 0))
-        npt.assert_(np.all((s + 0.5).astype(int) < mask.shape))
+        assert np.all((s + 0.5).astype(int) >= 0)
+        assert np.all((s + 0.5).astype(int) < mask.shape)
     # Test that the number of streamline return with return_all=True equal the
     # number of seeds places
 
-    npt.assert_(np.array([len(streamlines) == len(seeds)]))
+    assert np.array([len(streamlines) == len(seeds)])
 
     # Test reproducibility
     tracking_1 = Streamlines(
@@ -495,8 +495,8 @@ def test_particle_filtering_tractography(rng):
     )
     pft_streamlines = Streamlines(pft_streamlines_generator)
 
-    npt.assert_(np.array([len(pft_streamlines) > 0]))
-    npt.assert_(np.array([len(pft_streamlines) >= len(local_streamlines)]))
+    assert np.array([len(pft_streamlines) > 0])
+    assert np.array([len(pft_streamlines) >= len(local_streamlines)])
 
     # Test PFT with a PTT direction getter
     dg_ptt = PTTDirectionGetter.from_pmf(pmf, 60, sphere)
@@ -514,8 +514,8 @@ def test_particle_filtering_tractography(rng):
         )
     )
 
-    npt.assert_(np.array([len(pft_ptt_streamlines) > 0]))
-    npt.assert_(np.array([len(pft_ptt_streamlines) >= len(local_streamlines)]))
+    assert np.array([len(pft_ptt_streamlines) > 0])
+    assert np.array([len(pft_ptt_streamlines) >= len(local_streamlines)])
 
     # Test that all points are equally spaced
     for ell in [2, 3, 5, 10, 100]:
@@ -541,12 +541,12 @@ def test_particle_filtering_tractography(rng):
     pft_streamlines = Streamlines(pft_streamlines_generator)
 
     for s in pft_streamlines:
-        npt.assert_(np.all((s + 0.5).astype(int) >= 0))
-        npt.assert_(np.all((s + 0.5).astype(int) < simple_wm.shape))
+        assert np.all((s + 0.5).astype(int) >= 0)
+        assert np.all((s + 0.5).astype(int) < simple_wm.shape)
 
     # Test that the number of streamline return with return_all=True equal the
     # number of seeds places
-    npt.assert_(np.array([len(pft_streamlines) == len(seeds)]))
+    assert np.array([len(pft_streamlines) == len(seeds)])
 
     # Test min and max length
     pft_streamlines_generator = ParticleFilteringTracking(
@@ -555,8 +555,8 @@ def test_particle_filtering_tractography(rng):
     pft_streamlines = Streamlines(pft_streamlines_generator)
 
     for s in pft_streamlines:
-        npt.assert_(len(s) >= 3)
-        npt.assert_(len(s) <= 20)
+        assert len(s) >= 3
+        assert len(s) <= 20
 
     # Test non WM seed position
     seeds = [[0, 5, 4], [0, 0, 1], [50, 50, 50]]
@@ -708,7 +708,7 @@ def test_particle_filtering_tractography(rng):
         min_wm_pve_before_stopping=0,
     )
     pft_streamlines = Streamlines(pft_streamlines_generator)
-    npt.assert_(np.allclose(pft_streamlines[0], expected[0]))
+    assert np.allclose(pft_streamlines[0], expected[0])
 
     pft_streamlines_generator = ParticleFilteringTracking(
         dg,
@@ -721,7 +721,7 @@ def test_particle_filtering_tractography(rng):
         min_wm_pve_before_stopping=1,
     )
     pft_streamlines = Streamlines(pft_streamlines_generator)
-    npt.assert_(np.allclose(pft_streamlines[0], expected[1]))
+    assert np.allclose(pft_streamlines[0], expected[1])
 
     # Test invalid min_wm_pve_before_stopping parameters
     npt.assert_raises(
@@ -806,7 +806,7 @@ def test_maximum_deterministic_tracker():
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.0)
 
     for sl in streamlines:
-        npt.assert_(np.allclose(sl, expected[1]))
+        assert np.allclose(sl, expected[1])
 
     # Both path are not possible if 90 degree turns are exclude and
     # if pmf_threshold is larger than 0.67. Streamlines should stop at
@@ -818,7 +818,7 @@ def test_maximum_deterministic_tracker():
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.0)
 
     for sl in streamlines:
-        npt.assert_(np.allclose(sl, expected[2]))
+        assert np.allclose(sl, expected[2])
 
 
 def test_bootstap_peak_tracker():
@@ -1046,7 +1046,7 @@ def test_eudx_tracker():
     ]
 
     for i, sl in enumerate(streamlines):
-        npt.assert_(np.allclose(sl, expected[i]))
+        assert np.allclose(sl, expected[i])
 
 
 def test_affine_transformations():
@@ -1150,9 +1150,9 @@ def test_affine_transformations():
             streamlines_inv.append([np.dot(pts, lin) + offset for pts in line])
 
         npt.assert_equal(len(streamlines_inv[0]), len(expected[0]))
-        npt.assert_(np.allclose(streamlines_inv[0], expected[0], atol=0.3))
+        assert np.allclose(streamlines_inv[0], expected[0], atol=0.3)
         npt.assert_equal(len(streamlines_inv[1]), len(expected[1]))
-        npt.assert_(np.allclose(streamlines_inv[1], expected[1], atol=0.3))
+        assert np.allclose(streamlines_inv[1], expected[1], atol=0.3)
 
 
 @set_random_number_generator()
@@ -1282,9 +1282,9 @@ def test_tracking_with_initial_directions():
         initial_directions=initial_directions,
     )
     streamlines = Streamlines(streamline_generator)
-    npt.assert_(allclose(streamlines[0], expected[1]))
-    npt.assert_(allclose(streamlines[1], expected[2]))
-    npt.assert_(allclose(streamlines[2], np.array([crossing_pos])))
+    assert allclose(streamlines[0], expected[1])
+    assert allclose(streamlines[1], expected[2])
+    assert allclose(streamlines[2], np.array([crossing_pos]))
     # with max_cross=2
     streamline_generator = LocalTracking(
         dg,
@@ -1297,10 +1297,10 @@ def test_tracking_with_initial_directions():
         initial_directions=initial_directions,
     )
     streamlines = Streamlines(streamline_generator)
-    npt.assert_(allclose(streamlines[0], expected[1]))
-    npt.assert_(allclose(streamlines[1], expected[2]))
-    npt.assert_(allclose(streamlines[2], expected[1]))
-    npt.assert_(allclose(streamlines[3], np.array([crossing_pos])))
+    assert allclose(streamlines[0], expected[1])
+    assert allclose(streamlines[1], expected[2])
+    assert allclose(streamlines[2], expected[1])
+    assert allclose(streamlines[3], np.array([crossing_pos]))
 
     # Test initial_directions with norm != 1 and not sphere vertices
     initial_directions = np.array(
@@ -1321,10 +1321,10 @@ def test_tracking_with_initial_directions():
         initial_directions=initial_directions,
     )
     streamlines = Streamlines(streamline_generator)
-    npt.assert_(allclose(streamlines[0], expected[1]))
-    npt.assert_(allclose(streamlines[1], expected[2]))
-    npt.assert_(allclose(streamlines[2], expected[1][::-1]))
-    npt.assert_(allclose(streamlines[3], expected[1]))
+    assert allclose(streamlines[0], expected[1])
+    assert allclose(streamlines[1], expected[2])
+    assert allclose(streamlines[2], expected[1][::-1])
+    assert allclose(streamlines[3], expected[1])
 
     # Test dimension mismatch between seeds and initial_directions
     npt.assert_raises(
@@ -1381,10 +1381,10 @@ def test_tracking_with_initial_directions():
         initial_directions=initial_directions,
     )
     streamlines = Streamlines(streamline_generator)
-    npt.assert_(allclose(streamlines[0], expected[1]))
-    npt.assert_(allclose(streamlines[1], expected[2]))
-    npt.assert_(allclose(streamlines[2], expected[1]))
-    npt.assert_(allclose(streamlines[3], np.array([crossing_pos])))
+    assert allclose(streamlines[0], expected[1])
+    assert allclose(streamlines[1], expected[2])
+    assert allclose(streamlines[2], expected[1])
+    assert allclose(streamlines[3], np.array([crossing_pos]))
 
     # Test unidirectional tracking with initial directions
     initial_directions = np.array(
@@ -1402,10 +1402,10 @@ def test_tracking_with_initial_directions():
         initial_directions=initial_directions,
     )
     streamlines = Streamlines(streamline_generator)
-    npt.assert_(allclose(streamlines[0], expected[1][2:]))
-    npt.assert_(allclose(streamlines[1], expected[1][:3][::-1]))
-    npt.assert_(allclose(streamlines[2], expected[2][:2][::-1]))
-    npt.assert_(allclose(streamlines[3], expected[2][1:]))
+    assert allclose(streamlines[0], expected[1][2:])
+    assert allclose(streamlines[1], expected[1][:3][::-1])
+    assert allclose(streamlines[2], expected[2][:2][::-1])
+    assert allclose(streamlines[3], expected[2][1:])
 
     streamline_generator = ParticleFilteringTracking(
         dg,
@@ -1418,10 +1418,10 @@ def test_tracking_with_initial_directions():
         initial_directions=initial_directions,
     )
     streamlines = Streamlines(streamline_generator)
-    npt.assert_(allclose(streamlines[0], expected[1][2:]))
-    npt.assert_(allclose(streamlines[1], expected[1][:3][::-1]))
-    npt.assert_(allclose(streamlines[2], expected[2][:2][::-1]))
-    npt.assert_(allclose(streamlines[3], expected[2][1:]))
+    assert allclose(streamlines[0], expected[1][2:])
+    assert allclose(streamlines[1], expected[1][:3][::-1])
+    assert allclose(streamlines[2], expected[2][:2][::-1])
+    assert allclose(streamlines[3], expected[2][1:])
 
     # Test randomized initial forward direction
     seeds = np.array([crossing_pos] * 30)
@@ -1440,6 +1440,6 @@ def test_tracking_with_initial_directions():
     )
     streamlines = Streamlines(streamline_generator)
     for sl in streamlines:
-        npt.assert_(
+        assert (
             np.allclose(sl, expected[1][2:]) or np.allclose(sl, expected[1][:3][::-1])
         )

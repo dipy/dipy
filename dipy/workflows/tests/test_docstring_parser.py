@@ -161,17 +161,17 @@ doc_yields = NumpyDocString(doc_yields_txt)
 
 
 def test_signature():
-    npt.assert_(doc["Signature"].startswith("numpy.multivariate_normal("))
-    npt.assert_(doc["Signature"].endswith("spam=None)"))
+    assert doc["Signature"].startswith("numpy.multivariate_normal(")
+    assert doc["Signature"].endswith("spam=None)")
 
 
 def test_summary():
-    npt.assert_(doc["Summary"][0].startswith("Draw values"))
-    npt.assert_(doc["Summary"][-1].endswith("covariance."))
+    assert doc["Summary"][0].startswith("Draw values")
+    assert doc["Summary"][-1].endswith("covariance.")
 
 
 def test_extended_summary():
-    npt.assert_(doc["Extended Summary"][0].startswith("The multivariate normal"))
+    assert doc["Extended Summary"][0].startswith("The multivariate normal")
 
 
 def test_parameters():
@@ -180,7 +180,7 @@ def test_parameters():
 
     arg, arg_type, desc = doc["Parameters"][1]
     npt.assert_equal(arg_type, "(N, N) ndarray")
-    npt.assert_(desc[0].startswith("Covariance matrix"))
+    assert desc[0].startswith("Covariance matrix")
     npt.assert_equal(doc["Parameters"][0][-1][-2], "   (1+2+3)/3")
 
 
@@ -189,7 +189,7 @@ def test_other_parameters():
     npt.assert_equal([n for n, _, _ in doc["Other Parameters"]], ["spam"])
     arg, arg_type, desc = doc["Other Parameters"][0]
     npt.assert_equal(arg_type, "parrot")
-    npt.assert_(desc[0].startswith("A parrot off its mortal coil"))
+    assert desc[0].startswith("A parrot off its mortal coil")
 
 
 def test_returns():
@@ -197,30 +197,30 @@ def test_returns():
     arg, arg_type, desc = doc["Returns"][0]
     npt.assert_equal(arg, "out")
     npt.assert_equal(arg_type, "ndarray")
-    npt.assert_(desc[0].startswith("The drawn samples"))
-    npt.assert_(desc[-1].endswith("distribution."))
+    assert desc[0].startswith("The drawn samples")
+    assert desc[-1].endswith("distribution.")
 
     arg, arg_type, desc = doc["Returns"][1]
     npt.assert_equal(arg, "list of str")
     npt.assert_equal(arg_type, "")
-    npt.assert_(desc[0].startswith("This is not a real"))
-    npt.assert_(desc[-1].endswith("anonymous return values."))
+    assert desc[0].startswith("This is not a real")
+    assert desc[-1].endswith("anonymous return values.")
 
 
 def test_notes():
-    npt.assert_(doc["Notes"][0].startswith("Instead"))
-    npt.assert_(doc["Notes"][-1].endswith("definite."))
+    assert doc["Notes"][0].startswith("Instead")
+    assert doc["Notes"][-1].endswith("definite.")
     npt.assert_equal(len(doc["Notes"]), 17)
 
 
 def test_references():
-    npt.assert_(doc["References"][0].startswith(".."))
-    npt.assert_(doc["References"][-1].endswith("2001."))
+    assert doc["References"][0].startswith("..")
+    assert doc["References"][-1].endswith("2001.")
 
 
 def test_examples():
-    npt.assert_(doc["Examples"][0].startswith(">>>"))
-    npt.assert_(doc["Examples"][-1].endswith("True]"))
+    assert doc["Examples"][0].startswith(">>>")
+    assert doc["Examples"][-1].endswith("True]")
 
 
 def test_index():

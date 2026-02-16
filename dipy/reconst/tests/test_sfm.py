@@ -77,12 +77,12 @@ def test_predict():
     sfmodel = sfm.SparseFascicleModel(gtab, response=[0.0015, 0.0003, 0.0003])
     sffit = sfmodel.fit(S)
     pred = sffit.predict()
-    npt.assert_(xval.coeff_of_determination(pred, S) > 97)
+    assert xval.coeff_of_determination(pred, S) > 97
 
     # Should be possible to predict using a different gtab:
     new_gtab = grad.gradient_table(bvals[::2], bvecs=bvecs[::2])
     new_pred = sffit.predict(gtab=new_gtab)
-    npt.assert_(xval.coeff_of_determination(new_pred, S[::2]) > 97)
+    assert xval.coeff_of_determination(new_pred, S[::2]) > 97
 
     # Should be possible to predict for a single direction:
     with warnings.catch_warnings():
@@ -170,7 +170,7 @@ def test_sfm_stick():
     sfmodel = sfm.SparseFascicleModel(gtab, solver="NNLS", response=[0.001, 0, 0])
     sffit = sfmodel.fit(S)
     pred = sffit.predict()
-    npt.assert_(xval.coeff_of_determination(pred, S) > 96)
+    assert xval.coeff_of_determination(pred, S) > 96
 
 
 @needs_sklearn
@@ -187,7 +187,7 @@ def test_sfm_sklearnlinearsolver():
     gtab = grad.gradient_table(fbvals, bvecs=fbvecs)
     sfmodel = sfm.SparseFascicleModel(gtab, solver=SillySolver())
 
-    npt.assert_(isinstance(sfmodel.solver, SillySolver))
+    assert isinstance(sfmodel.solver, SillySolver)
     npt.assert_raises(
         ValueError, sfm.SparseFascicleModel, gtab, solver=EvenSillierSolver()
     )
@@ -235,4 +235,4 @@ def test_exponential_iso():
         )
         sffit = sfmodel.fit(S)
         pred = sffit.predict()
-        npt.assert_(xval.coeff_of_determination(pred, S) > 96)
+        assert xval.coeff_of_determination(pred, S) > 96

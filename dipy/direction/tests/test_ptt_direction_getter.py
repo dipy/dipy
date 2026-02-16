@@ -53,7 +53,7 @@ def test_ptt_tracking():
         )
         streamlines = Streamlines(streamline_generator)
         npt.assert_equal(len(streamlines), 10)
-        npt.assert_(np.all([len(s) > 1 for s in streamlines]))
+        assert np.all([len(s) > 1 for s in streamlines])
 
     # Test with zeros pmf
     dg = PTTDirectionGetter.from_pmf(
@@ -68,7 +68,7 @@ def test_ptt_tracking():
     )
     streamlines = Streamlines(streamline_generator)
     npt.assert_equal(len(streamlines), 10)
-    npt.assert_(np.all([len(s) == 1 for s in streamlines]))
+    assert np.all([len(s) == 1 for s in streamlines])
 
     # Test with maximum length reach
     dg = PTTDirectionGetter.from_pmf(sf, sphere=default_sphere, max_angle=20)
@@ -86,7 +86,7 @@ def test_ptt_tracking():
         np.linalg.norm(streams[0][0] - streams[0][1]), 0.2, decimal=1
     )
     npt.assert_equal(len(streams), 10)
-    npt.assert_(np.all([len(s) <= 3 for s in streams]))
+    assert np.all([len(s) <= 3 for s in streams])
 
     streamline_generator = LocalTracking(
         direction_getter=dg,

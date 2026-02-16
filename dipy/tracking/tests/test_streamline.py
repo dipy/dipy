@@ -1027,7 +1027,7 @@ def test_orient_by_rois():
     )
     npt.assert_array_equal(new_streamlines, flipped_sl)
 
-    npt.assert_(new_streamlines is not streamlines)
+    assert new_streamlines is not streamlines
 
     # Test with affine:
     x_flipped_sl = Streamlines([s + affine[:3, 3] for s in flipped_sl])
@@ -1035,7 +1035,7 @@ def test_orient_by_rois():
         x_streamlines, affine, mask1_vol, mask2_vol, in_place=False, as_generator=False
     )
     npt.assert_array_equal(new_streamlines, x_flipped_sl)
-    npt.assert_(new_streamlines is not x_streamlines)
+    assert new_streamlines is not x_streamlines
 
     # Test providing coord ROIs instead of vol ROIs:
     new_streamlines = orient_by_rois(
@@ -1053,7 +1053,7 @@ def test_orient_by_rois():
         streamlines, np.eye(4), mask1_vol, mask2_vol, in_place=False, as_generator=True
     )
 
-    npt.assert_(isinstance(new_streamlines, types.GeneratorType))
+    assert isinstance(new_streamlines, types.GeneratorType)
     ll = Streamlines(new_streamlines)
     npt.assert_array_equal(ll, flipped_sl)
 
@@ -1062,7 +1062,7 @@ def test_orient_by_rois():
         x_streamlines, affine, mask1_vol, mask2_vol, in_place=False, as_generator=True
     )
 
-    npt.assert_(isinstance(new_streamlines, types.GeneratorType))
+    assert isinstance(new_streamlines, types.GeneratorType)
     ll = Streamlines(new_streamlines)
     npt.assert_array_equal(ll, x_flipped_sl)
 
@@ -1076,7 +1076,7 @@ def test_orient_by_rois():
         as_generator=True,
     )
 
-    npt.assert_(isinstance(new_streamlines, types.GeneratorType))
+    assert isinstance(new_streamlines, types.GeneratorType)
     ll = Streamlines(new_streamlines)
     npt.assert_array_equal(ll, flipped_sl)
 
@@ -1098,7 +1098,7 @@ def test_orient_by_rois():
         as_generator=False,
     )
 
-    npt.assert_(not isinstance(new_streamlines, types.GeneratorType))
+    assert not isinstance(new_streamlines, types.GeneratorType)
     npt.assert_array_equal(new_streamlines, flipped_sl)
 
     # Modify in-place:
@@ -1108,7 +1108,7 @@ def test_orient_by_rois():
 
     npt.assert_array_equal(new_streamlines, flipped_sl)
     # The two objects are one and the same:
-    npt.assert_(new_streamlines is streamlines)
+    assert new_streamlines is streamlines
 
 
 def test_orient_by_streamline():
@@ -1135,7 +1135,7 @@ def test_orient_by_streamline():
     )
 
     npt.assert_array_equal(new_streamlines, flipped_sl)
-    npt.assert_(new_streamlines is not streamlines)
+    assert new_streamlines is not streamlines
 
     # Test with affine:
     x_flipped_sl = Streamlines([s + affine[:3, 3] for s in flipped_sl])
@@ -1143,14 +1143,14 @@ def test_orient_by_streamline():
         x_streamlines, standard_streamline, in_place=False
     )
     npt.assert_array_equal(new_streamlines, x_flipped_sl)
-    npt.assert_(new_streamlines is not x_streamlines)
+    assert new_streamlines is not x_streamlines
 
     # Test with as_generator set to True
     new_streamlines = orient_by_streamline(
         streamlines, standard_streamline, in_place=False, as_generator=True
     )
 
-    npt.assert_(isinstance(new_streamlines, types.GeneratorType))
+    assert isinstance(new_streamlines, types.GeneratorType)
     ll = Streamlines(new_streamlines)
     npt.assert_array_equal(ll, flipped_sl)
 
@@ -1159,7 +1159,7 @@ def test_orient_by_streamline():
         x_streamlines, standard_streamline, in_place=False, as_generator=True
     )
 
-    npt.assert_(isinstance(new_streamlines, types.GeneratorType))
+    assert isinstance(new_streamlines, types.GeneratorType)
     ll = Streamlines(new_streamlines)
     npt.assert_array_equal(ll, x_flipped_sl)
 
@@ -1170,7 +1170,7 @@ def test_orient_by_streamline():
 
     npt.assert_array_equal(new_streamlines, flipped_sl)
     # The two objects are one and the same:
-    npt.assert_(new_streamlines is streamlines)
+    assert new_streamlines is streamlines
 
 
 def test_values_from_volume():

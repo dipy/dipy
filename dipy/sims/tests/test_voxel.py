@@ -120,7 +120,7 @@ def test_single_tensor():
     evecs = np.eye(3)
     S = single_tensor(gtab, 100, evals=evals, evecs=evecs, snr=None)
     assert_array_almost_equal(S[gtab.b0s_mask], 100)
-    assert_(np.mean(S[~gtab.b0s_mask]) < 100)
+    assert np.mean(S[~gtab.b0s_mask]) < 100
 
     from dipy.reconst.dti import TensorModel
 

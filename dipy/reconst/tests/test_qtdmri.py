@@ -405,7 +405,7 @@ def test_anisotropic_reduced_MSE(radial_order=0, time_order=0):
     qtdmri_fit_iso = qtdmri_mod_iso.fit(S)
     mse_aniso = np.mean((S - qtdmri_fit_aniso.fitted_signal()) ** 2)
     mse_iso = np.mean((S - qtdmri_fit_iso.fitted_signal()) ** 2)
-    assert_(mse_aniso < mse_iso)
+    assert mse_aniso < mse_iso
 
 
 def test_number_of_coefficients(radial_order=4, time_order=2):
@@ -580,7 +580,7 @@ def test_laplacian_reduces_laplacian_norm(radial_order=4, time_order=2):
     laplacian_norm_no_reg = qtdmri_fit_no_laplacian.norm_of_laplacian_signal()
     laplacian_norm_reg = qtdmri_fit_laplacian.norm_of_laplacian_signal()
 
-    assert_(laplacian_norm_no_reg > laplacian_norm_reg)
+    assert laplacian_norm_no_reg > laplacian_norm_reg
 
 
 @needs_cvxpy
@@ -618,7 +618,7 @@ def test_spherical_laplacian_reduces_laplacian_norm(radial_order=4, time_order=2
     laplacian_norm_no_reg = qtdmri_fit_no_laplacian.norm_of_laplacian_signal()
     laplacian_norm_reg = qtdmri_fit_laplacian.norm_of_laplacian_signal()
 
-    assert_(laplacian_norm_no_reg > laplacian_norm_reg)
+    assert laplacian_norm_no_reg > laplacian_norm_reg
 
 
 @needs_cvxpy
@@ -640,7 +640,7 @@ def test_laplacian_GCV_higher_weight_with_noise(radial_order=4, time_order=2, rn
     qtdmri_fit_no_noise = qtdmri_mod_laplacian_GCV.fit(S)
     qtdmri_fit_noise = qtdmri_mod_laplacian_GCV.fit(S_noise)
 
-    assert_(qtdmri_fit_noise.lopt > qtdmri_fit_no_noise.lopt)
+    assert qtdmri_fit_noise.lopt > qtdmri_fit_no_noise.lopt
 
 
 @needs_cvxpy
@@ -669,11 +669,11 @@ def test_l1_increases_sparsity(radial_order=4, time_order=2):
 
     sparsity_abs_no_reg = qtdmri_fit_no_l1.sparsity_abs()
     sparsity_abs_reg = qtdmri_fit_l1.sparsity_abs()
-    assert_(sparsity_abs_no_reg > sparsity_abs_reg)
+    assert sparsity_abs_no_reg > sparsity_abs_reg
 
     sparsity_density_no_reg = qtdmri_fit_no_l1.sparsity_density()
     sparsity_density_reg = qtdmri_fit_l1.sparsity_density()
-    assert_(sparsity_density_no_reg > sparsity_density_reg)
+    assert sparsity_density_no_reg > sparsity_density_reg
 
 
 @needs_cvxpy
@@ -724,7 +724,7 @@ def test_spherical_l1_increases_sparsity(radial_order=4, time_order=2):
 
     sparsity_density_no_reg = qtdmri_fit_no_l1.sparsity_density()
     sparsity_density_reg = qtdmri_fit_l1.sparsity_density()
-    assert_(sparsity_density_no_reg > sparsity_density_reg)
+    assert sparsity_density_no_reg > sparsity_density_reg
 
 
 @needs_cvxpy
@@ -742,7 +742,7 @@ def test_l1_CV(radial_order=4, time_order=2, rng=None):
         l1_weighting="CV",
     )
     qtdmri_fit_noise = qtdmri_mod_l1_cv.fit(S_noise)
-    assert_(qtdmri_fit_noise.alpha >= 0)
+    assert qtdmri_fit_noise.alpha >= 0
 
 
 @needs_cvxpy
@@ -762,8 +762,8 @@ def test_elastic_GCV_CV(radial_order=4, time_order=2, rng=None):
         laplacian_weighting="GCV",
     )
     qtdmri_fit_noise = qtdmri_mod_elastic.fit(S_noise)
-    assert_(qtdmri_fit_noise.lopt >= 0)
-    assert_(qtdmri_fit_noise.alpha >= 0)
+    assert qtdmri_fit_noise.lopt >= 0
+    assert qtdmri_fit_noise.alpha >= 0
 
 
 @pytest.mark.skipif(not qtdmri.have_plt, reason="Requires Matplotlib")

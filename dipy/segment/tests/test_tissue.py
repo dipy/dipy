@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_, assert_equal, assert_raises
+from numpy.testing import assert_equal, assert_raises
 import pytest
 
 from dipy.segment.tissue import compute_directional_average, dam_classifier
@@ -15,10 +15,10 @@ def test_compute_directional_average_valid():
     bvals = np.array([0, 100, 500, 1000, 1500, 2000, 3000])
     P, V = compute_directional_average(data, bvals)
 
-    assert_(isinstance(P, float), "P should be a float")
-    assert_(isinstance(V, float), "V should be a float")
-    assert_(P != 0, "P should not be zero")
-    assert_(V != 0, "V should not be zero")
+    assert isinstance(P, float), "P should be a float"
+    assert isinstance(V, float), "V should be a float"
+    assert P != 0, "P should not be zero"
+    assert V != 0, "V should not be zero"
 
 
 @needs_sklearn
@@ -39,7 +39,7 @@ def test_compute_directional_average_div_by_zero():
 
     P, V = compute_directional_average(data, bvals)
 
-    assert_(np.allclose(P, 0))
+    assert np.allclose(P, 0)
 
 
 @needs_sklearn

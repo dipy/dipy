@@ -196,7 +196,7 @@ def test_single_fiber_model():
         ]
     )
     edt, idt = dki_micro.diffusion_components(dkiparams)
-    assert_(np.all(np.isfinite(edt)))
+    assert np.all(np.isfinite(edt))
 
 
 def test_wmti_model_multi_voxel():

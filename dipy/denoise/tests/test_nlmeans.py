@@ -52,8 +52,8 @@ def test_nlmeans_random_noise(rng):
     print(S0.mean(), S0.min(), S0.max())
     print(S0n.mean(), S0n.min(), S0n.max())
 
-    assert_(S0n.min() > S0.min())
-    assert_(S0n.max() < S0.max())
+    assert S0n.min() > S0.min()
+    assert S0n.max() < S0.max()
     assert_equal(np.round(S0n.mean()), 100)
 
 
@@ -67,8 +67,8 @@ def test_nlmeans_boundary(rng):
 
     S0_denoised = nlmeans(S0, sigma=np.std(noise), rician=False, method="classic")
 
-    assert_(S0_denoised[9, 9, 9] > 290)
-    assert_(S0_denoised[10, 10, 10] < 110)
+    assert S0_denoised[9, 9, 9] > 290
+    assert S0_denoised[10, 10, 10] < 110
 
 
 def test_nlmeans_4D_and_mask():

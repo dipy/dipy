@@ -410,10 +410,10 @@ def test_interp_rbf():
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             interp_data_a = interp_rbf(data, s0, s1, norm="angle")
-            npt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
-            npt.assert_(len(w) == 1)
-            npt.assert_(issubclass(w[0].category, DeprecationWarning))
-            npt.assert_("deprecated" in str(w[0].message))
+            assert np.mean(np.abs(interp_data_a - expected)) < 0.1
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "deprecated" in str(w[0].message)
 
     # Test that using the euclidean norm raises a warning
     # (following
@@ -421,11 +421,11 @@ def test_interp_rbf():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         interp_rbf(data, s0, s1, norm="euclidean_norm")
-        npt.assert_(len(w) == 2)
-        npt.assert_(issubclass(w[0].category, DeprecationWarning))
-        npt.assert_("deprecated" in str(w[0].message))
-        npt.assert_(issubclass(w[1].category, PendingDeprecationWarning))
-        npt.assert_("deprecated" in str(w[1].message))
+        assert len(w) == 2
+        assert issubclass(w[0].category, DeprecationWarning)
+        assert "deprecated" in str(w[0].message)
+        assert issubclass(w[1].category, PendingDeprecationWarning)
+        assert "deprecated" in str(w[1].message)
 
 
 def test_rbf_interpolation():
@@ -449,7 +449,7 @@ def test_rbf_interpolation():
             expected[i] = data_func_1d(s1, a, b, i)
 
         interp_data = rbf_interpolation(data, s0, s1, epsilon=10)
-        npt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
+        assert np.mean(np.abs(interp_data - expected)) < 0.1
 
     # Test 2D case
     def data_func_2d(s, a, b, i, j):
@@ -467,7 +467,7 @@ def test_rbf_interpolation():
                 expected[i, j] = data_func_2d(s1, a, b, i, j)
 
         interp_data = rbf_interpolation(data, s0, s1, epsilon=10)
-        npt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
+        assert np.mean(np.abs(interp_data - expected)) < 0.1
 
     # Test 3D case
     def data_func_3d(s, a, b, i, j, k):
@@ -487,7 +487,7 @@ def test_rbf_interpolation():
                     expected[i, j, k] = data_func_3d(s1, a, b, i, j, k)
 
         interp_data = rbf_interpolation(data, s0, s1, epsilon=10)
-        npt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
+        assert np.mean(np.abs(interp_data - expected)) < 0.1
 
     # Test that shape mismatch raises an error
     with npt.assert_raises(ValueError):

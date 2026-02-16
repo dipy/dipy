@@ -393,9 +393,9 @@ def test_replace_streamlines():
 
     try:
         sft.streamlines = tmp_streamlines
-        npt.assert_(True)
+        assert True
     except (TypeError, ValueError):
-        npt.assert_(False)
+        assert False
 
 
 def test_subsample_streamlines():
@@ -408,9 +408,9 @@ def test_subsample_streamlines():
 
     try:
         sft.streamlines = tmp_streamlines
-        npt.assert_(False)
+        assert False
     except (TypeError, ValueError):
-        npt.assert_(True)
+        assert True
 
 
 def test_reassign_both_data_sep_to_empty():
@@ -424,9 +424,9 @@ def test_reassign_both_data_sep_to_empty():
         sft.data_per_point = {}
         sft.data_per_streamline = {}
     except (TypeError, ValueError):
-        npt.assert_(False)
+        assert False
 
-    npt.assert_(sft.data_per_point == {} and sft.data_per_streamline == {})
+    assert sft.data_per_point == {} and sft.data_per_streamline == {}
 
 
 def test_reassign_both_data_sep():
@@ -439,9 +439,9 @@ def test_reassign_both_data_sep():
     try:
         sft.data_per_point = POINTS_DATA
         sft.data_per_streamline = STREAMLINES_DATA
-        npt.assert_(True)
+        assert True
     except (TypeError, ValueError):
-        npt.assert_(False)
+        assert False
 
 
 @pytest.mark.parametrize("standard", [Origin.NIFTI, Origin.TRACKVIS])
@@ -453,7 +453,7 @@ def test_bounding_bbox_valid(standard):
         bbox_valid_check=False,
     )
 
-    npt.assert_(sft.is_bbox_in_vox_valid())
+    assert sft.is_bbox_in_vox_valid()
 
 
 @set_random_number_generator(0)
@@ -469,9 +469,9 @@ def test_random_point_color(rng):
         sft.data_per_point = coloring_dict
         with TemporaryDirectory() as tmp_dir:
             save_tractogram(sft, Path(tmp_dir) / "random_points_color.trk")
-        npt.assert_(True)
+        assert True
     except (TypeError, ValueError):
-        npt.assert_(False)
+        assert False
 
 
 @set_random_number_generator(0)
@@ -491,9 +491,9 @@ def test_random_point_gray(rng):
         sft.data_per_point = coloring_dict
         with TemporaryDirectory() as tmp_dir:
             save_tractogram(sft, Path(tmp_dir) / "random_points_gray.trk")
-        npt.assert_(True)
+        assert True
     except ValueError:
-        npt.assert_(False)
+        assert False
 
 
 @set_random_number_generator(0)
@@ -519,9 +519,9 @@ def test_random_streamline_color(rng):
         sft.data_per_point = coloring_dict
         with TemporaryDirectory() as tmp_dir:
             save_tractogram(sft, Path(tmp_dir) / "random_streamlines_color.trk")
-        npt.assert_(True)
+        assert True
     except (TypeError, ValueError):
-        npt.assert_(False)
+        assert False
 
 
 @pytest.mark.parametrize(
@@ -537,9 +537,9 @@ def test_out_of_grid(value, is_out_of_grid):
 
     try:
         sft.streamlines = tmp_streamlines
-        npt.assert_(sft.is_bbox_in_vox_valid() != is_out_of_grid)
+        assert sft.is_bbox_in_vox_valid() != is_out_of_grid
     except (TypeError, ValueError):
-        npt.assert_(False)
+        assert False
 
 
 def test_data_per_point_consistency_addition():
@@ -552,9 +552,9 @@ def test_data_per_point_consistency_addition():
     sft_first_half.data_per_point = {}
     try:
         _ = sft_first_half + sft_last_half
-        npt.assert_(False)
+        assert False
     except ValueError:
-        npt.assert_(True)
+        assert True
 
 
 def test_data_per_streamline_consistency_addition():
@@ -567,9 +567,9 @@ def test_data_per_streamline_consistency_addition():
     sft_first_half.data_per_streamline = {}
     try:
         _ = sft_first_half + sft_last_half
-        npt.assert_(False)
+        assert False
     except ValueError:
-        npt.assert_(True)
+        assert True
 
 
 def test_space_consistency_addition():
@@ -582,9 +582,9 @@ def test_space_consistency_addition():
     sft_first_half.to_vox()
     try:
         _ = sft_first_half + sft_last_half
-        npt.assert_(False)
+        assert False
     except ValueError:
-        npt.assert_(True)
+        assert True
 
 
 def test_origin_consistency_addition():
@@ -597,9 +597,9 @@ def test_origin_consistency_addition():
     sft_first_half.to_corner()
     try:
         _ = sft_first_half + sft_last_half
-        npt.assert_(False)
+        assert False
     except ValueError:
-        npt.assert_(True)
+        assert True
 
 
 def test_space_attributes_consistency_addition():
@@ -612,9 +612,9 @@ def test_space_attributes_consistency_addition():
 
     try:
         _ = sft + sft_switch
-        npt.assert_(False)
+        assert False
     except ValueError:
-        npt.assert_(True)
+        assert True
 
 
 def test_equality():
@@ -625,7 +625,7 @@ def test_equality():
         FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
     )
 
-    npt.assert_(sft_1 == sft_2, msg="Identical sft should be equal (==)")
+    assert sft_1 == sft_2, "Identical sft should be equal (==)"
 
 
 def test_basic_slicing():
@@ -755,7 +755,7 @@ def test_basic_addition():
     sft_last_half = sft[7:13]
 
     concatenate_sft = sft_first_half + sft_last_half
-    npt.assert_(concatenate_sft == sft, msg="sft were not added correctly")
+    assert concatenate_sft == sft, "sft were not added correctly"
 
 
 def test_space_side_effect_addition():
@@ -767,22 +767,15 @@ def test_space_side_effect_addition():
 
     concatenate_sft = sft_first_half + sft_last_half
     sft.to_vox()
-    npt.assert_(
-        concatenate_sft != sft,
-        msg="Side effect, modifying a StatefulTractogram "
-        "after an addition should not modify the result",
-    )
-
+    assert (
+        concatenate_sft != sft
+    ), "Side effect, modifying a StatefulTractogram " "after an addition should not modify the result"
     # Testing it both ways
     sft.to_rasmm()
     concatenate_sft.to_vox()
-    npt.assert_(
-        concatenate_sft != sft,
-        msg="Side effect, modifying a StatefulTractogram "
-        "after an addition should not modify the result",
-    )
-
-
+    assert (
+        concatenate_sft != sft
+    ), "Side effect, modifying a StatefulTractogram " "after an addition should not modify the result"
 def test_origin_side_effect_addition():
     sft = load_tractogram(
         FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
@@ -792,22 +785,15 @@ def test_origin_side_effect_addition():
 
     concatenate_sft = sft_first_half + sft_last_half
     sft.to_corner()
-    npt.assert_(
-        concatenate_sft != sft,
-        msg="Side effect, modifying a StatefulTractogram "
-        "after an addition should not modify the result",
-    )
-
+    assert (
+        concatenate_sft != sft
+    ), "Side effect, modifying a StatefulTractogram " "after an addition should not modify the result"
     # Testing it both ways
     sft.to_center()
     concatenate_sft.to_corner()
-    npt.assert_(
-        concatenate_sft != sft,
-        msg="Side effect, modifying a StatefulTractogram "
-        "after an addition should not modify the result",
-    )
-
-
+    assert (
+        concatenate_sft != sft
+    ), "Side effect, modifying a StatefulTractogram " "after an addition should not modify the result"
 def test_invalid_streamlines():
     sft = load_tractogram(
         FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
@@ -820,11 +806,9 @@ def test_invalid_streamlines():
 
     assert len(obtained_idx_to_remove) == 0
     assert expected_idx_to_keep == obtained_idx_to_keep
-    npt.assert_(
-        len(sft) == src_strml_count,
-        msg="An unshifted gold standard should have "
-        f"{src_strml_count - src_strml_count} invalid streamlines",
-    )
+    assert (
+        len(sft) == src_strml_count
+    ), "An unshifted gold standard should have " f"{src_strml_count - src_strml_count} invalid streamlines"
 
     # Change the dimensions so that a few streamlines become invalid
     sft.dimensions[2] = 5
@@ -837,11 +821,9 @@ def test_invalid_streamlines():
 
     assert obtained_idx_to_remove == expected_idx_to_remove
     assert obtained_idx_to_keep == expected_idx_to_keep
-    npt.assert_(
-        len(sft) == expected_len_sft,
-        msg="The shifted gold standard should have "
-        f"{src_strml_count - expected_len_sft} invalid streamlines",
-    )
+    assert (
+        len(sft) == expected_len_sft
+    ), "The shifted gold standard should have " f"{src_strml_count - expected_len_sft} invalid streamlines"
 
 
 def test_invalid_streamlines_epsilon():
@@ -859,11 +841,9 @@ def test_invalid_streamlines_epsilon():
 
     assert len(obtained_idx_to_remove) == 0
     assert expected_idx_to_keep == obtained_idx_to_keep
-    npt.assert_(
-        len(sft) == src_strml_count,
-        msg="A small epsilon should not remove any streamlines",
-    )
-
+    assert (
+        len(sft) == src_strml_count
+    ), "A small epsilon should not remove any streamlines"
     epsilon = 1.0
     obtained_idx_to_remove, obtained_idx_to_keep = sft.remove_invalid_streamlines(
         epsilon=epsilon
@@ -877,12 +857,9 @@ def test_invalid_streamlines_epsilon():
 
     assert obtained_idx_to_remove == expected_idx_to_remove
     assert obtained_idx_to_keep == expected_idx_to_keep
-    npt.assert_(
-        len(sft) == expected_len_sft,
-        msg=f"Too big of an epsilon ({epsilon} mm) should have removed "
-        f"{expected_removed_strml_count} streamlines "
-        f"({expected_removed_strml_count} corners)",
-    )
+    assert (
+        len(sft) == expected_len_sft
+    ), f"Too big of an epsilon ({epsilon} mm) should have removed " f"{expected_removed_strml_count} streamlines " f"({expected_removed_strml_count} corners)"
 
 
 def test_create_from_sft():
@@ -897,24 +874,15 @@ def test_create_from_sft():
     )
 
     if not (sft_1 == sft_2):
-        npt.assert_(
-            True,
-            msg="Streamlines, space attributes, space, origin, "
-            "data_per_point and data_per_streamline should "
-            "be identical",
-        )
-
+        assert (
+            True
+        ), "Streamlines, space attributes, space, origin, " "data_per_point and data_per_streamline should " "be identical"
     # Side effect testing
     sft_1.streamlines = np.arange(6000).reshape((100, 20, 3))
     if np.array_equal(sft_1.streamlines, sft_2.streamlines):
-        npt.assert_(
-            True,
-            msg="Side effect, modifying the original "
-            "StatefulTractogram after creating a new one "
-            "should not modify the new one",
-        )
-
-
+        assert (
+            True
+        ), "Side effect, modifying the original " "StatefulTractogram after creating a new one " "should not modify the new one"
 def test_init_dtype_dict_attributes():
     sft = load_tractogram(
         FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
@@ -930,7 +898,7 @@ def test_init_dtype_dict_attributes():
         recursive_compare(dtype_dict, sft.dtype_dict)
     except ValueError as e:
         print(e)
-        npt.assert_(False, msg=e)
+        assert False, e
 
 
 def test_set_dtype_dict_attributes():
@@ -948,7 +916,7 @@ def test_set_dtype_dict_attributes():
     try:
         recursive_compare(dtype_dict, sft.dtype_dict)
     except ValueError:
-        npt.assert_(False, msg="dtype_dict should be identical after set.")
+        assert False, "dtype_dict should be identical after set."
 
 
 def test_set_partial_dtype_dict_attributes():
@@ -970,12 +938,9 @@ def test_set_partial_dtype_dict_attributes():
         recursive_compare(dpp_dtype_dict["dpp"], sft.dtype_dict["dpp"])
         recursive_compare(dps_dtype_dict["dps"], sft.dtype_dict["dps"])
     except ValueError:
-        npt.assert_(
-            False,
-            msg="Partial use of dtype_dict should apply only to the relevant portions.",
-        )
-
-
+        assert (
+            False
+        ), "Partial use of dtype_dict should apply only to the relevant portions."
 def test_non_existing_dtype_dict_attributes():
     sft = load_tractogram(
         FILEPATH_DIX["gs_streamlines.trk"], FILEPATH_DIX["gs_volume.nii"]
@@ -993,9 +958,9 @@ def test_non_existing_dtype_dict_attributes():
     sft.dtype_dict = dtype_dict
     try:
         recursive_compare(sft.dtype_dict, dtype_dict)
-        npt.assert_(False, msg="Fake entries in dtype_dict should not work.")
+        assert False, "Fake entries in dtype_dict should not work."
     except ValueError:
-        npt.assert_(True)
+        assert True
 
 
 def test_from_sft_dtype_dict_attributes():
@@ -1020,7 +985,7 @@ def test_from_sft_dtype_dict_attributes():
         recursive_compare(new_sft.dtype_dict, dtype_dict)
         recursive_compare(sft.dtype_dict, dtype_dict)
     except ValueError:
-        npt.assert_(False, msg="from_sft() should not modify the dtype_dict.")
+        assert False, "from_sft() should not modify the dtype_dict."
 
 
 def test_slicing_dtype_dict_attributes():
@@ -1041,4 +1006,4 @@ def test_slicing_dtype_dict_attributes():
         recursive_compare(new_sft.dtype_dict, dtype_dict)
         recursive_compare(sft.dtype_dict, dtype_dict)
     except ValueError:
-        npt.assert_(False, msg="Slicing should not modify the dtype_dict.")
+        assert False, "Slicing should not modify the dtype_dict."

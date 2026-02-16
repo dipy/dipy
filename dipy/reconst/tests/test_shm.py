@@ -194,13 +194,12 @@ def test_real_sym_sh_mrtrix():
         basis, m_values, l_values = real_sym_sh_mrtrix(8, sphere.theta, sphere.phi)
 
     npt.assert_equal(len(w), 2)
-    npt.assert_(issubclass(w[0].category, DeprecationWarning))
-    npt.assert_(
-        "dipy.reconst.shm.real_sym_sh_mrtrix is deprecated, Please use "
-        "dipy.reconst.shm.real_sh_tournier instead" in str(w[0].message)
+    assert issubclass(w[0].category, DeprecationWarning)
+    assert (
+        "dipy.reconst.shm.real_sym_sh_mrtrix is deprecated, Please use " "dipy.reconst.shm.real_sh_tournier instead" in str(w[0].message)
     )
-    npt.assert_(issubclass(w[1].category, PendingDeprecationWarning))
-    npt.assert_(tournier07_legacy_msg in str(w[1].message))
+    assert issubclass(w[1].category, PendingDeprecationWarning)
+    assert tournier07_legacy_msg in str(w[1].message)
 
     func = np.dot(coef, basis.T)
     assert_array_almost_equal(func, expected, 4)
@@ -224,13 +223,12 @@ def test_real_sym_sh_basis():
         )
 
     npt.assert_equal(len(w), 2)
-    npt.assert_(issubclass(w[0].category, DeprecationWarning))
-    npt.assert_(
-        "dipy.reconst.shm.real_sym_sh_basis is deprecated, Please use "
-        "dipy.reconst.shm.real_sh_descoteaux instead" in str(w[0].message)
+    assert issubclass(w[0].category, DeprecationWarning)
+    assert (
+        "dipy.reconst.shm.real_sym_sh_basis is deprecated, Please use " "dipy.reconst.shm.real_sh_descoteaux instead" in str(w[0].message)
     )
-    npt.assert_(issubclass(w[1].category, PendingDeprecationWarning))
-    npt.assert_(descoteaux07_legacy_msg in str(w[1].message))
+    assert issubclass(w[1].category, PendingDeprecationWarning)
+    assert descoteaux07_legacy_msg in str(w[1].message)
 
     assert_array_almost_equal(descoteaux07_basis, expected)
 
@@ -255,8 +253,8 @@ def test_real_sh_descoteaux1():
         )
 
     npt.assert_equal(len(w), 1)
-    npt.assert_(issubclass(w[0].category, PendingDeprecationWarning))
-    npt.assert_(descoteaux07_legacy_msg in str(w[0].message))
+    assert issubclass(w[0].category, PendingDeprecationWarning)
+    assert descoteaux07_legacy_msg in str(w[0].message)
 
     assert_array_almost_equal(descoteaux07_basis, expected)
 
@@ -284,8 +282,8 @@ def test_real_sh_tournier():
         )
 
     npt.assert_equal(len(w), 1)
-    npt.assert_(issubclass(w[0].category, PendingDeprecationWarning))
-    npt.assert_(tournier07_legacy_msg in str(w[0].message))
+    assert issubclass(w[0].category, PendingDeprecationWarning)
+    assert tournier07_legacy_msg in str(w[0].message)
 
     invB = smooth_pinv(B, L=np.zeros_like(l_values))
     sh_coefs = np.dot(invB, sf)
@@ -317,8 +315,8 @@ def test_real_sh_descoteaux2():
         )
 
     npt.assert_equal(len(w), 1)
-    npt.assert_(issubclass(w[0].category, PendingDeprecationWarning))
-    npt.assert_(descoteaux07_legacy_msg in str(w[0].message))
+    assert issubclass(w[0].category, PendingDeprecationWarning)
+    assert descoteaux07_legacy_msg in str(w[0].message)
 
     invB = smooth_pinv(B, L=np.zeros_like(l_values))
     sh_coefs = np.dot(invB, sf)

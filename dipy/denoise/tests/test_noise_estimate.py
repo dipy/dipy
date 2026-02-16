@@ -53,7 +53,7 @@ def test_piesno(rng):
     )
 
     # less than 3% of error?
-    assert_(np.abs(sigma - 50) / sigma < 0.03)
+    assert np.abs(sigma - 50) / sigma < 0.03
 
     # Test using the median as the initial estimation
     initial_estimation = np.median(sigma) / np.sqrt(2 * _inv_nchi_cdf(1, 1, 0.5))
@@ -68,7 +68,7 @@ def test_piesno(rng):
         initial_estimation=initial_estimation,
     )
 
-    assert_(np.abs(sigma - 50) / sigma < 0.03)
+    assert np.abs(sigma - 50) / sigma < 0.03
 
     sigma = _piesno_3D(
         rician_noise,
@@ -79,7 +79,7 @@ def test_piesno(rng):
         return_mask=False,
         initial_estimation=initial_estimation,
     )
-    assert_(np.abs(sigma - 50) / sigma < 0.03)
+    assert np.abs(sigma - 50) / sigma < 0.03
 
     sigma = _piesno_3D(
         np.zeros_like(rician_noise),
@@ -91,7 +91,7 @@ def test_piesno(rng):
         initial_estimation=initial_estimation,
     )
 
-    assert_(np.all(sigma == 0))
+    assert np.all(sigma == 0)
 
     sigma, mask = _piesno_3D(
         np.zeros_like(rician_noise),
@@ -103,8 +103,8 @@ def test_piesno(rng):
         initial_estimation=initial_estimation,
     )
 
-    assert_(np.all(sigma == 0))
-    assert_(np.all(mask == 0))
+    assert np.all(sigma == 0)
+    assert np.all(mask == 0)
 
     # Check if no noise points found in array it exits
     sigma = _piesno_3D(
@@ -116,7 +116,7 @@ def test_piesno(rng):
         return_mask=False,
         initial_estimation=10,
     )
-    assert_(np.all(sigma == 10))
+    assert np.all(sigma == 10)
 
 
 def test_piesno_type():
@@ -227,17 +227,8 @@ def test_pca_noise_estimate(rng):
                         assert_array_almost_equal(np.mean(sigma_est), sigma, decimal=1)
 
         # check that Rician corrects produces larger noise estimate
-        assert_(
-            np.mean(
-                pca_noise_estimate(
-                    data, gtab, correct_bias=True, images_as_samples=images_as_samples
-                )
-            )
-            > np.mean(
-                pca_noise_estimate(
-                    data, gtab, correct_bias=False, images_as_samples=images_as_samples
-                )
-            )
+        assert (
+            np.mean( pca_noise_estimate( data, gtab, correct_bias=True, images_as_samples=images_as_samples ) ) > np.mean( pca_noise_estimate( data, gtab, correct_bias=False, images_as_samples=images_as_samples ) )
         )
 
         assert_warns(UserWarning, pca_noise_estimate, data, gtab, patch_radius=0)

@@ -136,10 +136,9 @@ def test_io_peaks(rng):
             "peaks_indices.nii.gz",
             "shm.nii.gz",
         ]:
-            npt.assert_(
-                Path(Path(tmpdir) / name).is_file(),
-                f"{Path(tmpdir) / name} file does not exist",
-            )
+            assert Path(
+                Path(tmpdir) / name
+            ).is_file(), f"{Path(tmpdir) / name} file does not exist"
 
 
 @set_random_number_generator()
@@ -187,7 +186,7 @@ def test_io_niftis_to_pam():
         )
 
         npt.assert_equal(pam.peak_dirs.shape, (10, 10, 10, 5, 3))
-        npt.assert_(Path(Path(tmpdir) / "test15.pam5").is_file())
+        assert Path(Path(tmpdir) / "test15.pam5").is_file()
 
 
 def test_tensor_to_pam():
@@ -210,7 +209,7 @@ def test_tensor_to_pam():
             odf=odf,
             pam_file=Path(tmpdir) / fname,
         )
-        npt.assert_(Path(Path(tmpdir) / fname).is_file())
+        assert Path(Path(tmpdir) / fname).is_file()
         save_pam(Path(tmpdir) / "test_tt_2.pam5", pam)
         pam2 = load_pam(Path(tmpdir) / "test_tt_2.pam5")
 
@@ -231,5 +230,5 @@ def test_io_peaks_deprecated(rng):
             pam2 = load_peaks(fname, verbose=True)
             npt.assert_array_equal(pam.peak_dirs, pam2.peak_dirs)
             npt.assert_equal(len(cw), 2)
-            npt.assert_(issubclass(cw[0].category, DeprecationWarning))
-            npt.assert_(issubclass(cw[1].category, DeprecationWarning))
+            assert issubclass(cw[0].category, DeprecationWarning)
+            assert issubclass(cw[1].category, DeprecationWarning)

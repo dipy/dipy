@@ -181,9 +181,8 @@ def test_tensor_model():
             # http://prod.sandia.gov/techlib/access-control.cgi/2007/076422.pdf)
             # so we need to allow for sign flips. One of the following should
             # always be true:
-            npt.assert_(
-                np.all(np.abs(tensor_fit.evecs[0][:, i] - evecs[:, i]) < 10e-6)
-                or np.all(np.abs(-tensor_fit.evecs[0][:, i] - evecs[:, i]) < 10e-6)
+            assert (
+                np.all(np.abs(tensor_fit.evecs[0][:, i] - evecs[:, i]) < 10e-6) or np.all(np.abs(-tensor_fit.evecs[0][:, i] - evecs[:, i]) < 10e-6)
             )
             # We set a fixed tolerance of 10e-6, similar to array_almost_equal
 
@@ -1139,15 +1138,15 @@ def test_quantize_evecs():
     expected_shape = evecs.shape[:-2]
     npt.assert_equal(result.shape, expected_shape)
 
-    npt.assert_(np.all(result >= 0))  # Check that all values are valid indices
-    npt.assert_(np.all(result < 362))  # symmetric362 sphere has 362 vertices
+    assert np.all(result >= 0)  # Check that all values are valid indices
+    assert np.all(result < 362)  # symmetric362 sphere has 362 vertices
 
     # Test with custom sphere vertices
     custom_vertices = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0]])
     result_custom = dti.quantize_evecs(evecs, odf_vertices=custom_vertices)
     npt.assert_equal(result_custom.shape, expected_shape)
-    npt.assert_(np.all(result_custom >= 0))
-    npt.assert_(np.all(result_custom < 4))  # Should be indices 0-3
+    assert np.all(result_custom >= 0)
+    assert np.all(result_custom < 4)  # Should be indices 0-3
 
     # Test with single voxel (just 3x3 eigenvector matrix)
     single_evec = np.random.rand(3, 3)

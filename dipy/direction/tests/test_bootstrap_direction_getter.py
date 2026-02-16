@@ -206,7 +206,7 @@ def test_bdg_residual(rng):
         )
     odf1 = boot_dg2.get_pmf(np.array([1.5, 1.5, 1.5]))
     odf2 = boot_dg2.get_pmf(np.array([1.5, 1.5, 1.5]))
-    npt.assert_(np.any(odf1 != odf2))
+    assert np.any(odf1 != odf2)
 
     # test with a gtab with two shells and assert you get an error
     bvals[-1] = 2000
@@ -266,25 +266,25 @@ def test_boot_pmf():
         csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order_max=6)
         # Tests that the first caught warning comes from the CSD model
         # constructor
-        npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_("Number of parameters required " in str(w[0].message))
+        assert issubclass(w[0].category, UserWarning)
+        assert "Number of parameters required " in str(w[0].message)
 
         # Tests that additional warnings are raised for outdated SH basis
-        npt.assert_(len(w) > 1)
+        assert len(w) > 1
 
         boot_dg_sh4 = BootDirectionGetter(
             data, model=csd_model, max_angle=60, sphere=hsph_updated, sh_order=4
         )
         pmf_sh4 = boot_dg_sh4.get_pmf(point)
         npt.assert_equal(len(hsph_updated.vertices), pmf_sh4.shape[0])
-        npt.assert_(np.sum(pmf_sh4.shape) > 0)
+        assert np.sum(pmf_sh4.shape) > 0
 
         boot_dg_sh8 = BootDirectionGetter(
             data, model=csd_model, max_angle=60, sphere=hsph_updated, sh_order=8
         )
         pmf_sh8 = boot_dg_sh8.get_pmf(point)
         npt.assert_equal(len(hsph_updated.vertices), pmf_sh8.shape[0])
-        npt.assert_(np.sum(pmf_sh8.shape) > 0)
+        assert np.sum(pmf_sh8.shape) > 0
 
     # test b_tol parameter
     bvals[-2] = 1100

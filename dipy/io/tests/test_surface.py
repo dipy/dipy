@@ -147,4 +147,4 @@ def test_freesurfer_density_operation(dataset, hemisphere, type):
     elif dataset == "big_affine_freesurfer":
         approx_barycenter = [139, 96, 80] if hemisphere == "lh" else [79, 97, 78]
 
-    npt.assert_(np.linalg.norm(barycenter - approx_barycenter) < 2.0)
+    assert np.linalg.norm(barycenter - approx_barycenter) < 2.0

@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_, assert_array_almost_equal, assert_raises
+from numpy.testing import assert_array_almost_equal, assert_raises
 
 from dipy.denoise.gibbs import (
     _gibbs_removal_1d,
@@ -98,7 +98,7 @@ def test_gibbs_2d():
     # Correction of gibbs ringing have to be closer to gt than denoised image
     diff_raw = np.mean(abs(image_gibbs - image_gt))
     diff_cor = np.mean(abs(image_cor - image_gt))
-    assert_(diff_raw > diff_cor)
+    assert diff_raw > diff_cor
 
     # Test if gibbs_removal works for 2D data
     image_cor2 = gibbs_removal(image_gibbs, inplace=False)
@@ -202,7 +202,7 @@ def test_gibbs_subfunction():
     # Let's check that
     mean_tv0 = np.mean(abs(tv0_a0))
     mean_tv1 = np.mean(abs(tv1_a0))
-    assert_(mean_tv0 < mean_tv1)
+    assert mean_tv0 < mean_tv1
 
     # Testing correction along axis 1
     image_a1 = _gibbs_removal_1d(image_gibbs, axis=1)
@@ -215,7 +215,7 @@ def test_gibbs_subfunction():
     # Let's check that
     mean_tv0 = np.mean(abs(tv0_a1))
     mean_tv1 = np.mean(abs(tv1_a1))
-    assert_(mean_tv0 > mean_tv1)
+    assert mean_tv0 > mean_tv1
 
 
 def test_non_square_image():
@@ -247,4 +247,4 @@ def test_non_square_image():
     # Correction of gibbs ringing have to be closer to gt than denoised image
     diff_raw = np.mean(abs(img_gibbs - img_gt))
     diff_cor = np.mean(abs(img_cor - img_gt))
-    assert_(diff_raw > diff_cor)
+    assert diff_raw > diff_cor

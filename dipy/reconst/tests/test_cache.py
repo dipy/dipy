@@ -1,4 +1,4 @@
-from numpy.testing import assert_, assert_equal
+from numpy.testing import assert_equal
 
 from dipy.core.sphere import Sphere
 from dipy.reconst.cache import Cache
@@ -13,7 +13,7 @@ def test_basic_cache():
     t = DummyModel()
     s = Sphere(theta=[0], phi=[0])
 
-    assert_(t.cache_get("design_matrix", s) is None)
+    assert t.cache_get("design_matrix", s) is None
 
     m = [[1, 0], [0, 1]]
 
@@ -21,4 +21,4 @@ def test_basic_cache():
     assert_equal(t.cache_get("design_matrix", s), m)
 
     t.cache_clear()
-    assert_(t.cache_get("design_matrix", s) is None)
+    assert t.cache_get("design_matrix", s) is None

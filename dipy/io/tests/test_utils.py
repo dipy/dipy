@@ -4,7 +4,7 @@ from urllib.error import HTTPError, URLError
 
 import nibabel as nib
 import numpy as np
-from numpy.testing import assert_, assert_allclose, assert_array_equal
+from numpy.testing import assert_allclose, assert_array_equal
 import pytest
 import trx.trx_file_memmap as tmm
 
@@ -122,36 +122,30 @@ def is_voxel_order_valid(voxel_order):
 
 
 def test_reference_info_validity():
-    assert_(not is_affine_valid(np.eye(3)), msg="3x3 affine is invalid")
-    assert_(not is_affine_valid(np.zeros((4, 4))), msg="All zeroes affine is invalid")
-    assert_(is_affine_valid(np.eye(4)), msg="Identity should be valid")
+    assert not is_affine_valid(np.eye(3)), "3x3 affine is invalid"
+    assert not is_affine_valid(np.zeros((4, 4))), "All zeroes affine is invalid"
+    assert is_affine_valid(np.eye(4)), "Identity should be valid"
 
-    assert_(not is_dimensions_valid([0, 0]), msg="Dimensions of the wrong length")
-    assert_(not is_dimensions_valid([1, 1.0, 1]), msg="Dimensions cannot be float")
-    assert_(not is_dimensions_valid([1, -1, 1]), msg="Dimensions cannot be negative")
-    assert_(is_dimensions_valid([1, 1, 1]), msg="Dimensions of [1,1,1] should be valid")
+    assert not is_dimensions_valid([0, 0]), "Dimensions of the wrong length"
+    assert not is_dimensions_valid([1, 1.0, 1]), "Dimensions cannot be float"
+    assert not is_dimensions_valid([1, -1, 1]), "Dimensions cannot be negative"
+    assert is_dimensions_valid([1, 1, 1]), "Dimensions of [1,1,1] should be valid"
 
-    assert_(not is_voxel_sizes_valid([0, 0]), msg="Voxel sizes of the wrong length")
-    assert_(not is_voxel_sizes_valid([1, -1, 1]), msg="Voxel sizes cannot be negative")
-    assert_(
-        is_voxel_sizes_valid([1.0, 1.0, 1.0]),
-        msg="Voxel sizes of [1.0,1.0,1.0] should be valid",
-    )
-
-    assert_(not is_voxel_order_valid("RA"), msg="Voxel order of the wrong length")
-    assert_(
-        not is_voxel_order_valid(["RAS"]),
-        msg="List of string is not a valid voxel order",
-    )
-    assert_(
-        not is_voxel_order_valid(["R", "A", "Z"]),
-        msg="Invalid value for voxel order (Z)",
-    )
-    assert_(not is_voxel_order_valid("RAZ"), msg="Invalid value for voxel order (Z)")
-    assert_(is_voxel_order_valid("RAS"), msg="RAS should be a valid voxel order")
-    assert_(
-        is_voxel_order_valid(["R", "A", "S"]), msg="RAS should be a valid voxel order"
-    )
+    assert not is_voxel_sizes_valid([0, 0]), "Voxel sizes of the wrong length"
+    assert not is_voxel_sizes_valid([1, -1, 1]), "Voxel sizes cannot be negative"
+    assert (
+        is_voxel_sizes_valid([1.0, 1.0, 1.0])
+    ), "Voxel sizes of [1.0,1.0,1.0] should be valid"
+    assert not is_voxel_order_valid("RA"), "Voxel order of the wrong length"
+    assert (
+        not is_voxel_order_valid(["RAS"])
+    ), "List of string is not a valid voxel order"
+    assert (
+        not is_voxel_order_valid(["R", "A", "Z"])
+    ), "Invalid value for voxel order (Z)"
+    assert not is_voxel_order_valid("RAZ"), "Invalid value for voxel order (Z)"
+    assert is_voxel_order_valid("RAS"), "RAS should be a valid voxel order"
+    assert is_voxel_order_valid(["R", "A", "S"]), "RAS should be a valid voxel order"
 
 
 def reference_info_zero_affine():
@@ -234,9 +228,7 @@ def test_reference_header_info_identical():
 
 
 def test_all_zeros_affine():
-    assert_(
-        not reference_info_zero_affine(), msg="An all zeros affine should not be valid"
-    )
+    assert not reference_info_zero_affine(), "An all zeros affine should not be valid"
 
 
 @set_random_number_generator()

@@ -180,6 +180,6 @@ def test_fit_data():
     model_rmse = np.sqrt(np.mean(model_error**2, -1))
     matlab_rmse, matlab_weights = dpd.matlab_life_results()
     # Lower error than the matlab implementation for these data:
-    npt.assert_(np.median(model_rmse) < np.median(matlab_rmse))
+    assert np.median(model_rmse) < np.median(matlab_rmse)
     # And a moderate correlation with the Matlab implementation weights:
-    npt.assert_(np.corrcoef(matlab_weights, life_fit.beta)[0, 1] > 0.6)
+    assert np.corrcoef(matlab_weights, life_fit.beta)[0, 1] > 0.6

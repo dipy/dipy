@@ -118,7 +118,7 @@ def test_fetch_data():
             print(e)
             # stop local HTTP Server
             server.shutdown()
-        npt.assert_(newfile.exists())
+        assert newfile.exists()
 
         # Test that the file is replaced when the md5 doesn't match
         with open(newfile, "a") as f:
@@ -129,7 +129,7 @@ def test_fetch_data():
             print(e)
             # stop local HTTP Server
             server.shutdown()
-        npt.assert_(newfile.exists())
+        assert newfile.exists()
         npt.assert_equal(fetcher._get_file_md5(newfile), md5)
 
         # Test that an error is raised when the md5 checksum of the download

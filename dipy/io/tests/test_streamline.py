@@ -278,45 +278,32 @@ def trk_saver(filename):
 
 
 def test_io_trk_load():
-    npt.assert_(
-        trk_loader(FILEPATH_DIX["gs_streamlines.trk"]),
-        msg="trk_loader should be able to load a trk",
-    )
-    npt.assert_(
-        not trk_loader("fake_file.TRK"),
-        msg="trk_loader should not be able to load a TRK",
-    )
-    npt.assert_(
-        not trk_loader(FILEPATH_DIX["gs_streamlines.tck"]),
-        msg="trk_loader should not be able to load a tck",
-    )
-    npt.assert_(
-        not trk_loader(FILEPATH_DIX["gs_streamlines.fib"]),
-        msg="trk_loader should not be able to load a fib",
-    )
-    npt.assert_(
-        not trk_loader(FILEPATH_DIX["gs_streamlines.dpy"]),
-        msg="trk_loader should not be able to load a dpy",
-    )
-
-
+    assert (
+        trk_loader(FILEPATH_DIX["gs_streamlines.trk"])
+    ), "trk_loader should be able to load a trk"
+    assert (
+        not trk_loader("fake_file.TRK")
+    ), "trk_loader should not be able to load a TRK"
+    assert (
+        not trk_loader(FILEPATH_DIX["gs_streamlines.tck"])
+    ), "trk_loader should not be able to load a tck"
+    assert (
+        not trk_loader(FILEPATH_DIX["gs_streamlines.fib"])
+    ), "trk_loader should not be able to load a fib"
+    assert (
+        not trk_loader(FILEPATH_DIX["gs_streamlines.dpy"])
+    ), "trk_loader should not be able to load a dpy"
 def test_io_trk_save():
-    npt.assert_(
-        trk_saver(FILEPATH_DIX["gs_streamlines.trk"]),
-        msg="trk_saver should be able to save a trk",
-    )
-    npt.assert_(
-        not trk_saver("fake_file.TRK"), msg="trk_saver should not be able to save a TRK"
-    )
-    npt.assert_(
-        not trk_saver(FILEPATH_DIX["gs_streamlines.tck"]),
-        msg="trk_saver should not be able to save a tck",
-    )
-    npt.assert_(
-        not trk_saver(FILEPATH_DIX["gs_streamlines.fib"]),
-        msg="trk_saver should not be able to save a fib",
-    )
-    npt.assert_(
-        not trk_saver(FILEPATH_DIX["gs_streamlines.dpy"]),
-        msg="trk_saver should not be able to save a dpy",
-    )
+    assert (
+        trk_saver(FILEPATH_DIX["gs_streamlines.trk"])
+    ), "trk_saver should be able to save a trk"
+    assert not trk_saver("fake_file.TRK"), "trk_saver should not be able to save a TRK"
+    assert (
+        not trk_saver(FILEPATH_DIX["gs_streamlines.tck"])
+    ), "trk_saver should not be able to save a tck"
+    assert (
+        not trk_saver(FILEPATH_DIX["gs_streamlines.fib"])
+    ), "trk_saver should not be able to save a fib"
+    assert (
+        not trk_saver(FILEPATH_DIX["gs_streamlines.dpy"])
+    ), "trk_saver should not be able to save a dpy"

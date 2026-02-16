@@ -249,7 +249,7 @@ def test_peak_directions_thorough():
     assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
 
     AE = np.rad2deg(np.arccos(np.dot(directions[0], sticks[0])))
-    assert_(abs(AE) < 2.0 or abs(AE - 180) < 2.0)
+    assert abs(AE) < 2.0 or abs(AE - 180) < 2.0
 
     # two equal fibers and one small noisy one
     mevals = np.array(
@@ -503,7 +503,7 @@ def test_degenerate_cases(rng):
     directions, values, indices = peak_directions(
         odf, sphere, relative_peak_threshold=0.5, min_separation_angle=25
     )
-    assert_(all(values > values[0] * 0.5))
+    assert all(values > values[0] * 0.5)
     assert_array_equal(values, odf[indices])
 
     odf = np.ones(sphere.vertices.shape[0])
@@ -551,7 +551,7 @@ def test_peaksFromModel():
             pam = peaks_from_model(model, data, sphere, 0.5, 45, return_odf=True)
         expected_shape = (len(data), len(_odf))
         assert_equal(pam.odf.shape, expected_shape)
-        assert_((_odf == pam.odf).all())
+        assert (_odf == pam.odf).all()
         assert_array_equal(pam.peak_values[:, 0], _odf.max())
 
         # Test mask

@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_, assert_almost_equal, assert_equal
+from numpy.testing import assert_almost_equal, assert_equal
 
 from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
@@ -81,4 +81,4 @@ def test_gfa():
 
     # All-zeros returns a nan with no warning:
     g = gfa(np.zeros(10))
-    assert_(np.isnan(g))
+    assert np.isnan(g)

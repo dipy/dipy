@@ -563,10 +563,9 @@ def test_mapmri_metrics_anisotropic(radial_order=6):
         ng_perpendicular = mapfit.ng_perpendicular()
         assert_equal(len(w), 3)
         for l_w in w:
-            assert_(issubclass(l_w.category, UserWarning))
-            assert_(
-                "model bval_threshold must be lower than 2000".lower()
-                in str(l_w.message).lower()
+            assert issubclass(l_w.category, UserWarning)
+            assert (
+                "model bval_threshold must be lower than 2000".lower() in str(l_w.message).lower()
             )
 
     assert_almost_equal(ng, 0.0, 5)

@@ -88,12 +88,8 @@ def test_syn_registration():
 
         # Test that it is, attribute by attribute, identical:
         for k in mapping.__dict__:
-            npt.assert_(
-                (
-                    np.all(
-                        mapping.__getattribute__(k) == file_mapping.__getattribute__(k)
-                    )
-                )
+            assert (
+                ( np.all( mapping.__getattribute__(k) == file_mapping.__getattribute__(k) ) )
             )
 
 
@@ -107,7 +103,7 @@ def test_register_dwi_to_template():
         sigma_diff=2.0,
         radius=1,
     )
-    npt.assert_(isinstance(mapping, DiffeomorphicMap))
+    assert isinstance(mapping, DiffeomorphicMap)
     npt.assert_equal(warped_b0.shape, subset_t2_img.shape)
 
     # Use affine registration (+ don't provide a template and inputs as
@@ -121,8 +117,8 @@ def test_register_dwi_to_template():
         sigmas=[3, 1, 0],
         factors=[4, 2, 1],
     )
-    npt.assert_(isinstance(affine_mat, np.ndarray))
-    npt.assert_(affine_mat.shape == (4, 4))
+    assert isinstance(affine_mat, np.ndarray)
+    assert affine_mat.shape == (4, 4)
 
 
 def test_affine_registration():
@@ -290,8 +286,8 @@ def test_register_series():
     gtab = dpg.gradient_table(fbval, bvecs=fbvec)
     ref_idx = np.where(gtab.b0s_mask)[0][0]
     xformed, affines = register_series(img, ref_idx)
-    npt.assert_(np.all(affines[..., ref_idx] == np.eye(4)))
-    npt.assert_(np.all(xformed[..., ref_idx] == img.get_fdata()[..., ref_idx]))
+    assert np.all(affines[..., ref_idx] == np.eye(4))
+    assert np.all(xformed[..., ref_idx] == img.get_fdata()[..., ref_idx])
 
 
 def test_register_dwi_series_and_motion_correction():
@@ -311,7 +307,7 @@ def test_register_dwi_series_and_motion_correction():
         )
         reg_img, reg_affines = register_dwi_series(data, gtab, affine=img.affine)
         reg_img_2, reg_affines_2 = motion_correction(data, gtab, affine=img.affine)
-        npt.assert_(isinstance(reg_img, nib.Nifti1Image))
+        assert isinstance(reg_img, nib.Nifti1Image)
 
         npt.assert_array_equal(reg_img.get_fdata(), reg_img_2.get_fdata())
         npt.assert_array_equal(reg_affines, reg_affines_2)

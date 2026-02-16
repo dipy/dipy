@@ -1,6 +1,6 @@
 import nibabel as nib
 import numpy as np
-from numpy.testing import assert_, assert_almost_equal, assert_equal, assert_raises
+from numpy.testing import assert_almost_equal, assert_equal, assert_raises
 
 from dipy.align.reslice import reslice
 from dipy.data import get_fnames
@@ -38,8 +38,8 @@ def test_resample():
     sigmas2 = estimate_sigma(data2)
     sigmas3 = estimate_sigma(data3)
 
-    assert_(np.all(sigmas > sigmas2))
-    assert_(np.all(sigmas2 > sigmas3))
+    assert np.all(sigmas > sigmas2)
+    assert np.all(sigmas2 > sigmas3)
 
     # check that 4D resampling matches 3D resampling
     data2, affine2 = reslice(data, affine, zooms, new_zooms)

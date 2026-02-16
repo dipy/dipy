@@ -160,8 +160,8 @@ def test_recursive_response_calibration():
     with warnings.catch_warnings(record=True) as w:
         sphere = Sphere(xyz=gtab.gradients[where_dwi])
         npt.assert_equal(len(w), 1)
-        npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_("Vertices are not on the unit sphere" in str(w[0].message))
+        assert issubclass(w[0].category, UserWarning)
+        assert "Vertices are not on the unit sphere" in str(w[0].message)
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
@@ -207,8 +207,8 @@ def test_mask_for_response_ssst_nvoxels():
             gtab, data, roi_center=None, roi_radii=(1, 1, 0), fa_thr=1
         )
         npt.assert_equal(len(w), 1)
-        npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_("No voxel with a FA higher than 1 were found" in str(w[0].message))
+        assert issubclass(w[0].category, UserWarning)
+        assert "No voxel with a FA higher than 1 were found" in str(w[0].message)
 
     nvoxels = np.sum(mask)
     assert_equal(nvoxels, 0)
@@ -748,8 +748,8 @@ def test_default_lambda_csdmodel():
             )
             npt.assert_equal(len(w) - expected_sh_basis_deprecation_warnings, e_warn)
             if e_warn:
-                npt.assert_(issubclass(w[0].category, UserWarning))
-                npt.assert_("Number of parameters required " in str(w[0].message))
+                assert issubclass(w[0].category, UserWarning)
+                assert "Number of parameters required " in str(w[0].message)
 
         with warnings.catch_warnings():
             warnings.filterwarnings(
@@ -786,7 +786,7 @@ def test_csd_superres():
             gtab, (evals[0], 3.0), sh_order_max=16
         )
         assert_greater_equal(len(w), 1)
-        npt.assert_(issubclass(w[0].category, UserWarning))
+        assert issubclass(w[0].category, UserWarning)
 
     fit16 = model16.fit(S)
 
@@ -810,7 +810,7 @@ def test_csd_superres():
 
     # Check that peaks line up with sticks
     cos_sim = abs((d * sticks).sum(1)) ** 0.5
-    assert_(all(cos_sim > 0.99))
+    assert all(cos_sim > 0.99)
 
 
 def test_csd_convergence():

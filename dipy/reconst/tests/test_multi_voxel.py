@@ -37,7 +37,7 @@ def test_squash():
 
     # sub-arrays have different shapes ( (3,) and (2,) )
     B[0, 0] = np.ones((3,))
-    npt.assert_(_squash(B) is B)
+    assert _squash(B) is B
 
     # Check dtypes for arrays and scalars
     arr_arr = np.zeros((2,), dtype=object)
