@@ -66,7 +66,6 @@ fully covered are very welcome!
 Code contributions should be formatted according to the [DIPY Coding Style Guideline](../doc/devel/coding_style_guideline.rst).
 Please, read the document to conform your code contributions to the DIPY standard.
 
--
 ### Documentation
 
 DIPY uses [Sphinx](https://www.sphinx-doc.org/en/master/index.html) to generate
