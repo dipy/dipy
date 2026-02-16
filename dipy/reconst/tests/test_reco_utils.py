@@ -1,7 +1,7 @@
 """Testing reconstruction utilities."""
 
 import numpy as np
-from numpy.testing import assert_array_equal, assert_equal
+from numpy.testing import assert_array_equal, assert_equal, assert_raises
 
 from dipy.reconst.recspeed import adj_to_countarrs, argmax_from_countarrs
 
@@ -25,37 +25,19 @@ def test_argmax_from_countarrs():
     adj_inds = adj_inds_raw.copy()
     argmax_from_countarrs(vals, vertinds, adj_counts, adj_inds)
     # yield assert_array_equal(inds, [5, 6, 7, 8, 9])
+
     # test for errors - first - not contiguous
-    #
-    # The tests below cause odd errors and segfaults with numpy SVN
-    # vintage June 2010 (sometime after 1.4.0 release) - see
-    # https://groups.google.com/group/cython-users/browse_thread/thread/624c696293b7fe44?pli=1
-    """
-    yield assert_raises(ValueError,
-                        argmax_from_countarrs,
-                        vals,
-                        vertinds,
-                        adj_counts,
-                        adj_inds_raw)
+    with assert_raises(ValueError):
+        argmax_from_countarrs(vals, vertinds, adj_counts, adj_inds_raw)
+
     # too few vertices
-    yield assert_raises(ValueError,
-                        argmax_from_countarrs,
-                        vals,
-                        vertinds[:-1],
-                        adj_counts,
-                        adj_inds)
+    with assert_raises(ValueError):
+        argmax_from_countarrs(vals, vertinds[:-1], adj_counts, adj_inds)
+
     # adj_inds too short
-    yield assert_raises(IndexError,
-                        argmax_from_countarrs,
-                        vals,
-                        vertinds,
-                        adj_counts,
-                        adj_inds[:-1])
+    with assert_raises(IndexError):
+        argmax_from_countarrs(vals, vertinds, adj_counts, adj_inds[:-1])
+
     # vals too short
-    yield assert_raises(IndexError,
-                        argmax_from_countarrs,
-                        vals[:-1],
-                        vertinds,
-                        adj_counts,
-                        adj_inds)
-                        """
+    with assert_raises(IndexError):
+        argmax_from_countarrs(vals[:-1], vertinds, adj_counts, adj_inds)
