@@ -38,6 +38,8 @@ from dipy.workflows.io import (
     PamToNiftisFlow,
     SplitFlow,
     TensorToPamFlow,
+    format_data_names_table,
+    format_key_value_table,
 )
 
 ne, have_ne, _ = optional_package("numexpr")
@@ -128,6 +130,77 @@ def test_io_fetch_fetcher_datanames():
     npt.assert_equal(
         all(dataset_name in available_data.keys() for dataset_name in fetcher_list),
         True,
+    )
+
+
+def test_io_fetch_list_outputs_table(caplog, monkeypatch):
+    fetch_flow = FetchFlow()
+
+    def _fetch_foo():
+        """Foo dataset description."""
+
+    def _fetch_bar():
+        """Bar dataset description."""
+
+    monkeypatch.setattr(
+        FetchFlow,
+        "get_fetcher_datanames",
+        staticmethod(lambda: {"foo": _fetch_foo, "bar": _fetch_bar}),
+    )
+
+    with caplog.at_level(logging.INFO):
+        fetch_flow.run(["list"])
+
+    table_lines = [
+        line for line in caplog.text.splitlines() if line.strip().startswith("|")
+    ]
+    npt.assert_equal(any("Dataset" in line for line in table_lines), True)
+    npt.assert_equal(any("Description" in line for line in table_lines), True)
+    npt.assert_equal(any("foo" in line for line in table_lines), True)
+    npt.assert_equal(any("bar" in line for line in table_lines), True)
+    npt.assert_equal(
+        any("Foo dataset description." in line for line in table_lines), True
+    )
+    npt.assert_equal(
+        any("Bar dataset description." in line for line in table_lines), True
+    )
+    npt.assert_equal("foo, bar" in caplog.text, False)
+
+
+def test_format_key_value_table():
+    table = format_key_value_table(
+        {"foo": "Foo description", "bar": "x" * 200},
+        key_header="Dataset",
+        value_header="Description",
+    )
+
+    table_lines = table.splitlines()
+    npt.assert_equal(any("Dataset" in line for line in table_lines), True)
+    npt.assert_equal(any("Description" in line for line in table_lines), True)
+    npt.assert_equal(any("foo" in line for line in table_lines), True)
+    npt.assert_equal(any("Foo description" in line for line in table_lines), True)
+    npt.assert_equal(sum("x" in line for line in table_lines) > 1, True)
+
+
+def test_format_data_names_table():
+    def _fetch_foo():
+        """Foo dataset description."""
+
+    def _fetch_no_doc():
+        pass
+
+    table = format_data_names_table({"foo": _fetch_foo, "no_doc": _fetch_no_doc})
+    table_lines = table.splitlines()
+
+    npt.assert_equal(any("Dataset" in line for line in table_lines), True)
+    npt.assert_equal(any("Description" in line for line in table_lines), True)
+    npt.assert_equal(any("foo" in line for line in table_lines), True)
+    npt.assert_equal(any("no_doc" in line for line in table_lines), True)
+    npt.assert_equal(
+        any("Foo dataset description." in line for line in table_lines), True
+    )
+    npt.assert_equal(
+        any("| no_doc" in line and "| -" in line for line in table_lines), True
     )
 
 
