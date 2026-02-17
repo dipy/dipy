@@ -4,17 +4,25 @@ import warnings
 
 import numpy as np
 
-from dipy.reconst.cache import Cache
-from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.odf import OdfFit, OdfModel
+from dipy.core.subdivide_octahedron import create_unit_sphere
+from dipy.reconst.base import ReconstFit, ReconstModel
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.logging import logger
 
+INVERSE_LAMBDA = 1e-6
+DEFAULT_SPHERE_RECURSION_LEVEL = 5
 
-class GeneralizedQSamplingModel(OdfModel, Cache):
+
+class GeneralizedQSamplingModel(ReconstModel):
     @warning_for_keywords()
     def __init__(
-        self, gtab, *, method="gqi2", sampling_length=1.2, normalize_peaks=False
+        self,
+        gtab,
+        *,
+        method="standard",
+        sampling_length=1.2,
+        normalize_peaks=False,
+        sphere=None,
     ):
         r"""Generalized Q-Sampling Imaging.
 
@@ -37,6 +45,9 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
             diffusion sampling length (lambda in eq. 2.14 and 2.16)
         normalize_peaks : bool, optional
             True to normalize peaks.
+        sphere : :obj:`~dipy.core.sphere.Sphere`, optional
+            A sphere object, must be the same used for calculating the ODFs.
+            If not provided, a default sphere will be created.
 
         Notes
         -----
@@ -60,7 +71,7 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         >>> from dipy.core.subdivide_octahedron import create_unit_sphere
         >>> sphere = create_unit_sphere(recursion_level=5)
         >>> from dipy.reconst.gqi import GeneralizedQSamplingModel
-        >>> gq = GeneralizedQSamplingModel(gtab, method='gqi2', sampling_length=1.1)
+        >>> gq = GeneralizedQSamplingModel(gtab, method='standard', sampling_length=1.1)
         >>> voxel_signal = data[0, 0, 0]
         >>> odf = gq.fit(voxel_signal).odf(sphere)
 
@@ -69,25 +80,49 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         dipy.reconst.dsi.DiffusionSpectrumModel
 
         """
-        OdfModel.__init__(self, gtab)
+        ReconstModel.__init__(self, gtab)
         self.method = method
         self.Lambda = sampling_length
         self.normalize_peaks = normalize_peaks
-        # 0.01506 = 6*D where D is the free water diffusion coefficient
-        # l_values sqrt(6 D tau) D free water diffusion coefficient and
-        # tau included in the b-value
-        scaling = np.sqrt(self.gtab.bvals * 0.01506)
-        tmp = np.tile(scaling, (3, 1))
-        gradsT = self.gtab.bvecs.T
-        b_vector = gradsT * tmp  # element-wise product
-        self.b_vector = b_vector.T
+        self.gtab = gtab
+        self.sphere = (
+            create_unit_sphere(recursion_level=DEFAULT_SPHERE_RECURSION_LEVEL)
+            if sphere is None
+            else sphere
+        )
 
-    @multi_voxel_fit
+        # The gQI vector has shape (n_vertices, n_orientations)
+        self.kernel = gqi_kernel(
+            self.gtab,
+            self.Lambda,
+            self.sphere,
+            method=self.method,
+        ).T
+
     def fit(self, data, **kwargs):
         return GeneralizedQSamplingFit(self, data)
 
+    def predict(self, odf, *, S0=None):
+        """
+        Predict a signal for this GeneralizedQSamplingModel instance given parameters.
 
-class GeneralizedQSamplingFit(OdfFit):
+        Parameters
+        ----------
+        odf : ndarray
+            Map of ODFs.
+        gtab : ndarray
+            Orientations where signal will be simulated
+        sphere : :obj:`~dipy.core.sphere.Sphere`
+            A sphere object, must be the same used for calculating the ODFs.
+
+        """
+
+        return prediction_kernel(
+            self.gtab, self.Lambda, self.sphere, method=self.method
+        )
+
+
+class GeneralizedQSamplingFit(ReconstFit):
     def __init__(self, model, data):
         """Calculates PDF and ODF for a single voxel
 
@@ -99,37 +134,84 @@ class GeneralizedQSamplingFit(OdfFit):
             signal values
 
         """
-        OdfFit.__init__(self, model, data)
+        ReconstFit.__init__(self, model, data)
         self._gfa = None
         self.npeaks = 5
         self._peak_values = None
         self._peak_indices = None
         self._qa = None
+        self.odf_fit = None
 
-    def odf(self, sphere):
+    def fit(self, data, *, mask=None):
+        if self.odf_fit is None:
+            self.odf_fit = self.odf(data)
+        return self
+
+    def odf(self):
         """Calculates the discrete ODF for a given discrete sphere."""
-        self.gqi_vector = self.model.cache_get("gqi_vector", key=sphere)
-        if self.gqi_vector is None:
-            if self.model.method == "gqi2":
-                H = squared_radial_component
-                # print self.gqi_vector.shape
-                self.gqi_vector = np.real(
-                    H(
-                        np.dot(self.model.b_vector, sphere.vertices.T)
-                        * self.model.Lambda
-                    )
-                )
-            if self.model.method == "standard":
-                self.gqi_vector = np.real(
-                    np.sinc(
-                        np.dot(self.model.b_vector, sphere.vertices.T)
-                        * self.model.Lambda
-                        / np.pi
-                    )
-                )
-            self.model.cache_set("gqi_vector", sphere, self.gqi_vector)
+        return self.model.kernel @ self.data
 
-        return np.dot(self.data, self.gqi_vector)
+    def predict(self, gtab, *, S0=None):
+        """Predict using the fit model."""
+        K = (
+            prediction_kernel(
+                gtab,
+                self.model.Lambda,
+                self.model.sphere,
+            )
+            @ self.model.kernel
+        )
+
+        return (K @ self.data.T).T
+
+
+def gqi_kernel(gtab, param_lambda, sphere, method="standard"):
+    # 0.01506 = 6*D where D is the free water diffusion coefficient
+    # l_values sqrt(6 D tau) D free water diffusion coefficient and
+    # tau included in the b-value
+    scaling = np.sqrt(gtab.bvals * 0.01506)
+    b_vector = gtab.bvecs * scaling[:, None]
+
+    if method == "gqi2":
+        H = squared_radial_component
+        return np.real(H(np.dot(b_vector, sphere.vertices.T) * param_lambda))
+    elif method != "standard":
+        warnings.warn(
+            f'GQI model "{method}" unknown, falling back to "standard".',
+            stacklevel=1,
+        )
+    return np.real(np.sinc(np.dot(b_vector, sphere.vertices.T) * param_lambda / np.pi))
+
+
+def prediction_kernel(gtab, param_lambda, sphere, method="standard"):
+    r"""
+    Predict a signal given the ODF.
+
+    Parameters
+    ----------
+    odf : ndarray
+        ODF parameters.
+
+    gtab : GradientTable
+        The gradient table for this prediction
+
+    Notes
+    -----
+    The predicted signal is given by:
+
+    .. math::
+
+        S(\theta, b) = K_{ii}^{-1} \cdot ODF
+
+    where $K_{ii}^{-1}$, is the inverse of the GQI kernels for the direction(s) $ii$
+    given by ``gtab``.
+
+    """
+    # K.shape = (n_gradients, n_vertices)
+    K = gqi_kernel(gtab, param_lambda, sphere, method=method)
+    GtG = K @ K.T
+    identity = np.eye(GtG.shape[0])
+    return np.linalg.inv(GtG + INVERSE_LAMBDA * identity) @ K
 
 
 @warning_for_keywords()
