@@ -303,6 +303,7 @@ class SkylineFlow(Workflow):
         input_files,
         *,
         rois=None,
+        cluster=False,
     ):
         """Launch Skyline GUI.
 
@@ -313,7 +314,8 @@ class SkylineFlow(Workflow):
             the Skyline viewer.
         rois : variable str, optional
             Tuple of path for each ROI to be added to the Skyline viewer.
-
+        cluster : bool, optional
+            Whether to cluster the tractograms.
         """
         super(SkylineFlow, self).__init__(force=True)
 
@@ -328,7 +330,6 @@ class SkylineFlow(Workflow):
 
         io_it = self.get_io_iterator()
         for input_output in io_it:
-            print(input_output)
             fname = input_output
 
             logger.info(f"Loading file ... \n {fname}\n")
@@ -379,4 +380,5 @@ class SkylineFlow(Workflow):
             rois=skyline_rois,
             surfaces=skyline_surfaces,
             tractograms=skyline_tractograms,
+            is_cluster=cluster,
         )
