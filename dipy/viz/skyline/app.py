@@ -10,7 +10,7 @@ from dipy.viz.skyline.render.image import Image3D
 from dipy.viz.skyline.render.peak import Peak3D
 from dipy.viz.skyline.render.renderer import create_window
 from dipy.viz.skyline.render.roi import ROI3D
-from dipy.viz.skyline.render.streamline import Streamline3D
+from dipy.viz.skyline.render.streamline import ClusterStreamline3D, Streamline3D
 from dipy.viz.skyline.render.surface import Surface
 
 
@@ -23,6 +23,8 @@ class Skyline:
         rois=None,
         surfaces=None,
         tractograms=None,
+        is_cluster=False,
+        is_light_version=False,
     ):
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
@@ -42,6 +44,7 @@ class Skyline:
         self._tractogram_visualizations = []
         gpu_texture = load_image_as_wgpu_texture_view(str(LOGO), self.window.device)
         logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
+        self.window.renderer.add_event_handler(self.handle_key_events, "key_down")
 
         self.UI_window = UIWindow(
             "Image Controls",
@@ -102,19 +105,32 @@ class Skyline:
                 self._surface_visualizations.append(surface3d)
                 self.UI_window.add(fname, surface3d.renderer)
         if tractograms is not None:
-            for idx, (sft, path) in enumerate(tractograms):
-                color = next(self._color_gen)
-                fname = Path(path).name if path is not None else f"Tractogram {idx}"
-                streamline3d = Streamline3D(
-                    fname,
-                    sft,
-                    line_type="line",
-                    color=color,
-                    device=self.window.device,
-                    render_callback=self.before_render,
-                )
-                self._tractogram_visualizations.append(streamline3d)
-                self.UI_window.add(fname, streamline3d.renderer)
+            if is_cluster:
+                for idx, (sft, path) in enumerate(tractograms):
+                    fname = Path(path).name if path is not None else f"Tractogram {idx}"
+                    streamline3d = ClusterStreamline3D(
+                        fname,
+                        sft,
+                        thr=20,
+                        line_type="line" if is_light_version else "tube",
+                        render_callback=self.before_render,
+                        colormap=self._color_gen,
+                    )
+                    self._tractogram_visualizations.append(streamline3d)
+                    self.UI_window.add(fname, streamline3d.renderer)
+            else:
+                for idx, (sft, path) in enumerate(tractograms):
+                    color = next(self._color_gen)
+                    fname = Path(path).name if path is not None else f"Tractogram {idx}"
+                    streamline3d = Streamline3D(
+                        fname,
+                        sft,
+                        line_type="line" if is_light_version else "tube",
+                        color=color,
+                        render_callback=self.before_render,
+                    )
+                    self._tractogram_visualizations.append(streamline3d)
+                    self.UI_window.add(fname, streamline3d.renderer)
         self.active_image = None
         if self._image_visualizations:
             self._image_visualizations[-1].active = True
@@ -173,6 +189,11 @@ class Skyline:
         self.UI_window.size = (self.ui_size[0], size[1])
         self.window.render()
 
+    def handle_key_events(self, event):
+        for viz in self._tractogram_visualizations:
+            if isinstance(viz, ClusterStreamline3D):
+                viz.handle_key_events(event)
+
     @property
     def visualizations(self):
         return (
@@ -192,6 +213,7 @@ def skyline(
     rois=None,
     surfaces=None,
     tractograms=None,
+    is_cluster=False,
 ):
     """Launch Skyline GUI.
 
@@ -213,6 +235,8 @@ def skyline(
         List of path for each surface to be added to the Skyline viewer.
     tractograms : list, optional
         List of path for each tractogram to be added to the Skyline viewer.
+    is_cluster : bool, optional
+        Whether to cluster the tractograms.
     """
     Skyline(
         visualizer_type=visualizer_type,
@@ -221,4 +245,5 @@ def skyline(
         rois=rois,
         surfaces=surfaces,
         tractograms=tractograms,
+        is_cluster=is_cluster,
     )
