@@ -11,6 +11,9 @@ from dipy.viz.skyline.UI.theme import (
     WINDOW_THEME,
 )
 
+_NUMERIC_INPUT_EDITING = {}
+_NUMERIC_INPUT_DRAFT = {}
+
 
 def _calculate_hit_box(pos, size, padding=4):
     """Calculate hit box for given size and position.
@@ -285,27 +288,240 @@ def render_group(label, items, *, row_height=26, label_width=36, line_indent=8):
         return render_data
 
 
-def create_numeric_input(label, value, *, value_type="int", step=1, format="%.3f"):
-    if value_type == "int" and isinstance(value, float):
-        value = int(value)
-        logger.warning(
-            "Value converted to int for integer input."
-            " Please provide value_type as 'float' if float is intended."
-        )
+def create_numeric_input(
+    label,
+    value,
+    *,
+    value_type="int",
+    step=1,
+    format="%.3f",
+    label_width=0,
+    width=106,
+    height=32,
+):
+    """Render a themed numeric spinner with editable value field.
+
+    Parameters
+    ----------
+    label : str
+        Label rendered to the left. Use ``##id`` to hide visible text.
+    value : int or float
+        Current numeric value.
+    value_type : {"int", "float"}, optional
+        Numeric type enforced for the value.
+    step : int or float, optional
+        Increment/decrement amount used by spinner clicks.
+    format : str, optional
+        Display format used for floating-point values.
+    label_width : int, optional
+        Fixed width reserved for the label column in pixels. Use 0 to size from
+        content.
+    width : int, optional
+        Width of the input box in pixels.
+    height : int, optional
+        Height of the input box in pixels.
+
+    Returns
+    -------
+    tuple(bool, int or float)
+        Whether the value changed and the resulting numeric value.
+    """
+    if value_type not in {"int", "float"}:
+        raise ValueError("value_type must be either 'int' or 'float'")
 
     if value_type == "int":
-        changed, new_val = imgui.input_int(
-            label,
-            value,
-            step=int(step),
-            step_fast=int(step * 10),
-        )
+        if isinstance(value, float):
+            logger.warning(
+                "Value converted to int for integer input."
+                " Please provide value_type as 'float' if float is intended."
+            )
+        current = int(round(value))
+        step_amount = max(1, int(round(step)))
     else:
-        changed, new_val = imgui.input_float(
-            label, float(value), step=step, step_fast=step * 10, format=format
-        )
+        current = float(value)
+        step_amount = float(step) if step > 0 else 1.0
 
-    return changed, new_val
+    def _coerce_numeric(val):
+        if value_type == "int":
+            return int(round(val))
+        return float(val)
+
+    def _format_display(val):
+        if value_type == "int":
+            return str(int(round(val)))
+        try:
+            if "%" in format:
+                return format % float(val)
+            return f"{float(val):{format}}"
+        except (ValueError, TypeError):
+            return str(float(val))
+
+    imgui.push_id(label)
+
+    visible_label = label.split("##", 1)[0]
+    if visible_label:
+        imgui.align_text_to_frame_padding()
+        imgui.text_colored(THEME["text"], visible_label)
+        if label_width and label_width > 0:
+            text_width = imgui.calc_text_size(visible_label).x
+            spacing = max(16.0, float(label_width) - text_width)
+            imgui.same_line(0, spacing)
+        else:
+            imgui.same_line(0, 16)
+    elif label_width and label_width > 0:
+        imgui.dummy((float(label_width), imgui.get_text_line_height()))
+        imgui.same_line(0, 16)
+
+    edit_key = imgui.get_id("##numeric_input_edit_state")
+    editing_prev = _NUMERIC_INPUT_EDITING.get(edit_key, False)
+    draft_value = _NUMERIC_INPUT_DRAFT.get(edit_key, current)
+    if not editing_prev:
+        draft_value = current
+
+    control_width = width if width and width > 0 else imgui.get_content_region_avail().x
+    control_width = max(96.0, float(control_width))
+    control_height = max(float(height), imgui.get_frame_height())
+    imgui.invisible_button("##numeric_input", (control_width, control_height), 0)
+
+    frame_min = imgui.get_item_rect_min()
+    frame_max = imgui.get_item_rect_max()
+    draw_list = imgui.get_window_draw_list()
+    frame_color = imgui.get_color_u32(THEME["background"])
+    primary_color = imgui.get_color_u32(THEME["primary"])
+    inactive_color = imgui.get_color_u32(THEME["text"])
+    is_emphasized = imgui.is_item_active() or editing_prev
+    chrome_color = primary_color if is_emphasized else inactive_color
+
+    arrow_col_width = max(20.0, min(26.0, control_width * 0.26))
+    separator_x = frame_max.x - arrow_col_width
+    middle_y = (frame_min.y + frame_max.y) * 0.5
+
+    draw_list.add_rect_filled(frame_min, frame_max, frame_color, 6.0)
+    draw_list.add_rect(frame_min, frame_max, chrome_color, 6.0, 0, 1.0)
+    draw_list.add_line(
+        imgui.ImVec2(separator_x, frame_min.y + 1),
+        imgui.ImVec2(separator_x, frame_max.y - 1),
+        chrome_color,
+        1.0,
+    )
+
+    top_arrow_min = imgui.ImVec2(separator_x, frame_min.y)
+    top_arrow_max = imgui.ImVec2(frame_max.x, middle_y)
+    bottom_arrow_min = imgui.ImVec2(separator_x, middle_y)
+    bottom_arrow_max = imgui.ImVec2(frame_max.x, frame_max.y)
+    value_min = imgui.ImVec2(frame_min.x, frame_min.y)
+    value_max = imgui.ImVec2(separator_x, frame_max.y)
+
+    increase = imgui.is_mouse_hovering_rect(
+        top_arrow_min, top_arrow_max
+    ) and imgui.is_mouse_clicked(imgui.MouseButton_.left)
+    decrease = imgui.is_mouse_hovering_rect(
+        bottom_arrow_min, bottom_arrow_max
+    ) and imgui.is_mouse_clicked(imgui.MouseButton_.left)
+
+    clicked_value = imgui.is_mouse_hovering_rect(
+        value_min, value_max
+    ) and imgui.is_mouse_clicked(imgui.MouseButton_.left)
+
+    base_value = draft_value if (editing_prev or clicked_value) else current
+    new_value = (
+        base_value + (step_amount if increase else 0) - (step_amount if decrease else 0)
+    )
+
+    value_area_width = max(separator_x - frame_min.x, 1.0)
+    preview_text = _format_display(new_value)
+    preview_size = imgui.calc_text_size(preview_text)
+    editor_inner_width = max(value_area_width - 12.0, 10.0)
+    text_pad_x = max(0.0, (editor_inner_width - preview_size.x) * 0.5)
+    text_pad_y = imgui.get_style().frame_padding.y
+    editor_height = imgui.get_frame_height()
+    editor_y = frame_min.y + (control_height - editor_height) * 0.5
+
+    imgui.set_cursor_screen_pos((frame_min.x + 6.0, editor_y))
+    imgui.push_item_width(editor_inner_width)
+    imgui.push_style_var(imgui.StyleVar_.frame_border_size, 0.0)
+    imgui.push_style_var(imgui.StyleVar_.frame_rounding, 0.0)
+    imgui.push_style_var(imgui.StyleVar_.frame_padding, (text_pad_x, text_pad_y))
+    imgui.push_style_color(imgui.Col_.frame_bg, (0, 0, 0, 0))
+    imgui.push_style_color(imgui.Col_.frame_bg_hovered, (0, 0, 0, 0))
+    imgui.push_style_color(imgui.Col_.frame_bg_active, (0, 0, 0, 0))
+    imgui.push_style_color(imgui.Col_.text, THEME["primary"])
+
+    if clicked_value:
+        imgui.set_keyboard_focus_here()
+
+    if value_type == "int":
+        typed_changed, typed_value = imgui.input_int(
+            "##numeric_input_editor",
+            int(new_value),
+            step=0,
+            step_fast=0,
+        )
+        new_value = int(typed_value)
+    else:
+        typed_changed, typed_value = imgui.input_float(
+            "##numeric_input_editor",
+            float(new_value),
+            step=0.0,
+            step_fast=0.0,
+            format=format,
+        )
+        new_value = float(typed_value)
+    editor_focused = imgui.is_item_active() or imgui.is_item_focused()
+
+    step_changed = increase or decrease
+    new_value = _coerce_numeric(new_value)
+
+    enter_pressed = imgui.is_key_pressed(imgui.Key.enter)
+    keypad_enter = getattr(imgui.Key, "keypad_enter", None)
+    if keypad_enter is not None:
+        enter_pressed = enter_pressed or imgui.is_key_pressed(keypad_enter)
+
+    commit_on_blur = editing_prev and not editor_focused and not clicked_value
+    commit_value = enter_pressed or commit_on_blur
+    in_edit_session = editing_prev or clicked_value or editor_focused
+
+    if in_edit_session:
+        _NUMERIC_INPUT_DRAFT[edit_key] = new_value
+        if step_changed:
+            changed = new_value != current
+            output_value = new_value if changed else current
+            _NUMERIC_INPUT_EDITING[edit_key] = True
+            _NUMERIC_INPUT_DRAFT[edit_key] = output_value
+        elif commit_value:
+            changed = new_value != current
+            output_value = new_value
+            _NUMERIC_INPUT_EDITING[edit_key] = False
+            _NUMERIC_INPUT_DRAFT.pop(edit_key, None)
+        else:
+            changed = False
+            output_value = current
+            _NUMERIC_INPUT_EDITING[edit_key] = True
+    else:
+        changed = (step_changed or typed_changed) and new_value != current
+        output_value = new_value if changed else current
+        _NUMERIC_INPUT_EDITING[edit_key] = False
+        _NUMERIC_INPUT_DRAFT.pop(edit_key, None)
+
+    imgui.pop_style_color(4)
+    imgui.pop_style_var(3)
+    imgui.pop_item_width()
+
+    up_icon = icons_fontawesome_6.ICON_FA_CARET_UP
+    down_icon = icons_fontawesome_6.ICON_FA_CARET_DOWN
+    up_size = imgui.calc_text_size(up_icon)
+    down_size = imgui.calc_text_size(down_icon)
+    arrow_center_x = separator_x + (frame_max.x - separator_x) * 0.5
+    up_pos = (arrow_center_x - up_size.x * 0.5, frame_min.y)
+    down_pos = (
+        arrow_center_x - down_size.x * 0.5,
+        frame_max.y - down_size.y,
+    )
+    draw_list.add_text(up_pos, chrome_color, up_icon)
+    draw_list.add_text(down_pos, chrome_color, down_icon)
+
+    imgui.pop_id()
+    return changed, output_value
 
 
 def segmented_switch(label, options, value, *, width=0, height=28):
