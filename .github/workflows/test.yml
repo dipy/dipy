@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ master ]
   schedule:
-    - cron: "0 0 5 * *" # 1 per month
+    - cron: "0 0 25-31 * 0" # 1 per month
 
 concurrency:
   group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
