@@ -55,7 +55,7 @@
      - Multi shell data: b-vals: [0, 1500, 2500] (s/mm^2); 64 gradient directions
      -
      - isbi2013_2shell
-     - Daducci, A., et al. Quantitative Comparison of Reconstruction Methods for Intra-Voxel Fiber Recovery From Diffusion MRI. IEEE Transactions on Medical Imaging, vol. 33, no. 2, pp. 384-399, Feb. 2014. <a href='http://hardi.epfl.ch/static/events/2013_ISBI/testing_data.html'>HARDI reconstruction challenge 2013</a>
+     - Daducci, A., et al. Quantitative Comparison of Reconstruction Methods for Intra-Voxel Fiber Recovery From Diffusion MRI. IEEE Transactions on Medical Imaging, vol. 33, no. 2, pp. 384-399, Feb. 2014. <a href='https://hardi.epfl.ch/static/events/2013_ISBI/testing_data.html'>HARDI reconstruction challenge 2013</a>
    * - IVIM dataset
      - Human
      - Multi shell data: b-vals: [0, 10, 20, 30, 40, 60, 80, 100, 120, 140, 160, 180, 200, 300, 400, 500, 600, 700, 800, 900, 1000] (s/mm^2); 21 gradient directions
@@ -79,13 +79,13 @@
      - b0
      - GE (1.5, 3 T), Philips (3 T); Siemens (1.5, 3 T)
      - scil_b0
-     - <a href='http://scil.dinf.usherbrooke.ca'>Sherbrooke Connectivity Imaging Lab (SCIL)</a>
+     - <a href='https://scil.dinf.usherbrooke.ca'>Sherbrooke Connectivity Imaging Lab (SCIL)</a>
    * - Sherbrooke 3 shells
      - Human
      - Multi shell data: b-vals: [0, 1000, 2000; 3500] (s/mm^2); 193 gradient directions
      -
      - sherbrooke_3shell
-     - <a href='http://scil.dinf.usherbrooke.ca'>Sherbrooke Connectivity Imaging Lab (SCIL)</a>
+     - <a href='https://scil.dinf.usherbrooke.ca'>Sherbrooke Connectivity Imaging Lab (SCIL)</a>
    * - SNAIL dataset
      -
      - 2 subjects: T1; Fractional Anisotropy (FA); 27 bundles
