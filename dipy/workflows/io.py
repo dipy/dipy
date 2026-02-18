@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import shutil
 import sys
+import textwrap
 import warnings
 
 import numpy as np
@@ -351,6 +352,96 @@ def _print_tractography_information(
     )
 
 
+def format_key_value_table(data, key_header="Key", value_header="Value"):
+    """Format key-value pairs as a simple ASCII table.
+
+    Parameters
+    ----------
+    data : dict
+        Key-value pairs to display in the table.
+    key_header : str, optional
+        Header title for the key column.
+    value_header : str, optional
+        Header title for the value column.
+
+    Returns
+    -------
+    str
+        Key-value pairs formatted as an ASCII table.
+    """
+
+    sorted_data = sorted(data.items())
+    key_width = max([len(key_header), *[len(key) for key, _ in sorted_data]])
+    terminal_width = shutil.get_terminal_size(fallback=(120, 20)).columns
+    value_width = max(len(value_header), min(120, terminal_width - key_width - 7))
+    separator = f"+-{'-' * key_width}-+-{'-' * value_width}-+"
+    rows = [
+        separator,
+        f"| {key_header:<{key_width}} | {value_header:<{value_width}} |",
+        separator,
+    ]
+
+    for key, value in sorted_data:
+        wrapped_value = textwrap.wrap(value, width=value_width) or [""]
+        rows.append(f"| {key:<{key_width}} | {wrapped_value[0]:<{value_width}} |")
+        for extra_line in wrapped_value[1:]:
+            rows.append(f"| {'':<{key_width}} | {extra_line:<{value_width}} |")
+    rows.append(separator)
+    return "\n".join(rows)
+
+
+def format_data_names_table(data):
+    """Format dataset names and fetcher summaries as an ASCII table.
+
+    Parameters
+    ----------
+    data : dict
+        Available dataset names mapped to fetcher functions.
+
+    Returns
+    -------
+    str
+        Dataset names and fetcher summaries formatted as an ASCII table.
+    """
+
+    def _doc_summary(fetcher_function):
+        """Extract a short description from a fetcher docstring.
+
+        Parameters
+        ----------
+        fetcher_function : callable
+            Dataset fetcher function.
+
+        Returns
+        -------
+        str
+            The first non-empty line from ``fetcher_function.__doc__``.
+            Returns ``"-"`` when no description is available.
+        """
+
+        doc = getattr(fetcher_function, "__doc__", None)
+        if not doc:
+            return "-"
+
+        for line in doc.splitlines():
+            stripped_line = line.strip()
+            if stripped_line:
+                return stripped_line.replace("|", "/")
+
+        return "-"
+
+    descriptions_by_name = {
+        dataset_name: _doc_summary(fetcher_function)
+        for dataset_name, fetcher_function in data.items()
+    }
+
+    return format_key_value_table(
+        descriptions_by_name,
+        key_header="Dataset",
+        value_header="Description",
+    )
+
+
 class IoInfoFlow(Workflow):
     @classmethod
     def get_short_name(cls):
@@ -626,7 +717,7 @@ class FetchFlow(Workflow):
         elif "list" in data_names:
             logger.info(
                 "Please, select between the following data names: \n"
-                f"{', '.join(available_data.keys())}"
+                f"{format_data_names_table(available_data)}"
             )
 
         else:
