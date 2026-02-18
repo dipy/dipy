@@ -44,8 +44,8 @@ When running:
 
 You will get the usual output of pytest, but also a table that indicates the test
 coverage in each module: the percentage of coverage and also the lines of code
-that are not run in the tests. You can also see the test coverage in the Travis
-run corresponding to the PR (in the log for the machine with ``COVERAGE=1``).
+that are not run in the tests. You can also see the test coverage in the ``GitHub
+Actions`` run corresponding to the PR (in the log for the ``job`` with ``COVERAGE=1``).
 
 If your contributions are to a single module, you can see test and
 coverage results for only that module without running all of the DIPY
@@ -65,7 +65,6 @@ fully covered are very welcome!
 
 Code contributions should be formatted according to the [DIPY Coding Style Guideline](../doc/devel/coding_style_guideline.rst).
 Please, read the document to conform your code contributions to the DIPY standard.
-
 
 ### Documentation
 
