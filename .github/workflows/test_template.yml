@@ -147,7 +147,7 @@ jobs:
       uses: codecov/codecov-action@v5
       if: ${{ fromJSON(env.COVERAGE) }}
       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+        token: ${{ secrets.codecov-token }}
         directory: for_testing_results
         files: coverage.xml
         fail_ci_if_error: true

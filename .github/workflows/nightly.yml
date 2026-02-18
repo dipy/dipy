@@ -125,7 +125,7 @@ jobs:
         run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
+            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_arch }}
             path: ./dist/*.whl
 
   build_windows_wheels:
@@ -205,7 +205,7 @@ jobs:
         contents: write # for softprops/action-gh-release to create GitHub release
       name: Upload to Anaconda
       needs: [build_linux_wheels, build_osx_wheels, build_windows_wheels]
-      if: ${{ always() }} && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+      if:  always() && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
       runs-on: ubuntu-latest
       timeout-minutes: 10
       steps:
