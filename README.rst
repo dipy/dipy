@@ -46,7 +46,7 @@ https://mail.python.org/mailman3/lists/dipy.python.org/
 Please see the users' forum at
 https://github.com/dipy/dipy/discussions
 
-Please join the gitter chatroom `here <https://gitter.im/dipy/dipy>`_.
+Please join the community on Gitter/Matrix `here <https://matrix.to/#/#dipy_dipy:gitter.im>`_.
 
 Code
 ====
