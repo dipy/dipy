@@ -109,7 +109,7 @@ dipy_tensor2pam = "dipy.workflows.cli:run"
 build = [
     "meson-python>=0.13",
     "wheel",
-    "setuptools~=69.5",
+    "setuptools>=69.5,<83.0",
     "packaging>=21",
     "ninja",
     "Cython>=0.29.35",
