@@ -598,7 +598,9 @@ def _ols_fit(X, data_masked, *, step=int(1e4), return_leverages=False):
 
 
 @warning_for_keywords()
-def _wls_fit(X, data_masked, *, weights=None, step=int(1e4), return_leverages=False):
+def _wls_fit(
+    X, data_masked, *, weights=None, step=int(1e4), return_leverages=False
+):
     r"""Estimate the model parameters using weighted least squares with the
     signal magnitudes as weights.
 
@@ -633,17 +635,17 @@ def _wls_fit(X, data_masked, *, weights=None, step=int(1e4), return_leverages=Fa
 
     params_masked = np.zeros((size, 28))
     if return_leverages:
-        leverages = np.zeros_like(data_masked) #size, dtype=float) 
+        leverages = np.zeros_like(data_masked)
 
     for i in range(0, size, step):
-        S = np.log(data_masked[i : i + step])#[..., np.newaxis]
+        S = np.log(data_masked[i : i + step])
 
         if weights is None:  # calculate weights
             # OLS prediction of signal
-            params_ols = (X_inv @ X.T @ S[..., None])[..., 0]  # last dim has size 1
-            W = np.exp((X @ params_ols.T).T)#[:, np.newaxis, :]
+            params_ols = (X_inv @ X.T @ S[..., None])[..., 0]  # dim size 1
+            W = np.exp((X @ params_ols.T).T)
         else:
-            W = np.sqrt(weights[i : i + step])#[:, np.newaxis, :]
+            W = np.sqrt(weights[i : i + step])
 
         if return_leverages:
             tmp = np.einsum(
@@ -668,7 +670,9 @@ def _wls_fit(X, data_masked, *, weights=None, step=int(1e4), return_leverages=Fa
     return params_masked, extra
 
 
-def _sdpdc_fit(X, data_masked, cvxpy_solver, weights=None, return_leverages=True):
+def _sdpdc_fit(
+    X, data_masked, cvxpy_solver, weights=None, return_leverages=True
+):
     r"""Estimate the model parameters using Semidefinite Programming (SDP),
     while enforcing positivity constraints on the D and C tensors (SDPdc).
 
@@ -730,7 +734,7 @@ def _sdpdc_fit(X, data_masked, cvxpy_solver, weights=None, return_leverages=True
 
     if return_leverages:
         A = X * W[..., None]
-        inv_W_A_W  = np.einsum(
+        inv_W_A_W = np.einsum(
             "...ij,...j->...ij", np.linalg.pinv(A), W
         )
         leverages = np.einsum("ij,...ji->...i", X, inv_W_A_W)  # sums to 28
@@ -787,7 +791,9 @@ def _sdpdc_fit(X, data_masked, cvxpy_solver, weights=None, return_leverages=True
 
 class QtiModel(ReconstModel):
     @warning_for_keywords()
-    def __init__(self, gtab, *args, fit_method="WLS", cvxpy_solver="SCS", **kwargs):
+    def __init__(
+        self, gtab, *args, fit_method="WLS", cvxpy_solver="SCS", **kwargs
+    ):
         """Covariance tensor model of q-space trajectory imaging.
 
         See :footcite:t:`Westin2016` for further details about the model.
@@ -947,7 +953,7 @@ class QtiModel(ReconstModel):
             raise ValueError("num_iter must be 2+")
 
         w, robust = None, None  # NOTE: different to dki.py
-        tmp, extra, leverages = None, None, None  # initialize, for clarity
+        params_in_mask, extra, leverages = None, None, None
 
         TDX = num_iter
         # NOTE: on first iteration, fit_method receives weights=w(=None)

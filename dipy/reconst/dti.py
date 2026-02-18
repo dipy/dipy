@@ -1338,7 +1338,7 @@ def iter_fit_tensor(*, step=1e4):
             if design_matrix.shape[-1] == 22:  # DKI
                 sz = 22
             elif design_matrix.shape[-1] == 28:  # QTI
-                sz = 28 #if kwargs.get("return_lower_triangular", False) 
+                sz = 28
             else:  # DTI
                 sz = 7 if kwargs.get("return_lower_triangular", False) else 12
             dtiparams = np.empty((size, sz), dtype=np.float64)
