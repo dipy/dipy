@@ -8,8 +8,8 @@ on:
 
 jobs:
   pre-commit:
-
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       matrix:
         os: [ubuntu-latest]
