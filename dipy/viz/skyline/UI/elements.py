@@ -635,7 +635,7 @@ def segmented_switch(label, options, value, *, width=0, height=28):
     return changed, new_value
 
 
-def dropdown(label, options, value, *, width=0):
+def dropdown(label, options, value, *, width=0, height=0):
     """Render a themed dropdown/combobox control.
 
     Parameters
@@ -649,6 +649,9 @@ def dropdown(label, options, value, *, width=0):
         option is used.
     width : int, optional
         Width of the dropdown in pixels. If 0 or negative, uses available space.
+    height : int, optional
+        Height of the dropdown control in pixels. If 0 or negative, uses the
+        default style height.
 
     Returns
     -------
@@ -677,9 +680,18 @@ def dropdown(label, options, value, *, width=0):
     arrow_color = DROPDOWN_THEME["arrow_color"]
 
     imgui.set_next_item_width(combo_width)
+    style_var_count = 3
     imgui.push_style_var(imgui.StyleVar_.frame_rounding, 6.0)
     imgui.push_style_var(imgui.StyleVar_.frame_border_size, 1.0)
     imgui.push_style_var(imgui.StyleVar_.item_spacing, (0.0, 10.0))
+    if height and height > 0:
+        default_padding = imgui.get_style().frame_padding.x
+        text_height = imgui.get_text_line_height()
+        vertical_padding = max(0.0, (float(height) - text_height) * 0.5)
+        imgui.push_style_var(
+            imgui.StyleVar_.frame_padding, (default_padding, vertical_padding)
+        )
+        style_var_count += 1
     imgui.push_style_color(imgui.Col_.frame_bg, frame_bg)
     imgui.push_style_color(imgui.Col_.frame_bg_hovered, frame_bg)
     imgui.push_style_color(imgui.Col_.frame_bg_active, frame_bg)
@@ -692,7 +704,7 @@ def dropdown(label, options, value, *, width=0):
     combo_flags = imgui.ComboFlags_.height_regular | imgui.ComboFlags_.no_arrow_button
     changed = False
     new_value = current_value
-    opened = imgui.begin_combo(f"##{label}_dropdown", current_value, combo_flags)
+    opened = imgui.begin_combo(f"##{label}_dropdown", "", combo_flags)
 
     frame_min = imgui.get_item_rect_min()
     frame_max = imgui.get_item_rect_max()
@@ -701,6 +713,15 @@ def dropdown(label, options, value, *, width=0):
     arrow_pos = (
         frame_max.x - padding_x - arrow_size.x,
         frame_min.y + (frame_max.y - frame_min.y - arrow_size.y) * 0.52,
+    )
+    preview_size = imgui.calc_text_size(current_value)
+    preview_min_x = frame_min.x + padding_x
+    preview_max_x = frame_max.x - (padding_x * 2.0 + arrow_size.x)
+    preview_width = max(0.0, preview_max_x - preview_min_x)
+    preview_x = preview_min_x + max(0.0, (preview_width - preview_size.x) * 0.5)
+    preview_y = frame_min.y + (frame_max.y - frame_min.y - preview_size.y) * 0.5
+    draw_list.add_text(
+        (preview_x, preview_y), imgui.get_color_u32(text_color), current_value
     )
     draw_list.add_text(arrow_pos, imgui.get_color_u32(arrow_color), arrow_icon)
 
@@ -722,7 +743,7 @@ def dropdown(label, options, value, *, width=0):
         current_value = new_value
 
     imgui.pop_style_color(8)
-    imgui.pop_style_var(3)
+    imgui.pop_style_var(style_var_count)
 
     imgui.pop_id()
     return changed, new_value
