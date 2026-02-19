@@ -1654,6 +1654,60 @@ def _serve_html_report(report_path):
 # - dipy cluster qbx
 
 
+def _serve_html_report(report_path):
+    """Serve an HTML pipeline report via a local HTTP server and open it.
+
+    Starts a ``http.server`` rooted at the report's directory, opens the
+    default browser, and blocks until the user presses Ctrl+C.
+
+    Parameters
+    ----------
+    report_path : str or Path
+        Path to the HTML report file (e.g., ``pipeline_report.html``).
+    """
+    import functools
+    import http.server
+    import socket
+    import socketserver
+    import webbrowser
+
+    report_path = Path(report_path).resolve()
+    report_dir = str(report_path.parent)
+    report_name = report_path.name
+
+    port = 8000
+    while True:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("", port))
+                break
+            except OSError:
+                port += 1
+
+    handler = functools.partial(
+        http.server.SimpleHTTPRequestHandler, directory=report_dir
+    )
+    url = f"http://localhost:{port}/{report_name}"
+    logger.info(f"Serving report at: {url}")
+    logger.info("Press Ctrl+C to stop the server.")
+    webbrowser.open(url)
+    with socketserver.TCPServer(("", port), handler) as httpd:
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            logger.info("Server stopped.")
+
+
+# TODO:
+# - handle maskfile, check binary, % of white voxels.
+# - Add opposite phase encoding (AP/PA)
+# - handle incorrect --start name.
+# - Create dipy_brain_mask workflow and add to pipelines
+#   (SynthSeg, median_otsu, PUMBA, EVAC+)
+# - Create dipy_denoise
+# - dipy cluster qbx
+
+
 class AutoFlow(Workflow):
     """Automatic pipeline execution workflow with semantic DAG-based wiring.
 
@@ -1748,6 +1802,38 @@ class AutoFlow(Workflow):
                 templates.list_pipelines_with_descriptions(log_level=current_log_level)
             )
             return
+
+        # =====================================================================
+        # Detect file types from input_files
+        # =====================================================================
+
+        config_file = None
+        dwi_file = None
+        bvals_file = None
+        bvecs_file = None
+
+        for f in input_files:
+            p = Path(f)
+            name_lower = p.name.lower()
+            full_suffix = "".join(p.suffixes).lower()
+
+            if re.match(r".*report.*\.html$", name_lower):
+                logger.info(
+                    f"HTML report detected: {f}. "
+                    "Ignoring all other inputs and opening report."
+                )
+                _serve_html_report(f)
+                return
+            elif full_suffix == ".toml":
+                config_file = f
+            elif full_suffix in (".nii.gz", ".nii"):
+                dwi_file = f
+            elif p.suffix.lower() in (".bval", ".bvals"):
+                bvals_file = f
+            elif p.suffix.lower() in (".bvec", ".bvecs"):
+                bvecs_file = f
+            else:
+                logger.warning(f"Unrecognized file type, ignoring: {f}")
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         out_dir = os.path.abspath(out_dir) or os.getcwd()
