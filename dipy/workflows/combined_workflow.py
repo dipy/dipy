@@ -18,7 +18,7 @@ import re
 import sys
 import time
 
-from dipy.utils.logging import logger
+from dipy.utils.logging import add_file_handler, logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows import templates
 from dipy.workflows.cli import cli_flows
@@ -1121,6 +1121,8 @@ class AutoFlow(Workflow):
         bvals_file=None,
         bvecs_file=None,
         t1_file=None,
+        mask_file=None,
+        dwi_opp_phase_file=None,
         bids_folder=None,
         atlas_tractogram=None,
         bundle_atlas_dir=None,
@@ -1146,6 +1148,10 @@ class AutoFlow(Workflow):
             Path to the bvec file.
         t1_file : str, optional
             Path to the T1 file.
+        mask_file : str, optional
+            Path to the brain mask file.
+        dwi_opp_phase_file : str, optional
+            Path to the opposite phase DWI file (for phase correction).
         bids_folder : str, optional
             Path to the BIDS folder (reserved for future use).
         atlas_tractogram : str, optional
@@ -1182,6 +1188,7 @@ class AutoFlow(Workflow):
             )
             return
 
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         out_dir = os.path.abspath(out_dir) or os.getcwd()
 
         # =================================================================
@@ -1283,7 +1290,6 @@ class AutoFlow(Workflow):
 
             os.makedirs(out_dir, exist_ok=True)
 
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             pipeline_name = pipeline_type or "default"
             config_filename = f"{pipeline_name}_pipeline_{timestamp}.toml"
             config_file = os.path.join(out_dir, config_filename)
@@ -1359,6 +1365,10 @@ class AutoFlow(Workflow):
         io_config.setdefault("out_dir", ".")
         io_config["out_dir"] = os.path.abspath(io_config["out_dir"])
         os.makedirs(io_config["out_dir"], exist_ok=True)
+
+        log_file_path = os.path.join(io_config["out_dir"], f"dipy_auto_{timestamp}.log")
+        add_file_handler(filename=log_file_path, level=logger.getEffectiveLevel())
+        logger.info(f"Log file: {log_file_path}")
 
         cli_overrides = {
             "dwi": dwi_file,
