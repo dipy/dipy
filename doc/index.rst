@@ -5,7 +5,7 @@ Diffusion Imaging In Python - Documentation
 
 .. container:: index-paragraph
 
-   DIPY_ is the paragon 3D/4D+ imaging library in Python. Contains generic methods for
+   DIPY_ is the paragon 3D/4D+ imaging library in Python. It contains generic methods for
    spatial normalization, signal processing, machine learning, statistical analysis
    and visualization of medical images. Additionally, it contains
    specialized methods for computational anatomy including diffusion,
@@ -38,13 +38,13 @@ Quick links
         :link: recipes
         :link-type: ref
 
-        How do I do X in DIPY?  This dedicated section will provide you quick and direct answer.
+        How do I do X in DIPY?  This dedicated section will provide you with a quick and direct answer.
 
     .. grid-item-card:: :octicon:`zap` Workflows
         :link: interfaces/index
         :link-type: any
 
-        Not comfortable with coding? we have command line interfaces for you.
+        Not comfortable with coding? We have command line interfaces for you.
         An easy way to use DIPY_ via a terminal.
 
     .. grid-item-card:: :octicon:`rocket` Theory
@@ -64,7 +64,7 @@ Quick links
         :link: reference/index
         :link-type: any
 
-        A detailed description of DIPY public Python API.
+        A detailed description of the DIPY public Python API.
 
     .. grid-item-card:: :octicon:`repo` Workflows API reference
         :link: reference_cmd/index

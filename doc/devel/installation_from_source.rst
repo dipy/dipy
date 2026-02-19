@@ -7,7 +7,7 @@ Installing from source
 Getting the source
 ==================
 
-More likely you will want to get the source repository to be able to follow the
+You will most likely want to get the source repository to be able to follow the
 latest changes.  In that case, you can use::
 
     git clone https://github.com/dipy/dipy.git
@@ -63,7 +63,7 @@ Or, to build DIPY in the source tree (locally) so you can run the code in the so
 
     pip install --no-build-isolation -e .
 
-add the *DIPY source root directory* into your ``PYTHONPATH`` environment variable. Search google for ``PYTHONPATH`` for details or see `python module path`_ for an introduction.
+add the *DIPY source root directory* into your ``PYTHONPATH`` environment variable. Search Google for ``PYTHONPATH`` for details or see `python module path`_ for an introduction.
 
 When adding dipy_ to the ``PYTHONPATH``, we usually add the ``PYTHONPATH`` at
 the end of ``~/.bashrc`` or (macOS) ``~/.bash_profile`` so we don't need to
@@ -201,7 +201,7 @@ you will need to use the llvm compiler with OMP. Run::
     brew install libomp
     export CC="/opt/homebrew/opt/llvm/bin/clang"
 
-In case the compiler or OpenMP are not detected , you can specify some environment
+In case the compiler or OpenMP are not detected, you can specify some environment
 variables. For example, you can add the following lines to your ``~/.bash_profile``::
 
     export CC="/opt/homebrew/opt/llvm/bin/clang"
