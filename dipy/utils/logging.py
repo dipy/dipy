@@ -126,5 +126,34 @@ def configure_logger(
             h.setLevel(level)
 
 
+def add_file_handler(
+    filename,
+    level=None,
+    fmt="[%(asctime)s][%(name)s] %(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+):
+    """Add a file handler to the DIPY logger without removing existing handlers.
+
+    Parameters
+    ----------
+    filename : str or Path
+        Path to the log file. The file is opened in append mode.
+    level : int, optional
+        Logging level for the file handler. If None, uses the current logger
+        level.
+    fmt : str, optional
+        Log message format.
+    datefmt : str, optional
+        Date format for log messages.
+    """
+    _logger = logging.getLogger("dipy")
+    if level is None:
+        level = _logger.getEffectiveLevel()
+    handler = CustomHandler(filename=str(filename))
+    handler.setLevel(level)
+    handler.setFormatter(logging.Formatter(fmt, datefmt=datefmt))
+    _logger.addHandler(handler)
+
+
 # Provide a default logger for convenience
 logger = get_logger()
