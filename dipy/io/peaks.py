@@ -30,7 +30,7 @@ def _safe_save(group, array, name):
 
 
 @deprecate_with_version(
-    "dipy.io.peaks.load_peaks is deprecated, Please usedipy.io.peaks.load_pam instead",
+    "dipy.io.peaks.load_peaks is deprecated, Please use dipy.io.peaks.load_pam instead",
     since="1.10",
     until="1.12",
 )
