@@ -1749,6 +1749,7 @@ class AutoFlow(Workflow):
             )
             return
 
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         out_dir = os.path.abspath(out_dir) or os.getcwd()
 
         if list_pipelines:
