@@ -434,6 +434,7 @@ name = "register"
 cli = "dipy_slr"
 moving_files = "${tracking.out_tractogram}"
 static_files = "${io.atlas_tractogram}"
+bbox_valid_check = false
 
 # Bundle segmentation (RecoBundles)
 [[pipeline]]
