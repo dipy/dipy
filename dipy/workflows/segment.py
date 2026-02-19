@@ -10,6 +10,7 @@ from dipy.io.image import load_nifti, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.nn.synthseg import SynthSeg
+from dipy.nn.torch.synthseg import have_torch
 from dipy.segment.bundles import RecoBundles
 from dipy.segment.mask import median_otsu
 from dipy.segment.tissue import TissueClassifierHMRF, dam_classifier
@@ -590,4 +591,199 @@ class ClassifyTissueFlow(Workflow):
                 logger.info(f"Tissue saved as {tissue_out_path}")
             logger.info(f"Label names saved as {ocsv}")
 
+        return io_it
+
+
+class BrainMaskFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "brainmask"
+
+    def run(
+        self,
+        input_files,
+        *,
+        method="synthseg",
+        bvalues_files=None,
+        b0_threshold=50,
+        median_radius=2,
+        numpass=5,
+        vol_idx=None,
+        dilate=None,
+        finalize_mask=False,
+        save_masked=False,
+        use_cuda=False,
+        out_dir="",
+        out_mask="brain_mask.nii.gz",
+        out_masked="brain_masked.nii.gz",
+    ):
+        """Unified brain masking workflow supporting multiple methods.
+
+        Applies brain masking on each file found by 'globing' ``input_files``
+        and saves the results in a directory specified by ``out_dir``.
+
+        Parameters
+        ----------
+        input_files : string or Path
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        method : string, optional
+            Brain masking method. Options are:
+
+            - 'median_otsu': Classical median Otsu segmentation, DWI-focused.
+            - 'evac': Deep learning EVACPlus method, T1-focused.
+            - 'synthseg': Deep learning SynthSeg method, works for all
+              modalities.
+
+        bvalues_files : variable string or Path, optional
+            Path to the b-values files. Used only for 'median_otsu' method.
+            This path may contain wildcards to process multiple inputs at once.
+        b0_threshold : float, optional
+            Threshold to consider a volume as b0. Used only if bvalues_files
+            is provided with 'median_otsu' method.
+        median_radius : int, optional
+            Radius (in voxels) of the applied median filter. Used only for
+            'median_otsu' method.
+        numpass : int, optional
+            Number of pass of the median filter. Used only for 'median_otsu'
+            method.
+        vol_idx : str, optional
+            1D array representing indices of ``axis=-1`` of a 4D
+            `input_volume`. From the command line use something like
+            '1,2,3-5,7'. Used only for 'median_otsu' method. This input is
+            required for 4D volumes if bval files are not provided. If bval
+            files are provided, vol_idx is ignored and b0 volumes are used
+            for mask computation.
+        dilate : int, optional
+            Number of iterations for binary dilation. Used only for
+            'median_otsu' method.
+        finalize_mask : bool, optional
+            Whether to remove potential holes or islands. Useful for solving
+            minor errors. Used only for 'median_otsu' method.
+        save_masked : bool, optional
+            Save the masked volume in addition to the mask.
+        use_cuda : bool, optional
+            Use CUDA for GPU acceleration. Used only for 'evac' and
+            'synthseg' methods.
+        out_dir : string or Path, optional
+            Output directory.
+        out_mask : string, optional
+            Name of the mask volume to be saved.
+        out_masked : string, optional
+            Name of the masked volume to be saved.
+        """
+        valid_methods = ["median_otsu", "synthseg", "evac"]
+        method = method.lower()
+
+        if method not in valid_methods:
+            logger.error(
+                f"Unknown method '{method}' for brain masking. "
+                f"Choose one of: {', '.join(valid_methods)}."
+            )
+            sys.exit(1)
+
+        if method == "synthseg" and not have_torch:
+            logger.warning(
+                "SynthSeg method requires PyTorch. Please install PyTorch to use "
+                "this method. Switching to 'median_otsu' method instead."
+            )
+            method = "median_otsu"
+
+        logger.info(f"Brain masking using method: '{method}'")
+
+        io_it = self.get_io_iterator()
+
+        if method == "median_otsu":
+            if vol_idx is not None and bvalues_files is not None and io_it:
+                logger.warning(
+                    "'vol_idx' parameter is ignored when 'bvalues_files' is "
+                    "provided."
+                )
+
+            if bvalues_files is not None and not isinstance(bvalues_files, list):
+                bvalues_files = [bvalues_files]
+
+            if len(bvalues_files or []) > 0 and io_it:
+                if len(bvalues_files) != len(io_it.inputs):
+                    logger.error(
+                        "Number of b-values files must match the number of "
+                        "input volumes."
+                    )
+                    sys.exit(1)
+
+            vol_idx = handle_vol_idx(vol_idx)
+
+        elif method == "evac":
+            logger.info("Loading EVACPlus model...")
+            from dipy.nn.evac import EVACPlus
+
+            evac_model = EVACPlus(use_cuda=use_cuda)
+            logger.info("EVACPlus model loaded.")
+
+        elif method == "synthseg":
+            logger.info("Loading SynthSeg model...")
+            synthseg_model = SynthSeg(use_cuda=use_cuda)
+            logger.info("SynthSeg model loaded.")
+
+        bvals_counter = 0
+        for fpath, mask_out_path, masked_out_path in io_it:
+            logger.info(f"Applying '{method}' brain masking on {fpath}")
+
+            data, affine, img = load_nifti(fpath, return_img=True)
+            logger.info(f"Input shape: {data.shape}")
+
+            if method == "median_otsu":
+                if not vol_idx and not bvalues_files and data.ndim == 4:
+                    logger.error(
+                        "Either 'vol_idx' or 'bvalues_files' must be provided "
+                        "for 'median_otsu' method."
+                    )
+                    sys.exit(1)
+                vol_idx_used = vol_idx
+                if bvalues_files is not None:
+                    bvals, _ = read_bvals_bvecs(bvalues_files[bvals_counter], None)
+                    bvals_counter += 1
+                    b0_indices = np.where(bvals <= b0_threshold)[0]
+                    vol_idx_used = b0_indices
+
+                logger.debug(f"vol_idx_used: {vol_idx_used}")
+                masked_volume, mask_volume = median_otsu(
+                    data,
+                    vol_idx=vol_idx_used,
+                    median_radius=median_radius,
+                    numpass=numpass,
+                    dilate=dilate,
+                    finalize_mask=finalize_mask,
+                )
+
+            elif method == "evac":
+                if data.ndim == 4:
+                    logger.warning(
+                        f"{fpath} is a 4D image. Only the first volume will "
+                        "be used for 'evac' brain masking."
+                    )
+                    data = data[..., 0]
+                mask_volume = evac_model.predict(data, affine)
+                masked_volume = data * mask_volume
+
+            elif method == "synthseg":
+                if data.ndim == 4:
+                    logger.warning(
+                        f"{fpath} is a 4D image. Only the first volume will "
+                        "be used for 'synthseg' brain masking."
+                    )
+                    data = data[..., 0]
+                _, _, mask_volume = synthseg_model.predict(data, affine)
+                masked_volume = data * mask_volume
+
+            save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
+            logger.info(f"Mask saved as {mask_out_path}")
+
+            if save_masked:
+                save_nifti(masked_out_path, masked_volume, affine, hdr=img.header)
+                logger.info(f"Masked volume saved as {masked_out_path}")
+
+            logger.info(f"Brain masking of {fpath} completed.")
+
+        logger.info("Brain masking finished.")
         return io_it
