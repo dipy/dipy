@@ -1701,7 +1701,7 @@ def _serve_html_report(report_path):
 # TODO:
 # - handle maskfile, check binary, % of white voxels.
 # - Add opposite phase encoding (AP/PA)
-# - handle incorrect --start name.
+# - ~~handle incorrect --start name.~~
 # - Create dipy_brain_mask workflow and add to pipelines
 #   (SynthSeg, median_otsu, PUMBA, EVAC+)
 # - Create dipy_denoise
