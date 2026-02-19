@@ -14,6 +14,7 @@ from datetime import datetime
 import importlib
 import inspect
 import os
+from pathlib import Path
 import re
 import sys
 import time
@@ -882,7 +883,13 @@ def discover_stage_outputs(*, stage_name, stage_config, io_config):
 
 
 def execute_semantic_pipeline(
-    *, config, io_config, config_file_path=None, start=None, dry_run=False
+    *,
+    config,
+    io_config,
+    config_file_path=None,
+    report_path=None,
+    start=None,
+    dry_run=False,
 ):
     """Execute pipeline using semantic DAG-based approach.
 
@@ -894,6 +901,9 @@ def execute_semantic_pipeline(
         IO configuration.
     config_file_path : str, optional
         Path to configuration file for report linking.
+    report_path : str, optional
+        Path for the HTML report file. Defaults to
+        ``pipeline_report.html`` in the output directory.
     start : str, optional
         Stage name to start execution from. Earlier stages will be skipped,
         but their outputs must exist on disk.
@@ -1066,7 +1076,10 @@ def execute_semantic_pipeline(
         "execution_order": execution_order,
     }
 
-    report_path = os.path.join(io_config.get("out_dir", "."), "pipeline_report.html")
+    if report_path is None:
+        report_path = os.path.join(
+            io_config.get("out_dir", "."), "pipeline_report.html"
+        )
 
     try:
         report_path = report.generate_html_report(
@@ -1078,7 +1091,7 @@ def execute_semantic_pipeline(
         logger.info("To view the report with interactive 3D viewers:")
         logger.info(f"  cd {io_config.get('out_dir', '.')}")
         logger.info("  python -m http.server 8000")
-        logger.info("  Then open: http://localhost:8000/pipeline_report.html")
+        logger.info(f"  Then open: http://localhost:8000/{Path(report_path).name}")
         logger.info("=" * 70)
     except Exception as e:
         logger.warning(f"Failed to generate HTML report: {e}")
@@ -1090,6 +1103,60 @@ def execute_semantic_pipeline(
 # =============================================================================
 # AutoFlow Workflow
 # =============================================================================
+
+
+def _serve_html_report(report_path):
+    """Serve an HTML pipeline report via a local HTTP server and open it.
+
+    Starts a ``http.server`` rooted at the report's directory, opens the
+    default browser, and blocks until the user presses Ctrl+C.
+
+    Parameters
+    ----------
+    report_path : str or Path
+        Path to the HTML report file (e.g., ``pipeline_report.html``).
+    """
+    import functools
+    import http.server
+    import socket
+    import socketserver
+    import webbrowser
+
+    report_path = Path(report_path).resolve()
+    report_dir = str(report_path.parent)
+    report_name = report_path.name
+
+    port = 8000
+    while True:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("", port))
+                break
+            except OSError:
+                port += 1
+
+    handler = functools.partial(
+        http.server.SimpleHTTPRequestHandler, directory=report_dir
+    )
+    url = f"http://localhost:{port}/{report_name}"
+    logger.info(f"Serving report at: {url}")
+    logger.info("Press Ctrl+C to stop the server.")
+    webbrowser.open(url)
+    with socketserver.TCPServer(("", port), handler) as httpd:
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            logger.info("Server stopped.")
+
+
+# TODO:
+# - handle maskfile, check binary, % of white voxels.
+# - Add opposite phase encoding (AP/PA)
+# - handle incorrect --start name.
+# - Create dipy_brain_mask workflow and add to pipelines
+#   (SynthSeg, median_otsu, PUMBA, EVAC+)
+# - Create dipy_denoise
+# - dipy cluster qbx
 
 
 class AutoFlow(Workflow):
@@ -1116,10 +1183,7 @@ class AutoFlow(Workflow):
 
     def run(
         self,
-        config_file=None,
-        dwi_file=None,
-        bvals_file=None,
-        bvecs_file=None,
+        input_files,
         t1_file=None,
         mask_file=None,
         dwi_opp_phase_file=None,
@@ -1138,14 +1202,16 @@ class AutoFlow(Workflow):
 
         Parameters
         ----------
-        config_file : str, optional
-            Path to the TOML configuration file with [[pipeline]] sections.
-        dwi_file : str, optional
-            Path to the diffusion weighted images.
-        bvals_file : str, optional
-            Path to the bvals file.
-        bvecs_file : str, optional
-            Path to the bvec file.
+        input_files : variable str
+            Input files passed to the pipeline. File types are detected
+            automatically from their extensions (case-insensitive):
+
+            - ``.toml`` — pipeline configuration file.
+            - ``.nii`` / ``.nii.gz`` — DWI NIfTI file.
+            - ``.bval`` / ``.bvals`` — b-values file.
+            - ``.bvec`` / ``.bvecs`` — b-vectors file.
+            - ``*report*.html`` — HTML report; all other inputs are ignored
+              and the report is served via a local HTTP server.
         t1_file : str, optional
             Path to the T1 file.
         mask_file : str, optional
@@ -1187,6 +1253,38 @@ class AutoFlow(Workflow):
                 templates.list_pipelines_with_descriptions(log_level=current_log_level)
             )
             return
+
+        # =====================================================================
+        # Detect file types from input_files
+        # =====================================================================
+
+        config_file = None
+        dwi_file = None
+        bvals_file = None
+        bvecs_file = None
+
+        for f in input_files:
+            p = Path(f)
+            name_lower = p.name.lower()
+            full_suffix = "".join(p.suffixes).lower()
+
+            if re.match(r".*report.*\.html$", name_lower):
+                logger.info(
+                    f"HTML report detected: {f}. "
+                    "Ignoring all other inputs and opening report."
+                )
+                _serve_html_report(f)
+                return
+            elif full_suffix == ".toml":
+                config_file = f
+            elif full_suffix in (".nii.gz", ".nii"):
+                dwi_file = f
+            elif p.suffix.lower() in (".bval", ".bvals"):
+                bvals_file = f
+            elif p.suffix.lower() in (".bvec", ".bvecs"):
+                bvecs_file = f
+            else:
+                logger.warning(f"Unrecognized file type, ignoring: {f}")
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         out_dir = os.path.abspath(out_dir) or os.getcwd()
@@ -1291,7 +1389,7 @@ class AutoFlow(Workflow):
             os.makedirs(out_dir, exist_ok=True)
 
             pipeline_name = pipeline_type or "default"
-            config_filename = f"{pipeline_name}_pipeline_{timestamp}.toml"
+            config_filename = f"{timestamp}_{pipeline_name}_pipeline.toml"
             config_file = os.path.join(out_dir, config_filename)
 
             formatted_toml = format_toml_config(config)
@@ -1366,7 +1464,7 @@ class AutoFlow(Workflow):
         io_config["out_dir"] = os.path.abspath(io_config["out_dir"])
         os.makedirs(io_config["out_dir"], exist_ok=True)
 
-        log_file_path = os.path.join(io_config["out_dir"], f"dipy_auto_{timestamp}.log")
+        log_file_path = os.path.join(io_config["out_dir"], f"{timestamp}_dipy_auto.log")
         add_file_handler(filename=log_file_path, level=logger.getEffectiveLevel())
         logger.info(f"Log file: {log_file_path}")
 
@@ -1512,10 +1610,14 @@ class AutoFlow(Workflow):
         logger.info(f"  Dry run: {dry_run}")
         logger.info("")
 
+        pipeline_report_path = os.path.join(
+            io_config["out_dir"], f"{timestamp}_pipeline_report.html"
+        )
         execute_semantic_pipeline(
             config=config,
             io_config=io_config,
             config_file_path=config_file,
+            report_path=pipeline_report_path,
             start=start,
             dry_run=dry_run,
         )
