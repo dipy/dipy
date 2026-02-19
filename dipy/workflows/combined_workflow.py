@@ -11,6 +11,7 @@ and automatic DAG-based wiring. The pipeline:
 
 from collections import defaultdict, deque
 from datetime import datetime
+import difflib
 import importlib
 import inspect
 import os
@@ -914,6 +915,16 @@ def execute_semantic_pipeline(
     if not pipeline_stages:
         raise ValueError("No [[pipeline]] sections found in configuration")
 
+    stage_names = [s["name"] for s in pipeline_stages]
+
+    if start is not None and start not in stage_names:
+        suggestions = difflib.get_close_matches(start, stage_names, n=3, cutoff=0.6)
+        msg = f"Stage '{start}' not found in pipeline."
+        if suggestions:
+            msg += f" Did you mean: {', '.join(suggestions)}?"
+        msg += f" Available stages: {', '.join(stage_names)}"
+        raise ValueError(msg)
+
     logger.info(f"Building pipeline with {len(pipeline_stages)} stages...")
 
     is_valid, validation_errors = validate_pipeline_config(pipeline_stages)
@@ -989,11 +1000,6 @@ def execute_semantic_pipeline(
     pipeline_start_time = time.perf_counter()
 
     if start:
-        if start not in execution_order:
-            logger.error(f"Start stage '{start}' not found in pipeline")
-            logger.error(f"Available stages: {', '.join(execution_order)}")
-            sys.exit(1)
-
         start_idx = execution_order.index(start)
         skipped_stages = execution_order[:start_idx]
 
@@ -1152,7 +1158,7 @@ def _serve_html_report(report_path):
 # TODO:
 # - handle maskfile, check binary, % of white voxels.
 # - Add opposite phase encoding (AP/PA)
-# - handle incorrect --start name.
+# - ~~handle incorrect --start name.~~
 # - Create dipy_brain_mask workflow and add to pipelines
 #   (SynthSeg, median_otsu, PUMBA, EVAC+)
 # - Create dipy_denoise
