@@ -348,8 +348,8 @@ def test_diffeomorphic_map_simplification_3d():
     domain_sphere = vfu.create_sphere(
         domain_shape[0], domain_shape[1], domain_shape[2], radius
     )
-    expected = diff_map.transform(domain_sphere, interpolation="linear")
-    warped = simplified.transform(domain_sphere, interpolation="linear")
+    expected = diff_map.transform_inverse(domain_sphere, interpolation="linear")
+    warped = simplified.transform_inverse(domain_sphere, interpolation="linear")
 
     assert_array_almost_equal(warped, expected)
 
