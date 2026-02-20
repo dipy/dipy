@@ -38,8 +38,6 @@ possible. This means that the tests written cause each and every statement in
 the code to be executed, covering corner-cases, error-handling, and logical
 branch points. To check how much coverage the tests have, you will need to run:
 
-When running:
-
     coverage run -m pytest -s --doctest-modules --verbose dipy
 
 You will get the usual output of pytest, but also a table that indicates the test
