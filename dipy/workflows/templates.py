@@ -359,7 +359,7 @@ b0_threshold = 50
 
 [[pipeline]]
 name = "brain_mask"
-cli = "dipy_median_otsu"
+cli = "dipy_brain_mask"
 input_files = "${reslice.out_resliced}"
 bvalues_files = ["${io.bvals}"]
 median_radius = 2
@@ -388,7 +388,7 @@ cli = "dipy_correct_biasfield"
 input_files = "${motion_correction.out_moved}"
 bval = "${io.bvals}"
 bvec = "${io.bvecs}"
-method = "b0"
+method = "auto"
 
 # Step 5: Denoising with Patch2Self
 [[pipeline]]
