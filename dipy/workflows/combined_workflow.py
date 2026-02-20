@@ -17,9 +17,13 @@ import inspect
 import os
 from pathlib import Path
 import re
+import shutil
 import sys
 import time
 
+import numpy as np
+
+from dipy.io.image import load_nifti, load_nifti_data
 from dipy.utils.logging import add_file_handler, logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows import templates
@@ -883,6 +887,110 @@ def discover_stage_outputs(*, stage_name, stage_config, io_config):
     return discovered
 
 
+def estimate_pipeline_disk_usage(*, pipeline_stages, io_config):
+    """Estimate total disk space required by pipeline output files.
+
+    Uses a header-only load of the DWI file (no data read into memory) to
+    determine voxel dimensions and dtype.  For each output parameter in each
+    stage a size multiplier is applied depending on the parameter name or the
+    default filename extension.
+
+    Parameters
+    ----------
+    pipeline_stages : list
+        List of stage configurations from [[pipeline]] sections.
+    io_config : dict
+        IO configuration dictionary with at least ``dwi`` and ``out_dir``.
+
+    Returns
+    -------
+    tuple
+        ``(total_bytes, itemized)`` where *total_bytes* is the integer sum of
+        all estimated output sizes and *itemized* is a list of
+        ``(stage_name, filename, bytes)`` tuples — one per output parameter.
+    """
+    # Multipliers in units of "one compressed 3-D volume"
+    _PARAM_MULTIPLIERS = {
+        "out_denoised": None,  # → n_vols
+        "out_tensor": 6,
+        "out_evec": 9,
+        "out_eval": 3,
+        "out_shm": None,  # → n_vols
+        "out_peaks_dir": 15,
+        "out_peaks_values": 5,
+        "out_peaks_indices": 5,
+    }
+    _EXT_MULTIPLIERS = {
+        "pam5": 10,
+        "trk": 20,
+        "trx": 20,
+        "txt": 0,
+        "mat": 0,
+        "npz": 0,
+    }
+
+    dwi_path = io_config.get("dwi", "")
+    single_3d_bytes = 0
+    n_vols = 1
+
+    if dwi_path and os.path.exists(dwi_path):
+        try:
+            _, _, img = load_nifti(dwi_path, return_img=True, as_ndarray=False)
+            shape = img.shape
+            itemsize = np.dtype(img.header.get_data_dtype()).itemsize
+            x, y, z = shape[0], shape[1], shape[2]
+            n_vols = int(shape[3]) if len(shape) > 3 else 1
+            # 0.30 ≈ typical gzip compression ratio for brain MRI
+            single_3d_bytes = int(x * y * z * itemsize * 0.30)
+        except Exception as exc:
+            logger.debug(f"Could not read DWI header for disk estimation: {exc}")
+
+    itemized = []
+    total_bytes = 0
+
+    for stage in pipeline_stages:
+        stage_name = stage.get("name", "unknown")
+        cli_name = stage.get("cli")
+
+        if not cli_name or cli_name not in cli_flows:
+            continue
+
+        try:
+            module_name, class_name = cli_flows[cli_name]
+            module = importlib.import_module(module_name)
+            workflow_class = getattr(module, class_name)
+            sig = inspect.signature(workflow_class.run)
+        except Exception as exc:
+            logger.debug(f"Could not introspect {cli_name} for disk estimation: {exc}")
+            continue
+
+        for param_name, param in sig.parameters.items():
+            if not param_name.startswith("out_") or param_name == "out_dir":
+                continue
+
+            # Resolve default filename
+            if param.default is inspect.Parameter.empty:
+                base = param_name.replace("out_", "", 1)
+                filename = f"{base}.nii.gz"
+            else:
+                filename = str(param.default)
+
+            # Choose multiplier: param name → extension → default (1 scalar vol)
+            if param_name in _PARAM_MULTIPLIERS:
+                mult = _PARAM_MULTIPLIERS[param_name]
+                if mult is None:
+                    mult = n_vols
+            else:
+                ext = filename.split(".", 1)[1].lower() if "." in filename else "nii.gz"
+                mult = _EXT_MULTIPLIERS.get(ext, 1)
+
+            item_bytes = mult * single_3d_bytes
+            total_bytes += item_bytes
+            itemized.append((stage_name, filename, item_bytes))
+
+    return total_bytes, itemized
+
+
 def execute_semantic_pipeline(
     *,
     config,
@@ -986,6 +1094,54 @@ def execute_semantic_pipeline(
                 f"Configuration with resolved conflicts saved to: {config_file_path}"
             )
 
+    # ------------------------------------------------------------------
+    # Disk space estimation (always shown, including dry-run)
+    # ------------------------------------------------------------------
+    total_bytes, disk_itemized = estimate_pipeline_disk_usage(
+        pipeline_stages=pipeline_stages, io_config=io_config
+    )
+
+    def _fmt_bytes(b):
+        if b >= 1_000_000_000:
+            return f"{b / 1_000_000_000:.1f} GB"
+        if b >= 1_000_000:
+            return f"{b / 1_000_000:.0f} MB"
+        if b >= 1_000:
+            return f"{b / 1_000:.0f} KB"
+        return f"{b} B"
+
+    if disk_itemized:
+        logger.info("=" * 60)
+        logger.info("Estimated disk usage:")
+        col1 = max(len(s) for s, _, _ in disk_itemized)
+        col2 = max(len(f) for _, f, _ in disk_itemized)
+        for stage_name, filename, item_bytes in disk_itemized:
+            size_str = f"~{_fmt_bytes(item_bytes)}" if item_bytes else "negligible"
+            logger.info(f"  {stage_name:<{col1}}  {filename:<{col2}}  {size_str}")
+        logger.info(f"  {'TOTAL':<{col1}}  {'': <{col2}}  ~{_fmt_bytes(total_bytes)}")
+        out_dir_check = io_config.get("out_dir", ".")
+        try:
+            free_bytes = shutil.disk_usage(out_dir_check).free
+            free_str = _fmt_bytes(free_bytes)
+            avail_label = f"Available on {out_dir_check}:"
+            pad = col1 + col2 + 4
+            if free_bytes < total_bytes:
+                logger.error(f"  {avail_label:<{pad}}  {free_str}")
+                logger.error(
+                    f"Insufficient disk space: need ~{_fmt_bytes(total_bytes)}, "
+                    f"have {free_str} on '{out_dir_check}'"
+                )
+                sys.exit(1)
+            elif free_bytes < int(total_bytes * 1.5):
+                logger.warning(f"  {avail_label:<{pad}}  {free_str}  ⚠ LOW MARGIN")
+            else:
+                logger.info(f"  {avail_label:<{pad}}  {free_str}  ✓")
+        except SystemExit:
+            raise
+        except Exception as exc:
+            logger.debug(f"Could not check free disk space on '{out_dir_check}': {exc}")
+        logger.info("=" * 60)
+
     if dry_run:
         logger.info("[Dry run mode] Pipeline plan shown above - no execution performed")
         return
@@ -1033,9 +1189,49 @@ def execute_semantic_pipeline(
         logger.info(f"Executing stages: {' → '.join(execution_order)}")
         logger.info("")
 
+    # =====================================================================
+    # User-provided mask priority injection
+    # Pre-populate resolved_outputs for any stage that produces out_mask so
+    # those stages are transparently skipped in favour of the user's mask.
+    # This runs AFTER the --start block so it always wins over discovered
+    # outputs as well.
+    # =====================================================================
+
+    user_mask_stages = set()
+    if io_config.get("mask"):
+        for stage in pipeline_stages:
+            cli_name = stage.get("cli", "")
+            if not cli_name:
+                continue
+            try:
+                stage_outputs = introspect_workflow_outputs(cli_name)
+            except Exception:
+                continue
+            if "out_mask" in stage_outputs:
+                sname = stage["name"]
+                resolved_outputs.setdefault(sname, {})["out_mask"] = io_config["mask"]
+                user_mask_stages.add(sname)
+                logger.info(
+                    f"Skipping stage '{sname}' — using user-provided mask: "
+                    f"{io_config['mask']}"
+                )
+
     for stage_name in execution_order:
         stage_config = stage_map[stage_name]
         stage_start = time.perf_counter()
+
+        if stage_name in user_mask_stages:
+            stages_info.append(
+                {
+                    "name": stage_name,
+                    "cli": stage_config.get("cli"),
+                    "duration": 0.0,
+                    "success": True,
+                    "outputs": resolved_outputs.get(stage_name, {}),
+                    "skipped": "user_mask",
+                }
+            )
+            continue
 
         try:
             outputs = execute_pipeline_stage(
@@ -1106,9 +1302,44 @@ def execute_semantic_pipeline(
         logger.debug(traceback.format_exc())
 
 
-# =============================================================================
-# AutoFlow Workflow
-# =============================================================================
+def _validate_mask_file(mask_file):
+    """Validate that a mask file is binary and has sufficient brain coverage.
+
+    Parameters
+    ----------
+    mask_file : str
+        Path to the NIfTI mask file.
+
+    Raises
+    ------
+    SystemExit
+        If the file cannot be loaded, is not binary, or covers less than
+        25 % of the volume.
+    """
+    try:
+        data = load_nifti_data(mask_file)
+    except Exception as e:
+        logger.error(f"Cannot load mask file '{mask_file}': {e}")
+        sys.exit(1)
+
+    unique_vals = np.unique(data)
+    non_zero = unique_vals[unique_vals != 0]
+    if len(non_zero) > 1:
+        logger.error(
+            f"Mask '{mask_file}' is not binary: "
+            f"found {len(unique_vals)} unique values ({unique_vals[:8]}...)."
+        )
+        sys.exit(1)
+
+    coverage = float((data > 0).sum()) / data.size
+    if coverage < 0.25:
+        logger.error(
+            f"Mask '{mask_file}' has insufficient coverage: "
+            f"{coverage:.1%} of voxels are non-zero (minimum 25 % required)."
+        )
+        sys.exit(1)
+
+    logger.info(f"✓ Mask validated: binary, {coverage:.1%} coverage — {mask_file}")
 
 
 def _serve_html_report(report_path):
@@ -1155,11 +1386,14 @@ def _serve_html_report(report_path):
             logger.info("Server stopped.")
 
 
+# =============================================================================
+# AutoFlow Workflow
+# =============================================================================
 # TODO:
-# - handle maskfile, check binary, % of white voxels.
+# - Done: handle maskfile, check binary, % of white voxels.
 # - Add opposite phase encoding (AP/PA)
-# - ~~handle incorrect --start name.~~
-# - Create dipy_brain_mask workflow and add to pipelines
+# - Done: handle incorrect --start name.
+# - Done: Create dipy_brain_mask workflow and add to pipelines
 #   (SynthSeg, median_otsu, PUMBA, EVAC+)
 # - Create dipy_denoise
 # - dipy cluster qbx
@@ -1490,6 +1724,14 @@ class AutoFlow(Workflow):
                 if existing and existing != cli_value:
                     logger.warning(f"Overriding {config_key}: {existing} → {cli_value}")
                 io_config[config_key] = cli_value
+
+        # =================================================================
+        # Mask File Validation
+        # =================================================================
+
+        if mask_file:
+            _validate_mask_file(mask_file)
+            io_config["mask"] = mask_file
 
         # =================================================================
         # Auto-download Atlas if needed for SLR or RecoBundles
