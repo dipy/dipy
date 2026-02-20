@@ -15,6 +15,15 @@ import difflib
 import importlib
 import inspect
 import os
+
+# PyTorch wheels on macOS bundle their own libomp.dylib, which conflicts with
+# the conda/Homebrew libomp.dylib loaded by scipy/numpy.  Both are LLVM libomp
+# (the same implementation), so duplicate-loading is safe: the second
+# initialisation becomes a no-op and there is no thread-pool corruption risk.
+# This must be set before any import that transitively loads libomp (e.g.
+# importlib.import_module("dipy.workflows.segment") pulls in all of torch).
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 from pathlib import Path
 import re
 import shutil
@@ -648,7 +657,103 @@ def resolve_output_conflicts(*, config, conflicts):
     return warnings
 
 
-def execute_pipeline_stage(*, stage_name, stage_config, resolved_outputs, io_config):
+# ---------------------------------------------------------------------------
+# Subprocess isolation for PyTorch-based stages
+# ---------------------------------------------------------------------------
+# CLIs that bundle PyTorch (libiomp5) must run in a spawned subprocess so
+# that the Intel OpenMP runtime never shares a process with the LLVM/Apple
+# OpenMP runtime (libomp) already loaded by scipy/numpy.  Using spawn (not
+# fork) gives the child a clean address space with no inherited OpenMP state.
+_ISOLATED_STAGE_CLIS = frozenset(["dipy_brain_mask"])
+
+
+def _stage_worker(*, queue, module_name, class_name, init_params, run_params):
+    """Worker run inside a spawned subprocess for OpenMP-isolated stages.
+
+    Parameters
+    ----------
+    queue : multiprocessing.Queue
+        Used to pass ``last_generated_outputs`` back to the parent.
+    module_name : str
+        Dotted module path of the workflow.
+    class_name : str
+        Class name of the workflow inside *module_name*.
+    init_params : dict
+        Keyword arguments forwarded to ``workflow.__init__``.
+    run_params : dict
+        Keyword arguments forwarded to ``workflow.run``.
+    """
+    import importlib
+    import os
+
+    # PyTorch wheels on macOS bundle their own libomp.dylib, which conflicts
+    # with the conda/Homebrew libomp.dylib loaded by scipy/numpy.  Both are
+    # LLVM libomp (same implementation), so duplicate-loading is safe: the
+    # second initialisation is a no-op and there is no thread-pool corruption
+    # risk (unlike Intel libiomp5 + LLVM libomp, which are incompatible).
+    # Setting this here — before any import — ensures it is active before
+    # either copy is loaded.  This is safe only because this function runs
+    # in a spawned subprocess with no inherited OpenMP state from the parent.
+    os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
+    module = importlib.import_module(module_name)
+    workflow_class = getattr(module, class_name)
+    workflow = workflow_class(**init_params)
+    workflow.run(**run_params)
+    queue.put(getattr(workflow, "last_generated_outputs", None))
+
+
+def _execute_stage_isolated(*, module_name, class_name, init_params, run_params):
+    """Run a workflow stage in a spawned subprocess.
+
+    Parameters
+    ----------
+    module_name : str
+        Dotted module path of the workflow.
+    class_name : str
+        Class name of the workflow inside *module_name*.
+    init_params : dict
+        Keyword arguments forwarded to ``workflow.__init__``.
+    run_params : dict
+        Keyword arguments forwarded to ``workflow.run``.
+
+    Returns
+    -------
+    object
+        The value of ``workflow.last_generated_outputs`` from the child
+        process, or ``None`` if the attribute was absent.
+
+    Raises
+    ------
+    RuntimeError
+        If the child process exits with a non-zero exit code.
+    """
+    import multiprocessing as mp
+
+    ctx = mp.get_context("spawn")
+    queue = ctx.Queue()
+    proc = ctx.Process(
+        target=_stage_worker,
+        kwargs={
+            "queue": queue,
+            "module_name": module_name,
+            "class_name": class_name,
+            "init_params": init_params,
+            "run_params": run_params,
+        },
+    )
+    proc.start()
+    proc.join()
+    if proc.exitcode != 0:
+        raise RuntimeError(
+            f"Isolated stage subprocess exited with code {proc.exitcode}"
+        )
+    return queue.get_nowait()
+
+
+def execute_pipeline_stage(
+    *, stage_name, stage_config, resolved_outputs, io_config, force=False
+):
     """Execute a single pipeline stage.
 
     Parameters
@@ -661,6 +766,9 @@ def execute_pipeline_stage(*, stage_name, stage_config, resolved_outputs, io_con
         Previously resolved outputs from upstream stages.
     io_config : dict
         IO configuration.
+    force : bool
+        If ``True``, overwrite existing output files. Overrides any
+        stage-level ``force`` setting from the configuration.
 
     Returns
     -------
@@ -709,6 +817,11 @@ def execute_pipeline_stage(*, stage_name, stage_config, resolved_outputs, io_con
             if param.default != inspect.Parameter.empty:
                 init_params[param_name] = param.default
 
+    # Pipeline-level --force overrides any stage-level force setting
+    if force and "force" in init_sig.parameters:
+        init_params["force"] = True
+        logger.debug(f"Stage '{stage_name}': force overwrite enabled")
+
     # Get run() parameters
     sig = inspect.signature(workflow_class.run)
     valid_params = {
@@ -730,28 +843,41 @@ def execute_pipeline_stage(*, stage_name, stage_config, resolved_outputs, io_con
 
     final_params = {**valid_params, **workflow_params}
 
+    isolated = cli_name in _ISOLATED_STAGE_CLIS
+    if isolated:
+        logger.debug(
+            f"Stage '{stage_name}' uses PyTorch — running in isolated subprocess"
+        )
+
     logger.info(f"Executing stage '{stage_name}' using {cli_name}...")
     t_start = time.perf_counter()
 
     try:
-        workflow = workflow_class(**init_params)
-        workflow.run(**final_params)
+        if isolated:
+            last_outputs = _execute_stage_isolated(
+                module_name=module_name,
+                class_name=class_name,
+                init_params=init_params,
+                run_params=final_params,
+            )
+        else:
+            workflow = workflow_class(**init_params)
+            workflow.run(**final_params)
+            last_outputs = getattr(workflow, "last_generated_outputs", None)
 
         stage_outputs = {}
-        if hasattr(workflow, "last_generated_outputs"):
-            if isinstance(workflow.last_generated_outputs, dict):
-                stage_outputs = workflow.last_generated_outputs
+        if last_outputs is not None:
+            if isinstance(last_outputs, dict):
+                stage_outputs = last_outputs
                 logger.debug(f"Stage '{stage_name}' outputs (dict): {stage_outputs}")
-            elif isinstance(workflow.last_generated_outputs, list):
+            elif isinstance(last_outputs, list):
                 outputs = introspect_workflow_outputs(cli_name)
                 sorted_params = sorted(outputs)
                 logger.debug(
                     f"Stage '{stage_name}' - sorted params: {sorted_params}, "
-                    f"files: {workflow.last_generated_outputs}"
+                    f"files: {last_outputs}"
                 )
-                for out_param, out_file in zip(
-                    sorted_params, workflow.last_generated_outputs
-                ):
+                for out_param, out_file in zip(sorted_params, last_outputs):
                     stage_outputs[out_param] = out_file
                 logger.debug(f"Stage '{stage_name}' outputs (zipped): {stage_outputs}")
 
@@ -999,6 +1125,7 @@ def execute_semantic_pipeline(
     report_path=None,
     start=None,
     dry_run=False,
+    force=False,
 ):
     """Execute pipeline using semantic DAG-based approach.
 
@@ -1018,6 +1145,8 @@ def execute_semantic_pipeline(
         but their outputs must exist on disk.
     dry_run : bool
         If True, only show execution plan.
+    force : bool
+        If ``True``, overwrite existing output files for every stage.
     """
     pipeline_stages = config.get("pipeline", [])
     if not pipeline_stages:
@@ -1154,6 +1283,7 @@ def execute_semantic_pipeline(
     stage_map = {stage["name"]: stage for stage in pipeline_stages}
     stages_info = []
     pipeline_start_time = time.perf_counter()
+    full_execution_order = list(execution_order)  # preserve before --start trimming
 
     if start:
         start_idx = execution_order.index(start)
@@ -1184,6 +1314,17 @@ def execute_semantic_pipeline(
                         f"No outputs found for skipped stage '{skipped_stage}'. "
                         f"This may cause errors if later stages depend on it."
                     )
+
+                stages_info.append(
+                    {
+                        "name": skipped_stage,
+                        "cli": stage_config.get("cli"),
+                        "duration": None,
+                        "success": True,
+                        "outputs": resolved_outputs.get(skipped_stage, {}),
+                        "skipped": "restart",
+                    }
+                )
 
         execution_order = execution_order[start_idx:]
         logger.info(f"Executing stages: {' → '.join(execution_order)}")
@@ -1239,6 +1380,7 @@ def execute_semantic_pipeline(
                 stage_config=stage_config,
                 resolved_outputs=resolved_outputs,
                 io_config=io_config,
+                force=force,
             )
             resolved_outputs[stage_name] = outputs
 
@@ -1275,7 +1417,7 @@ def execute_semantic_pipeline(
         "stages": stages_info,
         "total_time": total_time,
         "dag_visualization": dag_viz,
-        "execution_order": execution_order,
+        "execution_order": full_execution_order,
     }
 
     if report_path is None:
@@ -1290,10 +1432,8 @@ def execute_semantic_pipeline(
         logger.info(f"HTML report generated: {report_path}")
         logger.info("")
         logger.info("=" * 70)
-        logger.info("To view the report with interactive 3D viewers:")
-        logger.info(f"  cd {io_config.get('out_dir', '.')}")
-        logger.info("  python -m http.server 8000")
-        logger.info(f"  Then open: http://localhost:8000/{Path(report_path).name}")
+        logger.info("To visualize results with interactive 3D viewers, run:")
+        logger.info(f"  dipy_auto {report_path}")
         logger.info("=" * 70)
     except Exception as e:
         logger.warning(f"Failed to generate HTML report: {e}")
@@ -1868,4 +2008,5 @@ class AutoFlow(Workflow):
             report_path=pipeline_report_path,
             start=start,
             dry_run=dry_run,
+            force=self._force_overwrite,
         )
