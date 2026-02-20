@@ -648,7 +648,9 @@ def resolve_output_conflicts(*, config, conflicts):
     return warnings
 
 
-def execute_pipeline_stage(*, stage_name, stage_config, resolved_outputs, io_config):
+def execute_pipeline_stage(
+    *, stage_name, stage_config, resolved_outputs, io_config, force=False
+):
     """Execute a single pipeline stage.
 
     Parameters
@@ -661,6 +663,9 @@ def execute_pipeline_stage(*, stage_name, stage_config, resolved_outputs, io_con
         Previously resolved outputs from upstream stages.
     io_config : dict
         IO configuration.
+    force : bool
+        If ``True``, overwrite existing output files. Overrides any
+        stage-level ``force`` setting from the configuration.
 
     Returns
     -------
@@ -708,6 +713,11 @@ def execute_pipeline_stage(*, stage_name, stage_config, resolved_outputs, io_con
             param = init_sig.parameters[param_name]
             if param.default != inspect.Parameter.empty:
                 init_params[param_name] = param.default
+
+    # Pipeline-level --force overrides any stage-level force setting
+    if force and "force" in init_sig.parameters:
+        init_params["force"] = True
+        logger.debug(f"Stage '{stage_name}': force overwrite enabled")
 
     # Get run() parameters
     sig = inspect.signature(workflow_class.run)
@@ -999,6 +1009,7 @@ def execute_semantic_pipeline(
     report_path=None,
     start=None,
     dry_run=False,
+    force=False,
 ):
     """Execute pipeline using semantic DAG-based approach.
 
@@ -1018,6 +1029,8 @@ def execute_semantic_pipeline(
         but their outputs must exist on disk.
     dry_run : bool
         If True, only show execution plan.
+    force : bool
+        If ``True``, overwrite existing output files for every stage.
     """
     pipeline_stages = config.get("pipeline", [])
     if not pipeline_stages:
@@ -1154,6 +1167,7 @@ def execute_semantic_pipeline(
     stage_map = {stage["name"]: stage for stage in pipeline_stages}
     stages_info = []
     pipeline_start_time = time.perf_counter()
+    full_execution_order = list(execution_order)  # preserve before --start trimming
 
     if start:
         start_idx = execution_order.index(start)
@@ -1184,6 +1198,17 @@ def execute_semantic_pipeline(
                         f"No outputs found for skipped stage '{skipped_stage}'. "
                         f"This may cause errors if later stages depend on it."
                     )
+
+                stages_info.append(
+                    {
+                        "name": skipped_stage,
+                        "cli": stage_config.get("cli"),
+                        "duration": None,
+                        "success": True,
+                        "outputs": resolved_outputs.get(skipped_stage, {}),
+                        "skipped": "restart",
+                    }
+                )
 
         execution_order = execution_order[start_idx:]
         logger.info(f"Executing stages: {' → '.join(execution_order)}")
@@ -1239,6 +1264,7 @@ def execute_semantic_pipeline(
                 stage_config=stage_config,
                 resolved_outputs=resolved_outputs,
                 io_config=io_config,
+                force=force,
             )
             resolved_outputs[stage_name] = outputs
 
@@ -1275,7 +1301,7 @@ def execute_semantic_pipeline(
         "stages": stages_info,
         "total_time": total_time,
         "dag_visualization": dag_viz,
-        "execution_order": execution_order,
+        "execution_order": full_execution_order,
     }
 
     if report_path is None:
@@ -1290,10 +1316,8 @@ def execute_semantic_pipeline(
         logger.info(f"HTML report generated: {report_path}")
         logger.info("")
         logger.info("=" * 70)
-        logger.info("To view the report with interactive 3D viewers:")
-        logger.info(f"  cd {io_config.get('out_dir', '.')}")
-        logger.info("  python -m http.server 8000")
-        logger.info(f"  Then open: http://localhost:8000/{Path(report_path).name}")
+        logger.info("To visualize results with interactive 3D viewers, run:")
+        logger.info(f"  dipy_auto {report_path}")
         logger.info("=" * 70)
     except Exception as e:
         logger.warning(f"Failed to generate HTML report: {e}")
@@ -1868,4 +1892,5 @@ class AutoFlow(Workflow):
             report_path=pipeline_report_path,
             start=start,
             dry_run=dry_run,
+            force=self._force_overwrite,
         )
