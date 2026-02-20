@@ -1698,11 +1698,14 @@ def _serve_html_report(report_path):
             logger.info("Server stopped.")
 
 
+# =============================================================================
+# AutoFlow Workflow
+# =============================================================================
 # TODO:
-# - handle maskfile, check binary, % of white voxels.
+# - Done: handle maskfile, check binary, % of white voxels.
 # - Add opposite phase encoding (AP/PA)
-# - ~~handle incorrect --start name.~~
-# - Create dipy_brain_mask workflow and add to pipelines
+# - Done: handle incorrect --start name.
+# - Done: Create dipy_brain_mask workflow and add to pipelines
 #   (SynthSeg, median_otsu, PUMBA, EVAC+)
 # - Create dipy_denoise
 # - dipy cluster qbx
