@@ -125,7 +125,7 @@ jobs:
         run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_arch }}
+            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
             path: ./dist/*.whl
 
   build_windows_wheels:
