@@ -67,6 +67,15 @@ cdef class PmfGen:
                                 double* xyz) noexcept nogil:
         pass
 
+    cdef cnp.npy_intp get_peaks_c(self,
+                                  double* point,
+                                  double* out_values,
+                                  double* out_indices,
+                                  double* out_weights,
+                                  cnp.npy_intp max_peaks,
+                                  cnp.npy_intp* out_valid) noexcept nogil:
+        return 0
+
 
 cdef class SimplePmfGen(PmfGen):
 
@@ -237,6 +246,7 @@ cdef class SimplePeakGen(PmfGen):
 
         self.peak_indices_ptr = &peak_indices[0, 0, 0, 0]
         self.peak_values_ptr = &peak_values[0, 0, 0, 0]
+        # Kept for Cython ABI compatibility across extension rebuild boundaries.
         self.odf_vertices_ptr = &odf_vertices[0, 0]
 
         self.peak_shape[0] = peak_indices.shape[0]
@@ -250,6 +260,22 @@ cdef class SimplePeakGen(PmfGen):
         self.peak_strides[1] = arr_strides[1]
         self.peak_strides[2] = arr_strides[2]
         self.peak_strides[3] = arr_strides[3]
+
+    cdef void _compute_trilinear(self,
+                                 double* point,
+                                 double* out_weights,
+                                 cnp.npy_intp* out_index) noexcept nogil:
+        """Compute trilinear weights and neighboring indices."""
+        _trilinear_interpolation_iso(point, out_weights, out_index)
+
+    cdef cnp.npy_intp _inside_global_bounds(self,
+                                            cnp.npy_intp* index) noexcept nogil:
+        """Return 1 when trilinear neighborhood is fully inside data bounds."""
+        cdef cnp.npy_intp i
+        for i in range(3):
+            if index[i] < 0 or index[7 * 3 + i] >= self.peak_shape[i]:
+                return 0
+        return 1
 
     cdef double* get_pmf_c(self, double* point, double* out) noexcept nogil:
         """Get PMF at a point.
@@ -277,12 +303,9 @@ cdef class SimplePeakGen(PmfGen):
             double weights[8]
 
         memset(out, 0, len_pmf * sizeof(double))
-        _trilinear_interpolation_iso(point, weights, index)
-
-        # Match trilinear_interpolate4d_c behavior: out-of-bounds => zeros.
-        for i in range(3):
-            if index[i] < 0 or index[7 * 3 + i] >= self.peak_shape[i]:
-                return out
+        self._compute_trilinear(point, weights, index)
+        if self._inside_global_bounds(index) == 0:
+            return out
 
         for m in range(8):
             for i in range(3):
@@ -321,12 +344,9 @@ cdef class SimplePeakGen(PmfGen):
             double weights[8]
             double pmf_value = 0
 
-        _trilinear_interpolation_iso(point, weights, index)
-
-        # Match trilinear_interpolate4d_c behavior: out-of-bounds => 0.
-        for i in range(3):
-            if index[i] < 0 or index[7 * 3 + i] >= self.peak_shape[i]:
-                return 0.0
+        self._compute_trilinear(point, weights, index)
+        if self._inside_global_bounds(index) == 0:
+            return 0.0
 
         for m in range(8):
             for i in range(3):
@@ -344,3 +364,71 @@ cdef class SimplePeakGen(PmfGen):
                     pmf_value += weights[m] * peak_value
 
         return pmf_value
+
+    cdef cnp.npy_intp get_peaks_c(self,
+                                  double* point,
+                                  double* out_values,
+                                  double* out_indices,
+                                  double* out_weights,
+                                  cnp.npy_intp max_peaks,
+                                  cnp.npy_intp* out_valid) noexcept nogil:
+        """Get neighboring peak lists and trilinear weights around ``point``.
+
+        Parameters
+        ----------
+        point : double*, shape (3,)
+            Query position in voxel coordinates.
+        out_values : double*, shape (8 * max_peaks,)
+            Output peak values, grouped by neighbor voxel.
+        out_indices : double*, shape (8 * max_peaks,)
+            Output peak indices, grouped by neighbor voxel.
+        out_weights : double*, shape (8,)
+            Trilinear weights for each neighboring voxel.
+        max_peaks : int
+            Maximum number of peaks to write per neighbor.
+        out_valid : int*, shape (8,)
+            Validity flag per neighbor voxel.
+
+        Returns
+        -------
+        peaks_used : int
+            Number of peaks written per neighbor (<= max_peaks).
+        """
+        cdef:
+            cnp.npy_intp i, j, m
+            cnp.npy_intp off
+            cnp.npy_intp idx_base
+            cnp.npy_intp index[24]
+            cnp.npy_intp xyz[4]
+            cnp.npy_intp peaks_used = max_peaks
+
+        if peaks_used > self.max_peaks:
+            peaks_used = self.max_peaks
+        if peaks_used <= 0:
+            return 0
+
+        self._compute_trilinear(point, out_weights, index)
+
+        for m in range(8):
+            idx_base = m * max_peaks
+            out_valid[m] = 0
+            for j in range(max_peaks):
+                out_values[idx_base + j] = 0.0
+                out_indices[idx_base + j] = -1.0
+
+            for i in range(3):
+                xyz[i] = index[m * 3 + i]
+
+            if (xyz[0] < 0 or xyz[0] >= self.peak_shape[0] or
+                xyz[1] < 0 or xyz[1] >= self.peak_shape[1] or
+                xyz[2] < 0 or xyz[2] >= self.peak_shape[2]):
+                continue
+
+            out_valid[m] = 1
+            for j in range(peaks_used):
+                xyz[3] = j
+                off = offset(xyz, <cnp.npy_intp*>self.peak_strides, 4, 8)
+                out_values[idx_base + j] = self.peak_values_ptr[off]
+                out_indices[idx_base + j] = self.peak_indices_ptr[off]
+
+        return peaks_used

@@ -9,7 +9,7 @@ from cython.parallel import prange
 import numpy as np
 cimport numpy as cnp
 
-from dipy.direction.pmf cimport PmfGen, SimplePeakGen
+from dipy.direction.pmf cimport PmfGen
 from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils cimport fast_numpy
 
@@ -165,19 +165,8 @@ cdef void generate_tractogram_c(double[:,::1] seed_positions,
     cdef:
         cnp.npy_intp _len=seed_positions.shape[0]
         cnp.npy_intp i
-        int j
         double* stream
         int* stream_idx
-
-    if params.eudx is not None:
-        peak_gen_wrapper = <SimplePeakGen>pmf_gen
-        params.eudx.peak_indices_ptr = peak_gen_wrapper.peak_indices_ptr
-        params.eudx.peak_values_ptr = peak_gen_wrapper.peak_values_ptr
-        params.eudx.odf_vertices_ptr = peak_gen_wrapper.odf_vertices_ptr
-        params.eudx.max_peaks = peak_gen_wrapper.max_peaks
-        for j in range(4):
-            params.eudx.peak_shape[j] = peak_gen_wrapper.peak_shape[j]
-            params.eudx.peak_strides[j] = peak_gen_wrapper.peak_strides[j]
 
     if nbr_threads <= 0:
         nbr_threads = 0

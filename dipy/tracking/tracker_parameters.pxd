@@ -33,12 +33,6 @@ cdef class EudxTrackerParameters:
     cdef public double qa_threshold
     cdef public double ang_threshold
     cdef public double total_weight
-    cdef double* peak_indices_ptr
-    cdef double* peak_values_ptr
-    cdef double* odf_vertices_ptr
-    cdef int max_peaks
-    cdef long[4] peak_shape
-    cdef long[4] peak_strides
 
 cdef class TrackerParameters:
     cdef func_ptr tracker

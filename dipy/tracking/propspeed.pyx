@@ -862,7 +862,7 @@ cdef TrackerStatus eudx_propagator(double* point,
     stream_data : double*
         Streamline data persistent across tracking steps.
     pmf_gen : PmfGen
-        PMF generator (unused, peak data accessed via params.eudx).
+        Peak generator interface.
     rng : RNGState*
         Random number generator state.
 
@@ -874,23 +874,17 @@ cdef TrackerStatus eudx_propagator(double* point,
     cdef:
         double weights[8]
         double* odf_vertices
-        double* peak_indices_ptr
-        double* peak_values_ptr
-        int max_peaks, peaks
-        int m, i, j
+        cnp.npy_intp peaks
+        int m, i
         double total_w = 0
         double new_direction[3]
         double interp_direction[3]
-        double qa_tmp[PEAK_NO]
-        double ind_tmp[PEAK_NO]
+        double qa_neighbors[8 * PEAK_NO]
+        double ind_neighbors[8 * PEAK_NO]
         cnp.npy_intp delta
+        cnp.npy_intp valid_neighbors[8]
         double normd
         double qa_thr, ang_thr, total_weight
-        cnp.npy_intp index[24]
-        cnp.npy_intp xyz[4]
-        cnp.npy_intp off
-        cnp.npy_intp peak_shape[4]
-        cnp.npy_intp peak_strides[4]
 
     if norm(direction) == 0:
         return TrackerStatus.FAIL
@@ -899,39 +893,28 @@ cdef TrackerStatus eudx_propagator(double* point,
     qa_thr = params.eudx.qa_threshold
     ang_thr = params.eudx.ang_threshold
     total_weight = params.eudx.total_weight
-    peak_indices_ptr = params.eudx.peak_indices_ptr
-    peak_values_ptr = params.eudx.peak_values_ptr
-    odf_vertices = params.eudx.odf_vertices_ptr
-    max_peaks = params.eudx.max_peaks
-    for i in range(4):
-        peak_shape[i] = params.eudx.peak_shape[i]
-        peak_strides[i] = params.eudx.peak_strides[i]
-
-    peaks = max_peaks
-
-    _trilinear_interpolation_iso(point, weights, index)
+    odf_vertices = &pmf_gen.vertices[0, 0]
+    peaks = pmf_gen.get_peaks_c(
+        point,
+        &qa_neighbors[0],
+        &ind_neighbors[0],
+        &weights[0],
+        PEAK_NO,
+        &valid_neighbors[0],
+    )
+    if peaks <= 0:
+        return TrackerStatus.FAIL
 
     for i in range(3):
         new_direction[i] = 0
 
     for m in range(8):
-        for i in range(3):
-            xyz[i] = index[m * 3 + i]
-
-        if (xyz[0] < 0 or xyz[0] >= peak_shape[0] or
-            xyz[1] < 0 or xyz[1] >= peak_shape[1] or
-            xyz[2] < 0 or xyz[2] >= peak_shape[2]):
+        if valid_neighbors[m] == 0:
             continue
 
-        for j in range(peaks):
-            xyz[3] = j
-            off = offset(xyz, peak_strides, 4, 8)
-            qa_tmp[j] = peak_values_ptr[off]
-            ind_tmp[j] = peak_indices_ptr[off]
-
         delta = _nearest_direction(direction,
-                                   qa_tmp,
-                                   ind_tmp,
+                                   &qa_neighbors[m * PEAK_NO],
+                                   &ind_neighbors[m * PEAK_NO],
                                    peaks,
                                    odf_vertices,
                                    qa_thr,
