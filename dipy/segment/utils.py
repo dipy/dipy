@@ -26,7 +26,10 @@ def remove_holes_and_islands(
     -------
     largest_img : np.ndarray
     """
-    if len(np.unique(binary_img)) != 2:
+    n_unique = len(np.unique(binary_img))
+    if n_unique <= 1:
+        return binary_img
+    if n_unique > 2:
         warnings.warn(
             "The mask is not binary. \
                       Returning the original mask",

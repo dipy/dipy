@@ -12,6 +12,8 @@ from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.nn.synthseg import SynthSeg
 from dipy.nn.torch.synthseg import have_torch
 from dipy.segment.bundles import RecoBundles
+from dipy.segment.clustering import QuickBundles, qbx_and_merge
+from dipy.segment.fss import FastStreamlineSearch, nearest_from_matrix_col
 from dipy.segment.mask import median_otsu
 from dipy.segment.tissue import TissueClassifierHMRF, dam_classifier
 from dipy.tracking import Streamlines
@@ -787,3 +789,158 @@ class BrainMaskFlow(Workflow):
 
         logger.info("Brain masking finished.")
         return io_it
+
+
+class ClusterStreamlinesFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "cluster"
+
+    def run(
+        self,
+        streamline_files,
+        *,
+        method="qbx_and_merge",
+        threshold=10.0,
+        thresholds="30,20,10",
+        nb_pts=20,
+        min_cluster_size=1,
+        select_randomly=None,
+        max_radius=10.0,
+        out_dir="",
+        out_centroids="centroids.trx",
+        out_cluster_labels="cluster_labels.npy",
+    ):
+        """Cluster streamlines.
+
+        Algorithms used to cluster streamlines are QuickBundles, QuickBundlesX or
+        FastStreamlineSearch.
+
+        Parameters
+        ----------
+        streamline_files : string or Path
+            Path to the streamline files. This path may contain wildcards to
+            process multiple inputs at once.
+        method : string, optional
+            Clustering method to use. Options are:
+
+            - 'quickbundles': QuickBundles with a single distance threshold.
+            - 'qbx_and_merge': QuickBundlesX with multi-level thresholds,
+              then merge.
+            - 'faststreamlines': QuickBundles for initial centroids followed
+              by FastStreamlineSearch for streamline reassignment.
+
+        threshold : float, optional
+            Distance threshold (mm) used by 'quickbundles' and
+            'faststreamlines' methods.
+        thresholds : string, optional
+            Comma-separated distance thresholds (mm) used by the
+            'qbx_and_merge' method (e.g. '30,20,10').
+        nb_pts : int, optional
+            Number of points to resample each streamline to before
+            clustering. Used by 'qbx_and_merge'.
+        min_cluster_size : int, optional
+            Minimum number of streamlines a cluster must contain to be kept.
+        select_randomly : int, optional
+            Randomly select a subset of streamlines before clustering.
+            Used by 'qbx_and_merge'.
+        max_radius : float, optional
+            Maximum search radius (mm) used by the 'faststreamlines' method.
+        out_dir : string or Path, optional
+            Output directory.
+        out_centroids : string, optional
+            Filename for the output cluster centroids tractogram.
+        out_cluster_labels : string, optional
+            Filename for the output cluster label array (.npy).
+
+        """
+        valid_methods = ["quickbundles", "qbx_and_merge", "faststreamlines"]
+        if method.lower() not in valid_methods:
+            logger.error(
+                f"Unknown method '{method}' for streamline clustering. "
+                f"Choose one of: {', '.join(valid_methods)}."
+            )
+            sys.exit(1)
+
+        thresholds_list = [float(t) for t in thresholds.split(",")]
+
+        logger.info(f"Clustering streamlines using method: '{method}'")
+
+        io_it = self.get_io_iterator()
+
+        for fpath, centroids_out_path, labels_out_path in io_it:
+            logger.info(f"Loading streamlines from {fpath}")
+            sft = load_tractogram(fpath, "same", bbox_valid_check=False)
+            streamlines = sft.streamlines
+            logger.info(f"Loaded {len(streamlines)} streamlines")
+
+            if method.lower() == "quickbundles":
+                cluster_map = QuickBundles(threshold).cluster(streamlines)
+                n_total = len(cluster_map)
+                out_centroids_sl = Streamlines()
+                labels = np.full(len(streamlines), -1, dtype=np.int32)
+                cluster_id = 0
+                for cluster in cluster_map:
+                    if len(cluster) >= min_cluster_size:
+                        out_centroids_sl.append(cluster.centroid)
+                        for idx in cluster.indices:
+                            labels[idx] = cluster_id
+                        cluster_id += 1
+                n_kept = cluster_id
+
+            elif method.lower() == "qbx_and_merge":
+                cluster_map = qbx_and_merge(
+                    streamlines,
+                    thresholds_list,
+                    nb_pts=nb_pts,
+                    select_randomly=select_randomly,
+                )
+                n_total = len(cluster_map)
+                out_centroids_sl = Streamlines()
+                labels = np.full(len(streamlines), -1, dtype=np.int32)
+                cluster_id = 0
+                for cluster in cluster_map:
+                    if len(cluster) >= min_cluster_size:
+                        out_centroids_sl.append(cluster.centroid)
+                        for idx in cluster.indices:
+                            labels[idx] = cluster_id
+                        cluster_id += 1
+                n_kept = cluster_id
+
+            else:
+                cluster_map = QuickBundles(threshold).cluster(streamlines)
+                n_total = len(cluster_map)
+                centroids_sl = Streamlines(cluster_map.centroids)
+
+                fss = FastStreamlineSearch(streamlines, max_radius=max_radius)
+                res = fss.radius_search(centroids_sl, radius=max_radius)
+
+                non_zero_ids, nearest_centroid_id, _ = nearest_from_matrix_col(res)
+
+                raw_labels = np.full(len(streamlines), -1, dtype=np.int32)
+                raw_labels[non_zero_ids] = nearest_centroid_id
+
+                out_centroids_sl = Streamlines()
+                labels = np.full(len(streamlines), -1, dtype=np.int32)
+                new_cluster_id = 0
+                for old_cluster_id, centroid in enumerate(cluster_map.centroids):
+                    cluster_mask = raw_labels == old_cluster_id
+                    if np.sum(cluster_mask) >= min_cluster_size:
+                        out_centroids_sl.append(centroid)
+                        labels[cluster_mask] = new_cluster_id
+                        new_cluster_id += 1
+                n_kept = new_cluster_id
+
+            logger.info(
+                f"Found {n_total} clusters, kept {n_kept} "
+                f"(min_cluster_size={min_cluster_size})"
+            )
+
+            sft_out = StatefulTractogram(out_centroids_sl, sft, Space.RASMM)
+            save_tractogram(sft_out, centroids_out_path, bbox_valid_check=False)
+            np.save(labels_out_path, labels)
+            logger.info(f"Centroids saved as {centroids_out_path}")
+            logger.info(f"Labels saved as {labels_out_path}")
+            logger.info(f"Clustering of {fpath} completed.")
+
+        logger.info("Streamline clustering finished.")
