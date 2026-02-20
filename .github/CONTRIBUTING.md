@@ -36,9 +36,7 @@ into the respective file (e.g., ``dipy/tracking/tests/test_streamline.py ``).
 New contributions are required to have as close to 100% code coverage as
 possible. This means that the tests written cause each and every statement in
 the code to be executed, covering corner-cases, error-handling, and logical
-branch points. To check how much coverage the tests have, you will need.
-
-When running:
+branch points. To check how much coverage the tests have, you will need to run:
 
     coverage run -m pytest -s --doctest-modules --verbose dipy
 
