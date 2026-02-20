@@ -579,6 +579,27 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             background: #fff;
         }}
 
+        .stage-badge {{
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            vertical-align: middle;
+            margin-left: 10px;
+        }}
+        .badge-restart {{
+            background: #e8f4fd;
+            color: #2471a3;
+            border: 1px solid #aed6f1;
+        }}
+        .badge-user-mask {{
+            background: #eafaf1;
+            color: #1e8449;
+            border: 1px solid #a9dfbf;
+        }}
+
         @media print {{
             .topbar, .sidebar {{ display: none; }}
             .main-content {{ margin-left: 0; }}
