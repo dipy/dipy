@@ -328,6 +328,22 @@ class SkylineFlow(Workflow):
         skyline_surfaces = []
         skyline_tractograms = []
 
+        mni_2009c = {
+            "affine": np.array(
+                [
+                    [1.0, 0.0, 0.0, -96.0],
+                    [0.0, 1.0, 0.0, -132.0],
+                    [0.0, 0.0, 1.0, -78.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ]
+            ),
+            "dims": (193, 229, 193),
+            "vox_size": (1.0, 1.0, 1.0),
+            "vox_space": "RAS",
+        }
+        emergency_ref = create_nifti_header(
+            mni_2009c["affine"], mni_2009c["dims"], mni_2009c["vox_size"]
+        )
         io_it = self.get_io_iterator()
         for input_output in io_it:
             fname = input_output
@@ -358,9 +374,11 @@ class SkylineFlow(Workflow):
             elif ext in [".trk", ".trx"]:
                 sft = load_tractogram(fname, "same", bbox_valid_check=False)
                 skyline_tractograms.append((sft, fname))
+            elif ext in [".dpy", ".tck", ".vtk", ".vtp", ".fib"]:
+                sft = load_tractogram(fname, emergency_ref)
+                skyline_tractograms.append((sft, fname))
             else:
                 logger.error(f"File extension '{ext}' is not supported in Skyline.")
-                sys.exit(1)
 
         for fname in rois:
             _, ext = split_filename_extension(fname)
