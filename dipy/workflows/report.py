@@ -311,6 +311,27 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             font-size: 0.9em;
         }}
 
+        .stage-badge {{
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            vertical-align: middle;
+            margin-left: 10px;
+        }}
+        .badge-restart {{
+            background: #e8f4fd;
+            color: #2471a3;
+            border: 1px solid #aed6f1;
+        }}
+        .badge-user-mask {{
+            background: #eafaf1;
+            color: #1e8449;
+            border: 1px solid #a9dfbf;
+        }}
+
         @media print {{
             nav {{
                 position: relative;
@@ -482,22 +503,53 @@ def generate_pipeline_section(dag_visualization, execution_order):
     return pipeline_html
 
 
-def generate_timing_section(stages_info):
-    """Generate timing table for all stages."""
+def generate_timing_section(*, stages_info):
+    """Generate timing table for all stages.
+
+    Parameters
+    ----------
+    stages_info : list of dict
+        Each dict must contain ``name``, and optionally ``cli``,
+        ``duration``, ``success``, and ``skipped``. When ``skipped``
+        is ``"restart"``, ``duration`` may be ``None``.
+
+    Returns
+    -------
+    str
+        HTML string for the timing section.
+    """
     rows = ""
     for stage in stages_info:
+        skipped = stage.get("skipped")
+        duration = stage.get("duration")
+
+        if skipped == "restart":
+            duration_str = "Previous Run"
+            status_str = (
+                '<span class="stage-badge badge-restart">Previous Run</span> ✓ Success'
+            )
+        elif skipped == "user_mask":
+            duration_str = "0.00s (skipped)"
+            status_str = (
+                '<span class="stage-badge badge-user-mask">User Mask</span> ✓ Skipped'
+            )
+        else:
+            duration_val = duration if duration is not None else 0.0
+            duration_str = f"{duration_val:.2f}s"
+            status_str = "✓ Success" if stage.get("success", True) else "✗ Failed"
+
         rows += """
         <tr>
             <td>{name}</td>
             <td>{cli}</td>
-            <td>{duration:.2f}s</td>
+            <td>{duration}</td>
             <td>{status}</td>
         </tr>
         """.format(
             name=stage["name"],
             cli=stage.get("cli", "N/A"),
-            duration=stage.get("duration", 0),
-            status="✓ Success" if stage.get("success", True) else "✗ Failed",
+            duration=duration_str,
+            status=status_str,
         )
 
     timing_html = """
@@ -606,12 +658,6 @@ def generate_methods_section(stages_info, pipeline_name):
     <section id="methods">
         <h1>Methods</h1>
         <div class="boilerplate">
-            <p><strong>Note:</strong> If the 3D viewers above show "loading..."
-            indefinitely, you need to serve this report via HTTP. In your terminal,
-            navigate to this report's directory and run:
-            <code>python -m http.server 8000</code>, then open
-            <code>http://localhost:8000/pipeline_report.html</code></p>
-
             <p>Results included in this report were generated using DIPY Auto
             (Diffusion Imaging in Python), a comprehensive pipeline for diffusion
             MRI data processing and analysis.</p>
@@ -673,15 +719,24 @@ https://doi.org/10.3389/fninf.2014.00008"""
     return methods_html
 
 
-def generate_results_section(stages_info, html_dir):
+def generate_results_section(*, stages_info, html_dir):
     """Generate results section with viewers for each stage.
 
     Parameters
     ----------
-    stages_info : list
-        List of stage information dictionaries.
+    stages_info : list of dict
+        List of stage information dictionaries. Each dict must contain
+        ``name`` and optionally ``cli``, ``duration``, ``outputs``,
+        and ``skipped``.
     html_dir : str
-        Directory where the HTML file is saved (for computing relative paths).
+        Directory where the HTML file is saved (for computing relative
+        paths).
+
+    Returns
+    -------
+    tuple of (str, str)
+        HTML string for the results section and a string of NiiVue
+        JavaScript snippets to embed.
     """
     results_html = '<section id="results"><h1>Stage Results</h1>'
     niivue_scripts = []
@@ -689,17 +744,35 @@ def generate_results_section(stages_info, html_dir):
     for idx, stage in enumerate(stages_info):
         stage_name = stage["name"]
         cli = stage.get("cli", "Unknown")
-        duration = stage.get("duration", 0)
+        duration = stage.get("duration")
         outputs = stage.get("outputs", {})
+        skipped = stage.get("skipped")
+
+        if skipped == "restart":
+            duration_str = "Previous Run"
+            badge_html = '<span class="stage-badge badge-restart">Previous Run</span>'
+        elif skipped == "user_mask":
+            duration_str = "Skipped"
+            badge_html = '<span class="stage-badge badge-user-mask">User Mask</span>'
+        else:
+            duration_val = duration if duration is not None else 0.0
+            duration_str = f"{duration_val:.2f}s"
+            badge_html = ""
 
         results_html += """
         <div class="stage-section">
             <div class="stage-header">
-                <div class="stage-title">Stage {num}: {name}</div>
-                <div class="stage-time">{duration:.2f}s</div>
+                <div class="stage-title">Stage {num}: {name}{badge}</div>
+                <div class="stage-time">{duration}</div>
             </div>
             <p><strong>CLI Command:</strong> <code>{cli}</code></p>
-        """.format(num=idx + 1, name=stage_name, duration=duration, cli=cli)
+        """.format(
+            num=idx + 1,
+            name=stage_name,
+            badge=badge_html,
+            duration=duration_str,
+            cli=cli,
+        )
 
         if outputs:
             results_html += '<h3>Output Files</h3><div class="output-list">'
@@ -765,9 +838,10 @@ def generate_html_report(config, config_file_path, execution_info, output_path):
         execution_info.get("dag_visualization", ""),
         execution_info.get("execution_order", []),
     )
-    timing = generate_timing_section(execution_info.get("stages", []))
+    timing = generate_timing_section(stages_info=execution_info.get("stages", []))
     results, niivue_scripts = generate_results_section(
-        execution_info.get("stages", []), html_dir
+        stages_info=execution_info.get("stages", []),
+        html_dir=html_dir,
     )
     methods = generate_methods_section(execution_info.get("stages", []), pipeline_name)
 
