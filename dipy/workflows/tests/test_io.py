@@ -23,6 +23,7 @@ from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.testing import assert_true, assert_warns
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWireError
+from dipy.workflows.base import format_key_value_table
 from dipy.workflows.io import (
     ConcatenateTractogramFlow,
     ConvertSHFlow,
@@ -39,7 +40,6 @@ from dipy.workflows.io import (
     SplitFlow,
     TensorToPamFlow,
     format_data_names_table,
-    format_key_value_table,
 )
 
 ne, have_ne, _ = optional_package("numexpr")
@@ -168,18 +168,48 @@ def test_io_fetch_list_outputs_table(caplog, monkeypatch):
 
 
 def test_format_key_value_table():
+    # Basic rendering: headers and content appear in output
     table = format_key_value_table(
         {"foo": "Foo description", "bar": "x" * 200},
         key_header="Dataset",
         value_header="Description",
     )
-
     table_lines = table.splitlines()
     npt.assert_equal(any("Dataset" in line for line in table_lines), True)
     npt.assert_equal(any("Description" in line for line in table_lines), True)
     npt.assert_equal(any("foo" in line for line in table_lines), True)
     npt.assert_equal(any("Foo description" in line for line in table_lines), True)
+    # Long value wraps across multiple lines
     npt.assert_equal(sum("x" in line for line in table_lines) > 1, True)
+
+    # sort=True (default): rows appear in alphabetical key order
+    table_sorted = format_key_value_table(
+        {"zebra": "last", "apple": "first"},
+        key_header="Key",
+        value_header="Value",
+    )
+    sorted_lines = [
+        line for line in table_sorted.splitlines() if "apple" in line or "zebra" in line
+    ]
+    npt.assert_equal(len(sorted_lines), 2)
+    npt.assert_equal("apple" in sorted_lines[0], True)
+    npt.assert_equal("zebra" in sorted_lines[1], True)
+
+    # sort=False: rows appear in insertion order
+    table_unsorted = format_key_value_table(
+        {"zebra": "last", "apple": "first"},
+        key_header="Key",
+        value_header="Value",
+        sort=False,
+    )
+    unsorted_lines = [
+        line
+        for line in table_unsorted.splitlines()
+        if "apple" in line or "zebra" in line
+    ]
+    npt.assert_equal(len(unsorted_lines), 2)
+    npt.assert_equal("zebra" in unsorted_lines[0], True)
+    npt.assert_equal("apple" in unsorted_lines[1], True)
 
 
 def test_format_data_names_table():
