@@ -7,10 +7,12 @@ from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, disperse_charges
 from dipy.reconst.dti import fractional_anisotropy
 import dipy.reconst.qti as qti
+import dipy.reconst.dti as dti
 from dipy.sims.voxel import vec2vec_rotmat
 from dipy.testing import assert_warns
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
+from dipy.reconst.weights_method import weights_method_wls_m_est
 
 cp, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
@@ -351,18 +353,117 @@ def test_ls_sdp_fits(rng):
         ).T
         data = qti.qti_signal(gtab, D, C)[np.newaxis, :]
         mask = np.ones(1).astype(bool)
-        npt.assert_almost_equal(qti._ols_fit(data, mask, X), params)
-        npt.assert_almost_equal(qti._wls_fit(data, mask, X), params)
+        npt.assert_almost_equal(qti._ols_fit(X, data[mask])[0], params)
+        npt.assert_almost_equal(qti._wls_fit(X, data[mask])[0], params)
+        # stack -> 2 voxels (same number of images)
         data = np.vstack((data, data))
         mask = np.ones(2).astype(bool)
         params = np.vstack((params, params))
-        npt.assert_almost_equal(qti._ols_fit(data, mask, X, step=1), params)
-        npt.assert_almost_equal(qti._wls_fit(data, mask, X, step=1), params)
+        npt.assert_almost_equal(qti._ols_fit(X, data[mask], step=1)[0], params)
+        npt.assert_almost_equal(qti._wls_fit(X, data[mask], step=1)[0], params)
 
         if have_cvxpy:
-            npt.assert_almost_equal(
-                qti._sdpdc_fit(data, mask, X, cvxpy_solver="SCS"), params, decimal=1
-            )
+            par = qti._sdpdc_fit(X, data[mask], cvxpy_solver="SCS")[0]
+            npt.assert_almost_equal(par, params, decimal=1)
+
+    # check if leverages are returned when requested
+    for step in [1, 10]:
+        _, extra = qti._ols_fit(
+            X, data[mask], step=step, return_leverages=True
+        )
+        npt.assert_equal("leverages" in extra, True)
+        # ensure leverages sum to 28
+        npt.assert_almost_equal(
+            extra["leverages"][mask].sum(-1), np.ones(mask.shape[0])*28
+        )
+        _, extra = qti._ols_fit(
+            X, data[mask], step=step, return_leverages=False
+        )
+        npt.assert_equal(extra, None)
+        params, extra = qti._wls_fit(
+            X, data[mask], step=step, return_leverages=True
+        )
+        npt.assert_equal("leverages" in extra, True)
+        # ensure leverages sum to 28
+        npt.assert_almost_equal(
+            extra["leverages"][mask].sum(-1), np.ones(mask.shape[0])*28
+        )
+
+    # test against dti wls fitter...
+    params_dti, extra_dti = dti.wls_fit_tensor(
+        X, data[mask], return_lower_triangular=True, return_leverages=True
+    )
+    npt.assert_almost_equal(extra_dti["leverages"], extra["leverages"])
+    npt.assert_almost_equal(params_dti, params)
+
+    _, extra = qti._sdpdc_fit(
+        X, data[mask], cvxpy_solver="SCS", return_leverages=True
+    )
+    npt.assert_equal("leverages" in extra, True)
+    # ensure leverages sum to 28
+    npt.assert_almost_equal(
+        extra["leverages"][mask].sum(-1), np.ones(mask.shape[0])*28
+    )
+    _, extra = qti._sdpdc_fit(
+        X, data[mask], cvxpy_solver="SCS", return_leverages=False
+    )
+    npt.assert_equal(extra, None)
+
+    # test of WLS given explicit weights=signal^2 is same as using no weights
+    npt.assert_almost_equal(
+        qti._wls_fit(X, data[mask], step=1)[0],
+        qti._wls_fit(X, data[mask], step=1, weights=data[mask]**2)[0]
+    )
+    npt.assert_almost_equal(
+        qti._sdpdc_fit(X, data[mask], cvxpy_solver="SCS")[0],
+        qti._sdpdc_fit(
+            X, data[mask], cvxpy_solver="SCS", weights=data[mask]**2
+        )[0]
+    )
+
+    # test robust QTI - hard to test
+    # robust fitting without noise doesn't make sense
+    data_corrupt = data.copy()
+    noise = 0.01 * np.random.normal(size=data_corrupt.shape)
+    data_corrupt = data_corrupt + noise
+    data_corrupt[..., -1] *= 5  # corrupt a signal
+
+    for MASK in [mask, None]:
+        # fit with WLS, show fitted params are different
+        qtimodel = qti.QtiModel(gtab, fit_method="WLS")
+        qtifit = qtimodel.fit(data_corrupt, mask=MASK)
+        npt.assert_raises(
+            AssertionError, npt.assert_almost_equal, qtifit.params, params
+        )
+        # fit with SDPdc (constraints), show fitted params are different
+        qtimodel = qti.QtiModel(gtab, fit_method="SDPdc")
+        qtifit = qtimodel.fit(data_corrupt, mask=MASK)
+        npt.assert_raises(
+            AssertionError, npt.assert_almost_equal, qtifit.params, params
+        )
+
+        # fit with WLS, i.e. RWLS
+        kwargs = {"weights_method": weights_method_wls_m_est, "num_iter": 10}
+        qtimodel_r = qti.QtiModel(gtab, fit_method="WLS", **kwargs)
+        qtifit_r = qtimodel_r.fit(data_corrupt, mask=MASK)
+        npt.assert_equal(qtimodel_r.extra["robust"][..., -1], False)
+        # use the RWLS method from dti.py - should match qti_model_r above
+        qtimodel_dti = qti.QtiModel(gtab, fit_method="RWLS", num_iter=10)
+        qtifit_dti = qtimodel_dti.fit(data_corrupt, mask=MASK)
+        npt.assert_almost_equal(
+            qtimodel_r.extra["robust"], qtimodel_dti.extra["robust"]
+        )
+        npt.assert_almost_equal(qtifit_dti.params, qtifit_r.params)
+
+        # fit with WLS, i.e. RWLS, but too small num_iter raises error
+        kwargs = {"weights_method": weights_method_wls_m_est, "num_iter": 1}
+        qtimodel_r1 = qti.QtiModel(gtab, fit_method="WLS", **kwargs)
+        npt.assert_raises(ValueError, qtimodel_r1.fit, data_corrupt, mask=MASK)
+        # fit with SDPdc (constraints), i.e. RCWLS
+        kwargs = {"weights_method": weights_method_wls_m_est}  # no num_iter
+        qtimodel_rc = qti.QtiModel(gtab, fit_method="SDPdc", **kwargs)
+        qtifit_rc = qtimodel_rc.fit(data_corrupt, mask=MASK)
+        npt.assert_equal(qtimodel_rc.extra["robust"][..., -1], False)
 
 
 @set_random_number_generator(123)

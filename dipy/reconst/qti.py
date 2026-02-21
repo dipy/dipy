@@ -15,6 +15,15 @@ from dipy.reconst.dti import auto_attr
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
+from dipy.reconst.dti import (
+    MIN_POSITIVE_SIGNAL,
+    robust_fit_tensor_wls,
+)
+
+from dipy.reconst.weights_method import (
+    weights_method_wls_m_est,
+)
+
 cp, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
@@ -542,20 +551,20 @@ def design_matrix(btens):
 
 
 @warning_for_keywords()
-def _ols_fit(data, mask, X, *, step=int(1e4)):
+def _ols_fit(X, data_masked, *, step=int(1e4), return_leverages=False):
     """Estimate the model parameters using ordinary least squares.
 
     Parameters
     ----------
-    data : numpy.ndarray
-        Array of shape (..., number of acquisitions).
-    mask : numpy.ndarray
-        Boolean array with the same shape as the data array of a single
-        acquisition.
-    X : numpy.ndarray
-        Design matrix of shape (number of acquisitions, 28).
+    X : array (g, 28)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    data_masked : array (N, g)
+        The measured signal, already masked.
     step : int, optional
         The number of voxels over which the fit is calculated simultaneously.
+    return_leverages : bool, optional
+        Boolean to return (True) or not (False) the fitting leverages.
 
     Returns
     -------
@@ -566,8 +575,6 @@ def _ols_fit(data, mask, X, *, step=int(1e4)):
         elements in Voigt notation, and elements 7-27 are the estimated
         covariance tensor elements in Voigt notation.
     """
-    params = np.zeros((np.prod(mask.shape), 28)) * np.nan
-    data_masked = data[mask]
     size = len(data_masked)
     X_inv = np.linalg.pinv(X.T @ X)  # Independent of data
     if step >= size:  # Fit over all data simultaneously
@@ -578,26 +585,41 @@ def _ols_fit(data, mask, X, *, step=int(1e4)):
         for i in range(0, size, step):
             S = np.log(data_masked[i : i + step])[..., np.newaxis]
             params_masked[i : i + step] = (X_inv @ X.T @ S)[..., 0]
-    params[np.where(mask.ravel())] = params_masked
-    params = params.reshape((mask.shape + (28,)))
-    return params
+
+    if return_leverages:
+        extra = {}
+        tmp = np.zeros_like(data_masked)
+        tmp[:] = np.einsum("ij,...ji->...i", X, np.linalg.pinv(X)[None, :])
+        extra["leverages"] = tmp
+    else:
+        extra = None
+
+    return params_masked, extra
 
 
 @warning_for_keywords()
-def _wls_fit(data, mask, X, *, step=int(1e4)):
-    """Estimate the model parameters using weighted least squares with the
+def _wls_fit(
+    X, data_masked, *, weights=None, step=int(1e4), return_leverages=False
+):
+    r"""Estimate the model parameters using weighted least squares with the
     signal magnitudes as weights.
 
     Parameters
     ----------
-    data : numpy.ndarray
-        Array of shape (..., number of acquisitions).
-    mask : numpy.ndarray
-        Array with the same shape as the data array of a single acquisition.
-    X : numpy.ndarray
-        Design matrix of shape (number of acquisitions, 28).
+    X : array (g, 28)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    data_masked : array (N, g)
+        The measured signal, already masked.
+    weights : array (N, g), optional
+        Weights to apply for fitting. These weights must correspond to the
+        squared residuals such that $S = \sum_i w_i r_i^2$. If not provided,
+        weights are estimated as the squared predicted signal from an initial
+        OLS fit.
     step : int, optional
         The number of voxels over which the fit is calculated simultaneously.
+    return_leverages : bool, optional
+        Boolean to return (True) or not (False) the fitting leverages.
 
     Returns
     -------
@@ -608,44 +630,70 @@ def _wls_fit(data, mask, X, *, step=int(1e4)):
         elements in Voigt notation, and elements 7-27 are the estimated
         covariance tensor elements in Voigt notation.
     """
-    params = np.zeros((np.prod(mask.shape), 28)) * np.nan
-    data_masked = data[mask]
-    size = len(data_masked)
-    if step >= size:  # Fit over all data simultaneously
-        S = np.log(data_masked)[..., np.newaxis]
-        C = data_masked[:, np.newaxis, :]
-        B = X.T * C
-        A = np.linalg.pinv(B @ X)
-        params_masked = (A @ B @ S)[..., 0]
-    else:  # Iterate over data
-        params_masked = np.zeros((size, 28))
-        for i in range(0, size, step):
-            S = np.log(data_masked[i : i + step])[..., np.newaxis]
-            C = data_masked[i : i + step][:, np.newaxis, :]
-            B = X.T * C
-            A = np.linalg.pinv(B @ X)
-            params_masked[i : i + step] = (A @ B @ S)[..., 0]
-    params[np.where(mask.ravel())] = params_masked
-    params = params.reshape((mask.shape + (28,)))
-    return params
+    size = data_masked.shape[0]
+    X_inv = np.linalg.pinv(X.T @ X)  # Independent of data
+
+    params_masked = np.zeros((size, 28))
+    if return_leverages:
+        leverages = np.zeros_like(data_masked)
+
+    for i in range(0, size, step):
+        S = np.log(data_masked[i : i + step])
+
+        if weights is None:  # calculate weights
+            # OLS prediction of signal
+            params_ols = (X_inv @ X.T @ S[..., None])[..., 0]  # dim size 1
+            W = np.exp((X @ params_ols.T).T)
+        else:
+            W = np.sqrt(weights[i : i + step])
+
+        if return_leverages:
+            tmp = np.einsum(
+                "...ij,...j->...ij", np.linalg.pinv(X * W[..., None]), W
+            )
+            fit_result = np.einsum("...ij,...j", tmp, S)
+            leverages_i = np.einsum("ij,...ji->...i", X, tmp)
+        else:
+            fit_result = np.einsum(
+                "...ij,...j", np.linalg.pinv(X * W[..., None]), W * S
+            )
+
+        params_masked[i : i + step] = fit_result
+        if return_leverages:
+            leverages[i : i + step] = leverages_i
+
+    if return_leverages:
+        extra = {"leverages": leverages}
+    else:
+        extra = None
+
+    return params_masked, extra
 
 
-def _sdpdc_fit(data, mask, X, cvxpy_solver):
-    """Estimate the model parameters using Semidefinite Programming (SDP),
+def _sdpdc_fit(
+    X, data_masked, cvxpy_solver, weights=None, return_leverages=True
+):
+    r"""Estimate the model parameters using Semidefinite Programming (SDP),
     while enforcing positivity constraints on the D and C tensors (SDPdc).
 
     See :footcite:p:`Herberthson2021` for further details about the method.
 
     Parameters
     ----------
-    data : numpy.ndarray
-        Array of shape (..., number of acquisitions).
-    mask : numpy.ndarray
-        Array with the same shape as the data array of a single acquisition.
-    X : numpy.ndarray
-        Design matrix of shape (number of acquisitions, 28).
+    X : array (g, 28)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    data_masked : array (N, g)
+        The measured signal, already masked.
     cvxpy_solver: string, required
         The name of the SDP solver to be used. Default: 'SCS'
+    weights : array (N, g), optional
+        Weights to apply for fitting. These weights must correspond to the
+        squared residuals such that $S = \sum_i w_i r_i^2$. If not provided,
+        weights are estimated as the squared predicted signal from an initial
+        OLS fit.
+    return_leverages : bool, optional
+        Boolean to return (True) or not (False) the fitting leverages.
 
     Returns
     -------
@@ -667,14 +715,29 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
     if cvxpy_solver not in cp.installed_solvers():
         raise ValueError("The selected solver is not available")
 
-    params = np.zeros((np.prod(mask.shape), 28)) * np.nan
-    data_masked = data[mask]
     size, nvols = data_masked.shape
+
+    # scale the signals (different scaling per voxel)
     scale = np.maximum(np.max(data_masked, axis=1, keepdims=True), 1)
     data_masked = data_masked / scale
-    data_masked[data_masked < 0] = 0
+    # re-apply MIN_POSITIVE_SIGNAL...
+    data_masked[data_masked < MIN_POSITIVE_SIGNAL] = MIN_POSITIVE_SIGNAL
     log_data = np.log(data_masked)
     params_masked = np.zeros((size, 28))
+
+    if weights is None:
+        X_inv = np.linalg.pinv(X.T @ X)  # Independent of data
+        params_ols = (X_inv @ X.T @ log_data[..., np.newaxis])[..., 0]
+        W = np.exp((X @ params_ols.T).T)
+    else:
+        W = np.sqrt(weights)
+
+    if return_leverages:
+        A = X * W[..., None]
+        inv_W_A_W = np.einsum(
+            "...ij,...j->...ij", np.linalg.pinv(A), W
+        )
+        leverages = np.einsum("ij,...ji->...i", X, inv_W_A_W)  # sums to 28
 
     x = cp.Variable((28, 1))
     y = cp.Parameter((nvols, 1))
@@ -687,12 +750,10 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
     unconstrained = cp.Problem(objective)
 
     for i in range(0, size, 1):
-        vox_data = data_masked[i : i + 1, :].T
+        vox_W = W[i : i + 1, :].T
         vox_log_data = log_data[i : i + 1, :].T
-        vox_log_data[np.isinf(vox_log_data)] = 0
-        y.value = vox_data * vox_log_data
-        A_val = vox_data * X
-
+        y.value = vox_W * vox_log_data
+        A_val = vox_W * X
         A.value = A_val
 
         # Suppress SCS CSC warning only for small matrices
@@ -701,7 +762,7 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
                 filterwarnings("ignore", message="Converting A to a CSC")
 
             try:
-                prob.solve(solver=cvxpy_solver, verbose=False)
+                prob.solve(solver=cvxpy_solver, verbose=False, ignore_dpp=True)
                 m = x.value
             except Exception:
                 msg = "Constrained optimization failed, attempting unconstrained"
@@ -719,14 +780,20 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
         params_masked[i : i + 1, :] = m.T
 
     params_masked[:, 0] += np.log(scale[:, 0])
-    params[np.where(mask.ravel())] = params_masked
-    params = params.reshape((mask.shape + (28,)))
-    return params
+
+    if return_leverages:
+        extra = {"leverages": leverages}
+    else:
+        extra = None
+
+    return params_masked, extra
 
 
 class QtiModel(ReconstModel):
     @warning_for_keywords()
-    def __init__(self, gtab, *, fit_method="WLS", cvxpy_solver="SCS"):
+    def __init__(
+        self, gtab, *args, fit_method="WLS", cvxpy_solver="SCS", **kwargs
+    ):
         """Covariance tensor model of q-space trajectory imaging.
 
         See :footcite:t:`Westin2016` for further details about the model.
@@ -751,6 +818,9 @@ class QtiModel(ReconstModel):
         .. footbibliography::
         """
         ReconstModel.__init__(self, gtab)
+        
+        self.args = args
+        self.kwargs = kwargs
 
         if self.gtab.btens is None:
             raise ValueError(
@@ -777,6 +847,13 @@ class QtiModel(ReconstModel):
         self.cvxpy_solver = cvxpy_solver
         self.fit_method_name = fit_method
 
+        self.is_iter_method = "weights_method" in self.kwargs
+
+        if "num_iter" not in self.kwargs and self.is_iter_method:
+            self.kwargs["num_iter"] = 4
+
+        self.extra = {}
+
     @warning_for_keywords()
     def fit(self, data, *, mask=None):
         """Fit QTI to data.
@@ -793,17 +870,122 @@ class QtiModel(ReconstModel):
         qtifit : dipy.reconst.qti.QtiFit
             The fitted model.
         """
+
         if mask is None:
             mask = np.ones(data.shape[:-1], dtype=bool)
         else:
+            # Check for valid shape of the mask
             if mask.shape != data.shape[:-1]:
                 raise ValueError("Mask is not the same shape as data.")
             mask = np.asarray(mask, dtype=bool)
-        if self.fit_method_name == "SDPdc":
-            params = self.fit_method(data, mask, self.X, self.cvxpy_solver)
+
+        data = np.maximum(data, MIN_POSITIVE_SIGNAL)
+
+        img_shape, sz = data.shape[:-1], data.shape[-1]
+        data_in_mask = np.reshape(data[mask], (-1, sz))
+
+        if not self.is_iter_method:
+            if self.fit_method_name == "SDPdc":
+                params_in_mask, extra = self.fit_method(
+                    self.X, data_in_mask, self.cvxpy_solver
+                )
+            else:
+                params_in_mask, extra = self.fit_method(
+                    self.X, data_in_mask, *self.args, **self.kwargs
+                )
+
         else:
-            params = self.fit_method(data, mask, self.X)
+            params_in_mask, extra = self.iterative_fit(
+                self.X,
+                data_in_mask,
+                num_iter=self.kwargs["num_iter"],
+                weights_method=self.kwargs["weights_method"]
+            )
+
+        params = np.zeros(img_shape + (params_in_mask.shape[-1],))
+        params[mask] = params_in_mask
+
+        if extra is not None:
+            for key in extra:
+                tmp_extra = np.zeros(img_shape + extra[key].shape[1:]) 
+                tmp_extra[mask] = extra[key]
+                self.extra[key] = tmp_extra
+
         return QtiFit(params)
+
+    def iterative_fit(
+        self,
+        X,
+        data_masked,
+        *,
+        num_iter=4,
+        weights_method=weights_method_wls_m_est,
+    ):
+        """Iteratively Reweighted fitting for the QTI model.
+
+        Parameters
+        ----------
+        X : array (g, 28)
+            Design matrix holding the covariants used to solve for the regression
+            coefficients.
+        data_masked : array (N, g)
+            The measured signal, already masked.
+        num_iter : int, optional
+            Number of times to iterate.
+        weights_method : callable, optional
+            A function with args and returns as follows:
+
+            (weights, robust) =
+              weights_method(data, pred_sig,
+                             design_matrix, leverages,
+                             idx, num_iter,
+                             robust)
+
+        Notes
+        -----
+        On the first iteration, (C)WLS fit is performed. Subsequent iterations
+        will be weighted according to weights_method.  Outlier rejection should
+        be handled within weights_method by setting the corresponding weights
+        to zero (if weights_method implements outlier rejection).
+
+        """
+        if num_iter < 2:  # otherwise, weights_method will not be utilized
+            raise ValueError("num_iter must be 2+")
+
+        w, robust = None, None  # NOTE: different to dki.py
+        params_in_mask, extra, leverages = None, None, None
+
+        TDX = num_iter
+        # NOTE: on first iteration, fit_method receives weights=w(=None)
+        for rdx in range(1, TDX + 1):
+            if rdx > 1:  #  after first iteration, update weights
+
+                # make prediction of the signal
+                pred_sig = self.predict(params_in_mask)
+
+                # define weights for next fit
+                w, robust = weights_method(
+                    data_masked,
+                    pred_sig,
+                    X,
+                    leverages,
+                    rdx,
+                    TDX,
+                    robust,
+                )
+
+            if self.fit_method_name == "SDPdc":
+                params_in_mask, extra = self.fit_method(
+                    X, data_masked, self.cvxpy_solver, weights=w, return_leverages=True
+                )
+            else:
+                params_in_mask, extra = self.fit_method(
+                    X, data_masked, weights=w, return_leverages=True
+                )
+            leverages = extra["leverages"]
+
+        extra = {"robust": robust}
+        return params_in_mask, extra
 
     def predict(self, params):
         """Generate signals from this model class instance and given parameters.
@@ -1265,4 +1447,9 @@ class QtiFit:
         return k_mu
 
 
-common_fit_methods = {"OLS": _ols_fit, "WLS": _wls_fit, "SDPdc": _sdpdc_fit}
+common_fit_methods = {
+    "OLS": _ols_fit,
+    "WLS": _wls_fit,
+    "SDPdc": _sdpdc_fit,
+    "RWLS": robust_fit_tensor_wls,
+}
