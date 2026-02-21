@@ -5,7 +5,7 @@ import numpy.testing as npt
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import default_sphere, get_sphere
-from dipy.direction.pmf import SHCoeffPmfGen, SimplePmfGen
+from dipy.direction.pmf import SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
 from dipy.reconst import shm
 from dipy.testing.decorators import set_random_number_generator
 
@@ -92,3 +92,48 @@ def test_pmf_from_array():
         ValueError,
         lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)]), default_sphere),
     )
+
+
+def test_pmf_from_peaks():
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+    n_vertices = len(sphere.vertices)
+
+    peak_indices = np.full((2, 2, 2, 2), -1.0, dtype=float)
+    peak_values = np.zeros((2, 2, 2, 2), dtype=float)
+
+    for x in range(2):
+        for y in range(2):
+            for z in range(2):
+                peak_indices[x, y, z, 0] = 0
+                peak_values[x, y, z, 0] = x + y + z + 1
+                peak_indices[x, y, z, 1] = 1
+                peak_values[x, y, z, 1] = 2.0
+
+    pmfgen = SimplePeakGen(peak_indices, peak_values, sphere.vertices, sphere)
+    point = np.array([0.5, 0.5, 0.5], dtype=float)
+    pmf = pmfgen.get_pmf(point)
+
+    npt.assert_allclose(pmf[0], 2.5)
+    npt.assert_allclose(pmf[1], 2.0)
+    npt.assert_array_equal(pmf[2:], np.zeros(n_vertices - 2))
+
+    pmf_value_0 = pmfgen.get_pmf_value(point, sphere.vertices[0])
+    pmf_value_1 = pmfgen.get_pmf_value(point, sphere.vertices[1])
+    pmf_value_2 = pmfgen.get_pmf_value(point, sphere.vertices[2])
+    npt.assert_allclose(pmf_value_0, 2.5)
+    npt.assert_allclose(pmf_value_1, 2.0)
+    npt.assert_allclose(pmf_value_2, 0.0)
+
+
+def test_pmf_from_peaks_invalid_point():
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+
+    peak_indices = np.zeros((2, 2, 2, 1), dtype=float)
+    peak_values = np.ones((2, 2, 2, 1), dtype=float)
+    pmfgen = SimplePeakGen(peak_indices, peak_values, sphere.vertices, sphere)
+
+    invalid_point = np.array([-0.1, 0.5, 0.5], dtype=float)
+    npt.assert_array_equal(
+        pmfgen.get_pmf(invalid_point), np.zeros(len(sphere.vertices))
+    )
+    npt.assert_allclose(pmfgen.get_pmf_value(invalid_point, sphere.vertices[0]), 0.0)

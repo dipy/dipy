@@ -1145,7 +1145,7 @@ def min_radius_curvature_from_angle(max_angle, step_size):
     return min_radius_curvature
 
 
-def seeds_directions_pairs(positions, peaks, *, max_cross=-1):
+def seeds_directions_pairs(positions, peaks, *, max_cross=-1, peak_values=None):
     """
     Pair each seed to the corresponding peaks. If multiple peaks are available
     the seed is repeated for each.
@@ -1159,6 +1159,10 @@ def seeds_directions_pairs(positions, peaks, *, max_cross=-1):
     max_cross : int, optional
         The maximum number of direction to track from each seed in crossing
         voxels. By default all voxel peaks are used.
+    peak_values : array (N, M), optional
+        Peak values (e.g., QA values) at each position. If provided, peaks
+        with value <= 0 are considered invalid. If not provided, peaks with
+        zero direction norm are considered invalid.
 
     Returns
     -------
@@ -1179,17 +1183,36 @@ def seeds_directions_pairs(positions, peaks, *, max_cross=-1):
             " be (N,3) and (N,M,3), respectively."
         )
 
-    seeds = []
-    directions = []
+    peaks_norm = np.linalg.norm(peaks, axis=2)
 
-    for i, s in enumerate(positions):
-        voxel_dirs_norm = np.linalg.norm(peaks[i, :, :], axis=1)
-        voxel_dirs = (
-            peaks[i, voxel_dirs_norm > 0, :]
-            / voxel_dirs_norm[voxel_dirs_norm > 0, np.newaxis]
-        )
-        for d in voxel_dirs[:max_cross, :]:
-            seeds.append(s)
-            directions.append(d)
+    # Use peak_values for validity if provided, otherwise use direction norm
+    if peak_values is not None:
+        valid_mask = peak_values > 0
+    else:
+        valid_mask = peaks_norm > 0
 
-    return np.array(seeds), np.array(directions)
+    peaks_normalized = np.zeros_like(peaks, dtype=float)
+    peaks_normalized[valid_mask] = (
+        peaks[valid_mask] / peaks_norm[valid_mask, np.newaxis]
+    )
+
+    if max_cross is not None and max_cross > 0:
+        cumsum_valid = np.cumsum(valid_mask, axis=1)
+        valid_mask &= cumsum_valid <= max_cross
+
+    n_valid = valid_mask.sum(axis=1)
+    total_pairs = n_valid.sum()
+
+    seeds = np.empty((total_pairs, 3), dtype=positions.dtype)
+    directions = np.empty((total_pairs, 3), dtype=float)
+
+    idx = 0
+    for i in range(positions.shape[0]):
+        n = n_valid[i]
+        if n > 0:
+            valid_dirs = peaks_normalized[i, valid_mask[i]]
+            seeds[idx : idx + n] = positions[i]
+            directions[idx : idx + n] = valid_dirs
+            idx += n
+
+    return seeds, directions

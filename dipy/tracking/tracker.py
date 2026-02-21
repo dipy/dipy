@@ -8,7 +8,7 @@ from dipy.direction import (
     ProbabilisticDirectionGetter,
 )
 from dipy.direction.peaks import peaks_from_positions
-from dipy.direction.pmf import SHCoeffPmfGen, SimplePmfGen
+from dipy.direction.pmf import SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
 from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tractogen import generate_tractogram
@@ -28,6 +28,7 @@ def generic_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    max_cross=None,
     nbr_threads=0,
     seed_buffer_fraction=1.0,
     save_seeds=False,
@@ -36,7 +37,7 @@ def generic_tracking(
 
     pmf_type = [
         {"name": "sh", "value": sh, "cls": SHCoeffPmfGen},
-        {"name": "peaks", "value": peaks, "cls": SimplePmfGen},
+        {"name": "peaks", "value": peaks, "cls": SimplePeakGen},
         {"name": "sf", "value": sf, "cls": SimplePmfGen},
     ]
 
@@ -61,18 +62,40 @@ def generic_tracking(
     if selected_pmf["name"] == "sf" and sphere is None:
         raise ValueError("A sphere should be defined when using SF (an ODF).")
 
-    if selected_pmf["name"] == "peaks":
-        raise NotImplementedError("Peaks are not yet implemented.")
-
     sphere = sphere or default_sphere
 
-    kwargs = {}
-    if selected_pmf["name"] == "sh":
-        kwargs = {"basis_type": basis_type, "legacy": legacy}
+    if selected_pmf["name"] == "peaks":
+        peak_data = selected_pmf["value"]
+        if not hasattr(peak_data, "peak_indices") or not hasattr(
+            peak_data, "peak_values"
+        ):
+            raise ValueError(
+                "peaks must be a PeaksAndMetrics object with "
+                "peak_indices and peak_values attributes"
+            )
 
-    pmf_gen = selected_pmf["cls"](
-        np.asarray(selected_pmf["value"], dtype=float), sphere, **kwargs
-    )
+        if hasattr(peak_data, "odf_vertices") and peak_data.odf_vertices is not None:
+            odf_vertices = peak_data.odf_vertices
+        else:
+            odf_vertices = sphere.vertices
+
+        pmf_gen = selected_pmf["cls"](
+            np.asarray(peak_data.peak_indices, dtype=float, order="C"),
+            np.asarray(peak_data.peak_values, dtype=float, order="C"),
+            np.asarray(odf_vertices, dtype=float, order="C"),
+            sphere,
+        )
+    elif selected_pmf["name"] == "sh":
+        pmf_gen = selected_pmf["cls"](
+            np.asarray(selected_pmf["value"], dtype=float),
+            sphere,
+            basis_type=basis_type,
+            legacy=legacy,
+        )
+    else:
+        pmf_gen = selected_pmf["cls"](
+            np.asarray(selected_pmf["value"], dtype=float), sphere
+        )
 
     if seed_directions is not None:
         if not isinstance(seed_directions, (np.ndarray, list)):
@@ -85,12 +108,47 @@ def generic_tracking(
                 "seed_directions and seed_positions should have the same shape."
             )
     else:
-        peaks = peaks_from_positions(
-            seed_positions, None, None, npeaks=1, affine=affine, pmf_gen=pmf_gen
-        )
-        seed_positions, seed_directions = seeds_directions_pairs(
-            seed_positions, peaks, max_cross=1
-        )
+        if selected_pmf["name"] == "peaks":
+            # Compute seed voxel coordinates
+            inv_affine = np.linalg.inv(affine)
+            seed_voxels = np.dot(seed_positions, inv_affine[:3, :3].T)
+            seed_voxels += inv_affine[:3, 3]
+            seed_voxels = np.round(seed_voxels).astype(int)
+
+            seed_voxels[:, 0] = np.clip(
+                seed_voxels[:, 0], 0, peak_data.peak_indices.shape[0] - 1
+            )
+            seed_voxels[:, 1] = np.clip(
+                seed_voxels[:, 1], 0, peak_data.peak_indices.shape[1] - 1
+            )
+            seed_voxels[:, 2] = np.clip(
+                seed_voxels[:, 2], 0, peak_data.peak_indices.shape[2] - 1
+            )
+
+            seed_peak_indices = peak_data.peak_indices[
+                seed_voxels[:, 0], seed_voxels[:, 1], seed_voxels[:, 2]
+            ].astype(int)
+
+            seed_peak_values = peak_data.peak_values[
+                seed_voxels[:, 0], seed_voxels[:, 1], seed_voxels[:, 2]
+            ]
+
+            seed_peak_indices = np.clip(seed_peak_indices, 0, len(odf_vertices) - 1)
+            peak_dirs_at_seeds = odf_vertices[seed_peak_indices]
+
+            seed_positions, seed_directions = seeds_directions_pairs(
+                seed_positions,
+                peak_dirs_at_seeds,
+                max_cross=max_cross,
+                peak_values=seed_peak_values,
+            )
+        else:
+            peaks_obj = peaks_from_positions(
+                seed_positions, None, None, npeaks=1, affine=affine, pmf_gen=pmf_gen
+            )
+            seed_positions, seed_directions = seeds_directions_pairs(
+                seed_positions, peaks_obj, max_cross=max_cross
+            )
 
     return generate_tractogram(
         seed_positions,
@@ -723,12 +781,13 @@ def eudx_tracking(
     peaks=None,
     sf=None,
     pam=None,
+    max_cross=None,
     min_len=2,
     max_len=500,
     step_size=0.5,
     voxel_size=None,
     max_angle=60,
-    pmf_threshold=0.1,
+    pmf_threshold=0.0239,
     sphere=None,
     basis_type=None,
     legacy=True,
@@ -756,6 +815,9 @@ def eudx_tracking(
         Spherical Function (SF).
     pam : PeakAndMetrics, optional
         Peaks and Metrics object
+    max_cross : int or None, optional
+        The maximum number of directions to track from each seed in crossing
+        voxels. By default (None), all peak directions are tracked.
     min_len : int, optional
         Minimum length (mm) of the streamlines.
     max_len : int, optional
@@ -777,8 +839,8 @@ def eudx_tracking(
         True to use a legacy basis definition for backward compatibility
         with previous ``tournier07`` and ``descoteaux07`` implementations.
     nbr_threads: int, optional
-        Number of threads to use for the processing. By default, all available threads
-        will be used.
+        Number of threads to use for parallel processing. Default is 0, which
+        uses all available cores.
     random_seed: int, optional
         Seed for the random number generator, must be >= 0. A value of greater than 0
         will all produce the same streamline trajectory for a given seed coordinate.
@@ -803,21 +865,34 @@ def eudx_tracking(
     if pam is None:
         raise ValueError("PAM should be defined.")
 
-    # convert length in mm to number of points
-    min_len = int(min_len / step_size)
-    max_len = int(max_len / step_size)
+    # Get voxel size
+    voxel_size = voxel_size if voxel_size is not None else voxel_sizes(affine)
 
-    return LocalTracking(
-        pam,
-        sc,
-        seed_positions,
-        affine,
+    params = generate_tracking_parameters(
+        "eudx",
+        min_len=min_len,
+        max_len=max_len,
         step_size=step_size,
-        minlen=min_len,
-        maxlen=max_len,
+        voxel_size=voxel_size,
+        max_angle=max_angle,
+        qa_thr=pmf_threshold,
+        ang_thr=max_angle,
+        total_weight=0.5,
         random_seed=random_seed,
         return_all=return_all,
-        initial_directions=seed_directions,
+    )
+
+    return generic_tracking(
+        seed_positions,
+        seed_directions,
+        sc,
+        params,
+        affine=affine,
+        peaks=pam,
+        sphere=sphere,
+        max_cross=max_cross,
+        nbr_threads=nbr_threads,
+        seed_buffer_fraction=seed_buffer_fraction,
         save_seeds=save_seeds,
     )
 
