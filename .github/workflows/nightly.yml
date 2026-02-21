@@ -205,7 +205,7 @@ jobs:
         contents: write # for softprops/action-gh-release to create GitHub release
       name: Upload to Anaconda
       needs: [build_linux_wheels, build_osx_wheels, build_windows_wheels]
-      if: ${{ always() }} && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+      if:  always() && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
       runs-on: ubuntu-latest
       timeout-minutes: 10
       steps:
