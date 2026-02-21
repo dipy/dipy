@@ -573,7 +573,7 @@ class ClassifyTissueFlow(Workflow):
                 class_list.append(["2", "Gray_Matter"])
 
             elif method.lower() == "synthseg":
-                synthseg = SynthSeg()
+                synthseg = SynthSeg(verbose=True)
                 segmentation_final, label_dict, _ = synthseg.predict(data, affine)
                 for label, name in label_dict.items():
                     class_list.append([f"{label}", name])
@@ -722,7 +722,7 @@ class BrainMaskFlow(Workflow):
 
         elif method == "synthseg":
             logger.info("Loading SynthSeg model...")
-            synthseg_model = SynthSeg(use_cuda=use_cuda)
+            synthseg_model = SynthSeg(verbose=True, use_cuda=use_cuda)
             logger.info("SynthSeg model loaded.")
 
         bvals_counter = 0

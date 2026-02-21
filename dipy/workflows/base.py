@@ -1,8 +1,49 @@
 import argparse
 import inspect
+import shutil
+import textwrap
 
 from dipy.utils.logging import logger
 from dipy.workflows.docstring_parser import NumpyDocString
+
+
+def format_key_value_table(data, key_header="Key", value_header="Value", *, sort=True):
+    """Format key-value pairs as a simple ASCII table.
+
+    Parameters
+    ----------
+    data : dict
+        Key-value pairs to display in the table.
+    key_header : str, optional
+        Header title for the key column.
+    value_header : str, optional
+        Header title for the value column.
+    sort : bool, optional
+        Whether to sort data alphabetically by key.
+
+    Returns
+    -------
+    str
+        Key-value pairs formatted as an ASCII table.
+    """
+    items = sorted(data.items()) if sort else list(data.items())
+    key_width = max([len(key_header), *[len(key) for key, _ in items]])
+    terminal_width = shutil.get_terminal_size(fallback=(120, 20)).columns
+    value_width = max(len(value_header), min(120, terminal_width - key_width - 7))
+    separator = f"+-{'-' * key_width}-+-{'-' * value_width}-+"
+    rows = [
+        separator,
+        f"| {key_header:<{key_width}} | {value_header:<{value_width}} |",
+        separator,
+    ]
+
+    for key, value in items:
+        wrapped_value = textwrap.wrap(value, width=value_width) or [""]
+        rows.append(f"| {key:<{key_width}} | {wrapped_value[0]:<{value_width}} |")
+        for extra_line in wrapped_value[1:]:
+            rows.append(f"| {'':<{key_width}} | {extra_line:<{value_width}} |")
+    rows.append(separator)
+    return "\n".join(rows)
 
 
 def add_default_args_to_docstring(npds, func):
@@ -354,6 +395,42 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         res = {k: v for k, v in dct.items() if v is not None}
         res.update({k: None for k, v in res.items() if v == "None"})
         return res
+
+    def format_help(self):
+        """Generate help message with table-formatted argument sections."""
+        parts = [self.format_usage()]
+
+        if self.description:
+            parts.append(self.description)
+
+        for action_group in self._action_groups:
+            visible = [
+                a for a in action_group._group_actions if a.help != argparse.SUPPRESS
+            ]
+            if not visible:
+                continue
+
+            table_data = {}
+            for action in visible:
+                if action.option_strings:
+                    arg_name = ", ".join(action.option_strings)
+                    if action.metavar:
+                        arg_name += f" <{action.metavar}>"
+                else:
+                    arg_name = action.dest
+                table_data[arg_name] = action.help or ""
+
+            parts.append(f"{action_group.title}:")
+            parts.append(
+                format_key_value_table(
+                    table_data, "Argument", "Description", sort=False
+                )
+            )
+
+        if self.epilog:
+            parts.append(self.epilog)
+
+        return "\n\n".join(parts) + "\n"
 
     def update_argument(self, *args, **kargs):
         self.add_argument(*args, **kargs)
