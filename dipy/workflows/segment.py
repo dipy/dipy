@@ -762,9 +762,12 @@ class BrainMaskFlow(Workflow):
                         f"{fpath} is a 4D image. Only the first volume will "
                         "be used for 'evac' brain masking."
                     )
-                    data = data[..., 0]
-                mask_volume = evac_model.predict(data, affine)
-                masked_volume = data * mask_volume
+                vol = data[..., 0] if data.ndim == 4 else data
+                mask_volume = evac_model.predict(vol, affine)
+                mask_for_apply = (
+                    mask_volume[..., np.newaxis] if data.ndim == 4 else mask_volume
+                )
+                masked_volume = data * mask_for_apply
 
             elif method == "synthseg":
                 if data.ndim == 4:
@@ -772,9 +775,12 @@ class BrainMaskFlow(Workflow):
                         f"{fpath} is a 4D image. Only the first volume will "
                         "be used for 'synthseg' brain masking."
                     )
-                    data = data[..., 0]
-                _, _, mask_volume = synthseg_model.predict(data, affine)
-                masked_volume = data * mask_volume
+                vol = data[..., 0] if data.ndim == 4 else data
+                _, _, mask_volume = synthseg_model.predict(vol, affine)
+                mask_for_apply = (
+                    mask_volume[..., np.newaxis] if data.ndim == 4 else mask_volume
+                )
+                masked_volume = data * mask_for_apply
 
             save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
             logger.info(f"Mask saved as {mask_out_path}")
