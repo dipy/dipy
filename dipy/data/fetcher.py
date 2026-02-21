@@ -2908,7 +2908,7 @@ def get_bundle_atlas_hcp842(*, size=80):
     Parameters
     ----------
     size : int, optional
-        Atlas size. Must be either 80 or 30 bundles. Default is 80.
+        Atlas size. Must be either 80 or 30 bundles.
 
     Returns
     -------
