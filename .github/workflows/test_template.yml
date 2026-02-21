@@ -14,7 +14,7 @@ on:
         required: false
         default: '["3.11", ]'
       use-pre:
-        description: "bal"
+        description: "Use pre-release versions"
         type: boolean
         required: false
       coverage:
