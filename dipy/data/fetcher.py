@@ -2877,11 +2877,14 @@ def read_cfin_t1():
 
 def get_file_formats():
     """
+    Get example bundle files and their reference anatomy image.
 
     Returns
     -------
-    bundles_list : all bundles (list)
-    ref_anat : reference
+    bundles_list : list of Path
+        List of bundle file paths in different formats.
+    ref_anat : Path
+        Path to the reference anatomical image.
     """
     ref_anat = dipy_home / "bundle_file_formats_example" / "template0.nii.gz"
     bundles_list = []
@@ -2900,10 +2903,19 @@ def get_file_formats():
 @warning_for_keywords()
 def get_bundle_atlas_hcp842(*, size=80):
     """
+    Get paths to the HCP842 bundle atlas files.
+
+    Parameters
+    ----------
+    size : int, optional
+        Atlas size. Must be either 80 or 30 bundles.
+
     Returns
     -------
-    file1 : string
-    file2 : string
+    file1 : Path
+        Path to whole brain tractogram.
+    file2 : Path
+        Path pattern to individual bundle tractograms.
     """
     size = 80 if size not in [80, 30] else size
 
@@ -2928,10 +2940,14 @@ def get_bundle_atlas_hcp842(*, size=80):
 
 def get_two_hcp842_bundles():
     """
+    Get paths to two example bundles from the HCP842 atlas.
+
     Returns
     -------
-    file1 : string
-    file2 : string
+    file1 : Path
+        Path to left arcuate fasciculus bundle.
+    file2 : Path
+        Path to left corticospinal tract bundle.
     """
     file1 = (
         dipy_home / "bundle_atlas_hcp842" / "Atlas_80_Bundles" / "bundles" / "AF_L.trk"
@@ -2946,9 +2962,12 @@ def get_two_hcp842_bundles():
 
 def get_target_tractogram_hcp():
     """
+    Get path to example HCP tractogram.
+
     Returns
     -------
-    file1 : string
+    file1 : Path
+        Path to tractogram file.
     """
     file1 = dipy_home / "target_tractogram_hcp" / "hcp_tractogram" / "streamlines.trk"
 
