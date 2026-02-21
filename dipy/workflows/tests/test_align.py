@@ -214,6 +214,34 @@ def test_slr_flow_empty_after_length_filtering(caplog):
         assert any("SLR with QBX failed" in err.message for err in error_records)
 
 
+def test_slr_flow_remove_invalid_streamlines():
+    """Test that SlrWithQbxFlow removes out-of-bounds streamlines when
+    remove_invalid_streamlines=True and does not raise a ValueError on save.
+    """
+    with TemporaryDirectory() as out_dir:
+        data_path = get_fnames(name="fornix")
+
+        sft = load_tractogram(data_path, "same", bbox_valid_check=False)
+        sft.streamlines._data += np.array([50, 0, 0])
+        moved_path = Path(out_dir) / "moved.trx"
+        save_tractogram(sft, moved_path, bbox_valid_check=False)
+
+        slr_flow = SlrWithQbxFlow(force=True)
+        slr_flow.run(
+            data_path,
+            moved_path,
+            out_dir=out_dir,
+            bbox_valid_check=False,
+            remove_invalid_streamlines=True,
+        )
+
+        out_path = slr_flow.last_generated_outputs["out_moved"]
+        assert Path(out_path).is_file()
+
+        result_sft = load_tractogram(out_path, "same", bbox_valid_check=True)
+        assert len(result_sft.streamlines) >= 0
+
+
 @set_random_number_generator(1234)
 def test_image_registration(rng):
     with TemporaryDirectory() as temp_out_dir:
