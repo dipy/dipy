@@ -86,14 +86,11 @@ signal, sticks = multi_tensor(
 signal_noisy, sticks = multi_tensor(
     gtab, mevals, S0=100, angles=angles, fractions=fractions, snr=20
 )
-plt.figure()
-
-plt.plot(signal, label="noiseless")
-
-plt.plot(signal_noisy, label="with noise")
-plt.legend()
-# plt.show()
-plt.savefig("simulated_signal.png", bbox_inches="tight")
+fig, ax = plt.subplots()
+ax.plot(signal, label="noiseless")
+ax.plot(signal_noisy, label="with noise")
+ax.legend()
+fig.savefig("simulated_signal.png", bbox_inches="tight")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
