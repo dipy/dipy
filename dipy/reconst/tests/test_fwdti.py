@@ -11,15 +11,17 @@ from dipy.reconst.dti import (
     decompose_tensor,
     fractional_anisotropy,
     from_lower_triangular,
+    lower_triangular_to_cholesky,
+    cholesky_to_lower_triangular
 )
+
 import dipy.reconst.fwdti as fwdti
 from dipy.reconst.fwdti import (
-    cholesky_to_lower_triangular,
     fwdti_prediction,
-    lower_triangular_to_cholesky,
     nls_fit_tensor,
     wls_fit_tensor,
 )
+
 from dipy.sims.voxel import (
     all_tensor_evecs,
     multi_tensor,
