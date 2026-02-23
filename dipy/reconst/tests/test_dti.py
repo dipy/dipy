@@ -32,11 +32,17 @@ from dipy.reconst.dti import (
     sphericity,
     trace,
     wls_fit_tensor,
+    lower_triangular_to_cholesky,
+    cholesky_to_lower_triangular,
+    nlls_fit_tensor,
+    design_matrix
 )
+
 from dipy.reconst.weights_method import (
     weights_method_nlls_m_est,
     weights_method_wls_m_est,
 )
+
 from dipy.sims.voxel import single_tensor
 from dipy.testing import assert_warns
 from dipy.testing.decorators import set_random_number_generator
@@ -1224,3 +1230,32 @@ def test_quantize_evecs_parallel_engines():
         except Exception as e:
             # If an engine fails, that's okay - just skip it
             print(f"Warning: Could not test engine {engine}: {e}")
+
+
+def test_cholesky_transformations():
+    """Test Cholesky decomposition and its inverse for DTI."""
+    dt_gt = np.array([0.0017, 0, 0.0003, 0, 0, 0.0003])
+    r_elements = lower_triangular_to_cholesky(dt_gt)
+    dt_recovered = cholesky_to_lower_triangular(r_elements)
+    npt.assert_array_almost_equal(dt_gt, dt_recovered)
+
+
+def test_dti_nlls_cholesky_positivity():
+    """Test if NLLS with Cholesky parameterization enforces positive eigenvalues."""
+    evals_gt = np.array([0.0017, 0.0003, 0.0003])
+    evecs_gt = np.eye(3)
+
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
+    S_noisy = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt, snr=5)
+    X = design_matrix(gtab)
+
+    params_nls, _ = nlls_fit_tensor(X, S_noisy, cholesky=True)
+    evals_nls = params_nls[..., :3]
+ 
+    # Assert all eigenvalues are non-negative (within float precision)
+    npt.assert_(np.all(evals_nls >= -1e-8))
+
+    fa_nls = fractional_anisotropy(evals_nls)
+    npt.assert_(np.all((fa_nls >= 0) & (fa_nls <= 1)))

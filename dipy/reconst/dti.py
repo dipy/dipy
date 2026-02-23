@@ -1671,15 +1671,13 @@ class _NllsHelper:
             squared residuals such that $S = \sum_i w_i r_i^2$.
 
         """
-        #Cholesky decomposition if requested ---------------------------
+
         if cholesky:
             r_params = tensor[:6]
             s0_param = tensor[6:]
             d_params = cholesky_to_lower_triangular(r_params)
             tensor = np.concatenate((d_params, s0_param))
-        
-        #----------------------------------------------------------------
-        
+
         # This is the predicted signal given the params:
         y = np.exp(np.dot(design_matrix, tensor))
         self.y = y  # cache the results
