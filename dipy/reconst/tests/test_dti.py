@@ -178,7 +178,7 @@ def test_tensor_model():
         for i in range(3):
             # Eigenvectors have intrinsic sign ambiguity
             # (see
-            # http://prod.sandia.gov/techlib/access-control.cgi/2007/076422.pdf)
+            # https://prod.sandia.gov/techlib/access-control.cgi/2007/076422.pdf)
             # so we need to allow for sign flips. One of the following should
             # always be true:
             npt.assert_(

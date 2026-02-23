@@ -23,9 +23,11 @@ from dipy.io.vtk import (
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
+vtk, have_vtk, setup_module = optional_package(
+    "vtk", min_version="9.0.0", max_version="9.1.0"
+)
 
-if have_fury:
+if have_vtk:
     import vtk
     import vtk.util.numpy_support as ns
 
@@ -107,7 +109,7 @@ def load_surface(
             reference = fname
         else:
             logging.error(
-                'Reference must be provided, "same" is only ' "available for GII file."
+                'Reference must be provided, "same" is only available for GII file.'
             )
             return False
 

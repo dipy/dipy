@@ -232,7 +232,7 @@ tag to github, so the buildbots can find the released code and build it.
 
     * An account on a macOS box with sudo (Admin user) on which to run the
       script.
-    * ssh access to the buildbot server http://nipy.bic.berkeley.edu (ask
+    * ssh access to the buildbot server https://nipy.bic.berkeley.edu (ask
       Matthew or Eleftherios).
     * a development version of ``bdist_mpkg`` installed from
       https://github.com/matthew-brett/bdist_mpkg.  You need this second for the

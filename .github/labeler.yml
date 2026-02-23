@@ -120,8 +120,8 @@ area:workflows:
 
 type:cython:
   files:
-    - "**/.pxd"
-    - "**/.pyx"
+    - "**/*.pxd"
+    - "**/*.pyx"
 
 type:infrastructure:
   files:
@@ -132,7 +132,6 @@ type:infrastructure:
     - ".coveragerc"
     - ".gitattributes"
     - ".gitignore"
-    - ".mailmap"
     - ".mailmap"
     - ".pre-commit-config.yaml"
     - "Makefile"

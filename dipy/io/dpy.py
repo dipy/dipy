@@ -5,7 +5,7 @@ key features of the HDF5 (hierarchical data format) API [1]_.
 
 References
 ----------
-.. [1] http://www.hdfgroup.org/HDF5/doc/H5.intro.html
+.. [1] https://www.hdfgroup.org/HDF5/doc/H5.intro.html
 """
 
 import h5py

@@ -23,7 +23,7 @@ class EVACPlusFlow(Workflow):
         save_masked=False,
         out_dir="",
         out_mask="brain_mask.nii.gz",
-        out_masked="dwi_masked.nii.gz",
+        out_masked="brain_masked.nii.gz",
     ):
         """Extract brain using EVAC+.
 

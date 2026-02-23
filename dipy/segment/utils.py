@@ -4,7 +4,9 @@ import numpy as np
 from scipy.ndimage import label
 
 
-def remove_holes_and_islands(binary_img, *, slice_wise=False):
+def remove_holes_and_islands(
+    binary_img, *, remove_holes=True, remove_islands=True, slice_wise=False
+):
     """
     Remove any small mask chunks or holes
     that could be in the segmentation output.
@@ -15,6 +17,10 @@ def remove_holes_and_islands(binary_img, *, slice_wise=False):
         Binary image
     slice_wise : bool, optional
         Whether to run slice wise background correction as well
+    remove_holes : bool, optional
+        Whether to remove holes from the binary image
+    remove_islands : bool, optional
+        Whether to remove islands from the binary image
 
     Returns
     -------
@@ -29,50 +35,39 @@ def remove_holes_and_islands(binary_img, *, slice_wise=False):
         )
         return binary_img
 
-    largest_img = np.zeros_like(binary_img)
-    chunks, _ = label(np.abs(1 - binary_img))
-    u, c = np.unique(chunks[chunks != 0], return_counts=True)
-    if len(u) == 0:
+    if not remove_holes and not remove_islands:
         warnings.warn(
-            "The mask has no background. \
+            "Both remove_holes and remove_islands is False. \
                       Returning the original mask",
             UserWarning,
             stacklevel=2,
         )
         return binary_img
-    target = u[np.argmax(c)]
 
-    largest_img = np.where(chunks == target, 0, 1)
+    shape = binary_img.shape
+    new_binary_img = binary_img.copy()
 
-    chunks, _ = label(largest_img)
-    u, c = np.unique(chunks[chunks != 0], return_counts=True)
-    if len(u) == 0:
-        warnings.warn(
-            "The mask has no foreground. \
-                      Returning the original mask",
-            UserWarning,
-            stacklevel=2,
-        )
-        return binary_img
-    target = u[np.argmax(c)]
-
-    largest_img = np.where(chunks == target, 1, 0)
+    if remove_islands:
+        components, _ = label(new_binary_img)
+        new_binary_img = components == np.argmax(np.bincount(components.flat)[1:]) + 1
+        new_binary_img = new_binary_img.astype(int)
+    if remove_holes:
+        components, _ = label(1 - new_binary_img)
+        new_binary_img = components == np.argmax(np.bincount(components.flat)[1:]) + 1
+        new_binary_img = 1 - new_binary_img.astype(int)
 
     if slice_wise:
-        for x in range(largest_img.shape[0]):
-            chunks, n_chunk = label(np.abs(1 - largest_img[x]))
-            u, c = np.unique(chunks[chunks != 0], return_counts=True)
-            target = u[np.argmax(c)]
-            largest_img[x] = np.where(chunks == target, 0, 1)
-        for y in range(largest_img.shape[1]):
-            chunks, n_chunk = label(np.abs(1 - largest_img[:, y]))
-            u, c = np.unique(chunks[chunks != 0], return_counts=True)
-            target = u[np.argmax(c)]
-            largest_img[:, y] = np.where(chunks == target, 0, 1)
-        for z in range(largest_img.shape[2]):
-            chunks, n_chunk = label(np.abs(1 - largest_img[..., z]))
-            u, c = np.unique(chunks[chunks != 0], return_counts=True)
-            target = u[np.argmax(c)]
-            largest_img[..., z] = np.where(chunks == target, 0, 1)
+        for x in range(shape[0]):
+            components, _ = label(1 - new_binary_img[x])
+            temp = components == np.argmax(np.bincount(components.flat)[1:]) + 1
+            new_binary_img[x] = 1 - temp.astype(int)
+        for y in range(shape[1]):
+            components, _ = label(1 - new_binary_img[:, y])
+            temp = components == np.argmax(np.bincount(components.flat)[1:]) + 1
+            new_binary_img[:, y] = 1 - temp.astype(int)
+        for z in range(shape[2]):
+            components, _ = label(1 - new_binary_img[..., z])
+            temp = components == np.argmax(np.bincount(components.flat)[1:]) + 1
+            new_binary_img[..., z] = 1 - temp.astype(int)
 
-    return largest_img
+    return new_binary_img

@@ -5,7 +5,7 @@ Making your own copy (fork) of DIPY
 ======================================================
 
 You need to do this only once. The instructions here are very similar
-to the instructions at http://help.github.com/forking/ |emdash| please see
+to the instructions at https://help.github.com/forking/ |emdash| please see
 that page for more detail. We're repeating some of it here just to give the
 specifics for the `DIPY`_ project, and to suggest some default names.
 

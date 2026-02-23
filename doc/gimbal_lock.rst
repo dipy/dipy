@@ -84,7 +84,7 @@ When $\sin(\beta) = 1$:
 From the `angle sum and difference identities
 <https://en.wikipedia.org/wiki/List_of_trigonometric_identities#Angle_sum_and_difference_identities>`_
 (see also `geometric proof
-<http://www.themathpage.com/atrig/sum-proof.htm>`_, `Mathworld treatment
+<https://www.themathpage.com/atrig/sum-proof.htm>`_, `Mathworld treatment
 <https://mathworld.wolfram.com/TrigonometricAdditionFormulas.html>`_) we
 remind ourselves that, for any two angles $\alpha$ and $\beta$:
 
@@ -115,5 +115,5 @@ rotation about the $z$ axis.
 
 It's easy to do the same set of reductions, with the same conclusion,
 for the case where $\sin(\beta) = -1$ - see
-http://www.gregslabaugh.name/publications/euler.pdf.
+https://www.gregslabaugh.name/publications/euler.pdf.
 

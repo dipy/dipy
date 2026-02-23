@@ -52,14 +52,14 @@ cst_l_file = (
     afq_path
     / "clean_bundles"
     / f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
-    "-RASMM_model-CSD_desc-prob-afq-CST_L_tractography.trk",
+    "-RASMM_model-CSD_desc-prob-afq-CST_L_tractography.trk"
 )
 
 arc_l_file = (
     afq_path
     / "clean_bundles"
     / f"sub-{subject}_ses-{session}_acq-64dir_space-T1w_desc-preproc_dwi_space"
-    "-RASMM_model-CSD_desc-prob-afq-ARC_L_tractography.trk",
+    "-RASMM_model-CSD_desc-prob-afq-ARC_L_tractography.trk"
 )
 
 cst_l = load_tractogram(

@@ -53,6 +53,7 @@ from itertools import combinations
 from warnings import warn
 
 from nibabel.affines import apply_affine
+from nibabel.streamlines import ArraySequence as Streamlines
 import numpy as np
 from scipy.spatial.distance import cdist
 
@@ -116,6 +117,8 @@ def connectivity_matrix(
     *,
     inclusive=False,
     symmetric=True,
+    weights=None,
+    discard_stream_size=0,
     return_mapping=False,
     mapping_as_streamlines=False,
 ):
@@ -133,14 +136,22 @@ def connectivity_matrix(
         volume map to anatomical structures.
     inclusive: bool
         Whether to analyze the entire streamline, as opposed to just the
-        endpoints. False by default.
-    symmetric : bool, True by default
+        endpoints.
+    symmetric : bool, optional
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
-    return_mapping : bool, False by default
+    weights : ndarray, optional
+        A 1D array of size n, containing the weights of each of the n
+        streamlines.
+    discard_stream_size : int, optional
+        If the length of a streamline is less than or equal to this value, it
+        will not be included in the connectivity matrix. When 0, no filtering
+        is applied. This is useful for ignoring very short streamlines that
+        are likely to be noise.
+    return_mapping : bool, optional
         If True, a mapping is returned which maps matrix indices to
         streamlines.
-    mapping_as_streamlines : bool, False by default
+    mapping_as_streamlines : bool, optional
         If True voxel indices map to lists of streamline objects. Otherwise
         voxel indices map to lists of integers.
 
@@ -165,12 +176,24 @@ def connectivity_matrix(
             "label_volume must be a 3d integer array with non-negative label values"
         )
 
-    matrix = np.zeros(
-        (np.max(label_volume) + 1, np.max(label_volume) + 1), dtype=np.int64
-    )
-
     mapping = defaultdict(list)
     lin_T, offset = _mapping_to_voxel(affine)
+
+    if type(streamlines).__name__ == "generator":
+        streamlines = Streamlines(streamlines)
+
+    if weights is None:
+        weights = np.ones(len(streamlines))
+        matrix = np.zeros(
+            (np.max(label_volume) + 1, np.max(label_volume) + 1), dtype=np.int64
+        )
+    else:
+        matrix = np.zeros((np.max(label_volume) + 1, np.max(label_volume) + 1))
+
+    if discard_stream_size > 0:
+        (keep_idx,) = np.where(streamlines._lengths > discard_stream_size)
+        streamlines = streamlines[keep_idx]
+        weights = weights[keep_idx]
 
     if inclusive:
         for i, sl in enumerate(streamlines):
@@ -183,7 +206,7 @@ def connectivity_matrix(
                 crossed_labels = crossed_labels[0][np.argsort(crossed_labels[1])]
 
             for comb in combinations(crossed_labels, 2):
-                matrix[comb] += 1
+                matrix[comb] += weights[i]
 
                 if return_mapping:
                     if mapping_as_streamlines:
@@ -192,14 +215,14 @@ def connectivity_matrix(
                         mapping[comb].append(i)
 
     else:
-        streamlines_end = np.array([sl[0 :: len(sl) - 1] for sl in streamlines])
+        streamlines_end = np.array([sl[[0, -1]] for sl in streamlines])
         streamlines_end = _to_voxel_coordinates(streamlines_end, lin_T, offset)
         x, y, z = streamlines_end.T
         if symmetric:
             end_labels = np.sort(label_volume[x, y, z], axis=0)
         else:
             end_labels = label_volume[x, y, z]
-        np.add.at(matrix, (end_labels[0].T, end_labels[1].T), 1)
+        np.add.at(matrix, (end_labels[0].T, end_labels[1].T), weights)
 
         if return_mapping:
             if mapping_as_streamlines:
@@ -996,11 +1019,11 @@ def path_length(streamlines, affine, aoi, *, fill_value=-1):
     streamlines : seq of (N, 3) arrays
         A sequence of streamlines, path length is given in mm along the curve
         of the streamline.
-    aoi : array, 3d
-        A mask (binary array) of voxels from which to start computing distance.
     affine : array (4, 4)
         The mapping between voxel indices and the point space for seeds.
         The voxel_to_rasmm matrix, typically from a NIFTI file.
+    aoi : array, 3d
+        A mask (binary array) of voxels from which to start computing distance.
     fill_value : float
         The value of voxel in the path length map that are not connected to the
         aoi.

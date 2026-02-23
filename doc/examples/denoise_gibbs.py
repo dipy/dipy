@@ -235,7 +235,6 @@ maskdata, mask = median_otsu(
     vol_idx=range(10, 50),
     median_radius=3,
     numpass=1,
-    autocrop=False,
     dilate=1,
 )
 

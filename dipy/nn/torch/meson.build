@@ -4,6 +4,7 @@ python_sources = [
   'histo_resdnn.py',
   'deepn4.py',
   'synb0.py',
+  'synthseg.py',
   ]
 
 

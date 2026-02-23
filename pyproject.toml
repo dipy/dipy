@@ -50,6 +50,7 @@ dependencies = [
 dipy_align_syn = "dipy.workflows.cli:run"
 dipy_align_affine = "dipy.workflows.cli:run"
 dipy_apply_transform = "dipy.workflows.cli:run"
+dipy_brain_mask = "dipy.workflows.cli:run"
 dipy_buan_shapes = "dipy.workflows.cli:run"
 dipy_buan_profiles = "dipy.workflows.cli:run"
 dipy_buan_lmm = "dipy.workflows.cli:run"
@@ -109,7 +110,7 @@ dipy_tensor2pam = "dipy.workflows.cli:run"
 build = [
     "meson-python>=0.13",
     "wheel",
-    "setuptools~=69.5",
+    "setuptools>=69.5,<83.0",
     "packaging>=21",
     "ninja",
     "Cython>=0.29.35",

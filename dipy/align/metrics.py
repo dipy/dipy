@@ -102,7 +102,7 @@ class SimilarityMetric:
         information from knowing how the current static image was generated
         (as the transformation of an original static image). This method is
         called by the optimizer just after it sets the static image.
-        Transformation will be an instance of DiffeomorficMap or None
+        Transformation will be an instance of DiffeomorphicMap or None
         if the original_static_image equals self.moving_image.
 
         Parameters
@@ -141,7 +141,7 @@ class SimilarityMetric:
         information from knowing how the current static image was generated
         (as the transformation of an original static image). This method is
         called by the optimizer just after it sets the static image.
-        Transformation will be an instance of DiffeomorficMap or None if
+        Transformation will be an instance of DiffeomorphicMap or None if
         the original_moving_image equals self.moving_image.
 
         Parameters
@@ -255,7 +255,7 @@ class CCMetric(SimilarityMetric):
             return any(size < min_size for size in image.shape)
 
         msg = (
-            "Each image dimension should be superior to 2 * radius + 1 "
+            "Each image dimension should be larger than 2 * radius + 1 "
             f"({min_size}). Decrease CCMetric radius ({self.radius}) or "
             "increase your image size (shape=%(shape)s)."
         )
@@ -649,7 +649,7 @@ class EMMetric(SimilarityMetric):
         r"""This is called by the optimizer just after setting the static image.
 
         EMMetric takes advantage of the image dynamics by computing the
-        current static image mask from the originalstaticImage mask (warped
+        current static image mask from the original static image mask (warped
         by nearest neighbor interpolation)
 
         Parameters

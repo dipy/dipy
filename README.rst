@@ -1,6 +1,6 @@
 .. image:: doc/_static/images/logos/dipy-logo.png
   :height: 180px
-  :target: http://dipy.org
+  :target: https://dipy.org
   :alt: DIPY - Diffusion Imaging in Python
 
 |
@@ -35,7 +35,7 @@ in clinical settings.
 Website
 =======
 
-Current information can always be found from the DIPY website - http://dipy.org
+Current information can always be found from the DIPY website - https://dipy.org
 
 Mailing Lists
 =============
@@ -46,20 +46,18 @@ https://mail.python.org/mailman3/lists/dipy.python.org/
 Please see the users' forum at
 https://github.com/dipy/dipy/discussions
 
-Please join the gitter chatroom `here <https://gitter.im/dipy/dipy>`_.
-
 Code
 ====
 
 You can find our sources and single-click downloads:
 
 * `Main repository`_ on Github.
-* Documentation_ for all releases and current development tree.
+* Documentation_ for all releases and the current development tree.
 * Download as a tar/zip file the `current trunk`_.
 
-.. _main repository: http://github.com/dipy/dipy
-.. _Documentation: http://dipy.org
-.. _current trunk: http://github.com/dipy/dipy/archives/master
+.. _main repository: https://github.com/dipy/dipy
+.. _Documentation: https://dipy.org
+.. _current trunk: https://github.com/dipy/dipy/archives/master
 
 
 Installing DIPY

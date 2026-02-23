@@ -29,7 +29,7 @@ from dipy.utils.optpkg import TripWire, optional_package
 
 # Set a user-writeable file-system location to put files:
 if "DIPY_HOME" in os.environ:
-    dipy_home = os.environ["DIPY_HOME"]
+    dipy_home = Path(os.environ["DIPY_HOME"])
 else:
     dipy_home = Path("~").expanduser() / ".dipy"
 
@@ -522,7 +522,7 @@ def _make_fetcher(
 
 fetch_isbi2013_2shell = _make_fetcher(
     "fetch_isbi2013_2shell",
-    Path(dipy_home) / "isbi2013",
+    dipy_home / "isbi2013",
     UW_RW_URL + "1773/38465/",
     ["phantom64.nii.gz", "phantom64.bval", "phantom64.bvec"],
     [Path("phantom64.nii.gz"), Path("phantom64.bval"), Path("phantom64.bvec")],
@@ -537,7 +537,7 @@ fetch_isbi2013_2shell = _make_fetcher(
 
 fetch_stanford_labels = _make_fetcher(
     "fetch_stanford_labels",
-    Path(dipy_home) / "stanford_hardi",
+    dipy_home / "stanford_hardi",
     "https://stacks.stanford.edu/file/druid:yx282xq2090/",
     ["aparc-reduced.nii.gz", "label_info.txt"],
     [Path("aparc-reduced.nii.gz"), Path("label_info.txt")],
@@ -547,7 +547,7 @@ fetch_stanford_labels = _make_fetcher(
 
 fetch_sherbrooke_3shell = _make_fetcher(
     "fetch_sherbrooke_3shell",
-    Path(dipy_home) / "sherbrooke_3shell",
+    dipy_home / "sherbrooke_3shell",
     UW_RW_URL + "1773/38475/",
     ["HARDI193.nii.gz", "HARDI193.bval", "HARDI193.bvec"],
     [Path("HARDI193.nii.gz"), Path("HARDI193.bval"), Path("HARDI193.bvec")],
@@ -562,7 +562,7 @@ fetch_sherbrooke_3shell = _make_fetcher(
 
 fetch_stanford_hardi = _make_fetcher(
     "fetch_stanford_hardi",
-    Path(dipy_home) / "stanford_hardi",
+    dipy_home / "stanford_hardi",
     "https://stacks.stanford.edu/file/druid:yx282xq2090/",
     ["dwi.nii.gz", "dwi.bvals", "dwi.bvecs"],
     [Path("HARDI150.nii.gz"), Path("HARDI150.bval"), Path("HARDI150.bvec")],
@@ -576,7 +576,7 @@ fetch_stanford_hardi = _make_fetcher(
 
 fetch_resdnn_tf_weights = _make_fetcher(
     "fetch_resdnn_tf_weights",
-    Path(dipy_home) / "histo_resdnn_weights",
+    dipy_home / "histo_resdnn_weights",
     "https://ndownloader.figshare.com/files/",
     ["22736240"],
     [Path("resdnn_weights_mri_2018.h5")],
@@ -586,7 +586,7 @@ fetch_resdnn_tf_weights = _make_fetcher(
 
 fetch_resdnn_torch_weights = _make_fetcher(
     "fetch_resdnn_torch_weights",
-    Path(dipy_home) / "histo_resdnn_weights",
+    dipy_home / "histo_resdnn_weights",
     "https://ndownloader.figshare.com/files/",
     ["50019429"],
     [Path("histo_weights.pth")],
@@ -618,7 +618,7 @@ fetch_synb0_torch_weights = _make_fetcher(
 
 fetch_synb0_weights = _make_fetcher(
     "fetch_synb0_weights",
-    Path(dipy_home) / "synb0",
+    dipy_home / "synb0",
     "https://ndownloader.figshare.com/files/",
     ["36379914", "36379917", "36379920", "36379923", "36379926"],
     [
@@ -640,7 +640,7 @@ fetch_synb0_weights = _make_fetcher(
 
 fetch_synb0_test = _make_fetcher(
     "fetch_synb0_test",
-    Path(dipy_home) / "synb0",
+    dipy_home / "synb0",
     "https://ndownloader.figshare.com/files/",
     ["36379911", "36671850"],
     [Path("test_input_synb0.npz"), Path("test_output_synb0.npz")],
@@ -668,7 +668,7 @@ fetch_mni_resized_templates = _make_fetcher(
 
 fetch_deepn4_tf_weights = _make_fetcher(
     "fetch_deepn4_tf_weights",
-    Path(dipy_home) / "deepn4",
+    dipy_home / "deepn4",
     "https://ndownloader.figshare.com/files/",
     ["44673313"],
     [Path("model_weights.h5")],
@@ -678,7 +678,7 @@ fetch_deepn4_tf_weights = _make_fetcher(
 
 fetch_deepn4_torch_weights = _make_fetcher(
     "fetch_deepn4_torch_weights",
-    Path(dipy_home) / "deepn4",
+    dipy_home / "deepn4",
     "https://ndownloader.figshare.com/files/",
     ["52285805"],
     [Path("deepn4_torch_weights")],
@@ -688,17 +688,17 @@ fetch_deepn4_torch_weights = _make_fetcher(
 
 fetch_deepn4_test = _make_fetcher(
     "fetch_deepn4_test",
-    Path(dipy_home) / "deepn4",
+    dipy_home / "deepn4",
     "https://ndownloader.figshare.com/files/",
-    ["48842938", "52454531"],
-    [Path("test_input_deepn4.npz"), Path("new_test_output_deepn4.npz")],
-    md5_list=["07aa7cc7c7f839683a0aad5bb853605b", "6da15c4358fd13c99773eedeb93953c7"],
+    ["60829657"],
+    ["d4_data.npz"],
+    md5_list=["d3cc2020107599139fe02bbadacee8ef"],
     doc="Download DeepN4 test data for Kanakaraj et. al 2024",
 )
 
 fetch_evac_tf_weights = _make_fetcher(
     "fetch_evac_tf_weights",
-    Path(dipy_home) / "evac",
+    dipy_home / "evac",
     "https://ndownloader.figshare.com/files/",
     ["43037191"],
     [Path("evac_default_weights.h5")],
@@ -708,7 +708,7 @@ fetch_evac_tf_weights = _make_fetcher(
 
 fetch_evac_torch_weights = _make_fetcher(
     "fetch_evac_torch_weights",
-    Path(dipy_home) / "evac",
+    dipy_home / "evac",
     "https://ndownloader.figshare.com/files/",
     ["50019432"],
     [Path("evac_weights.pth")],
@@ -718,17 +718,37 @@ fetch_evac_torch_weights = _make_fetcher(
 
 fetch_evac_test = _make_fetcher(
     "fetch_evac_test",
-    Path(dipy_home) / "evac",
+    dipy_home / "evac",
     "https://ndownloader.figshare.com/files/",
-    ["48891958"],
+    ["60829660"],
     ["evac_test_data.npz"],
-    md5_list=["072a0dd6d2cddf8a3697b6a772e06e29"],
+    md5_list=["d1f0dd6d38b4d358b2ce53a495fae31e"],
     doc="Download EVAC+ test data for Park et. al 2022",
+)
+
+fetch_synthseg_torch_weights = _make_fetcher(
+    "fetch_synthseg_torch_weights",
+    Path(dipy_home) / "synthseg",
+    "https://ndownloader.figshare.com/files/",
+    ["60274412"],
+    ["synthseg_model_weights.pth"],
+    md5_list=["83d54a150410bdc1f04d70a84ff8f1ee"],
+    doc="Download SynthSeg model weights for Billot et. al 2023",
+)
+
+fetch_synthseg_test = _make_fetcher(
+    "fetch_synthseg_test",
+    Path(dipy_home) / "synthseg",
+    "https://ndownloader.figshare.com/files/",
+    ["60572540"],
+    ["synthseg_test_data.npz"],
+    md5_list=["70377d1858dc870eca389f30cfc4e193"],
+    doc="Download SynthSeg test data for Billot et. al 2023",
 )
 
 fetch_stanford_t1 = _make_fetcher(
     "fetch_stanford_t1",
-    Path(dipy_home) / "stanford_hardi",
+    dipy_home / "stanford_hardi",
     "https://stacks.stanford.edu/file/druid:yx282xq2090/",
     ["t1.nii.gz"],
     ["t1.nii.gz"],
@@ -737,7 +757,7 @@ fetch_stanford_t1 = _make_fetcher(
 
 fetch_stanford_pve_maps = _make_fetcher(
     "fetch_stanford_pve_maps",
-    Path(dipy_home) / "stanford_hardi",
+    dipy_home / "stanford_hardi",
     "https://stacks.stanford.edu/file/druid:yx282xq2090/",
     ["pve_csf.nii.gz", "pve_gm.nii.gz", "pve_wm.nii.gz"],
     [Path("pve_csf.nii.gz"), Path("pve_gm.nii.gz"), Path("pve_wm.nii.gz")],
@@ -750,7 +770,7 @@ fetch_stanford_pve_maps = _make_fetcher(
 
 fetch_stanford_tracks = _make_fetcher(
     "fetch_stanford_tracks",
-    Path(dipy_home) / "stanford_hardi",
+    dipy_home / "stanford_hardi",
     "https://raw.githubusercontent.com/dipy/dipy_datatest/main/",
     [
         "hardi-lr-superiorfrontal.trk",
@@ -767,7 +787,7 @@ fetch_stanford_tracks = _make_fetcher(
 
 fetch_taiwan_ntu_dsi = _make_fetcher(
     "fetch_taiwan_ntu_dsi",
-    Path(dipy_home) / "taiwan_ntu_dsi",
+    dipy_home / "taiwan_ntu_dsi",
     UW_RW_URL + "1773/38480/",
     ["DSI203.nii.gz", "DSI203.bval", "DSI203.bvec", "DSI203_license.txt"],
     [
@@ -790,7 +810,7 @@ fetch_taiwan_ntu_dsi = _make_fetcher(
 
 fetch_syn_data = _make_fetcher(
     "fetch_syn_data",
-    Path(dipy_home) / "syn_test",
+    dipy_home / "syn_test",
     UW_RW_URL + "1773/38476/",
     ["t1.nii.gz", "b0.nii.gz"],
     [Path("t1.nii.gz"), Path("b0.nii.gz")],
@@ -801,7 +821,7 @@ fetch_syn_data = _make_fetcher(
 
 fetch_mni_template = _make_fetcher(
     "fetch_mni_template",
-    Path(dipy_home) / "mni_template",
+    dipy_home / "mni_template",
     "https://ndownloader.figshare.com/files/",
     [
         "5572676?private_link=4b8666116a0128560fb5",
@@ -840,7 +860,7 @@ fetch_scil_b0 = _make_fetcher(
 
 fetch_bundles_2_subjects = _make_fetcher(
     "fetch_bundles_2_subjects",
-    Path(dipy_home) / "exp_bundles_and_maps",
+    dipy_home / "exp_bundles_and_maps",
     UW_RW_URL + "1773/38477/",
     ["bundles_2_subjects.tar.gz"],
     [Path("bundles_2_subjects.tar.gz")],
@@ -852,7 +872,7 @@ fetch_bundles_2_subjects = _make_fetcher(
 
 fetch_ivim = _make_fetcher(
     "fetch_ivim",
-    Path(dipy_home) / "ivim",
+    dipy_home / "ivim",
     "https://ndownloader.figshare.com/files/",
     ["5305243", "5305246", "5305249"],
     [Path("ivim.nii.gz"), Path("ivim.bval"), Path("ivim.bvec")],
@@ -866,7 +886,7 @@ fetch_ivim = _make_fetcher(
 
 fetch_cfin_multib = _make_fetcher(
     "fetch_cfin_multib",
-    Path(dipy_home) / "cfin_multib",
+    dipy_home / "cfin_multib",
     UW_RW_URL + "/1773/38488/",
     [
         "T1.nii",
@@ -896,7 +916,7 @@ fetch_cfin_multib = _make_fetcher(
 
 fetch_file_formats = _make_fetcher(
     "bundle_file_formats_example",
-    Path(dipy_home) / "bundle_file_formats_example",
+    dipy_home / "bundle_file_formats_example",
     "https://zenodo.org/record/3352379/files/",
     [
         "cc_m_sub.trk",
@@ -928,7 +948,7 @@ fetch_file_formats = _make_fetcher(
 
 fetch_bundle_atlas_hcp842 = _make_fetcher(
     "fetch_bundle_atlas_hcp842",
-    Path(dipy_home) / "bundle_atlas_hcp842",
+    dipy_home / "bundle_atlas_hcp842",
     "https://ndownloader.figshare.com/files/",
     ["13638644"],
     [Path("Atlas_80_Bundles.zip")],
@@ -940,7 +960,7 @@ fetch_bundle_atlas_hcp842 = _make_fetcher(
 
 fetch_30_bundle_atlas_hcp842 = _make_fetcher(
     "fetch_30_bundle_atlas_hcp842",
-    Path(dipy_home) / "bundle_atlas_hcp842",
+    dipy_home / "bundle_atlas_hcp842",
     "https://ndownloader.figshare.com/files/",
     ["26842853"],
     [Path("Atlas_30_Bundles.zip")],
@@ -952,7 +972,7 @@ fetch_30_bundle_atlas_hcp842 = _make_fetcher(
 
 fetch_target_tractogram_hcp = _make_fetcher(
     "fetch_target_tractogram_hcp",
-    Path(dipy_home) / "target_tractogram_hcp",
+    dipy_home / "target_tractogram_hcp",
     "https://ndownloader.figshare.com/files/",
     ["12871127"],
     [Path("hcp_tractogram.zip")],
@@ -965,7 +985,7 @@ fetch_target_tractogram_hcp = _make_fetcher(
 
 fetch_bundle_fa_hcp = _make_fetcher(
     "fetch_bundle_fa_hcp",
-    Path(dipy_home) / "bundle_fa_hcp",
+    dipy_home / "bundle_fa_hcp",
     "https://ndownloader.figshare.com/files/",
     ["14035265"],
     [Path("hcp_bundle_fa.nii.gz")],
@@ -977,7 +997,7 @@ fetch_bundle_fa_hcp = _make_fetcher(
 
 fetch_qtdMRI_test_retest_2subjects = _make_fetcher(
     "fetch_qtdMRI_test_retest_2subjects",
-    Path(dipy_home) / "qtdMRI_test_retest_2subjects",
+    dipy_home / "qtdMRI_test_retest_2subjects",
     "https://zenodo.org/record/996889/files/",
     [
         "subject1_dwis_test.nii.gz",
@@ -1028,7 +1048,7 @@ fetch_qtdMRI_test_retest_2subjects = _make_fetcher(
 
 fetch_gold_standard_io = _make_fetcher(
     "fetch_gold_standard_io",
-    Path(dipy_home) / "gold_standard_io",
+    dipy_home / "gold_standard_io",
     "https://zenodo.org/record/14538513/files/",
     [
         "gs_streamlines.trk",
@@ -1136,7 +1156,7 @@ fetch_gold_standard_io = _make_fetcher(
 
 fetch_real_data_io = _make_fetcher(
     "fetch_real_data_io",
-    Path(dipy_home) / "real_data_io",
+    dipy_home / "real_data_io",
     "https://zenodo.org/record/14537772/files/",
     [
         "anat.nii.gz",
@@ -1214,7 +1234,7 @@ fetch_real_data_io = _make_fetcher(
 
 fetch_qte_lte_pte = _make_fetcher(
     "fetch_qte_lte_pte",
-    Path(dipy_home) / "qte_lte_pte",
+    dipy_home / "qte_lte_pte",
     "https://zenodo.org/record/4624866/files/",
     ["lte-pte.nii.gz", "lte-pte.bval", "lte-pte.bvec", "mask.nii.gz"],
     [
@@ -1236,7 +1256,7 @@ fetch_qte_lte_pte = _make_fetcher(
 
 fetch_cti_rat1 = _make_fetcher(
     "fetch_cti_rat1",
-    Path(dipy_home) / "cti_rat1",
+    dipy_home / "cti_rat1",
     "https://zenodo.org/record/8276773/files/",
     [
         "Rat1_invivo_cti_data.nii",
@@ -1274,7 +1294,7 @@ fetch_cti_rat1 = _make_fetcher(
 
 fetch_fury_surface = _make_fetcher(
     "fetch_fury_surface",
-    Path(dipy_home) / "fury_surface",
+    dipy_home / "fury_surface",
     "https://raw.githubusercontent.com/fury-gl/fury-data/master/surfaces/",
     ["100307_white_lh.vtk"],
     [Path("100307_white_lh.vtk")],
@@ -1285,7 +1305,7 @@ fetch_fury_surface = _make_fetcher(
 
 fetch_DiB_70_lte_pte_ste = _make_fetcher(
     "fetch_DiB_70_lte_pte_ste",
-    Path(dipy_home) / "DiB_70_lte_pte_ste",
+    dipy_home / "DiB_70_lte_pte_ste",
     "https://github.com/filip-szczepankiewicz/Szczepankiewicz_DIB_2019/"
     "raw/master/DATA/brain/NII_Boito_SubSamples/",
     [
@@ -1318,7 +1338,7 @@ fetch_DiB_70_lte_pte_ste = _make_fetcher(
 
 fetch_DiB_217_lte_pte_ste = _make_fetcher(
     "fetch_DiB_217_lte_pte_ste",
-    Path(dipy_home) / "DiB_217_lte_pte_ste",
+    dipy_home / "DiB_217_lte_pte_ste",
     "https://github.com/filip-szczepankiewicz/Szczepankiewicz_DIB_2019/"
     "raw/master/DATA/brain/NII_Boito_SubSamples/",
     [
@@ -1355,7 +1375,7 @@ fetch_DiB_217_lte_pte_ste = _make_fetcher(
 
 fetch_ptt_minimal_dataset = _make_fetcher(
     "fetch_ptt_minimal_dataset",
-    Path(dipy_home) / "ptt_dataset",
+    dipy_home / "ptt_dataset",
     "https://raw.githubusercontent.com/dipy/dipy_datatest/main/",
     ["ptt_fod.nii", "ptt_seed_coords.txt", "ptt_seed_image.nii"],
     [Path("ptt_fod.nii"), Path("ptt_seed_coords.txt"), Path("ptt_seed_image.nii")],
@@ -1371,7 +1391,7 @@ fetch_ptt_minimal_dataset = _make_fetcher(
 
 fetch_bundle_warp_dataset = _make_fetcher(
     "fetch_bundle_warp_dataset",
-    Path(dipy_home) / "bundle_warp",
+    dipy_home / "bundle_warp",
     "https://ndownloader.figshare.com/files/",
     ["40026343", "40026346"],
     [
@@ -1385,7 +1405,7 @@ fetch_bundle_warp_dataset = _make_fetcher(
 
 fetch_disco1_dataset = _make_fetcher(
     "fetch_disco1_dataset",
-    Path(dipy_home) / "disco" / "disco_1",
+    dipy_home / "disco" / "disco_1",
     "https://data.mendeley.com/public-files/datasets/fgf86jdfg6/files/",
     [
         "028147aa-f17f-4514-80e6-24c7419da75e/file_downloaded",
@@ -1562,7 +1582,7 @@ fetch_disco1_dataset = _make_fetcher(
 
 fetch_disco2_dataset = _make_fetcher(
     "fetch_disco2_dataset",
-    Path(dipy_home) / "disco" / "disco_2",
+    dipy_home / "disco" / "disco_2",
     "https://data.mendeley.com/public-files/datasets/fgf86jdfg6/files/",
     [
         "028147aa-f17f-4514-80e6-24c7419da75e/file_downloaded",
@@ -1739,7 +1759,7 @@ fetch_disco2_dataset = _make_fetcher(
 
 fetch_disco3_dataset = _make_fetcher(
     "fetch_disco3_dataset",
-    Path(dipy_home) / "disco" / "disco_3",
+    dipy_home / "disco" / "disco_3",
     "https://data.mendeley.com/public-files/datasets/fgf86jdfg6/files/",
     [
         "028147aa-f17f-4514-80e6-24c7419da75e/file_downloaded",
@@ -2181,9 +2201,8 @@ def get_fnames(*, name="small_64D", include_optional=False):
         return w1
     if name == "deepn4_test_data":
         files, folder = fetch_deepn4_test()
-        input_array = Path(folder) / "test_input_deepn4.npz"
-        target_array = Path(folder) / "new_test_output_deepn4.npz"
-        return input_array, target_array
+        test_data = Path(folder) / "d4_data.npz"
+        return test_data
     if name == "evac_default_tf_weights":
         files, folder = fetch_evac_tf_weights()
         weight = Path(folder) / "evac_default_weights.h5"
@@ -2195,6 +2214,14 @@ def get_fnames(*, name="small_64D", include_optional=False):
     if name == "evac_test_data":
         files, folder = fetch_evac_test()
         test_data = Path(folder) / "evac_test_data.npz"
+        return test_data
+    if name == "synthseg_torch_weights":
+        _, folder = fetch_synthseg_torch_weights()
+        w1 = Path(folder) / "synthseg_model_weights.pth"
+        return w1
+    if name == "synthseg_test_data":
+        files, folder = fetch_synthseg_test()
+        test_data = Path(folder) / "synthseg_test_data.npz"
         return test_data
     if name == "DiB_70_lte_pte_ste":
         _, folder = fetch_DiB_70_lte_pte_ste()
@@ -2285,7 +2312,7 @@ def read_qtdMRI_test_retest_2subjects():
         "subject2_dwis_retest.nii.gz",
     ]
     for data_name in data_names:
-        data_loc = Path(dipy_home) / "qtdMRI_test_retest_2subjects", data_name
+        data_loc = dipy_home / "qtdMRI_test_retest_2subjects" / data_name
         data.append(load_nifti_data(data_loc))
 
     cc_masks = []
@@ -2296,7 +2323,7 @@ def read_qtdMRI_test_retest_2subjects():
         "subject2_ccmask_retest.nii.gz",
     ]
     for mask_name in mask_names:
-        mask_loc = Path(dipy_home) / "qtdMRI_test_retest_2subjects", mask_name
+        mask_loc = dipy_home / "qtdMRI_test_retest_2subjects" / mask_name
         cc_masks.append(load_nifti_data(mask_loc))
 
     gtabs = []
@@ -2307,7 +2334,7 @@ def read_qtdMRI_test_retest_2subjects():
         "subject2_scheme_retest.txt",
     ]
     for gtab_txt_name in gtab_txt_names:
-        txt_loc = Path(dipy_home) / "qtdMRI_test_retest_2subjects", gtab_txt_name
+        txt_loc = dipy_home / "qtdMRI_test_retest_2subjects" / gtab_txt_name
         qtdmri_scheme = np.loadtxt(txt_loc, skiprows=1)
         bvecs = qtdmri_scheme[:, 1:4]
         G = qtdmri_scheme[:, 4] / 1e3  # because dipy takes T/mm not T/m
@@ -2468,7 +2495,7 @@ def fetch_tissue_data(*, include_optional=False):
     t1d = "https://ndownloader.figshare.com/files/6965981"
     ap = "https://ndownloader.figshare.com/files/6965984"
 
-    folder = Path(dipy_home) / "tissue_data"
+    folder = dipy_home / "tissue_data"
 
     md5_list = [
         "99c4b77267a6855cbfd96716d5d65b70",  # t1
@@ -2512,7 +2539,7 @@ def read_tissue_data(*, contrast="T1"):
         Nifti1Image
 
     """
-    folder = Path(dipy_home) / "tissue_data"
+    folder = dipy_home / "tissue_data"
     t1_name = Path(folder) / "t1_brain.nii.gz"
     t1d_name = Path(folder) / "t1_brain_denoised.nii.gz"
     ap_name = Path(folder) / "power_map.nii.gz"
@@ -2649,7 +2676,7 @@ def fetch_cenir_multib(*, with_raw=False, **kwargs):
         Whether to fetch the raw data. Per default, this is False, which means
         that only eddy-current/motion corrected data is fetched
     """
-    folder = Path(dipy_home) / "cenir_multib"
+    folder = dipy_home / "cenir_multib"
 
     fname_list = [
         "4D_dwi_eddycor_B200.nii.gz",
@@ -2825,34 +2852,30 @@ def read_bundles_2_subjects(
     .. footbibliography::
 
     """
-    dname = Path(dipy_home) / "exp_bundles_and_maps", "bundles_2_subjects"
+    dname = dipy_home / "exp_bundles_and_maps" / "bundles_2_subjects"
 
     from dipy.tracking.streamline import Streamlines
 
     res = {}
 
     if "t1" in metrics:
-        data, affine = load_nifti(Path(dname) / subj_id, "t1_warped.nii.gz")
+        data, affine = load_nifti(Path(dname) / subj_id / "t1_warped.nii.gz")
         res["t1"] = data
 
     if "fa" in metrics:
-        fa, affine = load_nifti(Path(dname) / subj_id, "fa_1x1x1.nii.gz")
+        fa, affine = load_nifti(Path(dname) / subj_id / "fa_1x1x1.nii.gz")
         res["fa"] = fa
 
     res["affine"] = affine
-
     for bun in bundles:
         streams = load_tractogram(
-            Path(dname) / subj_id,
-            "bundles",
-            f"bundles_{bun}.trk",
+            Path(dname) / subj_id / "bundles" / f"bundles_{bun}.trk",
             "same",
             bbox_valid_check=False,
         ).streamlines
 
         streamlines = Streamlines(streams)
         res[bun] = streamlines
-
     return res
 
 
@@ -2908,13 +2931,16 @@ def read_cfin_t1():
 
 def get_file_formats():
     """
+    Get example bundle files and their reference anatomy image.
 
     Returns
     -------
-    bundles_list : all bundles (list)
-    ref_anat : reference
+    bundles_list : list of Path
+        List of bundle file paths in different formats.
+    ref_anat : Path
+        Path to the reference anatomical image.
     """
-    ref_anat = Path(dipy_home) / "bundle_file_formats_example", "template0.nii.gz"
+    ref_anat = dipy_home / "bundle_file_formats_example" / "template0.nii.gz"
     bundles_list = []
     for filename in [
         "cc_m_sub.trk",
@@ -2923,7 +2949,7 @@ def get_file_formats():
         "raf_m_sub.vtk",
         "rpt_m_sub.dpy",
     ]:
-        bundles_list.append(Path(dipy_home) / "bundle_file_formats_example", filename)
+        bundles_list.append(dipy_home / "bundle_file_formats_example" / filename)
 
     return bundles_list, ref_anat
 
@@ -2931,23 +2957,32 @@ def get_file_formats():
 @warning_for_keywords()
 def get_bundle_atlas_hcp842(*, size=80):
     """
+    Get paths to the HCP842 bundle atlas files.
+
+    Parameters
+    ----------
+    size : int, optional
+        Atlas size. Must be either 80 or 30 bundles.
+
     Returns
     -------
-    file1 : string
-    file2 : string
+    file1 : Path
+        Path to whole brain tractogram.
+    file2 : Path
+        Path pattern to individual bundle tractograms.
     """
     size = 80 if size not in [80, 30] else size
 
     file1 = (
-        Path(dipy_home)
+        dipy_home
         / "bundle_atlas_hcp842"
         / f"Atlas_{size}_Bundles"
         / "whole_brain"
-        / "whole_brain_MNI.trk",
+        / "whole_brain_MNI.trk"
     )
 
     file2 = (
-        Path(dipy_home)
+        dipy_home
         / "bundle_atlas_hcp842"
         / f"Atlas_{size}_Bundles"
         / "bundles"
@@ -2959,23 +2994,21 @@ def get_bundle_atlas_hcp842(*, size=80):
 
 def get_two_hcp842_bundles():
     """
+    Get paths to two example bundles from the HCP842 atlas.
+
     Returns
     -------
-    file1 : string
-    file2 : string
+    file1 : Path
+        Path to left arcuate fasciculus bundle.
+    file2 : Path
+        Path to left corticospinal tract bundle.
     """
     file1 = (
-        Path(dipy_home) / "bundle_atlas_hcp842",
-        "Atlas_80_Bundles",
-        "bundles",
-        "AF_L.trk",
+        dipy_home / "bundle_atlas_hcp842" / "Atlas_80_Bundles" / "bundles" / "AF_L.trk"
     )
 
     file2 = (
-        Path(dipy_home) / "bundle_atlas_hcp842",
-        "Atlas_80_Bundles",
-        "bundles",
-        "CST_L.trk",
+        dipy_home / "bundle_atlas_hcp842" / "Atlas_80_Bundles" / "bundles" / "CST_L.trk"
     )
 
     return file1, file2
@@ -2983,15 +3016,14 @@ def get_two_hcp842_bundles():
 
 def get_target_tractogram_hcp():
     """
+    Get path to example HCP tractogram.
+
     Returns
     -------
-    file1 : string
+    file1 : Path
+        Path to tractogram file.
     """
-    file1 = (
-        Path(dipy_home) / "target_tractogram_hcp",
-        "hcp_tractogram",
-        "streamlines.trk",
-    )
+    file1 = dipy_home / "target_tractogram_hcp" / "hcp_tractogram" / "streamlines.trk"
 
     return file1
 
@@ -3236,13 +3268,13 @@ def fetch_hcp(
     bucket = s3.Bucket(hcp_bucket)
 
     if path is None:
-        if not Path(dipy_home).exists():
+        if not dipy_home.exists():
             os.mkdir(dipy_home)
         my_path = dipy_home
     else:
         my_path = path
 
-    base_dir = Path(my_path) / study, "derivatives", "hcp_pipeline"
+    base_dir = Path(my_path) / study / "derivatives" / "hcp_pipeline"
 
     if not Path(base_dir).exists():
         os.makedirs(base_dir, exist_ok=True)
@@ -3258,19 +3290,19 @@ def fetch_hcp(
         if not Path(sub_dir).exists():
             os.makedirs(Path(sub_dir) / "dwi", exist_ok=True)
             os.makedirs(Path(sub_dir) / "anat", exist_ok=True)
-        data_files[Path(sub_dir) / "dwi", f"sub-{subject}_dwi.bval"] = (
+        data_files[Path(sub_dir) / "dwi" / f"sub-{subject}_dwi.bval"] = (
             f"{study}/{subject}/T1w/Diffusion/bvals"
         )
-        data_files[Path(sub_dir) / "dwi", f"sub-{subject}_dwi.bvec"] = (
+        data_files[Path(sub_dir) / "dwi" / f"sub-{subject}_dwi.bvec"] = (
             f"{study}/{subject}/T1w/Diffusion/bvecs"
         )
-        data_files[Path(sub_dir) / "dwi", f"sub-{subject}_dwi.nii.gz"] = (
+        data_files[Path(sub_dir) / "dwi" / f"sub-{subject}_dwi.nii.gz"] = (
             f"{study}/{subject}/T1w/Diffusion/data.nii.gz"
         )
-        data_files[Path(sub_dir) / "anat", f"sub-{subject}_T1w.nii.gz"] = (
+        data_files[Path(sub_dir) / "anat" / f"sub-{subject}_T1w.nii.gz"] = (
             f"{study}/{subject}/T1w/T1w_acpc_dc.nii.gz"
         )
-        data_files[Path(sub_dir) / "anat", f"sub-{subject}_aparc+aseg_seg.nii.gz"] = (
+        data_files[Path(sub_dir) / "anat" / f"sub-{subject}_aparc+aseg_seg.nii.gz"] = (
             f"{study}/{subject}/T1w/aparc+aseg.nii.gz"
         )
 
@@ -3432,7 +3464,7 @@ def fetch_hbn(subjects, *, path=None, include_afq=False):
     client = boto3.client("s3", config=Config(signature_version=UNSIGNED))
 
     if path is None:
-        if not Path(dipy_home).exists():
+        if not dipy_home.exists():
             os.mkdir(dipy_home)
         my_path = dipy_home
     else:

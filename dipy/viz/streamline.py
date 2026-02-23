@@ -4,7 +4,7 @@ from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
-fury, has_fury, _ = optional_package("fury", min_version="0.10.0")
+fury, has_fury, _ = optional_package("fury", min_version="0.10.0", max_version="1.0.0")
 if has_fury:
     from dipy.viz import actor, window
 

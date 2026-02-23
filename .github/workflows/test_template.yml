@@ -49,6 +49,9 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -73,7 +76,7 @@ jobs:
       TEST_WITH_XVFB: ${{ inputs.enable-viz-tests }}
       PRE_WHEELS: "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"  # "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Set up Python ${{ matrix.python-version }}
       if: ${{ matrix.install-type != 'conda' }}
       uses: actions/setup-python@v6
@@ -120,13 +123,12 @@ jobs:
         brew install libomp
         echo "CC=clang" >> $GITHUB_ENV
     - name: Restore cached data
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.dipy
-        key: dipy-data-${{ runner.os }}-${{ hashFiles('dipy/data/fetcher.py') }}
+        key: dipy-downloaded-data-${{ hashFiles('dipy/data/fetcher.py') }}
         restore-keys: |
-          dipy-data-${{ runner.os }}-
-          dipy-data-
+          dipy-downloaded-data-
     - name: Install DIPY
       run: |
         if [ "${{ inputs.use-pre }}" == "true" ]; then
