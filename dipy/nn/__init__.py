@@ -36,15 +36,11 @@ def _load_backend():
                 "histo_resdnn": histo_resdnn_module,
                 "deepn4": deepn4_module,
                 "synb0": synb0_module,
-            }
-        )
-
-        __all__ += ["evac", "histo_resdnn", "deepn4", "synb0"]
                 "synthseg": synthseg_module,
             }
         )
 
-        __all__ += ["evac", "histo_resdnn", "deepn4", "synthseg"]
+        __all__ += ["evac", "histo_resdnn", "deepn4", "synb0", "synthseg"]
 
     elif have_tf:
         import dipy.nn.tf.cnn_1d_denoising as cnn_1d_denoising_module

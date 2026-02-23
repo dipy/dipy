@@ -241,7 +241,7 @@ def synb0_syn(
     masked_mni_t2 = mni_t2 * mni_mask
 
     metric = CCMetric(3)
-    level_iters_syn = [200, 200, 100]
+    level_iters_syn = [100, 100, 50]
     sdr = SymmetricDiffeomorphicRegistration(metric, level_iters_syn)
     mapping = sdr.optimize(
         masked_mni_t2, masked_dwi, mni_t1_affine, dwi_affine, reg_affine
@@ -260,7 +260,7 @@ def synb0_syn(
     ori_binf = mapping.transform_inverse(binf)
 
     sdr = SymmetricDiffeomorphicRegistration(
-        metric=CCMetric(3), level_iters=[200, 200, 100]
+        metric=CCMetric(3), level_iters=[100, 100, 50]
     )
     pre_align = np.eye(4)
     mapping = sdr.optimize(
