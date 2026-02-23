@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_equal, assert_equal, assert_raises
 
-from dipy.correct.disco import (
+from dipy.align.disco import (
     HAVE_SYNB0,
     dummy_distortion_correction,
     estimate_distortion_field,
