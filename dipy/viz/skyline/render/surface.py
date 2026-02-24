@@ -15,6 +15,7 @@ class Surface(Visualization):
         color=(1, 0, 0),
         opacity=100,
         texture=None,
+        material="phong",
         render_callback=None,
     ):
         super().__init__(name, render_callback)
@@ -24,15 +25,20 @@ class Surface(Visualization):
         self.color = color
         self.opacity = opacity
         self.texture = texture
+        self.material = material
         self._create_surface_actor()
 
     def _create_surface_actor(self):
         self._surface_actor = surface(
             self.vertices,
             self.faces,
+            material=self.material,
             colors=self.color,
             opacity=self.opacity / 100.0,
         )
+        self._surface_actor.material.alpha_mode = "blend"
+        if self.opacity < 100:
+            self._surface_actor.material.depth_write = False
 
     @property
     def actor(self):
@@ -52,3 +58,7 @@ class Surface(Visualization):
         if changed:
             self.opacity = new
             self._surface_actor.material.opacity = self.opacity / 100.0
+            if self.opacity < 100:
+                self._surface_actor.material.depth_write = False
+            else:
+                self._surface_actor.material.depth_write = True
