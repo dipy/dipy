@@ -1,7 +1,60 @@
+from pathlib import Path
+
 from fury.actor import contour_from_roi, set_group_opacity
 
 from dipy.viz.skyline.UI.elements import thin_slider
 from dipy.viz.skyline.render.renderer import Visualization
+
+
+def create_roi_visualization(
+    input,
+    idx,
+    *,
+    opacity=100,
+    color=(1, 0, 0),
+    render_callback=None,
+):
+    """Create ROI visualization from input
+
+    Parameters
+    ----------
+    input : tuple
+        Tuple of the (roi, affine, filename) or (roi, affine)
+    idx : int
+        Index of the ROI for naming purposes if filename is not provided.
+    opacity : int, optional
+        Opacity of the ROI rendering.
+    color : tuple, optional
+        Color of the ROI rendering.
+    render_callback : callable, optional
+        Callback function to be called after rendering.
+
+    Returns
+    -------
+    ROI3D
+        The created ROI3D object.
+    """
+    if not isinstance(input, tuple) or len(input) not in (2, 3):
+        raise ValueError(
+            "Input must be a tuple containing (roi, affine, filename) or "
+            "(roi, affine) for ROI visualization."
+        )
+
+    if len(input) == 2:
+        roi, affine = input
+        filename = f"ROI_{idx}"
+    else:
+        roi, affine, filename = input
+        filename = Path(filename).name if filename is not None else f"ROI_{idx}"
+
+    return ROI3D(
+        filename,
+        roi,
+        affine=affine,
+        color=color,
+        opacity=opacity,
+        render_callback=render_callback,
+    )
 
 
 class ROI3D(Visualization):

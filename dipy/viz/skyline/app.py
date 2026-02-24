@@ -1,17 +1,20 @@
-from pathlib import Path
-
 from fury.actor import Actor, show_slices
 from fury.colormap import distinguishable_colormap
 from fury.io import load_image_as_wgpu_texture_view
 
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO
-from dipy.viz.skyline.render.image import Image3D
-from dipy.viz.skyline.render.peak import Peak3D
+from dipy.viz.skyline.io import load_files
+from dipy.viz.skyline.render.image import Image3D, create_image_visualization
+from dipy.viz.skyline.render.peak import Peak3D, create_peak_visualization
 from dipy.viz.skyline.render.renderer import create_window
-from dipy.viz.skyline.render.roi import ROI3D
-from dipy.viz.skyline.render.streamline import ClusterStreamline3D, Streamline3D
-from dipy.viz.skyline.render.surface import Surface
+from dipy.viz.skyline.render.roi import ROI3D, create_roi_visualization
+from dipy.viz.skyline.render.streamline import (
+    ClusterStreamline3D,
+    Streamline3D,
+    create_streamline_visualization,
+)
+from dipy.viz.skyline.render.surface import Surface, create_surface_visualization
 
 
 class Skyline:
@@ -25,6 +28,8 @@ class Skyline:
         tractograms=None,
         is_cluster=False,
         is_light_version=False,
+        glass_brain=False,
+        bg_color=None,
     ):
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
@@ -36,6 +41,9 @@ class Skyline:
                 (self.ui_size[0], 0, self.size[0] - self.ui_size[0], self.size[1]),
             ],
         )
+        if bg_color is None:
+            bg_color = (1, 1, 1) if glass_brain else (0, 0, 0)
+        self.window.screens[0].scene.background = bg_color
 
         self._image_visualizations = []
         self._peak_visualizations = []
@@ -56,81 +64,53 @@ class Skyline:
         self._color_gen = distinguishable_colormap()
 
         if images is not None:
-            for idx, (img, affine, path) in enumerate(images):
-                fname = Path(path).name if path is not None else f"Image {idx}"
-                image3d = Image3D(
-                    fname,
-                    img,
-                    affine=affine,
+            for idx, input in enumerate(images):
+                image3d = create_image_visualization(
+                    input,
+                    idx,
                     render_callback=self.before_render,
-                    interpolation="linear",
                 )
-                self._image_visualizations.append(image3d)
-                self.UI_window.add(fname, image3d.renderer)
+                self._add_visualization(image3d)
         if peaks is not None:
-            for idx, (pam, path) in enumerate(peaks):
-                fname = Path(path).name if path is not None else f"Peaks {idx}"
-                peak3d = Peak3D(
-                    fname,
-                    pam.peak_dirs,
-                    affine=pam.affine,
-                    render_callback=self.before_render,
+            for idx, input in enumerate(peaks):
+                peak3d = create_peak_visualization(
+                    input, idx, render_callback=self.before_render
                 )
-                self._peak_visualizations.append(peak3d)
-                self.UI_window.add(fname, peak3d.renderer)
+                self._add_visualization(peak3d)
         if rois is not None:
-            for idx, (roi, affine, path) in enumerate(rois):
+            for idx, input in enumerate(rois):
                 color = next(self._color_gen)
-                fname = Path(path).name if path is not None else f"ROI {idx}"
-                roi3d = ROI3D(
-                    fname,
-                    roi,
-                    affine=affine,
+                roi3d = create_roi_visualization(
+                    input,
+                    idx,
                     color=color,
                     render_callback=self.before_render,
                 )
-                self._roi_visualizations.append(roi3d)
-                self.UI_window.add(fname, roi3d.renderer)
+                self._add_visualization(roi3d)
         if surfaces is not None:
-            for idx, (verts, faces, path) in enumerate(surfaces):
-                color = next(self._color_gen)
-                fname = Path(path).name if path is not None else f"Surface {idx}"
-                surface3d = Surface(
-                    fname,
-                    verts,
-                    faces,
+            for idx, input in enumerate(surfaces):
+                color = next(self._color_gen) if not glass_brain else (0, 0, 0)
+                opacity = 25 if glass_brain else 100
+                surface3d = create_surface_visualization(
+                    input,
+                    idx,
                     color=color,
+                    material="basic" if glass_brain else "phong",
+                    opacity=opacity,
                     render_callback=self.before_render,
                 )
-                self._surface_visualizations.append(surface3d)
-                self.UI_window.add(fname, surface3d.renderer)
+                self._add_visualization(surface3d)
         if tractograms is not None:
-            if is_cluster:
-                for idx, (sft, path) in enumerate(tractograms):
-                    fname = Path(path).name if path is not None else f"Tractogram {idx}"
-                    streamline3d = ClusterStreamline3D(
-                        fname,
-                        sft,
-                        thr=20,
-                        line_type="line" if is_light_version else "tube",
-                        render_callback=self.before_render,
-                        colormap=self._color_gen,
-                    )
-                    self._tractogram_visualizations.append(streamline3d)
-                    self.UI_window.add(fname, streamline3d.renderer)
-            else:
-                for idx, (sft, path) in enumerate(tractograms):
-                    color = next(self._color_gen)
-                    fname = Path(path).name if path is not None else f"Tractogram {idx}"
-                    streamline3d = Streamline3D(
-                        fname,
-                        sft,
-                        line_type="line" if is_light_version else "tube",
-                        color=color,
-                        render_callback=self.before_render,
-                    )
-                    self._tractogram_visualizations.append(streamline3d)
-                    self.UI_window.add(fname, streamline3d.renderer)
+            for idx, input in enumerate(tractograms):
+                tractogram3d = create_streamline_visualization(
+                    input,
+                    idx,
+                    is_cluster=is_cluster,
+                    line_type="line" if is_light_version else "tube",
+                    render_callback=self.before_render,
+                    colormap=self._color_gen,
+                )
+                self._add_visualization(tractogram3d)
         self.active_image = None
         if self._image_visualizations:
             self._image_visualizations[-1].active = True
@@ -194,6 +174,21 @@ class Skyline:
             if isinstance(viz, ClusterStreamline3D):
                 viz.handle_key_events(event)
 
+    def _add_visualization(self, viz):
+        if isinstance(viz, Image3D):
+            self._image_visualizations.append(viz)
+        elif isinstance(viz, Peak3D):
+            self._peak_visualizations.append(viz)
+        elif isinstance(viz, ROI3D):
+            self._roi_visualizations.append(viz)
+        elif isinstance(viz, Surface):
+            self._surface_visualizations.append(viz)
+        elif isinstance(viz, (Streamline3D, ClusterStreamline3D)):
+            self._tractogram_visualizations.append(viz)
+        else:
+            raise ValueError("Unsupported visualization type")
+        self.UI_window.add(viz.name, viz.renderer)
+
     @property
     def visualizations(self):
         return (
@@ -205,6 +200,56 @@ class Skyline:
         )
 
 
+def skyline_from_files(
+    fnames,
+    rois=None,
+    is_cluster=False,
+    is_light_version=False,
+    glass_brain=False,
+    bg_color=None,
+):
+    """Launch Skyline GUI from files.
+
+    Parameters
+    ----------
+    fnames : list
+        List of file paths to be loaded into the Skyline viewer.
+        Supported file types include:
+        - NIfTI images (.nii, .nii.gz)
+        - Peaks (.pam5)
+        - Surfaces (.pial, .gii, .gii.gz)
+        - Tractograms (.trx, .trk, .dpy, .tck, .vtk, .vtp, .fib)
+    rois : list, optional
+        List of file paths for ROIs to be loaded into the Skyline viewer.
+        Supported file types include NIfTI images (.nii, .nii.gz).
+    is_cluster : bool, optional
+        Whether to cluster the tractograms.
+    is_light_version : bool, optional
+        Whether to use the light version of the tractogram rendering. This will render
+        tractograms as lines instead of tubes, which can improve performance for large
+        tractograms.
+    glass_brain : bool, optional
+        Whether to use glass brain mode. This will overwrite the background color
+        to white if not explicitly set by the user.
+    bg_color : variable float, optional
+        Define the background color of the scene. Colors can be defined with
+        3 values and should be between [0-1].
+        For example, a value of (0, 0, 0) would mean the black color.
+    """
+    loaded_files = load_files(fnames, rois=rois)
+    return skyline(
+        images=loaded_files["images"],
+        peaks=loaded_files["peaks"],
+        rois=loaded_files["rois"],
+        surfaces=loaded_files["surfaces"],
+        tractograms=loaded_files["tractograms"],
+        is_cluster=is_cluster,
+        is_light_version=is_light_version,
+        glass_brain=glass_brain,
+        bg_color=bg_color,
+    )
+
+
 def skyline(
     *,
     visualizer_type="standalone",
@@ -214,6 +259,9 @@ def skyline(
     surfaces=None,
     tractograms=None,
     is_cluster=False,
+    is_light_version=False,
+    glass_brain=False,
+    bg_color=None,
 ):
     """Launch Skyline GUI.
 
@@ -237,8 +285,19 @@ def skyline(
         List of path for each tractogram to be added to the Skyline viewer.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
+    is_light_version : bool, optional
+        Whether to use the light version of the tractogram rendering. This will render
+        tractograms as lines instead of tubes, which can improve performance for large
+        tractograms.
+    glass_brain : bool, optional
+        Whether to use glass brain mode. This will overwrite the background color
+        to white if not explicitly set by the user.
+    bg_color : variable float, optional
+        Define the background color of the scene. Colors can be defined with
+        3 values and should be between [0-1].
+        For example, a value of (0, 0, 0) would mean the black color.
     """
-    Skyline(
+    return Skyline(
         visualizer_type=visualizer_type,
         images=images,
         peaks=peaks,
@@ -246,4 +305,7 @@ def skyline(
         surfaces=surfaces,
         tractograms=tractograms,
         is_cluster=is_cluster,
+        is_light_version=is_light_version,
+        glass_brain=glass_brain,
+        bg_color=bg_color,
     )
