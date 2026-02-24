@@ -1,5 +1,4 @@
 from pathlib import Path
-import sys
 from warnings import warn
 
 import numpy as np
@@ -304,6 +303,9 @@ class SkylineFlow(Workflow):
         *,
         rois=None,
         cluster=False,
+        light_version=False,
+        glass_brain=False,
+        bg_color=None,
     ):
         """Launch Skyline GUI.
 
@@ -316,6 +318,17 @@ class SkylineFlow(Workflow):
             Tuple of path for each ROI to be added to the Skyline viewer.
         cluster : bool, optional
             Whether to cluster the tractograms.
+        light_version : bool, optional
+            Whether to use the light version of the tractogram rendering.
+            This will render tractograms as lines instead of tubes,
+            which can improve performance for large tractograms.
+        glass_brain : bool, optional
+            Whether to use glass brain mode. This will overwrite the background color
+            to white if not explicitly set by the user.
+        bg_color : variable float, optional
+            Define the background color of the scene. Colors can be defined with
+            3 values and should be between [0-1].
+            For example, a value of (0, 0, 0) would mean the black color.
         """
         super(SkylineFlow, self).__init__(force=True)
 
@@ -390,7 +403,6 @@ class SkylineFlow(Workflow):
                 logger.error(
                     f"File extension '{ext}' is not supported for ROIs in Skyline."
                 )
-                sys.exit(1)
 
         skyline(
             images=skyline_images,
@@ -399,4 +411,7 @@ class SkylineFlow(Workflow):
             surfaces=skyline_surfaces,
             tractograms=skyline_tractograms,
             is_cluster=cluster,
+            is_light_version=light_version,
+            glass_brain=glass_brain,
+            bg_color=bg_color,
         )
