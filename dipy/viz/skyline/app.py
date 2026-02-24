@@ -25,6 +25,8 @@ class Skyline:
         tractograms=None,
         is_cluster=False,
         is_light_version=False,
+        glass_brain=False,
+        bg_color=None,
     ):
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
@@ -36,6 +38,9 @@ class Skyline:
                 (self.ui_size[0], 0, self.size[0] - self.ui_size[0], self.size[1]),
             ],
         )
+        if bg_color is None:
+            bg_color = (1, 1, 1) if glass_brain else (0, 0, 0)
+        self.window.screens[0].scene.background = bg_color
 
         self._image_visualizations = []
         self._peak_visualizations = []
@@ -93,13 +98,16 @@ class Skyline:
                 self.UI_window.add(fname, roi3d.renderer)
         if surfaces is not None:
             for idx, (verts, faces, path) in enumerate(surfaces):
-                color = next(self._color_gen)
+                color = next(self._color_gen) if not glass_brain else (0, 0, 0)
+                opacity = 25 if glass_brain else 100
                 fname = Path(path).name if path is not None else f"Surface {idx}"
                 surface3d = Surface(
                     fname,
                     verts,
                     faces,
                     color=color,
+                    material="basic" if glass_brain else "phong",
+                    opacity=opacity,
                     render_callback=self.before_render,
                 )
                 self._surface_visualizations.append(surface3d)
@@ -214,6 +222,9 @@ def skyline(
     surfaces=None,
     tractograms=None,
     is_cluster=False,
+    is_light_version=False,
+    glass_brain=False,
+    bg_color=None,
 ):
     """Launch Skyline GUI.
 
@@ -237,8 +248,19 @@ def skyline(
         List of path for each tractogram to be added to the Skyline viewer.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
+    is_light_version : bool, optional
+        Whether to use the light version of the tractogram rendering. This will render
+        tractograms as lines instead of tubes, which can improve performance for large
+        tractograms.
+    glass_brain : bool, optional
+        Whether to use glass brain mode. This will overwrite the background color
+        to white if not explicitly set by the user.
+    bg_color : variable float, optional
+        Define the background color of the scene. Colors can be defined with
+        3 values and should be between [0-1].
+        For example, a value of (0, 0, 0) would mean the black color.
     """
-    Skyline(
+    return Skyline(
         visualizer_type=visualizer_type,
         images=images,
         peaks=peaks,
@@ -246,4 +268,7 @@ def skyline(
         surfaces=surfaces,
         tractograms=tractograms,
         is_cluster=is_cluster,
+        is_light_version=is_light_version,
+        glass_brain=glass_brain,
+        bg_color=bg_color,
     )
