@@ -1673,10 +1673,10 @@ class _NllsHelper:
         """
 
         if cholesky:
-            r_params = tensor[:6]
-            s0_param = tensor[6:]
+            r_params = tensor[:6] 
+            neg_log_s0 = tensor[6:]
             d_params = cholesky_to_lower_triangular(r_params)
-            tensor = np.concatenate((d_params, s0_param))
+            tensor = np.concatenate((d_params, neg_log_s0))
 
         # This is the predicted signal given the params:
         y = np.exp(np.dot(design_matrix, tensor))
@@ -1903,7 +1903,7 @@ def nlls_fit_tensor(
 
         if cholesky:
             tensor_ols = start_params[:6]
-            s0_param = start_params[6:]
+            neg_log_s0 = start_params[6:]
 
             # remove possible zero eigen-value in starting pars for cholesky
             evals, evecs = decompose_tensor(from_lower_triangular(tensor_ols))
@@ -1912,7 +1912,7 @@ def nlls_fit_tensor(
             dt_clean = lower_triangular(vec_val_vect(evecs, evals))
 
             r_params = lower_triangular_to_cholesky(dt_clean)
-            start_params = np.concatenate((r_params, s0_param))
+            start_params = np.concatenate((r_params, neg_log_s0))
 
         weights_vox = weights[vox] if weights is not None else None
 
