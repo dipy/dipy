@@ -249,6 +249,7 @@ position = 32
 enable = true
 files = [
     "streamline_formats.py",
+    "pam_file_format.py",
 ]
 
 [visualization]
