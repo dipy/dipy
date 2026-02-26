@@ -12,6 +12,7 @@ cli_flows = {
     "dipy_apply_transform": ("dipy.workflows.align", "ApplyTransformFlow"),
     "dipy_brain_mask": ("dipy.workflows.segment", "BrainMaskFlow"),
     "dipy_buan_lmm": ("dipy.workflows.stats", "LinearMixedModelsFlow"),
+    "dipy_buan_fosr": ("dipy.workflows.stats", "FOSRFlow"),
     "dipy_buan_shapes": ("dipy.workflows.stats", "BundleShapeAnalysis"),
     "dipy_buan_profiles": ("dipy.workflows.stats", "BundleAnalysisTractometryFlow"),
     "dipy_bundlewarp": ("dipy.workflows.align", "BundleWarpFlow"),
