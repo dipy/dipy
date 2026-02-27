@@ -1,5 +1,8 @@
 name: Build and upload nightly wheels
 on:
+  pull_request:
+    branches:
+      - master
   workflow_dispatch:
     inputs:
       branch_or_tag:
@@ -16,8 +19,11 @@ on:
     - cron: "0 0 * * 0,3"  # Every Sunday and Wednesday at midnight
 
 env:
-  BUILD_COMMIT: "master"
-  CIBW_BUILD_VERBOSITY: 2
+  CIBW_BUILD_VERBOSITY: 1  # verbosity of 2 shows thousands of annoying pip lines!
+  CIBW_ARCHS: "native"
+  CIBW_BUILD: "cp3{11,12,13,14}-*"
+  CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
+  CIBW_TEST_SKIP: "*"
   CIBW_TEST_REQUIRES: "-r requirements/build.txt pytest==8.0.0"
   CIBW_TEST_COMMAND: pytest --pyargs dipy
   CIBW_CONFIG_SETTINGS: "compile-args=-v"
@@ -30,148 +36,121 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-commit:
+    name: Check [wheels] in commit message
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.commit-message.outputs.PROCEED }}
+      build-commit: ${{ steps.build-commit.outputs.BUILD_COMMIT }}
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+      - name: Check commit message for [wheels]
+        id: commit-message
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            MSG=$(git show -s --format=%s ${{ github.event.pull_request.head.sha }})
+            echo "Got commit message: $MSG"
+            if echo "$MSG" | grep -iq '\[wheels\]'; then
+              PROCEED=true
+            else
+              PROCEED=false
+            fi
+          else
+            PROCEED=true
+          fi
+          echo "PROCEED=$PROCEED" | tee -a $GITHUB_OUTPUT
+      - name: Check build commit
+        id: build-commit
+        run: |
+          BUILD_COMMIT=master
+          if [[ "schedule" == "${{ github.event_name }}" ]]; then
+            BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}
+          fi
+          echo "BUILD_COMMIT=$BUILD_COMMIT" | tee -a $GITHUB_OUTPUT
+
   build_linux_wheels:
-    name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
-    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+    name: Build wheels on ${{ matrix.os }}
+    needs: check-commit
+    if: github.repository_owner == 'dipy' && needs.check-commit.outputs.proceed == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        cibw_python: ["cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
-        cibw_manylinux: [manylinux2014]
-        cibw_arch: ["x86_64", "aarch64"]
+        os: [ubuntu-latest, ubuntu-24.04-arm]
     steps:
-      - name: Setup Environment variables
-        shell: bash
-        run: |
-          if [ "schedule" == "${{ github.event_name }}" ]; then echo "BUILD_COMMIT=master" >> $GITHUB_ENV; else echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" >> $GITHUB_ENV; fi
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ env.BUILD_COMMIT }}
-      - uses: actions/setup-python@v6
-        name: Install Python
-        with:
-          python-version: "3.12"
-      - name: Set up QEMU
-        if: ${{ matrix.cibw_arch == 'aarch64' }}
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-      - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel
-      - name: Build the wheel
-        run: python -m cibuildwheel --output-dir dist
+          ref: ${{ needs.check-commit.outputs.build-commit }}
+      - uses: pypa/cibuildwheel@v3.3.1
         env:
-            CIBW_BUILD: ${{ matrix.cibw_python }}
-            CIBW_ARCHS_LINUX: ${{ matrix.cibw_arch }}
             CIBW_SKIP: "*-musllinux_*"
-            CIBW_TEST_SKIP: "*"  # "*_aarch64"
-            CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.cibw_manylinux }}
-            CIBW_MANYLINUX_I686_IMAGE: ${{ matrix.cibw_manylinux }}
-            CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
-      - name: Rename Python version
-        run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
+            CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+            CIBW_MANYLINUX_I686_IMAGE: manylinux2014
+        with:
+          output-dir: dist
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
+            name: wheels-${{ matrix.os }}
             path: ./dist/*.whl
 
   build_osx_wheels:
-    name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
-    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+    name: Build ${{ matrix.os }} wheels
+    needs: check-commit
+    if: github.repository_owner == 'dipy' && needs.check-commit.outputs.proceed == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, macos-latest]
-        cibw_python: ["cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
-        include:
-          - os: macos-latest
-            cibw_arch: x86_64
-            compiler_env: CC=/usr/local/opt/llvm/bin/clang CXX=/usr/local/opt/llvm/bin/clang++ LIBRARY_PATH=/usr/local/opt/llvm/lib:$LIBRARY_PATH
-          - os: macos-14
-            cibw_arch: arm64
-            compiler_env: CC=/opt/homebrew/opt/llvm/bin/clang CXX=/opt/homebrew/opt/llvm/bin/clang++ LIBRARY_PATH=/opt/homebrew/opt/llvm/lib:$LIBRARY_PATH MACOSX_DEPLOYMENT_TARGET=14.7
-
+        os: [macos-15-intel, macos-latest]
     steps:
-      - name: Setup Environment variables
-        shell: bash
-        run: |
-          if [ "schedule" == "${{ github.event_name }}" ]; then echo "BUILD_COMMIT=master" >> $GITHUB_ENV; else echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" >> $GITHUB_ENV; fi
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ env.BUILD_COMMIT }}
-      - uses: actions/setup-python@v6
-        name: Install Python
+          ref: ${{ needs.check-commit.outputs.build-commit }}
+      - uses: pypa/cibuildwheel@v3.3.1
         with:
-          python-version: "3.12"
-      - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel
-      - name: Build the wheel
-        run: python -m cibuildwheel --output-dir dist
-        env:
-            CIBW_BEFORE_ALL_MACOS: "brew install llvm libomp"
-            CIBW_BUILD: ${{ matrix.cibw_python }}
-            CIBW_ARCHS_MACOS: ${{ matrix.cibw_arch }}
-            CIBW_TEST_SKIP: "*"  # "*_aarch64 *-macosx_arm64"
-            CIBW_ENVIRONMENT_MACOS: ${{ matrix.compiler_env }}
-            CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
-      - name: Rename Python version
-        run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
+          output-dir: dist
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_manylinux }}-${{ matrix.cibw_arch }}
+            name: wheels-${{ matrix.os }}
             path: ./dist/*.whl
 
   build_windows_wheels:
-    name: Build python ${{ matrix.cibw_python }} ${{ matrix.cibw_arch }} wheels on ${{ matrix.os }}
-    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+    name: Build ${{ matrix.os }} wheels
+    needs: check-commit
+    if: github.repository_owner == 'dipy' && needs.check-commit.outputs.proceed == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest]
-        cibw_python: ["cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
-        cibw_arch: ["AMD64"]
     steps:
-      - name: Setup Environment variables
-        shell: bash
-        run: |
-          if [ "schedule" == "${{ github.event_name }}" ]; then echo "BUILD_COMMIT=master" >> $GITHUB_ENV; else echo "BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}" >> $GITHUB_ENV; fi
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ env.BUILD_COMMIT }}
-      - uses: actions/setup-python@v6
-        name: Install Python
-        with:
-          python-version: "3.12"
-      - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel
-      - name: Build the wheel
-        run: python -m cibuildwheel --output-dir dist
+          ref: ${{ needs.check-commit.outputs.build-commit }}
+      - uses: pypa/cibuildwheel@v3.3.1
         env:
-            CIBW_BUILD: ${{ matrix.cibw_python }}
-            CIBW_ARCHS_WINDOWS: ${{ matrix.cibw_arch }}
             CIBW_CONFIG_SETTINGS: "setup-args=--vsenv compile-args=-v"
-            CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
-      - name: Rename Python version
-        shell: bash
-        run: echo "PY_VERSION=$(echo ${{ matrix.cibw_python }} | cut -d- -f1)" >> $GITHUB_ENV
+        with:
+          output-dir: dist
       - uses: actions/upload-artifact@v6
         with:
-            name: wheels-${{ env.PY_VERSION }}-${{ matrix.cibw_arch }}
+            name: wheels-${{ matrix.os }}
             path: ./dist/*.whl
 
   test_wheels:
     name: Test wheels
-    if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+    if: github.repository_owner == 'dipy'
     needs: [build_linux_wheels]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -185,7 +164,7 @@ jobs:
         run: echo "PY_VERSION=$(echo ${{ matrix.python-version }} | tr -d '.')" >> $GITHUB_ENV
       - uses: actions/download-artifact@v7
         with:
-          name: wheels-cp${{ env.PY_VERSION }}-manylinux2014-x86_64
+          name: wheels-ubuntu-latest
           path: ./dist
       - uses: actions/setup-python@v6
         with:
@@ -193,9 +172,9 @@ jobs:
       - name: Test wheel
         run: |
           set -eo pipefail
-          ls -al ./dist/*.whl
+          ls -al ./dist/*-cp${PY_VERSION}-*.whl
           python -m pip install --only-binary="numpy,scipy,h5py" --index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple" "numpy>=2.1.0.dev0" "scipy>=1.14.0.dev0" h5py
-          python -m pip install ./dist/*.whl
+          python -m pip install ./dist/*-cp${PY_VERSION}-*.whl
           python -c "import dipy; print(dipy.__version__)"
           python -c "import numpy; assert int(numpy.__version__[0]) >= 2, numpy.__version__"
           python -c "from dipy.align.imaffine import AffineMap"
@@ -204,8 +183,8 @@ jobs:
       permissions:
         contents: write # for softprops/action-gh-release to create GitHub release
       name: Upload to Anaconda
-      needs: [build_linux_wheels, build_osx_wheels, build_windows_wheels]
-      if: ${{ always() }} && github.repository_owner == 'dipy' && github.ref == 'refs/heads/master'
+      needs: [check-commit, build_linux_wheels, build_osx_wheels, build_windows_wheels]
+      if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
       runs-on: ubuntu-latest
       timeout-minutes: 10
       steps:
@@ -225,7 +204,7 @@ jobs:
           anaconda_nightly_upload_labels: dev
       - name: Upload wheel
         uses: scientific-python/upload-nightly-action@5748273c71e2d8d3a61f3a11a16421c8954f9ecf # 0.6.3
-        if: env.BUILD_COMMIT == 'master'
+        if: needs.check-commit.outputs.build-commit == 'master'
         with:
           artifacts_path: dist
           anaconda_nightly_upload_token: ${{secrets.ANACONDA_SCIENTIFIC_PYTHON_NIGHTLY_TOKEN}}
