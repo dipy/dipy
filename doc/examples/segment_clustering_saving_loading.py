@@ -4,9 +4,10 @@ Saving and Loading QuickBundles Clustering Results
 ==================================================
 
 This example shows how to save clustering results produced by QuickBundles
-:footcite:p:`Garyfallidis2012a` into tractogram files. Cluster labels are
-stored via ``data_per_streamline`` and centroids are saved separately.
-Both TRK and TRX formats are demonstrated.
+:footcite:p:`Garyfallidis2012a` into tractogram files. To ensure all relevant
+information is kept together, we merge original streamlines and their cluster
+centroids into a single tractogram. Both TRX and TRK formats are demonstrated,
+prioritizing the highly efficient TRX format.
 
 """
 
@@ -16,6 +17,15 @@ from dipy.data import get_fnames
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.segment.clustering import QuickBundles
+
+###############################################################################
+# Generating Clusters and Centroids
+# =================================
+#
+# We fetch a sample fornix dataset and group the streamlines into clusters
+# using the QuickBundles algorithm. QuickBundles produces a `ClusterMap`
+# object that stores the cluster indices as well as the computed centroids
+# (the representative average streamline for each cluster).
 
 fname = get_fnames(name="fornix")
 
@@ -31,75 +41,70 @@ print(f"Number of clusters: {len(clusters)}")
 print(f"Cluster sizes: {list(map(len, clusters))}")
 
 ###############################################################################
-# Build a label array that maps each streamline to its cluster index.
-# ``cluster.indices`` gives the original streamline indices belonging to
-# that cluster.
+# Merging Streamlines and Centroids
+# =================================
+#
+# A common workflow is to save both the original streamlines and their
+# centroids together. To do this, we concatenate the centroid streamlines
+# to the end of the original streamline list.
+#
+# We also need to keep track of which cluster each streamline belongs to,
+# and distinguish the original data from the centroids. We can store this
+# metadata using ``data_per_streamline``.
 
 labels = np.empty(len(streamlines), dtype=np.int32)
 for i, cluster in enumerate(clusters):
     for idx in cluster.indices:
         labels[idx] = i
 
-###############################################################################
-# Save the streamlines with their cluster labels attached via
-# ``data_per_streamline``. The TRK format preserves this metadata
-# through save/load round-trips.
+centroid_labels = np.arange(len(clusters), dtype=np.int32)
+all_labels = np.concatenate((labels, centroid_labels))
 
-sft_labeled = StatefulTractogram(
-    streamlines,
+is_centroid = np.concatenate((
+    np.zeros(len(streamlines), dtype=np.int32),
+    np.ones(len(clusters), dtype=np.int32)
+))
+
+combined_streamlines = list(streamlines) + list(clusters.centroids)
+
+sft_combined = StatefulTractogram(
+    combined_streamlines,
     reference=fornix,
     space=Space.RASMM,
-    data_per_streamline={"cluster": labels},
+    data_per_streamline={
+        "cluster": all_labels,
+        "is_centroid": is_centroid
+    },
 )
-
-save_tractogram(sft_labeled, "labeled_streamlines.trk",
-                bbox_valid_check=False)
-
-# Save the cluster centroids as a separate tractogram.
-sft_centroids = StatefulTractogram(
-    clusters.centroids,
-    reference=fornix,
-    space=Space.RASMM,
-)
-
-save_tractogram(sft_centroids, "centroids.trk",
-                bbox_valid_check=False)
 
 ###############################################################################
-# Reload and verify.
+# Saving to TRX
+# =============
+#
+# The TRX format is recommended because it utilizes memory-mapped arrays,
+# making it extremely memory-efficient for large tractograms. Crucially,
+# any metadata stored in ``data_per_streamline`` is automatically preserved
+# when saving and loading.
 
-sft_loaded = load_tractogram("labeled_streamlines.trk", "same",
-                             bbox_valid_check=False)
-loaded_labels = sft_loaded.data_per_streamline["cluster"]
+save_tractogram(sft_combined, "clustering_results.trx", bbox_valid_check=False)
 
-print(f"Loaded {len(loaded_labels)} labels from TRK")
-print(f"Labels match: "
-      f"{np.array_equal(loaded_labels.astype(np.int32), labels)}")
-
-sft_centr = load_tractogram("centroids.trk", "same",
-                            bbox_valid_check=False)
-print(f"Loaded {len(sft_centr.streamlines)} centroids from TRK")
-
-# The same workflow works with TRX, which uses memory-mapped arrays
-# and is more efficient for large tractograms.
-
-save_tractogram(sft_labeled, "labeled_streamlines.trx",
-                bbox_valid_check=False)
-save_tractogram(sft_centroids, "centroids.trx",
-                bbox_valid_check=False)
-
-sft_trx = load_tractogram("labeled_streamlines.trx", "same",
+sft_trx = load_tractogram("clustering_results.trx", "same",
                           bbox_valid_check=False)
+
 trx_labels = sft_trx.data_per_streamline["cluster"]
+trx_is_centroid = sft_trx.data_per_streamline["is_centroid"]
 
-print(f"Loaded {len(trx_labels)} labels from TRX")
-print(f"Labels match: "
-      f"{np.array_equal(trx_labels.astype(np.int32), labels)}")
+print(f"Loaded {len(sft_trx.streamlines)} total streamlines from TRX")
+print(f"TRX labels match: {np.array_equal(trx_labels, all_labels)}")
+print(f"TRX centroid flags match: "
+      f"{np.array_equal(trx_is_centroid, is_centroid)}")
 
-sft_centr_trx = load_tractogram("centroids.trx", "same",
-                                bbox_valid_check=False)
-print(f"Loaded {len(sft_centr_trx.streamlines)} centroids "
-      f"from TRX")
+###############################################################################
+# For backward compatibility with older software, the combined tractogram
+# can also be saved as a standard TRK file using identical syntax.
+
+save_tractogram(sft_combined, "clustering_results.trk",
+                bbox_valid_check=False)
 
 ###############################################################################
 # References
