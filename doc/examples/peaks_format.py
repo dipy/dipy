@@ -1,14 +1,13 @@
 """
 
-=======================================
 Understanding the PAM5 File Format
-=======================================
 
 DIPY stores peak directions and associated metrics from diffusion MRI
 reconstruction in PAM5 files (``.pam5``), which are HDF5 under the hood.
 
 """
 
+import h5py
 import numpy as np
 
 from dipy.core.gradients import gradient_table
@@ -22,7 +21,7 @@ from dipy.reconst.shm import CsaOdfModel
 
 """
 PAM5 File Structure
-===================
+
 
 A ``.pam5`` file is an HDF5 file with the following layout:
 
@@ -74,7 +73,7 @@ pam = peaks_from_model(
 
 print(f"peak_dirs shape: {pam.peak_dirs.shape}")
 
-###############################################################################
+
 # Save and reload the PAM.
 
 save_pam("csa_peaks.pam5", pam, affine=affine)
@@ -106,10 +105,8 @@ pam_manual.ang_thr = 60.0
 
 save_pam("manual_peaks.pam5", pam_manual)
 
-###############################################################################
-# Inspecting a PAM5 file with ``h5py``:
 
-import h5py
+# Inspecting a PAM5 file with ``h5py``:
 
 with h5py.File("csa_peaks.pam5", "r") as f:
     print(f"Version: {f.attrs['version']}")
