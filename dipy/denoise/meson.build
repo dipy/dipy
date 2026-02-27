@@ -4,6 +4,7 @@ cython_sources = [
   'pca_noise_estimate',
   'shift_twist_convolution',
   '_bias_correction',
+  '_localpca_fast',
   ]
 
 foreach ext: cython_sources
