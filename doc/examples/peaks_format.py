@@ -1,6 +1,7 @@
 """
-
+==================================
 Understanding the PAM5 File Format
+==================================
 
 DIPY stores peak directions and associated metrics from diffusion MRI
 reconstruction in PAM5 files (``.pam5``), which are HDF5 under the hood.
@@ -19,37 +20,46 @@ from dipy.io.image import load_nifti
 from dipy.io.peaks import load_pam, save_pam
 from dipy.reconst.shm import CsaOdfModel
 
-"""
-PAM5 File Structure
+###############################################################################
+# PAM5 File Structure
+# ===================
+#
+# A ``.pam5`` file is an HDF5 file with the following layout:
+#
+# .. code-block:: text
+#
+#     file.pam5  (HDF5)
+#     |-- @version = "0.0.1"              <- file-level attribute
+#     +-- pam/                            <- HDF5 group
+#         |-- peak_dirs       (X,Y,Z,N,3)   float64  REQUIRED
+#         |-- peak_values     (X,Y,Z,N)     float64  REQUIRED
+#         |-- peak_indices    (X,Y,Z,N)     int32    REQUIRED
+#         |-- affine          (4,4)          float64
+#         |-- sphere_vertices (M,3)         float64
+#         |-- shm_coeff       (X,Y,Z,K)     float64
+#         |-- B               (K,M)         float64
+#         |-- gfa             (X,Y,Z)       float64
+#         |-- qa              (X,Y,Z,N)     float64
+#         |-- odf             (X,Y,Z,M)     float64
+#         |-- total_weight    (1,)           float64
+#         +-- ang_thr         (1,)           float64
+#
+# X, Y, Z are spatial dimensions, N is the number of peaks per voxel
+# (default 5), M is the number of sphere vertices, and K is the number
+# of spherical harmonics coefficients.
+#
+# Only ``peak_dirs``, ``peak_values``, and ``peak_indices`` are
+# required. Everything else is optional and will be ``None`` when not
+# present.
 
-
-A ``.pam5`` file is an HDF5 file with the following layout:
-
-.. code-block:: text
-
-    file.pam5  (HDF5)
-    |-- @version = "0.0.1"              <- file-level attribute
-    +-- pam/                            <- HDF5 group
-        |-- peak_dirs       (X,Y,Z,N,3)   float64  REQUIRED
-        |-- peak_values     (X,Y,Z,N)     float64  REQUIRED
-        |-- peak_indices    (X,Y,Z,N)     int32    REQUIRED
-        |-- affine          (4,4)          float64
-        |-- sphere_vertices (M,3)         float64
-        |-- shm_coeff       (X,Y,Z,K)     float64
-        |-- B               (K,M)         float64
-        |-- gfa             (X,Y,Z)       float64
-        |-- qa              (X,Y,Z,N)     float64
-        |-- odf             (X,Y,Z,M)     float64
-        |-- total_weight    (1,)           float64
-        +-- ang_thr         (1,)           float64
-
-X, Y, Z are spatial dimensions, N is the number of peaks per voxel
-(default 5), M is the number of sphere vertices, and K is the number of
-spherical harmonics coefficients.
-
-Only ``peak_dirs``, ``peak_values``, and ``peak_indices`` are required.
-Everything else is optional and will be ``None`` when not present.
-"""
+###############################################################################
+# Generating and Saving Example Peaks
+# ===================================
+#
+# To demonstrate the PAM5 format, we first need some peaks. We fit a Constant
+# Solid Angle (CSA) ODF model to a small patch of data and extract the peaks.
+# Then, we can save the resulting ``PeaksAndMetrics`` object to a PAM5 file
+# using ``save_pam``, and load it back using ``load_pam``.
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(
     name="stanford_hardi"
@@ -73,19 +83,15 @@ pam = peaks_from_model(
 
 print(f"peak_dirs shape: {pam.peak_dirs.shape}")
 
-
-# Save and reload the PAM.
-
 save_pam("csa_peaks.pam5", pam, affine=affine)
 pam_loaded = load_pam("csa_peaks.pam5")
 
-"""
-Creating a PAM manually
-========================
-
-A ``PeaksAndMetrics`` object can also be constructed directly, e.g. to
-convert peak data from FSL or MRtrix into DIPY's format.
-"""
+###############################################################################
+# Creating a PAM Manually
+# =======================
+#
+# A ``PeaksAndMetrics`` object can also be constructed directly, e.g.
+# to convert peak data from FSL or MRtrix into DIPY's format.
 
 pam_manual = PeaksAndMetrics()
 pam_manual.peak_dirs = np.random.randn(10, 10, 10, 5, 3)
@@ -105,8 +111,12 @@ pam_manual.ang_thr = 60.0
 
 save_pam("manual_peaks.pam5", pam_manual)
 
-
-# Inspecting a PAM5 file with ``h5py``:
+###############################################################################
+# Inspecting the HDF5 Structure
+# ==============================
+#
+# Since PAM5 is standard HDF5, any HDF5 tool can read it. Here we
+# inspect the file directly with ``h5py`` to confirm the layout.
 
 with h5py.File("csa_peaks.pam5", "r") as f:
     print(f"Version: {f.attrs['version']}")
@@ -114,7 +124,13 @@ with h5py.File("csa_peaks.pam5", "r") as f:
         print(f"  {name}: shape={ds.shape}, dtype={ds.dtype}")
 
 ###############################################################################
-# ``pam_to_niftis`` and ``niftis_to_pam`` convert between PAM5 and NIfTI.
+# NIfTI Interoperability
+# ======================
+#
+# PAM5 files can be converted to and from NIfTI using
+# ``pam_to_niftis`` and ``niftis_to_pam``. This is useful when
+# exchanging peak data with tools that only read NIfTI, such as
+# FSL or MRtrix.
 #
 # .. code-block:: python
 #
