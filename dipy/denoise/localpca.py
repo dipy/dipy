@@ -9,6 +9,8 @@ from dipy.denoise.eig_localpca import genpca_core as genpca_core_fast
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.testing.decorators import warning_for_keywords
 
+# from dipy.denoise._localpca_fast import genpca_core as _genpca_core_fast
+
 
 def dimensionality_problem_message(arr, num_samples, spr):
     """Message about the number of samples being smaller than one less the
