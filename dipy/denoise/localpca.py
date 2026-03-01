@@ -8,6 +8,8 @@ from scipy.linalg.lapack import dgesvd as svd
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.testing.decorators import warning_for_keywords
 
+# from dipy.denoise._localpca_fast import genpca_core as _genpca_core_fast
+
 
 def dimensionality_problem_message(arr, num_samples, spr):
     """Message about the number of samples being smaller than one less the
@@ -310,6 +312,19 @@ def genpca(
     if return_sigma is True and sigma is None:
         var = np.zeros(arr.shape[:-1], dtype=calc_dtype)
         thetavar = np.zeros(arr.shape[:-1], dtype=calc_dtype)
+
+    # if (not is_svd):
+    #     return _genpca_core_fast(
+    #         arr,
+    #         sigma=sigma,
+    #         mask=mask,
+    #         patch_radius_arr_x=int(patch_radius_arr[0]),
+    #         patch_radius_arr_y=int(patch_radius_arr[1]),
+    #         patch_radius_arr_z=int(patch_radius_arr[2]),
+    #         tau_factor=tau_factor,
+    #         return_sigma=return_sigma,
+    #         out_dtype=out_dtype,
+    #     )
 
     # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius_arr[2], arr.shape[2] - patch_radius_arr[2]):
