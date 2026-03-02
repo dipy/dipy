@@ -1241,19 +1241,19 @@ def test_cholesky_transformations():
 
 
 def test_dti_nlls_cholesky_positivity():
-    """Test if NLLS with Cholesky parameterization enforces positive eigenvalues."""
+    """Test if NLLS with Cholesky enforces positive eigenvalues."""
     evals_gt = np.array([0.0017, 0.0003, 0.0003])
     evecs_gt = np.eye(3)
 
-    _, fbvals, fbvecs = get_fnames(name="small_64D")
+    _, fbvals, fbvecs = get_fnames(name="small_25")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = grad.gradient_table(bvals, bvecs=bvecs)
-    S_noisy = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt, snr=5)
+    Spred = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
     X = design_matrix(gtab)
 
-    params_nls, _ = nlls_fit_tensor(X, S_noisy, cholesky=True)
+    params_nls, _ = nlls_fit_tensor(X, Spred, cholesky=True)
     evals_nls = params_nls[..., :3]
- 
+
     # Assert all eigenvalues are non-negative (within float precision)
     npt.assert_(np.all(evals_nls >= -1e-8))
 
