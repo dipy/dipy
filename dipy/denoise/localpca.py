@@ -311,6 +311,7 @@ def genpca(
         var = np.zeros(arr.shape[:-1], dtype=calc_dtype)
         thetavar = np.zeros(arr.shape[:-1], dtype=calc_dtype)
 
+    # Fast Cython core only supports 'eig' for now
     if not is_svd:
         return _genpca_core_fast(
             arr,
