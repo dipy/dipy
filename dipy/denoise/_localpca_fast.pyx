@@ -584,10 +584,15 @@ def genpca_core(
     patch_radius_y=2,
     patch_radius_z=2,
     tau_factor=None,
+    out_dtype=None,
 ):
     """
     Full Cython implementation of the expensive triple-loop body.
     """
+
+    in_dtype = data.dtype
+    if out_dtype is None:
+        out_dtype = in_dtype
 
     estimate_sigma = (var_map is None)
     calc_dtype = np.float64 if data.dtype == np.float64 else np.float32
@@ -636,8 +641,8 @@ def genpca_core(
         if estimate_sigma:
             var_out = var_acc / thetavar
             var_out[mask == 0] = 0
-            return den.astype(calc_dtype), np.sqrt(var_out)
+            return den.astype(out_dtype), np.sqrt(var_out)
         else:
-            return den.astype(calc_dtype), np.sqrt(var_map)
+            return den.astype(out_dtype), np.sqrt(var_map)
     else:
-        return den.astype(calc_dtype)
+        return den.astype(out_dtype)
