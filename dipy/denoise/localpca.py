@@ -313,18 +313,21 @@ def genpca(
         var = np.zeros(arr.shape[:-1], dtype=calc_dtype)
         thetavar = np.zeros(arr.shape[:-1], dtype=calc_dtype)
 
-    # if (not is_svd):
-    #     return _genpca_core_fast(
-    #         arr,
-    #         sigma=sigma,
-    #         mask=mask,
-    #         patch_radius_arr_x=int(patch_radius_arr[0]),
-    #         patch_radius_arr_y=int(patch_radius_arr[1]),
-    #         patch_radius_arr_z=int(patch_radius_arr[2]),
-    #         tau_factor=tau_factor,
-    #         return_sigma=return_sigma,
-    #         out_dtype=out_dtype,
-    #     )
+    """
+    if (not is_svd):
+        return _genpca_core_fast(
+            arr,
+            mask=mask,
+            var_map=None if sigma is None else var,
+            patch_radius_x=int(patch_radius_arr[0]),
+            patch_radius_y=int(patch_radius_arr[1]),
+            patch_radius_z=int(patch_radius_arr[2]),
+            tau_factor=tau_factor,
+            return_sigma=return_sigma,
+            out_dtype=out_dtype,
+        )
+
+    """
 
     # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius_arr[2], arr.shape[2] - patch_radius_arr[2]):
