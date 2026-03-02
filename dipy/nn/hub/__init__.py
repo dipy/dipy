@@ -73,6 +73,7 @@ def load(name, version=None, use_cuda=False):
 
     # Weights fetching — plugs into existing dipy.data fetcher system
     from dipy.data import fetcher
+
     fetch_fn_name = f"fetch_{name.lower()}_torch_weights"
 
     if not hasattr(fetcher, fetch_fn_name):

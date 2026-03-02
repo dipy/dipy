@@ -2,7 +2,6 @@
 
 from abc import ABC, abstractmethod
 
-from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
