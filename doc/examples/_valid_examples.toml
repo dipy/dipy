@@ -65,6 +65,7 @@ files = [
     "reslice_datasets.py",
     "snr_in_cc.py",
     "motion_correction.py",
+    "bias_correction_dwi.py",
 ]
 
 [reconstruction]
