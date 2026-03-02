@@ -15,6 +15,15 @@ import difflib
 import importlib
 import inspect
 import os
+
+# PyTorch wheels on macOS bundle their own libomp.dylib, which conflicts with
+# the conda/Homebrew libomp.dylib loaded by scipy/numpy.  Both are LLVM libomp
+# (the same implementation), so duplicate-loading is safe: the second
+# initialisation becomes a no-op and there is no thread-pool corruption risk.
+# This must be set before any import that transitively loads libomp (e.g.
+# importlib.import_module("dipy.workflows.segment") pulls in all of torch).
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 from pathlib import Path
 import re
 import shutil
@@ -648,6 +657,100 @@ def resolve_output_conflicts(*, config, conflicts):
     return warnings
 
 
+# ---------------------------------------------------------------------------
+# Subprocess isolation for PyTorch-based stages
+# ---------------------------------------------------------------------------
+# CLIs that bundle PyTorch (libiomp5) must run in a spawned subprocess so
+# that the Intel OpenMP runtime never shares a process with the LLVM/Apple
+# OpenMP runtime (libomp) already loaded by scipy/numpy.  Using spawn (not
+# fork) gives the child a clean address space with no inherited OpenMP state.
+_ISOLATED_STAGE_CLIS = frozenset(["dipy_brain_mask"])
+
+
+def _stage_worker(*, queue, module_name, class_name, init_params, run_params):
+    """Worker run inside a spawned subprocess for OpenMP-isolated stages.
+
+    Parameters
+    ----------
+    queue : multiprocessing.Queue
+        Used to pass ``last_generated_outputs`` back to the parent.
+    module_name : str
+        Dotted module path of the workflow.
+    class_name : str
+        Class name of the workflow inside *module_name*.
+    init_params : dict
+        Keyword arguments forwarded to ``workflow.__init__``.
+    run_params : dict
+        Keyword arguments forwarded to ``workflow.run``.
+    """
+    import importlib
+    import os
+
+    # PyTorch wheels on macOS bundle their own libomp.dylib, which conflicts
+    # with the conda/Homebrew libomp.dylib loaded by scipy/numpy.  Both are
+    # LLVM libomp (same implementation), so duplicate-loading is safe: the
+    # second initialisation is a no-op and there is no thread-pool corruption
+    # risk (unlike Intel libiomp5 + LLVM libomp, which are incompatible).
+    # Setting this here — before any import — ensures it is active before
+    # either copy is loaded.  This is safe only because this function runs
+    # in a spawned subprocess with no inherited OpenMP state from the parent.
+    os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
+    module = importlib.import_module(module_name)
+    workflow_class = getattr(module, class_name)
+    workflow = workflow_class(**init_params)
+    workflow.run(**run_params)
+    queue.put(getattr(workflow, "last_generated_outputs", None))
+
+
+def _execute_stage_isolated(*, module_name, class_name, init_params, run_params):
+    """Run a workflow stage in a spawned subprocess.
+
+    Parameters
+    ----------
+    module_name : str
+        Dotted module path of the workflow.
+    class_name : str
+        Class name of the workflow inside *module_name*.
+    init_params : dict
+        Keyword arguments forwarded to ``workflow.__init__``.
+    run_params : dict
+        Keyword arguments forwarded to ``workflow.run``.
+
+    Returns
+    -------
+    object
+        The value of ``workflow.last_generated_outputs`` from the child
+        process, or ``None`` if the attribute was absent.
+
+    Raises
+    ------
+    RuntimeError
+        If the child process exits with a non-zero exit code.
+    """
+    import multiprocessing as mp
+
+    ctx = mp.get_context("spawn")
+    queue = ctx.Queue()
+    proc = ctx.Process(
+        target=_stage_worker,
+        kwargs={
+            "queue": queue,
+            "module_name": module_name,
+            "class_name": class_name,
+            "init_params": init_params,
+            "run_params": run_params,
+        },
+    )
+    proc.start()
+    proc.join()
+    if proc.exitcode != 0:
+        raise RuntimeError(
+            f"Isolated stage subprocess exited with code {proc.exitcode}"
+        )
+    return queue.get_nowait()
+
+
 def execute_pipeline_stage(
     *, stage_name, stage_config, resolved_outputs, io_config, force=False
 ):
@@ -740,28 +843,41 @@ def execute_pipeline_stage(
 
     final_params = {**valid_params, **workflow_params}
 
+    isolated = cli_name in _ISOLATED_STAGE_CLIS
+    if isolated:
+        logger.debug(
+            f"Stage '{stage_name}' uses PyTorch — running in isolated subprocess"
+        )
+
     logger.info(f"Executing stage '{stage_name}' using {cli_name}...")
     t_start = time.perf_counter()
 
     try:
-        workflow = workflow_class(**init_params)
-        workflow.run(**final_params)
+        if isolated:
+            last_outputs = _execute_stage_isolated(
+                module_name=module_name,
+                class_name=class_name,
+                init_params=init_params,
+                run_params=final_params,
+            )
+        else:
+            workflow = workflow_class(**init_params)
+            workflow.run(**final_params)
+            last_outputs = getattr(workflow, "last_generated_outputs", None)
 
         stage_outputs = {}
-        if hasattr(workflow, "last_generated_outputs"):
-            if isinstance(workflow.last_generated_outputs, dict):
-                stage_outputs = workflow.last_generated_outputs
+        if last_outputs is not None:
+            if isinstance(last_outputs, dict):
+                stage_outputs = last_outputs
                 logger.debug(f"Stage '{stage_name}' outputs (dict): {stage_outputs}")
-            elif isinstance(workflow.last_generated_outputs, list):
+            elif isinstance(last_outputs, list):
                 outputs = introspect_workflow_outputs(cli_name)
                 sorted_params = sorted(outputs)
                 logger.debug(
                     f"Stage '{stage_name}' - sorted params: {sorted_params}, "
-                    f"files: {workflow.last_generated_outputs}"
+                    f"files: {last_outputs}"
                 )
-                for out_param, out_file in zip(
-                    sorted_params, workflow.last_generated_outputs
-                ):
+                for out_param, out_file in zip(sorted_params, last_outputs):
                     stage_outputs[out_param] = out_file
                 logger.debug(f"Stage '{stage_name}' outputs (zipped): {stage_outputs}")
 
