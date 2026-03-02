@@ -61,9 +61,7 @@ from dipy.reconst.shm import CsaOdfModel
 # Then, we can save the resulting ``PeaksAndMetrics`` object to a PAM5 file
 # using ``save_pam``, and load it back using ``load_pam``.
 
-hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(
-    name="stanford_hardi"
-)
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 data, affine = load_nifti(hardi_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs=bvecs)
@@ -96,9 +94,7 @@ pam_loaded = load_pam("csa_peaks.pam5")
 pam_manual = PeaksAndMetrics()
 pam_manual.peak_dirs = np.random.randn(10, 10, 10, 5, 3)
 pam_manual.peak_values = np.zeros((10, 10, 10, 5))
-pam_manual.peak_indices = np.full(
-    (10, 10, 10, 5), -1, dtype=np.int32
-)
+pam_manual.peak_indices = np.full((10, 10, 10, 5), -1, dtype=np.int32)
 pam_manual.affine = np.eye(4)
 pam_manual.sphere = default_sphere
 pam_manual.shm_coeff = None
