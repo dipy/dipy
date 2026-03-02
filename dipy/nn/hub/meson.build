@@ -9,3 +9,6 @@ py3.install_sources(
   pure: false,
   subdir: 'dipy/nn/hub'
 )
+
+subdir('adapters')
+subdir('tests')
