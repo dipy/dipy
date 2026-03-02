@@ -90,3 +90,9 @@ def _load_backend():
 
 
 __all__ = _load_backend()
+
+# Hub is backend-agnostic, registered unconditionally
+import dipy.nn.hub as hub_module
+sys.modules["dipy.nn.hub"] = hub_module
+globals()["hub"] = hub_module
+__all__ += ["hub"]
