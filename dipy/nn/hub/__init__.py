@@ -1,21 +1,23 @@
 """Hub module for loading pre-trained dMRI deep learning models."""
 
 import importlib
-from pathlib import Path
-
-import yaml
 
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 
-_REGISTRY_PATH = Path(__file__).parent / "models_registry.yaml"
-
-
-def _load_registry():
-    with open(_REGISTRY_PATH) as f:
-        return yaml.safe_load(f)
+REGISTRY = {
+    "TractCloud": {
+        "version": "1.0",
+        "task": "bundle_segmentation",
+        "backend": "torch",
+        "paper": "https://doi.org/10.1007/978-3-031-43993-3_40",
+        "input": "streamlines",
+        "output": "bundle_labels",
+        "description": "Registration-free whole-brain tractography parcellation.",
+    }
+}
 
 
 def list_models(task=None):
@@ -32,7 +34,7 @@ def list_models(task=None):
     dict
         Registry entries matching the filter.
     """
-    registry = _load_registry()
+    registry = REGISTRY
     if task:
         return {k: v for k, v in registry.items() if v.get("task") == task}
     return registry
@@ -55,7 +57,7 @@ def load(name, version=None, use_cuda=False):
     BaseHubAdapter
         A model adapter with a .predict() method.
     """
-    registry = _load_registry()
+    registry = REGISTRY
 
     if name not in registry:
         raise ValueError(

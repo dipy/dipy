@@ -1,8 +1,0 @@
-TractCloud:
-  version: "1.0"
-  task: bundle_segmentation
-  backend: torch
-  paper: "https://doi.org/10.1007/978-3-031-43993-3_40"
-  input: streamlines
-  output: bundle_labels
-  description: "Registration-free whole-brain tractography parcellation."
