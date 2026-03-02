@@ -2,13 +2,11 @@ import copy
 from warnings import warn
 
 import numpy as np
-from scipy.linalg import eigh
 from scipy.linalg.lapack import dgesvd as real_svd, zgesvd as complex_svd
 
+from dipy.denoise._localpca_fast import genpca_core as _genpca_core_fast
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.testing.decorators import warning_for_keywords
-
-# from dipy.denoise._localpca_fast import genpca_core as _genpca_core_fast
 
 
 def dimensionality_problem_message(arr, num_samples, spr):
@@ -318,8 +316,7 @@ def genpca(
         var = np.zeros(arr.shape[:-1], dtype=calc_dtype)
         thetavar = np.zeros(arr.shape[:-1], dtype=calc_dtype)
 
-    """
-    if (not is_svd):
+    if not is_svd:
         return _genpca_core_fast(
             arr,
             mask=mask,
@@ -331,8 +328,6 @@ def genpca(
             return_sigma=return_sigma,
             out_dtype=out_dtype,
         )
-
-    """
 
     # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius_arr[2], arr.shape[2] - patch_radius_arr[2]):
@@ -354,27 +349,22 @@ def genpca(
                 # Upcast the dtype for precision in the SVD
                 X = X - M
 
-                if is_svd:
-                    # PCA using an SVD
-                    svd_args = [1, 0]
-                    if np.issubdtype(calc_dtype, np.complexfloating):
-                        U, S, Vt = complex_svd(X, *svd_args)[:3]
-                    else:
-                        U, S, Vt = real_svd(X, *svd_args)[:3]
-                    # Items in S are the eigenvalues, but in ascending order
-                    # We invert the order (=> descending), square and normalize
-                    # \lambda_i = s_i^2 / n
-                    d = S[::-1] ** 2 / X.shape[0]
-                    # Rows of Vt are eigenvectors, but also in ascending
-                    # eigenvalue order:
-                    W = Vt[::-1].conj().T
+                # PCA using an SVD
+                svd_args = [1, 0]
+                if np.issubdtype(calc_dtype, np.complexfloating):
+                    U, S, Vt = complex_svd(X, *svd_args)[:3]
                 else:
-                    # PCA using an Eigenvalue decomposition
-                    C = np.conjugate(np.transpose(X)).dot(X)
-                    C = C / X.shape[0]
-                    [d, W] = eigh(C)
+                    U, S, Vt = real_svd(X, *svd_args)[:3]
+                # Items in S are the eigenvalues, but in ascending order
+                # We invert the order (=> descending), square and normalize
+                # \lambda_i = s_i^2 / n
+                d = S[::-1] ** 2 / X.shape[0]
+                # Rows of Vt are eigenvectors, but also in ascending
+                # eigenvalue order:
+                W = Vt[::-1].conj().T
 
                 if sigma is None:
+                    # Random matrix theory
                     this_var, _ = _pca_classifier(d, num_samples)
                 else:
                     # Predefined variance
