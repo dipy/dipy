@@ -11,7 +11,7 @@ from dipy.io.utils import create_nifti_header, split_filename_extension
 from dipy.stats.analysis import assignment_map
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
-from dipy.viz import horizon, skyline
+from dipy.viz import horizon, skyline_from_files
 from dipy.workflows.workflow import Workflow
 
 fury, has_fury, setup_module = optional_package(
@@ -332,84 +332,11 @@ class SkylineFlow(Workflow):
         """
         super(SkylineFlow, self).__init__(force=True)
 
-        if rois is None:
-            rois = []
-
-        skyline_images = []
-        skyline_peaks = []
-        skyline_rois = []
-        skyline_surfaces = []
-        skyline_tractograms = []
-
-        mni_2009c = {
-            "affine": np.array(
-                [
-                    [1.0, 0.0, 0.0, -96.0],
-                    [0.0, 1.0, 0.0, -132.0],
-                    [0.0, 0.0, 1.0, -78.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ]
-            ),
-            "dims": (193, 229, 193),
-            "vox_size": (1.0, 1.0, 1.0),
-            "vox_space": "RAS",
-        }
-        emergency_ref = create_nifti_header(
-            mni_2009c["affine"], mni_2009c["dims"], mni_2009c["vox_size"]
-        )
         io_it = self.get_io_iterator()
-        for input_output in io_it:
-            fname = input_output
 
-            logger.info(f"Loading file ... \n {fname}\n")
-            _, ext = split_filename_extension(fname)
-            ext = ext.lower()
-
-            if ext in [".nii.gz", ".nii"]:
-                data, affine = load_nifti(fname)
-                skyline_images.append((data, affine, fname))
-            elif ext == ".pam5":
-                pam = load_pam(fname)
-                skyline_peaks.append((pam, fname))
-            elif ext == ".pial":
-                surface = load_pial(fname)
-                if surface:
-                    vertices, faces = surface
-                    skyline_surfaces.append((vertices, faces, fname))
-            elif any(ext.endswith(_ext) for _ext in [".gii", ".gii.gz"]):
-                surface = load_gifti(fname)
-                vertices, faces = surface
-                if len(vertices) and len(faces):
-                    vertices, faces = surface
-                    skyline_surfaces.append((vertices, faces, fname))
-                else:
-                    warn(f"{fname} does not have any surface geometry.", stacklevel=2)
-            elif ext in [".trk", ".trx"]:
-                sft = load_tractogram(fname, "same", bbox_valid_check=False)
-                skyline_tractograms.append((sft, fname))
-            elif ext in [".dpy", ".tck", ".vtk", ".vtp", ".fib"]:
-                sft = load_tractogram(fname, emergency_ref)
-                skyline_tractograms.append((sft, fname))
-            else:
-                logger.error(f"File extension '{ext}' is not supported in Skyline.")
-
-        for fname in rois:
-            _, ext = split_filename_extension(fname)
-            ext = ext.lower()
-            if ext in [".nii.gz", ".nii"]:
-                data, affine = load_nifti(fname)
-                skyline_rois.append((data, affine, fname))
-            else:
-                logger.error(
-                    f"File extension '{ext}' is not supported for ROIs in Skyline."
-                )
-
-        skyline(
-            images=skyline_images,
-            peaks=skyline_peaks,
-            rois=skyline_rois,
-            surfaces=skyline_surfaces,
-            tractograms=skyline_tractograms,
+        skyline_from_files(
+            io_it,
+            rois=rois,
             is_cluster=cluster,
             is_light_version=light_version,
             glass_brain=glass_brain,
