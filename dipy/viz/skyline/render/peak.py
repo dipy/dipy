@@ -1,8 +1,61 @@
+from pathlib import Path
+
 from fury.actor import peaks_slicer
 from imgui_bundle import imgui
 
 from dipy.viz.skyline.UI.elements import render_group, thin_slider
 from dipy.viz.skyline.render.renderer import Visualization
+
+
+def create_peak_visualization(
+    input,
+    idx,
+    *,
+    peak_values=1.0,
+    opacity=100,
+    render_callback=None,
+):
+    """Create peak visualization from input
+
+    Parameters
+    ----------
+    input : tuple
+        Tuple of the (pam, filename) or (pam,)
+    idx : int
+        Index of the peak for naming purposes if filename is not provided.
+    peak_values : float or ndarray, optional
+        Peak values to use for scaling.
+    opacity : int, optional
+        Opacity of the peak rendering.
+    render_callback : callable, optional
+        Callback function to be called after rendering.
+
+    Returns
+    -------
+    Peak3D
+        The created Peak3D object.
+    """
+    if not isinstance(input, tuple) or len(input) not in (1, 2):
+        raise ValueError(
+            "Input must be a tuple containing (pam, filename) or (pam,) "
+            "for peak visualization."
+        )
+
+    if len(input) == 1:
+        pam = input[0]
+        filename = f"Peaks_{idx}"
+    else:
+        pam, filename = input
+        filename = Path(filename).name if filename is not None else f"Peaks_{idx}"
+
+    return Peak3D(
+        filename,
+        pam.peak_dirs,
+        affine=pam.affine,
+        peak_values=peak_values,
+        opacity=opacity,
+        render_callback=render_callback,
+    )
 
 
 class Peak3D(Visualization):

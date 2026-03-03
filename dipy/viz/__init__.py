@@ -3,7 +3,7 @@ import warnings
 
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.app import horizon
-from dipy.viz.skyline.app import skyline
+from dipy.viz.skyline.app import skyline_from_files
 
 fury_pckg_msg = (
     "You do not have FURY installed. Some visualization functions might not "
