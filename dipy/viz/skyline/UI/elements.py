@@ -902,7 +902,7 @@ def thin_slider(
 
     thumb_color = imgui.get_color_u32(SLIDER_THEME["thumb_color"])
     shadow_color = imgui.get_color_u32(SLIDER_THEME["shadow_color"])
-    draw_list.add_circle_filled((thumb_x, track_y), radius + 4.0, shadow_color)
+    draw_list.add_circle_filled((thumb_x, track_y), radius + 2.0, shadow_color)
     draw_list.add_circle_filled((thumb_x, track_y), radius, thumb_color)
 
     value_color = SLIDER_THEME["value_color"]
@@ -1134,7 +1134,7 @@ def two_disk_slider(
             radius = thumb_radius * 1.08
         if is_active:
             radius = thumb_radius * 1.18
-        draw_list.add_circle_filled((x_pos, y_center), radius + 4.0, shadow_color)
+        draw_list.add_circle_filled((x_pos, y_center), radius + 2.0, shadow_color)
         draw_list.add_circle_filled((x_pos, y_center), radius, thumb_color)
 
     draw_thumb(left_x, left_hovered, active_thumb == 0 and active)
