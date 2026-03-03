@@ -105,9 +105,9 @@ def render_section_header(
     info_icon = icons_fontawesome_6.ICON_FA_CIRCLE_INFO
     close_icon = icons_fontawesome_6.ICON_FA_XMARK
     show_icon = (
-        icons_fontawesome_6.ICON_FA_EYE
+        icons_fontawesome_6.ICON_FA_CIRCLE_DOT
         if is_visible
-        else icons_fontawesome_6.ICON_FA_EYE_SLASH
+        else icons_fontawesome_6.ICON_FA_CIRCLE
     )
     info_icon_size = imgui.calc_text_size(info_icon)
     close_icon_size = imgui.calc_text_size(close_icon)
@@ -155,7 +155,9 @@ def render_section_header(
 
     show_icon_min, show_icon_max = _calculate_hit_box((pos_x, pos_y), show_icon_size)
     show_icon_hovered = imgui.is_mouse_hovering_rect(show_icon_min, show_icon_max)
-    draw_list.add_text((pos_x, pos_y), text_color, show_icon)
+    draw_list.add_text(
+        (pos_x, pos_y), accent_color if is_visible else text_color, show_icon
+    )
     pos_x += show_icon_size.x + padding_x
 
     close_icon_min, close_icon_max = _calculate_hit_box((pos_x, pos_y), close_icon_size)
