@@ -1,3 +1,4 @@
+from pathlib import Path
 import time
 
 from fury import distinguishable_colormap
@@ -9,6 +10,75 @@ from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.streamline import length as streamline_length
 from dipy.viz.skyline.UI.elements import create_numeric_input
 from dipy.viz.skyline.render.renderer import Visualization
+
+
+def create_streamline_visualization(
+    input,
+    idx,
+    *,
+    is_cluster=False,
+    thr=15.0,
+    line_type="line",
+    color=(1, 0, 0),
+    render_callback=None,
+    colormap=None,
+):
+    """Create streamline visualization from input
+
+    Parameters
+    ----------
+    input : tuple
+        Tuple of the (sft, filename) or (sft,)
+    idx : int
+        Index of the tractogram for naming purposes.
+    is_cluster : bool, optional
+        Whether to cluster the streamline.
+    thr : float, optional
+        Clustering distance threshold.
+    line_type : str, optional
+        The type of line to render ("line" or "tube").
+    color : tuple, optional
+        Color of the streamline rendering.
+    render_callback : callable, optional
+        Callback function to be called after rendering.
+    colormap : colormap, optional
+        Colormap for clustering.
+
+    Returns
+    -------
+    Visualization
+        The created streamline visualization object.
+    """
+    if not isinstance(input, tuple) or len(input) not in (1, 2):
+        raise ValueError(
+            "Input must be a tuple containing (sft, filename) or (sft,) "
+            "for streamline visualization."
+        )
+
+    if len(input) == 1:
+        sft = input[0]
+        filename = f"Streamline_{idx}"
+    else:
+        sft, filename = input
+        filename = Path(filename).name if filename is not None else f"Streamline_{idx}"
+
+    if is_cluster:
+        return ClusterStreamline3D(
+            filename,
+            sft,
+            thr,
+            line_type=line_type,
+            render_callback=render_callback,
+            colormap=colormap,
+        )
+
+    return Streamline3D(
+        filename,
+        sft,
+        line_type=line_type,
+        color=color,
+        render_callback=render_callback,
+    )
 
 
 def create_streamline(lines, *, color=(1, 0, 0), line_type="line", segments=3):
