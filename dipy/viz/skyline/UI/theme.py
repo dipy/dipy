@@ -73,7 +73,7 @@ THEME = {
     "secondary": hex_to_rgba("#FFFFFF"),
     "text": hex_to_rgba("#838383"),
     "text_highlight": hex_to_rgba("#EE942E"),
-    "shadow": hex_to_rgba("#000000", alpha=0.12),
+    "shadow": hex_to_rgba("#838383", alpha=0.12),
 }
 
 SLIDER_THEME = {
