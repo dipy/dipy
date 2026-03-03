@@ -491,7 +491,7 @@ cdef void genpca_loop_f64(
                             s += 1
 
 
-cdef tuple _run_core_f32(
+cdef tuple run_core_f32(
     ndarray data,
     ndarray mask,
     bint estimate_sigma,
@@ -526,7 +526,7 @@ cdef tuple _run_core_f32(
     return theta, thetax
 
 
-cdef tuple _run_core_f64(
+cdef tuple run_core_f64(
     ndarray data,
     ndarray mask,
     bint estimate_sigma,
@@ -598,7 +598,7 @@ def genpca_core(
     thetavar = np.zeros((shape[0], shape[1], shape[2]), dtype=calc_dtype)
 
     if calc_dtype == np.float32:
-        theta, thetax = _run_core_f32(
+        theta, thetax = run_core_f32(
             data,
             mask,
             estimate_sigma,
@@ -610,7 +610,7 @@ def genpca_core(
             thetavar,
         )
     else:
-        theta, thetax = _run_core_f64(
+        theta, thetax = run_core_f64(
             data,
             mask,
             estimate_sigma,
