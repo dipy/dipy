@@ -50,6 +50,10 @@ class Skyline:
         self._roi_visualizations = []
         self._surface_visualizations = []
         self._tractogram_visualizations = []
+        self._is_cluster = is_cluster
+        self._is_light_version = is_light_version
+        self._bg_color = bg_color
+        self._glass_brain = glass_brain
         gpu_texture = load_image_as_wgpu_texture_view(str(LOGO), self.window.device)
         logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
         self.window.renderer.add_event_handler(self.handle_key_events, "key_down")
@@ -59,58 +63,13 @@ class Skyline:
             size=self.ui_size,
             render_callback=self.before_render,
             logo_tex_ref=logo_tex_ref,
+            file_dialog_callback=self._append_visualization,
         )
         self.window.resize_callback(self.handle_resize)
         self._color_gen = distinguishable_colormap()
 
-        if images is not None:
-            for idx, input in enumerate(images):
-                image3d = create_image_visualization(
-                    input,
-                    idx,
-                    render_callback=self.before_render,
-                )
-                self._add_visualization(image3d)
-        if peaks is not None:
-            for idx, input in enumerate(peaks):
-                peak3d = create_peak_visualization(
-                    input, idx, render_callback=self.before_render
-                )
-                self._add_visualization(peak3d)
-        if rois is not None:
-            for idx, input in enumerate(rois):
-                color = next(self._color_gen)
-                roi3d = create_roi_visualization(
-                    input,
-                    idx,
-                    color=color,
-                    render_callback=self.before_render,
-                )
-                self._add_visualization(roi3d)
-        if surfaces is not None:
-            for idx, input in enumerate(surfaces):
-                color = next(self._color_gen) if not glass_brain else (0, 0, 0)
-                opacity = 25 if glass_brain else 100
-                surface3d = create_surface_visualization(
-                    input,
-                    idx,
-                    color=color,
-                    material="basic" if glass_brain else "phong",
-                    opacity=opacity,
-                    render_callback=self.before_render,
-                )
-                self._add_visualization(surface3d)
-        if tractograms is not None:
-            for idx, input in enumerate(tractograms):
-                tractogram3d = create_streamline_visualization(
-                    input,
-                    idx,
-                    is_cluster=is_cluster,
-                    line_type="line" if is_light_version else "tube",
-                    render_callback=self.before_render,
-                    colormap=self._color_gen,
-                )
-                self._add_visualization(tractogram3d)
+        self._load_visualiations(images, peaks, rois, surfaces, tractograms)
+
         self.active_image = None
         if self._image_visualizations:
             self._image_visualizations[-1].active = True
@@ -188,6 +147,62 @@ class Skyline:
         else:
             raise ValueError("Unsupported visualization type")
         self.UI_window.add(viz.name, viz.renderer)
+
+    def _load_visualiations(self, images, peaks, rois, surfaces, tractograms):
+        for idx, input in enumerate(images):
+            image3d = create_image_visualization(
+                input,
+                idx,
+                render_callback=self.before_render,
+            )
+            self._add_visualization(image3d)
+        for idx, input in enumerate(peaks):
+            peak3d = create_peak_visualization(
+                input, idx, render_callback=self.before_render
+            )
+            self._add_visualization(peak3d)
+        for idx, input in enumerate(rois):
+            color = next(self._color_gen)
+            roi3d = create_roi_visualization(
+                input,
+                idx,
+                color=color,
+                render_callback=self.before_render,
+            )
+            self._add_visualization(roi3d)
+        for idx, input in enumerate(surfaces):
+            color = next(self._color_gen) if not self._glass_brain else (0, 0, 0)
+            opacity = 25 if self._glass_brain else 100
+            surface3d = create_surface_visualization(
+                input,
+                idx,
+                color=color,
+                material="basic" if self._glass_brain else "phong",
+                opacity=opacity,
+                render_callback=self.before_render,
+            )
+            self._add_visualization(surface3d)
+        for idx, input in enumerate(tractograms):
+            tractogram3d = create_streamline_visualization(
+                input,
+                idx,
+                is_cluster=self._is_cluster,
+                line_type="line" if self._is_light_version else "tube",
+                render_callback=self.before_render,
+                colormap=self._color_gen,
+            )
+            self._add_visualization(tractogram3d)
+
+    def _append_visualization(self, filenames):
+        loaded_files = load_files(filenames)
+        self._load_visualiations(
+            loaded_files["images"],
+            loaded_files["peaks"],
+            loaded_files["rois"],
+            loaded_files["surfaces"],
+            loaded_files["tractograms"],
+        )
+        self.before_render()
 
     def _remove_visualization(self, viz):
         if isinstance(viz, Image3D):
