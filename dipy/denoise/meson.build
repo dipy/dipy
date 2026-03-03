@@ -3,7 +3,7 @@ cython_sources = [
   'enhancement_kernel',
   'pca_noise_estimate',
   'shift_twist_convolution',
-  '_localpca_fast',
+  'eig_localpca',
   ]
 
 foreach ext: cython_sources
