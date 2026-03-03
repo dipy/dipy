@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from fury.actor import set_group_opacity, show_slices, volume_slicer
+from fury.actor import (
+    set_group_opacity,
+    set_group_visibility,
+    show_slices,
+    volume_slicer,
+)
 from fury.lib import gfx
 from imgui_bundle import imgui
 import numpy as np
@@ -102,7 +107,6 @@ class Image3D(Visualization):
         value_percentiles=(2, 98),
         colormap="Gray",
     ):
-        super().__init__(name, render_callback)
         self.dwi = volume
         self.affine = affine
 
@@ -126,6 +130,8 @@ class Image3D(Visualization):
         self.colormap = colormap
         self._picked_voxel = None
         self._picked_intensity = None
+        self._slice_visibility = [True, True, True]
+        super().__init__(name, render_callback)
 
         self._create_slicer_actor()
         self.opacity = opacity
@@ -186,6 +192,19 @@ class Image3D(Visualization):
     def actor(self):
         return self._slicer
 
+    def _populate_info(self):
+        info = f"Dimensions: {self.dwi.shape[:3]}"
+        if self._has_directions:
+            info += f"\nDirections: {self.dwi.shape[3]}"
+        info += f"\nData Type: {self.dwi.dtype}"
+        if self.affine is not None:
+            voxel_sizes = np.sqrt(np.sum(self.affine[:3, :3] ** 2, axis=0))
+            info += f"\nVoxel Sizes: {voxel_sizes}"
+            voxel_order = "LAS" if self.affine[0, 0] < 0 else "RAS"
+            info += f"\nVoxel Order: {voxel_order}"
+            info += f"\nAffine:\n{self.affine}"
+        return info
+
     def render_widgets(self):
         changed, new = thin_slider(
             "Opacity",
@@ -220,13 +239,17 @@ class Image3D(Visualization):
                         "value_type": "float",
                         "text_format": ".0f",
                         "step": 1,
+                        "show_toggle": True,
+                        "toggle": self._slice_visibility[axis],
                     },
                 )
             )
         render_data = render_group("Slice", slicers)
-        for idx, (changed, new) in enumerate(render_data):
+        for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
                 self.state[idx] = new
+            self._slice_visibility[idx] = toggle
+            set_group_visibility(self._slicer, self._slice_visibility)
             show_slices(self._slicer, self.state)
 
         imgui.spacing()
