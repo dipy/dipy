@@ -1,4 +1,11 @@
-from imgui_bundle import hello_imgui, imgui
+from pathlib import Path
+
+from imgui_bundle import (
+    hello_imgui,
+    icons_fontawesome_6,
+    imgui,
+    portable_file_dialogs as pfd,
+)
 
 from dipy.viz.skyline.UI.theme import ASSETS, FONT, THEME
 
@@ -22,6 +29,7 @@ class UIWindow:
         size=(400, 400),
         logo_tex_ref=None,
         render_callback=None,
+        file_dialog_callback=None,
     ):
         self.title = title
         self.is_open = default_open
@@ -36,7 +44,8 @@ class UIWindow:
         self._title_text = "DIPY SKYLINE"
         if render_callback is None:
             self.render_callback = lambda: None
-
+        self.file_dialog_callback = file_dialog_callback
+        self._is_dialog_open = False
         hello_imgui.set_assets_folder(str(ASSETS))
         hello_imgui.load_font_ttf_with_font_awesome_icons(
             str(FONT.relative_to(ASSETS)), 18
@@ -96,15 +105,43 @@ class UIWindow:
             start[1] + (self.logo_size[1] - text_height) * 0.5,
         )
         text_color = imgui.get_color_u32(THEME["text"])
+        shadow_color = imgui.get_color_u32(THEME["shadow"])
         draw_list.add_text(title_text_pos, text_color, self._title_text)
 
         rect_min = (start[0] - spacing, start[1] + self.logo_size[1] + spacing)
         rect_max = (start[0] + total_width + spacing, rect_min[1] + 1)
-        draw_list.add_rect_filled(rect_min, rect_max, text_color, 0, 0)
+        draw_list.add_rect_filled(rect_min, rect_max, shadow_color, 0, 0)
+        imgui.pop_font()
+
+        file_icon = icons_fontawesome_6.ICON_FA_FILE_CIRCLE_PLUS
+        file_icon_size = imgui.calc_text_size(file_icon)
+        file_icon_pos = (start[0], rect_max[1] + spacing)
+        draw_list.add_text(file_icon_pos, text_color, file_icon)
+        imgui.set_cursor_screen_pos(file_icon_pos)
+        imgui.invisible_button("add_visualization", file_icon_size)
+        if imgui.is_item_hovered():
+            imgui.set_item_tooltip("Add Visualization")
+        if imgui.is_item_clicked(imgui.MouseButton_.left):
+            if not self._is_dialog_open:
+                self._is_dialog_open = True
+                dialog = pfd.open_file(
+                    "Select file(s)",
+                    str(Path("~").expanduser() / ".dipy"),
+                    [
+                        "Visualization Files",
+                        "*.nii *.nii.gz *.trx *.trk *.tck *.fib *.dpy *.vtp *.vtk",
+                        "*.pam5 *.pial *.gii *.gii.gz",
+                    ],
+                )
+                if dialog.result():
+                    selected_files = dialog.result()
+                    self.file_dialog_callback(selected_files)
+                    self._is_dialog_open = False
+                if dialog.kill():
+                    self._is_dialog_open = False
 
         imgui.set_cursor_screen_pos(org_start)
-        imgui.dummy((available_width, self.logo_size[1] + spacing * 3 + 1))
-        imgui.pop_font()
+        imgui.dummy((available_width, self.logo_size[1] + spacing * 5 + 1))
         imgui.pop_id()
         is_removed = [False] * len(self._sections)
         for idx, (name, renderer) in enumerate(self._sections.items()):
