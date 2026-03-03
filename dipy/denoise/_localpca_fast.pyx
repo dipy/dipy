@@ -1,3 +1,8 @@
+# cython: boundscheck=False
+# cython: cdivision=True
+# cython: initializedcheck=False
+# cython: wraparound=False
+
 import numpy as np
 cimport numpy as cnp
 from numpy cimport ndarray
@@ -246,12 +251,12 @@ cdef void genpca_loop_f32(
     cdef int size_z = 2*patch_radius_z + 1
     cdef int n_samples = size_x*size_y*size_z
 
-    cdef f32[:, :] X
-    cdef f32[:] M
-    cdef f32[:, :] C
-    cdef f32[:] d
-    cdef f32[:, :] proj_buf
-    cdef f32[:] work
+    cdef f32[:, ::1] X
+    cdef f32[::1] M
+    cdef f32[::1, :] C
+    cdef f32[::1] d
+    cdef f32[:, ::1] proj_buf
+    cdef f32[::1] work
 
     cdef int info
     cdef int lwork = 3 * N   # sufficient workspace for ssyev
@@ -378,12 +383,12 @@ cdef void genpca_loop_f64(
     cdef int size_z = 2*patch_radius_z + 1
     cdef int n_samples = size_x*size_y*size_z
 
-    cdef f64[:, :] X
-    cdef f64[:] M
-    cdef f64[:, :] C
-    cdef f64[:] d
-    cdef f64[:, :] proj_buf
-    cdef f64[:] work
+    cdef f64[:, ::1] X
+    cdef f64[::1] M
+    cdef f64[::1, :] C
+    cdef f64[::1] d
+    cdef f64[:, ::1] proj_buf
+    cdef f64[::1] work
 
     cdef int info
     cdef int lwork = 3 * N   # sufficient workspace for dsyev
@@ -588,8 +593,9 @@ def genpca_core(
     else:
         var_map = np.ascontiguousarray(var_map, dtype=calc_dtype)
 
-    var_acc = np.zeros(data.shape[:-1], dtype=calc_dtype)
-    thetavar = np.zeros(data.shape[:-1], dtype=calc_dtype)
+    shape = data.shape
+    var_acc = np.zeros((shape[0], shape[1], shape[2]), dtype=calc_dtype)
+    thetavar = np.zeros((shape[0], shape[1], shape[2]), dtype=calc_dtype)
 
     if calc_dtype == np.float32:
         theta, thetax = _run_core_f32(
