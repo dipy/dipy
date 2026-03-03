@@ -4,7 +4,7 @@ from warnings import warn
 import numpy as np
 from scipy.linalg.lapack import dgesvd as real_svd, zgesvd as complex_svd
 
-from dipy.denoise._localpca_fast import genpca_core as _genpca_core_fast
+from dipy.denoise.eig_localpca import genpca_core as genpca_core_fast
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.testing.decorators import warning_for_keywords
 
@@ -318,7 +318,7 @@ def genpca(
 
     # Fast Cython core only supports 'eig' for now
     if not is_svd:
-        return _genpca_core_fast(
+        return genpca_core_fast(
             arr,
             mask=mask,
             var_map=None if sigma is None else var,
