@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fury.actor import set_group_opacity, show_slices, volume_slicer
 from fury.lib import gfx
 from imgui_bundle import imgui
@@ -12,6 +14,78 @@ from dipy.viz.skyline.UI.elements import (
 )
 from dipy.viz.skyline.UI.theme import THEME
 from dipy.viz.skyline.render.renderer import Visualization
+
+
+def create_image_visualization(
+    input,
+    idx,
+    *,
+    interpolation="linear",
+    render_callback=None,
+    opacity=100,
+    rgb=False,
+    value_percentiles=(2, 98),
+    colormap="Gray",
+):
+    """Create image visualization from input
+
+    Parameters
+    ----------
+    input : tuple
+        Tuple of the (data, affine, filename) or (data, affine)
+    idx : int
+        Index of the image for naming purposes when filename is not provided.
+    interpolation : str, optional
+        Interpolation method for volume rendering. Options are "linear" or "nearest".
+    render_callback : callable, optional
+        Callback function to be called after rendering.
+    opacity : int, optional
+        Opacity of the volume rendering.
+    rgb : bool, optional
+        Whether the image is RGB
+    value_percentiles : tuple, optional
+        Percentiles for intensity value range. For example, (2, 98) will set the
+        intensity range to be between the 2nd and 98th percentiles of the image
+        intensities.
+    colormap : str, optional
+        The colormap to use for rendering. Options include "Gray", "Inferno", "Magma",
+        "Plasma", and "Viridis". This parameter is ignored if rgb=True.
+
+    Returns
+    -------
+    Image3D
+        The created Image3D object.
+
+    Raises
+    ------
+    ValueError
+        If the input is not a tuple of length 2 or 3, or if rgb=True and the last
+        dimension of the volume is not 3 or 4.
+    """
+    if not isinstance(input, tuple) or len(input) not in (2, 3):
+        raise ValueError(
+            "Input must be a tuple containing (data, affine, filename) or "
+            "(data, affine) for image visualization."
+        )
+
+    if len(input) == 2:
+        data, affine = input
+        filename = f"Image_{idx}"
+    else:
+        data, affine, filename = input
+        filename = Path(filename).name
+
+    return Image3D(
+        filename,
+        data,
+        affine=affine,
+        interpolation=interpolation,
+        render_callback=render_callback,
+        opacity=opacity,
+        rgb=rgb,
+        value_percentiles=value_percentiles,
+        colormap=colormap,
+    )
 
 
 class Image3D(Visualization):
@@ -37,7 +111,7 @@ class Image3D(Visualization):
             and self.dwi.ndim == 4
             and (self.dwi.shape[3] != 3 and self.dwi.shape[3] != 4)
         ):
-            ValueError(
+            raise ValueError(
                 "When specifying rgb=True, the last dimension of the volume "
                 "must be 3 (RGB) or 4 (RGBA)."
             )
@@ -64,39 +138,6 @@ class Image3D(Visualization):
 
     def _active_volume(self):
         return self.dwi[..., self._volume_idx] if self._has_directions else self.dwi
-
-    # def _render_voxel_info_panel(self):
-    #     voxel = str(self._picked_voxel) if self._picked_voxel is not None else ""
-    #     intensity = (
-    #         str(self._picked_intensity) if self._picked_intensity is not None else ""
-    #     )
-
-    #     # panel_height = 32.0
-    #     # panel_width = max(1.0, imgui.get_content_region_avail().x)
-    #     # imgui.invisible_button("##voxel_info_panel", (panel_width, panel_height), 0)
-
-    #     # panel_min = imgui.get_item_rect_min()
-    #     # panel_max = imgui.get_item_rect_max()
-    #     # draw_list = imgui.get_window_draw_list()
-
-    #     # background_color = imgui.get_color_u32(THEME["background"])
-    #     label_color = imgui.get_color_u32(THEME["text"])
-    #     value_color = imgui.get_color_u32(THEME["primary"])
-
-    #     # draw_list.add_rect_filled(panel_min, panel_max, background_color, 4.0)
-
-    #     # text_y = panel_min.y + (panel_height - imgui.get_text_line_height()) * 0.5
-    #     # cursor_x = panel_min.x
-    #     # voxel_text = f"({voxel[0]}, {voxel[1]}, {voxel[2]})"
-    #     # segments = (
-    #     #     ("Voxel ", label_color),
-    #     #     (voxel_text, value_color),
-    #     #     ("    Intensity ", label_color),
-    #     #     (f"{intensity:.2f}", value_color),
-    #     # )
-    #     # for text, color in segments:
-    #     #     draw_list.add_text((cursor_x, text_y), color, text)
-    #     #     cursor_x += imgui.calc_text_size(text).x
 
     def _create_slicer_actor(self):
         if self._has_directions:
