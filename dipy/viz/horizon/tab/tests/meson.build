@@ -3,6 +3,7 @@ python_sources = [
   'test_base.py',
   'test_peak.py',
   'test_slices.py',
+  'test_odf_tensor.py',
   'test_roi.py',
   'test_surface.py',
   ]
