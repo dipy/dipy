@@ -12,6 +12,7 @@ class Visualization:
         self._render_callback = render_callback
         self.name = name
         self.active = False
+        self._info = self._populate_info()
 
     def render(self):
         if self._render_callback is not None:
@@ -31,8 +32,28 @@ class Visualization:
         is_open : bool
             If the UI section is open
         """
+        type = None
+        if self.__class__.__name__ == "Image3D":
+            type = "image"
+        elif self.__class__.__name__ == "Surface":
+            type = "surface"
+        elif self.__class__.__name__ == "Peak3D":
+            type = "peak"
+        elif self.__class__.__name__ == "ROI3D":
+            type = "roi"
+        elif self.__class__.__name__ == "Streamline3D":
+            type = "tractography"
+        else:
+            logger.warning(
+                f"Visualization type '{self.__class__.__name__}' is not recognized. "
+                "UI rendering may not be fully functional for this visualization."
+            )
         is_open, is_visible, is_removed, is_selected = render_section_header(
-            name, is_open=is_open, is_visible=self.actor.visible
+            name,
+            is_open=is_open,
+            is_visible=self.actor.visible,
+            info=self._info,
+            type=type,
         )
         self.actor.visible = is_visible
         self.active = is_selected
@@ -64,6 +85,9 @@ class Visualization:
         raise NotImplementedError(
             "Subclasses must implement the render_widgets method."
         )
+
+    def _populate_info(self):
+        return self.name
 
 
 def create_window(

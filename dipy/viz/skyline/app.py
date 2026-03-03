@@ -193,8 +193,8 @@ class Skyline:
             )
             self._add_visualization(tractogram3d)
 
-    def _append_visualization(self, filenames):
-        loaded_files = load_files(filenames)
+    def _append_visualization(self, *, filenames=None, rois=None):
+        loaded_files = load_files(filenames, rois=rois)
         self._load_visualiations(
             loaded_files["images"],
             loaded_files["peaks"],
