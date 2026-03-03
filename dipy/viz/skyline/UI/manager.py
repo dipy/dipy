@@ -135,10 +135,46 @@ class UIWindow:
                 )
                 if dialog.result():
                     selected_files = dialog.result()
-                    self.file_dialog_callback(selected_files)
+                    self.file_dialog_callback(filenames=selected_files)
                     self._is_dialog_open = False
                 if dialog.kill():
                     self._is_dialog_open = False
+
+        roi_icon = icons_fontawesome_6.ICON_FA_CROSSHAIRS
+        roi_icon_size = imgui.calc_text_size(roi_icon)
+        roi_icon_pos = (
+            file_icon_pos[0] + file_icon_size[0] + spacing,
+            file_icon_pos[1],
+        )
+        draw_list.add_text(roi_icon_pos, text_color, roi_icon)
+        imgui.set_cursor_screen_pos(roi_icon_pos)
+        imgui.invisible_button("add_roi", roi_icon_size)
+        if imgui.is_item_hovered():
+            imgui.set_item_tooltip("Add ROI")
+        if imgui.is_item_clicked(imgui.MouseButton_.left):
+            if not self._is_dialog_open:
+                self._is_dialog_open = True
+                dialog = pfd.open_file(
+                    "Select ROI(s)",
+                    str(Path("~").expanduser() / ".dipy"),
+                    [
+                        "ROI Files",
+                        "*.nii *.nii.gz",
+                    ],
+                )
+                if dialog.result():
+                    selected_files = dialog.result()
+                    self.file_dialog_callback(rois=selected_files)
+                    self._is_dialog_open = False
+                if dialog.kill():
+                    self._is_dialog_open = False
+
+        cluster_icon = icons_fontawesome_6.ICON_FA_CIRCLE_NODES
+        cluster_icon_size = imgui.calc_text_size(cluster_icon)
+        cluster_icon_pos = (
+            file_icon_pos[0] + file_icon_size[0] + spacing,
+            file_icon_pos[1],
+        )
 
         imgui.set_cursor_screen_pos(org_start)
         imgui.dummy((available_width, self.logo_size[1] + spacing * 5 + 1))
