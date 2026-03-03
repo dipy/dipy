@@ -46,6 +46,7 @@ def render_section_header(
     width=0,
     height=40,
     padding_x=12,
+    info=None,
 ):
     """Draw a custom section header with a toggle arrow.
 
@@ -65,6 +66,9 @@ def render_section_header(
         Header height in pixels.
     padding_x : int, optional
         Horizontal padding between the icon and label.
+    info : str, optional
+        Additional info text shown in a tooltip when hovering the header. If not
+        provided, no tooltip is shown.
 
     Returns
     -------
@@ -90,10 +94,21 @@ def render_section_header(
 
     color = accent_color if (hovered or active or is_open) else text_color
 
-    brain_icon = icons_fontawesome_6.ICON_FA_BRAIN
-    brain_size = imgui.calc_text_size(brain_icon)
-    brain_pos = (start.x, start.y + (height - brain_size.y) * 0.5)
-    draw_list.add_text(brain_pos, color, brain_icon)
+    if type == "image":
+        type_icon = icons_fontawesome_6.ICON_FA_BRAIN
+    elif type == "roi":
+        type_icon = icons_fontawesome_6.ICON_FA_CROSSHAIRS
+    elif type == "surface":
+        type_icon = icons_fontawesome_6.ICON_FA_GLOBE
+    elif type == "peak":
+        type_icon = icons_fontawesome_6.ICON_FA_MOUNTAIN
+    elif type == "tractography":
+        type_icon = icons_fontawesome_6.ICON_FA_BACON
+    else:
+        type_icon = icons_fontawesome_6.ICON_FA_CUBES
+    type_icon_size = imgui.calc_text_size(type_icon)
+    type_icon_pos = (start.x, start.y + (height - type_icon_size.y) * 0.5)
+    draw_list.add_text(type_icon_pos, color, type_icon)
 
     label_size = imgui.calc_text_size(label)
     icon_size = imgui.ImVec2(0, 0)
@@ -121,21 +136,21 @@ def render_section_header(
         + (padding_x * 4),
         arrow_icon_size.y,
     )
-    table_icon_size = imgui.ImVec2(0, 0)
-    if type == "image":
-        table_icon = icons_fontawesome_6.ICON_FA_TABLE
-        table_icon_size = imgui.calc_text_size(table_icon)
-        icon_size = imgui.ImVec2(
-            icon_size.x + table_icon_size.x + padding_x,
-            icon_size.y,
-        )
+    # table_icon_size = imgui.ImVec2(0, 0)
+    # if type == "image":
+    #     table_icon = icons_fontawesome_6.ICON_FA_TABLE
+    #     table_icon_size = imgui.calc_text_size(table_icon)
+    #     icon_size = imgui.ImVec2(
+    #         icon_size.x + table_icon_size.x + padding_x,
+    #         icon_size.y,
+    #     )
 
-    available_label_width = total_width - brain_size.x - icon_size.x - padding_x * 2
+    available_label_width = total_width - type_icon_size.x - icon_size.x - padding_x * 2
     ellipsis_text = "..."
     show_ellipsis = label_size.x > available_label_width > 0
     display_text = label
     label_pos = (
-        start.x + brain_size.x + padding_x,
+        start.x + type_icon_size.x + padding_x,
         start.y + (height - label_size.y) * 0.5,
     )
 
@@ -159,17 +174,27 @@ def render_section_header(
         (pos_x, pos_y), accent_color if is_visible else text_color, show_icon
     )
     pos_x += show_icon_size.x + padding_x
+    if show_icon_hovered:
+        imgui.set_tooltip("Toggle visibility")
 
     close_icon_min, close_icon_max = _calculate_hit_box((pos_x, pos_y), close_icon_size)
     close_icon_hovered = imgui.is_mouse_hovering_rect(close_icon_min, close_icon_max)
     draw_list.add_text((pos_x, pos_y), text_color, close_icon)
     pos_x += close_icon_size.x + padding_x
+    if close_icon_hovered:
+        imgui.set_tooltip("Remove visualization")
 
-    if type == "image":
-        draw_list.add_text((pos_x, pos_y), text_color, table_icon)
-        pos_x += table_icon_size.x + padding_x
+    # if type == "image":
+    #     draw_list.add_text((pos_x, pos_y), text_color, table_icon)
+    #     pos_x += table_icon_size.x + padding_x
 
-    draw_list.add_text((pos_x, pos_y), text_color, info_icon)
+    info_icon_min, info_icon_max = _calculate_hit_box((pos_x, pos_y), info_icon_size)
+    show_info_tooltip = imgui.is_mouse_hovering_rect(info_icon_min, info_icon_max)
+    draw_list.add_text(
+        (pos_x, pos_y), accent_color if show_info_tooltip else text_color, info_icon
+    )
+    if show_info_tooltip and info:
+        imgui.set_tooltip(info)
     pos_x += info_icon_size.x + padding_x
 
     arrow_pos = (pos_x, pos_y)
@@ -283,8 +308,8 @@ def render_group(label, items, *, row_height=26, label_width=36, line_indent=8):
             imgui.dummy((1, text_height))
 
             imgui.table_set_column_index(1)
-            changed, new = render_fn(*args, **kwargs)
-            render_data.append((changed, new))
+            data = render_fn(*args, **kwargs)
+            render_data.append(data)
 
         imgui.end_table()
         return render_data
@@ -765,6 +790,8 @@ def thin_slider(
     text_format=".3f",
     value_type="float",
     value_unit=None,
+    show_toggle=False,
+    toggle=False,
 ):
     """Render a compact slider with a thin track and circular thumb.
 
@@ -809,8 +836,21 @@ def thin_slider(
         )
 
     imgui.push_id(label)
+
     if width > 0:
         imgui.push_item_width(width)
+
+    if show_toggle:
+        show_icon = (
+            icons_fontawesome_6.ICON_FA_CIRCLE_DOT
+            if toggle
+            else icons_fontawesome_6.ICON_FA_CIRCLE
+        )
+        color = THEME["primary"] if toggle else THEME["text"]
+        imgui.text_colored(color, show_icon)
+        if imgui.is_item_clicked():
+            toggle = not toggle
+        imgui.same_line(0, 8)
 
     label_color = SLIDER_THEME["label_color"]
     imgui.text_colored(label_color, label)
@@ -926,6 +966,10 @@ def thin_slider(
     imgui.pop_id()
 
     value_changed = typed_value != typed_original
+
+    if show_toggle:
+        return value_changed, typed_value, toggle
+
     return value_changed, typed_value
 
 
