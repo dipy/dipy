@@ -45,6 +45,9 @@ def load_files(fnames, rois=None):
         - "surfaces": List of tuples (vertices, faces, filename) for each surface file.
         - "tractograms": List of tuples (sft, filename) for each tractogram file.
     """
+    if fnames is None:
+        fnames = []
+
     if rois is None:
         rois = []
 
