@@ -135,7 +135,7 @@ class Skyline:
     def _refresh_ui(self):
         for viz in self.visualizations:
             if viz.name not in self.UI_window.sections:
-                self.visualizations.remove(viz)
+                self._remove_visualization(viz)
 
     def _arrange_image_actors(self):
         for viz in self._image_visualizations:
@@ -188,6 +188,20 @@ class Skyline:
         else:
             raise ValueError("Unsupported visualization type")
         self.UI_window.add(viz.name, viz.renderer)
+
+    def _remove_visualization(self, viz):
+        if isinstance(viz, Image3D):
+            self._image_visualizations.remove(viz)
+        elif isinstance(viz, Peak3D):
+            self._peak_visualizations.remove(viz)
+        elif isinstance(viz, ROI3D):
+            self._roi_visualizations.remove(viz)
+        elif isinstance(viz, Surface):
+            self._surface_visualizations.remove(viz)
+        elif isinstance(viz, (Streamline3D, ClusterStreamline3D)):
+            self._tractogram_visualizations.remove(viz)
+        else:
+            raise ValueError("Unsupported visualization type")
 
     @property
     def visualizations(self):
