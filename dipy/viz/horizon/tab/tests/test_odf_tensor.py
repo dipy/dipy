@@ -165,13 +165,20 @@ class TestSHValidation:
 FURY_MOCK_PATH = "dipy.viz.horizon.tab.odf._FURY_AVAILABLE"
 
 
+_fury_spec = __import__("importlib.util", fromlist=["find_spec"]).find_spec
+_has_fury = _fury_spec("fury") is not None
+
+
+@pytest.mark.skipif(not _has_fury, reason="Needs fury")
 class TestODFTab:
     """Test ODFTab with FURY mocked out (no display required)."""
 
     @pytest.fixture(autouse=True)
     def mock_fury(self, monkeypatch):
         """Monkeypatch FURY actor so we don't need a display."""
-        monkeypatch.setattr("dipy.viz.horizon.tab.odf._FURY_AVAILABLE", True)
+        import dipy.viz.horizon.tab.odf as _odf_mod
+
+        monkeypatch.setattr(_odf_mod, "_FURY_AVAILABLE", True)
         fake_actor = MagicMock()
         monkeypatch.setattr("fury.actor.odf_slicer", lambda *a, **kw: fake_actor)
         monkeypatch.setattr("fury.ui.Panel2D", MagicMock(return_value=MagicMock()))
@@ -252,6 +259,7 @@ class TestODFTab:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skipif(not _has_fury, reason="Needs fury")
 class TestTensorTab:
     @pytest.fixture(autouse=True)
     def mock_fury(self, monkeypatch):
@@ -482,7 +490,9 @@ class TestEdgeCases:
 
         sh64 = small_sh_coeffs.astype(np.float64)
         # Bypass FURY by patching
-        with patch("dipy.viz.horizon.tab.odf._FURY_AVAILABLE", True):
+        import dipy.viz.horizon.tab.odf as _odf_mod2
+
+        with patch.object(_odf_mod2, "_FURY_AVAILABLE", True):
             tab = ODFTab.__new__(ODFTab)
             tab._sh_coeffs = sh64.astype(np.float32)
             assert tab._sh_coeffs.dtype == np.float32
