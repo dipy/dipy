@@ -78,7 +78,7 @@ def _build_sphere(sh_order: int):
 
     # Higher SH order → denser sphere for faithful glyph rendering
     if sh_order <= 4:
-        return get_sphere("repulsion100")
+        return get_sphere(name="repulsion100")
     elif sh_order <= 8:
         return get_sphere("repulsion200")
     else:

@@ -174,17 +174,17 @@ class TensorTab:
             colors = self._slab(self._rgb, axis)
         elif self.colormap == "fa":
             fa_slab = self._slab(self._fa, axis)
-            colors = create_colormap(fa_slab.ravel(), "hot")
+            colors = create_colormap(v_value=fa_slab.ravel(), name="hot")
             colors = colors.reshape(*fa_slab.shape, 3)
         elif self.colormap == "md":
             md_slab = self._slab(self._md, axis)
             md_norm = (md_slab - md_slab.min()) / (md_slab.max() - md_slab.min() + 1e-9)
-            colors = create_colormap(md_norm.ravel(), "viridis")
+            colors = create_colormap(v_value=md_norm.ravel(), name="viridis")
             colors = colors.reshape(*md_slab.shape, 3)
         else:
             # Generic fallback
             fa_slab = self._slab(self._fa, axis)
-            colors = create_colormap(fa_slab.ravel(), self.colormap)
+            colors = create_colormap(v_value=fa_slab.ravel(), name=self.colormap)
             colors = colors.reshape(*fa_slab.shape, 3)
 
         # Clip very small eigenvalues → numerical stability
