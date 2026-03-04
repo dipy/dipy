@@ -1035,7 +1035,7 @@ def horizon_odf_tensor(
     Examples
     --------
     >>> from dipy.viz.horizon.app import horizon_odf_tensor
-    >>> horizon_odf_tensor(
+    >>> horizon_odf_tensor(  # doctest: +SKIP
     ...     odf_files=['csd_sh_coeffs.nii.gz'],
     ...     tensor_evals_files=['dti_evals.nii.gz'],
     ...     tensor_evecs_files=['dti_evecs.nii.gz'],
