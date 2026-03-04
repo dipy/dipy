@@ -47,14 +47,17 @@ from dipy.reconst.forecast import ForecastModel
 from dipy.reconst.fwdti import FreeWaterTensorModel, common_fit_methods
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.ivim import IvimModel
+from dipy.reconst.mcsd import MultiShellDeconvModel, auto_response_msmt
 from dipy.reconst.rumba import RumbaSDModel
 from dipy.reconst.sfm import SparseFascicleModel
+from dipy.reconst.odf import gfa
 from dipy.reconst.shm import (
     CsaOdfModel,
     OpdtModel,
     QballModel,
     anisotropic_power,
     normalize_data,
+    sh_to_sf_matrix,
     smooth_pinv,
     sph_harm_lookup,
 )
@@ -997,6 +1000,87 @@ class ReconstDsiFlow(Workflow):
             logger.info(f"DSI metrics saved to {Path(out_dir).resolve()}")
 
 
+def _peaks_from_shcoeff(
+    shm_coeff,
+    *,
+    sphere,
+    mask,
+    sh_order_max,
+    relative_peak_threshold,
+    min_separation_angle,
+    npeaks=5,
+    normalize_peaks=True,
+    sh_basis_type=None,
+    legacy=True,
+):
+    """Compute peaks/metrics from SH coefficients.
+
+    Workflow-internal helper used to avoid refitting the model voxel-by-voxel.
+    """
+
+    shape = shm_coeff.shape[:-1]
+    if mask is None:
+        mask = np.ones(shape, dtype=bool)
+    elif mask.shape != shape:
+        raise ValueError("Mask is not the same shape as shm_coeff.")
+
+    gfa_array = np.zeros(shape)
+    qa_array = np.zeros(shape + (npeaks,))
+    peak_dirs = np.zeros(shape + (npeaks, 3))
+    peak_values = np.zeros(shape + (npeaks,))
+    peak_indices = np.zeros(shape + (npeaks,), dtype=np.int32)
+    peak_indices.fill(-1)
+
+    B, _ = sh_to_sf_matrix(
+        sphere,
+        sh_order_max=sh_order_max,
+        basis_type=sh_basis_type,
+        legacy=legacy,
+        return_inv=True,
+    )
+
+    global_max = -np.inf
+    for idx in ndindex(shape):
+        if not mask[idx]:
+            continue
+
+        odf = np.dot(shm_coeff[idx], B)
+        gfa_array[idx] = gfa(odf)
+
+        direction, pk, ind = peak_directions(
+            odf,
+            sphere,
+            relative_peak_threshold=relative_peak_threshold,
+            min_separation_angle=min_separation_angle,
+        )
+
+        if pk.shape[0] == 0:
+            continue
+
+        global_max = max(global_max, pk[0])
+        n = min(npeaks, pk.shape[0])
+        qa_array[idx][:n] = pk[:n] - odf.min()
+        peak_dirs[idx][:n] = direction[:n]
+        peak_indices[idx][:n] = ind[:n]
+        peak_values[idx][:n] = pk[:n]
+
+        if normalize_peaks:
+            peak_values[idx][:n] = peak_values[idx][:n] / pk[0] if pk[0] != 0 else 0
+            peak_dirs[idx] *= peak_values[idx][:, None]
+
+    if np.isfinite(global_max) and global_max != 0:
+        qa_array /= global_max
+
+    return {
+        "gfa": gfa_array,
+        "qa": qa_array,
+        "peak_dirs": peak_dirs,
+        "peak_values": peak_values,
+        "peak_indices": peak_indices,
+        "B": B,
+    }
+
+
 class ReconstCSDFlow(Workflow):
     @classmethod
     def get_short_name(cls):
@@ -1021,6 +1105,10 @@ class ReconstCSDFlow(Workflow):
         parallel=False,
         extract_pam_values=False,
         num_processes=None,
+        engine="serial",
+        n_jobs=-1,
+        vox_per_chunk=None,
+        verbose=False,
         out_dir="",
         out_pam="peaks.pam5",
         out_shm="shm.nii.gz",
@@ -1086,6 +1174,16 @@ class ReconstCSDFlow(Workflow):
             (default multiprocessing.cpu_count()). If < 0 the maximal number
             of cores minus ``num_processes + 1`` is used (enter -1 to use as
             many cores as possible). 0 raises an error.
+        engine : string, optional
+            Parallelization engine used for the model fit (e.g., "serial",
+            "ray", "joblib", "dask").
+        n_jobs : int, optional
+            Number of parallel workers used by the selected `engine`.
+            Use ``-1`` to use all available CPUs.
+        vox_per_chunk : int, optional
+            Number of voxels per chunk dispatched to each worker.
+        verbose : bool, optional
+            Whether to show per-chunk progress for the model fit.
         out_dir : string, optional
             Output directory.
         out_pam : string, optional
@@ -1195,20 +1293,36 @@ class ReconstCSDFlow(Workflow):
                 gtab, response, sh_order_max=sh_order_max
             )
 
-            peaks_csd = peaks_from_model(
-                model=csd_model,
-                data=data,
+            fit_kwargs = {"mask": mask_vol, "engine": engine, "verbose": verbose}
+            if n_jobs is not None:
+                fit_kwargs["n_jobs"] = n_jobs
+            if vox_per_chunk is not None:
+                fit_kwargs["vox_per_chunk"] = vox_per_chunk
+
+            csd_fit = csd_model.fit(data, **fit_kwargs)
+            shm_coeff = csd_fit.shm_coeff
+
+            peaks_dict = _peaks_from_shcoeff(
+                shm_coeff,
                 sphere=peaks_sphere,
+                mask=mask_vol,
+                sh_order_max=sh_order_max,
                 relative_peak_threshold=relative_peak_threshold,
                 min_separation_angle=min_separation_angle,
-                mask=mask_vol,
-                return_sh=True,
-                sh_order_max=sh_order_max,
                 normalize_peaks=True,
-                parallel=parallel,
-                num_processes=num_processes,
             )
-            peaks_csd.affine = affine
+
+            peaks_csd = niftis_to_pam(
+                affine,
+                peaks_dict["peak_dirs"],
+                peaks_dict["peak_values"],
+                peaks_dict["peak_indices"],
+                shm_coeff=shm_coeff,
+                sphere=peaks_sphere,
+                gfa=peaks_dict["gfa"],
+                B=peaks_dict["B"],
+                qa=peaks_dict["qa"],
+            )
 
             save_pam(opam, peaks_csd)
 
@@ -1217,6 +1331,264 @@ class ReconstCSDFlow(Workflow):
             if extract_pam_values:
                 pam_to_niftis(
                     peaks_csd,
+                    fname_shm=oshm,
+                    fname_peaks_dir=opeaks_dir,
+                    fname_peaks_values=opeaks_values,
+                    fname_peaks_indices=opeaks_indices,
+                    fname_gfa=ogfa,
+                    fname_sphere=osphere,
+                    fname_b=ob,
+                    fname_qa=oqa,
+                    reshape_dirs=True,
+                )
+
+            dname_ = Path(opam).parent
+            if dname_ == "":
+                logger.info("Pam5 file saved in current directory")
+            else:
+                logger.info(f"Pam5 file saved in {dname_}")
+
+            return io_it
+
+
+class ReconstMSMTCSDFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "msmtcsd"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        b0_threshold=50.0,
+        bvecs_tol=0.01,
+        tol=20,
+        roi_center=None,
+        roi_radii=10,
+        wm_fa_thr=0.7,
+        gm_fa_thr=0.3,
+        csf_fa_thr=0.15,
+        gm_md_thr=0.001,
+        csf_md_thr=0.0032,
+        response=None,
+        iso=2,
+        sphere_name=None,
+        relative_peak_threshold=0.5,
+        min_separation_angle=25,
+        sh_order_max=8,
+        extract_pam_values=False,
+        engine="serial",
+        n_jobs=-1,
+        vox_per_chunk=None,
+        verbose=False,
+        out_dir="",
+        out_pam="peaks.pam5",
+        out_shm="shm.nii.gz",
+        out_peaks_dir="peaks_dirs.nii.gz",
+        out_peaks_values="peaks_values.nii.gz",
+        out_peaks_indices="peaks_indices.nii.gz",
+        out_gfa="gfa.nii.gz",
+        out_sphere="sphere.txt",
+        out_b="B.nii.gz",
+        out_qa="qa.nii.gz",
+    ):
+        """Multi-Shell Multi-Tissue CSD (MS/MT CSD, also known as MSMT-CSD).
+
+        This workflow fits a MSMT-CSD model and computes peaks/metrics from the
+        resulting SH coefficients.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        mask_files : string
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once. (default: No mask used)
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Bvecs should be unit vectors.
+        tol : int, optional
+            Tolerance angle (in degrees) used in the response estimation.
+        roi_center : variable int, optional
+            Center of ROI in data. If center is None, it is assumed that it is
+            the center of the volume with shape `data.shape[:3]`.
+        roi_radii : int or array-like, optional
+            Radii of cuboid ROI in voxels.
+        wm_fa_thr : float, optional
+            WM FA threshold for calculating the response function.
+        gm_fa_thr : float, optional
+            GM FA threshold for calculating the response function.
+        csf_fa_thr : float, optional
+            CSF FA threshold for calculating the response function.
+        gm_md_thr : float, optional
+            GM MD threshold for calculating the response function.
+        csf_md_thr : float, optional
+            CSF MD threshold for calculating the response function.
+        response : string, optional
+            Multi-tissue response function. If provided, expected to be a
+            string representation of an array-like of shape ``(3, n_shells, 4)``,
+            where ``n_shells`` is the number of unique non-zero b-values.
+            If None, responses are computed automatically.
+        iso : int, optional
+            Number of isotropic compartments used by the MSMT-CSD model.
+        sphere_name : string, optional
+            Sphere name on which to reconstruct the fODFs.
+        relative_peak_threshold : float, optional
+            Only return peaks greater than ``relative_peak_threshold * m``
+            where m is the largest peak.
+        min_separation_angle : float, optional
+            The minimum distance between directions. If two peaks are too close
+            only the larger of the two is returned.
+        sh_order_max : int, optional
+            Spherical harmonics order (l) used in the CSD fit.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
+        engine : string, optional
+            Parallelization engine used for the model fit (e.g., "serial",
+            "ray", "joblib", "dask").
+        n_jobs : int, optional
+            Number of parallel workers used by the selected `engine`.
+            Use ``-1`` to use all available CPUs.
+        vox_per_chunk : int, optional
+            Number of voxels per chunk dispatched to each worker.
+        verbose : bool, optional
+            Whether to show per-chunk progress for the model fit.
+        out_dir : string, optional
+            Output directory.
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved.
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        out_gfa : string, optional
+            Name of the generalized FA volume to be saved.
+        out_sphere : string, optional
+            Sphere vertices name to be saved.
+        out_b : string, optional
+            Name of the B Matrix to be saved.
+        out_qa : string, optional
+            Name of the Quantitative Anisotropy to be saved.
+
+        References
+        ----------
+        .. footbibliography::
+        """
+
+        io_it = self.get_io_iterator()
+
+        for (
+            dwi,
+            bval,
+            bvec,
+            maskfile,
+            opam,
+            oshm,
+            opeaks_dir,
+            opeaks_values,
+            opeaks_indices,
+            ogfa,
+            osphere,
+            ob,
+            oqa,
+        ) in io_it:
+            logger.info(f"Loading {dwi}")
+            data, affine = load_nifti(dwi)
+
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+            gtab = gradient_table(
+                bvals, bvecs=bvecs, b0_threshold=b0_threshold, atol=bvecs_tol
+            )
+            mask_vol = load_nifti_data(maskfile).astype(bool)
+
+            peaks_sphere = default_sphere
+            if sphere_name is not None:
+                peaks_sphere = get_sphere(name=sphere_name)
+
+            if response is None:
+                logger.info("Computing MSMT response functions")
+                response_wm, response_gm, response_csf = auto_response_msmt(
+                    gtab,
+                    data,
+                    tol=tol,
+                    roi_center=roi_center,
+                    roi_radii=roi_radii,
+                    wm_fa_thr=wm_fa_thr,
+                    gm_fa_thr=gm_fa_thr,
+                    csf_fa_thr=csf_fa_thr,
+                    gm_md_thr=gm_md_thr,
+                    csf_md_thr=csf_md_thr,
+                )
+                response_arr = np.array([response_wm, response_gm, response_csf])
+            else:
+                if isinstance(response, str):
+                    response_arr = np.asarray(literal_eval(response), dtype=np.float64)
+                else:
+                    response_arr = np.asarray(response, dtype=np.float64)
+
+            logger.info("MSMT-CSD computation started.")
+            mcsd_model = MultiShellDeconvModel(
+                gtab,
+                response_arr,
+                sh_order_max=sh_order_max,
+                iso=iso,
+                tol=tol,
+            )
+
+            fit_kwargs = {
+                "mask": mask_vol,
+                "engine": engine,
+                "verbose": verbose,
+                "n_jobs": n_jobs,
+            }
+            if vox_per_chunk is not None:
+                fit_kwargs["vox_per_chunk"] = vox_per_chunk
+
+            mcsd_fit = mcsd_model.fit(data, **fit_kwargs)
+            shm_coeff = mcsd_fit.shm_coeff
+
+            peaks_dict = _peaks_from_shcoeff(
+                shm_coeff,
+                sphere=peaks_sphere,
+                mask=mask_vol,
+                sh_order_max=sh_order_max,
+                relative_peak_threshold=relative_peak_threshold,
+                min_separation_angle=min_separation_angle,
+                normalize_peaks=True,
+            )
+
+            peaks_msmt = niftis_to_pam(
+                affine,
+                peaks_dict["peak_dirs"],
+                peaks_dict["peak_values"],
+                peaks_dict["peak_indices"],
+                shm_coeff=shm_coeff,
+                sphere=peaks_sphere,
+                gfa=peaks_dict["gfa"],
+                B=peaks_dict["B"],
+                qa=peaks_dict["qa"],
+            )
+
+            save_pam(opam, peaks_msmt)
+            logger.info("MSMT-CSD computation completed.")
+
+            if extract_pam_values:
+                pam_to_niftis(
+                    peaks_msmt,
                     fname_shm=oshm,
                     fname_peaks_dir=opeaks_dir,
                     fname_peaks_values=opeaks_values,
