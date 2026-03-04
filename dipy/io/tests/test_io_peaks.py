@@ -224,6 +224,7 @@ def test_tensor_to_pam():
 def test_io_peaks_deprecated(rng):
     with TemporaryDirectory() as tmpdir:
         with warnings.catch_warnings(record=True) as cw:
+            warnings.resetwarnings()
             warnings.simplefilter("always", DeprecationWarning)
             fname = Path(tmpdir) / "test_tt.pam5"
             pam = generate_default_pam(rng)
