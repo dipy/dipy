@@ -226,6 +226,9 @@ def test_io_peaks_deprecated(rng):
         with warnings.catch_warnings(record=True) as cw:
             warnings.resetwarnings()
             warnings.simplefilter("always", DeprecationWarning)
+            warnings.filterwarnings(
+                "ignore", category=DeprecationWarning, module="h5py"
+            )
             fname = Path(tmpdir) / "test_tt.pam5"
             pam = generate_default_pam(rng)
             save_peaks(fname, pam)
