@@ -70,6 +70,31 @@ def test_nlmeans_boundary(rng):
     assert_(S0_denoised[9, 9, 9] > 290)
     assert_(S0_denoised[10, 10, 10] < 110)
 
+@set_random_number_generator()
+def test_nlmeans_rician_noise_reduction(rng):
+    """Test rician=True output is non-negative and reduces variance."""
+    clean = np.zeros((30, 30, 30), dtype="f8")
+    clean[8:22, 8:22, 8:22] = 100.0
+    noisy = np.abs(clean + 15.0 * rng.standard_normal((30, 30, 30)))
+
+    for method in ("classic", "blockwise"):
+        result = nlmeans(
+            noisy, sigma=15.0, rician=True, method=method,
+            patch_radius=1, block_radius=2
+        )
+        assert np.all(result >= 0), f"rician=True ({method}) must be non-negative"
+        assert_equal(result.shape, noisy.shape)
+
+    # variance should decrease in the uniform high signal core
+    result_classic = nlmeans(
+        noisy, sigma=15.0, rician=True, method="classic",
+        patch_radius=1, block_radius=2
+    )
+    core = np.s_[10:20, 10:20, 10:20]
+    assert np.var(result_classic[core]) < np.var(noisy[core]), (
+        "rician=True (classic) should reduce variance in uniform region"
+    )
+
 
 def test_nlmeans_4D_and_mask():
     """Test 4D data with mask using classic method."""
@@ -244,3 +269,9 @@ def test_coordinate_consistency():
 
     assert isinstance(denoised_image, np.ndarray)
     assert denoised_image.dtype == np.float64 or denoised_image.dtype == np.float32
+
+
+
+
+
+
