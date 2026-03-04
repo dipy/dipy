@@ -93,7 +93,7 @@ def nlmeans(
     >>> from dipy.denoise.nlmeans import nlmeans
     >>> from dipy.denoise.noise_estimate import estimate_sigma
     >>> rng = np.random.default_rng(1234)
-    >>> # Create clean signal and add Gaussian noise (sigma=10)
+    >>> # Simulate magnitude MRI data: abs(signal + Gaussian noise)
     >>> clean = np.ones((30, 30, 30)) * 100.0
     >>> noisy = np.abs(clean + rng.standard_normal((30, 30, 30)) * 10)
     >>> # In practice, estimate sigma from the data (recovers ~10 here)
