@@ -77,12 +77,42 @@ class Conv3dELU(Module):
         )
 
     def forward(self, x):
+        """Forward pass of the Conv3dELU layer.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        torch.Tensor
+            Output tensor after convolution and ELU activation.
+        """
         x = self.conv(x)
         x = F.elu(x)
         return x
 
 
 class Block(Module):
+    """Building block for the SynthSeg model.
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    kernel_size : int
+        Size of the convolutional kernel.
+    padding : int
+        Padding of the convolution.
+    n_layers : int
+        Number of convolutional layers in the block.
+    layer_type : str
+        Type of the block: 'down', 'down2', or 'up'.
+    """
+
     def __init__(
         self,
         in_channels,
@@ -118,6 +148,23 @@ class Block(Module):
             self.layer_list.append(MaxPool3d(2, stride=2))
 
     def forward(self, input, passed):
+        """Forward pass of the Block.
+
+        Parameters
+        ----------
+        input : torch.Tensor
+            Input tensor.
+        passed : torch.Tensor
+            Tensor from skipped connection.
+
+        Returns
+        -------
+        x : torch.Tensor
+            Output of the convolutional layers.
+        skip : torch.Tensor, optional
+            Output of the convolutional layers before downsampling.
+            Only returned if layer_type is 'down'.
+        """
         x = input
         for l_idx, layer in enumerate(self.layer_list):
             x = layer(x)
@@ -132,6 +179,18 @@ class Block(Module):
 
 
 class Model(Module):
+    """The Model class for the SynthSeg architecture.
+
+    Parameters
+    ----------
+    model_scale : int, optional
+        The scale of the model. Default: 24.
+    n_levels : int, optional
+        Number of levels in the U-Net. Default: 5.
+    output_channels : int, optional
+        Number of output channels. Default: 33.
+    """
+
     def __init__(self, *, model_scale=24, n_levels=5, output_channels=33):
         super(Model, self).__init__()
 
@@ -184,6 +243,18 @@ class Model(Module):
         self.softmax = Softmax(dim=1)
 
     def forward(self, inputs):
+        """Forward pass of the SynthSeg model.
+
+        Parameters
+        ----------
+        inputs : torch.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        torch.Tensor
+            Predicted brain segmentation probability map.
+        """
         skip_list = []
         x = inputs
         for block in self.block_list[: self.n_levels - 1]:
@@ -394,6 +465,22 @@ class SynthSeg:
         }
 
     def init_model(self, model_scale=24, n_levels=5, output_channels=33):
+        """Initialize the SynthSeg model.
+
+        Parameters
+        ----------
+        model_scale : int, optional
+            The scale of the model. Default: 24.
+        n_levels : int, optional
+            Number of levels in the U-Net. Default: 5.
+        output_channels : int, optional
+            Number of output channels. Default: 33.
+
+        Returns
+        -------
+        Model
+            Initialized SynthSeg model.
+        """
         return Model(
             model_scale=model_scale, n_levels=n_levels, output_channels=output_channels
         )
@@ -431,12 +518,36 @@ class SynthSeg:
             ) from e
 
     def _flip_img_indices(self, img):
+        """Flip the label indices for a flipped image.
+
+        Parameters
+        ----------
+        img : np.ndarray
+            The image with label indices.
+
+        Returns
+        -------
+        np.ndarray
+            The image with flipped label indices.
+        """
         new_img = np.zeros_like(img)
         for l_idx, flip_lbl in enumerate(self.flip_indices):
             if l_idx != 0:
                 new_img = np.where(img == l_idx, flip_lbl, new_img)
 
     def _prepare_img(self, img):
+        """Prepare the image for model input.
+
+        Parameters
+        ----------
+        img : np.ndarray
+            Input image.
+
+        Returns
+        -------
+        torch.Tensor
+            Image tensor ready for the model.
+        """
         img = np.expand_dims(img, 1)  # add channel dimension
         img_tensor = torch.tensor(img, dtype=torch.float32).to(self.device)
         return img_tensor

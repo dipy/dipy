@@ -193,6 +193,25 @@ def get_polydata_vertices(polydata, dtype=None):
 
 
 def convert_to_polydata(vertices, triangles, data_per_point=None):
+    """Convert vertices and triangles to a vtkPolyData object.
+
+    Parameters
+    ----------
+    vertices : numpy.ndarray
+        An array of shape (n_vertices, 3) containing the vertex coordinates.
+    triangles : numpy.ndarray
+        An array of shape (n_triangles, 3) containing the vertex indices
+        of the triangles.
+    data_per_point : dict, optional
+        A dictionary where keys are array names and values are numpy arrays
+        of shape (n_vertices, ...) representing data associated with each
+        vertex.
+
+    Returns
+    -------
+    polydata : vtkPolyData
+        The resulting vtkPolyData object.
+    """
     vtk_points = vtk.vtkPoints()
     vtk_points.SetData(ns.numpy_to_vtk(vertices, deep=True))
 
@@ -220,6 +239,25 @@ def convert_to_polydata(vertices, triangles, data_per_point=None):
 
 
 def _numpy_to_vtk_array(array, name=None, dtype=None, deep=True):
+    """Convert a numpy array to a vtk array.
+
+    Parameters
+    ----------
+    array : numpy.ndarray
+        The input numpy array.
+    name : str, optional
+        The name to assign to the vtk array.
+    dtype : data-type, optional
+        The desired data type for the vtk array. If None, the default data
+        type of the numpy array will be used.
+    deep : bool, optional
+        If True, a deep copy of the data is made.
+
+    Returns
+    -------
+    vtk_array : vtkDataArray
+        The resulting vtk array.
+    """
     if dtype is not None:
         vtk_dtype = DATATYPE_DICT[np.dtype(dtype)]
     else:

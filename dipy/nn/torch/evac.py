@@ -85,32 +85,108 @@ def prepare_img(image):
 
 
 class MoveDimLayer(Module):
+    """Layer to move a dimension of a tensor.
+
+    Parameters
+    ----------
+    source_dim : int
+        The dimension to move.
+    dest_dim : int
+        The dimension to move to.
+    """
+
     def __init__(self, source_dim, dest_dim):
         super(MoveDimLayer, self).__init__()
         self.source_dim = source_dim
         self.dest_dim = dest_dim
 
     def forward(self, x):
+        """Forward pass of the MoveDimLayer.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        torch.Tensor
+            Tensor with moved dimension.
+        """
         return torch.movedim(x, self.source_dim, self.dest_dim)
 
 
 class ChannelSum(Module):
+    """Layer to sum over the channel dimension."""
+
     def __init__(self):
         super(ChannelSum, self).__init__()
 
     def forward(self, inputs):
+        """Forward pass of the ChannelSum layer.
+
+        Parameters
+        ----------
+        inputs : torch.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        torch.Tensor
+            Summed tensor over the channel dimension.
+        """
         return torch.sum(inputs, dim=1, keepdim=True)
 
 
 class Add(Module):
+    """Layer to add two tensors."""
+
     def __init__(self):
         super(Add, self).__init__()
 
     def forward(self, x, passed):
+        """Forward pass of the Add layer.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            First input tensor.
+        passed : torch.Tensor
+            Second input tensor.
+
+        Returns
+        -------
+        torch.Tensor
+            Sum of the two input tensors.
+        """
         return x + passed
 
 
 class Block(Module):
+    """Building block for the EVAC+ model.
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    kernel_size : int
+        Size of the convolutional kernel.
+    strides : int
+        Stride of the convolution.
+    padding : int
+        Padding of the convolution.
+    drop_r : float
+        Dropout rate.
+    n_layers : int
+        Number of convolutional layers in the block.
+    passed_channel : int, optional
+        Number of channels in the skipped connection.
+    layer_type : str, optional
+        Type of the block: 'down', 'up', or 'none'.
+    """
+
     def __init__(
         self,
         in_channels,
@@ -160,6 +236,22 @@ class Block(Module):
         self.add = Add()
 
     def forward(self, input, passed):
+        """Forward pass of the Block.
+
+        Parameters
+        ----------
+        input : torch.Tensor
+            Input tensor.
+        passed : torch.Tensor
+            Tensor from skipped connection.
+
+        Returns
+        -------
+        fwd : torch.Tensor
+            Output of the convolutional layers after adding the passed tensor.
+        x : torch.Tensor
+            Output of the downsampling or upsampling layer.
+        """
         x = input
         for layer in self.layer_list:
             x = layer(x)
@@ -175,6 +267,14 @@ class Block(Module):
 
 
 class Model(Module):
+    """The Model class for the EVAC+ architecture.
+
+    Parameters
+    ----------
+    model_scale : int, optional
+        The scale of the model. Default: 16.
+    """
+
     def __init__(self, model_scale=16):
         super(Model, self).__init__()
 
@@ -271,6 +371,26 @@ class Model(Module):
         self.softmax = Softmax(dim=1)
 
     def forward(self, inputs, raw_input_2, raw_input_3, raw_input_4, raw_input_5):
+        """Forward pass of the EVAC+ model.
+
+        Parameters
+        ----------
+        inputs : torch.Tensor
+            Main input tensor.
+        raw_input_2 : torch.Tensor
+            Multi-resolution input tensor at scale 2.
+        raw_input_3 : torch.Tensor
+            Multi-resolution input tensor at scale 4.
+        raw_input_4 : torch.Tensor
+            Multi-resolution input tensor at scale 8.
+        raw_input_5 : torch.Tensor
+            Multi-resolution input tensor at scale 16.
+
+        Returns
+        -------
+        torch.Tensor
+            Predicted brain mask probability map.
+        """
         fwd1, x = self.block1(inputs, inputs)
         x = torch.cat([x, raw_input_2], dim=1)
 
@@ -352,6 +472,18 @@ class EVACPlus:
         self.fetch_default_weights()
 
     def init_model(self, model_scale=16):
+        """Initialize the EVAC+ model.
+
+        Parameters
+        ----------
+        model_scale : int, optional
+            The scale of the model. Default: 16.
+
+        Returns
+        -------
+        Model
+            Initialized EVAC+ model.
+        """
         return Model(model_scale)
 
     def fetch_default_weights(self):
