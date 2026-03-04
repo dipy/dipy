@@ -339,7 +339,7 @@ def test_surfaces(rng):
 
 @pytest.mark.skipif(skip_it, reason="Needs xvfb")
 def test_small_horizon_import():
-    from dipy.viz import horizon as Horizon
+    from dipy.viz.horizon.app import horizon as Horizon
 
     if has_fury:
         assert Horizon == horizon
