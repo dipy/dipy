@@ -671,7 +671,7 @@ def _wls_fit(
 
 
 def _sdpdc_fit(
-    X, data_masked, cvxpy_solver, weights=None, return_leverages=True
+    X, data_masked, cvxpy_solver, weights=None, return_leverages=False
 ):
     r"""Estimate the model parameters using Semidefinite Programming (SDP),
     while enforcing positivity constraints on the D and C tensors (SDPdc).
@@ -807,11 +807,16 @@ class QtiModel(ReconstModel):
 
             - 'OLS' for ordinary least squares :func:`qti._ols_fit`
             - 'WLS' for weighted least squares :func:`qti._wls_fit`
+            - 'RWLS' for weighted least squares :func:`dti.robust_fit_tensor_wls`
             - 'SDPDc' for semidefinite programming with positivity constraints
               applied :footcite:p:`Herberthson2021` :func:`qti._sdpdc_fit`
 
         cvxpy_solver: str, optionals
             solver for the SDP formulation. default: 'SCS'
+        *args
+            Variable length argument list passed to the :func:`fit` method.
+        **kwargs
+            Arbitrary keyword arguments passed to the :func:`fit` method.
 
         References
         ----------

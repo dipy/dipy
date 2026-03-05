@@ -1359,9 +1359,6 @@ def iter_fit_tensor(*, step=1e4):
                         )
                     )
                 else:
-                    D, E = fit_tensor(
-                        design_matrix, data[i : i + step], *args, **kwargs
-                    )
                     dtiparams[i : i + step], extra_i = fit_tensor(
                         design_matrix, data[i : i + step], *args, **kwargs
                     )
