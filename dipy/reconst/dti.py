@@ -1919,9 +1919,9 @@ def nlls_fit_tensor(
     if return_lower_triangular:
         return flat_params, leverages
 
-    params.shape = data.shape[:-1] + (npa,)
+    params = params.reshape(data.shape[:-1] + (npa,))
     if return_S0_hat:
-        model_S0.shape = data.shape[:-1] + (1,)
+        model_S0 = model_S0.reshape(data.shape[:-1] + (1,))
         return [params, model_S0], None
     else:
         return params, None
@@ -2123,10 +2123,10 @@ def restore_fit_tensor(
     if resort_to_OLS:
         warnings.warn(ols_resort_msg, UserWarning, stacklevel=2)
 
-    params.shape = data.shape[:-1] + (npa,)
+    params = params.reshape(data.shape[:-1] + (npa,))
     extra = {"robust": robust}
     if return_S0_hat:
-        model_S0.shape = data.shape[:-1] + (1,)
+        model_S0 = model_S0.reshape(data.shape[:-1] + (1,))
         return [params, model_S0], extra
     else:
         return params, extra
@@ -2244,7 +2244,7 @@ def iterative_fit_tensor(
 
     extra = {"robust": robust}
     if return_S0_hat:
-        model_S0.shape = data.shape[:-1] + (1,)
+        model_S0 = model_S0.reshape(data.shape[:-1] + (1,))
         return [params, model_S0], extra
     else:
         return params, extra
