@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.testing as npt
 
-from dipy.stats.analysis import afq_profile, gaussian_weights, buan_profile
+from dipy.stats.analysis import afq_profile, buan_profile, gaussian_weights
 from dipy.tracking.streamline import Streamlines
 
 
@@ -140,7 +140,7 @@ def test_afq_profile():
 def test_buan_profile():
     data = np.ones((40, 40, 40), dtype=float)
 
-    # Create 10 streamlines 
+    # Create 10 streamlines
     n_pts = 20
     x = np.linspace(5, 34, n_pts)
     y0 = 20.0
@@ -153,16 +153,12 @@ def test_buan_profile():
 
     affine = np.eye(4)
 
-    profile = buan_profile(
-        model_bundle, bundle, orig_bundle, data, affine, no_disks=10
-    )
+    profile = buan_profile(model_bundle, bundle, orig_bundle, data, affine, no_disks=10)
     npt.assert_equal(profile.shape, (10,))
     npt.assert_almost_equal(profile, np.ones(10))
 
     # Test with a different number of disks/segments
-    profile = buan_profile(
-        model_bundle, bundle, orig_bundle, data, affine, no_disks=5
-    )
+    profile = buan_profile(model_bundle, bundle, orig_bundle, data, affine, no_disks=5)
     npt.assert_equal(profile.shape, (5,))
     npt.assert_almost_equal(profile, np.ones(5))
 
