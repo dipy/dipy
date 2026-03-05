@@ -528,7 +528,7 @@ class LinearMixedModelsFlow(Workflow):
 
                 mdf = md.fit()
 
-                pvalues[i] = mdf.pvalues[1]
+                pvalues[i] = mdf.pvalues["group"]
 
             x = list(range(1, len(pvalues) + 1))
             y = -1 * np.log10(pvalues)
