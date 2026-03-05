@@ -30,9 +30,9 @@ cdef class ShTrackerParameters:
     cdef public double pmf_threshold
 
 cdef class EudxTrackerParameters:
-    cdef public double qa_threshold
-    cdef public double ang_threshold
-    cdef public double total_weight
+    cdef public double peak_values_threshold
+    cdef public double angle_threshold
+    cdef public double min_total_weight
 
 cdef class TrackerParameters:
     cdef func_ptr tracker

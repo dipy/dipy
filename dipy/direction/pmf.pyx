@@ -171,10 +171,10 @@ cdef class SHCoeffPmfGen(PmfGen):
 
 
 cdef class SimplePeakGen(PmfGen):
-    """PmfGen subclass for sphere-based peak data (EUDX-style tracking).
+    """PmfGen subclass for sphere-based peak data.
 
-    This class stores peak indices and values for EUDX-style tracking,
-    providing the PmfGen interface required by the tractogram generator.
+    This class stores peak indices and values, providing the PmfGen 
+    interface required by the tractogram generator.
 
     Parameters
     ----------
@@ -195,8 +195,8 @@ cdef class SimplePeakGen(PmfGen):
     """
 
     def __init__(self,
-                 double[:, :, :, :] peak_indices,
-                 double[:, :, :, :] peak_values,
+                 peak_indices,
+                 peak_values,
                  double[:, :] odf_vertices,
                  object sphere):
         """Initialize SimplePeakGen with peak data.
@@ -212,54 +212,71 @@ cdef class SimplePeakGen(PmfGen):
         sphere : Sphere
             Sphere object.
         """
-        cdef int i
-        cdef cnp.ndarray dummy_data
+        cdef cnp.ndarray empty_data
+        cdef cnp.ndarray indices_arr
+        cdef cnp.ndarray values_arr
         cdef cnp.ndarray odf_vertices_arr
         cdef cnp.ndarray sphere_vertices_arr
+        cdef cnp.npy_intp[:] indices_strides
+        cdef cnp.npy_intp[:] values_strides
 
-        if (peak_indices.shape[0] != peak_values.shape[0] or
-            peak_indices.shape[1] != peak_values.shape[1] or
-            peak_indices.shape[2] != peak_values.shape[2]):
+        # Keep indices as int32 to avoid float->int casts in tight loops.
+        indices_arr = np.asarray(peak_indices, dtype=np.int32, order="C")
+        values_arr = np.asarray(peak_values, dtype=float, order="C")
+
+        if indices_arr.ndim != 4 or values_arr.ndim != 4:
+            raise ValueError(
+                "peak_indices and peak_values must be 4D arrays"
+            )
+
+        if (indices_arr.shape[0] != values_arr.shape[0] or
+            indices_arr.shape[1] != values_arr.shape[1] or
+            indices_arr.shape[2] != values_arr.shape[2]):
             raise ValueError(
                 "peak_indices and peak_values must have matching spatial dimensions"
             )
-        if peak_indices.shape[3] != peak_values.shape[3]:
+        if indices_arr.shape[3] != values_arr.shape[3]:
             raise ValueError(
                 "peak_indices and peak_values must have same number of peaks"
             )
 
-        dummy_data = np.zeros((1, 1, 1, odf_vertices.shape[0]))
+        # SimplePeakGen is peak-native; keep an empty placeholder for `data`
+        # to satisfy the shared PmfGen layout without allocating dummy PMF data.
+        empty_data = np.zeros((0, 0, 0, 0), dtype=float, order="C")
         odf_vertices_arr = np.asarray(odf_vertices, dtype=float, order="C")
-        PmfGen.__init__(self, dummy_data, sphere)
+        self.data = empty_data
         self.vertices = odf_vertices_arr
-        self.pmf = np.zeros(self.vertices.shape[0])
+        self.pmf = np.zeros(self.vertices.shape[0], dtype=float)
         sphere_vertices_arr = np.asarray(sphere.vertices, dtype=float, order="C")
         if np.array_equal(sphere_vertices_arr, odf_vertices_arr):
             self.sphere = sphere
         else:
             self.sphere = Sphere(xyz=odf_vertices_arr)
 
-        self.peak_indices = peak_indices
-        self.peak_values = peak_values
-        self.odf_vertices = odf_vertices
-        self.max_peaks = peak_indices.shape[3]
+        self.peak_indices = indices_arr
+        self.peak_values = values_arr
+        self.max_peaks = indices_arr.shape[3]
 
-        self.peak_indices_ptr = &peak_indices[0, 0, 0, 0]
-        self.peak_values_ptr = &peak_values[0, 0, 0, 0]
-        # Kept for Cython ABI compatibility across extension rebuild boundaries.
-        self.odf_vertices_ptr = &odf_vertices[0, 0]
+        self.peak_indices_ptr = &self.peak_indices[0, 0, 0, 0]
+        self.peak_values_ptr = &self.peak_values[0, 0, 0, 0]
 
-        self.peak_shape[0] = peak_indices.shape[0]
-        self.peak_shape[1] = peak_indices.shape[1]
-        self.peak_shape[2] = peak_indices.shape[2]
+        self.peak_shape[0] = indices_arr.shape[0]
+        self.peak_shape[1] = indices_arr.shape[1]
+        self.peak_shape[2] = indices_arr.shape[2]
         self.peak_shape[3] = self.max_peaks
 
-        cdef cnp.ndarray indices_arr = np.asarray(peak_indices)
-        cdef cnp.npy_intp[:] arr_strides = <cnp.npy_intp[:4]>(<cnp.npy_intp*>indices_arr.strides)
-        self.peak_strides[0] = arr_strides[0]
-        self.peak_strides[1] = arr_strides[1]
-        self.peak_strides[2] = arr_strides[2]
-        self.peak_strides[3] = arr_strides[3]
+        # Indices and values use different item sizes, so cache strides separately.
+        indices_strides = <cnp.npy_intp[:4]>(<cnp.npy_intp*>indices_arr.strides)
+        self.peak_indices_strides[0] = indices_strides[0]
+        self.peak_indices_strides[1] = indices_strides[1]
+        self.peak_indices_strides[2] = indices_strides[2]
+        self.peak_indices_strides[3] = indices_strides[3]
+
+        values_strides = <cnp.npy_intp[:4]>(<cnp.npy_intp*>values_arr.strides)
+        self.peak_values_strides[0] = values_strides[0]
+        self.peak_values_strides[1] = values_strides[1]
+        self.peak_values_strides[2] = values_strides[2]
+        self.peak_values_strides[3] = values_strides[3]
 
     cdef void _compute_trilinear(self,
                                  double* point,
@@ -294,7 +311,8 @@ cdef class SimplePeakGen(PmfGen):
         """
         cdef:
             cnp.npy_intp i, j, m
-            cnp.npy_intp off
+            cnp.npy_intp off_indices
+            cnp.npy_intp off_values
             cnp.npy_intp peak_index
             cnp.npy_intp len_pmf = self.pmf.shape[0]
             cnp.npy_intp index[24]
@@ -313,12 +331,23 @@ cdef class SimplePeakGen(PmfGen):
 
             for j in range(self.max_peaks):
                 xyz[3] = j
-                off = offset(xyz, <cnp.npy_intp*>self.peak_strides, 4, 8)
-                peak_value = self.peak_values_ptr[off]
+                off_values = offset(
+                    xyz,
+                    <cnp.npy_intp*>self.peak_values_strides,
+                    4,
+                    sizeof(double),
+                )
+                peak_value = self.peak_values_ptr[off_values]
                 if peak_value <= 0:
                     continue
 
-                peak_index = <cnp.npy_intp>self.peak_indices_ptr[off]
+                off_indices = offset(
+                    xyz,
+                    <cnp.npy_intp*>self.peak_indices_strides,
+                    4,
+                    sizeof(cnp.int32_t),
+                )
+                peak_index = self.peak_indices_ptr[off_indices]
                 if peak_index < 0 or peak_index >= len_pmf:
                     continue
 
@@ -336,7 +365,8 @@ cdef class SimplePeakGen(PmfGen):
         cdef:
             cnp.npy_intp closest_idx = self.find_closest(xyz)
             cnp.npy_intp i, j, m
-            cnp.npy_intp off
+            cnp.npy_intp off_indices
+            cnp.npy_intp off_values
             cnp.npy_intp peak_index
             cnp.npy_intp index[24]
             cnp.npy_intp xyz_idx[4]
@@ -354,12 +384,23 @@ cdef class SimplePeakGen(PmfGen):
 
             for j in range(self.max_peaks):
                 xyz_idx[3] = j
-                off = offset(xyz_idx, <cnp.npy_intp*>self.peak_strides, 4, 8)
-                peak_value = self.peak_values_ptr[off]
+                off_values = offset(
+                    xyz_idx,
+                    <cnp.npy_intp*>self.peak_values_strides,
+                    4,
+                    sizeof(double),
+                )
+                peak_value = self.peak_values_ptr[off_values]
                 if peak_value <= 0:
                     continue
 
-                peak_index = <cnp.npy_intp>self.peak_indices_ptr[off]
+                off_indices = offset(
+                    xyz_idx,
+                    <cnp.npy_intp*>self.peak_indices_strides,
+                    4,
+                    sizeof(cnp.int32_t),
+                )
+                peak_index = self.peak_indices_ptr[off_indices]
                 if peak_index == closest_idx:
                     pmf_value += weights[m] * peak_value
 
@@ -396,7 +437,8 @@ cdef class SimplePeakGen(PmfGen):
         """
         cdef:
             cnp.npy_intp i, j, m
-            cnp.npy_intp off
+            cnp.npy_intp off_indices
+            cnp.npy_intp off_values
             cnp.npy_intp idx_base
             cnp.npy_intp index[24]
             cnp.npy_intp xyz[4]
@@ -427,8 +469,19 @@ cdef class SimplePeakGen(PmfGen):
             out_valid[m] = 1
             for j in range(peaks_used):
                 xyz[3] = j
-                off = offset(xyz, <cnp.npy_intp*>self.peak_strides, 4, 8)
-                out_values[idx_base + j] = self.peak_values_ptr[off]
-                out_indices[idx_base + j] = self.peak_indices_ptr[off]
+                off_values = offset(
+                    xyz,
+                    <cnp.npy_intp*>self.peak_values_strides,
+                    4,
+                    sizeof(double),
+                )
+                off_indices = offset(
+                    xyz,
+                    <cnp.npy_intp*>self.peak_indices_strides,
+                    4,
+                    sizeof(cnp.int32_t),
+                )
+                out_values[idx_base + j] = self.peak_values_ptr[off_values]
+                out_indices[idx_base + j] = self.peak_indices_ptr[off_indices]
 
         return peaks_used

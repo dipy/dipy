@@ -127,14 +127,13 @@ def test_tracking_error():
         ValueError, tracker.deterministic_tracking, seeds, sc, np.eye(4), sf=sh, sh=sh
     )
     npt.assert_raises(ValueError, tracker.deterministic_tracking, seeds, sc, np.eye(4))
-    # peaks now supported but requires a valid PeaksAndMetrics object
     npt.assert_raises(
         ValueError,
         tracker.deterministic_tracking,
         seeds,
         sc,
         np.eye(4),
-        peaks=sh,
+        pam=sh,
     )
     npt.assert_raises(
         ValueError, tracker.deterministic_tracking, seeds, sc, np.eye(4), sf=sh

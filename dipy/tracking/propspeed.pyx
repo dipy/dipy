@@ -876,28 +876,28 @@ cdef TrackerStatus eudx_propagator(double* point,
         double* odf_vertices
         cnp.npy_intp peaks
         int m, i
-        double total_w = 0
+        double interpolation_total_weight = 0
         double new_direction[3]
         double interp_direction[3]
-        double qa_neighbors[8 * PEAK_NO]
-        double ind_neighbors[8 * PEAK_NO]
+        double peak_values_neighbors[8 * PEAK_NO]
+        double peak_indices_neighbors[8 * PEAK_NO]
         cnp.npy_intp delta
         cnp.npy_intp valid_neighbors[8]
         double normd
-        double qa_thr, ang_thr, total_weight
+        double peak_values_threshold, angle_threshold, min_total_weight
 
     if norm(direction) == 0:
         return TrackerStatus.FAIL
     normalize(direction)
 
-    qa_thr = params.eudx.qa_threshold
-    ang_thr = params.eudx.ang_threshold
-    total_weight = params.eudx.total_weight
+    peak_values_threshold = params.eudx.peak_values_threshold
+    angle_threshold = params.eudx.angle_threshold
+    min_total_weight = params.eudx.min_total_weight
     odf_vertices = &pmf_gen.vertices[0, 0]
     peaks = pmf_gen.get_peaks_c(
         point,
-        &qa_neighbors[0],
-        &ind_neighbors[0],
+        &peak_values_neighbors[0],
+        &peak_indices_neighbors[0],
         &weights[0],
         PEAK_NO,
         &valid_neighbors[0],
@@ -913,22 +913,22 @@ cdef TrackerStatus eudx_propagator(double* point,
             continue
 
         delta = _nearest_direction(direction,
-                                   &qa_neighbors[m * PEAK_NO],
-                                   &ind_neighbors[m * PEAK_NO],
+                                   &peak_values_neighbors[m * PEAK_NO],
+                                   &peak_indices_neighbors[m * PEAK_NO],
                                    peaks,
                                    odf_vertices,
-                                   qa_thr,
-                                   ang_thr,
+                                   peak_values_threshold,
+                                   angle_threshold,
                                    interp_direction)
 
         if delta == 0:
             continue
 
-        total_w += weights[m]
+        interpolation_total_weight += weights[m]
         for i in range(3):
             new_direction[i] += weights[m] * interp_direction[i]
 
-    if total_w < total_weight:
+    if interpolation_total_weight < min_total_weight:
         return TrackerStatus.FAIL
 
     normd = sqrt(new_direction[0] * new_direction[0] +

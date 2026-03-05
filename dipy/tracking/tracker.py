@@ -23,7 +23,7 @@ def generic_tracking(
     *,
     affine=None,
     sh=None,
-    peaks=None,
+    pam=None,
     sf=None,
     sphere=None,
     basis_type=None,
@@ -37,7 +37,7 @@ def generic_tracking(
 
     pmf_type = [
         {"name": "sh", "value": sh, "cls": SHCoeffPmfGen},
-        {"name": "peaks", "value": peaks, "cls": SimplePeakGen},
+        {"name": "pam", "value": pam, "cls": SimplePeakGen},
         {"name": "sf", "value": sf, "cls": SimplePmfGen},
     ]
 
@@ -64,13 +64,13 @@ def generic_tracking(
 
     sphere = sphere or default_sphere
 
-    if selected_pmf["name"] == "peaks":
+    if selected_pmf["name"] == "pam":
         peak_data = selected_pmf["value"]
         if not hasattr(peak_data, "peak_indices") or not hasattr(
             peak_data, "peak_values"
         ):
             raise ValueError(
-                "peaks must be a PeaksAndMetrics object with "
+                "pam must be a PeaksAndMetrics object with "
                 "peak_indices and peak_values attributes"
             )
 
@@ -80,7 +80,8 @@ def generic_tracking(
             odf_vertices = sphere.vertices
 
         pmf_gen = selected_pmf["cls"](
-            np.asarray(peak_data.peak_indices, dtype=float, order="C"),
+            # Peak indices are integer sphere vertex ids.
+            np.asarray(peak_data.peak_indices, dtype=np.int32, order="C"),
             np.asarray(peak_data.peak_values, dtype=float, order="C"),
             np.asarray(odf_vertices, dtype=float, order="C"),
             sphere,
@@ -108,7 +109,7 @@ def generic_tracking(
                 "seed_directions and seed_positions should have the same shape."
             )
     else:
-        if selected_pmf["name"] == "peaks":
+        if selected_pmf["name"] == "pam":
             # Compute seed voxel coordinates
             inv_affine = np.linalg.inv(affine)
             seed_voxels = np.dot(seed_positions, inv_affine[:3, :3].T)
@@ -170,7 +171,7 @@ def probabilistic_tracking(
     *,
     seed_directions=None,
     sh=None,
-    peaks=None,
+    pam=None,
     sf=None,
     min_len=2,
     max_len=500,
@@ -201,8 +202,8 @@ def probabilistic_tracking(
         Seed directions.
     sh : ndarray, optional
        Spherical Harmonics (SH).
-    peaks : ndarray, optional
-        Peaks array.
+    pam : PeakAndMetrics, optional
+        Peaks and Metrics object.
     sf : ndarray, optional
         Spherical Function (SF).
     min_len : int, optional
@@ -269,7 +270,7 @@ def probabilistic_tracking(
         params,
         affine=affine,
         sh=sh,
-        peaks=peaks,
+        pam=pam,
         sf=sf,
         sphere=sphere,
         basis_type=basis_type,
@@ -287,7 +288,7 @@ def deterministic_tracking(
     *,
     seed_directions=None,
     sh=None,
-    peaks=None,
+    pam=None,
     sf=None,
     min_len=2,
     max_len=500,
@@ -318,8 +319,8 @@ def deterministic_tracking(
         Seed directions.
     sh : ndarray, optional
         Spherical Harmonics (SH).
-    peaks : ndarray, optional
-        Peaks array.
+    pam : PeakAndMetrics, optional
+        Peaks and Metrics object.
     sf : ndarray, optional
         Spherical Function (SF).
     min_len : int, optional
@@ -385,7 +386,7 @@ def deterministic_tracking(
         params,
         affine=affine,
         sh=sh,
-        peaks=peaks,
+        pam=pam,
         sf=sf,
         sphere=sphere,
         basis_type=basis_type,
@@ -403,7 +404,7 @@ def ptt_tracking(
     *,
     seed_directions=None,
     sh=None,
-    peaks=None,
+    pam=None,
     sf=None,
     min_len=2,
     max_len=500,
@@ -439,8 +440,8 @@ def ptt_tracking(
         Seed directions.
     sh : ndarray, optional
         Spherical Harmonics (SH) data.
-    peaks : ndarray, optional
-        Peaks array
+    pam : PeakAndMetrics, optional
+        Peaks and Metrics object.
     sf : ndarray, optional
         Spherical Function (SF).
     min_len : int, optional
@@ -520,7 +521,7 @@ def ptt_tracking(
         params,
         affine=affine,
         sh=sh,
-        peaks=peaks,
+        pam=pam,
         sf=sf,
         sphere=sphere,
         basis_type=basis_type,
@@ -538,7 +539,6 @@ def closestpeak_tracking(
     *,
     seed_directions=None,
     sh=None,
-    peaks=None,
     sf=None,
     min_len=2,
     max_len=500,
@@ -569,8 +569,6 @@ def closestpeak_tracking(
         Seed directions.
     sh : ndarray, optional
         Spherical Harmonics (SH).
-    peaks : ndarray, optional
-        Peaks array.
     sf : ndarray, optional
         Spherical Function (SF).
     min_len : int, optional
@@ -632,7 +630,7 @@ def closestpeak_tracking(
             sf, sphere=sphere, max_angle=max_angle, pmf_threshold=pmf_threshold
         )
     else:
-        raise ValueError("SH or SF should be defined. Not implemented yet for peaks.")
+        raise ValueError("SH or SF should be defined.")
 
     # convert length in mm to number of points
     min_len = int(min_len / step_size)
@@ -662,7 +660,6 @@ def bootstrap_tracking(
     data=None,
     model=None,
     sh=None,
-    peaks=None,
     sf=None,
     min_len=2,
     max_len=500,
@@ -695,8 +692,6 @@ def bootstrap_tracking(
         Reconstruction model.
     sh : ndarray, optional
         Spherical Harmonics (SH).
-    peaks : ndarray, optional
-        Peaks array.
     sf : ndarray, optional
         Spherical Function (SF).
     min_len : int, optional
@@ -778,7 +773,6 @@ def eudx_tracking(
     *,
     seed_directions=None,
     sh=None,
-    peaks=None,
     sf=None,
     pam=None,
     max_cross=None,
@@ -809,8 +803,6 @@ def eudx_tracking(
         Seed directions.
     sh : ndarray, optional
         Spherical Harmonics (SH).
-    peaks : ndarray, optional
-        Peaks array.
     sf : ndarray, optional
         Spherical Function (SF).
     pam : PeakAndMetrics, optional
@@ -829,7 +821,7 @@ def eudx_tracking(
     max_angle : float, optional
         Maximum angle.
     pmf_threshold : float, optional
-        PMF threshold.
+        Peak-values threshold used to filter weak peaks.
     sphere : Sphere, optional
         Sphere.
     basis_type : name of basis
@@ -875,9 +867,9 @@ def eudx_tracking(
         step_size=step_size,
         voxel_size=voxel_size,
         max_angle=max_angle,
-        qa_thr=pmf_threshold,
-        ang_thr=max_angle,
-        total_weight=0.5,
+        peak_values_threshold=pmf_threshold,
+        angle_threshold=max_angle,
+        min_total_weight=0.5,
         random_seed=random_seed,
         return_all=return_all,
     )
@@ -888,8 +880,10 @@ def eudx_tracking(
         sc,
         params,
         affine=affine,
-        peaks=pam,
+        pam=pam,
         sphere=sphere,
+        basis_type=basis_type,
+        legacy=legacy,
         max_cross=max_cross,
         nbr_threads=nbr_threads,
         seed_buffer_fraction=seed_buffer_fraction,
@@ -904,7 +898,6 @@ def pft_tracking(
     *,
     seed_directions=None,
     sh=None,
-    peaks=None,
     sf=None,
     pam=None,
     max_cross=None,
@@ -942,8 +935,6 @@ def pft_tracking(
         Seed directions.
     sh : ndarray, optional
         Spherical Harmonics (SH).
-    peaks : ndarray, optional
-        Peaks array.
     sf : ndarray, optional
         Spherical Function (SF).
     pam : PeakAndMetrics, optional
@@ -1027,7 +1018,7 @@ def pft_tracking(
     elif pam is not None and sh is None:
         sh = pam.shm_coeff
     else:
-        msg = "SH, SF or PAM should be defined. Not implemented yet for peaks."
+        msg = "SH, SF or PAM should be defined."
         raise ValueError(msg)
 
     # convert length in mm to number of points

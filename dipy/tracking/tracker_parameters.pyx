@@ -20,7 +20,8 @@ def generate_tracking_parameters(algo_name, *,
     double max_angle=20, bint return_all=True, double pmf_threshold=0.1,
     double probe_length=0.5, double probe_radius=0, int probe_quality=3,
     int probe_count=1, double data_support_exponent=1, int random_seed=0,
-    double qa_thr=0.0239, double ang_thr=60, double total_weight=0.5):
+    double peak_values_threshold=0.0239, double angle_threshold=60,
+    double min_total_weight=0.5):
 
     cdef TrackerParameters params
 
@@ -69,10 +70,10 @@ def generate_tracking_parameters(algo_name, *,
                                    min_len=min_len,
                                    step_size=step_size,
                                    voxel_size=voxel_size,
-                                   max_angle=ang_thr,
-                                   qa_thr=qa_thr,
-                                   ang_thr=ang_thr,
-                                   total_weight=total_weight,
+                                   max_angle=angle_threshold,
+                                   peak_values_threshold=peak_values_threshold,
+                                   angle_threshold=angle_threshold,
+                                   min_total_weight=min_total_weight,
                                    random_seed=random_seed,
                                    return_all=return_all)
         params.set_tracker_c(eudx_propagator)
@@ -86,8 +87,9 @@ cdef class TrackerParameters:
     def __init__(self, max_len, min_len, step_size, voxel_size,
                  max_angle, return_all, pmf_threshold=None, probe_length=None,
                  probe_radius=None, probe_quality=None, probe_count=None,
-                 data_support_exponent=None, random_seed=None, qa_thr=None,
-                 ang_thr=None, total_weight=None):
+                 data_support_exponent=None, random_seed=None,
+                 peak_values_threshold=None, angle_threshold=None,
+                 min_total_weight=None):
         cdef cnp.npy_intp i
 
         self.max_nbr_pts = int(max_len/step_size)
@@ -117,8 +119,14 @@ cdef class TrackerParameters:
         if probe_length is not None and probe_radius is not None and probe_quality is not None and probe_count is not None and data_support_exponent is not None:
             self.ptt = ParallelTransportTrackerParameters(probe_length, probe_radius, probe_quality, probe_count, data_support_exponent)
 
-        if qa_thr is not None and ang_thr is not None and total_weight is not None:
-            self.eudx = EudxTrackerParameters(qa_thr, ang_thr, total_weight)
+        if (
+            peak_values_threshold is not None
+            and angle_threshold is not None
+            and min_total_weight is not None
+        ):
+            self.eudx = EudxTrackerParameters(
+                peak_values_threshold, angle_threshold, min_total_weight
+            )
 
     cdef void set_tracker_c(self, func_ptr tracker) noexcept nogil:
         self.tracker = tracker
@@ -153,18 +161,19 @@ cdef class EudxTrackerParameters:
 
     Parameters
     ----------
-    qa_threshold : double
-        Minimum QA (quantitative anisotropy) threshold. Peaks below this
+    peak_values_threshold : double
+        Minimum peak-values threshold. Peaks below this
         value are ignored. Default: 0.0239.
-    ang_threshold : double
+    angle_threshold : double
         Maximum angle (in degrees) between successive tracking steps.
         Default: 60.
-    total_weight : double
+    min_total_weight : double
         Minimum fraction of interpolation support required to continue
         tracking. Must be between 0 and 1. Default: 0.5 (50%).
     """
 
-    def __init__(self, double qa_threshold, double ang_threshold, double total_weight):
-        self.qa_threshold = qa_threshold
-        self.ang_threshold = ang_threshold
-        self.total_weight = total_weight
+    def __init__(self, double peak_values_threshold, double angle_threshold,
+                 double min_total_weight):
+        self.peak_values_threshold = peak_values_threshold
+        self.angle_threshold = angle_threshold
+        self.min_total_weight = min_total_weight

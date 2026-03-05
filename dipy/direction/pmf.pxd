@@ -34,15 +34,14 @@ cdef class SHCoeffPmfGen(PmfGen):
 
 cdef class SimplePeakGen(PmfGen):
     cdef:
-        double[:, :, :, :] peak_indices
+        cnp.int32_t[:, :, :, :] peak_indices
         double[:, :, :, :] peak_values
-        double[:, :] odf_vertices
-        double* peak_indices_ptr
+        cnp.int32_t* peak_indices_ptr
         double* peak_values_ptr
-        double* odf_vertices_ptr
         int max_peaks
         cnp.npy_intp[4] peak_shape
-        cnp.npy_intp[4] peak_strides
+        cnp.npy_intp[4] peak_indices_strides
+        cnp.npy_intp[4] peak_values_strides
     cdef void _compute_trilinear(self,
                                  double* point,
                                  double* out_weights,
