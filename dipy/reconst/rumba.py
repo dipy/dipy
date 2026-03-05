@@ -190,6 +190,13 @@ class RumbaSDModel(OdfModel):
 
         """
         if self.voxelwise:
+            self.kernel = generate_kernel(
+                self.gtab,
+                self.sphere,
+                self.wm_response,
+                self.gm_response,
+                self.csf_response,
+            )
             return self._voxelwise_fit(data, mask=mask, **kwargs)
         else:
             return self._global_fit(data, mask=mask, **kwargs)
@@ -288,14 +295,6 @@ class RumbaSDModel(OdfModel):
             Fit object storing model parameters.
 
         """
-        self.kernel = generate_kernel(
-            self.gtab,
-            self.sphere,
-            self.wm_response,
-            self.gm_response,
-            self.csf_response,
-        )
-
         # Normalize data to mean b0 image
         vox_data = normalize_data(data, self.where_b0s, min_signal=_EPS)
         # Rearrange data to match corrected gradient table
@@ -972,13 +971,7 @@ def rumba_deconv_global(
     index_mask = np.atleast_1d(np.squeeze(np.argwhere(mask_vec)))
     n_v_true = len(index_mask)  # number of target voxels
 
-    data_2d = np.zeros((n_v_true, n_grad), dtype=np.float32)
-    for i in range(n_grad):
-        data_2d[:, i] = np.ravel(data[:, :, :, i])[
-            index_mask
-        ]  # only keep voxels of interest
-
-    data_2d = data_2d.T
+    data_2d = data.reshape(-1, n_grad)[index_mask].T
     fodf = np.tile(fodf0, (1, n_v_true))
     reblurred = np.matmul(kernel, fodf)
 
@@ -1118,13 +1111,9 @@ def _divergence(F):
 @warning_for_keywords()
 def _reshape_2d_4d(M, mask, *, out=None):
     """
-    Faster reshape from 2D to 4D.
+    Reshape from 2D to 4D using numpy fancy indexing.
     """
     if out is None:
         out = np.zeros((*mask.shape, M.shape[-1]), dtype=M.dtype)
-    n = 0
-    for i, j, k in np.ndindex(mask.shape):
-        if mask[i, j, k]:
-            out[i, j, k, :] = M[n, :]
-            n += 1
+    out[mask.astype(bool)] = M
     return out
