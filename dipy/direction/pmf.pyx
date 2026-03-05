@@ -245,6 +245,7 @@ cdef class SimplePeakGen(PmfGen):
         empty_data = np.zeros((0, 0, 0, 0), dtype=float, order="C")
         odf_vertices_arr = np.asarray(odf_vertices, dtype=float, order="C")
         self.data = empty_data
+        # Required shared PmfGen fields used by generic tracking interfaces.
         self.vertices = odf_vertices_arr
         self.pmf = np.zeros(self.vertices.shape[0], dtype=float)
         sphere_vertices_arr = np.asarray(sphere.vertices, dtype=float, order="C")
@@ -253,19 +254,22 @@ cdef class SimplePeakGen(PmfGen):
         else:
             self.sphere = Sphere(xyz=odf_vertices_arr)
 
+        # Keep owning references alive; raw pointers below borrow this memory.
         self.peak_indices = indices_arr
         self.peak_values = values_arr
         self.max_peaks = indices_arr.shape[3]
 
+        # Fast-path pointer access for tight nogil loops.
         self.peak_indices_ptr = &self.peak_indices[0, 0, 0, 0]
         self.peak_values_ptr = &self.peak_values[0, 0, 0, 0]
 
+        # Cache shape metadata once to avoid repeated lookups in inner loops.
         self.peak_shape[0] = indices_arr.shape[0]
         self.peak_shape[1] = indices_arr.shape[1]
         self.peak_shape[2] = indices_arr.shape[2]
         self.peak_shape[3] = self.max_peaks
 
-        # Indices and values use different item sizes, so cache strides separately.
+        # Cache strides once; indices/values have different item sizes.
         indices_strides = <cnp.npy_intp[:4]>(<cnp.npy_intp*>indices_arr.strides)
         self.peak_indices_strides[0] = indices_strides[0]
         self.peak_indices_strides[1] = indices_strides[1]
