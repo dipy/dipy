@@ -792,7 +792,7 @@ def _sdpdc_fit(
 class QtiModel(ReconstModel):
     @warning_for_keywords()
     def __init__(
-        self, gtab, *args, fit_method="WLS", cvxpy_solver="SCS", **kwargs
+        self, gtab, fit_method="WLS", cvxpy_solver="SCS", **kwargs
     ):
         """Covariance tensor model of q-space trajectory imaging.
 
@@ -813,8 +813,6 @@ class QtiModel(ReconstModel):
 
         cvxpy_solver: str, optionals
             solver for the SDP formulation. default: 'SCS'
-        *args
-            Variable length argument list passed to the :func:`fit` method.
         **kwargs
             Arbitrary keyword arguments passed to the :func:`fit` method.
 
@@ -824,7 +822,6 @@ class QtiModel(ReconstModel):
         """
         ReconstModel.__init__(self, gtab)
         
-        self.args = args
         self.kwargs = kwargs
 
         if self.gtab.btens is None:
@@ -896,7 +893,7 @@ class QtiModel(ReconstModel):
                 )
             else:
                 params_in_mask, extra = self.fit_method(
-                    self.X, data_in_mask, *self.args, **self.kwargs
+                    self.X, data_in_mask, **self.kwargs
                 )
 
         else:
