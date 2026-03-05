@@ -785,6 +785,32 @@ fetch_mni_template = _make_fetcher(
     data_size="70MB",
 )
 
+fetch_buan_bundle_profiles = _make_fetcher(
+    "fetch_buan_bundle_profiles",
+    dipy_home / "buan_bundle_profiles",
+    "https://ndownloader.figshare.com/files/",
+    [
+        "61064704",
+        "61064707",
+        "61064710",
+        "61064713",
+    ],
+    [
+        Path("AF_L_recognized_orig.trk"),
+        Path("AF_L_recognized.trk"),
+        Path("AF_L.trk"),
+        Path("fa.nii.gz"),
+    ],
+    md5_list=[
+        "17181c2cbbf517918a2c9a4f3a6934e1",
+        "bde75f00359273520193a23cd6100c09",
+        "4079e761c567d678f49303beda61ab22",
+        "e113da515c0d44f4aea015915b4260f2",
+    ],
+    doc="Download BUAN bundle profiles tutorial dataset.",
+    data_size="15.5MB",
+)
+
 fetch_scil_b0 = _make_fetcher(
     "fetch_scil_b0",
     dipy_home,
@@ -2186,6 +2212,13 @@ def get_fnames(*, name="small_64D", include_optional=False):
         local_fetcher = globals().get(f"fetch_{name}_dataset")
         files, folder = local_fetcher(include_optional=include_optional)
         return [Path(folder) / f for f in files]
+    if name == "buan_bundle_profiles":
+        _, folder = fetch_buan_bundle_profiles()
+        af_orig = Path(folder) / "AF_L_recognized_orig.trk"
+        af_mni = Path(folder) / "AF_L_recognized.trk"
+        af_model = Path(folder) / "AF_L.trk"
+        fa = Path(folder) / "fa.nii.gz"
+        return af_orig, af_mni, af_model, fa
 
 
 def read_qtdMRI_test_retest_2subjects():

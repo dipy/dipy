@@ -21,14 +21,10 @@ from fury import actor, window
 import nibabel as nib
 import numpy as np
 
+from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
 from dipy.stats.analysis import assignment_map, buan_profile
 from dipy.viz.plotting import bundle_profile_plot
-
-###############################################################################
-## We need to download tutorial data from:
-## `<https://nih.figshare.com/articles/dataset/BUAN_Bundle_Profiles_Data/31080034>`_
-
 
 ###############################################################################
 ## We use example data from a single subject selected from the PPMI dataset,
@@ -48,10 +44,10 @@ from dipy.viz.plotting import bundle_profile_plot
 ###############################################################################
 ## Load example data
 
-af_orig_file = "AF_L_recognized_orig.trk"
-af_mni_file = "AF_L_recognized.trk"
-af_model_file = "AF_L.trk"
-fa_file = "fa.nii.gz"
+af_orig_file, af_mni_file, af_model_file, fa_file = get_fnames(
+    name="buan_bundle_profiles"
+)
+
 
 ## Load bundles
 sft_orig = load_tractogram(af_orig_file, reference="same", bbox_valid_check=False)
