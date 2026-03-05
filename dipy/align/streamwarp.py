@@ -310,7 +310,12 @@ def bundlewarp_shape_analysis(
             stdv[i] = np.nan
 
     if plotting:
-        bundle_profile_plot(x, shape_profile, ylabel='Average Displacement',
-                            title='Bundle Shape Profile', std=stdv)
+        bundle_profile_plot(
+            x,
+            shape_profile,
+            ylabel="Average Displacement",
+            title="Bundle Shape Profile",
+            std=stdv,
+        )
 
     return shape_profile, stdv

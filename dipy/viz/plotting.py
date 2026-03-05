@@ -239,8 +239,9 @@ def compare_qti_maps(
     plt.show()
 
 
-def bundle_profile_plot(x, profile, ylabel, *, title='Bundle Profile', 
-                        std=None, save_path=None, show=True):
+def bundle_profile_plot(
+    x, profile, ylabel, *, title="Bundle Profile", std=None, save_path=None, show=True
+):
     """Plot bundle profile.
 
     Parameters
@@ -259,20 +260,18 @@ def bundle_profile_plot(x, profile, ylabel, *, title='Bundle Profile',
         If provided, save the figure to this path (e.g., "profile.png")
     show : bool, optional
         Whether to display the plot (default: True)
-    
+
     """
     fig, ax = plt.subplots(figsize=(8, 6), dpi=300)
-        
-    ax.plot(
-        x, profile, "-", label="Mean", color="Purple", linewidth=3, markersize=12
-    )
-    
+
+    ax.plot(x, profile, "-", label="Mean", color="Purple", linewidth=3, markersize=12)
+
     if std is not None:
         std_1 = profile + std
         std_2 = profile - std
         ax.fill_between(x, std_1, std_2, alpha=0.2, label="Std", color="Purple")
         plt.ylim(0, max(std_1) + 2)
-        
+
     plt.xticks(x)
     plt.ylabel(ylabel)
     plt.xlabel("Segment Number")

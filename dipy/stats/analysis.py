@@ -4,6 +4,7 @@ import numpy as np
 from scipy.ndimage import map_coordinates
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import mahalanobis
+
 from dipy.io.utils import save_buan_profiles_hdf5
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
@@ -12,8 +13,8 @@ from dipy.tracking.streamline import (
     Streamlines,
     orient_by_streamline,
     set_number_of_points,
-    values_from_volume,
     transform_streamlines,
+    values_from_volume,
 )
 
 
@@ -149,28 +150,28 @@ def assignment_map(target_bundle, model_bundle, no_disks):
     return dist, indx
 
 
-def buan_profile(model_bundle, bundle, orig_bundle, metric,
-                             affine, *, no_disks=100):
+def buan_profile(model_bundle, bundle, orig_bundle, metric, affine, *, no_disks=100):
     """
     Create BUAN weighted mean bundle profiles (lite).
-    
-    See :footcite:p:`Chandio2020a` and and :footcite:p:`chandio2024bundle` for further details about the method.
-    
+
+    See :footcite:p:`Chandio2020a` and and :footcite:p:`chandio2024bundle`
+    for further details about the method.
+
     Parameters
     ----------
     model_bundle : Streamlines
-        The input model bundle. 
+        The input model bundle.
     bundle : Streamlines
-        The input bundle in common space. 
+        The input bundle in common space.
     orig_bundle : Streamlines
-        The input bundle in native space. 
+        The input bundle in native space.
     metric : ndarray
         Dti metric such as FA. This metric will be
         projected onto the bundle in native space to create bundle profiles.
     affine : ndarray
-        Affine metrix for transforming streamlines to native space.
+        Affine matrix for transforming streamlines to native space.
     no_disks : int, optional
-        Number of alongtract segments/disks used for dividing bundle into 
+        Number of alongtract segments/disks used for dividing bundle into
         segments.
 
      References
@@ -178,53 +179,37 @@ def buan_profile(model_bundle, bundle, orig_bundle, metric,
      .. footbibliography::
     """
 
-
     if len(model_bundle) == 0 or len(bundle) == 0 or len(orig_bundle) == 0:
         raise ValueError("One of the bundles contains no streamlines")
-        
+
     dist, indx = assignment_map(bundle, model_bundle, no_disks)
     ind = np.array(indx)
-
     affine_r = np.linalg.inv(affine)
-    transformed_orig_bundle = transform_streamlines(orig_bundle,
-                                                     affine_r)
-
+    transformed_orig_bundle = transform_streamlines(orig_bundle, affine_r)
     bundle_profile = np.zeros(no_disks)
-    
-    values = map_coordinates(metric, transformed_orig_bundle._data.T,
-                             order=1)
-    
+    values = map_coordinates(metric, transformed_orig_bundle._data.T, order=1)
+
     epsilon = 1e-8
-    
-    
     weights = 1 / (dist + epsilon)
-    
 
     for i in range(no_disks):
-        
         mask = ind == i
-        
         valid_mask = mask.copy()
-        
         valid_mask[np.isnan(values)] = False
-        
+
         if np.any(valid_mask):
-            
             vals = values[valid_mask]
             wts = weights[valid_mask]
-            
             wts /= np.sum(wts)
-            
             weighted_mean = np.sum(wts * vals)
-        else:
-            weighted_mean = np.nan 
-        
-        bundle_profile[i] = weighted_mean
 
+        else:
+            weighted_mean = np.nan
+
+        bundle_profile[i] = weighted_mean
 
     return bundle_profile
 
-    
 
 @warning_for_keywords()
 def gaussian_weights(bundle, *, n_points=100, return_mahalnobis=False, stat=np.mean):
