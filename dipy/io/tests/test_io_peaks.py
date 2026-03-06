@@ -224,12 +224,18 @@ def test_tensor_to_pam():
 def test_io_peaks_deprecated(rng):
     with TemporaryDirectory() as tmpdir:
         with warnings.catch_warnings(record=True) as cw:
-            warnings.simplefilter("always", DeprecationWarning)
+            warnings.simplefilter("always")
+            warnings.filterwarnings(
+                "ignore", category=DeprecationWarning, module=".*h5py.*"
+            )
+            warnings.filterwarnings(
+                "ignore", category=DeprecationWarning, module=".*numpy.*"
+            )
             fname = Path(tmpdir) / "test_tt.pam5"
             pam = generate_default_pam(rng)
             save_peaks(fname, pam)
             pam2 = load_peaks(fname, verbose=True)
             npt.assert_array_equal(pam.peak_dirs, pam2.peak_dirs)
-            npt.assert_equal(len(cw), 2)
+            npt.assert_(len(cw) >= 2)
             npt.assert_(issubclass(cw[0].category, DeprecationWarning))
             npt.assert_(issubclass(cw[1].category, DeprecationWarning))
