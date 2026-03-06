@@ -596,9 +596,7 @@ def _ols_fit(X, data_masked, *, step=int(1e4), return_leverages=False):
 
 
 @warning_for_keywords()
-def _wls_fit(
-    X, data_masked, *, weights=None, step=int(1e4), return_leverages=False
-):
+def _wls_fit(X, data_masked, *, weights=None, step=int(1e4), return_leverages=False):
     r"""Estimate the model parameters using weighted least squares with the
     signal magnitudes as weights.
 
@@ -646,9 +644,7 @@ def _wls_fit(
             W = np.sqrt(weights[i : i + step])
 
         if return_leverages:
-            tmp = np.einsum(
-                "...ij,...j->...ij", np.linalg.pinv(X * W[..., None]), W
-            )
+            tmp = np.einsum("...ij,...j->...ij", np.linalg.pinv(X * W[..., None]), W)
             fit_result = np.einsum("...ij,...j", tmp, S)
             leverages_i = np.einsum("ij,...ji->...i", X, tmp)
         else:
@@ -668,9 +664,7 @@ def _wls_fit(
     return params_masked, extra
 
 
-def _sdpdc_fit(
-    X, data_masked, cvxpy_solver, weights=None, return_leverages=False
-):
+def _sdpdc_fit(X, data_masked, cvxpy_solver, weights=None, return_leverages=False):
     r"""Estimate the model parameters using Semidefinite Programming (SDP),
     while enforcing positivity constraints on the D and C tensors (SDPdc).
 
@@ -732,9 +726,7 @@ def _sdpdc_fit(
 
     if return_leverages:
         A = X * W[..., None]
-        inv_W_A_W = np.einsum(
-            "...ij,...j->...ij", np.linalg.pinv(A), W
-        )
+        inv_W_A_W = np.einsum("...ij,...j->...ij", np.linalg.pinv(A), W)
         leverages = np.einsum("ij,...ji->...i", X, inv_W_A_W)  # sums to 28
 
     x = cp.Variable((28, 1))
@@ -789,9 +781,7 @@ def _sdpdc_fit(
 
 class QtiModel(ReconstModel):
     @warning_for_keywords()
-    def __init__(
-        self, gtab, fit_method="WLS", cvxpy_solver="SCS", **kwargs
-    ):
+    def __init__(self, gtab, fit_method="WLS", cvxpy_solver="SCS", **kwargs):
         """Covariance tensor model of q-space trajectory imaging.
 
         See :footcite:t:`Westin2016` for further details about the model.
@@ -900,7 +890,7 @@ class QtiModel(ReconstModel):
                 self.X,
                 data_in_mask,
                 num_iter=self.kwargs["num_iter"],
-                weights_method=self.kwargs["weights_method"]
+                weights_method=self.kwargs["weights_method"],
             )
 
         params = np.zeros(img_shape + (params_in_mask.shape[-1],))
@@ -960,7 +950,6 @@ class QtiModel(ReconstModel):
         # NOTE: on first iteration, fit_method receives weights=w(=None)
         for rdx in range(1, TDX + 1):
             if rdx > 1:  # after first iteration, update weights
-
                 # make prediction of the signal
                 pred_sig = self.predict(params_in_mask)
 
@@ -977,8 +966,7 @@ class QtiModel(ReconstModel):
 
             if self.fit_method_name == "SDPdc":
                 params_in_mask, extra = self.fit_method(
-                    X, data_masked, self.cvxpy_solver, weights=w,
-                    return_leverages=True
+                    X, data_masked, self.cvxpy_solver, weights=w, return_leverages=True
                 )
             else:
                 params_in_mask, extra = self.fit_method(
