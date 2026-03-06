@@ -473,7 +473,7 @@ def _make_fetcher(
     use_headers : bool, optional
         Whether to use headers when downloading files.
 
-    returns
+    Returns
     -------
     fetcher : function
         A function that, when called, fetches data according to the designated
