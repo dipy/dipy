@@ -86,6 +86,13 @@ def _load_backend():
             "Please install one of these packages."
         )
 
+    # Hub is backend-agnostic, registered unconditionally
+    import dipy.nn.hub as hub_module
+
+    sys.modules["dipy.nn.hub"] = hub_module
+    globals()["hub"] = hub_module
+    __all__ += ["hub"]
+
     return __all__
 
 
