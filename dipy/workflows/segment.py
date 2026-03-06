@@ -4,6 +4,7 @@ import sys
 from time import time
 
 import numpy as np
+import trx.trx_file_memmap as tmm
 
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
@@ -19,6 +20,7 @@ from dipy.segment.tissue import TissueClassifierHMRF, dam_classifier
 from dipy.tracking import Streamlines
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
+from dipy.workflows.base import format_key_value_table
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
@@ -229,7 +231,8 @@ class RecoBundlesFlow(Workflow):
         out_dir : string or Path, optional
             Output directory.
         out_recognized_transf : string, optional
-            Recognized bundle in the space of the model bundle.
+            Output TRX file containing all recognized bundles as named groups.
+            Must have a .trx extension.
         out_recognized_labels : string, optional
             Indices of recognized bundle in the original tractogram.
 
@@ -279,6 +282,18 @@ class RecoBundlesFlow(Workflow):
 
         logger.info("### RecoBundles ###")
 
+        out_trx_path = (
+            Path(out_dir) / out_recognized_transf
+            if out_dir
+            else Path(out_recognized_transf)
+        )
+        if out_trx_path.suffix.lower() != ".trx":
+            logger.error(
+                f"out_recognized_transf must have a .trx extension, got: "
+                f"'{out_trx_path.suffix}'. Please rename or change the output filename."
+            )
+            sys.exit(1)
+
         io_it = self.get_io_iterator()
 
         t = time()
@@ -288,9 +303,12 @@ class RecoBundlesFlow(Workflow):
 
         logger.info(f" Loading time {time() - t:0.3f} sec")
 
+        trx_file = tmm.TrxFile.from_sft(input_obj)
         rb = RecoBundles(streamlines, greater_than=greater_than, less_than=less_than)
+        bundle_summary = {}
 
-        for _, mb, out_rec, out_labels in io_it:
+        for _, mb, _out_rec, out_labels in io_it:
+            bundle_name = Path(mb).stem
             t = time()
             logger.info(mb)
             model_bundle = load_tractogram(
@@ -357,15 +375,22 @@ class RecoBundlesFlow(Workflow):
 
                 logger.info(f"Bundle adjacency Metric {ba}")
                 logger.info(f"Bundle Min Distance Metric {bmd}")
+                trx_file.groups[bundle_name] = np.array(labels, dtype=np.uint32)
 
-            new_tractogram = StatefulTractogram(
-                recognized_bundle, streamline_files, Space.RASMM
-            )
-            save_tractogram(new_tractogram, out_rec, bbox_valid_check=False)
-            logger.info("Saving output files ...")
+            bundle_summary[bundle_name] = len(labels)
             np.save(out_labels, np.array(labels))
-            logger.info(out_rec)
             logger.info(out_labels)
+
+        logger.info("Saving recognized bundles to single TRX file ...")
+        tmm.save(trx_file, str(out_trx_path))
+        trx_file.close()
+        logger.info(f"Saved: {out_trx_path}")
+
+        summary_str = {name: str(count) for name, count in bundle_summary.items()}
+        table = format_key_value_table(
+            summary_str, "Bundle", "# Streamlines", sort=False
+        )
+        logger.info("\nBundle Recognition Summary:\n" + table)
 
 
 class LabelsBundlesFlow(Workflow):

@@ -5,6 +5,7 @@ import nibabel as nib
 import numpy as np
 import numpy.testing as npt
 import pytest
+import trx.trx_file_memmap as tmm
 
 from dipy.align.streamlinear import BundleMinDistanceMetric
 from dipy.data import get_fnames
@@ -153,12 +154,14 @@ def test_recobundles_flow():
         )
 
         labels = rb_flow.last_generated_outputs["out_recognized_labels"]
-        recog_trk = rb_flow.last_generated_outputs["out_recognized_transf"]
+        recog_trx = rb_flow.last_generated_outputs["out_recognized_transf"]
 
-        rec_bundle = load_tractogram(
-            recog_trk, "same", bbox_valid_check=False
-        ).streamlines
-        npt.assert_equal(len(rec_bundle) == len(f2), True)
+        trx = tmm.load(recog_trx)
+        bundle_name = Path(f2_path).stem
+        npt.assert_equal(bundle_name in trx.groups, True)
+        rec_bundle_indices = trx.groups[bundle_name]
+        npt.assert_equal(len(rec_bundle_indices) == len(f2), True)
+        trx.close()
 
         label_flow = LabelsBundlesFlow(force=True)
         label_flow.run(f1_path, labels, out_dir=out_dir)
