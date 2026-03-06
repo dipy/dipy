@@ -496,7 +496,11 @@ class Horizon:
                 streamlines = sft.streamlines
 
                 if len(streamlines) == 0:
-                    logger.warning(f"Tractogram {t} is empty and will be skipped.")
+                    warn(
+                        f"Tractogram {t} is empty and will be skipped.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
                     continue
 
                 if "tracts" in self.random_colors:
@@ -903,3 +907,237 @@ def horizon(
     if return_showm:
         return hz.build_show(scene)
     hz.build_show(scene)
+
+
+# =============================================================================
+# Issue #3502 — ODF and Tensor support added below
+# =============================================================================
+_logger = __import__("logging").getLogger(__name__)
+
+
+def _select_backend() -> str:
+    """Auto-detect best rendering backend."""
+    env_backend = __import__("os").environ.get("FURY_BACKEND", "").lower()
+    if env_backend:
+        return env_backend
+    try:
+        import pyodide  # noqa: F401
+
+        return "webgpu"
+    except ImportError:
+        pass
+    try:
+        import glfw  # noqa: F401
+
+        return "glfw"
+    except ImportError:
+        pass
+    return "vtk"
+
+
+def _load_odf_data(path):
+    """Load SH coefficients from a 4-D NIfTI or .npz file.
+
+    Parameters
+    ----------
+    path : str or Path
+
+    Returns
+    -------
+    sh_coeffs : ndarray, shape (X, Y, Z, n_coeffs)
+    affine    : ndarray, shape (4, 4)
+    mask      : ndarray or None
+    """
+
+    import numpy as np
+
+    path = __import__("pathlib").Path(path)
+    if path.suffix == ".npz":
+        data = np.load(path, allow_pickle=False)
+        sh = data["sh_coeffs"]
+        aff = data["affine"] if "affine" in data else np.eye(4)
+        msk = data["mask"] if "mask" in data else None
+        return sh, aff, msk
+    try:
+        import nibabel as nib
+    except ImportError as exc:
+        raise ImportError("nibabel is required to load NIfTI ODF files.") from exc
+    img = nib.load(str(path))
+    sh = np.asarray(img.dataobj, dtype=np.float32)
+    if sh.ndim != 4:
+        raise ValueError(
+            f"ODF NIfTI must be 4-D (X,Y,Z,n_coeffs), got shape {sh.shape}"
+        )
+    return sh, np.array(img.affine, dtype=np.float64), None
+
+
+def _load_tensor_data(evals_path, evecs_path):
+    """Load tensor eigenvalues and eigenvectors from a NIfTI pair.
+
+    Parameters
+    ----------
+    evals_path : str or Path  — 4-D NIfTI, last dim = 3
+    evecs_path : str or Path  — 5-D NIfTI, last dims = 3x3
+
+    Returns
+    -------
+    evals  : ndarray (X, Y, Z, 3)
+    evecs  : ndarray (X, Y, Z, 3, 3)
+    affine : ndarray (4, 4)
+    mask   : None
+    """
+    import numpy as np
+
+    try:
+        import nibabel as nib
+    except ImportError as exc:
+        raise ImportError("nibabel is required to load tensor NIfTI files.") from exc
+    ev_img = nib.load(str(evals_path))
+    evals = np.asarray(ev_img.dataobj, dtype=np.float32)
+    if evals.shape[-1] != 3:
+        raise ValueError(f"evals NIfTI last dim must be 3, got {evals.shape}")
+    evs_img = nib.load(str(evecs_path))
+    evecs = np.asarray(evs_img.dataobj, dtype=np.float32)
+    if evecs.ndim == 4 and evecs.shape[-1] == 9:
+        evecs = evecs.reshape(*evecs.shape[:3], 3, 3)
+    if evecs.shape[-2:] != (3, 3):
+        raise ValueError(f"evecs must have last dims (3,3), got {evecs.shape}")
+    return evals, evecs, np.array(ev_img.affine, dtype=np.float64), None
+
+
+def horizon_odf_tensor(
+    odf_files=None,
+    tensor_evals_files=None,
+    tensor_evecs_files=None,
+    odf_kwargs=None,
+    tensor_kwargs=None,
+    backend=None,
+    title="DIPY Horizon — ODF + Tensor",
+    win_size=(1280, 720),
+):
+    """Launch Horizon with ODF and/or Tensor visualization.
+
+    Parameters
+    ----------
+    odf_files : list of str, optional
+        Paths to 4-D NIfTI files with SH coefficients.
+    tensor_evals_files : list of str, optional
+        Paths to 4-D NIfTI files with tensor eigenvalues (last dim=3).
+    tensor_evecs_files : list of str, optional
+        Paths to 5-D NIfTI files with tensor eigenvectors (last dims=3x3).
+    odf_kwargs : dict, optional
+        Extra keyword args forwarded to ODFTab (scale, colormap, norm, ...).
+    tensor_kwargs : dict, optional
+        Extra keyword args forwarded to TensorTab (scale, colormap, ...).
+    backend : str, optional
+        'vtk', 'glfw', or 'webgpu'. Auto-detected if None.
+    title : str, optional
+        Window title.
+    win_size : tuple of int, optional
+        Window size (width, height). Default (1280, 720).
+
+    Examples
+    --------
+    >>> from dipy.viz.horizon.app import horizon_odf_tensor
+    >>> horizon_odf_tensor(  # doctest: +SKIP
+    ...     odf_files=['csd_sh_coeffs.nii.gz'],
+    ...     tensor_evals_files=['dti_evals.nii.gz'],
+    ...     tensor_evecs_files=['dti_evecs.nii.gz'],
+    ... )
+    """
+    from fury import window
+
+    odf_files = list(odf_files or [])
+    tensor_evals_files = list(tensor_evals_files or [])
+    tensor_evecs_files = list(tensor_evecs_files or [])
+    odf_kwargs = odf_kwargs or {}
+    tensor_kwargs = tensor_kwargs or {}
+
+    if len(tensor_evals_files) != len(tensor_evecs_files):
+        raise ValueError(
+            f"tensor_evals_files and tensor_evecs_files must have the same "
+            f"number of files. Got {len(tensor_evals_files)} evals and "
+            f"{len(tensor_evecs_files)} evecs."
+        )
+
+    selected_backend = backend or _select_backend()
+    _logger.info("Using backend: %s", selected_backend)
+
+    scene = window.Scene()
+    scene.background((0.05, 0.05, 0.05))
+
+    # --- ODF tabs ---
+    for i, path in enumerate(odf_files):
+        _logger.info("Loading ODF file %d/%d: %s", i + 1, len(odf_files), path)
+        try:
+            sh, aff, mask = _load_odf_data(path)
+            from dipy.viz.horizon.tab.odf import ODFTab
+
+            tab = ODFTab(
+                sh_coeffs=sh,
+                affine=aff,
+                mask=mask,
+                **odf_kwargs,
+            )
+            tab.build_actors()
+            for act in tab.get_actors():
+                scene.add(act)
+            panel = tab.build_panel(position=(10, 200 + i * 420))
+            scene.add(panel)
+            _logger.info("ODF tab %d added to scene.", i)
+        except Exception as exc:
+            _logger.error("Failed to load ODF file %s: %s", path, exc)
+
+    # --- Tensor tabs ---
+    for i, (ep, vp) in enumerate(zip(tensor_evals_files, tensor_evecs_files)):
+        _logger.info("Loading tensor pair %d: evals=%s evecs=%s", i, ep, vp)
+        try:
+            ev, evs, aff, mask = _load_tensor_data(ep, vp)
+            from dipy.viz.horizon.tab.tensor import TensorTab
+
+            tab = TensorTab(
+                evals=ev,
+                evecs=evs,
+                affine=aff,
+                mask=mask,
+                **tensor_kwargs,
+            )
+            tab.build_actors()
+            for act in tab.get_actors():
+                scene.add(act)
+            panel = tab.build_panel(position=(320, 200 + i * 440))
+            scene.add(panel)
+            _logger.info("Tensor tab %d added to scene.", i)
+        except Exception as exc:
+            _logger.error("Failed to load tensor pair %d: %s", i, exc)
+
+    show_manager = window.ShowManager(
+        scene=scene,
+        title=title,
+        size=win_size,
+        reset_camera=True,
+        order_transparent=True,
+    )
+    show_manager.initialize()
+    show_manager.render()
+    show_manager.start()
+
+
+def _build_cli_parser():
+    """Build argparse parser for ODF/Tensor CLI flags."""
+    import argparse
+
+    p = argparse.ArgumentParser(description="DIPY Horizon ODF/Tensor viewer")
+    p.add_argument("--odf", nargs="+", default=[], dest="odf_files")
+    p.add_argument("--odf_scale", type=float, default=2.0)
+    p.add_argument("--odf_colormap", default="plasma")
+    p.add_argument("--odf_sh_basis", default="tournier07")
+    p.add_argument("--odf_no_norm", action="store_true")
+    p.add_argument("--tensor_evals", nargs="+", default=[], dest="tensor_evals_files")
+    p.add_argument("--tensor_evecs", nargs="+", default=[], dest="tensor_evecs_files")
+    p.add_argument(
+        "--tensor_colormap", default="fa_rgb", choices=["fa_rgb", "fa", "md"]
+    )
+    p.add_argument("--tensor_scale", type=float, default=1.0)
+    p.add_argument("--backend", choices=["vtk", "glfw", "webgpu"], default=None)
+    return p

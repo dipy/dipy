@@ -11,7 +11,7 @@ from dipy.io.utils import create_nifti_header, split_filename_extension
 from dipy.stats.analysis import assignment_map
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
-from dipy.viz import horizon
+from dipy.viz.horizon.app import horizon
 from dipy.workflows.workflow import Workflow
 
 fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
