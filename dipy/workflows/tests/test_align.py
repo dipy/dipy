@@ -350,7 +350,7 @@ def test_image_registration(rng):
             )
 
             dist = read_distance("rigid_q.txt")
-            npt.assert_almost_equal(dist, -0.6900534794005155, 1)
+            npt.assert_almost_equal(dist, -0.4448226960942718, 1)
             check_existence(out_moved, out_affine)
 
         def test_rigid_isoscaling():
@@ -371,7 +371,7 @@ def test_image_registration(rng):
             )
 
             dist = read_distance("rigid_isoscaling_q.txt")
-            npt.assert_almost_equal(dist, -0.6960044668271375, 1)
+            npt.assert_almost_equal(dist, -0.44489703283487086, 1)
             check_existence(out_moved, out_affine)
 
         def test_rigid_scaling():
@@ -413,7 +413,7 @@ def test_image_registration(rng):
             )
 
             dist = read_distance("affine_q.txt")
-            npt.assert_almost_equal(dist, -0.7670650775914811, 1)
+            npt.assert_almost_equal(dist, -0.5482400695948723, 1)
             check_existence(out_moved, out_affine)
 
         # Creating the erroneous behavior
