@@ -1,7 +1,6 @@
 from collections.abc import Sequence
 import json
 import multiprocessing
-import shutil
 import tempfile
 
 import numpy as np
@@ -139,20 +138,23 @@ def paramap(
         if not has_ray:
             raise ray()
 
+        num_cpus = None if n_jobs == -1 else n_jobs
+
+        init_kwargs = {}
+        if num_cpus is not None:
+            init_kwargs["num_cpus"] = num_cpus
+
+        tmp_dir = None
         if clean_spill:
             tmp_dir = tempfile.TemporaryDirectory()
-
-            if not ray.is_initialized():
-                ray.init(
-                    _system_config={
-                        "object_spilling_config": json.dumps(
-                            {
-                                "type": "filesystem",
-                                "params": {"directory_path": tmp_dir.name},
-                            },
-                        )
-                    },
+            init_kwargs["_system_config"] = {
+                "object_spilling_config": json.dumps(
+                    {"type": "filesystem", "params": {"directory_path": tmp_dir.name}}
                 )
+            }
+
+        if not ray.is_initialized():
+            ray.init(**init_kwargs)
 
         func = ray.remote(func)
         if func_kwargs_sequence:
@@ -167,8 +169,8 @@ def paramap(
                 [func.remote(ii, *func_args, **func_kwargs) for ii in in_list]
             )
 
-        if clean_spill:
-            shutil.rmtree(tmp_dir.name)
+        if tmp_dir is not None:
+            tmp_dir.cleanup()
 
     elif engine == "serial":
         results = []
