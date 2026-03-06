@@ -5,14 +5,14 @@ import numpy.testing as npt
 
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, disperse_charges
+import dipy.reconst.dti as dti
 from dipy.reconst.dti import fractional_anisotropy
 import dipy.reconst.qti as qti
-import dipy.reconst.dti as dti
+from dipy.reconst.weights_method import weights_method_wls_m_est
 from dipy.sims.voxel import vec2vec_rotmat
 from dipy.testing import assert_warns
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
-from dipy.reconst.weights_method import weights_method_wls_m_est
 
 cp, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
@@ -462,7 +462,7 @@ def test_ls_sdp_fits(rng):
         # fit with SDPdc (constraints), i.e. RCWLS
         kwargs = {"weights_method": weights_method_wls_m_est}  # no num_iter
         qtimodel_rc = qti.QtiModel(gtab, fit_method="SDPdc", **kwargs)
-        qtifit_rc = qtimodel_rc.fit(data_corrupt, mask=MASK)
+        _ = qtimodel_rc.fit(data_corrupt, mask=MASK)
         npt.assert_equal(qtimodel_rc.extra["robust"][..., -1], False)
 
 

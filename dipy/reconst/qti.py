@@ -11,18 +11,16 @@ from warnings import catch_warnings, filterwarnings, warn
 import numpy as np
 
 from dipy.reconst.base import ReconstModel
-from dipy.reconst.dti import auto_attr
-from dipy.testing.decorators import warning_for_keywords
-from dipy.utils.optpkg import optional_package
-
 from dipy.reconst.dti import (
     MIN_POSITIVE_SIGNAL,
+    auto_attr,
     robust_fit_tensor_wls,
 )
-
 from dipy.reconst.weights_method import (
     weights_method_wls_m_est,
 )
+from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.optpkg import optional_package
 
 cp, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
@@ -807,7 +805,8 @@ class QtiModel(ReconstModel):
 
             - 'OLS' for ordinary least squares :func:`qti._ols_fit`
             - 'WLS' for weighted least squares :func:`qti._wls_fit`
-            - 'RWLS' for weighted least squares :func:`dti.robust_fit_tensor_wls`
+            - 'RWLS' for robust weighted least squares
+              :func:`dti.robust_fit_tensor_wls`
             - 'SDPDc' for semidefinite programming with positivity constraints
               applied :footcite:p:`Herberthson2021` :func:`qti._sdpdc_fit`
 
@@ -821,7 +820,7 @@ class QtiModel(ReconstModel):
         .. footbibliography::
         """
         ReconstModel.__init__(self, gtab)
-        
+
         self.kwargs = kwargs
 
         if self.gtab.btens is None:
@@ -843,7 +842,7 @@ class QtiModel(ReconstModel):
         except KeyError as e:
             raise ValueError(
                 f"Invalid value ({fit_method}) for 'fit_method'."
-                + " Options: 'OLS', 'WLS', 'SDPdc'."
+                + " Options: 'OLS', 'WLS', 'SDPdc', 'RWLS'."
             ) from e
 
         self.cvxpy_solver = cvxpy_solver
@@ -909,7 +908,7 @@ class QtiModel(ReconstModel):
 
         if extra is not None:
             for key in extra:
-                tmp_extra = np.zeros(img_shape + extra[key].shape[1:]) 
+                tmp_extra = np.zeros(img_shape + extra[key].shape[1:])
                 tmp_extra[mask] = extra[key]
                 self.extra[key] = tmp_extra
 
@@ -928,8 +927,8 @@ class QtiModel(ReconstModel):
         Parameters
         ----------
         X : array (g, 28)
-            Design matrix holding the covariants used to solve for the regression
-            coefficients.
+            Design matrix holding the covariants used to solve for the
+            regression coefficients.
         data_masked : array (N, g)
             The measured signal, already masked.
         num_iter : int, optional
@@ -960,7 +959,7 @@ class QtiModel(ReconstModel):
         TDX = num_iter
         # NOTE: on first iteration, fit_method receives weights=w(=None)
         for rdx in range(1, TDX + 1):
-            if rdx > 1:  #  after first iteration, update weights
+            if rdx > 1:  # after first iteration, update weights
 
                 # make prediction of the signal
                 pred_sig = self.predict(params_in_mask)
@@ -978,7 +977,8 @@ class QtiModel(ReconstModel):
 
             if self.fit_method_name == "SDPdc":
                 params_in_mask, extra = self.fit_method(
-                    X, data_masked, self.cvxpy_solver, weights=w, return_leverages=True
+                    X, data_masked, self.cvxpy_solver, weights=w,
+                    return_leverages=True
                 )
             else:
                 params_in_mask, extra = self.fit_method(
