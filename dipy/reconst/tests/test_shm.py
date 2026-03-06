@@ -709,7 +709,7 @@ def test_ResidualBootstrapWrapper():
     B = B.T
     H = hat(B)
     d = np.arange(10) / 8.0
-    d.shape = (2, 5)
+    d = d.reshape(2, 5)
     dhat = np.dot(d, H)
     signal_object = NearestNeighborInterpolator(dhat, (1,))
     ms = 0.2
