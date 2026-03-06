@@ -85,10 +85,23 @@ class Dpy:
             self.offs_pos = 0
 
     def version(self):
+        """Return the version of the Dpy file.
+
+        Returns
+        -------
+        version : str
+            The version string stored in the file.
+        """
         return self.f.attrs["version"]
 
     def write_track(self, track):
-        """write on track each time"""
+        """Write a single track to the Dpy file.
+
+        Parameters
+        ----------
+        track : array-like (N, 3)
+            The streamline to be written.
+        """
         self.tracks.resize(self.tracks.shape[0] + track.shape[0], axis=0)
         self.tracks[-track.shape[0] :] = track.astype(np.float32)
         self.curr_pos += track.shape[0]
@@ -97,7 +110,13 @@ class Dpy:
         self.offsets[-1] = self.curr_pos
 
     def write_tracks(self, tracks):
-        """write many tracks together"""
+        """Write a multiple tracks to the Dpy file.
+
+        Parameters
+        ----------
+        tracks : Streamlines or list of array-like
+            The tractography dataset to be written.
+        """
 
         self.tracks.resize(self.tracks.shape[0] + tracks._data.shape[0], axis=0)
         self.tracks[-tracks._data.shape[0] :] = tracks._data
@@ -110,13 +129,30 @@ class Dpy:
         )
 
     def read_track(self):
-        """read one track each time"""
+        """Read one track from the Dpy file at the current position.
+
+        Returns
+        -------
+        track : ndarray (N, 3)
+            A single streamline.
+        """
         off0, off1 = self.offsets[self.offs_pos : self.offs_pos + 2]
         self.offs_pos += 1
         return self.tracks[off0:off1]
 
     def read_tracksi(self, indices):
-        """read tracks with specific indices"""
+        """Read tracks with specific indices from the Dpy file.
+
+        Parameters
+        ----------
+        indices : list or array-like
+            The indices of the tracks to read.
+
+        Returns
+        -------
+        tracks : Streamlines
+            The streamlines corresponding to the given indices.
+        """
         tracks = Streamlines()
         for i in indices:
             off0, off1 = self.offsets[i : i + 2]
@@ -124,7 +160,13 @@ class Dpy:
         return tracks
 
     def read_tracks(self):
-        """read the entire tractography"""
+        """Read the entire tractography dataset from the Dpy file.
+
+        Returns
+        -------
+        tracks : Streamlines
+            The entire set of streamlines in the file.
+        """
         offsets = self.offsets[:]
         TR = self.tracks[:]
         tracks = Streamlines()
@@ -134,4 +176,5 @@ class Dpy:
         return tracks
 
     def close(self):
+        """Close the Dpy file descriptor."""
         self.f.close()
