@@ -2,9 +2,9 @@ import copy
 from warnings import warn
 
 import numpy as np
-from scipy.linalg import eigh
 from scipy.linalg.lapack import dgesvd as svd
 
+from dipy.denoise.eig_localpca import genpca_core as genpca_core_fast
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.testing.decorators import warning_for_keywords
 
@@ -311,6 +311,20 @@ def genpca(
         var = np.zeros(arr.shape[:-1], dtype=calc_dtype)
         thetavar = np.zeros(arr.shape[:-1], dtype=calc_dtype)
 
+    # Fast Cython core only supports 'eig' for now
+    if not is_svd:
+        return genpca_core_fast(
+            arr,
+            mask=mask,
+            var_map=None if sigma is None else var,
+            patch_radius_x=int(patch_radius_arr[0]),
+            patch_radius_y=int(patch_radius_arr[1]),
+            patch_radius_z=int(patch_radius_arr[2]),
+            tau_factor=tau_factor,
+            return_sigma=return_sigma,
+            out_dtype=out_dtype,
+        )
+
     # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius_arr[2], arr.shape[2] - patch_radius_arr[2]):
         for j in range(patch_radius_arr[1], arr.shape[1] - patch_radius_arr[1]):
@@ -331,23 +345,16 @@ def genpca(
                 # Upcast the dtype for precision in the SVD
                 X = X - M
 
-                if is_svd:
-                    # PCA using an SVD
-                    svd_args = [1, 0]
-                    U, S, Vt = svd(X, *svd_args)[:3]
-                    # Items in S are the eigenvalues, but in ascending order
-                    # We invert the order (=> descending), square and normalize
-                    # \lambda_i = s_i^2 / n
-                    d = S[::-1] ** 2 / X.shape[0]
-                    # Rows of Vt are eigenvectors, but also in ascending
-                    # eigenvalue order:
-                    W = Vt[::-1].T
-
-                else:
-                    # PCA using an Eigenvalue decomposition
-                    C = np.transpose(X).dot(X)
-                    C = C / X.shape[0]
-                    [d, W] = eigh(C)
+                # PCA using an SVD
+                svd_args = [1, 0]
+                U, S, Vt = svd(X, *svd_args)[:3]
+                # Items in S are the eigenvalues, but in ascending order
+                # We invert the order (=> descending), square and normalize
+                # \lambda_i = s_i^2 / n
+                d = S[::-1] ** 2 / X.shape[0]
+                # Rows of Vt are eigenvectors, but also in ascending
+                # eigenvalue order:
+                W = Vt[::-1].T
 
                 if sigma is None:
                     # Random matrix theory
