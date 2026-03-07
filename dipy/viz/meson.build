@@ -5,6 +5,7 @@ python_sources = [
   'plotting.py',
   'projections.py',
   'regtools.py',
+  'sh_billboard.py',
   'streamline.py',
   ]
 
@@ -17,5 +18,6 @@ py3.install_sources(
 
 
 subdir('horizon')
-subdir('tests')
 subdir('skyline')
+subdir('tests')
+subdir('wgsl')
