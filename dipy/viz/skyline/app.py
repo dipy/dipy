@@ -30,6 +30,7 @@ class Skyline:
         is_light_version=False,
         glass_brain=False,
         bg_color=None,
+        tract_colors=None,
     ):
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
@@ -43,7 +44,14 @@ class Skyline:
         )
         if bg_color is None:
             bg_color = (1, 1, 1) if glass_brain else (0, 0, 0)
+        self._bg_color = bg_color
         self.window.screens[0].scene.background = bg_color
+
+        if tract_colors is None:
+            tract_colors = "direction"
+        elif isinstance(tract_colors, str) and len(tract_colors.split(" ")) == 3:
+            tract_colors = tuple(map(float, tract_colors.split(" ")))
+        self._tract_colors = tract_colors
 
         self._image_visualizations = []
         self._peak_visualizations = []
@@ -52,7 +60,6 @@ class Skyline:
         self._tractogram_visualizations = []
         self._is_cluster = is_cluster
         self._is_light_version = is_light_version
-        self._bg_color = bg_color
         self._glass_brain = glass_brain
         gpu_texture = load_image_as_wgpu_texture_view(str(LOGO), self.window.device)
         logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
@@ -190,6 +197,7 @@ class Skyline:
                 line_type="line" if self._is_light_version else "tube",
                 render_callback=self.before_render,
                 colormap=self._color_gen,
+                tract_colors=self._tract_colors,
             )
             self._add_visualization(tractogram3d)
 
@@ -236,6 +244,7 @@ def skyline_from_files(
     is_light_version=False,
     glass_brain=False,
     bg_color=None,
+    tract_colors=None,
 ):
     """Launch Skyline GUI from files.
 
@@ -264,6 +273,12 @@ def skyline_from_files(
         Define the background color of the scene. Colors can be defined with
         3 values and should be between [0-1].
         For example, a value of (0, 0, 0) would mean the black color.
+    tract_colors : variable float or str, optional
+        Define the colors of the tractograms. Colors can be defined with
+        3 values and should be between [0-1].
+        String options are 'random' for random colors for each tractogram,
+        'direction'  for directionally colored streamlines.
+        For example, a value of (1, 0, 0) would mean the red color.
     """
     loaded_files = load_files(fnames, rois=rois)
     return skyline(
@@ -276,6 +291,7 @@ def skyline_from_files(
         is_light_version=is_light_version,
         glass_brain=glass_brain,
         bg_color=bg_color,
+        tract_colors=tract_colors,
     )
 
 
@@ -291,6 +307,7 @@ def skyline(
     is_light_version=False,
     glass_brain=False,
     bg_color=None,
+    tract_colors=None,
 ):
     """Launch Skyline GUI.
 
@@ -325,6 +342,12 @@ def skyline(
         Define the background color of the scene. Colors can be defined with
         3 values and should be between [0-1].
         For example, a value of (0, 0, 0) would mean the black color.
+    tract_colors : variable float or str, optional
+        Define the colors of the tractograms. Colors can be defined with
+        3 values and should be between [0-1].
+        String options are 'random' for random colors for each tractogram,
+        'direction'  for directionally colored streamlines.
+        For example, a value of (1, 0, 0) would mean the red color.
     """
     return Skyline(
         visualizer_type=visualizer_type,
@@ -337,4 +360,5 @@ def skyline(
         is_light_version=is_light_version,
         glass_brain=glass_brain,
         bg_color=bg_color,
+        tract_colors=tract_colors,
     )
