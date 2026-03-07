@@ -4,6 +4,7 @@ python_sources = [
   'image.py',
   'peak.py',
   'roi.py',
+  'sh_slicer.py',
   'surface.py',
   'streamline.py'
   ]
