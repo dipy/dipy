@@ -4,7 +4,7 @@ BUAN bundle profiles
 ================================
 
 This example shows how to compute weighted mean bundle profiles using the BUAN
-tractometry :footcite:p:`Chandio2020a`:, :footcite:p:`chandio2024bundle`:.
+tractometry :footcite:p:`Chandio2020a`, :footcite:p:`chandio2024bundle`.
 
 The bundle is first divided into a set of along-tract segments by assigning
 each point on every streamline to its nearest model centroid. For each segment,
@@ -27,29 +27,29 @@ from dipy.stats.analysis import assignment_map, buan_profile
 from dipy.viz.plotting import bundle_profile_plot
 
 ###############################################################################
-## We use example data from a single subject selected from the PPMI dataset,
-## consisting of:
-
-## - ``AF_L_recognized_orig``: left arcuate fasciculus in native space,
-## - ``AF_L_recognized``: the same bundle transformed to MNI space,
-## - ``AF_L``: a model (template) arcuate fasciculus bundle in MNI space,
-## - ``fa.nii``: the subject’s fractional anisotropy (FA) map in native space.
-
-## Together, these files mirror a BUAN tractometry workflow: a subject-specific
-## bundle, its aligned representation in common space, a model bundle defining
-## the centroid for along-tract segmentation, and an along-tract scalar metric.
-## We use these to compute a weighted mean FA profile along the arcuate
-## fasciculus.
+# We use example data from a single subject selected from the PPMI dataset,
+# consisting of:
+#
+# - ``AF_L_recognized_orig``: left arcuate fasciculus in native space,
+# - ``AF_L_recognized``: the same bundle transformed to MNI space,
+# - ``AF_L``: a model (template) arcuate fasciculus bundle in MNI space,
+# - ``fa.nii``: the subject’s fractional anisotropy (FA) map in native space.
+#
+# Together, these files mirror a BUAN tractometry workflow: a subject-specific
+# bundle, its aligned representation in common space, a model bundle defining
+# the centroid for along-tract segmentation, and an along-tract scalar metric.
+# We use these to compute a weighted mean FA profile along the arcuate
+# fasciculus.
 
 ###############################################################################
-## Load example data
+# Load example data
 
 af_orig_file, af_mni_file, af_model_file, fa_file = get_fnames(
     name="buan_bundle_profiles"
 )
 
 
-## Load bundles
+# Load bundles
 sft_orig = load_tractogram(af_orig_file, reference="same", bbox_valid_check=False)
 orig_bundle = sft_orig.streamlines
 
@@ -59,13 +59,13 @@ bundle_mni = sft_mni.streamlines
 sft_model = load_tractogram(af_model_file, reference="same", bbox_valid_check=False)
 model_bundle = sft_model.streamlines
 
-## Load FA volume (native space)
+# Load FA volume (native space)
 fa_img = nib.load(fa_file)
 fa = fa_img.get_fdata()
 affine = fa_img.affine
 
 ###############################################################################
-## Visualize BUAN bundle segments along the length of the tract
+# Visualize BUAN bundle segments along the length of the tract
 
 interactive = False
 
@@ -95,7 +95,7 @@ if interactive:
     window.show(scene)
 
 ###############################################################################
-## Compute BUAN weighted mean bundle profile
+# Compute BUAN weighted mean bundle profile
 
 profile = buan_profile(
     model_bundle=model_bundle,
@@ -107,7 +107,7 @@ profile = buan_profile(
 )
 
 ###############################################################################
-## Plot the along-tract FA profile
+# Plot the along-tract FA profile
 
 x = np.arange(n_segments)
 bundle_profile_plot(
@@ -119,8 +119,8 @@ bundle_profile_plot(
 )
 
 ###############################################################################
-## References
-## ----------
-##
-## .. footbibliography::
-##
+# References
+# ----------
+#
+# .. footbibliography::
+#

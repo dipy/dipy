@@ -154,7 +154,7 @@ def buan_profile(model_bundle, bundle, orig_bundle, metric, affine, *, no_disks=
     """
     Create BUAN weighted mean bundle profiles (lite).
 
-    See :footcite:p:`Chandio2020a` and and :footcite:p:`chandio2024bundle`
+    See :footcite:p:`Chandio2020a` and :footcite:p:`chandio2024bundle`
     for further details about the method.
 
     Parameters
@@ -174,9 +174,10 @@ def buan_profile(model_bundle, bundle, orig_bundle, metric, affine, *, no_disks=
         Number of alongtract segments/disks used for dividing bundle into
         segments.
 
-     References
-     ----------
-     .. footbibliography::
+    References
+    ----------
+    .. footbibliography::
+
     """
 
     if len(model_bundle) == 0 or len(bundle) == 0 or len(orig_bundle) == 0:
