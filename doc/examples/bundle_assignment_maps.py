@@ -61,7 +61,7 @@ if interactive:
 rng = np.random.default_rng()
 
 n = 100
-indx = assignment_map(model_af_l, model_af_l, n)
+_, indx = assignment_map(model_af_l, model_af_l, n)
 indx = np.array(indx)
 
 colors = [rng.random(3) for si in range(n)]
