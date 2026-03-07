@@ -3,6 +3,7 @@ import time
 
 from fury import distinguishable_colormap
 from fury.actor import Group, streamlines, streamtube
+from fury.colormap import line_colors
 from imgui_bundle import imgui
 import numpy as np
 
@@ -22,6 +23,7 @@ def create_streamline_visualization(
     color=(1, 0, 0),
     render_callback=None,
     colormap=None,
+    tract_colors=None,
 ):
     """Create streamline visualization from input
 
@@ -43,6 +45,12 @@ def create_streamline_visualization(
         Callback function to be called after rendering.
     colormap : colormap, optional
         Colormap for clustering.
+    tract_colors : variable float or str, optional
+        Define the colors of the tractograms. Colors can be defined with
+        3 values and should be between [0-1].
+        String options are 'random' for random colors for each tractogram,
+        'direction'  for directionally colored streamlines.
+        For example, a value of (1, 0, 0) would mean the red color.
 
     Returns
     -------
@@ -72,6 +80,17 @@ def create_streamline_visualization(
             colormap=colormap,
         )
 
+    if tract_colors is not None:
+        if tract_colors == "random":
+            color = next(colormap)
+        elif tract_colors == "direction" or len(tract_colors) in [3, 4]:
+            color = tract_colors
+        else:
+            raise ValueError(
+                "Invalid tract_colors value. Must be 'random', 'direction', "
+                "or a tuple of 3 or 4 values."
+            )
+
     return Streamline3D(
         filename,
         sft,
@@ -82,6 +101,8 @@ def create_streamline_visualization(
 
 
 def create_streamline(lines, *, color=(1, 0, 0), line_type="line", segments=3):
+    if isinstance(color, str) and color == "direction":
+        color = line_colors(lines)
     if line_type == "tube":
         tubes = streamtube(
             lines=lines,
@@ -92,12 +113,17 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="line", segments=3):
         tubes.material.side = "front"
         return tubes
     elif line_type == "line":
-        return streamlines(
+        if len(color) == len(lines):
+            color = np.repeat(color, [len(line) for line in lines], axis=0)
+        lines = streamlines(
             lines=lines,
             colors=color,
-            thickness=1,
-            outline_thickness=1,
+            thickness=3,
+            outline_thickness=0.5,
+            outline_color=(0.15, 0.15, 0.15),
         )
+        lines.material.aa = True
+        return lines
 
 
 class Streamline3D(Visualization):
