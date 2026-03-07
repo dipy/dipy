@@ -79,6 +79,10 @@ class ROI3D(Visualization):
         self._roi_surface = contour_from_roi(
             self.roi, affine=self.affine, color=self.color, opacity=self.opacity / 100.0
         )
+        for actor in self._roi_surface.children:
+            actor.material.alpha_mode = "blend"
+            if self.opacity < 100:
+                actor.material.depth_write = False
 
     @property
     def actor(self):
@@ -98,3 +102,8 @@ class ROI3D(Visualization):
         if changed:
             self.opacity = new
             set_group_opacity(self._roi_surface, self.opacity / 100.0)
+            for actor in self._roi_surface.children:
+                if self.opacity < 100:
+                    actor.material.depth_write = False
+                else:
+                    actor.material.depth_write = True
