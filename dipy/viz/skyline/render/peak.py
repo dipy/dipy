@@ -1,7 +1,9 @@
 from pathlib import Path
 
 from fury.actor import peaks_slicer
+from fury.transform import apply_transformation
 from imgui_bundle import imgui
+import numpy as np
 
 from dipy.viz.skyline.UI.elements import render_group, thin_slider
 from dipy.viz.skyline.render.renderer import Visualization
@@ -11,7 +13,6 @@ def create_peak_visualization(
     input,
     idx,
     *,
-    peak_values=1.0,
     opacity=100,
     render_callback=None,
 ):
@@ -23,8 +24,6 @@ def create_peak_visualization(
         Tuple of the (pam, filename) or (pam,)
     idx : int
         Index of the peak for naming purposes if filename is not provided.
-    peak_values : float or ndarray, optional
-        Peak values to use for scaling.
     opacity : int, optional
         Opacity of the peak rendering.
     render_callback : callable, optional
@@ -52,7 +51,7 @@ def create_peak_visualization(
         filename,
         pam.peak_dirs,
         affine=pam.affine,
-        peak_values=peak_values,
+        peak_values=pam.peak_values,
         opacity=opacity,
         render_callback=render_callback,
     )
@@ -83,7 +82,14 @@ class Peak3D(Visualization):
             peak_values=self.peak_values,
         )
         self.state = self._slicer.cross_section
-        self.bounds = self._slicer.bounds
+        lower_bounds = np.zeros(3)
+        upper_bounds = np.array(self.peaks.shape[:3]) - 1
+        if self.affine is not None:
+            self.bounds = apply_transformation(
+                np.array([lower_bounds, upper_bounds]), self.affine
+            )
+        else:
+            self.bounds = np.asarray([lower_bounds, upper_bounds])
 
     @property
     def actor(self):
