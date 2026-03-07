@@ -285,7 +285,7 @@ def bundlewarp_shape_analysis(
         moving_aligned, deformed_bundle
     )
 
-    indx = assignment_map(deformed_bundle, deformed_bundle, n)
+    _, indx = assignment_map(deformed_bundle, deformed_bundle, n)
     indx = np.array(indx)
 
     rng = np.random.default_rng()
