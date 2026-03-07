@@ -58,7 +58,7 @@ def load_files(fnames, rois=None):
     skyline_tractograms = []
 
     for fname in fnames:
-        logger.info(f"Loading file ... \n {fname}\n")
+        logger.info(f"Loading file ... \n{fname}\n")
         _, ext = split_filename_extension(fname)
         ext = ext.lower()
 

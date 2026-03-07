@@ -10,6 +10,33 @@ from imgui_bundle import (
 from dipy.viz.skyline.UI.theme import ASSETS, FONT, THEME
 
 
+def render_file_dialog(
+    *,
+    title="Select File(s)",
+    name="All File(s)",
+    extensions="*.*",
+    multiselect=True,
+    callback=None,
+    type="viz",
+):
+    dialog = pfd.open_file(
+        title,
+        str(Path("~").expanduser() / ".dipy"),
+        [name, extensions],
+        pfd.opt.multiselect if multiselect else pfd.opt.none,
+    )
+    if dialog.result():
+        selected_files = dialog.result()
+        if callback is not None:
+            if type == "viz":
+                callback(filenames=selected_files)
+            elif type == "roi":
+                callback(rois=selected_files)
+    if dialog.kill():
+        if callback is not None:
+            callback(filenames=None)
+
+
 class UIManager:
     def __init__(self):
         self.windows = {}
@@ -122,59 +149,60 @@ class UIWindow:
         if imgui.is_item_hovered():
             imgui.set_item_tooltip("Add Visualization")
         if imgui.is_item_clicked(imgui.MouseButton_.left):
-            if not self._is_dialog_open:
-                self._is_dialog_open = True
-                dialog = pfd.open_file(
-                    "Select file(s)",
-                    str(Path("~").expanduser() / ".dipy"),
-                    [
-                        "Visualization Files",
-                        "*.nii *.nii.gz *.trx *.trk *.tck *.fib *.dpy *.vtp *.vtk",
-                        "*.pam5 *.pial *.gii *.gii.gz",
-                    ],
-                )
-                if dialog.result():
-                    selected_files = dialog.result()
-                    self.file_dialog_callback(filenames=selected_files)
-                    self._is_dialog_open = False
-                if dialog.kill():
-                    self._is_dialog_open = False
+            imgui.open_popup("my_popup")
 
-        roi_icon = icons_fontawesome_6.ICON_FA_CROSSHAIRS
-        roi_icon_size = imgui.calc_text_size(roi_icon)
-        roi_icon_pos = (
-            file_icon_pos[0] + file_icon_size[0] + spacing,
-            file_icon_pos[1],
-        )
-        draw_list.add_text(roi_icon_pos, text_color, roi_icon)
-        imgui.set_cursor_screen_pos(roi_icon_pos)
-        imgui.invisible_button("add_roi", roi_icon_size)
-        if imgui.is_item_hovered():
-            imgui.set_item_tooltip("Add ROI")
-        if imgui.is_item_clicked(imgui.MouseButton_.left):
-            if not self._is_dialog_open:
+        if imgui.begin_popup("my_popup"):
+            if imgui.menu_item("3D/4D Images", "", False)[0]:
                 self._is_dialog_open = True
-                dialog = pfd.open_file(
-                    "Select ROI(s)",
-                    str(Path("~").expanduser() / ".dipy"),
-                    [
-                        "ROI Files",
-                        "*.nii *.nii.gz",
-                    ],
+                render_file_dialog(
+                    title="Select Image File(s)",
+                    name="Image Files (*.nii *.nii.gz)",
+                    extensions="*.nii *.gz",
+                    callback=self.file_dialog_closed,
+                    type="viz",
                 )
-                if dialog.result():
-                    selected_files = dialog.result()
-                    self.file_dialog_callback(rois=selected_files)
-                    self._is_dialog_open = False
-                if dialog.kill():
-                    self._is_dialog_open = False
 
-        cluster_icon = icons_fontawesome_6.ICON_FA_CIRCLE_NODES
-        cluster_icon_size = imgui.calc_text_size(cluster_icon)
-        cluster_icon_pos = (
-            file_icon_pos[0] + file_icon_size[0] + spacing,
-            file_icon_pos[1],
-        )
+            if imgui.menu_item("Peaks", "", False)[0]:
+                self._is_dialog_open = True
+                render_file_dialog(
+                    title="Select Peak File(s)",
+                    name="Peak Files (*.pam5)",
+                    extensions="*.pam5",
+                    callback=self.file_dialog_closed,
+                    type="viz",
+                )
+
+            if imgui.menu_item("Surfaces", "", False)[0]:
+                self._is_dialog_open = True
+                render_file_dialog(
+                    title="Select Surface File(s)",
+                    name="Surface Files (*.pial *.gii *.gii.gz)",
+                    extensions="*.pial *.gii *.gz",
+                    callback=self.file_dialog_closed,
+                    type="viz",
+                )
+
+            if imgui.menu_item("Tractograms", "", False)[0]:
+                self._is_dialog_open = True
+                render_file_dialog(
+                    title="Select Tractogram File(s)",
+                    name="Tractogram Files (*.trx *.trk *.tck *.fib *.dpy *.vtp *.vtk)",
+                    extensions="*.trx *.trk *.tck *.fib *.dpy *.vtp *.vtk",
+                    callback=self.file_dialog_closed,
+                    type="viz",
+                )
+
+            if imgui.menu_item("ROIs", "", False)[0]:
+                self._is_dialog_open = True
+                render_file_dialog(
+                    title="Select ROI File(s)",
+                    name="ROI Files (*.nii *.nii.gz)",
+                    extensions="*.nii *.gz",
+                    callback=self.file_dialog_closed,
+                    type="roi",
+                )
+
+            imgui.end_popup()
 
         imgui.set_cursor_screen_pos(org_start)
         imgui.dummy((available_width, self.logo_size[1] + spacing * 5 + 1))
@@ -200,3 +228,8 @@ class UIWindow:
     @property
     def section_open_states(self):
         return self._section_open
+
+    def file_dialog_closed(self, *, filenames=None, rois=None):
+        self._is_dialog_open = False
+        if self.file_dialog_callback is not None:
+            self.file_dialog_callback(filenames=filenames, rois=rois)
