@@ -1,0 +1,260 @@
+name: ASV Continuous Benchmarks
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_branch:
+        description: Base branch to compare against
+        required: false
+        default: master
+  pull_request_target:
+    types: [labeled]
+
+permissions: {}
+
+concurrency:
+  group: asv-bench-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  asv-continuous:
+    name: ASV continuous
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request_target' &&
+       github.event.action == 'labeled' &&
+       github.event.label.name == 'run-benchmark')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    outputs:
+      base_rev: ${{ steps.revs.outputs.base_rev }}
+      head_rev: ${{ steps.revs.outputs.head_rev }}
+
+    permissions:
+      contents: read
+      actions: write
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: dipy
+
+    env:
+      CCACHE_DIR: ~/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}/dipy
+      CCACHE_COMPRESS: "true"
+      CCACHE_MAXSIZE: 500M
+      CC: ccache gcc
+      CXX: ccache g++
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ (github.event_name == 'pull_request_target' && github.event.pull_request.head.sha) || github.sha }}
+          repository: ${{ (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name) || github.repository }}
+
+      - name: Fetch base branch
+        run: |
+          BASE_BRANCH="${{ (github.event_name == 'pull_request_target' && github.event.pull_request.base.ref) || inputs.base_branch || 'master' }}"
+          echo "BASE_BRANCH=$BASE_BRANCH" >> "$GITHUB_ENV"
+          git remote add upstream "https://github.com/${{ github.repository }}.git" 2>/dev/null || true
+          git fetch --no-tags --prune upstream "$BASE_BRANCH":"refs/remotes/upstream/$BASE_BRANCH"
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-py311-${{ hashFiles('dipy/pyproject.toml', 'dipy/meson.build', 'dipy/src/**', 'dipy/dipy/**', 'dipy/benchmarks/**') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-py311-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ccache
+          ccache --version
+          ccache -M "$CCACHE_MAXSIZE"
+          ccache -z
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install benchmark runner dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/benchmark.txt
+
+      - name: Set threading parameters for reliable benchmarking
+        run: |
+          echo "OPENBLAS_NUM_THREADS=1" >> $GITHUB_ENV
+          echo "MKL_NUM_THREADS=1" >> $GITHUB_ENV
+          echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
+
+      - name: Generate ASV compare config
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          template_path = Path('benchmarks/asv_compare.conf.json.tpl')
+          output_path = Path('benchmarks/asv_compare.conf.json')
+
+          text = template_path.read_text(encoding='utf-8')
+          text = text.replace('{dipy_build_options}', '--wheel -o {build_cache_dir} {build_dir}')
+          text = text.replace('{dipy_global_options}', '')
+          output_path.write_text(text, encoding='utf-8')
+
+          print(f'Wrote {output_path}')
+          PY
+
+      - name: Compute comparison revs
+        id: revs
+        run: |
+          BASE_BRANCH="${BASE_BRANCH:-master}"
+          BASE_REV="upstream/${BASE_BRANCH}"
+          HEAD_REV="${{ (github.event_name == 'pull_request_target' && github.event.pull_request.head.sha) || github.sha }}"
+
+          echo "BASE_REV=$BASE_REV" >> "$GITHUB_ENV"
+          echo "HEAD_REV=$HEAD_REV" >> "$GITHUB_ENV"
+
+          echo "base_rev=$BASE_REV" >> "$GITHUB_OUTPUT"
+          echo "head_rev=$HEAD_REV" >> "$GITHUB_OUTPUT"
+
+      - name: Run ASV continuous and compare
+        run: |
+          asv machine --yes --config benchmarks/asv_compare.conf.json
+
+          asv continuous --config benchmarks/asv_compare.conf.json "$BASE_REV" "$HEAD_REV" --verbose | tee asv_continuous.txt
+          asv compare --config benchmarks/asv_compare.conf.json "$BASE_REV" "$HEAD_REV" --factor 1.1 | tee asv_compare.txt
+
+          ccache -s
+
+      - name: Upload ASV outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asv-compare
+          if-no-files-found: warn
+          path: |
+            dipy/asv_continuous.txt
+            dipy/asv_compare.txt
+
+  comment:
+    name: Comment on PR
+    needs: asv-continuous
+    if: |
+      always() &&
+      github.event_name == 'pull_request_target' &&
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'run-benchmark'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+
+    steps:
+      - name: Download ASV outputs
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: asv-compare
+          path: asv-artifact
+
+      - name: Comment benchmark results on PR
+        uses: actions/github-script@v7
+        env:
+          BASE_REV: ${{ needs.asv-continuous.outputs.base_rev }}
+          HEAD_REV: ${{ needs.asv-continuous.outputs.head_rev }}
+          ASV_JOB_RESULT: ${{ needs.asv-continuous.result }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const marker = '<!-- dipy-asv-continuous -->';
+            const artifactDir = path.join(process.env.GITHUB_WORKSPACE, 'asv-artifact');
+            const comparePath = path.join(artifactDir, 'asv_compare.txt');
+            const continuousPath = path.join(artifactDir, 'asv_continuous.txt');
+
+            const maxLen = 60000;
+            let compareText = '';
+            if (fs.existsSync(comparePath)) {
+              compareText = fs.readFileSync(comparePath, 'utf8');
+              if (compareText.length > maxLen) {
+                compareText = compareText.slice(0, maxLen) + '\n\n[truncated]\n';
+              }
+            }
+
+            let continuousTail = '';
+            if (!compareText && fs.existsSync(continuousPath)) {
+              const txt = fs.readFileSync(continuousPath, 'utf8');
+              const lines = txt.split(/\r?\n/);
+              continuousTail = lines.slice(-80).join('\n').trimEnd();
+              if (continuousTail.length > maxLen) {
+                continuousTail = continuousTail.slice(0, maxLen) + '\n\n[truncated]\n';
+              }
+            }
+
+            const baseRev = process.env.BASE_REV || 'upstream/master';
+            const headRev = process.env.HEAD_REV || 'HEAD';
+            const result = process.env.ASV_JOB_RESULT || 'unknown';
+
+            const header = [
+              marker,
+              '## ASV benchmark comparison',
+              `Status: **${result}**`,
+              `Base: \`${baseRev}\``,
+              `Contender: \`${headRev}\``,
+              '',
+            ].join('\n');
+
+            let details = '';
+            if (compareText) {
+              details = ['```', compareText.trimEnd(), '```'].join('\n');
+            } else if (continuousTail) {
+              details = [
+                '_`asv compare` output was not produced; showing tail of `asv continuous` log._',
+                '```',
+                continuousTail,
+                '```',
+              ].join('\n');
+            } else {
+              details = '_Benchmark outputs were not available (job may have failed before producing artifacts)._';
+            }
+
+            const body = [header, details].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+
+            const existing = comments.find(c => (c.body || '').includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }

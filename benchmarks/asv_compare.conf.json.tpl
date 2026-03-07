@@ -47,6 +47,7 @@
     // version.
     "matrix": {
         "Cython": [],
+        "build": [],
         "setuptools": ["59.2.0"],
         "packaging": []
     },
