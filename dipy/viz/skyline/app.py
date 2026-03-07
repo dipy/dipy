@@ -84,6 +84,10 @@ class Skyline:
             self._arrange_image_actors()
         self.window._imgui.set_gui(self.draw_ui)
         self.before_render()
+        # self.window.show_axes_gizmo(
+        #     labels=["L", "R", "P", "A", "S", "I"],
+        #     click_callback=self.update_camera_from_axis,
+        # )
         self.window.start()
 
     def _refresh_actors(self):
