@@ -81,6 +81,7 @@ class UIWindow:
         imgui.push_style_color(
             imgui.Col_.window_bg, imgui.get_color_u32(THEME["background"])
         )
+        self.request_file_dialog = False
 
     def add(self, name, section_renderer):
         self._sections[name] = section_renderer
@@ -148,11 +149,14 @@ class UIWindow:
         imgui.invisible_button("add_visualization", file_icon_size)
         if imgui.is_item_hovered():
             imgui.set_item_tooltip("Add Visualization")
-        if imgui.is_item_clicked(imgui.MouseButton_.left):
+        if imgui.is_item_clicked(imgui.MouseButton_.left) or self.request_file_dialog:
             imgui.open_popup("my_popup")
 
         if imgui.begin_popup("my_popup"):
+            imgui.text("Select Visualization Type")
+            imgui.separator()
             if imgui.menu_item("3D/4D Images", "", False)[0]:
+                self.request_file_dialog = False
                 self._is_dialog_open = True
                 render_file_dialog(
                     title="Select Image File(s)",
@@ -163,6 +167,7 @@ class UIWindow:
                 )
 
             if imgui.menu_item("Peaks", "", False)[0]:
+                self.request_file_dialog = False
                 self._is_dialog_open = True
                 render_file_dialog(
                     title="Select Peak File(s)",
@@ -173,6 +178,7 @@ class UIWindow:
                 )
 
             if imgui.menu_item("Surfaces", "", False)[0]:
+                self.request_file_dialog = False
                 self._is_dialog_open = True
                 render_file_dialog(
                     title="Select Surface File(s)",
@@ -183,6 +189,7 @@ class UIWindow:
                 )
 
             if imgui.menu_item("Tractograms", "", False)[0]:
+                self.request_file_dialog = False
                 self._is_dialog_open = True
                 render_file_dialog(
                     title="Select Tractogram File(s)",
@@ -193,6 +200,7 @@ class UIWindow:
                 )
 
             if imgui.menu_item("ROIs", "", False)[0]:
+                self.request_file_dialog = False
                 self._is_dialog_open = True
                 render_file_dialog(
                     title="Select ROI File(s)",
