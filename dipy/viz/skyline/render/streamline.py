@@ -100,13 +100,13 @@ def create_streamline_visualization(
     )
 
 
-def create_streamline(lines, *, color=(1, 0, 0), line_type="line", segments=3):
+def create_streamline(lines, *, color=(1, 0, 0), line_type="line", segments=4):
     if isinstance(color, str) and color == "direction":
         color = line_colors(lines)
     if line_type == "tube":
         tubes = streamtube(
             lines=lines,
-            radius=0.2,
+            radius=0.5,
             colors=color,
             segments=segments,
         )
