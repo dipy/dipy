@@ -288,14 +288,6 @@ def bundlewarp_shape_analysis(
     _, indx = assignment_map(deformed_bundle, deformed_bundle, n)
     indx = np.array(indx)
 
-    rng = np.random.default_rng()
-
-    colors = rng.random((n, 3))
-
-    disks_color = []
-    for _, ind in enumerate(indx):
-        disks_color.append(tuple(colors[ind]))
-
     x = np.array(range(1, n + 1))
     shape_profile = np.zeros(n)
     stdv = np.zeros(n)

@@ -193,8 +193,7 @@ def buan_profile(model_bundle, bundle, orig_bundle, metric, affine, *, no_disks=
     weights = 1 / (dist + epsilon)
 
     for i in range(no_disks):
-        mask = ind == i
-        valid_mask = mask.copy()
+        valid_mask = ind == i
         valid_mask[np.isnan(values)] = False
 
         if np.any(valid_mask):
