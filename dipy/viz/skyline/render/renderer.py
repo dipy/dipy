@@ -41,7 +41,10 @@ class Visualization:
             type = "peak"
         elif self.__class__.__name__ == "ROI3D":
             type = "roi"
-        elif self.__class__.__name__ == "Streamline3D":
+        elif (
+            self.__class__.__name__ == "Streamline3D"
+            or self.__class__.__name__ == "ClusterStreamline3D"
+        ):
             type = "tractography"
         else:
             logger.warning(
@@ -143,7 +146,7 @@ def create_window(
             screen_config=screen_config,
             imgui=True,
             imgui_draw_function=lambda: None,
-            pixel_ratio=1.5,
+            pixel_ratio=1.25,
         )
     else:
         show_m = window.ShowManager(
@@ -151,7 +154,7 @@ def create_window(
             size=size,
             window_type=window_type,
             screen_config=screen_config,
-            pixel_ratio=1.5,
+            pixel_ratio=1.25,
             imgui=False,
         )
 
