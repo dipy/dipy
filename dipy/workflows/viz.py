@@ -300,7 +300,6 @@ class SkylineFlow(Workflow):
     def run(
         self,
         input_files,
-        *,
         rois=None,
         cluster=False,
         light_version=False,
@@ -312,7 +311,7 @@ class SkylineFlow(Workflow):
 
         Parameters
         ----------
-        input_files : variable str, optional
+        input_files : variable str
             Tuple of path for each image, peak, surface or tractogram to be added to
             the Skyline viewer.
         rois : variable str, optional
@@ -338,11 +337,11 @@ class SkylineFlow(Workflow):
             For example, a value of (1, 0, 0) would mean the red color.
         """
         super(SkylineFlow, self).__init__(force=True)
-
-        io_it = self.get_io_iterator()
+        if input_files is None or input_files[0] == "start":
+            input_files = []
 
         skyline_from_files(
-            io_it,
+            input_files,
             rois=rois,
             is_cluster=cluster,
             is_light_version=light_version,
