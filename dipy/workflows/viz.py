@@ -306,6 +306,7 @@ class SkylineFlow(Workflow):
         light_version=False,
         glass_brain=False,
         bg_color=None,
+        tract_colors=None,
     ):
         """Launch Skyline GUI.
 
@@ -329,6 +330,12 @@ class SkylineFlow(Workflow):
             Define the background color of the scene. Colors can be defined with
             3 values and should be between [0-1].
             For example, a value of (0, 0, 0) would mean the black color.
+        tract_colors : str, optional
+            Define the colors of the tractograms. Colors can be defined with
+            3 values and should be between [0-1].
+            String options are 'random' for random colors for each tractogram,
+            'direction'  for directionally colored streamlines.
+            For example, a value of (1, 0, 0) would mean the red color.
         """
         super(SkylineFlow, self).__init__(force=True)
 
@@ -341,4 +348,5 @@ class SkylineFlow(Workflow):
             is_light_version=light_version,
             glass_brain=glass_brain,
             bg_color=bg_color,
+            tract_colors=tract_colors,
         )
