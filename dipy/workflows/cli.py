@@ -31,6 +31,7 @@ cli_flows = {
     "dipy_fetch": ("dipy.workflows.io", "FetchFlow"),
     "dipy_fit_csa": ("dipy.workflows.reconst", "ReconstQBallBaseFlow"),
     "dipy_fit_csd": ("dipy.workflows.reconst", "ReconstCSDFlow"),
+    "dipy_fit_msmtcsd": ("dipy.workflows.reconst", "ReconstMSMTCSDFlow"),
     "dipy_fit_dki": ("dipy.workflows.reconst", "ReconstDkiFlow"),
     "dipy_fit_dti": ("dipy.workflows.reconst", "ReconstDtiFlow"),
     "dipy_fit_dsi": ("dipy.workflows.reconst", "ReconstDsiFlow"),

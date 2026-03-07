@@ -8,6 +8,7 @@ python_sources = [
   'test_masking.py',
   'test_nn.py',
   'test_reconst_csa_csd.py',
+  'test_reconst_msmtcsd.py',
   'test_reconst_dki.py',
   'test_reconst_dti.py',
   'test_reconst_dsi.py',
