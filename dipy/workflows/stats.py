@@ -251,7 +251,7 @@ def buan_bundle_profiles(
         ).streamlines
 
         if len(orig_bundles) > 5:
-            indx = assignment_map(bundles, mbundles, no_disks)
+            _, indx = assignment_map(bundles, mbundles, no_disks)
             ind = np.array(indx)
 
             metric_files_names_dti = list(Path(metric_folder).glob("*.nii.gz"))
