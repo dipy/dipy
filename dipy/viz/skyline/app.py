@@ -1,6 +1,7 @@
 from fury.actor import Actor, show_slices
 from fury.colormap import distinguishable_colormap
 from fury.io import load_image_as_wgpu_texture_view
+from fury.window import update_camera
 
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO
@@ -205,6 +206,9 @@ class Skyline:
             )
             self._add_visualization(tractogram3d)
 
+        if len(self.visualizations) == 0:
+            self.UI_window.request_file_dialog = True
+
     def _append_visualization(self, *, filenames=None, rois=None):
         loaded_files = load_files(filenames, rois=rois)
         self._load_visualiations(
@@ -214,6 +218,7 @@ class Skyline:
             loaded_files["surfaces"],
             loaded_files["tractograms"],
         )
+        update_camera(self.window.screens[0].camera, None, self.window.screens[0].scene)
         self.before_render()
 
     def _remove_visualization(self, viz):
@@ -229,6 +234,9 @@ class Skyline:
             self._tractogram_visualizations.remove(viz)
         else:
             raise ValueError("Unsupported visualization type")
+
+        if len(self.visualizations) == 0:
+            self.UI_window.request_file_dialog = True
 
     @property
     def visualizations(self):
