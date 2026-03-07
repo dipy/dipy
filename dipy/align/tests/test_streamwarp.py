@@ -76,7 +76,7 @@ def test_bundle_shape_profile():
 
     n = 10
     shape_profile, stdv = bundlewarp_shape_analysis(
-        affine_bundle, deformed_bundle, no_disks=n
+        Streamlines(affine_bundle), Streamlines(deformed_bundle), no_disks=n
     )
 
     assert_equal(len(shape_profile), n)

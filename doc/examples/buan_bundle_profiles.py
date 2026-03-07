@@ -4,7 +4,7 @@ BUAN bundle profiles
 ================================
 
 This example shows how to compute weighted mean bundle profiles using the BUAN
-tractometry :footcite:p:`Chandio2020a`, :footcite:p:`chandio2024bundle`.
+tractometry :footcite:p:`Chandio2020a`:, :footcite:p:`chandio2024bundle`:.
 
 The bundle is first divided into a set of along-tract segments by assigning
 each point on every streamline to its nearest model centroid. For each segment,
