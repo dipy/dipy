@@ -138,6 +138,8 @@ def render_section_header(
         type_icon = icons_fontawesome_6.ICON_FA_STAR_OF_LIFE
     elif type == "tractography":
         type_icon = icons_fontawesome_6.ICON_FA_BACON
+    elif type == "sh_glyph":
+        type_icon = icons_fontawesome_6.ICON_FA_ATOM
     else:
         type_icon = icons_fontawesome_6.ICON_FA_CUBES
     type_icon_size = imgui.calc_text_size(type_icon)
