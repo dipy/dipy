@@ -76,13 +76,9 @@ class Skyline:
         self.window.resize_callback(self.handle_resize)
         self._color_gen = distinguishable_colormap()
 
+        self.active_image = None
         self._load_visualiations(images, peaks, rois, surfaces, tractograms)
 
-        self.active_image = None
-        if self._image_visualizations:
-            self._image_visualizations[-1].active = True
-            self.active_image = self._image_visualizations[-1]
-            self._arrange_image_actors()
         self.window._imgui.set_gui(self.draw_ui)
         self.before_render()
         # self.window.show_axes_gizmo(
@@ -166,11 +162,15 @@ class Skyline:
                 input,
                 idx,
                 render_callback=self.before_render,
+                sync_callabck=self._synchronize_visualizations,
             )
             self._add_visualization(image3d)
         for idx, input in enumerate(peaks):
             peak3d = create_peak_visualization(
-                input, idx, render_callback=self.before_render
+                input,
+                idx,
+                render_callback=self.before_render,
+                sync_callabck=self._synchronize_visualizations,
             )
             self._add_visualization(peak3d)
         for idx, input in enumerate(rois):
@@ -206,6 +206,11 @@ class Skyline:
             )
             self._add_visualization(tractogram3d)
 
+        if self._image_visualizations:
+            self._image_visualizations[-1].active = True
+            self.active_image = self._image_visualizations[-1]
+            self._arrange_image_actors()
+
         if len(self.visualizations) == 0:
             self.UI_window.request_file_dialog = True
 
@@ -237,6 +242,13 @@ class Skyline:
 
         if len(self.visualizations) == 0:
             self.UI_window.request_file_dialog = True
+
+    def _synchronize_visualizations(self, source_viz, new_state):
+        for viz in self.visualizations:
+            if viz is not source_viz and isinstance(viz, (Image3D, Peak3D)):
+                viz.update_state(new_state)
+        self._arrange_image_actors()
+        self.window.render()
 
     @property
     def visualizations(self):

@@ -5,7 +5,7 @@ from fury.transform import apply_transformation
 from imgui_bundle import imgui
 import numpy as np
 
-from dipy.viz.skyline.UI.elements import render_group, thin_slider
+from dipy.viz.skyline.UI.elements import render_group, thin_slider, toggle_button
 from dipy.viz.skyline.render.renderer import Visualization
 
 
@@ -15,6 +15,7 @@ def create_peak_visualization(
     *,
     opacity=100,
     render_callback=None,
+    sync_callabck=None,
 ):
     """Create peak visualization from input
 
@@ -28,6 +29,8 @@ def create_peak_visualization(
         Opacity of the peak rendering.
     render_callback : callable, optional
         Callback function to be called after rendering.
+    sync_callabck : callable, optional
+        Callback function to synchronize slice positions across visualizations.
 
     Returns
     -------
@@ -54,6 +57,7 @@ def create_peak_visualization(
         peak_values=pam.peak_values,
         opacity=opacity,
         render_callback=render_callback,
+        sync_callabck=sync_callabck,
     )
 
 
@@ -67,12 +71,15 @@ class Peak3D(Visualization):
         peak_values=1.0,
         opacity=100,
         render_callback=None,
+        sync_callabck=None,
     ):
         super().__init__(name, render_callback)
         self.peaks = peaks
         self.affine = affine
         self.peak_values = peak_values
         self.opacity = opacity
+        self._synchronize = True
+        self._sync_callabck = sync_callabck
         self._create_peak_actor()
 
     def _create_peak_actor(self):
@@ -95,7 +102,16 @@ class Peak3D(Visualization):
     def actor(self):
         return self._slicer
 
+    def update_state(self, new_state):
+        if self._synchronize:
+            self.state = new_state
+            self._slicer.cross_section = self.state
+
     def render_widgets(self):
+        changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
+        if changed:
+            self._synchronize = new
+
         changed, new = thin_slider(
             "Opacity",
             self.opacity,
@@ -136,4 +152,5 @@ class Peak3D(Visualization):
             if changed:
                 self.state[idx] = new
                 self._slicer.cross_section = self.state
+                self._synchronize and self._sync_callabck(self, self.state)
         imgui.spacing()
