@@ -15,6 +15,7 @@ from dipy.viz.skyline.UI.elements import (
     render_group,
     segmented_switch,
     thin_slider,
+    toggle_button,
     two_disk_slider,
 )
 from dipy.viz.skyline.UI.theme import THEME
@@ -31,6 +32,7 @@ def create_image_visualization(
     rgb=False,
     value_percentiles=(2, 98),
     colormap="Gray",
+    sync_callabck=None,
 ):
     """Create image visualization from input
 
@@ -55,6 +57,8 @@ def create_image_visualization(
     colormap : str, optional
         The colormap to use for rendering. Options include "Gray", "Inferno", "Magma",
         "Plasma", and "Viridis". This parameter is ignored if rgb=True.
+    sync_callabck : callable, optional
+        Callback function to synchronize slice positions across visualizations.
 
     Returns
     -------
@@ -90,6 +94,7 @@ def create_image_visualization(
         rgb=rgb,
         value_percentiles=value_percentiles,
         colormap=colormap,
+        sync_callabck=sync_callabck,
     )
 
 
@@ -106,6 +111,7 @@ class Image3D(Visualization):
         rgb=False,
         value_percentiles=(2, 98),
         colormap="Gray",
+        sync_callabck=None,
     ):
         self.dwi = volume
         self.affine = affine
@@ -131,6 +137,8 @@ class Image3D(Visualization):
         self._picked_voxel = None
         self._picked_intensity = None
         self._slice_visibility = [True, True, True]
+        self._synchronize = True
+        self._sync_callabck = sync_callabck
         super().__init__(name, render_callback)
 
         self._create_slicer_actor()
@@ -205,7 +213,17 @@ class Image3D(Visualization):
             info += f"\nAffine:\n{self.affine}"
         return info
 
+    def update_state(self, new_state):
+        if self._synchronize:
+            self.state = new_state
+            show_slices(self._slicer, self.state)
+
     def render_widgets(self):
+        changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
+        if changed:
+            print(f"Synchronize set to {new}")
+            self._synchronize = new
+
         changed, new = thin_slider(
             "Opacity",
             self.opacity,
@@ -248,6 +266,7 @@ class Image3D(Visualization):
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
                 self.state[idx] = new
+                self._synchronize and self._sync_callabck(self, self.state)
             self._slice_visibility[idx] = toggle
             set_group_visibility(self._slicer, self._slice_visibility)
             show_slices(self._slicer, self.state)
