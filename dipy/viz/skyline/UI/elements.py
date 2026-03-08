@@ -37,6 +37,40 @@ def _calculate_hit_box(pos, size, padding=4):
     return min_pos, max_pos
 
 
+def toggle_button(value, *, label=""):
+    """Render a toggle button with an icon indicating the on/off state.
+
+    Parameters
+    ----------
+    value : bool
+        Current state of the toggle.
+    label : str
+        Text rendered next to the toggle button.
+
+    Returns
+    -------
+    tuple
+        The tuple of the state (changed, value).
+    """
+
+    if label and label != "":
+        imgui.text_colored(THEME["text"], label)
+        imgui.same_line(0, 8)
+
+    prev_value = value
+    toggle_icon = (
+        icons_fontawesome_6.ICON_FA_TOGGLE_ON
+        if value
+        else icons_fontawesome_6.ICON_FA_TOGGLE_OFF
+    )
+    toggle_color = THEME["primary"] if value else THEME["text"]
+    imgui.text_colored(toggle_color, toggle_icon)
+    if imgui.is_item_clicked():
+        value = not value
+
+    return prev_value != value, value
+
+
 def render_section_header(
     label,
     *,
@@ -101,7 +135,7 @@ def render_section_header(
     elif type == "surface":
         type_icon = icons_fontawesome_6.ICON_FA_GLOBE
     elif type == "peak":
-        type_icon = icons_fontawesome_6.ICON_FA_MOUNTAIN
+        type_icon = icons_fontawesome_6.ICON_FA_STAR_OF_LIFE
     elif type == "tractography":
         type_icon = icons_fontawesome_6.ICON_FA_BACON
     else:
