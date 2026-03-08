@@ -196,6 +196,10 @@ def render_section_header(
             trimmed_label = trimmed_label[:-1]
         display_text = trimmed_label.rstrip()
         display_text += ellipsis_text
+        label_min, label_max = _calculate_hit_box(label_pos, label_size)
+        label_hovered = imgui.is_mouse_hovering_rect(label_min, label_max)
+        if label_hovered:
+            imgui.set_tooltip(label)
 
     draw_list.add_text(label_pos, color, display_text)
 
