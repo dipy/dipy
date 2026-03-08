@@ -3,8 +3,9 @@
 import numpy as np
 
 from fury.actor import Group
-from imgui_bundle import imgui
+from imgui_bundle import icons_fontawesome_6, imgui
 
+from dipy.reconst.shm import convert_sh_to_full_basis
 from dipy.viz.sh_billboard import sph_glyph_billboard
 from dipy.viz.skyline.UI.elements import render_group, thin_slider
 from dipy.viz.skyline.render.renderer import Visualization
@@ -50,6 +51,11 @@ class SHSlicer:
         basis_type="standard",
         color_type="orientation",
     ):
+        # Auto-convert descoteaux (even-order-only) basis to standard (full)
+        if basis_type in ("descoteaux", "descoteaux07"):
+            coeffs_4d = convert_sh_to_full_basis(coeffs_4d)
+            basis_type = "standard"
+        
         self.coeffs_4d = coeffs_4d
         self.shape = coeffs_4d.shape[:3]
         self.n_coeffs = coeffs_4d.shape[-1]
@@ -199,7 +205,7 @@ class SHSlicer:
             for a in actors:
                 if a is not None:
                     a.material.opacity = float(opacity)
-                    a.material.alpha_mode = "blend" if blend else "opaque"
+                    a.material.alpha_mode = "blend" if blend else "solid"
 
 
 class SHGlyph3D(Visualization):
@@ -323,7 +329,6 @@ class SHGlyph3D(Visualization):
                 if voxel[i] != self._last_voxel[i]:
                     self._slicer.set_slice(axis, voxel[i])
                     self._last_voxel[i] = voxel[i]
-                self._slicer.slide_to(axis, state[i])
             else:
                 self._slicer.hide_axis(axis)
                 self._last_voxel[i] = -1
@@ -367,29 +372,18 @@ class SHGlyph3D(Visualization):
         imgui.spacing()
 
         axis_labels = ("X", "Y", "Z")
-        slicers = []
         for i, label in enumerate(axis_labels):
-            dim_max = int(self.bounds[1][i] - 1)
-            world_val = (
-                self._image_ref.state[i] if self._image_ref is not None else 0
+            show_icon = (
+                icons_fontawesome_6.ICON_FA_CIRCLE_DOT
+                if self._slice_visibility[i]
+                else icons_fontawesome_6.ICON_FA_CIRCLE
             )
-            slicers.append(
-                (
-                    thin_slider,
-                    (label, world_val, int(self.bounds[0][i] + 1), dim_max),
-                    {
-                        "value_type": "float",
-                        "text_format": ".0f",
-                        "step": 1,
-                        "show_toggle": True,
-                        "toggle": self._slice_visibility[i],
-                    },
-                )
-            )
-        render_data = render_group("Axes", slicers)
-        for idx, (changed, _new, toggle) in enumerate(render_data):
-            if self._slice_visibility[idx] != toggle:
-                self._slice_visibility[idx] = toggle
-                self._last_voxel[idx] = -1
+            color = (0.4, 0.7, 1.0, 1.0) if self._slice_visibility[i] else (0.6, 0.6, 0.6, 1.0)
+            imgui.text_colored(color, f"{show_icon}  {label}")
+            if imgui.is_item_clicked():
+                self._slice_visibility[i] = not self._slice_visibility[i]
+                self._last_voxel[i] = -1
+            if i < len(axis_labels) - 1:
+                imgui.same_line(0, 16)
 
         imgui.spacing()
