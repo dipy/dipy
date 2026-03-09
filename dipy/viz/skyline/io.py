@@ -56,6 +56,7 @@ def load_files(fnames, rois=None):
     skyline_rois = []
     skyline_surfaces = []
     skyline_tractograms = []
+    skyline_shm_coeffs = []
 
     for fname in fnames:
         logger.info(f"Loading file ... \n{fname}\n")
@@ -68,6 +69,10 @@ def load_files(fnames, rois=None):
         elif ext == ".pam5":
             pam = load_pam(fname)
             skyline_peaks.append((pam, fname))
+            if hasattr(pam, "shm_coeff"):
+                skyline_shm_coeffs.append(
+                    (pam.shm_coeff, pam.affine, fname, "descoteaux")
+                )
         elif ext == ".pial":
             surface = load_pial(fname)
             if surface:
@@ -114,4 +119,5 @@ def load_files(fnames, rois=None):
         "rois": skyline_rois,
         "surfaces": skyline_surfaces,
         "tractograms": skyline_tractograms,
+        "shm_coeffs": skyline_shm_coeffs,
     }
