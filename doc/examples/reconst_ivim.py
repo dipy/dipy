@@ -70,11 +70,12 @@ print(f"data.shape {data.shape}")
 z = 33
 b = 0
 
-plt.imshow(data[:, :, z, b].T, origin="lower", cmap="gray", interpolation="nearest")
-plt.axhline(y=100)
-plt.axvline(x=170)
-plt.savefig("ivim_data_slice.png")
-plt.close()
+fig, ax = plt.subplots()
+ax.imshow(data[:, :, z, b].T, origin="lower", cmap="gray", interpolation="nearest")
+ax.axhline(y=100)
+ax.axvline(x=170)
+fig.savefig("ivim_data_slice.png")
+plt.close(fig)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -93,11 +94,12 @@ x1, x2 = 90, 155
 y1, y2 = 90, 170
 data_slice = data[x1:x2, y1:y2, z, :]
 
-plt.imshow(
+fig, ax = plt.subplots()
+ax.imshow(
     data[x1:x2, y1:y2, z, b].T, origin="lower", cmap="gray", interpolation="nearest"
 )
-plt.savefig("CSF_slice.png")
-plt.close()
+fig.savefig("CSF_slice.png")
+plt.close(fig)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -299,7 +301,6 @@ fig.savefig("ivim_voxel_plot.png")
 # Let us get the various plots with `fit_method = 'VarPro'` so that we can
 # visualize them in one page
 
-plt.figure()
 plot_map(
     ivimfit_vp.S0_predicted,
     "Heatmap of S0 predicted from the fit",
