@@ -89,7 +89,7 @@ class Skyline:
                 coeffs, affine, path, basis_type = item
             else:
                 coeffs, affine, path = item
-                basis_type = "standard"
+                basis_type = "descoteaux07"
             fname = Path(path).name if path is not None else f"SH Glyphs {idx}"
             sh_name = f"SH Glyphs ({fname})"
             sh3d = SHGlyph3D(
