@@ -219,6 +219,7 @@ class Skyline:
                 render_callback=self.before_render,
                 scale=1.0,
                 l_max=8,
+                sync_callback=self._synchronize_visualizations,
             )
             self._add_visualization(sh3d)
 
@@ -227,9 +228,9 @@ class Skyline:
             self.active_image = self._image_visualizations[-1]
             self._arrange_image_actors()
 
-        if self.active_image is not None:
-            for sh_viz in self._sh_glyph_visualizations:
-                sh_viz.set_image_ref(self.active_image)
+        # if self.active_image is not None:
+        #     for sh_viz in self._sh_glyph_visualizations:
+        #         sh_viz.set_image_ref(self.active_image)
 
         if len(self.visualizations) == 0:
             self.UI_window.request_file_dialog = True
@@ -242,7 +243,7 @@ class Skyline:
             loaded_files["rois"],
             loaded_files["surfaces"],
             loaded_files["tractograms"],
-            None,
+            loaded_files["shm_coeffs"],
         )
         update_camera(self.window.screens[0].camera, None, self.window.screens[0].scene)
         self.before_render()
@@ -268,9 +269,9 @@ class Skyline:
 
     def _synchronize_visualizations(self, source_viz, new_state):
         for viz in self.visualizations:
-            if viz is not source_viz and isinstance(viz, (Image3D, Peak3D)):
+            if viz is not source_viz and isinstance(viz, (Image3D, Peak3D, SHGlyph3D)):
                 viz.update_state(new_state)
-        self._arrange_image_actors()
+        self.active_image and self._arrange_image_actors()
         self.window.render()
 
     @property
