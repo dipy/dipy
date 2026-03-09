@@ -3,6 +3,7 @@ wgsl_sources = [
   'billboard_sphere_render.wgsl',
   'sh_analytical_lut_populate.wgsl',
   'sh_billboard.wgsl',
+  'sh_cube_hermite_lut_compute.wgsl',
   'utils.wgsl',
 ]
 

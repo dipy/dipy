@@ -6,14 +6,19 @@ from fury.actor import Group
 from imgui_bundle import icons_fontawesome_6, imgui
 
 from dipy.reconst.shm import convert_sh_to_full_basis
-from dipy.viz.sh_billboard import sph_glyph_billboard
+from dipy.viz.sh_billboard import sph_glyph_billboard_sliced
 from dipy.viz.skyline.UI.elements import render_group, thin_slider
 from dipy.viz.skyline.UI.theme import THEME
 from dipy.viz.skyline.render.renderer import Visualization
 
 
 class SHSlicer:
-    """Lazy per-slice billboard SH glyph slicer.
+    """Single-actor SH glyph slicer.
+
+    Every valid voxel is packed into **one** ``SphGlyphBillboard``
+    actor with per-glyph ``(ix, iy, iz)`` stored on the GPU.
+    Three material uniforms (``active_slice_x/y/z``) select which
+    slices are visible — switching is a uniform update, zero rebuild.
 
     Parameters
     ----------
@@ -25,12 +30,6 @@ class SHSlicer:
         Per-glyph scale factor.
     l_max : int
         Maximum SH order.
-    lut_res : int
-        LUT resolution for billboard precomputation.
-    use_hermite : bool
-        Use Hermite analytic normals.
-    mapping_mode : str
-        Billboard mapping mode.
     mask : ndarray, optional
         Boolean mask of valid voxels.
     basis_type : str
@@ -56,7 +55,7 @@ class SHSlicer:
         if basis_type in ("descoteaux", "descoteaux07"):
             coeffs_4d = convert_sh_to_full_basis(coeffs_4d)
             basis_type = "standard"
-        
+
         self.coeffs_4d = coeffs_4d
         self.shape = coeffs_4d.shape[:3]
         self.n_coeffs = coeffs_4d.shape[-1]
@@ -70,143 +69,113 @@ class SHSlicer:
         self.basis_type = basis_type
         self.color_type = color_type
 
-        self._slice_actors = {
-            "x": [None] * self.shape[0],
-            "y": [None] * self.shape[1],
-            "z": [None] * self.shape[2],
-        }
-        self._built = {
-            "x": [False] * self.shape[0],
-            "y": [False] * self.shape[1],
-            "z": [False] * self.shape[2],
-        }
         self._cur = {"x": -1, "y": -1, "z": -1}
-
         self._opacity = 1.0
         self.actor = Group()
+        self._glyph_actor = None
 
     def build(self):
-        """Mark the slicer as ready (slices are built lazily)."""
+        """Build the single actor containing every valid voxel."""
+        self._glyph_actor = self._build_volume_actor()
+        if self._glyph_actor is not None:
+            self.actor.add(self._glyph_actor)
         return self.actor
 
-    # -- lazy builders -----------------------------------------------------
+    # -- builder -----------------------------------------------------------
 
-    def _ensure_slice(self, axis, idx):
-        if idx < 0 or idx >= self.shape[{"x": 0, "y": 1, "z": 2}[axis]]:
-            return
-        if self._built[axis][idx]:
-            return
-        sl = {
-            "x": self.coeffs_4d[idx, :, :, :],
-            "y": self.coeffs_4d[:, idx, :, :],
-            "z": self.coeffs_4d[:, :, idx, :],
-        }[axis]
-        a = self._build_slice_actor(sl, idx, axis)
-        if a is not None:
-            self._slice_actors[axis][idx] = a
-            a.visible = False
-            self.actor.add(a)
-        self._built[axis][idx] = True
-
-    def _build_slice_actor(self, slice_coeffs, slice_idx, axis):
+    def _build_volume_actor(self):
+        """Create one billboard actor for every masked voxel."""
         vs = self.voxel_sizes
-        axis_dim = {"x": 0, "y": 1, "z": 2}[axis]
-        dims = [d for d in range(3) if d != axis_dim]
-        n0, n1 = slice_coeffs.shape[0], slice_coeffs.shape[1]
-        positions = np.zeros((n0 * n1, 3), dtype=np.float32)
-        for i in range(n0):
-            for j in range(n1):
-                pos = [0.0, 0.0, 0.0]
-                pos[axis_dim] = slice_idx * vs[axis_dim]
-                pos[dims[0]] = i * vs[dims[0]]
-                pos[dims[1]] = j * vs[dims[1]]
-                positions[i * n1 + j] = pos
+        X, Y, Z = self.shape
 
-        flat_coeffs = slice_coeffs.reshape(-1, self.n_coeffs)
-        valid_mask = np.any(flat_coeffs != 0, axis=1)
+        # Flatten and mask
+        flat_coeffs = self.coeffs_4d.reshape(-1, self.n_coeffs)
+        valid = np.any(flat_coeffs != 0, axis=1)
         if self.mask is not None:
-            slicing = [slice(None)] * 3
-            slicing[axis_dim] = slice_idx
-            sm = self.mask[tuple(slicing)].ravel()
-            valid_mask &= sm
-        if not np.any(valid_mask):
+            valid &= self.mask.ravel()
+        if not np.any(valid):
             return None
 
-        glyph = sph_glyph_billboard(
-            flat_coeffs[valid_mask],
-            centers=positions[valid_mask],
+        # Integer voxel coordinates for every valid voxel
+        ix, iy, iz = np.meshgrid(
+            np.arange(X, dtype=np.int32),
+            np.arange(Y, dtype=np.int32),
+            np.arange(Z, dtype=np.int32),
+            indexing="ij",
+        )
+        voxel_coords = np.column_stack([
+            ix.ravel(), iy.ravel(), iz.ravel()
+        ])  # (X*Y*Z, 3)
+
+        # World-space centres
+        centers = voxel_coords.astype(np.float32) * vs[np.newaxis, :]
+
+        coeffs_valid = flat_coeffs[valid]
+        centers_valid = centers[valid]
+        voxel_valid = voxel_coords[valid]
+
+        print(
+            f"  [SHSlicer] {len(coeffs_valid)} valid glyphs "
+            f"out of {X * Y * Z} voxels"
+        )
+
+        glyph = sph_glyph_billboard_sliced(
+            coeffs_valid,
+            centers_valid,
+            voxel_valid,
             scale=self.scale,
             l_max=self.l_max,
             basis_type=self.basis_type,
             color_type=self.color_type,
-            use_precomputation=True,
-            use_bicubic=True,
+            lut_res=self.lut_res,
             use_hermite=self.use_hermite,
             mapping_mode=self.mapping_mode,
-            lut_res=self.lut_res,
         )
-        if self._opacity < 1.0:
-            glyph.material.opacity = self._opacity
-            glyph.material.alpha_mode = "blend"
         return glyph
 
     # -- slice visibility --------------------------------------------------
 
     def set_slice(self, axis, idx):
-        """Show exactly one slice on *axis*, hide all others."""
+        """Show slice *idx* on *axis* via uniform update."""
         dim = {"x": 0, "y": 1, "z": 2}[axis]
         idx = int(np.clip(idx, 0, self.shape[dim] - 1))
         if idx == self._cur[axis]:
             return
-        self._ensure_slice(axis, idx)
-        for i, a in enumerate(self._slice_actors[axis]):
-            if a is not None:
-                a.visible = (i == idx)
+        if self._glyph_actor is not None:
+            attr = f"active_slice_{axis}"
+            setattr(self._glyph_actor.material, attr, idx)
         self._cur[axis] = idx
-
-    def slide_to(self, axis, world_pos):
-        """Translate the visible slice actor to a world coordinate."""
-        cur = self._cur[axis]
-        if cur < 0:
-            return
-        a = self._slice_actors[axis][cur]
-        if a is None:
-            return
-        dim = {"x": 0, "y": 1, "z": 2}[axis]
-        built_pos = cur * self.voxel_sizes[dim]
-        pos = list(a.local.position)
-        pos[dim] = world_pos - built_pos
-        a.local.position = tuple(pos)
 
     def hide_axis(self, axis):
         """Hide all slices for *axis*."""
-        for a in self._slice_actors[axis]:
-            if a is not None:
-                a.visible = False
+        if self._glyph_actor is not None:
+            setattr(self._glyph_actor.material, f"vis_{axis}", 0)
         self._cur[axis] = -1
 
+    def show_axis(self, axis):
+        """Enable axis visibility."""
+        if self._glyph_actor is not None:
+            setattr(self._glyph_actor.material, f"vis_{axis}", 1)
+
     def set_scale(self, new_scale):
-        """Update scale on all existing actors."""
+        """Update scale on the actor."""
         ratio = float(new_scale) / float(self.scale) if self.scale > 0 else 1.0
         if abs(ratio - 1.0) < 1e-6:
             return
         self.scale = float(new_scale)
-        for actors in self._slice_actors.values():
-            for a in actors:
-                if a is not None:
-                    a.material.scale = float(new_scale)
-                    a.geometry.normals.data[:, :2] *= ratio
-                    a.geometry.normals.update_full()
+        a = self._glyph_actor
+        if a is not None:
+            a.material.scale = float(new_scale)
+            a.geometry.normals.data[:, :2] *= ratio
+            a.geometry.normals.update_full()
 
     def set_opacity(self, opacity):
-        """Set opacity on every child actor."""
+        """Set opacity."""
         self._opacity = float(opacity)
-        blend = opacity < 1.0
-        for actors in self._slice_actors.values():
-            for a in actors:
-                if a is not None:
-                    a.material.opacity = float(opacity)
-                    a.material.alpha_mode = "blend" if blend else "solid"
+        a = self._glyph_actor
+        if a is not None:
+            a.material.opacity = float(opacity)
+            a.material.alpha_mode = "blend" if opacity < 1.0 else "solid"
 
 
 class SHGlyph3D(Visualization):
@@ -327,6 +296,7 @@ class SHGlyph3D(Visualization):
         axes = ("x", "y", "z")
         for i, axis in enumerate(axes):
             if self._slice_visibility[i]:
+                self._slicer.show_axis(axis)
                 if voxel[i] != self._last_voxel[i]:
                     self._slicer.set_slice(axis, voxel[i])
                     self._last_voxel[i] = voxel[i]
