@@ -1,14 +1,107 @@
 """SH Glyph Slicer for Skyline."""
 
+from pathlib import Path
+
+from fury import apply_transformation
+from fury.actor import Group
+from imgui_bundle import imgui
 import numpy as np
 
-from fury.actor import Group
-from imgui_bundle import icons_fontawesome_6, imgui
-
 from dipy.viz.sh_billboard import sph_glyph_billboard_sliced
-from dipy.viz.skyline.UI.elements import render_group, thin_slider
-from dipy.viz.skyline.UI.theme import THEME
+from dipy.viz.skyline.UI.elements import render_group, thin_slider, toggle_button
 from dipy.viz.skyline.render.renderer import Visualization
+
+
+def create_shm_visualization(
+    input,
+    idx,
+    *,
+    render_callback=None,
+    scale=1.3,
+    l_max=8,
+    lut_res=8,
+    use_hermite=True,
+    mapping_mode="cube",
+    basis_type="descoteaux07",
+    color_type="orientation",
+    mask=None,
+    sync_callback=None,
+):
+    """Create SH glyph visualization from input.
+
+    Parameters
+    ----------
+    input : tuple
+        Tuple of one of the following forms:
+        - (coeffs, affine, filename, basis_type)
+        - (coeffs, affine, filename)
+        - (coeffs, affine)
+    idx : int
+        Index used for naming when filename is not provided.
+    render_callback : callable, optional
+        Callback function to be called after rendering.
+    scale : float, optional
+        Initial per-glyph scale.
+    l_max : int, optional
+        Maximum SH order.
+    lut_res : int, optional
+        LUT resolution.
+    use_hermite : bool, optional
+        Whether to use Hermite analytic normals.
+    mapping_mode : str, optional
+        Billboard mapping mode.
+    basis_type : str, optional
+        SH basis convention. Ignored if provided in ``input`` as 4th element.
+    color_type : str, optional
+        Colour mapping type.
+    mask : ndarray, optional
+        Boolean mask of valid voxels.
+    sync_callback : callable, optional
+        Callback to trigger when synchronization is available.
+
+    Returns
+    -------
+    SHGlyph3D
+        The created SH glyph visualization object.
+
+    Raises
+    ------
+    ValueError
+        If input is not a tuple of length 2, 3, or 4.
+    """
+    if not isinstance(input, tuple) or len(input) not in (2, 3, 4):
+        raise ValueError(
+            "Input must be a tuple containing (coeffs, affine, filename, basis_type), "
+            "(coeffs, affine, filename), or (coeffs, affine) for SH visualization."
+        )
+
+    if len(input) == 2:
+        coeffs, affine = input
+        filename = f"SH_Glyphs_{idx}"
+        input_basis_type = basis_type
+    elif len(input) == 3:
+        coeffs, affine, filename = input
+        filename = Path(filename).name if filename is not None else f"SH_Glyphs_{idx}"
+        input_basis_type = basis_type
+    else:
+        coeffs, affine, filename, input_basis_type = input
+        filename = Path(filename).name if filename is not None else f"SH_Glyphs_{idx}"
+
+    return SHGlyph3D(
+        f"SH Glyphs ({filename})",
+        coeffs,
+        affine=affine,
+        render_callback=render_callback,
+        scale=scale,
+        l_max=l_max,
+        lut_res=lut_res,
+        use_hermite=use_hermite,
+        mapping_mode=mapping_mode,
+        basis_type=input_basis_type,
+        color_type=color_type,
+        mask=mask,
+        sync_callback=sync_callback,
+    )
 
 
 def _descoteaux_to_fury_standard(coeffs_4d, sh_order):
@@ -72,7 +165,6 @@ class SHSlicer:
         basis_type="standard",
         color_type="orientation",
     ):
-        # Auto-convert descoteaux (even-order-only) basis to FURY standard
         if basis_type in ("descoteaux", "descoteaux07"):
             coeffs_4d = _descoteaux_to_fury_standard(coeffs_4d, l_max)
             basis_type = "standard"
@@ -124,9 +216,9 @@ class SHSlicer:
             np.arange(Z, dtype=np.int32),
             indexing="ij",
         )
-        voxel_coords = np.column_stack([
-            ix.ravel(), iy.ravel(), iz.ravel()
-        ])  # (X*Y*Z, 3)
+        voxel_coords = np.column_stack(
+            [ix.ravel(), iy.ravel(), iz.ravel()]
+        )  # (X*Y*Z, 3)
 
         # World-space centres
         centers = voxel_coords.astype(np.float32) * vs[np.newaxis, :]
@@ -136,8 +228,7 @@ class SHSlicer:
         voxel_valid = voxel_coords[valid]
 
         print(
-            f"  [SHSlicer] {len(coeffs_valid)} valid glyphs "
-            f"out of {X * Y * Z} voxels"
+            f"  [SHSlicer] {len(coeffs_valid)} valid glyphs out of {X * Y * Z} voxels"
         )
 
         glyph = sph_glyph_billboard_sliced(
@@ -228,6 +319,8 @@ class SHGlyph3D(Visualization):
         Colour mapping.
     mask : ndarray, optional
         Boolean mask of valid voxels.
+    sync_callback : callable, optional
+        Callback to trigger when slice syncing from linked image reference.
     """
 
     def __init__(
@@ -245,12 +338,10 @@ class SHGlyph3D(Visualization):
         basis_type="standard",
         color_type="orientation",
         mask=None,
+        sync_callback=None,
     ):
         self.affine = affine
-        if affine is not None:
-            self._voxel_sizes = np.abs(np.diag(affine)[:3]).astype(float)
-        else:
-            self._voxel_sizes = np.array([1.0, 1.0, 1.0])
+        self._voxel_sizes = np.array([1.0, 1.0, 1.0])
 
         self.shape = coeffs.shape[:3]
 
@@ -267,32 +358,52 @@ class SHGlyph3D(Visualization):
             color_type=color_type,
         )
         self._slicer.build()
+        if affine is not None:
+            self._slicer.actor.transform(self.affine)
 
         super().__init__(name, render_callback)
         self._scale = float(scale)
         self._opacity = 100
         self._slice_visibility = [True, True, True]
+        self._synchronize = True
+        self._sync_callback = sync_callback
 
-        self._image_ref = None
         self._last_voxel = [-1, -1, -1]
 
-        mid = [s // 2 for s in self.shape]
-        for i, axis in enumerate(("x", "y", "z")):
-            self._slicer.set_slice(axis, mid[i])
-            self._last_voxel[i] = mid[i]
+        lower_bounds = np.zeros(3)
+        upper_bounds = np.array(coeffs.shape[:3]) - 1
 
-        self.bounds = [
-            [0, 0, 0],
-            list(np.array(self.shape) * self._voxel_sizes),
-        ]
+        if self.affine is not None:
+            self.bounds = apply_transformation(
+                np.array([lower_bounds, upper_bounds]), self.affine
+            )
+            self.state = apply_transformation(
+                np.array(
+                    [[self.shape[0] // 2, self.shape[1] // 2, self.shape[2] // 2]]
+                ),
+                self.affine,
+            )[0].astype(int)
+        else:
+            self.bounds = np.asarray([lower_bounds, upper_bounds])
+            self.state = [self.shape[0] // 2, self.shape[1] // 2, self.shape[2] // 2]
+        self.set_slices()
 
-    def set_image_ref(self, image_viz):
-        """Link to an :class:`Image3D` for slice syncing."""
-        self._image_ref = image_viz
+    # def set_image_ref(self, image_viz):
+    #     """Link to an :class:`Image3D` for slice syncing."""
+    #     self._image_ref = image_viz
 
     @property
     def actor(self):
         return self._slicer.actor
+
+    @property
+    def voxel_state(self):
+        if self.affine is None:
+            return self.state
+        voxel_state = apply_transformation(
+            np.array([self.state], dtype=np.float32), np.linalg.inv(self.affine)
+        )[0]
+        return voxel_state.astype(int)
 
     def _populate_info(self):
         info = f"Dimensions: {self.shape}"
@@ -302,34 +413,48 @@ class SHGlyph3D(Visualization):
             info += f"\nVoxel Sizes: {self._voxel_sizes}"
         return info
 
-    def _world_to_voxel(self, world_pos):
-        vs = self._voxel_sizes
-        return [
-            int(np.clip(np.round(world_pos[i] / vs[i]), 0, self.shape[i] - 1))
-            for i in range(3)
-        ]
+    # def _sync_from_image(self):
+    #     if self._image_ref is None:
+    #         return
+    #     state = self._image_ref.state
+    #     voxel = self._world_to_voxel(state)
+    #     axes = ("x", "y", "z")
+    #     for i, axis in enumerate(axes):
+    #         if self._slice_visibility[i]:
+    #             self._slicer.show_axis(axis)
+    #             if voxel[i] != self._last_voxel[i]:
+    #                 self._slicer.set_slice(axis, voxel[i])
+    #                 self._last_voxel[i] = voxel[i]
+    #         else:
+    #             self._slicer.hide_axis(axis)
+    #             self._last_voxel[i] = -1
 
-    def _sync_from_image(self):
-        if self._image_ref is None:
-            return
-        state = self._image_ref.state
-        voxel = self._world_to_voxel(state)
-        axes = ("x", "y", "z")
-        for i, axis in enumerate(axes):
+    def set_slices(self):
+        for i, axis in enumerate(("x", "y", "z")):
+            self._slicer.set_slice(axis, self.voxel_state[i])
+            self._last_voxel[i] = self.voxel_state[i]
+
+    def update_state(self, new_state):
+        if self._synchronize:
+            self.state = new_state
+            self.set_slices()
+
+    def set_slice_visibility(self):
+        for i, axis in enumerate(("x", "y", "z")):
             if self._slice_visibility[i]:
                 self._slicer.show_axis(axis)
-                if voxel[i] != self._last_voxel[i]:
-                    self._slicer.set_slice(axis, voxel[i])
-                    self._last_voxel[i] = voxel[i]
+                self._last_voxel[i] = self.voxel_state[i]
             else:
                 self._slicer.hide_axis(axis)
                 self._last_voxel[i] = -1
 
-    def renderer(self, name, is_open):
-        self._sync_from_image()
-        return super().renderer(name, is_open)
-
     def render_widgets(self):
+        changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
+        if changed:
+            self._synchronize = new
+
+        imgui.spacing()
+
         changed, new_scale = thin_slider(
             "Scale",
             self._scale,
@@ -364,18 +489,50 @@ class SHGlyph3D(Visualization):
         imgui.spacing()
 
         axis_labels = ("X", "Y", "Z")
-        for i, label in enumerate(axis_labels):
-            show_icon = (
-                icons_fontawesome_6.ICON_FA_CIRCLE_DOT
-                if self._slice_visibility[i]
-                else icons_fontawesome_6.ICON_FA_CIRCLE
+        slider_bounds = (
+            (int(self.bounds[0][0] + 1), int(self.bounds[1][0] - 1)),
+            (int(self.bounds[0][1] + 1), int(self.bounds[1][1] - 1)),
+            (int(self.bounds[0][2] + 1), int(self.bounds[1][2] - 1)),
+        )
+        slicers = []
+        for axis, label in enumerate(axis_labels):
+            min_bound, max_bound = slider_bounds[axis]
+            slicers.append(
+                (
+                    thin_slider,
+                    (label, self.state[axis], min_bound, max_bound),
+                    {
+                        "value_type": "float",
+                        "text_format": ".0f",
+                        "step": 1,
+                        "show_toggle": True,
+                        "toggle": self._slice_visibility[axis],
+                    },
+                )
             )
-            color = THEME["primary"] if self._slice_visibility[i] else THEME["text"]
-            imgui.text_colored(color, f"{show_icon}  {label}")
-            if imgui.is_item_clicked():
-                self._slice_visibility[i] = not self._slice_visibility[i]
-                self._last_voxel[i] = -1
-            if i < len(axis_labels) - 1:
-                imgui.same_line(0, 16)
+        render_data = render_group("Slice", slicers)
+        for idx, (changed, new, toggle) in enumerate(render_data):
+            if changed:
+                self.state[idx] = new
+                self.set_slices()
+                self._synchronize and self._sync_callback(self, self.state)
+            self._slice_visibility[idx] = toggle
+            self.set_slice_visibility()
+            self._last_voxel[idx] = -1
+
+        # axis_labels = ("X", "Y", "Z")
+        # for i, label in enumerate(axis_labels):
+        #     show_icon = (
+        #         icons_fontawesome_6.ICON_FA_CIRCLE_DOT
+        #         if self._slice_visibility[i]
+        #         else icons_fontawesome_6.ICON_FA_CIRCLE
+        #     )
+        #     color = THEME["primary"] if self._slice_visibility[i] else THEME["text"]
+        #     imgui.text_colored(color, f"{show_icon}  {label}")
+        #     if imgui.is_item_clicked():
+        #         self._slice_visibility[i] = not self._slice_visibility[i]
+        #         self._last_voxel[i] = -1
+        #     if i < len(axis_labels) - 1:
+        #         imgui.same_line(0, 16)
 
         imgui.spacing()
