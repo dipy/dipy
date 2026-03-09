@@ -2099,6 +2099,26 @@ fn vs_main(in: VertexInput) -> Varyings {
     let billboard_index = i32(in.index) / 6;
     let vertex_in_quad = i32(in.index) % 6;
 
+    // --- Slice-based visibility: discard glyphs not on active slice ---
+    {$ if use_slicing == 'true' $}
+    {
+        let gi = u32(billboard_index) * 3u;
+        let vx = s_slice_indices[gi];
+        let vy = s_slice_indices[gi + 1u];
+        let vz = s_slice_indices[gi + 2u];
+        let match_x = (u_material.vis_x != 0) && (vx == u_material.active_slice_x);
+        let match_y = (u_material.vis_y != 0) && (vy == u_material.active_slice_y);
+        let match_z = (u_material.vis_z != 0) && (vz == u_material.active_slice_z);
+        if (!(match_x || match_y || match_z)) {
+            // Push all 6 vertices of this billboard behind the camera
+            // so the GPU clips/culls the entire quad.
+            var discard_out: Varyings;
+            discard_out.position = vec4<f32>(0.0, 0.0, -2.0, 1.0);
+            return discard_out;
+        }
+    }
+    {$ endif $}
+
     var local_pos: vec2<f32>;
     switch vertex_in_quad {
         case 0: { local_pos = vec2<f32>(-0.5, -0.5); }
