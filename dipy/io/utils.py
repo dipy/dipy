@@ -398,8 +398,8 @@ def create_tractogram_header(
         tractogram_type = detect_format(str(tractogram_type))
 
     new_header = tractogram_type.create_empty_header()
-    new_header[nib.streamlines.Field.VOXEL_SIZES] = tuple(voxel_sizes)
-    new_header[nib.streamlines.Field.DIMENSIONS] = tuple(dimensions)
+    new_header[nib.streamlines.Field.VOXEL_SIZES] = np.asarray(voxel_sizes)
+    new_header[nib.streamlines.Field.DIMENSIONS] = np.asarray(dimensions)
     new_header[nib.streamlines.Field.VOXEL_TO_RASMM] = affine
     new_header[nib.streamlines.Field.VOXEL_ORDER] = voxel_order
 
