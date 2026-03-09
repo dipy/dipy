@@ -1,14 +1,103 @@
 """SH Glyph Slicer for Skyline."""
 
-import numpy as np
+from pathlib import Path
 
 from fury.actor import Group
 from imgui_bundle import icons_fontawesome_6, imgui
+import numpy as np
 
 from dipy.viz.sh_billboard import sph_glyph_billboard_sliced
-from dipy.viz.skyline.UI.elements import render_group, thin_slider
+from dipy.viz.skyline.UI.elements import thin_slider
 from dipy.viz.skyline.UI.theme import THEME
 from dipy.viz.skyline.render.renderer import Visualization
+
+
+def create_shm_visualization(
+    input,
+    idx,
+    *,
+    render_callback=None,
+    scale=1.3,
+    l_max=8,
+    lut_res=8,
+    use_hermite=True,
+    mapping_mode="cube",
+    basis_type="descoteaux07",
+    color_type="orientation",
+    mask=None,
+):
+    """Create SH glyph visualization from input.
+
+    Parameters
+    ----------
+    input : tuple
+        Tuple of one of the following forms:
+        - (coeffs, affine, filename, basis_type)
+        - (coeffs, affine, filename)
+        - (coeffs, affine)
+    idx : int
+        Index used for naming when filename is not provided.
+    render_callback : callable, optional
+        Callback function to be called after rendering.
+    scale : float, optional
+        Initial per-glyph scale.
+    l_max : int, optional
+        Maximum SH order.
+    lut_res : int, optional
+        LUT resolution.
+    use_hermite : bool, optional
+        Whether to use Hermite analytic normals.
+    mapping_mode : str, optional
+        Billboard mapping mode.
+    basis_type : str, optional
+        SH basis convention. Ignored if provided in ``input`` as 4th element.
+    color_type : str, optional
+        Colour mapping type.
+    mask : ndarray, optional
+        Boolean mask of valid voxels.
+
+    Returns
+    -------
+    SHGlyph3D
+        The created SH glyph visualization object.
+
+    Raises
+    ------
+    ValueError
+        If input is not a tuple of length 2, 3, or 4.
+    """
+    if not isinstance(input, tuple) or len(input) not in (2, 3, 4):
+        raise ValueError(
+            "Input must be a tuple containing (coeffs, affine, filename, basis_type), "
+            "(coeffs, affine, filename), or (coeffs, affine) for SH visualization."
+        )
+
+    if len(input) == 2:
+        coeffs, affine = input
+        filename = f"SH_Glyphs_{idx}"
+        input_basis_type = basis_type
+    elif len(input) == 3:
+        coeffs, affine, filename = input
+        filename = Path(filename).name if filename is not None else f"SH_Glyphs_{idx}"
+        input_basis_type = basis_type
+    else:
+        coeffs, affine, filename, input_basis_type = input
+        filename = Path(filename).name if filename is not None else f"SH_Glyphs_{idx}"
+
+    return SHGlyph3D(
+        f"SH Glyphs ({filename})",
+        coeffs,
+        affine=affine,
+        render_callback=render_callback,
+        scale=scale,
+        l_max=l_max,
+        lut_res=lut_res,
+        use_hermite=use_hermite,
+        mapping_mode=mapping_mode,
+        basis_type=input_basis_type,
+        color_type=color_type,
+        mask=mask,
+    )
 
 
 def _descoteaux_to_fury_standard(coeffs_4d, sh_order):
@@ -72,7 +161,6 @@ class SHSlicer:
         basis_type="standard",
         color_type="orientation",
     ):
-        # Auto-convert descoteaux (even-order-only) basis to FURY standard
         if basis_type in ("descoteaux", "descoteaux07"):
             coeffs_4d = _descoteaux_to_fury_standard(coeffs_4d, l_max)
             basis_type = "standard"
@@ -124,9 +212,9 @@ class SHSlicer:
             np.arange(Z, dtype=np.int32),
             indexing="ij",
         )
-        voxel_coords = np.column_stack([
-            ix.ravel(), iy.ravel(), iz.ravel()
-        ])  # (X*Y*Z, 3)
+        voxel_coords = np.column_stack(
+            [ix.ravel(), iy.ravel(), iz.ravel()]
+        )  # (X*Y*Z, 3)
 
         # World-space centres
         centers = voxel_coords.astype(np.float32) * vs[np.newaxis, :]
@@ -136,8 +224,7 @@ class SHSlicer:
         voxel_valid = voxel_coords[valid]
 
         print(
-            f"  [SHSlicer] {len(coeffs_valid)} valid glyphs "
-            f"out of {X * Y * Z} voxels"
+            f"  [SHSlicer] {len(coeffs_valid)} valid glyphs out of {X * Y * Z} voxels"
         )
 
         glyph = sph_glyph_billboard_sliced(
@@ -247,10 +334,7 @@ class SHGlyph3D(Visualization):
         mask=None,
     ):
         self.affine = affine
-        if affine is not None:
-            self._voxel_sizes = np.abs(np.diag(affine)[:3]).astype(float)
-        else:
-            self._voxel_sizes = np.array([1.0, 1.0, 1.0])
+        self._voxel_sizes = np.array([1.0, 1.0, 1.0])
 
         self.shape = coeffs.shape[:3]
 
@@ -267,6 +351,8 @@ class SHGlyph3D(Visualization):
             color_type=color_type,
         )
         self._slicer.build()
+        if affine is not None:
+            self._slicer.actor.transform(self.affine)
 
         super().__init__(name, render_callback)
         self._scale = float(scale)
