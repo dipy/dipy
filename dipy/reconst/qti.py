@@ -664,7 +664,7 @@ def _wls_fit(X, data_masked, *, weights=None, step=int(1e4), return_leverages=Fa
     return params_masked, extra
 
 
-def _sdpdc_fit(X, data_masked, cvxpy_solver, weights=None, return_leverages=False):
+def _sdpdc_fit(X, data_masked, cvxpy_solver, *, weights=None, return_leverages=False):
     r"""Estimate the model parameters using Semidefinite Programming (SDP),
     while enforcing positivity constraints on the D and C tensors (SDPdc).
 
@@ -677,8 +677,8 @@ def _sdpdc_fit(X, data_masked, cvxpy_solver, weights=None, return_leverages=Fals
         coefficients.
     data_masked : array (N, g)
         The measured signal, already masked.
-    cvxpy_solver: string, required
-        The name of the SDP solver to be used. Default: 'SCS'
+    cvxpy_solver: str
+        The name of the SDP solver to be used.
     weights : array (N, g), optional
         Weights to apply for fitting. These weights must correspond to the
         squared residuals such that $S = \sum_i w_i r_i^2$. If not provided,
@@ -712,7 +712,7 @@ def _sdpdc_fit(X, data_masked, cvxpy_solver, weights=None, return_leverages=Fals
     # scale the signals (different scaling per voxel)
     scale = np.maximum(np.max(data_masked, axis=1, keepdims=True), 1)
     data_masked = data_masked / scale
-    # re-apply MIN_POSITIVE_SIGNAL...
+    # re-apply MIN_POSITIVE_SIGNAL
     data_masked[data_masked < MIN_POSITIVE_SIGNAL] = MIN_POSITIVE_SIGNAL
     log_data = np.log(data_masked)
     params_masked = np.zeros((size, 28))
@@ -781,7 +781,7 @@ def _sdpdc_fit(X, data_masked, cvxpy_solver, weights=None, return_leverages=Fals
 
 class QtiModel(ReconstModel):
     @warning_for_keywords()
-    def __init__(self, gtab, fit_method="WLS", cvxpy_solver="SCS", **kwargs):
+    def __init__(self, gtab, *, fit_method="WLS", cvxpy_solver="SCS", **kwargs):
         """Covariance tensor model of q-space trajectory imaging.
 
         See :footcite:t:`Westin2016` for further details about the model.
@@ -800,7 +800,7 @@ class QtiModel(ReconstModel):
             - 'SDPDc' for semidefinite programming with positivity constraints
               applied :footcite:p:`Herberthson2021` :func:`qti._sdpdc_fit`
 
-        cvxpy_solver: str, optionals
+        cvxpy_solver: str, optional
             solver for the SDP formulation. default: 'SCS'
         **kwargs
             Arbitrary keyword arguments passed to the :func:`fit` method.
@@ -860,8 +860,8 @@ class QtiModel(ReconstModel):
         -------
         qtifit : dipy.reconst.qti.QtiFit
             The fitted model.
-        """
 
+        """
         if mask is None:
             mask = np.ones(data.shape[:-1], dtype=bool)
         else:
@@ -946,9 +946,8 @@ class QtiModel(ReconstModel):
         w, robust = None, None  # NOTE: different to dki.py
         params_in_mask, extra, leverages = None, None, None
 
-        TDX = num_iter
         # NOTE: on first iteration, fit_method receives weights=w(=None)
-        for rdx in range(1, TDX + 1):
+        for rdx in range(1, num_iter + 1):
             if rdx > 1:  # after first iteration, update weights
                 # make prediction of the signal
                 pred_sig = self.predict(params_in_mask)
@@ -960,7 +959,7 @@ class QtiModel(ReconstModel):
                     X,
                     leverages,
                     rdx,
-                    TDX,
+                    num_iter,
                     robust,
                 )
 
