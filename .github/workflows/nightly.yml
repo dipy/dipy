@@ -18,7 +18,7 @@ on:
 env:
   BUILD_COMMIT: "master"
   CIBW_BUILD_VERBOSITY: 2
-  CIBW_TEST_REQUIRES: "-r requirements/build.txt pytest==8.0.0"
+  CIBW_TEST_REQUIRES: "-r requirements/build.txt pytest>=8.0.0"
   CIBW_TEST_COMMAND: pytest --pyargs dipy
   CIBW_CONFIG_SETTINGS: "compile-args=-v"
 

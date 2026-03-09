@@ -4,6 +4,7 @@ import random
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 import dipy.core.gradients as grad
 import dipy.core.sphere as dps
@@ -1198,7 +1199,7 @@ def test_quantize_evecs_known_vectors():
     npt.assert_equal(result[1, 0], 50)
     npt.assert_equal(result[1, 1], 100)
 
-
+@pytest.mark.filterwarnings("ignore::FutureWarning:ray.*")
 def test_quantize_evecs_parallel_engines():
     """Test that different parallel engines give the same results."""
     evecs = np.random.rand(3, 3, 3, 3)
