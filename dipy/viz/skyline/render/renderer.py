@@ -46,6 +46,8 @@ class Visualization:
             or self.__class__.__name__ == "ClusterStreamline3D"
         ):
             type = "tractography"
+        elif self.__class__.__name__ == "SHGlyph3D":
+            type = "sh_glyph"
         else:
             logger.warning(
                 f"Visualization type '{self.__class__.__name__}' is not recognized. "
