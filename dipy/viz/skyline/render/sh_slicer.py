@@ -5,11 +5,32 @@ import numpy as np
 from fury.actor import Group
 from imgui_bundle import icons_fontawesome_6, imgui
 
-from dipy.reconst.shm import convert_sh_to_full_basis
 from dipy.viz.sh_billboard import sph_glyph_billboard_sliced
 from dipy.viz.skyline.UI.elements import render_group, thin_slider
 from dipy.viz.skyline.UI.theme import THEME
 from dipy.viz.skyline.render.renderer import Visualization
+
+
+def _descoteaux_to_fury_standard(coeffs_4d, sh_order):
+    """Convert legacy descoteaux07 (even-only) SH coeffs to FURY standard.
+
+    The legacy descoteaux07 basis uses Im(Y) for m>0 and Re(Y) for m<0,
+    while FURY's standard basis uses cos(mφ) for m>0 and sin(|m|φ) for m<0.
+    Empirically B_desc(l, m) == B_fury(l, -m) for all l, m, so the
+    conversion is a simple m-sign swap per degree.
+
+    Conversion: c_fury(l, m) = c_desc(l, -m)
+    """
+    n_std = (sh_order + 1) ** 2
+    out = np.zeros(coeffs_4d.shape[:-1] + (n_std,), dtype=coeffs_4d.dtype)
+    desc_idx = 0
+    for l_val in range(0, sh_order + 1, 2):
+        for m in range(-l_val, l_val + 1):
+            fury_m = -m
+            fury_idx = l_val * l_val + l_val + fury_m
+            out[..., fury_idx] = coeffs_4d[..., desc_idx]
+            desc_idx += 1
+    return out
 
 
 class SHSlicer:
@@ -51,9 +72,9 @@ class SHSlicer:
         basis_type="standard",
         color_type="orientation",
     ):
-        # Auto-convert descoteaux (even-order-only) basis to standard (full)
+        # Auto-convert descoteaux (even-order-only) basis to FURY standard
         if basis_type in ("descoteaux", "descoteaux07"):
-            coeffs_4d = convert_sh_to_full_basis(coeffs_4d)
+            coeffs_4d = _descoteaux_to_fury_standard(coeffs_4d, l_max)
             basis_type = "standard"
 
         self.coeffs_4d = coeffs_4d
