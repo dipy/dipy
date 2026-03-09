@@ -1220,7 +1220,7 @@ def sph_glyph_billboard(
         max_radius,
         np.full_like(max_radius, 1e-6),
     )
-    padding = 1.5
+    padding = 1.2
     sizes = (max_radius * scale * 2.0 * padding).astype(np.float32)
     sizes = np.column_stack([sizes, sizes])
 
