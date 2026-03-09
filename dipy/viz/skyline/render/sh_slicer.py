@@ -8,6 +8,7 @@ from imgui_bundle import icons_fontawesome_6, imgui
 from dipy.reconst.shm import convert_sh_to_full_basis
 from dipy.viz.sh_billboard import sph_glyph_billboard
 from dipy.viz.skyline.UI.elements import render_group, thin_slider
+from dipy.viz.skyline.UI.theme import THEME
 from dipy.viz.skyline.render.renderer import Visualization
 
 
@@ -378,7 +379,7 @@ class SHGlyph3D(Visualization):
                 if self._slice_visibility[i]
                 else icons_fontawesome_6.ICON_FA_CIRCLE
             )
-            color = (0.4, 0.7, 1.0, 1.0) if self._slice_visibility[i] else (0.6, 0.6, 0.6, 1.0)
+            color = THEME["primary"] if self._slice_visibility[i] else THEME["text"]
             imgui.text_colored(color, f"{show_icon}  {label}")
             if imgui.is_item_clicked():
                 self._slice_visibility[i] = not self._slice_visibility[i]
