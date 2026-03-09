@@ -39,6 +39,7 @@ def _sh_basis_for_basis_type(directions, l_max, basis_type="standard"):
 
 _SH_PRECOMPUTE_CACHE: dict = {}
 _GPU_DEVICE_LIMITS_CACHE: dict = {}
+_GPU_HERMITE_COMPUTE_CACHE: dict = {}
 
 _MAX_LUT_CHUNKS = 8
 
@@ -126,6 +127,98 @@ class _SphGlyphLutMaterial(SphGlyphMaterial):
     def __init__(self, auto_detach=True, **kwargs):
         super().__init__(**kwargs)
         self.auto_detach = bool(auto_detach)
+
+
+class SlicedSphGlyphMaterial(SphGlyphMaterial):
+    """SphGlyphMaterial with per-axis slice selection uniforms.
+
+    Uniforms ``active_slice_x/y/z`` select which slice index is visible
+    on each axis, and ``vis_x/y/z`` toggle axis visibility.  A glyph is
+    rendered when *any* visible axis matches its stored voxel coordinate.
+    """
+
+    uniform_type = dict(
+        SphGlyphMaterial.uniform_type,
+        active_slice_x="i4",
+        active_slice_y="i4",
+        active_slice_z="i4",
+        vis_x="i4",
+        vis_y="i4",
+        vis_z="i4",
+    )
+
+    def __init__(
+        self,
+        active_slice_x=-1,
+        active_slice_y=-1,
+        active_slice_z=-1,
+        vis_x=1,
+        vis_y=1,
+        vis_z=1,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.active_slice_x = active_slice_x
+        self.active_slice_y = active_slice_y
+        self.active_slice_z = active_slice_z
+        self.vis_x = vis_x
+        self.vis_y = vis_y
+        self.vis_z = vis_z
+
+    def _set_i4(self, name, value):
+        self.uniform_buffer.data[name] = int(value)
+        self.uniform_buffer.update_full()
+
+    def _get_i4(self, name):
+        return int(self.uniform_buffer.data[name])
+
+    @property
+    def active_slice_x(self):
+        return self._get_i4("active_slice_x")
+
+    @active_slice_x.setter
+    def active_slice_x(self, v):
+        self._set_i4("active_slice_x", v)
+
+    @property
+    def active_slice_y(self):
+        return self._get_i4("active_slice_y")
+
+    @active_slice_y.setter
+    def active_slice_y(self, v):
+        self._set_i4("active_slice_y", v)
+
+    @property
+    def active_slice_z(self):
+        return self._get_i4("active_slice_z")
+
+    @active_slice_z.setter
+    def active_slice_z(self, v):
+        self._set_i4("active_slice_z", v)
+
+    @property
+    def vis_x(self):
+        return self._get_i4("vis_x")
+
+    @vis_x.setter
+    def vis_x(self, v):
+        self._set_i4("vis_x", v)
+
+    @property
+    def vis_y(self):
+        return self._get_i4("vis_y")
+
+    @vis_y.setter
+    def vis_y(self, v):
+        self._set_i4("vis_y", v)
+
+    @property
+    def vis_z(self):
+        return self._get_i4("vis_z")
+
+    @vis_z.setter
+    def vis_z(self, v):
+        self._set_i4("vis_z", v)
 
 
 class Billboard(Mesh):
@@ -358,6 +451,11 @@ class BillboardSphGlyphShader(MeshShader):
         }
         self["mapping_mode"] = mapping_mode_map.get(mapping_mode_str, 0)
 
+        use_slicing = isinstance(
+            getattr(wobject, "material", None), SlicedSphGlyphMaterial
+        )
+        self["use_slicing"] = "true" if use_slicing else "false"
+
     def get_render_info(self, wobject, shared):
         try:
             mat = getattr(wobject, "material", None)
@@ -368,7 +466,14 @@ class BillboardSphGlyphShader(MeshShader):
                 and auto_detach
                 and lut_ready
             ):
-                baked_mat = SphGlyphMaterial(
+                # After GPU compute bake, restore the right material type.
+                # If the actor had a SlicedSphGlyphMaterial before the
+                # compute shader was attached, restore that; otherwise
+                # fall back to plain SphGlyphMaterial.
+                original_mat_cls = getattr(
+                    wobject, "_pre_compute_material_cls", None
+                )
+                base_kwargs = dict(
                     n_coeffs=int(getattr(mat, "n_coeffs", -1)),
                     scale=float(getattr(mat, "scale", 1.0)),
                     shininess=int(getattr(mat, "shininess", 30)),
@@ -378,6 +483,14 @@ class BillboardSphGlyphShader(MeshShader):
                         getattr(mat, "flat_shading", False)
                     ),
                 )
+                if original_mat_cls is SlicedSphGlyphMaterial:
+                    baked_mat = SlicedSphGlyphMaterial(**base_kwargs)
+                    # Restore slice uniforms
+                    saved = getattr(wobject, "_pre_compute_slice_state", {})
+                    for attr, val in saved.items():
+                        setattr(baked_mat, attr, val)
+                else:
+                    baked_mat = SphGlyphMaterial(**base_kwargs)
                 wobject.material = baked_mat
         except Exception:
             pass
@@ -422,6 +535,17 @@ class BillboardSphGlyphShader(MeshShader):
                 "FRAGMENT",
             )
         }
+
+        # Per-glyph slice indices (for sliced rendering)
+        slice_buf = getattr(wobject, "slice_indices_buffer", None)
+        if slice_buf is not None:
+            coeff_bindings[1] = Binding(
+                "s_slice_indices",
+                "buffer/read_only_storage",
+                slice_buf,
+                "VERTEX",
+            )
+
         self.define_bindings(2, coeff_bindings)
         bindings[2] = coeff_bindings
 
@@ -767,6 +891,242 @@ def _populate_hermite_lut_cube_cpu_chunked(
     return True
 
 
+def _populate_hermite_lut_cube_gpu(
+    actor, lut_res, glyph_count, n_coeffs, chunk_info, use_float16=False
+):
+    """GPU-accelerated cube-mapped Hermite LUT bake (two-pass compute).
+
+    Pass 1 evaluates SH on an internal padded grid (N+6)² per face.
+    Pass 2 computes 4th-order finite-difference derivatives and writes
+    (value, du, dv, d²uv) into the output hermite LUT buffer.
+
+    Runs imperatively via ``wgpu`` — no pygfx render-function needed.
+    """
+    import time as _time
+
+    _t0 = _time.perf_counter()
+
+    N = lut_res
+    g_int = 3
+    s_int = N + 2 * g_int       # internal padded size per face
+    g_out = 1
+    s_out = N + 2 * g_out       # output size per face
+
+    l_max = int(getattr(actor, "_l_max", 4))
+
+    # --- cached device + pipelines ----------------------------------------
+    cache = _GPU_HERMITE_COMPUTE_CACHE
+    if "device" not in cache:
+        shader_src = load_dipy_wgsl("sh_cube_hermite_lut_compute.wgsl")
+        adapter = wgpu.gpu.request_adapter_sync(
+            power_preference="high-performance"
+        )
+        device = adapter.request_device_sync(
+            required_limits={
+                "max-storage-buffer-binding-size": (
+                    _get_gpu_max_buffer_size()
+                ),
+                "max-buffer-size": _get_gpu_max_buffer_size(),
+            }
+        )
+        shader_module = device.create_shader_module(code=shader_src)
+        bind_group_layout = device.create_bind_group_layout(
+            entries=[
+                {
+                    "binding": 0,
+                    "visibility": wgpu.ShaderStage.COMPUTE,
+                    "buffer": {"type": "read-only-storage"},
+                },
+                {
+                    "binding": 1,
+                    "visibility": wgpu.ShaderStage.COMPUTE,
+                    "buffer": {"type": "storage"},
+                },
+                {
+                    "binding": 2,
+                    "visibility": wgpu.ShaderStage.COMPUTE,
+                    "buffer": {"type": "uniform"},
+                },
+                {
+                    "binding": 3,
+                    "visibility": wgpu.ShaderStage.COMPUTE,
+                    "buffer": {"type": "storage"},
+                },
+            ],
+        )
+        pipeline_layout = device.create_pipeline_layout(
+            bind_group_layouts=[bind_group_layout]
+        )
+        pass1_pipeline = device.create_compute_pipeline(
+            layout=pipeline_layout,
+            compute={
+                "module": shader_module,
+                "entry_point": "pass1_eval",
+            },
+        )
+        pass2_pipeline = device.create_compute_pipeline(
+            layout=pipeline_layout,
+            compute={
+                "module": shader_module,
+                "entry_point": "pass2_hermite",
+            },
+        )
+        cache["device"] = device
+        cache["bind_group_layout"] = bind_group_layout
+        cache["pass1_pipeline"] = pass1_pipeline
+        cache["pass2_pipeline"] = pass2_pipeline
+
+    device = cache["device"]
+    bind_group_layout = cache["bind_group_layout"]
+    pass1_pipeline = cache["pass1_pipeline"]
+    pass2_pipeline = cache["pass2_pipeline"]
+
+    # --- flatten coefficients for per-chunk upload -------------------------
+    coeffs_data = actor.sh_coeffs
+    if hasattr(coeffs_data, "data"):
+        coeffs_data = coeffs_data.data
+    if not isinstance(coeffs_data, np.ndarray):
+        coeffs_data = np.asarray(coeffs_data)
+    coeffs_flat = coeffs_data.astype(np.float32)
+
+    # --- per-chunk bake ---------------------------------------------------
+    glyph_offset = 0
+    for chunk_idx, chunk_glyphs in enumerate(chunk_info["chunk_sizes"]):
+        # Upload only this chunk's coefficients (avoids alignment issues)
+        chunk_coeffs = coeffs_flat[
+            glyph_offset * n_coeffs : (glyph_offset + chunk_glyphs) * n_coeffs
+        ]
+        coeff_chunk_gpu = device.create_buffer_with_data(
+            data=chunk_coeffs,
+            usage=wgpu.BufferUsage.STORAGE | wgpu.BufferUsage.COPY_DST,
+        )
+        coeff_chunk_size = int(chunk_glyphs) * int(n_coeffs) * 4
+        # Scratch buffer: chunk_glyphs × 6 × s_int × s_int × 4 bytes
+        scratch_count = int(chunk_glyphs) * 6 * s_int * s_int
+        scratch_gpu = device.create_buffer(
+            size=scratch_count * 4,
+            usage=wgpu.BufferUsage.STORAGE,
+        )
+
+        # Hermite output buffer
+        hermite_count = int(chunk_glyphs) * 6 * s_out * s_out
+        hermite_byte_size = hermite_count * 16  # vec4<f32>
+        hermite_gpu = device.create_buffer(
+            size=hermite_byte_size,
+            usage=(
+                wgpu.BufferUsage.STORAGE
+                | wgpu.BufferUsage.COPY_SRC
+            ),
+        )
+
+        # Uniform buffer
+        items_per_glyph_p1 = 6 * s_int * s_int
+        items_per_glyph_p2 = 6 * s_out * s_out
+        uniforms_dtype = np.dtype([
+            ("n_glyphs", "u4"),
+            ("n_coeffs", "u4"),
+            ("lut_res", "u4"),
+            ("l_max", "u4"),
+            ("items_per_glyph_p1", "u4"),
+            ("items_per_glyph_p2", "u4"),
+            ("_pad2", "u4"),
+            ("_pad3", "u4"),
+        ])
+        uniforms_data = np.array(
+            [(chunk_glyphs, n_coeffs, N, l_max,
+              items_per_glyph_p1, items_per_glyph_p2, 0, 0)],
+            dtype=uniforms_dtype,
+        )
+        uniform_gpu = device.create_buffer_with_data(
+            data=uniforms_data,
+            usage=wgpu.BufferUsage.UNIFORM,
+        )
+
+        bind_group = device.create_bind_group(
+            layout=bind_group_layout,
+            entries=[
+                {
+                    "binding": 0,
+                    "resource": {
+                        "buffer": coeff_chunk_gpu,
+                        "offset": 0,
+                        "size": coeff_chunk_size,
+                    },
+                },
+                {
+                    "binding": 1,
+                    "resource": {
+                        "buffer": hermite_gpu,
+                        "offset": 0,
+                        "size": hermite_byte_size,
+                    },
+                },
+                {
+                    "binding": 2,
+                    "resource": {
+                        "buffer": uniform_gpu,
+                        "offset": 0,
+                        "size": uniforms_data.nbytes,
+                    },
+                },
+                {
+                    "binding": 3,
+                    "resource": {
+                        "buffer": scratch_gpu,
+                        "offset": 0,
+                        "size": scratch_count * 4,
+                    },
+                },
+            ],
+        )
+
+        # --- dispatch pass 1 (evaluate SH on internal grid) ---
+        # 2D dispatch to avoid 65535 limit: total_wg = ceil(items/256)
+        # wg_y = ceil(total_wg / 65535), wg_x = min(total_wg, 65535)
+        wg_size = 256
+        total_p1 = int(chunk_glyphs) * items_per_glyph_p1
+        p1_total_wg = int(ceil(total_p1 / wg_size))
+        p1_x = min(p1_total_wg, 65535)
+        p1_y = int(ceil(p1_total_wg / 65535))
+
+        encoder = device.create_command_encoder()
+        cpass = encoder.begin_compute_pass()
+        cpass.set_pipeline(pass1_pipeline)
+        cpass.set_bind_group(0, bind_group)
+        cpass.dispatch_workgroups(p1_x, p1_y)
+        cpass.end()
+
+        # --- dispatch pass 2 (finite-difference hermite) ---
+        total_p2 = int(chunk_glyphs) * items_per_glyph_p2
+        p2_total_wg = int(ceil(total_p2 / wg_size))
+        p2_x = min(p2_total_wg, 65535)
+        p2_y = int(ceil(p2_total_wg / 65535))
+
+        cpass2 = encoder.begin_compute_pass()
+        cpass2.set_pipeline(pass2_pipeline)
+        cpass2.set_bind_group(0, bind_group)
+        cpass2.dispatch_workgroups(p2_x, p2_y)
+        cpass2.end()
+
+        device.queue.submit([encoder.finish()])
+
+        # Read back to CPU via queue.read_buffer (avoids staging buffer)
+        raw = device.queue.read_buffer(hermite_gpu)
+        hermite_np = np.frombuffer(raw, dtype=np.float32).reshape(-1, 4)
+
+        if use_float16:
+            hermite_np = hermite_np.astype(np.float16)
+
+        actor._sh_hermite_lut_buffers[chunk_idx].data[:] = hermite_np
+        actor._sh_hermite_lut_buffers[chunk_idx].update_range()
+
+        glyph_offset += chunk_glyphs
+
+    _elapsed = _time.perf_counter() - _t0
+    print(f"[GPU hermite bake] {glyph_count} glyphs in {_elapsed:.2f}s")
+    return True
+
+
 def _populate_radius_lut_cpu(
     actor, phi_res, theta_res, glyph_count, n_coeffs
 ):
@@ -868,14 +1228,28 @@ def enable_octahedral_lut(
         actor._sh_radius_lut_buffer = None
 
         if mapping_mode == "cube":
-            success = _populate_hermite_lut_cube_cpu_chunked(
-                actor,
-                lut_res,
-                glyph_count,
-                n_coeffs,
-                chunk_info,
-                use_float16=use_float16,
-            )
+            try:
+                success = _populate_hermite_lut_cube_gpu(
+                    actor,
+                    lut_res,
+                    glyph_count,
+                    n_coeffs,
+                    chunk_info,
+                    use_float16=use_float16,
+                )
+            except Exception as _gpu_err:
+                print(
+                    f"[GPU hermite bake] failed ({_gpu_err}), "
+                    "falling back to CPU"
+                )
+                success = _populate_hermite_lut_cube_cpu_chunked(
+                    actor,
+                    lut_res,
+                    glyph_count,
+                    n_coeffs,
+                    chunk_info,
+                    use_float16=use_float16,
+                )
         else:
             success = False
 
@@ -995,6 +1369,19 @@ def _attach_precomputed_radius_tables(actor, precompute_data):
     actor._sh_lut_needs_dispatch = True
 
     old_mat = actor.material
+
+    # Save original material type so auto-detach can restore it
+    actor._pre_compute_material_cls = type(old_mat)
+    if isinstance(old_mat, SlicedSphGlyphMaterial):
+        actor._pre_compute_slice_state = {
+            "active_slice_x": old_mat.active_slice_x,
+            "active_slice_y": old_mat.active_slice_y,
+            "active_slice_z": old_mat.active_slice_z,
+            "vis_x": old_mat.vis_x,
+            "vis_y": old_mat.vis_y,
+            "vis_z": old_mat.vis_z,
+        }
+
     actor.material = _SphGlyphLutMaterial(
         n_coeffs=int(getattr(old_mat, "n_coeffs", -1)),
         scale=float(getattr(old_mat, "scale", 1.0)),
@@ -1265,6 +1652,138 @@ def sph_glyph_billboard(
     return obj
 
 
+def sph_glyph_billboard_sliced(
+    coeffs,
+    centers,
+    voxel_coords,
+    *,
+    basis_type="standard",
+    color_type="orientation",
+    l_max=None,
+    scale=1.0,
+    shininess=50,
+    opacity=None,
+    enable_picking=True,
+    lut_res=8,
+    use_hermite=True,
+    mapping_mode="cube",
+):
+    """Create a *sliced* billboard SH glyph actor.
+
+    Every valid voxel lives in one single actor.  Three uniforms
+    (``active_slice_x/y/z``) select which slices are visible;
+    switching is a uniform update with zero geometry rebuild.
+
+    A cube-mapped LUT is baked once at creation time so the
+    fragment shader uses fast table lookups instead of per-pixel SH
+    evaluation.  Chunking is handled automatically by FURY based on
+    GPU buffer limits.
+
+    Parameters
+    ----------
+    coeffs : ndarray (M, n_coeffs)
+        Flat SH coefficients for every glyph.
+    centers : ndarray (M, 3)
+        World-space centres.
+    voxel_coords : ndarray (M, 3) int32
+        Per-glyph integer voxel (ix, iy, iz).
+    lut_res : int
+        Cube-map LUT resolution per face edge (default 8).
+    use_hermite : bool
+        Use Hermite interpolation LUT (default True).
+    mapping_mode : str
+        LUT mapping mode (default ``"cube"``).
+    """
+    coeffs = np.asarray(coeffs, dtype=np.float32)
+    centers = np.asarray(centers, dtype=np.float32)
+    voxel_coords = np.asarray(voxel_coords, dtype=np.int32)
+
+    n_coeff = coeffs.shape[1]
+    inferred_l_max = get_lmax(n_coeff, basis_type=basis_type)
+
+    if l_max is None:
+        material_n_coeffs = -1
+    else:
+        if l_max > inferred_l_max:
+            raise ValueError("l_max exceeds degree supported by coeffs.")
+        material_n_coeffs = get_n_coeffs(l_max, basis_type=basis_type)
+
+    # --- sizes from SH radii -----------------------------------------
+    sphere_verts, _ = fp.prim_sphere(name="symmetric362")
+    basis_matrix = _sh_basis_for_basis_type(
+        sphere_verts, inferred_l_max, basis_type=basis_type,
+    )
+    if basis_matrix.shape[1] > n_coeff:
+        basis_matrix = basis_matrix[:, :n_coeff]
+
+    radii = coeffs @ basis_matrix.T
+    max_radius = np.max(np.abs(radii), axis=1)
+    max_radius = np.where(max_radius > 1e-6, max_radius, 1e-6)
+    padding = 1.2
+    sizes = (max_radius * scale * 2.0 * padding).astype(np.float32)
+    sizes = np.column_stack([sizes, sizes])
+
+    colors = np.ones((len(coeffs), 3), dtype=np.float32)
+
+    material_kwargs = {
+        "flat_shading": False,
+        "shininess": shininess,
+        "n_coeffs": material_n_coeffs,
+        "scale": float(scale),
+    }
+
+    obj = _create_billboard_actor(
+        centers,
+        colors,
+        sizes,
+        opacity,
+        enable_picking,
+        material_cls=SlicedSphGlyphMaterial,
+        material_kwargs=material_kwargs,
+        actor_cls=SphGlyphBillboard,
+    )
+
+    obj.billboard_radii = max_radius * scale
+    obj.billboard_mode = "spherical_harmonic"
+    obj.n_coeff = n_coeff
+    obj.sh_coeffs = coeffs.reshape(-1).astype(np.float32)
+    obj.sh_coeffs_buffer = Buffer(obj.sh_coeffs)
+    obj.coeffs_per_glyph = n_coeff
+    obj.color_type = 0 if color_type == "sign" else 1
+    obj._basis_type = basis_type
+    obj._l_max = inferred_l_max
+    obj._sh_debug_mode = 0
+    obj._sh_force_direct_eval = False
+    obj._sh_use_octahedral_lut = False
+    obj._sh_use_hermite_interp = False
+    obj._sh_force_fd_normals = False
+    obj._is_precomputed = True
+    obj._is_optimized = True
+    obj._use_level_of_detail = True
+    obj._use_early_discard = True
+    obj._sh_interpolation_mode = 0
+    obj._sh_mapping_mode = mapping_mode
+    obj._sh_requested_lut_res = lut_res
+
+    # Per-glyph voxel coordinates — flat i32 array (ix0,iy0,iz0,ix1,...)
+    obj.slice_indices_buffer = Buffer(
+        voxel_coords.ravel().astype(np.int32)
+    )
+
+    obj.material.n_coeffs = material_n_coeffs
+
+    # Bake LUT (once) — replaces per-pixel SH eval
+    # Chunking is handled automatically based on GPU buffer limits.
+    enable_octahedral_lut(
+        obj,
+        lut_res=lut_res,
+        use_hermite=use_hermite,
+        mapping_mode=mapping_mode,
+    )
+
+    return obj
+
+
 def create_large_scale_sh_billboards(
     coeffs,
     centers=None,
@@ -1338,6 +1857,11 @@ def create_large_scale_sh_billboards(
 
 @register_wgpu_render_function(SphGlyphBillboard, SphGlyphMaterial)
 def _register_sph_glyph_render(wobject):
+    return (BillboardSphGlyphShader(wobject),)
+
+
+@register_wgpu_render_function(SphGlyphBillboard, SlicedSphGlyphMaterial)
+def _register_sliced_sph_glyph_render(wobject):
     return (BillboardSphGlyphShader(wobject),)
 
 
