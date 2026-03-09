@@ -157,7 +157,8 @@ def create_window(
             pixel_ratio=1.25,
             imgui=False,
         )
-    show_m.show_axes_gizmo(labels=["L", "R", "P", "A", "S", "I"])
+    if hasattr(show_m, "show_axes_gizmo"):
+        show_m.show_axes_gizmo(labels=["L", "R", "P", "A", "S", "I"])
     logger.info(
         "Created visualizer currently assumes Neurological convention for axes."
     )
