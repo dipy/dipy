@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from fury.actor import Actor, show_slices
 from fury.colormap import distinguishable_colormap
 from fury.io import load_image_as_wgpu_texture_view
@@ -12,7 +10,7 @@ from dipy.viz.skyline.render.image import Image3D, create_image_visualization
 from dipy.viz.skyline.render.peak import Peak3D, create_peak_visualization
 from dipy.viz.skyline.render.renderer import create_window
 from dipy.viz.skyline.render.roi import ROI3D, create_roi_visualization
-from dipy.viz.skyline.render.sh_slicer import SHGlyph3D
+from dipy.viz.skyline.render.sh_slicer import SHGlyph3D, create_shm_visualization
 from dipy.viz.skyline.render.streamline import (
     ClusterStreamline3D,
     Streamline3D,
@@ -82,35 +80,7 @@ class Skyline:
         self._color_gen = distinguishable_colormap()
 
         self.active_image = None
-        self._load_visualiations(images, peaks, rois, surfaces, tractograms)
-
-        for idx, item in enumerate(sh_coeffs or []):
-            if len(item) == 4:
-                coeffs, affine, path, basis_type = item
-            else:
-                coeffs, affine, path = item
-                basis_type = "descoteaux07"
-            fname = Path(path).name if path is not None else f"SH Glyphs {idx}"
-            sh_name = f"SH Glyphs ({fname})"
-            sh3d = SHGlyph3D(
-                sh_name,
-                coeffs,
-                affine=affine,
-                render_callback=self.before_render,
-                basis_type=basis_type,
-                scale=1.3,
-                l_max=8,
-            )
-            self._add_visualization(sh3d)
-
-        if self._image_visualizations:
-            self._image_visualizations[-1].active = True
-            self.active_image = self._image_visualizations[-1]
-            self._arrange_image_actors()
-
-        if self.active_image is not None:
-            for sh_viz in self._sh_glyph_visualizations:
-                sh_viz.set_image_ref(self.active_image)
+        self._load_visualiations(images, peaks, rois, surfaces, tractograms, sh_coeffs)
 
         self.window._imgui.set_gui(self.draw_ui)
         self.before_render()
@@ -191,7 +161,9 @@ class Skyline:
             raise ValueError("Unsupported visualization type")
         self.UI_window.add(viz.name, viz.renderer)
 
-    def _load_visualiations(self, images, peaks, rois, surfaces, tractograms):
+    def _load_visualiations(
+        self, images, peaks, rois, surfaces, tractograms, sh_coeffs
+    ):
         for idx, input in enumerate(images or []):
             image3d = create_image_visualization(
                 input,
@@ -240,11 +212,24 @@ class Skyline:
                 tract_colors=self._tract_colors,
             )
             self._add_visualization(tractogram3d)
+        for idx, input in enumerate(sh_coeffs or []):
+            sh3d = create_shm_visualization(
+                input,
+                idx,
+                render_callback=self.before_render,
+                scale=1.0,
+                l_max=8,
+            )
+            self._add_visualization(sh3d)
 
         if self._image_visualizations:
             self._image_visualizations[-1].active = True
             self.active_image = self._image_visualizations[-1]
             self._arrange_image_actors()
+
+        if self.active_image is not None:
+            for sh_viz in self._sh_glyph_visualizations:
+                sh_viz.set_image_ref(self.active_image)
 
         if len(self.visualizations) == 0:
             self.UI_window.request_file_dialog = True
@@ -257,6 +242,7 @@ class Skyline:
             loaded_files["rois"],
             loaded_files["surfaces"],
             loaded_files["tractograms"],
+            None,
         )
         update_camera(self.window.screens[0].camera, None, self.window.screens[0].scene)
         self.before_render()
