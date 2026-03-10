@@ -390,7 +390,7 @@ class SHGlyph3D(Visualization):
         voxel_state = apply_transformation(
             np.array([self.state], dtype=np.float32), np.linalg.inv(self.affine)
         )[0]
-        return voxel_state.astype(int)
+        return np.round(voxel_state).astype(int)
 
     def _populate_info(self):
         info = f"Dimensions: {self.shape}"
