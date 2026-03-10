@@ -62,12 +62,12 @@ def save_polydata(
     file_name : string or Path
         The output filename (.vtk, .fib, .ply, .stl and .xml)
     binary : bool, optional
-        Save the file in binary format. Default: False.
+        Save the file in binary format.
     color_array_name : str, optional
-        Name of the color array to save. Default: None.
+        Name of the color array to save.
     legacy_vtk_format : bool, optional
         Use legacy VTK file format. Only applied when fury >= 2.0
-        is installed. Default: False.
+        is installed.
     """
     # use kwargs for backward compatibility with fury < 2.0
     kwargs = {}
