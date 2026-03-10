@@ -131,3 +131,24 @@ def load_files(fnames, *, rois=None, shm_coeffs=None):
         "tractograms": skyline_tractograms,
         "shm_coeffs": skyline_shm_coeffs,
     }
+
+
+def load_npy(fname):
+    """Load a numpy file containing BUAN color values.
+
+    Parameters
+    ----------
+    fname : str
+        Path to the .npy file.
+
+    Returns
+    -------
+    np.ndarray
+        The loaded numpy array.
+    """
+    try:
+        data = np.load(fname)
+        return data
+    except Exception as e:
+        logger.error(f"Error loading numpy file '{fname}': {e}")
+        return None

@@ -9,7 +9,12 @@ import numpy as np
 
 from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.streamline import length as streamline_length
-from dipy.viz.skyline.UI.elements import create_numeric_input
+from dipy.viz.skyline.UI.elements import (
+    create_numeric_input,
+    segmented_switch,
+    uploader,
+)
+from dipy.viz.skyline.io import load_npy
 from dipy.viz.skyline.render.renderer import Visualization
 
 
@@ -106,7 +111,7 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="line", segments=4):
     if line_type == "tube":
         tubes = streamtube(
             lines=lines,
-            radius=0.5,
+            radius=0.3,
             colors=color,
             segments=segments,
         )
@@ -139,6 +144,8 @@ class Streamline3D(Visualization):
         super().__init__(name, render_callback)
         self.sft = sft
         self.color = color
+        self._line_type = line_type
+        self._buan_colors_file = False
         self._create_streamline_actor(line_type)
 
     def _create_streamline_actor(self, line_type):
@@ -153,7 +160,31 @@ class Streamline3D(Visualization):
         return self._actor
 
     def render_widgets(self):
-        pass
+        changed, new = segmented_switch("Line Type", ["Line", "Tube"], self._line_type)
+        if changed:
+            self._line_type = new
+            self._create_streamline_actor(new.lower())
+            self.render()
+
+        imgui.spacing()
+        imgui.spacing()
+
+        def handle_color_change(fname):
+            if fname is not None:
+                self._buan_colors_file = Path(fname[0]).name
+                self._buan_colors_data = load_npy(fname[0])
+                print(f"BUAN colors shape {self._buan_colors_data.shape}")
+                print(
+                    f"BUAN colors range {self._buan_colors_data.min()} - {self._buan_colors_data.max()}"
+                )
+
+        uploader(
+            "Upload BUAN P values",
+            callback=handle_color_change,
+            extension="*.npy",
+            selected=self._buan_colors_file,
+            type="buan_colors",
+        )
 
 
 class ClusterStreamline3D(Visualization):
