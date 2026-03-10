@@ -14,14 +14,15 @@ References
 FORCE methodology paper (in preparation)
 """
 
-import os
-import gc
-import tempfile
-import numpy as np
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import gc
+import os
+import tempfile
 
-from dipy.sims.voxel import all_tensor_evecs
+import numpy as np
+
 from dipy.data import default_sphere
+from dipy.sims.voxel import all_tensor_evecs
 
 
 def bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
@@ -49,8 +50,7 @@ def bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
         Spherical function values at each vertex.
     """
     sf = f0 * np.exp(
-        -k1 * vertices.dot(major_axis) ** 2
-        - k2 * vertices.dot(minor_axis) ** 2
+        -k1 * vertices.dot(major_axis) ** 2 - k2 * vertices.dot(minor_axis) ** 2
     )
     return sf.T
 
@@ -123,18 +123,19 @@ def smallest_shell_bval(bvals, b0_threshold=50, shell_tolerance=50):
 def init_worker(base_seed=None):
     """
     Initializer for ProcessPoolExecutor workers.
-    Each worker gets a unique RNG state (Ray-style). With base_seed=None,
+    Each worker gets a unique RNG state. With base_seed=None,
     seed = PID + high-resolution time so every worker has a different stream.
     With initargs=(base_seed,) for reproducibility, seed = base_seed + PID
     so workers differ but the run is reproducible for a fixed worker count.
     """
     import random
     import time
+
     if base_seed is not None:
-        seed = int(base_seed) + os.getpid()
+        seed = (int(base_seed) + os.getpid()) % (2**32)
     else:
         # Unique per process and run: PID + high-resolution time
-        seed = os.getpid() * (2**32) + (int(time.perf_counter_ns()) % (2**32))
+        seed = (os.getpid() * (2**16) + int(time.perf_counter_ns())) % (2**32)
     np.random.seed(seed)
     random.seed(seed)
 
@@ -169,47 +170,116 @@ def _generate_batch_worker(
 
     # Unpack memmap info
     (
-        signals_path, signals_shape, signals_dtype,
-        labels_path, labels_shape, labels_dtype,
-        num_fibers_path, num_fibers_shape, num_fibers_dtype,
-        dispersion_path, dispersion_shape, dispersion_dtype,
-        wm_fraction_path, wm_fraction_shape, wm_fraction_dtype,
-        gm_fraction_path, gm_fraction_shape, gm_fraction_dtype,
-        csf_fraction_path, csf_fraction_shape, csf_fraction_dtype,
-        nd_path, nd_shape, nd_dtype,
-        odfs_path, odfs_shape, odfs_dtype,
-        ufa_wm_path, ufa_wm_shape, ufa_wm_dtype,
-        ufa_voxel_path, ufa_voxel_shape, ufa_voxel_dtype,
-        fraction_array_path, fraction_array_shape, fraction_array_dtype,
-        wm_disp_path, wm_disp_shape, wm_disp_dtype,
-        wm_d_par_path, wm_d_par_shape, wm_d_par_dtype,
-        wm_d_perp_path, wm_d_perp_shape, wm_d_perp_dtype,
-        gm_d_par_path, gm_d_par_shape, gm_d_par_dtype,
-        csf_d_par_path, csf_d_par_shape, csf_d_par_dtype,
-        f_ins_path, f_ins_shape, f_ins_dtype,
+        signals_path,
+        signals_shape,
+        signals_dtype,
+        labels_path,
+        labels_shape,
+        labels_dtype,
+        num_fibers_path,
+        num_fibers_shape,
+        num_fibers_dtype,
+        dispersion_path,
+        dispersion_shape,
+        dispersion_dtype,
+        wm_fraction_path,
+        wm_fraction_shape,
+        wm_fraction_dtype,
+        gm_fraction_path,
+        gm_fraction_shape,
+        gm_fraction_dtype,
+        csf_fraction_path,
+        csf_fraction_shape,
+        csf_fraction_dtype,
+        nd_path,
+        nd_shape,
+        nd_dtype,
+        odfs_path,
+        odfs_shape,
+        odfs_dtype,
+        ufa_wm_path,
+        ufa_wm_shape,
+        ufa_wm_dtype,
+        ufa_voxel_path,
+        ufa_voxel_shape,
+        ufa_voxel_dtype,
+        fraction_array_path,
+        fraction_array_shape,
+        fraction_array_dtype,
+        wm_disp_path,
+        wm_disp_shape,
+        wm_disp_dtype,
+        wm_d_par_path,
+        wm_d_par_shape,
+        wm_d_par_dtype,
+        wm_d_perp_path,
+        wm_d_perp_shape,
+        wm_d_perp_dtype,
+        gm_d_par_path,
+        gm_d_par_shape,
+        gm_d_par_dtype,
+        csf_d_par_path,
+        csf_d_par_shape,
+        csf_d_par_dtype,
+        f_ins_path,
+        f_ins_shape,
+        f_ins_dtype,
     ) = memmap_info
 
     # Apply diffusivity ranges in worker
     set_diffusivity_ranges(**diffusivity_cfg)
 
     # Open memmaps in read-write mode
-    signals_mm = np.memmap(signals_path, mode="r+", dtype=signals_dtype, shape=signals_shape)
-    labels_mm = np.memmap(labels_path, mode="r+", dtype=labels_dtype, shape=labels_shape)
-    num_fibers_mm = np.memmap(num_fibers_path, mode="r+", dtype=num_fibers_dtype, shape=num_fibers_shape)
-    dispersion_mm = np.memmap(dispersion_path, mode="r+", dtype=dispersion_dtype, shape=dispersion_shape)
-    wm_fraction_mm = np.memmap(wm_fraction_path, mode="r+", dtype=wm_fraction_dtype, shape=wm_fraction_shape)
-    gm_fraction_mm = np.memmap(gm_fraction_path, mode="r+", dtype=gm_fraction_dtype, shape=gm_fraction_shape)
-    csf_fraction_mm = np.memmap(csf_fraction_path, mode="r+", dtype=csf_fraction_dtype, shape=csf_fraction_shape)
+    signals_mm = np.memmap(
+        signals_path, mode="r+", dtype=signals_dtype, shape=signals_shape
+    )
+    labels_mm = np.memmap(
+        labels_path, mode="r+", dtype=labels_dtype, shape=labels_shape
+    )
+    num_fibers_mm = np.memmap(
+        num_fibers_path, mode="r+", dtype=num_fibers_dtype, shape=num_fibers_shape
+    )
+    dispersion_mm = np.memmap(
+        dispersion_path, mode="r+", dtype=dispersion_dtype, shape=dispersion_shape
+    )
+    wm_fraction_mm = np.memmap(
+        wm_fraction_path, mode="r+", dtype=wm_fraction_dtype, shape=wm_fraction_shape
+    )
+    gm_fraction_mm = np.memmap(
+        gm_fraction_path, mode="r+", dtype=gm_fraction_dtype, shape=gm_fraction_shape
+    )
+    csf_fraction_mm = np.memmap(
+        csf_fraction_path, mode="r+", dtype=csf_fraction_dtype, shape=csf_fraction_shape
+    )
     nd_mm = np.memmap(nd_path, mode="r+", dtype=nd_dtype, shape=nd_shape)
     odfs_mm = np.memmap(odfs_path, mode="r+", dtype=odfs_dtype, shape=odfs_shape)
-    ufa_wm_mm = np.memmap(ufa_wm_path, mode="r+", dtype=ufa_wm_dtype, shape=ufa_wm_shape)
-    ufa_voxel_mm = np.memmap(ufa_voxel_path, mode="r+", dtype=ufa_voxel_dtype, shape=ufa_voxel_shape)
-    fraction_array_mm = np.memmap(fraction_array_path, mode="r+", dtype=fraction_array_dtype, shape=fraction_array_shape)
-    wm_disp_mm = np.memmap(wm_disp_path, mode="r+", dtype=wm_disp_dtype, shape=wm_disp_shape)
-    wm_d_par_mm = np.memmap(wm_d_par_path, mode="r+", dtype=wm_d_par_dtype, shape=wm_d_par_shape)
-    wm_d_perp_mm = np.memmap(wm_d_perp_path, mode="r+", dtype=wm_d_perp_dtype, shape=wm_d_perp_shape)
-    gm_d_par_mm = np.memmap(gm_d_par_path, mode="r+", dtype=gm_d_par_dtype, shape=gm_d_par_shape)
-    csf_d_par_mm = np.memmap(csf_d_par_path, mode="r+", dtype=csf_d_par_dtype, shape=csf_d_par_shape)
+    ufa_wm_mm = np.memmap(
+        ufa_wm_path, mode="r+", dtype=ufa_wm_dtype, shape=ufa_wm_shape
+    )
+    ufa_voxel_mm = np.memmap(
+        ufa_voxel_path, mode="r+", dtype=ufa_voxel_dtype, shape=ufa_voxel_shape
+    )
+    fraction_array_mm = np.memmap(
+        fraction_array_path,
+        mode="r+",
+        dtype=fraction_array_dtype,
+        shape=fraction_array_shape,
+    )
+    wm_disp_mm = np.memmap(
+        wm_disp_path, mode="r+", dtype=wm_disp_dtype, shape=wm_disp_shape
+    )
+    wm_d_par_mm = np.memmap(
+        wm_d_par_path, mode="r+", dtype=wm_d_par_dtype, shape=wm_d_par_shape
+    )
+    wm_d_perp_mm = np.memmap(
+        wm_d_perp_path, mode="r+", dtype=wm_d_perp_dtype, shape=wm_d_perp_shape
+    )
+    gm_d_par_mm = np.memmap(
+        gm_d_par_path, mode="r+", dtype=gm_d_par_dtype, shape=gm_d_par_shape
+    )
+    csf_d_par_mm = np.memmap(
+        csf_d_par_path, mode="r+", dtype=csf_d_par_dtype, shape=csf_d_par_shape
+    )
     f_ins_mm = np.memmap(f_ins_path, mode="r+", dtype=f_ins_dtype, shape=f_ins_shape)
 
     for i in range(batch_size):
@@ -239,11 +309,26 @@ def _generate_batch_worker(
         ) = res
 
     # Flush memmaps
-    for mm in [signals_mm, labels_mm, num_fibers_mm, dispersion_mm,
-               wm_fraction_mm, gm_fraction_mm, csf_fraction_mm, nd_mm,
-               odfs_mm, ufa_wm_mm, ufa_voxel_mm, fraction_array_mm,
-               wm_disp_mm, wm_d_par_mm, wm_d_perp_mm, gm_d_par_mm,
-               csf_d_par_mm, f_ins_mm]:
+    for mm in [
+        signals_mm,
+        labels_mm,
+        num_fibers_mm,
+        dispersion_mm,
+        wm_fraction_mm,
+        gm_fraction_mm,
+        csf_fraction_mm,
+        nd_mm,
+        odfs_mm,
+        ufa_wm_mm,
+        ufa_voxel_mm,
+        fraction_array_mm,
+        wm_disp_mm,
+        wm_d_par_mm,
+        wm_d_perp_mm,
+        gm_d_par_mm,
+        csf_d_par_mm,
+        f_ins_mm,
+    ]:
         mm.flush()
 
     return batch_size
@@ -309,6 +394,7 @@ def generate_force_simulations(
         Simulations containing signals and parameters.
     """
     from tqdm import tqdm
+
     from dipy.reconst import dti
     from dipy.sims._force_core import set_diffusivity_ranges
 
@@ -342,7 +428,9 @@ def generate_force_simulations(
         [all_tensor_evecs(tuple(point)) for point in target_sphere],
         dtype=np.float64,
     )
-    odi_list = np.linspace(odi_range[0], odi_range[1], num_odi_values).astype(np.float64)
+    odi_list = np.linspace(odi_range[0], odi_range[1], num_odi_values).astype(
+        np.float64
+    )
     bingham_sf = bingham_dictionary(target_sphere, odi_list)
 
     label_dtype = np.uint8
@@ -375,11 +463,24 @@ def generate_force_simulations(
     f_ins_mm = create_mm("f_ins", dtype, (num_simulations, 3))
 
     memmaps = [
-        signals_mm, labels_mm, num_fibers_mm, dispersion_mm,
-        wm_fraction_mm, gm_fraction_mm, csf_fraction_mm, nd_mm,
-        odfs_mm, ufa_wm_mm, ufa_voxel_mm, fraction_array_mm,
-        wm_disp_mm, wm_d_par_mm, wm_d_perp_mm, gm_d_par_mm,
-        csf_d_par_mm, f_ins_mm,
+        signals_mm,
+        labels_mm,
+        num_fibers_mm,
+        dispersion_mm,
+        wm_fraction_mm,
+        gm_fraction_mm,
+        csf_fraction_mm,
+        nd_mm,
+        odfs_mm,
+        ufa_wm_mm,
+        ufa_voxel_mm,
+        fraction_array_mm,
+        wm_disp_mm,
+        wm_d_par_mm,
+        wm_d_perp_mm,
+        gm_d_par_mm,
+        csf_d_par_mm,
+        f_ins_mm,
     ]
 
     # Build batch specs
@@ -396,32 +497,66 @@ def generate_force_simulations(
 
     # Pack memmap info for workers
     memmap_info = (
-        memmap_paths["signals"], (num_simulations, n_bvals), dtype,
-        memmap_paths["labels"], (num_simulations, n_dirs), label_dtype,
-        memmap_paths["num_fibers"], (num_simulations,), dtype,
-        memmap_paths["dispersion"], (num_simulations,), dtype,
-        memmap_paths["wm_fraction"], (num_simulations,), dtype,
-        memmap_paths["gm_fraction"], (num_simulations,), dtype,
-        memmap_paths["csf_fraction"], (num_simulations,), dtype,
-        memmap_paths["nd"], (num_simulations,), dtype,
-        memmap_paths["odfs"], (num_simulations, n_dirs), np.float16,
-        memmap_paths["ufa_wm"], (num_simulations,), dtype,
-        memmap_paths["ufa_voxel"], (num_simulations,), dtype,
-        memmap_paths["fraction_array"], (num_simulations, 3), dtype,
-        memmap_paths["wm_disp"], (num_simulations,), dtype,
-        memmap_paths["wm_d_par"], (num_simulations,), dtype,
-        memmap_paths["wm_d_perp"], (num_simulations,), dtype,
-        memmap_paths["gm_d_par"], (num_simulations,), dtype,
-        memmap_paths["csf_d_par"], (num_simulations,), dtype,
-        memmap_paths["f_ins"], (num_simulations, 3), dtype,
+        memmap_paths["signals"],
+        (num_simulations, n_bvals),
+        dtype,
+        memmap_paths["labels"],
+        (num_simulations, n_dirs),
+        label_dtype,
+        memmap_paths["num_fibers"],
+        (num_simulations,),
+        dtype,
+        memmap_paths["dispersion"],
+        (num_simulations,),
+        dtype,
+        memmap_paths["wm_fraction"],
+        (num_simulations,),
+        dtype,
+        memmap_paths["gm_fraction"],
+        (num_simulations,),
+        dtype,
+        memmap_paths["csf_fraction"],
+        (num_simulations,),
+        dtype,
+        memmap_paths["nd"],
+        (num_simulations,),
+        dtype,
+        memmap_paths["odfs"],
+        (num_simulations, n_dirs),
+        np.float16,
+        memmap_paths["ufa_wm"],
+        (num_simulations,),
+        dtype,
+        memmap_paths["ufa_voxel"],
+        (num_simulations,),
+        dtype,
+        memmap_paths["fraction_array"],
+        (num_simulations, 3),
+        dtype,
+        memmap_paths["wm_disp"],
+        (num_simulations,),
+        dtype,
+        memmap_paths["wm_d_par"],
+        (num_simulations,),
+        dtype,
+        memmap_paths["wm_d_perp"],
+        (num_simulations,),
+        dtype,
+        memmap_paths["gm_d_par"],
+        (num_simulations,),
+        dtype,
+        memmap_paths["csf_d_par"],
+        (num_simulations,),
+        dtype,
+        memmap_paths["f_ins"],
+        (num_simulations, 3),
+        dtype,
     )
 
     # Run simulations with progress bar
     pbar = tqdm(total=num_simulations, desc="Simulating", disable=not verbose)
 
-    with ProcessPoolExecutor(
-        max_workers=num_cpus, initializer=_worker_initializer
-    ) as executor:
+    with ProcessPoolExecutor(max_workers=num_cpus, initializer=init_worker) as executor:
         futures = {
             executor.submit(
                 _generate_batch_worker,
@@ -504,7 +639,7 @@ def generate_force_simulations(
         del mm
     gc.collect()
 
-    for name, path in memmap_paths.items():
+    for _name, path in memmap_paths.items():
         try:
             if os.path.exists(path):
                 os.remove(path)
