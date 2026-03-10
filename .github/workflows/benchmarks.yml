@@ -1,0 +1,215 @@
+name: ASV Continuous Benchmarks
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: "Base branch/ref to compare against"
+        required: false
+        default: master
+      head_ref:
+        description: "Head ref/sha to benchmark (defaults to the workflow ref)"
+        required: false
+        default: ""
+  pull_request_target:
+    types: [labeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: asv-benchmarks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  asv-continuous:
+    name: ASV continuous
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request_target' && github.event.action == 'labeled' && github.event.label.name == 'run-benchmark')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Check actor permissions (PR only)
+        if: github.event_name == 'pull_request_target'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              const actor = context.actor;
+              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: actor,
+              });
+
+              core.info(`Actor permission: ${data.permission}`);
+              const allowed = new Set(['admin', 'maintain', 'write', 'triage']);
+              if (!allowed.has(data.permission)) {
+                core.setFailed(`Actor ${actor} does not have permission to run benchmarks (${data.permission}).`);
+              }
+            } catch (err) {
+              core.setFailed(`Unable to verify permissions for actor ${context.actor}: ${err.message}`);
+            }
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install ccache
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ccache
+
+      - name: Configure ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          max-size: 2G
+          key: ${{ runner.os }}-asv-ccache
+
+      - name: Install ASV runner dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements/benchmark.txt
+
+      - name: Resolve base/head commits
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request_target" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            BASE_REF="${{ github.event.pull_request.base.ref }}"
+            HEAD_REPO="${{ github.event.pull_request.head.repo.clone_url }}"
+
+            echo "BASE_SHA=${BASE_SHA}" >> "$GITHUB_ENV"
+            echo "HEAD_SHA=${HEAD_SHA}" >> "$GITHUB_ENV"
+            echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> "$GITHUB_ENV"
+            echo "BASE_REF=${BASE_REF}" >> "$GITHUB_ENV"
+            echo "HEAD_REPO=${HEAD_REPO}" >> "$GITHUB_ENV"
+
+            git fetch --no-tags --prune --force origin "${BASE_SHA}"
+            git fetch --no-tags --prune --force "${HEAD_REPO}" "${HEAD_SHA}"
+          else
+            BASE_REF="${{ inputs.base_ref }}"
+            HEAD_REF_INPUT="${{ inputs.head_ref }}"
+
+            git fetch --no-tags --prune --force origin "${BASE_REF}"
+            BASE_SHA="$(git rev-parse FETCH_HEAD)"
+            echo "BASE_SHA=${BASE_SHA}" >> "$GITHUB_ENV"
+            echo "BASE_REF=${BASE_REF}" >> "$GITHUB_ENV"
+
+            if [ -n "${HEAD_REF_INPUT}" ]; then
+              git fetch --no-tags --prune --force origin "${HEAD_REF_INPUT}"
+              HEAD_SHA="$(git rev-parse FETCH_HEAD)"
+            else
+              HEAD_SHA="${GITHUB_SHA}"
+            fi
+            echo "HEAD_SHA=${HEAD_SHA}" >> "$GITHUB_ENV"
+          fi
+
+          echo "Base: ${BASE_REF} @ ${BASE_SHA}"
+          echo "Head: ${HEAD_SHA}"
+
+      - name: Generate ASV compare config
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          tpl_path = Path('benchmarks') / 'asv_compare.conf.json.tpl'
+          out_path = Path('benchmarks') / 'asv_compare.conf.json'
+
+          text = tpl_path.read_text(encoding='utf-8')
+          text = text.replace('{dipy_build_options}', '')
+          out_path.write_text(text, encoding='utf-8')
+
+          print(f'Wrote {out_path}')
+          PY
+
+      - name: Set threading parameters for reliable benchmarking
+        run: |
+          echo "OPENBLAS_NUM_THREADS=1" >> $GITHUB_ENV
+          echo "MKL_NUM_THREADS=1" >> $GITHUB_ENV
+          echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
+
+      - name: Run ASV continuous
+        env:
+          CC: ccache gcc
+          CXX: ccache g++
+          CCACHE_BASEDIR: ${{ github.workspace }}
+          CCACHE_COMPRESS: 'true'
+        working-directory: benchmarks
+        run: |
+          asv machine --yes --config asv_compare.conf.json
+          asv continuous --config asv_compare.conf.json --factor 1.1 --split --show-stderr "$BASE_SHA" "$HEAD_SHA" | tee ../asv_continuous.txt
+          asv compare --config asv_compare.conf.json --factor 1.1 --split "$BASE_SHA" "$HEAD_SHA" | tee ../asv_compare.txt
+
+      - name: Upload ASV output
+        uses: actions/upload-artifact@v4
+        with:
+          name: asv-results
+          path: |
+            asv_continuous.txt
+            asv_compare.txt
+            benchmarks/results
+
+      - name: Comment on PR with comparison
+        if: github.event_name == 'pull_request_target'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const prNumber = Number(process.env.PR_NUMBER);
+            const baseSha = process.env.BASE_SHA;
+            const headSha = process.env.HEAD_SHA;
+            const baseRef = process.env.BASE_REF || 'master';
+
+            let compareText = '';
+            try {
+              compareText = fs.readFileSync(path.join(process.env.GITHUB_WORKSPACE, 'asv_compare.txt'), 'utf8');
+            } catch (e) {
+              compareText = `Failed to read asv_compare.txt: ${e.message}`;
+            }
+
+            // GitHub comment body hard limit is ~65k.
+            const maxLen = 60000;
+            if (compareText.length > maxLen) {
+              compareText = compareText.slice(0, maxLen) + "\n\n... (truncated)";
+            }
+
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const body = [
+              '### ASV benchmark comparison',
+              '',
+              `Base (${baseRef}): ${baseSha}`,
+              `Head: ${headSha}`,
+              '',
+              '<details><summary>asv compare output</summary>',
+              '',
+              '```text',
+              compareText.trimEnd(),
+              '```',
+              '',
+              '</details>',
+              '',
+              `Run: ${runUrl}`,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body,
+            });

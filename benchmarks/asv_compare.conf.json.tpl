@@ -47,7 +47,7 @@
     // version.
     "matrix": {
         "Cython": [],
-        "setuptools": ["59.2.0"],
+        "build": [],
         "packaging": []
     },
 
@@ -78,11 +78,8 @@
     // number of builds to keep, per environment.
     "build_cache_size": 8,
 
-    "build_command" : [
-        "python -m build {dipy_build_options}",
-        // pip ignores '--global-option' when pep517 is enabled, we also enabling pip verbose to
-        // be reached from asv `--verbose` so we can verify the build options.
-        "PIP_NO_BUILD_ISOLATION=false python {build_dir}/benchmarks/asv_pip_nopep517.py -v {dipy_global_options} --no-deps --no-index -w {build_cache_dir} {build_dir}"
+    "build_command": [
+        "python -m build --wheel -o {build_cache_dir} {dipy_build_options} {build_dir}"
     ],
     // The commits after which the regression search in `asv publish`
     // should start looking for regressions. Dictionary whose keys are
