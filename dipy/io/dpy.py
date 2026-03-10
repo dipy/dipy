@@ -110,7 +110,7 @@ class Dpy:
         self.offsets[-1] = self.curr_pos
 
     def write_tracks(self, tracks):
-        """Write a multiple tracks to the Dpy file.
+        """Write multiple tracks to the Dpy file.
 
         Parameters
         ----------

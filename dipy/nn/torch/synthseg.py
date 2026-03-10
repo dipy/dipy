@@ -184,11 +184,11 @@ class Model(Module):
     Parameters
     ----------
     model_scale : int, optional
-        The scale of the model. Default: 24.
+        The scale of the model.
     n_levels : int, optional
-        Number of levels in the U-Net. Default: 5.
+        Number of levels in the U-Net.
     output_channels : int, optional
-        Number of output channels. Default: 33.
+        Number of output channels.
     """
 
     def __init__(self, *, model_scale=24, n_levels=5, output_channels=33):
@@ -470,11 +470,11 @@ class SynthSeg:
         Parameters
         ----------
         model_scale : int, optional
-            The scale of the model. Default: 24.
+            The scale of the model.
         n_levels : int, optional
-            Number of levels in the U-Net. Default: 5.
+            Number of levels in the U-Net.
         output_channels : int, optional
-            Number of output channels. Default: 33.
+            Number of output channels.
 
         Returns
         -------
@@ -534,6 +534,7 @@ class SynthSeg:
         for l_idx, flip_lbl in enumerate(self.flip_indices):
             if l_idx != 0:
                 new_img = np.where(img == l_idx, flip_lbl, new_img)
+        return new_img
 
     def _prepare_img(self, img):
         """Prepare the image for model input.

@@ -109,7 +109,7 @@ class Block(Layer):
     n_layers : int
         Number of convolutional layers in the block.
     layer_type : str, optional
-        Type of the block: 'down' or 'up'. Default: 'down'.
+        Type of the block: 'down' or 'up'.
     """
 
     @warning_for_keywords()

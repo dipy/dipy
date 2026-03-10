@@ -272,7 +272,7 @@ class Model(Module):
     Parameters
     ----------
     model_scale : int, optional
-        The scale of the model. Default: 16.
+        The scale of the model.
     """
 
     def __init__(self, model_scale=16):
@@ -477,7 +477,7 @@ class EVACPlus:
         Parameters
         ----------
         model_scale : int, optional
-            The scale of the model. Default: 16.
+            The scale of the model.
 
         Returns
         -------
