@@ -1,13 +1,12 @@
 """Tests for FORCE simulation module."""
 
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_array_less
 
 from dipy.sims.force import (
-    bingham_to_sf,
     bingham_dictionary,
-    validate_diffusivity_config,
+    bingham_to_sf,
     get_default_diffusivity_config,
+    validate_diffusivity_config,
 )
 
 
@@ -66,7 +65,7 @@ def test_validate_diffusivity_config_missing_key():
 
     try:
         validate_diffusivity_config(config)
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError as e:
         assert "Missing required key" in str(e)
 
@@ -78,7 +77,7 @@ def test_validate_diffusivity_config_invalid_range():
 
     try:
         validate_diffusivity_config(config)
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError as e:
         assert "min must be <= max" in str(e)
 
@@ -119,14 +118,14 @@ def test_smallest_shell_bval_no_nonzero():
 
     try:
         smallest_shell_bval(bvals)
-        assert False, "Should have raised ValueError"
+        raise AssertionError("Should have raised ValueError")
     except ValueError as e:
         assert "No non-b0 volumes" in str(e)
 
 
 def test_save_load_force_simulations(tmp_path):
     """Test saving and loading FORCE simulations."""
-    from dipy.sims.force import save_force_simulations, load_force_simulations
+    from dipy.sims.force import load_force_simulations, save_force_simulations
 
     # Create test simulations
     test_sims = {

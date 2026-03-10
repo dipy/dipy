@@ -27,6 +27,8 @@ def paramap(
     func_args=None,
     clean_spill=True,
     func_kwargs=None,
+    shared_objects=None,
+    inflight_cap=None,
     **kwargs,
 ):
     # FIXME: but several fitting functions return "extra" as well
@@ -65,6 +67,17 @@ def paramap(
     func_kwargs : dict or sequence, optional
         Keyword arguments to `func` or sequence of keyword arguments
         to `func`: one item for each item in the input list.
+    shared_objects : dict, optional
+        Dictionary of ``{name: array}`` to place in the Ray object store
+        once via ``ray.put()``.  The resulting ``ObjectRef`` dictionary is
+        passed to each worker as the ``_shared_refs`` keyword argument.
+        Workers can resolve them with ``ray.get()``.  Only used with the
+        ``"ray"`` engine; ignored for other engines.
+    inflight_cap : int, optional
+        Maximum number of pending Ray tasks before draining results.
+        Limits memory pressure when processing many chunks.
+        Only used with the ``"ray"`` engine; ignored for other engines.
+        When None (default), all tasks are submitted at once.
     kwargs : dict, optional
         Additional arguments to pass to either joblib.Parallel
         or dask.compute, or ray.remote depending on the engine used.
@@ -154,18 +167,45 @@ def paramap(
                     },
                 )
 
+        # Place shared objects in the Ray object store once
+        shared_refs = None
+        if shared_objects:
+            shared_refs = {k: ray.put(v) for k, v in shared_objects.items()}
+
         func = ray.remote(func)
-        if func_kwargs_sequence:
-            results = ray.get(
-                [
-                    func.remote(ii, *func_args, **fk)
-                    for ii, fk in zip(in_list, func_kwargs)
-                ]
+
+        def _build_kwargs(base_kw):
+            if shared_refs is not None:
+                return {**base_kw, "_shared_refs": shared_refs}
+            return base_kw
+
+        def _submit_one(item, kw):
+            return func.remote(item, *func_args, **_build_kwargs(kw))
+
+        if inflight_cap is not None and inflight_cap > 0:
+            # Throttled submission: drain every inflight_cap tasks
+            results = []
+            pending = []
+            items_kw = (
+                zip(in_list, func_kwargs)
+                if func_kwargs_sequence
+                else ((ii, func_kwargs) for ii in in_list)
             )
+            for item, kw in items_kw:
+                pending.append(_submit_one(item, kw))
+                if len(pending) >= inflight_cap:
+                    results.extend(ray.get(pending))
+                    pending = []
+            if pending:
+                results.extend(ray.get(pending))
         else:
-            results = ray.get(
-                [func.remote(ii, *func_args, **func_kwargs) for ii in in_list]
-            )
+            # Submit all at once (original behaviour)
+            if func_kwargs_sequence:
+                results = ray.get(
+                    [_submit_one(ii, fk) for ii, fk in zip(in_list, func_kwargs)]
+                )
+            else:
+                results = ray.get([_submit_one(ii, func_kwargs) for ii in in_list])
 
         if clean_spill:
             shutil.rmtree(tmp_dir.name)

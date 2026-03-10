@@ -1,13 +1,17 @@
+import fcntl
 import json
 import os
 from pathlib import Path
+import warnings
 
 import numpy as np
 
-from dipy.reconst.base import ReconstModel, ReconstFit
-from dipy.data import default_sphere
-from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst._force_search import search_inner_product as _cython_search
+from dipy.reconst.base import ReconstFit, ReconstModel
+from dipy.reconst.multi_voxel import multi_voxel_fit
+
+# Named constants
+EPSILON = 1e-12
 
 
 def _get_force_cache_dir():
@@ -30,8 +34,7 @@ def _get_force_cache_dir():
     return cache_dir
 
 
-def _gtab_matches(entry_bvals, entry_bvecs, gtab, bval_tol=10.0,
-                  bvec_tol=1e-3):
+def _gtab_matches(entry_bvals, entry_bvecs, gtab, *, bval_tol=10.0, bvec_tol=1e-3):
     """Check whether stored bvals/bvecs match a GradientTable.
 
     Parameters
@@ -62,8 +65,9 @@ def _gtab_matches(entry_bvals, entry_bvecs, gtab, bval_tol=10.0,
     if stored_bvecs.shape != current_bvecs.shape:
         return False
 
-    return (np.allclose(stored_bvals, current_bvals, atol=bval_tol) and
-            np.allclose(stored_bvecs, current_bvecs, atol=bvec_tol))
+    return np.allclose(stored_bvals, current_bvals, atol=bval_tol) and np.allclose(
+        stored_bvecs, current_bvecs, atol=bvec_tol
+    )
 
 
 def _diffusivity_matches(entry_config, current_config):
@@ -119,8 +123,29 @@ def _save_cache_registry(cache_dir, registry):
         json.dump(registry, f, indent=2)
 
 
-def _find_cached_simulation(cache_dir, gtab, diffusivity_config,
-                            num_simulations):
+def _locked_registry_update(cache_dir, update_fn):
+    """Read-modify-write the cache registry under an exclusive file lock.
+
+    Parameters
+    ----------
+    cache_dir : Path
+        Cache directory.
+    update_fn : callable
+        Function that receives the current registry list and returns the
+        updated list.
+    """
+    lock_path = cache_dir / "cache_registry.lock"
+    with open(lock_path, "w") as lock_fh:
+        fcntl.flock(lock_fh, fcntl.LOCK_EX)
+        try:
+            registry = _load_cache_registry(cache_dir)
+            registry = update_fn(registry)
+            _save_cache_registry(cache_dir, registry)
+        finally:
+            fcntl.flock(lock_fh, fcntl.LOCK_UN)
+
+
+def _find_cached_simulation(cache_dir, gtab, diffusivity_config, num_simulations):
     """Search the registry for a simulation matching the given parameters.
 
     Parameters
@@ -145,8 +170,7 @@ def _find_cached_simulation(cache_dir, gtab, diffusivity_config,
             continue
         if not _gtab_matches(entry["bvals"], entry["bvecs"], gtab):
             continue
-        if not _diffusivity_matches(entry["diffusivity_config"],
-                                    diffusivity_config):
+        if not _diffusivity_matches(entry["diffusivity_config"], diffusivity_config):
             continue
         candidate = cache_dir / entry["filename"]
         if candidate.exists():
@@ -154,8 +178,9 @@ def _find_cached_simulation(cache_dir, gtab, diffusivity_config,
     return None
 
 
-def _register_cached_simulation(cache_dir, gtab, diffusivity_config,
-                                num_simulations, filename):
+def _register_cached_simulation(
+    cache_dir, gtab, diffusivity_config, num_simulations, filename
+):
     """Add a new entry to the cache registry.
 
     Parameters
@@ -171,7 +196,6 @@ def _register_cached_simulation(cache_dir, gtab, diffusivity_config,
     filename : str
         Filename of the saved ``.npz`` inside *cache_dir*.
     """
-    registry = _load_cache_registry(cache_dir)
 
     # Convert numpy types to plain Python for JSON serialisation
     def _to_json(obj):
@@ -194,8 +218,12 @@ def _register_cached_simulation(cache_dir, gtab, diffusivity_config,
         "num_simulations": int(num_simulations),
         "filename": filename,
     }
-    registry.append(entry)
-    _save_cache_registry(cache_dir, registry)
+
+    def _append(registry):
+        registry.append(entry)
+        return registry
+
+    _locked_registry_update(cache_dir, _append)
 
 
 class SignalIndex:
@@ -226,6 +254,12 @@ class SignalIndex:
         ----------
         x : array-like (n, d)
             Vectors to add, will be converted to float32 C-contiguous.
+
+        Notes
+        -----
+        Each call reallocates the internal array via ``np.vstack``.  This
+        method is designed for a single bulk load; repeated small ``add``
+        calls will exhibit O(n²) memory allocation cost.
         """
         x = np.ascontiguousarray(x, dtype=np.float32)
 
@@ -292,7 +326,14 @@ class SignalIndex:
         if k <= 0:
             raise ValueError(f"k must be positive, got {k}")
 
-        k = min(k, self.ntotal)
+        if k > self.ntotal:
+            warnings.warn(
+                f"k={k} exceeds index size ({self.ntotal}); "
+                f"clamping to {self.ntotal}.",
+                UserWarning,
+                stacklevel=2,
+            )
+            k = self.ntotal
 
         # Use optimized Cython search (SciPy BLAS + streaming heap)
         distances, indices = _cython_search(x, self._xb, k)
@@ -348,7 +389,7 @@ def create_signal_index(signals_norm):
     return index
 
 
-def softmax_stable(x, axis=1):
+def softmax_stable(x, *, axis=1):
     """
     Numerically stable softmax.
 
@@ -398,7 +439,7 @@ def compute_uncertainty_ambiguity(scores):
     return uncertainty, ambiguity
 
 
-def labels_to_peak_indices(labels_binary, max_peaks=3):
+def labels_to_peak_indices(labels_binary, *, max_peaks=3):
     """
     Convert binary peak labels to compact index array.
 
@@ -430,7 +471,7 @@ def labels_to_peak_indices(labels_binary, max_peaks=3):
 
 
 def pick_top_peaks_from_weights(
-    weights, sphere_dirs, n_peaks=5, top_m=30, min_separation_angle=45.0
+    weights, sphere_dirs, *, n_peaks=5, top_m=30, min_separation_angle=45.0
 ):
     """
     Extract discrete peaks from directional weights.
@@ -543,6 +584,7 @@ class FORCEModel(ReconstModel):
     def __init__(
         self,
         gtab,
+        *,
         simulations=None,
         penalty=1e-5,
         n_neighbors=50,
@@ -605,13 +647,13 @@ class FORCEModel(ReconstModel):
 
         self._index = None
         self._penalty_array = None
-        self._signals_norm = None
 
         if simulations is not None:
             self._prepare_library()
 
     def generate(
         self,
+        *,
         num_simulations=500000,
         output_path=None,
         num_cpus=1,
@@ -672,20 +714,28 @@ class FORCEModel(ReconstModel):
         self : FORCEModel
             Model with simulations loaded.
         """
-        from dipy.sims.force import (generate_force_simulations,
-                                     get_default_diffusivity_config,
-                                     load_force_simulations,
-                                     save_force_simulations)
+        from dipy.sims.force import (
+            generate_force_simulations,
+            get_default_diffusivity_config,
+            load_force_simulations,
+            save_force_simulations,
+        )
 
         # Resolve the diffusivity config that will actually be used
-        resolved_config = (diffusivity_config if diffusivity_config is not None
-                           else get_default_diffusivity_config())
+        resolved_config = (
+            diffusivity_config
+            if diffusivity_config is not None
+            else get_default_diffusivity_config()
+        )
 
         # --- Cache logic when no explicit output_path is given ----------
         if output_path is None and use_cache:
             cache_dir = _get_force_cache_dir()
             cached = _find_cached_simulation(
-                cache_dir, self.gtab, resolved_config, num_simulations,
+                cache_dir,
+                self.gtab,
+                resolved_config,
+                num_simulations,
             )
             if cached is not None:
                 if verbose:
@@ -715,15 +765,16 @@ class FORCEModel(ReconstModel):
             cache_dir = _get_force_cache_dir()
             idx = len(_load_cache_registry(cache_dir))
             filename = f"force_sim_{idx}.npz"
-            save_force_simulations(self.simulations,
-                                   str(cache_dir / filename))
+            save_force_simulations(self.simulations, str(cache_dir / filename))
             _register_cached_simulation(
-                cache_dir, self.gtab, resolved_config,
-                num_simulations, filename,
+                cache_dir,
+                self.gtab,
+                resolved_config,
+                num_simulations,
+                filename,
             )
             if verbose:
-                print(f"[FORCE] Cached simulations to "
-                      f"{cache_dir / filename}")
+                print(f"[FORCE] Cached simulations to " f"{cache_dir / filename}")
 
         self._prepare_library()
         return self
@@ -761,12 +812,10 @@ class FORCEModel(ReconstModel):
         # Normalize library signals
         lib_norm = np.linalg.norm(signals, axis=1, keepdims=True)
         lib_norm[lib_norm == 0] = 1.0
-        self._signals_norm = np.ascontiguousarray(
-            (signals / lib_norm).astype(np.float32)
-        )
+        signals_norm = np.ascontiguousarray((signals / lib_norm).astype(np.float32))
 
         # Build index
-        self._index = create_signal_index(self._signals_norm)
+        self._index = create_signal_index(signals_norm)
 
         # Penalty array
         num_fibers = self.simulations.get(
@@ -774,7 +823,106 @@ class FORCEModel(ReconstModel):
         )
         self._penalty_array = (self.penalty * num_fibers).astype(np.float32)
 
-    @multi_voxel_fit
+    @staticmethod
+    def _fetch_params_batched(lib_idx, d):
+        """Vectorised parameter look-up for best-match indices.
+
+        Parameters
+        ----------
+        lib_idx : ndarray (N,)
+            Library indices of the best match per voxel.
+        d : dict
+            Simulation dictionary.
+
+        Returns
+        -------
+        params : dict of ndarray
+        """
+        params = {
+            "fa": d["fa"][lib_idx].astype(np.float32),
+            "md": d["md"][lib_idx].astype(np.float32),
+            "rd": d["rd"][lib_idx].astype(np.float32),
+            "wm_fraction": d["wm_fraction"][lib_idx].astype(np.float32),
+            "gm_fraction": d["gm_fraction"][lib_idx].astype(np.float32),
+            "csf_fraction": d["csf_fraction"][lib_idx].astype(np.float32),
+            "num_fibers": d["num_fibers"][lib_idx].astype(np.float32),
+            "dispersion": d["dispersion"][lib_idx].astype(np.float32),
+            "nd": d["nd"][lib_idx].astype(np.float32),
+        }
+        if "ufa_wm" in d:
+            params["ufa_wm"] = d["ufa_wm"][lib_idx].astype(np.float32)
+            params["ufa_voxel"] = d["ufa_voxel"][lib_idx].astype(np.float32)
+        if "ak" in d:
+            params["ak"] = d["ak"][lib_idx].astype(np.float32)
+            params["rk"] = d["rk"][lib_idx].astype(np.float32)
+            params["mk"] = d["mk"][lib_idx].astype(np.float32)
+            params["kfa"] = d["kfa"][lib_idx].astype(np.float32)
+        params["odf"] = d["odfs"][lib_idx].astype(np.float32) if "odfs" in d else None
+        params["predicted_signal"] = d["signals"][lib_idx].astype(np.float32)
+        return params
+
+    @staticmethod
+    def _posterior_params_batched(neighbors, W, d):
+        """Vectorised posterior-averaging over neighbours.
+
+        Parameters
+        ----------
+        neighbors : ndarray (N, K)
+            Neighbour indices.
+        W : ndarray (N, K)
+            Posterior weights.
+        d : dict
+            Simulation dictionary.
+
+        Returns
+        -------
+        params : dict of ndarray
+        """
+
+        def _wavg(field):
+            return np.sum(W * d[field][neighbors], axis=1).astype(np.float32)
+
+        params = {
+            "fa": _wavg("fa"),
+            "md": _wavg("md"),
+            "rd": _wavg("rd"),
+            "wm_fraction": _wavg("wm_fraction"),
+            "gm_fraction": _wavg("gm_fraction"),
+            "csf_fraction": _wavg("csf_fraction"),
+            "num_fibers": _wavg("num_fibers"),
+            "dispersion": _wavg("dispersion"),
+            "nd": _wavg("nd"),
+        }
+        if "ufa_wm" in d:
+            params["ufa_wm"] = _wavg("ufa_wm")
+            params["ufa_voxel"] = _wavg("ufa_voxel")
+        if "ak" in d:
+            params["ak"] = _wavg("ak")
+            params["rk"] = _wavg("rk")
+            params["mk"] = _wavg("mk")
+            params["kfa"] = _wavg("kfa")
+
+        # Posterior ODF
+        if "odfs" in d:
+            K = neighbors.shape[1]
+            odf = np.zeros((neighbors.shape[0], d["odfs"].shape[1]), dtype=np.float32)
+            for kk in range(K):
+                odf_k = d["odfs"][neighbors[:, kk]].astype(np.float32)
+                odf_k /= np.max(odf_k, axis=1, keepdims=True) + EPSILON
+                odf += W[:, kk : kk + 1] * odf_k
+            odf /= np.max(odf, axis=1, keepdims=True) + EPSILON
+            params["odf"] = odf
+        else:
+            params["odf"] = None
+
+        # Posterior mean signal
+        params["predicted_signal"] = posterior_mean_signal(d["signals"], W, neighbors)
+        return params
+
+    @multi_voxel_fit(
+        batched=True,
+        shared_obj=("_penalty_array", "_index", "simulations"),
+    )
     def fit(self, data, *, mask=None, **kwargs):
         """
         Fit model to data.
@@ -796,142 +944,93 @@ class FORCEModel(ReconstModel):
 
         Returns
         -------
-        fit : FORCEFit
-            Fitted model for a single voxel.
+        fit : FORCEFit or ndarray of FORCEFit
+            Fitted model for a single voxel (1-D input) or an object array
+            of fitted models for a batch of voxels (2-D input).
 
         Notes
         -----
-        This method is decorated with @multi_voxel_fit which handles:
-        - Multi-voxel iteration (serial or parallel)
-        - Mask application
-        - Results aggregation into MultiVoxelFit
+        This method is decorated with @multi_voxel_fit(batched=True)
+        which handles multi-voxel dispatch, mask application, and aggregation
+        into a MultiVoxelFit.  The method itself handles both 1-D
+        (single voxel) and 2-D (batch) inputs directly.
 
         For parallel execution, use:
         >>> fit = model.fit(data, mask=mask, engine="ray", n_jobs=4)
+
+        **Memory warning (joblib / dask engines):** When engine="joblib"
+        or engine="dask", the full simulation library (including the
+        signal matrix and search index, ~120-400 MB for 100k simulations) is
+        pickled and sent to *every* worker chunk.  With 8 workers this can
+        consume several gigabytes of RAM.  For num_simulations > ~10 000
+        use engine="ray" instead, which places the library in a shared
+        object store and avoids redundant copies across workers.
         """
         if self.simulations is None:
             raise RuntimeError(
                 "No simulations loaded. Call generate() or provide simulations."
             )
+        if self._index is None:
+            raise RuntimeError(
+                "Signal index is not prepared. Call _prepare_library() or "
+                "reload simulations via generate() or load()."
+            )
 
-        # Normalize the single voxel signal
-        data = data.astype(np.float32)
-        norm = np.linalg.norm(data)
-        if norm == 0:
-            norm = 1.0
-        query_norm = (data / norm).reshape(1, -1)
+        single = data.ndim == 1
+        data2d = data.reshape(1, -1) if single else data
+        data2d = np.ascontiguousarray(data2d, dtype=np.float32)
 
-        # Perform k-NN search for this single voxel
-        D, I = self._index.search(query_norm, k=self.n_neighbors)
-        S = D - self._penalty_array[I]
+        norms = np.linalg.norm(data2d, axis=1, keepdims=True).astype(np.float32)
+        norms[norms == 0] = 1.0
+        query_norm = np.ascontiguousarray(data2d / norms)
 
-        # Compute diagnostics
+        D, neighbors = self._index.search(query_norm, k=self.n_neighbors)
+        S = D - self._penalty_array[neighbors]
+
         U, A = compute_uncertainty_ambiguity(S)
 
+        d = self.simulations
+        n_vox = data2d.shape[0]
+
         if self.use_posterior:
-            # Posterior averaging
-            w = softmax_stable(self.posterior_beta * S, axis=1)
-            entropy = float(-np.sum(w * np.log(w + 1e-12)))
-            
-            # Weighted average of library parameters
-            params = self._compute_posterior_params(I[0], w[0])
-            params["uncertainty"] = float(U[0])
-            params["ambiguity"] = float(A[0])
-            params["entropy"] = entropy
+            W = softmax_stable(self.posterior_beta * S, axis=1)
+            entropy = -np.sum(W * np.log(W + EPSILON), axis=1)
+
+            params_arrays = self._posterior_params_batched(neighbors, W, d)
+            params_arrays["uncertainty"] = U
+            params_arrays["ambiguity"] = A
+            params_arrays["entropy"] = entropy.astype(np.float32)
         else:
-            # Best match
-            best = np.argmax(S[0])
-            lib_idx = I[0, best]
-            
-            params = self._fetch_library_params(lib_idx)
-            params["uncertainty"] = float(U[0])
-            params["ambiguity"] = float(A[0])
-            params["entropy"] = None
+            best = np.argmax(S, axis=1)
+            lib_idx = neighbors[np.arange(n_vox), best]
 
-        return FORCEFit(self, params)
+            params_arrays = self._fetch_params_batched(lib_idx, d)
+            params_arrays["uncertainty"] = U
+            params_arrays["ambiguity"] = A
+            params_arrays["entropy"] = np.full(n_vox, np.nan, dtype=np.float32)
 
-    def _fetch_library_params(self, lib_idx):
-        """Fetch parameters for a single library entry."""
-        d = self.simulations
-        params = {
-            "fa": float(d["fa"][lib_idx]),
-            "md": float(d["md"][lib_idx]),
-            "rd": float(d["rd"][lib_idx]),
-            "wm_fraction": float(d["wm_fraction"][lib_idx]),
-            "gm_fraction": float(d["gm_fraction"][lib_idx]),
-            "csf_fraction": float(d["csf_fraction"][lib_idx]),
-            "num_fibers": float(d["num_fibers"][lib_idx]),
-            "dispersion": float(d["dispersion"][lib_idx]),
-            "nd": float(d["nd"][lib_idx]),
-        }
+        fits = np.empty(n_vox, dtype=object)
+        keys = list(params_arrays.keys())
+        for i in range(n_vox):
+            p = {}
+            for k in keys:
+                val = params_arrays[k]
+                if val is None:
+                    p[k] = None
+                else:
+                    v = val[i]
+                    if isinstance(v, np.ndarray) and v.ndim == 0:
+                        p[k] = float(v)
+                    elif isinstance(v, (np.floating, np.integer)):
+                        p[k] = float(v)
+                    else:
+                        p[k] = v
+            entropy_val = p.get("entropy", 0.0)
+            if entropy_val is not None and np.isnan(entropy_val):
+                p["entropy"] = None
+            fits[i] = FORCEFit(None, p)
 
-        if "ufa_wm" in d:
-            params["ufa_wm"] = float(d["ufa_wm"][lib_idx])
-            params["ufa_voxel"] = float(d["ufa_voxel"][lib_idx])
-
-        if "ak" in d:
-            params["ak"] = float(d["ak"][lib_idx])
-            params["rk"] = float(d["rk"][lib_idx])
-            params["mk"] = float(d["mk"][lib_idx])
-            params["kfa"] = float(d["kfa"][lib_idx])
-
-        # ODF (if requested and available)
-        if self.compute_odf and "odfs" in d:
-            params["odf"] = d["odfs"][lib_idx].astype(np.float32)
-        else:
-            params["odf"] = None
-
-        # Predicted signal (cleaned_dwi) - the matched library signal
-        params["predicted_signal"] = d["signals"][lib_idx].astype(np.float32)
-
-        return params
-
-    def _compute_posterior_params(self, indices, weights):
-        """Compute weighted average of library parameters."""
-        d = self.simulations
-        params = {
-            "fa": float(np.sum(weights * d["fa"][indices])),
-            "md": float(np.sum(weights * d["md"][indices])),
-            "rd": float(np.sum(weights * d["rd"][indices])),
-            "wm_fraction": float(np.sum(weights * d["wm_fraction"][indices])),
-            "gm_fraction": float(np.sum(weights * d["gm_fraction"][indices])),
-            "csf_fraction": float(np.sum(weights * d["csf_fraction"][indices])),
-            "num_fibers": float(np.sum(weights * d["num_fibers"][indices])),
-            "dispersion": float(np.sum(weights * d["dispersion"][indices])),
-            "nd": float(np.sum(weights * d["nd"][indices])),
-        }
-
-        if "ufa_wm" in d:
-            params["ufa_wm"] = float(np.sum(weights * d["ufa_wm"][indices]))
-            params["ufa_voxel"] = float(np.sum(weights * d["ufa_voxel"][indices]))
-
-        if "ak" in d:
-            params["ak"] = float(np.sum(weights * d["ak"][indices]))
-            params["rk"] = float(np.sum(weights * d["rk"][indices]))
-            params["mk"] = float(np.sum(weights * d["mk"][indices]))
-            params["kfa"] = float(np.sum(weights * d["kfa"][indices]))
-
-        # Posterior ODF (if requested and available)
-        if self.compute_odf and "odfs" in d:
-            # Weighted average of ODFs
-            odf = np.zeros(d["odfs"].shape[1], dtype=np.float32)
-            for i, idx in enumerate(indices):
-                odf_i = d["odfs"][idx].astype(np.float32)
-                odf_i /= np.max(odf_i) + 1e-12  # Normalize
-                odf += weights[i] * odf_i
-            odf /= np.max(odf) + 1e-12  # Normalize final
-            params["odf"] = odf
-        else:
-            params["odf"] = None
-
-        # Posterior mean signal (cleaned_dwi)
-        n_grad = d["signals"].shape[1]
-        predicted_signal = np.zeros(n_grad, dtype=np.float32)
-        for i, idx in enumerate(indices):
-            predicted_signal += weights[i] * d["signals"][idx]
-        params["predicted_signal"] = predicted_signal
-
-        return params
+        return fits[0] if single else fits
 
 
 class FORCEFit(ReconstFit):
@@ -1057,7 +1156,7 @@ def compute_entropy(weights):
     entropy : ndarray (N,)
         Shannon entropy for each sample.
     """
-    return (-np.sum(weights * np.log(weights + 1e-12), axis=1)).astype(np.float32)
+    return (-np.sum(weights * np.log(weights + EPSILON), axis=1)).astype(np.float32)
 
 
 def posterior_mean_signal(signals, weights, indices):
@@ -1115,8 +1214,8 @@ def posterior_odf(odfs, weights, indices, n_dirs):
     result = np.zeros((n_query, n_dirs), dtype=np.float32)
     for kk in range(k):
         odf_k = odfs[indices[:, kk]].astype(np.float32)
-        odf_k /= np.max(odf_k, axis=1, keepdims=True) + 1e-12
+        odf_k /= np.max(odf_k, axis=1, keepdims=True) + EPSILON
         result += weights[:, kk : kk + 1] * odf_k
 
-    result /= np.max(result, axis=1, keepdims=True) + 1e-12
+    result /= np.max(result, axis=1, keepdims=True) + EPSILON
     return result

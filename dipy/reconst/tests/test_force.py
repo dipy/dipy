@@ -1,16 +1,16 @@
 """Tests for FORCE reconstruction module."""
 
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_array_less
+from numpy.testing import assert_almost_equal
 
 from dipy.reconst.force import (
-    normalize_signals,
-    softmax_stable,
-    compute_uncertainty_ambiguity,
-    labels_to_peak_indices,
-    pick_top_peaks_from_weights,
     SignalIndex,
+    compute_uncertainty_ambiguity,
     create_signal_index,
+    labels_to_peak_indices,
+    normalize_signals,
+    pick_top_peaks_from_weights,
+    softmax_stable,
 )
 
 
@@ -43,10 +43,13 @@ def test_softmax_stable():
 
 def test_compute_uncertainty_ambiguity():
     """Test uncertainty and ambiguity metrics."""
-    scores = np.array([
-        [0.1, 0.2, 0.3, 0.4, 0.5],
-        [0.5, 0.5, 0.5, 0.5, 0.5],
-    ], dtype=np.float32)
+    scores = np.array(
+        [
+            [0.1, 0.2, 0.3, 0.4, 0.5],
+            [0.5, 0.5, 0.5, 0.5, 0.5],
+        ],
+        dtype=np.float32,
+    )
 
     uncertainty, ambiguity = compute_uncertainty_ambiguity(scores)
 
@@ -59,11 +62,14 @@ def test_compute_uncertainty_ambiguity():
 
 def test_labels_to_peak_indices():
     """Test conversion of binary labels to peak indices."""
-    labels = np.array([
-        [0, 1, 0, 1, 0],
-        [1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-    ], dtype=np.uint8)
+    labels = np.array(
+        [
+            [0, 1, 0, 1, 0],
+            [1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+        ],
+        dtype=np.uint8,
+    )
 
     peak_idx = labels_to_peak_indices(labels, max_peaks=3)
 
@@ -109,10 +115,10 @@ def test_signal_index():
 
     # Search
     query = np.random.randn(5, 10).astype(np.float32)
-    D, I = index.search(query, k=10)
+    D, neighbors = index.search(query, k=10)
 
     assert D.shape == (5, 10)
-    assert I.shape == (5, 10)
+    assert neighbors.shape == (5, 10)
 
     # Distances should be in descending order
     for i in range(5):
@@ -141,7 +147,7 @@ def test_signal_search():
     query = np.random.randn(10, 50).astype(np.float32)
     query_norm = query / np.linalg.norm(query, axis=1, keepdims=True)
 
-    D, I = index.search(query_norm, k=20)
+    D, neighbors = index.search(query_norm, k=20)
 
     assert D.shape == (10, 20)
-    assert I.shape == (10, 20)
+    assert neighbors.shape == (10, 20)
