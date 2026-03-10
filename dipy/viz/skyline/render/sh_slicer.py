@@ -7,7 +7,12 @@ from fury.actor import Group
 from imgui_bundle import imgui
 import numpy as np
 
-from dipy.viz.skyline.UI.elements import render_group, thin_slider, toggle_button
+from dipy.viz.skyline.UI.elements import (
+    create_numeric_input,
+    render_group,
+    thin_slider,
+    toggle_button,
+)
 from dipy.viz.skyline.render.renderer import Visualization
 from dipy.viz.skyline.render.sh_billboard import sph_glyph_billboard_sliced
 
@@ -88,7 +93,7 @@ def create_shm_visualization(
         filename = Path(filename).name if filename is not None else f"SH_Glyphs_{idx}"
 
     return SHGlyph3D(
-        f"SH Glyphs ({filename})",
+        f"ODFs ({filename})",
         coeffs,
         affine=affine,
         render_callback=render_callback,
@@ -421,15 +426,10 @@ class SHGlyph3D(Visualization):
 
         imgui.spacing()
 
-        changed, new_scale = thin_slider(
-            "Scale",
-            self._scale,
-            0.1,
-            2.0,
-            value_type="float",
-            text_format=".2f",
-            step=0.1,
+        changed, new_scale = create_numeric_input(
+            "Scale", self._scale, value_type="float", format="%.1f", step=0.1, height=24
         )
+
         if changed:
             new_scale = float(new_scale)
             if abs(new_scale - self._scale) > 1e-4:
