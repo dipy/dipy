@@ -5,6 +5,7 @@ python_sources = [
   'peak.py',
   'roi.py',
   'sh_slicer.py',
+  'sh_billboard.py',
   'surface.py',
   'streamline.py'
   ]
