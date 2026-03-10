@@ -108,9 +108,12 @@ def uploader(
     """
 
     upload_icon = icons_fontawesome_6.ICON_FA_UPLOAD
-    imgui.text(
-        f"{upload_icon} {label}" if not selected else f"{upload_icon} {selected}"
+    imgui.text_colored(
+        THEME["text"] if not selected else THEME["primary"],
+        f"{upload_icon} {label}" if not selected else f"{upload_icon} {selected}",
     )
+    if imgui.is_item_hovered():
+        imgui.set_mouse_cursor(imgui.MouseCursor_.hand)
     if imgui.is_item_clicked():
         render_file_dialog(
             title=f"Select {label}",
