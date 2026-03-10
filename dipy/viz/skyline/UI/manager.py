@@ -32,6 +32,8 @@ def render_file_dialog(
                 callback(filenames=selected_files)
             elif type == "roi":
                 callback(rois=selected_files)
+            elif type == "shm_coeff":
+                callback(shm_coeffs=selected_files)
     if dialog.kill():
         if callback is not None:
             callback(filenames=None)
@@ -177,6 +179,17 @@ class UIWindow:
                     type="viz",
                 )
 
+            if imgui.menu_item("ODFs", "", False)[0]:
+                self.request_file_dialog = False
+                self._is_dialog_open = True
+                render_file_dialog(
+                    title="Select Spherical Harmonics ODFs File(s)",
+                    name="ODFs Files (*.pam5)",
+                    extensions="*.pam5",
+                    callback=self.file_dialog_closed,
+                    type="shm_coeff",
+                )
+
             if imgui.menu_item("Surfaces", "", False)[0]:
                 self.request_file_dialog = False
                 self._is_dialog_open = True
@@ -237,7 +250,9 @@ class UIWindow:
     def section_open_states(self):
         return self._section_open
 
-    def file_dialog_closed(self, *, filenames=None, rois=None):
+    def file_dialog_closed(self, *, filenames=None, rois=None, shm_coeffs=None):
         self._is_dialog_open = False
         if self.file_dialog_callback is not None:
-            self.file_dialog_callback(filenames=filenames, rois=rois)
+            self.file_dialog_callback(
+                filenames=filenames, rois=rois, shm_coeffs=shm_coeffs
+            )
