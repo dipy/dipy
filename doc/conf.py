@@ -15,6 +15,28 @@ import re
 import sys
 import time
 
+from docutils.parsers.rst import Directive, directives
+
+
+class _LegacyDirective(Directive):
+    """No-op stub for scipy's ``.. legacy::`` directive.
+
+    scipy uses this directive in its own Sphinx build (via a custom
+    extension).  When autodoc pulls scipy docstrings into DIPY's docs the
+    directive is unknown, causing a hard ERROR.  Registering a silent stub
+    here prevents that error.
+    """
+
+    required_arguments = 1
+    optional_arguments = 0
+    has_content = True
+
+    def run(self):
+        return []
+
+
+directives.register_directive("legacy", _LegacyDirective)
+
 # Doc generation depends on being able to import dipy
 try:
     import dipy
@@ -57,6 +79,12 @@ numpydoc_show_inherited_class_members = {
 
 autodoc_skip_members = [
     "docstring_addendum",
+]
+
+# Suppress cross-reference warnings originating from third-party docstrings
+# (e.g. scipy labels like 'dev-arrayapi' that exist only in scipy's own docs).
+nitpick_ignore_regex = [
+    ("ref.ref", "dev-arrayapi"),
 ]
 
 # Sphinx extension for BibTeX style citations.
