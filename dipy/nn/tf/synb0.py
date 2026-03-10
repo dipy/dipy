@@ -41,6 +41,20 @@ else:
 
 
 class EncoderBlock(Layer):
+    """Encoder block for the 3D U-Net.
+
+    Parameters
+    ----------
+    out_channels : int
+        Number of output channels.
+    kernel_size : int
+        Size of the convolutional kernel.
+    strides : int
+        Stride of the convolution.
+    padding : str
+        Padding for the convolution ('same' or 'valid').
+    """
+
     def __init__(self, out_channels, kernel_size, strides, padding):
         super(EncoderBlock, self).__init__()
         self.conv3d = Conv3D(
@@ -50,6 +64,18 @@ class EncoderBlock(Layer):
         self.activation = LeakyReLU(0.01)
 
     def call(self, input):
+        """Forward pass of the EncoderBlock.
+
+        Parameters
+        ----------
+        input : tf.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        tf.Tensor
+            Output tensor.
+        """
         x = self.conv3d(input)
         x = self.instnorm(x)
         x = self.activation(x)
@@ -58,6 +84,20 @@ class EncoderBlock(Layer):
 
 
 class DecoderBlock(Layer):
+    """Decoder block for the 3D U-Net.
+
+    Parameters
+    ----------
+    out_channels : int
+        Number of output channels.
+    kernel_size : int
+        Size of the convolutional kernel.
+    strides : int
+        Stride of the convolution.
+    padding : str
+        Padding for the convolution ('same' or 'valid').
+    """
+
     def __init__(self, out_channels, kernel_size, strides, padding):
         super(DecoderBlock, self).__init__()
         self.conv3d = Conv3DTranspose(
@@ -67,6 +107,18 @@ class DecoderBlock(Layer):
         self.activation = LeakyReLU(0.01)
 
     def call(self, input):
+        """Forward pass of the DecoderBlock.
+
+        Parameters
+        ----------
+        input : tf.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        tf.Tensor
+            Output tensor.
+        """
         x = self.conv3d(input)
         x = self.instnorm(x)
         x = self.activation(x)
@@ -75,6 +127,18 @@ class DecoderBlock(Layer):
 
 
 def UNet3D(input_shape):
+    """3D U-Net architecture for the Synb0 model.
+
+    Parameters
+    ----------
+    input_shape : tuple
+        Shape of the input tensor.
+
+    Returns
+    -------
+    tf.keras.Model
+        The 3D U-Net model.
+    """
     inputs = tf.keras.Input(input_shape)
     # Encode
     x = EncoderBlock(32, kernel_size=3, strides=1, padding="same")(inputs)
