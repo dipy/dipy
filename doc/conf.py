@@ -240,18 +240,38 @@ html_theme_options = {
             "name": "Workshops",
             "sections": [
                 {
-                    "name": "Latest",
+                    "name": "Upcoming",
                     "children": [
                         {
-                            "name": "DIPY Workshop 2024",
-                            "url": "https://dipy.org/workshops/dipy-workshop-2024",
+                            "name": "DIPY Workshop 2026",
+                            "url": "https://workshop.dipy.org",
                             "link_type": "external",
                         }
                     ],
                 },
+                # {
+                #     "name": "Latest",
+                #     "children": [
+                #         {
+                #             "name": "DIPY Workshop 2025",
+                #             "url": "https://dipy.org/workshops/dipy-workshop-2025",
+                #             "link_type": "external",
+                #         }
+                #     ],
+                # },
                 {
                     "name": "Past",
                     "children": [
+                        {
+                            "name": "DIPY Workshop 2025",
+                            "url": "https://workshop.dipy.org/2025",
+                            "link_type": "external",
+                        },
+                        {
+                            "name": "DIPY Workshop 2024",
+                            "url": "https://workshop.dipy.org/2024",
+                            "link_type": "external",
+                        },
                         {
                             "name": "DIPY Workshop 2023",
                             "url": "https://dipy.org/workshops/dipy-workshop-2023",
@@ -312,11 +332,6 @@ html_theme_options = {
                 {
                     "name": "Help",
                     "children": [
-                        {
-                            "name": "Live Chat (Gitter)",
-                            "url": "https://app.gitter.im/#/room/%23dipy_dipy:gitter.im",
-                            "link_type": "external",
-                        },
                         {
                             "name": "Github Discussions",
                             "url": "https://github.com/dipy/dipy/discussions",
