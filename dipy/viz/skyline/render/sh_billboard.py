@@ -17,7 +17,7 @@ from fury.utils import create_sh_basis_matrix, get_lmax, get_n_coeffs
 import numpy as np
 import wgpu
 
-from dipy.viz.wgsl import load_dipy_wgsl
+from dipy.viz.skyline.wgsl import load_dipy_wgsl
 
 _GPU_DEVICE_LIMITS_CACHE: dict = {}
 _GPU_HERMITE_COMPUTE_CACHE: dict = {}
