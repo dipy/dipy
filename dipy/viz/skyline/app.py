@@ -84,10 +84,6 @@ class Skyline:
 
         self.window._imgui.set_gui(self.draw_ui)
         self.before_render()
-        # self.window.show_axes_gizmo(
-        #     labels=["L", "R", "P", "A", "S", "I"],
-        #     click_callback=self.update_camera_from_axis,
-        # )
         self.window.start()
 
     def _refresh_actors(self):
@@ -228,15 +224,11 @@ class Skyline:
             self.active_image = self._image_visualizations[-1]
             self._arrange_image_actors()
 
-        # if self.active_image is not None:
-        #     for sh_viz in self._sh_glyph_visualizations:
-        #         sh_viz.set_image_ref(self.active_image)
-
         if len(self.visualizations) == 0:
             self.UI_window.request_file_dialog = True
 
-    def _append_visualization(self, *, filenames=None, rois=None):
-        loaded_files = load_files(filenames, rois=rois)
+    def _append_visualization(self, *, filenames=None, rois=None, shm_coeffs=None):
+        loaded_files = load_files(filenames, rois=rois, shm_coeffs=shm_coeffs)
         self._load_visualiations(
             loaded_files["images"],
             loaded_files["peaks"],
@@ -288,7 +280,9 @@ class Skyline:
 
 def skyline_from_files(
     fnames,
+    *,
     rois=None,
+    shm_coeffs=None,
     is_cluster=False,
     is_light_version=False,
     glass_brain=False,
@@ -309,6 +303,10 @@ def skyline_from_files(
     rois : list, optional
         List of file paths for ROIs to be loaded into the Skyline viewer.
         Supported file types include NIfTI images (.nii, .nii.gz).
+    shm_coeffs : list, optional
+        List of file paths for spherical harmonics coefficients to be loaded into the
+        Skyline viewer. Supported file types include .pam5 files containing SH
+        coefficients.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
@@ -329,13 +327,14 @@ def skyline_from_files(
         'direction'  for directionally colored streamlines.
         For example, a value of (1, 0, 0) would mean the red color.
     """
-    loaded_files = load_files(fnames, rois=rois)
+    loaded_files = load_files(fnames, rois=rois, shm_coeffs=shm_coeffs)
     return skyline(
         images=loaded_files["images"],
         peaks=loaded_files["peaks"],
         rois=loaded_files["rois"],
         surfaces=loaded_files["surfaces"],
         tractograms=loaded_files["tractograms"],
+        sh_coeffs=loaded_files["shm_coeffs"],
         is_cluster=is_cluster,
         is_light_version=is_light_version,
         glass_brain=glass_brain,
