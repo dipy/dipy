@@ -201,16 +201,22 @@ class Image3D(Visualization):
         return self._slicer
 
     def _populate_info(self):
+        np.set_printoptions(suppress=True, precision=2)
         info = f"Dimensions: {self.dwi.shape[:3]}"
         if self._has_directions:
             info += f"\nDirections: {self.dwi.shape[3]}"
         info += f"\nData Type: {self.dwi.dtype}"
         if self.affine is not None:
             voxel_sizes = np.sqrt(np.sum(self.affine[:3, :3] ** 2, axis=0))
-            info += f"\nVoxel Sizes: {voxel_sizes}"
+            info += f"\nVoxel Sizes: {np.round(voxel_sizes, 1)}"
             voxel_order = "LAS" if self.affine[0, 0] < 0 else "RAS"
             info += f"\nVoxel Order: {voxel_order}"
-            info += f"\nAffine:\n{self.affine}"
+            affine_str = np.array2string(
+                np.round(self.affine, 2), separator=" ", prefix=""
+            )
+            info += f"\nAffine:\n{affine_str}"
+
+        np.set_printoptions()
         return info
 
     def update_state(self, new_state):
@@ -237,6 +243,10 @@ class Image3D(Visualization):
         if changed:
             self.opacity = new
             set_group_opacity(self._slicer, self.opacity / 100.0)
+            if self.opacity < 100:
+                for actor in self._slicer.children:
+                    actor.material.depth_write = True
+                    actor.material.alpha_mode = "bayer"
 
         imgui.spacing()
 
