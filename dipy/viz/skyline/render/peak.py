@@ -55,11 +55,16 @@ def create_peak_visualization(
         pam, filename = input
         filename = Path(filename).name if filename is not None else f"Peaks_{idx}"
 
+    peak_values = 1.0
+    if pam.peak_values is not None:
+        max = np.percentile(pam.peak_values, 99)
+        peak_values = np.clip(pam.peak_values, 0, max)
+
     return Peak3D(
         filename,
         pam.peak_dirs,
         affine=pam.affine,
-        peak_values=1.0 if pam.peak_values is None else pam.peak_values,
+        peak_values=peak_values,
         opacity=opacity,
         render_callback=render_callback,
         sync_callabck=sync_callabck,
@@ -86,6 +91,7 @@ class Peak3D(Visualization):
         self.opacity = opacity
         self._synchronize = True
         self._sync_callabck = sync_callabck
+        self._slice_visibility = [True, True, True]
         self._create_peak_actor()
 
     def _create_peak_actor(self):
@@ -93,6 +99,7 @@ class Peak3D(Visualization):
             self.peaks,
             affine=self.affine,
             peak_values=self.peak_values * self._scale,
+            visibility=self._slice_visibility,
         )
         self.state = self._slicer.cross_section
         lower_bounds = np.zeros(3)
@@ -163,13 +170,17 @@ class Peak3D(Visualization):
                         "value_type": "int",
                         "text_format": ".0f",
                         "step": 1,
+                        "show_toggle": True,
+                        "toggle": self._slice_visibility[axis],
                     },
                 )
             )
         render_data = render_group("Slice", slicers)
-        for idx, (changed, new) in enumerate(render_data):
+        for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
                 self.state[idx] = new
                 self._slicer.cross_section = self.state
                 self._synchronize and self._sync_callabck(self, self.state)
+            self._slice_visibility[idx] = toggle
+        self._slicer.material.visibility = self._slice_visibility
         imgui.spacing()

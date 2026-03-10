@@ -254,7 +254,7 @@ class Image3D(Visualization):
                     thin_slider,
                     (label, self.state[axis], min_bound, max_bound),
                     {
-                        "value_type": "float",
+                        "value_type": "int",
                         "text_format": ".0f",
                         "step": 1,
                         "show_toggle": True,
@@ -268,8 +268,8 @@ class Image3D(Visualization):
                 self.state[idx] = new
                 self._synchronize and self._sync_callabck(self, self.state)
             self._slice_visibility[idx] = toggle
-            set_group_visibility(self._slicer, self._slice_visibility)
-            show_slices(self._slicer, self.state)
+        set_group_visibility(self._slicer, self._slice_visibility)
+        show_slices(self._slicer, self.state)
 
         imgui.spacing()
         volume_for_range = (
