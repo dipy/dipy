@@ -14,22 +14,22 @@ on:
   pull_request_target:
     types: [labeled]
 
-permissions:
-  contents: read
-  pull-requests: write
+permissions: {}
 
 concurrency:
   group: asv-benchmarks-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  asv-continuous:
+  benchmark:
     name: ASV continuous
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request_target' && github.event.action == 'labeled' && github.event.label.name == 'run-benchmark')
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    permissions:
+      contents: read
     defaults:
       run:
         shell: bash
@@ -121,6 +121,19 @@ jobs:
           echo "Base: ${BASE_REF} @ ${BASE_SHA}"
           echo "Head: ${HEAD_SHA}"
 
+            python - <<PY
+            import json
+            meta = {
+              "base_ref": "${BASE_REF}",
+              "base_sha": "${BASE_SHA}",
+              "head_sha": "${HEAD_SHA}",
+            }
+            with open("asv_meta.json", "w", encoding="utf-8") as f:
+              json.dump(meta, f)
+              f.write("\n")
+            print("Wrote asv_meta.json")
+            PY
+
       - name: Generate ASV compare config
         run: |
           python - <<'PY'
@@ -159,22 +172,40 @@ jobs:
         with:
           name: asv-results
           path: |
+            asv_meta.json
             asv_continuous.txt
             asv_compare.txt
             benchmarks/results
 
+  comment:
+    name: Comment PR
+    needs: benchmark
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      actions: read
+    steps:
+      - name: Download ASV output
+        uses: actions/download-artifact@v4
+        with:
+          name: asv-results
+
       - name: Comment on PR with comparison
-        if: github.event_name == 'pull_request_target'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             const path = require('path');
 
-            const prNumber = Number(process.env.PR_NUMBER);
-            const baseSha = process.env.BASE_SHA;
-            const headSha = process.env.HEAD_SHA;
-            const baseRef = process.env.BASE_REF || 'master';
+            const prNumber = context.payload.pull_request.number;
+
+            let meta = { base_ref: 'master', base_sha: '', head_sha: '' };
+            try {
+              meta = JSON.parse(fs.readFileSync(path.join(process.env.GITHUB_WORKSPACE, 'asv_meta.json'), 'utf8'));
+            } catch (e) {
+              // keep defaults
+            }
 
             let compareText = '';
             try {
@@ -193,8 +224,8 @@ jobs:
             const body = [
               '### ASV benchmark comparison',
               '',
-              `Base (${baseRef}): ${baseSha}`,
-              `Head: ${headSha}`,
+              `Base (${meta.base_ref}): ${meta.base_sha}`,
+              `Head: ${meta.head_sha}`,
               '',
               '<details><summary>asv compare output</summary>',
               '',
