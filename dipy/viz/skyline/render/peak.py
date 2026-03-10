@@ -5,7 +5,12 @@ from fury.transform import apply_transformation
 from imgui_bundle import imgui
 import numpy as np
 
-from dipy.viz.skyline.UI.elements import render_group, thin_slider, toggle_button
+from dipy.viz.skyline.UI.elements import (
+    create_numeric_input,
+    render_group,
+    thin_slider,
+    toggle_button,
+)
 from dipy.viz.skyline.render.renderer import Visualization
 
 
@@ -54,7 +59,7 @@ def create_peak_visualization(
         filename,
         pam.peak_dirs,
         affine=pam.affine,
-        peak_values=pam.peak_values,
+        peak_values=1.0 if pam.peak_values is None else pam.peak_values,
         opacity=opacity,
         render_callback=render_callback,
         sync_callabck=sync_callabck,
@@ -77,6 +82,7 @@ class Peak3D(Visualization):
         self.peaks = peaks
         self.affine = affine
         self.peak_values = peak_values
+        self._scale = 1.0
         self.opacity = opacity
         self._synchronize = True
         self._sync_callabck = sync_callabck
@@ -86,7 +92,7 @@ class Peak3D(Visualization):
         self._slicer = peaks_slicer(
             self.peaks,
             affine=self.affine,
-            peak_values=self.peak_values,
+            peak_values=self.peak_values * self._scale,
         )
         self.state = self._slicer.cross_section
         lower_bounds = np.zeros(3)
@@ -111,6 +117,19 @@ class Peak3D(Visualization):
         changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
         if changed:
             self._synchronize = new
+
+        imgui.spacing()
+
+        changed, new_scale = create_numeric_input(
+            "Scale", self._scale, value_type="float", format="%.1f", step=0.1, height=24
+        )
+
+        if changed:
+            new_scale = float(new_scale)
+            if abs(new_scale - self._scale) > 1e-4:
+                self._scale = new_scale
+                self._create_peak_actor()
+                self.render()
 
         changed, new = thin_slider(
             "Opacity",
