@@ -120,6 +120,25 @@ def smallest_shell_bval(bvals, b0_threshold=50, shell_tolerance=50):
     return min_shell, shell_mask
 
 
+def init_worker(base_seed=None):
+    """
+    Initializer for ProcessPoolExecutor workers.
+    Each worker gets a unique RNG state (Ray-style). With base_seed=None,
+    seed = PID + high-resolution time so every worker has a different stream.
+    With initargs=(base_seed,) for reproducibility, seed = base_seed + PID
+    so workers differ but the run is reproducible for a fixed worker count.
+    """
+    import random
+    import time
+    if base_seed is not None:
+        seed = int(base_seed) + os.getpid()
+    else:
+        # Unique per process and run: PID + high-resolution time
+        seed = os.getpid() * (2**32) + (int(time.perf_counter_ns()) % (2**32))
+    np.random.seed(seed)
+    random.seed(seed)
+
+
 def _create_memmap(output_dir, name, dtype, shape):
     """Create a memory-mapped file."""
     path = os.path.join(output_dir, f"{name}.mmap")
@@ -400,7 +419,9 @@ def generate_force_simulations(
     # Run simulations with progress bar
     pbar = tqdm(total=num_simulations, desc="Simulating", disable=not verbose)
 
-    with ProcessPoolExecutor(max_workers=num_cpus) as executor:
+    with ProcessPoolExecutor(
+        max_workers=num_cpus, initializer=_worker_initializer
+    ) as executor:
         futures = {
             executor.submit(
                 _generate_batch_worker,

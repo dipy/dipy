@@ -43,10 +43,9 @@ def _gtab_matches(entry_bvals, entry_bvecs, gtab, bval_tol=10.0,
     gtab : GradientTable
         Gradient table to compare against.
     bval_tol : float, optional
-        Absolute tolerance for b-value comparison. Default is 10.0.
+        Absolute tolerance for b-value comparison.
     bvec_tol : float, optional
         Absolute tolerance for b-vector coordinate comparison.
-        Default is 1e-3.
 
     Returns
     -------
@@ -390,7 +389,9 @@ def compute_uncertainty_ambiguity(scores):
     p25 = np.percentile(scores, 25, axis=1)
     uncertainty = (p75 - p25).astype(np.float32)
 
-    half = 0.5 * np.max(scores, axis=1)
+    s_max = np.max(scores, axis=1)
+    s_min = np.min(scores, axis=1)
+    half = 0.5 * (s_max + s_min)
     ambiguity = (np.sum(scores > half[:, None], axis=1) / scores.shape[1]).astype(
         np.float32
     )
@@ -568,17 +569,17 @@ class FORCEModel(ReconstModel):
             Pre-computed FORCE simulations with signals and parameters.
             If None, call generate() to create simulations.
         penalty : float, optional
-            Penalty weight for fiber complexity. Default is 1e-5.
+            Penalty weight for fiber complexity.
         n_neighbors : int, optional
-            Number of neighbors for matching. Default is 50.
+            Number of neighbors for matching.
         use_posterior : bool, optional
-            Use posterior averaging instead of best match. Default is False.
+            Use posterior averaging instead of best match.
         posterior_beta : float, optional
-            Softmax temperature for posterior. Default is 2000.0.
+            Softmax temperature for posterior.
         compute_odf : bool, optional
-            Compute posterior ODF maps. Default is False.
+            Compute posterior ODF maps.
         verbose : bool, optional
-            Show progress bar and status messages. Default is False.
+            Show progress bar and status messages.
 
         Notes
         -----
@@ -611,7 +612,7 @@ class FORCEModel(ReconstModel):
 
     def generate(
         self,
-        num_simulations=100000,
+        num_simulations=500000,
         output_path=None,
         num_cpus=1,
         wm_threshold=0.5,
@@ -642,7 +643,7 @@ class FORCEModel(ReconstModel):
         Parameters
         ----------
         num_simulations : int
-            Number of simulated voxels. Default is 100000.
+            Number of simulated voxels.
         output_path : str, optional
             Path to save simulations (.npz).  When None, defaults to
             ``~/.dipy/force_simulations/`` and uses caching.
@@ -665,7 +666,6 @@ class FORCEModel(ReconstModel):
         use_cache : bool, optional
             Whether to use cached simulations when ``output_path`` is
             None.  Set to ``False`` to always regenerate.
-            Default is True.
 
         Returns
         -------
