@@ -300,14 +300,24 @@ class SkylineFlow(Workflow):
     def run(
         self,
         input_files,
+        *,
         rois=None,
+        odfs=None,
         cluster=False,
-        light_version=False,
+        performance_version=False,
         glass_brain=False,
         bg_color=None,
         tract_colors=None,
     ):
         """Launch Skyline GUI.
+
+        If you want to load only odfs or rois.
+        use dipy_skyline run --odfs <Your ODF files> or
+        dipy_skyline run --rois <Your ROI files> respectively.
+
+        These options should be used in stealth mode. For GUI mode, the files can be
+        loaded through the file dialog.
+
 
         Parameters
         ----------
@@ -316,10 +326,12 @@ class SkylineFlow(Workflow):
             the Skyline viewer.
         rois : variable str, optional
             Tuple of path for each ROI to be added to the Skyline viewer.
+        odfs : variable str, optional
+            Tuple of path for each ODF to be added to the Skyline viewer.
         cluster : bool, optional
             Whether to cluster the tractograms.
-        light_version : bool, optional
-            Whether to use the light version of the tractogram rendering.
+        performance_version : bool, optional
+            Whether to use the performance version of the tractogram rendering.
             This will render tractograms as lines instead of tubes,
             which can improve performance for large tractograms.
         glass_brain : bool, optional
@@ -337,14 +349,15 @@ class SkylineFlow(Workflow):
             For example, a value of (1, 0, 0) would mean the red color.
         """
         super(SkylineFlow, self).__init__(force=True)
-        if input_files is None or input_files[0] == "start":
+        if input_files is None or input_files[0] == "start" or input_files[0] == "run":
             input_files = []
 
         skyline_from_files(
             input_files,
             rois=rois,
+            shm_coeffs=odfs,
             is_cluster=cluster,
-            is_light_version=light_version,
+            is_light_version=not performance_version,
             glass_brain=glass_brain,
             bg_color=bg_color,
             tract_colors=tract_colors,

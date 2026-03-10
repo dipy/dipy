@@ -25,7 +25,7 @@ EMERGENCY_REF = create_nifti_header(
 )
 
 
-def load_files(fnames, rois=None):
+def load_files(fnames, *, rois=None, shm_coeffs=None):
     """Load the provided list of files.
 
     Parameters
@@ -34,6 +34,8 @@ def load_files(fnames, rois=None):
         Path of the file.
     rois : list of str, optional
         Paths of the ROIs.
+    shm_coeffs : list of str, optional
+        Paths of the SH coefficients files.
 
     Returns
     -------
@@ -44,12 +46,17 @@ def load_files(fnames, rois=None):
         - "rois": List of tuples (data, affine, filename) for each ROI.
         - "surfaces": List of tuples (vertices, faces, filename) for each surface file.
         - "tractograms": List of tuples (sft, filename) for each tractogram file.
+        - "shm_coeffs": List of tuples (shm_coeff, affine, filename, basis_type) for
+            each SH coefficient file.
     """
     if fnames is None:
         fnames = []
 
     if rois is None:
         rois = []
+
+    if shm_coeffs is None:
+        shm_coeffs = []
 
     skyline_images = []
     skyline_peaks = []
@@ -69,10 +76,6 @@ def load_files(fnames, rois=None):
         elif ext == ".pam5":
             pam = load_pam(fname)
             skyline_peaks.append((pam, fname))
-            if hasattr(pam, "shm_coeff"):
-                skyline_shm_coeffs.append(
-                    (pam.shm_coeff, pam.affine, fname, "descoteaux")
-                )
         elif ext == ".pial":
             surface = load_pial(fname)
             if surface:
@@ -112,6 +115,13 @@ def load_files(fnames, rois=None):
             logger.error(
                 f"File extension '{ext}' is not supported for ROIs in Skyline."
             )
+
+    for fname in shm_coeffs:
+        _, ext = split_filename_extension(fname)
+        ext = ext.lower()
+        if ext == ".pam5":
+            pam = load_pam(fname)
+            skyline_shm_coeffs.append((pam.shm_coeff, pam.affine, fname, "descoteaux"))
 
     return {
         "images": skyline_images,
