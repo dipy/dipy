@@ -40,11 +40,11 @@ def render_file_dialog(
                 callback(rois=selected_files)
             elif type == "shm_coeff":
                 callback(shm_coeffs=selected_files)
-            elif type == "buan_colors":
+            elif type == "buan_pvals":
                 callback(selected_files)
     if dialog.kill():
         if callback is not None:
-            if type == "buan_colors":
+            if type == "buan_pvals":
                 callback(None)
             else:
                 callback(filenames=None, rois=None, shm_coeffs=None)

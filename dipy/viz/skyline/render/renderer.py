@@ -148,7 +148,7 @@ def create_window(
             screen_config=screen_config,
             imgui=True,
             imgui_draw_function=lambda: None,
-            pixel_ratio=1.25,
+            pixel_ratio=1.5,
         )
     else:
         show_m = window.ShowManager(
@@ -156,7 +156,7 @@ def create_window(
             size=size,
             window_type=window_type,
             screen_config=screen_config,
-            pixel_ratio=1.25,
+            pixel_ratio=1.5,
             imgui=False,
         )
     if hasattr(show_m, "show_axes_gizmo"):
