@@ -237,6 +237,7 @@ class Skyline:
             loaded_files["tractograms"],
             loaded_files["shm_coeffs"],
         )
+        self._synchronize_visualizations(self.active_image, self.active_image.state)
         update_camera(self.window.screens[0].camera, None, self.window.screens[0].scene)
         self.before_render()
 
