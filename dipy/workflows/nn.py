@@ -181,7 +181,15 @@ class BiasFieldCorrectionFlow(Workflow):
                     "biasfield_corrected.nii.gz"
                 ).with_name(f"{prefix}_biasfield_corrected.nii.gz")
 
-        self.update_flat_outputs(self.flat_outputs, io_it)
+        if io_it:
+            self.update_flat_outputs(self.flat_outputs, io_it)
+        else:
+            if isinstance(self.last_generated_outputs, dict):
+                self.last_generated_outputs = dict(
+                    zip(self.last_generated_outputs.keys(), self.flat_outputs)
+                )
+            else:
+                self.last_generated_outputs = self.flat_outputs
         for fpath, corrected_out_path in io_it:
             logger.info(f"Applying bias field correction on {fpath}")
 
