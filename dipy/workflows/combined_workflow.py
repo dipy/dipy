@@ -12,8 +12,10 @@ and automatic DAG-based wiring. The pipeline:
 from collections import defaultdict, deque
 from datetime import datetime
 import difflib
+import hashlib
 import importlib
 import inspect
+import json
 import os
 
 # PyTorch wheels on macOS bundle their own libomp.dylib, which conflicts with
@@ -43,6 +45,75 @@ try:  # standard module since Python 3.11
     import tomllib as toml
 except ImportError:
     toml, have_toml, _ = optional_package("tomli")
+
+
+def _pipeline_fingerprint(*, pipeline_stages, io_config):
+    """Compute a short hash identifying a pipeline and its input configuration.
+
+    Parameters
+    ----------
+    pipeline_stages : list
+        List of stage configuration dicts from ``[[pipeline]]`` sections.
+    io_config : dict
+        I/O configuration dict (``[io]`` section), including input file paths
+        and output directory.
+
+    Returns
+    -------
+    str
+        16-character hex digest of the combined pipeline and I/O configuration.
+    """
+    content = json.dumps({"pipeline": pipeline_stages, "io": io_config}, sort_keys=True)
+    return hashlib.sha256(content.encode()).hexdigest()[:16]
+
+
+def _load_timing_cache(*, out_dir, fingerprint):
+    """Load per-stage timing from disk.
+
+    Parameters
+    ----------
+    out_dir : str
+        Pipeline output directory.
+    fingerprint : str
+        Pipeline fingerprint to validate cache freshness.
+
+    Returns
+    -------
+    dict
+        Mapping of stage name to duration in seconds. Returns ``{}`` if the
+        cache is missing or belongs to a different pipeline.
+    """
+    path = os.path.join(out_dir, "pipeline_timing.json")
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        if data.get("_fingerprint") != fingerprint:
+            logger.debug("Timing cache fingerprint mismatch — discarding.")
+            return {}
+        return {k: v for k, v in data.items() if not k.startswith("_")}
+    except Exception:
+        return {}
+
+
+def _save_timing_cache(*, out_dir, fingerprint, timing_data):
+    """Persist per-stage timing with a pipeline fingerprint.
+
+    Parameters
+    ----------
+    out_dir : str
+        Pipeline output directory.
+    fingerprint : str
+        Pipeline fingerprint to embed in the cache file.
+    timing_data : dict
+        Mapping of stage name to duration in seconds.
+    """
+    path = os.path.join(out_dir, "pipeline_timing.json")
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        with open(path, "w") as f:
+            json.dump({"_fingerprint": fingerprint, **timing_data}, f, indent=2)
+    except Exception as e:
+        logger.debug(f"Could not save timing cache: {e}")
 
 
 def format_toml_config(config):
@@ -1282,8 +1353,13 @@ def execute_semantic_pipeline(
     resolved_outputs = {}
     stage_map = {stage["name"]: stage for stage in pipeline_stages}
     stages_info = []
-    pipeline_start_time = time.perf_counter()
     full_execution_order = list(execution_order)  # preserve before --start trimming
+
+    out_dir = io_config.get("out_dir", ".")
+    fingerprint = _pipeline_fingerprint(
+        pipeline_stages=pipeline_stages, io_config=io_config
+    )
+    timing_cache = _load_timing_cache(out_dir=out_dir, fingerprint=fingerprint)
 
     if start:
         start_idx = execution_order.index(start)
@@ -1319,7 +1395,7 @@ def execute_semantic_pipeline(
                     {
                         "name": skipped_stage,
                         "cli": stage_config.get("cli"),
-                        "duration": None,
+                        "duration": timing_cache.get(skipped_stage),
                         "success": True,
                         "outputs": resolved_outputs.get(skipped_stage, {}),
                         "skipped": "restart",
@@ -1361,6 +1437,31 @@ def execute_semantic_pipeline(
         stage_config = stage_map[stage_name]
         stage_start = time.perf_counter()
 
+        if not force:
+            already_done = discover_stage_outputs(
+                stage_name=stage_name,
+                stage_config=stage_config,
+                io_config=io_config,
+            )
+            try:
+                expected = introspect_workflow_outputs(stage_config.get("cli", ""))
+            except Exception:
+                expected = set()
+            if already_done and expected and already_done.keys() >= expected:
+                resolved_outputs[stage_name] = already_done
+                stages_info.append(
+                    {
+                        "name": stage_name,
+                        "cli": stage_config.get("cli"),
+                        "duration": timing_cache.get(stage_name),
+                        "success": True,
+                        "outputs": already_done,
+                        "skipped": "restart",
+                    }
+                )
+                logger.info(f"Stage '{stage_name}' outputs already exist, skipping.")
+                continue
+
         if stage_name in user_mask_stages:
             stages_info.append(
                 {
@@ -1394,6 +1495,10 @@ def execute_semantic_pipeline(
                     "outputs": outputs,
                 }
             )
+            timing_cache[stage_name] = stage_duration
+            _save_timing_cache(
+                out_dir=out_dir, fingerprint=fingerprint, timing_data=timing_cache
+            )
 
             if outputs:
                 logger.debug(f"Stage '{stage_name}' outputs: {outputs}")
@@ -1405,7 +1510,9 @@ def execute_semantic_pipeline(
             logger.error(traceback.format_exc())
             sys.exit(1)
 
-    total_time = time.perf_counter() - pipeline_start_time
+    total_time = sum(
+        s["duration"] for s in stages_info if s.get("duration") is not None
+    )
 
     logger.info("=" * 60)
     logger.info("Pipeline Completed Successfully!")
