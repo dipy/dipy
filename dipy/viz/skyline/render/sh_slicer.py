@@ -194,14 +194,11 @@ class SHSlicer:
             self.actor.add(self._glyph_actor)
         return self.actor
 
-    # -- builder -----------------------------------------------------------
-
     def _build_volume_actor(self):
         """Create one billboard actor for every masked voxel."""
         vs = self.voxel_sizes
         X, Y, Z = self.shape
 
-        # Flatten and mask
         flat_coeffs = self.coeffs_4d.reshape(-1, self.n_coeffs)
         valid = np.any(flat_coeffs != 0, axis=1)
         if self.mask is not None:
@@ -209,27 +206,19 @@ class SHSlicer:
         if not np.any(valid):
             return None
 
-        # Integer voxel coordinates for every valid voxel
         ix, iy, iz = np.meshgrid(
             np.arange(X, dtype=np.int32),
             np.arange(Y, dtype=np.int32),
             np.arange(Z, dtype=np.int32),
             indexing="ij",
         )
-        voxel_coords = np.column_stack(
-            [ix.ravel(), iy.ravel(), iz.ravel()]
-        )  # (X*Y*Z, 3)
+        voxel_coords = np.column_stack([ix.ravel(), iy.ravel(), iz.ravel()])
 
-        # World-space centres
         centers = voxel_coords.astype(np.float32) * vs[np.newaxis, :]
 
         coeffs_valid = flat_coeffs[valid]
         centers_valid = centers[valid]
         voxel_valid = voxel_coords[valid]
-
-        print(
-            f"  [SHSlicer] {len(coeffs_valid)} valid glyphs out of {X * Y * Z} voxels"
-        )
 
         glyph = sph_glyph_billboard_sliced(
             coeffs_valid,
@@ -237,15 +226,12 @@ class SHSlicer:
             voxel_valid,
             scale=self.scale,
             l_max=self.l_max,
-            basis_type=self.basis_type,
             color_type=self.color_type,
             lut_res=self.lut_res,
             use_hermite=self.use_hermite,
             mapping_mode=self.mapping_mode,
         )
         return glyph
-
-    # -- slice visibility --------------------------------------------------
 
     def set_slice(self, axis, idx):
         """Show slice *idx* on *axis* via uniform update."""
@@ -388,10 +374,6 @@ class SHGlyph3D(Visualization):
             self.state = [self.shape[0] // 2, self.shape[1] // 2, self.shape[2] // 2]
         self.set_slices()
 
-    # def set_image_ref(self, image_viz):
-    #     """Link to an :class:`Image3D` for slice syncing."""
-    #     self._image_ref = image_viz
-
     @property
     def actor(self):
         return self._slicer.actor
@@ -412,22 +394,6 @@ class SHGlyph3D(Visualization):
         if self.affine is not None:
             info += f"\nVoxel Sizes: {self._voxel_sizes}"
         return info
-
-    # def _sync_from_image(self):
-    #     if self._image_ref is None:
-    #         return
-    #     state = self._image_ref.state
-    #     voxel = self._world_to_voxel(state)
-    #     axes = ("x", "y", "z")
-    #     for i, axis in enumerate(axes):
-    #         if self._slice_visibility[i]:
-    #             self._slicer.show_axis(axis)
-    #             if voxel[i] != self._last_voxel[i]:
-    #                 self._slicer.set_slice(axis, voxel[i])
-    #                 self._last_voxel[i] = voxel[i]
-    #         else:
-    #             self._slicer.hide_axis(axis)
-    #             self._last_voxel[i] = -1
 
     def set_slices(self):
         for i, axis in enumerate(("x", "y", "z")):
@@ -519,20 +485,5 @@ class SHGlyph3D(Visualization):
             self._slice_visibility[idx] = toggle
             self.set_slice_visibility()
             self._last_voxel[idx] = -1
-
-        # axis_labels = ("X", "Y", "Z")
-        # for i, label in enumerate(axis_labels):
-        #     show_icon = (
-        #         icons_fontawesome_6.ICON_FA_CIRCLE_DOT
-        #         if self._slice_visibility[i]
-        #         else icons_fontawesome_6.ICON_FA_CIRCLE
-        #     )
-        #     color = THEME["primary"] if self._slice_visibility[i] else THEME["text"]
-        #     imgui.text_colored(color, f"{show_icon}  {label}")
-        #     if imgui.is_item_clicked():
-        #         self._slice_visibility[i] = not self._slice_visibility[i]
-        #         self._last_voxel[i] = -1
-        #     if i < len(axis_labels) - 1:
-        #         imgui.same_line(0, 16)
 
         imgui.spacing()
