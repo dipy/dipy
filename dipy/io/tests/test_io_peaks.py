@@ -230,6 +230,10 @@ def test_io_peaks_deprecated(rng):
             save_peaks(fname, pam)
             pam2 = load_peaks(fname, verbose=True)
             npt.assert_array_equal(pam.peak_dirs, pam2.peak_dirs)
-            npt.assert_equal(len(cw), 2)
-            npt.assert_(issubclass(cw[0].category, DeprecationWarning))
-            npt.assert_(issubclass(cw[1].category, DeprecationWarning))
+            dipy_deprecations = [
+                w
+                for w in cw
+                if issubclass(w.category, DeprecationWarning)
+                and "dipy.io.peaks" in str(w.message)
+            ]
+            npt.assert_equal(len(dipy_deprecations), 2)
