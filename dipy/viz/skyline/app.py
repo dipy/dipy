@@ -206,6 +206,7 @@ class Skyline:
                 render_callback=self.before_render,
                 colormap=self._color_gen,
                 tract_colors=self._tract_colors,
+                switch_render_callback=self._update_tractogram_rendering,
             )
             self._add_visualization(tractogram3d)
         for idx, input in enumerate(sh_coeffs or []):
@@ -237,7 +238,8 @@ class Skyline:
             loaded_files["tractograms"],
             loaded_files["shm_coeffs"],
         )
-        self._synchronize_visualizations(self.active_image, self.active_image.state)
+        if self.active_image is not None:
+            self._synchronize_visualizations(self.active_image, self.active_image.state)
         update_camera(self.window.screens[0].camera, None, self.window.screens[0].scene)
         self.before_render()
 
@@ -266,6 +268,24 @@ class Skyline:
                 viz.update_state(new_state)
         self.active_image and self._arrange_image_actors()
         self.window.render()
+
+    def _update_tractogram_rendering(self, streamline_viz, is_clustered):
+        for idx, viz in enumerate(self._tractogram_visualizations):
+            if viz is streamline_viz and isinstance(
+                viz, (Streamline3D, ClusterStreamline3D)
+            ):
+                new_viz = create_streamline_visualization(
+                    (viz.sft, viz.name),
+                    idx,
+                    is_cluster=is_clustered,
+                    line_type=viz._line_type,
+                    render_callback=self.before_render,
+                    colormap=self._color_gen,
+                    tract_colors=self._tract_colors,
+                    switch_render_callback=self._update_tractogram_rendering,
+                )
+                self._tractogram_visualizations[idx] = new_viz
+                self.UI_window._sections[viz.name] = new_viz.renderer
 
     @property
     def visualizations(self):
