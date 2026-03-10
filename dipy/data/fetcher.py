@@ -652,7 +652,7 @@ fetch_mni_resized_templates = _make_fetcher(
     "fetch_mni_resized_templates",
     Path(dipy_home) / "mni_resized",
     "https://ndownloader.figshare.com/files/",
-    ["61672486", "61672489", "61672492"],
+    ["61672486", "61672489", "62615755"],
     [
         Path("mni_icbm152_t2_tal_nlin_asym_09c_2_5.nii.gz"),
         Path("mni_icbm152_t1_tal_nlin_asym_09c_2_5.nii.gz"),
@@ -661,7 +661,7 @@ fetch_mni_resized_templates = _make_fetcher(
     md5_list=[
         "4d0096fdba03e0c9aee79552cbb419e0",
         "78633c9a826f7cabc7496e3297773276",
-        "f369f267e41a59dc7d1ef89da004e337",
+        "c23fe61521c04dff06faf43d80c3c682",
     ],
     doc="Download resized MNI templates for Synbo input",
 )
