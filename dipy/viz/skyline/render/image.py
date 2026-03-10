@@ -148,33 +148,20 @@ class Image3D(Visualization):
         info = event.pick_info
         voxel = info["index"]
         self._picked_voxel = voxel
-        self._picked_intensity = self._active_volume()[voxel]
-
-    def _active_volume(self):
-        return self.dwi[..., self._volume_idx] if self._has_directions else self.dwi
+        self._picked_intensity = self.active_volume[voxel]
 
     def _create_slicer_actor(self):
-        if self._has_directions:
-            volume = self.dwi[..., self._volume_idx]
-            self.value_range = self._value_range_from_percentile(volume)
-            self._slicer = volume_slicer(
-                volume,
-                affine=self.affine,
-                interpolation=self.interpolation,
-                value_range=self.value_range,
-                alpha_mode="blend",
-                depth_write=True,
-            )
-        else:
-            self.value_range = self._value_range_from_percentile(self.dwi)
-            self._slicer = volume_slicer(
-                self.dwi,
-                affine=self.affine,
-                interpolation=self.interpolation,
-                value_range=self.value_range,
-                alpha_mode="blend",
-                depth_write=True,
-            )
+        volume = self.active_volume
+        self.value_range = self._value_range_from_percentile(volume)
+        self._slicer = volume_slicer(
+            volume,
+            affine=self.affine,
+            interpolation=self.interpolation,
+            value_range=self.value_range,
+            alpha_mode="auto",
+            depth_write=True,
+        )
+
         self._apply_colormap(self.colormap)
         self.bounds = self._slicer.get_bounding_box()
         self.state = np.mean(self.bounds, axis=0)
@@ -199,6 +186,10 @@ class Image3D(Visualization):
     @property
     def actor(self):
         return self._slicer
+
+    @property
+    def active_volume(self):
+        return self.dwi[..., self._volume_idx] if self._has_directions else self.dwi
 
     def _populate_info(self):
         np.set_printoptions(suppress=True, precision=2)
@@ -227,8 +218,16 @@ class Image3D(Visualization):
     def render_widgets(self):
         changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
         if changed:
-            print(f"Synchronize set to {new}")
             self._synchronize = new
+
+        if self.dwi.ndim == 4 and self.dwi.shape[-1] in (3, 4):
+            imgui.same_line()
+            changed, new = toggle_button(self.rgb, label="RGB")
+            if changed:
+                self.rgb = new
+                self._has_directions = not new
+                self._create_slicer_actor()
+                self.render()
 
         changed, new = thin_slider(
             "Opacity",
@@ -301,7 +300,7 @@ class Image3D(Visualization):
             for actor in self._slicer.children:
                 actor.material.clim = self.value_range
 
-        if self._has_directions:
+        if self._has_directions and not self.rgb:
             imgui.spacing()
             volume_changed, new_idx = thin_slider(
                 "Directions",
