@@ -3,10 +3,7 @@ python_sources = [
   ]
 
 wgsl_sources = [
-  'billboard_sphere_render.wgsl',
-  'sh_analytical_lut_populate.wgsl',
   'sh_billboard.wgsl',
-  'utils.wgsl',
   ]
 
 
