@@ -62,7 +62,7 @@ class Visualization:
         )
         self.actor.visible = is_visible
         self.active = is_selected
-        if is_open and is_visible:
+        if is_open:
             padding = 20
             imgui.begin_group()
             imgui.push_style_var(imgui.StyleVar_.window_padding, (padding, padding / 2))
