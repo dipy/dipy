@@ -7,9 +7,9 @@ from fury.actor import Group
 from imgui_bundle import imgui
 import numpy as np
 
-from dipy.viz.sh_billboard import sph_glyph_billboard_sliced
 from dipy.viz.skyline.UI.elements import render_group, thin_slider, toggle_button
 from dipy.viz.skyline.render.renderer import Visualization
+from dipy.viz.skyline.render.sh_billboard import sph_glyph_billboard_sliced
 
 
 def create_shm_visualization(

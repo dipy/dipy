@@ -12,3 +12,4 @@ py3.install_sources(
 
 subdir('render')
 subdir('UI')
+subdir('wgsl')
