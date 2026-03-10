@@ -17,7 +17,7 @@ from dipy.io.vtk import convert_to_polydata
 from dipy.utils.optpkg import optional_package
 
 fury, have_fury, setup_module = optional_package(
-    "fury", min_version="0.8.0", max_version="0.12.0"
+    "fury", min_version="0.8.0", max_version="1.0.0"
 )
 
 logger = logging.getLogger("StatefulSurface")

@@ -121,6 +121,8 @@ class UIWindow:
         if imgui.is_item_hovered():
             imgui.set_item_tooltip("Add Visualization")
         if imgui.is_item_clicked(imgui.MouseButton_.left) or self.request_file_dialog:
+            if self.request_file_dialog:
+                imgui.set_next_window_pos((self.size[0], 0))
             imgui.open_popup("my_popup")
 
         if imgui.begin_popup("my_popup"):
