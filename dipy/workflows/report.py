@@ -524,7 +524,7 @@ def generate_timing_section(*, stages_info):
         duration = stage.get("duration")
 
         if skipped == "restart":
-            duration_str = "Previous Run"
+            duration_str = f"{duration:.2f}s" if duration is not None else "N/A"
             status_str = (
                 '<span class="stage-badge badge-restart">Previous Run</span> ✓ Success'
             )
@@ -749,7 +749,7 @@ def generate_results_section(*, stages_info, html_dir):
         skipped = stage.get("skipped")
 
         if skipped == "restart":
-            duration_str = "Previous Run"
+            duration_str = f"{duration:.2f}s" if duration is not None else "N/A"
             badge_html = '<span class="stage-badge badge-restart">Previous Run</span>'
         elif skipped == "user_mask":
             duration_str = "Skipped"
@@ -852,7 +852,7 @@ def generate_html_report(config, config_file_path, execution_info, output_path):
     )
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
 
     return output_path
