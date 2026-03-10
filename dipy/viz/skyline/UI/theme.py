@@ -3,6 +3,8 @@
 from pathlib import Path
 from urllib.request import urlretrieve
 
+from PIL import Image
+
 from dipy.utils.logging import logger
 
 DIPY_DATA_MIRROR = "https://github.com/dipy/dipy_data/raw/refs/heads/master"
@@ -24,9 +26,20 @@ if not IMAGES.exists():
     IMAGES.mkdir(parents=True, exist_ok=True)
 
 LOGO = IMAGES / "dipy-logo.png"
+LOGO_SMALL = IMAGES / "dipy-logo-small.png"
 if not LOGO.exists():
     logger.info("Downloading Skyline UI logo...")
     urlretrieve(f"{DIPY_DATA_MIRROR}/dipy-skyline/assets/images/dipy-logo.png", LOGO)
+with Image.open(LOGO) as img:
+    if img.size != (48, 48):
+        img = img.convert("RGBA")
+        resize = img.resize((48, 48), Image.Resampling.LANCZOS)
+        resize.save(LOGO, format="PNG", optimize=True)
+    if not LOGO_SMALL.exists() or Image.open(LOGO_SMALL).size != (32, 32):
+        img_small = img.resize((32, 32), Image.Resampling.LANCZOS)
+        img_small.save(LOGO_SMALL, format="PNG", optimize=True)
+    img.close()
+
 
 FONT = FONTS / "Inter_18pt-Regular.ttf"
 if not FONT.exists():
