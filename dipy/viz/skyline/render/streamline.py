@@ -152,7 +152,6 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="line", segments=4):
             colors=color,
             segments=segments,
         )
-        tubes.material.side = "front"
         return tubes
     elif line_type == "line":
         if len(color) == len(lines) and color.ndim == 2:
@@ -204,6 +203,10 @@ class Streamline3D(Visualization):
         if changed:
             if self._switch_render_callback is not None:
                 self._switch_render_callback(self, is_clustered)
+                self.render()
+
+        imgui.spacing()
+
         changed, new = segmented_switch("Line Type", ["Line", "Tube"], self._line_type)
         if changed:
             self._line_type = new.lower()
@@ -396,6 +399,10 @@ class ClusterStreamline3D(Visualization):
         if changed:
             if self._switch_render_callback is not None:
                 self._switch_render_callback(self, is_clustered)
+                self.render()
+
+        imgui.spacing()
+
         threshold_value = (
             self._pending_thr if self._pending_thr is not None else self.thr
         )
