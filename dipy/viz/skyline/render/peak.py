@@ -167,7 +167,7 @@ class Peak3D(Visualization):
                     thin_slider,
                     (label, self.state[axis], min_bound, max_bound),
                     {
-                        "value_type": "int",
+                        "value_type": "float",
                         "text_format": ".0f",
                         "step": 1,
                         "show_toggle": True,
