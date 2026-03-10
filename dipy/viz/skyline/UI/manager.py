@@ -1,42 +1,11 @@
-from pathlib import Path
-
 from imgui_bundle import (
     hello_imgui,
     icons_fontawesome_6,
     imgui,
-    portable_file_dialogs as pfd,
 )
 
+from dipy.viz.skyline.UI.elements import render_file_dialog
 from dipy.viz.skyline.UI.theme import ASSETS, FONT, THEME
-
-
-def render_file_dialog(
-    *,
-    title="Select File(s)",
-    name="All File(s)",
-    extensions="*.*",
-    multiselect=True,
-    callback=None,
-    type="viz",
-):
-    dialog = pfd.open_file(
-        title,
-        str(Path("~").expanduser() / ".dipy"),
-        [name, extensions],
-        pfd.opt.multiselect if multiselect else pfd.opt.none,
-    )
-    if dialog.result():
-        selected_files = dialog.result()
-        if callback is not None:
-            if type == "viz":
-                callback(filenames=selected_files)
-            elif type == "roi":
-                callback(rois=selected_files)
-            elif type == "shm_coeff":
-                callback(shm_coeffs=selected_files)
-    if dialog.kill():
-        if callback is not None:
-            callback(filenames=None)
 
 
 class UIManager:
