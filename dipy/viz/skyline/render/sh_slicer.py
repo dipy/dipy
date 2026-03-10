@@ -368,12 +368,7 @@ class SHGlyph3D(Visualization):
             self.bounds = apply_transformation(
                 np.array([lower_bounds, upper_bounds]), self.affine
             )
-            self.state = apply_transformation(
-                np.array(
-                    [[self.shape[0] // 2, self.shape[1] // 2, self.shape[2] // 2]]
-                ),
-                self.affine,
-            )[0].astype(int)
+            self.state = np.asarray(self.bounds).mean(axis=0).astype(int)
         else:
             self.bounds = np.asarray([lower_bounds, upper_bounds])
             self.state = [self.shape[0] // 2, self.shape[1] // 2, self.shape[2] // 2]
