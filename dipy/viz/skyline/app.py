@@ -113,7 +113,7 @@ class Skyline:
                 self.active_image = viz
         show_slices(
             self.active_image.actor,
-            self.active_image.state + (len(self._image_visualizations) * 0.1),
+            self.active_image.state + (len(self._image_visualizations) * 0.005),
         )
 
     def draw_ui(self):
