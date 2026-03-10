@@ -1,10 +1,13 @@
 import sys
 
+from PIL import Image
 from fury import window
+import glfw
 from imgui_bundle import imgui
 
 from dipy.utils.logging import logger
 from dipy.viz.skyline.UI.elements import render_section_header
+from dipy.viz.skyline.UI.theme import LOGO_SMALL
 
 
 class Visualization:
@@ -150,6 +153,13 @@ def create_window(
             imgui_draw_function=lambda: None,
             pixel_ratio=1.5,
         )
+        if window_type == "default":
+            with Image.open(LOGO_SMALL) as img:
+                img = img.convert("RGBA")
+                glfw.set_window_icon(show_m.window._window, 1, [(img)])
+                glfw.poll_events()
+                img.close()
+
     else:
         show_m = window.ShowManager(
             title="DIPY SKYLINE",
