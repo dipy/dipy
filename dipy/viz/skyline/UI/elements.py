@@ -1,6 +1,7 @@
 import math
+from pathlib import Path
 
-from imgui_bundle import icons_fontawesome_6, imgui
+from imgui_bundle import icons_fontawesome_6, imgui, portable_file_dialogs as pfd
 
 from dipy.utils.logging import logger
 from dipy.viz.skyline.UI.theme import (
@@ -13,6 +14,40 @@ from dipy.viz.skyline.UI.theme import (
 
 _NUMERIC_INPUT_EDITING = {}
 _NUMERIC_INPUT_DRAFT = {}
+
+
+def render_file_dialog(
+    *,
+    title="Select File(s)",
+    name="All File(s)",
+    extensions="*.*",
+    multiselect=True,
+    callback=None,
+    type="viz",
+):
+    dialog = pfd.open_file(
+        title,
+        str(Path("~").expanduser() / ".dipy"),
+        [name, extensions],
+        pfd.opt.multiselect if multiselect else pfd.opt.none,
+    )
+    if dialog.result():
+        selected_files = dialog.result()
+        if callback is not None:
+            if type == "viz":
+                callback(filenames=selected_files)
+            elif type == "roi":
+                callback(rois=selected_files)
+            elif type == "shm_coeff":
+                callback(shm_coeffs=selected_files)
+            elif type == "buan_colors":
+                callback(selected_files)
+    if dialog.kill():
+        if callback is not None:
+            if type == "buan_colors":
+                callback(None)
+            else:
+                callback(filenames=None, rois=None, shm_coeffs=None)
 
 
 def _calculate_hit_box(pos, size, padding=4):
@@ -35,6 +70,56 @@ def _calculate_hit_box(pos, size, padding=4):
     min_pos = imgui.ImVec2(pos[0] - padding, pos[1] - padding)
     max_pos = imgui.ImVec2(pos[0] + size[0] + padding, pos[1] + size[1] + padding)
     return min_pos, max_pos
+
+
+def uploader(
+    label,
+    callback,
+    *,
+    extension="*.*",
+    multiselect=False,
+    selected=False,
+    type="viz",
+):
+    """Render a themed file uploader button.
+
+    Parameters
+    ----------
+    label : str
+        Text to display on the button.
+    callback : function
+        Function to call with the selected file(s) when the button is clicked.
+    extension : str, optional
+        File extension filter for the file dialog.
+    multiselect : bool, optional
+        Whether to allow selecting multiple files.
+    selected : bool or string, optional
+        Whether the uploader is in a selected state, affecting its appearance.
+    type : str, optional
+        Type of file being uploaded, used to determine callback behavior.
+         - "viz": Visualization files (default)
+         - "roi": Region of Interest files
+         - "shm_coeff": Spherical Harmonics Coefficients files
+         - "buan_colors": BUAN color mapping files
+
+    Returns
+    -------
+    None
+    """
+
+    upload_icon = icons_fontawesome_6.ICON_FA_UPLOAD
+    imgui.text(
+        f"{upload_icon} {label}" if not selected else f"{upload_icon} {selected}"
+    )
+    if imgui.is_item_clicked():
+        render_file_dialog(
+            title=f"Select {label}",
+            name=f"{label} ({extension})",
+            extensions=extension,
+            multiselect=multiselect,
+            callback=callback,
+            type=type,
+        )
 
 
 def toggle_button(value, *, label=""):
