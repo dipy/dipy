@@ -263,8 +263,8 @@ class Skyline:
         )
         if self.active_image is not None:
             self._synchronize_visualizations(self.active_image, self.active_image.state)
-        update_camera(self.window.screens[0].camera, None, self.window.screens[0].scene)
         self.before_render()
+        update_camera(self.window.screens[0].camera, None, self.window.screens[0].scene)
 
     def _remove_visualization(self, viz):
         if isinstance(viz, Image3D):
