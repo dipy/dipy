@@ -2164,6 +2164,13 @@ def get_fnames(*, name="small_64D", include_optional=False):
         files, folder = fetch_resdnn_torch_weights()
         wraw = Path(folder) / "histo_weights.pth"
         return wraw
+    if name == "mni_templates":
+        files, folder = fetch_mni_template()
+        t2 = Path(folder) / "mni_icbm152_t2_tal_nlin_asym_09a.nii"
+        t1 = Path(folder) / "mni_icbm152_t1_tal_nlin_asym_09a.nii"
+        t1_mask = Path(folder) / "mni_icbm152_t1_tal_nlin_asym_09c_mask.nii"
+        t1c = Path(folder) / "mni_icbm152_t1_tal_nlin_asym_09c.nii"
+        return t1, t2, t1_mask, t1c
     if name == "mni_resized_templates":
         files, folder = fetch_mni_resized_templates()
         t1 = Path(folder) / "mni_icbm152_t1_tal_nlin_asym_09c_2_5.nii.gz"

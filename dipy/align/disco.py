@@ -23,8 +23,10 @@ from pathlib import Path
 import numpy as np
 
 from dipy.align import affine_registration
+from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import CCMetric
+from dipy.align.reslice import reslice
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
 from dipy.nn.utils import normalize
@@ -210,11 +212,28 @@ def synb0_syn(
     if T1_mask is not None:
         _save_debug_volume(debug_dir, "01c_t1_mask_input", T1_mask, T1_affine)
 
-    mni_t1_path, mni_t2_path, mni_mask_path = get_fnames("mni_resized_templates")
-    mni_t1, mni_t1_affine = load_nifti(mni_t1_path)
-    mni_t2, mni_t2_affine = load_nifti(mni_t2_path)
-    mni_mask, _ = load_nifti(mni_mask_path)
+    _, mni_t2_path, mni_mask_path, mni_t1_path = get_fnames("mni_templates")
+    mni_t1, mni_t1_affine = load_nifti(mni_t1_path)  # 09c T1
+    mni_t2, mni_t2_affine = load_nifti(mni_t2_path)  # 09a T2
+    mni_mask, _ = load_nifti(mni_mask_path)  # 09c mask
     mni_mask = mni_mask.astype(np.int32)
+
+    # Resample mask to T2 grid if shapes differ (09c mask vs 09a T2)
+    if mni_mask.shape != mni_t2.shape:
+        mask_to_t2 = AffineMap(
+            np.eye(4),
+            domain_grid_shape=mni_t2.shape,
+            domain_grid2world=mni_t2_affine,
+            codomain_grid_shape=mni_mask.shape,
+            codomain_grid2world=mni_t1_affine,
+        )
+        mni_mask_t2 = (
+            mask_to_t2.transform(mni_mask.astype(np.float32), interpolation="nearest")
+            > 0.5
+        ).astype(np.int32)
+    else:
+        mni_mask_t2 = mni_mask
+
     if not np.allclose(mni_t1_affine, mni_t2_affine):
         logger.warning(
             "MNI T1 and T2 template affines differ. "
@@ -306,7 +325,7 @@ def synb0_syn(
         sigmas=sigmas,
         factors=factors,
         moving_mask=dwi_mask,
-        static_mask=mni_mask,
+        static_mask=mni_mask_t2,
     )
     _save_debug_volume(
         debug_dir,
@@ -319,7 +338,7 @@ def synb0_syn(
         dwi_mask_f = np.ascontiguousarray(np.asarray(dwi_mask, dtype=np.float32))
     else:
         dwi_mask_f = None
-    masked_mni_t2 = mni_t2_norm * mni_mask
+    masked_mni_t2 = mni_t2_norm * mni_mask_t2
 
     dwi_template_sdr = SymmetricDiffeomorphicRegistration(
         metric=CCMetric(3), level_iters=[200, 200, 100]
@@ -355,32 +374,48 @@ def synb0_syn(
         masked_dwi_reg_to_template,
         mni_t1_affine,
     )
-    synb0 = Synb0()
-    binf = synb0.predict(
-        masked_dwi_reg_to_template, masked_T1_reg_to_template, **kwargs
+    # Reslice registered images from full-res to 2.5mm for Synb0 input
+    synb0_shape = (77, 91, 77)
+    synb0_zooms = (2.5, 2.5, 2.5)
+    mni_t1_zooms = tuple(np.sqrt(np.sum(mni_t1_affine[:3, :3] ** 2, axis=0)))
+    mni_t2_zooms = tuple(np.sqrt(np.sum(mni_t2_affine[:3, :3] ** 2, axis=0)))
+
+    masked_T1_reg_resized, resized_affine = reslice(
+        masked_T1_reg_to_template,
+        mni_t1_affine,
+        mni_t1_zooms,
+        synb0_zooms,
+        new_shape=synb0_shape,
     )
-    binf = binf * mni_mask
-    _save_debug_volume(debug_dir, "06_binf_template", binf, mni_t1_affine)
-    # b0_temp_reg_to_binf_in_template_sdr = SymmetricDiffeomorphicRegistration(
-    #     metric=CCMetric(3), level_iters=[20, 20, 10]
-    # )
-    # b0_temp_reg_to_binf_in_template = b0_temp_reg_to_binf_in_template_sdr.optimize(
-    #     static=binf,
-    #     moving=dwi_reg_to_template,
-    #     static_grid2world=mni_t1_affine,
-    #     moving_grid2world=mni_t2_affine,
-    #     prealign=np.eye(4),
-    # )
-    # dwi_reg_to_binf_in_template = b0_temp_reg_to_binf_in_template.transform(
-    # dwi_reg_to_template
-    # )
-    # _save_debug_volume(
-    #     debug_dir,
-    #     "06b_dwi_reg_to_binf_in_template",
-    #     dwi_reg_to_binf_in_template,
-    #     mni_t1_affine,
-    # )
-    binf_in_t1 = t1_template_mapping.transform_inverse(binf)
+    masked_dwi_reg_resized, _ = reslice(
+        masked_dwi_reg_to_template,
+        mni_t2_affine,
+        mni_t2_zooms,
+        synb0_zooms,
+        new_shape=synb0_shape,
+    )
+    mni_mask_resized, _ = reslice(
+        mni_mask.astype(np.float32),
+        mni_t1_affine,
+        mni_t1_zooms,
+        synb0_zooms,
+        new_shape=synb0_shape,
+        order=0,
+    )
+    mni_mask_resized = (mni_mask_resized > 0.5).astype(np.int32)
+
+    synb0 = Synb0()
+    binf = synb0.predict(masked_dwi_reg_resized, masked_T1_reg_resized, **kwargs)
+    binf = binf * mni_mask_resized
+    _save_debug_volume(debug_dir, "06_binf_template", binf, resized_affine)
+    binf_fullres, _ = reslice(
+        binf,
+        resized_affine,
+        synb0_zooms,
+        mni_t1_zooms,
+        new_shape=mni_t1.shape,
+    )
+    binf_in_t1 = t1_template_mapping.transform_inverse(binf_fullres)
     _save_debug_volume(debug_dir, "06b_binf_in_t1", binf_in_t1, T1_affine)
     ori_binf, _ = affine_registration(
         binf_in_t1,
