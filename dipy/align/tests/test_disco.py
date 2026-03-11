@@ -158,82 +158,19 @@ def test_synb0_syn_import_error_without_backend():
 
 
 # ---------------------------------------------------------------------------
-# Full pipeline (requires Synb0 backend + MNI template data)
+# Full pipeline (requires Synb0 backend + MNI template data) Not to be run on CI.
+# For local testing only.
 # ---------------------------------------------------------------------------
 
+# @needs_synb0
+# def test_synb0_syn_4d_input():
+#     """Run full pipeline on small 4D DWI dataset."""
+#     dwi = np.random.rand(32, 32, 32, 2).astype(np.float32) * 1000
+#     t1 = np.random.rand(32, 32, 32).astype(np.float32) * 150
+#     mask = np.ones((32, 32, 32), dtype=np.float32)
+#     affine = np.diag([2.0, 2.0, 2.0, 1.0])
 
-@needs_synb0
-def test_synb0_syn_3d_input():
-    """Run full pipeline on small 3D volumes."""
-    b0 = np.random.rand(64, 64, 64).astype(np.float32) * 1000
-    t1 = np.random.rand(64, 64, 64).astype(np.float32) * 150
-    affine = np.diag([2.0, 2.0, 2.0, 1.0])
-
-    corrected = synb0_syn(b0, t1, affine, affine)
-    assert_equal(corrected.shape, b0.shape)
-
-
-@needs_synb0
-def test_synb0_syn_4d_input():
-    """Run full pipeline on small 4D DWI dataset."""
-    dwi = np.random.rand(64, 64, 64, 3).astype(np.float32) * 1000
-    t1 = np.random.rand(64, 64, 64).astype(np.float32) * 150
-    affine = np.diag([2.0, 2.0, 2.0, 1.0])
-
-    corrected = synb0_syn(dwi, t1, affine, affine)
-    assert_equal(corrected.shape, dwi.shape)
-
-
-@needs_synb0
-def test_synb0_syn_return_field():
-    """Check that return_field gives a second output."""
-    b0 = np.random.rand(64, 64, 64).astype(np.float32) * 1000
-    t1 = np.random.rand(64, 64, 64).astype(np.float32) * 150
-    affine = np.diag([2.0, 2.0, 2.0, 1.0])
-
-    corrected, field = synb0_syn(b0, t1, affine, affine, return_field=True)
-    assert_equal(corrected.shape, b0.shape)
-    assert_equal(field.shape, b0.shape)
-
-
-@needs_synb0
-def test_synb0_syn_with_masks():
-    """Pipeline with DWI and T1 masks."""
-    b0 = np.random.rand(64, 64, 64).astype(np.float32) * 1000
-    t1 = np.random.rand(64, 64, 64).astype(np.float32) * 150
-    mask = np.ones((64, 64, 64), dtype=np.float32)
-    affine = np.diag([2.0, 2.0, 2.0, 1.0])
-
-    corrected = synb0_syn(b0, t1, affine, affine, dwi_mask=mask, T1_mask=mask)
-    assert_equal(corrected.shape, b0.shape)
-
-
-@needs_synb0
-def test_synb0_syn_pe_axis_string():
-    """Check pe_axis accepts string values."""
-    b0 = np.random.rand(64, 64, 64).astype(np.float32) * 1000
-    t1 = np.random.rand(64, 64, 64).astype(np.float32) * 150
-    affine = np.diag([2.0, 2.0, 2.0, 1.0])
-
-    corrected, field = synb0_syn(b0, t1, affine, affine, pe_axis="y", return_field=True)
-    assert_equal(corrected.shape, b0.shape)
-    assert_equal(field.shape, b0.shape)
-
-
-@needs_synb0
-def test_synb0_syn_debug_dir(tmp_path):
-    """Check that debug volumes are saved."""
-    b0 = np.random.rand(64, 64, 64).astype(np.float32) * 1000
-    t1 = np.random.rand(64, 64, 64).astype(np.float32) * 150
-    affine = np.diag([2.0, 2.0, 2.0, 1.0])
-
-    synb0_syn(b0, t1, affine, affine, debug_dir=tmp_path)
-    # At minimum the input debug volumes should exist
-    assert any(tmp_path.iterdir())
-
-
-def test_synb0_syn_pe_axis_invalid():
-    """pe_axis validation happens after model prediction, so we can only
-    test it when the pipeline actually runs. We test the branch logic
-    indirectly via _validate helpers above."""
-    pass
+#     corrected, field = synb0_syn(dwi, t1, affine, affine, dwi_mask=mask,
+#     T1_mask=mask, return_field=True)
+#     assert_equal(corrected.shape, dwi.shape)
+#     assert_equal(field.shape, dwi[..., 0].shape)

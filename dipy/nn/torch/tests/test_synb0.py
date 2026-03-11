@@ -2,7 +2,7 @@
 """Tests for Synb0 PyTorch implementation."""
 
 import numpy as np
-from numpy.testing import assert_, assert_array_almost_equal, assert_equal
+from numpy.testing import assert_, assert_equal
 
 from dipy.nn.torch.synb0 import DecoderBlock, EncoderBlock, Synb0, UNet3D
 from dipy.testing.decorators import set_random_number_generator
@@ -172,7 +172,7 @@ def test_synb0_predict_shape_validation(rng):
 
     # Should raise ValueError for wrong shape
     try:
-        prediction = synb0.predict(b0_wrong, T1_wrong, average=False)
+        synb0.predict(b0_wrong, T1_wrong, average=False)
         # If no error, fail the test
         assert_(False, "Should have raised ValueError for wrong shape")
     except ValueError as e:
@@ -195,7 +195,7 @@ def test_synb0_predict_mismatched_shapes(rng):
 
     # Should raise ValueError for mismatched shapes
     try:
-        prediction = synb0.predict(b0, T1, average=False)
+        synb0.predict(b0, T1, average=False)
         # If no error, fail the test
         assert_(False, "Should have raised ValueError for mismatched shapes")
     except ValueError as e:
