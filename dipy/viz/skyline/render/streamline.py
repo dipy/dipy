@@ -5,6 +5,7 @@ import time
 from fury import distinguishable_colormap
 from fury.actor import Group, streamlines, streamtube
 from fury.colormap import line_colors
+from fury.ui import TextBlock2D
 from imgui_bundle import imgui
 import numpy as np
 
@@ -45,6 +46,30 @@ def apply_buan_colors(
     buan_colors = lut[buan_color_idx]
 
     return buan_colors
+
+
+def create_cluster_help(*, position=(0, 0), size=(280, 150)):
+    help_text = (
+        "\t\t\t  Cluster Visualization Instructions:\n"
+        "\t\t\t - Click on a cluster to select/deselect it.\n"
+        "\t\t\t - 'e' to expand selected clusters.\n"
+        "\t\t\t - 'c' to collapse selected clusters.\n"
+        "\t\t\t - 'a' to select all clusters.\n"
+        "\t\t\t - 'd' to deselect all clusters.\n"
+        "\t\t\t - 'h' to hide deselected clusters\n"
+        "\t\t\t - 's' to show all clusters.\n"
+    )
+    text_block = TextBlock2D(
+        text=help_text,
+        position=position,
+        vertical_justification="middle",
+        justification="left",
+        font_size=14,
+        color=(1, 1, 1),
+        bg_color=(0.2, 0.2, 0.2),
+        size=size,
+    )
+    return text_block
 
 
 def create_streamline_visualization(
