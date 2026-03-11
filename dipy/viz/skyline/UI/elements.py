@@ -24,15 +24,24 @@ def render_file_dialog(
     extensions="*.*",
     multiselect=True,
     callback=None,
+    dialog_type="open",
+    file_name="save_file",
     type="viz",
 ):
     global _LAST_DIR
-    dialog = pfd.open_file(
-        title,
-        str(_LAST_DIR),
-        [name, extensions],
-        pfd.opt.multiselect if multiselect else pfd.opt.none,
-    )
+    if dialog_type == "open":
+        dialog = pfd.open_file(
+            title,
+            str(_LAST_DIR),
+            [name, extensions],
+            pfd.opt.multiselect if multiselect else pfd.opt.none,
+        )
+    elif dialog_type == "save":
+        dialog = pfd.save_file(
+            title,
+            str(_LAST_DIR / file_name),
+            [name, extensions],
+        )
     if dialog.result():
         selected_files = dialog.result()
         if callback is not None:
@@ -45,7 +54,7 @@ def render_file_dialog(
             elif type == "buan_pvals":
                 callback(selected_files)
         _LAST_DIR = Path(selected_files[0]).parent
-    if dialog.kill():
+    if not dialog.result() and dialog.kill():
         if callback is not None:
             if type == "buan_pvals":
                 callback(None)
@@ -87,6 +96,48 @@ def warning_message(message):
     imgui.text_colored(THEME["primary"], warning_icon)
     imgui.same_line(0, 4)
     imgui.text_colored(THEME["primary"], message)
+
+
+def downloader(label, callback, *, extension="*.*", type="viz", file_name="save.txt"):
+    """Render a themed file downloader button.
+
+    Parameters
+    ----------
+    label : str
+        Text to display on the button.
+    callback : function
+        Function to call when the button is clicked. Should return the content to
+        be saved.
+    extension : str, optional
+        File extension for the saved file.
+    type : str, optional
+        Type of file being downloaded, used to determine callback behavior.
+         - "viz": Visualization files (default)
+         - "roi": Region of Interest files
+         - "shm_coeff": Spherical Harmonics Coefficients files
+         - "buan_colors": BUAN color mapping files
+    file_name : str, optional
+        Default file name suggested in the save dialog.
+
+    Returns
+    -------
+    None
+    """
+    download_icon = icons_fontawesome_6.ICON_FA_DOWNLOAD
+    imgui.text_colored(THEME["text"], f"{download_icon} {label}")
+    if imgui.is_item_hovered():
+        imgui.set_mouse_cursor(imgui.MouseCursor_.hand)
+    if imgui.is_item_clicked():
+        render_file_dialog(
+            title=f"Save {label}",
+            name=f"{label} ({extension})",
+            extensions=extension,
+            multiselect=False,
+            callback=callback,
+            dialog_type="save",
+            file_name=file_name,
+            type=type,
+        )
 
 
 def uploader(
