@@ -47,9 +47,9 @@ class Skyline:
             ],
         )
         if bg_color is None:
-            bg_color = (1, 1, 1) if glass_brain else (0, 0, 0)
+            bg_color = (1, 1, 1) if glass_brain else (0.1, 0.1, 0.1)
         self._bg_color = bg_color
-        self.window.screens[0].scene.background = bg_color
+        self.window.screens[0].scene.background = self._bg_color
 
         if tract_colors is None:
             tract_colors = "direction"
@@ -77,6 +77,7 @@ class Skyline:
             render_callback=self.before_render,
             logo_tex_ref=logo_tex_ref,
             file_dialog_callback=self._append_visualization,
+            bg_color_callback=self._update_background_color,
         )
         self.window.resize_callback(self.handle_resize)
         self._color_gen = distinguishable_colormap()
@@ -290,6 +291,11 @@ class Skyline:
             if viz is not source_viz and isinstance(viz, (Image3D, Peak3D, SHGlyph3D)):
                 viz.update_state(new_state)
         self.active_image and self._arrange_image_actors()
+        self.window.render()
+
+    def _update_background_color(self, new_color):
+        self._bg_color = new_color
+        self.window.screens[0].scene.background = self._bg_color
         self.window.render()
 
     def _update_tractogram_rendering(self, streamline_viz, is_clustered):

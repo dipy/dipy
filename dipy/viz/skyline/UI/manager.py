@@ -4,7 +4,7 @@ from imgui_bundle import (
     imgui,
 )
 
-from dipy.viz.skyline.UI.elements import render_file_dialog
+from dipy.viz.skyline.UI.elements import color_picker, render_file_dialog
 from dipy.viz.skyline.UI.theme import ASSETS, FONT, THEME
 
 
@@ -28,6 +28,7 @@ class UIWindow:
         logo_tex_ref=None,
         render_callback=None,
         file_dialog_callback=None,
+        bg_color_callback=None,
     ):
         self.title = title
         self.is_open = default_open
@@ -43,6 +44,8 @@ class UIWindow:
         if render_callback is None:
             self.render_callback = lambda: None
         self.file_dialog_callback = file_dialog_callback
+        self.bg_color_callback = bg_color_callback
+        self._bg_color = (0.1, 0.1, 0.1)
         self._is_dialog_open = False
         hello_imgui.set_assets_folder(str(ASSETS))
         hello_imgui.load_font_ttf_with_font_awesome_icons(
@@ -196,6 +199,14 @@ class UIWindow:
 
             imgui.end_popup()
 
+        imgui.same_line(0, 8)
+        changed, color = color_picker(
+            selected_color=self._bg_color,
+            tooltip="Change Background Color",
+        )
+        if changed:
+            self.update_bg_color(color)
+
         imgui.set_cursor_screen_pos(org_start)
         imgui.dummy((available_width, self.logo_size[1] + spacing * 5 + 1))
         imgui.pop_id()
@@ -227,3 +238,8 @@ class UIWindow:
             self.file_dialog_callback(
                 filenames=filenames, rois=rois, shm_coeffs=shm_coeffs
             )
+
+    def update_bg_color(self, new_color):
+        self._bg_color = new_color
+        if self.bg_color_callback is not None:
+            self.bg_color_callback(new_color)
