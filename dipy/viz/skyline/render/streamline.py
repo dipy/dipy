@@ -114,7 +114,6 @@ def create_streamline_visualization(
             thr,
             line_type=line_type,
             render_callback=render_callback,
-            colormap=colormap,
             switch_render_callback=switch_render_callback,
         )
 
@@ -179,7 +178,6 @@ class Streamline3D(Visualization):
         render_callback=None,
         switch_render_callback=None,
     ):
-        super().__init__(name, render_callback)
         self.sft = sft
         self.color = color
         self._line_type = line_type
@@ -187,6 +185,7 @@ class Streamline3D(Visualization):
         self._buan_pvals_data = None
         self._switch_render_callback = switch_render_callback
         self._create_streamline_actor()
+        super().__init__(name, render_callback)
 
     def _create_streamline_actor(self):
         self._actor = create_streamline(
@@ -198,6 +197,14 @@ class Streamline3D(Visualization):
     @property
     def actor(self):
         return self._actor
+
+    def _populate_info(self):
+        np.set_printoptions(precision=2, suppress=True)
+        info = f"Number of streamlines: {len(self.sft.streamlines)}\n"
+        info += f"Min Length: {streamline_length(self.sft.streamlines).min():.0f}\n"
+        info += f"Max Length: {streamline_length(self.sft.streamlines).max():.0f}\n"
+        np.set_printoptions()
+        return info
 
     def render_widgets(self):
         changed, is_clustered = toggle_button(False, label="Cluster")
@@ -256,10 +263,8 @@ class ClusterStreamline3D(Visualization):
         *,
         line_type="line",
         render_callback=None,
-        colormap=None,
         switch_render_callback=None,
     ):
-        super().__init__(name, render_callback=render_callback)
 
         self.sft = sft
         self.thr = thr
@@ -268,9 +273,6 @@ class ClusterStreamline3D(Visualization):
         self._sizes = []
         self._lengths = []
         self._line_type = line_type
-        if colormap is None:
-            colormap = distinguishable_colormap()
-        self._colormap = colormap
         self._actor = Group()
         self._pending_thr = None
         self._thr_changed_at = None
@@ -279,6 +281,7 @@ class ClusterStreamline3D(Visualization):
         self._perform_clustering()
         self.size = int(np.min(self._sizes)) if self._sizes.size else 0
         self.length = float(np.min(self._lengths)) if self._lengths.size else 0.0
+        super().__init__(name, render_callback=render_callback)
 
     def _perform_clustering(self):
         self._clusters = qbx_and_merge(self.sft.streamlines, [40, 30, 25, 20, self.thr])
@@ -289,12 +292,12 @@ class ClusterStreamline3D(Visualization):
         line_widths = np.interp(
             self._sizes, [np.min(self._sizes), np.max(self._sizes)], [0.1, 2.0]
         )
+        colormap = distinguishable_colormap(nb_colors=len(self._clusters))
         for idx, centroid in enumerate(self._clusters.centroids):
-            color = next(self._colormap)
             centroid_rep = streamtube(
                 lines=[centroid],
                 radius=line_widths[idx],
-                colors=color,
+                colors=colormap[idx],
                 backend="cpu",
                 opacity=0.5,
             )
@@ -306,7 +309,7 @@ class ClusterStreamline3D(Visualization):
                 "cluster": idx,
                 "size": self._sizes[idx],
                 "length": self._lengths[idx],
-                "color": color,
+                "color": colormap[idx],
                 "selected": False,
                 "expanded": False,
                 "cluster_actor": None,
@@ -387,6 +390,26 @@ class ClusterStreamline3D(Visualization):
     def _show_all_clusters(self):
         for centroid_rep in self._cluster_state:
             centroid_rep.visible = True
+
+    def _populate_info(self):
+        np.set_printoptions(precision=2, suppress=True)
+        info = f"Total streamlines: {len(self.sft.streamlines)}\n"
+        info += f"Number of clusters: {len(self._clusters)}\n"
+        info += (
+            f"Max Cluster Size: {(self._sizes.max() if self._sizes.size else 0):.0f}\n"
+        )
+        info += (
+            f"Min Cluster Size: {(self._sizes.min() if self._sizes.size else 0):.0f}\n"
+        )
+        info += (
+            "Max Cluster Length: "
+            f"{(self._lengths.max() if self._lengths.size else 0):.0f}\n"
+        )
+        info += (
+            "Min Cluster Length: "
+            f"{(self._lengths.min() if self._lengths.size else 0):.0f}\n"
+        )
+        return info
 
     def handle_key_events(self, event):
         if event.key == "e":
