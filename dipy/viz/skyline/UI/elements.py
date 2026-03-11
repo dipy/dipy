@@ -84,6 +84,47 @@ def _calculate_hit_box(pos, size, padding=4):
     return min_pos, max_pos
 
 
+def open_confirmation_dialog(
+    title,
+    message,
+    *,
+    okay_text="Okay",
+    cancel_text="Cancel",
+):
+    state = "open" if not imgui.is_popup_open(title) else "already_open"
+    imgui.push_style_color(
+        imgui.Col_.title_bg_active, imgui.get_color_u32(THEME["primary"])
+    )
+    opened, _ = imgui.begin_popup_modal(title, None, imgui.WindowFlags_.no_resize)
+
+    if opened:
+        imgui.text(message)
+        style = imgui.get_style()
+        button_width = (
+            imgui.calc_text_size(okay_text).x
+            + imgui.calc_text_size(cancel_text).x
+            + (style.frame_padding.x * 2.0)
+        )
+        window_width = imgui.get_window_width()
+        imgui.push_style_color(imgui.Col_.button, imgui.get_color_u32(THEME["primary"]))
+        imgui.push_style_color(
+            imgui.Col_.button_hovered, imgui.get_color_u32(THEME["primary"])
+        )
+        imgui.spacing()
+        imgui.set_cursor_pos_x((window_width - button_width) * 0.5)
+        if imgui.button(okay_text):
+            state = "okay"
+            imgui.close_current_popup()
+        imgui.same_line(0, 8)
+        if imgui.button(cancel_text):
+            state = "cancel"
+            imgui.close_current_popup()
+        imgui.pop_style_color(2)
+        imgui.end_popup()
+    imgui.pop_style_color(1)
+    return state
+
+
 def warning_message(message):
     """Generate a warning message
 
@@ -96,6 +137,41 @@ def warning_message(message):
     imgui.text_colored(THEME["primary"], warning_icon)
     imgui.same_line(0, 4)
     imgui.text_colored(THEME["primary"], message)
+
+
+def color_picker(
+    *,
+    label="",
+    selected_color=(0, 0, 0),
+    tooltip="Pick color",
+):
+    """Create color picker from selected color
+
+    Parameters
+    ----------
+    label : str, optional
+        Text to put next to the icon.
+    selected_color : tuple, optional
+        Previously selected color.
+    tooltip : str, optional
+        Tooltip to show when hovering the color picker.
+    """
+
+    changed = False
+    color = selected_color
+    color_palette_icon = icons_fontawesome_6.ICON_FA_PALETTE
+    imgui.text_colored(THEME["text"], f"{color_palette_icon} {label}")
+    if imgui.is_item_hovered():
+        imgui.set_tooltip(tooltip)
+    if imgui.is_item_clicked():
+        imgui.open_popup("color_picker_popup")
+    if imgui.begin_popup("color_picker_popup"):
+        changed, color = imgui.color_picker3(
+            "", selected_color, imgui.ColorEditFlags_.no_side_preview
+        )
+        imgui.end_popup()
+
+    return changed, color
 
 
 def downloader(label, callback, *, extension="*.*", type="viz", file_name="save.txt"):
