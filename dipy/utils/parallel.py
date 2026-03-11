@@ -29,6 +29,7 @@ def paramap(
     func_kwargs=None,
     shared_objects=None,
     inflight_cap=None,
+    verbose=False,
     **kwargs,
 ):
     # FIXME: but several fitting functions return "extra" as well
@@ -78,6 +79,8 @@ def paramap(
         Limits memory pressure when processing many chunks.
         Only used with the ``"ray"`` engine; ignored for other engines.
         When None (default), all tasks are submitted at once.
+    verbose : bool, optional
+        Show a tqdm progress bar while processing chunks.
     kwargs : dict, optional
         Additional arguments to pass to either joblib.Parallel
         or dask.compute, or ray.remote depending on the engine used.
@@ -112,7 +115,7 @@ def paramap(
             d_l = [dd(ii, *func_args, **fk) for ii, fk in zip(in_list, func_kwargs)]
         else:
             d_l = [dd(ii, *func_args, **func_kwargs) for ii in in_list]
-        results = pp(tqdm(d_l))
+        results = pp(tqdm(d_l, disable=not verbose))
 
     elif engine == "dask":
         if not has_dask:
@@ -182,6 +185,7 @@ def paramap(
         def _submit_one(item, kw):
             return func.remote(item, *func_args, **_build_kwargs(kw))
 
+        n_chunks = len(in_list)
         if inflight_cap is not None and inflight_cap > 0:
             # Throttled submission: drain every inflight_cap tasks
             results = []
@@ -191,33 +195,48 @@ def paramap(
                 if func_kwargs_sequence
                 else ((ii, func_kwargs) for ii in in_list)
             )
-            for item, kw in items_kw:
-                pending.append(_submit_one(item, kw))
-                if len(pending) >= inflight_cap:
+            with tqdm(
+                total=n_chunks, disable=not verbose, desc="Fitting (ray)"
+            ) as pbar:
+                for item, kw in items_kw:
+                    pending.append(_submit_one(item, kw))
+                    if len(pending) >= inflight_cap:
+                        results.extend(ray.get(pending))
+                        pbar.update(len(pending))
+                        pending = []
+                if pending:
                     results.extend(ray.get(pending))
-                    pending = []
-            if pending:
-                results.extend(ray.get(pending))
+                    pbar.update(len(pending))
         else:
-            # Submit all at once (original behaviour)
+            # Submit all at once, collect in order with progress
             if func_kwargs_sequence:
-                results = ray.get(
-                    [_submit_one(ii, fk) for ii, fk in zip(in_list, func_kwargs)]
-                )
+                futures = [_submit_one(ii, fk) for ii, fk in zip(in_list, func_kwargs)]
             else:
-                results = ray.get([_submit_one(ii, func_kwargs) for ii in in_list])
+                futures = [_submit_one(ii, func_kwargs) for ii in in_list]
+            results = []
+            with tqdm(
+                total=n_chunks, disable=not verbose, desc="Fitting (ray)"
+            ) as pbar:
+                for f in futures:
+                    results.append(ray.get(f))
+                    pbar.update(1)
 
         if clean_spill:
             shutil.rmtree(tmp_dir.name)
 
     elif engine == "serial":
         results = []
-        if func_kwargs_sequence:
-            for in_element, fk in zip(in_list, func_kwargs):
-                results.append(func(in_element, *func_args, **fk))
-        else:
-            for in_element in in_list:
-                results.append(func(in_element, *func_args, **func_kwargs))
+        with tqdm(
+            total=len(in_list), disable=not verbose, desc="Fitting (serial)"
+        ) as pbar:
+            if func_kwargs_sequence:
+                for in_element, fk in zip(in_list, func_kwargs):
+                    results.append(func(in_element, *func_args, **fk))
+                    pbar.update(1)
+            else:
+                for in_element in in_list:
+                    results.append(func(in_element, *func_args, **func_kwargs))
+                    pbar.update(1)
     else:
         raise ValueError("%s is not a valid engine" % engine)
 

@@ -98,7 +98,7 @@ model.generate(
 # ``@multi_voxel_fit`` decorator handles chunking, masking, and result
 # assembly automatically.
 
-fit = model.fit(data, mask=mask, engine="ray", n_jobs=-1)
+fit = model.fit(data, mask=mask, engine="ray", n_jobs=-1, verbose=True)
 
 ###############################################################################
 # The ``fit`` object is a ``MultiVoxelFit`` container.  Its attributes are

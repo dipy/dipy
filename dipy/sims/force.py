@@ -14,15 +14,19 @@ References
 FORCE methodology paper (in preparation)
 """
 
+import ast
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import gc
+import multiprocessing as mp
 import os
+import sys
 import tempfile
 
 import numpy as np
 
 from dipy.data import default_sphere
 from dipy.sims.voxel import all_tensor_evecs
+from dipy.utils.logging import logger
 from dipy.utils.multiproc import determine_num_processes
 
 
@@ -335,6 +339,55 @@ def _generate_batch_worker(
     return batch_size
 
 
+def _main_is_guarded():
+    """Return True if ``__main__`` has a top-level ``if __name__ == '__main__':`` guard.
+
+    Parses the source of the ``__main__`` module with :mod:`ast` and inspects
+    only the direct children of the module node (top-level statements).  Returns
+    ``True`` also when the main module was invoked with ``python -m pkg.mod``
+    (``__spec__`` is not None), or from an interactive session (no ``__file__``),
+    because those cases do not cause spawn re-execution problems.
+
+    Returns
+    -------
+    guarded : bool
+        ``True`` if spawning workers is safe without causing recursive
+        re-execution of the caller's script.
+    """
+    main = sys.modules.get("__main__")
+    if main is None:
+        return True
+    if getattr(main, "__spec__", None) is not None:
+        # Invoked as `python -m pkg.mod` — spawn imports the module, no re-run
+        return True
+    main_file = getattr(main, "__file__", None)
+    if main_file is None:
+        # Interactive session or frozen executable
+        return True
+    try:
+        with open(main_file) as fh:
+            source = fh.read()
+        tree = ast.parse(source)
+    except (OSError, SyntaxError):
+        return False
+    for node in ast.iter_child_nodes(tree):
+        if not isinstance(node, ast.If):
+            continue
+        test = node.test
+        if (
+            isinstance(test, ast.Compare)
+            and isinstance(test.left, ast.Name)
+            and test.left.id == "__name__"
+            and len(test.ops) == 1
+            and isinstance(test.ops[0], ast.Eq)
+            and len(test.comparators) == 1
+            and isinstance(test.comparators[0], ast.Constant)
+            and test.comparators[0].value == "__main__"
+        ):
+            return True
+    return False
+
+
 def generate_force_simulations(
     gtab,
     num_simulations=100000,
@@ -582,12 +635,64 @@ def generate_force_simulations(
                 diffusivity_config,
             )
             pbar.update(batch_done)
+    elif sys.platform == "win32":
+        if _main_is_guarded():
+            ctx = mp.get_context("spawn")
+            with ProcessPoolExecutor(
+                max_workers=num_cpus, initializer=init_worker, mp_context=ctx
+            ) as executor:
+                futures = {
+                    executor.submit(
+                        _generate_batch_worker,
+                        start_idx,
+                        bs,
+                        target_sphere,
+                        evecs,
+                        bingham_sf,
+                        odi_list,
+                        bvals,
+                        bvecs,
+                        wm_threshold,
+                        tortuosity,
+                        memmap_info,
+                        diffusivity_config,
+                    ): (start_idx, bs)
+                    for start_idx, bs in batch_specs
+                }
+                for future in as_completed(futures):
+                    batch_done = future.result()
+                    pbar.update(batch_done)
+        else:
+            logger.warning(
+                "Parallel simulation on Windows requires your script to be "
+                "protected with `if __name__ == '__main__':`. "
+                "Falling back to serial execution."
+            )
+            init_worker()
+            for start_idx, bs in batch_specs:
+                batch_done = _generate_batch_worker(
+                    start_idx,
+                    bs,
+                    target_sphere,
+                    evecs,
+                    bingham_sf,
+                    odi_list,
+                    bvals,
+                    bvecs,
+                    wm_threshold,
+                    tortuosity,
+                    memmap_info,
+                    diffusivity_config,
+                )
+                pbar.update(batch_done)
     else:
-        # Parallel path (num_cpus > 1).
-        # On macOS/Windows (spawn default) user scripts must be protected with
-        # `if __name__ == '__main__':`.  On Linux (fork default) it just works.
+        # fork: workers are copies of the parent — __main__ is NOT re-run,
+        # so no `if __name__ == '__main__':` guard is needed in the caller's
+        # script. Safe for CLI scientific-computing scripts on macOS/Linux
+        # (no GUI/ObjC).
+        ctx = mp.get_context("fork")
         with ProcessPoolExecutor(
-            max_workers=num_cpus, initializer=init_worker
+            max_workers=num_cpus, initializer=init_worker, mp_context=ctx
         ) as executor:
             futures = {
                 executor.submit(
