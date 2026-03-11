@@ -37,10 +37,10 @@ classifiers = [
 ]
 version = "1.12.0.dev0"
 dependencies = [
-    "numpy>=1.22.4",
-    "scipy>=1.8",
-    "nibabel>=3.0.0",
-    "h5py>=3.1.0",
+    "numpy>=2.0.0",
+    "scipy>=1.13.0",
+    "nibabel>=5.4.1",
+    "h5py>=3.16.0",
     "packaging>=21",
     "tqdm>=4.30.0",
     "trx-python>=0.4.0",
@@ -109,13 +109,13 @@ dipy_tensor2pam = "dipy.workflows.cli:run"
 
 [project.optional-dependencies]
 build = [
-    "meson-python>=0.13",
+    "meson-python>=0.19.0",
     "wheel",
-    "setuptools>=69.5,<83.0",
+    "setuptools>=75.0.0",
     "packaging>=21",
     "ninja",
-    "Cython>=0.29.35",
-    "numpy>=1.22.4",
+    "Cython>=3.0.11",
+    "numpy>=2.0.0",
     "spin>=0.5",
     "build"
 ]
@@ -170,17 +170,11 @@ tracker = "https://github.com/dipy/dipy/issues"
 [build-system]
 build-backend = "mesonpy"
 requires = [
-    "meson-python>=0.13.1",
-    "Cython>=3.0.4",
+    "meson-python>=0.19.0",
+    "Cython>=3.0.11",
     "packaging>21.0",
     "wheel",
-    # numpy requirement for wheel builds for distribution on PyPI - building
-    # against 2.x yields wheels that are also compatible with numpy 1.x at
-    # runtime.
-    # Note that building against numpy 1.x works fine too - users and
-    # redistributors can do this by installing the numpy version they like and
-    # disabling build isolation.
-    "numpy>=2.0.0rc1; python_version>='3.10' and platform_python_implementation!='PyPy'",
+    "numpy>=2.0.0; python_version>='3.10' and platform_python_implementation!='PyPy'",
     "numpy; python_version>='3.10' and platform_python_implementation=='PyPy'",
 ]
 
