@@ -20,6 +20,7 @@ from dipy.tracking.streamline import (
 from dipy.viz.skyline.UI.elements import (
     create_numeric_input,
     downloader,
+    open_confirmation_dialog,
     segmented_switch,
     toggle_button,
     uploader,
@@ -307,6 +308,8 @@ class ClusterStreamline3D(Visualization):
         self._thr_changed_at = None
         self._switch_render_callback = switch_render_callback
         self._recluster_debounce_sec = 1.0
+        self._show_confirmation_dialog = False
+        self._dialog_state = "closed"
         self._perform_clustering()
         self.size = int(np.min(self._sizes)) if self._sizes.size else 0
         self.length = float(np.min(self._lengths)) if self._lengths.size else 0.0
@@ -489,35 +492,24 @@ class ClusterStreamline3D(Visualization):
             n_expanded = sum(
                 1 for state in self._cluster_state.values() if state["expanded"]
             )
-            if self._line_type == "tube" and n_expanded > 10:
-                imgui.open_popup("Cluster Confirmation")
-                if imgui.begin_popup_modal("Cluster Confirmation")[0]:
-                    imgui.text(
-                        "Rendering many expanded clusters as tubes may cause "
-                        "performance issues. So we will collapse all the clusters."
-                    )
-                    if imgui.button("Okay"):
-                        self._collapse_clusters()
-                        imgui.close_current_popup()
-                imgui.end_popup()
-            else:
-                for state in self._cluster_state.values():
-                    if state["expanded"]:
-                        cluster_idx = state["cluster"]
-                        cluster_streamlines = self._clusters[cluster_idx]
-                        color = state["color"]
-                        new_actor = create_streamline(
-                            lines=cluster_streamlines,
-                            color=color,
-                            line_type=self._line_type,
-                            segments=3,
-                        )
-                        self._actor.add(new_actor)
-                        if state["cluster_actor"] is not None:
-                            self._actor.remove(state["cluster_actor"])
-                        state["cluster_actor"] = new_actor
+            self._show_confirmation_dialog = (
+                self._line_type == "tube" and n_expanded > 10
+            )
+        if self._dialog_state == "cancel":
+            self._expand_clusters()
+        self._dialog_state = "closed"
 
-            self.render()
+        if self._show_confirmation_dialog:
+            self._show_confirmation_dialog = False
+            imgui.open_popup("Cluster Confirmation")
+            self._collapse_clusters()
+        self._dialog_state = open_confirmation_dialog(
+            "Cluster Confirmation",
+            "Rendering many expanded clusters as tubes may cause\n"
+            "performance issues. So we will collapse all the clusters.",
+            okay_text="Understood",
+            cancel_text="Keep Expanded",
+        )
 
         imgui.spacing()
         imgui.spacing()
