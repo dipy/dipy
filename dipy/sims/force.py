@@ -31,8 +31,7 @@ from dipy.utils.multiproc import determine_num_processes
 
 
 def bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
-    """
-    Evaluate Bingham distribution on a sphere.
+    """Evaluate Bingham distribution on a sphere.
 
     Parameters
     ----------
@@ -61,8 +60,7 @@ def bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
 
 
 def bingham_dictionary(target_sphere, odi_list):
-    """
-    Generate Bingham spherical functions for all directions and ODI values.
+    """Generate Bingham spherical functions for all directions and ODI values.
 
     Parameters
     ----------
@@ -93,17 +91,16 @@ def bingham_dictionary(target_sphere, odi_list):
     return bingham_sf
 
 
-def smallest_shell_bval(bvals, b0_threshold=50, shell_tolerance=50):
-    """
-    Find the smallest non-zero b-value shell.
+def smallest_shell_bval(bvals, *, b0_threshold=50, shell_tolerance=50):
+    """Find the smallest non-zero b-value shell.
 
     Parameters
     ----------
     bvals : ndarray
         B-values array.
-    b0_threshold : float
+    b0_threshold : float, optional
         Maximum b-value for b0 volumes.
-    shell_tolerance : float
+    shell_tolerance : float, optional
         Tolerance for grouping shells.
 
     Returns
@@ -126,12 +123,17 @@ def smallest_shell_bval(bvals, b0_threshold=50, shell_tolerance=50):
 
 
 def init_worker(base_seed=None):
-    """
-    Initializer for ProcessPoolExecutor workers.
-    Each worker gets a unique RNG state. With base_seed=None,
-    seed = PID + high-resolution time so every worker has a different stream.
-    With initargs=(base_seed,) for reproducibility, seed = base_seed + PID
-    so workers differ but the run is reproducible for a fixed worker count.
+    """Initialize a ProcessPoolExecutor worker with a unique RNG state.
+
+    With ``base_seed=None``, seed = PID + high-resolution time so every
+    worker has a different stream. With ``initargs=(base_seed,)`` for
+    reproducibility, seed = base_seed + PID so workers differ but the run
+    is reproducible for a fixed worker count.
+
+    Parameters
+    ----------
+    base_seed : int, optional
+        Base seed for reproducible worker initialization.
     """
     import random
     import time
@@ -165,8 +167,7 @@ def _generate_batch_worker(
     memmap_info,
     diffusivity_cfg,
 ):
-    """
-    Worker function for parallel batch generation.
+    """Worker function for parallel batch generation.
 
     Opens memmaps by path in each process and writes directly.
     """
@@ -390,6 +391,7 @@ def _main_is_guarded():
 
 def generate_force_simulations(
     gtab,
+    *,
     num_simulations=100000,
     output_dir=None,
     num_cpus=1,
@@ -404,8 +406,7 @@ def generate_force_simulations(
     compute_dki=False,
     verbose=True,
 ):
-    """
-    Generate FORCE simulations.
+    """Generate FORCE simulations.
 
     Creates a library of simulated diffusion MRI signals with
     corresponding microstructural parameters for matching-based
@@ -416,9 +417,9 @@ def generate_force_simulations(
     gtab : GradientTable
         Gradient table with b-values and b-vectors.
     num_simulations : int, optional
-        Number of simulated voxels. Default is 100000.
+        Number of simulated voxels.
     output_dir : str, optional
-        Directory for output files. If None, uses temporary directory.
+        Directory for output files. If None, uses a temporary directory.
     num_cpus : int or None, optional
         Number of CPU cores for parallel processing.
         ``1`` runs in-process (no subprocess, safe everywhere).
@@ -426,25 +427,25 @@ def generate_force_simulations(
         Values ``< -1`` leave that many cores idle
         (e.g. ``-2`` = all minus one). ``0`` raises ``ValueError``.
     batch_size : int, optional
-        Batch size for processing. Default is 1000.
+        Batch size for processing.
     wm_threshold : float, optional
-        Minimum WM fraction to include fiber labels. Default is 0.5.
+        Minimum WM fraction to include fiber labels.
     tortuosity : bool, optional
         Use tortuosity constraint for perpendicular diffusivity.
     odi_range : tuple, optional
         (min, max) orientation dispersion index range.
     num_odi_values : int, optional
-        Number of ODI values to sample. Default is 10.
+        Number of ODI values to sample.
     diffusivity_config : dict, optional
         Custom diffusivity ranges.
     dtype : dtype, optional
-        Data type for outputs. Default is np.float32.
+        Data type for outputs.
     compute_dti : bool, optional
-        Compute DTI metrics (FA, MD, RD). Default is True.
+        Compute DTI metrics (FA, MD, RD).
     compute_dki : bool, optional
-        Compute DKI metrics (AK, RK, MK, KFA). Default is False.
+        Compute DKI metrics (AK, RK, MK, KFA).
     verbose : bool, optional
-        Enable progress output. Default is True.
+        Enable progress output.
 
     Returns
     -------
@@ -789,8 +790,7 @@ def generate_force_simulations(
 
 
 def save_force_simulations(simulations, output_path):
-    """
-    Save FORCE simulations to compressed NPZ file.
+    """Save FORCE simulations to compressed NPZ file.
 
     Parameters
     ----------
@@ -803,8 +803,7 @@ def save_force_simulations(simulations, output_path):
 
 
 def load_force_simulations(input_path):
-    """
-    Load FORCE simulations from NPZ file.
+    """Load FORCE simulations from NPZ file.
 
     Parameters
     ----------
@@ -821,8 +820,7 @@ def load_force_simulations(input_path):
 
 
 def validate_diffusivity_config(config):
-    """
-    Validate diffusivity configuration dictionary.
+    """Validate diffusivity configuration dictionary.
 
     Parameters
     ----------
@@ -862,8 +860,7 @@ def validate_diffusivity_config(config):
 
 
 def get_default_diffusivity_config():
-    """
-    Get default diffusivity configuration.
+    """Get default diffusivity configuration.
 
     Returns
     -------

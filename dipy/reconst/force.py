@@ -227,8 +227,7 @@ def _register_cached_simulation(
 
 
 class SignalIndex:
-    """
-    Index for inner product similarity search.
+    """Index for inner product similarity search.
 
     Uses optimized Cython BLAS for fast matrix multiplication
     and streaming heap for memory-efficient top-k selection.
@@ -247,8 +246,7 @@ class SignalIndex:
         self._xb = None
 
     def add(self, x):
-        """
-        Add vectors to the index.
+        """Add vectors to the index.
 
         Parameters
         ----------
@@ -286,8 +284,7 @@ class SignalIndex:
         self.ntotal = len(self._xb)
 
     def search(self, x, k):
-        """
-        Search for k nearest neighbors by inner product.
+        """Search for k nearest neighbors by inner product.
 
         Parameters
         ----------
@@ -350,8 +347,7 @@ class SignalIndex:
 
 
 def normalize_signals(signals):
-    """
-    L2-normalize signal array for cosine similarity search.
+    """L2-normalize signal array for cosine similarity search.
 
     Parameters
     ----------
@@ -370,8 +366,7 @@ def normalize_signals(signals):
 
 
 def create_signal_index(signals_norm):
-    """
-    Create index for cosine similarity search.
+    """Create index for cosine similarity search.
 
     Parameters
     ----------
@@ -390,14 +385,13 @@ def create_signal_index(signals_norm):
 
 
 def softmax_stable(x, *, axis=1):
-    """
-    Numerically stable softmax.
+    """Numerically stable softmax.
 
     Parameters
     ----------
     x : ndarray
         Input array.
-    axis : int
+    axis : int, optional
         Axis along which to compute softmax.
 
     Returns
@@ -411,8 +405,7 @@ def softmax_stable(x, *, axis=1):
 
 
 def compute_uncertainty_ambiguity(scores):
-    """
-    Compute uncertainty and ambiguity metrics from match scores.
+    """Compute uncertainty and ambiguity metrics from match scores.
 
     Parameters
     ----------
@@ -440,14 +433,13 @@ def compute_uncertainty_ambiguity(scores):
 
 
 def labels_to_peak_indices(labels_binary, *, max_peaks=3):
-    """
-    Convert binary peak labels to compact index array.
+    """Convert binary peak labels to compact index array.
 
     Parameters
     ----------
     labels_binary : ndarray (N, D)
         Binary array with 1s at peak directions.
-    max_peaks : int
+    max_peaks : int, optional
         Maximum number of peaks to store.
 
     Returns
@@ -473,8 +465,7 @@ def labels_to_peak_indices(labels_binary, *, max_peaks=3):
 def pick_top_peaks_from_weights(
     weights, sphere_dirs, *, n_peaks=5, top_m=30, min_separation_angle=45.0
 ):
-    """
-    Extract discrete peaks from directional weights.
+    """Extract discrete peaks from directional weights.
 
     Parameters
     ----------
@@ -482,11 +473,11 @@ def pick_top_peaks_from_weights(
         Non-negative directional weights.
     sphere_dirs : ndarray (D, 3)
         Unit sphere directions.
-    n_peaks : int
+    n_peaks : int, optional
         Number of peaks to extract.
-    top_m : int
+    top_m : int, optional
         Number of top candidates to consider.
-    min_separation_angle : float
+    min_separation_angle : float, optional
         Minimum angular separation in degrees.
 
     Returns
@@ -538,8 +529,7 @@ def pick_top_peaks_from_weights(
 
 
 def postprocess_peaks(preds, target_sphere, fracs):
-    """
-    Convert binary peak masks to exactly 5 peaks per sample.
+    """Convert binary peak masks to exactly 5 peaks per sample.
 
     Parameters
     ----------
@@ -666,48 +656,46 @@ class FORCEModel(ReconstModel):
         verbose=False,
         use_cache=True,
     ):
-        """
-        Generate simulations for matching.
+        """Generate simulations for matching.
 
-        When ``output_path`` is ``None`` (the default) and
-        ``use_cache`` is ``True``, simulations are cached in
-        ``~/.dipy/force_simulations/`` (or ``$DIPY_HOME``).  A
-        registry file (``cache_registry.json``) keeps track of the
-        bvals, bvecs, diffusivity configuration and number of
-        simulations for each cached file.  If a cached simulation that
-        matches the current gradient table (within tolerance) and
-        diffusivity configuration already exists, it is loaded from
-        disk and generation is skipped.
+        When ``output_path`` is ``None`` and ``use_cache`` is ``True``,
+        simulations are cached in ``~/.dipy/force_simulations/`` (or
+        ``$DIPY_HOME``). A registry file (``cache_registry.json``) keeps
+        track of the bvals, bvecs, diffusivity configuration and number of
+        simulations for each cached file. If a cached simulation that matches
+        the current gradient table (within tolerance) and diffusivity
+        configuration already exists, it is loaded from disk and generation
+        is skipped.
 
-        Set ``use_cache=False`` to force regeneration even when a
-        matching cached simulation exists.
+        Set ``use_cache=False`` to force regeneration even when a matching
+        cached simulation exists.
 
         Parameters
         ----------
-        num_simulations : int
+        num_simulations : int, optional
             Number of simulated voxels.
         output_path : str, optional
-            Path to save simulations (.npz).  When None, defaults to
+            Path to save simulations (.npz). When None, saves to
             ``~/.dipy/force_simulations/`` and uses caching.
-        num_cpus : int
+        num_cpus : int, optional
             Number of CPU cores for parallel processing.
-        wm_threshold : float
+        wm_threshold : float, optional
             Minimum WM fraction to include fiber labels.
-        tortuosity : bool
+        tortuosity : bool, optional
             Use tortuosity constraint for perpendicular diffusivity.
-        odi_range : tuple
+        odi_range : tuple, optional
             (min, max) orientation dispersion index range.
         diffusivity_config : dict, optional
             Custom diffusivity ranges.
-        compute_dti : bool
+        compute_dti : bool, optional
             Compute DTI metrics (FA, MD, RD).
-        compute_dki : bool
+        compute_dki : bool, optional
             Compute DKI metrics (AK, RK, MK, KFA).
-        verbose : bool
+        verbose : bool, optional
             Enable progress output.
         use_cache : bool, optional
             Whether to use cached simulations when ``output_path`` is
-            None.  Set to ``False`` to always regenerate.
+            None. Set to ``False`` to always regenerate.
 
         Returns
         -------
@@ -780,8 +768,7 @@ class FORCEModel(ReconstModel):
         return self
 
     def load(self, input_path):
-        """
-        Load pre-computed simulations from file.
+        """Load pre-computed simulations from file.
 
         Parameters
         ----------
@@ -924,8 +911,7 @@ class FORCEModel(ReconstModel):
         shared_obj=("_penalty_array", "_index", "simulations"),
     )
     def fit(self, data, *, mask=None, **kwargs):
-        """
-        Fit model to data.
+        """Fit model to data.
 
         Parameters
         ----------
@@ -1143,8 +1129,7 @@ class FORCEFit(ReconstFit):
 
 
 def compute_entropy(weights):
-    """
-    Compute entropy of posterior weights.
+    """Compute entropy of posterior weights.
 
     Parameters
     ----------
@@ -1160,8 +1145,7 @@ def compute_entropy(weights):
 
 
 def posterior_mean_signal(signals, weights, indices):
-    """
-    Compute posterior mean signal from neighbors.
+    """Compute posterior mean signal from neighbors.
 
     Parameters
     ----------
@@ -1189,8 +1173,7 @@ def posterior_mean_signal(signals, weights, indices):
 
 
 def posterior_odf(odfs, weights, indices, n_dirs):
-    """
-    Compute posterior ODF from neighbors.
+    """Compute posterior ODF from neighbors.
 
     Parameters
     ----------

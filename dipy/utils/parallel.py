@@ -50,19 +50,20 @@ def paramap(
     out_shape : tuple, optional
          The shape of the output array. If not specified, the output shape will
          be `(len(in_list),)`.
-    n_jobs : integer, optional
-        The number of jobs to perform in parallel.
-        -1 (default) to use all but one cpu.
+    n_jobs : int, optional
+        The number of jobs to perform in parallel. Use -1 to use all but one
+        cpu.
     engine : str, optional
         {"dask", "joblib", "ray", "serial"}
         The last one is useful for debugging -- runs the code without any
         parallelization.
     backend : str, optional
-        What joblib or dask backend to use. For joblib, the default is "loky".
-        For dask the default is "threading".
+        The joblib or dask backend to use. For joblib the options are "loky",
+        "threading", and "multiprocessing". For dask the options are
+        "threading" and "multiprocessing".
     clean_spill : bool, optional
         If True, clean up the spill directory after the computation is done.
-        Only applies to "ray" engine. Otherwise has no effect.
+        Only applies to "ray" engine.
     func_args : list, optional
         Positional arguments to `func`.
     func_kwargs : dict or sequence, optional
@@ -78,7 +79,7 @@ def paramap(
         Maximum number of pending Ray tasks before draining results.
         Limits memory pressure when processing many chunks.
         Only used with the ``"ray"`` engine; ignored for other engines.
-        When None (default), all tasks are submitted at once.
+        When None, all tasks are submitted at once.
     verbose : bool, optional
         Show a tqdm progress bar while processing chunks.
     kwargs : dict, optional
