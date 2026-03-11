@@ -27,6 +27,7 @@ from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import CCMetric
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
+from dipy.nn.utils import normalize
 from dipy.utils.logging import logger
 
 # Try to import Synb0 - the backend (torch/tf) is selected automatically
@@ -110,6 +111,7 @@ def synb0_syn(
     b0_index=0,
     dwi_mask=None,
     T1_mask=None,
+    pe_axis=1,
     return_field=False,
     debug_dir=None,
     **kwargs,
@@ -145,6 +147,11 @@ def synb0_syn(
     T1_mask : ndarray (X, Y, Z), optional
         A binary mask for the T1 image. If None, no masking is applied.
         Default is None.
+
+    pe_axis : int or str, optional
+        The phase-encoding axis. Can be specified as an integer (0 for 'x',
+        1 for 'y', 2 for 'z') or a string ('x', 'y', 'z'). Default is 1 ('y').
+        If provided, the returned field will be restricted to this direction.
 
     return_field : bool, optional
         Whether to return the estimated distortion field along with the
@@ -282,9 +289,14 @@ def synb0_syn(
         mni_t1_affine,
     )
 
+    dwi_p99 = np.percentile(dwi_for_field, 99)
+    dwi_norm = normalize(dwi_for_field, min_v=0, max_v=dwi_p99, new_min=0, new_max=100)
+    mni_t2_p99 = np.percentile(mni_t2, 99)
+    mni_t2_norm = normalize(mni_t2, min_v=0, max_v=mni_t2_p99, new_min=0, new_max=100)
+
     dwi_affine_to_template, dwi_reg_affine = affine_registration(
-        dwi_for_field,
-        mni_t2,
+        dwi_norm,
+        mni_t2_norm,
         moving_affine=dwi_affine,
         static_affine=mni_t2_affine,
         nbins=32,
@@ -297,23 +309,24 @@ def synb0_syn(
         static_mask=mni_mask,
     )
     _save_debug_volume(
-        debug_dir, "04_b0_affine_to_template", dwi_affine_to_template, mni_t2_affine
+        debug_dir,
+        "04_b0_affine_to_template",
+        dwi_affine_to_template,
+        mni_t2_affine,
     )
 
     if dwi_mask is not None:
         dwi_mask_f = np.ascontiguousarray(np.asarray(dwi_mask, dtype=np.float32))
-        masked_dwi = dwi_for_field * dwi_mask_f
     else:
         dwi_mask_f = None
-        masked_dwi = dwi_for_field
-    masked_mni_t2 = mni_t2 * mni_mask
+    masked_mni_t2 = mni_t2_norm * mni_mask
 
     dwi_template_sdr = SymmetricDiffeomorphicRegistration(
-        metric=CCMetric(3), level_iters=[20, 20, 10], ss_sigma_factor=0.5
+        metric=CCMetric(3), level_iters=[200, 200, 100]
     )
     dwi_template_mapping = dwi_template_sdr.optimize(
         static=masked_mni_t2,
-        moving=masked_dwi,
+        moving=dwi_norm,
         static_grid2world=mni_t2_affine,
         moving_grid2world=dwi_affine,
         prealign=dwi_reg_affine,
@@ -346,6 +359,7 @@ def synb0_syn(
     binf = synb0.predict(
         masked_dwi_reg_to_template, masked_T1_reg_to_template, **kwargs
     )
+    binf = binf * mni_mask
     _save_debug_volume(debug_dir, "06_binf_template", binf, mni_t1_affine)
     # b0_temp_reg_to_binf_in_template_sdr = SymmetricDiffeomorphicRegistration(
     #     metric=CCMetric(3), level_iters=[20, 20, 10]
@@ -366,20 +380,52 @@ def synb0_syn(
     #     dwi_reg_to_binf_in_template,
     #     mni_t1_affine,
     # )
-    ori_binf = dwi_template_mapping.transform_inverse(binf)
+    binf_in_t1 = t1_template_mapping.transform_inverse(binf)
+    _save_debug_volume(debug_dir, "06b_binf_in_t1", binf_in_t1, T1_affine)
+    ori_binf, _ = affine_registration(
+        binf_in_t1,
+        dwi_for_field,
+        moving_affine=T1_affine,
+        static_affine=dwi_affine,
+        nbins=32,
+        metric="MI",
+        pipeline=["center_of_mass", "translation", "rigid", "affine"],
+        level_iters=level_iters,
+        sigmas=sigmas,
+        factors=factors,
+    )
+    ori_binf = np.clip(ori_binf, a_min=0, a_max=None)
+    if dwi_mask_f is not None:
+        ori_binf = ori_binf * dwi_mask_f
     _save_debug_volume(debug_dir, "07_binf_in_dwi", ori_binf, dwi_affine)
 
     sdr = SymmetricDiffeomorphicRegistration(
         metric=CCMetric(3), level_iters=[200, 200, 100]
     )
     pre_align = np.eye(4)
+    if dwi_mask_f is not None:
+        masked_dwi_for_sdr = dwi_for_field * dwi_mask_f
+    else:
+        masked_dwi_for_sdr = dwi_for_field
     mapping = sdr.optimize(
         static=ori_binf,
-        moving=dwi_for_field,
+        moving=masked_dwi_for_sdr,
         static_grid2world=dwi_affine,
         moving_grid2world=dwi_affine,
         prealign=pre_align,
     )
+    if pe_axis is not None:
+        # Make other axes zero in the forward field
+        #  to restrict correction to the PE direction
+        field = mapping.get_forward_field()
+        if isinstance(pe_axis, str):
+            pe_axis = {"x": 0, "y": 1, "z": 2}.get(pe_axis.lower())
+        if pe_axis in [0, 1, 2]:
+            field[..., [i for i in range(3) if i != pe_axis]] = 0
+            mapping.forward = field
+            field = field[..., pe_axis]
+        else:
+            raise ValueError("pe_axis must be 'x', 'y', 'z' or 0, 1, 2.")
     dwi_to_binf = _warp_image(mapping, dwi)
     _save_debug_volume(
         debug_dir,
@@ -389,8 +435,8 @@ def synb0_syn(
     )
 
     if return_field:
-        field = mapping.get_forward_field()
         _save_debug_volume(debug_dir, "09_final_field", field, dwi_affine)
+
         return dwi_to_binf, field
     else:
         return dwi_to_binf
