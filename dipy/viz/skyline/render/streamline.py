@@ -18,6 +18,7 @@ from dipy.viz.skyline.UI.elements import (
     segmented_switch,
     toggle_button,
     uploader,
+    warning_message,
 )
 from dipy.viz.skyline.io import load_npy
 from dipy.viz.skyline.render.renderer import Visualization
@@ -215,6 +216,8 @@ class Streamline3D(Visualization):
 
         imgui.spacing()
         imgui.spacing()
+        imgui.spacing()
+        imgui.spacing()
 
         def handle_color_change(fname):
             if fname is not None:
@@ -232,6 +235,15 @@ class Streamline3D(Visualization):
             extension="*.npy",
             selected=self._buan_pvals_file,
             type="buan_pvals",
+        )
+
+        imgui.spacing()
+        imgui.spacing()
+        imgui.spacing()
+        imgui.spacing()
+        warning_message(
+            "We recommend using type 'Line' for better"
+            "\nperformance with large tractograms."
         )
 
 
@@ -284,6 +296,7 @@ class ClusterStreamline3D(Visualization):
                 radius=line_widths[idx],
                 colors=color,
                 backend="cpu",
+                opacity=0.5,
             )
             centroid_rep.add_event_handler(
                 lambda event: self._toggle_cluster_selection(event.target),
@@ -297,7 +310,6 @@ class ClusterStreamline3D(Visualization):
                 "selected": False,
                 "expanded": False,
                 "cluster_actor": None,
-                "line_actor": None,
             }
             self._actor.add(centroid_rep)
 
@@ -358,9 +370,9 @@ class ClusterStreamline3D(Visualization):
         state = self._cluster_state[centroid_rep]
         state["selected"] = selected
         if selected:
-            centroid_rep.material.opacity = 0.5
-        else:
             centroid_rep.material.opacity = 1.0
+        else:
+            centroid_rep.material.opacity = 0.5
 
     def _toggle_cluster_selection(self, cluster):
         self._update_cluster_state(
@@ -401,6 +413,15 @@ class ClusterStreamline3D(Visualization):
                 self._switch_render_callback(self, is_clustered)
                 self.render()
 
+        imgui.spacing()
+
+        changed, new = segmented_switch("Line Type", ["Line", "Tube"], self._line_type)
+        if changed:
+            self._line_type = new.lower()
+            self._collapse_clusters()
+            self.render()
+
+        imgui.spacing()
         imgui.spacing()
 
         threshold_value = (
@@ -448,3 +469,10 @@ class ClusterStreamline3D(Visualization):
         if changed:
             self.length = max(0.0, float(new_length))
             self._refresh_cluster_visibility()
+
+        imgui.spacing()
+        imgui.spacing()
+        warning_message(
+            "We recommend using type 'Line' for better"
+            "\nperformance with large tractograms."
+        )
