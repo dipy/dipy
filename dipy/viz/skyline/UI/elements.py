@@ -14,6 +14,7 @@ from dipy.viz.skyline.UI.theme import (
 
 _NUMERIC_INPUT_EDITING = {}
 _NUMERIC_INPUT_DRAFT = {}
+_LAST_DIR = Path("~").expanduser() / ".dipy"
 
 
 def render_file_dialog(
@@ -25,9 +26,10 @@ def render_file_dialog(
     callback=None,
     type="viz",
 ):
+    global _LAST_DIR
     dialog = pfd.open_file(
         title,
-        str(Path("~").expanduser() / ".dipy"),
+        str(_LAST_DIR),
         [name, extensions],
         pfd.opt.multiselect if multiselect else pfd.opt.none,
     )
@@ -42,6 +44,7 @@ def render_file_dialog(
                 callback(shm_coeffs=selected_files)
             elif type == "buan_pvals":
                 callback(selected_files)
+        _LAST_DIR = Path(selected_files[0]).parent
     if dialog.kill():
         if callback is not None:
             if type == "buan_pvals":
@@ -70,6 +73,20 @@ def _calculate_hit_box(pos, size, padding=4):
     min_pos = imgui.ImVec2(pos[0] - padding, pos[1] - padding)
     max_pos = imgui.ImVec2(pos[0] + size[0] + padding, pos[1] + size[1] + padding)
     return min_pos, max_pos
+
+
+def warning_message(message):
+    """Generate a warning message
+
+    Parameters
+    ----------
+    message : str
+        Warning to display
+    """
+    warning_icon = icons_fontawesome_6.ICON_FA_TRIANGLE_EXCLAMATION
+    imgui.text_colored(THEME["primary"], warning_icon)
+    imgui.same_line(0, 4)
+    imgui.text_colored(THEME["primary"], message)
 
 
 def uploader(
