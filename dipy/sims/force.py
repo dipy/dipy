@@ -23,6 +23,7 @@ import numpy as np
 
 from dipy.data import default_sphere
 from dipy.sims.voxel import all_tensor_evecs
+from dipy.utils.multiproc import determine_num_processes
 
 
 def bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
@@ -365,8 +366,12 @@ def generate_force_simulations(
         Number of simulated voxels. Default is 100000.
     output_dir : str, optional
         Directory for output files. If None, uses temporary directory.
-    num_cpus : int, optional
-        Number of CPU cores for parallel processing. Default is 1.
+    num_cpus : int or None, optional
+        Number of CPU cores for parallel processing.
+        ``1`` runs in-process (no subprocess, safe everywhere).
+        ``None`` or ``-1`` uses all available cores.
+        Values ``< -1`` leave that many cores idle
+        (e.g. ``-2`` = all minus one). ``0`` raises ``ValueError``.
     batch_size : int, optional
         Batch size for processing. Default is 1000.
     wm_threshold : float, optional
@@ -397,6 +402,8 @@ def generate_force_simulations(
 
     from dipy.reconst import dti
     from dipy.sims._force_core import set_diffusivity_ranges
+
+    num_cpus = determine_num_processes(num_cpus)
 
     # Setup output directory
     if output_dir is None:
@@ -556,10 +563,11 @@ def generate_force_simulations(
     # Run simulations with progress bar
     pbar = tqdm(total=num_simulations, desc="Simulating", disable=not verbose)
 
-    with ProcessPoolExecutor(max_workers=num_cpus, initializer=init_worker) as executor:
-        futures = {
-            executor.submit(
-                _generate_batch_worker,
+    if num_cpus == 1:
+        # Serial in-process path — no subprocess spawned, safe on all platforms
+        init_worker()
+        for start_idx, bs in batch_specs:
+            batch_done = _generate_batch_worker(
                 start_idx,
                 bs,
                 target_sphere,
@@ -572,13 +580,37 @@ def generate_force_simulations(
                 tortuosity,
                 memmap_info,
                 diffusivity_config,
-            ): (start_idx, bs)
-            for start_idx, bs in batch_specs
-        }
-
-        for future in as_completed(futures):
-            batch_done = future.result()
+            )
             pbar.update(batch_done)
+    else:
+        # Parallel path (num_cpus > 1).
+        # On macOS/Windows (spawn default) user scripts must be protected with
+        # `if __name__ == '__main__':`.  On Linux (fork default) it just works.
+        with ProcessPoolExecutor(
+            max_workers=num_cpus, initializer=init_worker
+        ) as executor:
+            futures = {
+                executor.submit(
+                    _generate_batch_worker,
+                    start_idx,
+                    bs,
+                    target_sphere,
+                    evecs,
+                    bingham_sf,
+                    odi_list,
+                    bvals,
+                    bvecs,
+                    wm_threshold,
+                    tortuosity,
+                    memmap_info,
+                    diffusivity_config,
+                ): (start_idx, bs)
+                for start_idx, bs in batch_specs
+            }
+
+            for future in as_completed(futures):
+                batch_done = future.result()
+                pbar.update(batch_done)
 
     pbar.close()
 
