@@ -90,7 +90,7 @@ class BiasFieldCorrectionFlow(Workflow):
         input_files,
         bval=None,
         bvec=None,
-        method="n4",
+        method="auto",
         threshold=0.5,
         use_cuda=False,
         verbose=False,
@@ -190,7 +190,7 @@ class BiasFieldCorrectionFlow(Workflow):
                 )
             else:
                 self.last_generated_outputs = self.flat_outputs
-        for fpath, corrected_out_path in io_it:
+        for fpath, corrected_out_path, obf in io_it:
             logger.info(f"Applying bias field correction on {fpath}")
 
             data, affine, img, voxsize = load_nifti(
@@ -201,9 +201,7 @@ class BiasFieldCorrectionFlow(Workflow):
             if method.lower() == "n4":
                 deepn4_model = DeepN4(verbose=verbose, use_cuda=use_cuda)
                 deepn4_model.fetch_default_weights()
-                corrected_data = deepn4_model.predict(
-                    data, affine, voxsize=voxsize, threshold=threshold
-                )
+                corrected_data = deepn4_model.predict(data, affine, threshold=threshold)
             elif method.lower() in ["poly", "bspline", "auto"]:
                 bvals, bvecs = read_bvals_bvecs(bval, bvec)
                 gtab = gradient_table(bvals, bvecs=bvecs)
@@ -223,9 +221,8 @@ class BiasFieldCorrectionFlow(Workflow):
                     return_bias_field=True,
                     zero_background=bool(zero_background),
                 )
-                bias_out_path = Path(corrected_out_path).parent / out_bias_field
-                save_nifti(str(bias_out_path), bias.astype(np.float32), affine)
-                logger.info(f"Bias field saved as {bias_out_path}")
+                save_nifti(str(obf), bias.astype(np.float32), affine)
+                logger.info(f"Bias field saved as {obf}")
 
             save_nifti(corrected_out_path, corrected_data, affine, hdr=img.header)
             logger.info(f"Corrected volume saved as {corrected_out_path}")
