@@ -160,7 +160,7 @@ for ax, arr, title, cmap, vmin, vmax in panels:
 
 plt.tight_layout()
 plt.savefig("force_maps.png", dpi=150, bbox_inches="tight")
-plt.show()
+# plt.show()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

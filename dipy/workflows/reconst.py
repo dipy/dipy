@@ -3521,6 +3521,7 @@ class ReconstForceFlow(Workflow):
                 "nd",
                 "uncertainty",
                 "ambiguity",
+                "predicted_signal",
             ]
             conditional_metrics = []
             if compute_dki:

@@ -91,10 +91,8 @@ def paramap(
     ndarray of identical shape to `arr`
 
     """
-
     func_args = func_args or []
     func_kwargs = func_kwargs or {}
-    # Check if the func_kwargs are a sequence:
 
     if isinstance(func_kwargs, Sequence):
         if len(func_kwargs) != len(in_list):
@@ -171,7 +169,6 @@ def paramap(
                     },
                 )
 
-        # Place shared objects in the Ray object store once
         shared_refs = None
         if shared_objects:
             shared_refs = {k: ray.put(v) for k, v in shared_objects.items()}
@@ -188,7 +185,6 @@ def paramap(
 
         n_chunks = len(in_list)
         if inflight_cap is not None and inflight_cap > 0:
-            # Throttled submission: drain every inflight_cap tasks
             results = []
             pending = []
             items_kw = (
@@ -209,7 +205,6 @@ def paramap(
                     results.extend(ray.get(pending))
                     pbar.update(len(pending))
         else:
-            # Submit all at once, collect in order with progress
             if func_kwargs_sequence:
                 futures = [_submit_one(ii, fk) for ii, fk in zip(in_list, func_kwargs)]
             else:

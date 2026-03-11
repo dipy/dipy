@@ -129,21 +129,6 @@ endif
 inc_np = include_directories(incdir_numpy)
 np_dep = declare_dependency(include_directories: inc_np)
 
-# SciPy include directory for Cython BLAS
-incdir_scipy = run_command(py3,
-  [
-    '-c',
-    '''
-import scipy
-import os
-print(os.path.dirname(scipy.__file__))
-'''
-  ],
-  check: true
-).stdout().strip()
-inc_scipy = include_directories(incdir_scipy)
-
-
 # npymath_path = _incdir_numpy_abs / '..' / 'lib'
 # npyrandom_path = _incdir_numpy_abs / '..' / '..' / 'random' / 'lib'
 # npymath_lib = cc.find_library('npymath', dirs: npymath_path)
@@ -389,7 +374,6 @@ install_subdir('../doc/examples',
 
 cython_args = ['-3', '--fast-fail', '--warning-errors', '@EXTRA_ARGS@',
                '--output-file', '@OUTPUT@', '--include-dir', incdir_local,
-               '--include-dir', incdir_scipy,
                '@INPUT@']
 cython_cplus_args = ['--cplus'] + cython_args
 

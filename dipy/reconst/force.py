@@ -618,8 +618,6 @@ class FORCEModel(ReconstModel):
         The fit method uses the @multi_voxel_fit decorator which supports
         parallel execution. Pass `engine` and `n_jobs` kwargs to the fit method:
 
-        >>> fit = model.fit(data, mask=mask, engine="ray", n_jobs=4)
-
         Available engines: "serial", "ray", "joblib", "dask".
 
         References
@@ -780,11 +778,6 @@ class FORCEModel(ReconstModel):
         self : FORCEModel
             Model with simulations loaded.
 
-        Examples
-        --------
-        >>> model = FORCEModel(gtab, n_neighbors=50)
-        >>> model.load('simulated_data.npz')
-        >>> fit = model.fit(data, mask=mask)
         """
         from dipy.sims.force import load_force_simulations
 
@@ -941,8 +934,9 @@ class FORCEModel(ReconstModel):
         into a MultiVoxelFit.  The method itself handles both 1-D
         (single voxel) and 2-D (batch) inputs directly.
 
-        For parallel execution, use:
-        >>> fit = model.fit(data, mask=mask, engine="ray", n_jobs=4)
+        For parallel execution, use engine="ray", n_jobs=4 arguments in model
+        fit() call.
+
 
         **Memory warning (joblib / dask engines):** When engine="joblib"
         or engine="dask", the full simulation library (including the

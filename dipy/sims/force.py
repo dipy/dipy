@@ -25,42 +25,16 @@ import tempfile
 import numpy as np
 
 from dipy.data import default_sphere
+from dipy.reconst.bingham import _single_bingham_to_sf as bingham_to_sf
 from dipy.sims.voxel import all_tensor_evecs
 from dipy.utils.logging import logger
 from dipy.utils.multiproc import determine_num_processes
 
 
-def bingham_to_sf(f0, k1, k2, major_axis, minor_axis, vertices):
-    """Evaluate Bingham distribution on a sphere.
-
-    Parameters
-    ----------
-    f0 : float
-        Maximum amplitude of the distribution.
-    k1 : float
-        Concentration parameter along major axis.
-    k2 : float
-        Concentration parameter along minor axis.
-    major_axis : ndarray (3,)
-        Major axis of the distribution.
-    minor_axis : ndarray (3,)
-        Minor axis of the distribution.
-    vertices : ndarray (N, 3)
-        Unit sphere directions for evaluation.
-
-    Returns
-    -------
-    sf : ndarray (N,)
-        Spherical function values at each vertex.
-    """
-    sf = f0 * np.exp(
-        -k1 * vertices.dot(major_axis) ** 2 - k2 * vertices.dot(minor_axis) ** 2
-    )
-    return sf.T
-
-
-def bingham_dictionary(target_sphere, odi_list):
-    """Generate Bingham spherical functions for all directions and ODI values.
+def dispersion_lut(target_sphere, odi_list):
+    """Generate spherical functions for all directions and ODI values.
+    Currently uses Bingham distribution, but can be extended to other
+    dispersion models in the future.
 
     Parameters
     ----------
@@ -71,24 +45,25 @@ def bingham_dictionary(target_sphere, odi_list):
 
     Returns
     -------
-    bingham_sf : dict
-        Nested dictionary mapping (vertex_index, odi) to SF values.
+    SF : dict
+        Nested dictionary mapping (vertex_index, odi) to spherical function (SF)
+        values.
     """
-    bingham_sf = {}
+    dispersion_sf_lut = {}
     for i in range(len(target_sphere)):
         vertex_key = tuple(target_sphere[i])
-        bingham_sf[i] = {}
+        dispersion_sf_lut[i] = {}
 
         for odi in odi_list:
             k = 1 / np.tan(np.pi / 2 * odi)
             evecs = all_tensor_evecs(vertex_key)
             major_axis, minor_axis = evecs[:, 1], evecs[:, 2]
 
-            bingham_sf[i][odi] = bingham_to_sf(
+            dispersion_sf_lut[i][odi] = bingham_to_sf(
                 1, k, k, major_axis, minor_axis, target_sphere
             )
 
-    return bingham_sf
+    return dispersion_sf_lut
 
 
 def smallest_shell_bval(bvals, *, b0_threshold=50, shell_tolerance=50):
@@ -484,7 +459,7 @@ def generate_force_simulations(
     bvecs = np.ascontiguousarray(gtab.bvecs.astype(np.float64))
     n_bvals = bvals.shape[0]
 
-    # Pre-compute eigenvectors and Bingham dictionary
+    # Pre-compute eigenvectors and dispersion lookup table
     evecs = np.array(
         [all_tensor_evecs(tuple(point)) for point in target_sphere],
         dtype=np.float64,
@@ -492,7 +467,7 @@ def generate_force_simulations(
     odi_list = np.linspace(odi_range[0], odi_range[1], num_odi_values).astype(
         np.float64
     )
-    bingham_sf = bingham_dictionary(target_sphere, odi_list)
+    dispersion_sf = dispersion_lut(target_sphere, odi_list)
 
     label_dtype = np.uint8
 
@@ -626,7 +601,7 @@ def generate_force_simulations(
                 bs,
                 target_sphere,
                 evecs,
-                bingham_sf,
+                dispersion_sf,
                 odi_list,
                 bvals,
                 bvecs,
@@ -649,7 +624,7 @@ def generate_force_simulations(
                         bs,
                         target_sphere,
                         evecs,
-                        bingham_sf,
+                        dispersion_sf,
                         odi_list,
                         bvals,
                         bvecs,
@@ -676,7 +651,7 @@ def generate_force_simulations(
                     bs,
                     target_sphere,
                     evecs,
-                    bingham_sf,
+                    dispersion_sf,
                     odi_list,
                     bvals,
                     bvecs,
@@ -702,7 +677,7 @@ def generate_force_simulations(
                     bs,
                     target_sphere,
                     evecs,
-                    bingham_sf,
+                    dispersion_sf,
                     odi_list,
                     bvals,
                     bvecs,
