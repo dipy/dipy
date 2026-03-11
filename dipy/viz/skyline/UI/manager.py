@@ -78,6 +78,8 @@ class UIWindow:
             | imgui.WindowFlags_.no_collapse
             | imgui.WindowFlags_.no_resize
             | imgui.WindowFlags_.no_title_bar
+            | imgui.WindowFlags_.no_scroll_with_mouse
+            | imgui.WindowFlags_.no_scrollbar
         )
         imgui.begin(self.title, None, computed_flags)
         imgui.push_id("logo")
@@ -210,6 +212,15 @@ class UIWindow:
         imgui.set_cursor_screen_pos(org_start)
         imgui.dummy((available_width, self.logo_size[1] + spacing * 5 + 1))
         imgui.pop_id()
+
+        imgui.begin_child(
+            "sections",
+            None,
+            0,
+            imgui.WindowFlags_.no_title_bar
+            | imgui.WindowFlags_.no_collapse
+            | imgui.WindowFlags_.no_resize,
+        )
         is_removed = [False] * len(self._sections)
         for idx, (name, renderer) in enumerate(self._sections.items()):
             imgui.push_id(name)
@@ -217,7 +228,7 @@ class UIWindow:
             is_open, is_removed[idx] = renderer(name, is_open)
             self._section_open[name] = is_open
             imgui.pop_id()
-
+        imgui.end_child()
         for removed, name in zip(is_removed, list(self._sections.keys())):
             if removed:
                 self.remove(name)
