@@ -5,9 +5,13 @@ import time
 from fury import distinguishable_colormap
 from fury.actor import Group, streamlines, streamtube
 from fury.colormap import line_colors
+from fury.ui import TextBlock2D
 from imgui_bundle import imgui
 import numpy as np
 
+from dipy.io.stateful_tractogram import StatefulTractogram
+from dipy.io.streamline import save_tractogram
+from dipy.io.utils import split_filename_extension
 from dipy.segment.clustering import qbx_and_merge
 from dipy.stats.analysis import assignment_map
 from dipy.tracking.streamline import (
@@ -15,6 +19,7 @@ from dipy.tracking.streamline import (
 )
 from dipy.viz.skyline.UI.elements import (
     create_numeric_input,
+    downloader,
     segmented_switch,
     toggle_button,
     uploader,
@@ -45,6 +50,30 @@ def apply_buan_colors(
     buan_colors = lut[buan_color_idx]
 
     return buan_colors
+
+
+def create_cluster_help(*, position=(0, 0), size=(280, 150)):
+    help_text = (
+        "\t\t\t  Cluster Visualization Instructions:\n"
+        "\t\t\t - Click on a cluster to select/deselect it.\n"
+        "\t\t\t - 'e' to expand selected clusters.\n"
+        "\t\t\t - 'c' to collapse selected clusters.\n"
+        "\t\t\t - 'a' to select all clusters.\n"
+        "\t\t\t - 'd' to deselect all clusters.\n"
+        "\t\t\t - 'h' to hide deselected clusters\n"
+        "\t\t\t - 's' to show all clusters.\n"
+    )
+    text_block = TextBlock2D(
+        text=help_text,
+        position=position,
+        vertical_justification="middle",
+        justification="left",
+        font_size=14,
+        color=(1, 1, 1),
+        bg_color=(0.2, 0.2, 0.2),
+        size=size,
+    )
+    return text_block
 
 
 def create_streamline_visualization(
@@ -225,6 +254,15 @@ class Streamline3D(Visualization):
         imgui.spacing()
         imgui.spacing()
         imgui.spacing()
+        warning_message(
+            "We recommend using type 'Line' for better"
+            "\nperformance with large tractograms."
+        )
+
+        imgui.spacing()
+        imgui.spacing()
+        imgui.spacing()
+        imgui.spacing()
 
         def handle_color_change(fname):
             if fname is not None:
@@ -242,15 +280,6 @@ class Streamline3D(Visualization):
             extension="*.npy",
             selected=self._buan_pvals_file,
             type="buan_pvals",
-        )
-
-        imgui.spacing()
-        imgui.spacing()
-        imgui.spacing()
-        imgui.spacing()
-        warning_message(
-            "We recommend using type 'Line' for better"
-            "\nperformance with large tractograms."
         )
 
 
@@ -411,6 +440,22 @@ class ClusterStreamline3D(Visualization):
         )
         return info
 
+    def compute_visible_tractogram(self):
+        visible_streamlines = []
+        for state in self._cluster_state.values():
+            if state["selected"]:
+                cluster_idx = state["cluster"]
+                cluster_streamlines = self._clusters[cluster_idx]
+                visible_streamlines.extend(cluster_streamlines)
+        return StatefulTractogram.from_sft(visible_streamlines, self.sft)
+
+    def save_tractogram(self, filenames, rois=None, shm_coeffs=None):
+        if filenames:
+            if isinstance(filenames, (list, tuple)):
+                filenames = filenames[0]
+            visible_sft = self.compute_visible_tractogram()
+            save_tractogram(visible_sft, filenames, bbox_valid_check=False)
+
     def handle_key_events(self, event):
         if event.key == "e":
             self._expand_clusters()
@@ -441,8 +486,45 @@ class ClusterStreamline3D(Visualization):
         changed, new = segmented_switch("Line Type", ["Line", "Tube"], self._line_type)
         if changed:
             self._line_type = new.lower()
-            self._collapse_clusters()
+            n_expanded = sum(
+                1 for state in self._cluster_state.values() if state["expanded"]
+            )
+            if self._line_type == "tube" and n_expanded > 10:
+                imgui.open_popup("Cluster Confirmation")
+                if imgui.begin_popup_modal("Cluster Confirmation")[0]:
+                    imgui.text(
+                        "Rendering many expanded clusters as tubes may cause "
+                        "performance issues. So we will collapse all the clusters."
+                    )
+                    if imgui.button("Okay"):
+                        self._collapse_clusters()
+                        imgui.close_current_popup()
+                imgui.end_popup()
+            else:
+                for state in self._cluster_state.values():
+                    if state["expanded"]:
+                        cluster_idx = state["cluster"]
+                        cluster_streamlines = self._clusters[cluster_idx]
+                        color = state["color"]
+                        new_actor = create_streamline(
+                            lines=cluster_streamlines,
+                            color=color,
+                            line_type=self._line_type,
+                            segments=3,
+                        )
+                        self._actor.add(new_actor)
+                        if state["cluster_actor"] is not None:
+                            self._actor.remove(state["cluster_actor"])
+                        state["cluster_actor"] = new_actor
+
             self.render()
+
+        imgui.spacing()
+        imgui.spacing()
+        warning_message(
+            "We recommend using type 'Line' for better"
+            "\nperformance with large tractograms."
+        )
 
         imgui.spacing()
         imgui.spacing()
@@ -495,7 +577,13 @@ class ClusterStreamline3D(Visualization):
 
         imgui.spacing()
         imgui.spacing()
-        warning_message(
-            "We recommend using type 'Line' for better"
-            "\nperformance with large tractograms."
+
+        downloader(
+            "Tractogram",
+            callback=self.save_tractogram,
+            extension="*.trx *.trk",
+            file_name=f"{split_filename_extension(self.name)[0]}_visible_tractogram.trx",
         )
+
+        if imgui.is_item_hovered():
+            imgui.set_tooltip("Download the selected visible tractogram as a .trx file")
