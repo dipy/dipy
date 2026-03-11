@@ -14,6 +14,7 @@ from dipy.viz.skyline.render.sh_slicer import SHGlyph3D, create_shm_visualizatio
 from dipy.viz.skyline.render.streamline import (
     ClusterStreamline3D,
     Streamline3D,
+    create_cluster_help,
     create_streamline_visualization,
 )
 from dipy.viz.skyline.render.surface import Surface, create_surface_visualization
@@ -65,6 +66,7 @@ class Skyline:
         self._is_cluster = is_cluster
         self._is_light_version = is_light_version
         self._glass_brain = glass_brain
+        self._tractogram_help = False
         gpu_texture = load_image_as_wgpu_texture_view(str(LOGO), self.window.device)
         logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
         self.window.renderer.add_event_handler(self.handle_key_events, "key_down")
@@ -116,11 +118,32 @@ class Skyline:
             self.active_image.state + (len(self._image_visualizations) * 0.005),
         )
 
+    def _update_tractogram_helper(self):
+        if (
+            any(
+                isinstance(viz, ClusterStreamline3D)
+                for viz in self._tractogram_visualizations
+            )
+            and not self._tractogram_help
+        ):
+            self._tractogram_help = create_cluster_help()
+            self.window.screens[0].scene.add(self._tractogram_help)
+        elif (
+            not any(
+                isinstance(viz, ClusterStreamline3D)
+                for viz in self._tractogram_visualizations
+            )
+            and self._tractogram_help
+        ):
+            self.window.screens[0].scene.remove(self._tractogram_help)
+            self._tractogram_help = False
+
     def draw_ui(self):
         self.UI_window.render()
         self.active_image and self._arrange_image_actors()
 
     def before_render(self):
+        self._update_tractogram_helper()
         self._refresh_ui()
         self._refresh_actors()
         self.window.render()
