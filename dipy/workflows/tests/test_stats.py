@@ -287,6 +287,53 @@ def test_linear_mixed_models_flow():
         )
 
 
+@set_random_number_generator()
+def test_bundle_analysis_tractometry_flow_single_subject(rng):
+    with TemporaryDirectory() as dirpath:
+        data_path = get_fnames(name="fornix")
+        fornix = load_tractogram(data_path, "same", bbox_valid_check=False).streamlines
+
+        f = Streamlines(fornix)
+
+        mb = Path(dirpath) / "model_bundles"
+        os.mkdir(mb)
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, Path(mb) / "temp.trk", bbox_valid_check=False)
+
+        # Single-subject directory directly contains rec_bundles/, org_bundles/,
+        # and anatomical_measures/ (no patient/control subdirs)
+        single_sub = Path(dirpath) / "10001"
+        os.mkdir(single_sub)
+
+        os.mkdir(single_sub / "rec_bundles")
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(
+            sft, single_sub / "rec_bundles" / "temp.trk", bbox_valid_check=False
+        )
+
+        os.mkdir(single_sub / "org_bundles")
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(
+            sft, single_sub / "org_bundles" / "temp.trk", bbox_valid_check=False
+        )
+
+        os.mkdir(single_sub / "anatomical_measures")
+        fa = rng.random((255, 255, 255))
+        save_nifti(
+            single_sub / "anatomical_measures" / "fa.nii.gz",
+            fa,
+            affine=np.eye(4),
+        )
+
+        out_dir = Path(dirpath) / "output"
+        os.mkdir(out_dir)
+
+        ba_flow = BundleAnalysisTractometryFlow()
+        ba_flow.run(mb, single_sub, out_dir=out_dir)
+
+        assert_true(Path(out_dir / "temp_fa_profile.npy").exists())
+
+
 @pytest.mark.skipif(
     not have_pandas or not have_statsmodels or not have_tables or not have_matplotlib,
     reason="Requires Pandas, StatsModels, PyTables, and matplotlib",

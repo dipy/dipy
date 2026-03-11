@@ -126,6 +126,9 @@ def assignment_map(target_bundle, model_bundle, no_disks):
 
     Returns
     -------
+    dist : ndarray
+        Distance of each target bundle point to its nearest model bundle
+        centroid point.
     indx : ndarray
         Assignment map of the target bundle streamline point indices to the
         model bundle centroid points.
@@ -174,6 +177,12 @@ def buan_profile(model_bundle, bundle, orig_bundle, metric, affine, *, no_disks=
         Number of alongtract segments/disks used for dividing bundle into
         segments.
 
+    Returns
+    -------
+    bundle_profile : ndarray, shape (no_disks,)
+        Inverse-distance-weighted mean metric value for each disk segment.
+        Disks with no valid data points are set to NaN.
+
     References
     ----------
     .. footbibliography::
@@ -195,7 +204,7 @@ def buan_profile(model_bundle, bundle, orig_bundle, metric, affine, *, no_disks=
 
     for i in range(no_disks):
         valid_mask = ind == i
-        valid_mask[np.isnan(values)] = False
+        valid_mask &= ~np.isnan(values)
 
         if np.any(valid_mask):
             vals = values[valid_mask]
