@@ -454,6 +454,15 @@ streamline_files = "${tracking.out_tractogram}"
 labels_files = "${segment_bundles.out_dir}/*_labels.npy"
 mix_names = true
 out_dir = "${io.out_dir}/org_bundles"
+
+# Buan profiles
+[[pipeline]]
+name = "buan_profiles"
+cli = "dipy_buan_profiles"
+model_bundle_folder = "${io.bundle_atlas_dir}"
+subject_folder = "${io.out_dir}"
+metric_folder= "${dti_fit.out_dir}",
+out_dir = "${io.out_dir}/buan_profiles"
 """
 
 # =============================================================================
