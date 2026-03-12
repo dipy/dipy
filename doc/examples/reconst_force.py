@@ -1,7 +1,7 @@
 """
-==============================================================================
-Microstructure estimation with FORCE (FORward modeling for Complex Estimation)
-==============================================================================
+==================================================================================
+Reconstruction with FORCE (FORward modeling for Complex microstructure Estimation)
+==================================================================================
 
 FORCE :footcite:p:`Shah2025` is a forward-modeling paradigm that reframes how
 diffusion MRI data are analyzed. Instead of inverting the measured signal,
@@ -66,7 +66,7 @@ print(f"mask shape: {mask.shape}, brain voxels: {mask.sum()}")
 #   ``n_neighbors`` nearest entries weighted by a softmax posterior; when
 #   ``False`` (default) only the single best-match entry is used.
 
-from dipy.reconst.force import FORCEModel
+from dipy.reconst.force import FORCEModel, force_peaks
 
 model = FORCEModel(
     gtab,
@@ -85,9 +85,10 @@ model = FORCEModel(
 # runs with identical parameters, skipping regeneration entirely.
 
 model.generate(
-    num_simulations=5000,
-    num_cpus=1,
+    num_simulations=500000,
+    num_cpus=24,
     verbose=True,
+    use_cache=False,
 )
 
 ###############################################################################
@@ -98,7 +99,7 @@ model.generate(
 # ``@multi_voxel_fit`` decorator handles chunking, masking, and result
 # assembly automatically.
 
-fit = model.fit(data, mask=mask, engine="ray", n_jobs=-1, verbose=True)
+fit = model.fit(data, mask=mask, n_jobs=-1, verbose=True)
 
 ###############################################################################
 # The ``fit`` object is a ``MultiVoxelFit`` container.  Its attributes are
@@ -135,7 +136,7 @@ save_nifti("force_uncertainty.nii.gz", uncertainty.astype(np.float32), affine)
 
 import matplotlib.pyplot as plt
 
-mid_z = fa_map.shape[2] // 2
+mid_z = (fa_map.shape[2] // 2) - 5
 
 fig, axes = plt.subplots(2, 3, figsize=(15, 10))
 
@@ -161,6 +162,20 @@ for ax, arr, title, cmap, vmin, vmax in panels:
 plt.tight_layout()
 plt.savefig("force_maps.png", dpi=150, bbox_inches="tight")
 # plt.show()
+
+
+# To save the peaks generated from the FORCE directly, we need to call the force_peaks
+# function on the fitted object.  This will return a
+# PeaksAndMetrics object containing the peak directions, values, and indices, which can
+# be saved to disk using save_pam.
+peaks = force_peaks(fit)
+
+# Now lets import the save_pam function and save the peaks to disk as a .pam5 file.
+# The affine is needed to ensure that the peaks are correctly aligned with the original
+# data.
+from dipy.io.peaks import save_pam
+
+save_pam("force_peaks.pam5", peaks, affine=affine)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

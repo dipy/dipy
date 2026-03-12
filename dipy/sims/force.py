@@ -1,5 +1,5 @@
 """
-FORCE: Fast Orientation Reconstruction and Compartment Estimation
+FORCE: Forward modeling for complex microstructure estimation
 
 This module provides signal simulation for matching-based diffusion MRI
 reconstruction using multi-compartment tissue models.
@@ -11,7 +11,7 @@ from real diffusion MRI data.
 
 References
 ----------
-FORCE methodology paper (in preparation)
+:footcite:p:`Shah2025`
 """
 
 import ast

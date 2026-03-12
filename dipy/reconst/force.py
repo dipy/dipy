@@ -446,138 +446,35 @@ def compute_uncertainty_ambiguity(scores):
     return uncertainty, ambiguity
 
 
-def labels_to_peak_indices(labels_binary, *, max_peaks=3):
-    """Convert binary peak labels to compact index array.
-
-    Parameters
-    ----------
-    labels_binary : ndarray (N, D)
-        Binary array with 1s at peak directions.
-    max_peaks : int, optional
-        Maximum number of peaks to store.
-
-    Returns
-    -------
-    peak_idx : ndarray (N, max_peaks)
-        Indices of peak directions, -1 for missing.
-    """
-    nsims = labels_binary.shape[0]
-    peak_idx = np.full((nsims, max_peaks), -1, dtype=np.int16)
-
-    rows, cols = np.nonzero(labels_binary)
-    counts = np.zeros(nsims, dtype=np.int8)
-
-    for r, c in zip(rows, cols):
-        j = counts[r]
-        if j < max_peaks:
-            peak_idx[r, j] = c
-            counts[r] = j + 1
-
-    return peak_idx
-
-
-def pick_top_peaks_from_weights(
-    weights, sphere_dirs, *, n_peaks=5, top_m=30, min_separation_angle=45.0
-):
-    """Extract discrete peaks from directional weights.
-
-    Parameters
-    ----------
-    weights : ndarray (D,)
-        Non-negative directional weights.
-    sphere_dirs : ndarray (D, 3)
-        Unit sphere directions.
-    n_peaks : int, optional
-        Number of peaks to extract.
-    top_m : int, optional
-        Number of top candidates to consider.
-    min_separation_angle : float, optional
-        Minimum angular separation in degrees.
-
-    Returns
-    -------
-    peak_dirs : ndarray (n_peaks, 3)
-        Peak directions.
-    peak_inds : ndarray (n_peaks,)
-        Peak indices.
-    peak_vals : ndarray (n_peaks,)
-        Peak values.
-    """
-    peak_dirs = np.zeros((n_peaks, 3), dtype=np.float32)
-    peak_inds = np.full((n_peaks,), -1, dtype=np.int32)
-    peak_vals = np.zeros((n_peaks,), dtype=np.float32)
-
-    mx = float(np.max(weights))
-    if mx <= 0.0:
-        return peak_dirs, peak_inds, peak_vals
-
-    top_m = min(top_m, weights.shape[0])
-    cand = np.argpartition(weights, -top_m)[-top_m:]
-    cand = cand[np.argsort(weights[cand])[::-1]]
-
-    cos_thr = np.cos(np.deg2rad(min_separation_angle))
-    selected = []
-
-    for idx in cand:
-        if len(selected) >= n_peaks:
-            break
-        if float(weights[idx]) <= 0.0:
-            break
-
-        d = sphere_dirs[idx]
-        ok = True
-        for sidx in selected:
-            ds = sphere_dirs[sidx]
-            if abs(float(np.dot(d, ds))) > cos_thr:
-                ok = False
-                break
-        if ok:
-            selected.append(int(idx))
-
-    for j, idx in enumerate(selected):
-        peak_inds[j] = idx
-        peak_vals[j] = float(weights[idx])
-        peak_dirs[j] = sphere_dirs[idx].astype(np.float32, copy=False)
-
-    return peak_dirs, peak_inds, peak_vals
-
-
 def postprocess_peaks(preds, target_sphere, fracs):
-    """Convert binary peak masks to exactly 5 peaks per sample.
+    original_shape = preds.shape[:-1]
+    preds_flat = preds.reshape(-1, preds.shape[-1])
+    fracs_flat = fracs.reshape(-1, fracs.shape[-1])
 
-    Parameters
-    ----------
-    preds : ndarray (N, D)
-        Binary peak masks.
-    target_sphere : ndarray (D, 3)
-        Sphere directions.
-    fracs : ndarray (N, max_peaks)
-        Fiber fractions.
+    n_voxels = preds_flat.shape[0]
+    vertices = target_sphere.vertices
 
-    Returns
-    -------
-    peaks_output : ndarray (N, 5, 3)
-        Peak directions.
-    peak_indices : ndarray (N, 5)
-        Peak indices.
-    peak_values : ndarray (N, 5)
-        Peak values.
-    """
-    n = preds.shape[0]
-    peaks_output = np.zeros((n, 5, 3), dtype=np.float32)
-    peak_indices = np.full((n, 5), -1, dtype=np.int32)
-    peak_vals = np.zeros((n, 5), dtype=np.float32)
+    # Initialize outputs using the total number of voxels
+    peaks_output = np.zeros((n_voxels, 5, 3), dtype=np.float32)
+    peak_indices = np.full((n_voxels, 5), -1, dtype=np.int32)
+    peak_vals = np.zeros((n_voxels, 5), dtype=np.float32)
 
-    for i in range(n):
-        coords = target_sphere[preds[i] == 1]
-        indices = np.where(preds[i] == 1)[0]
+    for i in range(n_voxels):
+        mask = preds_flat[i] == 1
+        coords = vertices[mask]
+        indices = np.where(mask)[0]
 
         num = min(len(coords), 5)
         if num > 0:
             peaks_output[i, :num] = coords[:num]
             peak_indices[i, :num] = indices[:num]
-        num_fracs = min(5, fracs[i].shape[0])
-        peak_vals[i, :num_fracs] = fracs[i][:num_fracs]
+
+        num_fracs = min(5, fracs_flat[i].shape[0])
+        peak_vals[i, :num_fracs] = fracs_flat[i][:num_fracs]
+
+    peaks_output = peaks_output.reshape((*original_shape, 5, 3))
+    peak_indices = peak_indices.reshape((*original_shape, 5))
+    peak_vals = peak_vals.reshape((*original_shape, 5))
 
     return peaks_output, peak_indices, peak_vals
 
@@ -852,6 +749,8 @@ class FORCEModel(ReconstModel):
             "num_fibers": d["num_fibers"][lib_idx].astype(np.float32),
             "dispersion": d["dispersion"][lib_idx].astype(np.float32),
             "nd": d["nd"][lib_idx].astype(np.float32),
+            "labels": d["labels"][lib_idx].astype(np.int8),
+            "fracs": d["fraction_array"][lib_idx].astype(np.float32),
         }
         if "ufa_wm" in d:
             params["ufa_wm"] = d["ufa_wm"][lib_idx].astype(np.float32)
@@ -866,7 +765,7 @@ class FORCEModel(ReconstModel):
         return params
 
     @staticmethod
-    def _posterior_params_batched(neighbors, W, d):
+    def _posterior_params_batched(neighbors, W, d, lib_idx):
         """Vectorised posterior-averaging over neighbours.
 
         Parameters
@@ -877,6 +776,8 @@ class FORCEModel(ReconstModel):
             Posterior weights.
         d : dict
             Simulation dictionary.
+        lib_idx : int
+            Index of the exact match in the simulation
 
         Returns
         -------
@@ -896,6 +797,8 @@ class FORCEModel(ReconstModel):
             "num_fibers": _wavg("num_fibers"),
             "dispersion": _wavg("dispersion"),
             "nd": _wavg("nd"),
+            "labels": d["labels"][lib_idx].astype(np.int8),
+            "fracs": d["fraction_array"][lib_idx].astype(np.float32),
         }
         if "ufa_wm" in d:
             params["ufa_wm"] = _wavg("ufa_wm")
@@ -995,19 +898,18 @@ class FORCEModel(ReconstModel):
 
         d = self.simulations
         n_vox = data2d.shape[0]
+        best = np.argmax(S, axis=1)
+        lib_idx = neighbors[np.arange(n_vox), best]
 
         if self.use_posterior:
             W = softmax_stable(self.posterior_beta * S, axis=1)
             entropy = -np.sum(W * np.log(W + EPSILON), axis=1)
 
-            params_arrays = self._posterior_params_batched(neighbors, W, d)
+            params_arrays = self._posterior_params_batched(neighbors, W, d, lib_idx)
             params_arrays["uncertainty"] = U
             params_arrays["ambiguity"] = A
             params_arrays["entropy"] = entropy.astype(np.float32)
         else:
-            best = np.argmax(S, axis=1)
-            lib_idx = neighbors[np.arange(n_vox), best]
-
             params_arrays = self._fetch_params_batched(lib_idx, d)
             params_arrays["uncertainty"] = U
             params_arrays["ambiguity"] = A
@@ -1145,6 +1047,16 @@ class FORCEFit(ReconstFit):
         """Entropy (posterior mode only)."""
         return self._params.get("entropy", None)
 
+    @property
+    def label(self):
+        """Fiber configuration label."""
+        return self._params.get("labels", None)
+
+    @property
+    def fracs(self):
+        """Fiber fractions."""
+        return self._params.get("fracs", None)
+
 
 def compute_entropy(weights):
     """Compute entropy of posterior weights.
@@ -1220,3 +1132,83 @@ def posterior_odf(odfs, weights, indices, n_dirs):
 
     result /= np.max(result, axis=1, keepdims=True) + EPSILON
     return result
+
+
+def force_peaks(fitted_object, *, mask=None, sh_order=8):
+    """Create a PeaksAndMetrics object from a FORCEFit or MultiVoxelFit.
+
+    Parameters
+    ----------
+    fitted_object : FORCEFit or MultiVoxelFit
+        The result of model.fit().
+    mask : ndarray, optional
+        Optional brain mask.
+    sh_order : int, optional
+        Spherical harmonics order for the coefficients.
+    """
+    from dipy.direction.peaks import PeaksAndMetrics
+    from dipy.reconst.shm import sf_to_sh
+    from dipy.sims.force import default_sphere
+
+    labels = fitted_object.label
+    fracs = fitted_object.fracs
+    odf = fitted_object.odf
+
+    is_multi_voxel = labels.ndim > 1
+
+    if not is_multi_voxel:
+        # Single Voxel Case
+        p_out, p_ind, p_val = postprocess_peaks(
+            labels[None, :], default_sphere, fracs[None, :]
+        )
+        res_dirs, res_inds, res_vals = p_out[0], p_ind[0], p_val[0]
+        res_sh = (
+            sf_to_sh(odf, default_sphere, sh_order=sh_order)
+            if odf is not None
+            else None
+        )
+    else:
+        # Multi-Voxel / CLI Case
+        original_shape = labels.shape[:-1]  # (X, Y, Z)
+
+        if mask is not None:
+            labels_to_proc = labels[mask]
+            fracs_to_proc = fracs[mask]
+        else:
+            labels_to_proc = labels.reshape(-1, labels.shape[-1])
+            fracs_to_proc = fracs.reshape(-1, fracs.shape[-1])
+
+        p_out, p_ind, p_val = postprocess_peaks(
+            labels_to_proc, default_sphere, fracs_to_proc
+        )
+
+        res_dirs = np.zeros((*original_shape, 5, 3), dtype=np.float32)
+        res_inds = np.full((*original_shape, 5), -1, dtype=np.int32)
+        res_vals = np.zeros((*original_shape, 5), dtype=np.float32)
+
+        if mask is not None:
+            res_dirs[mask] = p_out
+            res_inds[mask] = p_ind
+            res_vals[mask] = p_val
+        else:
+            res_dirs = p_out.reshape((*original_shape, 5, 3))
+            res_inds = p_ind.reshape((*original_shape, 5))
+            res_vals = p_val.reshape((*original_shape, 5))
+
+        res_sh = None
+        if odf is not None:
+            v_max = np.max(odf, axis=-1, keepdims=True)
+            v_min = np.min(odf, axis=-1, keepdims=True)
+            mask = v_max > 1.0
+            denom = (v_max - v_min) + 1e-12
+            normalized_odf = (odf - v_min) / denom
+            odf = np.where(mask, normalized_odf, odf)
+            res_sh = sf_to_sh(odf, default_sphere, sh_order=sh_order)
+    peaks = PeaksAndMetrics()
+    peaks.peak_dirs = res_dirs
+    peaks.peak_values = res_vals
+    peaks.peak_indices = res_inds
+    peaks.shm_coeff = res_sh
+    peaks.sphere = default_sphere
+
+    return peaks

@@ -3308,14 +3308,14 @@ class ReconstForceFlow(Workflow):
         bvecs_tol=0.01,
         penalty=1e-5,
         n_neighbors=50,
-        use_posterior=False,
+        use_exact=False,
         posterior_beta=2000.0,
         compute_odf=False,
         num_simulations=500000,
         num_cpus=-1,
         use_cache=True,
         compute_dki=False,
-        engine="ray",
+        engine="serial",
         save_metrics=None,
         out_dir="",
         out_fa="fa.nii.gz",
@@ -3335,6 +3335,7 @@ class ReconstForceFlow(Workflow):
         out_kfa="kfa.nii.gz",
         out_entropy="entropy.nii.gz",
         out_predicted_signal="predicted_signal.nii.gz",
+        out_peaks="peaks.pam5",
     ):
         """Workflow for FORCE microstructure reconstruction.
 
@@ -3365,8 +3366,8 @@ class ReconstForceFlow(Workflow):
             Penalty weight for fiber complexity in the FORCE model.
         n_neighbors : int, optional
             Number of neighbors for signal matching.
-        use_posterior : bool, optional
-            Use posterior averaging instead of best match.
+        use_exact : bool, optional
+            Use best match instead of posterior averaging.
         posterior_beta : float, optional
             Softmax temperature for posterior averaging.
         compute_odf : bool, optional
@@ -3424,6 +3425,8 @@ class ReconstForceFlow(Workflow):
             Name of the entropy volume to be saved (requires use_posterior).
         out_predicted_signal : string, optional
             Name of the predicted signal volume to be saved.
+        out_peaks : string, optional
+            Name of the peaks file to be saved (in .pam5 format).
 
         References
         ----------
@@ -3433,6 +3436,7 @@ class ReconstForceFlow(Workflow):
         from dipy.reconst.force import FORCEModel
         from dipy.utils.optpkg import optional_package
 
+        use_posterior = not use_exact
         save_metrics = save_metrics or []
 
         if engine == "ray":
@@ -3468,6 +3472,7 @@ class ReconstForceFlow(Workflow):
             okfa,
             oentropy,
             opredicted_signal,
+            opeaks,
         ) in io_it:
             logger.info(f"Computing FORCE metrics for {dwi}")
             data, affine = load_nifti(dwi)
@@ -3508,6 +3513,13 @@ class ReconstForceFlow(Workflow):
                 engine=engine,
                 n_jobs=-1,
             )
+            from dipy.io.peaks import save_pam
+            from dipy.reconst.force import force_peaks
+
+            logger.info("Extracting peaks...")
+            res_peaks = force_peaks(force_fit, mask=mask)
+
+            save_pam(opeaks, res_peaks, affine=affine)
 
             always_metrics = [
                 "fa",
