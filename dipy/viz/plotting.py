@@ -259,7 +259,7 @@ def bundle_profile_plot(
     save_path : str, optional
         If provided, save the figure to this path (e.g., "profile.png")
     show : bool, optional
-        Whether to display the plot (default: True)
+        Whether to display the plot interactively
 
     """
     fig, ax = plt.subplots(figsize=(8, 6), dpi=300)

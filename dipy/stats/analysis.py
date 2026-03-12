@@ -163,16 +163,21 @@ def buan_profile(model_bundle, bundle, orig_bundle, metric, affine, *, no_disks=
     Parameters
     ----------
     model_bundle : Streamlines
-        The input model bundle.
+        The atlas/template bundle used as the along-tract reference.
+        Must be in the same space as ``bundle`` (common/MNI space).
     bundle : Streamlines
-        The input bundle in common space.
+        The subject bundle in common space (e.g., MNI). Used for segment
+        assignment against the model centroids.
     orig_bundle : Streamlines
-        The input bundle in native space.
+        The same subject bundle in native/world (RAS) space. Used for
+        sampling the metric volume. Must correspond point-for-point to
+        ``bundle``.
     metric : ndarray
-        Dti metric such as FA. This metric will be
-        projected onto the bundle in native space to create bundle profiles.
+        3-D scalar volume (e.g., FA) in the same voxel space as ``affine``.
     affine : ndarray
-        Affine matrix for transforming streamlines to native space.
+        Voxel-to-world affine of the metric volume (as returned by
+        ``nib.load(...).affine``). Used to convert ``orig_bundle`` from
+        world to voxel coordinates for metric interpolation.
     no_disks : int, optional
         Number of alongtract segments/disks used for dividing bundle into
         segments.

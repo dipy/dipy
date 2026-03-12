@@ -318,7 +318,7 @@ def test_bundle_analysis_tractometry_flow_single_subject(rng):
         )
 
         os.mkdir(single_sub / "anatomical_measures")
-        fa = rng.random((255, 255, 255))
+        fa = rng.random((40, 40, 40))
         save_nifti(
             single_sub / "anatomical_measures" / "fa.nii.gz",
             fa,

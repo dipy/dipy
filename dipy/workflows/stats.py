@@ -250,7 +250,6 @@ def buan_bundle_profiles(
     logger.info(bd)
     _org_folder = Path(orig_bundle_folder)
     org_bd = sorted(list(_org_folder.glob("*.trk")) + list(_org_folder.glob("*.trx")))
-    org_bd.sort()
     logger.info(org_bd)
     n = len(mb)
 
@@ -542,8 +541,6 @@ class BundleAnalysisTractometryFlow(Workflow):
             sys.exit(1)
         metric_files = sorted(metric_folder.glob("*.nii.gz"))
 
-        _, affine = load_nifti(metric_files[0])
-
         for mb_file, bd_file, org_file in zip(mb_list, bd_list, org_list):
             mbundles = load_tractogram(
                 mb_file, reference="same", bbox_valid_check=False
@@ -560,7 +557,7 @@ class BundleAnalysisTractometryFlow(Workflow):
 
             bname = Path(mb_file).stem
             for metric_file in metric_files:
-                metric, _ = load_nifti(metric_file)
+                metric, affine = load_nifti(metric_file)
                 fname = Path(metric_file).stem.replace(".nii", "")
                 logger.info(f"Applying metric {metric_file} on bundle {bname}")
                 if metric.ndim > 3:

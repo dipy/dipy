@@ -116,6 +116,7 @@ bundle_profile_plot(
     ylabel="Fractional Anisotropy (FA)",
     title="BUAN Weighted Mean FA Profile (AF_L)",
     save_path="af_l_buan_profile.png",
+    show=False,
 )
 
 ###############################################################################
