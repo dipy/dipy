@@ -4,7 +4,7 @@ from imgui_bundle import (
     imgui,
 )
 
-from dipy.viz.skyline.UI.elements import color_picker, render_file_dialog
+from dipy.viz.skyline.UI.elements import color_picker, loading, render_file_dialog
 from dipy.viz.skyline.UI.theme import ASSETS, FONT, THEME
 from dipy.viz.skyline.compute import process_async_callbacks
 
@@ -42,6 +42,8 @@ class UIWindow:
         self.logo_tex_ref = logo_tex_ref
         self.logo_size = (48, 48)
         self._title_text = "DIPY SKYLINE"
+        self._show_loader = False
+        self._loading_message = "Loading..."
         if render_callback is None:
             self.render_callback = lambda: None
         self.file_dialog_callback = file_dialog_callback
@@ -142,7 +144,7 @@ class UIWindow:
                     title="Select Image File(s)",
                     name="Image Files (*.nii *.nii.gz)",
                     extensions="*.nii *.gz",
-                    callback=self.file_dialog_closed,
+                    callback=self._file_dialog_closed,
                     type="viz",
                 )
 
@@ -153,7 +155,7 @@ class UIWindow:
                     title="Select Peak File(s)",
                     name="Peak Files (*.pam5)",
                     extensions="*.pam5",
-                    callback=self.file_dialog_closed,
+                    callback=self._file_dialog_closed,
                     type="viz",
                 )
 
@@ -164,7 +166,7 @@ class UIWindow:
                     title="Select Spherical Harmonics ODFs File(s)",
                     name="ODFs Files (*.pam5)",
                     extensions="*.pam5",
-                    callback=self.file_dialog_closed,
+                    callback=self._file_dialog_closed,
                     type="shm_coeff",
                 )
 
@@ -175,7 +177,7 @@ class UIWindow:
                     title="Select Surface File(s)",
                     name="Surface Files (*.pial *.gii *.gii.gz)",
                     extensions="*.pial *.gii *.gz",
-                    callback=self.file_dialog_closed,
+                    callback=self._file_dialog_closed,
                     type="viz",
                 )
 
@@ -186,7 +188,7 @@ class UIWindow:
                     title="Select Tractogram File(s)",
                     name="Tractogram Files (*.trx *.trk *.tck *.fib *.dpy *.vtp *.vtk)",
                     extensions="*.trx *.trk *.tck *.fib *.dpy *.vtp *.vtk",
-                    callback=self.file_dialog_closed,
+                    callback=self._file_dialog_closed,
                     type="viz",
                 )
 
@@ -197,7 +199,7 @@ class UIWindow:
                     title="Select ROI File(s)",
                     name="ROI Files (*.nii *.nii.gz)",
                     extensions="*.nii *.gz",
-                    callback=self.file_dialog_closed,
+                    callback=self._file_dialog_closed,
                     type="roi",
                 )
 
@@ -209,7 +211,7 @@ class UIWindow:
             tooltip="Change Background Color",
         )
         if changed:
-            self.update_bg_color(color)
+            self._update_bg_color(color)
 
         imgui.set_cursor_screen_pos(org_start)
         imgui.dummy((available_width, self.logo_size[1] + spacing * 5 + 1))
@@ -237,6 +239,10 @@ class UIWindow:
                 self._render_callback()
         imgui.end()
 
+        if self._show_loader and not imgui.is_popup_open("LoadingOverlay"):
+            imgui.open_popup("LoadingOverlay")
+        loading("LoadingOverlay", self._loading_message, self._show_loader)
+
     @property
     def sections(self):
         return self._sections
@@ -245,14 +251,19 @@ class UIWindow:
     def section_open_states(self):
         return self._section_open
 
-    def file_dialog_closed(self, *, filenames=None, rois=None, shm_coeffs=None):
+    def _file_dialog_closed(self, *, filenames=None, rois=None, shm_coeffs=None):
         self._is_dialog_open = False
         if self.file_dialog_callback is not None:
             self.file_dialog_callback(
                 filenames=filenames, rois=rois, shm_coeffs=shm_coeffs
             )
 
-    def update_bg_color(self, new_color):
+    def _update_bg_color(self, new_color):
         self._bg_color = new_color
         if self.bg_color_callback is not None:
             self.bg_color_callback(new_color)
+
+    def update_loader(self, *, show, message=None):
+        self._show_loader = show
+        if message is not None:
+            self._loading_message = message

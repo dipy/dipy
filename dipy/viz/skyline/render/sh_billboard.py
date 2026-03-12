@@ -857,7 +857,6 @@ def _populate_hermite_lut_cube_gpu(
         glyph_offset += chunk_glyphs
 
     _elapsed = _time.perf_counter() - _t0
-    print(f"[GPU hermite bake] {glyph_count} glyphs in {_elapsed:.2f}s")
     return True
 
 
@@ -931,8 +930,7 @@ def enable_octahedral_lut(
                     chunk_info,
                     use_float16=use_float16,
                 )
-            except Exception as _gpu_err:
-                print(f"[GPU hermite bake] failed ({_gpu_err}), falling back to CPU")
+            except Exception:
                 success = _populate_hermite_lut_cube_cpu_chunked(
                     actor,
                     lut_res,
