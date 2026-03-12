@@ -255,7 +255,7 @@ class Skyline:
             self._sh_glyph_visualizations.append(viz)
         else:
             raise ValueError("Unsupported visualization type")
-        self.UI_window.add(viz.name, viz.renderer)
+        self.UI_window.add(viz.name, viz.renderer, viz.viz_type)
 
     def _load_visualiations(
         self, images, peaks, rois, surfaces, tractograms, sh_coeffs
@@ -422,7 +422,10 @@ class Skyline:
                     loader=self.loader,
                 )
                 self._tractogram_visualizations[idx] = new_viz
-                self.UI_window._sections[viz.name] = new_viz.renderer
+                self.UI_window._sections[viz.name] = (
+                    new_viz.renderer,
+                    new_viz.viz_type,
+                )
 
     def loader(self, show, *, message=None):
         self.UI_window.update_loader(show=show, message=message)
