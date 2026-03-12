@@ -403,7 +403,7 @@ class SHGlyph3D(Visualization):
 
     def update_state(self, new_state):
         if self._synchronize:
-            self.state = new_state
+            self.state = new_state[:3]
             self.set_slices()
 
     def set_slice_visibility(self):
