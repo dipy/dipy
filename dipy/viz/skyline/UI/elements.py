@@ -1,7 +1,12 @@
 import math
 from pathlib import Path
 
-from imgui_bundle import icons_fontawesome_6, imgui, portable_file_dialogs as pfd
+from imgui_bundle import (
+    icons_fontawesome_6,
+    imgui,
+    imspinner,
+    portable_file_dialogs as pfd,
+)
 
 from dipy.utils.logging import logger
 from dipy.viz.skyline.UI.theme import (
@@ -123,6 +128,52 @@ def open_confirmation_dialog(
         imgui.end_popup()
     imgui.pop_style_color(1)
     return state
+
+
+def loading(title, message, show):
+    text_width = imgui.calc_text_size(message).x
+    spinner_radius = 16.0
+    padding = 32.0
+    min_width = max(text_width, spinner_radius * 2) + padding
+
+    flags = (
+        imgui.WindowFlags_.no_title_bar
+        | imgui.WindowFlags_.no_resize
+        | imgui.WindowFlags_.always_auto_resize
+    )
+
+    imgui.set_next_window_size_constraints(
+        (min_width, 0),
+        (float("inf"), float("inf")),
+    )
+
+    # 2. Render the Modal
+    opened, _ = imgui.begin_popup_modal(title, None, flags)
+
+    if opened:
+        window_width = imgui.get_window_width()
+
+        # --- The Spinner ---
+        # Center the spinner mathematically
+        imgui.set_cursor_pos_x((window_width - spinner_radius * 2) * 0.5)
+
+        # Draw a clean circular spinner using imspinner
+        color = imgui.ImColor(THEME["primary"])  # Nice default blue
+        imspinner.spinner_arc_rotation("spinner_id", spinner_radius, 4.0, color)
+
+        imgui.dummy((0, 10))  # Add a little vertical space
+
+        # --- The Text ---
+        # Center the text below the spinner
+        imgui.set_cursor_pos_x((window_width - text_width) * 0.5)
+        imgui.text_colored(THEME["primary"], message)
+
+        # --- The Auto-Close Logic ---
+        # If a background thread or callback sets self._show_loader to False, close it
+        if not show:
+            imgui.close_current_popup()
+
+        imgui.end_popup()
 
 
 def warning_message(message):

@@ -1,7 +1,8 @@
 python_sources = [
   '__init__.py',
   'app.py',
-  'io.py'
+  'io.py',
+  'compute.py'
   ]
 
 py3.install_sources(
