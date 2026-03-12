@@ -117,7 +117,7 @@ class Peak3D(Visualization):
 
     def update_state(self, new_state):
         if self._synchronize:
-            self.state = new_state
+            self.state = new_state[:3]
             self._slicer.cross_section = self.state
 
     def render_widgets(self):
