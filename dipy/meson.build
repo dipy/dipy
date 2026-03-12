@@ -161,11 +161,10 @@ if not omp.found() and meson.get_compiler('c').get_id() == 'clang'
   if not omp.found()
     brew = find_program('brew', required : false)
     if brew.found()
-      output = run_command(brew, 'list', 'libomp', check: false)
-      if output.returncode() == 0
-        output_str = output.stdout().strip()
-        if output_str.contains('/libomp/')
-          omp_prefix = fs.parent(output_str.split('\n')[0])
+      prefix_result = run_command(brew, '--prefix', 'libomp', check: false)
+      if prefix_result.returncode() == 0
+        omp_prefix = prefix_result.stdout().strip()
+        if fs.exists(omp_prefix / 'lib' / 'libomp.dylib')
           message('OpenMP Found: YES (Homebrew) - ', omp_prefix)
           omp = declare_dependency(
             compile_args : ['-Xpreprocessor', '-fopenmp'],
@@ -175,6 +174,22 @@ if not omp.found() and meson.get_compiler('c').get_id() == 'clang'
         endif
       endif
     endif
+  endif
+
+  # Final fallback: check standard system paths (e.g. pre-built tarballs from
+  # https://mac.r-project.org/openmp/ install libomp.dylib to /usr/local/lib)
+  if not omp.found()
+    foreach omp_prefix : ['/usr/local', '/opt/local']
+      if fs.exists(omp_prefix / 'lib' / 'libomp.dylib')
+        message('OpenMP Found: YES (system path) - ', omp_prefix)
+        omp = declare_dependency(
+          compile_args : ['-Xpreprocessor', '-fopenmp'],
+          link_args : ['-L' + omp_prefix + '/lib', '-lomp'],
+          include_directories : include_directories(omp_prefix / 'include')
+        )
+        break
+      endif
+    endforeach
   endif
 endif
 
