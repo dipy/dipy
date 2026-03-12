@@ -306,7 +306,9 @@ def validate_pipeline_config(pipeline_stages):
                     continue
 
                 available_outputs = stage_outputs[ref_stage]
-                if ref_output not in available_outputs:
+                if ref_output == "out_dir":
+                    pass  # out_dir is always a valid reference on any stage
+                elif ref_output not in available_outputs:
                     errors.append(
                         f"Stage '{stage_name}': Unknown output '{ref_output}' "
                         f"from stage '{ref_stage}'. Available: "
@@ -952,6 +954,9 @@ def execute_pipeline_stage(
                     stage_outputs[out_param] = out_file
                 logger.debug(f"Stage '{stage_name}' outputs (zipped): {stage_outputs}")
 
+        if "out_dir" in final_params:
+            stage_outputs["out_dir"] = final_params["out_dir"]
+
         duration = time.perf_counter() - t_start
         logger.info(f"Completed stage '{stage_name}' in {duration:.2f} seconds")
 
@@ -986,7 +991,7 @@ def discover_stage_outputs(*, stage_name, stage_config, io_config):
         return {}
 
     outputs = introspect_workflow_outputs(cli_name)
-    out_dir = io_config.get("out_dir", ".")
+    out_dir = stage_config.get("out_dir") or io_config.get("out_dir", ".")
     discovered = {}
 
     # Strategy 1: Check if output filenames are explicitly specified in config
@@ -1080,6 +1085,9 @@ def discover_stage_outputs(*, stage_name, stage_config, io_config):
             elif os.path.exists(pattern):
                 discovered[output_param] = pattern
                 break
+
+    if out_dir:
+        discovered["out_dir"] = out_dir
 
     return discovered
 
