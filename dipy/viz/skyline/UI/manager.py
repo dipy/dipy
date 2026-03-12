@@ -4,9 +4,24 @@ from imgui_bundle import (
     imgui,
 )
 
-from dipy.viz.skyline.UI.elements import color_picker, loading, render_file_dialog
+from dipy.viz.skyline.UI.elements import (
+    color_picker,
+    loading,
+    render_file_dialog,
+    render_section_header,
+)
 from dipy.viz.skyline.UI.theme import ASSETS, FONT, THEME
 from dipy.viz.skyline.compute import process_async_callbacks
+
+_GROUP_ORDER = ["image", "tractography", "peak", "sh_glyph", "roi", "surface"]
+_GROUP_LABELS = {
+    "image": "Images",
+    "tractography": "Tractograms",
+    "peak": "Peaks",
+    "sh_glyph": "ODFs",
+    "roi": "ROIs",
+    "surface": "Surfaces",
+}
 
 
 class UIManager:
@@ -38,6 +53,8 @@ class UIWindow:
         self.size = size
         self._sections = {}
         self._section_open = {}
+        self._group_open = {}
+        self._group_visible = {}
         self._render_callback = render_callback
         self.logo_tex_ref = logo_tex_ref
         self.logo_size = (48, 48)
@@ -60,8 +77,8 @@ class UIWindow:
         )
         self.request_file_dialog = False
 
-    def add(self, name, section_renderer):
-        self._sections[name] = section_renderer
+    def add(self, name, section_renderer, viz_type=None):
+        self._sections[name] = (section_renderer, viz_type)
         self._section_open.setdefault(name, False)
 
     def remove(self, name):
@@ -225,18 +242,77 @@ class UIWindow:
             | imgui.WindowFlags_.no_collapse
             | imgui.WindowFlags_.no_resize,
         )
-        is_removed = [False] * len(self._sections)
-        for idx, (name, renderer) in enumerate(self._sections.items()):
+        names_to_remove = []
+
+        # Group sections by viz_type
+        grouped = {t: [] for t in _GROUP_ORDER}
+        ungrouped = []
+        for name, (renderer, viz_type) in self._sections.items():
+            if viz_type in grouped:
+                grouped[viz_type].append((name, renderer))
+            else:
+                ungrouped.append((name, renderer))
+
+        # Render each type group in order
+        for viz_type in _GROUP_ORDER:
+            items = grouped[viz_type]
+            if not items:
+                continue
+            group_label = _GROUP_LABELS[viz_type]
+            imgui.push_id(f"group_{viz_type}")
+            group_is_open = self._group_open.get(viz_type, True)
+            group_is_visible = self._group_visible.get(viz_type, True)
+            group_is_open, group_is_visible, _, _ = render_section_header(
+                group_label,
+                is_open=group_is_open,
+                is_visible=group_is_visible,
+                type=viz_type,
+                show_close=False,
+                show_info=False,
+            )
+            self._group_open[viz_type] = group_is_open
+            self._group_visible[viz_type] = group_is_visible
+
+            if group_is_open:
+                child_flags = imgui.ChildFlags_.auto_resize_y
+                if imgui.begin_child(f"group_{viz_type}_child", (0, 0), child_flags):
+                    for name, renderer in items:
+                        imgui.push_id(name)
+                        is_open = self._section_open.get(name, False)
+                        is_open, is_removed, should_enable_group = renderer(
+                            name, is_open, group_visible=group_is_visible
+                        )
+                        self._section_open[name] = is_open
+                        if should_enable_group:
+                            self._group_visible[viz_type] = True
+                            group_is_visible = True
+                            # Only show the clicked item, hide others in this group
+                            for other_name, (
+                                other_renderer,
+                                other_type,
+                            ) in self._sections.items():
+                                if other_type == viz_type and other_name != name:
+                                    other_renderer.__self__._visible = False
+                        if is_removed:
+                            names_to_remove.append(name)
+                        imgui.pop_id()
+                imgui.end_child()
+            imgui.pop_id()
+
+        # Render ungrouped items (fallback for unrecognised types)
+        for name, renderer in ungrouped:
             imgui.push_id(name)
             is_open = self._section_open.get(name, False)
-            is_open, is_removed[idx] = renderer(name, is_open)
+            is_open, is_removed, _ = renderer(name, is_open)
             self._section_open[name] = is_open
+            if is_removed:
+                names_to_remove.append(name)
             imgui.pop_id()
+
         imgui.end_child()
-        for removed, name in zip(is_removed, list(self._sections.keys())):
-            if removed:
-                self.remove(name)
-                self._render_callback()
+        for name in names_to_remove:
+            self.remove(name)
+            self._render_callback()
         imgui.end()
 
         if self._show_loader and not imgui.is_popup_open("LoadingOverlay"):
