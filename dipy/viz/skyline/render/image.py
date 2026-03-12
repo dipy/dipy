@@ -158,7 +158,7 @@ class Image3D(Visualization):
             affine=self.affine,
             interpolation=self.interpolation,
             value_range=self.value_range,
-            alpha_mode="auto",
+            alpha_mode="bayer",
             depth_write=True,
         )
 
@@ -244,8 +244,8 @@ class Image3D(Visualization):
             set_group_opacity(self._slicer, self.opacity / 100.0)
             if self.opacity < 100:
                 for actor in self._slicer.children:
-                    actor.material.depth_write = True
-                    actor.material.alpha_mode = "bayer"
+                    actor.material.depth_write = False
+                    actor.material.alpha_mode = "blend"
 
         imgui.spacing()
 

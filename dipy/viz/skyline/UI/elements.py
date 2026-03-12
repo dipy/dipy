@@ -131,6 +131,17 @@ def open_confirmation_dialog(
 
 
 def loading(title, message, show):
+    """Show loading bar.
+
+    Parameters
+    ----------
+    title : str
+        Loader ID
+    message : str
+        Message to show in the loader.
+    show : bool
+        To show or hide the loader.
+    """
     text_width = imgui.calc_text_size(message).x
     spinner_radius = 16.0
     padding = 32.0
@@ -147,29 +158,21 @@ def loading(title, message, show):
         (float("inf"), float("inf")),
     )
 
-    # 2. Render the Modal
     opened, _ = imgui.begin_popup_modal(title, None, flags)
 
     if opened:
         window_width = imgui.get_window_width()
 
-        # --- The Spinner ---
-        # Center the spinner mathematically
         imgui.set_cursor_pos_x((window_width - spinner_radius * 2) * 0.5)
 
-        # Draw a clean circular spinner using imspinner
-        color = imgui.ImColor(THEME["primary"])  # Nice default blue
+        color = imgui.ImColor(THEME["primary"])
         imspinner.spinner_arc_rotation("spinner_id", spinner_radius, 4.0, color)
 
-        imgui.dummy((0, 10))  # Add a little vertical space
+        imgui.dummy((0, 10))
 
-        # --- The Text ---
-        # Center the text below the spinner
         imgui.set_cursor_pos_x((window_width - text_width) * 0.5)
         imgui.text_colored(THEME["primary"], message)
 
-        # --- The Auto-Close Logic ---
-        # If a background thread or callback sets self._show_loader to False, close it
         if not show:
             imgui.close_current_popup()
 
@@ -364,6 +367,8 @@ def render_section_header(
     height=40,
     padding_x=12,
     info=None,
+    show_close=True,
+    show_info=True,
 ):
     """Draw a custom section header with a toggle arrow.
 
@@ -386,6 +391,10 @@ def render_section_header(
     info : str, optional
         Additional info text shown in a tooltip when hovering the header. If not
         provided, no tooltip is shown.
+    show_close : bool, optional
+        Whether to show the close/remove button. Default is True.
+    show_info : bool, optional
+        Whether to show the info button. Default is True.
 
     Returns
     -------
@@ -447,22 +456,12 @@ def render_section_header(
     close_icon_size = imgui.calc_text_size(close_icon)
     show_icon_size = imgui.calc_text_size(show_icon)
     arrow_icon_size = imgui.calc_text_size(arrow_icon)
-    icon_size = imgui.ImVec2(
-        info_icon_size.x
-        + close_icon_size.x
-        + show_icon_size.x
-        + arrow_icon_size.x
-        + (padding_x * 4),
-        arrow_icon_size.y,
-    )
-    # table_icon_size = imgui.ImVec2(0, 0)
-    # if type == "image":
-    #     table_icon = icons_fontawesome_6.ICON_FA_TABLE
-    #     table_icon_size = imgui.calc_text_size(table_icon)
-    #     icon_size = imgui.ImVec2(
-    #         icon_size.x + table_icon_size.x + padding_x,
-    #         icon_size.y,
-    #     )
+    icon_size_x = show_icon_size.x + arrow_icon_size.x + (padding_x * 2)
+    if show_close:
+        icon_size_x += close_icon_size.x + padding_x
+    if show_info:
+        icon_size_x += info_icon_size.x + padding_x
+    icon_size = imgui.ImVec2(icon_size_x, arrow_icon_size.y)
 
     available_label_width = total_width - type_icon_size.x - icon_size.x - padding_x * 2
     ellipsis_text = "..."
@@ -500,25 +499,36 @@ def render_section_header(
     if show_icon_hovered:
         imgui.set_tooltip("Toggle visibility")
 
-    close_icon_min, close_icon_max = _calculate_hit_box((pos_x, pos_y), close_icon_size)
-    close_icon_hovered = imgui.is_mouse_hovering_rect(close_icon_min, close_icon_max)
-    draw_list.add_text((pos_x, pos_y), text_color, close_icon)
-    pos_x += close_icon_size.x + padding_x
-    if close_icon_hovered:
-        imgui.set_tooltip("Remove visualization")
+    close_icon_hovered = False
+    if show_close:
+        close_icon_min, close_icon_max = _calculate_hit_box(
+            (pos_x, pos_y), close_icon_size
+        )
+        close_icon_hovered = imgui.is_mouse_hovering_rect(
+            close_icon_min, close_icon_max
+        )
+        draw_list.add_text((pos_x, pos_y), text_color, close_icon)
+        pos_x += close_icon_size.x + padding_x
+        if close_icon_hovered:
+            imgui.set_tooltip("Remove visualization")
 
     # if type == "image":
     #     draw_list.add_text((pos_x, pos_y), text_color, table_icon)
     #     pos_x += table_icon_size.x + padding_x
 
-    info_icon_min, info_icon_max = _calculate_hit_box((pos_x, pos_y), info_icon_size)
-    show_info_tooltip = imgui.is_mouse_hovering_rect(info_icon_min, info_icon_max)
-    draw_list.add_text(
-        (pos_x, pos_y), accent_color if show_info_tooltip else text_color, info_icon
-    )
-    if show_info_tooltip and info:
-        imgui.set_tooltip(info)
-    pos_x += info_icon_size.x + padding_x
+    if show_info:
+        info_icon_min, info_icon_max = _calculate_hit_box(
+            (pos_x, pos_y), info_icon_size
+        )
+        show_info_tooltip = imgui.is_mouse_hovering_rect(info_icon_min, info_icon_max)
+        draw_list.add_text(
+            (pos_x, pos_y),
+            accent_color if show_info_tooltip else text_color,
+            info_icon,
+        )
+        if show_info_tooltip and info:
+            imgui.set_tooltip(info)
+        pos_x += info_icon_size.x + padding_x
 
     arrow_pos = (pos_x, pos_y)
     arrow_icon_min, arrow_icon_max = _calculate_hit_box(arrow_pos, arrow_icon_size)
