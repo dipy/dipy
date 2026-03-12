@@ -21,18 +21,28 @@ from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
 from dipy.nn.utils import normalize
 from dipy.utils.logging import logger
+from dipy.utils.optpkg import optional_package
+
+_, _have_torch, _ = optional_package("torch", min_version="2.2.0")
+_, _have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 
 # Try to import Synb0 - the backend (torch/tf) is selected automatically
 # based on DIPY_NN_BACKEND environment variable
 try:
     from dipy.nn.synb0 import Synb0
 
-    HAVE_SYNB0 = True
+    HAVE_SYNB0 = _have_torch or _have_tf
+    if not HAVE_SYNB0:
+        logger.warning(
+            "Synb0 model not available. Install PyTorch or TensorFlow to use. "
+            "(pip install dipy[ml]) "
+            "Synb0-DISCO distortion correction."
+        )
 except ImportError:
     HAVE_SYNB0 = False
     logger.warning(
-        "Synb0 model not available. Install PyTorch or TensorFlow to use."
-        "(pip install dipy[ml])"
+        "Synb0 model not available. Install PyTorch or TensorFlow to use. "
+        "(pip install dipy[ml]) "
         "Synb0-DISCO distortion correction."
     )
 
@@ -293,7 +303,7 @@ def synb0_syn(
             affine=T1_affine,
         )
 
-    _, mni_t2_path, mni_mask_path, mni_t1_path = get_fnames("mni_templates")
+    _, mni_t2_path, mni_mask_path, mni_t1_path = get_fnames(name="mni_templates")
     mni_t1, mni_t1_affine = load_nifti(mni_t1_path)  # 09c T1
     mni_t2, mni_t2_affine = load_nifti(mni_t2_path)  # 09a T2
     mni_mask, _ = load_nifti(mni_mask_path)  # 09c mask

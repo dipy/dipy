@@ -147,7 +147,6 @@ def test_synb0_syn_import_error_without_backend():
         )
 
 
-@pytest.mark.slow
 @pytest.mark.skipif(not HAVE_SYNB0, reason="Requires Synb0 (torch or tf)")
 def test_synb0_syn_4d_input():
     """Run full pipeline on small 4D DWI dataset."""
