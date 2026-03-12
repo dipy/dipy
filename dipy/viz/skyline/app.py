@@ -5,6 +5,7 @@ from fury.window import update_camera
 
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO
+from dipy.viz.skyline.compute import run_async
 from dipy.viz.skyline.io import load_files
 from dipy.viz.skyline.render.image import Image3D, create_image_visualization
 from dipy.viz.skyline.render.peak import Peak3D, create_peak_visualization
@@ -35,6 +36,9 @@ class Skyline:
         glass_brain=False,
         bg_color=None,
         tract_colors=None,
+        initial_filenames=None,
+        initial_rois=None,
+        initial_shm_coeffs=None,
     ):
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
@@ -63,6 +67,9 @@ class Skyline:
         self._surface_visualizations = []
         self._tractogram_visualizations = []
         self._sh_glyph_visualizations = []
+        self._pending_loaded_files = []
+        self._loading_total = 0
+        self._loading_done = 0
         self._is_cluster = is_cluster
         self._is_light_version = is_light_version
         self._glass_brain = glass_brain
@@ -83,9 +90,30 @@ class Skyline:
         self._color_gen = distinguishable_colormap()
 
         self.active_image = None
-        self._load_visualiations(images, peaks, rois, surfaces, tractograms, sh_coeffs)
-
         self.window._imgui.set_gui(self.draw_ui)
+        initial_loaded_files = {
+            "images": images or [],
+            "peaks": peaks or [],
+            "rois": rois or [],
+            "surfaces": surfaces or [],
+            "tractograms": tractograms or [],
+            "shm_coeffs": sh_coeffs or [],
+        }
+        has_initial_visualizations = any(initial_loaded_files.values())
+        has_initial_files = any((initial_filenames, initial_rois, initial_shm_coeffs))
+
+        if has_initial_visualizations:
+            self._queue_loaded_visualizations(initial_loaded_files)
+
+        if has_initial_files:
+            self._append_visualization(
+                filenames=initial_filenames,
+                rois=initial_rois,
+                shm_coeffs=initial_shm_coeffs,
+            )
+        elif not has_initial_visualizations:
+            self.UI_window.request_file_dialog = True
+
         self.before_render()
         self.window.start()
 
@@ -119,7 +147,11 @@ class Skyline:
             self.active_image.state + (len(self._image_visualizations) * 0.005),
         )
 
-    def _update_tractogram_helper(self):
+    def _update_tractogram_helper(self, *, remove=False):
+        if remove and self._tractogram_help:
+            self.window.screens[0].scene.remove(self._tractogram_help)
+            self._tractogram_help = False
+
         if (
             any(
                 isinstance(viz, ClusterStreamline3D)
@@ -127,7 +159,9 @@ class Skyline:
             )
             and not self._tractogram_help
         ):
-            self._tractogram_help = create_cluster_help()
+            self._tractogram_help = create_cluster_help(
+                position=(self.size[0] - self.ui_size[0] - 200, 0)
+            )
             self.window.screens[0].scene.add(self._tractogram_help)
         elif (
             not any(
@@ -141,7 +175,48 @@ class Skyline:
 
     def draw_ui(self):
         self.UI_window.render()
+        self._drain_pending_visualizations()
         self.active_image and self._arrange_image_actors()
+
+    def _queue_loaded_visualizations(self, loaded_files, *, message="Loading Files..."):
+        self._pending_loaded_files.append(loaded_files)
+        self._loading_total += 1
+        self._loading_done += 1
+        self.loader(True, message=message)
+
+    def _drain_pending_visualizations(self):
+        if self._pending_loaded_files:
+            loaded_files = self._pending_loaded_files.pop(0)
+            self._load_visualiations(
+                loaded_files["images"],
+                loaded_files["peaks"],
+                loaded_files["rois"],
+                loaded_files["surfaces"],
+                loaded_files["tractograms"],
+                loaded_files["shm_coeffs"],
+            )
+
+            if self.active_image is not None:
+                self._synchronize_visualizations_from_source(
+                    self.active_image, self.active_image.state
+                )
+
+            self._update_tractogram_helper()
+            self._refresh_actors()
+            update_camera(
+                self.window.screens[0].camera,
+                None,
+                self.window.screens[0].scene,
+            )
+
+        if (
+            self._loading_total > 0
+            and self._loading_done >= self._loading_total
+            and not self._pending_loaded_files
+        ):
+            self.loader(False)
+            self._loading_total = 0
+            self._loading_done = 0
 
     def before_render(self):
         self._update_tractogram_helper()
@@ -157,6 +232,7 @@ class Skyline:
             (self.ui_size[0], 0, self.size[0] - self.ui_size[0], self.size[1])
         ]
         self.UI_window.size = (self.ui_size[0], size[1])
+        self._update_tractogram_helper(remove=True)
         self.window.render()
 
     def handle_key_events(self, event):
@@ -231,6 +307,7 @@ class Skyline:
                 colormap=self._color_gen,
                 tract_colors=self._tract_colors,
                 switch_render_callback=self._update_tractogram_rendering,
+                loader=self.loader,
             )
             self._add_visualization(tractogram3d)
         for idx, input in enumerate(sh_coeffs or []):
@@ -253,19 +330,46 @@ class Skyline:
             self.UI_window.request_file_dialog = True
 
     def _append_visualization(self, *, filenames=None, rois=None, shm_coeffs=None):
-        loaded_files = load_files(filenames, rois=rois, shm_coeffs=shm_coeffs)
-        self._load_visualiations(
-            loaded_files["images"],
-            loaded_files["peaks"],
-            loaded_files["rois"],
-            loaded_files["surfaces"],
-            loaded_files["tractograms"],
-            loaded_files["shm_coeffs"],
-        )
-        if self.active_image is not None:
-            self._synchronize_visualizations(self.active_image, self.active_image.state)
-        self.before_render()
-        update_camera(self.window.screens[0].camera, None, self.window.screens[0].scene)
+        total_files = len(filenames or []) + len(rois or []) + len(shm_coeffs or [])
+        if total_files == 0:
+            return
+
+        self._loading_total = total_files
+        self._loading_done = 0
+
+        def load_files_task(filenames, rois, shm_coeffs):
+            return load_files(filenames, rois=rois, shm_coeffs=shm_coeffs)
+
+        def on_files_loaded(loaded_files, exception):
+            self._loading_done += 1
+            if exception is None and loaded_files is not None:
+                self._pending_loaded_files.append(loaded_files)
+
+        self.loader(True, message="Loading Files...")
+        for filename in filenames or []:
+            run_async(
+                load_files_task,
+                on_files_loaded,
+                filenames=[filename],
+                rois=[],
+                shm_coeffs=[],
+            )
+        for roi in rois or []:
+            run_async(
+                load_files_task,
+                on_files_loaded,
+                filenames=[],
+                rois=[roi],
+                shm_coeffs=[],
+            )
+        for shm in shm_coeffs or []:
+            run_async(
+                load_files_task,
+                on_files_loaded,
+                filenames=[],
+                rois=[],
+                shm_coeffs=[shm],
+            )
 
     def _remove_visualization(self, viz):
         if isinstance(viz, Image3D):
@@ -286,10 +390,13 @@ class Skyline:
         if len(self.visualizations) == 0:
             self.UI_window.request_file_dialog = True
 
-    def _synchronize_visualizations(self, source_viz, new_state):
+    def _synchronize_visualizations_from_source(self, source_viz, new_state):
         for viz in self.visualizations:
             if viz is not source_viz and isinstance(viz, (Image3D, Peak3D, SHGlyph3D)):
                 viz.update_state(new_state)
+
+    def _synchronize_visualizations(self, source_viz, new_state):
+        self._synchronize_visualizations_from_source(source_viz, new_state)
         self.active_image and self._arrange_image_actors()
         self.window.render()
 
@@ -312,9 +419,13 @@ class Skyline:
                     colormap=self._color_gen,
                     tract_colors=self._tract_colors,
                     switch_render_callback=self._update_tractogram_rendering,
+                    loader=self.loader,
                 )
                 self._tractogram_visualizations[idx] = new_viz
                 self.UI_window._sections[viz.name] = new_viz.renderer
+
+    def loader(self, show, *, message=None):
+        self.UI_window.update_loader(show=show, message=message)
 
     @property
     def visualizations(self):
@@ -377,14 +488,10 @@ def skyline_from_files(
         'direction'  for directionally colored streamlines.
         For example, a value of (1, 0, 0) would mean the red color.
     """
-    loaded_files = load_files(fnames, rois=rois, shm_coeffs=shm_coeffs)
     return skyline(
-        images=loaded_files["images"],
-        peaks=loaded_files["peaks"],
-        rois=loaded_files["rois"],
-        surfaces=loaded_files["surfaces"],
-        tractograms=loaded_files["tractograms"],
-        sh_coeffs=loaded_files["shm_coeffs"],
+        initial_filenames=fnames,
+        initial_rois=rois,
+        initial_shm_coeffs=shm_coeffs,
         is_cluster=is_cluster,
         is_light_version=is_light_version,
         glass_brain=glass_brain,
@@ -407,6 +514,9 @@ def skyline(
     glass_brain=False,
     bg_color=None,
     tract_colors=None,
+    initial_filenames=None,
+    initial_rois=None,
+    initial_shm_coeffs=None,
 ):
     """Launch Skyline GUI.
 
@@ -461,4 +571,7 @@ def skyline(
         glass_brain=glass_brain,
         bg_color=bg_color,
         tract_colors=tract_colors,
+        initial_filenames=initial_filenames,
+        initial_rois=initial_rois,
+        initial_shm_coeffs=initial_shm_coeffs,
     )
