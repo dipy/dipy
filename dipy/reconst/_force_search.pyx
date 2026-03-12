@@ -60,12 +60,13 @@ cdef void compute_distances_simd(
     cdef size_t n_queries = queries.shape[0]
     cdef size_t n_database = database.shape[0]
     cdef size_t d = queries.shape[1]
-    cdef size_t i, j
+    cdef Py_ssize_t i
+    cdef size_t j
 
     # Parallel loop over queries
-    for i in prange(n_queries, schedule='static', nogil=True):
+    for i in prange(<Py_ssize_t>n_queries, schedule='static', nogil=True):
         for j in range(n_database):
-            distances[i * n_database + j] = fvec_inner_product(
+            distances[<size_t>i * n_database + j] = fvec_inner_product(
                 &queries[i, 0],
                 &database[j, 0],
                 d

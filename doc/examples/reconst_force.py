@@ -1,7 +1,7 @@
 """
-=========================================================================
+==============================================================================
 Microstructure estimation with FORCE (FORward modeling for Complex Estimation)
-=========================================================================
+==============================================================================
 
 FORCE :footcite:p:`Shah2025` is a forward-modeling paradigm that reframes how
 diffusion MRI data are analyzed. Instead of inverting the measured signal,

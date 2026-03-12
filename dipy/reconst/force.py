@@ -1,7 +1,7 @@
-import fcntl
 import json
 import os
 from pathlib import Path
+import sys
 import warnings
 
 import numpy as np
@@ -136,13 +136,27 @@ def _locked_registry_update(cache_dir, update_fn):
     """
     lock_path = cache_dir / "cache_registry.lock"
     with open(lock_path, "w") as lock_fh:
-        fcntl.flock(lock_fh, fcntl.LOCK_EX)
-        try:
-            registry = _load_cache_registry(cache_dir)
-            registry = update_fn(registry)
-            _save_cache_registry(cache_dir, registry)
-        finally:
-            fcntl.flock(lock_fh, fcntl.LOCK_UN)
+        if sys.platform == "win32":
+            import msvcrt
+
+            msvcrt.locking(lock_fh.fileno(), msvcrt.LK_LOCK, 1)
+            try:
+                registry = _load_cache_registry(cache_dir)
+                registry = update_fn(registry)
+                _save_cache_registry(cache_dir, registry)
+            finally:
+                lock_fh.seek(0)
+                msvcrt.locking(lock_fh.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(lock_fh, fcntl.LOCK_EX)
+            try:
+                registry = _load_cache_registry(cache_dir)
+                registry = update_fn(registry)
+                _save_cache_registry(cache_dir, registry)
+            finally:
+                fcntl.flock(lock_fh, fcntl.LOCK_UN)
 
 
 def _find_cached_simulation(cache_dir, gtab, diffusivity_config, num_simulations):
@@ -747,10 +761,20 @@ class FORCEModel(ReconstModel):
         if output_path is not None:
             save_force_simulations(self.simulations, output_path)
         else:
-            # Save into the .dipy cache and register
+            # Save into the .dipy cache and register.
+            # filename is generated inside the lock to avoid races between
+            # concurrent processes reading the same registry length.
             cache_dir = _get_force_cache_dir()
-            idx = len(_load_cache_registry(cache_dir))
-            filename = f"force_sim_{idx}.npz"
+            filename_holder = {}
+
+            def _append_and_name(registry):
+                idx = len(registry)
+                fname = f"force_sim_{idx}.npz"
+                filename_holder["filename"] = fname
+                return registry  # entry added by _register_cached_simulation
+
+            _locked_registry_update(cache_dir, _append_and_name)
+            filename = filename_holder["filename"]
             save_force_simulations(self.simulations, str(cache_dir / filename))
             _register_cached_simulation(
                 cache_dir,
@@ -760,7 +784,7 @@ class FORCEModel(ReconstModel):
                 filename,
             )
             if verbose:
-                print(f"[FORCE] Cached simulations to " f"{cache_dir / filename}")
+                print(f"[FORCE] Cached simulations to {cache_dir / filename}")
 
         self._prepare_library()
         return self

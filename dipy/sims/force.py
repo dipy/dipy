@@ -435,8 +435,10 @@ def generate_force_simulations(
     num_cpus = determine_num_processes(num_cpus)
 
     # Setup output directory
+    _tmpdir_ctx = None
     if output_dir is None:
-        output_dir = tempfile.mkdtemp(prefix="force_sim_")
+        _tmpdir_ctx = tempfile.TemporaryDirectory(prefix="force_sim_")
+        output_dir = _tmpdir_ctx.name
     os.makedirs(output_dir, exist_ok=True)
 
     # Setup diffusivity config
@@ -760,6 +762,9 @@ def generate_force_simulations(
             pass
 
     gc.collect()
+
+    if _tmpdir_ctx is not None:
+        _tmpdir_ctx.cleanup()
 
     return simulations
 

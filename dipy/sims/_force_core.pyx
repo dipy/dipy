@@ -195,7 +195,7 @@ def angle_between(v1, v2):
     return np.arccos(cos_theta)
 
 
-def is_angle_valid(angle, threshold=30):
+def is_angle_valid(angle, *, threshold=30):
     """
     Check if an angle satisfies minimum separation constraint.
 
@@ -204,7 +204,7 @@ def is_angle_valid(angle, threshold=30):
     angle : float
         Angle to check in radians.
     threshold : float, optional
-        Minimum separation threshold in degrees. Default is 30.
+        Minimum separation threshold in degrees.
 
     Returns
     -------
@@ -382,11 +382,20 @@ cpdef tuple generate_two_fibers(
     mevals_in[:, 1] = 0.0
     mevals_in[:, 2] = 0.0
 
+    _MAX_ANGLE_TRIES = 10000
     index = np.random.randint(0, n_dirs, 2)
+    _angle_tries = 0
     while not is_angle_valid(
         angle_between(target_sphere[index[0]], target_sphere[index[1]])
     ):
         index = np.random.randint(0, n_dirs, 2)
+        _angle_tries += 1
+        if _angle_tries >= _MAX_ANGLE_TRIES:
+            raise RuntimeError(
+                "Could not find two fiber directions with sufficient angular "
+                "separation after %d attempts. Consider using a finer sphere."
+                % _MAX_ANGLE_TRIES
+            )
 
     idx0 = int(index[0])
     idx1 = int(index[1])
@@ -506,7 +515,9 @@ cpdef tuple generate_three_fibers(
     mevals_in[:, 1] = 0.0
     mevals_in[:, 2] = 0.0
 
+    _MAX_ANGLE_TRIES = 10000
     index = np.random.randint(0, n_dirs, 3)
+    _angle_tries = 0
     while (
         not is_angle_valid(
             angle_between(target_sphere[index[0]], target_sphere[index[1]]),
@@ -522,6 +533,13 @@ cpdef tuple generate_three_fibers(
         )
     ):
         index = np.random.randint(0, n_dirs, 3)
+        _angle_tries += 1
+        if _angle_tries >= _MAX_ANGLE_TRIES:
+            raise RuntimeError(
+                "Could not find three fiber directions with sufficient angular "
+                "separation after %d attempts. Consider using a finer sphere."
+                % _MAX_ANGLE_TRIES
+            )
 
     idx0 = int(index[0])
     idx1 = int(index[1])

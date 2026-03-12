@@ -1,6 +1,7 @@
 """Tests for FORCE simulation module."""
 
 import numpy as np
+import pytest
 
 from dipy.sims.force import (
     dispersion_lut,
@@ -35,24 +36,16 @@ def test_validate_diffusivity_config_valid():
 def test_validate_diffusivity_config_missing_key():
     """Test validation fails for missing keys."""
     config = {"wm_d_par_range": (2e-3, 3e-3)}
-
-    try:
+    with pytest.raises(ValueError, match="Missing required key"):
         validate_diffusivity_config(config)
-        raise AssertionError("Should have raised ValueError")
-    except ValueError as e:
-        assert "Missing required key" in str(e)
 
 
 def test_validate_diffusivity_config_invalid_range():
     """Test validation fails for invalid range."""
     config = get_default_diffusivity_config()
     config["wm_d_par_range"] = (3e-3, 2e-3)  # min > max
-
-    try:
+    with pytest.raises(ValueError, match="min must be <= max"):
         validate_diffusivity_config(config)
-        raise AssertionError("Should have raised ValueError")
-    except ValueError as e:
-        assert "min must be <= max" in str(e)
 
 
 def test_get_default_diffusivity_config():
@@ -88,12 +81,8 @@ def test_smallest_shell_bval_no_nonzero():
     from dipy.sims.force import smallest_shell_bval
 
     bvals = np.array([0, 0, 10, 20, 30])  # all below threshold
-
-    try:
+    with pytest.raises(ValueError, match="No non-b0 volumes"):
         smallest_shell_bval(bvals)
-        raise AssertionError("Should have raised ValueError")
-    except ValueError as e:
-        assert "No non-b0 volumes" in str(e)
 
 
 def test_save_load_force_simulations(tmp_path):

@@ -152,9 +152,14 @@ def multi_voxel_fit(_func=None, *, batched=False, shared_obj=None):
                     disable=not kwargs.get("verbose", False),
                 )
                 bar.set_description("Fitting (batched serial)")
+                fit_kwargs = {
+                    k: v
+                    for k, v in kwargs.items()
+                    if k not in ("engine", "n_jobs", "vox_per_chunk", "verbose")
+                }
                 for start in range(0, n_vox, vox_per_chunk):
                     chunk = data_to_fit[start : start + vox_per_chunk]
-                    chunk_result = single_voxel_fit(self, chunk)
+                    chunk_result = single_voxel_fit(self, chunk, **fit_kwargs)
                     all_chunk_results.append(chunk_result)
                     bar.update(len(chunk))
                 bar.close()

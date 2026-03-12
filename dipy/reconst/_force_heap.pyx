@@ -122,15 +122,16 @@ cdef void select_top_k_parallel(
     Uses min-heap for each query to find k largest distances.
     Parallelized with OpenMP (prange).
     """
-    cdef size_t i, j
+    cdef Py_ssize_t i
+    cdef size_t j
     cdef const float* dist_row
     cdef float* dist_out
     cdef long* idx_out
 
-    for i in prange(n_queries, schedule='static', nogil=True):
-        dist_row = distances + i * n_database
-        dist_out = out_distances + i * k
-        idx_out = out_indices + i * k
+    for i in prange(<Py_ssize_t>n_queries, schedule='static', nogil=True):
+        dist_row = distances + <size_t>i * n_database
+        dist_out = out_distances + <size_t>i * k
+        idx_out = out_indices + <size_t>i * k
 
         for j in range(k):
             dist_out[j] = dist_row[j]
@@ -156,14 +157,15 @@ cdef void heap_init_parallel(
     """
     Initialize heaps with -inf values for streaming top-k.
     """
-    cdef size_t i, j
+    cdef Py_ssize_t i
+    cdef size_t j
     cdef float* dist_out
     cdef long* idx_out
     cdef float neg_inf = -1e30
 
-    for i in prange(n_queries, schedule='static', nogil=True):
-        dist_out = out_distances + i * k
-        idx_out = out_indices + i * k
+    for i in prange(<Py_ssize_t>n_queries, schedule='static', nogil=True):
+        dist_out = out_distances + <size_t>i * k
+        idx_out = out_indices + <size_t>i * k
 
         for j in range(k):
             dist_out[j] = neg_inf
@@ -185,16 +187,17 @@ cdef void heap_update_batch_parallel(
     """
     Update running heaps with a batch of distances (streaming approach).
     """
-    cdef size_t i, j
+    cdef Py_ssize_t i
+    cdef size_t j
     cdef const float* dist_row
     cdef float* dist_out
     cdef long* idx_out
     cdef long global_idx
 
-    for i in prange(n_queries, schedule='static', nogil=True):
-        dist_row = distances + i * chunk_size
-        dist_out = out_distances + i * k
-        idx_out = out_indices + i * k
+    for i in prange(<Py_ssize_t>n_queries, schedule='static', nogil=True):
+        dist_row = distances + <size_t>i * chunk_size
+        dist_out = out_distances + <size_t>i * k
+        idx_out = out_indices + <size_t>i * k
 
         for j in range(chunk_size):
             global_idx = <long>(chunk_offset + j)
@@ -213,11 +216,11 @@ cdef void heap_finalize_parallel(
     """
     Finalize heaps by sorting in descending order.
     """
-    cdef size_t i
+    cdef Py_ssize_t i
     cdef float* dist_out
     cdef long* idx_out
 
-    for i in prange(n_queries, schedule='static', nogil=True):
-        dist_out = out_distances + i * k
-        idx_out = out_indices + i * k
+    for i in prange(<Py_ssize_t>n_queries, schedule='static', nogil=True):
+        dist_out = out_distances + <size_t>i * k
+        idx_out = out_indices + <size_t>i * k
         heap_reorder(dist_out, idx_out, k)

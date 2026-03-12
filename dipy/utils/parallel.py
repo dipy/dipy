@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-import json
 import multiprocessing
 import shutil
 import tempfile
@@ -158,16 +157,7 @@ def paramap(
             tmp_dir = tempfile.TemporaryDirectory()
 
             if not ray.is_initialized():
-                ray.init(
-                    _system_config={
-                        "object_spilling_config": json.dumps(
-                            {
-                                "type": "filesystem",
-                                "params": {"directory_path": tmp_dir.name},
-                            },
-                        )
-                    },
-                )
+                ray.init(object_spilling_directory=tmp_dir.name)
 
         shared_refs = None
         if shared_objects:
@@ -209,13 +199,11 @@ def paramap(
                 futures = [_submit_one(ii, fk) for ii, fk in zip(in_list, func_kwargs)]
             else:
                 futures = [_submit_one(ii, func_kwargs) for ii in in_list]
-            results = []
             with tqdm(
                 total=n_chunks, disable=not verbose, desc="Fitting (ray)"
             ) as pbar:
-                for f in futures:
-                    results.append(ray.get(f))
-                    pbar.update(1)
+                results = ray.get(futures)
+                pbar.update(n_chunks)
 
         if clean_spill:
             shutil.rmtree(tmp_dir.name)

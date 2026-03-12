@@ -158,7 +158,7 @@ def multi_tensor_batch(
     bvecs : ndarray (M, 3)
         Gradient directions.
     n_threads : int, optional
-        Number of OpenMP threads. Default is 1.
+        Number of OpenMP threads.
 
     Returns
     -------
