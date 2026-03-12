@@ -166,7 +166,7 @@ class Image3D(Visualization):
         self.bounds = self._slicer.get_bounding_box()
         self.state = np.mean(self.bounds, axis=0)
         self._slicer.add_event_handler(self._pick_voxel, "pointer_down")
-        show_slices(self._slicer, self.state)
+        show_slices(self._slicer, self.mid_voxel_state)
         self.render()
 
     def _value_range_from_percentile(self, volume):
@@ -191,6 +191,12 @@ class Image3D(Visualization):
     def active_volume(self):
         return self.dwi[..., self._volume_idx] if self._has_directions else self.dwi
 
+    @property
+    def mid_voxel_state(self):
+        if self.affine is not None:
+            return np.asarray(self.state) + (-0.5 if self.affine[0, 0] > 0 else 0.5)
+        return self.state
+
     def _populate_info(self):
         np.set_printoptions(suppress=True, precision=2)
         info = f"Dimensions: {self.dwi.shape[:3]}"
@@ -213,7 +219,7 @@ class Image3D(Visualization):
     def update_state(self, new_state):
         if self._synchronize:
             self.state = new_state
-            show_slices(self._slicer, self.state)
+            show_slices(self._slicer, self.mid_voxel_state)
 
     def render_widgets(self):
         changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
@@ -278,7 +284,7 @@ class Image3D(Visualization):
                 self._synchronize and self._sync_callabck(self, self.state)
             self._slice_visibility[idx] = toggle
         set_group_visibility(self._slicer, self._slice_visibility)
-        show_slices(self._slicer, self.state)
+        show_slices(self._slicer, self.mid_voxel_state)
 
         imgui.spacing()
         volume_for_range = (
