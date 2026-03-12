@@ -902,7 +902,7 @@ def execute_pipeline_stage(
     }
 
     out_dir = io_config.get("out_dir", ".")
-    if "out_dir" in valid_params:
+    if "out_dir" in valid_params and "out_dir" not in workflow_params:
         workflow_params["out_dir"] = out_dir
 
     invalid_params = set(workflow_params.keys()) - set(valid_params.keys())
