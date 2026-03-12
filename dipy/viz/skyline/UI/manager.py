@@ -6,6 +6,7 @@ from imgui_bundle import (
 
 from dipy.viz.skyline.UI.elements import color_picker, render_file_dialog
 from dipy.viz.skyline.UI.theme import ASSETS, FONT, THEME
+from dipy.viz.skyline.compute import process_async_callbacks
 
 
 class UIManager:
@@ -68,6 +69,7 @@ class UIWindow:
             del self._section_open[name]
 
     def render(self):
+        process_async_callbacks()
         if self.pos is not None:
             imgui.set_next_window_pos(self.pos)
         if self.size is not None:

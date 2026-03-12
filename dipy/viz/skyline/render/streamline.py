@@ -26,6 +26,7 @@ from dipy.viz.skyline.UI.elements import (
     uploader,
     warning_message,
 )
+from dipy.viz.skyline.compute import run_async
 from dipy.viz.skyline.io import load_npy
 from dipy.viz.skyline.render.renderer import Visualization
 
@@ -368,22 +369,38 @@ class ClusterStreamline3D(Visualization):
         self._refresh_cluster_visibility()
 
     # Interaction methods
+    def _create_cluster_streamlines(self, centroid_rep):
+        state = self._cluster_state[centroid_rep]
+        cluster_idx = state["cluster"]
+        cluster_streamlines = self._clusters[cluster_idx]
+        color = state["color"]
+        streamline_actor = create_streamline(
+            lines=cluster_streamlines,
+            color=color,
+            line_type=self._line_type,
+            segments=3,
+        )
+        return centroid_rep, streamline_actor
+
+    def _expand_cluster(self, result, _exception):
+        if _exception is not None:
+            print(f"Error expanding cluster: {_exception}")
+            return
+        centroid_rep, streamline_actor = result
+        self._actor.add(streamline_actor)
+        self._actor.remove(centroid_rep)
+        state = self._cluster_state[centroid_rep]
+        state["cluster_actor"] = streamline_actor
+        state["expanded"] = True
+
     def _expand_clusters(self):
         for centroid_rep, state in self._cluster_state.items():
             if state["selected"] and not state["expanded"]:
-                cluster_idx = state["cluster"]
-                cluster_streamlines = self._clusters[cluster_idx]
-                color = state["color"]
-                streamline_actor = create_streamline(
-                    lines=cluster_streamlines,
-                    color=color,
-                    line_type=self._line_type,
-                    segments=3,
+                run_async(
+                    self._create_cluster_streamlines,
+                    self._expand_cluster,
+                    centroid_rep,
                 )
-                self._actor.add(streamline_actor)
-                self._actor.remove(centroid_rep)
-                state["cluster_actor"] = streamline_actor
-                state["expanded"] = True
 
     def _collapse_clusters(self):
         for centroid_rep, state in self._cluster_state.items():
@@ -495,6 +512,10 @@ class ClusterStreamline3D(Visualization):
             self._show_confirmation_dialog = (
                 self._line_type == "tube" and n_expanded > 10
             )
+            if self._line_type == "line" or not self._show_confirmation_dialog:
+                self._collapse_clusters()
+                self._expand_clusters()
+
         if self._dialog_state == "cancel":
             self._expand_clusters()
         self._dialog_state = "closed"
