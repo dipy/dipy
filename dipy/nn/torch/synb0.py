@@ -34,39 +34,100 @@ else:
 
 class UNet3D(Module):
     def __init__(self, n_in, n_out):
+        """Initialize the UNet3D model.
+
+        Parameters
+        ----------
+        n_in : int
+            Number of input channels.
+        n_out : int
+            Number of output channels.
+        """
         super(UNet3D, self).__init__()
         # Encoder
-        self.ec0 = self.encoder_block(n_in, 32, kernel_size=3, stride=1, padding=1)
-        self.ec1 = self.encoder_block(32, 64, kernel_size=3, stride=1, padding=1)
+        self.ec0 = self.encoder_block(
+            in_channels=n_in, out_channels=32, kernel_size=3, stride=1, padding=1
+        )
+        self.ec1 = self.encoder_block(
+            in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1
+        )
         self.pool0 = MaxPool3d(2)
-        self.ec2 = self.encoder_block(64, 64, kernel_size=3, stride=1, padding=1)
-        self.ec3 = self.encoder_block(64, 128, kernel_size=3, stride=1, padding=1)
+        self.ec2 = self.encoder_block(
+            in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1
+        )
+        self.ec3 = self.encoder_block(
+            in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1
+        )
         self.pool1 = MaxPool3d(2)
-        self.ec4 = self.encoder_block(128, 128, kernel_size=3, stride=1, padding=1)
-        self.ec5 = self.encoder_block(128, 256, kernel_size=3, stride=1, padding=1)
+        self.ec4 = self.encoder_block(
+            in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1
+        )
+        self.ec5 = self.encoder_block(
+            in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1
+        )
         self.pool2 = MaxPool3d(2)
-        self.ec6 = self.encoder_block(256, 256, kernel_size=3, stride=1, padding=1)
-        self.ec7 = self.encoder_block(256, 512, kernel_size=3, stride=1, padding=1)
+        self.ec6 = self.encoder_block(
+            in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1
+        )
+        self.ec7 = self.encoder_block(
+            in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1
+        )
         self.el = Conv3d(512, 512, kernel_size=1, stride=1, padding=0)
 
         # Decoder
-        self.dc9 = self.decoder_block(512, 512, kernel_size=2, stride=2, padding=0)
+        self.dc9 = self.decoder_block(
+            in_channels=512, out_channels=512, kernel_size=2, stride=2, padding=0
+        )
         self.dc8 = self.decoder_block(
-            512 + 256, 256, kernel_size=3, stride=1, padding=1
+            in_channels=512 + 256, out_channels=256, kernel_size=3, stride=1, padding=1
         )
-        self.dc7 = self.decoder_block(256, 256, kernel_size=3, stride=1, padding=1)
-        self.dc6 = self.decoder_block(256, 256, kernel_size=2, stride=2, padding=0)
+        self.dc7 = self.decoder_block(
+            in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1
+        )
+        self.dc6 = self.decoder_block(
+            in_channels=256, out_channels=256, kernel_size=2, stride=2, padding=0
+        )
         self.dc5 = self.decoder_block(
-            256 + 128, 128, kernel_size=3, stride=1, padding=1
+            in_channels=256 + 128, out_channels=128, kernel_size=3, stride=1, padding=1
         )
-        self.dc4 = self.decoder_block(128, 128, kernel_size=3, stride=1, padding=1)
-        self.dc3 = self.decoder_block(128, 128, kernel_size=2, stride=2, padding=0)
-        self.dc2 = self.decoder_block(128 + 64, 64, kernel_size=3, stride=1, padding=1)
-        self.dc1 = self.decoder_block(64, 64, kernel_size=3, stride=1, padding=1)
-        self.dc0 = self.decoder_block(64, n_out, kernel_size=1, stride=1, padding=0)
+        self.dc4 = self.decoder_block(
+            in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1
+        )
+        self.dc3 = self.decoder_block(
+            in_channels=128, out_channels=128, kernel_size=2, stride=2, padding=0
+        )
+        self.dc2 = self.decoder_block(
+            in_channels=128 + 64, out_channels=64, kernel_size=3, stride=1, padding=1
+        )
+        self.dc1 = self.decoder_block(
+            in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1
+        )
+        self.dc0 = self.decoder_block(
+            in_channels=64, out_channels=n_out, kernel_size=1, stride=1, padding=0
+        )
         self.dl = ConvTranspose3d(n_out, n_out, kernel_size=1, stride=1, padding=0)
 
     def encoder_block(self, in_channels, out_channels, kernel_size, stride, padding):
+        """Build a single encoder block (Conv3d + InstanceNorm3d + LeakyReLU).
+
+        Parameters
+        ----------
+        in_channels : int
+            Number of input feature channels.
+        out_channels : int
+            Number of output feature channels.
+        kernel_size : int
+            Convolution kernel size.
+        stride : int
+            Convolution stride.
+        padding : int
+            Zero-padding added to all sides.
+
+        Returns
+        -------
+        layer : Sequential
+            The encoder block as a PyTorch Sequential module.
+        """
         layer = Sequential(
             Conv3d(
                 in_channels,
@@ -82,6 +143,26 @@ class UNet3D(Module):
         return layer
 
     def decoder_block(self, in_channels, out_channels, kernel_size, stride, padding):
+        """Build a single decoder block (ConvTranspose3d + InstanceNorm3d + LeakyReLU).
+
+        Parameters
+        ----------
+        in_channels : int
+            Number of input feature channels.
+        out_channels : int
+            Number of output feature channels.
+        kernel_size : int
+            Transposed convolution kernel size.
+        stride : int
+            Transposed convolution stride (controls upsampling factor).
+        padding : int
+            Zero-padding added to all sides.
+
+        Returns
+        -------
+        layer : Sequential
+            The decoder block as a PyTorch Sequential module.
+        """
         layer = Sequential(
             ConvTranspose3d(
                 in_channels,
@@ -97,6 +178,18 @@ class UNet3D(Module):
         return layer
 
     def forward(self, x):
+        """Run a forward pass through the UNet3D.
+
+        Parameters
+        ----------
+        x : torch.Tensor (batch, n_in, D, H, W)
+            Input tensor.
+
+        Returns
+        -------
+        out : torch.Tensor (batch, n_out, D, H, W)
+            Output tensor with the same spatial dimensions as input.
+        """
         # Encode
         e0 = self.ec0(x)
         syn0 = self.ec1(e0)
@@ -185,7 +278,6 @@ class Synb0:
         ----------
         verbose : bool, optional
             Whether to show information about the processing.
-            Default is False.
         """
         if not have_torch:
             raise ImportError(
@@ -283,13 +375,11 @@ class Synb0:
             Increase it if you want it to be faster and have a lot of data.
             If None, batch_size will be set to 1 if the provided image
             has a batch dimension.
-            Default is None.
 
         average : bool, optional
             Whether the function follows the Synb0-Disco pipeline and
             averages the prediction of 5 different models.
             If False, it uses the loaded weights for prediction.
-            Default is True.
 
         Returns
         -------

@@ -1,21 +1,11 @@
-"""
-Distortion Correction Module
-
-This module provides tools for correcting various types of distortions
-in diffusion MRI data, including susceptibility-induced distortions
-using the Synb0-SyN method.
+"""Tools for correcting distortions in diffusion MRI data, including
+susceptibility-induced distortions using the Synb0-SyN method
+:footcite:p:`Chigurupati2024`, :footcite:p:`Schilling2019`,
+:footcite:p:`Schilling2020`.
 
 References
 ----------
-.. [1] Chigurupati, S., et al. (2024). "Fast susceptibility distortion correction
-       for diffusion MRI using style transfer and nonrigid registration."
-       Proceedings of ISMRM.
-.. [2] Schilling, K. G., et al. (2019). "Synthesized b0 for diffusion
-       distortion correction (Synb0-DisCo)." Magnetic Resonance Imaging,
-       64, 62-70.
-.. [3] Schilling, K. G., et al. (2020). "Distortion correction of
-       diffusion weighted MRI without reverse phase-encoding scans or
-       field-maps." PLOS ONE, 15(7), e0236659.
+.. footbibliography::
 """
 
 from pathlib import Path
@@ -48,6 +38,29 @@ except ImportError:
 
 
 def _validate_b0_index(b0_index, n_volumes, image_name):
+    """Validate that b0_index is a valid integer index into a volume array.
+
+    Parameters
+    ----------
+    b0_index : int
+        Index to validate.
+    n_volumes : int
+        Total number of volumes in the image.
+    image_name : str
+        Name of the image (used in error messages).
+
+    Returns
+    -------
+    b0_index : int
+        The validated index as a Python int.
+
+    Raises
+    ------
+    TypeError
+        If b0_index is not an integer.
+    ValueError
+        If b0_index is out of range [0, n_volumes - 1].
+    """
     if not isinstance(b0_index, (int, np.integer)):
         raise TypeError("b0_index must be an integer.")
 
@@ -60,7 +73,28 @@ def _validate_b0_index(b0_index, n_volumes, image_name):
     return int(b0_index)
 
 
-def _select_3d_volume(image, *, image_name, b0_index):
+def _select_3d_volume(image, image_name, b0_index):
+    """Select a 3D volume from a 3D or 4D array.
+
+    Parameters
+    ----------
+    image : ndarray
+        Input array, either 3D (X, Y, Z) or 4D (X, Y, Z, N).
+    image_name : str
+        Name of the image (used in error messages).
+    b0_index : int
+        Index of the volume to select when `image` is 4D.
+
+    Returns
+    -------
+    volume : ndarray (X, Y, Z)
+        Selected 3D volume.
+
+    Raises
+    ------
+    ValueError
+        If `image` is not 3D or 4D.
+    """
     image = np.asarray(image)
 
     if image.ndim == 3:
@@ -71,11 +105,32 @@ def _select_3d_volume(image, *, image_name, b0_index):
             f"{image_name} must be a 3D or 4D array. Got shape {image.shape}."
         )
 
-    idx = _validate_b0_index(b0_index, image.shape[-1], image_name)
+    idx = _validate_b0_index(
+        b0_index=b0_index, n_volumes=image.shape[-1], image_name=image_name
+    )
     return image[..., idx]
 
 
 def _warp_image(mapping, image):
+    """Apply a deformation mapping to a 3D or 4D image.
+
+    Parameters
+    ----------
+    mapping : object
+        A mapping object with a ``transform(image)`` method.
+    image : ndarray
+        Input array, either 3D (X, Y, Z) or 4D (X, Y, Z, N).
+
+    Returns
+    -------
+    warped : ndarray
+        Warped image with the same shape as `image`.
+
+    Raises
+    ------
+    ValueError
+        If `image` is not 3D or 4D.
+    """
     image = np.asarray(image)
 
     if image.ndim == 3:
@@ -97,6 +152,19 @@ def _warp_image(mapping, image):
 
 
 def _save_debug_volume(debug_dir, name, data, affine):
+    """Save an array as a NIfTI file for debugging, if debug_dir is set.
+
+    Parameters
+    ----------
+    debug_dir : str, Path, or None
+        Directory where the file will be saved. If None, does nothing.
+    name : str
+        Base name of the output file (without extension).
+    data : ndarray
+        Array to save.
+    affine : ndarray (4, 4)
+        Affine transformation matrix for the NIfTI file.
+    """
     if debug_dir is None:
         return
     arr = np.asarray(data)
@@ -110,6 +178,7 @@ def synb0_syn(
     T1,
     dwi_affine,
     T1_affine,
+    *,
     b0_index=0,
     dwi_mask=None,
     T1_mask=None,
@@ -132,37 +201,31 @@ def synb0_syn(
         The input diffusion MRI data. If 4D, `b0_index` is used to select
         the volume for estimating the distortion field, and the estimated
         field is then applied to all volumes.
-
     T1 : ndarray (X, Y, Z) or (X, Y, Z, N)
         The T1-weighted structural image. If 4D, `b0_index` is used to
         select the volume for registration.
-
+    dwi_affine : ndarray (4, 4)
+        Affine transformation matrix for the DWI image.
+    T1_affine : ndarray (4, 4)
+        Affine transformation matrix for the T1 image.
     b0_index : int, optional
         The index of the volume used for field estimation/registration when
         `dwi` and/or `T1` are 4D. Must be less than the number of volumes in
-        each 4D input. Default is 0.
-
+        each 4D input.
     dwi_mask : ndarray (X, Y, Z), optional
         A binary mask for the DWI data. If None, no masking is applied.
-        Default is None.
-
     T1_mask : ndarray (X, Y, Z), optional
         A binary mask for the T1 image. If None, no masking is applied.
-        Default is None.
-
     pe_axis : int or str, optional
         The phase-encoding axis. Can be specified as an integer (0 for 'x',
-        1 for 'y', 2 for 'z') or a string ('x', 'y', 'z'). Default is 1 ('y').
+        1 for 'y', 2 for 'z') or a string ('x', 'y', 'z').
         If provided, the returned field will be restricted to this direction.
-
     return_field : bool, optional
         Whether to return the estimated distortion field along with the
-        corrected DWI data and synthesized undistorted b0. Default is False.
-
+        corrected DWI data.
     debug_dir : str or Path, optional
         Directory to save intermediate debug NIfTI volumes.
-
-    kwargs :
+    **kwargs :
         Additional keyword arguments to pass to Synb0.predict.
 
     Returns
@@ -171,8 +234,9 @@ def synb0_syn(
         Distortion-corrected DWI image. Same dimensionality as `dwi` (3D or
         4D). If `dwi` is 4D, the field estimated from `dwi[..., b0_index]` is
         applied to all volumes.
-    field : ndarray, optional
-        Estimated deformation field, returned only when `return_field=True`.
+    field : ndarray
+        Estimated deformation field. Only returned when `return_field=True`.
+        If `pe_axis` is not None, shape is (X, Y, Z); otherwise (X, Y, Z, 3).
     """
     dwi = np.asarray(dwi)
     T1 = np.asarray(T1)
@@ -189,9 +253,9 @@ def synb0_syn(
         raise ValueError(f"T1 must be a 3D or 4D array. Got shape {T1.shape}.")
 
     if dwi.ndim == 4:
-        _validate_b0_index(b0_index, dwi.shape[-1], "dwi")
+        _validate_b0_index(b0_index=b0_index, n_volumes=dwi.shape[-1], image_name="dwi")
     if T1.ndim == 4:
-        _validate_b0_index(b0_index, T1.shape[-1], "T1")
+        _validate_b0_index(b0_index=b0_index, n_volumes=T1.shape[-1], image_name="T1")
 
     dwi_for_field = _select_3d_volume(dwi, image_name="dwi", b0_index=b0_index)
     T1_for_reg = _select_3d_volume(T1, image_name="T1", b0_index=b0_index)
@@ -205,12 +269,29 @@ def synb0_syn(
         debug_dir = Path(debug_dir)
         debug_dir.mkdir(parents=True, exist_ok=True)
 
-    _save_debug_volume(debug_dir, "00_dwi_b0_input", dwi_for_field, dwi_affine)
-    _save_debug_volume(debug_dir, "01_t1_input", T1_for_reg, T1_affine)
+    _save_debug_volume(
+        debug_dir=debug_dir,
+        name="00_dwi_b0_input",
+        data=dwi_for_field,
+        affine=dwi_affine,
+    )
+    _save_debug_volume(
+        debug_dir=debug_dir, name="01_t1_input", data=T1_for_reg, affine=T1_affine
+    )
     if dwi_mask is not None:
-        _save_debug_volume(debug_dir, "01b_dwi_mask_input", dwi_mask, dwi_affine)
+        _save_debug_volume(
+            debug_dir=debug_dir,
+            name="01b_dwi_mask_input",
+            data=dwi_mask,
+            affine=dwi_affine,
+        )
     if T1_mask is not None:
-        _save_debug_volume(debug_dir, "01c_t1_mask_input", T1_mask, T1_affine)
+        _save_debug_volume(
+            debug_dir=debug_dir,
+            name="01c_t1_mask_input",
+            data=T1_mask,
+            affine=T1_affine,
+        )
 
     _, mni_t2_path, mni_mask_path, mni_t1_path = get_fnames("mni_templates")
     mni_t1, mni_t1_affine = load_nifti(mni_t1_path)  # 09c T1
@@ -260,10 +341,10 @@ def synb0_syn(
         static_mask=mni_mask,
     )
     _save_debug_volume(
-        debug_dir,
-        "01d_t1_affine_to_template",
-        T1_affine_to_template,
-        mni_t1_affine,
+        debug_dir=debug_dir,
+        name="01d_t1_affine_to_template",
+        data=T1_affine_to_template,
+        affine=mni_t1_affine,
     )
     masked_mni_t1 = mni_t1 * mni_mask
     if T1_mask is not None:
@@ -285,7 +366,10 @@ def synb0_syn(
     )
     T1_reg_to_template = t1_template_mapping.transform(T1_for_reg)
     _save_debug_volume(
-        debug_dir, "02_t1_reg_to_template", T1_reg_to_template, mni_t1_affine
+        debug_dir=debug_dir,
+        name="02_t1_reg_to_template",
+        data=T1_reg_to_template,
+        affine=mni_t1_affine,
     )
 
     if T1_mask_f is not None:
@@ -294,18 +378,18 @@ def synb0_syn(
         )
         masked_T1_reg_to_template = T1_reg_to_template * T1_mask_reg_to_template
         _save_debug_volume(
-            debug_dir,
-            "02b_t1_mask_reg_to_template",
-            T1_mask_reg_to_template,
-            mni_t1_affine,
+            debug_dir=debug_dir,
+            name="02b_t1_mask_reg_to_template",
+            data=T1_mask_reg_to_template,
+            affine=mni_t1_affine,
         )
     else:
         masked_T1_reg_to_template = T1_reg_to_template
     _save_debug_volume(
-        debug_dir,
-        "03_t1_reg_to_template_masked",
-        masked_T1_reg_to_template,
-        mni_t1_affine,
+        debug_dir=debug_dir,
+        name="03_t1_reg_to_template_masked",
+        data=masked_T1_reg_to_template,
+        affine=mni_t1_affine,
     )
 
     dwi_p99 = np.percentile(dwi_for_field, 99)
@@ -328,10 +412,10 @@ def synb0_syn(
         static_mask=mni_mask_t2,
     )
     _save_debug_volume(
-        debug_dir,
-        "04_b0_affine_to_template",
-        dwi_affine_to_template,
-        mni_t2_affine,
+        debug_dir=debug_dir,
+        name="04_b0_affine_to_template",
+        data=dwi_affine_to_template,
+        affine=mni_t2_affine,
     )
 
     if dwi_mask is not None:
@@ -352,7 +436,10 @@ def synb0_syn(
     )
     dwi_reg_to_template = dwi_template_mapping.transform(dwi_for_field)
     _save_debug_volume(
-        debug_dir, "04_b0_reg_to_template", dwi_reg_to_template, mni_t2_affine
+        debug_dir=debug_dir,
+        name="04_b0_reg_to_template",
+        data=dwi_reg_to_template,
+        affine=mni_t2_affine,
     )
 
     if dwi_mask_f is not None:
@@ -361,18 +448,18 @@ def synb0_syn(
         )
         masked_dwi_reg_to_template = dwi_reg_to_template * dwi_mask_reg_to_template
         _save_debug_volume(
-            debug_dir,
-            "04b_dwi_mask_reg_to_template",
-            dwi_mask_reg_to_template,
-            mni_t1_affine,
+            debug_dir=debug_dir,
+            name="04b_dwi_mask_reg_to_template",
+            data=dwi_mask_reg_to_template,
+            affine=mni_t1_affine,
         )
     else:
         masked_dwi_reg_to_template = dwi_reg_to_template
     _save_debug_volume(
-        debug_dir,
-        "05_b0_reg_to_template_masked",
-        masked_dwi_reg_to_template,
-        mni_t1_affine,
+        debug_dir=debug_dir,
+        name="05_b0_reg_to_template_masked",
+        data=masked_dwi_reg_to_template,
+        affine=mni_t1_affine,
     )
     # Reslice registered images from full-res to 2.5mm for Synb0 input
     synb0_shape = (77, 91, 77)
@@ -407,7 +494,9 @@ def synb0_syn(
     synb0 = Synb0()
     binf = synb0.predict(masked_dwi_reg_resized, masked_T1_reg_resized, **kwargs)
     binf = binf * mni_mask_resized
-    _save_debug_volume(debug_dir, "06_binf_template", binf, resized_affine)
+    _save_debug_volume(
+        debug_dir=debug_dir, name="06_binf_template", data=binf, affine=resized_affine
+    )
     binf_fullres, _ = reslice(
         binf,
         resized_affine,
@@ -416,7 +505,9 @@ def synb0_syn(
         new_shape=mni_t1.shape,
     )
     binf_in_t1 = t1_template_mapping.transform_inverse(binf_fullres)
-    _save_debug_volume(debug_dir, "06b_binf_in_t1", binf_in_t1, T1_affine)
+    _save_debug_volume(
+        debug_dir=debug_dir, name="06b_binf_in_t1", data=binf_in_t1, affine=T1_affine
+    )
     ori_binf, _ = affine_registration(
         binf_in_t1,
         dwi_for_field,
@@ -432,7 +523,9 @@ def synb0_syn(
     ori_binf = np.clip(ori_binf, a_min=0, a_max=None)
     if dwi_mask_f is not None:
         ori_binf = ori_binf * dwi_mask_f
-    _save_debug_volume(debug_dir, "07_binf_in_dwi", ori_binf, dwi_affine)
+    _save_debug_volume(
+        debug_dir=debug_dir, name="07_binf_in_dwi", data=ori_binf, affine=dwi_affine
+    )
 
     sdr = SymmetricDiffeomorphicRegistration(
         metric=CCMetric(3), level_iters=[200, 200, 100]
@@ -461,17 +554,22 @@ def synb0_syn(
             field = field[..., pe_axis]
         else:
             raise ValueError("pe_axis must be 'x', 'y', 'z' or 0, 1, 2.")
-    dwi_to_binf = _warp_image(mapping, dwi)
+    elif return_field:
+        field = mapping.get_forward_field()
+    dwi_to_binf = _warp_image(mapping=mapping, image=dwi)
     _save_debug_volume(
-        debug_dir,
-        "08_dwi_corrected_b0",
-        _select_3d_volume(dwi_to_binf, image_name="dwi_corrected", b0_index=b0_index),
-        dwi_affine,
+        debug_dir=debug_dir,
+        name="08_dwi_corrected_b0",
+        data=_select_3d_volume(
+            dwi_to_binf, image_name="dwi_corrected", b0_index=b0_index
+        ),
+        affine=dwi_affine,
     )
 
     if return_field:
-        _save_debug_volume(debug_dir, "09_final_field", field, dwi_affine)
-
+        _save_debug_volume(
+            debug_dir=debug_dir, name="09_final_field", data=field, affine=dwi_affine
+        )
         return dwi_to_binf, field
     else:
         return dwi_to_binf
