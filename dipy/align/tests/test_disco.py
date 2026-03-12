@@ -11,8 +11,6 @@ from dipy.align.disco import (
     synb0_syn,
 )
 
-needs_synb0 = pytest.mark.skipif(not HAVE_SYNB0, reason="Requires Synb0 (torch or tf)")
-
 
 def test_validate_b0_index_valid():
     assert _validate_b0_index(b0_index=0, n_volumes=5, image_name="dwi") == 0
@@ -150,7 +148,7 @@ def test_synb0_syn_import_error_without_backend():
 
 
 @pytest.mark.slow
-@needs_synb0
+@pytest.mark.skipif(not HAVE_SYNB0, reason="Requires Synb0 (torch or tf)")
 def test_synb0_syn_4d_input():
     """Run full pipeline on small 4D DWI dataset."""
     dwi = np.random.rand(32, 32, 32, 2).astype(np.float32) * 1000
