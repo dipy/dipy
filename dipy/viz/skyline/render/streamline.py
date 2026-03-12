@@ -370,7 +370,6 @@ class ClusterStreamline3D(Visualization):
         self._loader = loader
         self._is_clustering = False
         self._queued_recluster = False
-        self._pending_cluster_expands = 0
         self.size = size_threshold
         self.length = length_threshold
         super().__init__(name, render_callback=render_callback)
@@ -472,21 +471,6 @@ class ClusterStreamline3D(Visualization):
         )
         return centroid_rep, streamline_actor
 
-    def _expand_cluster(self, result, _exception):
-        if _exception is not None:
-            print(f"Error expanding cluster: {_exception}")
-        else:
-            centroid_rep, streamline_actor = result
-            self._actor.add(streamline_actor)
-            self._actor.remove(centroid_rep)
-            state = self._cluster_state[centroid_rep]
-            state["cluster_actor"] = streamline_actor
-            state["expanded"] = True
-
-        self._pending_cluster_expands = max(0, self._pending_cluster_expands - 1)
-        if self._pending_cluster_expands == 0 and self._loader is not None:
-            self._loader(False)
-
     def _selected_unexpanded_clusters(self):
         return [
             centroid_rep
@@ -504,28 +488,33 @@ class ClusterStreamline3D(Visualization):
             and self._line_type == "tube"
             and len(selected_clusters) > 10
         ):
-            if self._expand_confirmation_active:
+            if (
+                self._expand_confirmation_active
+                or self._show_expand_confirmation_dialog
+            ):
                 return
+            self._expand_confirmation_active = True
             self._show_expand_confirmation_dialog = True
             return
 
-        self._pending_cluster_expands = len(selected_clusters)
-        if self._loader is not None:
-            self._loader(True, message="Expanding clusters...")
-            self.render()
-
         for centroid_rep in selected_clusters:
-            run_async(
-                self._create_cluster_streamlines,
-                self._expand_cluster,
-                centroid_rep,
-            )
+            _, streamline_actor = self._create_cluster_streamlines(centroid_rep)
+            state = self._cluster_state[centroid_rep]
+            self._actor.add(streamline_actor)
+            self._actor.remove(centroid_rep)
+            state["cluster_actor"] = streamline_actor
+            state["expanded"] = True
 
     def _collapse_clusters(self):
         for centroid_rep, state in self._cluster_state.items():
             if state["selected"] and state["expanded"]:
                 self._actor.add(centroid_rep)
-                self._actor.remove(state["cluster_actor"])
+                cluster_actor = state["cluster_actor"]
+                if (
+                    cluster_actor is not None
+                    and cluster_actor in self._actor.children
+                ):
+                    self._actor.remove(cluster_actor)
                 state["cluster_actor"] = None
                 state["expanded"] = False
 
@@ -656,7 +645,6 @@ class ClusterStreamline3D(Visualization):
 
         if self._show_expand_confirmation_dialog:
             self._show_expand_confirmation_dialog = False
-            self._expand_confirmation_active = True
             imgui.open_popup("Expand Cluster Confirmation")
         expand_dialog_state = open_confirmation_dialog(
             "Expand Cluster Confirmation",
