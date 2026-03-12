@@ -548,13 +548,13 @@ fetch_stanford_labels = _make_fetcher(
 fetch_sherbrooke_3shell = _make_fetcher(
     "fetch_sherbrooke_3shell",
     dipy_home / "sherbrooke_3shell",
-    UW_RW_URL + "1773/38475/",
+    DIPY_MIRROR_URL + "researchworks/bitstream/handle/1773/38475/",
     ["HARDI193.nii.gz", "HARDI193.bval", "HARDI193.bvec"],
     [Path("HARDI193.nii.gz"), Path("HARDI193.bval"), Path("HARDI193.bvec")],
     md5_list=[
         "0b735e8f16695a37bfbd66aab136eb66",
         "e9b9bb56252503ea49d31fb30a0ac637",
-        "0c83f7e8b917cd677ad58a078658ebb7",
+        "72818d139f803f19ddb032cd011d452f",
     ],
     doc="Download a 3shell HARDI dataset with 192 gradient direction",
 )
