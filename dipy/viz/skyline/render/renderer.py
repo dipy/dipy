@@ -15,6 +15,7 @@ class Visualization:
         self._render_callback = render_callback
         self.name = name
         self.active = False
+        self._visible = True
         self._info = self._populate_info()
 
     def render(self):
@@ -25,7 +26,25 @@ class Visualization:
     def actor(self):
         raise NotImplementedError("Subclasses must implement the actor property.")
 
-    def renderer(self, name, is_open):
+    @property
+    def viz_type(self):
+        """Return the visualization type identifier string."""
+        name = self.__class__.__name__
+        if name == "Image3D":
+            return "image"
+        elif name == "Surface":
+            return "surface"
+        elif name == "Peak3D":
+            return "peak"
+        elif name == "ROI3D":
+            return "roi"
+        elif name in ("Streamline3D", "ClusterStreamline3D"):
+            return "tractography"
+        elif name == "SHGlyph3D":
+            return "sh_glyph"
+        return None
+
+    def renderer(self, name, is_open, group_visible=True):
         """Provides a callback from UIManager to handle visualization.
 
         Parameters
@@ -34,36 +53,36 @@ class Visualization:
             Name of the visualization section
         is_open : bool
             If the UI section is open
+        group_visible : bool, optional
+            Whether the parent group is visible. When False, the actor is
+            hidden regardless of the individual visibility toggle.
         """
-        type = None
-        if self.__class__.__name__ == "Image3D":
-            type = "image"
-        elif self.__class__.__name__ == "Surface":
-            type = "surface"
-        elif self.__class__.__name__ == "Peak3D":
-            type = "peak"
-        elif self.__class__.__name__ == "ROI3D":
-            type = "roi"
-        elif (
-            self.__class__.__name__ == "Streamline3D"
-            or self.__class__.__name__ == "ClusterStreamline3D"
-        ):
-            type = "tractography"
-        elif self.__class__.__name__ == "SHGlyph3D":
-            type = "sh_glyph"
-        else:
+        viz_type = self.viz_type
+        if viz_type is None:
             logger.warning(
                 f"Visualization type '{self.__class__.__name__}' is not recognized. "
                 "UI rendering may not be fully functional for this visualization."
             )
-        is_open, is_visible, is_removed, is_selected = render_section_header(
+        effective_visible = self._visible and group_visible
+        is_open, new_visible, is_removed, is_selected = render_section_header(
             name,
             is_open=is_open,
-            is_visible=self.actor.visible,
+            is_visible=effective_visible,
             info=self._info,
-            type=type,
+            type=viz_type,
         )
-        self.actor.visible = is_visible
+
+        should_enable_group = False
+        if group_visible:
+            self._visible = new_visible
+        elif new_visible:
+            # Group is hidden but user clicked visibility ON
+            # Enable the group and show this item
+            self._visible = True
+            should_enable_group = True
+        # If group hidden and user kept it off (new_visible=False), do nothing
+
+        self.actor.visible = self._visible and group_visible
         self.active = is_selected
         if is_open:
             padding = 20
@@ -80,7 +99,7 @@ class Visualization:
             imgui.dummy((0, padding / 2))
             imgui.end_group()
 
-        return is_open, is_removed
+        return is_open, is_removed, should_enable_group
 
     def render_widgets(self):
         """Render control widgets for visualization.
