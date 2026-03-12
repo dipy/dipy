@@ -225,8 +225,10 @@ class Image3D(Visualization):
                 and self._has_directions
                 and self.dwi.shape[-1] > new_state[3]
             ):
-                self._volume_idx = int(new_state[3])
-                self._create_slicer_actor()
+                new_volume_idx = int(new_state[3])
+                if new_volume_idx != self._volume_idx:
+                    self._volume_idx = new_volume_idx
+                    self._create_slicer_actor()
 
     def render_widgets(self):
         changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
@@ -263,11 +265,18 @@ class Image3D(Visualization):
         imgui.spacing()
 
         axis_labels = ("X", "Y", "Z")
-        slider_bounds = (
-            (int(self.bounds[0][0] + 1), int(self.bounds[1][0] - 1)),
-            (int(self.bounds[0][1] + 1), int(self.bounds[1][1] - 1)),
-            (int(self.bounds[0][2] + 1), int(self.bounds[1][2] - 1)),
-        )
+
+        def _axis_slider_bounds(axis):
+            lower = float(min(self.bounds[0][axis], self.bounds[1][axis]))
+            upper = float(max(self.bounds[0][axis], self.bounds[1][axis]))
+            min_bound = int(np.ceil(lower))
+            max_bound = int(np.floor(upper))
+            if min_bound > max_bound:
+                mid = int(round((lower + upper) * 0.5))
+                return mid, mid
+            return min_bound, max_bound
+
+        slider_bounds = tuple(_axis_slider_bounds(axis) for axis in range(3))
         slicers = []
         for axis, label in enumerate(axis_labels):
             min_bound, max_bound = slider_bounds[axis]
@@ -287,13 +296,14 @@ class Image3D(Visualization):
         render_data = render_group("Slice", slicers)
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
-                self.state[idx] = new
-                self._synchronize and self._sync_callabck(
-                    self,
-                    np.asarray([*self.state, self._volume_idx])
-                    if self._has_directions
-                    else self.state,
-                )
+                self.state[idx] = int(round(new))
+                if self._synchronize and self._sync_callabck is not None:
+                    self._sync_callabck(
+                        self,
+                        np.asarray([*self.state, self._volume_idx])
+                        if self._has_directions
+                        else self.state,
+                    )
             self._slice_visibility[idx] = toggle
         set_group_visibility(self._slicer, self._slice_visibility)
         show_slices(self._slicer, self.mid_voxel_state)
@@ -330,10 +340,11 @@ class Image3D(Visualization):
                 step=1,
             )
             if volume_changed:
-                self._volume_idx = new_idx
-                self._synchronize and self._sync_callabck(
-                    self, np.asarray([*self.state, self._volume_idx])
-                )
+                self._volume_idx = int(new_idx)
+                if self._synchronize and self._sync_callabck is not None:
+                    self._sync_callabck(
+                        self, np.asarray([*self.state, self._volume_idx])
+                    )
                 self._create_slicer_actor()
 
         imgui.spacing()
