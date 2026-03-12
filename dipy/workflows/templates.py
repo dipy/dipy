@@ -444,7 +444,16 @@ cli = "dipy_recobundles"
 streamline_files = "${register.out_moved}"
 model_bundle_files = "${io.bundle_atlas_dir}/*.trk"
 mix_names = true
-out_dir = "${io.out_dir}/bundles"
+out_dir = "${io.out_dir}/rec_bundles"
+
+# Label bundles
+[[pipeline]]
+name = "label_bundles"
+cli = "dipy_labelsbundles"
+streamline_files = "${tracking.out_tractogram}"
+labels_files = "${segment_bundles.out_dir}/*_labels.npy"
+mix_names = true
+out_dir = "${io.out_dir}/org_bundles"
 """
 
 # =============================================================================
