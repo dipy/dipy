@@ -78,7 +78,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
     See Also
     --------
-    dipy.reconst.csd.ConstrainedSDTModel
+    dipy.reconst.csdeconv.ConstrainedSDTModel
     dipy.reconst.shm.SphHarmModel
 
     References
@@ -278,14 +278,14 @@ class ConstrainedSDTModel(SphHarmModel):
 
     See Also
     --------
-    dipy.reconst.csd.ConstrainedSphericalDeconvModel
+    dipy.reconst.csdeconv.ConstrainedSphericalDeconvModel
     dipy.reconst.shm.SphHarmModel
 
     References
     ----------
     .. footbibliography::
     """
-    
+
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     @warning_for_keywords()
     def __init__(
