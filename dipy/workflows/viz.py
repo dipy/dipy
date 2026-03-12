@@ -349,10 +349,17 @@ class SkylineFlow(Workflow):
             For example, a value of (1, 0, 0) would mean the red color.
         """
         super(SkylineFlow, self).__init__(force=True)
-        io_it = self.get_io_iterator()
         skyline_input_files = []
-        for input_output in io_it:
-            skyline_input_files.append(input_output)
+        start_gui = input_files is not None and input_files[0] in (
+            "run",
+            "start",
+            "launch",
+            "initialize",
+        )
+        if not start_gui:
+            io_it = self.get_io_iterator()
+            for input_output in io_it:
+                skyline_input_files.append(input_output)
 
         skyline_from_files(
             skyline_input_files,
