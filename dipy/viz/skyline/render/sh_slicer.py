@@ -321,7 +321,7 @@ class SHGlyph3D(Visualization):
         *,
         affine=None,
         render_callback=None,
-        scale=1.0,
+        scale=2.0,
         l_max=8,
         lut_res=8,
         use_hermite=True,
@@ -332,6 +332,7 @@ class SHGlyph3D(Visualization):
         sync_callback=None,
     ):
         self.affine = affine
+        default_scale = self.affine[0, 0] if self.affine is not None else scale
         self._voxel_sizes = np.array([1.0, 1.0, 1.0])
 
         self.shape = coeffs.shape[:3]
@@ -339,7 +340,7 @@ class SHGlyph3D(Visualization):
         self._slicer = SHSlicer(
             coeffs,
             voxel_sizes=self._voxel_sizes,
-            scale=scale,
+            scale=default_scale,
             l_max=l_max,
             lut_res=lut_res,
             use_hermite=use_hermite,
@@ -353,7 +354,7 @@ class SHGlyph3D(Visualization):
             self._slicer.actor.transform(self.affine)
 
         super().__init__(name, render_callback)
-        self._scale = float(scale)
+        self._scale = float(default_scale)
         self._opacity = 100
         self._slice_visibility = [True, True, True]
         self._synchronize = True
@@ -402,7 +403,7 @@ class SHGlyph3D(Visualization):
 
     def update_state(self, new_state):
         if self._synchronize:
-            self.state = new_state
+            self.state = new_state[:3]
             self.set_slices()
 
     def set_slice_visibility(self):
