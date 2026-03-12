@@ -912,9 +912,6 @@ class TensorFit:
     .. footbibliography::
     """
 
-
-
-
     @warning_for_keywords()
     def __init__(self, model, model_params, *, model_S0=None):
         """Initialize a TensorFit class instance."""
