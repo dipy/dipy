@@ -408,6 +408,7 @@ bvectors_files = "${io.bvecs}"
 mask_files = "${brain_mask.out_mask}"
 fit_method = "WLS"
 extract_pam_values = true
+out_dir = "${io.out_dir}/dti"
 
 [[pipeline]]
 name = "csd_fit"
@@ -417,7 +418,7 @@ bvalues_files = "${io.bvals}"
 bvectors_files = "${io.bvecs}"
 mask_files = "${brain_mask.out_mask}"
 extract_pam_values = true
-
+out_dir = "${io.out_dir}/csd"
 
 # Tractography
 [[pipeline]]
@@ -443,6 +444,7 @@ cli = "dipy_recobundles"
 streamline_files = "${register.out_moved}"
 model_bundle_files = "${io.bundle_atlas_dir}/*.trk"
 mix_names = true
+out_dir = "${io.out_dir}/bundles"
 """
 
 # =============================================================================
