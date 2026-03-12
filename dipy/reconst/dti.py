@@ -873,7 +873,7 @@ class TensorFit:
 
     After fitting a ``TensorModel`` to data, this object holds
     the eigenvalues and eigenvectors for each voxel and exposes
-    standard DTI metrics such as FA, MD, RD and AD
+    standard DTI metrics such as FA, MD, RD and AD.
     :footcite:p:`Basser1994b,Basser1996`.
 
     The diffusion tensor :math:`\mathbf{D}` is a 3x3 symmetric
