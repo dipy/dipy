@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+import sys
 from time import time
 import warnings
 
@@ -522,13 +523,23 @@ class BundleAnalysisTractometryFlow(Workflow):
         mb_list = sorted(
             list(_mb_folder.glob("*.trk")) + list(_mb_folder.glob("*.trx"))
         )
+        if not mb_list:
+            logger.info("No model bundle files found in the specified folder")
+            sys.exit(1)
+
         bd_list = sorted(
             list(bundle_folder.glob("*.trk")) + list(bundle_folder.glob("*.trx"))
         )
+        if not bd_list:
+            logger.info("No registered bundle files found in the specified folder")
+            sys.exit(1)
         org_list = sorted(
             list(orig_bundle_folder.glob("*.trk"))
             + list(orig_bundle_folder.glob("*.trx"))
         )
+        if not org_list:
+            logger.info("No original bundle files found in the specified folder")
+            sys.exit(1)
         metric_files = sorted(metric_folder.glob("*.nii.gz"))
 
         _, affine = load_nifti(metric_files[0])
@@ -551,6 +562,12 @@ class BundleAnalysisTractometryFlow(Workflow):
             for metric_file in metric_files:
                 metric, _ = load_nifti(metric_file)
                 fname = Path(metric_file).stem.replace(".nii", "")
+                logger.info(f"Applying metric {metric_file} on bundle {bname}")
+                if metric.ndim > 3:
+                    logger.info(
+                        f"Skipping metric {metric_file} with 4D shape {metric.shape}"
+                    )
+                    continue
                 profile = buan_profile(
                     mbundles,
                     bundles,
