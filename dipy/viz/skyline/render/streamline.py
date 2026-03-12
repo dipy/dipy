@@ -24,7 +24,6 @@ from dipy.viz.skyline.UI.elements import (
     segmented_switch,
     toggle_button,
     uploader,
-    warning_message,
 )
 from dipy.viz.skyline.compute import run_async
 from dipy.viz.skyline.io import load_npy
@@ -54,23 +53,23 @@ def apply_buan_colors(
     return buan_colors
 
 
-def create_cluster_help(*, position=(0, 0), size=(280, 150)):
+def create_cluster_help(*, position=(0, 0), size=(200, 180)):
     help_text = (
-        "\t\t\t  Cluster Visualization Instructions:\n"
-        "\t\t\t - Click on a cluster to select/deselect it.\n"
-        "\t\t\t - 'e' to expand selected clusters.\n"
-        "\t\t\t - 'c' to collapse selected clusters.\n"
-        "\t\t\t - 'a' to select all clusters.\n"
-        "\t\t\t - 'd' to deselect all clusters.\n"
-        "\t\t\t - 'h' to hide deselected clusters\n"
-        "\t\t\t - 's' to show all clusters.\n"
+        "        Cluster Instructions:\n"
+        "          Click to select/deselect.\n"
+        "          'e' to expand.\n"
+        "          'c' to collapse.\n"
+        "          'a' to select all.\n"
+        "          'd' to deselect all.\n"
+        "          'h' to hide.\n"
+        "          's' to show.\n"
     )
     text_block = TextBlock2D(
         text=help_text,
         position=position,
         vertical_justification="middle",
         justification="left",
-        font_size=14,
+        font_size=16,
         color=(1, 1, 1),
         bg_color=(0.2, 0.2, 0.2),
         size=size,
@@ -90,6 +89,7 @@ def create_streamline_visualization(
     colormap=None,
     tract_colors=None,
     switch_render_callback=None,
+    loader=None,
 ):
     """Create streamline visualization from input
 
@@ -119,6 +119,8 @@ def create_streamline_visualization(
         For example, a value of (1, 0, 0) would mean the red color.
     switch_render_callback : callable, optional
         Callback function to switch rendering type, used for cluster visualization.
+    loader : callable, optional
+        Callback function to show/hide loader during asynchronous operations.
 
     Returns
     -------
@@ -146,6 +148,7 @@ def create_streamline_visualization(
             line_type=line_type,
             render_callback=render_callback,
             switch_render_callback=switch_render_callback,
+            loader=loader,
         )
 
     if tract_colors is not None:
@@ -166,6 +169,7 @@ def create_streamline_visualization(
         color=color,
         render_callback=render_callback,
         switch_render_callback=switch_render_callback,
+        loader=loader,
     )
 
 
@@ -208,6 +212,7 @@ class Streamline3D(Visualization):
         color=(1, 0, 0),
         render_callback=None,
         switch_render_callback=None,
+        loader=None,
     ):
         self.sft = sft
         self.color = color
@@ -215,6 +220,12 @@ class Streamline3D(Visualization):
         self._buan_pvals_file = False
         self._buan_pvals_data = None
         self._switch_render_callback = switch_render_callback
+        self._loader = loader
+        self._show_line_type_confirmation = False
+        self._line_type_confirmation_active = False
+        self._pending_line_type = None
+        self._apply_pending_line_type_next_frame = False
+        self._hide_line_type_loader_next_frame = False
         self._create_streamline_actor()
         super().__init__(name, render_callback)
 
@@ -238,6 +249,21 @@ class Streamline3D(Visualization):
         return info
 
     def render_widgets(self):
+        if (
+            self._apply_pending_line_type_next_frame
+            and self._pending_line_type is not None
+        ):
+            self._line_type = self._pending_line_type
+            self._create_streamline_actor()
+            self._pending_line_type = None
+            self._apply_pending_line_type_next_frame = False
+            self._hide_line_type_loader_next_frame = True
+            self.render()
+
+        if self._hide_line_type_loader_next_frame and self._loader is not None:
+            self._loader(False)
+            self._hide_line_type_loader_next_frame = False
+
         changed, is_clustered = toggle_button(False, label="Cluster")
         if changed:
             if self._switch_render_callback is not None:
@@ -248,18 +274,45 @@ class Streamline3D(Visualization):
 
         changed, new = segmented_switch("Line Type", ["Line", "Tube"], self._line_type)
         if changed:
-            self._line_type = new.lower()
-            self._create_streamline_actor()
-            self.render()
+            requested_line_type = new.lower()
+            require_confirmation = len(self.sft.streamlines) > 20000
+            if (
+                self._line_type == "line"
+                and requested_line_type == "tube"
+                and require_confirmation
+            ):
+                if (
+                    self._pending_line_type is None
+                    and not self._line_type_confirmation_active
+                    and not self._apply_pending_line_type_next_frame
+                ):
+                    self._pending_line_type = requested_line_type
+                    self._show_line_type_confirmation = True
+            else:
+                self._line_type = requested_line_type
+                self._create_streamline_actor()
+                self.render()
 
-        imgui.spacing()
-        imgui.spacing()
-        imgui.spacing()
-        imgui.spacing()
-        warning_message(
-            "We recommend using type 'Line' for better"
-            "\nperformance with large tractograms."
+        if self._show_line_type_confirmation:
+            self._show_line_type_confirmation = False
+            self._line_type_confirmation_active = True
+            imgui.open_popup("Line Type Confirmation")
+        line_type_dialog_state = open_confirmation_dialog(
+            "Line Type Confirmation",
+            "Rendering tractograms as tubes may cause performance issues.\n"
+            "Do you want to continue?",
+            okay_text="Switch to Tube",
+            cancel_text="Keep Line",
         )
+        if line_type_dialog_state == "okay" and self._pending_line_type == "tube":
+            self._line_type_confirmation_active = False
+            if self._loader is not None:
+                self._loader(True, message="Switching to tubes...")
+            self._apply_pending_line_type_next_frame = True
+        elif line_type_dialog_state == "cancel":
+            self._line_type_confirmation_active = False
+            self._pending_line_type = None
+            self._apply_pending_line_type_next_frame = False
 
         imgui.spacing()
         imgui.spacing()
@@ -295,59 +348,107 @@ class ClusterStreamline3D(Visualization):
         line_type="line",
         render_callback=None,
         switch_render_callback=None,
+        loader=None,
+        size_threshold=5,
+        length_threshold=10.0,
     ):
-
         self.sft = sft
         self.thr = thr
-        self._clusters = None
+        self._clusters = []
         self._cluster_state = {}
-        self._sizes = []
-        self._lengths = []
+        self._sizes = np.asarray([])
+        self._lengths = np.asarray([])
         self._line_type = line_type
         self._actor = Group()
         self._pending_thr = None
         self._thr_changed_at = None
         self._switch_render_callback = switch_render_callback
-        self._recluster_debounce_sec = 1.0
+        self._recluster_debounce_sec = 0.3
         self._show_confirmation_dialog = False
-        self._dialog_state = "closed"
-        self._perform_clustering()
-        self.size = int(np.min(self._sizes)) if self._sizes.size else 0
-        self.length = float(np.min(self._lengths)) if self._lengths.size else 0.0
+        self._show_expand_confirmation_dialog = False
+        self._expand_confirmation_active = False
+        self._loader = loader
+        self._is_clustering = False
+        self._queued_recluster = False
+        self._pending_cluster_expands = 0
+        self.size = size_threshold
+        self.length = length_threshold
         super().__init__(name, render_callback=render_callback)
+        self._perform_clustering()
 
     def _perform_clustering(self):
-        self._clusters = qbx_and_merge(self.sft.streamlines, [40, 30, 25, 20, self.thr])
-        self._lengths = np.asarray(
-            [streamline_length(c) for c in self._clusters.centroids]
+        if self._is_clustering:
+            self._queued_recluster = True
+            return
+
+        self._is_clustering = True
+        if self._loader is not None:
+            self._loader(True, message="Clustering streamlines...")
+            self.render()
+        run_async(
+            self._compute_clustering_data,
+            self._apply_clustering_result,
+            self.thr,
         )
-        self._sizes = np.asarray([len(c) for c in self._clusters])
-        line_widths = np.interp(
-            self._sizes, [np.min(self._sizes), np.max(self._sizes)], [0.1, 2.0]
-        )
-        colormap = distinguishable_colormap(nb_colors=len(self._clusters))
-        for idx, centroid in enumerate(self._clusters.centroids):
-            centroid_rep = streamtube(
-                lines=[centroid],
-                radius=line_widths[idx],
-                colors=colormap[idx],
-                backend="cpu",
-                opacity=0.5,
-            )
-            centroid_rep.add_event_handler(
-                lambda event: self._toggle_cluster_selection(event.target),
-                "pointer_down",
-            )
-            self._cluster_state[centroid_rep] = {
-                "cluster": idx,
-                "size": self._sizes[idx],
-                "length": self._lengths[idx],
-                "color": colormap[idx],
-                "selected": False,
-                "expanded": False,
-                "cluster_actor": None,
-            }
-            self._actor.add(centroid_rep)
+
+    def _compute_clustering_data(self, thr):
+        clusters = qbx_and_merge(self.sft.streamlines, [40, 30, 25, 20, thr])
+        lengths = np.asarray([streamline_length(c) for c in clusters.centroids])
+        sizes = np.asarray([len(c) for c in clusters])
+        colormap = distinguishable_colormap(nb_colors=len(clusters))
+        if sizes.size:
+            line_widths = np.interp(sizes, [np.min(sizes), np.max(sizes)], [0.1, 2.0])
+        else:
+            line_widths = np.asarray([])
+        return clusters, lengths, sizes, colormap, line_widths
+
+    def _apply_clustering_result(self, result, exception):
+        self._is_clustering = False
+
+        if exception is not None:
+            print(f"Error clustering streamlines: {exception}")
+        else:
+            clusters, lengths, sizes, colormap, line_widths = result
+            for actor in list(self._actor.children):
+                self._actor.remove(actor)
+            self._cluster_state.clear()
+            self._clusters = clusters
+            self._lengths = lengths
+            self._sizes = sizes
+
+            for idx, centroid in enumerate(self._clusters.centroids):
+                centroid_rep = streamtube(
+                    lines=[centroid],
+                    radius=line_widths[idx],
+                    colors=colormap[idx],
+                    backend="cpu",
+                    opacity=0.5,
+                )
+                centroid_rep.add_event_handler(
+                    lambda event: self._toggle_cluster_selection(event.target),
+                    "pointer_down",
+                )
+                self._cluster_state[centroid_rep] = {
+                    "cluster": idx,
+                    "size": self._sizes[idx],
+                    "length": self._lengths[idx],
+                    "color": colormap[idx],
+                    "selected": False,
+                    "expanded": False,
+                    "cluster_actor": None,
+                }
+                self._actor.add(centroid_rep)
+
+            self._refresh_cluster_visibility()
+            self._info = self._populate_info()
+
+        if self._queued_recluster:
+            self._queued_recluster = False
+            self._perform_clustering()
+            return
+
+        if self._loader is not None:
+            self._loader(False)
 
     def _refresh_cluster_visibility(self):
         for centroid_rep, state in self._cluster_state.items():
@@ -356,17 +457,6 @@ class ClusterStreamline3D(Visualization):
                 state["cluster_actor"].visible = is_visible
             else:
                 centroid_rep.visible = is_visible
-
-    def _recluster(self):
-        for actor in list(self._actor.children):
-            self._actor.remove(actor)
-        self._cluster_state.clear()
-        self._perform_clustering()
-        if self._sizes.size:
-            self.size = max(self.size, int(np.min(self._sizes)))
-        if self._lengths.size:
-            self.length = max(self.length, float(np.min(self._lengths)))
-        self._refresh_cluster_visibility()
 
     # Interaction methods
     def _create_cluster_streamlines(self, centroid_rep):
@@ -385,22 +475,51 @@ class ClusterStreamline3D(Visualization):
     def _expand_cluster(self, result, _exception):
         if _exception is not None:
             print(f"Error expanding cluster: {_exception}")
-            return
-        centroid_rep, streamline_actor = result
-        self._actor.add(streamline_actor)
-        self._actor.remove(centroid_rep)
-        state = self._cluster_state[centroid_rep]
-        state["cluster_actor"] = streamline_actor
-        state["expanded"] = True
+        else:
+            centroid_rep, streamline_actor = result
+            self._actor.add(streamline_actor)
+            self._actor.remove(centroid_rep)
+            state = self._cluster_state[centroid_rep]
+            state["cluster_actor"] = streamline_actor
+            state["expanded"] = True
 
-    def _expand_clusters(self):
-        for centroid_rep, state in self._cluster_state.items():
-            if state["selected"] and not state["expanded"]:
-                run_async(
-                    self._create_cluster_streamlines,
-                    self._expand_cluster,
-                    centroid_rep,
-                )
+        self._pending_cluster_expands = max(0, self._pending_cluster_expands - 1)
+        if self._pending_cluster_expands == 0 and self._loader is not None:
+            self._loader(False)
+
+    def _selected_unexpanded_clusters(self):
+        return [
+            centroid_rep
+            for centroid_rep, state in self._cluster_state.items()
+            if state["selected"] and not state["expanded"]
+        ]
+
+    def _expand_clusters(self, *, skip_confirmation=False):
+        selected_clusters = self._selected_unexpanded_clusters()
+        if not selected_clusters:
+            return
+
+        if (
+            not skip_confirmation
+            and self._line_type == "tube"
+            and len(selected_clusters) > 10
+        ):
+            if self._expand_confirmation_active:
+                return
+            self._show_expand_confirmation_dialog = True
+            return
+
+        self._pending_cluster_expands = len(selected_clusters)
+        if self._loader is not None:
+            self._loader(True, message="Expanding clusters...")
+            self.render()
+
+        for centroid_rep in selected_clusters:
+            run_async(
+                self._create_cluster_streamlines,
+                self._expand_cluster,
+                centroid_rep,
+            )
 
     def _collapse_clusters(self):
         for centroid_rep, state in self._cluster_state.items():
@@ -489,6 +608,7 @@ class ClusterStreamline3D(Visualization):
             self._hide_deselected_clusters()
         elif event.key == "s":
             self._show_all_clusters()
+            self._refresh_cluster_visibility()
 
     @property
     def actor(self):
@@ -512,32 +632,44 @@ class ClusterStreamline3D(Visualization):
             self._show_confirmation_dialog = (
                 self._line_type == "tube" and n_expanded > 10
             )
-            if self._line_type == "line" or not self._show_confirmation_dialog:
-                self._collapse_clusters()
-                self._expand_clusters()
-
-        if self._dialog_state == "cancel":
-            self._expand_clusters()
-        self._dialog_state = "closed"
+            if not self._show_confirmation_dialog:
+                for centroid_rep, state in self._cluster_state.items():
+                    if state["expanded"]:
+                        _, new_actor = self._create_cluster_streamlines(centroid_rep)
+                        self._actor.remove(state["cluster_actor"])
+                        self._actor.add(new_actor)
+                        state["cluster_actor"] = new_actor
 
         if self._show_confirmation_dialog:
             self._show_confirmation_dialog = False
             imgui.open_popup("Cluster Confirmation")
             self._collapse_clusters()
-        self._dialog_state = open_confirmation_dialog(
+        dialog_state = open_confirmation_dialog(
             "Cluster Confirmation",
             "Rendering many expanded clusters as tubes may cause\n"
             "performance issues. So we will collapse all the clusters.",
             okay_text="Understood",
             cancel_text="Keep Expanded",
         )
+        if dialog_state == "cancel":
+            self._expand_clusters(skip_confirmation=True)
 
-        imgui.spacing()
-        imgui.spacing()
-        warning_message(
-            "We recommend using type 'Line' for better"
-            "\nperformance with large tractograms."
+        if self._show_expand_confirmation_dialog:
+            self._show_expand_confirmation_dialog = False
+            self._expand_confirmation_active = True
+            imgui.open_popup("Expand Cluster Confirmation")
+        expand_dialog_state = open_confirmation_dialog(
+            "Expand Cluster Confirmation",
+            "Expanding more than 10 clusters as tubes may cause\n"
+            "performance issues. Do you want to continue?",
+            okay_text="Expand Anyway",
+            cancel_text="Cancel",
         )
+        if expand_dialog_state == "okay":
+            self._expand_confirmation_active = False
+            self._expand_clusters(skip_confirmation=True)
+        elif expand_dialog_state == "cancel":
+            self._expand_confirmation_active = False
 
         imgui.spacing()
         imgui.spacing()
@@ -562,7 +694,7 @@ class ClusterStreamline3D(Visualization):
             if elapsed >= self._recluster_debounce_sec:
                 if not np.isclose(self._pending_thr, self.thr):
                     self.thr = self._pending_thr
-                    self._recluster()
+                    self._perform_clustering()
                 self._pending_thr = None
                 self._thr_changed_at = None
 
@@ -599,4 +731,4 @@ class ClusterStreamline3D(Visualization):
         )
 
         if imgui.is_item_hovered():
-            imgui.set_tooltip("Download the selected visible tractogram as a .trx file")
+            imgui.set_tooltip("Download the selected cluster tractogram as a .trx file")
