@@ -218,8 +218,15 @@ class Image3D(Visualization):
 
     def update_state(self, new_state):
         if self._synchronize:
-            self.state = new_state
+            self.state = new_state[:3]
             show_slices(self._slicer, self.mid_voxel_state)
+            if (
+                len(new_state) == 4
+                and self._has_directions
+                and self.dwi.shape[-1] > new_state[3]
+            ):
+                self._volume_idx = int(new_state[3])
+                self._create_slicer_actor()
 
     def render_widgets(self):
         changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
@@ -281,7 +288,12 @@ class Image3D(Visualization):
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
                 self.state[idx] = new
-                self._synchronize and self._sync_callabck(self, self.state)
+                self._synchronize and self._sync_callabck(
+                    self,
+                    np.asarray([*self.state, self._volume_idx])
+                    if self._has_directions
+                    else self.state,
+                )
             self._slice_visibility[idx] = toggle
         set_group_visibility(self._slicer, self._slice_visibility)
         show_slices(self._slicer, self.mid_voxel_state)
@@ -319,6 +331,9 @@ class Image3D(Visualization):
             )
             if volume_changed:
                 self._volume_idx = new_idx
+                self._synchronize and self._sync_callabck(
+                    self, np.asarray([*self.state, self._volume_idx])
+                )
                 self._create_slicer_actor()
 
         imgui.spacing()
@@ -332,7 +347,9 @@ class Image3D(Visualization):
 
         voxel = str(self._picked_voxel) if self._picked_voxel is not None else ""
         intensity = (
-            str(self._picked_intensity) if self._picked_intensity is not None else ""
+            np.array2string(self._picked_intensity, precision=2, separator=", ")
+            if self._picked_intensity is not None
+            else ""
         )
         value_color = THEME["primary"]
         label_color = THEME["text"]
