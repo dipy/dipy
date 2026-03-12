@@ -154,11 +154,18 @@ class Peak3D(Visualization):
 
         imgui.spacing()
         axis_labels = ("X", "Y", "Z")
-        slider_bounds = (
-            (int(self.bounds[0][0] + 1), int(self.bounds[1][0] - 1)),
-            (int(self.bounds[0][1] + 1), int(self.bounds[1][1] - 1)),
-            (int(self.bounds[0][2] + 1), int(self.bounds[1][2] - 1)),
-        )
+
+        def _axis_slider_bounds(axis):
+            lower = float(min(self.bounds[0][axis], self.bounds[1][axis]))
+            upper = float(max(self.bounds[0][axis], self.bounds[1][axis]))
+            min_bound = int(np.ceil(lower))
+            max_bound = int(np.floor(upper))
+            if min_bound > max_bound:
+                mid = int(round((lower + upper) * 0.5))
+                return mid, mid
+            return min_bound, max_bound
+
+        slider_bounds = tuple(_axis_slider_bounds(axis) for axis in range(3))
         slicers = []
         for axis, label in enumerate(axis_labels):
             min_bound, max_bound = slider_bounds[axis]
@@ -178,9 +185,10 @@ class Peak3D(Visualization):
         render_data = render_group("Slice", slicers)
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
-                self.state[idx] = new
+                self.state[idx] = int(round(new))
                 self._slicer.cross_section = self.state
-                self._synchronize and self._sync_callabck(self, self.state)
+                if self._synchronize and self._sync_callabck is not None:
+                    self._sync_callabck(self, self.state)
             self._slice_visibility[idx] = toggle
         self._slicer.material.visibility = self._slice_visibility
         imgui.spacing()
