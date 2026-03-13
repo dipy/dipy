@@ -579,25 +579,45 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             background: #fff;
         }}
 
+        /* ── Badges ──────────────────────────────────────────── */
         .stage-badge {{
             display: inline-block;
-            padding: 4px 10px;
+            padding: 2px 9px;
             border-radius: 12px;
-            font-size: 0.8em;
+            font-size: 11px;
             font-weight: 600;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.2px;
             vertical-align: middle;
-            margin-left: 10px;
+            margin-left: 8px;
         }}
         .badge-restart {{
-            background: #e8f4fd;
-            color: #2471a3;
-            border: 1px solid #aed6f1;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
         }}
         .badge-user-mask {{
-            background: #eafaf1;
-            color: #1e8449;
-            border: 1px solid #a9dfbf;
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }}
+
+        /* ── Profile charts ──────────────────────────────────── */
+        .profile-charts-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+            margin: 16px 0;
+        }}
+        .profile-chart-container {{
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }}
+        .profile-chart-container canvas {{
+            height: 240px !important;
+            background: #fff;
         }}
 
         @media print {{
