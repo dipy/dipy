@@ -8,7 +8,7 @@ import numpy as np
 from dipy.align import affine_registration, motion_correction
 from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
-from dipy.align.metrics import CCMetric, EMMetric, MIMetric, SSDMetric
+from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
 from dipy.align.reslice import reslice
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.align.streamwarp import bundlewarp
@@ -805,10 +805,10 @@ class SynRegistrationFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         metric = metric.lower()
-        if metric not in ["ssd", "cc", "em", "mi"]:
+        if metric not in ["ssd", "cc", "em"]:
             raise ValueError(
                 "Invalid similarity metric: Please"
-                " provide a valid metric like 'ssd', 'cc', 'em', 'mi'"
+                " provide a valid metric like 'ssd', 'cc', 'em'"
             )
 
         logger.info("Starting Diffeomorphic Registration")
@@ -830,20 +830,20 @@ class SynRegistrationFlow(Workflow):
 
         mopt_smooth = (
             mopt_smooth
-            if mopt_smooth or metric in ("cc", "mi")
+            if mopt_smooth or metric in ("cc")
             else init_param[metric]["mopt_smooth"]
         )
         mopt_inner_iter = (
             mopt_inner_iter
-            if mopt_inner_iter or metric in ("cc", "mi")
+            if mopt_inner_iter or metric in ("cc")
             else init_param[metric]["mopt_inner_iter"]
         )
 
-        # If using the 'cc' or 'mi' metric, force the `mopt_step_type`
+        # If using the 'cc' metric, force the `mopt_step_type`
         # parameter to an empty value since these metrics do not use it; for
         # the rest of the metrics, the `step_type` parameter will be
         # initialized to their corresponding default values in `init_param`.
-        if metric in ("cc", "mi"):
+        if metric == "cc":
             mopt_step_type = ""
 
         for (
@@ -890,11 +890,6 @@ class SynRegistrationFlow(Workflow):
                     else init_param["em"]["mopt_step_type"],
                     q_levels=mopt_q_levels,
                     double_gradient=mopt_double_gradient,
-                ),
-                "mi": MIMetric(
-                    static_image.ndim,
-                    nbins=self.nbins if hasattr(self, "nbins") else 32,
-                    sigma_diff=mopt_sigma_diff,
                 ),
             }
 
