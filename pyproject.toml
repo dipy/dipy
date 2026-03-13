@@ -169,7 +169,7 @@ benchmark = [
 ]
 
 [project.optional-dependencies]
-skyline = ["fury>=2.0.0a6", "imgui_bundle>=1.92.600", "matplotlib"]
+skyline = ["fury>=2.0.0a6", "imgui_bundle==1.92.600", "matplotlib"]
 ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
 optional = [
     "dipy[skyline, ml]",
