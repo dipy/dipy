@@ -829,6 +829,7 @@ class FORCEModel(ReconstModel):
     @multi_voxel_fit(
         batched=True,
         shared_obj=("_penalty_array", "_index", "simulations"),
+        chunk_size={"serial": 10_000, "ray": "auto"},
     )
     def fit(self, data, *, mask=None, **kwargs):
         """Fit model to data.
@@ -915,6 +916,9 @@ class FORCEModel(ReconstModel):
             params_arrays["ambiguity"] = A
             params_arrays["entropy"] = np.full(n_vox, np.nan, dtype=np.float32)
 
+        if kwargs.pop("_raw", False):
+            return params_arrays
+
         fits = np.empty(n_vox, dtype=object)
         keys = list(params_arrays.keys())
         for i in range(n_vox):
@@ -944,6 +948,12 @@ class FORCEFit(ReconstFit):
 
     def __init__(self, model, params):
         """Initialize a FORCEFit class instance."""
+        if (
+            "entropy" in params
+            and params["entropy"] is not None
+            and np.isnan(params["entropy"])
+        ):
+            params["entropy"] = None
         self.model = model
         self._params = params
 
@@ -1056,6 +1066,10 @@ class FORCEFit(ReconstFit):
     def fracs(self):
         """Fiber fractions."""
         return self._params.get("fracs", None)
+
+
+# Resolve forward reference: FORCEModel is defined before FORCEFit.
+FORCEModel._fit_class = FORCEFit
 
 
 def compute_entropy(weights):

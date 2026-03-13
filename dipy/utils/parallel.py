@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+import json
 import multiprocessing
 import shutil
 import tempfile
@@ -7,11 +8,140 @@ import numpy as np
 from tqdm.auto import tqdm
 
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.multiproc import determine_num_processes
 from dipy.utils.optpkg import optional_package
 
 ray, has_ray, _ = optional_package("ray")
 joblib, has_joblib, _ = optional_package("joblib")
 dask, has_dask, _ = optional_package("dask")
+_RAY_TASK_OVERHEAD_MS = 3.0  # empirical fixed cost per Ray task (ms)
+_RAY_T_VOXEL_MS = 0.015  # conservative compute time per voxel (ms)
+
+
+def _available_ram():
+    """Estimate available RAM in bytes using stdlib only.
+
+    * **Linux** — reads ``MemAvailable`` from ``/proc/meminfo`` (accurate).
+    * **Windows** — queries ``GlobalMemoryStatusEx`` via ``ctypes`` (accurate).
+    * **macOS / other POSIX** — returns half of total physical RAM via
+      ``os.sysconf`` (conservative approximation).
+    * **Fallback** — 4 GiB when none of the above succeed.
+    """
+    import platform
+
+    system = platform.system()
+    try:
+        if system == "Linux":
+            with open("/proc/meminfo") as fh:
+                for line in fh:
+                    if line.startswith("MemAvailable:"):
+                        return int(line.split()[1]) * 1024
+        elif system == "Windows":
+            import ctypes
+
+            class _MEMORYSTATUSEX(ctypes.Structure):
+                _fields_ = [
+                    ("dwLength", ctypes.c_ulong),
+                    ("dwMemoryLoad", ctypes.c_ulong),
+                    ("ullTotalPhys", ctypes.c_ulonglong),
+                    ("ullAvailPhys", ctypes.c_ulonglong),
+                    ("ullTotalPageFile", ctypes.c_ulonglong),
+                    ("ullAvailPageFile", ctypes.c_ulonglong),
+                    ("ullTotalVirtual", ctypes.c_ulonglong),
+                    ("ullAvailVirtual", ctypes.c_ulonglong),
+                    ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+                ]
+
+            mem = _MEMORYSTATUSEX()
+            mem.dwLength = ctypes.sizeof(_MEMORYSTATUSEX)
+            ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(mem))
+            return mem.ullAvailPhys
+        else:
+            import os
+
+            pages = os.sysconf("SC_PHYS_PAGES")
+            page_size = os.sysconf("SC_PAGE_SIZE")
+            return (pages * page_size) // 2
+    except Exception:
+        pass
+    return 4 * 1024**3
+
+
+def auto_ray_chunk_size(
+    *,
+    n_jobs,
+    n_gradients,
+    n_vox=None,
+    shared_obj_nbytes=0,
+    ram_fraction=0.4,
+    min_efficiency=0.10,
+    output_bytes_per_voxel=4096,
+):
+    """Compute a memory- and efficiency-aware Ray chunk size.
+
+    Three constraints are balanced:
+
+    * **Efficiency lower bound** — chunk large enough that Ray task overhead
+      stays below ``min_efficiency`` of total compute time::
+
+          N_min = ray_overhead_ms / (min_efficiency × t_voxel_ms)
+                ≈ 3 ms / (0.10 × 0.015 ms) ≈ 2 000 voxels
+
+    * **Memory upper bound** — all ``n_jobs`` in-flight chunks fit in the
+      available RAM budget::
+
+          N_mem = (available_RAM × ram_fraction − shared_obj_bytes)
+                  ────────────────────────────────────────────────────
+                          n_jobs × bytes_per_voxel
+
+      where ``bytes_per_voxel = n_gradients × 4 + output_bytes_per_voxel``.
+
+    * **Parallelism upper bound** — at least ``n_jobs`` chunks are produced
+      so all workers stay busy::
+
+          N_par = n_vox // n_jobs   (only applied when n_vox is given)
+
+    Final result: ``clamp(min(N_mem, N_par), lo=N_min)``.  Available RAM
+    is detected via :func:`_available_ram` (stdlib only, no extra
+    dependencies).
+
+    Parameters
+    ----------
+    n_jobs : int
+        Number of parallel Ray workers (concurrent in-flight tasks).
+    n_gradients : int
+        Number of diffusion gradients — sets the input chunk byte size.
+    n_vox : int, optional
+        Total number of voxels to fit.  Used to cap chunk size so that
+        at least ``n_jobs`` chunks are produced.
+    shared_obj_nbytes : int, optional
+        Total bytes already placed in the Ray object store (e.g. the
+        simulation library).  Deducted from the available RAM budget.
+    ram_fraction : float, optional
+        Fraction of available RAM to allocate to the Ray object store.
+    min_efficiency : float, optional
+        Target minimum ratio ``compute_time / total_task_time``.
+    output_bytes_per_voxel : int, optional
+        Estimated output bytes per voxel in the raw result dict returned
+        by workers.  Defaults to 4 096 (≈ FORCE with ODF enabled).
+
+    Returns
+    -------
+    chunk_size : int
+    """
+    n_min = int(_RAY_TASK_OVERHEAD_MS / (min_efficiency * _RAY_T_VOXEL_MS))
+
+    n_jobs = determine_num_processes(n_jobs if n_jobs != 0 else 1)
+
+    available = _available_ram()
+
+    ray_budget = max(available * ram_fraction - shared_obj_nbytes, 0)
+    bytes_per_voxel = n_gradients * 4 + output_bytes_per_voxel
+    n_mem = int(ray_budget / n_jobs / bytes_per_voxel)
+
+    n_par = (n_vox // n_jobs) if n_vox is not None else n_mem
+
+    return max(n_min, min(n_mem, n_par))
 
 
 @warning_for_keywords()
@@ -70,9 +200,11 @@ def paramap(
         to `func`: one item for each item in the input list.
     shared_objects : dict, optional
         Dictionary of ``{name: array}`` to place in the Ray object store
-        once via ``ray.put()``.  The resulting ``ObjectRef`` dictionary is
-        passed to each worker as the ``_shared_refs`` keyword argument.
-        Workers can resolve them with ``ray.get()``.  Only used with the
+        once via ``ray.put()``.  Each ``ObjectRef`` is then passed to
+        workers as a direct top-level keyword argument prefixed with
+        ``_sobj_`` (e.g. ``_sobj__index``).  Ray auto-resolves top-level
+        ``ObjectRef`` arguments before invoking the worker — no explicit
+        ``ray.get()`` is required on the worker side.  Only used with the
         ``"ray"`` engine; ignored for other engines.
     inflight_cap : int, optional
         Maximum number of pending Ray tasks before draining results.
@@ -157,7 +289,16 @@ def paramap(
             tmp_dir = tempfile.TemporaryDirectory()
 
             if not ray.is_initialized():
-                ray.init(object_spilling_directory=tmp_dir.name)
+                ray.init(
+                    _system_config={
+                        "object_spilling_config": json.dumps(
+                            {
+                                "type": "filesystem",
+                                "params": {"directory_path": tmp_dir.name},
+                            }
+                        )
+                    }
+                )
 
         shared_refs = None
         if shared_objects:
@@ -167,7 +308,8 @@ def paramap(
 
         def _build_kwargs(base_kw):
             if shared_refs is not None:
-                return {**base_kw, "_shared_refs": shared_refs}
+                sobj_kw = {f"_sobj_{k}": v for k, v in shared_refs.items()}
+                return {**base_kw, **sobj_kw}
             return base_kw
 
         def _submit_one(item, kw):
@@ -199,11 +341,17 @@ def paramap(
                 futures = [_submit_one(ii, fk) for ii, fk in zip(in_list, func_kwargs)]
             else:
                 futures = [_submit_one(ii, func_kwargs) for ii in in_list]
+            future_to_idx = {f: i for i, f in enumerate(futures)}
+            results = [None] * n_chunks
             with tqdm(
                 total=n_chunks, disable=not verbose, desc="Fitting (ray)"
             ) as pbar:
-                results = ray.get(futures)
-                pbar.update(n_chunks)
+                remaining = list(futures)
+                while remaining:
+                    done, remaining = ray.wait(remaining, num_returns=1)
+                    for f in done:
+                        results[future_to_idx.pop(f)] = ray.get(f)
+                        pbar.update(1)
 
         if clean_spill:
             shutil.rmtree(tmp_dir.name)

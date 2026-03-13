@@ -9,16 +9,69 @@ from tqdm import tqdm
 from dipy.core.ndindex import ndindex
 from dipy.reconst.base import ReconstFit
 from dipy.reconst.quick_squash import quick_squash as _squash
-from dipy.utils.parallel import paramap
+from dipy.utils.multiproc import determine_num_processes
+from dipy.utils.parallel import auto_ray_chunk_size, paramap
+
+
+def _assemble_results(params_list, *, fit_class):
+    """Build a flat array of fit objects from raw per-chunk parameter dicts.
+
+    Generic assembly for any batched model that declares a ``_fit_class``
+    attribute.  Concatenates numpy arrays across chunks, then constructs
+    fit objects once in the caller process — avoiding expensive
+    Python-object serialisation through the Ray object store.
+
+    Parameters
+    ----------
+    params_list : list of dict
+        Each element is a ``dict`` of numpy arrays returned by ``fit``
+        when called with ``_raw=True``.  All arrays within a dict share
+        the same first dimension (the chunk size).
+    fit_class : type
+        Fit class to instantiate for each voxel as ``fit_class(None, params)``.
+
+    Returns
+    -------
+    fits : ndarray of object, shape (total_voxels,)
+    """
+    keys = list(params_list[0].keys())
+    merged = {}
+    for k in keys:
+        arrays = [p[k] for p in params_list]
+        merged[k] = None if arrays[0] is None else np.concatenate(arrays, axis=0)
+
+    n_vox = next(v.shape[0] for v in merged.values() if v is not None)
+    fits = np.empty(n_vox, dtype=object)
+    for i in range(n_vox):
+        p = {}
+        for k in keys:
+            val = merged[k]
+            if val is None:
+                p[k] = None
+            else:
+                v = val[i]
+                if isinstance(v, np.ndarray) and v.ndim == 0:
+                    p[k] = float(v)
+                elif isinstance(v, (np.floating, np.integer)):
+                    p[k] = float(v)
+                else:
+                    p[k] = v
+        fits[i] = fit_class(None, p)
+    return fits
 
 
 def _parallel_fit_worker(vox_data, fit_func, **kwargs):
     """Process a chunk of voxel data.
 
     When ``_batched`` is True the entire chunk is handed to *fit_func*
-    in a single batched call (the ``fit`` method handles the 2-D
-    input directly and returns an array of fit objects).
-    Otherwise each voxel is fitted individually (the classic path).
+    in a single batched call (the ``fit`` method handles the 2-D input
+    directly and returns an array of fit objects, or a raw dict when
+    ``_raw=True``).  Otherwise each voxel is fitted individually.
+
+    Shared objects arrive as direct keyword arguments prefixed with
+    ``_sobj_`` (e.g. ``_sobj__index``).  Ray resolves ``ObjectRef``
+    values before invoking the worker, so no explicit ``ray.get()`` is
+    required here.
 
     Parameters
     ----------
@@ -28,7 +81,23 @@ def _parallel_fit_worker(vox_data, fit_func, **kwargs):
         ``partial(single_voxel_fit, model)`` — used for both per-voxel
         and batched (``_batched=True``) paths.
     """
-    _resolve_shared_refs(fit_func, kwargs)
+    _prefix = "_sobj_"
+    shared_objs = {
+        k[len(_prefix) :]: kwargs.pop(k) for k in list(kwargs) if k.startswith(_prefix)
+    }
+    if shared_objs:
+        if fit_func.args:
+            model = fit_func.args[0]
+        elif hasattr(fit_func.func, "__self__"):
+            model = fit_func.func.__self__
+        else:
+            raise ValueError(
+                "_parallel_fit_worker: could not locate model instance in "
+                "fit_func — shared objects were never applied."
+            )
+        for name, val in shared_objs.items():
+            setattr(model, name, val)
+
     batched = kwargs.pop("_batched", False)
     vox_weights = kwargs.pop("weights", None)
     if batched:
@@ -44,41 +113,13 @@ def _parallel_fit_worker(vox_data, fit_func, **kwargs):
     return [fit_func(data, **kwargs) for data in vox_data]
 
 
-def _resolve_shared_refs(fit_func, kwargs):
-    """Resolve Ray shared object references on the worker side.
-
-    If ``_shared_refs`` is present in *kwargs*, resolve each
-    ``ObjectRef`` via ``ray.get()`` and apply them to the model
-    instance captured inside *fit_func* (a ``functools.partial``).
-
-    Parameters
-    ----------
-    fit_func : functools.partial
-        Partial wrapping a model method.  The model is in
-        ``fit_func.args[0]`` (``partial(single_voxel_fit, model)``).
-    kwargs : dict
-        Worker keyword arguments (mutated in-place to pop
-        ``_shared_refs``).
-    """
-    shared_refs = kwargs.pop("_shared_refs", None)
-    if shared_refs is not None:
-        import ray
-
-        resolved = {k: ray.get(v) for k, v in shared_refs.items()}
-        if fit_func.args:
-            model = fit_func.args[0]
-        elif hasattr(fit_func.func, "__self__"):
-            model = fit_func.func.__self__
-        else:
-            raise ValueError(
-                "_resolve_shared_refs: could not locate model instance in "
-                "fit_func — shared objects were never applied."
-            )
-        for name, val in resolved.items():
-            setattr(model, name, val)
-
-
-def multi_voxel_fit(_func=None, *, batched=False, shared_obj=None):
+def multi_voxel_fit(
+    _func=None,
+    *,
+    batched=False,
+    shared_obj=None,
+    chunk_size=None,
+):
     """Method decorator to turn a single voxel model fit
     definition into a multi voxel model fit definition.
 
@@ -87,11 +128,19 @@ def multi_voxel_fit(_func=None, *, batched=False, shared_obj=None):
         @multi_voxel_fit                   # existing models — unchanged
         @multi_voxel_fit(batched=True)     # batched models (e.g. FORCE)
 
-    When ``batched=True`` the decorated ``fit`` method must accept
-    both 1-D (single voxel) and 2-D (batch) input and return a single
-    fit object or a 1-D object array of fit objects respectively.  The
-    decorator calls it with the whole chunk at once instead of
-    iterating voxel-by-voxel.
+    When ``batched=True`` the decorated ``fit`` method must accept both
+    1-D (single voxel) and 2-D (batch) input and return a single fit
+    object or a 1-D object array of fit objects respectively.
+
+    **Raw-dict protocol** — if the model declares a ``_fit_class``
+    attribute, the decorator automatically injects ``_raw=True`` into
+    worker kwargs so that ``fit`` returns a plain ``dict`` of numpy arrays
+    instead of Python fit objects.  After all chunks are collected,
+    the generic :func:`_assemble_results` helper is called once in the
+    caller process to build the final fit array via
+    ``_fit_class(None, params)``.  This avoids serialising Python objects
+    through the Ray object store and is available to any batched model that
+    sets ``_fit_class``.
 
     Parameters
     ----------
@@ -105,6 +154,13 @@ def multi_voxel_fit(_func=None, *, batched=False, shared_obj=None):
         and reuse across workers (avoids per-task serialization of large
         arrays).  Example: ``("_penalty_array", "_index", "simulations")``.
         Only active when ``engine="ray"``.
+    chunk_size : int or dict, optional
+        Number of voxels per chunk.  Accepts either a single ``int``
+        (applied to all engines) or a ``dict`` mapping engine names to
+        chunk sizes, e.g. ``{"serial": 10_000, "ray": 100_000}``.
+        Overridden at call time by the ``vox_per_chunk`` keyword argument.
+        Defaults to 10 000 for the serial-batched path and
+        ``n_vox // n_jobs`` for parallel engines.
     """
 
     def decorator(single_voxel_fit):
@@ -140,10 +196,46 @@ def multi_voxel_fit(_func=None, *, batched=False, shared_obj=None):
             # Default to serial execution:
             engine = kwargs.get("engine", "serial")
 
+            def _shared_obj_nbytes():
+                total = 0
+                for name in shared_obj or ():
+                    obj = getattr(self, name, None)
+                    if obj is None:
+                        continue
+                    if hasattr(obj, "nbytes"):
+                        total += obj.nbytes
+                    elif isinstance(obj, dict):
+                        total += sum(
+                            v.nbytes for v in obj.values() if hasattr(v, "nbytes")
+                        )
+                return total
+
+            def _resolve_chunk_size(*, default, n_jobs=None, n_vox=None):
+                explicit = kwargs.get("vox_per_chunk")
+                if explicit is not None:
+                    return explicit
+                val = (
+                    chunk_size.get(engine, default)
+                    if isinstance(chunk_size, dict)
+                    else (chunk_size if chunk_size is not None else default)
+                )
+                if val == "auto":
+                    if engine == "ray" and n_jobs is not None:
+                        return auto_ray_chunk_size(
+                            n_jobs=n_jobs,
+                            n_gradients=data.shape[-1],
+                            n_vox=n_vox,
+                            shared_obj_nbytes=_shared_obj_nbytes(),
+                        )
+                    return default
+                return val
+
+            use_raw = batched and hasattr(self, "_fit_class")
+
             if engine == "serial" and batched:
                 # Batched serial path — pass the whole chunk to fit() at once
                 data_to_fit = data[np.where(mask)]
-                vox_per_chunk = kwargs.get("vox_per_chunk", 10000)
+                vox_per_chunk = _resolve_chunk_size(default=10000)
                 n_vox = data_to_fit.shape[0]
                 all_chunk_results = []
                 bar = tqdm(
@@ -157,13 +249,20 @@ def multi_voxel_fit(_func=None, *, batched=False, shared_obj=None):
                     for k, v in kwargs.items()
                     if k not in ("engine", "n_jobs", "vox_per_chunk", "verbose")
                 }
+                if use_raw:
+                    fit_kwargs["_raw"] = True
                 for start in range(0, n_vox, vox_per_chunk):
                     chunk = data_to_fit[start : start + vox_per_chunk]
                     chunk_result = single_voxel_fit(self, chunk, **fit_kwargs)
                     all_chunk_results.append(chunk_result)
                     bar.update(len(chunk))
                 bar.close()
-                tmp_fit_array = np.concatenate(all_chunk_results)
+                if use_raw:
+                    tmp_fit_array = _assemble_results(
+                        all_chunk_results, fit_class=self._fit_class
+                    )
+                else:
+                    tmp_fit_array = np.concatenate(all_chunk_results)
                 fit_array[np.where(mask)] = tmp_fit_array
             elif engine == "serial":
                 extra_list = []
@@ -198,8 +297,12 @@ def multi_voxel_fit(_func=None, *, batched=False, shared_obj=None):
                 if weights_is_array:
                     weights_to_fit = weights[np.where(mask)]
                 n_jobs = kwargs.get("n_jobs", max(multiprocessing.cpu_count() - 1, 1))
-                vox_per_chunk = kwargs.get(
-                    "vox_per_chunk", np.max([data_to_fit.shape[0] // n_jobs, 1])
+                n_jobs_eff = determine_num_processes(n_jobs if n_jobs != 0 else 1)
+                n_vox = data_to_fit.shape[0]
+                vox_per_chunk = _resolve_chunk_size(
+                    default=max(n_vox // n_jobs_eff, 1),
+                    n_jobs=n_jobs_eff,
+                    n_vox=n_vox,
                 )
                 chunks = [
                     data_to_fit[ii : ii + vox_per_chunk]
@@ -223,6 +326,8 @@ def multi_voxel_fit(_func=None, *, batched=False, shared_obj=None):
                         kw = kwargs.copy()
                         if batched:
                             kw["_batched"] = True
+                        if use_raw:
+                            kw["_raw"] = True
                         if weights_is_array:
                             kw["weights"] = weights_to_fit[ii : ii + vox_per_chunk]
                         kwargs_chunks.append(kw)
@@ -254,8 +359,12 @@ def multi_voxel_fit(_func=None, *, batched=False, shared_obj=None):
                             setattr(self, name, val)
 
                 if batched:
-                    # Each element of mvf is an array of fit objects.
-                    tmp_fit_array = np.concatenate(mvf)
+                    if use_raw:
+                        tmp_fit_array = _assemble_results(
+                            mvf, fit_class=self._fit_class
+                        )
+                    else:
+                        tmp_fit_array = np.concatenate(mvf)
                     fit_array[np.where(mask)] = tmp_fit_array
                     extra_list = None
                 elif isinstance(mvf[0][0], tuple):
