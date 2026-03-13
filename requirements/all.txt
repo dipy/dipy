@@ -36,4 +36,5 @@ numexpr
 polyxios>=0.2.0
 matplotlib
 fury>=2.0.0a6
-imgui_bundle>=1.92.600
+imgui_bundle==1.92.600
+vtk>=9.0.0,<=9.1.0
