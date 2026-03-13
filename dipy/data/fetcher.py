@@ -663,7 +663,7 @@ fetch_mni_resized_templates = _make_fetcher(
         "78633c9a826f7cabc7496e3297773276",
         "c23fe61521c04dff06faf43d80c3c682",
     ],
-    doc="Download resized MNI templates for Synbo input",
+    doc="Download resized MNI templates for Synb0 input",
 )
 
 fetch_deepn4_tf_weights = _make_fetcher(

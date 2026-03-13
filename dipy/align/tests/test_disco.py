@@ -148,9 +148,7 @@ def test_synb0_syn_b0_index_type_error():
         )
 
 
-@pytest.mark.skipif(
-    not HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing"
-)
+@pytest.mark.skipif(HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing")
 def test_synb0_syn_import_error_without_backend():
     with pytest.raises(ImportError, match="Synb0 model not available"):
         synb0_syn(

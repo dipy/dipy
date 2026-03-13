@@ -12,6 +12,11 @@ from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
+
+_SYNB0_INPUT_SHAPE = (77, 91, 77)
+_SYNB0_PADDED_SHAPE = (80, 96, 80)
+_SYNB0_PADDING = ((0, 0), (2, 1), (3, 2), (2, 1))
+_SYNB0_UNPAD = (slice(None), 0, slice(2, -1), slice(3, -2), slice(2, -1))
 if have_torch:
     from torch.nn import (
         Conv3d,
@@ -331,7 +336,7 @@ class Synb0:
                 "do not match the declared model"
             ) from e
 
-    def __predict(self, x_test):
+    def _predict(self, x_test):
         r"""
         Internal prediction function.
 
@@ -373,8 +378,6 @@ class Synb0:
             is provided with a batch dimension.
             Consider lowering it if you get an out of memory error.
             Increase it if you want it to be faster and have a lot of data.
-            If None, batch_size will be set to 1 if the provided image
-            has a batch dimension.
 
         average : bool, optional
             Whether the function follows the Synb0-Disco pipeline and
@@ -388,11 +391,11 @@ class Synb0:
         """
         # Check if shape is as intended
         if (
-            all([b0.shape[1:] != (77, 91, 77), b0.shape != (77, 91, 77)])
-            or b0.shape != T1.shape
-        ):
+            b0.shape[1:] != _SYNB0_INPUT_SHAPE and b0.shape != _SYNB0_INPUT_SHAPE
+        ) or b0.shape != T1.shape:
             raise ValueError(
-                "Expected shape (batch, 77, 91, 77) or (77, 91, 77) for both inputs"
+                f"Expected shape (batch, {_SYNB0_INPUT_SHAPE}) or "
+                f"{_SYNB0_INPUT_SHAPE} for both inputs"
             )
 
         dim = len(b0.shape)
@@ -407,9 +410,8 @@ class Synb0:
             batch_size = 1
 
         # Pad the data to match the model's input shape
-        # From (77, 91, 77) to (80, 96, 80)
-        T1 = np.pad(T1, ((0, 0), (2, 1), (3, 2), (2, 1)), "constant")
-        b0 = np.pad(b0, ((0, 0), (2, 1), (3, 2), (2, 1)), "constant")
+        T1 = np.pad(T1, _SYNB0_PADDING, "constant")
+        b0 = np.pad(b0, _SYNB0_PADDING, "constant")
 
         # Normalize the data
         p99 = np.percentile(b0, 99, axis=(1, 2, 3))
@@ -424,25 +426,26 @@ class Synb0:
             )
             batch_size = 1
 
+        padded_out_shape = (shape[0], 1) + _SYNB0_PADDED_SHAPE
+
         # Prediction stage
         if average:
             mean_pred = np.zeros(shape + (5,), dtype=np.float32)
             for i in range(5):
                 self.fetch_default_weights(i)
-                # Stack and prepare input: (batch, 80, 96, 80, 2)
-                # -> (batch, 2, 80, 96, 80)
+                # Stack and prepare input: (batch, D, H, W, 2) -> (batch, 2, D, H, W)
                 temp = np.stack([b0, T1], axis=-1)
                 input_data = np.moveaxis(temp, -1, 1).astype(np.float32)
 
-                prediction = np.zeros((shape[0], 1, 80, 96, 80), dtype=np.float32)
+                prediction = np.zeros(padded_out_shape, dtype=np.float32)
                 for batch_idx in range(batch_size, shape[0] + 1, batch_size):
                     temp_input = input_data[batch_idx - batch_size : batch_idx]
-                    temp_pred = self.__predict(temp_input)
+                    temp_pred = self._predict(temp_input)
                     prediction[batch_idx - batch_size : batch_idx] = temp_pred
 
                 remainder = np.mod(shape[0], batch_size)
                 if remainder != 0:
-                    temp_pred = self.__predict(input_data[-remainder:])
+                    temp_pred = self._predict(input_data[-remainder:])
                     prediction[-remainder:] = temp_pred
 
                 # Unnormalize
@@ -450,8 +453,8 @@ class Synb0:
                     temp_pred = unnormalize(prediction[j], -1, 1, 0, p99[j])
                     prediction[j] = temp_pred
 
-                # Remove padding: (batch, 1, 80, 96, 80) -> (batch, 77, 91, 77)
-                prediction = prediction[:, 0, 2:-1, 3:-2, 2:-1]
+                # Remove padding
+                prediction = prediction[_SYNB0_UNPAD]
 
                 mean_pred[..., i] = prediction
 
@@ -461,15 +464,15 @@ class Synb0:
             temp = np.stack([b0, T1], axis=-1)
             input_data = np.moveaxis(temp, -1, 1).astype(np.float32)
 
-            prediction = np.zeros((shape[0], 1, 80, 96, 80), dtype=np.float32)
+            prediction = np.zeros(padded_out_shape, dtype=np.float32)
             for batch_idx in range(batch_size, shape[0] + 1, batch_size):
                 temp_input = input_data[batch_idx - batch_size : batch_idx]
-                temp_pred = self.__predict(temp_input)
+                temp_pred = self._predict(temp_input)
                 prediction[batch_idx - batch_size : batch_idx] = temp_pred
 
             remainder = np.mod(shape[0], batch_size)
             if remainder != 0:
-                temp_pred = self.__predict(input_data[-remainder:])
+                temp_pred = self._predict(input_data[-remainder:])
                 prediction[-remainder:] = temp_pred
 
             # Unnormalize
@@ -477,7 +480,7 @@ class Synb0:
                 prediction[j] = unnormalize(prediction[j], -1, 1, 0, p99[j])
 
             # Remove padding
-            prediction = prediction[:, 0, 2:-1, 3:-2, 2:-1]
+            prediction = prediction[_SYNB0_UNPAD]
 
         if dim == 3:
             prediction = prediction[0]

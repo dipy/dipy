@@ -31,19 +31,8 @@ try:
     from dipy.nn.synb0 import Synb0
 
     HAVE_SYNB0 = _have_torch or _have_tf
-    if not HAVE_SYNB0:
-        logger.warning(
-            "Synb0 model not available. Install PyTorch or TensorFlow to use. "
-            "(pip install dipy[ml]) "
-            "Synb0-DISCO distortion correction."
-        )
 except ImportError:
     HAVE_SYNB0 = False
-    logger.warning(
-        "Synb0 model not available. Install PyTorch or TensorFlow to use. "
-        "(pip install dipy[ml]) "
-        "Synb0-DISCO distortion correction."
-    )
 
 
 def _validate_b0_index(b0_index, n_volumes, image_name):
@@ -161,16 +150,25 @@ def _warp_image(mapping, image):
 
 
 def _normalize_t1_for_synb0(t1):
-    """
-    The Synb0 model was trained on T1 images normalised to a scale
-     which places white-matter around 110.
-    The subsequent model normalisation clips at 150 and maps to [-1, 1].
-    Feeding a raw T1 (values up to ~3000) causes everything to clip,
-    destroying all contrast.
+    """Rescale a T1 image to match the intensity distribution expected by Synb0.
 
-    This function rescales the T1 so that the white-matter peak (estimated
-    as the 90th percentile of brain voxels) sits at 110, matching the
-    expected distribution.
+    The Synb0 model was trained on T1 images normalised to a scale which
+    places white-matter around 110. The subsequent model normalisation clips
+    at 150 and maps to [-1, 1]. Feeding a raw T1 (values up to ~3000) causes
+    everything to clip, destroying all contrast.
+
+    The white-matter peak is estimated as the 90th percentile of brain voxels
+    (voxels above the 5th percentile of non-zero values).
+
+    Parameters
+    ----------
+    t1 : ndarray
+        Input T1-weighted image with arbitrary intensity scale.
+
+    Returns
+    -------
+    t1_normalized : ndarray
+        Rescaled T1 image with white-matter intensity near 110.
     """
     brain = t1[t1 > np.percentile(t1[t1 > 0], 5)] if np.any(t1 > 0) else t1.ravel()
     wm_proxy = np.percentile(brain, 90)

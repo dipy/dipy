@@ -830,12 +830,12 @@ class SynRegistrationFlow(Workflow):
 
         mopt_smooth = (
             mopt_smooth
-            if mopt_smooth or metric in ("cc")
+            if mopt_smooth or metric == "cc"
             else init_param[metric]["mopt_smooth"]
         )
         mopt_inner_iter = (
             mopt_inner_iter
-            if mopt_inner_iter or metric in ("cc")
+            if mopt_inner_iter or metric == "cc"
             else init_param[metric]["mopt_inner_iter"]
         )
 
@@ -1152,6 +1152,8 @@ class BundleWarpFlow(Workflow):
 
 
 class Synb0SynFlow(Workflow):
+    """Workflow for Synb0-SyN susceptibility distortion correction."""
+
     @classmethod
     def get_short_name(cls):
         return "synb0_syn"
