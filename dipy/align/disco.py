@@ -11,6 +11,7 @@ References
 from pathlib import Path
 
 import numpy as np
+from scipy.ndimage import binary_dilation, gaussian_filter
 
 from dipy.align import affine_registration
 from dipy.align.imaffine import AffineMap
@@ -26,8 +27,6 @@ from dipy.utils.optpkg import optional_package
 _, _have_torch, _ = optional_package("torch", min_version="2.2.0")
 _, _have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 
-# Try to import Synb0 - the backend (torch/tf) is selected automatically
-# based on DIPY_NN_BACKEND environment variable
 try:
     from dipy.nn.synb0 import Synb0
 
@@ -161,6 +160,25 @@ def _warp_image(mapping, image):
     return warped
 
 
+def _normalize_t1_for_synb0(t1):
+    """
+    The Synb0 model was trained on T1 images normalised to a scale
+     which places white-matter around 110.
+    The subsequent model normalisation clips at 150 and maps to [-1, 1].
+    Feeding a raw T1 (values up to ~3000) causes everything to clip,
+    destroying all contrast.
+
+    This function rescales the T1 so that the white-matter peak (estimated
+    as the 90th percentile of brain voxels) sits at 110, matching the
+    expected distribution.
+    """
+    brain = t1[t1 > np.percentile(t1[t1 > 0], 5)] if np.any(t1 > 0) else t1.ravel()
+    wm_proxy = np.percentile(brain, 90)
+    if wm_proxy < 1e-6:
+        return t1.copy()
+    return t1 * (110.0 / wm_proxy)
+
+
 def _save_debug_volume(debug_dir, name, data, affine):
     """Save an array as a NIfTI file for debugging, if debug_dir is set.
 
@@ -288,54 +306,14 @@ def synb0_syn(
     _save_debug_volume(
         debug_dir=debug_dir, name="01_t1_input", data=T1_for_reg, affine=T1_affine
     )
-    if dwi_mask is not None:
-        _save_debug_volume(
-            debug_dir=debug_dir,
-            name="01b_dwi_mask_input",
-            data=dwi_mask,
-            affine=dwi_affine,
-        )
-    if T1_mask is not None:
-        _save_debug_volume(
-            debug_dir=debug_dir,
-            name="01c_t1_mask_input",
-            data=T1_mask,
-            affine=T1_affine,
-        )
 
-    _, mni_t2_path, mni_mask_path, mni_t1_path = get_fnames(name="mni_templates")
-    mni_t1, mni_t1_affine = load_nifti(mni_t1_path)  # 09c T1
-    mni_t2, mni_t2_affine = load_nifti(mni_t2_path)  # 09a T2
-    mni_mask, _ = load_nifti(mni_mask_path)  # 09c mask
+    _, _, mni_mask_path, mni_t1_path = get_fnames(name="mni_templates")
+    mni_t1, mni_t1_affine = load_nifti(mni_t1_path)
+    mni_mask, _ = load_nifti(mni_mask_path)
     mni_mask = mni_mask.astype(np.int32)
 
-    # Resample mask to T2 grid if shapes differ (09c mask vs 09a T2)
-    if mni_mask.shape != mni_t2.shape:
-        mask_to_t2 = AffineMap(
-            np.eye(4),
-            domain_grid_shape=mni_t2.shape,
-            domain_grid2world=mni_t2_affine,
-            codomain_grid_shape=mni_mask.shape,
-            codomain_grid2world=mni_t1_affine,
-        )
-        mni_mask_t2 = (
-            mask_to_t2.transform(mni_mask.astype(np.float32), interpolation="nearest")
-            > 0.5
-        ).astype(np.int32)
-    else:
-        mni_mask_t2 = mni_mask
-
-    if not np.allclose(mni_t1_affine, mni_t2_affine):
-        logger.warning(
-            "MNI T1 and T2 template affines differ. "
-            "Using MNI T1 affine for DWI->template registration to match "
-            "the Synb0-DISCO pipeline."
-        )
-
-    level_iters = [10000, 1000]
-    sigmas = [3.0, 1.0]
-    factors = [4, 2]
-    pipeline = ["center_of_mass", "translation", "rigid", "affine"]
+    # ── Step 1: Affine T1 → MNI T1 (sparse sampling for speed) ──────────
+    logger.info("Performing affine registration of T1 to MNI template...")
     T1_affine_to_template, t1_reg_affine = affine_registration(
         T1_for_reg,
         mni_t1,
@@ -343,12 +321,12 @@ def synb0_syn(
         static_affine=mni_t1_affine,
         nbins=32,
         metric="MI",
-        pipeline=pipeline,
-        level_iters=level_iters,
-        sigmas=sigmas,
-        factors=factors,
-        moving_mask=T1_mask,
+        pipeline=["center_of_mass", "translation", "rigid", "affine"],
+        level_iters=[100, 50, 25],
+        sigmas=[4.0, 2.0, 1.0],
+        factors=[8, 4, 2],
         static_mask=mni_mask,
+        moving_mask=T1_mask.astype(bool) if T1_mask is not None else None,
     )
     _save_debug_volume(
         debug_dir=debug_dir,
@@ -356,126 +334,76 @@ def synb0_syn(
         data=T1_affine_to_template,
         affine=mni_t1_affine,
     )
-    masked_mni_t1 = mni_t1 * mni_mask
     if T1_mask is not None:
         T1_mask_f = np.ascontiguousarray(np.asarray(T1_mask, dtype=np.float32))
-        masked_t1 = T1_for_reg * T1_mask_f
+        t1_affine_map = AffineMap(
+            t1_reg_affine,
+            domain_grid_shape=mni_t1.shape,
+            domain_grid2world=mni_t1_affine,
+            codomain_grid_shape=T1_for_reg.shape,
+            codomain_grid2world=T1_affine,
+        )
+        T1_mask_in_template = (
+            t1_affine_map.transform(T1_mask_f, interpolation="nearest") > 0.5
+        )
+        masked_T1_reg_to_template = T1_affine_to_template * T1_mask_in_template
     else:
         T1_mask_f = None
-        masked_t1 = T1_for_reg
+        masked_T1_reg_to_template = T1_affine_to_template
 
-    t1_template_sdr = SymmetricDiffeomorphicRegistration(
-        metric=CCMetric(3), level_iters=[200, 200, 100]
-    )
-    t1_template_mapping = t1_template_sdr.optimize(
-        static=masked_mni_t1,
-        moving=masked_t1,
-        static_grid2world=mni_t1_affine,
-        moving_grid2world=T1_affine,
-        prealign=t1_reg_affine,
-    )
-    T1_reg_to_template = t1_template_mapping.transform(T1_for_reg)
-    _save_debug_volume(
-        debug_dir=debug_dir,
-        name="02_t1_reg_to_template",
-        data=T1_reg_to_template,
-        affine=mni_t1_affine,
-    )
-
-    if T1_mask_f is not None:
-        T1_mask_reg_to_template = (
-            t1_template_mapping.transform(T1_mask_f, interpolation="nearest") > 0.5
-        )
-        masked_T1_reg_to_template = T1_reg_to_template * T1_mask_reg_to_template
-        _save_debug_volume(
-            debug_dir=debug_dir,
-            name="02b_t1_mask_reg_to_template",
-            data=T1_mask_reg_to_template,
-            affine=mni_t1_affine,
-        )
-    else:
-        masked_T1_reg_to_template = T1_reg_to_template
-    _save_debug_volume(
-        debug_dir=debug_dir,
-        name="03_t1_reg_to_template_masked",
-        data=masked_T1_reg_to_template,
-        affine=mni_t1_affine,
-    )
-
+    # ── Step 2: Rigid b0 → T1, compose with T1 → MNI ────────────────────
+    logger.info("Performing rigid registration of DWI b0 to T1...")
     dwi_p99 = np.percentile(dwi_for_field, 99)
     dwi_norm = normalize(dwi_for_field, min_v=0, max_v=dwi_p99, new_min=0, new_max=100)
-    mni_t2_p99 = np.percentile(mni_t2, 99)
-    mni_t2_norm = normalize(mni_t2, min_v=0, max_v=mni_t2_p99, new_min=0, new_max=100)
-
-    dwi_affine_to_template, dwi_reg_affine = affine_registration(
+    t1_p99 = np.percentile(T1_for_reg, 99)
+    t1_norm = normalize(T1_for_reg, min_v=0, max_v=t1_p99, new_min=0, new_max=100)
+    _, b0_to_t1_affine = affine_registration(
         dwi_norm,
-        mni_t2_norm,
+        t1_norm,
         moving_affine=dwi_affine,
-        static_affine=mni_t2_affine,
+        static_affine=T1_affine,
         nbins=32,
         metric="MI",
-        pipeline=pipeline,
-        level_iters=level_iters,
-        sigmas=sigmas,
-        factors=factors,
-        moving_mask=dwi_mask,
-        static_mask=mni_mask_t2,
+        pipeline=["center_of_mass", "translation", "rigid", "affine"],
+        level_iters=[100, 50, 25],
+        sigmas=[4.0, 2.0, 1.0],
+        factors=[8, 4, 2],
+        moving_mask=dwi_mask.astype(bool) if dwi_mask is not None else None,
+        static_mask=T1_mask.astype(bool) if T1_mask is not None else None,
     )
+    dwi_reg_affine = t1_reg_affine @ b0_to_t1_affine
+
+    dwi_to_mni_map = AffineMap(
+        dwi_reg_affine,
+        domain_grid_shape=mni_t1.shape,
+        domain_grid2world=mni_t1_affine,
+        codomain_grid_shape=dwi_for_field.shape,
+        codomain_grid2world=dwi_affine,
+    )
+    dwi_affine_to_template = dwi_to_mni_map.transform(dwi_for_field)
     _save_debug_volume(
         debug_dir=debug_dir,
         name="04_b0_affine_to_template",
         data=dwi_affine_to_template,
-        affine=mni_t2_affine,
+        affine=mni_t1_affine,
     )
 
     if dwi_mask is not None:
         dwi_mask_f = np.ascontiguousarray(np.asarray(dwi_mask, dtype=np.float32))
+        dwi_mask_in_template = (
+            dwi_to_mni_map.transform(dwi_mask_f, interpolation="nearest") > 0.5
+        )
+        masked_dwi_reg_to_template = dwi_affine_to_template * dwi_mask_in_template
     else:
         dwi_mask_f = None
-    masked_mni_t2 = mni_t2_norm * mni_mask_t2
+        masked_dwi_reg_to_template = dwi_affine_to_template
 
-    dwi_template_sdr = SymmetricDiffeomorphicRegistration(
-        metric=CCMetric(3), level_iters=[200, 200, 100]
-    )
-    dwi_template_mapping = dwi_template_sdr.optimize(
-        static=masked_mni_t2,
-        moving=dwi_norm,
-        static_grid2world=mni_t2_affine,
-        moving_grid2world=dwi_affine,
-        prealign=dwi_reg_affine,
-    )
-    dwi_reg_to_template = dwi_template_mapping.transform(dwi_for_field)
-    _save_debug_volume(
-        debug_dir=debug_dir,
-        name="04_b0_reg_to_template",
-        data=dwi_reg_to_template,
-        affine=mni_t2_affine,
-    )
-
-    if dwi_mask_f is not None:
-        dwi_mask_reg_to_template = (
-            dwi_template_mapping.transform(dwi_mask_f, interpolation="nearest") > 0.5
-        )
-        masked_dwi_reg_to_template = dwi_reg_to_template * dwi_mask_reg_to_template
-        _save_debug_volume(
-            debug_dir=debug_dir,
-            name="04b_dwi_mask_reg_to_template",
-            data=dwi_mask_reg_to_template,
-            affine=mni_t1_affine,
-        )
-    else:
-        masked_dwi_reg_to_template = dwi_reg_to_template
-    _save_debug_volume(
-        debug_dir=debug_dir,
-        name="05_b0_reg_to_template_masked",
-        data=masked_dwi_reg_to_template,
-        affine=mni_t1_affine,
-    )
-    # Reslice registered images from full-res to 2.5mm for Synb0 input
+    # ── Step 3: Reslice to 2.5 mm for Synb0 ─────────────────────────────
     synb0_shape = (77, 91, 77)
     synb0_zooms = (2.5, 2.5, 2.5)
     mni_t1_zooms = tuple(np.sqrt(np.sum(mni_t1_affine[:3, :3] ** 2, axis=0)))
-    mni_t2_zooms = tuple(np.sqrt(np.sum(mni_t2_affine[:3, :3] ** 2, axis=0)))
+
+    masked_T1_reg_to_template = _normalize_t1_for_synb0(masked_T1_reg_to_template)
 
     masked_T1_reg_resized, resized_affine = reslice(
         masked_T1_reg_to_template,
@@ -486,8 +414,8 @@ def synb0_syn(
     )
     masked_dwi_reg_resized, _ = reslice(
         masked_dwi_reg_to_template,
-        mni_t2_affine,
-        mni_t2_zooms,
+        mni_t1_affine,
+        mni_t1_zooms,
         synb0_zooms,
         new_shape=synb0_shape,
     )
@@ -501,12 +429,16 @@ def synb0_syn(
     )
     mni_mask_resized = (mni_mask_resized > 0.5).astype(np.int32)
 
+    # ── Step 4: Synb0 synthesis ──────────────────────────────────────────
     synb0 = Synb0()
+    logger.info("Synthesizing undistorted b0 with Synb0 model...")
     binf = synb0.predict(masked_dwi_reg_resized, masked_T1_reg_resized, **kwargs)
     binf = binf * mni_mask_resized
     _save_debug_volume(
         debug_dir=debug_dir, name="06_binf_template", data=binf, affine=resized_affine
     )
+
+    # ── Step 5: Bring synthetic b0 back to native DWI space ──────────────
     binf_fullres, _ = reslice(
         binf,
         resized_affine,
@@ -514,21 +446,16 @@ def synb0_syn(
         mni_t1_zooms,
         new_shape=mni_t1.shape,
     )
-    binf_in_t1 = t1_template_mapping.transform_inverse(binf_fullres)
-    _save_debug_volume(
-        debug_dir=debug_dir, name="06b_binf_in_t1", data=binf_in_t1, affine=T1_affine
+    dwi_inv_affine_map = AffineMap(
+        dwi_reg_affine,
+        domain_grid_shape=mni_t1.shape,
+        domain_grid2world=mni_t1_affine,
+        codomain_grid_shape=dwi_for_field.shape,
+        codomain_grid2world=dwi_affine,
     )
-    ori_binf, _ = affine_registration(
-        binf_in_t1,
-        dwi_for_field,
-        moving_affine=T1_affine,
-        static_affine=dwi_affine,
-        nbins=32,
-        metric="MI",
-        pipeline=["center_of_mass", "translation", "rigid", "affine"],
-        level_iters=level_iters,
-        sigmas=sigmas,
-        factors=factors,
+    ori_binf = dwi_inv_affine_map.transform_inverse(binf_fullres)
+    _save_debug_volume(
+        debug_dir=debug_dir, name="06b_binf_in_dwi", data=ori_binf, affine=dwi_affine
     )
     ori_binf = np.clip(ori_binf, a_min=0, a_max=None)
     if dwi_mask_f is not None:
@@ -537,35 +464,70 @@ def synb0_syn(
         debug_dir=debug_dir, name="07_binf_in_dwi", data=ori_binf, affine=dwi_affine
     )
 
-    sdr = SymmetricDiffeomorphicRegistration(
-        metric=CCMetric(3), level_iters=[200, 200, 100]
-    )
-    pre_align = np.eye(4)
+    # ── Step 6: SyN registration  (synthetic b0 ↔ distorted b0) ─────────
+    logger.info("Performing nonlinear registration of synthesized b0 to DWI...")
     if dwi_mask_f is not None:
         masked_dwi_for_sdr = dwi_for_field * dwi_mask_f
     else:
         masked_dwi_for_sdr = dwi_for_field
+
+    voxel_sizes = np.sqrt(np.sum(dwi_affine[:3, :3] ** 2, axis=0))
+
+    binf_coverage = binary_dilation(ori_binf > 0, iterations=5).astype(np.float32)
+    binf_coverage = gaussian_filter(binf_coverage, sigma=3.0)
+    masked_dwi_for_sdr = masked_dwi_for_sdr * binf_coverage
+
+    smooth_sigma_vox = 1.15 / voxel_sizes
+    binf_smooth = gaussian_filter(ori_binf, sigma=smooth_sigma_vox)
+
+    p99_s = (
+        np.percentile(binf_smooth[binf_smooth > 0], 99)
+        if np.any(binf_smooth > 0)
+        else 1.0
+    )
+    p99_m = (
+        np.percentile(masked_dwi_for_sdr[masked_dwi_for_sdr > 0], 99)
+        if np.any(masked_dwi_for_sdr > 0)
+        else 1.0
+    )
+    static_norm = binf_smooth / max(p99_s, 1e-8) * 100.0
+    moving_norm = masked_dwi_for_sdr / max(p99_m, 1e-8) * 100.0
+
+    sdr = SymmetricDiffeomorphicRegistration(
+        metric=CCMetric(3, sigma_diff=3.5, radius=6),
+        level_iters=[200, 100, 20],
+        step_length=0.25,
+    )
     mapping = sdr.optimize(
-        static=ori_binf,
-        moving=masked_dwi_for_sdr,
+        static=static_norm,
+        moving=moving_norm,
         static_grid2world=dwi_affine,
         moving_grid2world=dwi_affine,
-        prealign=pre_align,
+        prealign=np.eye(4),
     )
+
+    # ── Step 7: Extract PE-restricted field and post-smooth ──────────────
+    field_smooth_mm = 10.0
+    field_smooth_vox = field_smooth_mm / voxel_sizes
+
     if pe_axis is not None:
-        # Make other axes zero in the forward field
-        #  to restrict correction to the PE direction
         field = mapping.get_forward_field()
         if isinstance(pe_axis, str):
             pe_axis = {"x": 0, "y": 1, "z": 2}.get(pe_axis.lower())
         if pe_axis in [0, 1, 2]:
             field[..., [i for i in range(3) if i != pe_axis]] = 0
+            pe_disp = gaussian_filter(field[..., pe_axis], sigma=field_smooth_vox)
+            field[..., pe_axis] = pe_disp
             mapping.forward = field
-            field = field[..., pe_axis]
+            field = pe_disp
         else:
             raise ValueError("pe_axis must be 'x', 'y', 'z' or 0, 1, 2.")
     elif return_field:
         field = mapping.get_forward_field()
+        for c in range(3):
+            field[..., c] = gaussian_filter(field[..., c], sigma=field_smooth_vox)
+        mapping.forward = field
+
     dwi_to_binf = _warp_image(mapping=mapping, image=dwi)
     _save_debug_volume(
         debug_dir=debug_dir,

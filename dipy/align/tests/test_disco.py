@@ -94,7 +94,9 @@ def test_save_debug_volume_bool_data(tmp_path):
     assert (tmp_path / "mask.nii.gz").exists()
 
 
-@pytest.mark.skipif(HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing")
+@pytest.mark.skipif(
+    not HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing"
+)
 def test_synb0_syn_wrong_dwi_ndim():
     with pytest.raises(ValueError, match="dwi must be a 3D or 4D"):
         synb0_syn(
@@ -105,7 +107,9 @@ def test_synb0_syn_wrong_dwi_ndim():
         )
 
 
-@pytest.mark.skipif(HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing")
+@pytest.mark.skipif(
+    not HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing"
+)
 def test_synb0_syn_wrong_t1_ndim():
     with pytest.raises(ValueError, match="T1 must be a 3D or 4D"):
         synb0_syn(
@@ -116,7 +120,9 @@ def test_synb0_syn_wrong_t1_ndim():
         )
 
 
-@pytest.mark.skipif(HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing")
+@pytest.mark.skipif(
+    not HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing"
+)
 def test_synb0_syn_bad_b0_index():
     with pytest.raises(ValueError, match="must be in"):
         synb0_syn(
@@ -128,7 +134,9 @@ def test_synb0_syn_bad_b0_index():
         )
 
 
-@pytest.mark.skipif(HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing")
+@pytest.mark.skipif(
+    not HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing"
+)
 def test_synb0_syn_b0_index_type_error():
     with pytest.raises(TypeError, match="must be an integer"):
         synb0_syn(
@@ -140,7 +148,9 @@ def test_synb0_syn_b0_index_type_error():
         )
 
 
-@pytest.mark.skipif(HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing")
+@pytest.mark.skipif(
+    not HAVE_SYNB0, reason="Only test ImportError when Synb0 is missing"
+)
 def test_synb0_syn_import_error_without_backend():
     with pytest.raises(ImportError, match="Synb0 model not available"):
         synb0_syn(
