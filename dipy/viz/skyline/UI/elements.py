@@ -221,7 +221,9 @@ def color_picker(
         imgui.open_popup("color_picker_popup")
     if imgui.begin_popup("color_picker_popup"):
         changed, color = imgui.color_picker3(
-            "", selected_color, imgui.ColorEditFlags_.no_side_preview
+            "",
+            imgui.ImVec4(selected_color[0], selected_color[1], selected_color[2], 1.0),
+            imgui.ColorEditFlags_.no_side_preview,
         )
         imgui.end_popup()
 

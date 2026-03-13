@@ -332,7 +332,7 @@ class SHGlyph3D(Visualization):
         sync_callback=None,
     ):
         self.affine = affine
-        default_scale = self.affine[0, 0] if self.affine is not None else scale
+        default_scale = abs(self.affine[0, 0]) if self.affine is not None else scale
         self._voxel_sizes = np.array([1.0, 1.0, 1.0])
 
         self.shape = coeffs.shape[:3]
