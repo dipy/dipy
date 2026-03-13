@@ -86,7 +86,7 @@ model = FORCEModel(
 
 model.generate(
     num_simulations=500000,
-    num_cpus=24,
+    num_cpus=-1,
     verbose=True,
     use_cache=False,
 )

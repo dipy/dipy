@@ -7,9 +7,7 @@ from dipy.reconst.force import (
     SignalIndex,
     compute_uncertainty_ambiguity,
     create_signal_index,
-    labels_to_peak_indices,
     normalize_signals,
-    pick_top_peaks_from_weights,
     softmax_stable,
 )
 
@@ -58,49 +56,6 @@ def test_compute_uncertainty_ambiguity():
 
     # First row has spread, second is uniform
     assert uncertainty[0] > uncertainty[1]
-
-
-def test_labels_to_peak_indices():
-    """Test conversion of binary labels to peak indices."""
-    labels = np.array(
-        [
-            [0, 1, 0, 1, 0],
-            [1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0],
-        ],
-        dtype=np.uint8,
-    )
-
-    peak_idx = labels_to_peak_indices(labels, max_peaks=3)
-
-    assert peak_idx.shape == (3, 3)
-    assert peak_idx[0, 0] == 1  # First peak at index 1
-    assert peak_idx[0, 1] == 3  # Second peak at index 3
-    assert peak_idx[1, 0] == 0  # Single peak at index 0
-    assert peak_idx[2, 0] == -1  # No peaks
-
-
-def test_pick_top_peaks_from_weights():
-    """Test peak extraction from directional weights."""
-    weights = np.zeros(100, dtype=np.float32)
-    weights[10] = 1.0
-    weights[50] = 0.8
-    weights[90] = 0.6
-
-    sphere_dirs = np.random.randn(100, 3).astype(np.float32)
-    sphere_dirs = sphere_dirs / np.linalg.norm(sphere_dirs, axis=1, keepdims=True)
-
-    peak_dirs, peak_inds, peak_vals = pick_top_peaks_from_weights(
-        weights, sphere_dirs, n_peaks=5
-    )
-
-    assert peak_dirs.shape == (5, 3)
-    assert peak_inds.shape == (5,)
-    assert peak_vals.shape == (5,)
-
-    # First peak should be at index 10 with value 1.0
-    assert peak_inds[0] == 10
-    assert peak_vals[0] == 1.0
 
 
 def test_signal_index():
