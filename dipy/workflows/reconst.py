@@ -1,5 +1,6 @@
 from ast import literal_eval
 from pathlib import Path
+import sys
 from warnings import warn
 
 import nibabel as nib
@@ -9,6 +10,7 @@ from dipy.core.gradients import (
     gradient_table,
     gradient_table_from_bvals_bvecs,
     mask_non_weighted_bvals,
+    unique_bvals_tolerance,
 )
 from dipy.core.ndindex import ndindex
 from dipy.core.sphere import HemiSphere
@@ -47,6 +49,11 @@ from dipy.reconst.forecast import ForecastModel
 from dipy.reconst.fwdti import FreeWaterTensorModel, common_fit_methods
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.ivim import IvimModel
+from dipy.reconst.mcsd import (
+    MultiShellDeconvModel,
+    multi_shell_fiber_response,
+    response_from_mask_msmt,
+)
 from dipy.reconst.rumba import RumbaSDModel
 from dipy.reconst.sfm import SparseFascicleModel
 from dipy.reconst.shm import (
@@ -58,6 +65,7 @@ from dipy.reconst.shm import (
     smooth_pinv,
     sph_harm_lookup,
 )
+from dipy.segment.tissue import TissueClassifierHMRF
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
@@ -1008,6 +1016,15 @@ class ReconstCSDFlow(Workflow):
         bvalues_files,
         bvectors_files,
         mask_files,
+        *,
+        use_msmt=False,
+        t1_file=None,
+        wm_file=None,
+        gm_file=None,
+        csf_file=None,
+        iso=3,
+        beta=0.1,
+        bval_tol=20,
         b0_threshold=50.0,
         bvecs_tol=0.01,
         roi_center=None,
@@ -1035,21 +1052,48 @@ class ReconstCSDFlow(Workflow):
         """Constrained spherical deconvolution.
 
         See :footcite:p:`Tournier2007` for further details about the method.
+        See :footcite:p:`Jeurissen2014` if you use the MSMT method. This method extends
+        the SSST-CSD introduced in :footcite:p:`Tournier2007`.
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
-            multiple masks at once. (default: No mask used)
+            multiple masks at once.
+        use_msmt : bool, optional
+            If True, use the Multi-Shell Multi-Tissue method.
+        t1_file : string or Path, optional
+            Path to the T1 file. If not available, an anisotropic map will be computed.
+            Option available only for ``--use_msmt`` or ``use_msmt=True``.
+        wm_file : string or Path, optional
+            Path to the WM mask. If not provided, HMRF tissue classifier will be
+            used on the T1 image to obtain the WM mask. Option available
+            only for ``--use_msmt`` or ``use_msmt=True``
+        gm_file : string or Path, optional
+            Path to the GM mask. If not provided, HMRF tissue classifier will be
+            used on the T1 image to obtain the GM mask. Option available only
+            for ``--use_msmt`` or ``use_msmt=True``
+        csf_file : string or Path, optional
+            Path to the CSF mask. If not provided, HMRF tissue classifier will be
+            used on the T1 image to obtain the CSF mask. Option available only
+            for ``--use_msmt`` or ``use_msmt=True``
+        iso : int, optional
+            Number of isotropic compartments for running the MSMT-CSD.
+            Currently fixed at 3 (WM, GM, CSF); values below 3 are rejected.
+        beta : float, optional
+            The smoothness factor of the tissue segmentation during MSMT-CSD.
+            Good performance is achieved with values between 0 and 0.5.
+        bval_tol : int, optional
+            Tolerance gap for b-values clustering in MSMT-CSD.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
@@ -1114,6 +1158,17 @@ class ReconstCSDFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
+        model = MultiShellDeconvModel if use_msmt else ConstrainedSphericalDeconvModel
+
+        if use_msmt and iso < 3:
+            msg = f"With MSMT, the minimum number of compartments is 3, got {iso}"
+            logger.error(msg)
+            return sys.exit(1)
+
+        peaks_sphere = default_sphere
+        if sphere_name is not None:
+            peaks_sphere = get_sphere(name=sphere_name)
+
         for (
             dwi,
             bval,
@@ -1157,43 +1212,136 @@ class ReconstCSDFlow(Workflow):
                     " DWI volumes."
                 )
 
-            if frf is None:
-                logger.info("Computing response function")
-                if roi_center is not None:
-                    logger.info(f"Response ROI center:\n{roi_center}")
-                    logger.info(f"Response ROI radii:\n{roi_radii}")
-                response, ratio = auto_response_ssst(
-                    gtab,
-                    data,
-                    roi_center=roi_center,
-                    roi_radii=roi_radii,
-                    fa_thr=fa_thr,
+            model_args = {"gtab": gtab, "sh_order_max": sh_order_max}
+            if not use_msmt:
+                if frf is None:
+                    logger.info("Computing response function")
+                    if roi_center is not None:
+                        logger.info(f"Response ROI center:\n{roi_center}")
+                        logger.info(f"Response ROI radii:\n{roi_radii}")
+                    response, ratio = auto_response_ssst(
+                        gtab,
+                        data,
+                        roi_center=roi_center,
+                        roi_radii=roi_radii,
+                        fa_thr=fa_thr,
+                    )
+                    response = list(response)
+
+                else:
+                    logger.info("Using response function")
+                    if isinstance(frf, str):
+                        l01 = np.array(literal_eval(frf), dtype=np.float64)
+                    else:
+                        l01 = np.array(frf, dtype=np.float64)
+
+                    l01 *= 10**-4
+                    response = np.array([l01[0], l01[1], l01[1]])
+                    ratio = l01[1] / l01[0]
+                    response = (response, ratio)
+
+                model_args["response"] = response
+                logger.info(
+                    f"Eigenvalues for the frf of the input data are :{response[0]}"
                 )
-                response = list(response)
+                logger.info(f"Ratio for smallest to largest eigen value is {ratio}")
 
             else:
-                logger.info("Using response function")
-                if isinstance(frf, str):
-                    l01 = np.array(literal_eval(frf), dtype=np.float64)
-                else:
-                    l01 = np.array(frf, dtype=np.float64)
+                need_tissue_classification = (
+                    sum(x is not None for x in [wm_file, gm_file, csf_file]) < iso
+                )
+                need_powermap = t1_file is None and need_tissue_classification
+                wm = np.ones(data.shape[:3])
+                gm = np.ones(data.shape[:3])
+                csf = np.ones(data.shape[:3])
+                anat_affine = affine
+                if need_tissue_classification:
+                    if need_powermap:
+                        logger.info(
+                            "No T1 image provided, computing anisotropic power map"
+                        )
+                        dwi_mask = ~gtab.b0s_mask
+                        normed_data = normalize_data(data, gtab.b0s_mask)
+                        normed_data = normed_data[..., dwi_mask]
+                        normed_data = normed_data * mask_vol[..., None]
 
-                l01 *= 10**-4
-                response = np.array([l01[0], l01[1], l01[1]])
-                ratio = l01[1] / l01[0]
-                response = (response, ratio)
+                        signal_native_pts = HemiSphere(xyz=gtab.bvecs[dwi_mask])
+                        sh_basis = "descoteaux07"
+                        sph_harm_basis = sph_harm_lookup.get(sh_basis)
 
-            logger.info(f"Eigenvalues for the frf of the input data are :{response[0]}")
-            logger.info(f"Ratio for smallest to largest eigen value is {ratio}")
+                        Ba, m, n = sph_harm_basis(
+                            sh_order_max, signal_native_pts.theta, signal_native_pts.phi
+                        )
+                        L = -n * (n + 1)
+                        # no Laplace-Beltrami regularization for power map
+                        smooth = 0.0
+                        # L2 power norm as in Duy et al. 2016
+                        power = 2
+                        # small offset to avoid log(0) in anisotropic_power
+                        norm_factor = 0.00001
+                        non_negative = True
+                        invB = smooth_pinv(Ba, np.sqrt(smooth) * L)
 
-            peaks_sphere = default_sphere
-            if sphere_name is not None:
-                peaks_sphere = get_sphere(name=sphere_name)
+                        # fit SH basis to DWI signal
+                        shm_coeff_data = np.dot(normed_data, invB.T)
+
+                        anat = anisotropic_power(
+                            shm_coeff_data,
+                            norm_factor=norm_factor,
+                            power=power,
+                            non_negative=non_negative,
+                        )
+                    else:
+                        logger.info(f"Loading T1 image from {t1_file}")
+                        anat, anat_affine = load_nifti(t1_file)
+
+                    logger.info(
+                        "Computing tissue classifier from anatomical image using "
+                        "the HMRF method."
+                    )
+                    hmrf = TissueClassifierHMRF()
+                    _, final_segmentation, _ = hmrf.classify(anat, iso, beta)
+
+                    csf = np.where(final_segmentation == 1, 1, 0)
+                    gm = np.where(final_segmentation == 2, 1, 0)
+                    wm = np.where(final_segmentation == 3, 1, 0)
+
+                for fname_in, fname_out, label, tissue in zip(
+                    [wm_file, gm_file, csf_file],
+                    [
+                        Path(out_dir) / "wm_mask.nii.gz",
+                        Path(out_dir) / "gm_mask.nii.gz",
+                        Path(out_dir) / "csf_mask.nii.gz",
+                    ],
+                    ["WM", "GM", "CSF"],
+                    [wm, gm, csf],
+                ):
+                    if fname_in is not None:
+                        mask_tissue, mask_affine = load_nifti(fname_in)
+                        tissue *= mask_tissue
+                        anat_affine = mask_affine
+
+                    save_nifti(str(fname_out), tissue.astype(np.uint8), anat_affine)
+                    logger.info(f"{label} mask saved to {fname_out}")
+
+                response_wm, response_gm, response_csf = response_from_mask_msmt(
+                    gtab, data, wm, gm, csf
+                )
+                ubvals = unique_bvals_tolerance(gtab.bvals)
+                response_mcsd = multi_shell_fiber_response(
+                    sh_order_max=sh_order_max,
+                    bvals=ubvals,
+                    wm_rf=response_wm,
+                    gm_rf=response_gm,
+                    csf_rf=response_csf,
+                )
+                model_args["response"] = response_mcsd
+                model_args["reg_sphere"] = peaks_sphere
+                model_args["iso"] = response_mcsd.iso
+                model_args["tol"] = bval_tol
 
             logger.info("CSD computation started.")
-            csd_model = ConstrainedSphericalDeconvModel(
-                gtab, response, sh_order_max=sh_order_max
-            )
+            csd_model = model(**model_args)
 
             peaks_csd = peaks_from_model(
                 model=csd_model,
