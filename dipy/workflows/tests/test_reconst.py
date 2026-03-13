@@ -534,7 +534,7 @@ def test_reconst_force_select_metrics(monkeypatch, tmp_path):
 
 
 def test_reconst_force_dki_metrics(monkeypatch, tmp_path):
-    """DKI metrics are saved when compute_dki=True."""
+    """DKI metrics are saved when compute_kurtosis=True."""
     data_path, bval_path, bvec_path = get_fnames(name="small_64D")
     volume, affine = load_nifti(data_path)
     mask = np.ones(volume.shape[:3], dtype=np.uint8)
@@ -552,7 +552,7 @@ def test_reconst_force_dki_metrics(monkeypatch, tmp_path):
         str(mask_path),
         n_neighbors=5,
         engine="serial",
-        compute_dki=True,
+        compute_kurtosis=True,
         out_dir=str(tmp_path),
     )
 
@@ -577,9 +577,9 @@ def test_reconst_force_ray_fallback(monkeypatch, tmp_path):
     # Simulate ray being unavailable
     monkeypatch.setattr(
         "dipy.utils.optpkg.optional_package",
-        lambda name, *a, **kw: (None, False, None)
-        if name == "ray"
-        else optional_package(name, *a, **kw),
+        lambda name, *a, **kw: (
+            (None, False, None) if name == "ray" else optional_package(name, *a, **kw)
+        ),
     )
 
     flow = ReconstForceFlow()

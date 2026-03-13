@@ -3314,9 +3314,10 @@ class ReconstForceFlow(Workflow):
         num_simulations=500000,
         num_cpus=-1,
         use_cache=True,
-        compute_dki=False,
+        compute_kurtosis=False,
         engine="serial",
         save_metrics=None,
+        verbose=False,
         out_dir="",
         out_fa="fa.nii.gz",
         out_md="md.nii.gz",
@@ -3327,6 +3328,7 @@ class ReconstForceFlow(Workflow):
         out_num_fibers="num_fibers.nii.gz",
         out_dispersion="dispersion.nii.gz",
         out_nd="nd.nii.gz",
+        out_ufa="ufa.nii.gz",
         out_uncertainty="uncertainty.nii.gz",
         out_ambiguity="ambiguity.nii.gz",
         out_mk="mk.nii.gz",
@@ -3379,16 +3381,18 @@ class ReconstForceFlow(Workflow):
             all available cores.
         use_cache : bool, optional
             Load cached simulations if available.
-        compute_dki : bool, optional
-            Compute DKI metrics (mk, ak, rk, kfa) during simulation.
+        compute_kurtosis : bool, optional
+            Compute kurtosis metrics (mk, ak, rk, kfa) during simulation.
         engine : string, optional
             Parallel engine for fitting: "ray" or "serial". If "ray" is
             requested but not installed, falls back to "serial" with a warning.
         save_metrics : variable string, optional
             List of metrics to save. Possible values: fa, md, rd, wm_fraction,
-            gm_fraction, csf_fraction, num_fibers, dispersion, nd, uncertainty,
+            gm_fraction, csf_fraction, num_fibers, dispersion, nd, ufa, uncertainty,
             ambiguity, mk, ak, rk, kfa, entropy, predicted_signal.
             If not set, all available metrics are saved.
+        verbose : bool, optional
+            Whether to print verbose messages during processing.
         out_dir : string or Path, optional
             Output directory.
         out_fa : string, optional
@@ -3409,18 +3413,20 @@ class ReconstForceFlow(Workflow):
             Name of the orientation dispersion volume to be saved.
         out_nd : string, optional
             Name of the neurite density volume to be saved.
+        out_ufa : string, optional
+            Name of the micro-FA volume to be saved.
         out_uncertainty : string, optional
             Name of the uncertainty volume to be saved.
         out_ambiguity : string, optional
             Name of the ambiguity volume to be saved.
         out_mk : string, optional
-            Name of the mean kurtosis volume to be saved (requires compute_dki).
+            Name of the mean kurtosis volume to be saved (requires compute_kurtosis).
         out_ak : string, optional
-            Name of the axial kurtosis volume to be saved (requires compute_dki).
+            Name of the axial kurtosis volume to be saved (requires compute_kurtosis).
         out_rk : string, optional
-            Name of the radial kurtosis volume to be saved (requires compute_dki).
+            Name of the radial kurtosis volume to be saved (requires compute_kurtosis).
         out_kfa : string, optional
-            Name of the kurtosis FA volume to be saved (requires compute_dki).
+            Name of the kurtosis FA volume to be saved (requires compute_kurtosis).
         out_entropy : string, optional
             Name of the entropy volume to be saved (requires use_posterior).
         out_predicted_signal : string, optional
@@ -3464,6 +3470,7 @@ class ReconstForceFlow(Workflow):
             onum_fibers,
             odispersion,
             ond,
+            oufa,
             ouncertainty,
             oambiguity,
             omk,
@@ -3495,7 +3502,7 @@ class ReconstForceFlow(Workflow):
                 use_posterior=use_posterior,
                 posterior_beta=posterior_beta,
                 compute_odf=compute_odf,
-                verbose=True,
+                verbose=verbose,
             )
 
             logger.info("Generating FORCE simulation library...")
@@ -3503,7 +3510,8 @@ class ReconstForceFlow(Workflow):
                 num_simulations=num_simulations,
                 num_cpus=num_cpus,
                 use_cache=use_cache,
-                compute_dki=compute_dki,
+                compute_dki=compute_kurtosis,
+                verbose=verbose,
             )
 
             logger.info("Fitting FORCE model...")
@@ -3512,6 +3520,7 @@ class ReconstForceFlow(Workflow):
                 mask=mask,
                 engine=engine,
                 n_jobs=-1,
+                verbose=verbose,
             )
             from dipy.io.peaks import save_pam
             from dipy.reconst.force import force_peaks
@@ -3531,12 +3540,13 @@ class ReconstForceFlow(Workflow):
                 "num_fibers",
                 "dispersion",
                 "nd",
+                "ufa",
                 "uncertainty",
                 "ambiguity",
                 "predicted_signal",
             ]
             conditional_metrics = []
-            if compute_dki:
+            if compute_kurtosis:
                 conditional_metrics.extend(["mk", "ak", "rk", "kfa"])
             if use_posterior:
                 conditional_metrics.append("entropy")
@@ -3553,6 +3563,7 @@ class ReconstForceFlow(Workflow):
                 "num_fibers": (onum_fibers, force_fit.num_fibers),
                 "dispersion": (odispersion, force_fit.dispersion),
                 "nd": (ond, force_fit.nd),
+                "ufa": (oufa, force_fit.ufa_voxel),
                 "uncertainty": (ouncertainty, force_fit.uncertainty),
                 "ambiguity": (oambiguity, force_fit.ambiguity),
                 "mk": (omk, force_fit.mk),

@@ -66,7 +66,7 @@ def dispersion_lut(target_sphere, odi_list):
     return dispersion_sf_lut
 
 
-def smallest_shell_bval(bvals, *, b0_threshold=50, shell_tolerance=50):
+def smallest_shell_bval(bvals, *, b0_threshold=50, shell_tolerance=50, n=1):
     """Find the smallest non-zero b-value shell.
 
     Parameters
@@ -77,6 +77,8 @@ def smallest_shell_bval(bvals, *, b0_threshold=50, shell_tolerance=50):
         Maximum b-value for b0 volumes.
     shell_tolerance : float, optional
         Tolerance for grouping shells.
+    n : int, optional
+        Number of smallest shells to return.
 
     Returns
     -------
@@ -90,11 +92,17 @@ def smallest_shell_bval(bvals, *, b0_threshold=50, shell_tolerance=50):
     if not np.any(non_b0):
         raise ValueError("No non-b0 volumes found.")
     rounded = np.round(bvals[non_b0] / shell_tolerance) * shell_tolerance
-    min_shell = float(np.min(rounded))
-    shell_mask = np.isclose(
-        np.round(bvals / shell_tolerance) * shell_tolerance, min_shell
-    )
-    return min_shell, shell_mask
+    unique_shells = np.unique(rounded)
+    if len(unique_shells) < n:
+        raise ValueError(
+            f"Only {len(unique_shells)} unique shells found, but n={n} requested."
+        )
+    else:
+        min_shells = unique_shells[:n]
+
+    rounded_all = np.round(bvals / shell_tolerance) * shell_tolerance
+    shell_mask = np.isin(rounded_all, min_shells)
+    return min_shells, shell_mask
 
 
 def init_worker(base_seed=None):
@@ -706,11 +714,17 @@ def generate_force_simulations(
     md_dti = np.zeros(num_simulations, dtype=dtype)
     rd_dti = np.zeros(num_simulations, dtype=dtype)
 
+    # Compute DKI metrics
+    ak_arr = np.zeros(num_simulations, dtype=dtype)
+    rk_arr = np.zeros(num_simulations, dtype=dtype)
+    mk_arr = np.zeros(num_simulations, dtype=dtype)
+    kfa_arr = np.zeros(num_simulations, dtype=dtype)
+
     if compute_dti:
         from dipy.core.gradients import gradient_table as gt_func
 
         min_b, shell_mask = smallest_shell_bval(bvals)
-        b0_mask = bvals <= 50
+        b0_mask = bvals <= gtab.b0_threshold
         use_mask = shell_mask | b0_mask
 
         gtab_small = gt_func(bvals[use_mask], bvecs=bvecs[use_mask])
@@ -726,6 +740,34 @@ def generate_force_simulations(
             fa_dti[start:end] = dti_fit.fa.astype(dtype)
             md_dti[start:end] = dti_fit.md.astype(dtype)
             rd_dti[start:end] = dti_fit.rd.astype(dtype)
+            pbar.update(end - start)
+
+        pbar.close()
+
+    if compute_dki:
+        from dipy.core.gradients import gradient_table as gt_func
+        from dipy.reconst.dki import DiffusionKurtosisModel
+
+        min_bs, shell_mask = smallest_shell_bval(bvals, n=2)
+        b0_mask = bvals <= gtab.b0_threshold
+        use_mask = shell_mask | b0_mask
+
+        gtab_dki = gt_func(bvals[use_mask], bvecs=bvecs[use_mask])
+        dki_model = DiffusionKurtosisModel(gtab_dki)
+
+        dki_batch_size = 2000
+        pbar = tqdm(
+            total=num_simulations, desc="Kurtosis Estimation", disable=not verbose
+        )
+
+        for start in range(0, num_simulations, dki_batch_size):
+            end = min(start + dki_batch_size, num_simulations)
+            data_batch = signals_mm[start:end][:, use_mask]
+            dki_fit = dki_model.multi_fit(data_batch)[0]
+            ak_arr[start:end] = dki_fit.ak().astype(dtype)
+            rk_arr[start:end] = dki_fit.rk().astype(dtype)
+            mk_arr[start:end] = dki_fit.mk().astype(dtype)
+            kfa_arr[start:end] = dki_fit.kfa.astype(dtype)
             pbar.update(end - start)
 
         pbar.close()
@@ -749,8 +791,20 @@ def generate_force_simulations(
         "fraction_array": np.array(fraction_array_mm),
     }
 
+    if compute_dki:
+        simulations.update(
+            {
+                "ak": ak_arr,
+                "rk": rk_arr,
+                "mk": mk_arr,
+                "kfa": kfa_arr,
+            }
+        )
+
     # Cleanup memmaps
     for mm in memmaps:
+        if hasattr(mm, "base") and hasattr(mm.base, "close"):
+            mm.base.close()
         del mm
     gc.collect()
 
