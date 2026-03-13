@@ -9,6 +9,8 @@ DEC map. We use a Tensor model to reconstruct the datasets which are
 saved in a Nifti file along with the b-values and b-vectors which are saved as
 text files. Finally, we save our result as a Nifti file ::
 
+    .. code-block:: python
+
     fdwi = 'dwi.nii.gz'
     fbval = 'dwi.bval'
     fbvec = 'dwi.bvec'
@@ -38,6 +40,6 @@ a slice should look like.
 Next Steps
 **********
 
-You can learn more about how you to use DIPY_ with  your datasets by reading the examples in our :ref:`examples`.
+You can learn more about how to use DIPY_ with  your datasets by reading the examples in our :ref:`examples`.
 
 .. include:: ../links_names.inc
