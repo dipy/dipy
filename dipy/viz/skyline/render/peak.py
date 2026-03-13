@@ -101,7 +101,8 @@ class Peak3D(Visualization):
             peak_values=self.peak_values * self._scale,
             visibility=self._slice_visibility,
         )
-        self.state = self._slicer.cross_section
+        self.state = np.asarray(self._slicer.cross_section, dtype=np.float32)
+        self._cross_section_state = np.asarray(self.state, dtype=np.float32)
         lower_bounds = np.zeros(3)
         upper_bounds = np.array(self.peaks.shape[:3]) - 1
         if self.affine is not None:
@@ -110,15 +111,57 @@ class Peak3D(Visualization):
             )
         else:
             self.bounds = np.asarray([lower_bounds, upper_bounds])
+        self._cross_section_space = self._infer_cross_section_space()
+        self._apply_cross_section_from_state()
 
     @property
     def actor(self):
         return self._slicer
 
+    def _infer_cross_section_space(self):
+        if self.affine is None:
+            return "voxel"
+
+        cross_section = np.asarray(self._slicer.cross_section, dtype=np.float32)
+        voxel_center = (np.array(self.peaks.shape[:3], dtype=np.float32) - 1.0) * 0.5
+        world_center = apply_transformation(
+            np.array([voxel_center], dtype=np.float32), self.affine
+        )[0]
+
+        world_dist = np.linalg.norm(cross_section - world_center)
+        voxel_dist = np.linalg.norm(cross_section - voxel_center)
+        return "world" if world_dist <= voxel_dist else "voxel"
+
+    def _voxel_from_world_state(self, world_state):
+        voxel_state = apply_transformation(
+            np.array([world_state], dtype=np.float32), np.linalg.inv(self.affine)
+        )[0]
+        voxel_state = np.round(voxel_state).astype(np.int16)
+        max_idx = np.array(self.peaks.shape[:3], dtype=np.int16) - 1
+        return np.clip(voxel_state, 0, max_idx)
+
+    def _apply_cross_section_from_state(self):
+        if self.affine is None:
+            voxel_state = np.round(self.state).astype(np.int16)
+            self._cross_section_state = voxel_state.astype(np.float32)
+            self._slicer.cross_section = voxel_state
+            return
+
+        voxel_state = self._voxel_from_world_state(self.state)
+        if self._cross_section_space == "world":
+            world_state = apply_transformation(
+                np.array([voxel_state], dtype=np.float32), self.affine
+            )[0]
+            self._cross_section_state = np.asarray(world_state, dtype=np.float32)
+            self._slicer.cross_section = self._cross_section_state
+        else:
+            self._cross_section_state = voxel_state.astype(np.float32)
+            self._slicer.cross_section = voxel_state
+
     def update_state(self, new_state):
         if self._synchronize:
-            self.state = new_state[:3]
-            self._slicer.cross_section = self.state
+            self.state = np.asarray(new_state[:3], dtype=np.float32)
+            self._apply_cross_section_from_state()
 
     def render_widgets(self):
         changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
@@ -185,8 +228,8 @@ class Peak3D(Visualization):
         render_data = render_group("Slice", slicers)
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
-                self.state[idx] = int(round(new))
-                self._slicer.cross_section = self.state
+                self.state[idx] = float(new)
+                self._apply_cross_section_from_state()
                 if self._synchronize and self._sync_callabck is not None:
                     self._sync_callabck(self, self.state)
             self._slice_visibility[idx] = toggle
