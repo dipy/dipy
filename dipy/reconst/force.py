@@ -1196,7 +1196,9 @@ def force_peaks(fitted_object, *, mask=None, sh_order=8):
             res_vals = p_val.reshape((*original_shape, 5))
 
         res_sh = None
-        if odf is not None:
+        if odf is not None and np.issubdtype(
+            getattr(odf, "dtype", type(None)), np.floating
+        ):
             v_max = np.max(odf, axis=-1, keepdims=True)
             v_min = np.min(odf, axis=-1, keepdims=True)
             mask = v_max > 1.0

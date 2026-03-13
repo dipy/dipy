@@ -9,7 +9,7 @@ import numpy.testing as npt
 import pytest
 
 from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames
+from dipy.data import default_sphere, get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.peaks import load_pam
@@ -416,6 +416,7 @@ def _make_fake_simulations(n_gradients, *, n_sims=100):
         Minimal simulations dict accepted by FORCEModel._prepare_library.
     """
     rng = np.random.default_rng(42)
+    n_dirs = len(default_sphere.vertices)
     sims = {
         "signals": rng.random((n_sims, n_gradients)).astype(np.float32),
         "fa": rng.random(n_sims).astype(np.float32),
@@ -427,6 +428,8 @@ def _make_fake_simulations(n_gradients, *, n_sims=100):
         "num_fibers": rng.integers(0, 3, n_sims).astype(np.float32),
         "dispersion": rng.random(n_sims).astype(np.float32),
         "nd": rng.random(n_sims).astype(np.float32),
+        "labels": rng.integers(0, 2, (n_sims, n_dirs)).astype(np.int8),
+        "fraction_array": rng.random((n_sims, 3)).astype(np.float32),
     }
     return sims
 
