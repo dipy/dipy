@@ -219,13 +219,11 @@ class Streamline3D(Visualization):
         self._line_type = line_type
         self._buan_pvals_file = False
         self._buan_pvals_data = None
+        self._show_line_type_confirmation = False
+        self._requested_line_type = None
+        self._apply_line_change_next_frame = False
         self._switch_render_callback = switch_render_callback
         self._loader = loader
-        self._show_line_type_confirmation = False
-        self._line_type_confirmation_active = False
-        self._pending_line_type = None
-        self._apply_pending_line_type_next_frame = False
-        self._hide_line_type_loader_next_frame = False
         self._create_streamline_actor()
         super().__init__(name, render_callback)
 
@@ -249,20 +247,11 @@ class Streamline3D(Visualization):
         return info
 
     def render_widgets(self):
-        if (
-            self._apply_pending_line_type_next_frame
-            and self._pending_line_type is not None
-        ):
-            self._line_type = self._pending_line_type
+        if self._apply_line_change_next_frame:
+            self._apply_line_change_next_frame = False
             self._create_streamline_actor()
-            self._pending_line_type = None
-            self._apply_pending_line_type_next_frame = False
-            self._hide_line_type_loader_next_frame = True
-            self.render()
-
-        if self._hide_line_type_loader_next_frame and self._loader is not None:
             self._loader(False)
-            self._hide_line_type_loader_next_frame = False
+            self.render()
 
         changed, is_clustered = toggle_button(False, label="Cluster")
         if changed:
@@ -275,27 +264,23 @@ class Streamline3D(Visualization):
         changed, new = segmented_switch("Line Type", ["Line", "Tube"], self._line_type)
         if changed:
             requested_line_type = new.lower()
-            require_confirmation = len(self.sft.streamlines) > 20000
-            if (
+            require_confirmation = (
                 self._line_type == "line"
                 and requested_line_type == "tube"
-                and require_confirmation
-            ):
-                if (
-                    self._pending_line_type is None
-                    and not self._line_type_confirmation_active
-                    and not self._apply_pending_line_type_next_frame
-                ):
-                    self._pending_line_type = requested_line_type
-                    self._show_line_type_confirmation = True
+                and len(self.sft.streamlines) > 20000
+            )
+            if require_confirmation:
+                self._requested_line_type = requested_line_type
+                self._show_line_type_confirmation = True
             else:
+                self._loader(True, message="Switching line type...")
                 self._line_type = requested_line_type
                 self._create_streamline_actor()
+                self._loader(False)
                 self.render()
 
         if self._show_line_type_confirmation:
             self._show_line_type_confirmation = False
-            self._line_type_confirmation_active = True
             imgui.open_popup("Line Type Confirmation")
         line_type_dialog_state = open_confirmation_dialog(
             "Line Type Confirmation",
@@ -304,15 +289,13 @@ class Streamline3D(Visualization):
             okay_text="Switch to Tube",
             cancel_text="Keep Line",
         )
-        if line_type_dialog_state == "okay" and self._pending_line_type == "tube":
-            self._line_type_confirmation_active = False
-            if self._loader is not None:
-                self._loader(True, message="Switching to tubes...")
-            self._apply_pending_line_type_next_frame = True
+        if line_type_dialog_state == "okay" and self._requested_line_type is not None:
+            self._line_type = self._requested_line_type
+            self._requested_line_type = None
+            self._apply_line_change_next_frame = True
+            self._loader(True, message="Switching line type...")
         elif line_type_dialog_state == "cancel":
-            self._line_type_confirmation_active = False
-            self._pending_line_type = None
-            self._apply_pending_line_type_next_frame = False
+            self._requested_line_type = None
 
         imgui.spacing()
         imgui.spacing()
@@ -364,9 +347,6 @@ class ClusterStreamline3D(Visualization):
         self._thr_changed_at = None
         self._switch_render_callback = switch_render_callback
         self._recluster_debounce_sec = 0.3
-        self._show_confirmation_dialog = False
-        self._show_expand_confirmation_dialog = False
-        self._expand_confirmation_active = False
         self._loader = loader
         self._is_clustering = False
         self._queued_recluster = False
@@ -478,23 +458,9 @@ class ClusterStreamline3D(Visualization):
             if state["selected"] and not state["expanded"]
         ]
 
-    def _expand_clusters(self, *, skip_confirmation=False):
+    def _expand_clusters(self):
         selected_clusters = self._selected_unexpanded_clusters()
         if not selected_clusters:
-            return
-
-        if (
-            not skip_confirmation
-            and self._line_type == "tube"
-            and len(selected_clusters) > 10
-        ):
-            if (
-                self._expand_confirmation_active
-                or self._show_expand_confirmation_dialog
-            ):
-                return
-            self._expand_confirmation_active = True
-            self._show_expand_confirmation_dialog = True
             return
 
         for centroid_rep in selected_clusters:
@@ -510,10 +476,7 @@ class ClusterStreamline3D(Visualization):
             if state["selected"] and state["expanded"]:
                 self._actor.add(centroid_rep)
                 cluster_actor = state["cluster_actor"]
-                if (
-                    cluster_actor is not None
-                    and cluster_actor in self._actor.children
-                ):
+                if cluster_actor is not None and cluster_actor in self._actor.children:
                     self._actor.remove(cluster_actor)
                 state["cluster_actor"] = None
                 state["expanded"] = False
@@ -615,49 +578,12 @@ class ClusterStreamline3D(Visualization):
         changed, new = segmented_switch("Line Type", ["Line", "Tube"], self._line_type)
         if changed:
             self._line_type = new.lower()
-            n_expanded = sum(
-                1 for state in self._cluster_state.values() if state["expanded"]
-            )
-            self._show_confirmation_dialog = (
-                self._line_type == "tube" and n_expanded > 10
-            )
-            if not self._show_confirmation_dialog:
-                for centroid_rep, state in self._cluster_state.items():
-                    if state["expanded"]:
-                        _, new_actor = self._create_cluster_streamlines(centroid_rep)
-                        self._actor.remove(state["cluster_actor"])
-                        self._actor.add(new_actor)
-                        state["cluster_actor"] = new_actor
-
-        if self._show_confirmation_dialog:
-            self._show_confirmation_dialog = False
-            imgui.open_popup("Cluster Confirmation")
-            self._collapse_clusters()
-        dialog_state = open_confirmation_dialog(
-            "Cluster Confirmation",
-            "Rendering many expanded clusters as tubes may cause\n"
-            "performance issues. So we will collapse all the clusters.",
-            okay_text="Understood",
-            cancel_text="Keep Expanded",
-        )
-        if dialog_state == "cancel":
-            self._expand_clusters(skip_confirmation=True)
-
-        if self._show_expand_confirmation_dialog:
-            self._show_expand_confirmation_dialog = False
-            imgui.open_popup("Expand Cluster Confirmation")
-        expand_dialog_state = open_confirmation_dialog(
-            "Expand Cluster Confirmation",
-            "Expanding more than 10 clusters as tubes may cause\n"
-            "performance issues. Do you want to continue?",
-            okay_text="Expand Anyway",
-            cancel_text="Cancel",
-        )
-        if expand_dialog_state == "okay":
-            self._expand_confirmation_active = False
-            self._expand_clusters(skip_confirmation=True)
-        elif expand_dialog_state == "cancel":
-            self._expand_confirmation_active = False
+            for centroid_rep, state in self._cluster_state.items():
+                if state["expanded"]:
+                    _, new_actor = self._create_cluster_streamlines(centroid_rep)
+                    self._actor.remove(state["cluster_actor"])
+                    self._actor.add(new_actor)
+                    state["cluster_actor"] = new_actor
 
         imgui.spacing()
         imgui.spacing()
