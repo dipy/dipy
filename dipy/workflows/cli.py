@@ -35,6 +35,7 @@ cli_flows = {
     "dipy_fit_dti": ("dipy.workflows.reconst", "ReconstDtiFlow"),
     "dipy_fit_dsi": ("dipy.workflows.reconst", "ReconstDsiFlow"),
     "dipy_fit_dsid": ("dipy.workflows.reconst", "ReconstDsiFlow"),
+    "dipy_fit_force": ("dipy.workflows.reconst", "ReconstForceFlow"),
     "dipy_fit_forecast": ("dipy.workflows.reconst", "ReconstForecastFlow"),
     "dipy_fit_fwdti": ("dipy.workflows.reconst", "ReconstFwdtiFlow"),
     "dipy_fit_gqi": ("dipy.workflows.reconst", "ReconstGQIFlow"),

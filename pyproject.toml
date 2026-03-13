@@ -71,6 +71,7 @@ dipy_fit_dki = "dipy.workflows.cli:run"
 dipy_fit_dsi = "dipy.workflows.cli:run"
 dipy_fit_dsid = "dipy.workflows.cli:run"
 dipy_fit_dti = "dipy.workflows.cli:run"
+dipy_fit_force = "dipy.workflows.cli:run"
 dipy_fit_forecast = "dipy.workflows.cli:run"
 dipy_fit_fwdti = "dipy.workflows.cli:run"
 dipy_fit_gqi = "dipy.workflows.cli:run"
@@ -175,6 +176,7 @@ requires = [
     "Cython>=3.0.4",
     "packaging>21.0",
     "wheel",
+    "scipy>=1.8.0",
     # numpy requirement for wheel builds for distribution on PyPI - building
     # against 2.x yields wheels that are also compatible with numpy 1.x at
     # runtime.
