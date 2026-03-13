@@ -347,9 +347,6 @@ class ClusterStreamline3D(Visualization):
         self._thr_changed_at = None
         self._switch_render_callback = switch_render_callback
         self._recluster_debounce_sec = 0.3
-        self._show_confirmation_dialog = False
-        self._show_expand_confirmation_dialog = False
-        self._expand_confirmation_active = False
         self._loader = loader
         self._is_clustering = False
         self._queued_recluster = False
@@ -461,23 +458,9 @@ class ClusterStreamline3D(Visualization):
             if state["selected"] and not state["expanded"]
         ]
 
-    def _expand_clusters(self, *, skip_confirmation=False):
+    def _expand_clusters(self):
         selected_clusters = self._selected_unexpanded_clusters()
         if not selected_clusters:
-            return
-
-        if (
-            not skip_confirmation
-            and self._line_type == "tube"
-            and len(selected_clusters) > 10
-        ):
-            if (
-                self._expand_confirmation_active
-                or self._show_expand_confirmation_dialog
-            ):
-                return
-            self._expand_confirmation_active = True
-            self._show_expand_confirmation_dialog = True
             return
 
         for centroid_rep in selected_clusters:
@@ -595,49 +578,12 @@ class ClusterStreamline3D(Visualization):
         changed, new = segmented_switch("Line Type", ["Line", "Tube"], self._line_type)
         if changed:
             self._line_type = new.lower()
-            n_expanded = sum(
-                1 for state in self._cluster_state.values() if state["expanded"]
-            )
-            self._show_confirmation_dialog = (
-                self._line_type == "tube" and n_expanded > 10
-            )
-            if not self._show_confirmation_dialog:
-                for centroid_rep, state in self._cluster_state.items():
-                    if state["expanded"]:
-                        _, new_actor = self._create_cluster_streamlines(centroid_rep)
-                        self._actor.remove(state["cluster_actor"])
-                        self._actor.add(new_actor)
-                        state["cluster_actor"] = new_actor
-
-        if self._show_confirmation_dialog:
-            self._show_confirmation_dialog = False
-            imgui.open_popup("Cluster Confirmation")
-            self._collapse_clusters()
-        dialog_state = open_confirmation_dialog(
-            "Cluster Confirmation",
-            "Rendering many expanded clusters as tubes may cause\n"
-            "performance issues. So we will collapse all the clusters.",
-            okay_text="Understood",
-            cancel_text="Keep Expanded",
-        )
-        if dialog_state == "cancel":
-            self._expand_clusters(skip_confirmation=True)
-
-        if self._show_expand_confirmation_dialog:
-            self._show_expand_confirmation_dialog = False
-            imgui.open_popup("Expand Cluster Confirmation")
-        expand_dialog_state = open_confirmation_dialog(
-            "Expand Cluster Confirmation",
-            "Expanding more than 10 clusters as tubes may cause\n"
-            "performance issues. Do you want to continue?",
-            okay_text="Expand Anyway",
-            cancel_text="Cancel",
-        )
-        if expand_dialog_state == "okay":
-            self._expand_confirmation_active = False
-            self._expand_clusters(skip_confirmation=True)
-        elif expand_dialog_state == "cancel":
-            self._expand_confirmation_active = False
+            for centroid_rep, state in self._cluster_state.items():
+                if state["expanded"]:
+                    _, new_actor = self._create_cluster_streamlines(centroid_rep)
+                    self._actor.remove(state["cluster_actor"])
+                    self._actor.add(new_actor)
+                    state["cluster_actor"] = new_actor
 
         imgui.spacing()
         imgui.spacing()
