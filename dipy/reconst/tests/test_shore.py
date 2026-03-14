@@ -111,9 +111,9 @@ def test_shore_fitting_constrain_e0():
 
 def test_shore_indices_returns_int():
     # n_c should be computed as int, not numpy.float64
-    n, l, m = shore_indices(4, 0)
+    n, ell, m = shore_indices(4, 0)
     assert isinstance(n, int)
-    assert isinstance(l, int)
+    assert isinstance(ell, int)
     assert isinstance(m, int)
 
 
