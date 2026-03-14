@@ -280,7 +280,7 @@ class UIWindow:
                         imgui.push_id(name)
                         is_open = self._section_open.get(name, False)
                         is_open, is_removed, should_enable_group = renderer(
-                            name, is_open, group_visible=group_is_visible
+                            is_open, group_visible=group_is_visible
                         )
                         self._section_open[name] = is_open
                         if should_enable_group:
@@ -303,7 +303,7 @@ class UIWindow:
         for name, renderer in ungrouped:
             imgui.push_id(name)
             is_open = self._section_open.get(name, False)
-            is_open, is_removed, _ = renderer(name, is_open)
+            is_open, is_removed, _ = renderer(is_open)
             self._section_open[name] = is_open
             if is_removed:
                 names_to_remove.append(name)
