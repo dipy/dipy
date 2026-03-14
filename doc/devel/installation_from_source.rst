@@ -218,6 +218,8 @@ Whether you are using Anaconda_ or Homebrew/python.org Python, you will need to 
 run ``pip install dipy``. When you do that, it should now
 compile the code with this OpenMP-enabled compiler, and things should go faster!
 
+.. _macos-openmp-troubleshooting:
+
 Troubleshooting: ImportError on macOS with PyPI wheels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

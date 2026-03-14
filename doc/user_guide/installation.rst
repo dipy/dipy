@@ -95,7 +95,16 @@ OSX
 
     pip install nibabel
 
-#. Finally, we are ready to install DIPY itself. Same as with `nibabel` above, we will type at the terminal shell command line::
+#. Finally, we are ready to install DIPY itself. Same as with `nibabel` above, we will type at the terminal shell command line.
+
+   .. warning::
+
+      On macOS, pre-built PyPI wheels may cause an ``ImportError`` related
+      to OpenMP linking (e.g., ``symbol not found '___kmpc_barrier'``).
+      If you encounter this, install from source instead — see
+      :ref:`macos-openmp-troubleshooting` for details.
+
+   Run the following command::
 
     pip install dipy
 
