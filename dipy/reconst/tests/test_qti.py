@@ -432,11 +432,12 @@ def test_ls_sdp_fits(rng):
             AssertionError, npt.assert_almost_equal, qtifit.params, params
         )
         # fit with SDPdc (constraints), show fitted params are different
-        qtimodel = qti.QtiModel(gtab, fit_method="SDPdc")
-        qtifit = qtimodel.fit(data_corrupt, mask=MASK)
-        npt.assert_raises(
-            AssertionError, npt.assert_almost_equal, qtifit.params, params
-        )
+        if have_cvxpy:
+            qtimodel = qti.QtiModel(gtab, fit_method="SDPdc")
+            qtifit = qtimodel.fit(data_corrupt, mask=MASK)
+            npt.assert_raises(
+                AssertionError, npt.assert_almost_equal, qtifit.params, params
+            )
 
         # fit with WLS, i.e. RWLS
         kwargs = {"weights_method": weights_method_wls_m_est, "num_iter": 10}
@@ -456,10 +457,11 @@ def test_ls_sdp_fits(rng):
         qtimodel_r1 = qti.QtiModel(gtab, fit_method="WLS", **kwargs)
         npt.assert_raises(ValueError, qtimodel_r1.fit, data_corrupt, mask=MASK)
         # fit with SDPdc (constraints), i.e. RCWLS
-        kwargs = {"weights_method": weights_method_wls_m_est}  # no num_iter
-        qtimodel_rc = qti.QtiModel(gtab, fit_method="SDPdc", **kwargs)
-        _ = qtimodel_rc.fit(data_corrupt, mask=MASK)
-        npt.assert_equal(qtimodel_rc.extra["robust"][..., -1], False)
+        if have_cvxpy:
+            kwargs = {"weights_method": weights_method_wls_m_est}  # no num_iter
+            qtimodel_rc = qti.QtiModel(gtab, fit_method="SDPdc", **kwargs)
+            _ = qtimodel_rc.fit(data_corrupt, mask=MASK)
+            npt.assert_equal(qtimodel_rc.extra["robust"][..., -1], False)
 
 
 @set_random_number_generator(123)
