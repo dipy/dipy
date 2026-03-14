@@ -409,7 +409,7 @@ bvectors_files = "${io.bvecs}"
 [[pipeline]]
 name = "bias_correction"
 cli = "dipy_correct_biasfield"
-input_files = "${motion_correction.out_moved}"
+input_files = "${gibbs.out_unring}"
 bval = "${io.bvals}"
 bvec = "${io.bvecs}"
 method = "auto"
