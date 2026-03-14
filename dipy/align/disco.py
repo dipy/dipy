@@ -428,7 +428,7 @@ def synb0_syn(
     mni_mask_resized = (mni_mask_resized > 0.5).astype(np.int32)
 
     # ── Step 4: Synb0 synthesis ──────────────────────────────────────────
-    synb0 = Synb0()
+    synb0 = Synb0(verbose=True)
     logger.info("Synthesizing undistorted b0 with Synb0 model...")
     binf = synb0.predict(masked_dwi_reg_resized, masked_T1_reg_resized, **kwargs)
     binf = binf * mni_mask_resized
