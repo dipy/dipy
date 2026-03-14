@@ -541,6 +541,8 @@ class BundleAnalysisTractometryFlow(Workflow):
             sys.exit(1)
         metric_files = sorted(metric_folder.glob("*.nii.gz"))
 
+        Path(out_dir).mkdir(parents=True, exist_ok=True)
+
         for mb_file, bd_file, org_file in zip(mb_list, bd_list, org_list):
             mbundles = load_tractogram(
                 mb_file, reference="same", bbox_valid_check=False
