@@ -6,7 +6,7 @@ from fury import distinguishable_colormap
 from fury.actor import Group, streamlines, streamtube
 from fury.colormap import line_colors
 from fury.ui import TextBlock2D
-from imgui_bundle import imgui
+from imgui_bundle import icons_fontawesome_6, imgui
 import numpy as np
 
 from dipy.io.stateful_tractogram import StatefulTractogram
@@ -216,6 +216,7 @@ class Streamline3D(Visualization):
     ):
         self.sft = sft
         self.color = color
+        self._original_color = color
         self._line_type = line_type
         self._buan_pvals_file = False
         self._buan_pvals_data = None
@@ -319,6 +320,17 @@ class Streamline3D(Visualization):
             selected=self._buan_pvals_file,
             type="buan_pvals",
         )
+
+        imgui.same_line(0, 10)
+        if self._buan_pvals_file:
+            close_icon = icons_fontawesome_6.ICON_FA_XMARK
+            imgui.text(close_icon)
+            if imgui.is_item_clicked():
+                self._buan_pvals_file = False
+                self._buan_pvals_data = None
+                self.color = self._original_color
+                self._create_streamline_actor()
+                self.render()
 
 
 class ClusterStreamline3D(Visualization):
