@@ -58,7 +58,7 @@ class EVACPlusFlow(Workflow):
                 fpath, return_img=True, return_voxsize=True
             )
             evac = EVACPlus()
-            mask_volume = evac.predict(data, affine, voxsize=voxsize)
+            mask_volume = evac.predict(data, affine)
             masked_volume = mask_volume * data
 
             save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)

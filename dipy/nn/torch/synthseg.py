@@ -656,10 +656,11 @@ class SynthSeg:
         prediction = np.zeros((len(T1), 192, 192, 192, 33), dtype=np.float32)
         for batch_idx in range(batch_size, len(T1) + 1, batch_size):
             batch = input_data[batch_idx - batch_size : batch_idx]
+            batch_start = batch_idx - batch_size
             temp_input = self._prepare_img(batch)
             temp_pred = self.__predict(temp_input)
             temp_pred = gaussian_filter(temp_pred, (0, 0.5, 0.5, 0.5, 0))
-            prediction[:batch_idx] = np.moveaxis(temp_pred, 1, -1)
+            prediction[batch_start:batch_idx] = np.moveaxis(temp_pred, 1, -1)
             temp_input = self._prepare_img(np.flip(batch, axis=1).copy())
             temp_pred = self.__predict(temp_input)
             temp_pred = gaussian_filter(temp_pred, (0, 0.5, 0.5, 0.5, 0))
@@ -671,8 +672,8 @@ class SynthSeg:
                 ],
                 axis=1,
             )
-            prediction[:batch_idx] += np.moveaxis(temp_pred, 1, -1)
-            prediction[:batch_idx] /= 2
+            prediction[batch_start:batch_idx] += np.moveaxis(temp_pred, 1, -1)
+            prediction[batch_start:batch_idx] /= 2
         remainder = np.mod(len(T1), batch_size)
         if remainder != 0:
             batch = input_data[-remainder:]

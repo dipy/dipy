@@ -53,8 +53,9 @@ def test_reslice_auto_voxsize(caplog):
         data_path, _, _ = get_fnames(name="small_25")
         volume = load_nifti_data(data_path)
 
-        reslice_flow = ResliceFlow()
-        reslice_flow.run(data_path, out_dir=out_dir)
+        with caplog.at_level(logging.WARNING, logger="dipy"):
+            reslice_flow = ResliceFlow()
+            reslice_flow.run(data_path, out_dir=out_dir)
 
         warning_records = [r for r in caplog.records if r.levelname == "WARNING"]
         assert len(warning_records) > 0, "Expected WARNING level log message"
@@ -77,9 +78,10 @@ def test_reslice_custom_voxfactor(caplog):
         data_path, _, _ = get_fnames(name="small_25")
         volume = load_nifti_data(data_path)
 
-        reslice_flow = ResliceFlow()
-        custom_factor = 0.5
-        reslice_flow.run(data_path, vox_factor=custom_factor, out_dir=out_dir)
+        with caplog.at_level(logging.WARNING, logger="dipy"):
+            reslice_flow = ResliceFlow()
+            custom_factor = 0.5
+            reslice_flow.run(data_path, vox_factor=custom_factor, out_dir=out_dir)
 
         warning_records = [r for r in caplog.records if r.levelname == "WARNING"]
         assert len(warning_records) > 0, "Expected WARNING level log message"
@@ -169,12 +171,13 @@ def test_slr_flow(caplog):
         slr_flow = SlrWithQbxFlow(force=True)
 
         # Test empty static file
-        slr_flow.run(
-            empty_path,
-            moved_path,
-            out_dir=out_dir,
-            bbox_valid_check=False,
-        )
+        with caplog.at_level(logging.ERROR, logger="dipy"):
+            slr_flow.run(
+                empty_path,
+                moved_path,
+                out_dir=out_dir,
+                bbox_valid_check=False,
+            )
 
         error_records = [r for r in caplog.records if r.levelname == "ERROR"]
         assert len(error_records) > 0, "Expected ERROR level log message"
@@ -184,12 +187,13 @@ def test_slr_flow(caplog):
         caplog.clear()
 
         # Test empty moving file
-        slr_flow.run(
-            data_path,
-            empty_path,
-            out_dir=out_dir,
-            bbox_valid_check=False,
-        )
+        with caplog.at_level(logging.ERROR, logger="dipy"):
+            slr_flow.run(
+                data_path,
+                empty_path,
+                out_dir=out_dir,
+                bbox_valid_check=False,
+            )
 
         error_records = [r for r in caplog.records if r.levelname == "ERROR"]
         assert len(error_records) > 0, "Expected ERROR level log message"
@@ -211,28 +215,30 @@ def test_slr_flow_empty_after_length_filtering(caplog):
         slr_flow = SlrWithQbxFlow(force=True)
 
         caplog.clear()
-        slr_flow.run(
-            data_path,
-            moved_path,
-            out_dir=out_dir,
-            bbox_valid_check=False,
-            greater_than=1000,
-            less_than=np.inf,
-        )
+        with caplog.at_level(logging.ERROR, logger="dipy"):
+            slr_flow.run(
+                data_path,
+                moved_path,
+                out_dir=out_dir,
+                bbox_valid_check=False,
+                greater_than=1000,
+                less_than=np.inf,
+            )
 
         error_records = [r for r in caplog.records if r.levelname == "ERROR"]
         assert len(error_records) > 0, "Expected ERROR level log message"
         assert any("SLR with QBX failed" in err.message for err in error_records)
 
         caplog.clear()
-        slr_flow.run(
-            data_path,
-            moved_path,
-            out_dir=out_dir,
-            bbox_valid_check=False,
-            greater_than=0,
-            less_than=1,
-        )
+        with caplog.at_level(logging.ERROR, logger="dipy"):
+            slr_flow.run(
+                data_path,
+                moved_path,
+                out_dir=out_dir,
+                bbox_valid_check=False,
+                greater_than=0,
+                less_than=1,
+            )
 
         error_records = [r for r in caplog.records if r.levelname == "ERROR"]
         assert len(error_records) > 0, "Expected ERROR level log message"
