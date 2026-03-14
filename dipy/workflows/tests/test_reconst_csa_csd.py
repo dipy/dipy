@@ -5,15 +5,19 @@ import warnings
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from dipy.core.gradients import generate_bvecs
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.peaks import load_pam
+from dipy.reconst.mcsd import have_cvxpy
 from dipy.reconst.shm import descoteaux07_legacy_msg, sph_harm_ind_list
 from dipy.testing import assert_warns
 from dipy.workflows.reconst import ReconstCSDFlow, ReconstQBallBaseFlow, ReconstSDTFlow
+
+needs_cvxpy = pytest.mark.skipif(not have_cvxpy, reason="Requires CVXPY")
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -68,6 +72,7 @@ def test_reconst_sdt():
         reconst_flow_core(ReconstSDTFlow)
 
 
+@needs_cvxpy
 def test_reconst_csd_msmt():
     """Test MSMT-CSD functionality."""
     with warnings.catch_warnings():
@@ -114,6 +119,7 @@ def test_reconst_csd_msmt():
                 )
 
 
+@needs_cvxpy
 def test_reconst_csd_msmt_with_t1():
     """Test MSMT-CSD with provided T1 image (T1-based HMRF tissue segmentation).
 
@@ -339,6 +345,7 @@ def reconst_flow_core(flow, **kwargs):
                 )
 
 
+@needs_cvxpy
 def test_reconst_csd_msmt_parallel():
     """Test MSMT-CSD with parallel processing."""
     with warnings.catch_warnings():
@@ -403,6 +410,7 @@ def test_reconst_csd_msmt_invalid_iso():
             )
 
 
+@needs_cvxpy
 def test_reconst_csd_msmt_with_tissue_masks():
     """Test MSMT-CSD with pre-provided tissue masks (no HMRF classification).
 

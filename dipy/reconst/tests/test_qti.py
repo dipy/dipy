@@ -390,24 +390,32 @@ def test_ls_sdp_fits(rng):
     npt.assert_almost_equal(extra_dti["leverages"], extra["leverages"])
     npt.assert_almost_equal(params_dti, params)
 
-    _, extra = qti._sdpdc_fit(X, data[mask], cvxpy_solver="SCS", return_leverages=True)
-    npt.assert_equal("leverages" in extra, True)
-    # ensure leverages sum to 28
-    npt.assert_almost_equal(
-        extra["leverages"][mask].sum(-1), np.ones(mask.shape[0]) * 28
-    )
-    _, extra = qti._sdpdc_fit(X, data[mask], cvxpy_solver="SCS", return_leverages=False)
-    npt.assert_equal(extra, None)
+    if have_cvxpy:
+        _, extra = qti._sdpdc_fit(
+            X, data[mask], cvxpy_solver="SCS", return_leverages=True
+        )
+        npt.assert_equal("leverages" in extra, True)
+        # ensure leverages sum to 28
+        npt.assert_almost_equal(
+            extra["leverages"][mask].sum(-1), np.ones(mask.shape[0]) * 28
+        )
+        _, extra = qti._sdpdc_fit(
+            X, data[mask], cvxpy_solver="SCS", return_leverages=False
+        )
+        npt.assert_equal(extra, None)
 
     # test of WLS given explicit weights=signal^2 is same as using no weights
     npt.assert_almost_equal(
         qti._wls_fit(X, data[mask], step=1)[0],
         qti._wls_fit(X, data[mask], step=1, weights=data[mask] ** 2)[0],
     )
-    npt.assert_almost_equal(
-        qti._sdpdc_fit(X, data[mask], cvxpy_solver="SCS")[0],
-        qti._sdpdc_fit(X, data[mask], cvxpy_solver="SCS", weights=data[mask] ** 2)[0],
-    )
+    if have_cvxpy:
+        npt.assert_almost_equal(
+            qti._sdpdc_fit(X, data[mask], cvxpy_solver="SCS")[0],
+            qti._sdpdc_fit(X, data[mask], cvxpy_solver="SCS", weights=data[mask] ** 2)[
+                0
+            ],
+        )
 
     # test robust QTI - hard to test
     # robust fitting without noise doesn't make sense
