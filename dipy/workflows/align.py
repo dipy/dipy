@@ -1166,6 +1166,8 @@ class Synb0SynFlow(Workflow):
         pe_axis=1,
         dwi_mask_file="",
         t1_mask_file="",
+        apply_skull_strip=False,
+        apply_deepn4=False,
         out_dir="",
         out_corrected="corrected.nii.gz",
         out_field="field.nii.gz",
@@ -1195,6 +1197,12 @@ class Synb0SynFlow(Workflow):
             Path to the DWI brain mask file. If empty, no masking is applied.
         t1_mask_file : string or Path, optional
             Path to the T1 brain mask file. If empty, no masking is applied.
+        apply_skull_strip : bool, optional
+            If True, apply SynthSeg skull stripping to both the T1 and
+            DWI b0 images before registration. Default is False.
+        apply_deepn4 : bool, optional
+            If True, apply DeepN4 bias field correction to the T1 image
+            before the first affine registration. Default is False.
         out_dir : string or Path, optional
             Directory to save the corrected image and field map.
         out_corrected : string, optional
@@ -1237,6 +1245,8 @@ class Synb0SynFlow(Workflow):
                 T1_mask=t1_mask,
                 pe_axis=pe_axis,
                 return_field=True,
+                apply_skull_strip=apply_skull_strip,
+                apply_deepn4=apply_deepn4,
             )
 
             logger.info(f"Saving corrected DWI to {ocorrected}")

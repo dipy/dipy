@@ -210,6 +210,8 @@ def synb0_syn(
     T1_mask=None,
     pe_axis=1,
     return_field=False,
+    apply_deepn4=False,
+    apply_skull_strip=False,
     debug_dir=None,
     **kwargs,
 ):
@@ -249,6 +251,13 @@ def synb0_syn(
     return_field : bool, optional
         Whether to return the estimated distortion field along with the
         corrected DWI data.
+    apply_deepn4 : bool, optional
+        If True, apply DeepN4 bias field correction to the T1 image
+        before the first affine registration. Default is False.
+    apply_skull_strip : bool, optional
+        If True, apply SynthSeg skull stripping to both the T1 and DWI b0
+        images before registration. The resulting masks are used as
+        ``T1_mask`` and ``dwi_mask`` respectively. Default is False.
     debug_dir : str or Path, optional
         Directory to save intermediate debug NIfTI volumes.
     **kwargs :
@@ -309,6 +318,43 @@ def synb0_syn(
     mni_t1, mni_t1_affine = load_nifti(mni_t1_path)
     mni_mask, _ = load_nifti(mni_mask_path)
     mni_mask = mni_mask.astype(np.int32)
+
+    # ── Optional: SynthSeg skull stripping on T1 and DWI ─────────────────
+    if apply_skull_strip:
+        from dipy.nn.synthseg import SynthSeg
+
+        logger.info("Applying SynthSeg skull stripping to T1 and DWI b0...")
+        synthseg_model = SynthSeg(verbose=True)
+        _, _, T1_mask = synthseg_model.predict(T1_for_reg, T1_affine)
+        T1_mask = T1_mask.astype(bool)
+        _, _, dwi_mask = synthseg_model.predict(dwi_for_field, dwi_affine)
+        dwi_mask = dwi_mask.astype(bool)
+        _save_debug_volume(
+            debug_dir=debug_dir,
+            name="00a_t1_skull_strip_mask",
+            data=T1_mask,
+            affine=T1_affine,
+        )
+        _save_debug_volume(
+            debug_dir=debug_dir,
+            name="00a_dwi_skull_strip_mask",
+            data=dwi_mask,
+            affine=dwi_affine,
+        )
+
+    # ── Optional: DeepN4 bias field correction on T1 ────────────────────
+    if apply_deepn4:
+        from dipy.nn.deepn4 import DeepN4
+
+        logger.info("Applying DeepN4 bias field correction to T1...")
+        deepn4_model = DeepN4(verbose=True)
+        T1_for_reg = deepn4_model.predict(T1_for_reg, T1_affine)
+        _save_debug_volume(
+            debug_dir=debug_dir,
+            name="00b_t1_deepn4_corrected",
+            data=T1_for_reg,
+            affine=T1_affine,
+        )
 
     # ── Step 1: Affine T1 → MNI T1 (sparse sampling for speed) ──────────
     logger.info("Performing affine registration of T1 to MNI template...")
@@ -492,9 +538,7 @@ def synb0_syn(
     moving_norm = masked_dwi_for_sdr / max(p99_m, 1e-8) * 100.0
 
     sdr = SymmetricDiffeomorphicRegistration(
-        metric=CCMetric(3, sigma_diff=3.5, radius=6),
-        level_iters=[200, 100, 20],
-        step_length=0.25,
+        metric=CCMetric(3, sigma_diff=3.5, radius=2), level_iters=[200, 200, 100]
     )
     mapping = sdr.optimize(
         static=static_norm,
