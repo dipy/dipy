@@ -3,7 +3,6 @@ from scipy.ndimage import convolve
 from scipy.special import gammainccinv
 
 from dipy.testing.decorators import warning_for_keywords
-from dipy.utils.deprecator import deprecated_params
 
 
 def _inv_nchi_cdf(N, K, alpha):
@@ -32,7 +31,6 @@ opt_quantile = {
 }
 
 
-@deprecated_params("l", new_name="step", since="1.10.0", until="1.12.0")
 @warning_for_keywords()
 def piesno(data, N, *, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=False):
     """
@@ -146,7 +144,6 @@ def piesno(data, N, *, alpha=0.01, step=100, itermax=100, eps=1e-5, return_mask=
     return sigma
 
 
-@deprecated_params("l", new_name="step", since="1.10.0", until="1.12.0")
 @warning_for_keywords()
 def _piesno_3D(
     data,

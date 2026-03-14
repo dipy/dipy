@@ -13,7 +13,6 @@ from dipy.nn.utils import (
 )
 from dipy.segment.utils import remove_holes_and_islands
 from dipy.testing.decorators import doctest_skip_parser
-from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -532,9 +531,6 @@ class EVACPlus:
         """
         return self.model(*x_test)[:, 0].detach().numpy()
 
-    @deprecated_params(
-        "largest_area", new_name="finalize_mask", since="1.10", until="1.12"
-    )
     def predict(
         self,
         T1,

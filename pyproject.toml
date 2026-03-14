@@ -125,7 +125,7 @@ all = ["dipy[build, dev, doc, style, viz, optional, benchmark]"]
 style = ["ruff", "pre-commit"]
 viz = ["fury>=0.12.0", "matplotlib"]
 test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
-ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow", "torch"]
+ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
 dev = [
     "dipy[build, style]",
     "pytest",
@@ -220,6 +220,7 @@ addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignor
 filterwarnings = [
     # FURY
     "ignore:.*You do not have FURY installed.*:UserWarning",
+    "ignore:.*'where' used without 'out'.*:UserWarning:fury.colormap",
     # pkg_resources (via Ray)
     "ignore:Implementing implicit namespace packages.*:DeprecationWarning",
     "ignore:Deprecated call to `pkg_resources.*:DeprecationWarning",
@@ -229,4 +230,7 @@ filterwarnings = [
     "ignore:The default value of raise_error will change.*:PendingDeprecationWarning",
     # Joblib:loky issue. see https://github.com/joblib/joblib/blob/71c2ce7f1b8bebc804ff8e9eb77571bb486ed34d/CHANGES.rst?plain=1#L79
     "ignore:.*is multi-threaded, use of fork.{2} may lead to deadlocks in the child.*:DeprecationWarning",
+    # scipy/h5py using deprecated numpy functions (np.find_common_type, np.product)
+    "ignore:.*np.find_common_type is deprecated.*:DeprecationWarning:scipy",
+    "ignore:.*`product` is deprecated.*:DeprecationWarning:h5py",
 ]

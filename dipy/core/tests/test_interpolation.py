@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import numpy.testing as npt
 from scipy.ndimage import map_coordinates
@@ -9,7 +7,6 @@ from dipy.core.interpolation import (
     NearestNeighborInterpolator,
     OutsideImage,
     TriLinearInterpolator,
-    interp_rbf,
     interpolate_scalar_2d,
     interpolate_scalar_3d,
     interpolate_scalar_nn_2d,
@@ -394,38 +391,6 @@ def test_trilinear_interp_cubic_voxels():
     npt.assert_raises(
         ValueError, map_coordinates_trilinear_iso, A, points, strides, 3, stepped_1d(B)
     )
-
-
-def test_interp_rbf():
-    def data_func(s, a, b):
-        return a * np.cos(s.theta) + b * np.sin(s.phi)
-
-    s0 = create_unit_sphere(recursion_level=3)
-    s1 = create_unit_sphere(recursion_level=4)
-
-    for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
-        data = data_func(s0, a, b)
-        expected = data_func(s1, a, b)
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            interp_data_a = interp_rbf(data, s0, s1, norm="angle")
-            npt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
-            npt.assert_(len(w) == 1)
-            npt.assert_(issubclass(w[0].category, DeprecationWarning))
-            npt.assert_("deprecated" in str(w[0].message))
-
-    # Test that using the euclidean norm raises a warning
-    # (following
-    # https://docs.python.org/2/library/warnings.html#testing-warnings)
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        interp_rbf(data, s0, s1, norm="euclidean_norm")
-        npt.assert_(len(w) == 2)
-        npt.assert_(issubclass(w[0].category, DeprecationWarning))
-        npt.assert_("deprecated" in str(w[0].message))
-        npt.assert_(issubclass(w[1].category, PendingDeprecationWarning))
-        npt.assert_("deprecated" in str(w[1].message))
 
 
 def test_rbf_interpolation():

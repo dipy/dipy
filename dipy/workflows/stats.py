@@ -11,7 +11,7 @@ from scipy.ndimage import binary_dilation
 from dipy.core.gradients import gradient_table
 from dipy.io import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
-from dipy.io.peaks import load_peaks
+from dipy.io.peaks import load_pam
 from dipy.io.streamline import load_tractogram
 from dipy.reconst.dti import TensorModel
 from dipy.segment.bundles import bundle_shape_similarity
@@ -312,7 +312,7 @@ def buan_bundle_profiles(
                 logger.info(f"bm = {bm}")
                 logger.info(f"metric = {metric_files_names_csa[mn]}")
                 dt = {}
-                metric = load_peaks(metric_files_names_csa[mn])
+                metric = load_pam(metric_files_names_csa[mn])
 
                 peak_values(
                     transformed_orig_bundles,
@@ -540,6 +540,8 @@ class BundleAnalysisTractometryFlow(Workflow):
             logger.info("No original bundle files found in the specified folder")
             sys.exit(1)
         metric_files = sorted(metric_folder.glob("*.nii.gz"))
+
+        Path(out_dir).mkdir(parents=True, exist_ok=True)
 
         for mb_file, bd_file, org_file in zip(mb_list, bd_list, org_list):
             mbundles = load_tractogram(
