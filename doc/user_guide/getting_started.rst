@@ -9,8 +9,6 @@ DEC map. We use a Tensor model to reconstruct the datasets which are
 saved in a Nifti file along with the b-values and b-vectors which are saved as
 text files. Finally, we save our result as a Nifti file ::
 
-    .. code-block:: python
-
     fdwi = 'dwi.nii.gz'
     fbval = 'dwi.bval'
     fbvec = 'dwi.bvec'
