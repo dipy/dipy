@@ -341,7 +341,10 @@ def synb0_syn(
             data=dwi_mask,
             affine=dwi_affine,
         )
-
+    if dwi_mask is not None:
+        dwi_for_field = dwi_for_field * dwi_mask
+    if T1_mask is not None:
+        T1_for_reg = T1_for_reg * T1_mask
     # ── Optional: DeepN4 bias field correction on T1 ────────────────────
     if apply_deepn4:
         from dipy.nn.deepn4 import DeepN4
