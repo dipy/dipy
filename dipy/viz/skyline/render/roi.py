@@ -1,7 +1,7 @@
-from pathlib import Path
-
 from fury.actor import contour_from_roi, set_group_opacity
+import numpy as np
 
+from dipy.utils.logging import logger
 from dipy.viz.skyline.UI.elements import thin_slider
 from dipy.viz.skyline.render.renderer import Visualization
 
@@ -45,7 +45,6 @@ def create_roi_visualization(
         filename = f"ROI_{idx}"
     else:
         roi, affine, filename = input
-        filename = Path(filename).name if filename is not None else f"ROI_{idx}"
 
     return ROI3D(
         filename,
@@ -70,6 +69,16 @@ class ROI3D(Visualization):
     ):
         super().__init__(name, render_callback)
         self.roi = roi
+        if self.roi is None:
+            raise ValueError("ROI data cannot be None for ROI visualization.")
+        elif not isinstance(self.roi, np.ndarray):
+            raise ValueError("ROI data must be a numpy array for ROI visualization.")
+
+        if self.roi.ndim == 4:
+            logger.info(
+                "Input has 4 dims, taking the first volume for ROI visualization."
+            )
+            self.roi = self.roi[..., 0]
         self.affine = affine
         self.opacity = opacity
         self.color = color

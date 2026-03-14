@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from fury.actor import (
     set_group_opacity,
     set_group_visibility,
@@ -82,7 +80,6 @@ def create_image_visualization(
         filename = f"Image_{idx}"
     else:
         data, affine, filename = input
-        filename = Path(filename).name
 
     return Image3D(
         filename,
