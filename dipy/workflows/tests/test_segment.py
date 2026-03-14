@@ -265,9 +265,23 @@ def test_classify_tissue_flow_synthseg(rng=None):
         data_path = Path(out_dir) / "data.nii.gz"
         nib.save(nib.Nifti1Image(data, np.eye(4) * 2), data_path)
 
-        torch.set_num_threads(1)
-        flow = ClassifyTissueFlow()
-        flow.run(input_files=data_path, method="synthseg", out_dir=out_dir)
+        # SynthSeg accuracy is tested in nn/tests/test_synthseg.py.
+        # Mock it here to avoid loading multi-GB weights in this workflow test.
+        class _FakeSynthSeg:
+            def __init__(self, **kwargs):
+                pass
+
+            def predict(self, img, affine, **kwargs):
+                return (
+                    np.zeros(img.shape, dtype=np.int32),
+                    {0: "Background"},
+                    np.zeros(img.shape),
+                )
+
+        with pytest.MonkeyPatch.context() as mp:
+            mp.setattr("dipy.workflows.segment.SynthSeg", _FakeSynthSeg)
+            flow = ClassifyTissueFlow()
+            flow.run(input_files=data_path, method="synthseg", out_dir=out_dir)
 
         tissue = flow.last_generated_outputs["out_tissue"]
         tissue_data = load_nifti_data(tissue)
@@ -332,18 +346,28 @@ def test_brain_mask_flow(rng=None):
 
     if has_torch:
         with TemporaryDirectory() as out_dir:
-            file_path = get_fnames(name="evac_test_data")
-            volume = np.load(file_path)["input"][0]
+            data = rng.uniform(low=0.0, high=1.0, size=(32, 32, 32))
             temp_path = Path(out_dir) / "temp.nii.gz"
-            save_nifti(temp_path, volume, np.eye(4))
+            save_nifti(temp_path, data, np.eye(4))
 
-            flow = BrainMaskFlow()
-            flow.run(temp_path, method="evac", out_dir=out_dir)
+            # EVACPlus accuracy is tested in nn/tests/test_evac.py.
+            # Mock it here to avoid loading model weights in this workflow test.
+            class _FakeEVACPlus:
+                def __init__(self, **kwargs):
+                    pass
+
+                def predict(self, vol, affine, **kwargs):
+                    return np.ones(vol.shape)
+
+            with pytest.MonkeyPatch.context() as mp:
+                mp.setattr("dipy.nn.evac.EVACPlus", _FakeEVACPlus)
+                flow = BrainMaskFlow()
+                flow.run(temp_path, method="evac", out_dir=out_dir)
 
             mask_name = flow.last_generated_outputs["out_mask"]
             mask_data = load_nifti_data(Path(out_dir) / mask_name)
 
-            npt.assert_equal(mask_data.shape, volume.shape)
+            npt.assert_equal(mask_data.shape, data.shape)
             npt.assert_equal(mask_data.min() >= 0, True)
             npt.assert_equal(mask_data.max() <= 1, True)
 
@@ -353,8 +377,21 @@ def test_brain_mask_flow(rng=None):
             data_path = Path(out_dir) / "data.nii.gz"
             nib.save(nib.Nifti1Image(data, np.eye(4) * 2), data_path)
 
-            flow = BrainMaskFlow()
-            flow.run(data_path, method="synthseg", out_dir=out_dir)
+            class _FakeSynthSeg:
+                def __init__(self, **kwargs):
+                    pass
+
+                def predict(self, img, affine, **kwargs):
+                    return (
+                        np.zeros(img.shape, dtype=np.int32),
+                        {0: "Background"},
+                        np.zeros(img.shape),
+                    )
+
+            with pytest.MonkeyPatch.context() as mp:
+                mp.setattr("dipy.workflows.segment.SynthSeg", _FakeSynthSeg)
+                flow = BrainMaskFlow()
+                flow.run(data_path, method="synthseg", out_dir=out_dir)
 
             mask_name = flow.last_generated_outputs["out_mask"]
             mask_data = load_nifti_data(Path(out_dir) / mask_name)
