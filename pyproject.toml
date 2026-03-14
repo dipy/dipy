@@ -220,6 +220,7 @@ addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignor
 filterwarnings = [
     # FURY
     "ignore:.*You do not have FURY installed.*:UserWarning",
+    "ignore:.*'where' used without 'out'.*:UserWarning:fury.colormap",
     # pkg_resources (via Ray)
     "ignore:Implementing implicit namespace packages.*:DeprecationWarning",
     "ignore:Deprecated call to `pkg_resources.*:DeprecationWarning",
