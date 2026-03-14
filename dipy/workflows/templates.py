@@ -373,6 +373,141 @@ input_files = "${brain_mask.out_masked}"
 slice_axis = 2
 num_processes = -1
 
+# Step 4: Bias field correction (using median_otsu on b0)
+[[pipeline]]
+name = "bias_correction"
+cli = "dipy_correct_biasfield"
+input_files = "${gibbs.out_unring}"
+bval = "${io.bvals}"
+bvec = "${io.bvecs}"
+method = "auto"
+
+# Step 5: Denoising with Patch2Self
+[[pipeline]]
+name = "denoise"
+cli = "dipy_denoise_patch2self"
+input_files = "${bias_correction.out_corrected}"
+bval_files = "${io.bvals}"
+verbose = true
+
+# Multiple reconstructions
+[[pipeline]]
+name = "dti_fit"
+cli = "dipy_fit_dti"
+input_files = "${denoise.out_denoised}"
+bvalues_files = "${io.bvals}"
+bvectors_files = "${io.bvecs}"
+mask_files = "${brain_mask.out_mask}"
+fit_method = "WLS"
+extract_pam_values = true
+out_dir = "${io.out_dir}/dti"
+
+[[pipeline]]
+name = "csd_fit"
+cli = "dipy_fit_csd"
+input_files = "${denoise.out_denoised}"
+bvalues_files = "${io.bvals}"
+bvectors_files = "${io.bvecs}"
+mask_files = "${brain_mask.out_mask}"
+extract_pam_values = true
+out_dir = "${io.out_dir}/csd"
+
+# Tractography
+[[pipeline]]
+name = "tracking"
+cli = "dipy_track"
+pam_files = "${csd_fit.out_pam}"
+stopping_files = "${dti_fit.out_fa}"
+seeding_files = "${brain_mask.out_mask}"
+seed_density = 2
+
+# Registration (SLR)
+[[pipeline]]
+name = "register"
+cli = "dipy_slr"
+moving_files = "${tracking.out_tractogram}"
+static_files = "${io.atlas_tractogram}"
+bbox_valid_check = false
+
+# Bundle segmentation (RecoBundles)
+[[pipeline]]
+name = "segment_bundles"
+cli = "dipy_recobundles"
+streamline_files = "${register.out_moved}"
+model_bundle_files = "${io.bundle_atlas_dir}/*.trk"
+mix_names = true
+out_dir = "${io.out_dir}/rec_bundles"
+
+# Label bundles
+[[pipeline]]
+name = "label_bundles"
+cli = "dipy_labelsbundles"
+streamline_files = "${tracking.out_tractogram}"
+labels_files = "${segment_bundles.out_dir}/*_labels.npy"
+mix_names = true
+out_dir = "${io.out_dir}/org_bundles"
+
+# Buan profiles
+[[pipeline]]
+name = "buan_profiles"
+cli = "dipy_buan_profiles"
+model_bundle_folder = "${io.bundle_atlas_dir}"
+subject_folder = "${io.out_dir}"
+metric_folder= "${dti_fit.out_dir}"
+orig_bundle_folder= "${label_bundles.out_dir}"
+out_dir = "${io.out_dir}/buan_profiles"
+"""
+
+# =============================================================================
+# Full Pipeline - Complete analysis
+# =============================================================================
+
+FULL_PIPELINE = """
+[General]
+name = "full_pipeline_with_motion"
+description = "Full pipeline: preprocessing + reconstruction + tracking + SLR + bundles"
+version = "1.0.0"
+author = "DIPY Developers"
+
+[io]
+dwi = ""
+bvals = ""
+bvecs = ""
+t1w = ""
+bids_folder = ""
+out_dir = "."
+atlas_tractogram = ""
+bundle_atlas_dir = ""
+
+# Full preprocessing chain
+[[pipeline]]
+name = "reslice"
+cli = "dipy_reslice"
+input_files = "${io.dwi}"
+
+[[pipeline]]
+name = "b0_extraction"
+cli = "dipy_extract_b0"
+input_files = "${reslice.out_resliced}"
+bvalues_files = "${io.bvals}"
+b0_threshold = 50
+
+[[pipeline]]
+name = "brain_mask"
+cli = "dipy_brain_mask"
+input_files = "${reslice.out_resliced}"
+bvalues_files = ["${io.bvals}"]
+median_radius = 2
+numpass = 5
+save_masked = true
+
+[[pipeline]]
+name = "gibbs"
+cli = "dipy_gibbs_ringing"
+input_files = "${brain_mask.out_masked}"
+slice_axis = 2
+num_processes = -1
+
 # Step 3: Motion correction
 [[pipeline]]
 name = "motion_correction"
@@ -385,7 +520,7 @@ bvectors_files = "${io.bvecs}"
 [[pipeline]]
 name = "bias_correction"
 cli = "dipy_correct_biasfield"
-input_files = "${motion_correction.out_moved}"
+input_files = "${gibbs.out_unring}"
 bval = "${io.bvals}"
 bvec = "${io.bvecs}"
 method = "auto"
