@@ -462,6 +462,7 @@ cli = "dipy_buan_profiles"
 model_bundle_folder = "${io.bundle_atlas_dir}"
 subject_folder = "${io.out_dir}"
 metric_folder= "${dti_fit.out_dir}"
+orig_bundle_folder= "${label_bundles.out_dir}"
 out_dir = "${io.out_dir}/buan_profiles"
 """
 
