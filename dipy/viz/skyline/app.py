@@ -234,6 +234,10 @@ class Skyline:
             self._tractogram_help = False
 
     def draw_ui(self):
+        if len(self.visualizations) == 0:
+            self.UI_window.request_file_dialog = True
+        else:
+            self.UI_window.request_file_dialog = False
         self.UI_window.render()
         self._drain_pending_visualizations()
         self.active_image and self._arrange_image_actors()
