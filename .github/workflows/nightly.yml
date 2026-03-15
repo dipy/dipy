@@ -93,8 +93,8 @@ jobs:
       - uses: pypa/cibuildwheel@v3.3.1
         env:
             CIBW_SKIP: "*-musllinux_*"
-            CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-            CIBW_MANYLINUX_I686_IMAGE: manylinux2014
+            CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+            CIBW_MANYLINUX_I686_IMAGE: manylinux_2_28
         with:
           output-dir: dist
       - uses: actions/upload-artifact@v7
