@@ -58,7 +58,7 @@ class UIWindow:
         self._group_visible = {}
         self._render_callback = render_callback
         self.logo_tex_ref = logo_tex_ref
-        self.logo_size = (48, 48)
+        self.logo_size = (32, 32)
         self._title_text = "DIPY SKYLINE"
         self._show_loader = False
         self._loading_message = "Loading..."
