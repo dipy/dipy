@@ -111,6 +111,7 @@ def create_streamline_visualization(
     tract_colors=None,
     switch_render_callback=None,
     loader=None,
+    async_clustering=True,
 ):
     """Create streamline visualization from input
 
@@ -142,6 +143,9 @@ def create_streamline_visualization(
         Callback function to switch rendering type, used for cluster visualization.
     loader : callable, optional
         Callback function to show/hide loader during asynchronous operations.
+    async_clustering : bool, optional
+        Whether to perform clustering asynchronously. Set to False to block
+        until clustering completes (used in stealth mode).
 
     Returns
     -------
@@ -169,6 +173,7 @@ def create_streamline_visualization(
             render_callback=render_callback,
             switch_render_callback=switch_render_callback,
             loader=loader,
+            async_clustering=async_clustering,
         )
 
     if tract_colors is not None:
@@ -366,6 +371,7 @@ class ClusterStreamline3D(Visualization):
         loader=None,
         size_threshold=5,
         length_threshold=10.0,
+        async_clustering=True,
     ):
         self.sft = sft
         self.thr = thr
@@ -382,6 +388,7 @@ class ClusterStreamline3D(Visualization):
         self._loader = loader
         self._is_clustering = False
         self._queued_recluster = False
+        self._async_clustering = async_clustering
         self.size = size_threshold
         self.length = length_threshold
         super().__init__(name, render_callback=render_callback)
@@ -396,6 +403,12 @@ class ClusterStreamline3D(Visualization):
         if self._loader is not None:
             self._loader(True, message="Clustering streamlines...")
             self.render()
+
+        if not self._async_clustering:
+            result = self._compute_clustering_data(self.thr)
+            self._apply_clustering_result(result, None)
+            return
+
         run_async(
             self._compute_clustering_data,
             self._apply_clustering_result,

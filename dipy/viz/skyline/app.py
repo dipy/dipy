@@ -63,6 +63,7 @@ class Skyline:
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
         self._visualizer_type = visualizer_type
+        self._direct_load = True
         if self._visualizer_type != "stealth":
             os.environ["FURY_OFFSCREEN"] = "0"
             self.window = create_window(
@@ -154,6 +155,7 @@ class Skyline:
             self._wait_for_loading_in_stealth_mode()
 
         self.before_render()
+        self._direct_load = False
         self.window.start()
 
     def _wait_for_loading_in_stealth_mode(self):
@@ -370,6 +372,8 @@ class Skyline:
                 tract_colors=self._tract_colors,
                 switch_render_callback=self._update_tractogram_rendering,
                 loader=self.loader,
+                async_clustering=self._direct_load
+                and self._visualizer_type != "stealth",
             )
             self._add_visualization(tractogram3d)
         for idx, input in enumerate(sh_coeffs or []):
