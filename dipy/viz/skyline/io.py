@@ -102,6 +102,9 @@ def load_files(fnames, *, rois=None, shm_coeffs=None):
             else:
                 sft = load_tractogram(fname, EMERGENCY_REF)
             skyline_tractograms.append((sft, fname))
+        elif ext == ".npy":
+            # To support horizon BUAN p-values file
+            pass
         else:
             logger.error(f"File extension '{ext}' is not supported in Skyline.")
 
