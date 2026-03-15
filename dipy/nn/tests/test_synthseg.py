@@ -51,15 +51,17 @@ def test_default_weights():
 @pytest.mark.skipif(not have_torch, reason="Requires Torch")
 def test_default_weights_batch():
     file_path = get_fnames(name="synthseg_test_data")
-    input_arr = np.load(file_path)["input"]
-    output_arr = np.load(file_path)["output"]
-    input_arr = list(input_arr)
+    data = np.load(file_path)
+    # Use a single image passed as a list to exercise the batch code path
+    # while keeping peak memory equivalent to the single-image test.
+    input_arr = [data["input"][0]]
+    output_arr = data["output"][0]
 
     synthseg_model = synthseg.SynthSeg()
-    fake_affine = np.array([np.eye(4), np.eye(4)])
+    fake_affine = np.array([np.eye(4)])
     results_arr = synthseg_model.predict(
-        input_arr, fake_affine, batch_size=2, return_prob=True
-    )[..., 5]
+        input_arr, fake_affine, batch_size=1, return_prob=True
+    )[0, ..., 5]
     assert_percent_almost_equal(results_arr, output_arr, decimal=4, percent=0.99)
 
 

@@ -11,7 +11,7 @@
 #include <cmath>
 #include <cstring>
 
-#ifdef __SSE3__
+#if defined(__AVX__) || defined(_MSC_VER)
 #include <immintrin.h>
 #endif
 

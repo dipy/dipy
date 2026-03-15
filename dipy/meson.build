@@ -234,9 +234,9 @@ if host_cpu_family in ['x86', 'x86_64']
   x86_intrinsics = []
   if cc.get_id() == 'msvc'
     x86_intrinsics = [
-      [ 'AVX', 'immintrin.h', '__m256', '_mm256_setzero_ps()', ['/ARCH:AVX'] ],
-      [ 'AVX2', 'immintrin.h', '__m256i', '_mm256_setzero_si256()', ['/ARCH:AVX2'] ],
-      [ 'AVX512', 'immintrin.h', '__m512', '_mm512_setzero_si512()', ['/ARCH:AVX512'] ],
+      [ 'AVX', 'immintrin.h', '__m256', '_mm256_setzero_ps()', ['/arch:AVX'] ],
+      [ 'AVX2', 'immintrin.h', '__m256i', '_mm256_setzero_si256()', ['/arch:AVX2'] ],
+      [ 'AVX512', 'immintrin.h', '__m512', '_mm512_setzero_si512()', ['/arch:AVX512'] ],
     ]
   else
     x86_intrinsics = [
