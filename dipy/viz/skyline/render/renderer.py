@@ -1,3 +1,4 @@
+from pathlib import Path
 import sys
 
 from PIL import Image
@@ -11,9 +12,15 @@ from dipy.viz.skyline.UI.theme import LOGO_SMALL
 
 
 class Visualization:
-    def __init__(self, name, render_callback):
+    def __init__(self, path, render_callback):
         self._render_callback = render_callback
-        self.name = name
+        self.path = path if path is not None else "Unnamed Visualization"
+        if self.__class__.__name__ == "ROI3D":
+            self.name = f"ROI ({Path(self.path).name})"
+        elif self.__class__.__name__ == "SHGlyph3D":
+            self.name = f"ODFs ({Path(self.path).name})"
+        else:
+            self.name = Path(self.path).name
         self.active = False
         self._visible = True
         self._info = self._populate_info()
@@ -44,7 +51,7 @@ class Visualization:
             return "sh_glyph"
         return None
 
-    def renderer(self, name, is_open, group_visible=True):
+    def renderer(self, is_open, group_visible=True):
         """Provides a callback from UIManager to handle visualization.
 
         Parameters
@@ -65,7 +72,7 @@ class Visualization:
             )
         effective_visible = self._visible and group_visible
         is_open, new_visible, is_removed, is_selected = render_section_header(
-            name,
+            self.name,
             is_open=is_open,
             is_visible=effective_visible,
             info=self._info,
@@ -92,7 +99,7 @@ class Visualization:
                 imgui.ChildFlags_.always_use_window_padding
                 | imgui.ChildFlags_.auto_resize_y
             )
-            if imgui.begin_child(f"{name}_content_child", (0, 0), child_flags):
+            if imgui.begin_child(f"{self.name}_content_child", (0, 0), child_flags):
                 self.render_widgets()
             imgui.end_child()
             imgui.pop_style_var()
