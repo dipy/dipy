@@ -308,6 +308,9 @@ class SkylineFlow(Workflow):
         glass_brain=False,
         bg_color=None,
         tract_colors=None,
+        cluster_thr=15.0,
+        cluster_size_thr=-1,
+        cluster_length_thr=-1,
         rgb=False,
         stealth=False,
         out_dir="",
@@ -351,6 +354,19 @@ class SkylineFlow(Workflow):
             String options are 'random' for random colors for each tractogram,
             'direction'  for directionally colored streamlines.
             For example, a value of (1, 0, 0) would mean the red color.
+        cluster_thr : float, optional
+            Distance threshold used for clustering. Default value 15.0 for
+            small animal brains you may need to use something smaller such
+            as 2.0. The distance is in mm. For this parameter to be active
+            ``cluster`` should be enabled.
+        cluster_size_thr : int, optional
+            Clusters with size less than ``cluster_size_thr`` will be hidden.
+            If -1, it will show all cluster above the 50th percentile of the cluster
+            size distribution.
+        cluster_length_thr : float, optional
+            Clusters with average length less than ``cluster_length_thr`` in mm will be
+            hidden. If -1, it will show all cluster above the 25th percentile of the
+            cluster length distribution.
         stealth : bool, optional
             Do not use interactive mode just save figure.
         rgb : bool, optional
@@ -373,6 +389,17 @@ class SkylineFlow(Workflow):
             for input_output in io_it:
                 skyline_input_files.append(input_output[0])
 
+        if cluster_length_thr == -1:
+            # set default as None is not allowed in int
+            # Further down it will be set to
+            # 25th percentile of the cluster length distribution
+            cluster_length_thr = None
+        if cluster_size_thr == -1:
+            # set default as None is not allowed in int
+            # Further down it will be set to
+            # 50th percentile of the cluster size distribution
+            cluster_size_thr = None
+
         skyline_from_files(
             skyline_input_files,
             rois=rois,
@@ -382,6 +409,9 @@ class SkylineFlow(Workflow):
             glass_brain=glass_brain,
             bg_color=bg_color,
             tract_colors=tract_colors,
+            cluster_thr=cluster_thr,
+            cluster_size_thr=cluster_size_thr,
+            cluster_length_thr=cluster_length_thr,
             stealth=stealth,
             rgb=rgb,
             out_dir=out_dir,
