@@ -142,7 +142,11 @@ class Visualization:
 
 
 def create_window(
-    *, visualizer_type="standalone", size=(1200, 1000), screen_config=None
+    *,
+    visualizer_type="standalone",
+    size=(1200, 1000),
+    screen_config=None,
+    title="DIPY SKYLINE",
 ):
     """Create a FURY ShowManager based on the visualizer type.
 
@@ -188,7 +192,7 @@ def create_window(
 
     if visualizer_type != "stealth":
         show_m = window.ShowManager(
-            title="DIPY SKYLINE",
+            title=title,
             size=size,
             window_type=window_type,
             screen_config=screen_config,
@@ -205,7 +209,7 @@ def create_window(
 
     else:
         show_m = window.ShowManager(
-            title="DIPY SKYLINE",
+            title=title,
             size=size,
             window_type=window_type,
             screen_config=screen_config,
