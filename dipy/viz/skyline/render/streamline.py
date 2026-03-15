@@ -20,7 +20,9 @@ from dipy.viz.skyline.UI.elements import (
     downloader,
     open_confirmation_dialog,
     segmented_switch,
+    thin_slider,
     toggle_button,
+    two_disk_slider,
     uploader,
 )
 from dipy.viz.skyline.compute import run_async
@@ -125,6 +127,7 @@ def create_streamline_visualization(
     loader=None,
     size_threshold=None,
     length_threshold=None,
+    buan_pvals_file=None,
     async_clustering=True,
 ):
     """Create streamline visualization from input
@@ -161,6 +164,8 @@ def create_streamline_visualization(
         Minimum number of streamlines in a cluster to be visible.
     length_threshold : float, optional
         Minimum length of streamlines in a cluster to be visible.
+    buan_pvals_file : str, optional
+        File path to BUAN p-values for coloring streamlines.
     async_clustering : bool, optional
         Whether to perform clustering asynchronously. Set to False to block
         until clustering completes (used in stealth mode).
@@ -214,6 +219,7 @@ def create_streamline_visualization(
         color=color,
         render_callback=render_callback,
         switch_render_callback=switch_render_callback,
+        buan_pvals_file=buan_pvals_file,
         loader=loader,
     )
 
@@ -263,7 +269,12 @@ class Streamline3D(Visualization):
         self.sft = sft
         self.color = color
         self._original_color = color
-        self._buan_color = (1, 0, 0)
+        self._color_picker = (1, 0, 0)
+        self._hue_low = 0.0
+        self._hue_high = 0.1
+        self._saturation_high = 0.8
+        self._saturation_low = 0.2
+        self._value = 0.8
         self._line_type = line_type
         self._buan_pvals_file = buan_pvals_file
         self._buan_pvals_data = None
@@ -274,11 +285,10 @@ class Streamline3D(Visualization):
         self._switch_render_callback = switch_render_callback
         self._loader = loader
 
+        self._create_streamline_actor()
+        super().__init__(name, render_callback)
         if buan_pvals_file is not None:
             self.handle_color_change(buan_pvals_file)
-        else:
-            self._create_streamline_actor()
-        super().__init__(name, render_callback)
 
     def _create_streamline_actor(self):
         self._actor = create_streamline(
@@ -303,11 +313,28 @@ class Streamline3D(Visualization):
         if fname is not None:
             self._buan_pvals_file = Path(fname[0]).name
             self._buan_pvals_data = load_npy(fname[0])
+            print(f"Loaded BUAN p-values from {fname[0]}")
             self.color, self._buan_color_idx = apply_buan_colors(
-                self.sft.streamlines, self._buan_pvals_data
+                self.sft.streamlines,
+                self._buan_pvals_data,
+                hue=(self._hue_low, self._hue_high),
+                saturation=(self._saturation_high, self._saturation_low),
+                value=self._value,
             )
             self._create_streamline_actor()
             self.render()
+
+    def _update_buan_colors_on_sliders(self):
+        self.color, self._buan_color_idx = apply_buan_colors(
+            self.sft.streamlines,
+            self._buan_pvals_data,
+            buan_color_idx=self._buan_color_idx,
+            hue=(self._hue_low, self._hue_high),
+            saturation=(self._saturation_high, self._saturation_low),
+            value=self._value,
+        )
+        self._create_streamline_actor()
+        self.render()
 
     def render_widgets(self):
         if self._apply_line_change_next_frame:
@@ -387,26 +414,57 @@ class Streamline3D(Visualization):
 
         imgui.same_line(0, 10)
         changed, new_color = color_picker(
-            selected_color=self._buan_color, tooltip="Pick a color for the streamlines."
+            selected_color=self._color_picker,
+            tooltip="Pick a color for the streamlines.",
         )
         if changed:
-            self._buan_color = (new_color[0], new_color[1], new_color[2])
-            hue, saturation, value = colorsys.rgb_to_hsv(
-                new_color[0], new_color[1], new_color[2]
-            )
-            if self._buan_pvals_file is not None and self._buan_pvals_data is not None:
-                self.color, self._buan_color_idx = apply_buan_colors(
-                    self.sft.streamlines,
-                    self._buan_pvals_data,
-                    buan_color_idx=self._buan_color_idx,
-                    hue=(0, hue),
-                    saturation=(0, saturation),
-                    value=value,
-                )
-            else:
-                self.color = self._buan_color
+            self._color_picker = (new_color[0], new_color[1], new_color[2])
+
+            self.color = self._color_picker
             self._create_streamline_actor()
             self.render()
+
+        if self._buan_pvals_file is not None and self._buan_pvals_data is not None:
+            imgui.spacing()
+            changed, (hue_low, hue_high) = two_disk_slider(
+                "Hue",
+                (self._hue_low, self._hue_high),
+                0.0,
+                1.0,
+                text_format=".1f",
+                step=0.1,
+            )
+            if changed:
+                self._hue_low = hue_low
+                self._hue_high = hue_high
+                self._update_buan_colors_on_sliders()
+
+            imgui.spacing()
+            changed, (sat_low, sat_high) = two_disk_slider(
+                "Saturation",
+                (self._saturation_low, self._saturation_high),
+                0.0,
+                1.0,
+                text_format=".1f",
+                step=0.01,
+            )
+            if changed:
+                self._saturation_low = sat_low
+                self._saturation_high = sat_high
+                self._update_buan_colors_on_sliders()
+
+            imgui.spacing()
+            changed, value = thin_slider(
+                "Value",
+                self._value,
+                0.0,
+                1.0,
+                text_format=".1f",
+                step=0.01,
+            )
+            if changed:
+                self._value = value
+                self._update_buan_colors_on_sliders()
 
 
 class ClusterStreamline3D(Visualization):
