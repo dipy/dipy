@@ -96,7 +96,6 @@ class Peak3D(Visualization):
         render_callback=None,
         sync_callabck=None,
     ):
-        super().__init__(name, render_callback)
         self.peaks = peaks
         self.affine = affine
         self.peak_values = peak_values
@@ -106,6 +105,7 @@ class Peak3D(Visualization):
         self._sync_callabck = sync_callabck
         self._slice_visibility = [True, True, True]
         self._create_peak_actor()
+        super().__init__(name, render_callback)
 
     def _create_peak_actor(self):
         self._slicer = peaks_slicer(
@@ -126,6 +126,16 @@ class Peak3D(Visualization):
             self.bounds = np.asarray([lower_bounds, upper_bounds])
         self._cross_section_space = self._infer_cross_section_space()
         self._apply_cross_section_from_state()
+
+    def _populate_info(self):
+        info = f"Peaks shape: {self.peaks.shape}\n"
+        info += f"Peaks dtype: {self.peaks.dtype}\n"
+        if self.affine is not None:
+            affine_str = np.array2string(
+                np.round(self.affine, 2), separator=" ", prefix=""
+            )
+            info += f"Affine:\n{affine_str}\n"
+        return info
 
     @property
     def actor(self):
