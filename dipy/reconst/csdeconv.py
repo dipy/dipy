@@ -67,6 +67,25 @@ class AxSymShResponse:
 
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
+    """Model for estimating fiber orientation distributions via spherical
+    deconvolution.
+
+    CSD deconvolves the diffusion signal with a single-fiber response
+    function to estimate the fiber orientation distribution (FOD). This
+    gives a sharper angular profile than standard ODF models, which is
+    particularly useful in regions with crossing fibers
+    :footcite:p:`Tournier2007,Descoteaux2009`.
+
+    See Also
+    --------
+    dipy.reconst.csdeconv.ConstrainedSDTModel
+    dipy.reconst.shm.SphHarmModel
+
+    References
+    ----------
+    .. footbibliography::
+    """
+
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     @warning_for_keywords()
     def __init__(
@@ -247,8 +266,26 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
         return pred_sig
 
-
 class ConstrainedSDTModel(SphHarmModel):
+    """SDT variant of CSD that operates on Q-ball ODFs.
+
+    Unlike standard CSD which works on the raw diffusion signal, SDT
+    performs the deconvolution on the Q-ball ODF directly
+    :footcite:p:`Descoteaux2009`. The single-fiber response function
+    is used to sharpen the angular profile of the ODF, providing
+    improved fiber orientation estimates without needing to go back
+    to the raw signal.
+
+    See Also
+    --------
+    dipy.reconst.csdeconv.ConstrainedSphericalDeconvModel
+    dipy.reconst.shm.SphHarmModel
+
+    References
+    ----------
+    .. footbibliography::
+    """
+
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     @warning_for_keywords()
     def __init__(
