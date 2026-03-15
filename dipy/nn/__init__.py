@@ -54,7 +54,7 @@ def _load_backend():
             "`dipy.nn.tf` module uses TensorFlow, which is deprecated in DIPY 1.10.0. "
             "Please install PyTorch to use the `dipy.nn.torch` module instead."
         )
-        dec = deprecate_with_version(msg, since="1.10.0", until="1.12.0")
+        dec = deprecate_with_version(msg, since="1.10.0", until="2.0.0")
         dec(lambda x=None: x)()
 
         sys.modules["dipy.nn.evac"] = evac_module

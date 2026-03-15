@@ -843,6 +843,108 @@ cdef TrackerStatus probabilistic_propagator(double* point,
     return TrackerStatus.SUCCESS
 
 
+cdef TrackerStatus eudx_propagator(double* point,
+                                    double* direction,
+                                    TrackerParameters params,
+                                    double* stream_data,
+                                    PmfGen pmf_gen,
+                                    RNGState* rng) noexcept nogil:
+    """EUDX propagator using trilinear interpolation of peak directions.
+
+    Parameters
+    ----------
+    point : double[3]
+        Current tracking position in voxel coordinates.
+    direction : double[3]
+        Previous tracking direction (input), updated to next direction (output).
+    params : TrackerParameters
+        EUDX tracking parameters.
+    stream_data : double*
+        Streamline data persistent across tracking steps.
+    pmf_gen : PmfGen
+        Peak generator interface.
+    rng : RNGState*
+        Random number generator state.
+
+    Returns
+    -------
+    status : TrackerStatus
+        SUCCESS if propagation succeeded, FAIL otherwise.
+    """
+    cdef:
+        double weights[8]
+        double* odf_vertices
+        cnp.npy_intp peaks
+        int m, i
+        double interpolation_total_weight = 0
+        double new_direction[3]
+        double interp_direction[3]
+        double peak_values_neighbors[8 * PEAK_NO]
+        double peak_indices_neighbors[8 * PEAK_NO]
+        cnp.npy_intp delta
+        cnp.npy_intp valid_neighbors[8]
+        double normd
+        double peak_values_threshold, angle_threshold, min_total_weight
+
+    if norm(direction) == 0:
+        return TrackerStatus.FAIL
+    normalize(direction)
+
+    peak_values_threshold = params.eudx.peak_values_threshold
+    angle_threshold = params.eudx.angle_threshold
+    min_total_weight = params.eudx.min_total_weight
+    odf_vertices = &pmf_gen.vertices[0, 0]
+    peaks = pmf_gen.get_peaks_c(
+        point,
+        &peak_values_neighbors[0],
+        &peak_indices_neighbors[0],
+        &weights[0],
+        PEAK_NO,
+        &valid_neighbors[0],
+    )
+    if peaks <= 0:
+        return TrackerStatus.FAIL
+
+    for i in range(3):
+        new_direction[i] = 0
+
+    for m in range(8):
+        if valid_neighbors[m] == 0:
+            continue
+
+        delta = _nearest_direction(direction,
+                                   &peak_values_neighbors[m * PEAK_NO],
+                                   &peak_indices_neighbors[m * PEAK_NO],
+                                   peaks,
+                                   odf_vertices,
+                                   peak_values_threshold,
+                                   angle_threshold,
+                                   interp_direction)
+
+        if delta == 0:
+            continue
+
+        interpolation_total_weight += weights[m]
+        for i in range(3):
+            new_direction[i] += weights[m] * interp_direction[i]
+
+    if interpolation_total_weight < min_total_weight:
+        return TrackerStatus.FAIL
+
+    normd = sqrt(new_direction[0] * new_direction[0] +
+                 new_direction[1] * new_direction[1] +
+                 new_direction[2] * new_direction[2])
+
+    if normd == 0:
+        return TrackerStatus.FAIL
+
+    normd = 1.0 / normd
+    for i in range(3):
+        direction[i] = new_direction[i] * normd
+
+    return TrackerStatus.SUCCESS
+
+
 cdef TrackerStatus parallel_transport_propagator(double* point,
                                               double* direction,
                                               TrackerParameters params,

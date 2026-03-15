@@ -637,9 +637,8 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
             nb_points = c_compress_streamline[double2d](streamline, compressed_streamline,
                                                         tol_error, max_segment_length)
 
-        compressed_streamline.resize((nb_points, streamline.shape[1]))
         # HACK: To avoid memleaks we have to recast with astype(dtype).
-        compressed_streamlines.append(compressed_streamline.astype(dtype))
+        compressed_streamlines.append(compressed_streamline[:nb_points].astype(dtype))
 
     if only_one_streamlines:
         return compressed_streamlines[0]

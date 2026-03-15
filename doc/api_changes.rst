@@ -8,10 +8,77 @@ renamed or are deprecated (not recommended) during different release circles.
 DIPY 1.12.0 changes
 -------------------
 
+**General**
+
+- Dropped support for Python 3.10. Python 3.11 is now the minimum supported version.
+- Added Python 3.14 nightly wheel support.
+
 **IO**
 
-- The `utils` function `split_name_with_gz` was removed in PR https://github.com/dipy/dipy/pull/3593
-  as DIPY transitioned to using `pathlib` for path manipulation.
+- ``dipy.io.utils.split_name_with_gz`` was removed. Use ``pathlib.Path(fname).suffix``
+  / ``pathlib.Path(fname).stem`` or ``dipy.io.utils.split_filename_extension`` instead.
+
+- ``dipy.io.peaks.load_peaks`` and ``dipy.io.peaks.save_peaks`` have been fully removed
+  (deprecated since 1.10.0). Use ``dipy.io.peaks.load_pam`` and
+  ``dipy.io.peaks.save_pam`` instead.
+
+**Segment**
+
+- The ``autocrop`` parameter of ``dipy.segment.mask.median_otsu`` is deprecated since
+  1.11.0 and will be removed in 1.13.0. Remove ``autocrop=True`` from your calls; if
+  you need cropping, call ``bounding_box()`` and ``crop()`` manually afterwards.
+
+**Denoising**
+
+- ``dipy.denoise.nlmeans.nlmeans`` gained a new keyword-only ``method`` parameter
+  (``"blockwise"`` or ``"classic"``). **The default changed to** ``"blockwise"``,
+  which uses an improved algorithm with better memory efficiency and statistical
+  pre-filtering. Results may differ from prior releases. To restore the previous
+  behaviour pass ``method="classic"``. The ``block_radius`` default also changed:
+  it is now ``2`` for ``"blockwise"`` and ``5`` for ``"classic"`` (previously always
+  ``5``).
+
+**Align**
+
+- ``dipy.align.reslice.reslice`` gained a new optional keyword-only ``new_shape``
+  parameter. When ``None`` (default) the output shape is computed as before.
+
+**Tracking**
+
+- Using ``EuDXDirectionGetter``-based objects (e.g., ``PeaksAndMetrics``) as the
+  ``direction_getter`` argument of ``LocalTracking`` is deprecated since 1.12.0 and
+  will be removed in 2.0.0. Use ``dipy.tracking.tracker.eudx_tracking`` instead::
+
+      # old
+      LocalTracking(pam, stopping_criterion, seeds, affine, step_size)
+
+      # new
+      from dipy.tracking.tracker import eudx_tracking
+      eudx_tracking(seeds, stopping_criterion, affine, pam=pam, step_size=step_size)
+
+- New high-level tracking functions are available in ``dipy.tracking.tracker``:
+  ``eudx_tracking``, ``deterministic_tracking``, ``probabilistic_tracking``,
+  ``closestpeak_tracking``, ``pft_tracking``, ``ptt_tracking``. They accept
+  ``min_len`` / ``max_len`` in **mm** (not number of points) and support a
+  ``nbr_threads`` keyword for parallelism.
+
+**Workflows / CLI**
+
+- The default output tractogram format changed from ``.trk`` to ``.trx`` across all
+  tracking and segmentation workflows (``dipy_track``, ``dipy_track_pft``,
+  ``dipy_slr``, ``dipy_recobundles``, etc.). Pass an explicit
+  ``--out_tractogram`` argument ending in ``.trk`` to keep the old format.
+
+- ``dipy_sh_convert_mrtrix`` is deprecated since 1.11.0. Use ``dipy_convert_sh``
+  instead.
+
+- New CLI commands: ``dipy_fit_msmtcsd``, ``dipy_brain_mask``,
+  ``dipy_cluster_streamlines``, ``dipy_fit_powermap``, ``dipy_fit_fwdti``.
+
+**Utils**
+
+- ``dipy.utils.optpkg.optional_package`` gained a new keyword-only ``max_version``
+  parameter to enforce an upper version bound on optional dependencies.
 
 
 DIPY 1.10.0 changes

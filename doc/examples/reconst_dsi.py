@@ -97,8 +97,8 @@ GFA = gfa(ODF)
 
 fig_hist, ax = plt.subplots(1)
 ax.set_axis_off()
-plt.imshow(GFA.T)
-plt.savefig("dsi_gfa.png", bbox_inches="tight")
+ax.imshow(GFA.T)
+fig_hist.savefig("dsi_gfa.png", bbox_inches="tight")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

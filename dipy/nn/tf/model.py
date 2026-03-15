@@ -97,8 +97,8 @@ class SingleLayerPerceptron:
 
         """
         hist = self.model.fit(x_train, y_train, epochs=epochs)
-        self.accuracy = hist.history["accuracy"][0]
-        self.loss = hist.history["loss"][0]
+        self.accuracy = hist.history["accuracy"][-1]
+        self.loss = hist.history["loss"][-1]
         return hist
 
     @warning_for_keywords()
@@ -250,8 +250,8 @@ class MultipleLayerPercepton:
 
         """
         hist = self.model.fit(x_train, y_train, epochs=epochs)
-        self.accuracy = hist.history["accuracy"][0]
-        self.loss = hist.history["loss"][0]
+        self.accuracy = hist.history["accuracy"][-1]
+        self.loss = hist.history["loss"][-1]
         return hist
 
     @warning_for_keywords()

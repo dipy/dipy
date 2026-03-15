@@ -90,17 +90,22 @@ Quick links
 Highlights
 **********
 
-**DIPY 1.11.0** is now available. New features include:
+**DIPY 1.12.0** is now available. New features include:
 
-- NF: Refactoring of the tracking API.
-- Deprecation of Tensorflow backend in favor of PyTorch.
-- Performance improvements of multiple functionalities.
-- DIPY Horizon improvements and minor features added.
-- Added support for Python 3.13.
-- Drop support for Python 3.9.
-- Multiple Workflows updated and added (15 workflows).
+- NF: FORCE reconstruction model.
+- NF: New BiasField correction method.
+- NF: Parallel EuDX tractography.
+- NF: Intermediate map for symmetric diffeomorphic registration.
+- NF: StatefulSurface class to handle surfaces.
+- NF: Multiple new workflows (dipy_fit_msmtcsd, dipy_brain_mask, dipy_cluster_streamlines, dipy_fit_powermap, dipy_fit_fwdti).
+- ENH: Cythonized AK, RK, and KFA kurtosis computations.
+- RF: TRX as default file format for tractography outputs.
+- RF: Adoption of pathlib across workflows.
+- RF: Refactoring of nlmeans denoising (classic and blockwise variants).
+- Added support for Python 3.14.
+- Drop support for Python 3.10.
 - Documentation update.
-- Closed 73 issues and merged 47 pull requests.
+- Closed 324 issues and merged 173 pull requests.
 
 
 See :ref:`Older Highlights <old_highlights>`.
@@ -108,9 +113,9 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
+- :doc:`DIPY 1.12.0 <release_notes/release1.12>` released March 14, 2026.
 - :doc:`DIPY 1.11.0 <release_notes/release1.11>` released March 15, 2025.
 - :doc:`DIPY 1.10.0 <release_notes/release1.10>` released December 12, 2024.
-- :doc:`DIPY 1.9.0 <release_notes/release1.9>` released March 8, 2024.
 
 
 

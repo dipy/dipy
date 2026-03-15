@@ -10,7 +10,7 @@ def save_pickle(fname, dix):
     ----------
     fname : str
        filename to save object e.g. a dictionary
-    dix : str
+    dix : object
        dictionary or other object
 
     Examples
@@ -50,7 +50,7 @@ def load_pickle(fname):
     dix : object
        dictionary or other object
 
-    Examples
+    See Also
     --------
     dipy.io.pickles.save_pickle
 

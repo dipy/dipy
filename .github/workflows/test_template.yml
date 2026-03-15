@@ -14,7 +14,7 @@ on:
         required: false
         default: '["3.11", ]'
       use-pre:
-        description: "bal"
+        description: "Use pre-release versions"
         type: boolean
         required: false
       coverage:
@@ -74,86 +74,86 @@ jobs:
       DIPY_WERRORS: 1
       CODECOV_TOKEN: ${{ secrets.codecov-token }}
       TEST_WITH_XVFB: ${{ inputs.enable-viz-tests }}
-      PRE_WHEELS: "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"  # "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
+      PRE_WHEELS: "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple" # "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
     steps:
-    - uses: actions/checkout@v6
-    - name: Set up Python ${{ matrix.python-version }}
-      if: ${{ matrix.install-type != 'conda' }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Set up Virtualenv
-      if: ${{ matrix.install-type != 'conda' }}
-      run: |
-        python -m pip install --upgrade pip virtualenv
-        virtualenv $VENV_ARGS venv
-    - name: Setup Miniconda
-      uses: conda-incubator/setup-miniconda@v3
-      if: ${{ matrix.install-type == 'conda' }}
-      with:
-        auto-update-conda: true
-        auto-activate-base: false
-        activate-environment: venv
-        python-version: ${{ matrix.python-version }}
-        allow-softlinks: true
-        channel-priority: flexible
-        show-channel-urls: true
-        use-only-tar-bz2: false
-        miniforge-version: latest
-    - name: Install HDF5 and pytables on macOS
-      if: ${{ (runner.os == 'macOS')  &&  (env.EXTRA_DEPENDS != '')  &&  (env.INSTALL_TYPE == 'pip') }}
-      run: |
-        pip install cython
-        brew install hdf5
-        brew install c-blosc
-        export HDF5_DIR=/opt/homebrew/opt/hdf5
-        export BLOSC_DIR=/opt/homebrew/opt/c-blosc
-        pip install tables
-    - name: Install Dependencies
-      run: |
-        if [ "${{ inputs.use-pre }}" == "true" ]; then
-          tools/ci/install_dependencies.sh || echo "::warning::Experimental Job so Install Dependencies failure ignored!"
-        else
-          tools/ci/install_dependencies.sh
-        fi
-    - name: Install OpenMP on macOS (pip only)
-      if: runner.os == 'macOS' && matrix.install-type != 'conda'
-      run: |
-        brew install llvm
-        brew install libomp
-        echo "CC=clang" >> $GITHUB_ENV
-    - name: Restore cached data
-      uses: actions/cache@v5
-      with:
-        path: ~/.dipy
-        key: dipy-downloaded-data-${{ hashFiles('dipy/data/fetcher.py') }}
-        restore-keys: |
-          dipy-downloaded-data-
-    - name: Install DIPY
-      run: |
-        if [ "${{ inputs.use-pre }}" == "true" ]; then
-          tools/ci/install.sh || echo "::warning::Experimental Job so Install DIPY failure ignored!"
-        else
-          tools/ci/install.sh
-        fi
-    - name: Setup Headless
-      if: ${{ inputs.enable-viz-tests }}
-      run: tools/ci/setup_headless.sh
-    - name: Run the Tests
-      run: |
-        if [ "${{ inputs.use-pre }}" == "true" ]; then
-          tools/ci/run_tests.sh || echo "::warning::Experimental Job so failure ignored!"
-        else
-          tools/ci/run_tests.sh
-        fi
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v5
-      if: ${{ fromJSON(env.COVERAGE) }}
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        directory: for_testing_results
-        files: coverage.xml
-        fail_ci_if_error: true
-        flags: unittests
-        name: codecov-umbrella
-        verbose: true
+      - uses: actions/checkout@v6
+      - name: Set up Python ${{ matrix.python-version }}
+        if: ${{ matrix.install-type != 'conda' }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up Virtualenv
+        if: ${{ matrix.install-type != 'conda' }}
+        run: |
+          python -m pip install --upgrade pip virtualenv
+          virtualenv $VENV_ARGS venv
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        if: ${{ matrix.install-type == 'conda' }}
+        with:
+          auto-update-conda: true
+          auto-activate-base: false
+          activate-environment: venv
+          python-version: ${{ matrix.python-version }}
+          allow-softlinks: true
+          channel-priority: flexible
+          show-channel-urls: true
+          use-only-tar-bz2: false
+          miniforge-version: latest
+      - name: Install HDF5 and pytables on macOS
+        if: ${{ (runner.os == 'macOS')  &&  (env.EXTRA_DEPENDS != '')  &&  (env.INSTALL_TYPE == 'pip') }}
+        run: |
+          pip install cython
+          brew install hdf5
+          brew install c-blosc
+          export HDF5_DIR=/opt/homebrew/opt/hdf5
+          export BLOSC_DIR=/opt/homebrew/opt/c-blosc
+          pip install tables
+      - name: Install Dependencies
+        run: |
+          if [ "${{ inputs.use-pre }}" == "true" ]; then
+            tools/ci/install_dependencies.sh || echo "::warning::Experimental Job so Install Dependencies failure ignored!"
+          else
+            tools/ci/install_dependencies.sh
+          fi
+      - name: Install OpenMP on macOS (pip only)
+        if: runner.os == 'macOS' && matrix.install-type != 'conda'
+        run: |
+          brew install llvm
+          brew install libomp
+          echo "CC=clang" >> $GITHUB_ENV
+      - name: Restore cached data
+        uses: actions/cache@v5
+        with:
+          path: ~/.dipy
+          key: dipy-downloaded-data-${{ hashFiles('dipy/data/fetcher.py') }}
+          restore-keys: |
+            dipy-downloaded-data-
+      - name: Install DIPY
+        run: |
+          if [ "${{ inputs.use-pre }}" == "true" ]; then
+            tools/ci/install.sh || echo "::warning::Experimental Job so Install DIPY failure ignored!"
+          else
+            tools/ci/install.sh
+          fi
+      - name: Setup Headless
+        if: ${{ inputs.enable-viz-tests }}
+        run: tools/ci/setup_headless.sh
+      - name: Run the Tests
+        run: |
+          if [ "${{ inputs.use-pre }}" == "true" ]; then
+            tools/ci/run_tests.sh || echo "::warning::Experimental Job so failure ignored!"
+          else
+            tools/ci/run_tests.sh
+          fi
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: ${{ fromJSON(env.COVERAGE) }}
+        with:
+          token: ${{ inputs.codecov-token || secrets.CODECOV_TOKEN }}
+          directory: for_testing_results
+          files: coverage.xml
+          fail_ci_if_error: true
+          flags: unittests
+          name: codecov-umbrella
+          verbose: true
