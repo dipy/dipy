@@ -91,17 +91,27 @@ def nlmeans(
     --------
     >>> import numpy as np
     >>> from dipy.denoise.nlmeans import nlmeans
-    >>> # Create synthetic noisy data
-    >>> clean_data = np.random.rand(50, 50, 50) * 100
-    >>> noisy_data = clean_data + np.random.randn(50, 50, 50) * 10
-    >>> # Denoise a 3D image with default blockwise method
-    >>> denoised_data = nlmeans(noisy_data, sigma=10.0)
-    >>> # Use classic method for compatibility:
-    >>> denoised_classic = nlmeans(noisy_data, sigma=10.0, method='classic')
-    >>> # Denoise 4D DWI data with different noise levels per volume:
-    >>> dwi_data = np.random.rand(64, 64, 40, 30) * 1000  # 30 DWI directions
-    >>> noise_levels = np.linspace(50, 100, 30)  # Varying noise
-    >>> denoised_dwi = nlmeans(dwi_data, sigma=noise_levels)
+    >>> from dipy.denoise.noise_estimate import estimate_sigma
+    >>> rng = np.random.default_rng(1234)
+    >>> # Simulate magnitude MRI data: abs(signal + Gaussian noise)
+    >>> clean = np.ones((30, 30, 30)) * 100.0
+    >>> noisy = np.abs(clean + rng.standard_normal((30, 30, 30)) * 10)
+    >>> # In practice, estimate sigma from the data (recovers ~10 here)
+    >>> sigma = estimate_sigma(noisy, N=1)
+    >>> # Denoise with Rician noise model
+    >>> denoised = nlmeans(noisy, sigma=sigma, rician=True)
+    >>> denoised.shape == noisy.shape
+    True
+    >>> # Classic method for comparison
+    >>> denoised_classic = nlmeans(noisy, sigma=sigma, method='classic', rician=True)
+    >>> denoised_classic.shape == noisy.shape
+    True
+    >>> # Denoise 4D DWI data with per-volume sigma array
+    >>> dwi_data = rng.random((20, 20, 20, 5)) * 100
+    >>> sigma_4d = np.full(5, 10.0)
+    >>> denoised_dwi = nlmeans(dwi_data, sigma=sigma_4d)
+    >>> denoised_dwi.shape == dwi_data.shape
+    True
     """
     method = method.lower()
     if method not in ["classic", "blockwise"]:
