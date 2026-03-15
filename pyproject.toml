@@ -145,11 +145,13 @@ dev = [
 ]
 
 optional = [
-    "dipy[skyline, ml]",
+    "dipy[ml]",
     "cvxpy",
     "scikit-image",
     "boto3",
-    "numexpr"
+    "numexpr",
+    "matplotlib",
+    "vtk>=9.0.0,<=9.1.0",
 ]
 
 doc = [
