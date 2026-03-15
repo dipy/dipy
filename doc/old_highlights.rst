@@ -4,6 +4,18 @@
 Older Highlights
 ****************
 
+**DIPY 1.11.0** is now available. New features include:
+
+- NF: Refactoring of the tracking API.
+- Deprecation of Tensorflow backend in favor of PyTorch.
+- Performance improvements of multiple functionalities.
+- DIPY Horizon improvements and minor features added.
+- Added support for Python 3.13.
+- Drop support for Python 3.9.
+- Multiple Workflows updated and added (15 workflows).
+- Documentation update.
+- Closed 73 issues and merged 47 pull requests.
+
 **DIPY 1.10.0** is now available. New features include:
 
 - NF: Patch2Self3 - Large improvements of self-supervised denoising method added.

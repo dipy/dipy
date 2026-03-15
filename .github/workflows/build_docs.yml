@@ -41,3 +41,24 @@ jobs:
       run: |
         cd doc
         make -C . html-no-examples SPHINXOPTS="-W --keep-going"
+    - name: Deploy dev docs to docs.dipy.org
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      env:
+        DOCS_DEPLOY_TOKEN: ${{ secrets.DOCS_DEPLOY_TOKEN }}
+      run: |
+        git clone --depth=1 \
+          "https://x-access-token:${DOCS_DEPLOY_TOKEN}@github.com/dipy/docs.dipy.org.git" \
+          _deploy
+        # Sync everything into dev/ but preserve the pre-built examples_built/
+        # directory (tutorials are not rebuilt by html-no-examples).
+        rsync -a --delete \
+          --exclude='examples_built/' \
+          doc/_build/html/ _deploy/dev/
+        cd _deploy
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add -A
+        SHORT_SHA=$(cd .. && git rev-parse --short HEAD)
+        git diff --cached --quiet \
+          || git commit -m "DOC: update dev docs from dipy/dipy@${SHORT_SHA}"
+        git push
