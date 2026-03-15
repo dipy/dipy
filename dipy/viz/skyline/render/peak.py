@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from fury.actor import peaks_slicer
 from fury.transform import apply_transformation
 from imgui_bundle import imgui
@@ -53,7 +51,6 @@ def create_peak_visualization(
         filename = f"Peaks_{idx}"
     else:
         pam, filename = input
-        filename = Path(filename).name if filename is not None else f"Peaks_{idx}"
 
     peak_values = 1.0
     if pam.peak_values is not None:
