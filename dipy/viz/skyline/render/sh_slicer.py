@@ -1,7 +1,5 @@
 """SH Glyph Slicer for Skyline."""
 
-from pathlib import Path
-
 from fury import apply_transformation
 from fury.actor import Group
 from imgui_bundle import imgui
@@ -86,14 +84,12 @@ def create_shm_visualization(
         input_basis_type = basis_type
     elif len(input) == 3:
         coeffs, affine, filename = input
-        filename = Path(filename).name if filename is not None else f"SH_Glyphs_{idx}"
         input_basis_type = basis_type
     else:
         coeffs, affine, filename, input_basis_type = input
-        filename = Path(filename).name if filename is not None else f"SH_Glyphs_{idx}"
 
     return SHGlyph3D(
-        f"ODFs ({filename})",
+        filename,
         coeffs,
         affine=affine,
         render_callback=render_callback,
