@@ -111,6 +111,8 @@ def create_streamline_visualization(
     tract_colors=None,
     switch_render_callback=None,
     loader=None,
+    size_threshold=None,
+    length_threshold=None,
     async_clustering=True,
 ):
     """Create streamline visualization from input
@@ -143,6 +145,10 @@ def create_streamline_visualization(
         Callback function to switch rendering type, used for cluster visualization.
     loader : callable, optional
         Callback function to show/hide loader during asynchronous operations.
+    size_threshold : int, optional
+        Minimum number of streamlines in a cluster to be visible.
+    length_threshold : float, optional
+        Minimum length of streamlines in a cluster to be visible.
     async_clustering : bool, optional
         Whether to perform clustering asynchronously. Set to False to block
         until clustering completes (used in stealth mode).
@@ -173,6 +179,8 @@ def create_streamline_visualization(
             render_callback=render_callback,
             switch_render_callback=switch_render_callback,
             loader=loader,
+            size_threshold=size_threshold,
+            length_threshold=length_threshold,
             async_clustering=async_clustering,
         )
 
@@ -369,8 +377,8 @@ class ClusterStreamline3D(Visualization):
         render_callback=None,
         switch_render_callback=None,
         loader=None,
-        size_threshold=5,
-        length_threshold=10.0,
+        size_threshold=None,
+        length_threshold=None,
         async_clustering=True,
     ):
         self.sft = sft
@@ -475,6 +483,10 @@ class ClusterStreamline3D(Visualization):
             self._loader(False)
 
     def _refresh_cluster_visibility(self):
+        if self.size is None:
+            self.size = np.percentile(self._sizes, 50).astype(int)
+        if self.length is None:
+            self.length = np.percentile(self._lengths, 25)
         for centroid_rep, state in self._cluster_state.items():
             is_visible = state["size"] >= self.size and state["length"] >= self.length
             if state["expanded"] and state["cluster_actor"] is not None:
