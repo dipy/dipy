@@ -1,8 +1,12 @@
+import os
+import time
+
+from dipy.io.utils import split_filename_extension
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO
-from dipy.viz.skyline.compute import run_async
+from dipy.viz.skyline.compute import process_async_callbacks, run_async
 from dipy.viz.skyline.io import load_files
 from dipy.viz.skyline.render.image import Image3D, create_image_visualization
 from dipy.viz.skyline.render.peak import Peak3D, create_peak_visualization
@@ -53,17 +57,32 @@ class Skyline:
         initial_filenames=None,
         initial_rois=None,
         initial_shm_coeffs=None,
+        out_dir=None,
+        out_stealth_png=None,
     ):
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
-
-        self.window = create_window(
-            visualizer_type=visualizer_type,
-            size=self.size,
-            screen_config=[
-                (self.ui_size[0], 0, self.size[0] - self.ui_size[0], self.size[1]),
-            ],
-        )
+        self._visualizer_type = visualizer_type
+        if self._visualizer_type != "stealth":
+            os.environ["FURY_OFFSCREEN"] = "0"
+            self.window = create_window(
+                visualizer_type=self._visualizer_type,
+                size=self.size,
+                screen_config=[
+                    (self.ui_size[0], 0, self.size[0] - self.ui_size[0], self.size[1]),
+                ],
+            )
+        else:
+            os.environ["FURY_OFFSCREEN"] = "1"
+            title = "DIPY SKYLINE"
+            if out_stealth_png is not None:
+                title = split_filename_extension(out_stealth_png)[0]
+            if out_dir is not None and out_dir != "":
+                os.makedirs(out_dir, exist_ok=True)
+                title = os.path.join(out_dir, title)
+            self.window = create_window(
+                visualizer_type=self._visualizer_type, size=self.size, title=title
+            )
         if bg_color is None:
             bg_color = (1, 1, 1) if glass_brain else (0.1, 0.1, 0.1)
         self._bg_color = bg_color
@@ -88,23 +107,26 @@ class Skyline:
         self._is_light_version = is_light_version
         self._glass_brain = glass_brain
         self._tractogram_help = False
-        gpu_texture = load_image_as_wgpu_texture_view(str(LOGO), self.window.device)
-        logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
         self.window.renderer.add_event_handler(self.handle_key_events, "key_down")
-
-        self.UI_window = UIWindow(
-            "Image Controls",
-            size=self.ui_size,
-            render_callback=self.before_render,
-            logo_tex_ref=logo_tex_ref,
-            file_dialog_callback=self._append_visualization,
-            bg_color_callback=self._update_background_color,
-        )
         self.window.resize_callback(self.handle_resize)
         self._color_gen = distinguishable_colormap()
-
         self.active_image = None
-        self.window._imgui.set_gui(self.draw_ui)
+
+        if self._visualizer_type != "stealth":
+            gpu_texture = load_image_as_wgpu_texture_view(str(LOGO), self.window.device)
+            logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
+            self.UI_window = UIWindow(
+                "Image Controls",
+                size=self.ui_size,
+                render_callback=self.before_render,
+                logo_tex_ref=logo_tex_ref,
+                file_dialog_callback=self._append_visualization,
+                bg_color_callback=self._update_background_color,
+            )
+            self.window._imgui.set_gui(self.draw_ui)
+        else:
+            self.UI_window = None
+
         initial_loaded_files = {
             "images": images or [],
             "peaks": peaks or [],
@@ -125,11 +147,22 @@ class Skyline:
                 rois=initial_rois,
                 shm_coeffs=initial_shm_coeffs,
             )
-        elif not has_initial_visualizations:
+        elif not has_initial_visualizations and self.UI_window is not None:
             self.UI_window.request_file_dialog = True
+
+        if self._visualizer_type == "stealth":
+            self._wait_for_loading_in_stealth_mode()
 
         self.before_render()
         self.window.start()
+
+    def _wait_for_loading_in_stealth_mode(self):
+        while self._pending_loaded_files or (
+            self._loading_total > 0 and self._loading_done < self._loading_total
+        ):
+            process_async_callbacks()
+            self._drain_pending_visualizations()
+            time.sleep(0.01)
 
     def _refresh_actors(self):
         all_actors = [v.actor for v in self.visualizations]
@@ -216,13 +249,19 @@ class Skyline:
                     self.active_image, self.active_image.state
                 )
 
-            self._update_tractogram_helper()
+            if self._visualizer_type != "stealth":
+                self._update_tractogram_helper()
+
             self._refresh_actors()
-            update_camera(
-                self.window.screens[0].camera,
-                None,
-                self.window.screens[0].scene,
-            )
+            if (
+                self.window.screens[0].scene.main_scene.get_world_bounding_sphere()
+                is not None
+            ):
+                update_camera(
+                    self.window.screens[0].camera,
+                    None,
+                    self.window.screens[0].scene,
+                )
 
         if (
             self._loading_total > 0
@@ -234,8 +273,9 @@ class Skyline:
             self._loading_done = 0
 
     def before_render(self):
-        self._update_tractogram_helper()
-        self._refresh_ui()
+        if self._visualizer_type != "stealth":
+            self._update_tractogram_helper()
+            self._refresh_ui()
         self._refresh_actors()
         self.window.render()
 
@@ -257,12 +297,11 @@ class Skyline:
 
     def _add_visualization(self, viz):
         viz_id = f"{viz.path}:{viz.name}"
-        if viz_id in self.UI_window.sections:
+        if self.UI_window is not None and viz_id in self.UI_window.sections:
             logger.warning(
                 f"Visualization with id '{viz_id}' already exists. Skipping."
             )
             return
-        print(f"Adding visualization: {viz_id}")
         if isinstance(viz, Image3D):
             self._image_visualizations.append(viz)
         elif isinstance(viz, Peak3D):
@@ -277,7 +316,8 @@ class Skyline:
             self._sh_glyph_visualizations.append(viz)
         else:
             raise ValueError("Unsupported visualization type")
-        self.UI_window.add(viz_id, viz.renderer, viz.viz_type)
+        if self.UI_window is not None:
+            self.UI_window.add(viz_id, viz.renderer, viz.viz_type)
 
     def _load_visualiations(
         self, images, peaks, rois, surfaces, tractograms, sh_coeffs
@@ -348,7 +388,7 @@ class Skyline:
             self.active_image = self._image_visualizations[-1]
             self._arrange_image_actors()
 
-        if len(self.visualizations) == 0:
+        if len(self.visualizations) == 0 and self.UI_window is not None:
             self.UI_window.request_file_dialog = True
 
     def _append_visualization(self, *, filenames=None, rois=None, shm_coeffs=None):
@@ -451,7 +491,8 @@ class Skyline:
                 )
 
     def loader(self, show, *, message=None):
-        self.UI_window.update_loader(show=show, message=message)
+        if self.UI_window is not None:
+            self.UI_window.update_loader(show=show, message=message)
 
     @property
     def visualizations(self):
@@ -475,6 +516,9 @@ def skyline_from_files(
     glass_brain=False,
     bg_color=None,
     tract_colors=None,
+    stealth=False,
+    out_dir=None,
+    out_stealth_png=None,
 ):
     """Launch Skyline GUI from files.
 
@@ -513,8 +557,17 @@ def skyline_from_files(
         String options are 'random' for random colors for each tractogram,
         'direction'  for directionally colored streamlines.
         For example, a value of (1, 0, 0) would mean the red color.
+    stealth : bool, optional
+        Do not use interactive mode just save figure.
+    out_dir : str or Path, optional
+        Output directory to save the figure if stealth mode is enabled.
+    out_stealth_png : str, optional
+        Filename of saved picture if stealth mode is enabled.
     """
+    visualizer_type = "stealth" if stealth else "standalone"
+
     return skyline(
+        visualizer_type=visualizer_type,
         initial_filenames=fnames,
         initial_rois=rois,
         initial_shm_coeffs=shm_coeffs,
@@ -523,6 +576,8 @@ def skyline_from_files(
         glass_brain=glass_brain,
         bg_color=bg_color,
         tract_colors=tract_colors,
+        out_dir=out_dir,
+        out_stealth_png=out_stealth_png,
     )
 
 
@@ -543,6 +598,8 @@ def skyline(
     initial_filenames=None,
     initial_rois=None,
     initial_shm_coeffs=None,
+    out_dir=None,
+    out_stealth_png=None,
 ):
     """Launch Skyline GUI.
 
@@ -583,6 +640,17 @@ def skyline(
         String options are 'random' for random colors for each tractogram,
         'direction'  for directionally colored streamlines.
         For example, a value of (1, 0, 0) would mean the red color.
+    initial_filenames : list, optional
+        List of file paths to be loaded into the Skyline viewer on startup.
+    initial_rois : list, optional
+        List of file paths for ROIs to be loaded into the Skyline viewer on startup.
+    initial_shm_coeffs : list, optional
+        List of file paths for spherical harmonics coefficients to be loaded into the
+        Skyline viewer on startup.
+    out_dir : str or Path, optional
+        Output directory to save the figure if stealth mode is enabled.
+    out_stealth_png : str, optional
+        Filename of saved picture if stealth mode is enabled.
     """
     return Skyline(
         visualizer_type=visualizer_type,
@@ -600,4 +668,6 @@ def skyline(
         initial_filenames=initial_filenames,
         initial_rois=initial_rois,
         initial_shm_coeffs=initial_shm_coeffs,
+        out_dir=out_dir,
+        out_stealth_png=out_stealth_png,
     )
