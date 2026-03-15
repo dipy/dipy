@@ -2,7 +2,7 @@ import numpy as np
 
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
-from dipy.viz.skyline.UI.elements import thin_slider
+from dipy.viz.skyline.UI.elements import color_picker, thin_slider
 from dipy.viz.skyline.render.renderer import Visualization
 
 fury_trip_msg = (
@@ -18,6 +18,8 @@ if has_fury_v2:
     from fury.actor import contour_from_roi, set_group_opacity
 else:
     actor = fury.actor
+imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
+imgui = imgui_bundle.imgui
 
 
 def create_roi_visualization(
@@ -130,3 +132,16 @@ class ROI3D(Visualization):
                     actor.material.depth_write = False
                 else:
                     actor.material.depth_write = True
+
+        imgui.spacing()
+        color = np.asarray(self.color) * 255
+        color = color.astype(np.uint8)
+        changed, new_color = color_picker(
+            selected_color=self.color,
+            tooltip="Pick surface color",
+            label=color,
+        )
+        if changed:
+            self.color = (new_color[0], new_color[1], new_color[2])
+            self._create_roi_actor()
+            self.render()
