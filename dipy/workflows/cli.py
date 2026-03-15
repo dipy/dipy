@@ -18,6 +18,7 @@ cli_flows = {
     "dipy_classify_tissue": ("dipy.workflows.segment", "ClassifyTissueFlow"),
     "dipy_cluster_streamlines": ("dipy.workflows.segment", "ClusterStreamlinesFlow"),
     "dipy_correct_motion": ("dipy.workflows.align", "MotionCorrectionFlow"),
+    "dipy_correct_synb0_syn": ("dipy.workflows.align", "Synb0SynFlow"),
     "dipy_correct_biasfield": ("dipy.workflows.nn", "BiasFieldCorrectionFlow"),
     "dipy_concatenate_tractograms": ("dipy.workflows.io", "ConcatenateTractogramFlow"),
     "dipy_convert_tractogram": ("dipy.workflows.io", "ConvertTractogramFlow"),
