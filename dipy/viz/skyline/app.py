@@ -54,6 +54,7 @@ class Skyline:
         glass_brain=False,
         bg_color=None,
         tract_colors=None,
+        rgb=False,
         initial_filenames=None,
         initial_rois=None,
         initial_shm_coeffs=None,
@@ -63,6 +64,8 @@ class Skyline:
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
         self._visualizer_type = visualizer_type
+        self._direct_load = True
+        self._rgb = rgb
         if self._visualizer_type != "stealth":
             os.environ["FURY_OFFSCREEN"] = "0"
             self.window = create_window(
@@ -154,6 +157,7 @@ class Skyline:
             self._wait_for_loading_in_stealth_mode()
 
         self.before_render()
+        self._direct_load = False
         self.window.start()
 
     def _wait_for_loading_in_stealth_mode(self):
@@ -328,6 +332,7 @@ class Skyline:
                 idx,
                 render_callback=self.before_render,
                 sync_callabck=self._synchronize_visualizations,
+                rgb=self._rgb,
             )
             self._add_visualization(image3d)
         for idx, input in enumerate(peaks or []):
@@ -370,6 +375,8 @@ class Skyline:
                 tract_colors=self._tract_colors,
                 switch_render_callback=self._update_tractogram_rendering,
                 loader=self.loader,
+                async_clustering=self._direct_load
+                and self._visualizer_type != "stealth",
             )
             self._add_visualization(tractogram3d)
         for idx, input in enumerate(sh_coeffs or []):
@@ -517,6 +524,7 @@ def skyline_from_files(
     bg_color=None,
     tract_colors=None,
     stealth=False,
+    rgb=False,
     out_dir=None,
     out_stealth_png=None,
 ):
@@ -559,6 +567,8 @@ def skyline_from_files(
         For example, a value of (1, 0, 0) would mean the red color.
     stealth : bool, optional
         Do not use interactive mode just save figure.
+    rgb : bool, optional
+        Enable the colors in the image if 4D data with RGB/RGBA channels.
     out_dir : str or Path, optional
         Output directory to save the figure if stealth mode is enabled.
     out_stealth_png : str, optional
@@ -576,6 +586,7 @@ def skyline_from_files(
         glass_brain=glass_brain,
         bg_color=bg_color,
         tract_colors=tract_colors,
+        rgb=rgb,
         out_dir=out_dir,
         out_stealth_png=out_stealth_png,
     )
@@ -595,6 +606,7 @@ def skyline(
     glass_brain=False,
     bg_color=None,
     tract_colors=None,
+    rgb=False,
     initial_filenames=None,
     initial_rois=None,
     initial_shm_coeffs=None,
@@ -640,6 +652,8 @@ def skyline(
         String options are 'random' for random colors for each tractogram,
         'direction'  for directionally colored streamlines.
         For example, a value of (1, 0, 0) would mean the red color.
+    rgb : bool, optional
+        Enable the colors in the image if 4D data with RGB/RGBA channels.
     initial_filenames : list, optional
         List of file paths to be loaded into the Skyline viewer on startup.
     initial_rois : list, optional
@@ -665,6 +679,7 @@ def skyline(
         glass_brain=glass_brain,
         bg_color=bg_color,
         tract_colors=tract_colors,
+        rgb=rgb,
         initial_filenames=initial_filenames,
         initial_rois=initial_rois,
         initial_shm_coeffs=initial_shm_coeffs,
