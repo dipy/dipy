@@ -308,6 +308,7 @@ class SkylineFlow(Workflow):
         glass_brain=False,
         bg_color=None,
         tract_colors=None,
+        rgb=False,
         stealth=False,
         out_dir="",
         out_stealth_png="out_skyline.png",
@@ -352,6 +353,8 @@ class SkylineFlow(Workflow):
             For example, a value of (1, 0, 0) would mean the red color.
         stealth : bool, optional
             Do not use interactive mode just save figure.
+        rgb : bool, optional
+            Enable the colors in the image if 4D data with RGB/RGBA channels.
         out_dir : str or Path, optional
             Output directory to save the figure if stealth mode is enabled.
         out_stealth_png : str, optional
@@ -380,6 +383,7 @@ class SkylineFlow(Workflow):
             bg_color=bg_color,
             tract_colors=tract_colors,
             stealth=stealth,
+            rgb=rgb,
             out_dir=out_dir,
             out_stealth_png=out_stealth_png,
         )
