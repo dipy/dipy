@@ -3,6 +3,7 @@ from fury.colormap import distinguishable_colormap
 from fury.io import load_image_as_wgpu_texture_view
 from fury.window import update_camera
 
+from dipy.utils.logging import logger
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO
 from dipy.viz.skyline.compute import run_async
@@ -131,7 +132,8 @@ class Skyline:
 
     def _refresh_ui(self):
         for viz in self.visualizations:
-            if viz.name not in self.UI_window.sections:
+            viz_id = f"{viz.path}:{viz.name}"
+            if viz_id not in self.UI_window.sections:
                 self._remove_visualization(viz)
 
     def _arrange_image_actors(self):
@@ -241,6 +243,13 @@ class Skyline:
                 viz.handle_key_events(event)
 
     def _add_visualization(self, viz):
+        viz_id = f"{viz.path}:{viz.name}"
+        if viz_id in self.UI_window.sections:
+            logger.warning(
+                f"Visualization with id '{viz_id}' already exists. Skipping."
+            )
+            return
+        print(f"Adding visualization: {viz_id}")
         if isinstance(viz, Image3D):
             self._image_visualizations.append(viz)
         elif isinstance(viz, Peak3D):
@@ -255,7 +264,7 @@ class Skyline:
             self._sh_glyph_visualizations.append(viz)
         else:
             raise ValueError("Unsupported visualization type")
-        self.UI_window.add(viz.name, viz.renderer, viz.viz_type)
+        self.UI_window.add(viz_id, viz.renderer, viz.viz_type)
 
     def _load_visualiations(
         self, images, peaks, rois, surfaces, tractograms, sh_coeffs
@@ -411,7 +420,7 @@ class Skyline:
                 viz, (Streamline3D, ClusterStreamline3D)
             ):
                 new_viz = create_streamline_visualization(
-                    (viz.sft, viz.name),
+                    (viz.sft, viz.path),
                     idx,
                     is_cluster=is_clustered,
                     line_type=viz._line_type,
@@ -422,7 +431,8 @@ class Skyline:
                     loader=self.loader,
                 )
                 self._tractogram_visualizations[idx] = new_viz
-                self.UI_window._sections[viz.name] = (
+                viz_id = f"{viz.path}:{viz.name}"
+                self.UI_window.sections[viz_id] = (
                     new_viz.renderer,
                     new_viz.viz_type,
                 )

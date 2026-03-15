@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from fury.actor import surface
 
 from dipy.viz.skyline.UI.elements import thin_slider
@@ -51,7 +49,6 @@ def create_surface_visualization(
         filename = f"Surface_{idx}"
     else:
         vertices, faces, filename = input
-        filename = Path(filename).name if filename is not None else f"Surface_{idx}"
 
     return Surface(
         filename,

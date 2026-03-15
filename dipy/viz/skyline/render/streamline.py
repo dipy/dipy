@@ -138,7 +138,6 @@ def create_streamline_visualization(
         filename = f"Streamline_{idx}"
     else:
         sft, filename = input
-        filename = Path(filename).name if filename is not None else f"Streamline_{idx}"
 
     if is_cluster:
         return ClusterStreamline3D(
