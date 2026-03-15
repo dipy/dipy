@@ -528,9 +528,10 @@ def synb0_syn(
 
     sdr = SymmetricDiffeomorphicRegistration(
         metric=CCMetric(3),
-        level_iters=[200, 200, 200],
-        step_length=0.5,
+        level_iters=[200, 200, 100],
+        step_length=0.25,
         ss_sigma_factor=0.1,
+        opt_tol=1e-6,
     )
     mapping = sdr.optimize(
         static=static_norm,
