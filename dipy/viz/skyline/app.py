@@ -54,6 +54,9 @@ class Skyline:
         glass_brain=False,
         bg_color=None,
         tract_colors=None,
+        cluster_thr=15.0,
+        cluster_size_thr=None,
+        cluster_length_thr=None,
         rgb=False,
         initial_filenames=None,
         initial_rois=None,
@@ -66,6 +69,9 @@ class Skyline:
         self._visualizer_type = visualizer_type
         self._direct_load = True
         self._rgb = rgb
+        self._cluster_thr = cluster_thr
+        self._cluster_size_thr = cluster_size_thr
+        self._cluster_length_thr = cluster_length_thr
         if self._visualizer_type != "stealth":
             os.environ["FURY_OFFSCREEN"] = "0"
             self.window = create_window(
@@ -369,12 +375,15 @@ class Skyline:
                 input,
                 idx,
                 is_cluster=self._is_cluster,
+                thr=self._cluster_thr,
                 line_type="line" if self._is_light_version else "tube",
                 render_callback=self.before_render,
                 colormap=self._color_gen,
                 tract_colors=self._tract_colors,
                 switch_render_callback=self._update_tractogram_rendering,
                 loader=self.loader,
+                size_threshold=self._cluster_size_thr,
+                length_threshold=self._cluster_length_thr,
                 async_clustering=self._direct_load
                 and self._visualizer_type != "stealth",
             )
@@ -483,12 +492,15 @@ class Skyline:
                     (viz.sft, viz.path),
                     idx,
                     is_cluster=is_clustered,
+                    thr=self._cluster_thr,
                     line_type=viz._line_type,
                     render_callback=self.before_render,
                     colormap=self._color_gen,
                     tract_colors=self._tract_colors,
                     switch_render_callback=self._update_tractogram_rendering,
                     loader=self.loader,
+                    size_threshold=self._cluster_size_thr,
+                    length_threshold=self._cluster_length_thr,
                 )
                 self._tractogram_visualizations[idx] = new_viz
                 viz_id = f"{viz.path}:{viz.name}"
@@ -523,6 +535,9 @@ def skyline_from_files(
     glass_brain=False,
     bg_color=None,
     tract_colors=None,
+    cluster_thr=15.0,
+    cluster_size_thr=None,
+    cluster_length_thr=None,
     stealth=False,
     rgb=False,
     out_dir=None,
@@ -565,6 +580,19 @@ def skyline_from_files(
         String options are 'random' for random colors for each tractogram,
         'direction'  for directionally colored streamlines.
         For example, a value of (1, 0, 0) would mean the red color.
+    cluster_thr : float, optional
+        Distance threshold used for clustering. Default value 15.0 for
+        small animal brains you may need to use something smaller such
+        as 2.0. The distance is in mm. For this parameter to be active
+        ``cluster`` should be enabled.
+    cluster_size_thr : int, optional
+        Clusters with size less than ``cluster_size_thr`` will be hidden.
+        If None, it will show all cluster above the 50th percentile of the cluster
+        size distribution.
+    cluster_length_thr : float, optional
+        Clusters with average length less than ``cluster_length_thr`` in mm will be
+        hidden. If None, it will show all cluster above the 25th percentile of the
+        cluster length distribution.
     stealth : bool, optional
         Do not use interactive mode just save figure.
     rgb : bool, optional
@@ -586,6 +614,9 @@ def skyline_from_files(
         glass_brain=glass_brain,
         bg_color=bg_color,
         tract_colors=tract_colors,
+        cluster_thr=cluster_thr,
+        cluster_size_thr=cluster_size_thr,
+        cluster_length_thr=cluster_length_thr,
         rgb=rgb,
         out_dir=out_dir,
         out_stealth_png=out_stealth_png,
@@ -606,6 +637,9 @@ def skyline(
     glass_brain=False,
     bg_color=None,
     tract_colors=None,
+    cluster_thr=15.0,
+    cluster_size_thr=None,
+    cluster_length_thr=None,
     rgb=False,
     initial_filenames=None,
     initial_rois=None,
@@ -652,6 +686,19 @@ def skyline(
         String options are 'random' for random colors for each tractogram,
         'direction'  for directionally colored streamlines.
         For example, a value of (1, 0, 0) would mean the red color.
+    cluster_thr : float, optional
+        Distance threshold used for clustering. Default value 15.0 for
+        small animal brains you may need to use something smaller such
+        as 2.0. The distance is in mm. For this parameter to be active
+        ``cluster`` should be enabled.
+    cluster_size_thr : int, optional
+        Clusters with size less than ``cluster_size_thr`` will be hidden.
+        If None, it will show all cluster above the 50th percentile of the cluster
+        size distribution.
+    cluster_length_thr : float, optional
+        Clusters with average length less than ``cluster_length_thr`` in mm will be
+        hidden. If None, it will show all cluster above the 25th percentile of the
+        cluster length distribution.
     rgb : bool, optional
         Enable the colors in the image if 4D data with RGB/RGBA channels.
     initial_filenames : list, optional
@@ -679,6 +726,9 @@ def skyline(
         glass_brain=glass_brain,
         bg_color=bg_color,
         tract_colors=tract_colors,
+        cluster_thr=cluster_thr,
+        cluster_size_thr=cluster_size_thr,
+        cluster_length_thr=cluster_length_thr,
         rgb=rgb,
         initial_filenames=initial_filenames,
         initial_rois=initial_rois,
