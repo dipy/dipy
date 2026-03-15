@@ -15,6 +15,7 @@ from dipy.tracking.streamline import (
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import (
+    color_picker,
     create_numeric_input,
     downloader,
     open_confirmation_dialog,
@@ -48,30 +49,41 @@ imgui = imgui_bundle.imgui
 icons_fontawesome_6 = imgui_bundle.icons_fontawesome_6
 
 
+def create_colormap(n, *, hue=(0.0, 0.1), saturation=(0.8, 0.2), value=0.8):
+    lut = np.zeros((n, 3), dtype=np.float32)
+    h = np.interp(np.arange(n), [0, n - 1], hue)
+    s = np.interp(np.arange(n), [0, n - 1], saturation)
+    for i in range(n):
+        r, g, b = colorsys.hsv_to_rgb(h[i], s[i], value)
+        lut[i] = (r, g, b)
+    return lut
+
+
 def apply_buan_colors(
-    streamlines, buan_pvals, *, hue=(0.0, 0.1), saturation=(0.8, 0.2)
+    streamlines,
+    buan_pvals,
+    *,
+    hue=(0.0, 0.1),
+    saturation=(0.8, 0.2),
+    value=0.8,
+    buan_color_idx=None,
 ):
     n = len(buan_pvals)
     if n > 1000:
         logger.info("Limiting assignment to 1000 bands for performance reasons.")
         n = 1000
-    _, indx = assignment_map(streamlines, streamlines, n)
-    buan_color_pvals = buan_pvals[indx].astype(np.float32)
+    if buan_color_idx is None:
+        _, indx = assignment_map(streamlines, streamlines, n)
+        buan_color_pvals = buan_pvals[indx].astype(np.float32)
+        buan_color_idx = np.interp(
+            buan_color_pvals, [buan_pvals.min(), buan_pvals.max()], [0, n - 1]
+        ).astype(int)
 
-    lut = np.zeros((n, 3), dtype=np.float32)
+    lut = create_colormap(n, hue=hue, saturation=saturation, value=value)
 
-    h = np.interp(np.arange(n), [0, n - 1], hue)
-    s = np.interp(np.arange(n), [0, n - 1], saturation)
-    for i in range(n):
-        r, g, b = colorsys.hsv_to_rgb(h[i], s[i], 0.8)
-        lut[i] = (r, g, b)
-
-    buan_color_idx = np.interp(
-        buan_color_pvals, [buan_pvals.min(), buan_pvals.max()], [0, n - 1]
-    ).astype(int)
     buan_colors = lut[buan_color_idx]
 
-    return buan_colors
+    return buan_colors, buan_color_idx
 
 
 def create_cluster_help(*, position=(0, 0), size=(200, 180)):
@@ -245,20 +257,27 @@ class Streamline3D(Visualization):
         color=(1, 0, 0),
         render_callback=None,
         switch_render_callback=None,
+        buan_pvals_file=None,
         loader=None,
     ):
         self.sft = sft
         self.color = color
         self._original_color = color
+        self._buan_color = (1, 0, 0)
         self._line_type = line_type
-        self._buan_pvals_file = False
+        self._buan_pvals_file = buan_pvals_file
         self._buan_pvals_data = None
+        self._buan_color_idx = None
         self._show_line_type_confirmation = False
         self._requested_line_type = None
         self._apply_line_change_next_frame = False
         self._switch_render_callback = switch_render_callback
         self._loader = loader
-        self._create_streamline_actor()
+
+        if buan_pvals_file is not None:
+            self.handle_color_change(buan_pvals_file)
+        else:
+            self._create_streamline_actor()
         super().__init__(name, render_callback)
 
     def _create_streamline_actor(self):
@@ -279,6 +298,16 @@ class Streamline3D(Visualization):
         info += f"Max Length: {streamline_length(self.sft.streamlines).max():.0f}\n"
         np.set_printoptions()
         return info
+
+    def handle_color_change(self, fname):
+        if fname is not None:
+            self._buan_pvals_file = Path(fname[0]).name
+            self._buan_pvals_data = load_npy(fname[0])
+            self.color, self._buan_color_idx = apply_buan_colors(
+                self.sft.streamlines, self._buan_pvals_data
+            )
+            self._create_streamline_actor()
+            self.render()
 
     def render_widgets(self):
         if self._apply_line_change_next_frame:
@@ -336,34 +365,48 @@ class Streamline3D(Visualization):
         imgui.spacing()
         imgui.spacing()
 
-        def handle_color_change(fname):
-            if fname is not None:
-                self._buan_pvals_file = Path(fname[0]).name
-                self._buan_pvals_data = load_npy(fname[0])
-                self.color = apply_buan_colors(
-                    self.sft.streamlines, self._buan_pvals_data
-                )
-                self._create_streamline_actor()
-                self.render()
-
         uploader(
             "Upload BUAN P values",
-            callback=handle_color_change,
+            callback=self.handle_color_change,
             extension="*.npy",
             selected=self._buan_pvals_file,
             type="buan_pvals",
         )
 
         imgui.same_line(0, 10)
-        if self._buan_pvals_file:
-            close_icon = icons_fontawesome_6.ICON_FA_XMARK
-            imgui.text(close_icon)
-            if imgui.is_item_clicked():
-                self._buan_pvals_file = False
-                self._buan_pvals_data = None
-                self.color = self._original_color
-                self._create_streamline_actor()
-                self.render()
+        close_icon = icons_fontawesome_6.ICON_FA_XMARK
+        imgui.text(close_icon)
+        if imgui.is_item_hovered():
+            imgui.set_tooltip("Reset colors")
+        if imgui.is_item_clicked():
+            self._buan_pvals_file = False
+            self._buan_pvals_data = None
+            self.color = self._original_color
+            self._create_streamline_actor()
+            self.render()
+
+        imgui.same_line(0, 10)
+        changed, new_color = color_picker(
+            selected_color=self._buan_color, tooltip="Pick a color for the streamlines."
+        )
+        if changed:
+            self._buan_color = (new_color[0], new_color[1], new_color[2])
+            hue, saturation, value = colorsys.rgb_to_hsv(
+                new_color[0], new_color[1], new_color[2]
+            )
+            if self._buan_pvals_file is not None and self._buan_pvals_data is not None:
+                self.color, self._buan_color_idx = apply_buan_colors(
+                    self.sft.streamlines,
+                    self._buan_pvals_data,
+                    buan_color_idx=self._buan_color_idx,
+                    hue=(0, hue),
+                    saturation=(0, saturation),
+                    value=value,
+                )
+            else:
+                self.color = self._buan_color
+            self._create_streamline_actor()
+            self.render()
 
 
 class ClusterStreamline3D(Visualization):
