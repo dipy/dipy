@@ -1,23 +1,37 @@
 from math import ceil
 
-from fury.actor import Mesh
-from fury.geometry import buffer_to_geometry
-from fury.lib import register_wgpu_render_function
-from fury.material import (
-    SphGlyphMaterial,
-    validate_opacity,
-)
-import fury.primitive as fp
-from fury.shader import (
-    Binding,
-    Buffer,
-    MeshShader,
-)
-from fury.utils import create_sh_basis_matrix, get_lmax, get_n_coeffs
 import numpy as np
-import wgpu
 
+from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.wgsl import load_dipy_wgsl
+
+fury_trip_msg = (
+    "Skyline requires Fury version 2.0.0a6 or higher."
+    " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
+)
+fury, has_fury_v2, _ = optional_package(
+    "fury",
+    min_version="2.0.0a6",
+    trip_msg=fury_trip_msg,
+)
+if has_fury_v2:
+    from fury.actor import Mesh
+    from fury.geometry import buffer_to_geometry
+    from fury.lib import register_wgpu_render_function
+    from fury.material import (
+        SphGlyphMaterial,
+        validate_opacity,
+    )
+    import fury.primitive as fp
+    from fury.shader import (
+        Binding,
+        Buffer,
+        MeshShader,
+    )
+    from fury.utils import create_sh_basis_matrix, get_lmax, get_n_coeffs
+    import wgpu
+else:
+    actor = fury.actor
 
 _GPU_DEVICE_LIMITS_CACHE: dict = {}
 _GPU_HERMITE_COMPUTE_CACHE: dict = {}
