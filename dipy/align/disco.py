@@ -411,7 +411,7 @@ def synb0_syn(
         static_affine=T1_affine,
         nbins=32,
         metric="MI",
-        pipeline=["center_of_mass", "translation", "rigid", "affine"],
+        pipeline=["center_of_mass", "translation", "rigid"],
         level_iters=[100, 50, 25],
         sigmas=[4.0, 2.0, 1.0],
         factors=[8, 4, 2],
@@ -486,21 +486,14 @@ def synb0_syn(
     )
 
     # ── Step 5: Bring synthetic b0 back to native DWI space ──────────────
-    binf_fullres, _ = reslice(
-        binf,
-        resized_affine,
-        synb0_zooms,
-        mni_t1_zooms,
-        new_shape=mni_t1.shape,
-    )
     dwi_inv_affine_map = AffineMap(
         dwi_reg_affine,
-        domain_grid_shape=mni_t1.shape,
-        domain_grid2world=mni_t1_affine,
+        domain_grid_shape=synb0_shape,
+        domain_grid2world=resized_affine,
         codomain_grid_shape=dwi_for_field.shape,
         codomain_grid2world=dwi_affine,
     )
-    ori_binf = dwi_inv_affine_map.transform_inverse(binf_fullres)
+    ori_binf = dwi_inv_affine_map.transform_inverse(binf)
     _save_debug_volume(
         debug_dir=debug_dir, name="06b_binf_in_dwi", data=ori_binf, affine=dwi_affine
     )
@@ -511,7 +504,7 @@ def synb0_syn(
         debug_dir=debug_dir, name="07_binf_in_dwi", data=ori_binf, affine=dwi_affine
     )
 
-    # ── Step 6: SyN registration  (synthetic b0 ↔ distorted b0) ─────────
+    # ── Step 6: SyN registration (synthetic b0 ↔ distorted b0) ──────────
     logger.info("Performing nonlinear registration of synthesized b0 to DWI...")
     if dwi_mask_f is not None:
         masked_dwi_for_sdr = dwi_for_field * dwi_mask_f
@@ -524,35 +517,30 @@ def synb0_syn(
     binf_coverage = gaussian_filter(binf_coverage, sigma=3.0)
     masked_dwi_for_sdr = masked_dwi_for_sdr * binf_coverage
 
-    smooth_sigma_vox = 1.15 / voxel_sizes
-    binf_smooth = gaussian_filter(ori_binf, sigma=smooth_sigma_vox)
-
-    p99_s = (
-        np.percentile(binf_smooth[binf_smooth > 0], 99)
-        if np.any(binf_smooth > 0)
-        else 1.0
-    )
+    p99_s = np.percentile(ori_binf[ori_binf > 0], 99) if np.any(ori_binf > 0) else 1.0
     p99_m = (
         np.percentile(masked_dwi_for_sdr[masked_dwi_for_sdr > 0], 99)
         if np.any(masked_dwi_for_sdr > 0)
         else 1.0
     )
-    static_norm = binf_smooth / max(p99_s, 1e-8) * 100.0
+    static_norm = ori_binf / max(p99_s, 1e-8) * 100.0
     moving_norm = masked_dwi_for_sdr / max(p99_m, 1e-8) * 100.0
 
     sdr = SymmetricDiffeomorphicRegistration(
-        metric=CCMetric(3, sigma_diff=3.5, radius=2), level_iters=[200, 200, 100]
+        metric=CCMetric(3),
+        level_iters=[200, 200, 200],
+        step_length=0.5,
+        ss_sigma_factor=0.1,
     )
     mapping = sdr.optimize(
         static=static_norm,
         moving=moving_norm,
         static_grid2world=dwi_affine,
         moving_grid2world=dwi_affine,
-        prealign=np.eye(4),
     )
 
     # ── Step 7: Extract PE-restricted field and post-smooth ──────────────
-    field_smooth_mm = 10.0
+    field_smooth_mm = 0.5
     field_smooth_vox = field_smooth_mm / voxel_sizes
 
     if pe_axis is not None:
@@ -573,6 +561,7 @@ def synb0_syn(
             field[..., c] = gaussian_filter(field[..., c], sigma=field_smooth_vox)
         mapping.forward = field
 
+    # ── Step 8: Apply correction to DWI ──────────────────────────────────
     dwi_to_binf = _warp_image(mapping=mapping, image=dwi)
     _save_debug_volume(
         debug_dir=debug_dir,
