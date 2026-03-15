@@ -308,6 +308,9 @@ class SkylineFlow(Workflow):
         glass_brain=False,
         bg_color=None,
         tract_colors=None,
+        stealth=False,
+        out_dir="",
+        out_stealth_png="out_skyline.png",
     ):
         """Launch Skyline GUI.
 
@@ -347,6 +350,12 @@ class SkylineFlow(Workflow):
             String options are 'random' for random colors for each tractogram,
             'direction'  for directionally colored streamlines.
             For example, a value of (1, 0, 0) would mean the red color.
+        stealth : bool, optional
+            Do not use interactive mode just save figure.
+        out_dir : str or Path, optional
+            Output directory to save the figure if stealth mode is enabled.
+        out_stealth_png : str, optional
+            Filename of saved picture if stealth mode is enabled.
         """
         super(SkylineFlow, self).__init__(force=True)
         skyline_input_files = []
@@ -359,7 +368,7 @@ class SkylineFlow(Workflow):
         if not start_gui:
             io_it = self.get_io_iterator()
             for input_output in io_it:
-                skyline_input_files.append(input_output)
+                skyline_input_files.append(input_output[0])
 
         skyline_from_files(
             skyline_input_files,
@@ -370,4 +379,7 @@ class SkylineFlow(Workflow):
             glass_brain=glass_brain,
             bg_color=bg_color,
             tract_colors=tract_colors,
+            stealth=stealth,
+            out_dir=out_dir,
+            out_stealth_png=out_stealth_png,
         )
