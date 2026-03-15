@@ -106,6 +106,7 @@ def load_files(fnames, *, rois=None, shm_coeffs=None):
             logger.error(f"File extension '{ext}' is not supported in Skyline.")
 
     for fname in rois:
+        logger.info(f"Loading file ... \n{fname}\n")
         _, ext = split_filename_extension(fname)
         ext = ext.lower()
         if ext in [".nii.gz", ".nii"]:
@@ -117,6 +118,7 @@ def load_files(fnames, *, rois=None, shm_coeffs=None):
             )
 
     for fname in shm_coeffs:
+        logger.info(f"Loading file ... \n{fname}\n")
         _, ext = split_filename_extension(fname)
         ext = ext.lower()
         if ext == ".pam5":
