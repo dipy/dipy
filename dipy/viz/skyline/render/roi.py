@@ -83,7 +83,6 @@ class ROI3D(Visualization):
         color=(1, 0, 0),
         render_callback=None,
     ):
-        super().__init__(name, render_callback)
         self.roi = roi
         if self.roi is None:
             raise ValueError("ROI data cannot be None for ROI visualization.")
@@ -99,6 +98,7 @@ class ROI3D(Visualization):
         self.opacity = opacity
         self.color = color
         self._create_roi_actor()
+        super().__init__(name, render_callback)
 
     def _create_roi_actor(self):
         self._roi_surface = contour_from_roi(
@@ -108,6 +108,16 @@ class ROI3D(Visualization):
             actor.material.alpha_mode = "blend"
             if self.opacity < 100:
                 actor.material.depth_write = False
+
+    def _populate_info(self):
+        info = f"ROI shape: {self.roi.shape}\nROI dtype: {self.roi.dtype}\n"
+        info += f"Total voxels in ROI: {np.sum(self.roi > 0)}\n"
+        if self.affine is not None:
+            affine_str = np.array2string(
+                np.round(self.affine, 2), separator=" ", prefix=""
+            )
+            info += f"Affine:\n{affine_str}\n"
+        return info
 
     @property
     def actor(self):
