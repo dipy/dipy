@@ -125,8 +125,7 @@ build = [
 ]
 all = ["dipy[build, dev, doc, style, optional, benchmark]"]
 style = ["ruff", "pre-commit"]
-horizon = ["fury>=0.10.0,<1.0.0"]
-skyline = ["fury>=2.0.0a6", "imgui_bundle>=1.92.600", "matplotlib"]
+skyline = ["fury>=2.0.0a6", "imgui_bundle>=1.92.600"]
 test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
 ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
 dev = [
@@ -139,12 +138,13 @@ dev = [
 ]
 
 optional = [
-    "dipy[horizon, ml]",
+    "dipy[ml]",
     "cvxpy",
     "scikit-image",
     "boto3",
     "numexpr",
-    "matplotlib"
+    "matplotlib",
+    "vtk>=9.0.0,<=9.1.0",
 ]
 
 doc = [

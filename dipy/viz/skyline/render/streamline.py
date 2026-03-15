@@ -313,7 +313,6 @@ class Streamline3D(Visualization):
         if fname is not None:
             self._buan_pvals_file = Path(fname[0]).name
             self._buan_pvals_data = load_npy(fname[0])
-            print(f"Loaded BUAN p-values from {fname[0]}")
             self.color, self._buan_color_idx = apply_buan_colors(
                 self.sft.streamlines,
                 self._buan_pvals_data,
