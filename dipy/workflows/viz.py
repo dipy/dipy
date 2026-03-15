@@ -311,6 +311,7 @@ class SkylineFlow(Workflow):
         cluster_thr=15.0,
         cluster_size_thr=-1,
         cluster_length_thr=-1,
+        buan_pvals=None,
         rgb=False,
         stealth=False,
         out_dir="",
@@ -367,6 +368,9 @@ class SkylineFlow(Workflow):
             Clusters with average length less than ``cluster_length_thr`` in mm will be
             hidden. If -1, it will show all cluster above the 25th percentile of the
             cluster length distribution.
+        buan_pvals : variable str, optional
+            File path for BUAN p-values to be used for BUAN-based coloring of
+            tractograms.
         stealth : bool, optional
             Do not use interactive mode just save figure.
         rgb : bool, optional
@@ -412,6 +416,7 @@ class SkylineFlow(Workflow):
             cluster_thr=cluster_thr,
             cluster_size_thr=cluster_size_thr,
             cluster_length_thr=cluster_length_thr,
+            buan_pvals=buan_pvals,
             stealth=stealth,
             rgb=rgb,
             out_dir=out_dir,

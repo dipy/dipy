@@ -57,6 +57,7 @@ class Skyline:
         cluster_thr=15.0,
         cluster_size_thr=None,
         cluster_length_thr=None,
+        buan_pvals=None,
         rgb=False,
         initial_filenames=None,
         initial_rois=None,
@@ -72,6 +73,7 @@ class Skyline:
         self._cluster_thr = cluster_thr
         self._cluster_size_thr = cluster_size_thr
         self._cluster_length_thr = cluster_length_thr
+        self._buan_pvals = buan_pvals
         if self._visualizer_type != "stealth":
             os.environ["FURY_OFFSCREEN"] = "0"
             self.window = create_window(
@@ -384,6 +386,7 @@ class Skyline:
                 loader=self.loader,
                 size_threshold=self._cluster_size_thr,
                 length_threshold=self._cluster_length_thr,
+                buan_pvals_file=self._buan_pvals,
                 async_clustering=self._direct_load
                 and self._visualizer_type != "stealth",
             )
@@ -501,6 +504,7 @@ class Skyline:
                     loader=self.loader,
                     size_threshold=self._cluster_size_thr,
                     length_threshold=self._cluster_length_thr,
+                    buan_pvals_file=self._buan_pvals,
                 )
                 self._tractogram_visualizations[idx] = new_viz
                 viz_id = f"{viz.path}:{viz.name}"
@@ -538,6 +542,7 @@ def skyline_from_files(
     cluster_thr=15.0,
     cluster_size_thr=None,
     cluster_length_thr=None,
+    buan_pvals=None,
     stealth=False,
     rgb=False,
     out_dir=None,
@@ -593,6 +598,8 @@ def skyline_from_files(
         Clusters with average length less than ``cluster_length_thr`` in mm will be
         hidden. If None, it will show all cluster above the 25th percentile of the
         cluster length distribution.
+    buan_pvals : str, optional
+        File path for BUAN p-values to be used for BUAN-based coloring of tractograms.
     stealth : bool, optional
         Do not use interactive mode just save figure.
     rgb : bool, optional
@@ -617,6 +624,7 @@ def skyline_from_files(
         cluster_thr=cluster_thr,
         cluster_size_thr=cluster_size_thr,
         cluster_length_thr=cluster_length_thr,
+        buan_pvals=buan_pvals,
         rgb=rgb,
         out_dir=out_dir,
         out_stealth_png=out_stealth_png,
@@ -640,6 +648,7 @@ def skyline(
     cluster_thr=15.0,
     cluster_size_thr=None,
     cluster_length_thr=None,
+    buan_pvals=None,
     rgb=False,
     initial_filenames=None,
     initial_rois=None,
@@ -701,6 +710,8 @@ def skyline(
         cluster length distribution.
     rgb : bool, optional
         Enable the colors in the image if 4D data with RGB/RGBA channels.
+    buan_pvals : str, optional
+        File path for BUAN p-values to be used for BUAN-based coloring of tractograms.
     initial_filenames : list, optional
         List of file paths to be loaded into the Skyline viewer on startup.
     initial_rois : list, optional
@@ -729,6 +740,7 @@ def skyline(
         cluster_thr=cluster_thr,
         cluster_size_thr=cluster_size_thr,
         cluster_length_thr=cluster_length_thr,
+        buan_pvals=buan_pvals,
         rgb=rgb,
         initial_filenames=initial_filenames,
         initial_rois=initial_rois,
