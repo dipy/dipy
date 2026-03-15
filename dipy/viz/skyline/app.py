@@ -5,7 +5,7 @@ from dipy.io.utils import split_filename_extension
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.manager import UIWindow
-from dipy.viz.skyline.UI.theme import LOGO
+from dipy.viz.skyline.UI.theme import LOGO_SMALL
 from dipy.viz.skyline.compute import process_async_callbacks, run_async
 from dipy.viz.skyline.io import load_files
 from dipy.viz.skyline.render.image import Image3D, create_image_visualization
@@ -124,7 +124,9 @@ class Skyline:
         self.active_image = None
 
         if self._visualizer_type != "stealth":
-            gpu_texture = load_image_as_wgpu_texture_view(str(LOGO), self.window.device)
+            gpu_texture = load_image_as_wgpu_texture_view(
+                str(LOGO_SMALL), self.window.device
+            )
             logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
             self.UI_window = UIWindow(
                 "Image Controls",
