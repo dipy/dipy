@@ -1,13 +1,6 @@
-from fury.actor import (
-    set_group_opacity,
-    set_group_visibility,
-    show_slices,
-    volume_slicer,
-)
-from fury.lib import gfx
-from imgui_bundle import imgui
 import numpy as np
 
+from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import (
     dropdown,
     render_group,
@@ -18,6 +11,29 @@ from dipy.viz.skyline.UI.elements import (
 )
 from dipy.viz.skyline.UI.theme import THEME
 from dipy.viz.skyline.render.renderer import Visualization
+
+fury_trip_msg = (
+    "Skyline requires Fury version 2.0.0a6 or higher."
+    " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
+)
+fury, has_fury_v2, _ = optional_package(
+    "fury",
+    min_version="2.0.0a6",
+    trip_msg=fury_trip_msg,
+)
+if has_fury_v2:
+    from fury.actor import (
+        set_group_opacity,
+        set_group_visibility,
+        show_slices,
+        volume_slicer,
+    )
+    from fury.lib import gfx
+else:
+    actor = fury.actor
+
+imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
+imgui = imgui_bundle.imgui
 
 
 def create_image_visualization(

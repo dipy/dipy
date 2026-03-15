@@ -1,9 +1,5 @@
-from fury.actor import Actor, show_slices
-from fury.colormap import distinguishable_colormap
-from fury.io import load_image_as_wgpu_texture_view
-from fury.window import update_camera
-
 from dipy.utils.logging import logger
+from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO
 from dipy.viz.skyline.compute import run_async
@@ -20,6 +16,23 @@ from dipy.viz.skyline.render.streamline import (
     create_streamline_visualization,
 )
 from dipy.viz.skyline.render.surface import Surface, create_surface_visualization
+
+fury_trip_msg = (
+    "Skyline requires Fury version 2.0.0a6 or higher."
+    " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
+)
+fury, has_fury_v2, _ = optional_package(
+    "fury",
+    min_version="2.0.0a6",
+    trip_msg=fury_trip_msg,
+)
+if has_fury_v2:
+    from fury.actor import Actor, show_slices
+    from fury.colormap import distinguishable_colormap
+    from fury.io import load_image_as_wgpu_texture_view
+    from fury.window import update_camera
+else:
+    actor = fury.actor
 
 
 class Skyline:
