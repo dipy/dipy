@@ -93,7 +93,6 @@ class Surface(Visualization):
         material="phong",
         render_callback=None,
     ):
-        super().__init__(name, render_callback)
         self.vertices = vertices
         self.faces = faces
         self.affine = affine
@@ -102,6 +101,7 @@ class Surface(Visualization):
         self.texture = texture
         self.material = material
         self._create_surface_actor()
+        super().__init__(name, render_callback)
 
     def _create_surface_actor(self):
         self._surface_actor = surface(
@@ -114,6 +114,10 @@ class Surface(Visualization):
         self._surface_actor.material.alpha_mode = "blend"
         if self.opacity < 100:
             self._surface_actor.material.depth_write = False
+
+    def _populate_info(self):
+        info = f"No. of vertices: {len(self.vertices)}\nNo. of faces: {len(self.faces)}"
+        return info
 
     @property
     def actor(self):
