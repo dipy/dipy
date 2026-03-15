@@ -1,8 +1,6 @@
-from fury.actor import peaks_slicer
-from fury.transform import apply_transformation
-from imgui_bundle import imgui
 import numpy as np
 
+from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import (
     create_numeric_input,
     render_group,
@@ -10,6 +8,24 @@ from dipy.viz.skyline.UI.elements import (
     toggle_button,
 )
 from dipy.viz.skyline.render.renderer import Visualization
+
+fury_trip_msg = (
+    "Skyline requires Fury version 2.0.0a6 or higher."
+    " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
+)
+fury, has_fury_v2, _ = optional_package(
+    "fury",
+    min_version="2.0.0a6",
+    trip_msg=fury_trip_msg,
+)
+if has_fury_v2:
+    from fury.actor import peaks_slicer
+    from fury.transform import apply_transformation
+else:
+    actor = fury.actor
+
+imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
+imgui = imgui_bundle.imgui
 
 
 def create_peak_visualization(

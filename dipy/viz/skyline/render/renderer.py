@@ -2,13 +2,30 @@ from pathlib import Path
 import sys
 
 from PIL import Image
-from fury import window
-import glfw
-from imgui_bundle import imgui
 
 from dipy.utils.logging import logger
+from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import render_section_header
 from dipy.viz.skyline.UI.theme import LOGO_SMALL
+
+fury_trip_msg = (
+    "Skyline requires Fury version 2.0.0a6 or higher."
+    " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
+)
+fury, has_fury_v2, _ = optional_package(
+    "fury",
+    min_version="2.0.0a6",
+    trip_msg=fury_trip_msg,
+)
+if has_fury_v2:
+    from fury import window
+    import glfw
+else:
+    window = fury.window
+
+_, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
+if has_imgui:
+    from imgui_bundle import imgui
 
 
 class Visualization:
@@ -125,7 +142,11 @@ class Visualization:
 
 
 def create_window(
-    *, visualizer_type="standalone", size=(1200, 1000), screen_config=None
+    *,
+    visualizer_type="standalone",
+    size=(1200, 1000),
+    screen_config=None,
+    title="DIPY SKYLINE",
 ):
     """Create a FURY ShowManager based on the visualizer type.
 
@@ -171,7 +192,7 @@ def create_window(
 
     if visualizer_type != "stealth":
         show_m = window.ShowManager(
-            title="DIPY SKYLINE",
+            title=title,
             size=size,
             window_type=window_type,
             screen_config=screen_config,
@@ -188,7 +209,7 @@ def create_window(
 
     else:
         show_m = window.ShowManager(
-            title="DIPY SKYLINE",
+            title=title,
             size=size,
             window_type=window_type,
             screen_config=screen_config,
