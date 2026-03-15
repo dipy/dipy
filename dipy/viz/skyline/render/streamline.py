@@ -2,11 +2,6 @@ import colorsys
 from pathlib import Path
 import time
 
-from fury import distinguishable_colormap
-from fury.actor import Group, streamlines, streamtube
-from fury.colormap import line_colors
-from fury.ui import TextBlock2D
-from imgui_bundle import icons_fontawesome_6, imgui
 import numpy as np
 
 from dipy.io.stateful_tractogram import StatefulTractogram
@@ -17,6 +12,8 @@ from dipy.stats.analysis import assignment_map
 from dipy.tracking.streamline import (
     length as streamline_length,
 )
+from dipy.utils.logging import logger
+from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import (
     create_numeric_input,
     downloader,
@@ -29,12 +26,36 @@ from dipy.viz.skyline.compute import run_async
 from dipy.viz.skyline.io import load_npy
 from dipy.viz.skyline.render.renderer import Visualization
 
+fury_trip_msg = (
+    "Skyline requires Fury version 2.0.0a6 or higher."
+    " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
+)
+fury, has_fury_v2, _ = optional_package(
+    "fury",
+    min_version="2.0.0a6",
+    trip_msg=fury_trip_msg,
+)
+if has_fury_v2:
+    from fury import distinguishable_colormap
+    from fury.actor import Group, streamlines, streamtube
+    from fury.colormap import line_colors
+    from fury.ui import TextBlock2D
+else:
+    actor = fury.actor
+
+imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
+imgui = imgui_bundle.imgui
+icons_fontawesome_6 = imgui_bundle.icons_fontawesome_6
+
 
 def apply_buan_colors(
     streamlines, buan_pvals, *, hue=(0.0, 0.1), saturation=(0.8, 0.2)
 ):
     n = len(buan_pvals)
-    indx = assignment_map(streamlines, streamlines, n)
+    if n > 1000:
+        logger.info("Limiting assignment to 1000 bands for performance reasons.")
+        n = 1000
+    _, indx = assignment_map(streamlines, streamlines, n)
     buan_color_pvals = buan_pvals[indx].astype(np.float32)
 
     lut = np.zeros((n, 3), dtype=np.float32)

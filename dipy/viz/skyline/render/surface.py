@@ -1,7 +1,20 @@
-from fury.actor import surface
-
+from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import thin_slider
 from dipy.viz.skyline.render.renderer import Visualization
+
+fury_trip_msg = (
+    "Skyline requires Fury version 2.0.0a6 or higher."
+    " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
+)
+fury, has_fury_v2, _ = optional_package(
+    "fury",
+    min_version="2.0.0a6",
+    trip_msg=fury_trip_msg,
+)
+if has_fury_v2:
+    from fury.actor import surface
+else:
+    actor = fury.actor
 
 
 def create_surface_visualization(
