@@ -3485,7 +3485,7 @@ class ReconstForceFlow(Workflow):
         out_kfa="kfa.nii.gz",
         out_entropy="entropy.nii.gz",
         out_predicted_signal="predicted_signal.nii.gz",
-        out_peaks="peaks.pam5",
+        out_pam="peaks.pam5",
     ):
         """Workflow for FORCE microstructure reconstruction.
 
@@ -3579,7 +3579,7 @@ class ReconstForceFlow(Workflow):
             Name of the entropy volume to be saved (requires use_posterior).
         out_predicted_signal : string, optional
             Name of the predicted signal volume to be saved.
-        out_peaks : string, optional
+        out_pam : string, optional
             Name of the peaks file to be saved (in .pam5 format).
 
         References

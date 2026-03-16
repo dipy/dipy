@@ -205,6 +205,13 @@ RECONSTRUCTION_METHODS = {
     "mapmri": ReconMethod(
         "mapmri", "MAPMRI", "Mean Apparent Propagator MRI", 2, "multi-shell"
     ),
+    "force": ReconMethod(
+        "force",
+        "FORCE",
+        "FORward modeling for Complex microstructure Estimation ",
+        2,
+        "all data",
+    ),
 }
 
 
@@ -260,8 +267,9 @@ def interactive_preprocessing_selection():
         "motion_correction": "Motion correction (eddy)",
         "bias_correction": "Bias field correction",
     }
-
-    print("\nSelect preprocessing steps to include:")
+    print(
+        "\nSelect preprocessing steps to include (Brain Mask Extraction always runs):"
+    )
     for i, (_step_name, desc) in enumerate(preprocessing_steps.items(), 1):
         print(f"  {i}. {desc}")
 
@@ -383,7 +391,7 @@ def interactive_method_selection(*, data_chars):
     """
     logger.info("\nSelect reconstruction methods (DTI always runs):")
 
-    method_list = ["dki", "csd", "csa", "gqi", "mapmri"]
+    method_list = ["force", "dki", "csd", "csa", "gqi", "mapmri"]
     for i, method_code in enumerate(method_list, 1):
         method = RECONSTRUCTION_METHODS[method_code]
         compatible, warning = check_method_compatibility(
@@ -849,6 +857,24 @@ def build_interactive_pipeline_config(*, data_chars):
             }
             config["pipeline"].append(stage_config)
 
+        elif method == "force":
+            stage_config = {
+                "name": "force_fit",
+                "cli": "dipy_fit_force",
+                "input_files": preprocessed_dwi,
+                "bvalues_files": "${io.bvals}",
+                "bvectors_files": "${io.bvecs}",
+            }
+            if mask_output:
+                stage_config["mask_files"] = mask_output
+            else:
+                raise ValueError(
+                    "FORCE fitting requires a brain mask. Please include the "
+                    "'Brain Mask Extraction' "
+                    "preprocessing step to extract a brain mask."
+                )
+            config["pipeline"].append(stage_config)
+
     if include_tracking and recon_methods:
         if "dti" in recon_methods:
             tracking_methods = interactive_tracking_selection(
@@ -860,6 +886,7 @@ def build_interactive_pipeline_config(*, data_chars):
             )
 
         for method in tracking_methods:
+            track_method = "eudx"
             config["pipeline"].append(
                 {
                     "name": f"track_{method}",
@@ -867,6 +894,7 @@ def build_interactive_pipeline_config(*, data_chars):
                     "pam_files": f"${{{method}_fit.out_pam}}",
                     "stopping_files": out_fa,
                     "seeding_files": mask_output,
+                    "tracking_method": track_method,
                 }
             )
 
