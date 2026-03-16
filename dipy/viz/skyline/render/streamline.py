@@ -497,8 +497,8 @@ class ClusterStreamline3D(Visualization):
         self._is_clustering = False
         self._queued_recluster = False
         self._async_clustering = async_clustering
-        self.size = size_threshold
-        self.length = length_threshold
+        self.size = size_threshold if size_threshold is not None else 10
+        self.length = length_threshold if length_threshold is not None else 20.0
         super().__init__(name, render_callback=render_callback)
         self._perform_clustering()
 
@@ -583,10 +583,6 @@ class ClusterStreamline3D(Visualization):
             self._loader(False)
 
     def _refresh_cluster_visibility(self):
-        if self.size is None:
-            self.size = np.percentile(self._sizes, 50).astype(int)
-        if self.length is None:
-            self.length = np.percentile(self._lengths, 25)
         for centroid_rep, state in self._cluster_state.items():
             is_visible = state["size"] >= self.size and state["length"] >= self.length
             if state["expanded"] and state["cluster_actor"] is not None:
