@@ -124,7 +124,7 @@ build = [
     "spin>=0.5",
     "build"
 ]
-all = ["dipy[build, dev, doc, style, optional, benchmark]"]
+all = ["dipy[build, dev, doc, style, optional, benchmark, skyline]"]
 style = ["ruff", "pre-commit"]
 skyline = ["fury>=2.0.0a6", "imgui_bundle>=1.92.600"]
 test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
@@ -145,7 +145,6 @@ optional = [
     "boto3",
     "numexpr",
     "matplotlib",
-    "vtk>=9.0.0,<=9.1.0",
 ]
 
 doc = [
