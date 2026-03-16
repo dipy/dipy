@@ -47,8 +47,9 @@ else:
     actor = fury.actor
 
 imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
-imgui = imgui_bundle.imgui
-icons_fontawesome_6 = imgui_bundle.icons_fontawesome_6
+if has_imgui:
+    imgui = imgui_bundle.imgui
+    icons_fontawesome_6 = imgui_bundle.icons_fontawesome_6
 
 
 def create_colormap(n, *, hue=(0.0, 0.1), saturation=(0.8, 0.2), value=0.8):
