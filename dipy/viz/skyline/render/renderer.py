@@ -23,9 +23,9 @@ if has_fury_v2:
 else:
     window = fury.window
 
-_, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
+imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
 if has_imgui:
-    from imgui_bundle import imgui
+    imgui = imgui_bundle.imgui
 
 
 class Visualization:

@@ -12,13 +12,12 @@ from dipy.viz.skyline.UI.theme import (
 )
 
 imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
-
-imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
-imgui = imgui_bundle.imgui
-hello_imgui = imgui_bundle.hello_imgui
-icons_fontawesome_6 = imgui_bundle.icons_fontawesome_6
-imspinner = imgui_bundle.imspinner
-pfd = imgui_bundle.portable_file_dialogs
+if has_imgui:
+    imgui = imgui_bundle.imgui
+    hello_imgui = imgui_bundle.hello_imgui
+    icons_fontawesome_6 = imgui_bundle.icons_fontawesome_6
+    imspinner = imgui_bundle.imspinner
+    pfd = imgui_bundle.portable_file_dialogs
 
 
 _NUMERIC_INPUT_EDITING = {}
