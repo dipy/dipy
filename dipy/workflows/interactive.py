@@ -2,9 +2,9 @@
 
 from dataclasses import dataclass
 import os
-import shutil
 
 from dipy.utils.logging import logger
+from dipy.utils.optpkg import optional_package
 
 # =============================================================================
 # Data Analysis Functions
@@ -259,7 +259,6 @@ def interactive_preprocessing_selection():
         "gibbs": "Gibbs ringing removal",
         "motion_correction": "Motion correction (eddy)",
         "bias_correction": "Bias field correction",
-        "mask": "Brain mask extraction",
     }
 
     print("\nSelect preprocessing steps to include:")
@@ -267,7 +266,7 @@ def interactive_preprocessing_selection():
         print(f"  {i}. {desc}")
 
     print(
-        "\nEnter numbers (comma-separated, e.g., 4,5,6,7,8,9) or press Enter for "
+        "\nEnter numbers (comma-separated, e.g., 4,5,6,7,8) or press Enter for "
         "recommended defaults:"
     )
     choice = input("Steps: ").strip()
@@ -365,6 +364,7 @@ def interactive_preprocessing_selection():
                         selected[step_name] = step_name in default_steps
                     break
 
+        selected["mask"] = "mask"
     return selected
 
 
@@ -537,15 +537,16 @@ def interactive_segmentation_selection(*, available_registered):
         return available_registered
 
 
-def check_synthstrip_available():
-    """Check if SynthStrip is available on the system.
+def check_synthseg_available():
+    """Check if SynthSeg is available on the system.
 
     Returns
     -------
     bool
         True if mri_synthstrip command is available.
     """
-    return shutil.which("mri_synthstrip") is not None
+    _, has_torch, _ = optional_package("torch")
+    return has_torch
 
 
 def interactive_brain_extraction_method():
@@ -554,22 +555,22 @@ def interactive_brain_extraction_method():
     Returns
     -------
     str
-        Selected method ('synthstrip' or 'median_otsu').
+        Selected method ('synthseg' or 'median_otsu').
     """
-    has_synthstrip = check_synthstrip_available()
+    has_synthseg = check_synthseg_available()
 
-    if not has_synthstrip:
-        print("\nSynthStrip not found, using median_otsu")
+    if not has_synthseg:
+        print("\nSynthSeg not found, using median_otsu")
         return "median_otsu"
 
     print("\nChoose brain extraction method:")
-    print("  1. SynthStrip (FreeSurfer) - More accurate, requires FreeSurfer")
-    print("  2. median_otsu (DIPY) - Good accuracy, no extra dependencies")
+    print("  1. SynthSeg - More accurate, requires pytorch installed")
+    print("  2. median_otsu - Good accuracy, no extra dependencies")
 
     choice = input("Enter choice [1-2]: ").strip()
 
     if choice == "1":
-        return "synthstrip"
+        return "synthseg"
     elif choice == "2":
         return "median_otsu"
     else:
@@ -663,6 +664,8 @@ def build_interactive_pipeline_config(*, data_chars):
                 "name": "denoise_lpca",
                 "cli": "dipy_denoise_lpca",
                 "input_files": current_input,
+                "bvalues_files": "${io.bvals}",
+                "bvectors_files": "${io.bvecs}",
             }
         )
         current_input = "${denoise_lpca.out_denoised}"
@@ -674,7 +677,7 @@ def build_interactive_pipeline_config(*, data_chars):
                 "name": "denoise_patch2self",
                 "cli": "dipy_denoise_patch2self",
                 "input_files": current_input,
-                "bvals_files": "${io.bvals}",
+                "bval_files": "${io.bvals}",
             }
         )
         current_input = "${denoise_patch2self.out_denoised}"
@@ -708,8 +711,8 @@ def build_interactive_pipeline_config(*, data_chars):
                 "name": "motion",
                 "cli": "dipy_correct_motion",
                 "input_files": current_input,
-                "bvals_files": "${io.bvals}",
-                "bvecs_files": "${io.bvecs}",
+                "bvalues_files": "${io.bvals}",
+                "bvectors_files": "${io.bvecs}",
             }
         )
         current_input = "${motion.out_moved}"
@@ -719,43 +722,49 @@ def build_interactive_pipeline_config(*, data_chars):
         config["pipeline"].append(
             {
                 "name": "bias",
-                "cli": "dipy_median_otsu",
+                "cli": "dipy_correct_biasfield",
                 "input_files": current_input,
+                "bval": "${io.bvals}",
+                "bvec": "${io.bvecs}",
             }
         )
         current_input = "${bias.out_corrected}"
 
     mask_output = None
     if preprocessing.get("mask", False):
-        brain_method = interactive_brain_extraction_method()
-        if brain_method == "synthstrip":
-            print(
-                "Note: SynthStrip integration requires custom script. "
-                "Using median_otsu."
-            )
-            brain_method = "median_otsu"
-
+        brain_extraction_method = interactive_brain_extraction_method()
         config["pipeline"].append(
             {
                 "name": "mask",
-                "cli": "dipy_median_otsu",
+                "cli": "dipy_brain_mask",
                 "input_files": current_input,
+                "bvalues_files": "${io.bvals}",
+                "method": brain_extraction_method,
             }
         )
         mask_output = "${mask.out_mask}"
 
     preprocessed_dwi = current_input
+    out_fa = None
     for method in recon_methods:
         if method == "dti":
             stage_config = {
                 "name": "dti_fit",
                 "cli": "dipy_fit_dti",
                 "input_files": preprocessed_dwi,
-                "bvals_files": "${io.bvals}",
-                "bvecs_files": "${io.bvecs}",
+                "bvalues_files": "${io.bvals}",
+                "bvectors_files": "${io.bvecs}",
             }
+            out_fa = "${dti_fit.out_fa}"
             if mask_output:
                 stage_config["mask_files"] = mask_output
+            else:
+                raise ValueError(
+                    "DTI fitting requires a brain mask. Please include the "
+                    "'Brain Mask Extraction' "
+                    "preprocessing step to extract a brain mask."
+                )
+
             config["pipeline"].append(stage_config)
 
         elif method == "dki":
@@ -763,11 +772,17 @@ def build_interactive_pipeline_config(*, data_chars):
                 "name": "dki_fit",
                 "cli": "dipy_fit_dki",
                 "input_files": preprocessed_dwi,
-                "bvals_files": "${io.bvals}",
-                "bvecs_files": "${io.bvecs}",
+                "bvalues_files": "${io.bvals}",
+                "bvectors_files": "${io.bvecs}",
             }
             if mask_output:
                 stage_config["mask_files"] = mask_output
+            else:
+                raise ValueError(
+                    "DKI fitting requires a brain mask. Please include the "
+                    "'Brain Mask Extraction' "
+                    "preprocessing step to extract a brain mask."
+                )
             config["pipeline"].append(stage_config)
 
         elif method == "csd":
@@ -775,11 +790,17 @@ def build_interactive_pipeline_config(*, data_chars):
                 "name": "csd_fit",
                 "cli": "dipy_fit_csd",
                 "input_files": preprocessed_dwi,
-                "bvals_files": "${io.bvals}",
-                "bvecs_files": "${io.bvecs}",
+                "bvalues_files": "${io.bvals}",
+                "bvectors_files": "${io.bvecs}",
             }
             if mask_output:
                 stage_config["mask_files"] = mask_output
+            else:
+                raise ValueError(
+                    "CSD fitting requires a brain mask. Please include the "
+                    "'Brain Mask Extraction' "
+                    "preprocessing step to extract a brain mask."
+                )
             config["pipeline"].append(stage_config)
 
         elif method == "csa":
@@ -787,11 +808,17 @@ def build_interactive_pipeline_config(*, data_chars):
                 "name": "csa_fit",
                 "cli": "dipy_fit_csa",
                 "input_files": preprocessed_dwi,
-                "bvals_files": "${io.bvals}",
-                "bvecs_files": "${io.bvecs}",
+                "bvalues_files": "${io.bvals}",
+                "bvectors_files": "${io.bvecs}",
             }
             if mask_output:
                 stage_config["mask_files"] = mask_output
+            else:
+                raise ValueError(
+                    "CSA fitting requires a brain mask. Please include the "
+                    "'Brain Mask Extraction' "
+                    "preprocessing step to extract a brain mask."
+                )
             config["pipeline"].append(stage_config)
 
         elif method == "gqi":
@@ -799,23 +826,27 @@ def build_interactive_pipeline_config(*, data_chars):
                 "name": "gqi_fit",
                 "cli": "dipy_fit_gqi",
                 "input_files": preprocessed_dwi,
-                "bvals_files": "${io.bvals}",
-                "bvecs_files": "${io.bvecs}",
+                "bvalues_files": "${io.bvals}",
+                "bvectors_files": "${io.bvecs}",
             }
             if mask_output:
                 stage_config["mask_files"] = mask_output
+            else:
+                raise ValueError(
+                    "GQI fitting requires a brain mask. Please include the "
+                    "'Brain Mask Extraction' "
+                    "preprocessing step to extract a brain mask."
+                )
             config["pipeline"].append(stage_config)
 
         elif method == "mapmri":
             stage_config = {
                 "name": "mapmri_fit",
                 "cli": "dipy_fit_mapmri",
-                "input_files": preprocessed_dwi,
+                "data_files": preprocessed_dwi,
                 "bvals_files": "${io.bvals}",
                 "bvecs_files": "${io.bvecs}",
             }
-            if mask_output:
-                stage_config["mask_files"] = mask_output
             config["pipeline"].append(stage_config)
 
     if include_tracking and recon_methods:
@@ -834,6 +865,8 @@ def build_interactive_pipeline_config(*, data_chars):
                     "name": f"track_{method}",
                     "cli": "dipy_track",
                     "pam_files": f"${{{method}_fit.out_pam}}",
+                    "stopping_files": out_fa,
+                    "seeding_files": mask_output,
                 }
             )
 
