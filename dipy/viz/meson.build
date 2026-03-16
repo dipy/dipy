@@ -1,5 +1,11 @@
 python_sources = [
   '__init__.py',
+  'gmem.py',
+  'panel.py',
+  'plotting.py',
+  'projections.py',
+  'regtools.py',
+  'streamline.py',
   ]
 
 
