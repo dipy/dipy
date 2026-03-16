@@ -9,9 +9,10 @@ from dipy.viz.skyline.UI.theme import ASSETS, FONT, THEME
 from dipy.viz.skyline.compute import process_async_callbacks
 
 imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
-imgui = imgui_bundle.imgui
-hello_imgui = imgui_bundle.hello_imgui
-icons_fontawesome_6 = imgui_bundle.icons_fontawesome_6
+if has_imgui:
+    imgui = imgui_bundle.imgui
+    hello_imgui = imgui_bundle.hello_imgui
+    icons_fontawesome_6 = imgui_bundle.icons_fontawesome_6
 
 
 _GROUP_ORDER = ["image", "tractography", "peak", "sh_glyph", "roi", "surface"]
