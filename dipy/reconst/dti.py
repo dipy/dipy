@@ -869,48 +869,7 @@ class TensorModel(ReconstModel):
 
 
 class TensorFit:
-    r"""Stores the fit result of the Diffusion Tensor model.
-
-    After fitting a ``TensorModel`` to data, this object holds
-    the eigenvalues and eigenvectors for each voxel and exposes
-    standard DTI metrics such as FA, MD, RD and AD
-    :footcite:p:`Basser1994b,Basser1996`.
-
-    The diffusion tensor :math:`\mathbf{D}` is a 3x3 symmetric
-    matrix reconstructed from eigenvalues :math:`\lambda_i` and
-    eigenvectors :math:`\mathbf{v}_i`:
-
-    .. math::
-        \mathbf{D} = \sum_{i=1}^3 \lambda_i \mathbf{v}_i \mathbf{v}_i^T
-
-    Parameters
-    ----------
-    model : TensorModel instance
-        The model used to generate this fit.
-    model_params : ndarray (..., 12)
-        Fitted tensor parameters. Last axis holds 12 values: first 3 are
-        eigenvalues, next 9 are the flattened 3x3 eigenvector matrix.
-    model_S0 : ndarray, optional
-        Estimated non-diffusion-weighted (S0) signal per voxel.
-
-    Attributes
-    ----------
-    evals : ndarray (..., 3)
-        Eigenvalues of the diffusion tensor.
-    evecs : ndarray (..., 3, 3)
-        Eigenvectors of the diffusion tensor.
-    shape : tuple
-        Spatial shape of the fitted data.
-
-    Notes
-    -----
-    Scalar metrics like ``fa``, ``md``, and ``rd`` are computed
-    lazily on first access and cached for subsequent calls.
-
-    References
-    ----------
-    .. footbibliography::
-    """
+    """Stores the fit result of the Diffusion Tensor model."""
 
     @warning_for_keywords()
     def __init__(self, model, model_params, *, model_S0=None):
