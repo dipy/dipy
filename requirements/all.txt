@@ -33,9 +33,9 @@ pandas
 statsmodels>=0.14.0
 tables
 torch
-fury>=0.12.0
-matplotlib
 cvxpy
 scikit-image
 boto3
 numexpr
+matplotlib
+vtk>=9.0.0,<=9.1.0

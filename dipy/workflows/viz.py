@@ -1,29 +1,142 @@
-from pathlib import Path
-from warnings import warn
-
-import numpy as np
-
-from dipy.io.image import load_nifti
-from dipy.io.peaks import load_pam
-from dipy.io.streamline import load_tractogram
-from dipy.io.surface import load_gifti, load_pial
-from dipy.io.utils import create_nifti_header, split_filename_extension
-from dipy.stats.analysis import assignment_map
+from dipy.io.utils import split_filename_extension
 from dipy.utils.logging import logger
-from dipy.utils.optpkg import optional_package
-from dipy.viz import horizon
+from dipy.viz import skyline_from_files
 from dipy.workflows.workflow import Workflow
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
+
+class SkylineFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "skyline"
+
+    def run(
+        self,
+        input_files,
+        *,
+        rois=None,
+        odfs=None,
+        cluster=False,
+        performance_version=False,
+        glass_brain=False,
+        bg_color=None,
+        tract_colors=None,
+        cluster_thr=15.0,
+        cluster_size_thr=-1,
+        cluster_length_thr=-1,
+        buan_pvals=None,
+        rgb=False,
+        stealth=False,
+        out_dir="",
+        out_stealth_png="out_skyline.png",
+    ):
+        """Launch Skyline GUI.
+
+        If you want to load only odfs or rois.
+        use dipy_skyline run --odfs <Your ODF files> or
+        dipy_skyline run --rois <Your ROI files> respectively.
+
+        These options should be used in stealth mode. For GUI mode, the files can be
+        loaded through the file dialog.
 
 
-if has_fury:
-    from fury.colormap import line_colors
-    from fury.lib import numpy_support
-    from fury.utils import numpy_to_vtk_colors
+        Parameters
+        ----------
+        input_files : variable string or Path
+            Tuple of path for each image, peak, surface or tractogram to be added to
+            the Skyline viewer.
+        rois : variable str, optional
+            Tuple of path for each ROI to be added to the Skyline viewer.
+        odfs : variable str, optional
+            Tuple of path for each ODF to be added to the Skyline viewer.
+        cluster : bool, optional
+            Whether to cluster the tractograms.
+        performance_version : bool, optional
+            Whether to use the performance version of the tractogram rendering.
+            This will render tractograms as lines instead of tubes,
+            which can improve performance for large tractograms.
+        glass_brain : bool, optional
+            Whether to use glass brain mode. This will overwrite the background color
+            to white if not explicitly set by the user.
+        bg_color : variable float, optional
+            Define the background color of the scene. Colors can be defined with
+            3 values and should be between [0-1].
+            For example, a value of (0, 0, 0) would mean the black color.
+        tract_colors : str, optional
+            Define the colors of the tractograms. Colors can be defined with
+            3 values and should be between [0-1].
+            String options are 'random' for random colors for each tractogram,
+            'direction'  for directionally colored streamlines.
+            For example, a value of (1, 0, 0) would mean the red color.
+        cluster_thr : float, optional
+            Distance threshold used for clustering. Default value 15.0 for
+            small animal brains you may need to use something smaller such
+            as 2.0. The distance is in mm. For this parameter to be active
+            ``cluster`` should be enabled.
+        cluster_size_thr : int, optional
+            Clusters with size less than ``cluster_size_thr`` will be hidden.
+            If -1, it will show all cluster above the 50th percentile of the cluster
+            size distribution.
+        cluster_length_thr : float, optional
+            Clusters with average length less than ``cluster_length_thr`` in mm will be
+            hidden. If -1, it will show all cluster above the 25th percentile of the
+            cluster length distribution.
+        buan_pvals : variable str, optional
+            File path for BUAN p-values to be used for BUAN-based coloring of
+            tractograms.
+        stealth : bool, optional
+            Do not use interactive mode just save figure.
+        rgb : bool, optional
+            Enable the colors in the image if 4D data with RGB/RGBA channels.
+        out_dir : str or Path, optional
+            Output directory to save the figure if stealth mode is enabled.
+        out_stealth_png : str, optional
+            Filename of saved picture if stealth mode is enabled.
+        """
+        super(SkylineFlow, self).__init__(force=True)
+        skyline_input_files = []
+        start_gui = input_files is not None and input_files[0] in (
+            "run",
+            "start",
+            "launch",
+            "initialize",
+        )
+        if not start_gui:
+            io_it = self.get_io_iterator()
+            for input_output in io_it:
+                skyline_input_files.append(input_output[0])
+
+        if cluster_length_thr == -1:
+            # set default as None is not allowed in int
+            # Further down it will be set to
+            # 25th percentile of the cluster length distribution
+            cluster_length_thr = None
+        if cluster_size_thr == -1:
+            # set default as None is not allowed in int
+            # Further down it will be set to
+            # 50th percentile of the cluster size distribution
+            cluster_size_thr = None
+
+        skyline_from_files(
+            skyline_input_files,
+            rois=rois,
+            shm_coeffs=odfs,
+            is_cluster=cluster,
+            is_light_version=not performance_version,
+            glass_brain=glass_brain,
+            bg_color=bg_color,
+            tract_colors=tract_colors,
+            cluster_thr=cluster_thr,
+            cluster_size_thr=cluster_size_thr,
+            cluster_length_thr=cluster_length_thr,
+            buan_pvals=buan_pvals,
+            stealth=stealth,
+            rgb=rgb,
+            out_dir=out_dir,
+            out_stealth_png=out_stealth_png,
+        )
 
 
-class HorizonFlow(Workflow):
+class HorizonFlow(SkylineFlow):
     @classmethod
     def get_short_name(cls):
         return "horizon"
@@ -52,7 +165,8 @@ class HorizonFlow(Workflow):
         out_dir="",
         out_stealth_png="tmp.png",
     ):
-        """Interactive medical visualization - Invert the Horizon!
+        """Horizon is deprecated and will be removed with future releases.
+        Please use Skyline with `dipy_skyline` CLI.
 
         See :footcite:p:`Garyfallidis2019` for further details about Horizon.
 
@@ -80,44 +194,54 @@ class HorizonFlow(Workflow):
             should only be applied to one of the 2 types, then use the
             options 'tracts' and 'rois' for the tractograms and the ROIs
             respectively.
+            This will be ignored with Skyline.
         length_gt : float, optional
             Clusters with average length greater than ``length_gt`` amount
             in mm will be shown.
         length_lt : float, optional
             Clusters with average length less than ``length_lt`` amount in
             mm will be shown.
+            This will be ignored with Skyline.
         clusters_gt : int, optional
             Clusters with size greater than ``clusters_gt`` will be shown.
         clusters_lt : int, optional
-            Clusters with size less than ``clusters_gt`` will be shown.
+            Clusters with size less than ``clusters_lt`` will be shown.
+            This will be ignored with Skyline.
         native_coords : bool, optional
             Show results in native coordinates.
+            This will be ignored with Skyline.
         stealth : bool, optional
             Do not use interactive mode just save figure.
         emergency_header : str, optional
             If no anatomy reference is provided an emergency header is
             provided. Current options 'icbm_2009a' and 'icbm_2009c'.
+            This will be ignored with Skyline.
         bg_color : variable float, optional
             Define the background color of the scene. Colors can be defined
             with 1 or 3 values and should be between [0-1].
         disable_order_transparency : bool, optional
             Use depth peeling to sort transparent objects.
             If True also enables anti-aliasing.
+            This will be ignored with Skyline.
         buan : bool, optional
             Enables BUAN framework visualization.
         buan_thr : float, optional
             Uses the threshold value to highlight segments on the
             bundle which have pvalues less than this threshold.
+            This will be ignored with Skyline.
         buan_highlight : variable float, optional
             Define the bundle highlight area color. Colors can be defined
             with 1 or 3 values and should be between [0-1].
             For example, a value of (1, 0, 0) would mean the red color.
+            This will be ignored with Skyline.
         roi_images : bool, optional
             Displays binary images as contours.
+            This will be ignored with Skyline.
         roi_colors : variable float, optional
             Define the color for the roi images. Colors can be defined
             with 1 or 3 values and should be between [0-1]. For example, a
             value of (1, 0, 0) would mean the red color.
+            This will be ignored with Skyline.
         out_dir : str or Path, optional
             Output directory.
         out_stealth_png : str, optional
@@ -128,163 +252,30 @@ class HorizonFlow(Workflow):
         .. footbibliography::
         """
         super(HorizonFlow, self).__init__(force=True)
-        verbose = True
-        tractograms = []
-        images = []
-        pams = []
-        surfaces = []
-        numpy_files = []
-        interactive = not stealth
-        world_coords = not native_coords
-        bundle_colors = None
 
-        # mni_2009a = {
-        #    "affine": np.array(
-        #        [
-        #            [1.0, 0.0, 0.0, -98.0],
-        #            [0.0, 1.0, 0.0, -134.0],
-        #            [0.0, 0.0, 1.0, -72.0],
-        #            [0.0, 0.0, 0.0, 1.0],
-        #        ]
-        #    ),
-        #    "dims": (197, 233, 189),
-        #    "vox_size": (1.0, 1.0, 1.0),
-        #    "vox_space": "RAS",
-        # }
+        logger.info(
+            "Horizon is deprecated and will be removed with future releases. "
+            "Please use Skyline with `dipy_skyline` CLI."
+        )
 
-        mni_2009c = {
-            "affine": np.array(
-                [
-                    [1.0, 0.0, 0.0, -96.0],
-                    [0.0, 1.0, 0.0, -132.0],
-                    [0.0, 0.0, 1.0, -78.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ]
-            ),
-            "dims": (193, 229, 193),
-            "vox_size": (1.0, 1.0, 1.0),
-            "vox_space": "RAS",
-        }
-
-        if emergency_header == "icbm_2009a":
-            hdr = mni_2009c
-        else:
-            hdr = mni_2009c
-        emergency_ref = create_nifti_header(hdr["affine"], hdr["dims"], hdr["vox_size"])
-
-        io_it = self.get_io_iterator()
-
-        for input_output in io_it:
-            fname = input_output[0]
-
-            if verbose:
-                logger.info(f"Loading file ... \n {fname}\n")
-
-            _, ext = split_filename_extension(fname)
-            ext = ext.lower()
-
-            if ext in [".trk", ".trx"]:
-                sft = load_tractogram(fname, "same", bbox_valid_check=False)
-                tractograms.append(sft)
-
-            if ext in [".dpy", ".tck", ".vtk", ".vtp", ".fib"]:
-                sft = load_tractogram(fname, emergency_ref)
-                tractograms.append(sft)
-
-            if ext in [".nii.gz", ".nii"]:
-                data, affine = load_nifti(fname)
-                images.append((data, affine, fname))
-
-            if ext == ".pial":
-                surface = load_pial(fname)
-                if surface:
-                    vertices, faces = surface
-                    surfaces.append((vertices, faces, fname))
-
-            if any(ext.endswith(_ext) for _ext in [".gii", ".gii.gz"]):
-                surface = load_gifti(fname)
-                vertices, faces = surface
-                if len(vertices) and len(faces):
-                    vertices, faces = surface
-                    surfaces.append((vertices, faces, fname))
-                else:
-                    warn(f"{fname} does not have any surface geometry.", stacklevel=2)
-
-            if ext == ".pam5":
-                pam = load_pam(fname)
-                pams.append((pam, fname))
-
-            if ext == ".npy":
-                data = np.load(fname)
-                numpy_files.append(data)
-
-                if verbose:
-                    logger.info(f"numpy array length \n {len(data)}\n")
-
+        buan_pvals = None
         if buan:
-            bundle_colors = []
+            for input_file in input_files:
+                _, ext = split_filename_extension(input_file)
+                if ext == ".npy":
+                    buan_pvals = [input_file]
+                    break
 
-            for i in range(len(numpy_files)):
-                n = len(numpy_files[i])
-                pvalues = numpy_files[i]
-                bundle = tractograms[i].streamlines
-
-                _, indx = assignment_map(bundle, bundle, n)
-                ind = np.array(indx)
-
-                nb_lines = len(bundle)
-                lines_range = range(nb_lines)
-                points_per_line = [len(bundle[i]) for i in lines_range]
-                points_per_line = np.array(points_per_line, np.intp)
-
-                cols_arr = line_colors(bundle)
-                colors_mapper = np.repeat(lines_range, points_per_line, axis=0)
-                vtk_colors = numpy_to_vtk_colors(255 * cols_arr[colors_mapper])
-                colors = numpy_support.vtk_to_numpy(vtk_colors)
-                colors = (colors - np.min(colors)) / np.ptp(colors)
-
-                for j in range(n):
-                    if pvalues[j] < buan_thr:
-                        colors[ind == j] = buan_highlight
-
-                bundle_colors.append(colors)
-
-        if len(bg_color) == 1:
-            bg_color *= 3
-        elif len(bg_color) != 3:
-            raise ValueError(
-                "You need 3 values to set up background color. "
-                "e.g --bg_color 0.5 0.5 0.5"
-            )
-
-        if len(roi_colors) == 1:
-            roi_colors *= 3
-        elif len(roi_colors) != 3:
-            raise ValueError(
-                "You need 3 values to set up ROI color. e.g. --roi_colors 0.5 0.5 0.5"
-            )
-
-        order_transparent = not disable_order_transparency
-        horizon(
-            tractograms=tractograms,
-            images=images,
-            pams=pams,
-            surfaces=surfaces,
+        super(HorizonFlow, self).run(
+            input_files,
+            bg_color=bg_color,
             cluster=cluster,
             rgb=rgb,
             cluster_thr=cluster_thr,
-            random_colors=random_colors,
-            bg_color=bg_color,
-            order_transparent=order_transparent,
-            length_gt=length_gt,
-            length_lt=length_lt,
-            clusters_gt=clusters_gt,
-            clusters_lt=clusters_lt,
-            world_coords=world_coords,
-            interactive=interactive,
-            buan=buan,
-            buan_colors=bundle_colors,
-            roi_images=roi_images,
-            roi_colors=roi_colors,
-            out_png=Path(out_dir) / out_stealth_png,
+            cluster_length_thr=length_gt,
+            cluster_size_thr=clusters_gt,
+            buan_pvals=buan_pvals,
+            stealth=stealth,
+            out_dir=out_dir,
+            out_stealth_png=out_stealth_png,
         )
