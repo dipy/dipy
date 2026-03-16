@@ -733,4 +733,5 @@ def values_from_volume(data, streamlines, affine):
 
 
 def nbytes(streamlines):
+    """Calculate the memory footprint of a streamlines object."""
     return streamlines._data.nbytes / 1024.0**2
