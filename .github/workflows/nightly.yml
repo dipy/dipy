@@ -218,3 +218,26 @@ jobs:
           anaconda_nightly_upload_token: ${{secrets.ANACONDA_SCIENTIFIC_PYTHON_NIGHTLY_TOKEN}}
           anaconda_nightly_upload_organization: scientific-python-nightly-wheels
           anaconda_nightly_upload_labels: main
+  upload_dw26_anaconda:
+      permissions:
+        contents: write # for softprops/action-gh-release to create GitHub release
+      name: Upload to Anaconda (wd26)
+      needs: [check-commit, build_linux_wheels, build_osx_wheels, build_windows_wheels]
+      if: github.repository_owner == 'dipy' && github.ref == 'refs/heads/workshop26' && github.event_name != 'pull_request'
+      runs-on: ubuntu-latest
+      timeout-minutes: 10
+      steps:
+      - uses: actions/download-artifact@v8
+        id: download
+        with:
+          pattern: wheels-*
+          path: ./dist
+          merge-multiple: true
+      - name: Upload workshop wheel
+        uses: scientific-python/upload-nightly-action@5748273c71e2d8d3a61f3a11a16421c8954f9ecf # 0.6.3
+        if: needs.check-commit.outputs.build-commit == 'workshop26'
+        with:
+          artifacts_path: dist
+          anaconda_nightly_upload_token: ${{secrets.ANACONDA_SCIENTIFIC_PYTHON_NIGHTLY_TOKEN}}
+          anaconda_nightly_upload_organization: dipy
+          anaconda_nightly_upload_labels: dw26
