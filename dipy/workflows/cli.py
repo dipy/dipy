@@ -10,6 +10,7 @@ cli_flows = {
     "dipy_align_affine": ("dipy.workflows.align", "ImageRegistrationFlow"),
     "dipy_align_syn": ("dipy.workflows.align", "SynRegistrationFlow"),
     "dipy_apply_transform": ("dipy.workflows.align", "ApplyTransformFlow"),
+    "dipy_auto": ("dipy.workflows.combined_workflow", "AutoFlow"),
     "dipy_brain_mask": ("dipy.workflows.segment", "BrainMaskFlow"),
     "dipy_buan_lmm": ("dipy.workflows.stats", "LinearMixedModelsFlow"),
     "dipy_buan_shapes": ("dipy.workflows.stats", "BundleShapeAnalysis"),
