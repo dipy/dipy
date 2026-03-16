@@ -25,7 +25,8 @@ else:
     actor = fury.actor
 
 imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
-imgui = imgui_bundle.imgui
+if has_imgui:
+    imgui = imgui_bundle.imgui
 
 
 def create_peak_visualization(
