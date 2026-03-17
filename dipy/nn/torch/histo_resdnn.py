@@ -210,12 +210,9 @@ class HistoResDNN:
                 f"declared model ({self.sh_size})"
             )
 
-        # Ensure float32 dtype and move to correct device (no-op when device=cpu)
+        # Move to correct device (no-op when device=cpu)
         return (
-            self.model(torch.from_numpy(x_test).float().to(self.device))
-            .detach()
-            .cpu()
-            .numpy()
+            self.model(torch.from_numpy(x_test).to(self.device)).detach().cpu().numpy()
         )
 
     def predict(self, data, gtab, *, mask=None, chunk_size=1000):
