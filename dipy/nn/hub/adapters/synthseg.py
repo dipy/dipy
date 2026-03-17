@@ -19,13 +19,12 @@ class SynthSegAdapter(BaseHubAdapter):
         Whether to use GPU if available.
     """
 
-    def __init__(self, weights_path, use_cuda=False):
+    def __init__(self, weights_path=None, use_cuda=False):
         if not have_torch:
             raise ImportError("PyTorch is required. Install with: pip install torch")
         from dipy.nn.torch.synthseg import SynthSeg
 
         self._model = SynthSeg(use_cuda=use_cuda)
-        self._model.load_model_weights(weights_path)
 
     def init_model(self):
         """Not used directly — SynthSeg initializes its own model."""

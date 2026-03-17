@@ -46,7 +46,7 @@ def load(name, version=None, use_cuda=False):
     Parameters
     ----------
     name : str
-        Name of the model e.g. 'TractCloud'.
+        Name of the model e.g. 'SynthSeg'.
     version : str, optional
         Version string. Uses registry default if None.
     use_cuda : bool, optional
@@ -73,20 +73,6 @@ def load(name, version=None, use_cuda=False):
 
     logger.info(f"Loading model '{name}' from DIPY hub...")
 
-    # Weights fetching — plugs into existing dipy.data fetcher system
-    from dipy.data import fetcher
-
-    fetch_fn_name = f"fetch_{name.lower()}_torch_weights"
-
-    if not hasattr(fetcher, fetch_fn_name):
-        raise NotImplementedError(
-            f"No fetcher found for '{name}'. "
-            f"Expected 'dipy.data.fetcher.{fetch_fn_name}' to exist."
-        )
-
-    fetch_fn = getattr(fetcher, fetch_fn_name)
-    weights_path = fetch_fn()
-
     # Load adapter
     adapter_path = f"dipy.nn.hub.adapters.{name.lower()}"
     adapter_class_name = f"{name}Adapter"
@@ -100,4 +86,4 @@ def load(name, version=None, use_cuda=False):
             f"Expected '{adapter_path}.{adapter_class_name}'."
         ) from e
 
-    return adapter_class(weights_path, use_cuda=use_cuda)
+    return adapter_class(use_cuda=use_cuda)
