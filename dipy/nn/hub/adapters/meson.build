@@ -1,5 +1,6 @@
 python_sources = [
   '__init__.py',
+  'synthseg.py',
 ]
 
 py3.install_sources(

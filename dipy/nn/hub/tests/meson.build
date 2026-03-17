@@ -1,5 +1,6 @@
 python_sources = [
   '__init__.py',
+  'test_hub.py',
 ]
 
 py3.install_sources(
