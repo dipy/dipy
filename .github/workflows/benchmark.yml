@@ -1,16 +1,21 @@
+---
 name: Benchmarks
 
+# yamllint disable-line rule:truthy
 on:
   workflow_dispatch:
   pull_request:
-    types: [labeled]
+    types:
+      - labeled
 
 permissions:
   contents: read
   pull-requests: write
 
 concurrency:
-  group: benchmark-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: >-
+    benchmark-${{ github.workflow }}-
+    ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -94,12 +99,11 @@ jobs:
 
       - name: Post results as PR comment
         if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: asv-benchmark-results
           message: |
             ## ASV Benchmark Results - master vs HEAD
-
             <details>
             <summary>Click to expand full comparison</summary>
 
@@ -107,8 +111,8 @@ jobs:
 
             </details>
 
-            > **Legend:** + regression / - improvement / within +-10% = no significant change
-            > Full logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            > **Legend:** + regression / - improvement / +-10% = no change
+            > Full logs: ${{ github.run_id }}
 
       - name: Upload raw results as artifact
         if: always()
