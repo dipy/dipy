@@ -119,7 +119,6 @@ def copyfileobj_withprogress(fsrc, fdst, total_length, *, length=16 * 1024):
             break
         fdst.write(buf)
 
-
 def _already_there_msg(folder):
     """
     Log a message indicating that the dataset is already present.
@@ -136,7 +135,6 @@ def _already_there_msg(folder):
     msg = "Dataset is already in place. If you want to fetch it again "
     msg += f"please first remove the folder {folder} "
     logger.info(msg)
-
 
 def _get_file_md5(filename):
     """Compute the md5 checksum of a file"""
