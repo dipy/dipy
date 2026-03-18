@@ -305,6 +305,8 @@ class Skyline:
         pending = self._pending_sync_requests.copy()
         self._pending_sync_requests.clear()
         for source_viz, new_state in pending:
+            # Re-check source sync at flush time: user may have toggled it off
+            # while the request was queued.
             self._synchronize_visualizations_from_source(source_viz, new_state)
         self.active_image and self._arrange_image_actors()
         self._refresh_requested = True
@@ -461,6 +463,17 @@ class Skyline:
             )
             self._add_visualization(surface3d)
         for idx, input in enumerate(tractograms or []):
+            if isinstance(input, tuple):
+                sft = input[0]
+                filename = f"Streamlines {idx}"
+                if len(input) == 2:
+                    filename = input[1]
+                if len(sft.streamlines) <= 0:
+                    logger.warning(
+                        f"The provide file: {filename} does not "
+                        "contain any streamlines."
+                    )
+                    continue
             tractogram3d = create_streamline_visualization(
                 input,
                 idx,
@@ -562,12 +575,33 @@ class Skyline:
         if len(self.visualizations) == 0:
             self.UI_window.request_file_dialog = True
 
+    @staticmethod
+    def _snapshot_state(new_state):
+        if hasattr(new_state, "copy"):
+            return new_state.copy()
+        if isinstance(new_state, list):
+            return list(new_state)
+        if isinstance(new_state, tuple):
+            return tuple(new_state)
+        return new_state
+
     def _synchronize_visualizations_from_source(self, source_viz, new_state):
+        # Source-side guard: only push if this view has sync enabled.
+        if not getattr(source_viz, "_synchronize", True):
+            return
+
         for viz in self.visualizations:
             if viz is not source_viz and isinstance(viz, (Image3D, Peak3D, SHGlyph3D)):
+                # Target-side guard is inside each viz's update_state.
                 viz.update_state(new_state)
 
     def _synchronize_visualizations(self, source_viz, new_state):
+        # Source-side guard: only push if this view has sync enabled.
+        if not getattr(source_viz, "_synchronize", True):
+            return
+
+        new_state = self._snapshot_state(new_state)
+
         if self._is_drawing_ui:
             self._pending_sync_requests.append((source_viz, new_state))
             self.request_refresh()
