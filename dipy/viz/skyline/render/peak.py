@@ -185,7 +185,13 @@ class Peak3D(Visualization):
     def update_state(self, new_state):
         if self._synchronize:
             self.state = np.asarray(new_state[:3], dtype=np.float32)
-            self._apply_cross_section_from_state()
+            self.apply_scene_op(self._apply_cross_section_from_state)
+
+    def _set_opacity(self, opacity):
+        self._slicer.material.opacity = opacity
+
+    def _set_slice_visibility(self, visibility):
+        self._slicer.material.visibility = visibility
 
     def render_widgets(self):
         changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
@@ -202,7 +208,7 @@ class Peak3D(Visualization):
             new_scale = float(new_scale)
             if abs(new_scale - self._scale) > 1e-4:
                 self._scale = new_scale
-                self._create_peak_actor()
+                self.apply_scene_op(self._create_peak_actor)
                 self.render()
 
         changed, new = thin_slider(
@@ -217,7 +223,7 @@ class Peak3D(Visualization):
         )
         if changed:
             self.opacity = new
-            self._slicer.material.opacity = self.opacity / 100.0
+            self.apply_scene_op(self._set_opacity, self.opacity / 100.0)
 
         imgui.spacing()
         axis_labels = ("X", "Y", "Z")
@@ -253,9 +259,9 @@ class Peak3D(Visualization):
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
                 self.state[idx] = float(new)
-                self._apply_cross_section_from_state()
+                self.apply_scene_op(self._apply_cross_section_from_state)
                 if self._synchronize and self._sync_callabck is not None:
                     self._sync_callabck(self, self.state)
             self._slice_visibility[idx] = toggle
-        self._slicer.material.visibility = self._slice_visibility
+        self.apply_scene_op(self._set_slice_visibility, tuple(self._slice_visibility))
         imgui.spacing()

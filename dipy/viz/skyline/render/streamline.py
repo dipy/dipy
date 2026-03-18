@@ -321,7 +321,7 @@ class Streamline3D(Visualization):
                 saturation=(self._saturation_high, self._saturation_low),
                 value=self._value,
             )
-            self._create_streamline_actor()
+            self.apply_scene_op(self._create_streamline_actor)
             self.render()
 
     def _update_buan_colors_on_sliders(self):
@@ -333,13 +333,13 @@ class Streamline3D(Visualization):
             saturation=(self._saturation_high, self._saturation_low),
             value=self._value,
         )
-        self._create_streamline_actor()
+        self.apply_scene_op(self._create_streamline_actor)
         self.render()
 
     def render_widgets(self):
         if self._apply_line_change_next_frame:
             self._apply_line_change_next_frame = False
-            self._create_streamline_actor()
+            self.apply_scene_op(self._create_streamline_actor)
             self._loader(False)
             self.render()
 
@@ -364,7 +364,7 @@ class Streamline3D(Visualization):
             else:
                 self._loader(True, message="Switching line type...")
                 self._line_type = requested_line_type
-                self._create_streamline_actor()
+                self.apply_scene_op(self._create_streamline_actor)
                 self._loader(False)
                 self.render()
 
@@ -408,7 +408,7 @@ class Streamline3D(Visualization):
             self._buan_pvals_file = False
             self._buan_pvals_data = None
             self.color = self._original_color
-            self._create_streamline_actor()
+            self.apply_scene_op(self._create_streamline_actor)
             self.render()
 
         imgui.same_line(0, 10)
@@ -420,7 +420,7 @@ class Streamline3D(Visualization):
             self._color_picker = (new_color[0], new_color[1], new_color[2])
 
             self.color = self._color_picker
-            self._create_streamline_actor()
+            self.apply_scene_op(self._create_streamline_actor)
             self.render()
 
         if self._buan_pvals_file is not None and self._buan_pvals_data is not None:
@@ -538,7 +538,7 @@ class ClusterStreamline3D(Visualization):
         self._is_clustering = False
 
         if exception is not None:
-            print(f"Error clustering streamlines: {exception}")
+            logger.error(f"Error clustering streamlines: {exception}")
         else:
             clusters, lengths, sizes, colormap, line_widths = result
             for actor in list(self._actor.children):
@@ -651,8 +651,10 @@ class ClusterStreamline3D(Visualization):
             centroid_rep.material.opacity = 0.5
 
     def _toggle_cluster_selection(self, cluster):
-        self._update_cluster_state(
-            cluster, not self._cluster_state[cluster]["selected"]
+        self.apply_scene_op(
+            self._update_cluster_state,
+            cluster,
+            not self._cluster_state[cluster]["selected"],
         )
 
     def _hide_deselected_clusters(self):
@@ -663,6 +665,18 @@ class ClusterStreamline3D(Visualization):
     def _show_all_clusters(self):
         for centroid_rep in self._cluster_state:
             centroid_rep.visible = True
+
+    def _show_all_clusters_and_refresh(self):
+        self._show_all_clusters()
+        self._refresh_cluster_visibility()
+
+    def _apply_cluster_line_type_change(self):
+        for centroid_rep, state in self._cluster_state.items():
+            if state["expanded"]:
+                _, new_actor = self._create_cluster_streamlines(centroid_rep)
+                self._actor.remove(state["cluster_actor"])
+                self._actor.add(new_actor)
+                state["cluster_actor"] = new_actor
 
     def _populate_info(self):
         np.set_printoptions(precision=2, suppress=True)
@@ -702,18 +716,17 @@ class ClusterStreamline3D(Visualization):
 
     def handle_key_events(self, event):
         if event.key == "e":
-            self._expand_clusters()
+            self.apply_scene_op(self._expand_clusters)
         elif event.key == "c":
-            self._collapse_clusters()
+            self.apply_scene_op(self._collapse_clusters)
         elif event.key == "a":
-            self._select_all_clusters()
+            self.apply_scene_op(self._select_all_clusters)
         elif event.key == "d":
-            self._deselect_all_clusters()
+            self.apply_scene_op(self._deselect_all_clusters)
         elif event.key == "h":
-            self._hide_deselected_clusters()
+            self.apply_scene_op(self._hide_deselected_clusters)
         elif event.key == "s":
-            self._show_all_clusters()
-            self._refresh_cluster_visibility()
+            self.apply_scene_op(self._show_all_clusters_and_refresh)
 
     @property
     def actor(self):
@@ -730,12 +743,7 @@ class ClusterStreamline3D(Visualization):
         changed, new = segmented_switch("Line Type", ["Line", "Tube"], self._line_type)
         if changed:
             self._line_type = new.lower()
-            for centroid_rep, state in self._cluster_state.items():
-                if state["expanded"]:
-                    _, new_actor = self._create_cluster_streamlines(centroid_rep)
-                    self._actor.remove(state["cluster_actor"])
-                    self._actor.add(new_actor)
-                    state["cluster_actor"] = new_actor
+            self.apply_scene_op(self._apply_cluster_line_type_change)
 
         imgui.spacing()
         imgui.spacing()
@@ -770,7 +778,7 @@ class ClusterStreamline3D(Visualization):
         )
         if changed:
             self.size = max(0, int(new_size))
-            self._refresh_cluster_visibility()
+            self.apply_scene_op(self._refresh_cluster_visibility)
 
         imgui.spacing()
         changed, new_length = create_numeric_input(
@@ -784,7 +792,7 @@ class ClusterStreamline3D(Visualization):
         )
         if changed:
             self.length = max(0.0, float(new_length))
-            self._refresh_cluster_visibility()
+            self.apply_scene_op(self._refresh_cluster_visibility)
 
         imgui.spacing()
         imgui.spacing()
