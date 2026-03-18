@@ -417,7 +417,7 @@ class SHGlyph3D(Visualization):
     def update_state(self, new_state):
         if self._synchronize:
             self.state = new_state[:3]
-            self.set_slices()
+            self.apply_scene_op(self.set_slices)
 
     def set_slice_visibility(self):
         for i, axis in enumerate(("x", "y", "z")):
@@ -442,7 +442,7 @@ class SHGlyph3D(Visualization):
         if changed:
             new_scale = float(new_scale)
             if abs(new_scale - self._scale) > 1e-4:
-                self._slicer.set_scale(new_scale)
+                self.apply_scene_op(self._slicer.set_scale, new_scale)
                 self._scale = new_scale
 
         imgui.spacing()
@@ -459,7 +459,7 @@ class SHGlyph3D(Visualization):
         )
         if changed:
             self._opacity = int(new_op)
-            self._slicer.set_opacity(self._opacity / 100.0)
+            self.apply_scene_op(self._slicer.set_opacity, self._opacity / 100.0)
 
         imgui.spacing()
 
@@ -496,11 +496,11 @@ class SHGlyph3D(Visualization):
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
                 self.state[idx] = int(round(new))
-                self.set_slices()
+                self.apply_scene_op(self.set_slices)
                 if self._synchronize and self._sync_callback is not None:
                     self._sync_callback(self, self.state)
             self._slice_visibility[idx] = toggle
-            self.set_slice_visibility()
+            self.apply_scene_op(self.set_slice_visibility)
             self._last_voxel[idx] = -1
 
         imgui.spacing()

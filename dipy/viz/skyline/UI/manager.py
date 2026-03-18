@@ -5,13 +5,11 @@ from dipy.viz.skyline.UI.elements import (
     render_file_dialog,
     render_section_header,
 )
-from dipy.viz.skyline.UI.theme import ASSETS, FONT, THEME
-from dipy.viz.skyline.compute import process_async_callbacks
+from dipy.viz.skyline.UI.theme import FONT, FONT_AWESOME, THEME
 
 imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
 if has_imgui:
     imgui = imgui_bundle.imgui
-    hello_imgui = imgui_bundle.hello_imgui
     icons_fontawesome_6 = imgui_bundle.icons_fontawesome_6
 
 
@@ -69,14 +67,19 @@ class UIWindow:
         self.bg_color_callback = bg_color_callback
         self._bg_color = (0.1, 0.1, 0.1)
         self._is_dialog_open = False
-        hello_imgui.set_assets_folder(str(ASSETS))
-        hello_imgui.load_font_ttf_with_font_awesome_icons(
-            str(FONT.relative_to(ASSETS)), 18
-        )
 
-        imgui.push_style_color(
-            imgui.Col_.window_bg, imgui.get_color_u32(THEME["background"])
-        )
+        # Use direct imgui API to avoid font atlas rebuilds that cause
+        # texture ID collisions on macOS
+        io = imgui.get_io()
+        font_size = 16.0
+        io.fonts.clear()
+        io.fonts.add_font_from_file_ttf(str(FONT), font_size)
+        fa_cfg = imgui.ImFontConfig()
+        fa_cfg.merge_mode = True
+        fa_cfg.pixel_snap_h = True
+        fa_cfg.glyph_min_advance_x = font_size
+        io.fonts.add_font_from_file_ttf(str(FONT_AWESOME), font_size, fa_cfg)
+
         self.request_file_dialog = False
 
     def add(self, name, section_renderer, viz_type=None):
@@ -90,7 +93,9 @@ class UIWindow:
             del self._section_open[name]
 
     def render(self):
-        process_async_callbacks()
+        imgui.push_style_color(
+            imgui.Col_.window_bg, imgui.get_color_u32(THEME["background"])
+        )
         if self.pos is not None:
             imgui.set_next_window_pos(self.pos)
         if self.size is not None:
@@ -316,6 +321,7 @@ class UIWindow:
             self.remove(name)
             self._render_callback()
         imgui.end()
+        imgui.pop_style_color(1)
 
         if self._show_loader and not imgui.is_popup_open("LoadingOverlay"):
             imgui.open_popup("LoadingOverlay")

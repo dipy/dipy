@@ -31,6 +31,7 @@ if has_imgui:
 class Visualization:
     def __init__(self, path, render_callback):
         self._render_callback = render_callback
+        self._scene_op_callback = None
         self.path = path if path is not None else "Unnamed Visualization"
         if self.__class__.__name__ == "ROI3D":
             self.name = f"ROI ({Path(self.path).name})"
@@ -45,6 +46,15 @@ class Visualization:
     def render(self):
         if self._render_callback is not None:
             self._render_callback()
+
+    def apply_scene_op(self, func, *args, **kwargs):
+        if self._scene_op_callback is not None:
+            self._scene_op_callback(func, *args, **kwargs)
+            return
+        func(*args, **kwargs)
+
+    def _set_actor_visible(self, visible):
+        self.actor.visible = visible
 
     @property
     def actor(self):
@@ -106,7 +116,7 @@ class Visualization:
             should_enable_group = True
         # If group hidden and user kept it off (new_visible=False), do nothing
 
-        self.actor.visible = self._visible and group_visible
+        self.apply_scene_op(self._set_actor_visible, self._visible and group_visible)
         self.active = is_selected
         if is_open:
             padding = 20

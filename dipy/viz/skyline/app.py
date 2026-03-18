@@ -115,6 +115,11 @@ class Skyline:
         self._pending_tractogram_switches = []
         self._loading_total = 0
         self._loading_done = 0
+        self._is_drawing_ui = False
+        self._refresh_requested = False
+        self._pending_bg_color = None
+        self._pending_sync_requests = []
+        self._pending_scene_ops = []
         self._is_cluster = is_cluster
         self._is_light_version = is_light_version
         self._glass_brain = glass_brain
@@ -132,7 +137,7 @@ class Skyline:
             self.UI_window = UIWindow(
                 "Image Controls",
                 size=self.ui_size,
-                render_callback=self.before_render,
+                render_callback=self.request_refresh,
                 logo_tex_ref=logo_tex_ref,
                 file_dialog_callback=self._append_visualization,
                 bg_color_callback=self._update_background_color,
@@ -237,20 +242,84 @@ class Skyline:
             self._tractogram_help = False
 
     def draw_ui(self):
-        if len(self.visualizations) == 0 and self._loading_total == 0:
-            self.UI_window.request_file_dialog = True
-        else:
-            self.UI_window.request_file_dialog = False
-        self.UI_window.render()
+        process_async_callbacks()
+        self._is_drawing_ui = True
+        try:
+            if len(self.visualizations) == 0 and self._loading_total == 0:
+                self.UI_window.request_file_dialog = True
+            else:
+                self.UI_window.request_file_dialog = False
+            self.UI_window.render()
+        finally:
+            self._is_drawing_ui = False
+
         self._process_tractogram_switches()
         self._drain_pending_visualizations()
+        self._flush_pending_sync_requests()
+        self._flush_pending_scene_ops()
+        if self._pending_bg_color is not None:
+            self.window.screens[0].scene.background = self._pending_bg_color
+            self._bg_color = self._pending_bg_color
+            self._pending_bg_color = None
+            self._refresh_requested = True
         self.active_image and self._arrange_image_actors()
+        if self._refresh_requested:
+            self.before_render()
+
+    def request_refresh(self):
+        self._refresh_requested = True
+
+    def enqueue_scene_op(self, func, *args, **kwargs):
+        if self._is_drawing_ui:
+            self._pending_scene_ops.append((func, args, kwargs))
+            self.request_refresh()
+            return
+        func(*args, **kwargs)
+        self.request_refresh()
+
+    def _perform_refresh(self):
+        if self._visualizer_type != "stealth":
+            self._update_tractogram_helper()
+            self._refresh_ui()
+        self._refresh_actors()
+
+    def _perform_refresh_and_render(self):
+        self._perform_refresh()
+        self._refresh_requested = False
+        self._render_window()
+
+    def _render_window(self):
+        if self._is_drawing_ui:
+            return
+        self.window.render()
 
     def _queue_loaded_visualizations(self, loaded_files, *, message="Loading Files..."):
         self._pending_loaded_files.append(loaded_files)
         self._loading_total += 1
         self._loading_done += 1
         self.loader(True, message=message)
+
+    def _flush_pending_sync_requests(self):
+        if not self._pending_sync_requests:
+            return
+        pending = self._pending_sync_requests.copy()
+        self._pending_sync_requests.clear()
+        for source_viz, new_state in pending:
+            self._synchronize_visualizations_from_source(source_viz, new_state)
+        self.active_image and self._arrange_image_actors()
+        self._refresh_requested = True
+
+    def _flush_pending_scene_ops(self):
+        if not self._pending_scene_ops:
+            return
+        pending = self._pending_scene_ops.copy()
+        self._pending_scene_ops.clear()
+        for func, args, kwargs in pending:
+            try:
+                func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"Failed to apply deferred scene operation: {e}")
+        self._refresh_requested = True
 
     def _drain_pending_visualizations(self):
         if self._pending_loaded_files:
@@ -295,11 +364,10 @@ class Skyline:
             self._loading_done = 0
 
     def before_render(self):
-        if self._visualizer_type != "stealth":
-            self._update_tractogram_helper()
-            self._refresh_ui()
-        self._refresh_actors()
-        self.window.render()
+        if self._is_drawing_ui:
+            self.request_refresh()
+            return
+        self._perform_refresh_and_render()
 
     def handle_resize(self, size):
         self.size = size
@@ -310,7 +378,7 @@ class Skyline:
         ]
         self.UI_window.size = (self.ui_size[0], size[1])
         self._update_tractogram_helper(remove=True)
-        self.window.render()
+        self._render_window()
 
     def handle_key_events(self, event):
         for viz in self._tractogram_visualizations:
@@ -338,6 +406,7 @@ class Skyline:
             self._sh_glyph_visualizations.append(viz)
         else:
             raise ValueError("Unsupported visualization type")
+        viz._scene_op_callback = self.enqueue_scene_op
         if self.UI_window is not None:
             self.UI_window.add(viz_id, viz.renderer, viz.viz_type)
 
@@ -357,7 +426,7 @@ class Skyline:
             image3d = create_image_visualization(
                 input,
                 idx,
-                render_callback=self.before_render,
+                render_callback=self.request_refresh,
                 sync_callabck=self._synchronize_visualizations,
                 rgb=self._rgb,
             )
@@ -366,7 +435,7 @@ class Skyline:
             peak3d = create_peak_visualization(
                 input,
                 idx,
-                render_callback=self.before_render,
+                render_callback=self.request_refresh,
                 sync_callabck=self._synchronize_visualizations,
             )
             self._add_visualization(peak3d)
@@ -376,7 +445,7 @@ class Skyline:
                 input,
                 idx,
                 color=color,
-                render_callback=self.before_render,
+                render_callback=self.request_refresh,
             )
             self._add_visualization(roi3d)
         for idx, input in enumerate(surfaces or []):
@@ -388,7 +457,7 @@ class Skyline:
                 color=color,
                 material="basic" if self._glass_brain else "phong",
                 opacity=opacity,
-                render_callback=self.before_render,
+                render_callback=self.request_refresh,
             )
             self._add_visualization(surface3d)
         for idx, input in enumerate(tractograms or []):
@@ -398,7 +467,7 @@ class Skyline:
                 is_cluster=is_cluster if is_cluster is not None else self._is_cluster,
                 thr=self._cluster_thr,
                 line_type="line" if self._is_light_version else "tube",
-                render_callback=self.before_render,
+                render_callback=self.request_refresh,
                 colormap=self._color_gen,
                 tract_colors=self._tract_colors,
                 switch_render_callback=self._update_tractogram_rendering,
@@ -417,7 +486,7 @@ class Skyline:
             sh3d = create_shm_visualization(
                 input,
                 idx,
-                render_callback=self.before_render,
+                render_callback=self.request_refresh,
                 scale=1.0,
                 l_max=8,
                 sync_callback=self._synchronize_visualizations,
@@ -499,14 +568,23 @@ class Skyline:
                 viz.update_state(new_state)
 
     def _synchronize_visualizations(self, source_viz, new_state):
+        if self._is_drawing_ui:
+            self._pending_sync_requests.append((source_viz, new_state))
+            self.request_refresh()
+            return
         self._synchronize_visualizations_from_source(source_viz, new_state)
         self.active_image and self._arrange_image_actors()
-        self.window.render()
+
+    # self.window.render()
 
     def _update_background_color(self, new_color):
+        if self._is_drawing_ui:
+            self._pending_bg_color = new_color
+            self.request_refresh()
+            return
         self._bg_color = new_color
         self.window.screens[0].scene.background = self._bg_color
-        self.window.render()
+        self._render_window()
 
     def _process_tractogram_switches(self):
         if not self._pending_tractogram_switches:
@@ -522,7 +600,10 @@ class Skyline:
 
             if self.UI_window is not None:
                 self.UI_window.remove(viz_id)
-            self.before_render()
+            # Remove the old visualization object immediately so mode switches
+            # replace state instead of coexisting under the same UI id.
+            self._remove_visualization(viz)
+            self.request_refresh()
 
             self._loading_total = 1
             self._loading_done = 0
