@@ -508,6 +508,7 @@ def mppca(
     return_sigma=False,
     out_dtype=None,
     suppress_warning=False,
+    backend="cpu",
 ):
     r"""Performs PCA-based denoising using the Marcenko-Pastur
     distribution.
@@ -539,6 +540,10 @@ def mppca(
         the input.
     suppress_warning : bool, optional
         If true, suppress warning caused by patch_size < arr.shape[-1].
+    backend : {'cpu', 'gpu'}, optional
+        Compute backend. ``'gpu'`` uses WebGPU acceleration via wgpu-py.
+        Requires ``pip install dipy[gpu]``. Falls back to CPU with a warning
+        if GPU is unavailable. Default: ``'cpu'``.
 
     Returns
     -------
@@ -552,6 +557,24 @@ def mppca(
     ----------
     .. footbibliography::
     """
+    if backend not in ("cpu", "gpu"):
+        raise ValueError(f"backend must be 'cpu' or 'gpu', got {backend!r}")
+    if backend == "gpu":
+        if pca_method != "eig":
+            raise ValueError(
+                f"GPU backend only supports pca_method='eig'. "
+                f"Got pca_method={pca_method!r}."
+            )
+        from dipy.denoise._gpu_mppca import mppca_gpu
+
+        return mppca_gpu(
+            arr,
+            mask=mask,
+            patch_radius=patch_radius,
+            return_sigma=return_sigma,
+            out_dtype=out_dtype,
+            suppress_warning=suppress_warning,
+        )
     return genpca(
         arr,
         sigma=None,
