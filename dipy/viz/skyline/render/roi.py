@@ -110,6 +110,11 @@ class ROI3D(Visualization):
             if self.opacity < 100:
                 actor.material.depth_write = False
 
+    def _set_opacity(self, opacity):
+        set_group_opacity(self._roi_surface, opacity / 100.0)
+        for actor in self._roi_surface.children:
+            actor.material.depth_write = opacity >= 100
+
     def _populate_info(self):
         info = f"ROI shape: {self.roi.shape}\nROI dtype: {self.roi.dtype}\n"
         info += f"Total voxels in ROI: {np.sum(self.roi > 0)}\n"
@@ -137,12 +142,7 @@ class ROI3D(Visualization):
         )
         if changed:
             self.opacity = new
-            set_group_opacity(self._roi_surface, self.opacity / 100.0)
-            for actor in self._roi_surface.children:
-                if self.opacity < 100:
-                    actor.material.depth_write = False
-                else:
-                    actor.material.depth_write = True
+            self.apply_scene_op(self._set_opacity, self.opacity)
 
         imgui.spacing()
         color = np.asarray(self.color) * 255
@@ -154,5 +154,5 @@ class ROI3D(Visualization):
         )
         if changed:
             self.color = (new_color[0], new_color[1], new_color[2])
-            self._create_roi_actor()
+            self.apply_scene_op(self._create_roi_actor)
             self.render()
