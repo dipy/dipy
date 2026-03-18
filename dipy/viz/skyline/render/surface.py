@@ -116,6 +116,10 @@ class Surface(Visualization):
         if self.opacity < 100:
             self._surface_actor.material.depth_write = False
 
+    def _set_opacity(self, opacity):
+        self._surface_actor.material.opacity = opacity / 100.0
+        self._surface_actor.material.depth_write = opacity >= 100
+
     def _populate_info(self):
         info = f"No. of vertices: {len(self.vertices)}\nNo. of faces: {len(self.faces)}"
         return info
@@ -137,11 +141,7 @@ class Surface(Visualization):
         )
         if changed:
             self.opacity = new
-            self._surface_actor.material.opacity = self.opacity / 100.0
-            if self.opacity < 100:
-                self._surface_actor.material.depth_write = False
-            else:
-                self._surface_actor.material.depth_write = True
+            self.apply_scene_op(self._set_opacity, self.opacity)
 
         imgui.spacing()
         color = np.asarray(self.color) * 255
@@ -153,5 +153,5 @@ class Surface(Visualization):
         )
         if changed:
             self.color = (new_color[0], new_color[1], new_color[2])
-            self._create_surface_actor()
+            self.apply_scene_op(self._create_surface_actor)
             self.render()
