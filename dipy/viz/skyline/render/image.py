@@ -227,7 +227,7 @@ class Image3D(Visualization):
     def update_state(self, new_state):
         if self._synchronize:
             self.state = new_state[:3]
-            show_slices(self._slicer, self.state)
+            self.apply_scene_op(show_slices, self._slicer, self.state)
             if (
                 len(new_state) == 4
                 and self._has_directions
@@ -236,7 +236,26 @@ class Image3D(Visualization):
                 new_volume_idx = int(new_state[3])
                 if new_volume_idx != self._volume_idx:
                     self._volume_idx = new_volume_idx
-                    self._create_slicer_actor()
+                    self.apply_scene_op(self._create_slicer_actor)
+
+    def _set_opacity(self, opacity):
+        set_group_opacity(self._slicer, opacity / 100.0)
+        if opacity < 100:
+            for actor in self._slicer.children:
+                actor.material.depth_write = False
+                actor.material.alpha_mode = "blend"
+
+    def _set_slice_state(self, visibility, state):
+        set_group_visibility(self._slicer, visibility)
+        show_slices(self._slicer, state)
+
+    def _set_clim(self, value_range):
+        for actor in self._slicer.children:
+            actor.material.clim = value_range
+
+    def _set_interpolation(self, interpolation):
+        for actor in self._slicer.children:
+            actor.material.interpolation = interpolation
 
     def render_widgets(self):
         changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
@@ -249,8 +268,7 @@ class Image3D(Visualization):
             if changed:
                 self.rgb = new
                 self._has_directions = not new
-                self._create_slicer_actor()
-                self.render()
+                self.apply_scene_op(self._create_slicer_actor)
 
         changed, new = thin_slider(
             "Opacity",
@@ -264,11 +282,7 @@ class Image3D(Visualization):
         )
         if changed:
             self.opacity = new
-            set_group_opacity(self._slicer, self.opacity / 100.0)
-            if self.opacity < 100:
-                for actor in self._slicer.children:
-                    actor.material.depth_write = False
-                    actor.material.alpha_mode = "blend"
+            self.apply_scene_op(self._set_opacity, self.opacity)
 
         imgui.spacing()
 
@@ -313,8 +327,11 @@ class Image3D(Visualization):
                         else self.state,
                     )
             self._slice_visibility[idx] = toggle
-        set_group_visibility(self._slicer, self._slice_visibility)
-        show_slices(self._slicer, self.state)
+        self.apply_scene_op(
+            self._set_slice_state,
+            tuple(self._slice_visibility),
+            np.asarray(self.state),
+        )
 
         imgui.spacing()
         volume_for_range = (
@@ -333,8 +350,7 @@ class Image3D(Visualization):
         if intensity_changed:
             self._value_percentiles = new_percentiles
             self.value_range = self._value_range_from_percentile(volume_for_range)
-            for actor in self._slicer.children:
-                actor.material.clim = self.value_range
+            self.apply_scene_op(self._set_clim, self.value_range)
 
         if self._has_directions and not self.rgb:
             imgui.spacing()
@@ -353,14 +369,14 @@ class Image3D(Visualization):
                     self._sync_callabck(
                         self, np.asarray([*self.state, self._volume_idx])
                     )
-                self._create_slicer_actor()
+                self.apply_scene_op(self._create_slicer_actor)
 
         imgui.spacing()
         colormap_changed, new_cmap = dropdown(
             "Colormap", self._colormap_options, self.colormap, height=26
         )
         if colormap_changed:
-            self._apply_colormap(new_cmap)
+            self.apply_scene_op(self._apply_colormap, new_cmap)
 
         imgui.spacing()
 
@@ -391,7 +407,6 @@ class Image3D(Visualization):
         )
         if changed:
             self.interpolation = new
-            for actor in self._slicer.children:
-                actor.material.interpolation = self.interpolation
+            self.apply_scene_op(self._set_interpolation, self.interpolation)
 
         imgui.spacing()
