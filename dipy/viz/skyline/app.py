@@ -112,6 +112,7 @@ class Skyline:
         self._tractogram_visualizations = []
         self._sh_glyph_visualizations = []
         self._pending_loaded_files = []
+        self._pending_tractogram_switches = []
         self._loading_total = 0
         self._loading_done = 0
         self._is_cluster = is_cluster
@@ -236,11 +237,12 @@ class Skyline:
             self._tractogram_help = False
 
     def draw_ui(self):
-        if len(self.visualizations) == 0:
+        if len(self.visualizations) == 0 and self._loading_total == 0:
             self.UI_window.request_file_dialog = True
         else:
             self.UI_window.request_file_dialog = False
         self.UI_window.render()
+        self._process_tractogram_switches()
         self._drain_pending_visualizations()
         self.active_image and self._arrange_image_actors()
 
@@ -260,6 +262,8 @@ class Skyline:
                 loaded_files["surfaces"],
                 loaded_files["tractograms"],
                 loaded_files["shm_coeffs"],
+                is_cluster=loaded_files.get("is_cluster_override"),
+                async_clustering=loaded_files.get("async_clustering_override"),
             )
 
             if self.active_image is not None:
@@ -338,7 +342,16 @@ class Skyline:
             self.UI_window.add(viz_id, viz.renderer, viz.viz_type)
 
     def _load_visualiations(
-        self, images, peaks, rois, surfaces, tractograms, sh_coeffs
+        self,
+        images,
+        peaks,
+        rois,
+        surfaces,
+        tractograms,
+        sh_coeffs,
+        *,
+        is_cluster=None,
+        async_clustering=None,
     ):
         for idx, input in enumerate(images or []):
             image3d = create_image_visualization(
@@ -382,7 +395,7 @@ class Skyline:
             tractogram3d = create_streamline_visualization(
                 input,
                 idx,
-                is_cluster=self._is_cluster,
+                is_cluster=is_cluster if is_cluster is not None else self._is_cluster,
                 thr=self._cluster_thr,
                 line_type="line" if self._is_light_version else "tube",
                 render_callback=self.before_render,
@@ -393,8 +406,11 @@ class Skyline:
                 size_threshold=self._cluster_size_thr,
                 length_threshold=self._cluster_length_thr,
                 buan_pvals_file=self._buan_pvals,
-                async_clustering=self._direct_load
-                and self._visualizer_type != "stealth",
+                async_clustering=(
+                    async_clustering
+                    if async_clustering is not None
+                    else self._direct_load and self._visualizer_type != "stealth"
+                ),
             )
             self._add_visualization(tractogram3d)
         for idx, input in enumerate(sh_coeffs or []):
@@ -492,32 +508,54 @@ class Skyline:
         self.window.screens[0].scene.background = self._bg_color
         self.window.render()
 
+    def _process_tractogram_switches(self):
+        if not self._pending_tractogram_switches:
+            return
+        pending = self._pending_tractogram_switches.copy()
+        self._pending_tractogram_switches.clear()
+        for viz, is_clustered in pending:
+            if viz not in self._tractogram_visualizations:
+                continue
+            viz_id = f"{viz.path}:{viz.name}"
+            sft = viz.sft
+            path = viz.path
+
+            if self.UI_window is not None:
+                self.UI_window.remove(viz_id)
+            self.before_render()
+
+            self._loading_total = 1
+            self._loading_done = 0
+
+            def _delay():
+                pass
+
+            def _on_delay_done(
+                _, exception, _sft=sft, _path=path, _is_clustered=is_clustered
+            ):
+                self._loading_done += 1
+                self._pending_loaded_files.append(
+                    {
+                        "images": [],
+                        "peaks": [],
+                        "rois": [],
+                        "surfaces": [],
+                        "tractograms": [(_sft, _path)],
+                        "shm_coeffs": [],
+                        "is_cluster_override": _is_clustered,
+                        "async_clustering_override": True,
+                    }
+                )
+
+            run_async(_delay, _on_delay_done)
+
     def _update_tractogram_rendering(self, streamline_viz, is_clustered):
-        for idx, viz in enumerate(self._tractogram_visualizations):
+        for viz in self._tractogram_visualizations:
             if viz is streamline_viz and isinstance(
                 viz, (Streamline3D, ClusterStreamline3D)
             ):
-                new_viz = create_streamline_visualization(
-                    (viz.sft, viz.path),
-                    idx,
-                    is_cluster=is_clustered,
-                    thr=self._cluster_thr,
-                    line_type=viz._line_type,
-                    render_callback=self.before_render,
-                    colormap=self._color_gen,
-                    tract_colors=self._tract_colors,
-                    switch_render_callback=self._update_tractogram_rendering,
-                    loader=self.loader,
-                    size_threshold=self._cluster_size_thr,
-                    length_threshold=self._cluster_length_thr,
-                    buan_pvals_file=self._buan_pvals,
-                )
-                self._tractogram_visualizations[idx] = new_viz
-                viz_id = f"{viz.path}:{viz.name}"
-                self.UI_window.sections[viz_id] = (
-                    new_viz.renderer,
-                    new_viz.viz_type,
-                )
+                self._pending_tractogram_switches.append((viz, is_clustered))
+                break
 
     def loader(self, show, *, message=None):
         if self.UI_window is not None:
