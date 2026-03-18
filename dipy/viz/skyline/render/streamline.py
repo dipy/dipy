@@ -347,7 +347,6 @@ class Streamline3D(Visualization):
         if changed:
             if self._switch_render_callback is not None:
                 self._switch_render_callback(self, is_clustered)
-                self.render()
 
         imgui.spacing()
 
@@ -725,7 +724,6 @@ class ClusterStreamline3D(Visualization):
         if changed:
             if self._switch_render_callback is not None:
                 self._switch_render_callback(self, is_clustered)
-                self.render()
 
         imgui.spacing()
 
