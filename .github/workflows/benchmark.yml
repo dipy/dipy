@@ -1,4 +1,5 @@
 ---
+# yamllint disable rule:line-length
 name: Benchmarks
 
 # yamllint disable-line rule:truthy
@@ -112,7 +113,7 @@ jobs:
             </details>
 
             > **Legend:** + regression / - improvement / +-10% = no change
-            > Full logs: ${{ github.run_id }}
+            > [Full logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
       - name: Upload raw results as artifact
         if: always()
@@ -126,7 +127,7 @@ jobs:
 
       - name: Fail if significant regressions detected
         run: |
-          if grep -q "+" /tmp/asv_output.txt; then
+          if grep -qE "^\+\s" /tmp/asv_output.txt; then
             echo "Regressions detected - review benchmark output above."
             exit 1
           fi
