@@ -417,7 +417,7 @@ class Streamline3D(Visualization):
             tooltip="Pick a color for the streamlines.",
         )
         if changed:
-            self._color_picker = (new_color[0], new_color[1], new_color[2])
+            self._color_picker = np.asarray((new_color[0], new_color[1], new_color[2]))
 
             self.color = self._color_picker
             self.apply_scene_op(self._create_streamline_actor)

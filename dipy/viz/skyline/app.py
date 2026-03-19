@@ -463,6 +463,17 @@ class Skyline:
             )
             self._add_visualization(surface3d)
         for idx, input in enumerate(tractograms or []):
+            if isinstance(input, tuple):
+                sft = input[0]
+                filename = f"Streamlines {idx}"
+                if len(input) == 2:
+                    filename = input[1]
+                if len(sft.streamlines) <= 0:
+                    logger.warning(
+                        f"The provide file: {filename} does not "
+                        "contain any streamlines."
+                    )
+                    continue
             tractogram3d = create_streamline_visualization(
                 input,
                 idx,
