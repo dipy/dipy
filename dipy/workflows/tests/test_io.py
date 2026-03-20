@@ -148,7 +148,7 @@ def test_io_fetch_list_outputs_table(caplog, monkeypatch):
         staticmethod(lambda: {"foo": _fetch_foo, "bar": _fetch_bar}),
     )
 
-    with caplog.at_level(logging.INFO):
+    with caplog.at_level(logging.INFO, logger="dipy"):
         fetch_flow.run(["list"])
 
     table_lines = [

@@ -1,6 +1,5 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import warnings
 
 import numpy as np
 import numpy.testing as npt
@@ -12,11 +11,9 @@ from dipy.direction.peaks import PeaksAndMetrics
 from dipy.io.image import load_nifti
 from dipy.io.peaks import (
     load_pam,
-    load_peaks,
     niftis_to_pam,
     pam_to_niftis,
     save_pam,
-    save_peaks,
     tensor_to_pam,
 )
 import dipy.reconst.dti as dti
@@ -218,19 +215,3 @@ def test_tensor_to_pam():
         npt.assert_array_equal(pam.peak_dirs, pam2.peak_dirs)
         npt.assert_array_almost_equal(pam.peak_indices, pam2.peak_indices)
         del pam
-
-
-@set_random_number_generator()
-def test_io_peaks_deprecated(rng):
-    with TemporaryDirectory() as tmpdir:
-        with warnings.catch_warnings(record=True) as cw:
-            warnings.simplefilter("always", DeprecationWarning)
-            fname = Path(tmpdir) / "test_tt.pam5"
-            pam = generate_default_pam(rng)
-            save_peaks(fname, pam)
-            pam2 = load_peaks(fname, verbose=True)
-            npt.assert_array_equal(pam.peak_dirs, pam2.peak_dirs)
-            noisyWarnings = [w for w in cw if "h5py" not in w.filename and "scipy" not in w.filename]
-            npt.assert_equal(len(noisyWarnings), 2)
-            npt.assert_(issubclass(cw[0].category, DeprecationWarning))
-            npt.assert_(issubclass(cw[1].category, DeprecationWarning))

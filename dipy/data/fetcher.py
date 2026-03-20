@@ -473,7 +473,7 @@ def _make_fetcher(
     use_headers : bool, optional
         Whether to use headers when downloading files.
 
-    returns
+    Returns
     -------
     fetcher : function
         A function that, when called, fetches data according to the designated
@@ -548,13 +548,13 @@ fetch_stanford_labels = _make_fetcher(
 fetch_sherbrooke_3shell = _make_fetcher(
     "fetch_sherbrooke_3shell",
     dipy_home / "sherbrooke_3shell",
-    UW_RW_URL + "1773/38475/",
+    DIPY_MIRROR_URL + "researchworks/bitstream/handle/1773/38475/",
     ["HARDI193.nii.gz", "HARDI193.bval", "HARDI193.bvec"],
     [Path("HARDI193.nii.gz"), Path("HARDI193.bval"), Path("HARDI193.bvec")],
     md5_list=[
         "0b735e8f16695a37bfbd66aab136eb66",
         "e9b9bb56252503ea49d31fb30a0ac637",
-        "0c83f7e8b917cd677ad58a078658ebb7",
+        "72818d139f803f19ddb032cd011d452f",
     ],
     doc="Download a 3shell HARDI dataset with 192 gradient direction",
 )
@@ -803,6 +803,32 @@ fetch_mni_template = _make_fetcher(
     ],
     doc="fetch the MNI 2009a T1 and T2, and 2009c T1 and T1 mask files",
     data_size="70MB",
+)
+
+fetch_buan_bundle_profiles = _make_fetcher(
+    "fetch_buan_bundle_profiles",
+    dipy_home / "buan_bundle_profiles",
+    "https://ndownloader.figshare.com/files/",
+    [
+        "61064704",
+        "61064707",
+        "61064710",
+        "61064713",
+    ],
+    [
+        Path("AF_L_recognized_orig.trk"),
+        Path("AF_L_recognized.trk"),
+        Path("AF_L.trk"),
+        Path("fa.nii.gz"),
+    ],
+    md5_list=[
+        "17181c2cbbf517918a2c9a4f3a6934e1",
+        "bde75f00359273520193a23cd6100c09",
+        "4079e761c567d678f49303beda61ab22",
+        "e113da515c0d44f4aea015915b4260f2",
+    ],
+    doc="Download BUAN bundle profiles tutorial dataset.",
+    data_size="15.5MB",
 )
 
 fetch_scil_b0 = _make_fetcher(
@@ -2214,6 +2240,13 @@ def get_fnames(*, name="small_64D", include_optional=False):
         local_fetcher = globals().get(f"fetch_{name}_dataset")
         files, folder = local_fetcher(include_optional=include_optional)
         return [Path(folder) / f for f in files]
+    if name == "buan_bundle_profiles":
+        _, folder = fetch_buan_bundle_profiles()
+        af_orig = Path(folder) / "AF_L_recognized_orig.trk"
+        af_mni = Path(folder) / "AF_L_recognized.trk"
+        af_model = Path(folder) / "AF_L.trk"
+        fa = Path(folder) / "fa.nii.gz"
+        return af_orig, af_mni, af_model, fa
 
 
 def read_qtdMRI_test_retest_2subjects():

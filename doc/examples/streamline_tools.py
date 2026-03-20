@@ -201,8 +201,9 @@ M[:, :3] = 0
 # We can now display this matrix using matplotlib. We display it using a log
 # scale to make small values in the matrix easier to see.
 
-plt.imshow(np.log1p(M), interpolation="nearest")
-plt.savefig("connectivity.png")
+fig, ax = plt.subplots()
+ax.imshow(np.log1p(M), interpolation="nearest")
+fig.savefig("connectivity.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

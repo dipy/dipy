@@ -13,7 +13,6 @@ from dipy.nn.utils import (
 )
 from dipy.segment.utils import remove_holes_and_islands
 from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
-from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -92,6 +91,26 @@ def prepare_img(image):
 
 
 class Block(Layer):
+    """Building block for the EVAC+ model.
+
+    Parameters
+    ----------
+    out_channels : int
+        Number of output channels.
+    kernel_size : int
+        Size of the convolutional kernel.
+    strides : int
+        Stride of the convolution.
+    padding : str
+        Padding for the convolution ('same' or 'valid').
+    drop_r : float
+        Dropout rate.
+    n_layers : int
+        Number of convolutional layers in the block.
+    layer_type : str, optional
+        Type of the block: 'down' or 'up'.
+    """
+
     @warning_for_keywords()
     def __init__(
         self,
@@ -126,6 +145,22 @@ class Block(Layer):
         self.add = Add()
 
     def call(self, input, passed):
+        """Forward pass of the Block.
+
+        Parameters
+        ----------
+        input : tf.Tensor
+            Input tensor.
+        passed : tf.Tensor
+            Tensor from skipped connection.
+
+        Returns
+        -------
+        fwd : tf.Tensor
+            Output of the convolutional layers after adding the passed tensor.
+        x : tf.Tensor
+            Output of the downsampling or upsampling layer.
+        """
         x = input
         for layer in self.layer_list:
             x = layer(x)
@@ -141,10 +176,24 @@ class Block(Layer):
 
 
 class ChannelSum(Layer):
+    """Layer to sum over the channel dimension."""
+
     def __init__(self):
         super(ChannelSum, self).__init__()
 
     def call(self, inputs):
+        """Forward pass of the ChannelSum layer.
+
+        Parameters
+        ----------
+        inputs : tf.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        tf.Tensor
+            Summed tensor over the channel dimension.
+        """
         return tf.reduce_sum(inputs, axis=-1, keepdims=True)
 
 
@@ -362,9 +411,6 @@ class EVACPlus:
         """
         return self.model.predict(x_test)
 
-    @deprecated_params(
-        "largest_area", new_name="finalize_mask", since="1.10", until="1.12"
-    )
     def predict(
         self,
         T1,

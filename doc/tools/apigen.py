@@ -292,6 +292,9 @@ class ApiDocWriter:
             classes = []
             constants = []
             for obj_str in obj_strs:
+                # Apply object_skip_patterns (same as the .py AST path above)
+                if pat.search(obj_str):
+                    continue
                 # find the actual object from its string representation
                 if obj_str not in mod.__dict__:
                     continue
@@ -390,7 +393,7 @@ class ApiDocWriter:
             body += f"\n:class:`{c}`\n{self.rst_section_levels[3] * (len(c) + 9)}\n\n"
             body += "\n.. autoclass:: " + c + "\n"
             # must NOT exclude from index to keep cross-refs working
-            body += "  :members:\n" "  :undoc-members:\n" "  :show-inheritance:\n" "\n"
+            body += "  :members:\n" "  :show-inheritance:\n" "\n"
         head += ".. autosummary::\n\n"
         for f in constants + classes + functions:
             head += "   " + f + "\n"

@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+import sys
 from time import time
 import warnings
 
@@ -10,12 +11,17 @@ from scipy.ndimage import binary_dilation
 from dipy.core.gradients import gradient_table
 from dipy.io import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
-from dipy.io.peaks import load_peaks
+from dipy.io.peaks import load_pam
 from dipy.io.streamline import load_tractogram
 from dipy.reconst.dti import TensorModel
 from dipy.segment.bundles import bundle_shape_similarity
 from dipy.segment.mask import bounding_box, segment_from_cfa
-from dipy.stats.analysis import anatomical_measures, assignment_map, peak_values
+from dipy.stats.analysis import (
+    anatomical_measures,
+    assignment_map,
+    buan_profile,
+    peak_values,
+)
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.logging import logger
@@ -217,6 +223,16 @@ def buan_bundle_profiles(
     out_dir : string or Path, optional
         Output directory.
 
+    Notes
+    -----
+    This function uses :func:`~dipy.stats.analysis.anatomical_measures` to
+    store per-point metric values in HDF5 files, which are suitable for
+    downstream linear mixed model (LMM) analysis across a group of subjects.
+    This is intentionally different from :func:`~dipy.stats.analysis.buan_profile`,
+    which computes inverse-distance-weighted along-tract profiles for a single
+    subject and returns a ``numpy`` array. Use ``buan_bundle_profiles`` for
+    group studies and ``buan_profile`` for single-subject analysis.
+
     References
     ----------
     .. footbibliography::
@@ -225,17 +241,15 @@ def buan_bundle_profiles(
 
     t = time()
 
-    mb = list(Path(model_bundle_folder).glob("*.trk"))
+    _mb_folder = Path(model_bundle_folder)
+    mb = sorted(list(_mb_folder.glob("*.trk")) + list(_mb_folder.glob("*.trx")))
     logger.info(mb)
 
-    mb.sort()
-
-    bd = list(Path(bundle_folder).glob("*.trk"))
-
-    bd.sort()
+    _bd_folder = Path(bundle_folder)
+    bd = sorted(list(_bd_folder.glob("*.trk")) + list(_bd_folder.glob("*.trx")))
     logger.info(bd)
-    org_bd = list(Path(orig_bundle_folder).glob("*.trk"))
-    org_bd.sort()
+    _org_folder = Path(orig_bundle_folder)
+    org_bd = sorted(list(_org_folder.glob("*.trk")) + list(_org_folder.glob("*.trx")))
     logger.info(org_bd)
     n = len(mb)
 
@@ -251,7 +265,7 @@ def buan_bundle_profiles(
         ).streamlines
 
         if len(orig_bundles) > 5:
-            indx = assignment_map(bundles, mbundles, no_disks)
+            _, indx = assignment_map(bundles, mbundles, no_disks)
             ind = np.array(indx)
 
             metric_files_names_dti = list(Path(metric_folder).glob("*.nii.gz"))
@@ -298,7 +312,7 @@ def buan_bundle_profiles(
                 logger.info(f"bm = {bm}")
                 logger.info(f"metric = {metric_files_names_csa[mn]}")
                 dt = {}
-                metric = load_peaks(metric_files_names_csa[mn])
+                metric = load_pam(metric_files_names_csa[mn])
 
                 peak_values(
                     transformed_orig_bundles,
@@ -321,11 +335,34 @@ class BundleAnalysisTractometryFlow(Workflow):
         return "ba"
 
     @warning_for_keywords()
-    def run(self, model_bundle_folder, subject_folder, *, no_disks=100, out_dir=""):
+    def run(
+        self,
+        model_bundle_folder,
+        subject_folder,
+        *,
+        bundle_folder=None,
+        orig_bundle_folder=None,
+        metric_folder=None,
+        no_disks=100,
+        out_dir="",
+    ):
         """Workflow of bundle analytics.
 
         Applies statistical analysis on bundles of subjects and saves the
         results in a directory specified by ``out_dir``.
+
+        Supports two modes auto-detected from the directory structure:
+
+        - **Group mode**: ``subject_folder`` contains ``patient/`` and
+          ``control/`` subdirectories, each with per-subject subdirectories
+          containing ``rec_bundles/``, ``org_bundles/``, and
+          ``anatomical_measures/``. Outputs HDF5 files suitable for linear
+          mixed model analysis.
+        - **Single-subject mode**: ``subject_folder`` directly contains
+          ``rec_bundles/``, ``org_bundles/``, and ``anatomical_measures/``
+          (or the paths are overridden via ``bundle_folder``,
+          ``orig_bundle_folder``, and ``metric_folder``). Outputs ``.npy``
+          profile arrays (one per bundle/metric pair).
 
         See :footcite:p:`Chandio2020a` for further details about the method.
 
@@ -335,8 +372,22 @@ class BundleAnalysisTractometryFlow(Workflow):
             Path to the input model bundle files. This path may
             contain wildcards to process multiple inputs at once.
         subject_folder : string or Path
-            Path to the input subject folder. This path may contain
-            wildcards to process multiple inputs at once.
+            Path to the subject folder. Either a group-level directory
+            (containing ``patient/`` and ``control/`` subdirs) or a
+            single-subject directory (directly containing ``rec_bundles/``,
+            ``org_bundles/``, and ``anatomical_measures/``).
+        bundle_folder : string or Path, optional
+            Override path for the registered bundles in common space
+            (replaces ``<subject_folder>/rec_bundles``). Only used in
+            single-subject mode.
+        orig_bundle_folder : string or Path, optional
+            Override path for the bundles in native space (replaces
+            ``<subject_folder>/org_bundles``). Only used in single-subject
+            mode.
+        metric_folder : string or Path, optional
+            Override path for the metric files (replaces
+            ``<subject_folder>/anatomical_measures``). Only used in
+            single-subject mode.
         no_disks : integer, optional
             Number of disks used for dividing bundle into disks.
         out_dir : string or Path, optional
@@ -347,14 +398,45 @@ class BundleAnalysisTractometryFlow(Workflow):
         .. footbibliography::
 
         """
-
-        if not Path(subject_folder).is_dir():
+        subject_path = Path(subject_folder)
+        if not subject_path.is_dir():
             raise ValueError("Invalid path to subjects")
 
-        groups = [p.name for p in Path(subject_folder).iterdir()]
+        has_overrides = any(
+            p is not None for p in (bundle_folder, orig_bundle_folder, metric_folder)
+        )
+        if has_overrides or (subject_path / "rec_bundles").is_dir():
+            self._run_single_subject(
+                model_bundle_folder,
+                subject_path,
+                no_disks,
+                out_dir,
+                bundle_folder=bundle_folder,
+                orig_bundle_folder=orig_bundle_folder,
+                metric_folder=metric_folder,
+            )
+        else:
+            self._run_group(model_bundle_folder, subject_path, no_disks, out_dir)
+
+    def _run_group(self, model_bundle_folder, subject_path, no_disks, out_dir):
+        """Run group-mode tractometry (patient/control subdirectory structure).
+
+        Parameters
+        ----------
+        model_bundle_folder : string or Path
+            Path to the input model bundle files.
+        subject_path : Path
+            Path object pointing to the group-level subject folder.
+        no_disks : integer
+            Number of disks used for dividing bundle into disks.
+        out_dir : string or Path
+            Output directory.
+
+        """
+        groups = [p.name for p in subject_path.iterdir()]
         groups.sort()
         for group in groups:
-            group_dirname = Path(subject_folder) / group
+            group_dirname = subject_path / group
             if group_dirname.is_dir():
                 logger.info(f"group = {group}")
                 all_subjects = os.listdir(group_dirname)
@@ -385,6 +467,115 @@ class BundleAnalysisTractometryFlow(Workflow):
                     no_disks=no_disks,
                     out_dir=out_dir,
                 )
+
+    def _run_single_subject(
+        self,
+        model_bundle_folder,
+        subject_path,
+        no_disks,
+        out_dir,
+        *,
+        bundle_folder=None,
+        orig_bundle_folder=None,
+        metric_folder=None,
+    ):
+        """Run single-subject tractometry saving ``.npy`` profile arrays.
+
+        Parameters
+        ----------
+        model_bundle_folder : string or Path
+            Path to the input model bundle files.
+        subject_path : Path
+            Path object pointing to the single-subject directory.
+        no_disks : integer
+            Number of disks used for dividing bundle into disks.
+        out_dir : string or Path
+            Output directory.
+        bundle_folder : string or Path, optional
+            Path to the registered bundles in common space. Defaults to
+            ``<subject_path>/rec_bundles``.
+        orig_bundle_folder : string or Path, optional
+            Path to the bundles in native space. Defaults to
+            ``<subject_path>/org_bundles``.
+        metric_folder : string or Path, optional
+            Path to the metric files. Defaults to
+            ``<subject_path>/anatomical_measures``.
+
+        """
+        bundle_folder = (
+            Path(bundle_folder)
+            if bundle_folder is not None
+            else subject_path / "rec_bundles"
+        )
+        orig_bundle_folder = (
+            Path(orig_bundle_folder)
+            if orig_bundle_folder is not None
+            else subject_path / "org_bundles"
+        )
+        metric_folder = (
+            Path(metric_folder)
+            if metric_folder is not None
+            else subject_path / "anatomical_measures"
+        )
+
+        _mb_folder = Path(model_bundle_folder)
+        mb_list = sorted(
+            list(_mb_folder.glob("*.trk")) + list(_mb_folder.glob("*.trx"))
+        )
+        if not mb_list:
+            logger.info("No model bundle files found in the specified folder")
+            sys.exit(1)
+
+        bd_list = sorted(
+            list(bundle_folder.glob("*.trk")) + list(bundle_folder.glob("*.trx"))
+        )
+        if not bd_list:
+            logger.info("No registered bundle files found in the specified folder")
+            sys.exit(1)
+        org_list = sorted(
+            list(orig_bundle_folder.glob("*.trk"))
+            + list(orig_bundle_folder.glob("*.trx"))
+        )
+        if not org_list:
+            logger.info("No original bundle files found in the specified folder")
+            sys.exit(1)
+        metric_files = sorted(metric_folder.glob("*.nii.gz"))
+
+        Path(out_dir).mkdir(parents=True, exist_ok=True)
+
+        for mb_file, bd_file, org_file in zip(mb_list, bd_list, org_list):
+            mbundles = load_tractogram(
+                mb_file, reference="same", bbox_valid_check=False
+            ).streamlines
+            bundles = load_tractogram(
+                bd_file, reference="same", bbox_valid_check=False
+            ).streamlines
+            orig_bundles = load_tractogram(
+                org_file, reference="same", bbox_valid_check=False
+            ).streamlines
+
+            if len(orig_bundles) <= 5:
+                continue
+
+            bname = Path(mb_file).stem
+            for metric_file in metric_files:
+                metric, affine = load_nifti(metric_file)
+                fname = Path(metric_file).stem.replace(".nii", "")
+                logger.info(f"Applying metric {metric_file} on bundle {bname}")
+                if metric.ndim > 3:
+                    logger.info(
+                        f"Skipping metric {metric_file} with 4D shape {metric.shape}"
+                    )
+                    continue
+                profile = buan_profile(
+                    mbundles,
+                    bundles,
+                    orig_bundles,
+                    metric,
+                    affine,
+                    no_disks=no_disks,
+                )
+                np.save(Path(out_dir) / f"{bname}_{fname}_profile.npy", profile)
 
 
 class LinearMixedModelsFlow(Workflow):
@@ -528,7 +719,7 @@ class LinearMixedModelsFlow(Workflow):
 
                 mdf = md.fit()
 
-                pvalues[i] = mdf.pvalues[1]
+                pvalues[i] = mdf.pvalues["group"]
 
             x = list(range(1, len(pvalues) + 1))
             y = -1 * np.log10(pvalues)

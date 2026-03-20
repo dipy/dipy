@@ -1,2 +1,1 @@
-# init for nn aka the deep neural network module
-
+# init for nn aka the deep neural network module that uses PyTorch

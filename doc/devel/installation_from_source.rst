@@ -169,6 +169,8 @@ Make sure you have Xcode_ and Anaconda_ installed.
 
 From here follow the :ref:`install-source-nix` instructions.
 
+.. _openmp-macos:
+
 OpenMP with macOS
 -----------------
 OpenMP_ is a standard library for efficient multithreaded applications. This
@@ -215,6 +217,25 @@ Building and installing
 Whether you are using Anaconda_ or Homebrew/python.org Python, you will need to then
 run ``pip install dipy``. When you do that, it should now
 compile the code with this OpenMP-enabled compiler, and things should go faster!
+
+Troubleshooting: ImportError on macOS with PyPI wheels
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you installed DIPY via PyPI (``pip install dipy``) on macOS and encounter
+an ``ImportError`` like this::
+
+    ImportError: dlopen(.../bundlemin.cpython-312-darwin.so, 0x0002):
+    symbol not found in flat namespace '___kmpc_barrier'
+
+This is a known OpenMP linking issue with pre-built PyPI wheels on macOS
+(see `GitHub issue #3637 <https://github.com/dipy/dipy/issues/3637>`__).
+macOS does not include OpenMP support by default, causing dynamic linking
+failures for modules that use multithreading (e.g., ``dipy.align``).
+
+**Solution**: Install DIPY from source with OpenMP enabled, following the
+instructions above in the :ref:`openmp-macos` section.
+Building from source compiles DIPY against your local OpenMP installation,
+ensuring symbols like ``___kmpc_barrier`` are correctly linked.
 
 Setting up pre-commit (optional but recommended)
 =================================================

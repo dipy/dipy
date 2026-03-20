@@ -89,6 +89,12 @@ class SimilarityMetric:
         ----------
         static_image : array, shape (R, C) or (S, R, C)
             the static image
+        static_affine : array, shape (dim+1, dim+1)
+            affine mapping from voxel indices to world coordinates
+        static_spacing : tuple or array, length dim
+            voxel spacing along each dimension
+        static_direction : array, shape (dim, dim)
+            direction cosine matrix describing image orientation
         """
         self.static_image = static_image
         self.static_affine = static_affine
@@ -103,7 +109,7 @@ class SimilarityMetric:
         (as the transformation of an original static image). This method is
         called by the optimizer just after it sets the static image.
         Transformation will be an instance of DiffeomorphicMap or None
-        if the original_static_image equals self.moving_image.
+        if the original_static_image equals self.static_image.
 
         Parameters
         ----------
@@ -128,6 +134,12 @@ class SimilarityMetric:
         ----------
         moving_image : array, shape (R, C) or (S, R, C)
             the moving image
+        moving_affine : array, shape (dim+1, dim+1)
+            affine mapping from voxel indices to world coordinates
+        moving_spacing : tuple or array, length dim
+            voxel spacing along each dimension
+        moving_direction : array, shape (dim, dim)
+            direction cosine matrix describing image orientation
         """
         self.moving_image = moving_image
         self.moving_affine = moving_affine
@@ -138,9 +150,9 @@ class SimilarityMetric:
         r"""This is called by the optimizer just after setting the moving image
 
         This method allows the metric to compute any useful
-        information from knowing how the current static image was generated
-        (as the transformation of an original static image). This method is
-        called by the optimizer just after it sets the static image.
+        information from knowing how the current moving image was generated
+        (as the transformation of an original moving image). This method is
+        called by the optimizer just after it sets the moving image.
         Transformation will be an instance of DiffeomorphicMap or None if
         the original_moving_image equals self.moving_image.
 
@@ -177,7 +189,7 @@ class SimilarityMetric:
 
     @abc.abstractmethod
     def compute_forward(self):
-        r"""Computes one step bringing the reference image towards the static.
+        r"""Computes one step bringing the moving image towards the static.
 
         Computes the forward update field to register the moving image towards
         the static image in a gradient-based optimization algorithm
@@ -193,10 +205,11 @@ class SimilarityMetric:
 
     @abc.abstractmethod
     def get_energy(self):
-        r"""Numerical value assigned by this metric to the current image pair
+        r"""Return the scalar energy for the current static/moving image pair.
 
-        Must return the numeric value of the similarity between the given
-        static and moving images
+        Called by the optimizer to evaluate how well the current warped moving
+        image matches the current static image. Lower energy is typically
+        considered better (optimizer minimizes).
         """
 
 

@@ -13,7 +13,7 @@ from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import Streamlines, length, unlist_streamlines
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
-from dipy.viz.plotting import bundle_shape_profile
+from dipy.viz.plotting import bundle_profile_plot
 
 pd, have_pd, _ = optional_package("pandas")
 
@@ -285,16 +285,8 @@ def bundlewarp_shape_analysis(
         moving_aligned, deformed_bundle
     )
 
-    indx = assignment_map(deformed_bundle, deformed_bundle, n)
+    _, indx = assignment_map(deformed_bundle, deformed_bundle, n)
     indx = np.array(indx)
-
-    rng = np.random.default_rng()
-
-    colors = rng.random((n, 3))
-
-    disks_color = []
-    for _, ind in enumerate(indx):
-        disks_color.append(tuple(colors[ind]))
 
     x = np.array(range(1, n + 1))
     shape_profile = np.zeros(n)
@@ -310,6 +302,12 @@ def bundlewarp_shape_analysis(
             stdv[i] = np.nan
 
     if plotting:
-        bundle_shape_profile(x, shape_profile, stdv)
+        bundle_profile_plot(
+            x,
+            shape_profile,
+            ylabel="Average Displacement",
+            title="Bundle Shape Profile",
+            std=stdv,
+        )
 
     return shape_profile, stdv

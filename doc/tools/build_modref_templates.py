@@ -76,6 +76,7 @@ if __name__ == '__main__':
     docwriter.object_skip_patterns += [
         r'.*FetcherError.*$',
         r'.*urlopen.*',
+        r'\bwarn\b',
         r'.*add_callback.*',
         r'.*Logger.*',
         r'.*logger.*',

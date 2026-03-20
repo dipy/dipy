@@ -187,7 +187,7 @@ class CosineMetric(Metric):
         def norm(x):
             return np.sqrt(np.sum(x**2))
 
-        cos_theta = np.dot(v1, v2.T) / (norm(v1) * norm(v2))
+        cos_theta = np.dot(v1.flatten(), v2.flatten()) / (norm(v1) * norm(v2))
 
         # Make sure it's in [-1, 1], i.e. within domain of arccosine
         cos_theta = np.minimum(cos_theta, 1.0)
