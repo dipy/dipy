@@ -87,10 +87,10 @@ Practical
 
 1. **Why Python and not MATLAB or some other language?**
 
-  Python is free, batteries-included, very well-designed, painless to read
-  and easy to use.
-  There is nothing else like it. Give it a go.
-  Once with Python, always with Python.
+  Python is free, batteries-included, well-designed, and easy to read and use.
+  It offers a rich ecosystem of libraries for scientific computing.
+
+  Give it a try—once you start using Python, it becomes a powerful and flexible tool for many applications.
 
 2. **Isn't Python slow?**
 
@@ -110,14 +110,14 @@ Practical
 
   For 3D visualization, we use ``dipy.viz`` which depends in turn on ``FURY``::
 
-    from dipy.viz import window, actor
+  from dipy.viz import window, actor
 
   For 2D visualization we use matplotlib_.
 
 4. **Which file formats do you support?**
 
   Nifti (.nii), Dicom (Siemens(read-only)), Trackvis (.trk), DIPY (.dpy), Mrtrix (.tck),
-  TRX community file (.trx), Numpy (.npy, ,npz), text and any other formats supported
+  TRX community file (.trx), Numpy (.npy, .npz), text and any other formats supported
   by nibabel and pydicom.
 
   You can also read/save in Matlab version v4 (Level 1.0), v6 and v7 to 7.2,
@@ -136,7 +136,7 @@ Practical
 
 6. **Which python editor should I use?**
 
-  Any text editor would do the job but we prefer the following: PyCharm, Sublime, Aptana, Emacs, Vim and Eclipse (with PyDev).
+  Any text editor can be used, but we recommend the following: PyCharm, Sublime, Aptana, Emacs, Vim and Eclipse (with PyDev).
 
 7. **I have problems reading my dicom files using nibabel, what should I do?**
 
@@ -148,8 +148,8 @@ Practical
 
 8. **Where can I find diffusion data?**
 
-  There are many sources for openly available diffusion MRI. the :mod:`dipy.data` module can be used to download some sample datasets that we use in our examples. In addition there are a lot of large research-grade datasets available through the following sources:
-
+  There are many sources for openly available diffusion MRI data. The :mod:`dipy.data` module can be used to download some sample datasets used in our examples.
+  For more datasets, you can check out the following repositories:
     - https://fcon_1000.projects.nitrc.org/
     - https://www.humanconnectome.org/
     - https://openneuro.org/
