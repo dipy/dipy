@@ -1,4 +1,8 @@
-"""Benchmarks for ``dipy.segment`` module."""
+"""Benchmarks for DIPY segmentation algorithms.
+
+Covers clustering, masking and related routines.
+Run with: asv run --config benchmarks/asv.conf.json
+"""
 
 import numpy as np
 
@@ -12,15 +16,18 @@ from dipy.tracking.streamline import Streamlines, set_number_of_points
 
 class BenchMask:
     def setup(self):
+        # Create dense volume (all voxels non-zero) and sparse volume (only one voxel non-zero)
         self.dense_vol = np.zeros((100, 100, 100))
         self.dense_vol[:] = 10
         self.sparse_vol = np.zeros((100, 100, 100))
         self.sparse_vol[0, 0, 0] = 1
 
     def time_bounding_box_sparse(self):
+        # Benchmark bounding box calculation on sparse volume
         bounding_box(self.sparse_vol)
 
     def time_bounding_box_dense(self):
+        # Benchmark bounding box calculation on dense volume
         bounding_box(self.dense_vol)
 
 
@@ -45,7 +52,7 @@ class BenchQuickbundles:
         )
 
         # Create eight copies of the fornix to be clustered (one in
-        # each octant).
+        # each octant). This simulates 8 distinct clusters.
         self.streamlines = []
         self.streamlines += [
             s + np.array([100, 100, 100], dtype) for s in fornix_streamlines
@@ -73,6 +80,7 @@ class BenchQuickbundles:
         ]
 
         class MDFpy(Metric):
+            # Custom distance metric for streamline clustering
             def are_compatible(self, shape1, shape2):
                 return shape1 == shape2
 
@@ -84,10 +92,12 @@ class BenchQuickbundles:
         self.custom_metric = MDFpy()
 
     def time_quickbundles(self):
+        # Benchmark QuickBundles clustering without custom metric
         qb2 = QB_New(self.basic_parameters.get("threshold", 10))
         _ = qb2.cluster(self.streamlines)
 
     def time_quickbundles_metric(self):
+        # Benchmark QuickBundles clustering with custom distance metric
         qb = QB_New(
             self.basic_parameters.get("threshold", 10), metric=self.custom_metric
         )

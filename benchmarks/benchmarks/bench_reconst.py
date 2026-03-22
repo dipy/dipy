@@ -1,4 +1,8 @@
-"""Benchmarks for``dipy.reconst`` module."""
+"""Benchmarks for DIPY reconstruction algorithms.
+
+Covers DTI, CSD and related fitting routines.
+Run with: asv run --config benchmarks/asv.conf.json
+"""
 
 import numpy as np
 
@@ -10,20 +14,24 @@ from dipy.reconst.vec_val_sum import vec_val_vect
 
 class BenchRecSpeed:
     def setup(self):
+        # Get sphere vertices and faces for ODF representation
         vertices, faces = default_sphere.vertices, default_sphere.faces
         self.edges = unique_edges(faces)
+        # Create a test ODF (Orientation Distribution Function) with peaks at specific indices
         self.odf = np.zeros(len(vertices))
         self.odf[1] = 1.0
         self.odf[143] = 143.0
         self.odf[305] = 305.0
 
     def time_local_maxima(self):
+        # Benchmark finding local maxima in ODF using sphere edges
         local_maxima(self.odf, self.edges)
 
 
 class BenchVecValSum:
     def setup(self):
         def make_vecs_vals(shape):
+            # Generate random eigenvectors and eigenvalues for testing
             return (
                 np.random.randn(*shape),
                 np.random.randn(*(shape[:-2] + shape[-1:])),
@@ -33,6 +41,7 @@ class BenchVecValSum:
         self.evecs, self.evals = make_vecs_vals(shape)
 
     def time_vec_val_vect(self):
+        # Benchmark vector-value multiplication operation
         vec_val_vect(self.evecs, self.evals)
 
 
