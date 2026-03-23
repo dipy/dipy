@@ -244,3 +244,23 @@ def test_coordinate_consistency():
 
     assert isinstance(denoised_image, np.ndarray)
     assert denoised_image.dtype == np.float64 or denoised_image.dtype == np.float32
+
+
+def test_nlmeans_sigma_3d_volume():
+    """Regression test: nlmeans should accept a 3D sigma volume (e.g. from PIESNO)."""
+    np.random.seed(42)
+    arr = np.random.normal(100, 10, size=(10, 10, 10, 5)).astype(np.float64)
+    # 3D sigma — one value per spatial voxel, as PIESNO would produce per slice
+    sigma = np.ones(arr.shape[:3]) * 10.0
+    # This should NOT raise a ValueError
+    result = nlmeans(arr, sigma=sigma)
+    assert result.shape == arr.shape
+
+
+def test_nlmeans_3d_sigma():
+    """Regression test: nlmeans should accept 3D sigma volume from PIESNO."""
+    np.random.seed(42)
+    arr = np.random.normal(100, 10, size=(10, 10, 10, 5)).astype(np.float64)
+    sigma = np.ones(arr.shape[:3]) * 10.0
+    result = nlmeans(arr, sigma=sigma)
+    assert result.shape == arr.shape

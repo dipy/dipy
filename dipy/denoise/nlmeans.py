@@ -139,13 +139,23 @@ def nlmeans(
                         f"shape {sigma.shape}"
                     )
         elif arr.ndim == 4:
-            if sigma.ndim != 1:
-                raise ValueError("sigma should be a 1D array for 4D data", sigma)
-            if sigma.shape[0] != arr.shape[-1]:
+            if sigma.ndim == 1:
+                if sigma.shape[0] not in [1, arr.shape[-1]]:
+                    raise ValueError(
+                        "sigma should have length 1 or the same length as "
+                        "the last dimension of arr for 4D data",
+                        sigma,
+                    )
+            elif sigma.ndim == 3:
+                if sigma.shape != arr.shape[:3]:
+                    raise ValueError(
+                        "3D sigma should have the same shape as the first "
+                        "3 dimensions of arr",
+                        sigma,
+                    )
+            else:
                 raise ValueError(
-                    "sigma should have the same length as the last "
-                    "dimension of arr for 4D data",
-                    sigma,
+                    "sigma should be a 1D or 3D array for 4D data", sigma
                 )
     else:
         if not isinstance(sigma, Number):
@@ -196,12 +206,33 @@ def nlmeans(
         for i in range(arr.shape[-1]):
             if method == "classic":
                 if isinstance(sigma, np.ndarray):
-                    sigma_vol = np.full(arr[..., i].shape, sigma[i], dtype="f8")
+                    if sigma.ndim == 1:
+                        sigma_val = sigma[i] if sigma.shape[0] == arr.shape[-1] else sigma[0]
+                        sigma_vol = np.full(arr[..., i].shape, sigma_val, dtype="f8")
+                    elif sigma.ndim == 3:
+                        sigma_vol = np.ascontiguousarray(sigma, dtype="f8")
+                    elif sigma.ndim == 0:
+                        sigma_vol = np.full(arr[..., i].shape, float(sigma), dtype="f8")
+                    else:
+                        raise ValueError(
+                            "sigma should be a 0D, 1D, or 3D array for 4D data",
+                            sigma,
+                        )
                 else:
                     sigma_vol = np.full(arr[..., i].shape, sigma, dtype="f8")
             else:
                 if isinstance(sigma, np.ndarray):
-                    sigma_vol = sigma[i]
+                    if sigma.ndim == 1:
+                        sigma_vol = sigma[i] if sigma.shape[0] == arr.shape[-1] else sigma[0]
+                    elif sigma.ndim == 3:
+                        sigma_vol = sigma
+                    elif sigma.ndim == 0:
+                        sigma_vol = float(sigma)
+                    else:
+                        raise ValueError(
+                            "sigma should be a 0D, 1D, or 3D array for 4D data",
+                            sigma,
+                        )
                 else:
                     sigma_vol = sigma
 
