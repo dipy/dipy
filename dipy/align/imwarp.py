@@ -306,9 +306,13 @@ class DiffeomorphicMap:
 
         Parameters
         ----------
-        points :
-        coord2world :
-        world2coord :
+        points : array, shape (N, dim) or Streamlines object
+
+        coord2world : array, shape (dim+1, dim+1), optional
+            affine matrix mapping points to world coordinates
+
+        world2coord : array, shape (dim+1, dim+1), optional
+            affine matrix mapping world coordinates to points
         """
         warp_f = self._get_warping_function(None, warp_coordinates=True)
         coord2prealigned = mult_aff(self.prealign, coord2world)
@@ -330,9 +334,13 @@ class DiffeomorphicMap:
 
         Parameters
         ----------
-        points :
-        coord2world :
-        world2coord :
+        points : array, shape (N, dim) or Streamlines object
+
+        coord2world : array, shape (dim+1, dim+1), optional
+            affine matrix mapping points to world coordinates
+
+        world2coord : array, shape (dim+1, dim+1), optional
+            affine matrix mapping world coordinates to points
         """
         warp_f = self._get_warping_function(None, warp_coordinates=True)
         world2invprealigned = mult_aff(world2coord, self.prealign_inv)
