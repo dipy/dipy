@@ -20,6 +20,7 @@ from dipy.reconst.csdeconv import (
     ConstrainedSDTModel,
     ConstrainedSphericalDeconvModel,
     auto_response_ssst,
+    csdeconv,
     forward_sdeconv_mat,
     mask_for_response_ssst,
     odf_deconv,
@@ -323,6 +324,51 @@ def test_csdeconv():
 
     auto_response_ssst(gtab, big_S, roi_radii=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
+
+
+def test_csdeconv_prefactored_P_equivalence():
+    SNR = 100
+    S0 = 1
+
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=0)
+    mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
+    angles = [(0, 0), (60, 0)]
+    S, _ = multi_tensor(
+        gtab, mevals, S0=S0, angles=angles, fractions=[50, 50], snr=SNR
+    )
+
+    response = (np.array([0.0015, 0.0003, 0.0003]), S0)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        csd = ConstrainedSphericalDeconvModel(gtab, response)
+
+    dwi_signal = S[~gtab.b0s_mask]
+    coeff_prefactored, n_iter_prefactored = csdeconv(
+        dwi_signal,
+        csd._X,
+        csd.B_reg,
+        tau=csd.tau,
+        convergence=csd.convergence,
+        P=csd._P,
+        P_chol=csd._P_chol,
+    )
+    coeff_standard, n_iter_standard = csdeconv(
+        dwi_signal,
+        csd._X,
+        csd.B_reg,
+        tau=csd.tau,
+        convergence=csd.convergence,
+        P=csd._P,
+    )
+
+    assert_array_almost_equal(coeff_prefactored, coeff_standard)
+    assert_equal(n_iter_prefactored, n_iter_standard)
 
 
 def test_odfdeconv():
