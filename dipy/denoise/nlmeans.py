@@ -203,19 +203,23 @@ def nlmeans(
 
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
+        sigma_3d_classic = None
+        sigma_3d_blockwise_scalar = None
         for i in range(arr.shape[-1]):
             if method == "classic":
                 if isinstance(sigma, np.ndarray):
                     if sigma.ndim == 1:
-                        sigma_val = sigma[i] if sigma.shape[0] == arr.shape[-1] else sigma[0]
+                        sigma_val = (
+                            sigma[i] if sigma.shape[0] == arr.shape[-1] else sigma[0]
+                        )
                         sigma_vol = np.full(arr[..., i].shape, sigma_val, dtype="f8")
                     elif sigma.ndim == 3:
-                        sigma_vol = np.ascontiguousarray(sigma, dtype="f8")
-                    elif sigma.ndim == 0:
-                        sigma_vol = np.full(arr[..., i].shape, float(sigma), dtype="f8")
+                        if sigma_3d_classic is None:
+                            sigma_3d_classic = np.ascontiguousarray(sigma, dtype="f8")
+                        sigma_vol = sigma_3d_classic
                     else:
                         raise ValueError(
-                            "sigma should be a 0D, 1D, or 3D array for 4D data",
+                            "sigma should be a 1D or 3D array for 4D data",
                             sigma,
                         )
                 else:
@@ -223,14 +227,16 @@ def nlmeans(
             else:
                 if isinstance(sigma, np.ndarray):
                     if sigma.ndim == 1:
-                        sigma_vol = sigma[i] if sigma.shape[0] == arr.shape[-1] else sigma[0]
+                        sigma_vol = (
+                            sigma[i] if sigma.shape[0] == arr.shape[-1] else sigma[0]
+                        )
                     elif sigma.ndim == 3:
-                        sigma_vol = sigma
-                    elif sigma.ndim == 0:
-                        sigma_vol = float(sigma)
+                        if sigma_3d_blockwise_scalar is None:
+                            sigma_3d_blockwise_scalar = float(np.mean(sigma))
+                        sigma_vol = sigma_3d_blockwise_scalar
                     else:
                         raise ValueError(
-                            "sigma should be a 0D, 1D, or 3D array for 4D data",
+                            "sigma should be a 1D or 3D array for 4D data",
                             sigma,
                         )
                 else:
