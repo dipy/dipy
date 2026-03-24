@@ -335,9 +335,7 @@ def test_csdeconv_prefactored_P_equivalence():
     gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=0)
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
     angles = [(0, 0), (60, 0)]
-    S, _ = multi_tensor(
-        gtab, mevals, S0=S0, angles=angles, fractions=[50, 50], snr=SNR
-    )
+    S, _ = multi_tensor(gtab, mevals, S0=S0, angles=angles, fractions=[50, 50], snr=SNR)
 
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
     with warnings.catch_warnings():
