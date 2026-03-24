@@ -161,9 +161,4 @@ DIPY can process large diffusion datasets. For this reason, we recommend using a
 
 Note on python versions
 -----------------------
-
-DIPY requires Python 3.8 or newer. Support for Python 2.6 and 2.7 has been discontinued to ensure compatibility with modern scientific computing standards.
-
-Note: Advanced 3D visualization features require the FURY library, which currently supports Python 3.11 and newer.
-
-.. include:: ../links_names.inc
+DIPY requires a modern Python environment . For a detailed list of supported Python,NumPy,and compiler versions , please refer to our :ref:`toolchain-roadmap`.
