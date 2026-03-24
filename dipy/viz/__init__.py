@@ -1,3 +1,9 @@
+"""Visualization tools.
+
+Functions and classes for visualizing diffusion MRI data,
+streamlines, and tensors (powered by FURY and Matplotlib).
+"""
+
 # Init file for visualization package
 import warnings
 

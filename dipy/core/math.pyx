@@ -4,6 +4,12 @@
 # cython: wraparound=False
 # cython: nonecheck=False
 # cython: overflowcheck=False
+"""Fast math utilities for arrays (Cython).
+
+Low-level C functions for minimum, maximum, and other array
+operations used throughout DIPY core modules.
+"""
+
 
 
 from dipy.align.fused_types cimport floating
