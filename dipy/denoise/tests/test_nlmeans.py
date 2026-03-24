@@ -255,12 +255,3 @@ def test_nlmeans_sigma_3d_volume():
     # This should NOT raise a ValueError
     result = nlmeans(arr, sigma=sigma)
     assert result.shape == arr.shape
-
-
-def test_nlmeans_3d_sigma():
-    """Regression test: nlmeans should accept 3D sigma volume from PIESNO."""
-    np.random.seed(42)
-    arr = np.random.normal(100, 10, size=(10, 10, 10, 5)).astype(np.float64)
-    sigma = np.ones(arr.shape[:3]) * 10.0
-    result = nlmeans(arr, sigma=sigma)
-    assert result.shape == arr.shape
