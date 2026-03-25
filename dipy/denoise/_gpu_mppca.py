@@ -167,24 +167,20 @@ def _precompute_patch_indices(shape, patch_radius, mask):
     pr0, pr1, pr2 = int(patch_radius[0]), int(patch_radius[1]), int(patch_radius[2])
     Nx, Ny, Nz = shape[0], shape[1], shape[2]
 
-    # Pre-allocate a generous buffer; trim at the end.
-    buf = np.empty(((Nx * Ny * Nz), 6), dtype=np.uint32)
-    count = 0
+    k, j, i = np.nonzero(
+        mask[pr0:Nx - pr0, pr1:Ny - pr1, pr2:Nz - pr2]
+        .transpose(2, 1, 0)
+    )
 
-    for k in range(pr2, Nz - pr2):
-        for j in range(pr1, Ny - pr1):
-            for i in range(pr0, Nx - pr0):
-                if not mask[i, j, k]:
-                    continue
-                buf[count, 0] = i - pr0
-                buf[count, 1] = i + pr0 + 1
-                buf[count, 2] = j - pr1
-                buf[count, 3] = j + pr1 + 1
-                buf[count, 4] = k - pr2
-                buf[count, 5] = k + pr2 + 1
-                count += 1
+    patches = np.empty((len(i), 6), dtype=np.uint32)
+    patches[:, 0] = i
+    patches[:, 1] = i + 2 * pr0 + 1
+    patches[:, 2] = j
+    patches[:, 3] = j + 2 * pr1 + 1
+    patches[:, 4] = k
+    patches[:, 5] = k + 2 * pr2 + 1
 
-    return buf[:count].copy()
+    return patches
 
 
 def _load_shader(name, D=None):
