@@ -32,7 +32,7 @@ cdef inline f_t mean_from_start(const f_t* a, int n) noexcept nogil:
 
 
 cdef inline void pca_classifier(const f_t[:] evals, int n_evals, int nvoxels,
-                                   f_t* out_var, int* out_ncomps) noexcept nogil:
+                                   f_t* out_var) noexcept nogil:
     cdef int start = 0
     if n_evals > nvoxels - 1:
         start = n_evals - (nvoxels - 1)
@@ -48,7 +48,6 @@ cdef inline void pca_classifier(const f_t[:] evals, int n_evals, int nvoxels,
         r = evals[start + c] - evals[start] - 4.0 * sqrt((c + 1.0) / nvoxels) * var
 
     out_var[0] = var
-    out_ncomps[0] = c + 1
 
 
 # Helpers
@@ -260,7 +259,7 @@ cdef void genpca_loop(
                           &info)
 
                 if estimate_sigma:
-                    pca_classifier[f_t](d, N, n_samples, &this_var, &ncomps)
+                    pca_classifier[f_t](d, N, n_samples, &this_var)
                 else:
                     this_var = var_map[i, j, k]
 
