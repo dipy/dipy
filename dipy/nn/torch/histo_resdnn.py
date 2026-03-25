@@ -210,7 +210,10 @@ class HistoResDNN:
                 f"declared model ({self.sh_size})"
             )
 
-        return self.model(torch.from_numpy(x_test)).detach().numpy()
+        # Move to correct device (no-op when device=cpu)
+        return (
+            self.model(torch.from_numpy(x_test).to(self.device)).detach().cpu().numpy()
+        )
 
     def predict(self, data, gtab, *, mask=None, chunk_size=1000):
         """Wrapper function to facilitate prediction of larger dataset.

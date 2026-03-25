@@ -306,7 +306,7 @@ class DeepN4:
         np.ndarray (batch, ...)
             Predicted bias field
         """
-        return self.model(x_test)[:, 0].detach().numpy()
+        return self.model(x_test)[:, 0].detach().cpu().numpy()
 
     def pad(self, img, sz):
         """Pad or crop the image to the specified size.
