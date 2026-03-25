@@ -246,12 +246,13 @@ def test_coordinate_consistency():
     assert denoised_image.dtype == np.float64 or denoised_image.dtype == np.float32
 
 
-def test_nlmeans_sigma_3d_volume():
-    """Regression test: nlmeans should accept a 3D sigma volume (e.g. from PIESNO)."""
+@pytest.mark.parametrize("method", ["blockwise", "classic"])
+def test_nlmeans_4d_with_sigma_3d_volume(method):
+    """Regression test: nlmeans should accept a 3D sigma volume for 4D data (e.g. from PIESNO)."""
     np.random.seed(42)
     arr = np.random.normal(100, 10, size=(10, 10, 10, 5)).astype(np.float64)
     # 3D sigma — one value per spatial voxel, as PIESNO would produce per slice
     sigma = np.ones(arr.shape[:3]) * 10.0
     # This should NOT raise a ValueError
-    result = nlmeans(arr, sigma=sigma)
+    result = nlmeans(arr, sigma=sigma, method=method)
     assert result.shape == arr.shape
