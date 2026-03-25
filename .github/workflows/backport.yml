@@ -1,0 +1,79 @@
+# Backport merged pull requests to maintenance branches.
+#
+# Label convention:
+#   backport-maint/1.13.x  →  cherry-pick onto branch maint/1.13.x
+#   backport-maint/1.12.x  →  cherry-pick onto branch maint/1.12.x
+#
+# The first capture group of label_pattern maps 1:1 to the target branch name.
+# Since GitHub label names may contain '/', the label "backport-maint/1.13.x"
+# captures "maint/1.13.x" verbatim — which is exactly the target branch name.
+#
+# On conflict: korthout/backport-action automatically creates a draft backport PR
+# with conflict markers committed AND posts manual cherry-pick instructions on the
+# original PR. No extra comment step is needed — this is built-in action behavior.
+#
+# To add a new maintenance branch (e.g. maint/1.14.x):
+#   1. Create and push the branch to upstream.
+#   2. Create GitHub label "backport-maint/1.14.x".
+#   3. No changes to this file are needed — fully dynamic.
+
+name: Backport
+
+on:
+  pull_request_target:
+    types: [closed]
+
+# Required permissions:
+#   contents: write      – to push backport branches
+#   pull-requests: write – to open backport PRs and post conflict comments
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  backport:
+    name: Backport pull request
+    runs-on: ubuntu-latest
+
+    # Only run when the PR was actually merged, not just closed/abandoned.
+    if: github.event.pull_request.merged == true
+
+    steps:
+      # Full history is required so the action can cherry-pick commits across
+      # potentially divergent maintenance branches.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Create backport pull requests
+        uses: korthout/backport-action@d07416681cab29bf2661702f925f020aaa962997 # v3.4.1
+        with:
+          # Match labels of the form "backport-maint/1.13.x".
+          # The first capture group becomes the target branch name verbatim.
+          # Example: "backport-maint/1.13.x" → target branch "maint/1.13.x"
+          label_pattern: '^backport-(.+)$'
+
+          # Copy all non-backport labels from the original PR to the backport PR.
+          # Labels matching label_pattern are excluded automatically by the action.
+          copy_labels_pattern: '.*'
+
+          # Preserve the original PR's assignees on the backport PR.
+          copy_assignees: true
+
+          # Backport PR title: prefixed with target branch for easy identification.
+          pull_title: '[Backport ${target_branch}] ${pull_title}'
+
+          # Backport PR body: links back to original PR for full traceability.
+          pull_description: |
+            Automated backport of #${pull_number} to `${target_branch}`.
+
+            **Original PR:** #${pull_number} by @${pull_author}
+
+            ---
+
+            ${pull_description}
+
+          # On cherry-pick conflict: create a draft PR with the conflict markers
+          # committed (so the branch and base are already set up for the maintainer)
+          # and post manual resolution instructions on the original PR.
+          experimental: '{"conflict_resolution": "draft_commit_conflicts"}'
