@@ -122,7 +122,16 @@ def copyfileobj_withprogress(fsrc, fdst, total_length, *, length=16 * 1024):
 
 def _already_there_msg(folder):
     """
-    Prints a message indicating that a certain data-set is already in place
+    Log a message indicating that the dataset is already present.
+
+    Parameters
+    ----------
+    folder : str
+        Path to the folder containing the dataset.
+
+    Returns
+    -------
+    None
     """
     msg = "Dataset is already in place. If you want to fetch it again "
     msg += f"please first remove the folder {folder} "
