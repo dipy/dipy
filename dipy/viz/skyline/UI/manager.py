@@ -1,3 +1,5 @@
+"""Skyline sidebar window: section grouping, file dialogs, and font setup."""
+
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import (
     color_picker,
@@ -25,14 +27,49 @@ _GROUP_LABELS = {
 
 
 class UIManager:
+    """Lightweight registry for named UI window instances (extension hook)."""
+
     def __init__(self):
         self.windows = {}
 
     def add_window(self, window_name, window_instance):
+        """Register ``window_instance`` under ``window_name``.
+
+        Parameters
+        ----------
+        window_name : str
+            Dictionary key for later lookup.
+        window_instance : object
+            Arbitrary window object owned by the caller.
+        """
         self.windows[window_name] = window_instance
 
 
 class UIWindow:
+    """ImGui dock for Skyline: branding, grouped layers, loaders, and file pickers.
+
+    Parameters
+    ----------
+    title : str
+        ImGui window title used as the internal id.
+    default_open : bool, optional
+        Ignored for collapsed state; kept for API compatibility.
+    flags : int, optional
+        Extra ``imgui.WindowFlags`` OR-ed into the computed flags.
+    pos : tuple, optional
+        Window position in screen pixels.
+    size : tuple, optional
+        Window width and height in pixels.
+    logo_tex_ref : object, optional
+        ImGui texture reference for the header logo.
+    render_callback : callable, optional
+        Invoked after sections are removed so the host can refresh the scene.
+    file_dialog_callback : callable, optional
+        Receives ``filenames`` / ``rois`` / ``shm_coeffs`` kwargs from load dialogs.
+    bg_color_callback : callable, optional
+        Called with an ``(r, g, b)`` tuple when the user edits the background.
+    """
+
     def __init__(
         self,
         title,
@@ -83,16 +120,35 @@ class UIWindow:
         self.request_file_dialog = False
 
     def add(self, name, section_renderer, viz_type=None):
+        """Register a visualization section callable and optional grouping type.
+
+        Parameters
+        ----------
+        name : str
+            Unique key, usually ``f"{path}:{display_name}"``.
+        section_renderer : callable
+            ``renderer(is_open, group_visible=...)`` from :class:`Visualization`.
+        viz_type : str or None, optional
+            One of the keys in ``_GROUP_ORDER`` used to cluster the sidebar.
+        """
         self._sections[name] = (section_renderer, viz_type)
         self._section_open.setdefault(name, False)
 
     def remove(self, name):
+        """Drop a section and its open-state bookkeeping.
+
+        Parameters
+        ----------
+        name : str
+            Key previously passed to :meth:`add`.
+        """
         if name in self._sections:
             del self._sections[name]
         if name in self._section_open:
             del self._section_open[name]
 
     def render(self):
+        """Draw the full sidebar for the current frame."""
         imgui.push_style_color(
             imgui.Col_.window_bg, imgui.get_color_u32(THEME["background"])
         )
@@ -329,13 +385,26 @@ class UIWindow:
 
     @property
     def sections(self):
+        """Map section id to ``(renderer_callable, viz_type)`` tuples."""
         return self._sections
 
     @property
     def section_open_states(self):
+        """Collapsed/open flags for each registered section id."""
         return self._section_open
 
     def _file_dialog_closed(self, *, filenames=None, rois=None, shm_coeffs=None):
+        """Forward dialog results to :attr:`file_dialog_callback` if present.
+
+        Parameters
+        ----------
+        filenames : list or None, optional
+            Selected visualization paths.
+        rois : list or None, optional
+            Selected ROI paths.
+        shm_coeffs : list or None, optional
+            Selected SH coefficient paths.
+        """
         self._is_dialog_open = False
         if self.file_dialog_callback is not None:
             self.file_dialog_callback(
@@ -343,11 +412,27 @@ class UIWindow:
             )
 
     def _update_bg_color(self, new_color):
+        """Store the sidebar's background picker color and notify the host scene.
+
+        Parameters
+        ----------
+        new_color : tuple of float
+            RGB triplet in ``[0, 1]``.
+        """
         self._bg_color = new_color
         if self.bg_color_callback is not None:
             self.bg_color_callback(new_color)
 
     def update_loader(self, *, show, message=None):
+        """Toggle the modal loading overlay.
+
+        Parameters
+        ----------
+        show : bool
+            When True, ensure the loading popup is opened.
+        message : str, optional
+            User-facing status string.
+        """
         self._show_loader = show
         if message is not None:
             self._loading_message = message

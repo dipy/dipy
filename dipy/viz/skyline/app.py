@@ -1,3 +1,5 @@
+"""Application entry points and main ``Skyline`` viewer class."""
+
 import os
 import time
 
@@ -40,6 +42,58 @@ else:
 
 
 class Skyline:
+    """Coordinate Skyline windows, UI, asynchronous loading, and visualization layers.
+
+    Parameters
+    ----------
+    visualizer_type : str, optional
+        One of ``"standalone"``, ``"gui"``, ``"jupyter"``, or ``"stealth"``
+        (offscreen). Passed to :func:`~dipy.viz.skyline.render.renderer.create_window`.
+    images : list, optional
+        Pre-loaded image tuples ``(data, affine, path)`` (or two-element without path).
+    peaks : list, optional
+        Pre-loaded peak tuples ``(pam, path)`` or ``(pam,)``.
+    rois : list, optional
+        Pre-loaded ROI tuples ``(data, affine, path)``.
+    surfaces : list, optional
+        Pre-loaded surface tuples ``(vertices, faces, path)``.
+    tractograms : list, optional
+        Pre-loaded tractogram tuples ``(sft, path)`` or TrX/Trk-loaded objects.
+    sh_coeffs : list, optional
+        Pre-loaded spherical harmonic tuples as accepted by
+        ``create_shm_visualization``.
+    is_cluster : bool, optional
+        If True, open tractograms with clustered rendering where applicable.
+    is_light_version : bool, optional
+        Render streamlines as lines instead of tubes for performance.
+    glass_brain : bool, optional
+        Glass-brain styling for surfaces and default background.
+    bg_color : tuple of float, optional
+        RGB background color in ``[0, 1]``. Default depends on ``glass_brain``.
+    tract_colors : str or tuple, optional
+        ``"direction"``, ``"random"``, or RGB tuple for streamline coloring.
+    cluster_thr : float, optional
+        Spatial clustering threshold in millimeters.
+    cluster_size_thr : int or None, optional
+        Minimum cluster size to display; ``None`` uses a percentile rule.
+    cluster_length_thr : float or None, optional
+        Minimum mean cluster length in mm; ``None`` uses a percentile rule.
+    buan_pvals : str or None, optional
+        Path to BUAN p-values for tract coloring.
+    rgb : bool, optional
+        Treat 4D volumes as RGB/RGBA when True.
+    initial_filenames : list, optional
+        Files to load asynchronously after startup (mixed types by extension).
+    initial_rois : list, optional
+        ROI NIfTI paths to load on startup.
+    initial_shm_coeffs : list, optional
+        SH ``.pam5`` paths to load on startup.
+    out_dir : str or Path, optional
+        Output directory for stealth rendering.
+    out_stealth_png : str, optional
+        Basename or path for stealth PNG output.
+    """
+
     def __init__(
         self,
         visualizer_type="standalone",
@@ -767,6 +821,11 @@ def skyline_from_files(
         Output directory to save the figure if stealth mode is enabled.
     out_stealth_png : str, optional
         Filename of saved picture if stealth mode is enabled.
+
+    Returns
+    -------
+    Skyline
+        Constructed viewer instance (blocking for interactive modes).
     """
     visualizer_type = "stealth" if stealth else "standalone"
 
@@ -882,6 +941,11 @@ def skyline(
         Output directory to save the figure if stealth mode is enabled.
     out_stealth_png : str, optional
         Filename of saved picture if stealth mode is enabled.
+
+    Returns
+    -------
+    Skyline
+        Constructed viewer instance (blocking for interactive modes).
     """
     return Skyline(
         visualizer_type=visualizer_type,

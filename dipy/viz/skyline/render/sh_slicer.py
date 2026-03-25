@@ -122,25 +122,46 @@ def create_shm_visualization(
     )
 
 
-def _descoteaux_to_fury_standard(coeffs_4d, sh_order):
-    """Convert legacy descoteaux07 (even-only) SH coeffs to FURY standard.
+def _descoteaux_to_fury_standard(coeffs_4d, sh_order, is_left_handed=False):
+    """Convert even-order descoteaux07 SH coefficients to Fury's standard basis.
 
-    The legacy descoteaux07 basis uses Im(Y) for m>0 and Re(Y) for m<0,
-    while FURY's standard basis uses cos(mφ) for m>0 and sin(|m|φ) for m<0.
-    Empirically B_desc(l, m) == B_fury(l, -m) for all l, m, so the
-    conversion is a simple m-sign swap per degree.
+    The legacy descoteaux07 basis uses Im(Y) for m>0 and Re(Y) for m<0, while
+    FURY uses cos(mφ) for m>0 and sin(|m|φ) for m<0. Coefficients satisfy
+    ``c_fury(l, m) = c_desc(l, -m)``. Left-handed affines additionally flip
+    the sign for orders with ``m > 0``.
 
-    Conversion: c_fury(l, m) = c_desc(l, -m)
+    Parameters
+    ----------
+    coeffs_4d : ndarray
+        Volume storing descoteaux07 coefficients along the last axis.
+    sh_order : int
+        Maximum even spherical harmonic order present in the volume.
+    is_left_handed : bool, optional
+        If True, apply reflection correction for LAS-like orientations.
+
+    Returns
+    -------
+    ndarray
+        Array with the same leading shape as ``coeffs_4d`` and
+        ``(sh_order + 1) ** 2`` standard-basis coefficients on the last axis.
     """
     n_std = (sh_order + 1) ** 2
     out = np.zeros(coeffs_4d.shape[:-1] + (n_std,), dtype=coeffs_4d.dtype)
+
     desc_idx = 0
     for l_val in range(0, sh_order + 1, 2):
         for m in range(-l_val, l_val + 1):
             fury_m = -m
             fury_idx = l_val * l_val + l_val + fury_m
-            out[..., fury_idx] = coeffs_4d[..., desc_idx]
+
+            val = coeffs_4d[..., desc_idx]
+
+            if is_left_handed and m > 0:
+                val = -val
+
+            out[..., fury_idx] = val
             desc_idx += 1
+
     return out
 
 
@@ -168,6 +189,9 @@ class SHSlicer:
         SH basis convention.
     color_type : str
         Colour mapping type.
+    is_left_handed : bool
+        Whether the affine is left-handed (e.g., LAS),
+        requiring a reflection correction for legacy descoteaux07 coefficients.
     """
 
     def __init__(
@@ -182,9 +206,10 @@ class SHSlicer:
         mask=None,
         basis_type="standard",
         color_type="orientation",
+        is_left_handed=False,
     ):
         if basis_type in ("descoteaux", "descoteaux07"):
-            coeffs_4d = _descoteaux_to_fury_standard(coeffs_4d, l_max)
+            coeffs_4d = _descoteaux_to_fury_standard(coeffs_4d, l_max, is_left_handed)
             basis_type = "standard"
 
         self.coeffs_4d = coeffs_4d
@@ -347,6 +372,7 @@ class SHGlyph3D(Visualization):
         self.affine = affine
         default_scale = abs(self.affine[0, 0]) if self.affine is not None else scale
         self._voxel_sizes = np.array([1.0, 1.0, 1.0])
+        is_left_handed = self.affine is not None and self.affine[0, 0] < 0
 
         self.shape = coeffs.shape[:3]
 
@@ -361,6 +387,7 @@ class SHGlyph3D(Visualization):
             mask=mask,
             basis_type=basis_type,
             color_type=color_type,
+            is_left_handed=is_left_handed,
         )
         self._slicer.build()
         if affine is not None:
