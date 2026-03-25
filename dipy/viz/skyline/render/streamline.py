@@ -1,3 +1,5 @@
+"""Tractography layers, clustering, and BUAN coloring for Skyline."""
+
 import colorsys
 from pathlib import Path
 import time
@@ -53,6 +55,24 @@ if has_imgui:
 
 
 def create_colormap(n, *, hue=(0.0, 0.1), saturation=(0.8, 0.2), value=0.8):
+    """Build an RGB lookup table sampled along HSV space.
+
+    Parameters
+    ----------
+    n : int
+        Number of discrete colors.
+    hue : tuple of float, optional
+        Hue endpoints passed through ``np.interp`` over the LUT indices.
+    saturation : tuple of float, optional
+        Saturation endpoints interpolated like ``hue``.
+    value : float, optional
+        Fixed HSV value (brightness) for every entry.
+
+    Returns
+    -------
+    ndarray, shape (n, 3)
+        Float32 RGB colors in ``[0, 1]``.
+    """
     lut = np.zeros((n, 3), dtype=np.float32)
     h = np.interp(np.arange(n), [0, n - 1], hue)
     s = np.interp(np.arange(n), [0, n - 1], saturation)
@@ -71,6 +91,31 @@ def apply_buan_colors(
     value=0.8,
     buan_color_idx=None,
 ):
+    """Assign BUAN p-value-derived RGB colors per streamline or sample.
+
+    Parameters
+    ----------
+    streamlines : list of ndarray
+        Streamline arrays used for assignment mapping when ``buan_color_idx``
+        is omitted.
+    buan_pvals : ndarray
+        Scalar p-values (or statistics) sampled per correspondence bin.
+    hue : tuple of float, optional
+        Passed to :func:`create_colormap`.
+    saturation : tuple of float, optional
+        Passed to :func:`create_colormap`.
+    value : float, optional
+        Passed to :func:`create_colormap`.
+    buan_color_idx : ndarray or None, optional
+        Precomputed indices into the LUT; if None, computed via ``assignment_map``.
+
+    Returns
+    -------
+    buan_colors : ndarray, shape (N, 3)
+        Per-streamline RGB colors.
+    buan_color_idx : ndarray
+        Integer LUT indices used for coloring.
+    """
     n = len(buan_pvals)
     if n > 1000:
         logger.info("Limiting assignment to 1000 bands for performance reasons.")
@@ -90,6 +135,20 @@ def apply_buan_colors(
 
 
 def create_cluster_help(*, position=(0, 0), size=(200, 180)):
+    """Create a 2D text panel summarizing cluster interaction shortcuts.
+
+    Parameters
+    ----------
+    position : tuple of float, optional
+        Screen-space anchor for the block.
+    size : tuple of float, optional
+        Pixel width and height of the background rectangle.
+
+    Returns
+    -------
+    TextBlock2D
+        Fury overlay actor ready to be inserted into the scene.
+    """
     help_text = (
         "        Cluster Instructions:\n"
         "          Click to select/deselect.\n"
@@ -226,6 +285,24 @@ def create_streamline_visualization(
 
 
 def create_streamline(lines, *, color=(1, 0, 0), line_type="line", segments=4):
+    """Instantiate Fury line or tube geometry for polyline streamlines.
+
+    Parameters
+    ----------
+    lines : list of ndarray
+        Each array is a (N, 3) polyline in world space.
+    color : ndarray, tuple, or str, optional
+        Per-point, per-line, directional (``"direction"``), or constant RGB colors.
+    line_type : {"line", "tube"}, optional
+        Primitive style passed to Fury.
+    segments : int, optional
+        Tube tessellation segments when ``line_type`` is ``"tube"``.
+
+    Returns
+    -------
+    Actor
+        Fury actor (line or tube container) ready to parent under a ``Group``.
+    """
     if isinstance(color, str) and color == "direction" and lines:
         color = line_colors(lines)
     if line_type == "tube":
@@ -255,6 +332,8 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="line", segments=4):
 
 
 class Streamline3D(Visualization):
+    """Interactive tractogram with optional tubes, BUAN coloring, and file export."""
+
     def __init__(
         self,
         name,
@@ -467,6 +546,38 @@ class Streamline3D(Visualization):
 
 
 class ClusterStreamline3D(Visualization):
+    """QBx-clustered tractogram view with selection, filtering, and keyboard shortcuts.
+
+    Parameters
+    ----------
+    name : str
+        Name of the streamline visualization.
+    sft : StatefulTractogram
+        StatefulTractogram object containing the streamlines.
+    thr : float
+        Threshold for clustering.
+    line_type : str, optional
+        The type of line to render ("line" or "tube").
+    render_callback : callable, optional
+        Callback function to be called after rendering.
+    switch_render_callback : callable, optional
+        Callback function to switch rendering type, used for cluster visualization.
+    loader : callable, optional
+        Callback function to show/hide loader during asynchronous operations.
+    size_threshold : int, optional
+        Minimum number of streamlines in a cluster to be visible.
+    length_threshold : float, optional
+        Minimum length of streamlines in a cluster to be visible.
+    async_clustering : bool, optional
+        Whether to perform clustering asynchronously. Set to False to block
+        until clustering completes (used in stealth mode).
+
+    Returns
+    -------
+    ClusterStreamline3D
+        The created ClusterStreamline3D object.
+    """
+
     def __init__(
         self,
         name,
@@ -481,6 +592,37 @@ class ClusterStreamline3D(Visualization):
         length_threshold=None,
         async_clustering=True,
     ):
+        """QBx-clustered tractogram view with selection, filtering, and shortcuts.
+
+        Parameters
+        ----------
+        name : str
+            Name of the streamline visualization.
+        sft : StatefulTractogram
+            StatefulTractogram object containing the streamlines.
+        thr : float
+            Threshold for clustering.
+        line_type : str, optional
+            The type of line to render ("line" or "tube").
+        render_callback : callable, optional
+            Callback function to be called after rendering.
+        switch_render_callback : callable, optional
+            Callback function to switch rendering type, used for cluster visualization.
+        loader : callable, optional
+            Callback function to show/hide loader during asynchronous operations.
+        size_threshold : int, optional
+            Minimum number of streamlines in a cluster to be visible.
+        length_threshold : float, optional
+            Minimum length of streamlines in a cluster to be visible.
+        async_clustering : bool, optional
+            Whether to perform clustering asynchronously. Set to False to block
+            until clustering completes (used in stealth mode).
+
+        Returns
+        -------
+        ClusterStreamline3D
+            The created ClusterStreamline3D object.
+        """
         self.sft = sft
         self.thr = thr
         self._clusters = []

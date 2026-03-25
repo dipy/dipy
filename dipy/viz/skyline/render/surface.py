@@ -1,3 +1,5 @@
+"""Mesh surfaces (FreeSurfer/GIFTI) with Phong or basic materials."""
+
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
@@ -81,6 +83,8 @@ def create_surface_visualization(
 
 
 class Surface(Visualization):
+    """Triangulated cortical or anatomical surface."""
+
     def __init__(
         self,
         name,

@@ -1,3 +1,5 @@
+"""NIfTI-backed volume slicers with linked UI controls for Skyline."""
+
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
@@ -113,6 +115,8 @@ def create_image_visualization(
 
 
 class Image3D(Visualization):
+    """3D/4D scalar or RGB volume with orthographic slice planes and sync hooks."""
+
     def __init__(
         self,
         name,
