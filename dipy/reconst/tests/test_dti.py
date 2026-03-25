@@ -4,7 +4,6 @@ import random
 
 import numpy as np
 import numpy.testing as npt
-import pytest
 
 import dipy.core.gradients as grad
 import dipy.core.sphere as dps
