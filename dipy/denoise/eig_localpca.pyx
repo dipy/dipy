@@ -6,6 +6,7 @@
 import numpy as np
 cimport numpy as cnp
 from numpy cimport ndarray
+import cython
 
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt
@@ -13,6 +14,7 @@ from libc.math cimport sqrt
 from scipy.linalg.cython_lapack cimport ssyev, dsyev
 from scipy.linalg.cython_blas cimport sgemm, dgemm
 
+ctypedef cython.floating f_t
 ctypedef cnp.float32_t f32
 ctypedef cnp.float64_t f64
 ctypedef cnp.uint8_t  u8
@@ -21,55 +23,27 @@ ctypedef cnp.uint8_t  u8
 cnp.import_array()
 
 
-cdef inline f32 mean_from_start_f32(const f32* a, int n) noexcept nogil:
+cdef inline f_t mean_from_start(const f_t* a, int n) noexcept nogil:
     cdef int i
-    cdef f32 s = 0.0
+    cdef f_t s = 0
     for i in range(n):
         s += a[i]
     return s / n
 
 
-cdef inline f64 mean_from_start_f64(const f64* a, int n) noexcept nogil:
-    cdef int i
-    cdef f64 s = 0.0
-    for i in range(n):
-        s += a[i]
-    return s / n
-
-
-cdef inline void pca_classifier_f32(const f32[:] evals, int n_evals, int nvoxels,
-                                   f32* out_var, int* out_ncomps) noexcept nogil:
+cdef inline void pca_classifier(const f_t[:] evals, int n_evals, int nvoxels,
+                                   f_t* out_var, int* out_ncomps) noexcept nogil:
     cdef int start = 0
     if n_evals > nvoxels - 1:
         start = n_evals - (nvoxels - 1)
         n_evals = nvoxels - 1
 
-    cdef f32 var = mean_from_start_f32(&evals[start], n_evals)
+    cdef f_t var = mean_from_start(&evals[start], n_evals)
     cdef int c = n_evals - 1
-    cdef f32 r = evals[start + c] - evals[start] - 4.0 * sqrt((c + 1.0) / nvoxels) * var
+    cdef f_t r = evals[start + c] - evals[start] - 4.0 * sqrt((c + 1.0) / nvoxels) * var
 
     while r > 0.0:
-        var = mean_from_start_f32(&evals[start], c)
-        c = c - 1
-        r = evals[start + c] - evals[start] - 4.0 * sqrt((c + 1.0) / nvoxels) * var
-
-    out_var[0] = var
-    out_ncomps[0] = c + 1
-
-
-cdef inline void pca_classifier_f64(const f64[:] evals, int n_evals, int nvoxels,
-                                   f64* out_var, int* out_ncomps) noexcept nogil:
-    cdef int start = 0
-    if n_evals > nvoxels - 1:
-        start = n_evals - (nvoxels - 1)
-        n_evals = nvoxels - 1
-
-    cdef f64 var = mean_from_start_f64(&evals[start], n_evals)
-    cdef int c = n_evals - 1
-    cdef f64 r = evals[start + c] - evals[start] - 4.0 * sqrt((c + 1.0) / nvoxels) * var
-
-    while r > 0.0:
-        var = mean_from_start_f64(&evals[start], c)
+        var = mean_from_start(&evals[start], c)
         c = c - 1
         r = evals[start + c] - evals[start] - 4.0 * sqrt((c + 1.0) / nvoxels) * var
 
@@ -78,7 +52,7 @@ cdef inline void pca_classifier_f64(const f64[:] evals, int n_evals, int nvoxels
 
 
 # Helpers
-cdef inline void compute_mean_center_f32(f32[:, :] X, f32[:] M, int n_samples, int N) noexcept nogil:
+cdef inline void compute_mean_center(f_t[:, :] X, f_t[:] M, int n_samples, int N) noexcept nogil:
     cdef int s, t
     for t in range(N):
         M[t] = 0.0
@@ -92,64 +66,48 @@ cdef inline void compute_mean_center_f32(f32[:, :] X, f32[:] M, int n_samples, i
             X[s, t] -= M[t]
 
 
-cdef inline void compute_mean_center_f64(f64[:, :] X, f64[:] M, int ns, int N) noexcept nogil:
-    cdef int s, t
-    for t in range(N):
-        M[t] = 0.0
-    for s in range(ns):
-        for t in range(N):
-            M[t] += X[s, t]
-    for t in range(N):
-        M[t] /= ns
-    for s in range(ns):
-        for t in range(N):
-            X[s, t] -= M[t]
-
-
-cdef inline void build_cov_f32(f32[:, :] X, f32[:, :] C, int ns, int N) noexcept nogil:
-    cdef float alpha = <float>(1.0 / ns)
-    cdef float beta = 0.0
+cdef inline void build_cov(f_t[:, :] X, f_t[:, :] C, int ns, int N) noexcept nogil:
+    cdef float alpha32, beta32
+    cdef double alpha64, beta64
 
     # This is the low-level equivalent of: C = X^T X / ns
     # NOTE: could be changed for something more readable, such as plain matrix
-    # multiplication with for loop. 
-    sgemm(b'N', b'T',
-          &N, &N, &ns,
-          &alpha,
-            &X[0, 0], &N,
-            &X[0, 0], &N,
-          &beta,
-            &C[0, 0], &N)
+    # multiplication with for loop.
+    if f_t is float:
+        alpha32 = <float>(1.0 / ns)
+        beta32 = 0.0
+        sgemm(b'N', b'T',
+              &N, &N, &ns,
+              &alpha32,
+              &X[0, 0], &N,
+              &X[0, 0], &N,
+              &beta32,
+              &C[0, 0], &N)
+    else:
+        alpha64 = 1.0 / ns
+        beta64 = 0.0
+        dgemm(b'N', b'T',
+              &N, &N, &ns,
+              &alpha64,
+              &X[0, 0], &N,
+              &X[0, 0], &N,
+              &beta64,
+              &C[0, 0], &N)
 
 
-cdef inline void build_cov_f64(f64[:, :] X, f64[:, :] C, int ns, int N) noexcept nogil:
-    cdef double alpha = 1.0 / ns
-    cdef double beta = 0.0
-
-    # This is the low-level equivalent of: C = X^T X / ns
-    # NOTE: could be changed for something more readable, such as plain matrix
-    # multiplication with for loop. 
-    dgemm(b'N', b'T',
-          &N, &N, &ns,
-          &alpha,
-            &X[0, 0], &N,
-            &X[0, 0], &N,
-          &beta,
-            &C[0, 0], &N)
-
-
-cdef inline void reconstruct_f32(
-    f32[:, :] X,
-    const f32[:] M,
-    const f32* W,
+cdef inline void reconstruct(
+    f_t[:, :] X,
+    const f_t[:] M,
+    const f_t* W,
     int ns, int N,
     int n_signal,
-    f32[:, :] Yt
+    f_t[:, :] Yt
 ) noexcept nogil:
-
-    cdef float alpha = 1.0
-    cdef float beta0 = 0.0
     cdef int t, s
+    cdef float alpha32 = 1.0
+    cdef float beta32 = 0.0
+    cdef double alpha64 = 1.0
+    cdef double beta64 = 0.0
 
     if n_signal <= 0:
         for s in range(ns):
@@ -157,69 +115,46 @@ cdef inline void reconstruct_f32(
                 X[s, t] = M[t]
         return
 
-    # Equivalent to Y = W^T X^T = (X W)^T. Necessary since sgemm assuumes column-major.
-    # W is already column major, but X isn't. 
-    sgemm(b'T', b'N',
-        &n_signal, &ns, &N,
-        &alpha,
-        <float*>W, &N,
-        <float*>&X[0, 0],  &N,
-        &beta0,
-        <float*>&Yt[0, 0], &n_signal)
+    if f_t is float:
+        # Equivalent to Y = W^T X^T = (X W)^T. Necessary since sgemm assumes column-major.
+        # W is already column major, but X isn't.
+        sgemm(b'T', b'N',
+              &n_signal, &ns, &N,
+              &alpha32,
+              <float*>W, &N,
+              <float*>&X[0, 0], &N,
+              &beta32,
+              <float*>&Yt[0, 0], &n_signal)
 
-    # Equivalent to doing W Y = W (X W) ^T = W W^T X^T
-    # Writing the output back to row-major (C-order), we have X W W^T
-    sgemm(b'N', b'N',
-            &N, &ns, &n_signal,
-            &alpha,
-            <float*>W, &N,
-            <float*>&Yt[0, 0], &n_signal,
-            &beta0,
-            <float*>&X[0, 0],  &N)
+        # Equivalent to doing W Y = W (X W)^T = W W^T X^T
+        # Writing the output back to row-major (C-order), we have X W W^T
+        sgemm(b'N', b'N',
+              &N, &ns, &n_signal,
+              &alpha32,
+              <float*>W, &N,
+              <float*>&Yt[0, 0], &n_signal,
+              &beta32,
+              <float*>&X[0, 0], &N)
+    else:
+        # Equivalent to Y = W^T X^T = (X W)^T. Necessary since dgemm assumes column-major.
+        # W is already column major, but X isn't.
+        dgemm(b'T', b'N',
+              &n_signal, &ns, &N,
+              &alpha64,
+              <double*>W, &N,
+              <double*>&X[0, 0], &N,
+              &beta64,
+              <double*>&Yt[0, 0], &n_signal)
 
-    for s in range(ns):
-        for t in range(N):
-            X[s, t] += M[t]
-
-
-cdef inline void reconstruct_f64(
-    f64[:, :] X,
-    const f64[:] M,
-    const f64* W,
-    int ns, int N,
-    int n_signal,
-    f64[:, :] Yt
-) noexcept nogil:
-
-    cdef double alpha = 1.0
-    cdef double beta0 = 0.0
-    cdef int t, s
-
-    if n_signal <= 0:
-        for s in range(ns):
-            for t in range(N):
-                X[s, t] = M[t]
-        return
-
-    # Equivalent to Y = W^T X^T = (X W)^T. Necessary since dgemm assumes column-major.
-    # W is already column major, but X isn't. 
-    dgemm(b'T', b'N',
-        &n_signal, &ns, &N,
-        &alpha,
-        <double*>W, &N,
-        <double*>&X[0, 0],  &N,
-        &beta0,
-        <double*>&Yt[0, 0], &n_signal)
-
-    # Equivalent to doing W Y = W (X W) ^T = W W^T X^T
-    # Writing the output back to row-major (C-order), we have X W W^T
-    dgemm(b'N', b'N',
-            &N, &ns, &n_signal,
-            &alpha,
-            <double*>W, &N,
-            <double*>&Yt[0, 0], &n_signal,
-            &beta0,
-            <double*>&X[0, 0],  &N)
+        # Equivalent to doing W Y = W (X W)^T = W W^T X^T
+        # Writing the output back to row-major (C-order), we have X W W^T
+        dgemm(b'N', b'N',
+              &N, &ns, &n_signal,
+              &alpha64,
+              <double*>W, &N,
+              <double*>&Yt[0, 0], &n_signal,
+              &beta64,
+              <double*>&X[0, 0], &N)
 
     for s in range(ns):
         for t in range(N):
@@ -227,18 +162,18 @@ cdef inline void reconstruct_f64(
 
 
 # Main loop (float32/float64)
-cdef void genpca_loop_f32(
-    f32[:, :, :, :] data,
+cdef void genpca_loop(
+    f_t[:, :, :, :] data,
     u8[:, :, :] mask,
-    f32[:, :, :, :] theta,
-    f32[:, :, :, :] thetax,
+    f_t[:, :, :, :] theta,
+    f_t[:, :, :, :] thetax,
     bint estimate_sigma,
-    f32[:, :, :] var_map,         # only valid if estimate_sigma==False
+    f_t[:, :, :] var_map,         # only valid if estimate_sigma==False
     bint return_sigma,
-    f32[:, :, :] var_acc,         # only valid if return_sigma and estimate_sigma
-    f32[:, :, :] thetavar,        # only valid if return_sigma and estimate_sigma
+    f_t[:, :, :] var_acc,         # only valid if return_sigma and estimate_sigma
+    f_t[:, :, :] thetavar,        # only valid if return_sigma and estimate_sigma
     int patch_radius_x, int patch_radius_y, int patch_radius_z,
-    f32 tau_factor
+    f_t tau_factor
 ) noexcept nogil:
 
     cdef Py_ssize_t Xdim = data.shape[0]
@@ -251,173 +186,49 @@ cdef void genpca_loop_f32(
     cdef int size_z = 2*patch_radius_z + 1
     cdef int n_samples = size_x*size_y*size_z
 
-    cdef f32[:, ::1] X
-    cdef f32[::1] M
-    cdef f32[::1, :] C
-    cdef f32[::1] d
-    cdef f32[:, ::1] proj_buf
-    cdef f32[::1] work
+    cdef f_t[:, ::1] X
+    cdef f_t[::1] M
+    cdef f_t[::1, :] C
+    cdef f_t[::1] d
+    cdef f_t[:, ::1] proj_buf
+    cdef f_t[::1] work
 
     cdef int info
-    cdef int lwork = 3 * N   # sufficient workspace for ssyev
+    cdef int lwork = 3 * N # sufficient workspace for ssyev
 
     # Memory layout:
     # - X/M/proj_buf/work are C-order.
     # - C is F-order because ssyev/dsyev expect column-major.
-    # Buffers (must allocate with GIL)
     with gil:
-        X = np.empty((n_samples, N), dtype=np.float32)
-        M = np.empty((N,), dtype=np.float32)
-        C = np.empty((N, N), dtype=np.float32, order='F')
-        d = np.empty((N,), dtype=np.float32)
-        proj_buf = np.empty((n_samples, N), dtype=np.float32)
-        work = np.empty((lwork,), dtype=np.float32)
+        if f_t is float:
+            X = np.empty((n_samples, N), dtype=np.float32)
+            M = np.empty((N,), dtype=np.float32)
+            C = np.empty((N, N), dtype=np.float32, order='F')
+            d = np.empty((N,), dtype=np.float32)
+            proj_buf = np.empty((n_samples, N), dtype=np.float32)
+            work = np.empty((lwork,), dtype=np.float32)
+        else:
+            X = np.empty((n_samples, N), dtype=np.float64)
+            M = np.empty((N,), dtype=np.float64)
+            C = np.empty((N, N), dtype=np.float64, order='F')
+            d = np.empty((N,), dtype=np.float64)
+            proj_buf = np.empty((n_samples, N), dtype=np.float64)
+            work = np.empty((lwork,), dtype=np.float64)
 
     cdef Py_ssize_t i, j, k
     cdef int dx, dy, dz
     cdef Py_ssize_t ii, jj, kk
     cdef int s, t
-    cdef f32 this_var, tau, this_theta
+    cdef f_t this_var, tau, this_theta
     cdef int ncomps, n_signal
-    cdef const f32* W
+    cdef const f_t* W
 
     for k in range(patch_radius_z, Zdim - patch_radius_z):
         for j in range(patch_radius_y, Ydim - patch_radius_y):
             for i in range(patch_radius_x, Xdim - patch_radius_x):
                 if mask[i, j, k] == 0:
                     continue
-                s = 0
-                for dx in range(-patch_radius_x, patch_radius_x+1):
-                    ii = i + dx
-                    for dy in range(-patch_radius_y, patch_radius_y+1):
-                        jj = j + dy
-                        for dz in range(-patch_radius_z, patch_radius_z+1):
-                            kk = k + dz
-                            for t in range(N):
-                                X[s, t] = data[ii, jj, kk, t]
-                            s += 1
 
-                compute_mean_center_f32(X, M, n_samples, N)
-                build_cov_f32(X, C, n_samples, N)
-                
-                # LAPACK eigendecomposition (column-major)
-                # NOTE: could be changed for something more readable, implementing the math manually.
-                # Scipy would require GIL and extra costs. 
-                ssyev(b'V', b'L',
-                    &N,
-                    &C[0, 0], &N,
-                    &d[0],
-                    &work[0], &lwork,
-                    &info)
-
-                if estimate_sigma:
-                    # Random matrix theory
-                    pca_classifier_f32(d, N, n_samples, &this_var, &ncomps)
-                else:
-                    # Predefined variance
-                    this_var = var_map[i, j, k]
-
-                # Threshold by tau
-                tau = (tau_factor * tau_factor) * this_var
-
-                # Update ncomps according to tau_factor
-                ncomps = 0
-                for t in range(N):              
-                    if d[t] < tau:
-                        ncomps += 1
-                    else:
-                        break
-
-                n_signal = N - ncomps
-                W = &C[0, 0] + ncomps * N
-
-                reconstruct_f32(X,
-                                M,
-                                W,
-                                n_samples, N,
-                                n_signal,
-                                proj_buf)
-
-                this_theta = <f32>(1.0 / (1.0 + N - ncomps))
-
-                s = 0
-                for dx in range(-patch_radius_x, patch_radius_x + 1):
-                    ii = i + dx
-                    for dy in range(-patch_radius_y, patch_radius_y + 1):
-                        jj = j + dy
-                        for dz in range(-patch_radius_z, patch_radius_z + 1):
-                            kk = k + dz
-
-                            for t in range(N):
-                                theta[ii, jj, kk, t]  += this_theta
-                                thetax[ii, jj, kk, t] += X[s, t] * this_theta
-
-                            if return_sigma and estimate_sigma:
-                                var_acc[ii, jj, kk] += this_var * this_theta
-                                thetavar[ii, jj, kk] += this_theta
-
-                            s += 1
-
-
-cdef void genpca_loop_f64(
-    f64[:, :, :, :] data,
-    u8[:, :, :] mask,
-    f64[:, :, :, :] theta,
-    f64[:, :, :, :] thetax,
-    bint estimate_sigma,
-    f64[:, :, :] var_map,         # only valid if estimate_sigma==False
-    bint return_sigma,
-    f64[:, :, :] var_acc,         # only valid if return_sigma and estimate_sigma
-    f64[:, :, :] thetavar,        # only valid if return_sigma and estimate_sigma
-    int patch_radius_x, int patch_radius_y, int patch_radius_z,
-    f64 tau_factor
-) noexcept nogil:
-
-    cdef Py_ssize_t Xdim = data.shape[0]
-    cdef Py_ssize_t Ydim = data.shape[1]
-    cdef Py_ssize_t Zdim = data.shape[2]
-    cdef int N = <int>data.shape[3]
-
-    cdef int size_x = 2*patch_radius_x + 1
-    cdef int size_y = 2*patch_radius_y + 1
-    cdef int size_z = 2*patch_radius_z + 1
-    cdef int n_samples = size_x*size_y*size_z
-
-    cdef f64[:, ::1] X
-    cdef f64[::1] M
-    cdef f64[::1, :] C
-    cdef f64[::1] d
-    cdef f64[:, ::1] proj_buf
-    cdef f64[::1] work
-
-    cdef int info
-    cdef int lwork = 3 * N   # sufficient workspace for dsyev
-
-    # Memory layout:
-    # - X/M/proj_buf/work are C-order.
-    # - C is F-order because ssyev/dsyev expect column-major.
-    # Buffers (must allocate with GIL)
-    with gil:
-        X = np.empty((n_samples, N), dtype=np.float64)
-        M = np.empty((N,), dtype=np.float64)
-        C = np.empty((N, N), dtype=np.float64, order='F')
-        d = np.empty((N,), dtype=np.float64)
-        proj_buf = np.empty((n_samples, N), dtype=np.float64)
-        work = np.empty((lwork,), dtype=np.float64)
-
-    cdef Py_ssize_t i, j, k
-    cdef int dx, dy, dz
-    cdef Py_ssize_t ii, jj, kk
-    cdef int s, t
-    cdef f64 this_var, tau, this_theta
-    cdef int ncomps, n_signal
-    cdef const f64* W
-
-    for k in range(patch_radius_z, Zdim - patch_radius_z):
-        for j in range(patch_radius_y, Ydim - patch_radius_y):
-            for i in range(patch_radius_x, Xdim - patch_radius_x):
-                if mask[i, j, k] == 0:
-                    continue
                 s = 0
                 for dx in range(-patch_radius_x, patch_radius_x + 1):
                     ii = i + dx
@@ -429,30 +240,32 @@ cdef void genpca_loop_f64(
                                 X[s, t] = data[ii, jj, kk, t]
                             s += 1
 
-                compute_mean_center_f64(X, M, n_samples, N)
-                build_cov_f64(X, C, n_samples, N)
+                compute_mean_center[f_t](X, M, n_samples, N)
+                build_cov[f_t](X, C, n_samples, N)
 
                 # LAPACK eigendecomposition (column-major)
-                # NOTE: could be changed for something more readable, implementing the math manually.
-                # Scipy would require GIL and extra costs. 
-                dsyev(b'V', b'L',
-                    &N,
-                    &C[0, 0], &N,
-                    &d[0],
-                    &work[0], &lwork,
-                    &info)
+                if f_t is float:
+                    ssyev(b'V', b'L',
+                          &N,
+                          &C[0, 0], &N,
+                          &d[0],
+                          &work[0], &lwork,
+                          &info)
+                else:
+                    dsyev(b'V', b'L',
+                          &N,
+                          &C[0, 0], &N,
+                          &d[0],
+                          &work[0], &lwork,
+                          &info)
 
                 if estimate_sigma:
-                    # Random matrix theory
-                    pca_classifier_f64(d, N, n_samples, &this_var, &ncomps)
+                    pca_classifier[f_t](d, N, n_samples, &this_var, &ncomps)
                 else:
-                    # Predefined variance
                     this_var = var_map[i, j, k]
 
-                # Threshold by tau
                 tau = (tau_factor * tau_factor) * this_var
 
-                # Update ncomps according to tau_factor
                 ncomps = 0
                 for t in range(N):
                     if d[t] < tau:
@@ -463,14 +276,14 @@ cdef void genpca_loop_f64(
                 n_signal = N - ncomps
                 W = &C[0, 0] + ncomps * N
 
-                reconstruct_f64(X,
-                                M,
-                                W,
-                                n_samples, N,
-                                n_signal,
-                                proj_buf)
+                reconstruct[f_t](X,
+                                 M,
+                                 W,
+                                 n_samples, N,
+                            n_signal,
+                            proj_buf)
 
-                this_theta = <f64>(1.0 / (1.0 + N - ncomps))
+                this_theta = <f_t>(1.0 / (1.0 + N - ncomps))
 
                 s = 0
                 for dx in range(-patch_radius_x, patch_radius_x + 1):
@@ -481,7 +294,7 @@ cdef void genpca_loop_f64(
                             kk = k + dz
 
                             for t in range(N):
-                                theta[ii, jj, kk, t]  += this_theta
+                                theta[ii, jj, kk, t] += this_theta
                                 thetax[ii, jj, kk, t] += X[s, t] * this_theta
 
                             if return_sigma and estimate_sigma:
@@ -517,7 +330,7 @@ cdef tuple run_core_f32(
     cdef f32 ctau_factor = tau_factor
 
     with nogil:
-        genpca_loop_f32(cdata, cmask, ctheta, cthetax,
+        genpca_loop[float](cdata, cmask, ctheta, cthetax,
                         estimate_sigma, cvar_map,
                         return_sigma, cvar_acc, cthetavar,
                         patch_radius_x, patch_radius_y, patch_radius_z,
@@ -552,10 +365,10 @@ cdef tuple run_core_f64(
     cdef f64 ctau_factor = tau_factor
 
     with nogil:
-        genpca_loop_f64(cdata, cmask, ctheta, cthetax,
-                        estimate_sigma, cvar_map,
-                        return_sigma, cvar_acc, cthetavar,
-                        patch_radius_x, patch_radius_y, patch_radius_z,
+        genpca_loop[double](cdata, cmask, ctheta, cthetax,
+            estimate_sigma, cvar_map,
+            return_sigma, cvar_acc, cthetavar,
+            patch_radius_x, patch_radius_y, patch_radius_z,
                         ctau_factor)
 
     return theta, thetax
@@ -584,10 +397,10 @@ def genpca_core(
 
     estimate_sigma = (var_map is None)
     calc_dtype = np.float64 if data.dtype == np.float64 else np.float32
-    
+
     data = np.ascontiguousarray(data, dtype=calc_dtype)
     mask = np.ascontiguousarray(mask, dtype=np.uint8)
-    
+
     if estimate_sigma:
         var_map = np.zeros((1, 1, 1), dtype=calc_dtype)
     else:
