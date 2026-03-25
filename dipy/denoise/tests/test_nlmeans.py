@@ -248,11 +248,21 @@ def test_coordinate_consistency():
 
 @pytest.mark.parametrize("method", ["blockwise", "classic"])
 def test_nlmeans_4d_with_sigma_3d_volume(method):
-    """Regression test: nlmeans should accept a 3D sigma volume for 4D data (e.g. from PIESNO)."""
+    """Regression test: nlmeans should accept non-scalar sigma for 4D data.
+
+    This includes:
+    - a 3D sigma volume (e.g., from PIESNO) with one value per spatial voxel
+    - a 1D sigma array of length 1, which should be broadcast over all volumes
+    """
     np.random.seed(42)
     arr = np.random.normal(100, 10, size=(10, 10, 10, 5)).astype(np.float64)
     # 3D sigma — one value per spatial voxel, as PIESNO would produce per slice
-    sigma = np.ones(arr.shape[:3]) * 10.0
+    sigma_3d = np.ones(arr.shape[:3]) * 10.0
     # This should NOT raise a ValueError
-    result = nlmeans(arr, sigma=sigma, method=method)
-    assert result.shape == arr.shape
+    result_3d = nlmeans(arr, sigma=sigma_3d, method=method)
+    assert result_3d.shape == arr.shape
+
+    # 1D sigma array of length 1 — should also be accepted for 4D data
+    sigma_1d = np.array([10.0])
+    result_1d = nlmeans(arr, sigma=sigma_1d, method=method)
+    assert result_1d.shape == arr.shape
