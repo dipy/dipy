@@ -27,9 +27,10 @@ _GROUP_LABELS = {
 
 
 class UIManager:
-    """Lightweight registry for named UI window instances (extension hook)."""
+    """Represent ``UIManager`` in Skyline."""
 
     def __init__(self):
+        """Represent ``UIManager`` in Skyline."""
         self.windows = {}
 
     def add_window(self, window_name, window_instance):
@@ -39,35 +40,35 @@ class UIManager:
         ----------
         window_name : str
             Dictionary key for later lookup.
-        window_instance : object
+        window_instance : UIWindow
             Arbitrary window object owned by the caller.
         """
         self.windows[window_name] = window_instance
 
 
 class UIWindow:
-    """ImGui dock for Skyline: branding, grouped layers, loaders, and file pickers.
+    """Represent ``UIWindow`` in Skyline.
 
     Parameters
     ----------
     title : str
-        ImGui window title used as the internal id.
+        Title text shown in the UI.
     default_open : bool, optional
-        Ignored for collapsed state; kept for API compatibility.
+        Value for ``default open``.
     flags : int, optional
-        Extra ``imgui.WindowFlags`` OR-ed into the computed flags.
-    pos : tuple, optional
-        Window position in screen pixels.
-    size : tuple, optional
-        Window width and height in pixels.
-    logo_tex_ref : object, optional
-        ImGui texture reference for the header logo.
+        Value for ``flags``.
+    pos : tuple(int, int), optional
+        Value for ``pos``.
+    size : tuple(int, int), optional
+        Value for ``size``.
+    logo_tex_ref : TextureId, optional, optional
+        Value for ``logo tex ref``.
     render_callback : callable, optional
-        Invoked after sections are removed so the host can refresh the scene.
+        Callback used to request a render/update.
     file_dialog_callback : callable, optional
-        Receives ``filenames`` / ``rois`` / ``shm_coeffs`` kwargs from load dialogs.
+        Callback invoked after file selection.
     bg_color_callback : callable, optional
-        Called with an ``(r, g, b)`` tuple when the user edits the background.
+        Callback invoked when background color changes.
     """
 
     def __init__(
@@ -83,6 +84,29 @@ class UIWindow:
         file_dialog_callback=None,
         bg_color_callback=None,
     ):
+        """Represent ``UIWindow`` in Skyline.
+
+        Parameters
+        ----------
+        title : str
+            Title text shown in the UI.
+        default_open : bool, optional
+            Value for ``default open``.
+        flags : int, optional
+            Value for ``flags``.
+        pos : tuple(int, int), optional
+            Value for ``pos``.
+        size : tuple(int, int), optional
+            Value for ``size``.
+        logo_tex_ref : TextureId, optional, optional
+            Value for ``logo tex ref``.
+        render_callback : callable, optional
+            Callback used to request a render/update.
+        file_dialog_callback : callable, optional
+            Callback invoked after file selection.
+        bg_color_callback : callable, optional
+            Callback invoked when background color changes.
+        """
         self.title = title
         self.is_open = default_open
         self.flags = flags
