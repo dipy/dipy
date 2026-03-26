@@ -1,3 +1,9 @@
+"""Load mixed media files for Skyline from disk paths.
+
+``EMERGENCY_REF`` supplies a fallback NIfTI header (MNI-like spacing) when
+tractograms must load before any matching reference image is available.
+"""
+
 import numpy as np
 
 from dipy.io.image import load_nifti
