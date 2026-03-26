@@ -1025,7 +1025,8 @@ class MotionCorrectionFlow(Workflow):
             )
 
             # Saving the corrected image file
-            save_nifti(omoved, reg_img.get_fdata(), affine)
+            # CHANGED: use the new helper (preserves original header)
+            save_nifti_with_header(omoved, reg_img.get_fdata(), affine, hdr=img.header)
             # Write the affine matrix array to disk
             with open(oafffine, "w") as outfile:
                 outfile.write(f"# Array shape: {reg_affines.shape}\n")
