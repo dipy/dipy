@@ -1,3 +1,5 @@
+"""Peak direction (PAM) slicers for Skyline."""
+
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
@@ -86,6 +88,8 @@ def create_peak_visualization(
 
 
 class Peak3D(Visualization):
+    """Peak vector field with adjustable scale, opacity, and slice locks."""
+
     def __init__(
         self,
         name,
