@@ -1,3 +1,5 @@
+"""Binary ROI masks meshed as translucent contours."""
+
 import numpy as np
 
 from dipy.utils.logging import logger
@@ -74,6 +76,8 @@ def create_roi_visualization(
 
 
 class ROI3D(Visualization):
+    """3D ROI mask converted to an isosurface actor with basic styling widgets."""
+
     def __init__(
         self,
         name,
