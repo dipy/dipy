@@ -139,7 +139,7 @@ class MedianOtsuFlow(Workflow):
                 **extra_args,
             )
 
-            save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
+            save_nifti_with_header(mask_out_path, mask_volume.astype(np.float64), affine)
 
             logger.info(f"Mask saved as {mask_out_path}")
 
@@ -548,8 +548,8 @@ class ClassifyTissueFlow(Workflow):
                     data, nclass, beta, tolerance=tolerance, max_iter=max_iter
                 )
 
-                save_nifti(tissue_out_path, segmentation_final, affine)
-                save_nifti(opve, PVE, affine)
+                save_nifti_with_header(tissue_out_path, segmentation_final, affine)
+                save_nifti_with_header(opve, PVE, affine)
                 class_list.append(["0", "Background"])
                 for i in range(1, nclass + 1):
                     class_list.append([f"{i}", f"Tissue_{i}"])
@@ -576,8 +576,8 @@ class ClassifyTissueFlow(Workflow):
                 result = np.zeros(wm_mask.shape, dtype=np.int32)
                 result[wm_mask] = 1
                 result[gm_mask] = 2
-                save_nifti(tissue_out_path, result, affine)
-                save_nifti(
+                save_nifti_with_header(tissue_out_path, result, affine)
+                save_nifti_with_header(
                     opve, np.stack([wm_mask, gm_mask], axis=-1).astype(np.int32), affine
                 )
                 class_list.append(["0", "Background"])
@@ -590,7 +590,7 @@ class ClassifyTissueFlow(Workflow):
                 for label, name in label_dict.items():
                     class_list.append([f"{label}", name])
 
-                save_nifti(tissue_out_path, segmentation_final.astype(np.int32), affine)
+                save_nifti_with_header(tissue_out_path, segmentation_final.astype(np.int32), affine)
 
             with open(ocsv, "w", newline="") as csv_object:
                 csv_writer = csv.writer(csv_object)
@@ -794,7 +794,7 @@ class BrainMaskFlow(Workflow):
                 )
                 masked_volume = data * mask_for_apply
 
-            save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
+            save_nifti_with_header(mask_out_path, mask_volume.astype(np.float64), affine)
             logger.info(f"Mask saved as {mask_out_path}")
 
             if save_masked:
