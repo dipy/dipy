@@ -1,3 +1,5 @@
+"""GPU billboard pipeline for dense spherical-harmonic glyphs in Skyline."""
+
 from math import ceil
 
 import numpy as np
@@ -39,7 +41,14 @@ _GPU_HERMITE_COMPUTE_CACHE: dict = {}
 _MAX_LUT_CHUNKS = 8
 
 
-def _get_gpu_max_buffer_size() -> int:
+def _get_gpu_max_buffer_size():
+    """Return cached ``max_storage_buffer_binding_size`` for the default WGPU adapter.
+
+    Returns
+    -------
+    int
+        Device limit in bytes, falling back to 128 MiB if discovery fails.
+    """
     if "max_storage_buffer_binding_size" in _GPU_DEVICE_LIMITS_CACHE:
         return _GPU_DEVICE_LIMITS_CACHE["max_storage_buffer_binding_size"]
 
@@ -57,10 +66,26 @@ def _get_gpu_max_buffer_size() -> int:
 
 
 def _calculate_lut_chunking(
-    glyph_count: int,
-    samples_per_glyph: int,
-    bytes_per_sample: int = 4,
-) -> dict:
+    glyph_count,
+    samples_per_glyph,
+    bytes_per_sample=4,
+):
+    """Plan LUT buffer chunking so each storage buffer stays within GPU limits.
+
+    Parameters
+    ----------
+    glyph_count : int
+        Number of distinct glyphs sharing the LUT layout.
+    samples_per_glyph : int
+        Scalar LUT entries per glyph for the active mapping mode.
+    bytes_per_sample : int, optional
+        Width of each LUT texel in bytes.
+
+    Returns
+    -------
+    dict
+        Fields ``n_chunks``, ``glyphs_per_chunk``, ``chunk_sizes``, ``feasible``, etc.
+    """
     max_buffer_bytes = _get_gpu_max_buffer_size()
     usable_bytes = int(max_buffer_bytes * 0.90)
 
@@ -201,10 +226,12 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
 
 
 class Billboard(Mesh):
-    pass
+    """Base mesh class for instanced glyph billboards (Fury ``Mesh`` subclass)."""
 
 
 class SphGlyphBillboard(Billboard):
+    """Multi-glyph SH billboard with LUT baking and per-glyph coefficient buffers."""
+
     _basis_type = "standard"
 
     @property
@@ -230,6 +257,8 @@ class SphGlyphBillboard(Billboard):
 
 
 class BillboardSphGlyphShader(MeshShader):
+    """WGSL template bridge that injects slicing, LUT, and SH uniforms."""
+
     def __init__(self, wobject):
         super().__init__(wobject)
         self._wobject = wobject
@@ -882,6 +911,23 @@ def enable_octahedral_lut(
     mapping_mode="octahedral",
     use_float16=False,
 ):
+    """Bake radius or Hermite LUT chunks on ``actor`` if GPU memory allows.
+
+    Parameters
+    ----------
+    actor : SphGlyphBillboard
+        Target billboard with populated ``billboard_count`` and coefficients.
+    lut_res : int, optional
+        Base cube-map or octahedral resolution per face/hemisphere.
+    use_hermite : bool, optional
+        Allocate paired position/normal Hermite LUT texels.
+    force_rebake : bool, optional
+        Recompute even when flags indicate the LUT is ready.
+    mapping_mode : str, optional
+        One of ``"cube"``, ``"dual_hemi"``, ``"dual_paraboloid"``, or ``"fibonacci"``.
+    use_float16 : bool, optional
+        Store Hermite LUTs with reduced precision when supported.
+    """
     if getattr(actor, "_sh_use_octahedral_lut", False) and not force_rebake:
         return
 
@@ -1034,12 +1080,29 @@ def sph_glyph_billboard_sliced(
         World-space centres.
     voxel_coords : ndarray (M, 3) int32
         Per-glyph integer voxel (ix, iy, iz).
-    lut_res : int
-        Cube-map LUT resolution per face edge (default 8).
-    use_hermite : bool
-        Use Hermite interpolation LUT (default True).
-    mapping_mode : str
-        LUT mapping mode (default ``"cube"``).
+    color_type : {"orientation", "sign"}, optional
+        Encoding forwarded to the material (sign vs orientation hue).
+    l_max : int or None, optional
+        Explicit truncation order; inferred from ``coeffs`` when None.
+    scale : float, optional
+        Uniform billboard size multiplier relative to estimated SH radii.
+    shininess : float, optional
+        Phong exponent for glyph lighting.
+    opacity : float or None, optional
+        Initial scalar opacity; forwarded to Fury validation when not None.
+    enable_picking : bool, optional
+        Whether picking handlers are installed on the billboard mesh.
+    lut_res : int, optional
+        Cube-map LUT resolution per face edge.
+    use_hermite : bool, optional
+        Use Hermite interpolation LUT.
+    mapping_mode : str, optional
+        LUT mapping mode.
+
+    Returns
+    -------
+    SphGlyphBillboard
+        Configured billboard with slice index buffer and baked LUTs.
     """
     coeffs = np.asarray(coeffs, dtype=np.float32)
     centers = np.asarray(centers, dtype=np.float32)
@@ -1123,4 +1186,6 @@ def sph_glyph_billboard_sliced(
 
 @register_wgpu_render_function(SphGlyphBillboard, SlicedSphGlyphMaterial)
 def _register_sliced_sph_glyph_render(wobject):
+    """Return the shader pair used for sliced SH billboards."""
+
     return (BillboardSphGlyphShader(wobject),)

@@ -50,7 +50,11 @@ def run_async(func, callback, *args, **kwargs):
 
 
 def process_async_callbacks():
-    """Processes all finished tasks in the queue explicitly."""
+    """Drain the async task queue and run each callback on the calling thread.
+
+    Pair this with :func:`run_async` on the main/UI thread so background work
+    delivers results safely without blocking the worker thread.
+    """
 
     while not _callback_queue.empty():
         callback, result, exception = _callback_queue.get_nowait()
