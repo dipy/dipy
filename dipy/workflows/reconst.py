@@ -1808,52 +1808,52 @@ class ReconstDkiFlow(Workflow):
                 tensor_vals = lower_triangular(dkfit.quadratic_form)
                 correct_order = [0, 1, 3, 2, 4, 5]
                 tensor_vals_reordered = tensor_vals[..., correct_order]
-                save_nifti(otensor, tensor_vals_reordered.astype(np.float32), affine)
+                save_nifti_with_header(otensor, tensor_vals_reordered.astype(np.float32), affine)
 
             if "dk_tensor" in save_metrics:
-                save_nifti(odk_tensor, dkfit.kt.astype(np.float32), affine)
+                save_nifti_with_header(odk_tensor, dkfit.kt.astype(np.float32), affine)
 
             if "fa" in save_metrics:
-                save_nifti(ofa, FA.astype(np.float32), affine)
+                save_nifti_with_header(ofa, FA.astype(np.float32), affine)
 
             if "ga" in save_metrics:
                 GA = geodesic_anisotropy(dkfit.evals)
-                save_nifti(oga, GA.astype(np.float32), affine)
+                save_nifti_with_header(oga, GA.astype(np.float32), affine)
 
             if "rgb" in save_metrics:
                 RGB = color_fa(FA, dkfit.evecs)
-                save_nifti(orgb, np.array(255 * RGB, "uint8"), affine)
+                save_nifti_with_header(orgb, np.array(255 * RGB, "uint8"), affine)
 
             if "md" in save_metrics:
                 MD = mean_diffusivity(dkfit.evals)
-                save_nifti(omd, MD.astype(np.float32), affine)
+                save_nifti_with_header(omd, MD.astype(np.float32), affine)
 
             if "ad" in save_metrics:
                 AD = axial_diffusivity(dkfit.evals)
-                save_nifti(oad, AD.astype(np.float32), affine)
+                save_nifti_with_header(oad, AD.astype(np.float32), affine)
 
             if "rd" in save_metrics:
                 RD = radial_diffusivity(dkfit.evals)
-                save_nifti(orad, RD.astype(np.float32), affine)
+                save_nifti_with_header(orad, RD.astype(np.float32), affine)
 
             if "mode" in save_metrics:
                 MODE = get_mode(dkfit.quadratic_form)
-                save_nifti(omode, MODE.astype(np.float32), affine)
+                save_nifti_with_header(omode, MODE.astype(np.float32), affine)
 
             if "evec" in save_metrics:
-                save_nifti(oevecs, dkfit.evecs.astype(np.float32), affine)
+                save_nifti_with_header(oevecs, dkfit.evecs.astype(np.float32), affine)
 
             if "eval" in save_metrics:
-                save_nifti(oevals, dkfit.evals.astype(np.float32), affine)
+                save_nifti_with_header(oevals, dkfit.evals.astype(np.float32), affine)
 
             if "mk" in save_metrics:
-                save_nifti(omk, dkfit.mk().astype(np.float32), affine)
+                save_nifti_with_header(omk, dkfit.mk().astype(np.float32), affine)
 
             if "ak" in save_metrics:
-                save_nifti(oak, dkfit.ak().astype(np.float32), affine)
+                save_nifti_with_header(oak, dkfit.ak().astype(np.float32), affine)
 
             if "rk" in save_metrics:
-                save_nifti(ork, dkfit.rk().astype(np.float32), affine)
+                save_nifti_with_header(ork, dkfit.rk().astype(np.float32), affine)
 
             logger.info(f"DKI metrics saved in {Path(oevals).parent}")
 
