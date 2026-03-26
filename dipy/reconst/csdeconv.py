@@ -190,6 +190,14 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self._X = X = self.R.diagonal() * self.B_dwi
         self._P = np.dot(X.T, X)
 
+        # === NEW: precompute Cholesky factor of the static P ===
+        mu = 1e-5
+        try:
+            self._L = la.cholesky(self._P, lower=False)
+        except Exception:
+            self._L = la.cholesky(self._P + mu * np.eye(self._P.shape[0]), lower=False)
+        # ======================================================
+
     @multi_voxel_fit
     def fit(self, data, **kwargs):
         dwi_data = data[self._where_dwi]
@@ -200,6 +208,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             tau=self.tau,
             convergence=self.convergence,
             P=self._P,
+            L=self._L,  # <-- NEW optional argument
         )
         return SphHarmFit(self, shm_coeff, None)
 
@@ -450,14 +459,18 @@ def forward_sdt_deconv_mat(ratio, l_values, *, r2_term=False):
 potrf, potrs = ll.get_lapack_funcs(("potrf", "potrs"))
 
 
-def _solve_cholesky(Q, z):
-    L, info = potrf(Q, lower=False, overwrite_a=False, clean=False)
-    if info > 0:
-        msg = f"{info}-th leading minor not positive definite"
-        raise la.LinAlgError(msg)
-    if info < 0:
-        msg = f"illegal value in {-info}-th argument of internal potrf"
-        raise ValueError(msg)
+def _solve_cholesky(Q, z, precomputed_L=None):
+    """Solve Q f = z with Cholesky. If precomputed_L is given, skip factorization."""
+    if precomputed_L is None:
+        L, info = potrf(Q, lower=False, overwrite_a=False, clean=False)
+        if info > 0:
+            msg = f"{info}-th leading minor not positive definite"
+            raise la.LinAlgError(msg)
+        if info < 0:
+            msg = f"illegal value in {-info}-th argument of internal potrf"
+            raise ValueError(msg)
+    else:
+        L = precomputed_L
     f, info = potrs(L, z, lower=False, overwrite_b=False)
     if info != 0:
         msg = f"illegal value in {-info}-th argument of internal potrs"
@@ -466,12 +479,8 @@ def _solve_cholesky(Q, z):
 
 
 @warning_for_keywords()
-def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None):
+def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None, L=None):
     r"""Constrained-regularized spherical deconvolution (CSD).
-
-    Deconvolves the axially symmetric single fiber response function `r_rh` in
-    rotational harmonics coefficients from the diffusion weighted signal in
-    `dwsignal` :footcite:p:`Tournier2007`.
 
     Parameters
     ----------
@@ -498,6 +507,8 @@ def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None):
         This is an optimization to avoid computing ``dot(X.T, X)`` many times.
         If the same ``X`` is used many times, ``P`` can be precomputed and
         passed to this function.
+    L : ndarray, optional
+        Precomputed Cholesky factor of P. If provided, used for the initial unconstrained solve for performance optimization.
 
     Returns
     -------
@@ -582,9 +593,11 @@ def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None):
         P = np.dot(X.T, X)
     z = np.dot(X.T, dwsignal)
 
+    # === CHANGED: use precomputed L if provided ===
     try:
-        fodf_sh = _solve_cholesky(P, z)
-    except la.LinAlgError:
+        fodf_sh = _solve_cholesky(P, z, precomputed_L=L)
+    except Exception:
+        # fallback (rare)
         P = P + mu * np.eye(P.shape[0])
         fodf_sh = _solve_cholesky(P, z)
     # For the first iteration we use a smooth FOD that only uses SH orders up
