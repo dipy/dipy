@@ -3,7 +3,7 @@ name = "dipy"
 description = "Diffusion MRI Imaging in Python"
 license = {file = "LICENSE"}
 readme = "README.rst"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "DIPY developers", email = "dipy@python.org" }]
 maintainers = [
     {name = "Eleftherios Garyfallidis", email="neuroimaging@python.org"},
@@ -23,9 +23,10 @@ classifiers = [
     'License :: OSI Approved :: BSD License',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
+    'Programming Language :: Python :: 3.14',
     'Programming Language :: Python :: 3 :: Only',
     "Topic :: Software Development :: Libraries",
     'Topic :: Scientific/Engineering',
@@ -183,8 +184,8 @@ requires = [
     # Note that building against numpy 1.x works fine too - users and
     # redistributors can do this by installing the numpy version they like and
     # disabling build isolation.
-    "numpy>=2.0.0rc1; python_version>='3.10' and platform_python_implementation!='PyPy'",
-    "numpy; python_version>='3.10' and platform_python_implementation=='PyPy'",
+    "numpy>=2.0.0rc1; python_version>='3.11' and platform_python_implementation!='PyPy'",
+    "numpy; python_version>='3.11' and platform_python_implementation=='PyPy'",
 ]
 
 [tool.spin]
