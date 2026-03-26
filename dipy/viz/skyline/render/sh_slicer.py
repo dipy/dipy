@@ -123,17 +123,27 @@ def create_shm_visualization(
 
 
 def _descoteaux_to_fury_standard(coeffs_4d, sh_order, is_left_handed=False):
-    """Convert legacy descoteaux07 (even-only) SH coeffs to FURY standard.
+    """Convert even-order descoteaux07 SH coefficients to Fury's standard basis.
 
-    The legacy descoteaux07 basis uses Im(Y) for m>0 and Re(Y) for m<0,
-    while FURY's standard basis uses cos(mφ) for m>0 and sin(|m|φ) for m<0.
+    The legacy descoteaux07 basis uses Im(Y) for m>0 and Re(Y) for m<0, while
+    FURY uses cos(mφ) for m>0 and sin(|m|φ) for m<0. Coefficients satisfy
+    ``c_fury(l, m) = c_desc(l, -m)``. Left-handed affines additionally flip
+    the sign for orders with ``m > 0``.
 
-    Conversion:
-        c_fury(l, m) = c_desc(l, -m)
+    Parameters
+    ----------
+    coeffs_4d : ndarray
+        Volume storing descoteaux07 coefficients along the last axis.
+    sh_order : int
+        Maximum even spherical harmonic order present in the volume.
+    is_left_handed : bool, optional
+        If True, apply reflection correction for LAS-like orientations.
 
-    Additionally, if the affine is left-handed (e.g., LAS),
-    apply a reflection correction:
-        flip sign for m > 0
+    Returns
+    -------
+    ndarray
+        Array with the same leading shape as ``coeffs_4d`` and
+        ``(sh_order + 1) ** 2`` standard-basis coefficients on the last axis.
     """
     n_std = (sh_order + 1) ** 2
     out = np.zeros(coeffs_4d.shape[:-1] + (n_std,), dtype=coeffs_4d.dtype)
