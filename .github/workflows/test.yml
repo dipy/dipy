@@ -41,7 +41,7 @@ jobs:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
-      extra-depends: dask joblib ray>=2.53.0 protobuf==4.25.8
+      extra-depends: dask joblib ray>=2.53.0
 
   minimal-py311:
     uses: ./.github/workflows/test_template.yml
