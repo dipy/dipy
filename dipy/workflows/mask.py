@@ -41,5 +41,6 @@ class MaskFlow(Workflow):
             logger.info(f"Creating mask of {input_path}")
             data, affine = load_nifti(input_path)
             mask = np.bitwise_and(data > lb, data < ub)
-            save_nifti(out_mask_path, mask.astype(np.ubyte), affine)
+            # Use the new helper to preserve header if available (here, no header, so fallback)
+            save_nifti_with_header(out_mask_path, mask.astype(np.ubyte), affine)
             logger.info(f"Mask saved at {out_mask_path}")

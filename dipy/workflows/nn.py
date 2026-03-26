@@ -61,7 +61,8 @@ class EVACPlusFlow(Workflow):
             mask_volume = evac.predict(data, affine)
             masked_volume = mask_volume * data
 
-            save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
+            # Use the new helper to preserve header if available (here, no header, so fallback)
+            save_nifti_with_header(mask_out_path, mask_volume.astype(np.float64), affine)
 
             logger.info(f"Mask saved as {mask_out_path}")
 
@@ -221,7 +222,8 @@ class BiasFieldCorrectionFlow(Workflow):
                     return_bias_field=True,
                     zero_background=bool(zero_background),
                 )
-                save_nifti(str(obf), bias.astype(np.float32), affine)
+                # Use the new helper to preserve header if available (here, no header, so fallback)
+                save_nifti_with_header(str(obf), bias.astype(np.float32), affine)
                 logger.info(f"Bias field saved as {obf}")
 
             save_nifti(corrected_out_path, corrected_data, affine, hdr=img.header)
