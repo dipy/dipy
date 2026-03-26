@@ -3,9 +3,6 @@
 
 def _register_dipy_wgsl_loader():
     """Register this package with Fury's Jinja WGSL loader if dependencies exist.
-
-    Returns
-    -------
     None
         Failures are swallowed so Skyline degrades gracefully without WGSL extras.
     """
