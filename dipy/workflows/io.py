@@ -1498,6 +1498,21 @@ class PamToNiftisFlow(Workflow):
 
 
 class MathFlow(Workflow):
+    # ------------------------------------------------------------------
+    # NEW: Consistent header-preserving save (fixes #3883)
+    # ------------------------------------------------------------------
+    from dipy.testing.decorators import warning_for_keywords
+
+    @warning_for_keywords()
+    def save_nifti_with_header(fname, data, affine, *, hdr=None, dtype=None):
+        """Save NIfTI while preserving original header when possible.
+
+        This is the new recommended function for all workflows.
+        """
+        if hdr is None:
+            # Fallback for cases where no original header is available
+            return save_nifti(fname, data, affine, dtype=dtype)
+        return save_nifti(fname, data, affine, hdr=hdr, dtype=dtype)
     @classmethod
     def get_short_name(cls):
         return "math_flow"
