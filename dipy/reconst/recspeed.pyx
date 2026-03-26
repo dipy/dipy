@@ -289,7 +289,7 @@ cdef long local_maxima_c(double[:] odf, cnp.uint16_t[:, :] edges, double[::1] ou
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def local_maxima(double[:] odf, cnp.uint16_t[:, :] edges):
+def local_maxima(double[:] odf, cnp.uint16_t[:, :] edges), strict_peaks=True:
     """Local maxima of a function evaluated on a discrete set of points.
 
     If a function is evaluated on some set of points where each pair of
