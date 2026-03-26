@@ -31,8 +31,6 @@ if has_fury_v2:
         volume_slicer,
     )
     from fury.lib import gfx
-else:
-    actor = fury.actor
 
 imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
 if has_imgui:
@@ -115,7 +113,32 @@ def create_image_visualization(
 
 
 class Image3D(Visualization):
-    """3D/4D scalar or RGB volume with orthographic slice planes and sync hooks."""
+    """Represent ``Image3D`` in Skyline.
+
+    Parameters
+    ----------
+    name : str
+        Display name used in the Skyline UI.
+    volume : np.ndarray
+        Input image volume with shape ``(X, Y, Z)`` or ``(X, Y, Z, N)``.
+    affine : np.ndarray
+        Voxel-to-world affine used to position slices in world coordinates.
+    interpolation : str
+        Slice interpolation mode (``"linear"`` or ``"nearest"``).
+    render_callback : callable
+        Callback used to request a render/update.
+    opacity : int
+        Slice opacity in percent, expected in ``[0, 100]``.
+    rgb : bool
+        Interpret a 4D volume as RGB/RGBA channels when True.
+        Colormap and directional-volume controls are ignored in this mode.
+    value_percentiles : tuple
+        Low/high percentiles used to compute scalar intensity limits.
+    colormap : str
+        Colormap used for scalar volumes; ignored when ``rgb`` is True.
+    sync_callabck : callable
+        Callback used to synchronize state across views.
+    """
 
     def __init__(
         self,
@@ -131,6 +154,32 @@ class Image3D(Visualization):
         colormap="Gray",
         sync_callabck=None,
     ):
+        """Represent ``Image3D`` in Skyline.
+
+        Parameters
+        ----------
+        name : str
+            Display name used in the Skyline UI.
+        volume : ndarray
+            Input image volume with shape ``(X, Y, Z)`` or ``(X, Y, Z, N)``.
+        affine : ndarray, optional
+            Voxel-to-world affine used to position slices in world coordinates.
+        interpolation : str, optional
+            Slice interpolation mode (``"linear"`` or ``"nearest"``).
+        render_callback : callable, optional
+            Callback used to request a render/update.
+        opacity : int, optional
+            Slice opacity in percent, expected in ``[0, 100]``.
+        rgb : bool, optional
+            Interpret a 4D volume as RGB/RGBA channels when True.
+            Colormap and directional-volume controls are ignored in this mode.
+        value_percentiles : tuple(float, float), optional
+            Low/high percentiles used to compute scalar intensity limits.
+        colormap : str, optional
+            Colormap used for scalar volumes; ignored when ``rgb`` is True.
+        sync_callabck : callable, optional
+            Callback used to synchronize state across views.
+        """
         self.dwi = volume
         self.affine = affine
 
@@ -163,12 +212,22 @@ class Image3D(Visualization):
         self.opacity = opacity
 
     def _pick_voxel(self, event):
+        """Handle  pick voxel for ``Image3D``.
+
+        Parameters
+        ----------
+        event : Event
+            Interaction event from the renderer callback.
+        """
         info = event.pick_info
         voxel = info["index"]
         self._picked_voxel = voxel
         self._picked_intensity = self.active_volume[voxel]
 
     def _create_slicer_actor(self):
+        """Handle  create slicer actor for ``Image3D``.
+        None
+        """
         volume = self.active_volume
         self.value_range = self._value_range_from_percentile(volume)
         self._slicer = volume_slicer(
@@ -188,11 +247,30 @@ class Image3D(Visualization):
         self.render()
 
     def _value_range_from_percentile(self, volume):
+        """Handle  value range from percentile for ``Image3D``.
+
+        Parameters
+        ----------
+        volume : ndarray
+            Input image volume with shape ``(X, Y, Z)`` or ``(X, Y, Z, N)``.
+
+        Returns
+        -------
+        tuple(float, float)
+            The value range of the image visualization.
+        """
         p_low, p_high = self._value_percentiles
         vmin, vmax = np.percentile(volume, (p_low, p_high))
         return vmin, vmax
 
     def _apply_colormap(self, colormap):
+        """Handle  apply colormap for ``Image3D``.
+
+        Parameters
+        ----------
+        colormap : str, optional
+            Colormap used for scalar volumes; ignored when ``rgb`` is True.
+        """
         self.colormap = colormap
         if self.colormap.lower() == "gray":
             for actor in self._slicer.children:
@@ -203,13 +281,34 @@ class Image3D(Visualization):
 
     @property
     def actor(self):
+        """Handle actor for ``Image3D``.
+
+        Returns
+        -------
+        VolumeSlicer
+            The actor of the image visualization.
+        """
         return self._slicer
 
     @property
     def active_volume(self):
+        """Handle active volume for ``Image3D``.
+
+        Returns
+        -------
+        np.ndarray
+            The active volume of the image visualization.
+        """
         return self.dwi[..., self._volume_idx] if self._has_directions else self.dwi
 
     def _populate_info(self):
+        """Handle  populate info for ``Image3D``.
+
+        Returns
+        -------
+        str
+            The information of the image visualization.
+        """
         np.set_printoptions(suppress=True, precision=2)
         info = f"Dimensions: {self.dwi.shape[:3]}"
         if self._has_directions:
@@ -229,6 +328,13 @@ class Image3D(Visualization):
         return info
 
     def update_state(self, new_state):
+        """Handle update state for ``Image3D``.
+
+        Parameters
+        ----------
+        new_state : array-like
+            New synchronized state for this visualization.
+        """
         if self._synchronize:
             self.state = new_state[:3]
             self.apply_scene_op(show_slices, self._slicer, self.state)
@@ -243,6 +349,13 @@ class Image3D(Visualization):
                     self.apply_scene_op(self._create_slicer_actor)
 
     def _set_opacity(self, opacity):
+        """Handle  set opacity for ``Image3D``.
+
+        Parameters
+        ----------
+        opacity : int, optional
+            Slice opacity in percent, expected in ``[0, 100]``.
+        """
         set_group_opacity(self._slicer, opacity / 100.0)
         if opacity < 100:
             for actor in self._slicer.children:
@@ -250,18 +363,42 @@ class Image3D(Visualization):
                 actor.material.alpha_mode = "blend"
 
     def _set_slice_state(self, visibility, state):
+        """Handle  set slice state for ``Image3D``.
+
+        Parameters
+        ----------
+        visibility : tuple(bool, bool, bool)
+            Per-axis visibility flags for X/Y/Z slices.
+        state : array-like
+            Current slice state for X/Y/Z.
+        """
         set_group_visibility(self._slicer, visibility)
         show_slices(self._slicer, state)
 
     def _set_clim(self, value_range):
+        """Handle  set clim for ``Image3D``.
+
+        Parameters
+        ----------
+        value_range : tuple(float, float)
+            Scalar range used for display intensity limits.
+        """
         for actor in self._slicer.children:
             actor.material.clim = value_range
 
     def _set_interpolation(self, interpolation):
+        """Handle  set interpolation for ``Image3D``.
+
+        Parameters
+        ----------
+        interpolation : str, optional
+            Slice interpolation mode (``"linear"`` or ``"nearest"``).
+        """
         for actor in self._slicer.children:
             actor.material.interpolation = interpolation
 
     def render_widgets(self):
+        """Handle render widgets for ``Image3D``."""
         changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
         if changed:
             self._synchronize = new

@@ -60,9 +60,6 @@ def render_file_dialog(
     type : str, optional
         Callback convention: ``"viz"`` (``filenames=``), ``"roi"`` (``rois=``),
         ``"shm_coeff"`` (``shm_coeffs=``), or ``"buan_pvals"`` (raw list/None).
-
-    Returns
-    -------
     None
     """
     global _LAST_DIR
@@ -192,9 +189,6 @@ def loading(title, message, show):
         Status line shown under the spinner.
     show : bool
         When False the modal is closed on the next draw.
-
-    Returns
-    -------
     None
     """
     text_width = imgui.calc_text_size(message).x
@@ -241,9 +235,6 @@ def warning_message(message):
     ----------
     message : str
         Warning to display on the current ImGui line.
-
-    Returns
-    -------
     None
     """
     warning_icon = icons_fontawesome_6.ICON_FA_TRIANGLE_EXCLAMATION
@@ -316,9 +307,6 @@ def downloader(label, callback, *, extension="*.*", type="viz", file_name="save.
          - "buan_colors": BUAN color mapping files
     file_name : str, optional
         Default file name suggested in the save dialog.
-
-    Returns
-    -------
     None
     """
     download_icon = icons_fontawesome_6.ICON_FA_DOWNLOAD
@@ -367,9 +355,6 @@ def uploader(
          - "roi": Region of Interest files
          - "shm_coeff": Spherical Harmonics Coefficients files
          - "buan_colors": BUAN color mapping files
-
-    Returns
-    -------
     None
     """
 
