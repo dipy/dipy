@@ -502,7 +502,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
                     + D[..., 2, 2] ** 2
                     + 2 * D[..., 0, 1] ** 2
                     + 2 * D[..., 0, 2] ** 2
-                    + D[..., 1, 2] ** 2
+                    + 2 * D[..., 1, 2] ** 2
                 )
                 / (mean_D**2)
             ) - (6 / 5)
