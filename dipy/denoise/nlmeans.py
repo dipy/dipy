@@ -36,10 +36,11 @@ def nlmeans(
         The array to be denoised. For 3D arrays, shape should be (height, width, depth).
         For 4D arrays, shape should be (height, width, depth, volumes) where the last
         dimension represents different volumes (e.g., DWI directions).
-    sigma : float or 1D ndarray
+    sigma : float, 1D ndarray, or 3D ndarray
         Standard deviation of the noise estimated from the data. For 3D arrays,
         this should be a scalar. For 4D arrays, this can be either a scalar (same noise
-        level for all volumes) or a 1D array with length equal to the number of volumes.
+        level for all volumes), a 1D array with length 1 or equal to the number
+        of volumes, or a 3D array with shape ``arr.shape[:3]``.
     mask : 3D ndarray, optional
         Binary mask indicating which voxels to process. Should have shape
         (height, width, depth). Voxels with mask value 0 are set to 0 in output.
@@ -82,6 +83,10 @@ def nlmeans(
     quality may require different parameters between methods:
     - Classic patch_radius=3 ≈ Blockwise patch_radius=2
     - Block_radius can be smaller for blockwise due to efficiency improvements
+
+    For 4D inputs with ``method='blockwise'``, a 3D ``sigma`` map is internally
+    reduced to a scalar via ``np.mean(sigma)`` because the blockwise backend
+    accepts scalar noise level per volume.
 
     References
     ----------
