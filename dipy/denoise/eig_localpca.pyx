@@ -193,7 +193,10 @@ cdef void genpca_loop(
     cdef f_t[::1] work
 
     cdef int info
-    cdef int lwork = 3 * N # sufficient workspace for ssyev
+    cdef int lwork = -1 # query optimal workspace first
+
+    cdef float work_query32[1]
+    cdef double work_query64[1]
 
     # Memory layout:
     # - X/M/proj_buf/work are C-order.
@@ -205,15 +208,34 @@ cdef void genpca_loop(
             C = np.empty((N, N), dtype=np.float32, order='F')
             d = np.empty((N,), dtype=np.float32)
             proj_buf = np.empty((n_samples, N), dtype=np.float32)
+            
+            ssyev(b'V', b'L',
+              &N,
+              &C[0, 0], &N,
+              &d[0],
+              &work_query32[0], &lwork,
+              &info)
+
+            lwork = <int>work_query32[0]
             work = np.empty((lwork,), dtype=np.float32)
+
         else:
             X = np.empty((n_samples, N), dtype=np.float64)
             M = np.empty((N,), dtype=np.float64)
             C = np.empty((N, N), dtype=np.float64, order='F')
             d = np.empty((N,), dtype=np.float64)
             proj_buf = np.empty((n_samples, N), dtype=np.float64)
-            work = np.empty((lwork,), dtype=np.float64)
 
+            dsyev(b'V', b'L',
+                &N,
+                &C[0, 0], &N,
+                &d[0],
+                &work_query64[0], &lwork,
+                &info)
+
+            lwork = <int>work_query64[0]
+            work = np.empty((lwork,), dtype=np.float64)
+            
     cdef Py_ssize_t i, j, k
     cdef int dx, dy, dz
     cdef Py_ssize_t ii, jj, kk
