@@ -279,7 +279,20 @@ cdef void genpca_loop(
                           &d[0],
                           &work[0], &lwork,
                           &info)
-
+                
+                if info != 0:
+                    with gil:
+                        if info < 0:
+                            raise np.linalg.LinAlgError(
+                                f"Illegal value in argument {-info} of internal syev"
+                            )
+                        else:
+                            raise np.linalg.LinAlgError(
+                                "The algorithm failed to converge; "
+                                f"{info} off-diagonal elements of an intermediate "
+                                "tridiagonal form did not converge to zero."
+                            )
+                            
                 if estimate_sigma:
                     pca_classifier[f_t](d, N, n_samples, &this_var)
                 else:
