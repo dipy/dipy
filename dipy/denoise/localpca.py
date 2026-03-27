@@ -2,6 +2,7 @@ import copy
 from warnings import warn
 
 import numpy as np
+from scipy.linalg import eigh
 from scipy.linalg.lapack import dgesvd as svd
 
 from dipy.denoise.eig_localpca import genpca_core as genpca_core_fast
@@ -185,6 +186,7 @@ def genpca(
     mask=None,
     patch_radius=2,
     pca_method="eig",
+    fast=True,
     tau_factor=None,
     return_sigma=False,
     out_dtype=None,
@@ -214,6 +216,10 @@ def genpca(
         decomposition (svd) for principal component analysis. The default
         method is 'eig' which is faster. However, occasionally 'svd' might be
         more accurate.
+    fast : bool, optional
+        If True and pca_method is 'eig', use the Cython-optimized
+        solution. If False, use the pure Python solution. Both
+        produce identical results.
     tau_factor : float, optional
         Thresholding of PCA eigenvalues is done by nulling out eigenvalues that
         are smaller than:
@@ -312,7 +318,7 @@ def genpca(
         thetavar = np.zeros(arr.shape[:-1], dtype=calc_dtype)
 
     # Fast Cython core only supports 'eig' for now
-    if not is_svd:
+    if not is_svd and fast:
         return genpca_core_fast(
             arr,
             mask=mask,
@@ -345,16 +351,23 @@ def genpca(
                 # Upcast the dtype for precision in the SVD
                 X = X - M
 
-                # PCA using an SVD
-                svd_args = [1, 0]
-                U, S, Vt = svd(X, *svd_args)[:3]
-                # Items in S are the eigenvalues, but in ascending order
-                # We invert the order (=> descending), square and normalize
-                # \lambda_i = s_i^2 / n
-                d = S[::-1] ** 2 / X.shape[0]
-                # Rows of Vt are eigenvectors, but also in ascending
-                # eigenvalue order:
-                W = Vt[::-1].T
+                if is_svd:
+                    # PCA using an SVD
+                    svd_args = [1, 0]
+                    U, S, Vt = svd(X, *svd_args)[:3]
+                    # Items in S are the eigenvalues, but in ascending order
+                    # We invert the order (=> descending), square and normalize
+                    # \lambda_i = s_i^2 / n
+                    d = S[::-1] ** 2 / X.shape[0]
+                    # Rows of Vt are eigenvectors, but also in ascending
+                    # eigenvalue order:
+                    W = Vt[::-1].T
+
+                else:
+                    # PCA using an Eigenvalue decomposition
+                    C = np.transpose(X).dot(X)
+                    C = C / X.shape[0]
+                    [d, W] = eigh(C)
 
                 if sigma is None:
                     # Random matrix theory
