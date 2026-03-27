@@ -2,10 +2,14 @@
 
 import numpy as np
 
+from dipy.core.gradients import gradient_table
 from dipy.core.sphere import unique_edges
-from dipy.data import default_sphere
+from dipy.data import default_sphere, get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, csdeconv
 from dipy.reconst.recspeed import local_maxima
 from dipy.reconst.vec_val_sum import vec_val_vect
+from dipy.sims.voxel import multi_tensor
 
 
 class BenchRecSpeed:
@@ -34,6 +38,48 @@ class BenchVecValSum:
 
     def time_vec_val_vect(self):
         vec_val_vect(self.evecs, self.evals)
+
+
+class BenchCSDPrefactorizedP:
+    def setup(self):
+        _, fbvals, fbvecs = get_fnames(name="small_64D")
+        bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+        gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=0)
+
+        mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
+        signal, _ = multi_tensor(
+            gtab,
+            mevals,
+            S0=1.0,
+            angles=[(0, 0), (60, 0)],
+            fractions=[50, 50],
+            snr=40,
+        )
+        response = (np.array([0.0015, 0.0003, 0.0003]), 1.0)
+        self.model = ConstrainedSphericalDeconvModel(gtab, response)
+        self.dwi_signal = signal[~gtab.b0s_mask]
+
+    def time_csdeconv_prefactored_P(self):
+        csdeconv(
+            self.dwi_signal,
+            self.model._X,
+            self.model.B_reg,
+            tau=self.model.tau,
+            convergence=self.model.convergence,
+            P=self.model._P,
+            P_chol=self.model._P_chol,
+        )
+
+    def time_csdeconv_factorize_each_call(self):
+        csdeconv(
+            self.dwi_signal,
+            self.model._X,
+            self.model.B_reg,
+            tau=self.model.tau,
+            convergence=self.model.convergence,
+            P=self.model._P,
+            P_chol=None,
+        )
 
 
 # class BenchCSD:
