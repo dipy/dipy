@@ -244,3 +244,40 @@ def test_coordinate_consistency():
 
     assert isinstance(denoised_image, np.ndarray)
     assert denoised_image.dtype == np.float64 or denoised_image.dtype == np.float32
+
+
+@pytest.mark.parametrize("method", ["blockwise", "classic"])
+def test_nlmeans_4d_with_sigma_3d_volume(method):
+    """Regression test: nlmeans should accept non-scalar sigma for 4D data.
+
+    This includes:
+    - a 3D sigma volume (e.g., from PIESNO) with one value per spatial voxel
+    - a 1D sigma array of length 1, which should be broadcast over all volumes
+    """
+    np.random.seed(42)
+    arr = np.random.normal(100, 10, size=(10, 10, 10, 5)).astype(np.float64)
+    # 3D sigma — one value per spatial voxel, as PIESNO would produce per slice
+    sigma_3d = np.ones(arr.shape[:3]) * 10.0
+    # This should NOT raise a ValueError
+    result_3d = nlmeans(arr, sigma=sigma_3d, method=method)
+    assert result_3d.shape == arr.shape
+
+    # 1D sigma array of length 1 — should also be accepted for 4D data
+    sigma_1d = np.array([10.0])
+    result_1d = nlmeans(arr, sigma=sigma_1d, method=method)
+    assert result_1d.shape == arr.shape
+
+
+def test_nlmeans_4d_invalid_sigma_shapes():
+    """Invalid 4D sigma shapes should raise clear validation errors."""
+    np.random.seed(42)
+    arr = np.random.normal(100, 10, size=(10, 10, 10, 5)).astype(np.float64)
+
+    with pytest.raises(ValueError, match="length 1 or"):
+        nlmeans(arr, sigma=np.array([10.0, 11.0]), method="classic")
+
+    with pytest.raises(ValueError, match="same shape as the first 3 dimensions"):
+        nlmeans(arr, sigma=np.ones((9, 10, 10)), method="classic")
+
+    with pytest.raises(ValueError, match="1D or 3D array for 4D data"):
+        nlmeans(arr, sigma=np.ones((10, 10)), method="classic")
