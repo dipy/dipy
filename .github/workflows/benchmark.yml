@@ -1,46 +1,133 @@
+---
+# yamllint disable rule:line-length
 name: Benchmarks
 
-on: [push, pull_request]
+# yamllint disable-line rule:truthy
+on:
+  workflow_dispatch:
+  pull_request:
+    types:
+      - labeled
 
 permissions:
   contents: read
+  pull-requests: write
 
 concurrency:
-  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: >-
+    benchmark-${{ github.workflow }}-
+    ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   benchmark:
-    name: Linux
+    name: ASV Continuous (HEAD vs master)
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.label.name == 'run-benchmark')
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
+
     defaults:
       run:
         shell: bash
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [ '3.11' ]
 
     steps:
-    - name: Set up system
-      uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install .[dev,test,ml,extra,benchmark]
-    - name: Set threading parameters for reliable benchmarking
-      run: |
-        echo "OPENBLAS_NUM_THREADS=1" >> $GITHUB_ENV
-        echo "MKL_NUM_THREADS=1" >> $GITHUB_ENV
-        echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
-    - name: Run benchmarks
-      run: |
-        asv machine --yes --config ${GITHUB_WORKSPACE}/benchmarks/asv.conf.json
-        asv run --config ${GITHUB_WORKSPACE}/benchmarks/asv.conf.json --show-stderr
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install ccache
+        run: |
+          sudo apt-get update -y -q
+          sudo apt-get install -y ccache
+          echo "/usr/lib/ccache" >> $GITHUB_PATH
+
+      - name: Cache ccache files
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-asv-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            ccache-asv-${{ runner.os }}-
+
+      - name: Install ASV and build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install asv virtualenv pyperf Cython build packaging
+
+      - name: Set threading parameters for reliable benchmarking
+        run: |
+          echo "OPENBLAS_NUM_THREADS=1" >> $GITHUB_ENV
+          echo "MKL_NUM_THREADS=1"      >> $GITHUB_ENV
+          echo "OMP_NUM_THREADS=1"      >> $GITHUB_ENV
+
+      - name: Configure ASV machine
+        run: |
+          asv machine --yes \
+            --config ${GITHUB_WORKSPACE}/benchmarks/asv.conf.json
+
+      - name: Run ASV continuous (HEAD vs master)
+        run: |
+          cd ${GITHUB_WORKSPACE}
+          asv continuous \
+            --config benchmarks/asv.conf.json \
+            --factor 1.1 \
+            --show-stderr \
+            master HEAD \
+            2>&1 | tee /tmp/asv_output.txt
+
+      - name: Generate comparison summary
+        id: compare
+        run: |
+          cd ${GITHUB_WORKSPACE}
+          {
+            echo "COMPARISON<<EOF"
+            asv compare \
+              --config benchmarks/asv.conf.json \
+              --factor 1.1 \
+              --split \
+              master HEAD
+            echo "EOF"
+          } >> $GITHUB_ENV
+
+      - name: Post results as PR comment
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: asv-benchmark-results
+          message: |
+            ## ASV Benchmark Results - master vs HEAD
+            <details>
+            <summary>Click to expand full comparison</summary>
+
+            ${{ env.COMPARISON }}
+
+            </details>
+
+            > **Legend:** + regression / - improvement / +-10% = no change
+            > [Full logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: Upload raw results as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asv-results-${{ github.sha }}
+          path: |
+            benchmarks/results/
+            /tmp/asv_output.txt
+          retention-days: 30
+
+      - name: Fail if significant regressions detected
+        run: |
+          if grep -qE "^\+\s" /tmp/asv_output.txt; then
+            echo "Regressions detected - review benchmark output above."
+            exit 1
+          fi
