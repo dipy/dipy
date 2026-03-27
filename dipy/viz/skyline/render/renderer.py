@@ -1,3 +1,5 @@
+"""Shared FURY window factory and base class for Skyline visualizations."""
+
 from pathlib import Path
 import sys
 
@@ -29,7 +31,26 @@ if has_imgui:
 
 
 class Visualization:
+    """Represent ``Visualization`` in Skyline.
+
+    Parameters
+    ----------
+    path : str or Path
+        Path to the resource on disk.
+    render_callback : callable, optional
+        Callback used to request a render/update.
+    """
+
     def __init__(self, path, render_callback):
+        """Represent ``Visualization`` in Skyline.
+
+        Parameters
+        ----------
+        path : str or Path
+            Path to the resource on disk.
+        render_callback : callable, optional
+            Callback used to request a render/update.
+        """
         self._render_callback = render_callback
         self._scene_op_callback = None
         self.path = path if path is not None else "Unnamed Visualization"
@@ -44,20 +65,36 @@ class Visualization:
         self._info = self._populate_info()
 
     def render(self):
+        """Request a window redraw through :attr:`_render_callback` when set."""
         if self._render_callback is not None:
             self._render_callback()
 
     def apply_scene_op(self, func, *args, **kwargs):
+        """Run ``func`` immediately or defer it via :attr:`_scene_op_callback`."""
         if self._scene_op_callback is not None:
             self._scene_op_callback(func, *args, **kwargs)
             return
         func(*args, **kwargs)
 
     def _set_actor_visible(self, visible):
+        """Handle  set actor visible for ``Visualization``.
+
+        Parameters
+        ----------
+        visible : bool
+            Whether the actor should be visible.
+        """
         self.actor.visible = visible
 
     @property
     def actor(self):
+        """Handle actor for ``Visualization``.
+
+        Raises
+        ------
+        NotImplementedError
+            if the method is not implemented in the subclass.
+        """
         raise NotImplementedError("Subclasses must implement the actor property.")
 
     @property
@@ -79,17 +116,24 @@ class Visualization:
         return None
 
     def renderer(self, is_open, group_visible=True):
-        """Provides a callback from UIManager to handle visualization.
+        """Draw the sidebar header and optional widget body for this layer.
 
         Parameters
         ----------
-        name : str
-            Name of the visualization section
         is_open : bool
-            If the UI section is open
+            Whether the collapsible section should start expanded this frame.
         group_visible : bool, optional
             Whether the parent group is visible. When False, the actor is
             hidden regardless of the individual visibility toggle.
+
+        Returns
+        -------
+        is_open : bool
+            Updated expanded state after handling input.
+        is_removed : bool
+            True if the user requested removal.
+        should_enable_group : bool
+            True if a hidden group must be re-enabled because visibility was toggled.
         """
         viz_type = self.viz_type
         if viz_type is None:
@@ -148,6 +192,14 @@ class Visualization:
         )
 
     def _populate_info(self):
+        """Handle  populate info for ``Visualization``.
+        None
+
+        Returns
+        -------
+        object
+            Returned value.
+        """
         return self.name
 
 
@@ -160,9 +212,8 @@ def create_window(
 ):
     """Create a FURY ShowManager based on the visualizer type.
 
-    This function enables the creation of different types of windows for visualizations.
-    This will be used to create multi-window structure in the skyline visualizer,
-    where multiple instances can co-exist.
+    Used to host the main scene, optional ImGui overlay, and multi-viewport
+    layouts in Skyline.
 
     Parameters
     ----------
@@ -177,6 +228,8 @@ def create_window(
     screen_config : list, optional
         Defines the screen layout. Can be a list of integers (vertical/horizontal
         sections) or a list of explicit bounding box tuples (x, y, w, h).
+    title : str, optional
+        Window title; in stealth mode may be combined with ``out_dir`` upstream.
 
     Returns
     -------

@@ -1,9 +1,11 @@
 """WGSL shader sources for DIPY's SH billboard rendering pipeline."""
 
-from __future__ import annotations
-
 
 def _register_dipy_wgsl_loader():
+    """Register this package with Fury's Jinja WGSL loader if dependencies exist.
+    None
+        Failures are swallowed so Skyline degrades gracefully without WGSL extras.
+    """
     try:
         import jinja2
         from pygfx.renderers.wgpu.shader.templating import (
@@ -21,6 +23,18 @@ def _register_dipy_wgsl_loader():
 
 
 def load_dipy_wgsl(name: str) -> str:
+    """Load a UTF-8 WGSL/Jinja template shipped inside ``dipy.viz.skyline.wgsl``.
+
+    Parameters
+    ----------
+    name : str
+        Relative filename inside the package resource tree.
+
+    Returns
+    -------
+    str
+        Shader source text.
+    """
     import importlib.resources
 
     ref = importlib.resources.files(__package__) / name

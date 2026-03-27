@@ -1,3 +1,5 @@
+"""Application entry points and main ``Skyline`` viewer class."""
+
 import os
 import time
 
@@ -40,6 +42,57 @@ else:
 
 
 class Skyline:
+    """Represent ``Skyline`` in Skyline.
+
+    Parameters
+    ----------
+    visualizer_type : str, optional
+        Value for ``visualizer type``.
+    images : list, optional
+        Value for ``images``.
+    peaks : ndarray
+        Value for ``peaks``.
+    rois : list, optional
+        Value for ``rois``.
+    surfaces : list, optional
+        Value for ``surfaces``.
+    tractograms : list, optional
+        Value for ``tractograms``.
+    sh_coeffs : list, optional
+        Value for ``sh coeffs``.
+    is_cluster : bool, optional
+        Value for ``is cluster``.
+    is_light_version : bool, optional
+        Value for ``is light version``.
+    glass_brain : bool, optional
+        Value for ``glass brain``.
+    bg_color : tuple(float, float, float), optional
+        Value for ``bg color``.
+    tract_colors : str or tuple, optional
+        Value for ``tract colors``.
+    cluster_thr : float, optional
+        Value for ``cluster thr``.
+    cluster_size_thr : int, optional
+        Value for ``cluster size thr``.
+    cluster_length_thr : float, optional
+        Value for ``cluster length thr``.
+    buan_pvals : str, optional
+        Value for ``buan pvals``.
+    rgb : bool, optional
+        Interpret a 4D volume as RGB/RGBA channels when True.
+        Colormap and directional-volume controls are ignored in this mode.
+    initial_filenames : list, optional
+        Value for ``initial filenames``.
+    initial_rois : list, optional
+        Value for ``initial rois``.
+    initial_shm_coeffs : list, optional
+        Value for ``initial shm coeffs``.
+    out_dir : str or Path, optional
+        Value for ``out dir``.
+    out_stealth_png : str, optional
+        Value for ``out stealth png``.
+    """
+
     def __init__(
         self,
         visualizer_type="standalone",
@@ -65,6 +118,56 @@ class Skyline:
         out_dir=None,
         out_stealth_png=None,
     ):
+        """Represent ``Skyline`` in Skyline.
+
+        Parameters
+        ----------
+        visualizer_type : str, optional
+            Value for ``visualizer type``.
+        images : list, optional
+            Value for ``images``.
+        peaks : ndarray
+            Value for ``peaks``.
+        rois : list, optional
+            Value for ``rois``.
+        surfaces : list, optional
+            Value for ``surfaces``.
+        tractograms : list, optional
+            Value for ``tractograms``.
+        sh_coeffs : list, optional
+            Value for ``sh coeffs``.
+        is_cluster : bool, optional
+            Value for ``is cluster``.
+        is_light_version : bool, optional
+            Value for ``is light version``.
+        glass_brain : bool, optional
+            Value for ``glass brain``.
+        bg_color : tuple(float, float, float), optional
+            Value for ``bg color``.
+        tract_colors : str or tuple, optional
+            Value for ``tract colors``.
+        cluster_thr : float, optional
+            Value for ``cluster thr``.
+        cluster_size_thr : int, optional
+            Value for ``cluster size thr``.
+        cluster_length_thr : float, optional
+            Value for ``cluster length thr``.
+        buan_pvals : str, optional
+            Value for ``buan pvals``.
+        rgb : bool, optional
+            Interpret a 4D volume as RGB/RGBA channels when True.
+            Colormap and directional-volume controls are ignored in this mode.
+        initial_filenames : list, optional
+            Value for ``initial filenames``.
+        initial_rois : list, optional
+            Value for ``initial rois``.
+        initial_shm_coeffs : list, optional
+            Value for ``initial shm coeffs``.
+        out_dir : str or Path, optional
+            Value for ``out dir``.
+        out_stealth_png : str, optional
+            Value for ``out stealth png``.
+        """
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
         self._visualizer_type = visualizer_type
@@ -177,6 +280,9 @@ class Skyline:
         self.window.start()
 
     def _wait_for_loading_in_stealth_mode(self):
+        """Handle  wait for loading in stealth mode for ``Skyline``.
+        None
+        """
         while self._pending_loaded_files or (
             self._loading_total > 0 and self._loading_done < self._loading_total
         ):
@@ -185,6 +291,9 @@ class Skyline:
             time.sleep(0.01)
 
     def _refresh_actors(self):
+        """Handle  refresh actors for ``Skyline``.
+        None
+        """
         all_actors = [v.actor for v in self.visualizations]
 
         for actor in list(self.window.screens[0].scene.main_scene.children):
@@ -197,12 +306,18 @@ class Skyline:
                 self.window.screens[0].scene.main_scene.add(a)
 
     def _refresh_ui(self):
+        """Handle  refresh ui for ``Skyline``.
+        None
+        """
         for viz in self.visualizations:
             viz_id = f"{viz.path}:{viz.name}"
             if viz_id not in self.UI_window.sections:
                 self._remove_visualization(viz)
 
     def _arrange_image_actors(self):
+        """Handle  arrange image actors for ``Skyline``.
+        None
+        """
         for viz in self._image_visualizations:
             if viz.active:
                 show_slices(
@@ -216,6 +331,13 @@ class Skyline:
         )
 
     def _update_tractogram_helper(self, *, remove=False):
+        """Handle  update tractogram helper for ``Skyline``.
+
+        Parameters
+        ----------
+        remove : bool, optional
+            Value for ``remove``.
+        """
         if remove and self._tractogram_help:
             self.window.screens[0].scene.remove(self._tractogram_help)
             self._tractogram_help = False
@@ -242,6 +364,9 @@ class Skyline:
             self._tractogram_help = False
 
     def draw_ui(self):
+        """Handle draw ui for ``Skyline``.
+        None
+        """
         process_async_callbacks()
         self._is_drawing_ui = True
         try:
@@ -267,9 +392,23 @@ class Skyline:
             self.before_render()
 
     def request_refresh(self):
+        """Handle request refresh for ``Skyline``.
+        None
+        """
         self._refresh_requested = True
 
     def enqueue_scene_op(self, func, *args, **kwargs):
+        """Handle enqueue scene op for ``Skyline``.
+
+        Parameters
+        ----------
+        func : callable
+            Value for ``func``.
+        *args : tuple
+            Value for ``args``.
+        **kwargs : dict
+            Value for ``kwargs``.
+        """
         if self._is_drawing_ui:
             self._pending_scene_ops.append((func, args, kwargs))
             self.request_refresh()
@@ -278,28 +417,49 @@ class Skyline:
         self.request_refresh()
 
     def _perform_refresh(self):
+        """Handle  perform refresh for ``Skyline``.
+        None
+        """
         if self._visualizer_type != "stealth":
             self._update_tractogram_helper()
             self._refresh_ui()
         self._refresh_actors()
 
     def _perform_refresh_and_render(self):
+        """Handle  perform refresh and render for ``Skyline``.
+        None
+        """
         self._perform_refresh()
         self._refresh_requested = False
         self._render_window()
 
     def _render_window(self):
+        """Handle  render window for ``Skyline``.
+        None
+        """
         if self._is_drawing_ui:
             return
         self.window.render()
 
     def _queue_loaded_visualizations(self, loaded_files, *, message="Loading Files..."):
+        """Handle  queue loaded visualizations for ``Skyline``.
+
+        Parameters
+        ----------
+        loaded_files : dict
+            Value for ``loaded files``.
+        message : str, optional
+            Message text shown to the user.
+        """
         self._pending_loaded_files.append(loaded_files)
         self._loading_total += 1
         self._loading_done += 1
         self.loader(True, message=message)
 
     def _flush_pending_sync_requests(self):
+        """Handle  flush pending sync requests for ``Skyline``.
+        None
+        """
         if not self._pending_sync_requests:
             return
         pending = self._pending_sync_requests.copy()
@@ -312,6 +472,9 @@ class Skyline:
         self._refresh_requested = True
 
     def _flush_pending_scene_ops(self):
+        """Handle  flush pending scene ops for ``Skyline``.
+        None
+        """
         if not self._pending_scene_ops:
             return
         pending = self._pending_scene_ops.copy()
@@ -324,6 +487,9 @@ class Skyline:
         self._refresh_requested = True
 
     def _drain_pending_visualizations(self):
+        """Handle  drain pending visualizations for ``Skyline``.
+        None
+        """
         if self._pending_loaded_files:
             loaded_files = self._pending_loaded_files.pop(0)
             self._load_visualiations(
@@ -366,12 +532,22 @@ class Skyline:
             self._loading_done = 0
 
     def before_render(self):
+        """Handle before render for ``Skyline``.
+        None
+        """
         if self._is_drawing_ui:
             self.request_refresh()
             return
         self._perform_refresh_and_render()
 
     def handle_resize(self, size):
+        """Handle handle resize for ``Skyline``.
+
+        Parameters
+        ----------
+        size : tuple(int, int), optional
+            Value for ``size``.
+        """
         self.size = size
         self.ui_size = (400, self.size[1])
         self.UI_window.size = (self.ui_size[0], size[1])
@@ -383,11 +559,25 @@ class Skyline:
         self._render_window()
 
     def handle_key_events(self, event):
+        """Handle handle key events for ``Skyline``.
+
+        Parameters
+        ----------
+        event : Event
+            Interaction event from the renderer callback.
+        """
         for viz in self._tractogram_visualizations:
             if isinstance(viz, ClusterStreamline3D):
                 viz.handle_key_events(event)
 
     def _add_visualization(self, viz):
+        """Handle  add visualization for ``Skyline``.
+
+        Parameters
+        ----------
+        viz : Visualization
+            Value for ``viz``.
+        """
         viz_id = f"{viz.path}:{viz.name}"
         if self.UI_window is not None and viz_id in self.UI_window.sections:
             logger.warning(
@@ -424,6 +614,27 @@ class Skyline:
         is_cluster=None,
         async_clustering=None,
     ):
+        """Handle  load visualiations for ``Skyline``.
+
+        Parameters
+        ----------
+        images : list, optional
+            Value for ``images``.
+        peaks : ndarray
+            Value for ``peaks``.
+        rois : list, optional
+            Value for ``rois``.
+        surfaces : list, optional
+            Value for ``surfaces``.
+        tractograms : list, optional
+            Value for ``tractograms``.
+        sh_coeffs : list, optional
+            Value for ``sh coeffs``.
+        is_cluster : bool, optional
+            Value for ``is cluster``.
+        async_clustering : bool, optional
+            Value for ``async clustering``.
+        """
         for idx, input in enumerate(images or []):
             image3d = create_image_visualization(
                 input,
@@ -515,6 +726,17 @@ class Skyline:
             self.UI_window.request_file_dialog = True
 
     def _append_visualization(self, *, filenames=None, rois=None, shm_coeffs=None):
+        """Handle  append visualization for ``Skyline``.
+
+        Parameters
+        ----------
+        filenames : list, optional
+            Value for ``filenames``.
+        rois : list, optional
+            Value for ``rois``.
+        shm_coeffs : list, optional
+            Value for ``shm coeffs``.
+        """
         total_files = len(filenames or []) + len(rois or []) + len(shm_coeffs or [])
         if total_files == 0:
             return
@@ -557,6 +779,13 @@ class Skyline:
             )
 
     def _remove_visualization(self, viz):
+        """Handle  remove visualization for ``Skyline``.
+
+        Parameters
+        ----------
+        viz : Visualization
+            Value for ``viz``.
+        """
         if isinstance(viz, Image3D):
             self._image_visualizations.remove(viz)
         elif isinstance(viz, Peak3D):
@@ -577,6 +806,18 @@ class Skyline:
 
     @staticmethod
     def _snapshot_state(new_state):
+        """Handle  snapshot state for ``Skyline``.
+
+        Parameters
+        ----------
+        new_state : array-like
+            New synchronized state for this visualization.
+
+        Returns
+        -------
+        np.ndarray
+            The snapshot state of the visualization.
+        """
         if hasattr(new_state, "copy"):
             return new_state.copy()
         if isinstance(new_state, list):
@@ -587,6 +828,15 @@ class Skyline:
 
     def _synchronize_visualizations_from_source(self, source_viz, new_state):
         # Source-side guard: only push if this view has sync enabled.
+        """Handle  synchronize visualizations from source for ``Skyline``.
+
+        Parameters
+        ----------
+        source_viz : Visualization
+            Value for ``source viz``.
+        new_state : array-like
+            New synchronized state for this visualization.
+        """
         if not getattr(source_viz, "_synchronize", True):
             return
 
@@ -597,6 +847,15 @@ class Skyline:
 
     def _synchronize_visualizations(self, source_viz, new_state):
         # Source-side guard: only push if this view has sync enabled.
+        """Handle  synchronize visualizations for ``Skyline``.
+
+        Parameters
+        ----------
+        source_viz : Visualization
+            Value for ``source viz``.
+        new_state : array-like
+            New synchronized state for this visualization.
+        """
         if not getattr(source_viz, "_synchronize", True):
             return
 
@@ -612,6 +871,13 @@ class Skyline:
     # self.window.render()
 
     def _update_background_color(self, new_color):
+        """Handle  update background color for ``Skyline``.
+
+        Parameters
+        ----------
+        new_color : tuple(float, float, float)
+            Value for ``new color``.
+        """
         if self._is_drawing_ui:
             self._pending_bg_color = new_color
             self.request_refresh()
@@ -621,6 +887,9 @@ class Skyline:
         self._render_window()
 
     def _process_tractogram_switches(self):
+        """Handle  process tractogram switches for ``Skyline``.
+        None
+        """
         if not self._pending_tractogram_switches:
             return
         pending = self._pending_tractogram_switches.copy()
@@ -665,6 +934,15 @@ class Skyline:
             run_async(_delay, _on_delay_done)
 
     def _update_tractogram_rendering(self, streamline_viz, is_clustered):
+        """Handle  update tractogram rendering for ``Skyline``.
+
+        Parameters
+        ----------
+        streamline_viz : Visualization
+            Value for ``streamline viz``.
+        is_clustered : bool
+            Value for ``is clustered``.
+        """
         for viz in self._tractogram_visualizations:
             if viz is streamline_viz and isinstance(
                 viz, (Streamline3D, ClusterStreamline3D)
@@ -673,11 +951,27 @@ class Skyline:
                 break
 
     def loader(self, show, *, message=None):
+        """Handle loader for ``Skyline``.
+
+        Parameters
+        ----------
+        show : bool
+            Whether to show the UI element/loader.
+        message : str, optional
+            Message text shown to the user.
+        """
         if self.UI_window is not None:
             self.UI_window.update_loader(show=show, message=message)
 
     @property
     def visualizations(self):
+        """Handle visualizations for ``Skyline``.
+
+        Returns
+        -------
+        list
+            The list of visualizations in the Skyline viewer.
+        """
         return (
             self._image_visualizations
             + self._peak_visualizations
@@ -767,6 +1061,11 @@ def skyline_from_files(
         Output directory to save the figure if stealth mode is enabled.
     out_stealth_png : str, optional
         Filename of saved picture if stealth mode is enabled.
+
+    Returns
+    -------
+    Skyline
+        Constructed viewer instance (blocking for interactive modes).
     """
     visualizer_type = "stealth" if stealth else "standalone"
 
@@ -882,6 +1181,11 @@ def skyline(
         Output directory to save the figure if stealth mode is enabled.
     out_stealth_png : str, optional
         Filename of saved picture if stealth mode is enabled.
+
+    Returns
+    -------
+    Skyline
+        Constructed viewer instance (blocking for interactive modes).
     """
     return Skyline(
         visualizer_type=visualizer_type,

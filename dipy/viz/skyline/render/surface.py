@@ -1,3 +1,5 @@
+"""Mesh surfaces (FreeSurfer/GIFTI) with Phong or basic materials."""
+
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
@@ -15,8 +17,6 @@ fury, has_fury_v2, _ = optional_package(
 )
 if has_fury_v2:
     from fury.actor import surface
-else:
-    actor = fury.actor
 imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
 if has_imgui:
     imgui = imgui_bundle.imgui
@@ -81,6 +81,30 @@ def create_surface_visualization(
 
 
 class Surface(Visualization):
+    """Represent ``Surface`` in Skyline.
+
+    Parameters
+    ----------
+    name : str
+        Display name used in the Skyline UI.
+    vertices : ndarray
+        Value for ``vertices``.
+    faces : ndarray
+        Value for ``faces``.
+    affine : ndarray, optional
+        Voxel-to-world affine used to position slices in world coordinates.
+    color : tuple(float, float, float), optional
+        Value for ``color``.
+    opacity : int, optional
+        Slice opacity in percent, expected in ``[0, 100]``.
+    texture : ndarray, optional
+        Value for ``texture``.
+    material : str, optional
+        Value for ``material``.
+    render_callback : callable, optional
+        Callback used to request a render/update.
+    """
+
     def __init__(
         self,
         name,
@@ -94,6 +118,29 @@ class Surface(Visualization):
         material="phong",
         render_callback=None,
     ):
+        """Represent ``Surface`` in Skyline.
+
+        Parameters
+        ----------
+        name : str
+            Display name used in the Skyline UI.
+        vertices : ndarray
+            Value for ``vertices``.
+        faces : ndarray
+            Value for ``faces``.
+        affine : ndarray, optional
+            Voxel-to-world affine used to position slices in world coordinates.
+        color : tuple(float, float, float), optional
+            Value for ``color``.
+        opacity : int, optional
+            Slice opacity in percent, expected in ``[0, 100]``.
+        texture : ndarray, optional
+            Value for ``texture``.
+        material : str, optional
+            Value for ``material``.
+        render_callback : callable, optional
+            Callback used to request a render/update.
+        """
         self.vertices = vertices
         self.faces = faces
         self.affine = affine
@@ -105,6 +152,7 @@ class Surface(Visualization):
         super().__init__(name, render_callback)
 
     def _create_surface_actor(self):
+        """Handle  create surface actor for ``Surface``."""
         self._surface_actor = surface(
             self.vertices,
             self.faces,
@@ -117,18 +165,40 @@ class Surface(Visualization):
             self._surface_actor.material.depth_write = False
 
     def _set_opacity(self, opacity):
+        """Handle  set opacity for ``Surface``.
+
+        Parameters
+        ----------
+        opacity : int, optional
+            Slice opacity in percent, expected in ``[0, 100]``.
+        """
         self._surface_actor.material.opacity = opacity / 100.0
         self._surface_actor.material.depth_write = opacity >= 100
 
     def _populate_info(self):
+        """Handle  populate info for ``Surface``.
+
+        Returns
+        -------
+        object
+            Returned value.
+        """
         info = f"No. of vertices: {len(self.vertices)}\nNo. of faces: {len(self.faces)}"
         return info
 
     @property
     def actor(self):
+        """Handle actor for ``Surface``.
+
+        Returns
+        -------
+        object
+            Returned value.
+        """
         return self._surface_actor
 
     def render_widgets(self):
+        """Handle render widgets for ``Surface``."""
         changed, new = thin_slider(
             "Opacity",
             self.opacity,

@@ -1,3 +1,5 @@
+"""Reusable ImGui controls styled for the Skyline sidebar."""
+
 import math
 from pathlib import Path
 
@@ -36,6 +38,30 @@ def render_file_dialog(
     file_name="save_file",
     type="viz",
 ):
+    """Open a native file dialog and forward the result to ``callback``.
+
+    Parameters
+    ----------
+    title : str, optional
+        Dialog window title.
+    name : str, optional
+        Filter label shown in the dialog.
+    extensions : str, optional
+        Extension filter string (platform-specific, e.g. ``"*.nii *.gz"``).
+    multiselect : bool, optional
+        Allow multiple paths when ``dialog_type`` is ``"open"``.
+    callback : callable or None, optional
+        Invoked with keyword arguments matching the selected ``type``, or with
+        ``None`` when the dialog is cancelled (BUAN branch uses a single argument).
+    dialog_type : {"open", "save"}, optional
+        Whether to pick existing files or choose a save location.
+    file_name : str, optional
+        Default file name for save dialogs.
+    type : str, optional
+        Callback convention: ``"viz"`` (``filenames=``), ``"roi"`` (``rois=``),
+        ``"shm_coeff"`` (``shm_coeffs=``), or ``"buan_pvals"`` (raw list/None).
+    None
+    """
     global _LAST_DIR
     if dialog_type == "open":
         dialog = pfd.open_file(
@@ -99,6 +125,25 @@ def open_confirmation_dialog(
     okay_text="Okay",
     cancel_text="Cancel",
 ):
+    """Drive a modal confirmation popup for the current frame.
+
+    Parameters
+    ----------
+    title : str
+        Popup identifier; must be stable across frames.
+    message : str
+        Body text shown inside the modal.
+    okay_text : str, optional
+        Label for the confirm button.
+    cancel_text : str, optional
+        Label for the dismiss button.
+
+    Returns
+    -------
+    str
+        One of ``"open"``, ``"already_open"``, ``"okay"``, or ``"cancel"`` depending
+        on popup and button state for this frame.
+    """
     state = "open" if not imgui.is_popup_open(title) else "already_open"
     imgui.push_style_color(
         imgui.Col_.title_bg_active, imgui.get_color_u32(THEME["primary"])
@@ -134,16 +179,17 @@ def open_confirmation_dialog(
 
 
 def loading(title, message, show):
-    """Show loading bar.
+    """Show or hide a centered modal loading indicator.
 
     Parameters
     ----------
     title : str
-        Loader ID
+        ImGui popup id used for the overlay modal.
     message : str
-        Message to show in the loader.
+        Status line shown under the spinner.
     show : bool
-        To show or hide the loader.
+        When False the modal is closed on the next draw.
+    None
     """
     text_width = imgui.calc_text_size(message).x
     spinner_radius = 16.0
@@ -183,12 +229,13 @@ def loading(title, message, show):
 
 
 def warning_message(message):
-    """Generate a warning message
+    """Draw a warning icon with primary-colored text.
 
     Parameters
     ----------
     message : str
-        Warning to display
+        Warning to display on the current ImGui line.
+    None
     """
     warning_icon = icons_fontawesome_6.ICON_FA_TRIANGLE_EXCLAMATION
     imgui.text_colored(THEME["primary"], warning_icon)
@@ -202,7 +249,7 @@ def color_picker(
     selected_color=(0, 0, 0),
     tooltip="Pick color",
 ):
-    """Create color picker from selected color
+    """Create color picker from selected color.
 
     Parameters
     ----------
@@ -212,6 +259,13 @@ def color_picker(
         Previously selected color.
     tooltip : str, optional
         Tooltip to show when hovering the color picker.
+
+    Returns
+    -------
+    changed : bool
+        True if the user committed a new color this frame.
+    color : tuple of float
+        RGB values in ``[0, 1]`` after any edit.
     """
 
     changed = False
@@ -253,9 +307,6 @@ def downloader(label, callback, *, extension="*.*", type="viz", file_name="save.
          - "buan_colors": BUAN color mapping files
     file_name : str, optional
         Default file name suggested in the save dialog.
-
-    Returns
-    -------
     None
     """
     download_icon = icons_fontawesome_6.ICON_FA_DOWNLOAD
@@ -304,9 +355,6 @@ def uploader(
          - "roi": Region of Interest files
          - "shm_coeff": Spherical Harmonics Coefficients files
          - "buan_colors": BUAN color mapping files
-
-    Returns
-    -------
     None
     """
 
@@ -403,8 +451,14 @@ def render_section_header(
 
     Returns
     -------
-    bool
-        Updated open state after handling input.
+    is_open : bool
+        Updated expanded state for the section panel.
+    is_visible : bool
+        Updated actor visibility preference.
+    is_close : bool
+        True if the user clicked remove this frame.
+    is_changed : bool
+        True if the header body area triggered an open transition.
     """
     imgui.push_id(label)
 
@@ -586,9 +640,9 @@ def render_group(label, items, *, row_height=26, label_width=36, line_indent=8):
 
     Returns
     -------
-    list of tuple
-        A list of ``(changed, new_value)`` returned from each ``render_fn`` call.
-        Returns ``None`` if no items are supplied.
+    list of tuple or None
+        A list of values returned from each ``render_fn`` call, or ``None`` when
+        ``items`` is empty.
     """
     if not items:
         return
@@ -1159,11 +1213,16 @@ def thin_slider(
         Numeric type enforced for the slider value.
     value_unit : str or None, optional
         Optional unit suffix appended to the value display.
+    show_toggle : bool, optional
+        When True, prefix a clickable visibility icon before the label.
+    toggle : bool, optional
+        Current state for the visibility icon when ``show_toggle`` is True.
 
     Returns
     -------
-    tuple(bool, float or int)
-        Whether the slider value changed and the resulting numeric value.
+    tuple
+        ``(changed, value)`` or ``(changed, value, toggle)`` when ``show_toggle``
+        is True.
     """
     if value_type not in {"float", "int"}:
         raise ValueError("value_type must be either 'float' or 'int'")

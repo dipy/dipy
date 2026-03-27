@@ -1,3 +1,5 @@
+"""Binary ROI masks meshed as translucent contours."""
+
 import numpy as np
 
 from dipy.utils.logging import logger
@@ -16,8 +18,7 @@ fury, has_fury_v2, _ = optional_package(
 )
 if has_fury_v2:
     from fury.actor import contour_from_roi, set_group_opacity
-else:
-    actor = fury.actor
+
 imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
 if has_imgui:
     imgui = imgui_bundle.imgui
@@ -74,6 +75,24 @@ def create_roi_visualization(
 
 
 class ROI3D(Visualization):
+    """Represent ``ROI3D`` in Skyline.
+
+    Parameters
+    ----------
+    name : str
+        Display name used in the Skyline UI.
+    roi : ndarray
+        ROI mask array used to build a contour surface.
+    affine : ndarray, optional
+        Voxel-to-world affine used to position slices in world coordinates.
+    opacity : int, optional
+        Slice opacity in percent, expected in ``[0, 100]``.
+    color : tuple(float, float, float), optional
+        Value for ``color``.
+    render_callback : callable, optional
+        Callback used to request a render/update.
+    """
+
     def __init__(
         self,
         name,
@@ -84,6 +103,23 @@ class ROI3D(Visualization):
         color=(1, 0, 0),
         render_callback=None,
     ):
+        """Represent ``ROI3D`` in Skyline.
+
+        Parameters
+        ----------
+        name : str
+            Display name used in the Skyline UI.
+        roi : ndarray
+            ROI mask array used to build a contour surface.
+        affine : ndarray, optional
+            Voxel-to-world affine used to position slices in world coordinates.
+        opacity : int, optional
+            Slice opacity in percent, expected in ``[0, 100]``.
+        color : tuple(float, float, float), optional
+            Value for ``color``.
+        render_callback : callable, optional
+            Callback used to request a render/update.
+        """
         self.roi = roi
         if self.roi is None:
             raise ValueError("ROI data cannot be None for ROI visualization.")
@@ -102,6 +138,9 @@ class ROI3D(Visualization):
         super().__init__(name, render_callback)
 
     def _create_roi_actor(self):
+        """Handle  create roi actor for ``ROI3D``.
+        None
+        """
         self._roi_surface = contour_from_roi(
             self.roi, affine=self.affine, color=self.color, opacity=self.opacity / 100.0
         )
@@ -111,11 +150,25 @@ class ROI3D(Visualization):
                 actor.material.depth_write = False
 
     def _set_opacity(self, opacity):
+        """Handle  set opacity for ``ROI3D``.
+
+        Parameters
+        ----------
+        opacity : int, optional
+            Slice opacity in percent, expected in ``[0, 100]``.
+        """
         set_group_opacity(self._roi_surface, opacity / 100.0)
         for actor in self._roi_surface.children:
             actor.material.depth_write = opacity >= 100
 
     def _populate_info(self):
+        """Handle  populate info for ``ROI3D``.
+
+        Returns
+        -------
+        str
+            The information of the ROI visualization.
+        """
         info = f"ROI shape: {self.roi.shape}\nROI dtype: {self.roi.dtype}\n"
         info += f"Total voxels in ROI: {np.sum(self.roi > 0)}\n"
         if self.affine is not None:
@@ -127,9 +180,17 @@ class ROI3D(Visualization):
 
     @property
     def actor(self):
+        """Handle actor for ``ROI3D``.
+
+        Returns
+        -------
+        Contour
+            The actor of the ROI visualization.
+        """
         return self._roi_surface
 
     def render_widgets(self):
+        """Handle render widgets for ``ROI3D``."""
         changed, new = thin_slider(
             "Opacity",
             self.opacity,

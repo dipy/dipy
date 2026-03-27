@@ -24,8 +24,6 @@ fury, has_fury_v2, _ = optional_package(
 if has_fury_v2:
     from fury import apply_transformation
     from fury.actor import Group
-else:
-    actor = fury.actor
 
 imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
 if has_imgui:
@@ -123,17 +121,27 @@ def create_shm_visualization(
 
 
 def _descoteaux_to_fury_standard(coeffs_4d, sh_order, is_left_handed=False):
-    """Convert legacy descoteaux07 (even-only) SH coeffs to FURY standard.
+    """Convert even-order descoteaux07 SH coefficients to Fury's standard basis.
 
-    The legacy descoteaux07 basis uses Im(Y) for m>0 and Re(Y) for m<0,
-    while FURY's standard basis uses cos(mφ) for m>0 and sin(|m|φ) for m<0.
+    The legacy descoteaux07 basis uses Im(Y) for m>0 and Re(Y) for m<0, while
+    FURY uses cos(mφ) for m>0 and sin(|m|φ) for m<0. Coefficients satisfy
+    ``c_fury(l, m) = c_desc(l, -m)``. Left-handed affines additionally flip
+    the sign for orders with ``m > 0``.
 
-    Conversion:
-        c_fury(l, m) = c_desc(l, -m)
+    Parameters
+    ----------
+    coeffs_4d : ndarray
+        Volume storing descoteaux07 coefficients along the last axis.
+    sh_order : int
+        Maximum even spherical harmonic order present in the volume.
+    is_left_handed : bool, optional
+        If True, apply reflection correction for LAS-like orientations.
 
-    Additionally, if the affine is left-handed (e.g., LAS),
-    apply a reflection correction:
-        flip sign for m > 0
+    Returns
+    -------
+    ndarray
+        Array with the same leading shape as ``coeffs_4d`` and
+        ``(sh_order + 1) ** 2`` standard-basis coefficients on the last axis.
     """
     n_std = (sh_order + 1) ** 2
     out = np.zeros(coeffs_4d.shape[:-1] + (n_std,), dtype=coeffs_4d.dtype)
@@ -156,32 +164,32 @@ def _descoteaux_to_fury_standard(coeffs_4d, sh_order, is_left_handed=False):
 
 
 class SHSlicer:
-    """Single-actor SH glyph slicer.
-
-    Every valid voxel is packed into **one** ``SphGlyphBillboard``
-    actor with per-glyph ``(ix, iy, iz)`` stored on the GPU.
-    Three material uniforms (``active_slice_x/y/z``) select which
-    slices are visible — switching is a uniform update, zero rebuild.
+    """Represent ``SHSlicer`` in Skyline.
 
     Parameters
     ----------
-    coeffs_4d : ndarray, shape (X, Y, Z, n_coeffs)
-        SH coefficients.
-    voxel_sizes : array-like, shape (3,)
-        Physical voxel sizes in mm.
-    scale : float
-        Per-glyph scale factor.
-    l_max : int
-        Maximum SH order.
+    coeffs_4d : ndarray
+        Value for ``coeffs 4d``.
+    voxel_sizes : tuple(float, float, float), optional
+        Value for ``voxel sizes``.
+    scale : float, optional
+        Value for ``scale``.
+    l_max : int, optional
+        Value for ``l max``.
+    lut_res : int, optional
+        Value for ``lut res``.
+    use_hermite : bool, optional
+        Value for ``use hermite``.
+    mapping_mode : str, optional
+        Value for ``mapping mode``.
     mask : ndarray, optional
-        Boolean mask of valid voxels.
-    basis_type : str
-        SH basis convention.
-    color_type : str
-        Colour mapping type.
-    is_left_handed : bool
-        Whether the affine is left-handed (e.g., LAS),
-        requiring a reflection correction for legacy descoteaux07 coefficients.
+        Value for ``mask``.
+    basis_type : str, optional
+        Value for ``basis type``.
+    color_type : str, optional
+        Value for ``color type``.
+    is_left_handed : bool, optional
+        Value for ``is left handed``.
     """
 
     def __init__(
@@ -198,6 +206,33 @@ class SHSlicer:
         color_type="orientation",
         is_left_handed=False,
     ):
+        """Represent ``SHSlicer`` in Skyline.
+
+        Parameters
+        ----------
+        coeffs_4d : ndarray
+            Value for ``coeffs 4d``.
+        voxel_sizes : tuple(float, float, float), optional
+            Value for ``voxel sizes``.
+        scale : float, optional
+            Value for ``scale``.
+        l_max : int, optional
+            Value for ``l max``.
+        lut_res : int, optional
+            Value for ``lut res``.
+        use_hermite : bool, optional
+            Value for ``use hermite``.
+        mapping_mode : str, optional
+            Value for ``mapping mode``.
+        mask : ndarray, optional
+            Value for ``mask``.
+        basis_type : str, optional
+            Value for ``basis type``.
+        color_type : str, optional
+            Value for ``color type``.
+        is_left_handed : bool, optional
+            Value for ``is left handed``.
+        """
         if basis_type in ("descoteaux", "descoteaux07"):
             coeffs_4d = _descoteaux_to_fury_standard(coeffs_4d, l_max, is_left_handed)
             basis_type = "standard"
@@ -221,14 +256,14 @@ class SHSlicer:
         self._glyph_actor = None
 
     def build(self):
-        """Build the single actor containing every valid voxel."""
+        """Handle build for ``SHSlicer``."""
         self._glyph_actor = self._build_volume_actor()
         if self._glyph_actor is not None:
             self.actor.add(self._glyph_actor)
         return self.actor
 
     def _build_volume_actor(self):
-        """Create one billboard actor for every masked voxel."""
+        """Handle build volume actor for ``SHSlicer``."""
         vs = self.voxel_sizes
         X, Y, Z = self.shape
 
@@ -310,36 +345,36 @@ class SHSlicer:
 
 
 class SHGlyph3D(Visualization):
-    """SH glyph slicer visualization for Skyline.
+    """Represent ``SHGlyph3D`` in Skyline.
 
     Parameters
     ----------
     name : str
-        Display name in the UI sidebar.
-    coeffs : ndarray, shape (X, Y, Z, n_coeffs)
-        SH coefficients.
-    affine : ndarray (4, 4), optional
-        Voxel-to-world affine.
+        Display name used in the Skyline UI.
+    coeffs : ndarray
+        Value for ``coeffs``.
+    affine : ndarray, optional
+        Voxel-to-world affine used to position slices in world coordinates.
     render_callback : callable, optional
-        Callback to trigger a scene re-render.
-    scale : float
-        Initial per-glyph scale.
-    l_max : int
-        Maximum SH order.
-    lut_res : int
-        LUT resolution.
-    use_hermite : bool
-        Whether to use Hermite analytic normals.
-    mapping_mode : str
-        Billboard mapping mode.
-    basis_type : str
-        SH basis convention.
-    color_type : str
-        Colour mapping.
+        Callback used to request a render/update.
+    scale : float, optional
+        Value for ``scale``.
+    l_max : int, optional
+        Value for ``l max``.
+    lut_res : int, optional
+        Value for ``lut res``.
+    use_hermite : bool, optional
+        Value for ``use hermite``.
+    mapping_mode : str, optional
+        Value for ``mapping mode``.
+    basis_type : str, optional
+        Value for ``basis type``.
+    color_type : str, optional
+        Value for ``color type``.
     mask : ndarray, optional
-        Boolean mask of valid voxels.
+        Value for ``mask``.
     sync_callback : callable, optional
-        Callback to trigger when slice syncing from linked image reference.
+        Callback used to synchronize state across views.
     """
 
     def __init__(
@@ -359,6 +394,37 @@ class SHGlyph3D(Visualization):
         mask=None,
         sync_callback=None,
     ):
+        """Represent ``SHGlyph3D`` in Skyline.
+
+        Parameters
+        ----------
+        name : str
+            Display name used in the Skyline UI.
+        coeffs : ndarray
+            Value for ``coeffs``.
+        affine : ndarray, optional
+            Voxel-to-world affine used to position slices in world coordinates.
+        render_callback : callable, optional
+            Callback used to request a render/update.
+        scale : float, optional
+            Value for ``scale``.
+        l_max : int, optional
+            Value for ``l max``.
+        lut_res : int, optional
+            Value for ``lut res``.
+        use_hermite : bool, optional
+            Value for ``use hermite``.
+        mapping_mode : str, optional
+            Value for ``mapping mode``.
+        basis_type : str, optional
+            Value for ``basis type``.
+        color_type : str, optional
+            Value for ``color type``.
+        mask : ndarray, optional
+            Value for ``mask``.
+        sync_callback : callable, optional
+            Callback used to synchronize state across views.
+        """
         self.affine = affine
         default_scale = abs(self.affine[0, 0]) if self.affine is not None else scale
         self._voxel_sizes = np.array([1.0, 1.0, 1.0])
@@ -407,10 +473,24 @@ class SHGlyph3D(Visualization):
 
     @property
     def actor(self):
+        """Handle actor for ``SHGlyph3D``.
+
+        Returns
+        -------
+        Group
+            The actor of the SHGlyph3D visualization.
+        """
         return self._slicer.actor
 
     @property
     def voxel_state(self):
+        """Handle voxel state for ``SHGlyph3D``.
+
+        Returns
+        -------
+        np.ndarray
+            The voxel state of the SHGlyph3D visualization.
+        """
         if self.affine is None:
             return self.state
         voxel_state = apply_transformation(
@@ -419,6 +499,13 @@ class SHGlyph3D(Visualization):
         return np.round(voxel_state).astype(int)
 
     def _populate_info(self):
+        """Handle  populate info for ``SHGlyph3D``.
+
+        Returns
+        -------
+        str
+            The information of the SHGlyph3D visualization.
+        """
         info = f"Dimensions: {self.shape}"
         info += f"\nSH Coefficients: {self._slicer.n_coeffs}"
         info += f"\nSH Order: {self._slicer.l_max}"
@@ -427,16 +514,25 @@ class SHGlyph3D(Visualization):
         return info
 
     def set_slices(self):
+        """Handle set slices for ``SHGlyph3D``."""
         for i, axis in enumerate(("x", "y", "z")):
             self._slicer.set_slice(axis, self.voxel_state[i])
             self._last_voxel[i] = self.voxel_state[i]
 
     def update_state(self, new_state):
+        """Handle update state for ``SHGlyph3D``.
+
+        Parameters
+        ----------
+        new_state : array-like
+            New synchronized state for this visualization.
+        """
         if self._synchronize:
             self.state = new_state[:3]
             self.apply_scene_op(self.set_slices)
 
     def set_slice_visibility(self):
+        """Handle set slice visibility for ``SHGlyph3D``."""
         for i, axis in enumerate(("x", "y", "z")):
             if self._slice_visibility[i]:
                 self._slicer.show_axis(axis)
@@ -446,6 +542,7 @@ class SHGlyph3D(Visualization):
                 self._last_voxel[i] = -1
 
     def render_widgets(self):
+        """Handle render widgets for ``SHGlyph3D``."""
         changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
         if changed:
             self._synchronize = new

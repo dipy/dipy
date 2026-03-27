@@ -1,3 +1,5 @@
+"""GPU billboard pipeline for dense spherical-harmonic glyphs in Skyline."""
+
 from math import ceil
 
 import numpy as np
@@ -30,8 +32,7 @@ if has_fury_v2:
     )
     from fury.utils import create_sh_basis_matrix, get_lmax, get_n_coeffs
     import wgpu
-else:
-    actor = fury.actor
+
 
 _GPU_DEVICE_LIMITS_CACHE: dict = {}
 _GPU_HERMITE_COMPUTE_CACHE: dict = {}
@@ -39,7 +40,14 @@ _GPU_HERMITE_COMPUTE_CACHE: dict = {}
 _MAX_LUT_CHUNKS = 8
 
 
-def _get_gpu_max_buffer_size() -> int:
+def _get_gpu_max_buffer_size():
+    """Return cached ``max_storage_buffer_binding_size`` for the default WGPU adapter.
+
+    Returns
+    -------
+    int
+        Device limit in bytes, falling back to 128 MiB if discovery fails.
+    """
     if "max_storage_buffer_binding_size" in _GPU_DEVICE_LIMITS_CACHE:
         return _GPU_DEVICE_LIMITS_CACHE["max_storage_buffer_binding_size"]
 
@@ -57,10 +65,26 @@ def _get_gpu_max_buffer_size() -> int:
 
 
 def _calculate_lut_chunking(
-    glyph_count: int,
-    samples_per_glyph: int,
-    bytes_per_sample: int = 4,
-) -> dict:
+    glyph_count,
+    samples_per_glyph,
+    bytes_per_sample=4,
+):
+    """Plan LUT buffer chunking so each storage buffer stays within GPU limits.
+
+    Parameters
+    ----------
+    glyph_count : int
+        Number of distinct glyphs sharing the LUT layout.
+    samples_per_glyph : int
+        Scalar LUT entries per glyph for the active mapping mode.
+    bytes_per_sample : int, optional
+        Width of each LUT texel in bytes.
+
+    Returns
+    -------
+    dict
+        Fields ``n_chunks``, ``glyphs_per_chunk``, ``chunk_sizes``, ``feasible``, etc.
+    """
     max_buffer_bytes = _get_gpu_max_buffer_size()
     usable_bytes = int(max_buffer_bytes * 0.90)
 
@@ -109,11 +133,24 @@ def _calculate_lut_chunking(
 
 
 class SlicedSphGlyphMaterial(SphGlyphMaterial):
-    """SphGlyphMaterial with per-axis slice selection uniforms.
+    """Represent ``SlicedSphGlyphMaterial`` in Skyline.
 
-    Uniforms ``active_slice_x/y/z`` select which slice index is visible
-    on each axis, and ``vis_x/y/z`` toggle axis visibility.  A glyph is
-    rendered when *any* visible axis matches its stored voxel coordinate.
+    Parameters
+    ----------
+    active_slice_x : int, optional
+        Value for ``active slice x``.
+    active_slice_y : int, optional
+        Value for ``active slice y``.
+    active_slice_z : int, optional
+        Value for ``active slice z``.
+    vis_x : int, optional
+        Value for ``vis x``.
+    vis_y : int, optional
+        Value for ``vis y``.
+    vis_z : int, optional
+        Value for ``vis z``.
+    **kwargs : dict
+        Value for ``kwargs``.
     """
 
     uniform_type = dict(
@@ -136,6 +173,25 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
         vis_z=1,
         **kwargs,
     ):
+        """Represent ``SlicedSphGlyphMaterial`` in Skyline.
+
+        Parameters
+        ----------
+        active_slice_x : int, optional
+            Value for ``active slice x``.
+        active_slice_y : int, optional
+            Value for ``active slice y``.
+        active_slice_z : int, optional
+            Value for ``active slice z``.
+        vis_x : int, optional
+            Value for ``vis x``.
+        vis_y : int, optional
+            Value for ``vis y``.
+        vis_z : int, optional
+            Value for ``vis z``.
+        **kwargs : dict
+            Value for ``kwargs``.
+        """
         super().__init__(**kwargs)
         self.active_slice_x = active_slice_x
         self.active_slice_y = active_slice_y
@@ -145,74 +201,195 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
         self.vis_z = vis_z
 
     def _set_i4(self, name, value):
+        """Handle  set i4 for ``SlicedSphGlyphMaterial``.
+
+        Parameters
+        ----------
+        name : str
+            Display name used in the Skyline UI.
+        value : int
+            Value for ``value``.
+        """
         self.uniform_buffer.data[name] = int(value)
         self.uniform_buffer.update_full()
 
     def _get_i4(self, name):
+        """Handle  get i4 for ``SlicedSphGlyphMaterial``.
+
+        Parameters
+        ----------
+        name : str
+            Display name used in the Skyline UI.
+
+        Returns
+        -------
+        int
+            The value of the uniform buffer.
+        """
         return int(self.uniform_buffer.data[name])
 
     @property
     def active_slice_x(self):
+        """Handle active slice x for ``SlicedSphGlyphMaterial``.
+
+        Returns
+        -------
+        int
+            The value of the active slice x.
+        """
         return self._get_i4("active_slice_x")
 
     @active_slice_x.setter
     def active_slice_x(self, v):
+        """Handle active slice x for ``SlicedSphGlyphMaterial``.
+
+        Parameters
+        ----------
+        v : int
+            Value for ``v``.
+        """
         self._set_i4("active_slice_x", v)
 
     @property
     def active_slice_y(self):
+        """Handle active slice y for ``SlicedSphGlyphMaterial``.
+
+        Returns
+        -------
+        int
+            The value of the active slice y.
+        """
         return self._get_i4("active_slice_y")
 
     @active_slice_y.setter
     def active_slice_y(self, v):
+        """Handle active slice y for ``SlicedSphGlyphMaterial``.
+
+        Parameters
+        ----------
+        v : int
+            Value for ``v``.
+        """
         self._set_i4("active_slice_y", v)
 
     @property
     def active_slice_z(self):
+        """Handle active slice z for ``SlicedSphGlyphMaterial``.
+
+        Returns
+        -------
+        int
+            The value of the active slice z.
+        """
         return self._get_i4("active_slice_z")
 
     @active_slice_z.setter
     def active_slice_z(self, v):
+        """Handle active slice z for ``SlicedSphGlyphMaterial``.
+
+        Parameters
+        ----------
+        v : int
+            Value for ``v``.
+        """
         self._set_i4("active_slice_z", v)
 
     @property
     def vis_x(self):
+        """Handle vis x for ``SlicedSphGlyphMaterial``.
+
+        Returns
+        -------
+        int
+            The value of the vis x.
+        """
         return self._get_i4("vis_x")
 
     @vis_x.setter
     def vis_x(self, v):
+        """Handle vis x for ``SlicedSphGlyphMaterial``.
+
+        Parameters
+        ----------
+        v : int
+            Value for ``v``.
+        """
         self._set_i4("vis_x", v)
 
     @property
     def vis_y(self):
+        """Handle vis y for ``SlicedSphGlyphMaterial``.
+
+        Returns
+        -------
+        int
+            Returned value.
+        """
         return self._get_i4("vis_y")
 
     @vis_y.setter
     def vis_y(self, v):
+        """Handle vis y for ``SlicedSphGlyphMaterial``.
+
+        Parameters
+        ----------
+        v : int
+            Value for ``v``.
+        """
         self._set_i4("vis_y", v)
 
     @property
     def vis_z(self):
+        """Handle vis z for ``SlicedSphGlyphMaterial``.
+
+        Returns
+        -------
+        int
+            The value of the vis z.
+        """
         return self._get_i4("vis_z")
 
     @vis_z.setter
     def vis_z(self, v):
+        """Handle vis z for ``SlicedSphGlyphMaterial``.
+
+        Parameters
+        ----------
+        v : int
+            Value for ``v``.
+        """
         self._set_i4("vis_z", v)
 
 
 class Billboard(Mesh):
-    pass
+    """Base mesh class for instanced glyph billboards (Fury ``Mesh`` subclass)."""
 
 
 class SphGlyphBillboard(Billboard):
+    """Multi-glyph SH billboard with LUT baking and per-glyph coefficient buffers."""
+
     _basis_type = "standard"
 
     @property
     def l_max(self):
+        """Handle l max for ``SphGlyphBillboard``.
+
+        Returns
+        -------
+        int
+            The value of the l max.
+        """
         return getattr(self, "_l_max", -1)
 
     @l_max.setter
     def l_max(self, value):
+        """Handle l max for ``SphGlyphBillboard``.
+
+        Parameters
+        ----------
+        value : int
+            Value for ``value``.
+        """
         if not isinstance(value, int) or value < 0:
             raise ValueError("The attribute 'l_max' must be a non-negative integer.")
         max_supported = get_lmax(
@@ -230,7 +407,22 @@ class SphGlyphBillboard(Billboard):
 
 
 class BillboardSphGlyphShader(MeshShader):
+    """Represent ``BillboardSphGlyphShader`` in Skyline.
+
+    Parameters
+    ----------
+    wobject : SphGlyphBillboard
+        Billboard object rendered by this shader.
+    """
+
     def __init__(self, wobject):
+        """Represent ``BillboardSphGlyphShader`` in Skyline.
+
+        Parameters
+        ----------
+        wobject : SphGlyphBillboard
+            Billboard object rendered by this shader.
+        """
         super().__init__(wobject)
         self._wobject = wobject
         self["billboard_count"] = getattr(wobject, "billboard_count", 1)
@@ -288,6 +480,20 @@ class BillboardSphGlyphShader(MeshShader):
         self["use_slicing"] = "true" if use_slicing else "false"
 
     def get_render_info(self, wobject, shared):
+        """Handle get render info for ``BillboardSphGlyphShader``.
+
+        Parameters
+        ----------
+        wobject : SphGlyphBillboard
+            Billboard object rendered by this shader.
+        shared : dict
+            Value for ``shared``.
+
+        Returns
+        -------
+        dict
+            The render info of the billboard shader.
+        """
         render_info = super().get_render_info(wobject, shared)
         if not render_info or render_info.get("indices") is None:
             geometry = wobject.geometry
@@ -302,6 +508,22 @@ class BillboardSphGlyphShader(MeshShader):
         return render_info
 
     def get_bindings(self, wobject, shared, scene=None):
+        """Handle get bindings for ``BillboardSphGlyphShader``.
+
+        Parameters
+        ----------
+        wobject : SphGlyphBillboard
+            Billboard object rendered by this shader.
+        shared : dict
+            Value for ``shared``.
+        scene : Scene, optional
+            Active rendering scene passed by the renderer.
+
+        Returns
+        -------
+        dict
+            The bindings of the billboard shader.
+        """
         try:
             bindings = super().get_bindings(wobject, shared, scene)
         except TypeError:
@@ -415,6 +637,13 @@ class BillboardSphGlyphShader(MeshShader):
         return bindings
 
     def get_code(self):
+        """Handle get code for ``BillboardSphGlyphShader``.
+
+        Returns
+        -------
+        str
+            The code of the billboard shader.
+        """
         return load_dipy_wgsl("sh_billboard.wgsl")
 
 
@@ -882,6 +1111,23 @@ def enable_octahedral_lut(
     mapping_mode="octahedral",
     use_float16=False,
 ):
+    """Bake radius or Hermite LUT chunks on ``actor`` if GPU memory allows.
+
+    Parameters
+    ----------
+    actor : SphGlyphBillboard
+        Target billboard with populated ``billboard_count`` and coefficients.
+    lut_res : int, optional
+        Base cube-map or octahedral resolution per face/hemisphere.
+    use_hermite : bool, optional
+        Allocate paired position/normal Hermite LUT texels.
+    force_rebake : bool, optional
+        Recompute even when flags indicate the LUT is ready.
+    mapping_mode : str, optional
+        One of ``"cube"``, ``"dual_hemi"``, ``"dual_paraboloid"``, or ``"fibonacci"``.
+    use_float16 : bool, optional
+        Store Hermite LUTs with reduced precision when supported.
+    """
     if getattr(actor, "_sh_use_octahedral_lut", False) and not force_rebake:
         return
 
@@ -1034,12 +1280,29 @@ def sph_glyph_billboard_sliced(
         World-space centres.
     voxel_coords : ndarray (M, 3) int32
         Per-glyph integer voxel (ix, iy, iz).
-    lut_res : int
-        Cube-map LUT resolution per face edge (default 8).
-    use_hermite : bool
-        Use Hermite interpolation LUT (default True).
-    mapping_mode : str
-        LUT mapping mode (default ``"cube"``).
+    color_type : {"orientation", "sign"}, optional
+        Encoding forwarded to the material (sign vs orientation hue).
+    l_max : int or None, optional
+        Explicit truncation order; inferred from ``coeffs`` when None.
+    scale : float, optional
+        Uniform billboard size multiplier relative to estimated SH radii.
+    shininess : float, optional
+        Phong exponent for glyph lighting.
+    opacity : float or None, optional
+        Initial scalar opacity; forwarded to Fury validation when not None.
+    enable_picking : bool, optional
+        Whether picking handlers are installed on the billboard mesh.
+    lut_res : int, optional
+        Cube-map LUT resolution per face edge.
+    use_hermite : bool, optional
+        Use Hermite interpolation LUT.
+    mapping_mode : str, optional
+        LUT mapping mode.
+
+    Returns
+    -------
+    SphGlyphBillboard
+        Configured billboard with slice index buffer and baked LUTs.
     """
     coeffs = np.asarray(coeffs, dtype=np.float32)
     centers = np.asarray(centers, dtype=np.float32)
@@ -1123,4 +1386,6 @@ def sph_glyph_billboard_sliced(
 
 @register_wgpu_render_function(SphGlyphBillboard, SlicedSphGlyphMaterial)
 def _register_sliced_sph_glyph_render(wobject):
+    """Return the shader pair used for sliced SH billboards."""
+
     return (BillboardSphGlyphShader(wobject),)
