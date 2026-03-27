@@ -195,6 +195,54 @@ def test_lpca_dtype():
     assert_(np.all(S0ns <= 200))
 
 
+@set_random_number_generator()
+def test_lpca_float32_float64_consistency(rng):
+    """Check that the results of localpca with float32 and float64
+    inputs are near identical."""
+
+    data = 100 + 2 * rng.standard_normal((22, 23, 30, 20))
+    sigma = np.std(data)
+    out32 = localpca(data.astype(np.float32), sigma=sigma)
+    out64 = localpca(data.astype(np.float64), sigma=sigma)
+    # Allow small numerical differences
+    assert_array_almost_equal(out32, out64, decimal=4)
+
+
+@set_random_number_generator()
+def test_genpca_eig_matches_reference_sigma_provided(rng):
+    """Verify that Cython (fast=True) and Python (fast=False) eigenvalue-based PCA
+    implementations produce identical results"""
+
+    arr = 100 + 2 * rng.standard_normal((22, 23, 30, 20))
+    sigma = np.std(arr)
+
+    ref = genpca(
+        arr,
+        sigma=sigma,
+        mask=None,
+        patch_radius=2,
+        pca_method="eig",
+        fast=False,
+        tau_factor=None,
+        return_sigma=False,
+        out_dtype=arr.dtype,
+    )
+
+    new = genpca(
+        arr,
+        sigma=sigma,
+        mask=None,
+        patch_radius=2,
+        pca_method="eig",
+        fast=True,
+        tau_factor=None,
+        return_sigma=False,
+        out_dtype=arr.dtype,
+    )
+
+    assert_array_almost_equal(new, ref, decimal=4)
+
+
 def test_lpca_wrong():
     S0 = np.ones((20, 20))
     assert_raises(ValueError, localpca, S0, sigma=1)
