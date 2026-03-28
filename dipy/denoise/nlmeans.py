@@ -96,7 +96,7 @@ def nlmeans(
     >>> # Simulate magnitude MRI data: abs(signal + Gaussian noise)
     >>> clean = np.ones((30, 30, 30)) * 100.0
     >>> noisy = np.abs(clean + rng.standard_normal((30, 30, 30)) * 10)
-    >>> # In practice, estimate sigma from the data (recovers ~10 here)
+    >>> # In practice, estimate sigma from the data (estimates ~10 for this simulation)
     >>> sigma = estimate_sigma(noisy, N=1)
     >>> # Denoise with Rician noise model
     >>> denoised = nlmeans(noisy, sigma=sigma, rician=True)
