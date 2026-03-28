@@ -14,7 +14,7 @@ import numpy as np
 from dipy.data import get_fnames
 from dipy.io.pickles import save_pickle
 from dipy.io.streamline import load_tractogram
-from dipy.segment.clustering import QuickBundles
+from dipy.segment.clustering import QuickBundles, qbx_and_merge
 from dipy.viz import actor, colormap, window
 
 ###############################################################################
@@ -115,6 +115,69 @@ if interactive:
 save_pickle("QB.pkl", clusters)
 
 ###############################################################################
+# QuickBundlesX (Hierarchical Clustering)
+# =======================================
+#
+# QuickBundlesX extends QuickBundles :footcite:p:`Garyfallidis2012a` by building
+# clustering hierarchies at multiple threshold levels. The `qbx_and_merge`
+# function is the recommended way to use it.
+#
+# Let's perform clustering using a sequence of distance thresholds (in mm).
+# QuickBundlesX builds a hierarchy by clustering at each threshold level, from
+# coarse (40mm) to fine (10mm).
+
+rng = np.random.default_rng(42)
+thresholds = [40, 30, 25, 20, 10]
+qbx_clusters = qbx_and_merge(streamlines, thresholds, rng=rng)
+
+# Let's assign colors based on the QBX clusters.
+cmap_qbx = colormap.create_colormap(np.arange(len(qbx_clusters)))
+colormap_full_qbx = np.ones((len(streamlines), 3))
+for cluster, color in zip(qbx_clusters, cmap_qbx):
+    colormap_full_qbx[cluster.indices] = color
+
+scene.clear()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.streamtube(streamlines, colors=colormap_full_qbx))
+window.record(scene=scene, out_path="fornix_qbx_clusters.png", size=(600, 600))
+if interactive:
+    window.show(scene)
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Showing the different QuickBundlesX clusters with random colors.
+#
+#
+# Comparing QuickBundles and QuickBundlesX
+# ========================================
+#
+# QuickBundles uses a single flat distance threshold, which requires
+# determining an optimal global value. QuickBundlesX solves this by exploring
+# multiple scales simultaneously.
+#
+# Let's compare the granularity of the outputs from both methods by looking at
+# the number of clusters and their sizes.
+
+qb_cluster_sizes = [len(cluster) for cluster in clusters]
+qbx_cluster_sizes = [len(cluster) for cluster in qbx_clusters]
+
+print(f"QuickBundles (10mm threshold): {len(clusters)} clusters")
+print(f"QuickBundlesX (multi-scale ending in 10mm): {len(qbx_clusters)} clusters")
+print("QuickBundles cluster sizes:", qb_cluster_sizes)
+print("QuickBundlesX cluster sizes:", qbx_cluster_sizes)
+
+###############################################################################
+# Comparing these size distributions helps show how QuickBundlesX can preserve
+# coarse organization while still refining the final segmentation at smaller
+# scales.
+
+###############################################################################
+# QuickBundlesX builds a hierarchy :footcite:p:`Garyfallidis2016`, which often
+# produces more meaningful segmentations than the flat QuickBundles approach,
+# especially for complex tractography data with branching structures. It is
+# also generally faster for large datasets.
+#
 # Finally, here is a video of QuickBundles applied on a larger dataset.
 #
 # .. raw:: html
