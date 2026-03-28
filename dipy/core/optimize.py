@@ -15,8 +15,6 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
 class Optimizer:
-    """Optimization class."""
-
     @warning_for_keywords()
     def __init__(
         self,

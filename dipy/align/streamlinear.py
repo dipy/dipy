@@ -409,9 +409,9 @@ class StreamlineLinearRegistration:
 
         Parameters
         ----------
-        static : list of ndarray, ArraySequence
+        static : streamlines
             Reference or fixed set of streamlines.
-        moving : list of ndarray, ArraySequence
+        moving : streamlines
             Moving set of streamlines.
         mat : array
             Transformation (4, 4) matrix to start the registration. ``mat``
