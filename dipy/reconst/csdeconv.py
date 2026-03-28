@@ -249,6 +249,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
         return pred_sig
 
+
 class ConstrainedSDTModel(SphHarmModel):
     """Constrained Spherical Deconvolution Transform (SDT) model."""
 
