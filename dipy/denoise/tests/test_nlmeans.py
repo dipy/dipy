@@ -70,6 +70,7 @@ def test_nlmeans_boundary(rng):
     assert_(S0_denoised[9, 9, 9] > 290)
     assert_(S0_denoised[10, 10, 10] < 110)
 
+
 @set_random_number_generator()
 def test_nlmeans_rician_noise_reduction(rng):
     """Test rician=True output is non-negative and reduces variance."""
@@ -81,18 +82,24 @@ def test_nlmeans_rician_noise_reduction(rng):
     results = {}
     for method in ("classic", "blockwise"):
         results[method] = nlmeans(
-            noisy, sigma=15.0, rician=True, method=method,
-            patch_radius=1, block_radius=2
+            noisy,
+            sigma=15.0,
+            rician=True,
+            method=method,
+            patch_radius=1,
+            block_radius=2,
         )
-        assert np.all(results[method] >= 0), f"rician=True ({method}) must be non-negative"
+        assert np.all(
+            results[method] >= 0
+        ), f"rician=True ({method}) must be non-negative"
         assert_equal(results[method].shape, noisy.shape)
 
     # variance should decrease in the uniform high signal core for both methods
     core = np.s_[10:20, 10:20, 10:20]
     for method in ("classic", "blockwise"):
-        assert np.var(results[method][core]) < np.var(noisy[core]), (
-            f"rician=True ({method}) should reduce variance in uniform region"
-        )
+        assert np.var(results[method][core]) < np.var(
+            noisy[core]
+        ), f"rician=True ({method}) should reduce variance in uniform region"
 
 
 def test_nlmeans_4D_and_mask():
