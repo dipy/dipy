@@ -1,4 +1,5 @@
 override workgroup_size: u32 = 32;
+override b_max: u32 = 192;
 
 struct Params {
     D:            u32,
@@ -16,6 +17,9 @@ struct Params {
 @group(0) @binding(3) var<storage, read_write> cov_matrices: array<f32>;
 @group(0) @binding(4) var<storage, read_write> means:        array<f32>;
 
+var<workgroup> shared_means: array<f32, 512>;
+var<workgroup> shared_patch: array<f32, 123072>;
+
 @compute @workgroup_size(workgroup_size)
 fn main(
     @builtin(workgroup_id)    wg_id:    vec3<u32>,
@@ -30,7 +34,6 @@ fn main(
     let Ny = params.Ny;
     let Nz = params.Nz;
 
-    // Load bounding box for this pid from patch_indices.
     let base = (params.tile_offset + patch_idx) * 6u;
     let ix1 = patch_indices[base + 0u];
     let ix2 = patch_indices[base + 1u];
@@ -44,46 +47,100 @@ fn main(
 
     let tid = lid.x;
 
-    for (var d = tid; d < D; d += workgroup_size) {
-        var sum = 0.0;
-        for (var i = ix1; i < ix2; i++) {
-            for (var j = jx1; j < jx2; j++) {
-                for (var k = kx1; k < kx2; k++) {
-                    let voxel = i * Ny * Nz + j * Nz + k;
-                    sum += input_volume[voxel * D + d];
-                }
-            }
-        }
-        means[patch_idx * D + d] = sum * inv_n;
-    }
+    let patch_nz = kx2 - kx1;
+    let patch_ny = jx2 - jx1;
 
+    let B = min(b_max, num_samples);
+
+    for (var d = tid; d < D; d += workgroup_size) {
+        shared_means[d] = 0.0;
+    }
     workgroupBarrier();
 
-    // Only compute upper triangle and mirror; the covariance matrix is symmetric.
-    let cov_base = patch_idx * D * D;
+    var tile_start = 0u;
+    while (tile_start < num_samples) {
+        let tile_end = min(tile_start + B, num_samples);
+        let tile_len = tile_end - tile_start;
+
+        for (var load_idx = tid; load_idx < tile_len * D; load_idx += workgroup_size) {
+            let s = load_idx / D;
+            let d = load_idx % D;
+            let global_s = tile_start + s;
+            let off_i = global_s / (patch_ny * patch_nz);
+            let rem2 = global_s % (patch_ny * patch_nz);
+            let off_j = rem2 / patch_nz;
+            let off_k = rem2 % patch_nz;
+            let voxel = (ix1 + off_i) * Ny * Nz + (jx1 + off_j) * Nz + (kx1 + off_k);
+            shared_patch[s * D + d] = input_volume[voxel * D + d];
+        }
+        workgroupBarrier();
+
+        for (var d = tid; d < D; d += workgroup_size) {
+            var sum = 0.0;
+            for (var s = 0u; s < tile_len; s++) {
+                sum += shared_patch[s * D + d];
+            }
+            shared_means[d] += sum;
+        }
+        workgroupBarrier();
+
+        tile_start = tile_end;
+    }
+
     for (var d = tid; d < D; d += workgroup_size) {
-        let mean_d = means[patch_idx * D + d];
+        shared_means[d] *= inv_n;
+        means[patch_idx * D + d] = shared_means[d];
+    }
+    workgroupBarrier();
 
-        for (var d2 = d; d2 < D; d2++) {
-            let mean_d2 = means[patch_idx * D + d2];
-            var acc = 0.0;
+    let cov_base = patch_idx * D * D;
+    for (var idx = tid; idx < D * D; idx += workgroup_size) {
+        cov_matrices[cov_base + idx] = 0.0;
+    }
+    workgroupBarrier();
 
-            for (var i = ix1; i < ix2; i++) {
-                for (var j = jx1; j < jx2; j++) {
-                    for (var k = kx1; k < kx2; k++) {
-                        let voxel = i * Ny * Nz + j * Nz + k;
-                        let a = input_volume[voxel * D + d]  - mean_d;
-                        let b = input_volume[voxel * D + d2] - mean_d2;
-                        acc += a * b;
-                    }
+    tile_start = 0u;
+    while (tile_start < num_samples) {
+        let tile_end = min(tile_start + B, num_samples);
+        let tile_len = tile_end - tile_start;
+
+        for (var load_idx = tid; load_idx < tile_len * D; load_idx += workgroup_size) {
+            let s = load_idx / D;
+            let d = load_idx % D;
+            let global_s = tile_start + s;
+            let off_i = global_s / (patch_ny * patch_nz);
+            let rem2 = global_s % (patch_ny * patch_nz);
+            let off_j = rem2 / patch_nz;
+            let off_k = rem2 % patch_nz;
+            let voxel = (ix1 + off_i) * Ny * Nz + (jx1 + off_j) * Nz + (kx1 + off_k);
+            shared_patch[s * D + d] = input_volume[voxel * D + d];
+        }
+        workgroupBarrier();
+
+        for (var d = tid; d < D; d += workgroup_size) {
+            let mean_d = shared_means[d];
+
+            for (var d2 = d; d2 < D; d2++) {
+                let mean_d2 = shared_means[d2];
+                var acc = 0.0;
+
+                for (var s = 0u; s < tile_len; s++) {
+                    let a = shared_patch[s * D + d]  - mean_d;
+                    let b = shared_patch[s * D + d2] - mean_d2;
+                    acc += a * b;
                 }
-            }
 
-            let cov_val = acc * inv_n;
-            cov_matrices[cov_base + d * D + d2] = cov_val;
-            if (d2 != d) {
-                cov_matrices[cov_base + d2 * D + d] = cov_val;
+                cov_matrices[cov_base + d * D + d2] += acc * inv_n;
             }
+        }
+        workgroupBarrier();
+
+        tile_start = tile_end;
+    }
+
+    for (var d = tid; d < D; d += workgroup_size) {
+        for (var d2 = d + 1u; d2 < D; d2++) {
+            cov_matrices[cov_base + d2 * D + d] = cov_matrices[cov_base + d * D + d2];
         }
     }
 }

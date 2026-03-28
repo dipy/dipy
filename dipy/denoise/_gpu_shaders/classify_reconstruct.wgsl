@@ -20,8 +20,40 @@ struct Params {
 @group(0) @binding(7) var<storage, read_write> ncomps_out:     array<u32>;
 @group(0) @binding(8) var<storage, read_write> sigma_est_out:  array<f32>;
 
-// Shared memory: holds the projection matrix P = W_z @ W_z.T during reconstruction.
-var<workgroup> shared_mat: array<f32, 4096>;  // 64 * 64
+{{#shared}}
+var<workgroup> shared_mat: array<f32, 4096>;  // D * (D + 1), patched at load time
+
+fn project_voxel(
+    d: u32, voxel: u32, D: u32, nc: u32,
+    eig_offset: u32, mean_offset: u32,
+) -> f32 {
+    var val = 0.0;
+    for (var d2 = 0u; d2 < D; d2++) {
+        let x = input_volume[voxel * D + d2] - means[mean_offset + d2];
+        val += shared_mat[d * (D + 1u) + d2] * x;
+    }
+    return val + means[mean_offset + d];
+}
+{{/shared}}
+{{#global}}
+// Avoids materializing the full D x D projection matrix.
+fn project_voxel(
+    d: u32, voxel: u32, D: u32, nc: u32,
+    eig_offset: u32, mean_offset: u32,
+) -> f32 {
+    var val = 0.0;
+    for (var col = nc; col < D; col++) {
+        let w = eigenvectors[eig_offset + d * D + col];
+        var inner = 0.0;
+        for (var d2 = 0u; d2 < D; d2++) {
+            let x = input_volume[voxel * D + d2] - means[mean_offset + d2];
+            inner += eigenvectors[eig_offset + d2 * D + col] * x;
+        }
+        val += w * inner;
+    }
+    return val + means[mean_offset + d];
+}
+{{/global}}
 
 var<workgroup> ncomps_shared: u32;
 var<workgroup> sigma_shared: f32;
@@ -32,9 +64,7 @@ fn main(
     @builtin(local_invocation_id)  lid:   vec3<u32>,
 ) {
     let patch_idx = wg_id.x;
-    if (patch_idx >= params.tile_size) {
-        return;
-    }
+    if (patch_idx >= params.tile_size) { return; }
 
     let D  = params.D;
     let Ny = params.Ny;
@@ -50,15 +80,12 @@ fn main(
     let kx2 = patch_indices[base + 5u];
 
     let num_samples = (ix2 - ix1) * (jx2 - jx1) * (kx2 - kx1);
-
     let eig_offset = patch_idx * D * D;
     let eval_offset = patch_idx * D;
 
     // Marcenko-Pastur classification + tau threshold (single-threaded).
     // Matches _pca_classifier() + tau_factor logic in genpca() exactly.
     if (tid == 0u) {
-        // Eigenvalues are in ascending order: d[0] <= d[1] <= ... <= d[D-1].
-        // When D > num_samples - 1, discard the leading zero eigenvalues.
         var eff_D = D;
         var eval_start = 0u;
         if (D > num_samples - 1u) {
@@ -84,9 +111,7 @@ fn main(
                 partial_sum += eigenvalues[eval_offset + ii];
             }
             variance = partial_sum / f32(u32(c));
-
             c = c - 1;
-
             d_c = eigenvalues[eval_offset + eval_start + u32(c)];
             r = d_c - d_first - 4.0 * sqrt(f32(c + 1) / f32(num_samples)) * variance;
         }
@@ -96,9 +121,7 @@ fn main(
 
         var nc = 0u;
         for (var ii = 0u; ii < D; ii++) {
-            if (eigenvalues[eval_offset + ii] < tau) {
-                nc++;
-            }
+            if (eigenvalues[eval_offset + ii] < tau) { nc++; }
         }
 
         ncomps_shared = nc;
@@ -106,18 +129,14 @@ fn main(
         // The CPU accumulates this_var * theta, then at the end computes
         // sqrt(weighted_avg_var). So we store variance here.
         sigma_shared = max(variance, 0.0);
-
         ncomps_out[patch_idx] = nc;
         sigma_est_out[patch_idx] = sigma_shared;
     }
 
     workgroupBarrier();
-
     let nc = ncomps_shared;
 
-    // Compute P = W_z @ W_z.T directly into shared_mat from global eigenvectors,
-    // skipping noise columns (0..nc-1).
-    workgroupBarrier();
+{{#shared}}
     for (var ii = tid; ii < D * D; ii += workgroup_size) {
         let r1 = ii / D;
         let r2 = ii % D;
@@ -126,13 +145,12 @@ fn main(
             dot_val += eigenvectors[eig_offset + r1 * D + col]
                      * eigenvectors[eig_offset + r2 * D + col];
         }
-        shared_mat[ii] = dot_val;
+        shared_mat[r1 * (D + 1u) + r2] = dot_val;
     }
     workgroupBarrier();
+{{/shared}}
 
-    // Reconstruct: Xest = P @ x_centered + mean.
-    let num_samples_max = params.num_samples;
-    let recon_patch_offset = patch_idx * num_samples_max * D;
+    let recon_offset = patch_idx * params.num_samples * D;
     let mean_offset = patch_idx * D;
 
     var s = 0u;
@@ -140,18 +158,10 @@ fn main(
         for (var j = jx1; j < jx2; j++) {
             for (var k = kx1; k < kx2; k++) {
                 let voxel = i * Ny * Nz + j * Nz + k;
-
                 for (var d = tid; d < D; d += workgroup_size) {
-                    var recon_d = 0.0;
-                    for (var d2 = 0u; d2 < D; d2++) {
-                        let x_val = input_volume[voxel * D + d2] - means[mean_offset + d2];
-                        recon_d += shared_mat[d * D + d2] * x_val;
-                    }
-                    recon_d += means[mean_offset + d];
-
-                    reconstructed[recon_patch_offset + s * D + d] = recon_d;
+                    reconstructed[recon_offset + s * D + d] =
+                        project_voxel(d, voxel, D, nc, eig_offset, mean_offset);
                 }
-
                 s++;
             }
         }

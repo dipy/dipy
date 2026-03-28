@@ -1,10 +1,5 @@
 """GPU-accelerated MPPCA denoising via WebGPU (wgpu-py).
 
-This module implements the same Marcenko-Pastur PCA denoising as
-:func:`dipy.denoise.localpca.genpca` with ``sigma=None`` and
-``pca_method='eig'``, but offloads the heavy lifting to a 4-pass
-compute-shader pipeline executed on the GPU.
-
 Pipeline
 --------
 1. **extract_covariance** -- extract patch data, compute means and the
@@ -15,44 +10,65 @@ Pipeline
    separate signal from noise eigenvalues, zero noise columns, and
    reconstruct denoised patch data.
 4. **accumulate** -- scatter-add weighted reconstructed voxels and
-   weights (theta) back into the output volume using atomic float CAS.
+   weights (theta) back into the output volume using atomic floats
+   (native f32 atomics when available, CAS fallback otherwise).
 
-All GPU arithmetic is in float32. The input array is converted on upload
-and the result is cast to *out_dtype* before return.
-
-Tiling
-------
-Patches are processed in tiles of *T* (a power of two chosen to fit GPU
-buffer limits). Per-tile buffers for covariance matrices, eigenvectors,
-etc. are allocated once and reused across tiles.
+All GPU arithmetic is in float32.
 """
 
 import importlib.resources
 import logging
+import os
 import struct
+import sys
 import warnings
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
-_WARP_SIZE = 32
+_WGPU_STDERR_NOISE = (
+    "no windowing system",
+    "no config found",
+    "max vertex attribute stride unknown",
+    "using surfaceless platform",
+)
+
+
+def _call_suppressing_native_noise(fn, *args, **kwargs):
+    import tempfile
+
+    tmp, saved = tempfile.TemporaryFile(mode="w+"), os.dup(2)
+    os.dup2(tmp.fileno(), 2)
+    try:
+        result = fn(*args, **kwargs)
+    finally:
+        os.dup2(saved, 2)
+        os.close(saved)
+    tmp.seek(0)
+    for ln in tmp:
+        if not any(p in ln.lower() for p in _WGPU_STDERR_NOISE):
+            sys.stderr.write(ln)
+    tmp.close()
+    return result
+
+
+_WG_GRANULARITY = 32
 _MAX_TILE_SIZE = 8192
 _MAX_JACOBI_SWEEPS = 15
 _MAX_REDUCE_BUF = 256
 _JACOBI_EPSILON = 1e-5
 
-# ---------------------------------------------------------------------------
-# Public entry point
-# ---------------------------------------------------------------------------
 
-
-def mppca_gpu(arr, *, mask=None, patch_radius=2,
-              return_sigma=False, out_dtype=None,
-              suppress_warning=False):
+def mppca_gpu(
+    arr,
+    *,
+    mask=None,
+    patch_radius=2,
+    return_sigma=False,
+    out_dtype=None,
+    suppress_warning=False,
+):
     """GPU-accelerated MPPCA denoising via WebGPU.
 
     Parameters
@@ -78,76 +94,64 @@ def mppca_gpu(arr, *, mask=None, patch_radius=2,
         Only returned when *return_sigma* is ``True``.
     """
     try:
-        import wgpu  # noqa: F401
-    except ImportError:
+        import wgpu
+    except ImportError as err:
         raise ImportError(
-            "wgpu-py is required for backend='gpu'. "
-            "Install with: pip install dipy[gpu]"
-        )
+            "wgpu-py is required for backend='gpu'. Install with: pip install dipy[gpu]"
+        ) from err
 
-    adapter = wgpu.gpu.request_adapter_sync(
-        power_preference="high-performance"
+    adapter = _call_suppressing_native_noise(
+        wgpu.gpu.request_adapter_sync, power_preference="high-performance"
     )
+
     if adapter is None:
         warnings.warn(
             "No WebGPU adapter found -- falling back to CPU MPPCA.",
             stacklevel=2,
         )
         from dipy.denoise.localpca import mppca
+
         return mppca(
-            arr, mask=mask, patch_radius=patch_radius,
-            return_sigma=return_sigma, out_dtype=out_dtype, backend="cpu",
+            arr,
+            mask=mask,
+            patch_radius=patch_radius,
+            return_sigma=return_sigma,
+            out_dtype=out_dtype,
+            backend="cpu",
         )
 
-    device = adapter.request_device_sync()
+    use_f32_atomic = "shader-float32-atomic" in adapter.features
+    required_features = []
+    if use_f32_atomic:
+        required_features.append("shader-float32-atomic")
+        logger.info("GPU supports shader-float32-atomic; using native f32 atomics")
+    else:
+        logger.info("shader-float32-atomic not available; using CAS fallback")
+    device = _call_suppressing_native_noise(
+        adapter.request_device_sync, required_features=required_features
+    )
     return _run_gpu_pipeline(
-        device, arr, mask, patch_radius, return_sigma, out_dtype,
+        device,
+        arr,
+        mask,
+        patch_radius,
+        return_sigma,
+        out_dtype,
         suppress_warning,
+        use_f32_atomic=use_f32_atomic,
     )
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
 def _choose_tile_size(n_patches, D, device_limits):
-    """Pick a power-of-2 tile size that fits in the GPU buffer limit.
-
-    The dominant per-tile allocation is ``T * D * D * 4`` bytes for the
-    covariance, eigenvector, and cov-copy matrices (three such buffers).
-    We also need ``T * num_samples * D * 4`` for the reconstruction
-    buffer, but that is bounded by the same order for typical D.
-
-    Parameters
-    ----------
-    n_patches : int
-    D : int
-        Number of diffusion directions.
-    device_limits : dict
-
-    Returns
-    -------
-    T : int
-        Tile size (power of two, >= 64).
-    """
-    max_buffer = device_limits["max-buffer-size"]
-    # Three D*D matrices + eigenvalues + means + ncomps + sigma + converged
-    # + off_diag_norms per patch.  Conservatively estimate 4 * D*D floats.
-    per_patch_bytes = 4 * D * D * 4
-    max_by_memory = max(max_buffer // per_patch_bytes, 64)
-    T = min(n_patches, max_by_memory, _MAX_TILE_SIZE)
-    T = max(T, 64)
-    # Round down to power of two.
+    """Power-of-2 tile size fitting GPU buffer limits (>= 64)."""
+    max_fit = device_limits["max-buffer-size"] // (4 * D * D * 4)
+    T = max(min(n_patches, max_fit, _MAX_TILE_SIZE), 64)
     T = 1 << (T.bit_length() - 1)
     return T
 
 
 def _precompute_patch_indices(shape, patch_radius, mask):
     """Build an (P, 6) uint32 array of patch bounding boxes.
-
-    Replicates the exact iteration order of
-    :func:`dipy.denoise.localpca.genpca` (lines 315-326).
 
     Parameters
     ----------
@@ -168,8 +172,7 @@ def _precompute_patch_indices(shape, patch_radius, mask):
     Nx, Ny, Nz = shape[0], shape[1], shape[2]
 
     k, j, i = np.nonzero(
-        mask[pr0:Nx - pr0, pr1:Ny - pr1, pr2:Nz - pr2]
-        .transpose(2, 1, 0)
+        mask[pr0 : Nx - pr0, pr1 : Ny - pr1, pr2 : Nz - pr2].transpose(2, 1, 0)
     )
 
     patches = np.empty((len(i), 6), dtype=np.uint32)
@@ -183,96 +186,335 @@ def _precompute_patch_indices(shape, patch_radius, mask):
     return patches
 
 
-def _load_shader(name, D=None):
-    """Read a ``.wgsl`` shader and template shared-memory sizes for *D*.
+def _load_shader(name, D=None, B_MAX=None, use_global_mem=False, use_f32_atomic=False):
+    """Read a ``.wgsl`` shader and render conditional blocks.
 
-    The Jacobi and classify shaders declare fixed-size workgroup arrays
-    (``array<f32, 4096>`` for a 64×64 default).  When *D* is provided the
-    source is patched so that every ``array<f32, 4096>`` becomes
-    ``array<f32, D*D>`` and the ``d_max`` override is set to *D*.  This
-    avoids both overflow (D > 64) and wasted shared memory (D < 64).
+    Parameters
+    ----------
+    name : str
+        Shader filename.
+    D : int, optional
+        Number of directions.  Sizes shared-memory arrays.
+    B_MAX : int, optional
+        Maximum tile size for covariance shared-memory tiling.  Only used
+        for ``extract_covariance.wgsl``.
+    use_global_mem : bool
+        If True, render the global-memory variant; otherwise render the
+        shared-memory variant.
+    use_f32_atomic : bool
+        If True, render the native f32 atomic variant; otherwise render
+        the CAS (compare-and-swap) fallback variant.
     """
-    ref = importlib.resources.files(
-        "dipy.denoise._gpu_shaders"
-    ).joinpath(name)
+    import re
+
+    pkg = importlib.resources.files("dipy.denoise._gpu_shaders")
+    ref = pkg.joinpath(name)
     code = ref.read_text()
-    if D is not None:
-        code = code.replace("array<f32, 4096>", f"array<f32, {D * D}>")
+
+    _SHARED_ARRAY_PLACEHOLDER = "array<f32, 4096>"
+    _COVARIANCE_MEANS_PLACEHOLDER = "array<f32, 512>"
+    _COVARIANCE_PATCH_PLACEHOLDER = "array<f32, 123072>"
+
+    if D is not None and not use_global_mem:
+        if _SHARED_ARRAY_PLACEHOLDER in code:
+            code = code.replace(_SHARED_ARRAY_PLACEHOLDER, f"array<f32, {D * (D + 1)}>")
+        if _COVARIANCE_MEANS_PLACEHOLDER in code:
+            code = code.replace(_COVARIANCE_MEANS_PLACEHOLDER, f"array<f32, {D}>")
+        if B_MAX is not None and _COVARIANCE_PATCH_PLACEHOLDER in code:
+            code = code.replace(
+                _COVARIANCE_PATCH_PLACEHOLDER, f"array<f32, {B_MAX * D}>"
+            )
+
+    for keep, strip in [
+        ("shared", "global") if not use_global_mem else ("global", "shared"),
+        ("native", "cas") if use_f32_atomic else ("cas", "native"),
+    ]:
+        code = re.sub(
+            rf"\{{\{{#{strip}\}}\}}.*?\{{\{{/{strip}\}}\}}\n?",
+            "",
+            code,
+            flags=re.DOTALL,
+        )
+        code = re.sub(rf"\{{\{{[#/]{keep}\}}\}}\n?", "", code)
+
     return code
 
 
-# ---------------------------------------------------------------------------
-# Uniform packing helpers
-# ---------------------------------------------------------------------------
-# WGSL structs have strict 16-byte alignment rules.  We match the layout
-# of each shader's ``Params`` struct with explicit padding.
+def _create_buffers(
+    device, arr_f32, n_voxels, T, D, num_samples, patch_indices, return_sigma=False
+):
+    """Allocate all GPU buffers and upload initial data.
 
+    Parameters
+    ----------
+    device : wgpu.GPUDevice
+    arr_f32 : ndarray, shape (Nx, Ny, Nz, D)
+        Input volume as contiguous float32.
+    n_voxels : int
+        ``Nx * Ny * Nz``.
+    T : int
+        Tile size (power of two).
+    D : int
+        Number of diffusion directions.
+    num_samples : int
+        Voxels per patch.
+    patch_indices : ndarray, shape (P, 6), dtype uint32
+    return_sigma : bool
+        If True, allocate a staging buffer for sigma readback.
 
-def _pack_volume_params(D, Nx, Ny, Nz, num_samples, tile_offset, tile_size):
-    """Pack the uniform buffer for *extract_covariance*.
-
-    WGSL layout::
-
-        struct Params {
-            D:            u32,  // offset 0
-            Nx:           u32,  // offset 4
-            Ny:           u32,  // offset 8
-            Nz:           u32,  // offset 12
-            num_samples:  u32,  // offset 16
-            tile_offset:  u32,  // offset 20
-            tile_size:    u32,  // offset 24
-        }
-
-    Total 28 bytes; padded to 32 (next multiple of 16).
+    Returns
+    -------
+    bufs : dict
+        GPU buffers keyed by name.
     """
-    return struct.pack("<7I1I", D, Nx, Ny, Nz, num_samples,
-                       tile_offset, tile_size, 0)
+    import wgpu
+
+    _BU = wgpu.BufferUsage
+    STORAGE = _BU.STORAGE
+    COPY_SRC = _BU.COPY_SRC
+    COPY_DST = _BU.COPY_DST
+    UNIFORM = _BU.UNIFORM
+    MAP_READ = _BU.MAP_READ
+
+    patch_bytes = patch_indices.tobytes()
+
+    # fmt: off
+    specs = [
+        ("input",              arr_f32.nbytes,          STORAGE | COPY_DST),
+        ("output",             n_voxels * D * 4,        STORAGE | COPY_SRC),
+        ("theta",              n_voxels * 4,            STORAGE | COPY_SRC),
+        ("sigma_out",          n_voxels * 4,            STORAGE | COPY_SRC),
+        ("patch_indices_full", len(patch_bytes),         STORAGE | COPY_DST),
+        ("staging_output",     n_voxels * D * 4,        COPY_DST | MAP_READ),
+        ("staging_theta",      n_voxels * 4,            COPY_DST | MAP_READ),
+        ("cov",                T * D * D * 4,           STORAGE),
+        ("means",              T * D * 4,               STORAGE),
+        ("eigenvectors",       T * D * D * 4,           STORAGE),
+        ("eigenvalues",        T * D * 4,               STORAGE),
+        ("converged",          T * 4,                   STORAGE | COPY_SRC | COPY_DST),
+        ("off_diag",           T * 2 * 4,               STORAGE | COPY_DST),
+        ("reconstructed",      T * num_samples * D * 4, STORAGE),
+        ("ncomps",             T * 4,                   STORAGE),
+        ("sigma_est",          T * 4,                   STORAGE),
+        ("uniform_volume",     32,                      UNIFORM | COPY_DST),
+        ("uniform_jacobi",     16,                      UNIFORM | COPY_DST),
+    ]
+    # fmt: on
+    if return_sigma:
+        specs.insert(7, ("staging_sigma", n_voxels * 4, COPY_DST | MAP_READ))
+
+    bufs = {n: device.create_buffer(size=s, usage=u) for n, s, u in specs}
+
+    device.queue.write_buffer(bufs["input"], 0, arr_f32)
+    device.queue.write_buffer(bufs["patch_indices_full"], 0, patch_bytes)
+
+    return bufs
 
 
-def _pack_jacobi_params(D, tile_size, sweep_idx, epsilon):
-    """Pack the uniform buffer for *jacobi_eigh*.
+def _create_pipelines(
+    device, bufs, D, num_samples, use_global_mem, use_f32_atomic=False
+):
+    """Compile shaders, create compute pipelines and bind groups.
 
-    WGSL layout::
+    Parameters
+    ----------
+    device : wgpu.GPUDevice
+    bufs : dict
+        GPU buffers returned by :func:`_create_buffers`.
+    D : int
+        Number of diffusion directions.
+    num_samples : int
+        Voxels per patch.
+    use_global_mem : bool
+        Whether to use global-memory shader variants.
+    use_f32_atomic : bool
+        If True, use native f32 atomics instead of CAS fallback.
 
-        struct Params {
-            D:         u32,   // offset 0
-            tile_size: u32,   // offset 4
-            sweep_idx: u32,   // offset 8
-            epsilon:   f32,   // offset 12
-        }
-
-    Total 16 bytes -- already 16-byte aligned.
+    Returns
+    -------
+    pipes : dict
+        ``{name: (pipeline, bind_group)}`` for each of the four passes.
     """
-    return struct.pack("<3If", D, tile_size, sweep_idx, epsilon)
+    limits = device.limits
+    max_wg = limits["max-compute-workgroup-size-x"]
+    max_shared = limits["max-compute-workgroup-storage-size"]
+
+    _W = _WG_GRANULARITY
+    # Pass 1, 3: one workgroup per patch, threads stripe over D.
+    W13 = min(((D + _W - 1) // _W) * _W, max_wg)
+    W13 = max(W13, _W)
+    # Pass 2: Jacobi -- the shader uses a reduce_buf whose size caps the
+    # workgroup.
+    W2 = min(W13, _MAX_REDUCE_BUF)
+    # Pass 4: threads stripe over voxels in the patch.
+    W4 = min(((num_samples + _W - 1) // _W) * _W, max_wg)
+    W4 = max(W4, _W)
+
+    b_max = (max_shared - D * 4) // (D * 4)
+    b_max = max(1, min(b_max, num_samples))
+    shader_cov = device.create_shader_module(
+        code=_load_shader("extract_covariance.wgsl", D=D, B_MAX=b_max),
+    )
+    shader_jacobi = device.create_shader_module(
+        code=_load_shader("jacobi_eigh.wgsl", D=D, use_global_mem=use_global_mem),
+    )
+    shader_classify = device.create_shader_module(
+        code=_load_shader(
+            "classify_reconstruct.wgsl", D=D, use_global_mem=use_global_mem
+        ),
+    )
+    shader_accum = device.create_shader_module(
+        code=_load_shader("accumulate.wgsl", use_f32_atomic=use_f32_atomic),
+    )
+
+    pipe_specs = [
+        ("cov", shader_cov, {"workgroup_size": int(W13), "b_max": int(b_max)}),
+        ("jacobi", shader_jacobi, {"workgroup_size": int(W2)}),
+        ("classify", shader_classify, {"workgroup_size": int(W13)}),
+        ("accum", shader_accum, {"workgroup_size": int(W4)}),
+    ]
+    pipelines = {}
+    for name, module, constants in pipe_specs:
+        pipelines[name] = device.create_compute_pipeline(
+            layout="auto",
+            compute={"module": module, "entry_point": "main", "constants": constants},
+        )
+
+    bind_specs = {
+        "cov": ["uniform_volume", "input", "patch_indices_full", "cov", "means"],
+        "jacobi": [
+            "uniform_jacobi",
+            "cov",
+            "eigenvectors",
+            "eigenvalues",
+            "converged",
+            "off_diag",
+        ],
+        "classify": [
+            "uniform_volume",
+            "input",
+            "patch_indices_full",
+            "eigenvalues",
+            "eigenvectors",
+            "means",
+            "reconstructed",
+            "ncomps",
+            "sigma_est",
+        ],
+        "accum": [
+            "uniform_volume",
+            "patch_indices_full",
+            "reconstructed",
+            "ncomps",
+            "sigma_est",
+            "output",
+            "theta",
+            "sigma_out",
+        ],
+    }
+
+    return {
+        name: (
+            pipelines[name],
+            device.create_bind_group(
+                layout=pipelines[name].get_bind_group_layout(0),
+                entries=[
+                    {"binding": i, "resource": {"buffer": bufs[b]}}
+                    for i, b in enumerate(buf_names)
+                ],
+            ),
+        )
+        for name, buf_names in bind_specs.items()
+    }
 
 
-def _pack_accumulate_params(D, Nx, Ny, Nz, num_samples, tile_size):
-    """Pack the uniform buffer for *accumulate*.
+def _read_staging_f32(buf, shape):
+    """Read a mapped staging buffer as float32 and unmap it."""
+    out = np.frombuffer(buf.read_mapped(), np.float32).reshape(shape).copy()
+    buf.unmap()
+    return out
 
-    WGSL layout::
 
-        struct Params {
-            D:            u32,  // offset 0
-            Nx:           u32,  // offset 4
-            Ny:           u32,  // offset 8
-            Nz:           u32,  // offset 12
-            num_samples:  u32,  // offset 16
-            tile_size:    u32,  // offset 20
-        }
+def _map_staging_buffers(device, staging_bufs):
+    """Map staging buffers for CPU readback."""
+    try:
+        awaitables = [b._map("READ_NOSYNC") for b in staging_bufs]
+        device._poll_wait()
+        for a in awaitables:
+            a._finish()
+    except AttributeError:
+        for b in staging_bufs:
+            b.map("READ")
 
-    Total 24 bytes; padded to 32.
+
+def _readback_results(device, bufs, mask, vol_shape, return_sigma, out_dtype):
+    """Copy GPU results to CPU, compute weighted average, and apply mask.
+
+    Parameters
+    ----------
+    device : wgpu.GPUDevice
+    bufs : dict
+        GPU buffers returned by :func:`_create_buffers`.
+    mask : ndarray, shape (Nx, Ny, Nz)
+    vol_shape : tuple
+        ``(Nx, Ny, Nz, D)`` -- full volume shape.
+    return_sigma : bool
+    out_dtype : dtype
+
+    Returns
+    -------
+    result : ndarray, shape (Nx, Ny, Nz, D)
+    sigma : ndarray, shape (Nx, Ny, Nz)
+        Only returned when *return_sigma* is ``True``.
     """
-    return struct.pack("<6I2I", D, Nx, Ny, Nz, num_samples,
-                       tile_size, 0, 0)
+    Nx, Ny, Nz, D = vol_shape
+    n_voxels = Nx * Ny * Nz
+    enc = device.create_command_encoder()
+    enc.copy_buffer_to_buffer(
+        bufs["output"], 0, bufs["staging_output"], 0, n_voxels * D * 4
+    )
+    enc.copy_buffer_to_buffer(bufs["theta"], 0, bufs["staging_theta"], 0, n_voxels * 4)
+    if return_sigma:
+        enc.copy_buffer_to_buffer(
+            bufs["sigma_out"], 0, bufs["staging_sigma"], 0, n_voxels * 4
+        )
+    device.queue.submit([enc.finish()])
+
+    staging_bufs = [bufs["staging_output"], bufs["staging_theta"]]
+    if return_sigma:
+        staging_bufs.append(bufs["staging_sigma"])
+
+    _map_staging_buffers(device, staging_bufs)
+
+    output_f32 = _read_staging_f32(bufs["staging_output"], (Nx, Ny, Nz, D))
+    theta_f32 = _read_staging_f32(bufs["staging_theta"], (Nx, Ny, Nz))
+
+    nonzero = theta_f32 > 0.0
+    output_f32[nonzero] /= theta_f32[nonzero, np.newaxis]
+    output_f32[~mask] = 0.0
+    np.clip(output_f32, 0.0, None, out=output_f32)
+
+    result = output_f32.astype(out_dtype)
+
+    if return_sigma:
+        sigma_f32 = _read_staging_f32(bufs["staging_sigma"], (Nx, Ny, Nz))
+        sigma_f32[nonzero] /= theta_f32[nonzero]
+        sigma_f32[~mask] = 0.0
+        return result, np.sqrt(sigma_f32).astype(out_dtype)
+
+    return result
 
 
-# ---------------------------------------------------------------------------
-# Main GPU pipeline
-# ---------------------------------------------------------------------------
-
-
-def _run_gpu_pipeline(device, arr, mask, patch_radius, return_sigma,
-                      out_dtype, suppress_warning=False):
+def _run_gpu_pipeline(
+    device,
+    arr,
+    mask,
+    patch_radius,
+    return_sigma,
+    out_dtype,
+    suppress_warning=False,
+    use_f32_atomic=False,
+):
     """Execute the 4-pass GPU pipeline and return the denoised volume.
 
     Parameters
@@ -284,13 +526,8 @@ def _run_gpu_pipeline(device, arr, mask, patch_radius, return_sigma,
     return_sigma : bool
     out_dtype : dtype or None
     """
-    import wgpu
-
-    # -- 0. Validate / prepare -----------------------------------------------
     if arr.ndim != 4:
-        raise ValueError(
-            f"GPU MPPCA requires a 4-D array, got shape {arr.shape}."
-        )
+        raise ValueError(f"GPU MPPCA requires a 4-D array, got shape {arr.shape}.")
 
     if out_dtype is None:
         out_dtype = arr.dtype
@@ -308,25 +545,27 @@ def _run_gpu_pipeline(device, arr, mask, patch_radius, return_sigma,
         mask = np.ones((Nx, Ny, Nz), dtype=bool)
 
     from dipy.denoise.localpca import (
-        create_patch_radius_arr, compute_patch_size, compute_num_samples,
+        compute_num_samples,
+        compute_patch_size,
+        create_patch_radius_arr,
         dimensionality_problem_message,
     )
+
     pr = create_patch_radius_arr(arr, patch_radius)
     patch_size = compute_patch_size(pr)
     num_samples = compute_num_samples(patch_size)
     if (num_samples - 1) < D and not suppress_warning:
         spr = max(np.max(pr) + 1, 2)
-        warnings.warn(dimensionality_problem_message(arr, num_samples, spr))
-    if num_samples <= 1:
-        raise ValueError(
-            "Effective patch has only 1 sample -- increase patch_radius."
+        warnings.warn(
+            dimensionality_problem_message(arr, num_samples, spr),
+            stacklevel=2,
         )
+    if num_samples <= 1:
+        raise ValueError("Effective patch has only 1 sample -- increase patch_radius.")
 
-    # -- 1. Build patch indices ----------------------------------------------
     patch_indices = _precompute_patch_indices(arr.shape, pr, mask)
     n_patches = len(patch_indices)
     if n_patches == 0:
-        # Nothing inside the mask -- return zeros.
         result = np.zeros_like(arr_f32).astype(out_dtype)
         if return_sigma:
             return result, np.zeros((Nx, Ny, Nz), dtype=out_dtype)
@@ -334,360 +573,106 @@ def _run_gpu_pipeline(device, arr, mask, patch_radius, return_sigma,
 
     logger.info(
         "GPU MPPCA: %d patches, D=%d, num_samples=%d",
-        n_patches, D, num_samples,
+        n_patches,
+        D,
+        num_samples,
     )
 
-    # -- 2. Shader variant selection ------------------------------------------
-    # Jacobi needs 2 × D² × 4 bytes of shared memory (C + V matrices).
-    # Classify needs 1 × D² × 4 bytes.  If D is too large for shared
-    # memory, use global-memory shader variants (slower but no size limit).
-    jacobi_shared = 2 * D * D * 4
+    jacobi_shared = 2 * D * (D + 1) * 4
     max_shared = device.limits["max-compute-workgroup-storage-size"]
     use_global_mem = jacobi_shared > max_shared
     if use_global_mem:
         logger.info(
             "D=%d exceeds shared memory (%d > %d bytes), using global-memory shaders",
-            D, jacobi_shared, max_shared,
+            D,
+            jacobi_shared,
+            max_shared,
         )
 
-    # -- 3. Tile size --------------------------------------------------------
     T = _choose_tile_size(n_patches, D, device.limits)
     logger.info("Tile size: T=%d", T)
 
-    # -- 4. Workgroup sizes --------------------------------------------------
-    max_wg = device.limits["max-compute-workgroup-size-x"]
-    # Pass 1, 3: one workgroup per patch, threads stripe over D.
-    _W = _WARP_SIZE
-    W13 = min(((D + _W - 1) // _W) * _W, max_wg)
-    W13 = max(W13, _W)
-    # Pass 2: Jacobi -- the shader uses a reduce_buf whose size caps the
-    # workgroup.
-    W2 = min(W13, _MAX_REDUCE_BUF)
-    # Pass 4: threads stripe over voxels in the patch.
-    W4 = min(((num_samples + _W - 1) // _W) * _W, max_wg)
-    W4 = max(W4, _W)
-
-    # -- 5. Persistent output buffers (full volume) --------------------------
     n_voxels = Nx * Ny * Nz
-    BU = wgpu.BufferUsage
-    STORAGE = BU.STORAGE
-    COPY_SRC = BU.COPY_SRC
-    COPY_DST = BU.COPY_DST
-    UNIFORM = BU.UNIFORM
-
-    gpu_input = device.create_buffer_with_data(
-        data=arr_f32.tobytes(),
-        usage=STORAGE,
+    bufs = _create_buffers(
+        device,
+        arr_f32,
+        n_voxels,
+        T,
+        D,
+        num_samples,
+        patch_indices,
+        return_sigma=return_sigma,
     )
-    # output, theta, sigma use atomic u32 in the shader -> sized as u32
-    gpu_output = device.create_buffer(
-        size=n_voxels * D * 4,
-        usage=STORAGE | COPY_SRC,
-    )
-    gpu_theta = device.create_buffer(
-        size=n_voxels * 4,
-        usage=STORAGE | COPY_SRC,
-    )
-    gpu_sigma_out = device.create_buffer(
-        size=n_voxels * 4,
-        usage=STORAGE | COPY_SRC,
-    )
-    # Full patch index buffer (read by pass 1 with tile_offset).
-    gpu_patch_indices_full = device.create_buffer_with_data(
-        data=patch_indices.tobytes(),
-        usage=STORAGE | COPY_SRC,
+    pipes = _create_pipelines(
+        device,
+        bufs,
+        D,
+        num_samples,
+        use_global_mem,
+        use_f32_atomic=use_f32_atomic,
     )
 
-    # -- 6. Per-tile buffers (allocated once, reused) ------------------------
-    gpu_cov = device.create_buffer(
-        size=T * D * D * 4,
-        usage=STORAGE,
-    )
-    gpu_means = device.create_buffer(
-        size=T * D * 4,
-        usage=STORAGE,
-    )
-    gpu_eigenvectors = device.create_buffer(
-        size=T * D * D * 4,
-        usage=STORAGE,
-    )
-    gpu_eigenvalues = device.create_buffer(
-        size=T * D * 4,
-        usage=STORAGE,
-    )
-    gpu_converged = device.create_buffer(
-        size=T * 4,
-        usage=STORAGE | COPY_SRC,
-    )
-    gpu_off_diag = device.create_buffer(
-        size=T * 2 * 4,  # two floats per patch (initial, current)
-        usage=STORAGE,
-    )
-    gpu_reconstructed = device.create_buffer(
-        size=T * num_samples * D * 4,
-        usage=STORAGE,
-    )
-    gpu_ncomps = device.create_buffer(
-        size=T * 4,
-        usage=STORAGE,
-    )
-    gpu_sigma_est = device.create_buffer(
-        size=T * 4,
-        usage=STORAGE,
-    )
-    # Tile-local patch indices for pass 4 (accumulate uses patch_idx * 6u
-    # without a tile_offset, so it needs a buffer containing only the
-    # current tile's indices).
-    gpu_patch_indices_tile = device.create_buffer(
-        size=T * 6 * 4,
-        usage=STORAGE | COPY_DST,
-    )
-
-    # -- 7. Uniform buffers (one per pass, rewritten each tile) ---------------
-    gpu_uniform_cov = device.create_buffer(
-        size=32, usage=UNIFORM | COPY_DST,
-    )
-    gpu_uniform_jacobi = device.create_buffer(
-        size=16, usage=UNIFORM | COPY_DST,
-    )
-    gpu_uniform_classify = device.create_buffer(
-        size=32, usage=UNIFORM | COPY_DST,
-    )
-    gpu_uniform_accum = device.create_buffer(
-        size=32, usage=UNIFORM | COPY_DST,
-    )
-
-    # -- 8. Compile shaders --------------------------------------------------
-    shader_cov = device.create_shader_module(
-        code=_load_shader("extract_covariance.wgsl"),
-    )
-    if use_global_mem:
-        shader_jacobi = device.create_shader_module(
-            code=_load_shader("jacobi_eigh_global.wgsl"),
-        )
-        shader_classify = device.create_shader_module(
-            code=_load_shader("classify_reconstruct_global.wgsl"),
-        )
-    else:
-        shader_jacobi = device.create_shader_module(
-            code=_load_shader("jacobi_eigh.wgsl", D=D),
-        )
-        shader_classify = device.create_shader_module(
-            code=_load_shader("classify_reconstruct.wgsl", D=D),
-        )
-    shader_accum = device.create_shader_module(
-        code=_load_shader("accumulate.wgsl"),
-    )
-
-    # -- 9. Compute pipelines ------------------------------------------------
-    pipeline_cov = device.create_compute_pipeline(
-        layout="auto",
-        compute={
-            "module": shader_cov,
-            "entry_point": "main",
-            "constants": {"workgroup_size": int(W13)},
-        },
-    )
-    jacobi_constants = {"workgroup_size": int(W2)}
-    if not use_global_mem:
-        jacobi_constants["d_max"] = int(D)
-    pipeline_jacobi = device.create_compute_pipeline(
-        layout="auto",
-        compute={
-            "module": shader_jacobi,
-            "entry_point": "main",
-            "constants": jacobi_constants,
-        },
-    )
-    pipeline_classify = device.create_compute_pipeline(
-        layout="auto",
-        compute={
-            "module": shader_classify,
-            "entry_point": "main",
-            "constants": {"workgroup_size": int(W13)},
-        },
-    )
-    pipeline_accum = device.create_compute_pipeline(
-        layout="auto",
-        compute={
-            "module": shader_accum,
-            "entry_point": "main",
-            "constants": {"workgroup_size": int(W4)},
-        },
-    )
-
-    # -- 10. Bind groups -----------------------------------------------------
-    # Pass 1: params, input_volume, patch_indices(full), cov, means
-    bg_layout_cov = pipeline_cov.get_bind_group_layout(0)
-    bind_group_cov = device.create_bind_group(
-        layout=bg_layout_cov,
-        entries=[
-            {"binding": 0, "resource": {"buffer": gpu_uniform_cov}},
-            {"binding": 1, "resource": {"buffer": gpu_input}},
-            {"binding": 2, "resource": {"buffer": gpu_patch_indices_full}},
-            {"binding": 3, "resource": {"buffer": gpu_cov}},
-            {"binding": 4, "resource": {"buffer": gpu_means}},
-        ],
-    )
-
-    # Pass 2: params, cov, eigenvectors, eigenvalues, converged, off_diag
-    bg_layout_jacobi = pipeline_jacobi.get_bind_group_layout(0)
-    bind_group_jacobi = device.create_bind_group(
-        layout=bg_layout_jacobi,
-        entries=[
-            {"binding": 0, "resource": {"buffer": gpu_uniform_jacobi}},
-            {"binding": 1, "resource": {"buffer": gpu_cov}},
-            {"binding": 2, "resource": {"buffer": gpu_eigenvectors}},
-            {"binding": 3, "resource": {"buffer": gpu_eigenvalues}},
-            {"binding": 4, "resource": {"buffer": gpu_converged}},
-            {"binding": 5, "resource": {"buffer": gpu_off_diag}},
-        ],
-    )
-
-    # Pass 3: params, input_volume, patch_indices(full), eigenvalues,
-    #          eigenvectors, means, reconstructed, ncomps, sigma_est
-    # Pass 3 uses tile_offset to index into the full patch_indices buffer.
-    bg_layout_classify = pipeline_classify.get_bind_group_layout(0)
-    bind_group_classify = device.create_bind_group(
-        layout=bg_layout_classify,
-        entries=[
-            {"binding": 0, "resource": {"buffer": gpu_uniform_classify}},
-            {"binding": 1, "resource": {"buffer": gpu_input}},
-            {"binding": 2, "resource": {"buffer": gpu_patch_indices_full}},
-            {"binding": 3, "resource": {"buffer": gpu_eigenvalues}},
-            {"binding": 4, "resource": {"buffer": gpu_eigenvectors}},
-            {"binding": 5, "resource": {"buffer": gpu_means}},
-            {"binding": 6, "resource": {"buffer": gpu_reconstructed}},
-            {"binding": 7, "resource": {"buffer": gpu_ncomps}},
-            {"binding": 8, "resource": {"buffer": gpu_sigma_est}},
-        ],
-    )
-
-    # Pass 4: params, patch_indices(tile), reconstructed, ncomps, sigma_est,
-    #          output_volume, theta, sigma_out
-    bg_layout_accum = pipeline_accum.get_bind_group_layout(0)
-    bind_group_accum = device.create_bind_group(
-        layout=bg_layout_accum,
-        entries=[
-            {"binding": 0, "resource": {"buffer": gpu_uniform_accum}},
-            {"binding": 1, "resource": {"buffer": gpu_patch_indices_tile}},
-            {"binding": 2, "resource": {"buffer": gpu_reconstructed}},
-            {"binding": 3, "resource": {"buffer": gpu_ncomps}},
-            {"binding": 4, "resource": {"buffer": gpu_sigma_est}},
-            {"binding": 5, "resource": {"buffer": gpu_output}},
-            {"binding": 6, "resource": {"buffer": gpu_theta}},
-            {"binding": 7, "resource": {"buffer": gpu_sigma_out}},
-        ],
-    )
-
-    # -- 11. Tile loop -------------------------------------------------------
     try:
         from tqdm import tqdm
+
         tile_iter = tqdm(
-            range(0, n_patches, T), desc="GPU MPPCA", unit="tile",
+            range(0, n_patches, T),
+            desc="GPU MPPCA",
+            unit="tile",
         )
     except ImportError:
         tile_iter = range(0, n_patches, T)
+
+    pipe_cov, bg_cov = pipes["cov"]
+    pipe_jacobi, bg_jacobi = pipes["jacobi"]
+    pipe_classify, bg_classify = pipes["classify"]
+    pipe_accum, bg_accum = pipes["accum"]
+    buf_uniform_volume = bufs["uniform_volume"]
+    buf_uniform_jacobi = bufs["uniform_jacobi"]
 
     for tile_start in tile_iter:
         tile_end = min(tile_start + T, n_patches)
         current_T = tile_end - tile_start
 
-        # Upload tile-local patch indices for pass 4 (accumulate).
-        tile_indices_bytes = patch_indices[tile_start:tile_end].tobytes()
-        # Pad to full T * 6 * 4 if the last tile is smaller.
-        if current_T < T:
-            tile_indices_bytes += b"\x00" * ((T - current_T) * 6 * 4)
-        device.queue.write_buffer(gpu_patch_indices_tile, 0,
-                                  tile_indices_bytes)
-
         device.queue.write_buffer(
-            gpu_uniform_cov, 0,
-            _pack_volume_params(D, Nx, Ny, Nz, num_samples,
-                               tile_start, current_T),
+            buf_uniform_volume,
+            0,
+            struct.pack("<7I1I", D, Nx, Ny, Nz, num_samples, tile_start, current_T, 0),
         )
+        device.queue.write_buffer(
+            buf_uniform_jacobi,
+            0,
+            struct.pack("<2IfI", D, current_T, _JACOBI_EPSILON, 0),
+        )
+        device.queue.write_buffer(bufs["converged"], 0, bytes(current_T * 4))
+        device.queue.write_buffer(bufs["off_diag"], 0, bytes(current_T * 2 * 4))
 
+        # wgpu-native inserts implicit storage barriers between dispatches
+        # within a single compute pass. Browser WebGPU does not guarantee
+        # this; porting would require separate compute passes per stage.
         enc = device.create_command_encoder()
         cp = enc.begin_compute_pass()
-        cp.set_pipeline(pipeline_cov)
-        cp.set_bind_group(0, bind_group_cov)
-        cp.dispatch_workgroups(current_T)
-        cp.end()
-        device.queue.submit([enc.finish()])
 
-        for sweep in range(_MAX_JACOBI_SWEEPS):
-            device.queue.write_buffer(
-                gpu_uniform_jacobi, 0,
-                _pack_jacobi_params(D, current_T, sweep, _JACOBI_EPSILON),
-            )
-            enc = device.create_command_encoder()
-            cp = enc.begin_compute_pass()
-            cp.set_pipeline(pipeline_jacobi)
-            cp.set_bind_group(0, bind_group_jacobi)
+        cp.set_pipeline(pipe_cov)
+        cp.set_bind_group(0, bg_cov)
+        cp.dispatch_workgroups(current_T)
+
+        for _ in range(_MAX_JACOBI_SWEEPS):
+            cp.set_pipeline(pipe_jacobi)
+            cp.set_bind_group(0, bg_jacobi)
             cp.dispatch_workgroups(current_T)
-            cp.end()
-            device.queue.submit([enc.finish()])
 
-        device.queue.write_buffer(
-            gpu_uniform_classify, 0,
-            _pack_volume_params(D, Nx, Ny, Nz, num_samples,
-                               tile_start, current_T),
-        )
-
-        enc = device.create_command_encoder()
-        cp = enc.begin_compute_pass()
-        cp.set_pipeline(pipeline_classify)
-        cp.set_bind_group(0, bind_group_classify)
+        cp.set_pipeline(pipe_classify)
+        cp.set_bind_group(0, bg_classify)
         cp.dispatch_workgroups(current_T)
+
+        cp.set_pipeline(pipe_accum)
+        cp.set_bind_group(0, bg_accum)
+        cp.dispatch_workgroups(current_T)
+
         cp.end()
         device.queue.submit([enc.finish()])
 
-        device.queue.write_buffer(
-            gpu_uniform_accum, 0,
-            _pack_accumulate_params(D, Nx, Ny, Nz, num_samples, current_T),
-        )
-
-        enc = device.create_command_encoder()
-        cp = enc.begin_compute_pass()
-        cp.set_pipeline(pipeline_accum)
-        cp.set_bind_group(0, bind_group_accum)
-        cp.dispatch_workgroups(current_T)
-        cp.end()
-        device.queue.submit([enc.finish()])
-
-    # -- 12. Read back results ------------------------------------------------
-    output_bytes = device.queue.read_buffer(gpu_output)
-    theta_bytes = device.queue.read_buffer(gpu_theta)
-
-    # The output and theta buffers store bitwise u32 representations of
-    # floats accumulated via atomic CAS.  Reinterpret as float32.
-    output_u32 = np.frombuffer(output_bytes, dtype=np.uint32)
-    output_f32 = output_u32.view(np.float32).reshape(Nx, Ny, Nz, D).copy()
-
-    theta_u32 = np.frombuffer(theta_bytes, dtype=np.uint32)
-    theta_f32 = theta_u32.view(np.float32).reshape(Nx, Ny, Nz).copy()
-
-    # Weighted average (avoid division by zero).
-    nonzero = theta_f32 > 0.0
-    output_f32[nonzero] /= theta_f32[nonzero, np.newaxis]
-
-    # Zero outside mask.
-    output_f32[~mask] = 0.0
-
-    # Clip to non-negative values (same as CPU path).
-    np.clip(output_f32, 0.0, None, out=output_f32)
-
-    result = output_f32.astype(out_dtype)
-
-    if return_sigma:
-        sigma_bytes = device.queue.read_buffer(gpu_sigma_out)
-        sigma_u32 = np.frombuffer(sigma_bytes, dtype=np.uint32)
-        sigma_f32 = sigma_u32.view(np.float32).reshape(Nx, Ny, Nz).copy()
-        # sigma_f32 contains accumulated (variance * weight).  Divide by
-        # theta to get the weighted average variance, then take sqrt to
-        # match the CPU which returns sqrt(var).
-        sigma_f32[nonzero] /= theta_f32[nonzero]
-        sigma_f32[~mask] = 0.0
-        return result, np.sqrt(sigma_f32).astype(out_dtype)
-
-    return result
+    return _readback_results(
+        device, bufs, mask, (Nx, Ny, Nz, D), return_sigma, out_dtype
+    )

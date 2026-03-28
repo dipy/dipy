@@ -1,3 +1,7 @@
+{{#native}}
+enable shader_f32_atomic;
+{{/native}}
+
 override workgroup_size: u32 = 64;
 
 struct Params {
@@ -6,6 +10,7 @@ struct Params {
     Ny:           u32,
     Nz:           u32,
     num_samples:  u32,
+    tile_offset:  u32,
     tile_size:    u32,
 }
 
@@ -14,9 +19,16 @@ struct Params {
 @group(0) @binding(2) var<storage, read>       reconstructed:  array<f32>;
 @group(0) @binding(3) var<storage, read>       ncomps:         array<u32>;
 @group(0) @binding(4) var<storage, read>       sigma_est:      array<f32>;
+{{#cas}}
 @group(0) @binding(5) var<storage, read_write> output_volume:  array<atomic<u32>>;
 @group(0) @binding(6) var<storage, read_write> theta:          array<atomic<u32>>;
 @group(0) @binding(7) var<storage, read_write> sigma_out:      array<atomic<u32>>;
+{{/cas}}
+{{#native}}
+@group(0) @binding(5) var<storage, read_write> output_volume:  array<atomic<f32>>;
+@group(0) @binding(6) var<storage, read_write> theta:          array<atomic<f32>>;
+@group(0) @binding(7) var<storage, read_write> sigma_out:      array<atomic<f32>>;
+{{/native}}
 
 @compute @workgroup_size(workgroup_size)
 fn main(
@@ -32,7 +44,7 @@ fn main(
     let Ny = params.Ny;
     let Nz = params.Nz;
 
-    let base = patch_idx * 6u;
+    let base = (params.tile_offset + patch_idx) * 6u;
     let ix1 = patch_indices[base + 0u];
     let ix2 = patch_indices[base + 1u];
     let jx1 = patch_indices[base + 2u];
@@ -65,6 +77,7 @@ fn main(
         let voxel_linear = i * Ny * Nz + j * Nz + k;
         let sample_idx = v;
 
+{{#cas}}
         {
             var old_val = atomicLoad(&theta[voxel_linear]);
             loop {
@@ -97,5 +110,17 @@ fn main(
                 old_val = result.old_value;
             }
         }
+{{/cas}}
+{{#native}}
+        atomicAdd(&theta[voxel_linear], weight);
+        atomicAdd(&sigma_out[voxel_linear], sigma_w);
+
+        let recon_base = patch_idx * num_samples * D + sample_idx * D;
+        for (var d = 0u; d < D; d++) {
+            let val = reconstructed[recon_base + d] * weight;
+            let out_idx = voxel_linear * D + d;
+            atomicAdd(&output_volume[out_idx], val);
+        }
+{{/native}}
     }
 }

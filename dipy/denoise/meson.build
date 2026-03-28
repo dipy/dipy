@@ -38,12 +38,10 @@ py3.install_sources(
 
 gpu_shader_sources = [
   '_gpu_shaders/__init__.py',
+  '_gpu_shaders/accumulate.wgsl',
+  '_gpu_shaders/classify_reconstruct.wgsl',
   '_gpu_shaders/extract_covariance.wgsl',
   '_gpu_shaders/jacobi_eigh.wgsl',
-  '_gpu_shaders/jacobi_eigh_global.wgsl',
-  '_gpu_shaders/classify_reconstruct.wgsl',
-  '_gpu_shaders/classify_reconstruct_global.wgsl',
-  '_gpu_shaders/accumulate.wgsl',
 ]
 
 py3.install_sources(
