@@ -1105,6 +1105,8 @@ class DiffeomorphicRegistration(metaclass=abc.ABCMeta):
 
 
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
+    """Symmetric Diffeomorphic Registration algorithm."""
+
     @warning_for_keywords()
     def __init__(
         self,

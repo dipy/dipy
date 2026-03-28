@@ -724,6 +724,8 @@ class EMMetric(SimilarityMetric):
 
 
 class SSDMetric(SimilarityMetric):
+    """Sum of Squared Differences (SSD) Metric."""
+
     @warning_for_keywords()
     def __init__(self, dim, *, smooth=4, inner_iter=10, step_type="demons"):
         r"""Sum of Squared Differences (SSD) Metric

@@ -9,6 +9,8 @@ from dipy.testing.decorators import warning_for_keywords
 
 
 class DiffusionSpectrumModel(OdfModel, Cache):
+    """Diffusion Spectrum Imaging (DSI) model."""
+
     @warning_for_keywords()
     def __init__(
         self,
@@ -130,6 +132,8 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
 
 class DiffusionSpectrumFit(OdfFit):
+    """Fit object for Diffusion Spectrum Imaging (DSI)."""
+
     def __init__(self, model, data):
         """Calculates PDF and ODF and other properties for a single voxel
 
@@ -492,6 +496,8 @@ def project_hemisph_bvecs(gtab):
 
 
 class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
+    """Diffusion Spectrum Deconvolution (DSI Deconv) model."""
+
     @warning_for_keywords()
     def __init__(
         self,
@@ -566,6 +572,8 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
 
 
 class DiffusionSpectrumDeconvFit(DiffusionSpectrumFit):
+    """Fit object for Diffusion Spectrum Deconvolution."""
+
     def pdf(self):
         """Applies the 3D FFT in the q-space grid to generate
         the DSI diffusion propagator, remove the background noise with a

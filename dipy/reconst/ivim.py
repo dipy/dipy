@@ -139,6 +139,8 @@ def ivim_model_selector(gtab, *, fit_method="trr", **kwargs):
 
     Parameters
     ----------
+    gtab : GradientTable class instance
+        Gradient directions and bvalues.
     fit_method : string, optional
         The value fit_method can either be 'trr' or 'varpro'.
         default : trr
