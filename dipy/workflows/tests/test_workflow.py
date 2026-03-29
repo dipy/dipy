@@ -20,8 +20,9 @@ def test_force_overwrite():
         mask_file = mo_flow.last_generated_outputs["out_mask"]
         first_time = os.path.getmtime(mask_file)
 
-        # re-run with no force overwrite, modified time should not change
-        mo_flow.run(data_path, out_dir=out_dir)
+        # re-run with no force overwrite should terminate early with a clear
+        # error, and therefore not modify existing outputs.
+        npt.assert_raises(ValueError, mo_flow.run, data_path, out_dir=out_dir)
         mask_file = mo_flow.last_generated_outputs["out_mask"]
         second_time = os.path.getmtime(mask_file)
         assert first_time == second_time
