@@ -53,8 +53,12 @@ class Workflow:
 
         if self.manage_output_overwrite():
             return io_it
-        else:
-            return []
+
+        raise ValueError(
+            "The following output files already exist, the workflow will "
+            "not continue processing any further. Add the --force flag "
+            "to allow output files overwrite."
+        )
 
     def update_flat_outputs(self, new_flat_outputs, io_it):
         """Update the flat outputs with new values.
@@ -105,7 +109,7 @@ class Workflow:
             if self._force_overwrite:
                 logger.info("The following output files are about to be overwritten.")
             else:
-                logger.info(
+                logger.error(
                     "The following output files already exist, the "
                     "workflow will not continue processing any "
                     "further. Add the --force flag to allow output "
