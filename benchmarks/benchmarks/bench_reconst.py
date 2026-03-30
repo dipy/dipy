@@ -1,4 +1,8 @@
-"""Benchmarks for``dipy.reconst`` module."""
+"""Benchmarks for ``dipy.reconst`` module.
+
+Covers DTI, CSD and related fitting routines.
+Run with: asv run --config benchmarks/asv.conf.json
+"""
 
 import numpy as np
 

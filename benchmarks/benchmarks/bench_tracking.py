@@ -1,4 +1,8 @@
-"""Benchmarks for functions related to streamline in ``dipy.tracking``module."""
+"""Benchmarks for ``dipy.tracking`` module.
+
+Covers streamline generation and related tracking routines.
+Run with: asv run --config benchmarks/asv.conf.json
+"""
 
 import numpy as np
 

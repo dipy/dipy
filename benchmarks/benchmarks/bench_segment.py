@@ -1,4 +1,8 @@
-"""Benchmarks for ``dipy.segment`` module."""
+"""Benchmarks for ``dipy.segment`` module.
+
+Covers QuickBundles and related segmentation routines.
+Run with: asv run --config benchmarks/asv.conf.json
+"""
 
 import numpy as np
 
