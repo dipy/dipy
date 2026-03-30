@@ -3587,19 +3587,19 @@ class ReconstForceFlow(Workflow):
             Name of the subdirectory for per-microstructure uncertainty maps
             (weighted IQR of posterior density, normalized by prior range).
             Maps saved: fa, md, rd, wm_fraction, gm_fraction, csf_fraction,
-            num_fibers, dispersion, nd.
+            num_fibers, dispersion, nd, ufa, mk, ak, rk, kfa.
         out_micro_ambiguity_dir : string, optional
             Name of the subdirectory for per-microstructure ambiguity maps
             (FWHM of posterior density, normalized by prior range).
             Maps saved: fa, md, rd, wm_fraction, gm_fraction, csf_fraction,
-            num_fibers, dispersion, nd.
+            num_fibers, dispersion, nd, ufa, mk, ak, rk, kfa.
 
         References
         ----------
         .. footbibliography::
 
         """
-        from dipy.reconst.force import FORCEModel
+        from dipy.reconst.force import MICRO_PARAMS, FORCEModel
         from dipy.utils.optpkg import optional_package
 
         use_posterior = not use_exact
@@ -3749,8 +3749,6 @@ class ReconstForceFlow(Workflow):
                     continue
                 save_nifti(out_path, data_arr.astype(np.float32), affine)
 
-            from dipy.reconst.force import MICRO_PARAMS
-
             micro_unc_map = {
                 p: getattr(force_fit, f"uncertainty_{p}", None) for p in MICRO_PARAMS
             }
@@ -3765,14 +3763,18 @@ class ReconstForceFlow(Workflow):
 
             for param in MICRO_PARAMS:
                 u_data = micro_unc_map.get(param)
-                if u_data is not None:
+                if u_data is not None and np.issubdtype(
+                    getattr(u_data, "dtype", type(None)), np.floating
+                ):
                     save_nifti(
                         str(unc_dir / f"{param}.nii.gz"),
                         u_data.astype(np.float32),
                         affine,
                     )
                 a_data = micro_amb_map.get(param)
-                if a_data is not None:
+                if a_data is not None and np.issubdtype(
+                    getattr(a_data, "dtype", type(None)), np.floating
+                ):
                     save_nifti(
                         str(amb_dir / f"{param}.nii.gz"),
                         a_data.astype(np.float32),

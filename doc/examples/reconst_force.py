@@ -35,6 +35,7 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
+from dipy.io.peaks import save_pam
 
 ###############################################################################
 # Download (or locate in cache) the Stanford HARDI dataset.  The first call
@@ -129,7 +130,6 @@ peaks = force_peaks(fit)
 # Now lets import the save_pam function and save the peaks to disk as a .pam5 file.
 # The affine is needed to ensure that the peaks are correctly aligned with the original
 # data.
-from dipy.io.peaks import save_pam
 
 save_pam("force_peaks.pam5", peaks, affine=affine)
 

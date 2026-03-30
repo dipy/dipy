@@ -6,9 +6,19 @@ import warnings
 
 import numpy as np
 
+from dipy.core.gradients import unique_bvals_tolerance
+from dipy.direction.peaks import PeaksAndMetrics
 from dipy.reconst._force_search import search_inner_product as _cython_search
 from dipy.reconst.base import ReconstFit, ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.shm import sf_to_sh
+from dipy.sims.force import (
+    generate_force_simulations,
+    get_default_diffusivity_config,
+    load_force_simulations,
+    save_force_simulations,
+)
+from dipy.utils.logging import logger
 
 # Named constants
 EPSILON = 1e-12
@@ -490,7 +500,7 @@ def _weighted_percentile(vals, weights, q):
     return sv[np.arange(sv.shape[0]), j]
 
 
-def _fwhm_kde_batch(vals, weights, n_grid=100, batch_size=2000):
+def _fwhm_kde_batch(vals, weights, *, n_grid=100, batch_size=2000):
     """Batch FWHM via weighted KDE.
 
     Estimates the full width at half maximum of the weighted posterior
@@ -517,12 +527,12 @@ def _fwhm_kde_batch(vals, weights, n_grid=100, batch_size=2000):
 
     for start in range(0, N, batch_size):
         end = min(start + batch_size, N)
-        v = vals[start:end].astype(np.float32)
-        w = weights[start:end].astype(np.float32)
+        vals_batch = vals[start:end].astype(np.float32)
+        weights_batch = weights[start:end].astype(np.float32)
         n = end - start
 
-        lo = v.min(axis=1)
-        hi = v.max(axis=1)
+        lo = vals_batch.min(axis=1)
+        hi = vals_batch.max(axis=1)
         span = hi - lo
         pad = 0.15 * (span + EPSILON)
         lo_p, hi_p = lo - pad, hi + pad
@@ -534,8 +544,8 @@ def _fwhm_kde_batch(vals, weights, n_grid=100, batch_size=2000):
         bw = span_p / max(K**0.5, 4.0)
         bw = np.maximum(bw, EPSILON)
 
-        diff = (grid[:, :, None] - v[:, None, :]) / bw[:, None, None]
-        density = np.sum(np.exp(-0.5 * diff**2) * w[:, None, :], axis=2)
+        diff = (grid[:, :, None] - vals_batch[:, None, :]) / bw[:, None, None]
+        density = np.sum(np.exp(-0.5 * diff**2) * weights_batch[:, None, :], axis=2)
 
         peak = density.max(axis=1)
         half_peak = 0.5 * peak
@@ -558,7 +568,8 @@ def compute_microstructure_uncertainty_ambiguity(vals, weights, prior_range):
     Uncertainty is the weighted interquartile range of the posterior density,
     normalized by the prior range. Ambiguity is the full width at half
     maximum (FWHM) of the weighted posterior density, similarly normalized.
-    Both are expressed as percentages.
+    Both are in [0, 1] where 0 means no spread and 1 means the posterior
+    spans the entire prior range.
 
     Parameters
     ----------
@@ -572,16 +583,16 @@ def compute_microstructure_uncertainty_ambiguity(vals, weights, prior_range):
     Returns
     -------
     uncertainty : ndarray (N,)
-        Weighted IQR / prior_range * 100 (%).
+        Weighted IQR / prior_range (fraction in [0, 1]).
     ambiguity : ndarray (N,)
-        FWHM / prior_range * 100 (%).
+        FWHM / prior_range (fraction in [0, 1]).
     """
     q75 = _weighted_percentile(vals, weights, 0.75)
     q25 = _weighted_percentile(vals, weights, 0.25)
-    uncertainty = ((q75 - q25) / (prior_range + EPSILON) * 100.0).astype(np.float32)
+    uncertainty = ((q75 - q25) / (prior_range + EPSILON)).astype(np.float32)
 
     fwhm = _fwhm_kde_batch(vals, weights)
-    ambiguity = (fwhm / (prior_range + EPSILON) * 100.0).astype(np.float32)
+    ambiguity = (fwhm / (prior_range + EPSILON)).astype(np.float32)
 
     return uncertainty, ambiguity
 
@@ -751,12 +762,26 @@ class FORCEModel(ReconstModel):
         self : FORCEModel
             Model with simulations loaded.
         """
-        from dipy.sims.force import (
-            generate_force_simulations,
-            get_default_diffusivity_config,
-            load_force_simulations,
-            save_force_simulations,
-        )
+
+        b0_thr = getattr(self.gtab, "b0_threshold", 50)
+        unique_bvals = unique_bvals_tolerance(self.gtab.bvals, tol=50)
+        n_nonzero_shells = int(np.sum(unique_bvals > b0_thr))
+
+        if compute_dki and n_nonzero_shells < 2:
+            warnings.warn(
+                f"compute_dki=True but only {n_nonzero_shells} non-zero "
+                "b-value shell found (need at least 2). "
+                "Disabling DKI computation.",
+                UserWarning,
+                stacklevel=2,
+            )
+            compute_dki = False
+        elif not compute_dki and n_nonzero_shells >= 2:
+            logger.info(
+                f"Found {n_nonzero_shells} non-zero b-value shells. "
+                "You can compute DKI metrics (AK, RK, MK, KFA) by "
+                "setting compute_dki=True."
+            )
 
         # Resolve the diffusivity config that will actually be used
         resolved_config = (
@@ -840,8 +865,6 @@ class FORCEModel(ReconstModel):
             Model with simulations loaded.
 
         """
-        from dipy.sims.force import load_force_simulations
-
         self.simulations = load_force_simulations(input_path)
         self._prepare_library()
         return self
@@ -1050,8 +1073,9 @@ class FORCEModel(ReconstModel):
         best = np.argmax(S, axis=1)
         lib_idx = neighbors[np.arange(n_vox), best]
 
+        W = softmax_stable(self.posterior_beta * S, axis=1)
+
         if self.use_posterior:
-            W = softmax_stable(self.posterior_beta * S, axis=1)
             entropy = -np.sum(W * np.log(W + EPSILON), axis=1)
 
             params_arrays = self._posterior_params_batched(neighbors, W, d, lib_idx)
@@ -1059,7 +1083,6 @@ class FORCEModel(ReconstModel):
             params_arrays["ambiguity"] = A
             params_arrays["entropy"] = entropy.astype(np.float32)
         else:
-            W = softmax_stable(self.posterior_beta * S, axis=1)
             params_arrays = self._fetch_params_batched(lib_idx, d)
             params_arrays["uncertainty"] = U
             params_arrays["ambiguity"] = A
@@ -1229,142 +1252,142 @@ class FORCEFit(ReconstFit):
 
     @property
     def uncertainty_fa(self):
-        """Per-microstructure uncertainty for FA (% of prior range)."""
+        """Per-microstructure uncertainty for FA (fraction of prior range)."""
         return self._params.get("uncertainty_fa", None)
 
     @property
     def ambiguity_fa(self):
-        """Per-microstructure ambiguity for FA (% of prior range)."""
+        """Per-microstructure ambiguity for FA (fraction of prior range)."""
         return self._params.get("ambiguity_fa", None)
 
     @property
     def uncertainty_md(self):
-        """Per-microstructure uncertainty for MD (% of prior range)."""
+        """Per-microstructure uncertainty for MD (fraction of prior range)."""
         return self._params.get("uncertainty_md", None)
 
     @property
     def ambiguity_md(self):
-        """Per-microstructure ambiguity for MD (% of prior range)."""
+        """Per-microstructure ambiguity for MD (fraction of prior range)."""
         return self._params.get("ambiguity_md", None)
 
     @property
     def uncertainty_rd(self):
-        """Per-microstructure uncertainty for RD (% of prior range)."""
+        """Per-microstructure uncertainty for RD (fraction of prior range)."""
         return self._params.get("uncertainty_rd", None)
 
     @property
     def ambiguity_rd(self):
-        """Per-microstructure ambiguity for RD (% of prior range)."""
+        """Per-microstructure ambiguity for RD (fraction of prior range)."""
         return self._params.get("ambiguity_rd", None)
 
     @property
     def uncertainty_wm_fraction(self):
-        """Per-microstructure uncertainty for WM fraction (% of prior range)."""
+        """Per-microstructure uncertainty for WM fraction (fraction of prior range)."""
         return self._params.get("uncertainty_wm_fraction", None)
 
     @property
     def ambiguity_wm_fraction(self):
-        """Per-microstructure ambiguity for WM fraction (% of prior range)."""
+        """Per-microstructure ambiguity for WM fraction (fraction of prior range)."""
         return self._params.get("ambiguity_wm_fraction", None)
 
     @property
     def uncertainty_gm_fraction(self):
-        """Per-microstructure uncertainty for GM fraction (% of prior range)."""
+        """Per-microstructure uncertainty for GM fraction (fraction of prior range)."""
         return self._params.get("uncertainty_gm_fraction", None)
 
     @property
     def ambiguity_gm_fraction(self):
-        """Per-microstructure ambiguity for GM fraction (% of prior range)."""
+        """Per-microstructure ambiguity for GM fraction (fraction of prior range)."""
         return self._params.get("ambiguity_gm_fraction", None)
 
     @property
     def uncertainty_csf_fraction(self):
-        """Per-microstructure uncertainty for CSF fraction (% of prior range)."""
+        """Per-microstructure uncertainty for CSF fraction (fraction of prior range)."""
         return self._params.get("uncertainty_csf_fraction", None)
 
     @property
     def ambiguity_csf_fraction(self):
-        """Per-microstructure ambiguity for CSF fraction (% of prior range)."""
+        """Per-microstructure ambiguity for CSF fraction (fraction of prior range)."""
         return self._params.get("ambiguity_csf_fraction", None)
 
     @property
     def uncertainty_num_fibers(self):
-        """Per-microstructure uncertainty for num_fibers (% of prior range)."""
+        """Per-microstructure uncertainty for num_fibers (fraction of prior range)."""
         return self._params.get("uncertainty_num_fibers", None)
 
     @property
     def ambiguity_num_fibers(self):
-        """Per-microstructure ambiguity for num_fibers (% of prior range)."""
+        """Per-microstructure ambiguity for num_fibers (fraction of prior range)."""
         return self._params.get("ambiguity_num_fibers", None)
 
     @property
     def uncertainty_dispersion(self):
-        """Per-microstructure uncertainty for dispersion (% of prior range)."""
+        """Per-microstructure uncertainty for dispersion (fraction of prior range)."""
         return self._params.get("uncertainty_dispersion", None)
 
     @property
     def ambiguity_dispersion(self):
-        """Per-microstructure ambiguity for dispersion (% of prior range)."""
+        """Per-microstructure ambiguity for dispersion (fraction of prior range)."""
         return self._params.get("ambiguity_dispersion", None)
 
     @property
     def uncertainty_nd(self):
-        """Per-microstructure uncertainty for ND (% of prior range)."""
+        """Per-microstructure uncertainty for ND (fraction of prior range)."""
         return self._params.get("uncertainty_nd", None)
 
     @property
     def ambiguity_nd(self):
-        """Per-microstructure ambiguity for ND (% of prior range)."""
+        """Per-microstructure ambiguity for ND (fraction of prior range)."""
         return self._params.get("ambiguity_nd", None)
 
     @property
     def uncertainty_ufa_voxel(self):
-        """Per-microstructure uncertainty for microFA voxel (% of prior range)."""
+        """Uncertainty for microFA voxel (fraction of prior range)."""
         return self._params.get("uncertainty_ufa_voxel", None)
 
     @property
     def ambiguity_ufa_voxel(self):
-        """Per-microstructure ambiguity for microFA voxel (% of prior range)."""
+        """Per-microstructure ambiguity for microFA voxel (fraction of prior range)."""
         return self._params.get("ambiguity_ufa_voxel", None)
 
     @property
     def uncertainty_ak(self):
-        """Per-microstructure uncertainty for AK (% of prior range)."""
+        """Per-microstructure uncertainty for AK (fraction of prior range)."""
         return self._params.get("uncertainty_ak", None)
 
     @property
     def ambiguity_ak(self):
-        """Per-microstructure ambiguity for AK (% of prior range)."""
+        """Per-microstructure ambiguity for AK (fraction of prior range)."""
         return self._params.get("ambiguity_ak", None)
 
     @property
     def uncertainty_rk(self):
-        """Per-microstructure uncertainty for RK (% of prior range)."""
+        """Per-microstructure uncertainty for RK (fraction of prior range)."""
         return self._params.get("uncertainty_rk", None)
 
     @property
     def ambiguity_rk(self):
-        """Per-microstructure ambiguity for RK (% of prior range)."""
+        """Per-microstructure ambiguity for RK (fraction of prior range)."""
         return self._params.get("ambiguity_rk", None)
 
     @property
     def uncertainty_mk(self):
-        """Per-microstructure uncertainty for MK (% of prior range)."""
+        """Per-microstructure uncertainty for MK (fraction of prior range)."""
         return self._params.get("uncertainty_mk", None)
 
     @property
     def ambiguity_mk(self):
-        """Per-microstructure ambiguity for MK (% of prior range)."""
+        """Per-microstructure ambiguity for MK (fraction of prior range)."""
         return self._params.get("ambiguity_mk", None)
 
     @property
     def uncertainty_kfa(self):
-        """Per-microstructure uncertainty for KFA (% of prior range)."""
+        """Per-microstructure uncertainty for KFA (fraction of prior range)."""
         return self._params.get("uncertainty_kfa", None)
 
     @property
     def ambiguity_kfa(self):
-        """Per-microstructure ambiguity for KFA (% of prior range)."""
+        """Per-microstructure ambiguity for KFA (fraction of prior range)."""
         return self._params.get("ambiguity_kfa", None)
 
 
@@ -1460,8 +1483,6 @@ def force_peaks(fitted_object, *, mask=None, sh_order=8):
     sh_order : int, optional
         Spherical harmonics order for the coefficients.
     """
-    from dipy.direction.peaks import PeaksAndMetrics
-    from dipy.reconst.shm import sf_to_sh
     from dipy.sims.force import default_sphere
 
     labels = fitted_object.label
