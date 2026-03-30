@@ -35,6 +35,8 @@ def _is_eudx_direction_getter(direction_getter):
 
 
 class LocalTracking:
+    """Local tractography class."""
+
     @staticmethod
     def _get_voxel_size(affine):
         """Computes the voxel sizes of an image from the affine.

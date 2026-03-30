@@ -273,6 +273,8 @@ class ForecastModel(OdfModel, Cache):
 
 
 class ForecastFit(OdfFit):
+    """Fit object for the FORECAST model."""
+
     def __init__(self, model, data, sh_coef, d_par, d_perp):
         """Calculates diffusion properties for a single voxel
 
@@ -435,6 +437,8 @@ def forecast_error_func(x, b_unique, E):
 
 
 def psi_l(ell, b):
+    """Helper function for calculating the FORECAST radial matrix."""
+
     n = ell // 2
     v = (-b) ** n
     v *= gamma(n + 1.0 / 2) / gamma(2 * n + 3.0 / 2)
