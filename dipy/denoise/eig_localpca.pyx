@@ -2,6 +2,13 @@
 # cython: cdivision=True
 # cython: initializedcheck=False
 # cython: wraparound=False
+"""
+Optimized Cython implementation of the local PCA denoising core used in DIPY.
+
+This module provides Cython-accelerated routines for the computationally
+intensive parts of local PCA denoising, in particular a triple nested loop
+that applies eigenvalue-based PCA to 3D patches of 4D input data.
+"""
 
 import numpy as np
 cimport numpy as cnp
@@ -24,6 +31,10 @@ cnp.import_array()
 
 
 cdef inline f_t mean_from_start(const f_t* a, int n) noexcept nogil:
+    """
+    Return the mean of the first ``n`` values in ``a``.
+    """
+    
     cdef int i
     cdef f_t s = 0
     for i in range(n):
@@ -33,6 +44,30 @@ cdef inline f_t mean_from_start(const f_t* a, int n) noexcept nogil:
 
 cdef inline void pca_classifier(const f_t[:] evals, int n_evals, int nvoxels,
                                    f_t* out_var) noexcept nogil:
+    """
+    Classify which PCA eigenvalues are related to noise and estimate the
+    noise variance.
+
+    Parameters
+    ----------
+    evals : 1D typed memoryview
+        Array containing the PCA eigenvalues in ascending order.
+    n_evals : int
+        Number of available eigenvalues.
+    nvoxels : int
+        Number of voxels used to compute the eigenvalues.
+    out_var : pointer to f_t
+        Output location for the estimated noise variance.
+
+    Notes
+    -----
+    This is based on the algorithm described in :footcite:p:`Veraart2016c`.
+
+    References
+    ----------
+    .. footbibliography::
+    """
+
     cdef int start = 0
     if n_evals > nvoxels - 1:
         start = n_evals - (nvoxels - 1)
@@ -50,8 +85,22 @@ cdef inline void pca_classifier(const f_t[:] evals, int n_evals, int nvoxels,
     out_var[0] = var
 
 
-# Helpers
 cdef inline void compute_mean_center(f_t[:, :] X, f_t[:] M, int n_samples, int N) noexcept nogil:
+    """
+    Compute the column-wise mean of ``X`` and subtract it in place.
+
+    Parameters
+    ----------
+    X : 2D typed memoryview
+        Input patch matrix of shape ``(n_samples, N)``. Modified in place.
+    M : 1D typed memoryview
+        Output buffer for the column means.
+    n_samples : int
+        Number of rows in ``X``.
+    N : int
+        Number of columns in ``X``.
+    """
+
     cdef int s, t
     for t in range(N):
         M[t] = 0.0
@@ -66,12 +115,25 @@ cdef inline void compute_mean_center(f_t[:, :] X, f_t[:] M, int n_samples, int N
 
 
 cdef inline void build_cov(f_t[:, :] X, f_t[:, :] C, int ns, int N) noexcept nogil:
+    """
+    Build the covariance matrix ``C = X^T X / ns``.
+
+    Parameters
+    ----------
+    X : 2D typed memoryview
+        Mean-centered patch matrix of shape ``(ns, N)``.
+    C : 2D typed memoryview
+        Output covariance matrix of shape ``(N, N)``.
+    ns : int
+        Number of samples in the patch.
+    N : int
+        Number of signal dimensions.
+    """
+
     cdef float alpha32, beta32
     cdef double alpha64, beta64
 
     # This is the low-level equivalent of: C = X^T X / ns
-    # NOTE: could be changed for something more readable, such as plain matrix
-    # multiplication with for loop.
     if f_t is float:
         alpha32 = <float>(1.0 / ns)
         beta32 = 0.0
@@ -102,6 +164,28 @@ cdef inline void reconstruct(
     int n_signal,
     f_t[:, :] Yt
 ) noexcept nogil:
+    """
+    Reconstruct ``X`` from the retained PCA signal components.
+
+    Parameters
+    ----------
+    X : 2D typed memoryview
+        Mean-centered patch matrix of shape ``(ns, N)``. Overwritten in place
+        with the reconstructed patch.
+    M : 1D typed memoryview
+        Mean vector of length ``N``.
+    W : pointer
+        Pointer to the retained eigenvectors.
+    ns : int
+        Number of samples in the patch.
+    N : int
+        Number of signal dimensions.
+    n_signal : int
+        Number of retained signal components.
+    Yt : 2D typed memoryview
+        Temporary buffer.
+    """
+
     cdef int t, s
     cdef float alpha32 = 1.0
     cdef float beta32 = 0.0
@@ -174,7 +258,36 @@ cdef void genpca_loop(
     int patch_radius_x, int patch_radius_y, int patch_radius_z,
     f_t tau_factor
 ) noexcept nogil:
+    """
+    Main nogil loop for local PCA denoising.
 
+    Parameters
+    ----------
+    data : 4D typed memoryview
+        Array of data to be denoised.
+    mask : 3D typed memoryview
+        A mask with voxels that are true inside the brain and false outside of
+        it.
+    theta : 4D memoryview
+        Accumulator for weights.
+    thetax : 4D memoryview
+        Accumulator for weighted reconstructed signal.
+    estimate_sigma : bool
+        Whether to estimate local noise variance from the eigenvalue spectrum.
+    var_map : 3D memoryview
+        Input noise variance map if ``estimate_sigma`` is False.
+    return_sigma : bool
+        Whether variance estimates should also be accumulated for output.
+    var_acc : 3D memoryview
+        Weighted variance accumulator.
+    thetavar : 3D memoryview
+        Variance weight accumulator.
+    patch_radius_x, patch_radius_y, patch_radius_z : int
+        Patch radius along each spatial dimension.
+    tau_factor : float
+        Thresholding of PCA eigenvalues.
+    """
+    
     cdef Py_ssize_t Xdim = data.shape[0]
     cdef Py_ssize_t Ydim = data.shape[1]
     cdef Py_ssize_t Zdim = data.shape[2]
@@ -292,7 +405,7 @@ cdef void genpca_loop(
                                 f"{info} off-diagonal elements of an intermediate "
                                 "tridiagonal form did not converge to zero."
                             )
-                            
+
                 if estimate_sigma:
                     pca_classifier[f_t](d, N, n_samples, &this_var)
                 else:
@@ -349,6 +462,44 @@ cdef tuple run_core_f32(
     ndarray var_acc,
     ndarray thetavar
 ):
+    """
+    Execute the float32 implementation of the local PCA core.
+
+    This helper allocates float32 accumulation buffers and dispatches the main
+    Cython loop. 
+
+    Parameters
+    ----------
+    data : 4D array
+        Array of data to be denoised.
+    mask : 3D boolean array
+        A mask with voxels that are true inside the brain and false outside of
+        it.
+    estimate_sigma : bool
+        Whether the local noise variance should be estimated from the
+        eigenvalue spectrum.
+    var_map : 3D array
+        Input variance map if ``estimate_sigma`` is False; dummy array
+        otherwise.
+    patch_radius_x, patch_radius_y, patch_radius_z : int
+        Patch radius along each spatial dimension.
+    tau_factor : float
+        Thresholding factor for PCA eigenvalues.
+    return_sigma : bool
+        Whether noise variance accumulation buffers should be updated.
+    var_acc : ndarray
+        Accumulator for weighted local variance estimates.
+    thetavar : ndarray
+        Accumulator for variance weights.
+
+    Returns
+    -------
+    theta : ndarray
+        Accumulated weights.
+    thetax : ndarray
+        Weighted reconstructed signal.
+    """
+
     cdef f32[:, :, :, :] cdata = data
     cdef u8[:, :, :] cmask = mask
     cdef tuple data_shape = (<object>data).shape
@@ -384,6 +535,44 @@ cdef tuple run_core_f64(
     ndarray var_acc,
     ndarray thetavar
 ):
+    """
+    Execute the float64 implementation of the local PCA core.
+
+    This helper allocates float64 accumulation buffers and dispatches the main
+    Cython loop. 
+
+    Parameters
+    ----------
+    data : 4D array
+        Array of data to be denoised.
+    mask : 3D boolean array
+        A mask with voxels that are true inside the brain and false outside of
+        it.
+    estimate_sigma : bool
+        Whether the local noise variance should be estimated from the
+        eigenvalue spectrum.
+    var_map : 3D array
+        Input variance map if ``estimate_sigma`` is False; dummy array
+        otherwise.
+    patch_radius_x, patch_radius_y, patch_radius_z : int
+        Patch radius along each spatial dimension.
+    tau_factor : float
+        Thresholding factor for PCA eigenvalues.
+    return_sigma : bool
+        Whether noise variance accumulation buffers should be updated.
+    var_acc : ndarray
+        Accumulator for weighted local variance estimates.
+    thetavar : ndarray
+        Accumulator for variance weights.
+
+    Returns
+    -------
+    theta : ndarray
+        Accumulated weights.
+    thetax : ndarray
+        Weighted reconstructed signal.
+    """
+
     cdef f64[:, :, :, :] cdata = data
     cdef u8[:, :, :] cmask = mask
     cdef tuple data_shape = (<object>data).shape
@@ -422,7 +611,58 @@ def genpca_core(
     out_dtype=None,
 ):
     """
-    Full Cython implementation of the expensive triple-loop body.
+    Perform PCA-based denoising on a 4D volume. This is a Python wrapper 
+    around the optimized Cython core function `genpca_loop`. The code only supports
+    eigenvalue decomposition.
+
+    Parameters
+    ----------
+    data : 4D array
+        Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
+        are the diffusion gradient directions. The first 3 dimensions must have
+        size >= 2 * patch_radius + 1 or size = 1.
+    mask : 3D boolean array
+        A mask with voxels that are true inside the brain and false outside of
+        it. The function denoises within the true part and returns zeros
+        outside of those voxels.
+    var_map : 3D array, optional
+        Voxelwise noise variance map estimated from the data. If it is not given, it
+        will be estimated based on random matrix theory 
+        :footcite:p:`Veraart2016b`, :footcite:p:`Veraart2016c`.
+    return_sigma : bool, optional
+        If true, the Standard deviation of the noise will be returned.
+    patch_radius_x : int, optional
+        The radius of the local patch to be taken around each voxel (in
+        voxels) along the x-axis.
+    patch_radius_y : int, optional
+        The radius of the local patch to be taken around each voxel (in
+        voxels) along the y-axis.
+    patch_radius_z : int, optional
+       The radius of the local patch to be taken around each voxel (in
+        voxels) along the z-axis.
+    tau_factor : float, optional
+        Thresholding of PCA eigenvalues is done by nulling out eigenvalues that
+        are smaller than:
+
+        .. math::
+
+                \tau = (\tau_{factor} \sigma)^2
+
+        $\tau_{factor}$ can be set to a predefined values (e.g. $\tau_{factor} =
+        2.3$ :footcite:p:`Manjon2013`), or automatically calculated using random
+        matrix theory (in case that $\tau_{factor}$ is set to None).
+    out_dtype : dtype, optional
+        The dtype for the output array. Default: output has the same dtype as
+        the input.
+
+    Returns
+    -------
+    denoised : 4D array
+        This is the denoised array of the same size as that of the input data.
+
+    sigma : 3D array, optional
+        Estimated noise standard deviation, returned only if
+        ``return_sigma=True``.
     """
 
     in_dtype = data.dtype

@@ -198,7 +198,7 @@ def genpca(
     ----------
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
-        are the diffusion gradient directions. The first 3 dimension must have
+        are the diffusion gradient directions. The first 3 dimensions must have
         size >= 2 * patch_radius + 1 or size = 1.
     sigma : float or 3D array, optional
         Standard deviation of the noise estimated from the data. If no sigma
