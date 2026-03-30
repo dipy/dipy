@@ -456,6 +456,11 @@ MICRO_PARAMS = (
     "num_fibers",
     "dispersion",
     "nd",
+    "ufa_voxel",
+    "ak",
+    "rk",
+    "mk",
+    "kfa",
 )
 
 
@@ -1311,6 +1316,56 @@ class FORCEFit(ReconstFit):
     def ambiguity_nd(self):
         """Per-microstructure ambiguity for ND (% of prior range)."""
         return self._params.get("ambiguity_nd", None)
+
+    @property
+    def uncertainty_ufa_voxel(self):
+        """Per-microstructure uncertainty for microFA voxel (% of prior range)."""
+        return self._params.get("uncertainty_ufa_voxel", None)
+
+    @property
+    def ambiguity_ufa_voxel(self):
+        """Per-microstructure ambiguity for microFA voxel (% of prior range)."""
+        return self._params.get("ambiguity_ufa_voxel", None)
+
+    @property
+    def uncertainty_ak(self):
+        """Per-microstructure uncertainty for AK (% of prior range)."""
+        return self._params.get("uncertainty_ak", None)
+
+    @property
+    def ambiguity_ak(self):
+        """Per-microstructure ambiguity for AK (% of prior range)."""
+        return self._params.get("ambiguity_ak", None)
+
+    @property
+    def uncertainty_rk(self):
+        """Per-microstructure uncertainty for RK (% of prior range)."""
+        return self._params.get("uncertainty_rk", None)
+
+    @property
+    def ambiguity_rk(self):
+        """Per-microstructure ambiguity for RK (% of prior range)."""
+        return self._params.get("ambiguity_rk", None)
+
+    @property
+    def uncertainty_mk(self):
+        """Per-microstructure uncertainty for MK (% of prior range)."""
+        return self._params.get("uncertainty_mk", None)
+
+    @property
+    def ambiguity_mk(self):
+        """Per-microstructure ambiguity for MK (% of prior range)."""
+        return self._params.get("ambiguity_mk", None)
+
+    @property
+    def uncertainty_kfa(self):
+        """Per-microstructure uncertainty for KFA (% of prior range)."""
+        return self._params.get("uncertainty_kfa", None)
+
+    @property
+    def ambiguity_kfa(self):
+        """Per-microstructure ambiguity for KFA (% of prior range)."""
+        return self._params.get("ambiguity_kfa", None)
 
 
 # Resolve forward reference: FORCEModel is defined before FORCEFit.
