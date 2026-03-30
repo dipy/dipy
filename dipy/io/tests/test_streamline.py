@@ -255,6 +255,22 @@ def test_low_io_vtk():
         npt.assert_array_almost_equal(tracks[1], STREAMLINE, decimal=4)
 
 
+def test_streamline_import_does_not_trigger_vtk():
+    # Regression test for gh-3837: importing dipy.io.streamline must not
+    # eagerly import dipy.io.vtk (and thus fury/GPU libraries).
+    import sys
+
+    # Remove dipy.io.vtk from sys.modules if already loaded so we can detect
+    # a fresh import triggered by dipy.io.streamline.
+    sys.modules.pop("dipy.io.vtk", None)
+    import importlib
+
+    importlib.reload(sys.modules["dipy.io.streamline"])
+    assert "dipy.io.vtk" not in sys.modules, (
+        "dipy.io.streamline should not import dipy.io.vtk at module level"
+    )
+
+
 def trk_loader(filename):
     try:
         with TemporaryDirectory() as tmp_dir:

@@ -16,7 +16,6 @@ from dipy.io.utils import (
     is_header_compatible,
     split_filename_extension,
 )
-from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.logging import logger
 
@@ -100,6 +99,8 @@ def save_tractogram(
         nib.streamlines.save(fileobj, str(filename))
 
     elif extension in [".vtk", ".vtp", ".fib"]:
+        from dipy.io.vtk import save_vtk_streamlines
+
         binary = extension in [".vtk", ".fib"]
         save_vtk_streamlines(sft.streamlines, filename, binary=binary, to_lps=False)
         logger.warning(
@@ -218,6 +219,8 @@ def load_tractogram(
             data_per_streamline = tractogram_obj.data_per_streamline
 
     elif extension in [".vtk", ".vtp", ".fib"]:
+        from dipy.io.vtk import load_vtk_streamlines
+
         streamlines = load_vtk_streamlines(filename, to_lps=False)
         logger.warning(
             "StatefulTractogram was previously saving in LPSMM space.\n"
