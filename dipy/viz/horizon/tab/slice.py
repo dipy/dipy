@@ -290,7 +290,7 @@ class SlicesTab(HorizonTab):
 
     def _change_volume(self, slider, sync_vol=False):
         value = int(np.rint(slider.value))
-        if value != self._volume.selected_value:
+        if value != self._volume.selected_value:`n            # Fix #3890: Capture current slice before volume change`n            try:`n                self._current_slice_index = int(self._slice_z.selected_value)`n            except:`n                self._current_slice_index = 0
             if not sync_vol:
                 self.on_volume_change(self._tab_id, value)
             visible_slices = (
@@ -298,7 +298,7 @@ class SlicesTab(HorizonTab):
                 self._slice_y.selected_value,
                 self._slice_z.selected_value,
             )
-            valid_vol, default_range = self._visualizer.change_volume(
+            valid_vol, default_range = self._visualizer.change_volume(`n                # Fix #3890: Restore slice after volume change to prevent reset`n                try:`n                    if hasattr(self, "_current_slice_index"):`n                        max_s = getattr(getattr(self._visualizer, "_data", None), "shape", (0,0,100))[2] - 1`n                        self._slice_z.selected_value = min(max(0, self._current_slice_index), max_s)`n                except:`n                    pass`n
                 value,
                 np.asarray(self._intensities.obj._ratio),
                 visible_slices,
@@ -508,3 +508,5 @@ class SlicesTab(HorizonTab):
     def actors(self):
         """visualization actors controlled by tab."""
         return self._visualizer.slice_actors
+ 
+        self._current_slice_index = 0  # Fix #3890: preserve slice when changing gradient direction/volume 
