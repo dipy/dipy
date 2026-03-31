@@ -8,7 +8,7 @@ Diffusion Imaging In Python - Documentation
    DIPY_ is the paragon 3D/4D+ imaging library in Python. It contains generic methods for
    spatial normalization, signal processing, machine learning, statistical analysis
    and visualization of medical images. Additionally, it contains
-   specialized methods for computational anatomy including diffusion,
+   specialize methods for computational anatomy including diffusion,
    perfusion and structural imaging.
 
    DIPY is part of the `NiPy ecosystem <https://nipy.org/>`__.
