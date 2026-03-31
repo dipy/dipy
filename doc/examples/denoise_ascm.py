@@ -124,6 +124,22 @@ plt.savefig("denoised_ascm.png", bbox_inches="tight")
 
 save_nifti("denoised_ascm.nii.gz", den_final, affine)
 
+if den_final is None:
+    raise ValueError("Denoised data is empty")
+
+if den_final.ndim != 3:
+    raise ValueError("Expected 3D image data")
+############################################################################
+#
+# .. figure:: sphx_glr_denoised_ascm.png
+#    :align: center
+#    :caption: Showing the axial slice without (left) and with (middle)
+#              ASCM denoising.
+#
+# From the above figure we can see that the residual is really uniform in nature
+# which dictates that ASCM denoises the data while preserving the sharpness of
+# the features.
+
 ###############################################################################
 # For comparison propose we also plot the outputs of the ``non_local_means``
 # (both with the larger as well as with the smaller patch radius) with the ASCM
