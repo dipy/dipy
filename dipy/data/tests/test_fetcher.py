@@ -28,6 +28,12 @@ def _make_gz_file(tmp_path, inner_name, content=b"hello gz"):
         f.write(content)
     return gz_path
 
+def _make_zip_file(tmp_path, members):
+    zip_path = tmp_path / "archive.zip"
+    with zipfile.ZipFile(zip_path, "w") as z:
+        for name, data in members.items():
+            z.writestr(name, data)
+    return zip_path
 
 
 def test_check_md5():
