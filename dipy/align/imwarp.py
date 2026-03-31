@@ -295,7 +295,7 @@ class DiffeomorphicMap:
 
     @warning_for_keywords()
     def _warp_coordinates_forward(self, points, *, coord2world=None, world2coord=None):
-        r"""Warps the list of points in the forward direction
+        r"""Warps the list of points in the forward direction.
 
         Applies this diffeomorphic map to the list of points given by `points`.
         We assume that the points' coordinates are mapped to world coordinates
@@ -308,11 +308,9 @@ class DiffeomorphicMap:
         ----------
         points : array, shape (N, dim) or Streamlines object
             Input points (or streamlines) to be warped in the forward direction.
-
         coord2world : array, shape (dim+1, dim+1), optional
             Affine matrix mapping input coordinates to world coordinates.
             If None, identity is assumed.
-
         world2coord : array, shape (dim+1, dim+1), optional
             Affine matrix mapping world coordinates to the output coordinate system.
             If None, output is returned in world coordinates.
@@ -327,7 +325,7 @@ class DiffeomorphicMap:
 
     @warning_for_keywords()
     def _warp_coordinates_backward(self, points, *, coord2world=None, world2coord=None):
-        """Warps the list of points in the backward direction
+        """Warps the list of points in the backward direction.
 
         Applies this diffeomorphic map to the list of points given by `points`.
         We assume that the points' coordinates are mapped to world coordinates
@@ -340,11 +338,9 @@ class DiffeomorphicMap:
         ----------
         points : array, shape (N, dim) or Streamlines object
             Input points (or streamlines) to be warped in the backward direction.
-
         coord2world : array, shape (dim+1, dim+1), optional
             Affine matrix mapping input coordinates to world coordinates.
             If None, identity is assumed.
-
         world2coord : array, shape (dim+1, dim+1), optional
             Affine matrix mapping world coordinates to the output coordinate system.
             If None, output is returned in world coordinates.
@@ -749,11 +745,9 @@ class DiffeomorphicMap:
         points : array, shape (N, dim) or Streamlines object
             Input points (or streamlines) to be warped. Can be an array of
             shape (N, dim) or a Streamlines object.
-
         coord2world : array, shape (dim+1, dim+1), optional
             Affine matrix mapping input coordinates to world coordinates.
             If None, identity is assumed.
-
         world2coord : array, shape (dim+1, dim+1), optional
             Affine matrix mapping world coordinates to the output coordinate system.
             If None, output is returned in world coordinates.
@@ -779,11 +773,9 @@ class DiffeomorphicMap:
         points : array, shape (N, dim) or Streamlines object
             Input points (or streamlines) to be warped. Can be an array of
             shape (N, dim) or a Streamlines object.
-
         coord2world : array, shape (dim+1, dim+1), optional
             Affine matrix mapping input coordinates to world coordinates.
             If None, identity is assumed.
-
         world2coord : array, shape (dim+1, dim+1), optional
             Affine matrix mapping world coordinates to the output coordinate system.
             If None, output is returned in world coordinates.
