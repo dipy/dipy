@@ -404,7 +404,7 @@ def fetch_data(
         try:
             _get_file_data(fullpath, url, use_headers=use_headers, stored_md5=md5)
             successful_downloads += 1
-        except (FetcherError, Exception) as e:
+        except Exception as e:
             failed_files.append((f, url, str(e)))
             if raise_on_error:
                 raise
