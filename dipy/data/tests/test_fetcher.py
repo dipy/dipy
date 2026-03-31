@@ -1,18 +1,49 @@
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+import gzip
 import importlib
+import io
 import os
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 import tempfile
 from threading import Thread
-from urllib.request import pathname2url
+from unittest.mock import MagicMock, call, patch
+from urllib.error import HTTPError, URLError
+import zipfile
 
 import numpy.testing as npt
+import pytest
 
 from dipy.data import SPHERE_FILES
 import dipy.data.fetcher as fetcher
+from dipy.data.fetcher import (
+    DIPY_MIRROR_URL,
+    MIRRORABLE_HOSTS,
+    FetcherError,
+    _already_there_msg,
+    _get_file_md5,
+    _get_file_data,
+    _get_mirror_url,
+    _make_fetcher,
+    check_md5,
+    fetch_data,
+    fetch_deepn4_test,
+    fetch_evac_test,
+    fetch_synthseg_torch_weights,
+    fetch_synthseg_test,
+    get_fnames,
+)
 
+
+# ===========================================================================
+# Shared test helpers
+# ===========================================================================
 
 def _free_port_server(directory):
+    """Start an HTTP server on an OS-assigned free port serving *directory*.
+
+    Returns (server, base_url, original_cwd).
+    Caller MUST call server.shutdown() and os.chdir(original_cwd) in finally.
+    """
     original_cwd = os.getcwd()
     os.chdir(directory)
     server = HTTPServer(("127.0.0.1", 0), SimpleHTTPRequestHandler)
@@ -22,29 +53,71 @@ def _free_port_server(directory):
     thread.start()
     return server, f"http://127.0.0.1:{port}/", original_cwd
 
+
 def _make_gz_file(tmp_path, inner_name, content=b"hello gz"):
+    """Write a plain .gz file (not .tar.gz) and return its path."""
     gz_path = tmp_path / f"{inner_name}.gz"
     with gzip.open(gz_path, "wb") as f:
         f.write(content)
     return gz_path
 
+
 def _make_zip_file(tmp_path, members):
+    """Write a .zip with {filename: bytes} members and return its path."""
     zip_path = tmp_path / "archive.zip"
     with zipfile.ZipFile(zip_path, "w") as z:
         for name, data in members.items():
             z.writestr(name, data)
     return zip_path
 
+# ===========================================================================
+# Pre-existing test bug fixes
+# ===========================================================================
 
-def test_check_md5():
-    fd, fname = tempfile.mkstemp()
-    stored_md5 = fetcher._get_file_md5(fname)
-    # If all is well, this shouldn't return anything:
-    npt.assert_equal(fetcher.check_md5(fname, stored_md5=stored_md5), None)
-    # If None is provided as input, it should silently not check either:
-    npt.assert_equal(fetcher.check_md5(fname, stored_md5=None), None)
-    # Otherwise, it will raise its exception class:
-    npt.assert_raises(fetcher.FetcherError, fetcher.check_md5, fname, stored_md5="foo")
+class TestCheckMd5:
+
+    def test_correct_md5_returns_none(self):
+        fd, fname = tempfile.mkstemp()
+        os.close(fd)                                 # This was missing, caused PermissionError on Windows
+        try:
+            stored = _get_file_md5(fname)
+            assert check_md5(fname, stored_md5=stored) is None
+        finally:
+            os.unlink(fname)
+
+    def test_none_stored_md5_skips_check(self):
+        fd, fname = tempfile.mkstemp()
+        os.close(fd)
+        try:
+            assert check_md5(fname, stored_md5=None) is None
+        finally:
+            os.unlink(fname)
+
+    def test_wrong_md5_raises_fetcher_error(self):
+        fd, fname = tempfile.mkstemp()
+        os.close(fd)
+        try:
+            with pytest.raises(FetcherError):
+                check_md5(fname, stored_md5="wrong")
+        finally:
+            os.unlink(fname)
+
+    def test_error_message_contains_filename_and_both_checksums(self):
+        content = b"dipy"
+        fd, fname = tempfile.mkstemp()
+        os.write(fd, content)
+        os.close(fd)
+        actual = _get_file_md5(fname)
+        stored = "0" * 32
+        try:
+            with pytest.raises(FetcherError) as exc_info:
+                check_md5(fname, stored_md5=stored)
+            msg = str(exc_info.value)
+            assert fname in msg
+            assert stored in msg
+            assert actual in msg
+        finally:
+            os.unlink(fname)
 
 
 def test_make_fetcher():
