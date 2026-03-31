@@ -307,7 +307,7 @@ class CCMetric(SimilarityMetric):
         for i, grad in enumerate(gradient(self.static_image)):
             self.gradient_static[..., i] = grad
 
-        # Convert moving image's gradient field from voxel to physical space
+        # Convert static image's gradient field from voxel to physical space
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
@@ -489,7 +489,7 @@ class EMMetric(SimilarityMetric):
         for i, grad in enumerate(gradient(self.static_image)):
             self.gradient_static[..., i] = grad
 
-        # Convert moving image's gradient field from voxel to physical space
+        # Convert static image's gradient field from voxel to physical space
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
@@ -724,6 +724,8 @@ class EMMetric(SimilarityMetric):
 
 
 class SSDMetric(SimilarityMetric):
+    """Sum of Squared Differences (SSD) Metric."""
+
     @warning_for_keywords()
     def __init__(self, dim, *, smooth=4, inner_iter=10, step_type="demons"):
         r"""Sum of Squared Differences (SSD) Metric
@@ -789,7 +791,7 @@ class SSDMetric(SimilarityMetric):
         for i, grad in enumerate(gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
 
-        # Convert static image's gradient field from voxel to physical space
+        # Convert moving image's gradient field from voxel to physical space
         if self.moving_spacing is not None:
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:

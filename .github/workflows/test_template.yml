@@ -76,7 +76,7 @@ jobs:
       TEST_WITH_XVFB: ${{ inputs.enable-viz-tests }}
       PRE_WHEELS: "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple" # "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
       - name: Set up Python ${{ matrix.python-version }}
         if: ${{ matrix.install-type != 'conda' }}
         uses: actions/setup-python@v6
@@ -147,7 +147,7 @@ jobs:
             tools/ci/run_tests.sh
           fi
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         if: ${{ fromJSON(env.COVERAGE) }}
         with:
           token: ${{ inputs.codecov-token || secrets.CODECOV_TOKEN }}
