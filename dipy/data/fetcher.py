@@ -383,9 +383,8 @@ def fetch_data(
         does not match the expected value or download fails.
 
     """
-    if not Path(folder).exists():
-        logger.info(f"Creating new folder {folder}")
-        os.makedirs(folder)
+    logger.info(f"Creating new folder {folder}")
+    os.makedirs(folder, exist_ok=True)
 
     if data_size is not None:
         logger.info(f"Data size is approximately {data_size}")
