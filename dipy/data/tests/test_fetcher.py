@@ -153,59 +153,32 @@ def test_make_fetcher_http(tmp_path):
         os.chdir(original_cwd)  # FIX: always restored
 
 
-def test_fetch_data():
+def test_fetch_data_http(tmp_path):
+    """Port hardcoding and chdir leak fixed."""
     symmetric362 = SPHERE_FILES["symmetric362"]
-    with tempfile.TemporaryDirectory() as tmpdir:
-        md5 = fetcher._get_file_md5(symmetric362)
-        bad_md5 = "8" * len(md5)
+    md5 = _get_file_md5(symmetric362)
+    bad_md5 = "8" * len(md5)
+    name = Path(symmetric362).name
+    newfile = tmp_path / "testfile.txt"
 
-        newfile = Path(tmpdir) / "testfile.txt"
-        # Test that the fetcher can get a file
-        testfile_url = symmetric362
-        print(testfile_url)
-        p = Path(testfile_url)
-        testfile_dir, testfile_name = str(p.parent), p.name
-        # create local HTTP Server
-        test_server_url = f"http://127.0.0.1:8001/{testfile_name}"
-        current_dir = os.getcwd()
-        # change pwd to directory containing testfile.
-        os.chdir(testfile_dir + os.sep)
-        # use different port as shutdown() takes time to release socket.
-        server = HTTPServer(("localhost", 8001), SimpleHTTPRequestHandler)
-        server_thread = Thread(target=server.serve_forever)
-        server_thread.daemon = True
-        server_thread.start()
+    server, base_url, original_cwd = _free_port_server(str(Path(symmetric362).parent))
+    url = base_url + name
+    try:
+        # Normal download.
+        fetch_data({"testfile.txt": (url, md5)}, str(tmp_path))
+        assert newfile.exists()
 
-        files = {"testfile.txt": (test_server_url, md5)}
-        try:
-            fetcher.fetch_data(files, tmpdir)
-        except Exception as e:
-            print(e)
-            # stop local HTTP Server
-            server.shutdown()
-        npt.assert_(newfile.exists())
+        # Corrupted file is re-downloaded.
+        newfile.write_bytes(newfile.read_bytes() + b"junk")
+        fetch_data({"testfile.txt": (url, md5)}, str(tmp_path))
+        assert _get_file_md5(newfile) == md5
 
-        # Test that the file is replaced when the md5 doesn't match
-        with open(newfile, "a") as f:
-            f.write("some junk")
-        try:
-            fetcher.fetch_data(files, tmpdir)
-        except Exception as e:
-            print(e)
-            # stop local HTTP Server
-            server.shutdown()
-        npt.assert_(newfile.exists())
-        npt.assert_equal(fetcher._get_file_md5(newfile), md5)
-
-        # Test that an error is raised when the md5 checksum of the download
-        # file does not match the expected value
-        files = {"testfile.txt": (test_server_url, bad_md5)}
-        npt.assert_raises(fetcher.FetcherError, fetcher.fetch_data, files, tmpdir)
-
-        # stop local HTTP Server
+        # Bad md5 must raise FetcherError.
+        with pytest.raises(FetcherError):
+            fetch_data({"testfile.txt": (url, bad_md5)}, str(tmp_path))
+    finally:
         server.shutdown()
-        # change to original working directory
-        os.chdir(current_dir)
+        os.chdir(original_cwd)
 
     def test_dipy_home():
         test_path = "TEST_PATH"
