@@ -206,7 +206,7 @@ def test_dipy_home():
             importlib.reload(fetcher)
 
 # ===========================================================================
-# New unit tests: _get_mirror_url
+# New unit tests: _get_mirror_url, _already_there_msg, fetch_data branches with zero prior coverage
 # ===========================================================================
 
 class TestGetMirrorUrl:
@@ -259,3 +259,96 @@ class TestAlreadyThereMsg:
             _already_there_msg(str(tmp_path))
         logged = " ".join(str(c) for c in mock_log.info.call_args_list)
         assert str(tmp_path) in logged
+
+
+class TestFetchDataMocked:
+    """All branches of fetch_data exercised without network."""
+
+    def test_creates_missing_folder(self, tmp_path):
+        new = tmp_path / "new"
+        with patch("dipy.data.fetcher._get_file_data"), \
+                patch("dipy.data.fetcher._get_file_md5", return_value="x"):
+            fetch_data({"f.gz": ("http://x/f.gz", "md5")}, new)
+        assert new.exists()
+
+    def test_no_error_if_folder_already_exists(self, tmp_path):
+        # Regression guard for exist_ok=True fix.
+        with patch("dipy.data.fetcher._get_file_data"), \
+                patch("dipy.data.fetcher._get_file_md5", return_value="x"):
+            fetch_data({"f.gz": ("http://x/f.gz", "md5")}, tmp_path)
+            fetch_data({"f.gz": ("http://x/f.gz", "md5")}, tmp_path)
+
+    def test_skips_file_with_matching_md5(self, tmp_path):
+        (tmp_path / "f.gz").write_bytes(b"data")
+        with patch("dipy.data.fetcher._get_file_data") as mock_dl, \
+                patch("dipy.data.fetcher._get_file_md5", return_value="match"):
+            fetch_data({"f.gz": ("http://x/f.gz", "match")}, tmp_path)
+        mock_dl.assert_not_called()
+
+    def test_redownloads_stale_file(self, tmp_path):
+        (tmp_path / "f.gz").write_bytes(b"stale")
+        with patch("dipy.data.fetcher._get_file_data") as mock_dl, \
+                patch("dipy.data.fetcher._get_file_md5", return_value="wrong"):
+            fetch_data({"f.gz": ("http://x/f.gz", "expected")}, tmp_path)
+        mock_dl.assert_called_once()
+
+    def test_raise_on_error_true_propagates(self, tmp_path):
+        with patch("dipy.data.fetcher._get_file_data",
+                   side_effect=FetcherError("boom")), \
+                patch("dipy.data.fetcher._get_file_md5", return_value="x"):
+            with pytest.raises(FetcherError):
+                fetch_data({"f.gz": ("http://x/f.gz", "md5")}, tmp_path,
+                           raise_on_error=True)
+
+    def test_raise_on_error_false_does_not_raise(self, tmp_path):
+        with patch("dipy.data.fetcher._get_file_data",
+                   side_effect=FetcherError("boom")), \
+                patch("dipy.data.fetcher._get_file_md5", return_value="x"):
+            fetch_data({"f.gz": ("http://x/f.gz", "md5")}, tmp_path,
+                       raise_on_error=False)
+
+    def test_raise_on_error_false_continues_after_failure(self, tmp_path):
+        attempted = []
+
+        def side(fullpath, url, **kw):
+            attempted.append(url)
+            if "bad" in url:
+                raise FetcherError("fail")
+
+        with patch("dipy.data.fetcher._get_file_data", side_effect=side), \
+                patch("dipy.data.fetcher._get_file_md5", return_value="x"):
+            fetch_data({
+                "bad.gz": ("http://x/bad.gz", "md5"),
+                "good.gz": ("http://x/good.gz", "md5"),
+            }, tmp_path, raise_on_error=False)
+
+        assert any("good" in u for u in attempted)
+
+    def test_raise_on_error_false_cleans_partial_file(self, tmp_path):
+        def side(fullpath, url, **kw):
+            Path(fullpath).write_bytes(b"partial")
+            raise FetcherError("dropped")
+
+        with patch("dipy.data.fetcher._get_file_data", side_effect=side), \
+                patch("dipy.data.fetcher._get_file_md5", return_value="x"):
+            fetch_data({"p.gz": ("http://x/p.gz", "md5")}, tmp_path,
+                       raise_on_error=False)
+
+        assert not (tmp_path / "p.gz").exists()
+
+    def test_data_size_logged(self, tmp_path):
+        with patch("dipy.data.fetcher._get_file_data"), \
+                patch("dipy.data.fetcher._get_file_md5", return_value="x"), \
+                patch("dipy.data.fetcher.logger") as mock_log:
+            fetch_data({"f.gz": ("http://x/f.gz", "md5")}, tmp_path,
+                       data_size="99 MB")
+        logged = " ".join(str(c) for c in mock_log.info.call_args_list)
+        assert "99 MB" in logged
+
+    def test_all_skip_calls_already_there_msg(self, tmp_path):
+        (tmp_path / "f.gz").write_bytes(b"data")
+        with patch("dipy.data.fetcher._get_file_data"), \
+                patch("dipy.data.fetcher._get_file_md5", return_value="match"), \
+                patch("dipy.data.fetcher._already_there_msg") as mock_atm:
+            fetch_data({"f.gz": ("http://x/f.gz", "match")}, tmp_path)
+        mock_atm.assert_called_once()
