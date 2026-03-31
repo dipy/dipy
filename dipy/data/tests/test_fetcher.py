@@ -180,23 +180,27 @@ def test_fetch_data_http(tmp_path):
         server.shutdown()
         os.chdir(original_cwd)
 
-    def test_dipy_home():
-        test_path = "TEST_PATH"
-        if "DIPY_HOME" in os.environ:
-            old_home = os.environ["DIPY_HOME"]
-            del os.environ["DIPY_HOME"]
-        else:
-            old_home = None
+def test_dipy_home():
+        """It was nested inside test_fetch_data so never ran.
 
-        importlib.reload(fetcher)
+        Also fixed: dipy_home is a Path, not str; compare via str().
+        """
+        old_home = os.environ.pop("DIPY_HOME", None)
+        try:
+            importlib.reload(fetcher)
+            expected = str(Path("~").expanduser() / ".dipy")
+            assert str(fetcher.dipy_home) == expected
 
-        npt.assert_string_equal(
-            fetcher.dipy_home, str(Path("~").expanduser() / ".dipy")
-        )
-        os.environ["DIPY_HOME"] = test_path
-        importlib.reload(fetcher)
-        npt.assert_string_equal(fetcher.dipy_home, test_path)
-
-        # return to previous state
-        if old_home:
-            os.environ["DIPY_HOME"] = old_home
+            test_path = tempfile.mkdtemp()
+            try:
+                os.environ["DIPY_HOME"] = test_path
+                importlib.reload(fetcher)
+                assert str(fetcher.dipy_home) == test_path
+            finally:
+                os.rmdir(test_path)
+        finally:
+            if old_home is not None:
+                os.environ["DIPY_HOME"] = old_home
+            elif "DIPY_HOME" in os.environ:
+                del os.environ["DIPY_HOME"]
+            importlib.reload(fetcher)
