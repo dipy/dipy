@@ -12,6 +12,20 @@ from dipy.data import SPHERE_FILES
 import dipy.data.fetcher as fetcher
 
 
+def _free_port_server(directory):
+    original_cwd = os.getcwd()
+    os.chdir(directory)
+    server = HTTPServer(("127.0.0.1", 0), SimpleHTTPRequestHandler)
+    port = server.server_address[1]
+    thread = Thread(target=server.serve_forever)
+    thread.daemon = True
+    thread.start()
+    return server, f"http://127.0.0.1:{port}/", original_cwd
+
+
+
+
+
 def test_check_md5():
     fd, fname = tempfile.mkstemp()
     stored_md5 = fetcher._get_file_md5(fname)
