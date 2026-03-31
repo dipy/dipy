@@ -204,3 +204,44 @@ def test_dipy_home():
             elif "DIPY_HOME" in os.environ:
                 del os.environ["DIPY_HOME"]
             importlib.reload(fetcher)
+
+# ===========================================================================
+# New unit tests: _get_mirror_url, _already_there_msg,
+#            fetch_data branches with zero prior coverage
+# ===========================================================================
+
+class TestGetMirrorUrl:
+
+    @pytest.mark.parametrize("host", MIRRORABLE_HOSTS)
+    def test_mirrorable_host_returns_mirror_url(self, host):
+        result = _get_mirror_url(f"https://{host}/some/path/data.nii.gz")
+        assert result is not None
+        assert result.startswith(DIPY_MIRROR_URL)
+
+    @pytest.mark.parametrize("host", MIRRORABLE_HOSTS)
+    def test_path_preserved_after_host(self, host):
+        suffix = "/bucket/handle/1773/file.nii.gz"
+        result = _get_mirror_url(f"https://{host}{suffix}")
+        assert suffix.lstrip("/") in result
+
+    def test_non_mirrorable_host_returns_none(self):
+        assert _get_mirror_url("https://example.com/data.nii.gz") is None
+
+    def test_empty_string_returns_none(self):
+        assert _get_mirror_url("") is None
+
+    def test_garbage_string_returns_none(self):
+        assert _get_mirror_url("not-a-url") is None
+
+    def test_docstring_example(self):
+        url = "https://stacks.stanford.edu/file/druid:yx282xq2090/dwi.nii.gz"
+        expected = (
+            "https://workshop.dipy.org/services/data/"
+            "file/druid:yx282xq2090/dwi.nii.gz"
+        )
+        assert _get_mirror_url(url) == expected
+
+    def test_no_double_slash_in_mirrored_path(self):
+        result = _get_mirror_url("https://zenodo.org/record/999/files/f.nii.gz")
+        path_part = result.split(DIPY_MIRROR_URL, 1)[-1]
+        assert "//" not in path_part
