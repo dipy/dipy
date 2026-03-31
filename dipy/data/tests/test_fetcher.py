@@ -22,7 +22,11 @@ def _free_port_server(directory):
     thread.start()
     return server, f"http://127.0.0.1:{port}/", original_cwd
 
-
+def _make_gz_file(tmp_path, inner_name, content=b"hello gz"):
+    gz_path = tmp_path / f"{inner_name}.gz"
+    with gzip.open(gz_path, "wb") as f:
+        f.write(content)
+    return gz_path
 
 
 
