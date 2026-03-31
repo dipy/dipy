@@ -206,8 +206,7 @@ def test_dipy_home():
             importlib.reload(fetcher)
 
 # ===========================================================================
-# New unit tests: _get_mirror_url, _already_there_msg,
-#            fetch_data branches with zero prior coverage
+# New unit tests: _get_mirror_url
 # ===========================================================================
 
 class TestGetMirrorUrl:
@@ -245,3 +244,18 @@ class TestGetMirrorUrl:
         result = _get_mirror_url("https://zenodo.org/record/999/files/f.nii.gz")
         path_part = result.split(DIPY_MIRROR_URL, 1)[-1]
         assert "//" not in path_part
+
+
+class TestAlreadyThereMsg:
+
+    def test_does_not_raise_with_str(self, tmp_path):
+        _already_there_msg(str(tmp_path))
+
+    def test_does_not_raise_with_path(self, tmp_path):
+        _already_there_msg(tmp_path)
+
+    def test_logs_folder_path(self, tmp_path):
+        with patch("dipy.data.fetcher.logger") as mock_log:
+            _already_there_msg(str(tmp_path))
+        logged = " ".join(str(c) for c in mock_log.info.call_args_list)
+        assert str(tmp_path) in logged
