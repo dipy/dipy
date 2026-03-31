@@ -120,69 +120,37 @@ class TestCheckMd5:
             os.unlink(fname)
 
 
-def test_make_fetcher():
+def test_make_fetcher_http(tmp_path):
+    """Port hardcoding and chdir leak fixed."""
     symmetric362 = SPHERE_FILES["symmetric362"]
     symmetric642 = SPHERE_FILES["symmetric642"]
-    with tempfile.TemporaryDirectory() as tmpdir:
-        stored_md5 = fetcher._get_file_md5(symmetric362)
-        stored_md5_642 = fetcher._get_file_md5(symmetric642)
+    stored_md5 = _get_file_md5(symmetric362)
+    stored_md5_642 = _get_file_md5(symmetric642)
 
-        # create local HTTP Server
-        testfile_folder = str(Path(symmetric362).parent) + os.sep
-        testfile_url = f"file:{pathname2url(testfile_folder)}"
-        print(testfile_url)
-        print(symmetric362)
-        current_dir = os.getcwd()
-        # change pwd to directory containing testfile.
-        os.chdir(testfile_folder)
-        server = HTTPServer(("localhost", 8000), SimpleHTTPRequestHandler)
-        server_thread = Thread(target=server.serve_forever)
-        server_thread.daemon = True
-        server_thread.start()
-
-        # test make_fetcher
-        sphere_fetcher = fetcher._make_fetcher(
+    server, base_url, original_cwd = _free_port_server(str(Path(symmetric362).parent))
+    try:
+        sf = _make_fetcher(
             "sphere_fetcher",
-            tmpdir,
-            testfile_url,
-            [os.sep + Path(symmetric362).name, os.sep + Path(symmetric642).name],
+            str(tmp_path),
+            base_url,
+            [Path(symmetric362).name, Path(symmetric642).name],
             ["sphere_name", "sphere_name2"],
             md5_list=[stored_md5, stored_md5_642],
             optional_fnames=["sphere_name2"],
         )
 
-        try:
-            sphere_fetcher()
-        except Exception as e:
-            print(e)
-            # stop local HTTP Server
-            server.shutdown()
+        # No bare except — failures propagate to pytest.
+        sf()
+        assert (tmp_path / "sphere_name").is_file()
+        assert not (tmp_path / "sphere_name2").is_file()
+        assert _get_file_md5(tmp_path / "sphere_name") == stored_md5
 
-        assert Path(Path(tmpdir) / "sphere_name").is_file()
-        assert not Path(Path(tmpdir) / "sphere_name2").is_file()
-        npt.assert_equal(
-            fetcher._get_file_md5(Path(tmpdir) / "sphere_name"), stored_md5
-        )
-        try:
-            sphere_fetcher(include_optional=True)
-        except Exception as e:
-            print(e)
-            # stop local HTTP Server
-            server.shutdown()
-
-        assert Path(Path(tmpdir) / "sphere_name").is_file()
-        assert Path(Path(tmpdir) / "sphere_name2").is_file()
-        npt.assert_equal(
-            fetcher._get_file_md5(Path(tmpdir) / "sphere_name"), stored_md5
-        )
-        npt.assert_equal(
-            fetcher._get_file_md5(Path(tmpdir) / "sphere_name2"), stored_md5_642
-        )
-
-        # stop local HTTP Server
+        sf(include_optional=True)
+        assert (tmp_path / "sphere_name2").is_file()
+        assert _get_file_md5(tmp_path / "sphere_name2") == stored_md5_642
+    finally:
         server.shutdown()
-        # change to original working directory
-        os.chdir(current_dir)
+        os.chdir(original_cwd)  # FIX: always restored
 
 
 def test_fetch_data():
