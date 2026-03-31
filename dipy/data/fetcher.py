@@ -157,7 +157,7 @@ def check_md5(filename, *, stored_md5=None):
     ----------
     filename : string
         Path to a file.
-    md5 : string
+    stored_md5 : string
         Known md5 of filename to check against. If None (default), checking is
         skipped
     """
