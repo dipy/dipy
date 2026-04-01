@@ -129,12 +129,10 @@ def nlmeans(
 
         if arr.ndim == 3:
             if method == "classic":
-                if sigma.ndim not in [0, 3] and not (
-                    sigma.ndim == 3 and sigma.shape == arr.shape
-                ):
+                if sigma.shape != arr.shape:
                     raise ValueError(
-                        "For classic method with 3D data, sigma should be scalar or"
-                        f" 3D array, got shape {sigma.shape}"
+                        "For classic method with 3D data, sigma should be scalar or "
+                        f"a 3D array matching arr shape, got shape {sigma.shape}"
                     )
             elif method == "blockwise":
                 if sigma.ndim > 3:
@@ -201,43 +199,23 @@ def nlmeans(
 
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
-        sigma_classic_scalar = None
-        sigma_3d_classic = None
-        sigma_3d_blockwise = None
-
-        if method == "classic" and not isinstance(sigma, np.ndarray):
-            sigma_classic_scalar = np.full(arr.shape[:3], sigma, dtype="f8")
+        sigma_3d = None
+        if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
+            sigma_3d = np.ascontiguousarray(sigma, dtype="f8")
 
         for i in range(arr.shape[-1]):
             if method == "classic":
-                if sigma_classic_scalar is not None:
-                    sigma_vol = sigma_classic_scalar
+                if sigma_3d is not None:
+                    sigma_vol = sigma_3d
                 elif isinstance(sigma, np.ndarray):
-                    if sigma.ndim == 1:
-                        sigma_val = sigma[i]
-                        sigma_vol = np.full(arr[..., i].shape, sigma_val, dtype="f8")
-                    elif sigma.ndim == 3:
-                        if sigma_3d_classic is None:
-                            sigma_3d_classic = np.ascontiguousarray(sigma, dtype="f8")
-                        sigma_vol = sigma_3d_classic
-                    else:
-                        raise ValueError(
-                            "sigma should be a 1D or 3D array for 4D data",
-                            sigma,
-                        )
+                    sigma_vol = np.full(arr[..., i].shape, sigma[i], dtype="f8")
+                else:
+                    sigma_vol = np.full(arr[..., i].shape, sigma, dtype="f8")
             else:
-                if isinstance(sigma, np.ndarray):
-                    if sigma.ndim == 1:
-                        sigma_vol = sigma[i]
-                    elif sigma.ndim == 3:
-                        if sigma_3d_blockwise is None:
-                            sigma_3d_blockwise = np.ascontiguousarray(sigma, dtype="f8")
-                        sigma_vol = sigma_3d_blockwise
-                    else:
-                        raise ValueError(
-                            "sigma should be a 1D or 3D array for 4D data",
-                            sigma,
-                        )
+                if sigma_3d is not None:
+                    sigma_vol = sigma_3d
+                elif isinstance(sigma, np.ndarray):
+                    sigma_vol = sigma[i]
                 else:
                     sigma_vol = sigma
 
