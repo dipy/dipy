@@ -22,7 +22,7 @@ env:
   CIBW_BUILD_VERBOSITY: 1  # verbosity of 2 shows thousands of annoying pip lines!
   CIBW_ARCHS: "native"
   CIBW_BUILD: "cp3{11,12,13,14}-*"
-  CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
+  CIBW_BUILD_FRONTEND: ${{ ((github.event_name == 'workflow_dispatch' && startsWith(github.event.inputs.branch_or_tag, 'workshop')) || startsWith(github.head_ref, 'workshop') || startsWith(github.ref_name, 'workshop')) && 'pip' || 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"' }}
   CIBW_TEST_SKIP: "*"
   CIBW_TEST_REQUIRES: "-r requirements/build.txt pytest==8.0.0"
   CIBW_TEST_COMMAND: pytest --pyargs dipy
@@ -42,6 +42,7 @@ jobs:
     outputs:
       proceed: ${{ steps.commit-message.outputs.PROCEED }}
       build-commit: ${{ steps.build-commit.outputs.BUILD_COMMIT }}
+      use-stable: ${{ steps.build-commit.outputs.USE_STABLE }}
     defaults:
       run:
         shell: bash -el {0}
@@ -68,12 +69,20 @@ jobs:
         id: build-commit
         run: |
           BUILD_COMMIT=master
+          USE_STABLE=false
+          TARGET_BRANCH=${{ github.ref_name }}
           if [[ "workflow_dispatch" == "${{ github.event_name }}" ]]; then
             BUILD_COMMIT=${{ github.event.inputs.branch_or_tag }}
+            TARGET_BRANCH=${{ github.event.inputs.branch_or_tag }}
           elif [[ "pull_request" == "${{ github.event_name }}" ]]; then
             BUILD_COMMIT=${{ github.event.pull_request.head.sha }}
+            TARGET_BRANCH=${{ github.head_ref }}
+          fi
+          if [[ "$TARGET_BRANCH" == workshop* ]]; then
+            USE_STABLE=true
           fi
           echo "BUILD_COMMIT=$BUILD_COMMIT" | tee -a $GITHUB_OUTPUT
+          echo "USE_STABLE=$USE_STABLE" | tee -a $GITHUB_OUTPUT
 
   build_linux_wheels:
     name: Build wheels on ${{ matrix.os }}
@@ -159,7 +168,7 @@ jobs:
   test_wheels:
     name: Test wheels
     if: github.repository_owner == 'dipy'
-    needs: [build_linux_wheels]
+    needs: [check-commit, build_linux_wheels]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -181,7 +190,11 @@ jobs:
         run: |
           set -eo pipefail
           ls -al ./dist/*-cp${PY_VERSION}-*.whl
-          python -m pip install --only-binary="numpy,scipy,h5py" --index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple" "numpy>=2.1.0.dev0" "scipy>=1.14.0.dev0" h5py
+          if [[ "${{ needs.check-commit.outputs.use-stable }}" == "true" ]]; then
+            python -m pip install --only-binary="numpy,scipy,h5py" numpy scipy h5py
+          else
+            python -m pip install --only-binary="numpy,scipy,h5py" --index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple" "numpy>=2.1.0.dev0" "scipy>=1.14.0.dev0" h5py
+          fi
           python -m pip install ./dist/*-cp${PY_VERSION}-*.whl
           python -c "import dipy; print(dipy.__version__)"
           python -c "import numpy; assert int(numpy.__version__[0]) >= 2, numpy.__version__"
