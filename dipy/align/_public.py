@@ -521,7 +521,6 @@ def affine_registration(
 
     """
     pipeline = pipeline or ["center_of_mass", "translation", "rigid", "affine"]
-    optimizer_options = optimizer_options or {"gtol": 1e-4, "ftol": 1e-3}
     if level_iters is None:
         level_iters = [1000, 500, 100]
         logger.info(
@@ -826,6 +825,15 @@ def register_dwi_series(
 
     """
     pipeline = pipeline or ["center_of_mass", "translation", "rigid", "affine"]
+    if not optimizer_options:
+        optimizer_options = {"gtol": 1e-4, "ftol": 1e-3}
+        logger.warning(
+            "Default optimizer_options have been updated to "
+            "{'gtol': 1e-4, 'ftol': 1e-3}  for performance improvement. Identical "
+            "results are expected. In case of any discrepancy, you can revert to the "
+            "previous default by setting "
+            "optimizer_options={'gtol': 1e-4, 'ftol': 2.220446049250313e-09}."
+        )
 
     data, affine = read_img_arr_or_path(data, affine=affine)
     if isinstance(gtab, collections.abc.Sequence):

@@ -1321,7 +1321,7 @@ class AffineRegistration:
             # Optimize this level
             if self.options is None:
                 # With L-BFGS-B, ftol value is 2.220446049250313e-09
-                self.options = {"gtol": 1e-4, "ftol": 1e-5}
+                self.options = {"gtol": 1e-4}
 
             if self.method == "L-BFGS-B":
                 self.options["maxfun"] = max_iter
