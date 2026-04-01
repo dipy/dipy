@@ -208,6 +208,35 @@ def test_blockwise_sigma_array_support():
     assert np.abs(np.mean(result4) - np.mean(result1)) < 5.0
 
 
+def test_blockwise_3d_sigma_map_not_reduced_to_global_mean():
+    """Blockwise 3D sigma maps should affect denoising beyond a global mean."""
+    rng = np.random.default_rng(42)
+    arr = rng.normal(100, 15, size=(10, 10, 10)).astype(np.float64)
+
+    sigma_map = np.ones(arr.shape, dtype=np.float64)
+    sigma_map[:5, :, :] = 2.0
+    sigma_map[5:, :, :] = 20.0
+
+    result_map = nlmeans(
+        arr,
+        sigma=sigma_map,
+        method="blockwise",
+        rician=False,
+        num_threads=1,
+    )
+    result_scalar = nlmeans(
+        arr,
+        sigma=float(np.mean(sigma_map)),
+        method="blockwise",
+        rician=False,
+        num_threads=1,
+    )
+
+    assert result_map.shape == arr.shape
+    assert result_scalar.shape == arr.shape
+    assert np.max(np.abs(result_map - result_scalar)) > 1e-6
+
+
 def test_coordinate_consistency():
     """
     Test that the nlmeans denoising respects coordinate geometry.
@@ -273,7 +302,7 @@ def test_nlmeans_4d_invalid_sigma_shapes():
     np.random.seed(42)
     arr = np.random.normal(100, 10, size=(10, 10, 10, 5)).astype(np.float64)
 
-    with pytest.raises(ValueError, match="length 1 or"):
+    with pytest.raises(ValueError, match="same length as the last dimension"):
         nlmeans(arr, sigma=np.array([10.0, 11.0]), method="classic")
 
     with pytest.raises(ValueError, match="same shape as the first 3 dimensions"):

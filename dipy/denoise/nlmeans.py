@@ -39,7 +39,7 @@ def nlmeans(
     sigma : float, 1D ndarray, or 3D ndarray
         Standard deviation of the noise estimated from the data. For 3D arrays,
         this should be a scalar. For 4D arrays, this can be either a scalar (same noise
-        level for all volumes), a 1D array with length 1 or equal to the number
+        level for all volumes), a 1D array with length equal to the number
         of volumes, or a 3D array with shape ``arr.shape[:3]``.
     mask : 3D ndarray, optional
         Binary mask indicating which voxels to process. Should have shape
@@ -84,9 +84,8 @@ def nlmeans(
     - Classic patch_radius=3 ≈ Blockwise patch_radius=2
     - Block_radius can be smaller for blockwise due to efficiency improvements
 
-    For 4D inputs with ``method='blockwise'``, a 3D ``sigma`` map is internally
-    reduced to a scalar via ``np.mean(sigma)`` because the blockwise backend
-    accepts scalar noise level per volume.
+    For 4D inputs with ``method='blockwise'``, a 3D ``sigma`` map is accepted
+    and passed through for blockwise processing.
 
     References
     ----------
@@ -145,10 +144,10 @@ def nlmeans(
                     )
         elif arr.ndim == 4:
             if sigma.ndim == 1:
-                if sigma.shape[0] not in [1, arr.shape[-1]]:
+                if sigma.shape[0] != arr.shape[-1]:
                     raise ValueError(
-                        "sigma should have length 1 or the same length as "
-                        "the last dimension of arr for 4D data",
+                        "sigma should have the same length as the last "
+                        "dimension of arr for 4D data",
                         sigma,
                     )
             elif sigma.ndim == 3:
@@ -159,14 +158,12 @@ def nlmeans(
                         sigma,
                     )
             else:
-                raise ValueError(
-                    "sigma should be a 1D or 3D array for 4D data", sigma
-                )
+                raise ValueError("sigma should be a 1D or 3D array for 4D data", sigma)
     else:
         if not isinstance(sigma, Number):
             raise ValueError("sigma should be a float", sigma)
         if arr.ndim == 4:
-            sigma = np.array([sigma] * arr.shape[-1])
+            sigma = float(sigma)
 
     if mask is None and arr.ndim > 2:
         mask = np.ones((arr.shape[0], arr.shape[1], arr.shape[2]), dtype=np.float64)
@@ -180,17 +177,13 @@ def nlmeans(
         if method == "classic":
             if not isinstance(sigma, np.ndarray):
                 sigma_3d = np.full(arr.shape, sigma, dtype="f8")
+            elif sigma.shape == arr.shape:
+                sigma_3d = np.ascontiguousarray(sigma, dtype="f8")
             else:
-                if sigma.shape != arr.shape:
-                    if sigma.ndim == 0 or (sigma.ndim == 1 and len(sigma) == 1):
-                        sigma_3d = np.full(arr.shape, float(sigma), dtype="f8")
-                    else:
-                        raise ValueError(
-                            f"sigma shape {sigma.shape} incompatible "
-                            f"with arr shape {arr.shape}"
-                        )
-                else:
-                    sigma_3d = np.ascontiguousarray(sigma, dtype="f8")
+                raise ValueError(
+                    f"sigma shape {sigma.shape} incompatible "
+                    f"with arr shape {arr.shape}"
+                )
         else:
             sigma_3d = sigma
 
@@ -208,15 +201,20 @@ def nlmeans(
 
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
+        sigma_classic_scalar = None
         sigma_3d_classic = None
-        sigma_3d_blockwise_scalar = None
+        sigma_3d_blockwise = None
+
+        if method == "classic" and not isinstance(sigma, np.ndarray):
+            sigma_classic_scalar = np.full(arr.shape[:3], sigma, dtype="f8")
+
         for i in range(arr.shape[-1]):
             if method == "classic":
-                if isinstance(sigma, np.ndarray):
+                if sigma_classic_scalar is not None:
+                    sigma_vol = sigma_classic_scalar
+                elif isinstance(sigma, np.ndarray):
                     if sigma.ndim == 1:
-                        sigma_val = (
-                            sigma[i] if sigma.shape[0] == arr.shape[-1] else sigma[0]
-                        )
+                        sigma_val = sigma[i]
                         sigma_vol = np.full(arr[..., i].shape, sigma_val, dtype="f8")
                     elif sigma.ndim == 3:
                         if sigma_3d_classic is None:
@@ -227,18 +225,14 @@ def nlmeans(
                             "sigma should be a 1D or 3D array for 4D data",
                             sigma,
                         )
-                else:
-                    sigma_vol = np.full(arr[..., i].shape, sigma, dtype="f8")
             else:
                 if isinstance(sigma, np.ndarray):
                     if sigma.ndim == 1:
-                        sigma_vol = (
-                            sigma[i] if sigma.shape[0] == arr.shape[-1] else sigma[0]
-                        )
+                        sigma_vol = sigma[i]
                     elif sigma.ndim == 3:
-                        if sigma_3d_blockwise_scalar is None:
-                            sigma_3d_blockwise_scalar = float(np.mean(sigma))
-                        sigma_vol = sigma_3d_blockwise_scalar
+                        if sigma_3d_blockwise is None:
+                            sigma_3d_blockwise = np.ascontiguousarray(sigma, dtype="f8")
+                        sigma_vol = sigma_3d_blockwise
                     else:
                         raise ValueError(
                             "sigma should be a 1D or 3D array for 4D data",

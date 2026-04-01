@@ -851,7 +851,7 @@ cdef double _local_variance(double[:, :, :] image, double mean_intensity,
         return 0.0
 
 
-def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_radius, int block_radius, double noise_sigma, int is_rician, num_threads=None):
+def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_radius, int block_radius, noise_sigma, int is_rician, num_threads=None):
     """
     Non-Local Means Denoising Using Blockwise Averaging.
 
@@ -873,8 +873,10 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
     block_radius : int
         Radius for the blocks used in weighted averaging. Each block has
         size (2*block_radius + 1)^3.
-    noise_sigma : double
-        Estimated noise standard deviation in the input image.
+    noise_sigma : double or 3D ndarray
+        Estimated noise standard deviation in the input image. Can be a
+        scalar (uniform noise level) or a 3D sigma map with shape matching
+        ``image.shape``.
     is_rician : int
         1 if Rician noise model should be used, 0 for Gaussian noise model.
     num_threads : int, optional
@@ -902,8 +904,24 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
         threads_to_use = determine_num_threads(num_threads)
 
     # Algorithm parameters
-    cdef double noise_variance_doubled = 2.0 * noise_sigma * noise_sigma
-    cdef double filtering_strength = noise_sigma * noise_sigma
+    cdef bint use_sigma_map = False
+    cdef double sigma_scalar = 0.0
+    cdef double[:, :, :] sigma_map
+    cdef double current_sigma
+    cdef double current_sigma_sq
+    cdef double local_noise_variance_doubled
+    cdef double local_filtering_strength
+
+    if hasattr(noise_sigma, 'ndim'):
+        if noise_sigma.ndim != 3:
+            raise ValueError('noise_sigma should be scalar or a 3D ndarray', getattr(noise_sigma, 'shape', type(noise_sigma)))
+        if noise_sigma.shape != (img_height, img_width, img_depth):
+            raise ValueError('3D noise_sigma should have the same shape as image', noise_sigma.shape)
+        sigma_map = np.ascontiguousarray(noise_sigma, dtype='f8')
+        use_sigma_map = True
+    else:
+        sigma_scalar = float(noise_sigma)
+
     cdef int block_size = 2 * block_radius + 1
 
     # Statistical filtering thresholds
@@ -967,13 +985,24 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
                     # Clear workspace for this thread
                     _clear_workspace(thread_workspaces[thread_id])
 
+                    if use_sigma_map:
+                        current_sigma = sigma_map[center_y, center_x, center_z]
+                    else:
+                        current_sigma = sigma_scalar
+
+                    current_sigma_sq = current_sigma * current_sigma
+                    local_noise_variance_doubled = 2.0 * current_sigma_sq
+                    local_filtering_strength = current_sigma_sq
+                    if local_filtering_strength <= 0:
+                        local_filtering_strength = epsilon
+
                     # Process this block completely in one go
                     _process_block_complete(image, mask, local_means, local_variances,
                                           accumulated_estimates, weight_counts,
                                           thread_workspaces[thread_id],
                                           center_y, center_x, center_z,
-                                          patch_radius, block_radius, filtering_strength,
-                                          noise_variance_doubled, is_rician,
+                                          patch_radius, block_radius, local_filtering_strength,
+                                          local_noise_variance_doubled, is_rician,
                                           epsilon, mean_ratio_threshold, variance_ratio_min,
                                           img_height, img_width, img_depth)
 
@@ -1070,24 +1099,22 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
         return remove_padding(arrnlm, block_radius)
     elif method == 'blockwise':
         # Use new blockwise algorithm without padding
-        # For blockwise, we need a scalar sigma but can accept arrays
+        # For blockwise, scalar or 3D sigma map are supported
         if hasattr(sigma, 'shape'):
             if sigma.shape == arr.shape:
-                # 3D sigma array - take the mean for uniform noise estimation
-                sigma_scalar = np.mean(sigma)
+                sigma_input = np.ascontiguousarray(sigma, dtype='f8')
             elif sigma.ndim == 1:
-                # 1D sigma array - take the mean (for 4D case handled above)
-                sigma_scalar = np.mean(sigma)
+                sigma_input = float(np.mean(sigma))
             elif sigma.shape == ():
                 # 0-D array (scalar in array form)
-                sigma_scalar = float(sigma)
+                sigma_input = float(sigma)
             else:
                 raise ValueError(f'Invalid sigma shape {sigma.shape} for blockwise method')
         else:
             # Scalar sigma
-            sigma_scalar = float(sigma)
+            sigma_input = float(sigma)
 
         return nlmeans_3d_blockwise(arr, mask, patch_radius, block_radius,
-                                    sigma_scalar, int(rician), num_threads)
+                                    sigma_input, int(rician), num_threads)
     else:
         raise ValueError(f"Unknown method '{method}'. Use 'classic' or 'blockwise'.")
