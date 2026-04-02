@@ -4,7 +4,8 @@
 
 import numpy as np
 cimport numpy as cnp
-
+from dipy.direction.peaks import PeaksAndMetrics
+from libc.math cimport floor
 from dipy.reconst import shm
 
 from dipy.core.interpolation cimport trilinear_interpolate4d_c
@@ -154,4 +155,58 @@ cdef class SHCoeffPmfGen(PmfGen):
 
         free(coeff)
         return pmf_value
+
+cdef class PeakPmfGen(PmfGen):
+    cdef:
+        double[:, :, :, :, :] peak_dirs
+    pass
+
+    def __init__(self,
+                 double[:, :, :, :, :] peak_dirs,
+                 double[:, :, :, :] peak_values,
+                 object sphere):
+        PmfGen.__init__(self, peak_values, sphere)
+        self.peak_dirs = np.asarray(peak_dirs, dtype=float, order='C')
+
+    cdef double * get_pmf_c(self, double * point, double * out) noexcept nogil:
+        cdef:
+            int i, closest_idx
+            int n_peaks = self.peak_dirs.shape[3]
+            int len_pmf = self.pmf.shape[0]
+            int vx = <int> floor(point[0] + 0.5)
+            int vy = <int> floor(point[1] + 0.5)
+            int vz = <int> floor(point[2] + 0.5)
+            double peak_dir[3]
+
+        memset(out, 0, len_pmf * sizeof(double))
+        if (vx < 0 or vx >= self.data.shape[0] or
+                vy < 0 or vy >= self.data.shape[1] or
+                vz < 0 or vz >= self.data.shape[2]):
+            return out
+
+        for i in range(n_peaks):
+            if self.data[vx, vy, vz, i] == 0:
+                continue
+            peak_dir[0] = self.peak_dirs[vx, vy, vz, i, 0]
+            peak_dir[1] = self.peak_dirs[vx, vy, vz, i, 1]
+            peak_dir[2] = self.peak_dirs[vx, vy, vz, i, 2]
+            closest_idx = self.find_closest(peak_dir)
+            out[closest_idx] += self.data[vx, vy, vz, i]
+        return out
+
+    cdef double get_pmf_value_c(self,
+                                double * point,
+                                double * xyz) noexcept nogil:
+        cdef:
+            int len_pmf = self.pmf.shape[0]
+            double *tmp = <double *> malloc(len_pmf * sizeof(double))
+            double val = 0
+        memset(tmp, 0, len_pmf * sizeof(double))
+        self.get_pmf_c(point, tmp)
+        val = tmp[self.find_closest(xyz)]
+        free(tmp)
+        return val
+
+
+
 
