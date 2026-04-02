@@ -311,3 +311,26 @@ def test_nlmeans_4d_invalid_sigma_shapes(method):
 
     with pytest.raises(ValueError, match="1D or 3D array for 4D data"):
         nlmeans(arr, sigma=np.ones((10, 10)), method=method)
+
+
+def test_nlmeans_3d_invalid_sigma_and_mask_inputs():
+    arr = np.ones((10, 10, 10), dtype=np.float64)
+
+    with pytest.raises(ValueError, match="array of floats"):
+        nlmeans(
+            arr,
+            sigma=np.array([["bad", "worse"]], dtype=object),
+            method="classic",
+        )
+
+    with pytest.raises(ValueError, match="sigma should be scalar or a 3D array"):
+        nlmeans(arr, sigma=np.ones((9, 10, 10)), method="classic")
+
+    with pytest.raises(ValueError, match="at most 3D"):
+        nlmeans(arr, sigma=np.ones((2, 2, 2, 2)), method="blockwise")
+
+    with pytest.raises(ValueError, match="sigma should be a float"):
+        nlmeans(arr, sigma="bad", method="classic")
+
+    with pytest.raises(ValueError, match="mask needs to be a 3D ndarray"):
+        nlmeans(arr, sigma=1.0, mask=np.ones((10, 10)), method="classic")
