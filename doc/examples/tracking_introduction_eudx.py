@@ -107,9 +107,7 @@ if has_fury:
         )
     )
 
-    window.record(
-        scene=scene, out_path="force_direction_field.png", size=(900, 900)
-    )
+    window.record(scene=scene, out_path="force_direction_field.png", size=(900, 900))
 
     if interactive:
         window.show(scene, size=(800, 800))
