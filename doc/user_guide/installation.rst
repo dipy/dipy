@@ -161,4 +161,7 @@ DIPY can process large diffusion datasets. For this reason, we recommend using a
 
 Note on python versions
 -----------------------
-DIPY requires a modern Python environment . For a detailed list of supported Python,NumPy,and compiler versions , please refer to our :ref:`toolchain-roadmap`.
+DIPY requires a modern Python environment. For a detailed list of supported
+Python, NumPy, and compiler versions, please refer to our :ref:`toolchain-roadmap`.
+
+.. include:: ../links_names.inc
