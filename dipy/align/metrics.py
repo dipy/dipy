@@ -530,7 +530,7 @@ class EMMetric(SimilarityMetric):
         del self.gradient_static
 
     def compute_forward(self):
-        """Computes one step bringing the reference image towards the static.
+        r"""Computes one step bringing the moving image towards the static.
 
         Computes the forward update field to register the moving image towards
         the static image in a gradient-based optimization algorithm
@@ -810,7 +810,7 @@ class SSDMetric(SimilarityMetric):
             self.reorient_vector_field(self.gradient_static, self.static_direction)
 
     def compute_forward(self):
-        r"""Computes one step bringing the reference image towards the static.
+        r"""Computes one step bringing the moving image towards the static.
 
         Computes the update displacement field to be used for registration of
         the moving image towards the static image
