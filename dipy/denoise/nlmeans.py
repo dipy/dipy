@@ -106,6 +106,9 @@ def nlmeans(
     >>> dwi_data = np.random.rand(64, 64, 40, 30) * 1000  # 30 DWI directions
     >>> noise_levels = np.linspace(50, 100, 30)  # Varying noise
     >>> denoised_dwi = nlmeans(dwi_data, sigma=noise_levels)
+    >>> # Denoise 4D DWI data with a 3D sigma map (e.g., from PIESNO):
+    >>> sigma_map = np.ones((64, 64, 40)) * 30  # one value per spatial voxel
+    >>> denoised_piesno = nlmeans(dwi_data, sigma=sigma_map)
     """
     method = method.lower()
     if method not in ["classic", "blockwise"]:
@@ -125,7 +128,9 @@ def nlmeans(
         sigma = sigma.item()
     if isinstance(sigma, np.ndarray):
         if not np.issubdtype(sigma.dtype, np.number):
-            raise ValueError("sigma should be an array of floats", sigma)
+            raise ValueError(
+                f"sigma should be an array of floats, got dtype {sigma.dtype}"
+            )
 
         if arr.ndim == 3:
             if method == "classic":
@@ -144,23 +149,25 @@ def nlmeans(
             if sigma.ndim == 1:
                 if sigma.shape[0] != arr.shape[-1]:
                     raise ValueError(
-                        "sigma should have the same length as the last "
-                        "dimension of arr for 4D data",
-                        sigma,
+                        f"1D sigma length {sigma.shape[0]} does not match the last "
+                        f"dimension of arr ({arr.shape[-1]}) for 4D data"
                     )
             elif sigma.ndim == 3:
                 if sigma.shape != arr.shape[:3]:
                     raise ValueError(
-                        "3D sigma should have the same shape as the first "
-                        "3 dimensions of arr",
-                        sigma,
+                        f"3D sigma shape {sigma.shape} does not match the first "
+                        f"3 dimensions of arr {arr.shape[:3]}"
                     )
             else:
-                raise ValueError("sigma should be a 1D or 3D array for 4D data", sigma)
+                raise ValueError(
+                    f"sigma should be a 1D or 3D array for 4D data, "
+                    f"got shape {sigma.shape}"
+                )
     else:
         if not isinstance(sigma, Number):
-            raise ValueError("sigma should be a float", sigma)
+            raise ValueError(f"sigma should be a float, got {type(sigma)}")
         if arr.ndim == 4:
+            # Keep as float; the 4D loop broadcasts it per-volume.
             sigma = float(sigma)
 
     if mask is None and arr.ndim > 2:
@@ -169,7 +176,7 @@ def nlmeans(
         mask = np.ascontiguousarray(mask, dtype=np.float64)
 
     if mask.ndim != 3:
-        raise ValueError("mask needs to be a 3D ndarray", mask.shape)
+        raise ValueError(f"mask needs to be a 3D ndarray, got shape {mask.shape}")
 
     if arr.ndim == 3:
         if method == "classic":
@@ -234,4 +241,4 @@ def nlmeans(
         return denoised_arr
 
     else:
-        raise ValueError("Only 3D or 4D arrays are supported!", arr.shape)
+        raise ValueError(f"Only 3D or 4D arrays are supported, got shape {arr.shape}")
