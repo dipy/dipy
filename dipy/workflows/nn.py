@@ -6,7 +6,7 @@ import numpy as np
 from dipy.core.gradients import gradient_table
 from dipy.denoise.bias_correction import bias_field_correction
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti, save_nifti
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.nn.deepn4 import DeepN4
 from dipy.nn.evac import EVACPlus
 from dipy.utils.logging import logger
@@ -58,7 +58,7 @@ class EVACPlusFlow(Workflow):
                 fpath, return_img=True, return_voxsize=True
             )
             evac = EVACPlus()
-            mask_volume = evac.predict(data, affine, voxsize=voxsize)
+            mask_volume = evac.predict(data, affine)
             masked_volume = mask_volume * data
 
             save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
@@ -90,7 +90,8 @@ class BiasFieldCorrectionFlow(Workflow):
         input_files,
         bval=None,
         bvec=None,
-        method="n4",
+        mask=None,
+        method="auto",
         threshold=0.5,
         use_cuda=False,
         verbose=False,
@@ -117,6 +118,9 @@ class BiasFieldCorrectionFlow(Workflow):
             Path to the b-value file.
         bvec : string or Path, optional
             Path to the b-vector file.
+        mask : string or Path, optional
+            Path to the brain mask file. If not provided, a mask will be estimated
+            from the input volume using Otsu's method for 'poly' and 'bspline' methods.
         method : string, optional
             Bias field correction method. Choose from:
                 - 'n4': DeepN4 bias field correction.
@@ -181,8 +185,16 @@ class BiasFieldCorrectionFlow(Workflow):
                     "biasfield_corrected.nii.gz"
                 ).with_name(f"{prefix}_biasfield_corrected.nii.gz")
 
-        self.update_flat_outputs(self.flat_outputs, io_it)
-        for fpath, corrected_out_path in io_it:
+        if io_it:
+            self.update_flat_outputs(self.flat_outputs, io_it)
+        else:
+            if isinstance(self.last_generated_outputs, dict):
+                self.last_generated_outputs = dict(
+                    zip(self.last_generated_outputs.keys(), self.flat_outputs)
+                )
+            else:
+                self.last_generated_outputs = self.flat_outputs
+        for fpath, corrected_out_path, obf in io_it:
             logger.info(f"Applying bias field correction on {fpath}")
 
             data, affine, img, voxsize = load_nifti(
@@ -193,17 +205,17 @@ class BiasFieldCorrectionFlow(Workflow):
             if method.lower() == "n4":
                 deepn4_model = DeepN4(verbose=verbose, use_cuda=use_cuda)
                 deepn4_model.fetch_default_weights()
-                corrected_data = deepn4_model.predict(
-                    data, affine, voxsize=voxsize, threshold=threshold
-                )
+                corrected_data = deepn4_model.predict(data, affine, threshold=threshold)
             elif method.lower() in ["poly", "bspline", "auto"]:
                 bvals, bvecs = read_bvals_bvecs(bval, bvec)
                 gtab = gradient_table(bvals, bvecs=bvecs)
                 levels = tuple(int(x.strip()) for x in pyramid_levels.split(","))
                 n_ctrl = (int(n_control_points),) * 3
+                mask_arr = load_nifti_data(mask) if mask is not None else None
                 corrected_data, bias = bias_field_correction(
                     data,
                     gtab,
+                    mask=mask_arr,
                     method=method.lower(),
                     order=int(order),
                     n_control_points=n_ctrl,
@@ -215,9 +227,8 @@ class BiasFieldCorrectionFlow(Workflow):
                     return_bias_field=True,
                     zero_background=bool(zero_background),
                 )
-                bias_out_path = Path(corrected_out_path).parent / out_bias_field
-                save_nifti(str(bias_out_path), bias.astype(np.float32), affine)
-                logger.info(f"Bias field saved as {bias_out_path}")
+                save_nifti(str(obf), bias.astype(np.float32), affine)
+                logger.info(f"Bias field saved as {obf}")
 
             save_nifti(corrected_out_path, corrected_data, affine, hdr=img.header)
             logger.info(f"Corrected volume saved as {corrected_out_path}")

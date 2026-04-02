@@ -19,6 +19,7 @@ from dipy.segment.tissue import TissueClassifierHMRF, dam_classifier
 from dipy.tracking import Streamlines
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
+from dipy.workflows.base import format_key_value_table
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
@@ -289,8 +290,10 @@ class RecoBundlesFlow(Workflow):
         logger.info(f" Loading time {time() - t:0.3f} sec")
 
         rb = RecoBundles(streamlines, greater_than=greater_than, less_than=less_than)
+        bundle_summary = {}
 
         for _, mb, out_rec, out_labels in io_it:
+            bundle_name = Path(mb).stem
             t = time()
             logger.info(mb)
             model_bundle = load_tractogram(
@@ -358,6 +361,7 @@ class RecoBundlesFlow(Workflow):
                 logger.info(f"Bundle adjacency Metric {ba}")
                 logger.info(f"Bundle Min Distance Metric {bmd}")
 
+            bundle_summary[bundle_name] = len(labels)
             new_tractogram = StatefulTractogram(
                 recognized_bundle, streamline_files, Space.RASMM
             )
@@ -366,6 +370,12 @@ class RecoBundlesFlow(Workflow):
             np.save(out_labels, np.array(labels))
             logger.info(out_rec)
             logger.info(out_labels)
+
+        summary_str = {name: str(count) for name, count in bundle_summary.items()}
+        table = format_key_value_table(
+            summary_str, "Bundle", "# Streamlines", sort=False
+        )
+        logger.info("\nBundle Recognition Summary:\n" + table)
 
 
 class LabelsBundlesFlow(Workflow):

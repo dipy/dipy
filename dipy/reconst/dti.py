@@ -869,6 +869,8 @@ class TensorModel(ReconstModel):
 
 
 class TensorFit:
+    """Stores the fit result of the Diffusion Tensor model."""
+
     @warning_for_keywords()
     def __init__(self, model, model_params, *, model_S0=None):
         """Initialize a TensorFit class instance."""
@@ -1337,6 +1339,8 @@ def iter_fit_tensor(*, step=1e4):
                 weights = weights.reshape(-1, weights.shape[-1])
             if design_matrix.shape[-1] == 22:  # DKI
                 sz = 22
+            elif design_matrix.shape[-1] == 28:  # QTI
+                sz = 28
             else:  # DTI
                 sz = 7 if kwargs.get("return_lower_triangular", False) else 12
             dtiparams = np.empty((size, sz), dtype=np.float64)
@@ -2193,6 +2197,7 @@ def iterative_fit_tensor(
     # Detect if number of parameters corresponds to dti
     npa = p + 5
     dti = npa == 12
+    qti = p == 28
 
     w, robust = None, None  # w = None means wls_fit_tensor uses WLS weights
     D, extra, leverages = None, None, None  # initialize, for clarity
@@ -2227,6 +2232,10 @@ def iterative_fit_tensor(
             )
             if rdx == 1:  # for NLLS, leverages from OLS, so they never change
                 leverages = extra["leverages"]
+
+    if qti:
+        extra = {"robust": robust}
+        return D, extra
 
     # Convert diffusion tensor parameters to the evals and the evecs:
     evals, evecs = decompose_tensor(

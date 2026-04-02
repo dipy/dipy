@@ -750,7 +750,7 @@ def shore_indices(radial_order, index):
     """
 
     F = radial_order / 2
-    n_c = np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3))
+    n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
     n_i = 0
     l_i = 0
     m_i = 0

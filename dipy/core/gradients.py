@@ -136,7 +136,7 @@ class GradientTable:
         b0_threshold=50,
         btens=None,
     ):
-        """Constructor for GradientTable class"""
+        """Constructor for GradientTable class."""
         gradients = np.asarray(gradients)
         if gradients.ndim != 2 or gradients.shape[1] != 3:
             raise ValueError("gradients should be an (N, 3) array")

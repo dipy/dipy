@@ -229,7 +229,7 @@ class HorizonFlow(Workflow):
                 pvalues = numpy_files[i]
                 bundle = tractograms[i].streamlines
 
-                indx = assignment_map(bundle, bundle, n)
+                _, indx = assignment_map(bundle, bundle, n)
                 ind = np.array(indx)
 
                 nb_lines = len(bundle)

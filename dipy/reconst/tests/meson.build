@@ -2,6 +2,7 @@ python_sources = [
   '__init__.py',
   'test_bingham.py',
   'test_cache.py',
+  'test_force.py',
   'test_cross_validation.py',
   'test_csdeconv.py',
   'test_cti.py',

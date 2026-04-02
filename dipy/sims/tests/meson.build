@@ -1,5 +1,6 @@
 python_sources = [
   '__init__.py',
+  'test_force.py',
   'test_phantom.py',
   'test_voxel.py',
   ]

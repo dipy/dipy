@@ -832,11 +832,11 @@ def mean_kurtosis(
         KV = apparent_kurtosis_coef(dki_params, sph, min_kurtosis=min_kurtosis)
         MK = np.mean(KV, axis=-1)
 
-    if min_kurtosis is not None:
-        MK = MK.clip(min=min_kurtosis)
+        if min_kurtosis is not None:
+            MK = MK.clip(min=min_kurtosis)
 
-    if max_kurtosis is not None:
-        MK = MK.clip(max=max_kurtosis)
+        if max_kurtosis is not None:
+            MK = MK.clip(max=max_kurtosis)
 
     return MK.reshape(outshape)
 

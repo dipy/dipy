@@ -40,6 +40,20 @@ else:
 
 
 class EncoderBlock(Layer):
+    """Encoder block for the 3D U-Net.
+
+    Parameters
+    ----------
+    out_channels : int
+        Number of output channels.
+    kernel_size : int
+        Size of the convolutional kernel.
+    strides : int
+        Stride of the convolution.
+    padding : str
+        Padding for the convolution ('same' or 'valid').
+    """
+
     def __init__(self, out_channels, kernel_size, strides, padding):
         super(EncoderBlock, self).__init__()
         self.conv3d = Conv3D(
@@ -51,6 +65,18 @@ class EncoderBlock(Layer):
         self.activation = LeakyReLU(0.01)
 
     def call(self, input):
+        """Forward pass of the EncoderBlock.
+
+        Parameters
+        ----------
+        input : tf.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        tf.Tensor
+            Output tensor.
+        """
         x = self.conv3d(input)
         x = self.instnorm(x)
         x = self.activation(x)
@@ -59,6 +85,20 @@ class EncoderBlock(Layer):
 
 
 class DecoderBlock(Layer):
+    """Decoder block for the 3D U-Net.
+
+    Parameters
+    ----------
+    out_channels : int
+        Number of output channels.
+    kernel_size : int
+        Size of the convolutional kernel.
+    strides : int
+        Stride of the convolution.
+    padding : str
+        Padding for the convolution ('same' or 'valid').
+    """
+
     def __init__(self, out_channels, kernel_size, strides, padding):
         super(DecoderBlock, self).__init__()
         self.conv3d = Conv3DTranspose(
@@ -70,6 +110,18 @@ class DecoderBlock(Layer):
         self.activation = LeakyReLU(0.01)
 
     def call(self, input):
+        """Forward pass of the DecoderBlock.
+
+        Parameters
+        ----------
+        input : tf.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        tf.Tensor
+            Output tensor.
+        """
         x = self.conv3d(input)
         x = self.instnorm(x)
         x = self.activation(x)
@@ -78,6 +130,18 @@ class DecoderBlock(Layer):
 
 
 def UNet3D(input_shape):
+    """3D U-Net architecture for the DeepN4 model.
+
+    Parameters
+    ----------
+    input_shape : tuple
+        Shape of the input tensor.
+
+    Returns
+    -------
+    tf.keras.Model
+        The 3D U-Net model.
+    """
     inputs = tf.keras.Input(input_shape)
     # Encode
     x = EncoderBlock(32, kernel_size=3, strides=1, padding="same")(inputs)
@@ -202,6 +266,22 @@ class DeepN4:
         return self.model.predict(x_test)[..., 0]
 
     def pad(self, img, sz):
+        """Pad or crop the image to the specified size.
+
+        Parameters
+        ----------
+        img : np.ndarray
+            The image to pad or crop.
+        sz : int
+            The target size for each dimension.
+
+        Returns
+        -------
+        tmp : np.ndarray
+            The padded or cropped image.
+        indices : list
+            A list of indices used for padding and cropping.
+        """
         tmp = np.zeros((sz, sz, sz))
 
         diff = int((sz - img.shape[0]) / 2)
@@ -233,6 +313,20 @@ class DeepN4:
         return tmp, [lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ]
 
     def load_resample(self, subj):
+        """Preprocess the subject image for the model.
+
+        This includes padding, normalization, and converting to a tensor.
+
+        Parameters
+        ----------
+        subj : np.ndarray
+            The subject image.
+
+        Returns
+        -------
+        tuple
+            A tuple containing the processed tensor and auxiliary parameters.
+        """
         input_data, [lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ] = self.pad(
             subj, 128
         )

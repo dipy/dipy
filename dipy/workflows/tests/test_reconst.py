@@ -9,7 +9,7 @@ import numpy.testing as npt
 import pytest
 
 from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames
+from dipy.data import default_sphere, get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.peaks import load_pam
@@ -17,6 +17,7 @@ from dipy.reconst.shm import descoteaux07_legacy_msg, sph_harm_ind_list
 from dipy.sims.voxel import multi_tensor
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.reconst import (
+    ReconstForceFlow,
     ReconstForecastFlow,
     ReconstGQIFlow,
     ReconstPowermapFlow,
@@ -392,3 +393,206 @@ def test_reconst_powermap_edge_cases():
             assert not np.allclose(
                 powermaps[0], powermaps[1], rtol=0.1
             ), "Different norm factors should produce different results"
+
+
+# ---------------------------------------------------------------------------
+# FORCE workflow tests
+# ---------------------------------------------------------------------------
+
+
+def _make_fake_simulations(n_gradients, *, n_sims=100):
+    """Build a minimal simulations dict for FORCE tests.
+
+    Parameters
+    ----------
+    n_gradients : int
+        Number of DWI gradients (determines signal length).
+    n_sims : int
+        Number of library entries.
+
+    Returns
+    -------
+    sims : dict
+        Minimal simulations dict accepted by FORCEModel._prepare_library.
+    """
+    rng = np.random.default_rng(42)
+    n_dirs = len(default_sphere.vertices)
+    sims = {
+        "signals": rng.random((n_sims, n_gradients)).astype(np.float32),
+        "fa": rng.random(n_sims).astype(np.float32),
+        "md": rng.random(n_sims).astype(np.float32) * 3e-3,
+        "rd": rng.random(n_sims).astype(np.float32) * 1e-3,
+        "wm_fraction": rng.random(n_sims).astype(np.float32),
+        "gm_fraction": rng.random(n_sims).astype(np.float32),
+        "csf_fraction": rng.random(n_sims).astype(np.float32),
+        "num_fibers": rng.integers(0, 3, n_sims).astype(np.float32),
+        "dispersion": rng.random(n_sims).astype(np.float32),
+        "nd": rng.random(n_sims).astype(np.float32),
+        "labels": rng.integers(0, 2, (n_sims, n_dirs)).astype(np.int8),
+        "fraction_array": rng.random((n_sims, 3)).astype(np.float32),
+    }
+    return sims
+
+
+def _make_fake_simulations_dki(n_gradients, *, n_sims=100):
+    """Like _make_fake_simulations but with DKI fields."""
+    sims = _make_fake_simulations(n_gradients, n_sims=n_sims)
+    rng = np.random.default_rng(99)
+    sims.update(
+        {
+            "ak": rng.random(n_sims).astype(np.float32),
+            "rk": rng.random(n_sims).astype(np.float32),
+            "mk": rng.random(n_sims).astype(np.float32),
+            "kfa": rng.random(n_sims).astype(np.float32),
+        }
+    )
+    return sims
+
+
+def _patch_generate(monkeypatch, fake_sims):
+    """Patch FORCEModel.generate to inject fake_sims without running simulations."""
+
+    def _fake_generate(self, **kwargs):
+        self.simulations = fake_sims
+        self._prepare_library()
+        return self
+
+    monkeypatch.setattr("dipy.reconst.force.FORCEModel.generate", _fake_generate)
+
+
+def test_reconst_force_basic(monkeypatch, tmp_path):
+    """ReconstForceFlow runs and produces expected output files."""
+    data_path, bval_path, bvec_path = get_fnames(name="small_64D")
+    volume, affine = load_nifti(data_path)
+    mask = np.ones(volume.shape[:3], dtype=np.uint8)
+    mask_path = tmp_path / "mask.nii.gz"
+    save_nifti(mask_path, mask, affine)
+
+    bvals, _ = read_bvals_bvecs(bval_path, bvec_path)
+    n_gradients = len(bvals)
+
+    _patch_generate(monkeypatch, _make_fake_simulations(n_gradients))
+
+    flow = ReconstForceFlow()
+    flow.run(
+        str(data_path),
+        str(bval_path),
+        str(bvec_path),
+        str(mask_path),
+        n_neighbors=5,
+        engine="serial",
+        out_dir=str(tmp_path),
+    )
+
+    for metric in [
+        "fa",
+        "md",
+        "rd",
+        "wm_fraction",
+        "gm_fraction",
+        "csf_fraction",
+        "num_fibers",
+        "dispersion",
+        "nd",
+        "uncertainty",
+        "ambiguity",
+    ]:
+        out_path = flow.last_generated_outputs[f"out_{metric}"]
+        assert os.path.exists(out_path), f"Missing output: {metric}"
+        data_arr = load_nifti_data(out_path)
+        npt.assert_equal(data_arr.shape, volume.shape[:3])
+        assert np.isfinite(data_arr).all(), f"Non-finite values in {metric}"
+
+
+def test_reconst_force_select_metrics(monkeypatch, tmp_path):
+    """save_metrics limits which output files are written."""
+    data_path, bval_path, bvec_path = get_fnames(name="small_64D")
+    volume, affine = load_nifti(data_path)
+    mask = np.ones(volume.shape[:3], dtype=np.uint8)
+    mask_path = tmp_path / "mask.nii.gz"
+    save_nifti(mask_path, mask, affine)
+
+    bvals, _ = read_bvals_bvecs(bval_path, bvec_path)
+    _patch_generate(monkeypatch, _make_fake_simulations(len(bvals)))
+
+    flow = ReconstForceFlow()
+    flow.run(
+        str(data_path),
+        str(bval_path),
+        str(bvec_path),
+        str(mask_path),
+        n_neighbors=5,
+        engine="serial",
+        save_metrics=["fa", "md"],
+        out_dir=str(tmp_path),
+        out_fa="only_fa.nii.gz",
+        out_md="only_md.nii.gz",
+    )
+
+    assert os.path.exists(flow.last_generated_outputs["out_fa"])
+    assert os.path.exists(flow.last_generated_outputs["out_md"])
+
+
+def test_reconst_force_dki_metrics(monkeypatch, tmp_path):
+    """DKI metrics are saved when compute_kurtosis=True."""
+    data_path, bval_path, bvec_path = get_fnames(name="small_64D")
+    volume, affine = load_nifti(data_path)
+    mask = np.ones(volume.shape[:3], dtype=np.uint8)
+    mask_path = tmp_path / "mask.nii.gz"
+    save_nifti(mask_path, mask, affine)
+
+    bvals, _ = read_bvals_bvecs(bval_path, bvec_path)
+    _patch_generate(monkeypatch, _make_fake_simulations_dki(len(bvals)))
+
+    flow = ReconstForceFlow()
+    flow.run(
+        str(data_path),
+        str(bval_path),
+        str(bvec_path),
+        str(mask_path),
+        n_neighbors=5,
+        engine="serial",
+        compute_kurtosis=True,
+        out_dir=str(tmp_path),
+    )
+
+    for metric in ["mk", "ak", "rk", "kfa"]:
+        out_path = flow.last_generated_outputs[f"out_{metric}"]
+        assert os.path.exists(out_path), f"Missing DKI output: {metric}"
+        data_arr = load_nifti_data(out_path)
+        npt.assert_equal(data_arr.shape, volume.shape[:3])
+
+
+def test_reconst_force_ray_fallback(monkeypatch, tmp_path):
+    """engine='ray' falls back to serial when ray is not available."""
+    data_path, bval_path, bvec_path = get_fnames(name="small_64D")
+    volume, affine = load_nifti(data_path)
+    mask = np.ones(volume.shape[:3], dtype=np.uint8)
+    mask_path = tmp_path / "mask.nii.gz"
+    save_nifti(mask_path, mask, affine)
+
+    bvals, _ = read_bvals_bvecs(bval_path, bvec_path)
+    _patch_generate(monkeypatch, _make_fake_simulations(len(bvals)))
+
+    # Simulate ray being unavailable
+    monkeypatch.setattr(
+        "dipy.utils.optpkg.optional_package",
+        lambda name, *a, **kw: (
+            (None, False, None) if name == "ray" else optional_package(name, *a, **kw)
+        ),
+    )
+
+    flow = ReconstForceFlow()
+    flow.run(
+        str(data_path),
+        str(bval_path),
+        str(bvec_path),
+        str(mask_path),
+        n_neighbors=5,
+        engine="ray",
+        save_metrics=["fa"],
+        out_dir=str(tmp_path),
+    )
+
+    out_path = flow.last_generated_outputs["out_fa"]
+    assert os.path.exists(out_path)

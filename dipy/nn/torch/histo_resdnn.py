@@ -28,6 +28,16 @@ else:
 
 
 class DenseModel(Module):
+    """Deep Neural Network model with several linear layers.
+
+    Parameters
+    ----------
+    sh_size : int
+        Size of the input spherical harmonics.
+    num_hidden : int
+        Number of units in the hidden layers.
+    """
+
     def __init__(self, sh_size, num_hidden):
         super(DenseModel, self).__init__()
         self.fc1 = Linear(sh_size, 400)
@@ -38,6 +48,18 @@ class DenseModel(Module):
         self.fc6 = Linear(200, num_hidden)
 
     def forward(self, x):
+        """Forward pass of the model.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        torch.Tensor
+            Output tensor.
+        """
         x1 = torch.relu(self.fc1(x))
         x2 = torch.relu(self.fc2(x1))
         x3 = torch.relu(self.fc3(x2))
@@ -188,7 +210,10 @@ class HistoResDNN:
                 f"declared model ({self.sh_size})"
             )
 
-        return self.model(torch.from_numpy(x_test)).detach().numpy()
+        # Move to correct device (no-op when device=cpu)
+        return (
+            self.model(torch.from_numpy(x_test).to(self.device)).detach().cpu().numpy()
+        )
 
     def predict(self, data, gtab, *, mask=None, chunk_size=1000):
         """Wrapper function to facilitate prediction of larger dataset.
