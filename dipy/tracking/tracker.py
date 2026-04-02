@@ -8,7 +8,7 @@ from dipy.direction import (
     ProbabilisticDirectionGetter,
 )
 from dipy.direction.peaks import peaks_from_positions
-from dipy.direction.pmf import SHCoeffPmfGen, SimplePmfGen
+from dipy.direction.pmf import SHCoeffPmfGen, SimplePmfGen, PeakPmfGen
 from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tractogen import generate_tractogram
@@ -36,7 +36,7 @@ def generic_tracking(
 
     pmf_type = [
         {"name": "sh", "value": sh, "cls": SHCoeffPmfGen},
-        {"name": "peaks", "value": peaks, "cls": SimplePmfGen},
+        {"name": "peaks", "value": peaks, "cls": PeakPmfGen},
         {"name": "sf", "value": sf, "cls": SimplePmfGen},
     ]
 
@@ -62,7 +62,12 @@ def generic_tracking(
         raise ValueError("A sphere should be defined when using SF (an ODF).")
 
     if selected_pmf["name"] == "peaks":
-        raise NotImplementedError("Peaks are not yet implemented.")
+        from dipy.direction.peaks import PeaksAndMetrics
+        if not isinstance(peaks, PeaksAndMetrics):
+            raise TypeError(
+                "peaks= must be a PeaksAndMetrics object (e.g. the output of "
+                "peaks_from_model). Got: " + type(peaks).__name__
+            )
 
     sphere = sphere or default_sphere
 
@@ -70,9 +75,16 @@ def generic_tracking(
     if selected_pmf["name"] == "sh":
         kwargs = {"basis_type": basis_type, "legacy": legacy}
 
-    pmf_gen = selected_pmf["cls"](
-        np.asarray(selected_pmf["value"], dtype=float), sphere, **kwargs
-    )
+    if selected_pmf["name"] == "peaks":
+        pmf_gen = PeakPmfGen(
+            np.asarray(peaks.peak_dirs, dtype=float, order='C'),
+            np.asarray(peaks.peak_values, dtype=float, order='C'),
+            sphere,
+        )
+    else:
+        pmf_gen = selected_pmf["cls"](
+            np.asarray(selected_pmf["value"], dtype=float), sphere, **kwargs
+        )
 
     if seed_directions is not None:
         if not isinstance(seed_directions, (np.ndarray, list)):
