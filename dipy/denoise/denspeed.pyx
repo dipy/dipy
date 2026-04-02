@@ -55,7 +55,7 @@ def nlmeans_3d_classic(arr, mask=None, sigma=None, patch_radius=1,
     """
 
     if arr.ndim != 3:
-        raise ValueError('data needs to be a 3D ndarray', arr.shape)
+        raise ValueError(f'data needs to be a 3D ndarray, got shape {arr.shape}')
 
     if mask is None:
         mask = np.ones(arr.shape, dtype='f8')
@@ -63,10 +63,10 @@ def nlmeans_3d_classic(arr, mask=None, sigma=None, patch_radius=1,
         mask = np.ascontiguousarray(mask, dtype='f8')
 
     if mask.ndim != 3:
-        raise ValueError('mask needs to be a 3D ndarray', mask.shape)
+        raise ValueError(f'mask needs to be a 3D ndarray, got shape {mask.shape}')
 
     if sigma.ndim != 3:
-        raise ValueError('sigma needs to be a 3D ndarray', sigma.shape)
+        raise ValueError(f'sigma needs to be a 3D ndarray, got shape {sigma.shape}')
 
     arr = np.ascontiguousarray(arr, dtype='f8')
     arr = add_padding_reflection(arr, block_radius)
@@ -906,7 +906,7 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
     # Algorithm parameters
     cdef bint use_sigma_map = False
     cdef double sigma_scalar = 0.0
-    cdef double[:, :, :] sigma_map
+    cdef double[:, :, :] sigma_map = None
     cdef double current_sigma
     cdef double current_sigma_sq
     cdef double local_noise_variance_doubled
@@ -914,9 +914,15 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
 
     if hasattr(noise_sigma, 'ndim'):
         if noise_sigma.ndim != 3:
-            raise ValueError('noise_sigma should be scalar or a 3D ndarray', getattr(noise_sigma, 'shape', type(noise_sigma)))
+            raise ValueError(
+                f'noise_sigma should be scalar or a 3D ndarray, '
+                f'got {getattr(noise_sigma, "shape", type(noise_sigma))}'
+            )
         if noise_sigma.shape != (img_height, img_width, img_depth):
-            raise ValueError('3D noise_sigma should have the same shape as image', noise_sigma.shape)
+            raise ValueError(
+                f'3D noise_sigma shape {noise_sigma.shape} does not match '
+                f'image shape ({img_height}, {img_width}, {img_depth})'
+            )
         sigma_map = np.ascontiguousarray(noise_sigma, dtype='f8')
         use_sigma_map = True
     else:
@@ -970,41 +976,65 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
                             image, current_mean, center_y, center_x, center_z, 1)
 
     # Phase 2: Process blocks with stride 2 for efficiency
-    # Avoid reduction variables entirely by processing each block completely
-    with nogil, parallel():
-        for center_z in prange(0, img_depth, 2, schedule="dynamic"):
-            thread_id = threadid()
-            for center_x in range(0, img_width, 2):
-                for center_y in range(0, img_height, 2):
-                    if mask[center_y, center_x, center_z] == 0:
-                        continue
+    # Avoid reduction variables entirely by processing each block completely.
+    # Two separate code paths avoid a per-voxel branch on use_sigma_map.
+    cdef double fixed_sigma_sq = sigma_scalar * sigma_scalar
+    if fixed_sigma_sq <= 0:
+        fixed_sigma_sq = epsilon
+    cdef double fixed_noise_variance_doubled = 2.0 * fixed_sigma_sq
+    cdef double fixed_filtering_strength = fixed_sigma_sq
 
-                    current_mean = local_means[center_y, center_x, center_z]
-                    current_variance = local_variances[center_y, center_x, center_z]
+    if use_sigma_map:
+        with nogil, parallel():
+            for center_z in prange(0, img_depth, 2, schedule="dynamic"):
+                thread_id = threadid()
+                for center_x in range(0, img_width, 2):
+                    for center_y in range(0, img_height, 2):
+                        if mask[center_y, center_x, center_z] == 0:
+                            continue
 
-                    # Clear workspace for this thread
-                    _clear_workspace(thread_workspaces[thread_id])
+                        current_mean = local_means[center_y, center_x, center_z]
+                        current_variance = local_variances[center_y, center_x, center_z]
 
-                    if use_sigma_map:
+                        _clear_workspace(thread_workspaces[thread_id])
+
                         current_sigma = sigma_map[center_y, center_x, center_z]
-                    else:
-                        current_sigma = sigma_scalar
+                        current_sigma_sq = current_sigma * current_sigma
+                        if current_sigma_sq <= 0:
+                            current_sigma_sq = epsilon
+                        local_noise_variance_doubled = 2.0 * current_sigma_sq
+                        local_filtering_strength = current_sigma_sq
 
-                    current_sigma_sq = current_sigma * current_sigma
-                    local_noise_variance_doubled = 2.0 * current_sigma_sq
-                    local_filtering_strength = current_sigma_sq
-                    if local_filtering_strength <= 0:
-                        local_filtering_strength = epsilon
+                        _process_block_complete(image, mask, local_means, local_variances,
+                                              accumulated_estimates, weight_counts,
+                                              thread_workspaces[thread_id],
+                                              center_y, center_x, center_z,
+                                              patch_radius, block_radius, local_filtering_strength,
+                                              local_noise_variance_doubled, is_rician,
+                                              epsilon, mean_ratio_threshold, variance_ratio_min,
+                                              img_height, img_width, img_depth)
+    else:
+        with nogil, parallel():
+            for center_z in prange(0, img_depth, 2, schedule="dynamic"):
+                thread_id = threadid()
+                for center_x in range(0, img_width, 2):
+                    for center_y in range(0, img_height, 2):
+                        if mask[center_y, center_x, center_z] == 0:
+                            continue
 
-                    # Process this block completely in one go
-                    _process_block_complete(image, mask, local_means, local_variances,
-                                          accumulated_estimates, weight_counts,
-                                          thread_workspaces[thread_id],
-                                          center_y, center_x, center_z,
-                                          patch_radius, block_radius, local_filtering_strength,
-                                          local_noise_variance_doubled, is_rician,
-                                          epsilon, mean_ratio_threshold, variance_ratio_min,
-                                          img_height, img_width, img_depth)
+                        current_mean = local_means[center_y, center_x, center_z]
+                        current_variance = local_variances[center_y, center_x, center_z]
+
+                        _clear_workspace(thread_workspaces[thread_id])
+
+                        _process_block_complete(image, mask, local_means, local_variances,
+                                              accumulated_estimates, weight_counts,
+                                              thread_workspaces[thread_id],
+                                              center_y, center_x, center_z,
+                                              patch_radius, block_radius, fixed_filtering_strength,
+                                              fixed_noise_variance_doubled, is_rician,
+                                              epsilon, mean_ratio_threshold, variance_ratio_min,
+                                              img_height, img_width, img_depth)
 
     # Phase 3: Finalize denoised estimates
     with nogil, parallel():
@@ -1062,7 +1092,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     """
 
     if arr.ndim != 3:
-        raise ValueError('data needs to be a 3D ndarray', arr.shape)
+        raise ValueError(f'data needs to be a 3D ndarray, got shape {arr.shape}')
 
     if mask is None:
         mask = np.ones(arr.shape, dtype='f8')
@@ -1070,18 +1100,24 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
         mask = np.ascontiguousarray(mask, dtype='f8')
 
     if mask.ndim != 3:
-        raise ValueError('mask needs to be a 3D ndarray', mask.shape)
+        raise ValueError(f'mask needs to be a 3D ndarray, got shape {mask.shape}')
 
     # Handle sigma validation based on method
     if method == 'classic':
         # Classic method requires 3D sigma array
         if not hasattr(sigma, 'ndim') or sigma.ndim != 3:
-            raise ValueError('sigma needs to be a 3D ndarray for classic method', getattr(sigma, 'shape', type(sigma)))
+            raise ValueError(
+                f'sigma needs to be a 3D ndarray for classic method, '
+                f'got {getattr(sigma, "shape", type(sigma))}'
+            )
     elif method == 'blockwise':
         # Blockwise method can accept scalar or array sigma
         if hasattr(sigma, 'ndim'):
             if sigma.ndim > 3:
-                raise ValueError('sigma should be at most 3D for blockwise method', sigma.shape)
+                raise ValueError(
+                    f'sigma should be at most 3D for blockwise method, '
+                    f'got shape {sigma.shape}'
+                )
         # Scalar sigma is fine for blockwise method
     else:
         raise ValueError(f"Unknown method '{method}'. Use 'classic' or 'blockwise'.")
@@ -1104,6 +1140,8 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
             if sigma.shape == arr.shape:
                 sigma_input = np.ascontiguousarray(sigma, dtype='f8')
             elif sigma.ndim == 1:
+                # 1D sigma for 3D input: take the mean as a fallback.
+                # For 4D inputs, nlmeans.py extracts per-volume scalars before reaching here.
                 sigma_input = float(np.mean(sigma))
             elif sigma.shape == ():
                 # 0-D array (scalar in array form)
