@@ -159,7 +159,6 @@ cdef class SHCoeffPmfGen(PmfGen):
 cdef class PeakPmfGen(PmfGen):
     cdef:
         double[:, :, :, :, :] peak_dirs
-    pass
 
     def __init__(self,
                  double[:, :, :, :, :] peak_dirs,
