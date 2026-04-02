@@ -119,10 +119,6 @@ def nlmeans(
             block_radius = 5
         elif method == "blockwise":
             block_radius = 2
-        else:
-            raise ValueError(
-                f"Unknown method '{method}'. Use 'classic' or 'blockwise'."
-            )
 
     if isinstance(sigma, np.ndarray) and sigma.size == 1:
         sigma = sigma.item()
@@ -184,11 +180,6 @@ def nlmeans(
                 sigma_3d = np.full(arr.shape, sigma, dtype="f8")
             elif sigma.shape == arr.shape:
                 sigma_3d = np.ascontiguousarray(sigma, dtype="f8")
-            else:
-                raise ValueError(
-                    f"sigma shape {sigma.shape} incompatible "
-                    f"with arr shape {arr.shape}"
-                )
         else:
             sigma_3d = sigma
 
