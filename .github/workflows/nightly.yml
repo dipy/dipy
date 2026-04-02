@@ -22,7 +22,7 @@ env:
   CIBW_BUILD_VERBOSITY: 1  # verbosity of 2 shows thousands of annoying pip lines!
   CIBW_ARCHS: "native"
   CIBW_BUILD: "cp3{11,12,13,14}-*"
-  CIBW_BUILD_FRONTEND: ${{ ((github.event_name == 'workflow_dispatch' && startsWith(github.event.inputs.branch_or_tag, 'workshop')) || startsWith(github.head_ref, 'workshop') || startsWith(github.ref_name, 'workshop')) && 'pip' || 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"' }}
+  CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
   CIBW_TEST_SKIP: "*"
   CIBW_TEST_REQUIRES: "-r requirements/build.txt pytest==8.0.0"
   CIBW_TEST_COMMAND: pytest --pyargs dipy
