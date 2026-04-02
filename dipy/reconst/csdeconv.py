@@ -67,6 +67,8 @@ class AxSymShResponse:
 
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
+    """Constrained Spherical Deconvolution (CSD) model."""
+
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     @warning_for_keywords()
     def __init__(
@@ -249,6 +251,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
 
 class ConstrainedSDTModel(SphHarmModel):
+    """Constrained Spherical Deconvolution Transform (SDT) model."""
+
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     @warning_for_keywords()
     def __init__(

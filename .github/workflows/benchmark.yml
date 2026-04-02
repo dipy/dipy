@@ -131,3 +131,24 @@ jobs:
             echo "Regressions detected - review benchmark output above."
             exit 1
           fi
+    - name: Set up system
+      uses: actions/checkout@v6.0.2
+      with:
+        fetch-depth: 0
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install .[dev,test,ml,extra,benchmark]
+    - name: Set threading parameters for reliable benchmarking
+      run: |
+        echo "OPENBLAS_NUM_THREADS=1" >> $GITHUB_ENV
+        echo "MKL_NUM_THREADS=1" >> $GITHUB_ENV
+        echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
+    - name: Run benchmarks
+      run: |
+        asv machine --yes --config ${GITHUB_WORKSPACE}/benchmarks/asv.conf.json
+        asv run --config ${GITHUB_WORKSPACE}/benchmarks/asv.conf.json --show-stderr

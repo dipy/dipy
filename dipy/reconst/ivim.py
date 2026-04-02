@@ -139,6 +139,8 @@ def ivim_model_selector(gtab, *, fit_method="trr", **kwargs):
 
     Parameters
     ----------
+    gtab : GradientTable class instance
+        Gradient directions and bvalues.
     fit_method : string, optional
         The value fit_method can either be 'trr' or 'varpro'.
         default : trr
@@ -581,7 +583,8 @@ class IvimModelVP(ReconstModel):
         b = self.bvals
 
         # Setting up the bounds for differential_evolution
-        bounds_de = np.array([(0.005, 0.01), (10**-4, 0.001)])
+        if bounds_de is None:
+            bounds_de = np.array([(0.005, 0.01), (10**-4, 0.001)])
 
         # Optimizer #1: Differential Evolution
         res_one = differential_evolution(

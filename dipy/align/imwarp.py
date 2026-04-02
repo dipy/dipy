@@ -295,7 +295,7 @@ class DiffeomorphicMap:
 
     @warning_for_keywords()
     def _warp_coordinates_forward(self, points, *, coord2world=None, world2coord=None):
-        r"""Warps the list of points in the forward direction
+        r"""Warps the list of points in the forward direction.
 
         Applies this diffeomorphic map to the list of points given by `points`.
         We assume that the points' coordinates are mapped to world coordinates
@@ -306,9 +306,15 @@ class DiffeomorphicMap:
 
         Parameters
         ----------
-        points :
-        coord2world :
-        world2coord :
+        points : array, shape (N, dim) or Streamlines object
+            Input points (or streamlines) to be warped in the forward direction.
+        coord2world : array, shape (dim+1, dim+1), optional
+            Affine matrix mapping input coordinates to world coordinates.
+            If None, identity is assumed.
+        world2coord : array, shape (dim+1, dim+1), optional
+            Affine matrix mapping world coordinates to the output coordinate system.
+            If None, output is returned in world coordinates.
+
         """
         warp_f = self._get_warping_function(None, warp_coordinates=True)
         coord2prealigned = mult_aff(self.prealign, coord2world)
@@ -319,7 +325,7 @@ class DiffeomorphicMap:
 
     @warning_for_keywords()
     def _warp_coordinates_backward(self, points, *, coord2world=None, world2coord=None):
-        """Warps the list of points in the backward direction
+        """Warps the list of points in the backward direction.
 
         Applies this diffeomorphic map to the list of points given by `points`.
         We assume that the points' coordinates are mapped to world coordinates
@@ -330,9 +336,15 @@ class DiffeomorphicMap:
 
         Parameters
         ----------
-        points :
-        coord2world :
-        world2coord :
+        points : array, shape (N, dim) or Streamlines object
+            Input points (or streamlines) to be warped in the backward direction.
+        coord2world : array, shape (dim+1, dim+1), optional
+            Affine matrix mapping input coordinates to world coordinates.
+            If None, identity is assumed.
+        world2coord : array, shape (dim+1, dim+1), optional
+            Affine matrix mapping world coordinates to the output coordinate system.
+            If None, output is returned in world coordinates.
+
         """
         warp_f = self._get_warping_function(None, warp_coordinates=True)
         world2invprealigned = mult_aff(world2coord, self.prealign_inv)
@@ -731,12 +743,14 @@ class DiffeomorphicMap:
         Parameters
         ----------
         points : array, shape (N, dim) or Streamlines object
-
+            Input points (or streamlines) to be warped. Can be an array of
+            shape (N, dim) or a Streamlines object.
         coord2world : array, shape (dim+1, dim+1), optional
-            affine matrix mapping points to world coordinates
-
+            Affine matrix mapping input coordinates to world coordinates.
+            If None, identity is assumed.
         world2coord : array, shape (dim+1, dim+1), optional
-            affine matrix mapping world coordinates to points
+            Affine matrix mapping world coordinates to the output coordinate system.
+            If None, output is returned in world coordinates.
 
         """
         return self._transform_coordinates(
@@ -757,12 +771,14 @@ class DiffeomorphicMap:
         Parameters
         ----------
         points : array, shape (N, dim) or Streamlines object
-
+            Input points (or streamlines) to be warped. Can be an array of
+            shape (N, dim) or a Streamlines object.
         coord2world : array, shape (dim+1, dim+1), optional
-            affine matrix mapping points to world coordinates
-
+            Affine matrix mapping input coordinates to world coordinates.
+            If None, identity is assumed.
         world2coord : array, shape (dim+1, dim+1), optional
-            affine matrix mapping world coordinates to points
+            Affine matrix mapping world coordinates to the output coordinate system.
+            If None, output is returned in world coordinates.
 
         """
         return self._transform_coordinates(
@@ -1105,6 +1121,8 @@ class DiffeomorphicRegistration(metaclass=abc.ABCMeta):
 
 
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
+    """Symmetric Diffeomorphic Registration algorithm."""
+
     @warning_for_keywords()
     def __init__(
         self,

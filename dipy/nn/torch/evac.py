@@ -529,7 +529,9 @@ class EVACPlus:
         np.ndarray (batch, ...)
             Predicted brain mask
         """
-        return self.model(*x_test)[:, 0].detach().numpy()
+        # Move input tensors to correct device (no-op when device=cpu)
+        x_test = [t.to(self.device) for t in x_test]
+        return self.model(*x_test)[:, 0].detach().cpu().numpy()
 
     def predict(
         self,

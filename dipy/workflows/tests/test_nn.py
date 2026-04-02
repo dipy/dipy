@@ -88,6 +88,30 @@ def test_correct_biasfield_flow():
     npt.assert_raises(SystemExit, bias_flow.run, **args)
 
 
+def test_correct_biasfield_flow_with_mask():
+    """Test that a mask file can be passed to BiasFieldCorrectionFlow."""
+    with TemporaryDirectory() as out_dir:
+        fdata, fbval, fbvec = get_fnames(name="small_25")
+        volume, affine = load_nifti(fdata)
+        mask_data = np.ones(volume.shape[:3], dtype=np.uint8)
+        mask_path = Path(out_dir) / "mask.nii.gz"
+        save_nifti(mask_path, mask_data, affine)
+
+        args = {
+            "input_files": fdata,
+            "bval": fbval,
+            "bvec": fbvec,
+            "mask": str(mask_path),
+            "out_dir": out_dir,
+        }
+        bias_flow = BiasFieldCorrectionFlow()
+        bias_flow.run(**args)
+
+        corrected_name = bias_flow.last_generated_outputs["out_corrected"]
+        corrected_data = load_nifti_data(Path(out_dir) / corrected_name)
+        assert corrected_data.shape == volume.shape
+
+
 def test_correct_biasfield_flow_with_bias_output():
     """Test that out_bias_field is saved when using poly/bspline methods."""
     with TemporaryDirectory() as out_dir:

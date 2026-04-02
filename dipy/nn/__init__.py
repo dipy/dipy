@@ -1,4 +1,8 @@
-# init for nn aka the deep neural network module
+"""Neural network tools.
+
+Deep learning models and utilities for diffusion MRI processing.
+"""
+
 import os
 import sys
 

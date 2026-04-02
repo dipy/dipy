@@ -1,3 +1,5 @@
+"""Visualizer components for the Horizon application."""
+
 from dipy.viz.horizon.visualizer.cluster import ClustersVisualizer
 from dipy.viz.horizon.visualizer.peak import PeaksVisualizer
 from dipy.viz.horizon.visualizer.slice import SlicesVisualizer

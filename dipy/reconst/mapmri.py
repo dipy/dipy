@@ -2027,7 +2027,7 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
         Basis order matrix
     mu : array, shape (3,)
         scale factors of the basis for x, y, z
-    S, T, U : matrices, shape (N_coef,N_coef)
+    S_mat, T_mat, U_mat : ndarray, shape (N_coef,N_coef)
         Regularization submatrices
 
     Returns
