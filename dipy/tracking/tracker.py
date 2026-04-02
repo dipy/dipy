@@ -8,8 +8,7 @@ from dipy.direction import (
     ProbabilisticDirectionGetter,
 )
 from dipy.direction.peaks import peaks_from_positions
-from dipy.direction.pmf import SHCoeffPmfGen, SimplePmfGen, PeakPmfGen
-from dipy.direction.pmf import SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
+from dipy.direction.pmf import PeakPmfGen, SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
 from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tractogen import generate_tractogram
@@ -24,6 +23,7 @@ def generic_tracking(
     *,
     affine=None,
     sh=None,
+    peaks=None,
     pam=None,
     sf=None,
     sphere=None,
@@ -66,6 +66,7 @@ def generic_tracking(
 
     if selected_pmf["name"] == "peaks":
         from dipy.direction.peaks import PeaksAndMetrics
+
         if not isinstance(peaks, PeaksAndMetrics):
             raise TypeError(
                 "peaks= must be a PeaksAndMetrics object (e.g. the output of "
@@ -86,13 +87,11 @@ def generic_tracking(
 
     if selected_pmf["name"] == "peaks":
         pmf_gen = PeakPmfGen(
-            np.asarray(peaks.peak_dirs, dtype=float, order='C'),
-            np.asarray(peaks.peak_values, dtype=float, order='C'),
+            np.asarray(peaks.peak_dirs, dtype=float, order="C"),
+            np.asarray(peaks.peak_values, dtype=float, order="C"),
             sphere,
         )
-    else:
-        pmf_gen = selected_pmf["cls"](
-            np.asarray(selected_pmf["value"], dtype=float), sphere, **kwargs
+    elif selected_pmf["name"] == "pam":
         if hasattr(peak_data, "odf_vertices") and peak_data.odf_vertices is not None:
             odf_vertices = peak_data.odf_vertices
         else:
@@ -190,6 +189,7 @@ def probabilistic_tracking(
     *,
     seed_directions=None,
     sh=None,
+    peaks=None,
     pam=None,
     sf=None,
     min_len=2,
@@ -309,6 +309,7 @@ def deterministic_tracking(
     *,
     seed_directions=None,
     sh=None,
+    peaks=None,
     pam=None,
     sf=None,
     min_len=2,
@@ -427,6 +428,7 @@ def ptt_tracking(
     *,
     seed_directions=None,
     sh=None,
+    peaks=None,
     pam=None,
     sf=None,
     min_len=2,
@@ -803,6 +805,7 @@ def eudx_tracking(
     seed_directions=None,
     sh=None,
     sf=None,
+    peaks=None,
     pam=None,
     max_cross=None,
     min_len=2,
@@ -930,6 +933,7 @@ def pft_tracking(
     seed_directions=None,
     sh=None,
     sf=None,
+    peaks=None,
     pam=None,
     max_cross=None,
     min_len=2,

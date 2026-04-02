@@ -5,8 +5,7 @@ import numpy.testing as npt
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import default_sphere, get_sphere
-from dipy.direction.pmf import SHCoeffPmfGen, SimplePmfGen, PeakPmfGen
-from dipy.direction.pmf import SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
+from dipy.direction.pmf import PeakPmfGen, SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
 from dipy.reconst import shm
 from dipy.testing.decorators import set_random_number_generator
 
@@ -100,14 +99,11 @@ def test_pmf_from_peaks():
     shape = (2, 2, 2)
     n_peaks = 1
 
-
     peak_dirs = np.zeros(shape + (n_peaks, 3))
     peak_values = np.zeros(shape + (n_peaks,))
 
-
     peak_dirs[0, 0, 0, 0, :] = np.array([1.0, 0.0, 0.0])
     peak_values[0, 0, 0, 0] = 5.0
-
 
     pmfgen = PeakPmfGen(peak_dirs, peak_values, sphere)
 
@@ -121,7 +117,7 @@ def test_pmf_from_peaks():
     # Find the sphere vertex closest to [1, 0, 0] to check if mass was grouped there
     target_dir = np.array([1.0, 0.0, 0.0])
     closest_idx = np.argmax(np.dot(sphere.vertices, target_dir))
-    
+
     # Assert that this EXACT vertex received the probability mass 5.0
     npt.assert_equal(pmf_array[closest_idx], 5.0)
 
