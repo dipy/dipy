@@ -164,8 +164,46 @@ cdef class PeakPmfGen(PmfGen):
                  double[:, :, :, :, :] peak_dirs,
                  double[:, :, :, :] peak_values,
                  object sphere):
-        PmfGen.__init__(self, peak_values, sphere)
-        self.peak_dirs = np.asarray(peak_dirs, dtype=float, order='C')
+
+        peak_dirs_arr = np.asarray(peak_dirs, dtype=float, order='C')
+        peak_values_arr = np.asarray(peak_values, dtype=float, order='C')
+        
+
+        if peak_dirs_arr.ndim != 5:
+            raise ValueError(
+                f"peak_dirs must be a 5D array, got {peak_dirs_arr.ndim}D instead"
+            )
+        if peak_values_arr.ndim != 4:
+            raise ValueError(
+                f"peak_values must be a 4D array, got {peak_values_arr.ndim}D instead"
+            )
+            
+
+        if peak_dirs_arr.shape[4] != 3:
+            raise ValueError(
+                f"peak_dirs.shape[4] must be 3 (x, y, z components), got "
+                f"{peak_dirs_arr.shape[4]}"
+            )
+            
+
+        if peak_dirs_arr.shape[0] != peak_values_arr.shape[0] or \
+           peak_dirs_arr.shape[1] != peak_values_arr.shape[1] or \
+           peak_dirs_arr.shape[2] != peak_values_arr.shape[2]:
+            raise ValueError(
+                "Spatial dimensions of peak_dirs and peak_values must match: "
+                f"got peak_dirs.shape[0:3]={peak_dirs_arr.shape[0:3]} and "
+                f"peak_values.shape[0:3]={peak_values_arr.shape[0:3]}"
+            )
+
+        if peak_dirs_arr.shape[3] != peak_values_arr.shape[3]:
+            raise ValueError(
+                "Number of peaks in peak_dirs and peak_values must match: "
+                f"got peak_dirs.shape[3]={peak_dirs_arr.shape[3]} and "
+                f"peak_values.shape[3]={peak_values_arr.shape[3]}"
+            )
+
+        PmfGen.__init__(self, peak_values_arr, sphere)
+        self.peak_dirs = peak_dirs_arr
 
     cdef double * get_pmf_c(self, double * point, double * out) noexcept nogil:
         cdef:

@@ -155,7 +155,7 @@ def probabilistic_tracking(
         Seed directions.
     sh : ndarray, optional
        Spherical Harmonics (SH).
-    peaks : ndarray, optional
+    peaks : PeaksAndMetrics, optional
         Peaks array.
     sf : ndarray, optional
         Spherical Function (SF).
@@ -272,7 +272,7 @@ def deterministic_tracking(
         Seed directions.
     sh : ndarray, optional
         Spherical Harmonics (SH).
-    peaks : ndarray, optional
+    peaks : PeaksAndMetrics, optional
         Peaks array.
     sf : ndarray, optional
         Spherical Function (SF).
@@ -393,7 +393,7 @@ def ptt_tracking(
         Seed directions.
     sh : ndarray, optional
         Spherical Harmonics (SH) data.
-    peaks : ndarray, optional
+    peaks : PeaksAndMetrics, optional
         Peaks array
     sf : ndarray, optional
         Spherical Function (SF).
@@ -523,7 +523,7 @@ def closestpeak_tracking(
         Seed directions.
     sh : ndarray, optional
         Spherical Harmonics (SH).
-    peaks : ndarray, optional
+    peaks : PeaksAndMetrics, optional
         Peaks array.
     sf : ndarray, optional
         Spherical Function (SF).
@@ -649,7 +649,7 @@ def bootstrap_tracking(
         Reconstruction model.
     sh : ndarray, optional
         Spherical Harmonics (SH).
-    peaks : ndarray, optional
+    peaks : PeaksAndMetrics, optional
         Peaks array.
     sf : ndarray, optional
         Spherical Function (SF).
@@ -762,7 +762,7 @@ def eudx_tracking(
         Seed directions.
     sh : ndarray, optional
         Spherical Harmonics (SH).
-    peaks : ndarray, optional
+    peaks : PeaksAndMetrics, optional
         Peaks array.
     sf : ndarray, optional
         Spherical Function (SF).
@@ -879,7 +879,7 @@ def pft_tracking(
         Seed directions.
     sh : ndarray, optional
         Spherical Harmonics (SH).
-    peaks : ndarray, optional
+    peaks : PeaksAndMetrics, optional
         Peaks array.
     sf : ndarray, optional
         Spherical Function (SF).

@@ -119,7 +119,10 @@ def test_pmf_from_peaks():
 
     # Find the sphere vertex closest to [1, 0, 0] to check if mass was grouped there
     target_dir = np.array([1.0, 0.0, 0.0])
-
+    closest_idx = np.argmax(np.dot(sphere.vertices, target_dir))
+    
+    # Assert that this EXACT vertex received the probability mass 5.0
+    npt.assert_equal(pmf_array[closest_idx], 5.0)
 
     # Test get_pmf_value() directly against our target direction
     pmf_val = pmfgen.get_pmf_value(point, target_dir)
