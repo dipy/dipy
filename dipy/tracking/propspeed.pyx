@@ -502,6 +502,7 @@ cdef void initialize_ptt_candidate(TrackerParameters params,
 
     """
     cdef double[3] position
+    cdef double fod_amp
     cdef int count
     cdef int i
     cdef double* pmf
@@ -522,8 +523,10 @@ cdef void initialize_ptt_candidate(TrackerParameters params,
     stream_data[22] = 0  # last_val
 
     if params.ptt.probe_count == 1:
-        stream_data[22] = pmf_gen.get_pmf_value_c(&stream_data[19],
-                                                  &stream_data[1])  # position, frame[0]
+        fod_amp = pmf_gen.get_pmf_value_c(&stream_data[19],
+                                          &stream_data[1])  # position, frame[0]
+        fod_amp = fod_amp if fod_amp > params.sh.pmf_threshold else 0
+        stream_data[22] = fod_amp
     else:
         for count in range(params.ptt.probe_count):
             for i in range(3):
@@ -537,8 +540,10 @@ cdef void initialize_ptt_candidate(TrackerParameters params,
                               * sin(count * params.ptt.angular_separation)
                               * params.inv_voxel_size[i])
 
-            stream_data[22] += pmf_gen.get_pmf_value_c(&stream_data[19],
-                                                       &stream_data[1])
+            fod_amp = pmf_gen.get_pmf_value_c(position,
+                                              &stream_data[1])
+            fod_amp = fod_amp if fod_amp > params.sh.pmf_threshold else 0
+            stream_data[22] += fod_amp
 
 
 cdef void prepare_ptt_propagator(TrackerParameters params,
