@@ -349,6 +349,7 @@ bundle_atlas_dir = ""
 name = "reslice"
 cli = "dipy_reslice"
 input_files = "${io.dwi}"
+order = "lanczos2"
 
 [[pipeline]]
 name = "b0_extraction"
@@ -364,6 +365,7 @@ input_files = "${reslice.out_resliced}"
 bvalues_files = ["${io.bvals}"]
 median_radius = 2
 numpass = 5
+finalize_mask = true
 save_masked = true
 
 [[pipeline]]
@@ -372,38 +374,6 @@ cli = "dipy_gibbs_ringing"
 input_files = "${brain_mask.out_masked}"
 slice_axis = 2
 num_processes = -1
-
-# Step 4: Bias field correction (using median_otsu on b0)
-[[pipeline]]
-name = "bias_correction"
-cli = "dipy_correct_biasfield"
-input_files = "${gibbs.out_unring}"
-bval = "${io.bvals}"
-bvec = "${io.bvecs}"
-method = "auto"
-
-# Step 5: Denoising with Patch2Self
-[[pipeline]]
-name = "denoise"
-cli = "dipy_denoise_patch2self"
-input_files = "${bias_correction.out_corrected}"
-bval_files = "${io.bvals}"
-verbose = true
-
-[[pipeline]]
-name = "gibbs"
-cli = "dipy_gibbs_ringing"
-input_files = "${brain_mask.out_masked}"
-slice_axis = 2
-num_processes = -1
-
-# Step 3: Motion correction
-[[pipeline]]
-name = "motion_correction"
-cli = "dipy_correct_motion"
-input_files = "${gibbs.out_unring}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
 
 # Step 4: Bias field correction (using median_otsu on b0)
 [[pipeline]]
@@ -435,22 +405,22 @@ extract_pam_values = true
 out_dir = "${io.out_dir}/dti"
 
 [[pipeline]]
-name = "csd_fit"
-cli = "dipy_fit_csd"
+name = "force_fit"
+cli = "dipy_fit_force"
 input_files = "${denoise.out_denoised}"
 bvalues_files = "${io.bvals}"
 bvectors_files = "${io.bvecs}"
 mask_files = "${brain_mask.out_mask}"
-extract_pam_values = true
-out_dir = "${io.out_dir}/csd"
-
+compute_kurtosis = true
+engine = "ray"
+out_dir = "${io.out_dir}/force"
 
 # Tractography
 [[pipeline]]
 name = "tracking"
 cli = "dipy_track"
-pam_files = "${csd_fit.out_pam}"
-stopping_files = "${dti_fit.out_fa}"
+pam_files = "${force_fit.out_pam}"
+stopping_files = "${force_fit.out_fa}"
 seeding_files = "${brain_mask.out_mask}"
 seed_density = 2
 
@@ -492,10 +462,10 @@ out_dir = "${io.out_dir}/buan_profiles"
 """
 
 # =============================================================================
-# Full Pipeline - Complete analysis
+# Full Pipeline with Motion Correction - Complete analysis
 # =============================================================================
 
-FULL_PIPELINE = """
+FULL_PIPELINE_WITH_MOTION = """
 [General]
 name = "full_pipeline_with_motion"
 description = "Full pipeline: preprocessing + reconstruction + tracking + SLR + bundles"
@@ -517,6 +487,7 @@ bundle_atlas_dir = ""
 name = "reslice"
 cli = "dipy_reslice"
 input_files = "${io.dwi}"
+order = "lanczos2"
 
 [[pipeline]]
 name = "b0_extraction"
@@ -532,6 +503,7 @@ input_files = "${reslice.out_resliced}"
 bvalues_files = ["${io.bvals}"]
 median_radius = 2
 numpass = 5
+finalize_mask = true
 save_masked = true
 
 [[pipeline]]
@@ -553,9 +525,10 @@ bvectors_files = "${io.bvecs}"
 [[pipeline]]
 name = "bias_correction"
 cli = "dipy_correct_biasfield"
-input_files = "${gibbs.out_unring}"
+input_files = "${motion_correction.out_moved}"
 bval = "${io.bvals}"
 bvec = "${io.bvecs}"
+mask = "${brain_mask.out_mask}"
 method = "auto"
 
 # Step 5: Denoising with Patch2Self
@@ -579,6 +552,17 @@ extract_pam_values = true
 out_dir = "${io.out_dir}/dti"
 
 [[pipeline]]
+name = "force_fit"
+cli = "dipy_fit_force"
+input_files = "${denoise.out_denoised}"
+bvalues_files = "${io.bvals}"
+bvectors_files = "${io.bvecs}"
+mask_files = "${brain_mask.out_mask}"
+compute_kurtosis = true
+engine = "ray"
+out_dir = "${io.out_dir}/force"
+
+[[pipeline]]
 name = "csd_fit"
 cli = "dipy_fit_csd"
 input_files = "${denoise.out_denoised}"
@@ -592,8 +576,8 @@ out_dir = "${io.out_dir}/csd"
 [[pipeline]]
 name = "tracking"
 cli = "dipy_track"
-pam_files = "${csd_fit.out_pam}"
-stopping_files = "${dti_fit.out_fa}"
+pam_files = "${force_fit.out_pam}"
+stopping_files = "${force_fit.out_fa}"
 seeding_files = "${brain_mask.out_mask}"
 seed_density = 2
 
@@ -950,6 +934,13 @@ PREDEFINED_PIPELINES = {
             "Full pipeline: preprocessing + reconstruction + tracking + SLR + bundles"
         ),
         "config": FULL_PIPELINE,
+    },
+    "full_with_motion": {
+        "description": (
+            "Full pipeline with motion correction: preprocessing + reconstruction"
+            " + tracking + SLR + bundles"
+        ),
+        "config": FULL_PIPELINE_WITH_MOTION,
     },
     "comprehensive": {
         "description": "Complete: preprocessing + 6 methods + tracking + SLR + bundles",
