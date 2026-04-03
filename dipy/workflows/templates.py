@@ -553,9 +553,10 @@ bvectors_files = "${io.bvecs}"
 [[pipeline]]
 name = "bias_correction"
 cli = "dipy_correct_biasfield"
-input_files = "${gibbs.out_unring}"
+input_files = "${motion_correction.out_moved}"
 bval = "${io.bvals}"
 bvec = "${io.bvecs}"
+mask = "${brain_mask.out_mask}"
 method = "auto"
 
 # Step 5: Denoising with Patch2Self
@@ -579,6 +580,17 @@ extract_pam_values = true
 out_dir = "${io.out_dir}/dti"
 
 [[pipeline]]
+name = "force_fit"
+cli = "dipy_fit_force"
+input_files = "${denoise.out_denoised}"
+bvalues_files = "${io.bvals}"
+bvectors_files = "${io.bvecs}"
+mask_files = "${brain_mask.out_mask}"
+compute_kurtosis = true
+engine = "ray"
+out_dir = "${io.out_dir}/force"
+
+[[pipeline]]
 name = "csd_fit"
 cli = "dipy_fit_csd"
 input_files = "${denoise.out_denoised}"
@@ -592,8 +604,8 @@ out_dir = "${io.out_dir}/csd"
 [[pipeline]]
 name = "tracking"
 cli = "dipy_track"
-pam_files = "${csd_fit.out_pam}"
-stopping_files = "${dti_fit.out_fa}"
+pam_files = "${force_fit.out_pam}"
+stopping_files = "${force_fit.out_fa}"
 seeding_files = "${brain_mask.out_mask}"
 seed_density = 2
 
