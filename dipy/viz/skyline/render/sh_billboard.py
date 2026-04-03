@@ -155,9 +155,9 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
 
     uniform_type = dict(
         SphGlyphMaterial.uniform_type,
-        active_slice_x="i4",
-        active_slice_y="i4",
-        active_slice_z="i4",
+        active_slice_x="f4",
+        active_slice_y="f4",
+        active_slice_z="f4",
         vis_x="i4",
         vis_y="i4",
         vis_z="i4",

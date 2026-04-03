@@ -120,13 +120,12 @@ def create_shm_visualization(
     )
 
 
-def _descoteaux_to_fury_standard(coeffs_4d, sh_order, is_left_handed=False):
+def _descoteaux_to_fury_standard(coeffs_4d, sh_order):
     """Convert even-order descoteaux07 SH coefficients to Fury's standard basis.
 
     The legacy descoteaux07 basis uses Im(Y) for m>0 and Re(Y) for m<0, while
     FURY uses cos(mφ) for m>0 and sin(|m|φ) for m<0. Coefficients satisfy
-    ``c_fury(l, m) = c_desc(l, -m)``. Left-handed affines additionally flip
-    the sign for orders with ``m > 0``.
+    ``c_fury(l, m) = c_desc(l, -m)``.
 
     Parameters
     ----------
@@ -134,8 +133,6 @@ def _descoteaux_to_fury_standard(coeffs_4d, sh_order, is_left_handed=False):
         Volume storing descoteaux07 coefficients along the last axis.
     sh_order : int
         Maximum even spherical harmonic order present in the volume.
-    is_left_handed : bool, optional
-        If True, apply reflection correction for LAS-like orientations.
 
     Returns
     -------
@@ -152,12 +149,7 @@ def _descoteaux_to_fury_standard(coeffs_4d, sh_order, is_left_handed=False):
             fury_m = -m
             fury_idx = l_val * l_val + l_val + fury_m
 
-            val = coeffs_4d[..., desc_idx]
-
-            if is_left_handed and m > 0:
-                val = -val
-
-            out[..., fury_idx] = val
+            out[..., fury_idx] = coeffs_4d[..., desc_idx]
             desc_idx += 1
 
     return out
@@ -188,8 +180,6 @@ class SHSlicer:
         Value for ``basis type``.
     color_type : str, optional
         Value for ``color type``.
-    is_left_handed : bool, optional
-        Value for ``is left handed``.
     """
 
     def __init__(
@@ -204,7 +194,6 @@ class SHSlicer:
         mask=None,
         basis_type="standard",
         color_type="orientation",
-        is_left_handed=False,
     ):
         """Represent ``SHSlicer`` in Skyline.
 
@@ -230,11 +219,9 @@ class SHSlicer:
             Value for ``basis type``.
         color_type : str, optional
             Value for ``color type``.
-        is_left_handed : bool, optional
-            Value for ``is left handed``.
         """
         if basis_type in ("descoteaux", "descoteaux07"):
-            coeffs_4d = _descoteaux_to_fury_standard(coeffs_4d, l_max, is_left_handed)
+            coeffs_4d = _descoteaux_to_fury_standard(coeffs_4d, l_max)
             basis_type = "standard"
 
         self.coeffs_4d = coeffs_4d
@@ -303,8 +290,6 @@ class SHSlicer:
 
     def set_slice(self, axis, idx):
         """Show slice *idx* on *axis* via uniform update."""
-        dim = {"x": 0, "y": 1, "z": 2}[axis]
-        idx = int(np.clip(idx, 0, self.shape[dim] - 1))
         if idx == self._cur[axis]:
             return
         if self._glyph_actor is not None:
@@ -428,7 +413,6 @@ class SHGlyph3D(Visualization):
         self.affine = affine
         default_scale = abs(self.affine[0, 0]) if self.affine is not None else scale
         self._voxel_sizes = np.array([1.0, 1.0, 1.0])
-        is_left_handed = self.affine is not None and self.affine[0, 0] < 0
 
         self.shape = coeffs.shape[:3]
 
@@ -443,7 +427,6 @@ class SHGlyph3D(Visualization):
             mask=mask,
             basis_type=basis_type,
             color_type=color_type,
-            is_left_handed=is_left_handed,
         )
         self._slicer.build()
         if affine is not None:
@@ -456,7 +439,7 @@ class SHGlyph3D(Visualization):
         self._synchronize = True
         self._sync_callback = sync_callback
 
-        self._last_voxel = [-1, -1, -1]
+        self._last_state = [-1, -1, -1]
 
         lower_bounds = np.zeros(3)
         upper_bounds = np.array(coeffs.shape[:3]) - 1
@@ -482,22 +465,6 @@ class SHGlyph3D(Visualization):
         """
         return self._slicer.actor
 
-    @property
-    def voxel_state(self):
-        """Handle voxel state for ``SHGlyph3D``.
-
-        Returns
-        -------
-        np.ndarray
-            The voxel state of the SHGlyph3D visualization.
-        """
-        if self.affine is None:
-            return self.state
-        voxel_state = apply_transformation(
-            np.array([self.state], dtype=np.float32), np.linalg.inv(self.affine)
-        )[0]
-        return np.round(voxel_state).astype(int)
-
     def _populate_info(self):
         """Handle  populate info for ``SHGlyph3D``.
 
@@ -516,8 +483,8 @@ class SHGlyph3D(Visualization):
     def set_slices(self):
         """Handle set slices for ``SHGlyph3D``."""
         for i, axis in enumerate(("x", "y", "z")):
-            self._slicer.set_slice(axis, self.voxel_state[i])
-            self._last_voxel[i] = self.voxel_state[i]
+            self._slicer.set_slice(axis, self.state[i])
+            self._last_state[i] = self.state[i]
 
     def update_state(self, new_state):
         """Handle update state for ``SHGlyph3D``.
@@ -536,10 +503,10 @@ class SHGlyph3D(Visualization):
         for i, axis in enumerate(("x", "y", "z")):
             if self._slice_visibility[i]:
                 self._slicer.show_axis(axis)
-                self._last_voxel[i] = self.voxel_state[i]
+                self._last_state[i] = self.state[i]
             else:
                 self._slicer.hide_axis(axis)
-                self._last_voxel[i] = -1
+                self._last_state[i] = -1
 
     def render_widgets(self):
         """Handle render widgets for ``SHGlyph3D``."""
@@ -615,6 +582,6 @@ class SHGlyph3D(Visualization):
                     self._sync_callback(self, self.state)
             self._slice_visibility[idx] = toggle
             self.apply_scene_op(self.set_slice_visibility)
-            self._last_voxel[idx] = -1
+            self._last_state[idx] = -1
 
         imgui.spacing()

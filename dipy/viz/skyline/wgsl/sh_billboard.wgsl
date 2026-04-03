@@ -4,6 +4,7 @@ enable f16;
 
 {$ include 'pygfx.std.wgsl' $}
 {$ include 'pygfx.light_phong.wgsl' $}
+{$ include 'fury.utils.wgsl' $}
 
 const NUM_COEFFS = i32({{ n_coeffs }});
 const L_MAX = i32({{ l_max }});
@@ -1714,11 +1715,11 @@ fn surface_difference_fast(
     }
 
     let direction = offset / dist;
-
+    let local_dir = normalize((u_wobject.world_transform_inv * vec4<f32>(direction, 0.0)).xyz);
     if (USE_HERMITE_INTERP && MAPPING_MODE == 5) {
-        raw_radius = sample_hermite_cube(glyph_id, direction);
+        raw_radius = sample_hermite_cube(glyph_id, local_dir);
     } else {
-        raw_radius = get_radius_optimized(glyph_id, coeff_offset, direction, coeff_limit);
+        raw_radius = get_radius_optimized(glyph_id, coeff_offset, local_dir, coeff_limit);
     }
 
     let radius = clamp_radius(raw_radius);
@@ -1758,7 +1759,8 @@ fn surface_difference(
         return -clamp_radius(raw_radius);
     }
     let direction = offset / dist;
-    let raw_radius = get_radius_optimized(glyph_id, coeff_offset, direction, coeff_limit);
+    let local_dir = normalize((u_wobject.world_transform_inv * vec4<f32>(direction, 0.0)).xyz);
+    let raw_radius = get_radius_optimized(glyph_id, coeff_offset, local_dir, coeff_limit);
     let radius = clamp_radius(raw_radius);
     return dist - radius;
 }
@@ -2099,19 +2101,51 @@ fn vs_main(in: VertexInput) -> Varyings {
     let billboard_index = i32(in.index) / 6;
     let vertex_in_quad = i32(in.index) % 6;
 
+    let raw_center = load_s_positions(billboard_index * 6);
+    var w_center = u_wobject.world_transform * vec4<f32>(raw_center.xyz, 1.0);
+
     // --- Slice-based visibility: discard glyphs not on active slice ---
     {$ if use_slicing == 'true' $}
     {
-        let gi = u32(billboard_index) * 3u;
-        let vx = s_slice_indices[gi];
-        let vy = s_slice_indices[gi + 1u];
-        let vz = s_slice_indices[gi + 2u];
-        let match_x = (u_material.vis_x != 0) && (vx == u_material.active_slice_x);
-        let match_y = (u_material.vis_y != 0) && (vy == u_material.active_slice_y);
-        let match_z = (u_material.vis_z != 0) && (vz == u_material.active_slice_z);
-        if (!(match_x || match_y || match_z)) {
-            // Push all 6 vertices of this billboard behind the camera
-            // so the GPU clips/culls the entire quad.
+        let cross_section = vec3<f32>(u_material.active_slice_x, u_material.active_slice_y, u_material.active_slice_z);
+        let visibility = vec3<i32>(u_material.vis_x, u_material.vis_y, u_material.vis_z);
+        var is_visible = false;
+
+        if (!all(visibility == vec3<i32>(-1))) {
+            let is_near_x_plane = is_point_on_plane_equation(
+                vec4<f32>(-1.0, 0.0, 0.0, cross_section.x),
+                w_center.xyz,
+                abs(u_wobject.world_transform[0][0])
+            );
+            if (is_near_x_plane && visibility.x != 0) {
+                w_center.x = cross_section.x; // Snap center to plane
+                is_visible = true;
+            }
+
+            let is_near_y_plane = is_point_on_plane_equation(
+                vec4<f32>(0.0, -1.0, 0.0, cross_section.y),
+                w_center.xyz,
+                abs(u_wobject.world_transform[1][1])
+            );
+            if (is_near_y_plane && visibility.y != 0) {
+                w_center.y = cross_section.y; // Snap center to plane
+                is_visible = true;
+            }
+
+            let is_near_z_plane = is_point_on_plane_equation(
+                vec4<f32>(0.0, 0.0, -1.0, cross_section.z),
+                w_center.xyz,
+                abs(u_wobject.world_transform[2][2])
+            );
+            if (is_near_z_plane && visibility.z != 0) {
+                w_center.z = cross_section.z; // Snap center to plane
+                is_visible = true;
+            }
+        } else {
+            is_visible = true;
+        }
+
+        if (!is_visible) {
             var discard_out: Varyings;
             discard_out.position = vec4<f32>(0.0, 0.0, -2.0, 1.0);
             return discard_out;
@@ -2129,17 +2163,13 @@ fn vs_main(in: VertexInput) -> Varyings {
         default: { local_pos = vec2<f32>(-0.5, 0.5); }
     }
 
-    let raw_center = load_s_positions(billboard_index * 6);
-    let world_center = u_wobject.world_transform * vec4<f32>(raw_center.xyz, 1.0);
-
     let cam_right = vec3<f32>(u_stdinfo.cam_transform_inv[0].xyz);
     let cam_up = vec3<f32>(u_stdinfo.cam_transform_inv[1].xyz);
-
     let raw_size = load_s_normals(billboard_index * 6);
     let size = raw_size.xy;
 
     let billboard_offset = local_pos.x * cam_right * size.x + local_pos.y * cam_up * size.y;
-    let world_pos = world_center.xyz + billboard_offset;
+    let world_pos = w_center.xyz + billboard_offset;
 
     let clip_pos = u_stdinfo.projection_transform * u_stdinfo.cam_transform * vec4<f32>(world_pos, 1.0);
 
@@ -2159,7 +2189,7 @@ fn vs_main(in: VertexInput) -> Varyings {
     let color = load_s_colors(billboard_index * 6);
     varyings.color = vec4<f32>(color, 1.0);
     varyings.texcoord_vert = vec2<f32>(tex_coord);
-    varyings.billboard_center = vec3<f32>(world_center.xyz);
+    varyings.billboard_center = vec3<f32>(w_center.xyz);
     varyings.billboard_right = vec3<f32>(cam_right.xyz);
     varyings.billboard_up = vec3<f32>(cam_up.xyz);
     varyings.billboard_size = vec2<f32>(size);
@@ -2176,7 +2206,7 @@ struct ReflectedLight {
 };
 
 @fragment
-fn fs_main(varyings: Varyings, @builtin(front_facing) is_front: bool) -> FragmentOutput {
+fn fs_main(varyings: Varyings) -> FragmentOutput {
     {$ include 'pygfx.clipping_planes.wgsl' $}
 
     let uv = varyings.texcoord_vert.xy;
@@ -2255,13 +2285,17 @@ fn fs_main(varyings: Varyings, @builtin(front_facing) is_front: bool) -> Fragmen
     var world_normal = vec3<f32>(0.0);
 
     if (USE_HERMITE_INTERP && MAPPING_MODE == 5 && !FORCE_FD_NORMALS) {
-        let grad_sample = sample_hermite_cube_with_gradient(glyph_id, direction);
-        world_normal = estimate_surface_normal_analytic(
-            direction,
+        let local_dir = normalize((u_wobject.world_transform_inv * vec4<f32>(direction, 0.0)).xyz);
+
+        let grad_sample = sample_hermite_cube_with_gradient(glyph_id, local_dir);
+        let local_normal = estimate_surface_normal_analytic(
+            local_dir,
             dist_to_center,
             grad_sample.grad_s2,
             raw_radius,
         );
+
+        world_normal = normalize((vec4<f32>(local_normal, 0.0) * u_wobject.world_transform_inv).xyz);
     } else {
         world_normal = estimate_surface_normal(
             coeff_offset,
@@ -2272,7 +2306,7 @@ fn fs_main(varyings: Varyings, @builtin(front_facing) is_front: bool) -> Fragmen
         );
     }
 
-    if (!is_front) {
+    if (dot(ray_dir, world_normal) > 0.0) {
         world_normal = -world_normal;
     }
 
