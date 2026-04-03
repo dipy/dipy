@@ -5,6 +5,7 @@ import numpy as np
 from scipy.linalg import eigh
 from scipy.linalg.lapack import dgesvd as svd
 
+from dipy.denoise.eig_localpca import genpca_core as genpca_core_fast
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.testing.decorators import warning_for_keywords
 
@@ -185,6 +186,7 @@ def genpca(
     mask=None,
     patch_radius=2,
     pca_method="eig",
+    fast=True,
     tau_factor=None,
     return_sigma=False,
     out_dtype=None,
@@ -196,7 +198,7 @@ def genpca(
     ----------
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
-        are the diffusion gradient directions. The first 3 dimension must have
+        are the diffusion gradient directions. The first 3 dimensions must have
         size >= 2 * patch_radius + 1 or size = 1.
     sigma : float or 3D array, optional
         Standard deviation of the noise estimated from the data. If no sigma
@@ -214,6 +216,10 @@ def genpca(
         decomposition (svd) for principal component analysis. The default
         method is 'eig' which is faster. However, occasionally 'svd' might be
         more accurate.
+    fast : bool, optional
+        If True and pca_method is 'eig', use the Cython-optimized
+        solution. If False, use the pure Python solution. Both
+        produce identical results.
     tau_factor : float, optional
         Thresholding of PCA eigenvalues is done by nulling out eigenvalues that
         are smaller than:
@@ -310,6 +316,20 @@ def genpca(
     if return_sigma is True and sigma is None:
         var = np.zeros(arr.shape[:-1], dtype=calc_dtype)
         thetavar = np.zeros(arr.shape[:-1], dtype=calc_dtype)
+
+    # Fast Cython core only supports 'eig' for now
+    if not is_svd and fast:
+        return genpca_core_fast(
+            arr,
+            mask=mask,
+            var_map=None if sigma is None else var,
+            patch_radius_x=int(patch_radius_arr[0]),
+            patch_radius_y=int(patch_radius_arr[1]),
+            patch_radius_z=int(patch_radius_arr[2]),
+            tau_factor=tau_factor,
+            return_sigma=return_sigma,
+            out_dtype=out_dtype,
+        )
 
     # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius_arr[2], arr.shape[2] - patch_radius_arr[2]):
