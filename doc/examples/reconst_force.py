@@ -120,13 +120,13 @@ print(f"FA  — min: {fa_map[mask].min():.3f}  max: {fa_map[mask].max():.3f}")
 print(f"MD  — min: {md_map[mask].min():.6f}  max: {md_map[mask].max():.6f}")
 
 ###############################################################################
-
 # To save the peaks generated from the FORCE directly, we need to call the force_peaks
 # function on the fitted object.  This will return a
 # PeaksAndMetrics object containing the peak directions, values, and indices, which can
 # be saved to disk using save_pam.
 peaks = force_peaks(fit)
 
+###############################################################################
 # Now lets import the save_pam function and save the peaks to disk as a .pam5 file.
 # The affine is needed to ensure that the peaks are correctly aligned with the original
 # data.
