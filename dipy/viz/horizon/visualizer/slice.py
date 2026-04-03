@@ -225,6 +225,7 @@ class SlicesVisualizer:
         self._create_and_resize_actors(vol_data, self._int_range)
 
         self._add_slice_actors_to_scene(visible_slices)
+        self._sel_slices = np.asarray(visible_slices)
 
         return True, default_range
 

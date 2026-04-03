@@ -58,3 +58,33 @@ def test_toggle_actors(slice_viz):
         tab._toggle_actors(tab._actor_toggle.obj)
         mock_hide.assert_called_with(*tab.actors)
         assert mock_hide.call_count == 2
+
+
+@pytest.fixture
+@set_random_number_generator()
+def slice_viz_4d(rng):
+    """Fixture to create a SlicesVisualizer with 4D data."""
+    affine = np.eye(4)
+    data = 255 * rng.random((20, 20, 20, 5))
+
+    class MockScene:
+        def add(self, *actor):
+            pass
+
+        def rm(self, *actor):
+            pass
+
+    return SlicesVisualizer(None, MockScene(), data, affine=affine, fname="mock_4d")
+
+
+@pytest.mark.skipif(skip_it, reason="Needs xvfb")
+def test_selected_slices_preserved_on_volume_change(slice_viz_4d):
+    """Test that slice positions are preserved when changing gradient volume.
+
+    Regression test for https://github.com/dipy/dipy/issues/3890
+    """
+    visible_slices = (3, 7, 12)
+    intensity_ratios = np.array([0.0, 1.0])
+    valid, _ = slice_viz_4d.change_volume(1, intensity_ratios, visible_slices)
+    assert valid
+    np.testing.assert_array_equal(slice_viz_4d.selected_slices, visible_slices)
