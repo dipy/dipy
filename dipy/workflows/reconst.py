@@ -3486,6 +3486,8 @@ class ReconstForceFlow(Workflow):
         out_entropy="entropy.nii.gz",
         out_predicted_signal="predicted_signal.nii.gz",
         out_peaks="peaks.pam5",
+        out_micro_uncertainty_dir="microstructure_uncertainty",
+        out_micro_ambiguity_dir="microstructure_ambiguity",
     ):
         """Workflow for FORCE microstructure reconstruction.
 
@@ -3581,13 +3583,23 @@ class ReconstForceFlow(Workflow):
             Name of the predicted signal volume to be saved.
         out_peaks : string, optional
             Name of the peaks file to be saved (in .pam5 format).
+        out_micro_uncertainty_dir : string, optional
+            Name of the subdirectory for per-microstructure uncertainty maps
+            (weighted IQR of posterior density, normalized by prior range).
+            Maps saved: fa, md, rd, wm_fraction, gm_fraction, csf_fraction,
+            num_fibers, dispersion, nd, ufa, mk, ak, rk, kfa.
+        out_micro_ambiguity_dir : string, optional
+            Name of the subdirectory for per-microstructure ambiguity maps
+            (FWHM of posterior density, normalized by prior range).
+            Maps saved: fa, md, rd, wm_fraction, gm_fraction, csf_fraction,
+            num_fibers, dispersion, nd, ufa, mk, ak, rk, kfa.
 
         References
         ----------
         .. footbibliography::
 
         """
-        from dipy.reconst.force import FORCEModel
+        from dipy.reconst.force import MICRO_PARAMS, FORCEModel
         from dipy.utils.optpkg import optional_package
 
         use_posterior = not use_exact
@@ -3628,6 +3640,8 @@ class ReconstForceFlow(Workflow):
             oentropy,
             opredicted_signal,
             opeaks,
+            omicro_unc_dir,
+            omicro_amb_dir,
         ) in io_it:
             logger.info(f"Computing FORCE metrics for {dwi}")
             data, affine = load_nifti(dwi)
@@ -3734,5 +3748,44 @@ class ReconstForceFlow(Workflow):
                     )
                     continue
                 save_nifti(out_path, data_arr.astype(np.float32), affine)
+
+            micro_unc_map = {
+                p: getattr(force_fit, f"uncertainty_{p}", None) for p in MICRO_PARAMS
+            }
+            micro_amb_map = {
+                p: getattr(force_fit, f"ambiguity_{p}", None) for p in MICRO_PARAMS
+            }
+
+            unc_dir = Path(omicro_unc_dir)
+            amb_dir = Path(omicro_amb_dir)
+            unc_dir.mkdir(parents=True, exist_ok=True)
+            amb_dir.mkdir(parents=True, exist_ok=True)
+
+            for param in MICRO_PARAMS:
+                u_data = micro_unc_map.get(param)
+                if u_data is not None and np.issubdtype(
+                    getattr(u_data, "dtype", type(None)), np.floating
+                ):
+                    save_nifti(
+                        str(unc_dir / f"{param}.nii.gz"),
+                        u_data.astype(np.float32),
+                        affine,
+                    )
+                a_data = micro_amb_map.get(param)
+                if a_data is not None and np.issubdtype(
+                    getattr(a_data, "dtype", type(None)), np.floating
+                ):
+                    save_nifti(
+                        str(amb_dir / f"{param}.nii.gz"),
+                        a_data.astype(np.float32),
+                        affine,
+                    )
+
+            logger.info(
+                f"Per-microstructure uncertainty maps saved to {unc_dir.resolve()}"
+            )
+            logger.info(
+                f"Per-microstructure ambiguity maps saved to {amb_dir.resolve()}"
+            )
 
             logger.info(f"FORCE metrics saved to {Path(out_dir).resolve()}")

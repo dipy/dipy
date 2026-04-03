@@ -62,6 +62,12 @@
      - :bdg-danger:`No`
      -
      -
+   * - :ref:`FORCE <sphx_glr_examples_built_reconstruction_reconst_force.py>`
+     - :bdg-success:`Yes`
+     - :bdg-success:`Yes`
+     - :bdg-success:`Yes`
+     - Tested from 500 s/mm^2 to 5500 s/mm^2, with as low as 20 directions single shell and 378 directions multi shell
+     - :cite:t:`Shah2025`
    * - :ref:`IVIM <sphx_glr_examples_built_reconstruction_reconst_ivim.py>`
      - :bdg-danger:`No`
      - :bdg-success:`Yes`
