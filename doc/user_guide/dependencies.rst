@@ -8,8 +8,6 @@ DIPY follows the `Scientific Python`_ `SPEC 0 — Minimum Supported Versions`_
 recommendation as closely as possible. SPEC 0 defines the minimum supported versions 
 of Python and core dependencies based on their release dates.
 
-DIPY requires **Python 3.10 or higher**.
-
 Further information can be found in :ref:`toolchain-roadmap`.
 
 Dependencies

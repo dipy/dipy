@@ -115,7 +115,7 @@ Linux
 For Debian, Ubuntu and Mint set up the NeuroDebian_ repositories - see
 `NeuroDebian how to`_. Then::
 
-    pip install dipy
+    sudo apt-get install python-dipy
 
 We hope to get packages for the other Linux distributions, but for now, please
 try :ref:`install-pip` instead.
