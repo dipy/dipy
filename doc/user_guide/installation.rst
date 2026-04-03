@@ -48,7 +48,7 @@ On all platforms, you can use Anaconda_ to install DIPY. To do so issue the foll
 
     conda install -c conda-forge dipy
 
-Some of the visualization methods require the FURY_ library and this can be installed separately (for the time being only on Python 3.4+)::
+Some of the visualization methods require the FURY_ library and this can be installed separately::
 
     conda install -c conda-forge fury
 
@@ -151,7 +151,7 @@ and then remove the DIPY directory that contains that file.
 
 Alternatives to Anaconda
 -------------------------
-If you have problems installing Anaconda_ we recommend using Canopy_.
+If you have problems installing Anaconda_, you can also use 'Miniforge <https://github.com/conda-forge/miniforge>'_ as a lightweight Alternative.
 
 Memory issues
 -------------
