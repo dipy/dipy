@@ -3,6 +3,8 @@
 import os
 import time
 
+import numpy as np
+
 from dipy.io.utils import split_filename_extension
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
@@ -707,6 +709,17 @@ class Skyline:
             )
             self._add_visualization(tractogram3d)
         for idx, input in enumerate(sh_coeffs or []):
+            if isinstance(input, tuple):
+                coeffs = input[0]
+                filename = f"ODFs {idx}"
+                if len(input) >= 3:
+                    filename = input[2]
+                if not isinstance(coeffs, np.ndarray) or len(coeffs.shape) != 4:
+                    logger.warning(
+                        f"The provide file: {filename} does not "
+                        "contain any SH coefficients or is not a 4D array."
+                    )
+                    continue
             sh3d = create_shm_visualization(
                 input,
                 idx,
