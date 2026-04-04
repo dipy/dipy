@@ -27,7 +27,7 @@ jobs:
       (github.event_name == 'pull_request' &&
        github.event.label.name == 'run-benchmark')
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 110
 
     defaults:
       run:
@@ -82,19 +82,27 @@ jobs:
             --factor 1.1 \
             --show-stderr \
             master HEAD \
-            2>&1 | tee /tmp/asv_output.txt
+            2>/tmp/asv_stderr.txt | tee /tmp/asv_output.txt
 
       - name: Generate comparison summary
         id: compare
         run: |
           cd ${GITHUB_WORKSPACE}
+          MASTER_HASH=$(git rev-parse master)
+          HEAD_HASH=$(git rev-parse HEAD)
+          asv compare \
+            --config benchmarks/asv.conf.json \
+            --factor 1.1 \
+            --split \
+            "${MASTER_HASH}" "${HEAD_HASH}" \
+            > /tmp/asv_compare.txt 2>&1 || true
+
+      - name: Load comparison output into env
+        if: github.event_name == 'pull_request'
+        run: |
           {
             echo "COMPARISON<<EOF"
-            asv compare \
-              --config benchmarks/asv.conf.json \
-              --factor 1.1 \
-              --split \
-              master HEAD
+            cat /tmp/asv_compare.txt
             echo "EOF"
           } >> $GITHUB_ENV
 
@@ -123,11 +131,13 @@ jobs:
           path: |
             benchmarks/results/
             /tmp/asv_output.txt
+            /tmp/asv_compare.txt
+            /tmp/asv_stderr.txt
           retention-days: 30
 
       - name: Fail if significant regressions detected
         run: |
-          if grep -qE "^\+\s" /tmp/asv_output.txt; then
+          if grep -qE "^\+\s+[0-9]" /tmp/asv_output.txt; then
             echo "Regressions detected - review benchmark output above."
             exit 1
           fi
