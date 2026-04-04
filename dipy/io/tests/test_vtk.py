@@ -31,7 +31,9 @@ def test_save_polydata_legacy_kw_for_fury_ge_2(monkeypatch):
     monkeypatch.setattr(
         io_vtk,
         "fury",
-        SimpleNamespace(__version__="2.0.0", io=SimpleNamespace(save_polydata=_save_polydata)),
+        SimpleNamespace(
+            __version__="2.0.0", io=SimpleNamespace(save_polydata=_save_polydata)
+        ),
     )
 
     io_vtk.save_polydata(
@@ -51,7 +53,9 @@ def test_save_polydata_no_legacy_kw_for_fury_lt_2(monkeypatch):
     monkeypatch.setattr(
         io_vtk,
         "fury",
-        SimpleNamespace(__version__="1.0.0", io=SimpleNamespace(save_polydata=_save_polydata)),
+        SimpleNamespace(
+            __version__="1.0.0", io=SimpleNamespace(save_polydata=_save_polydata)
+        ),
     )
 
     io_vtk.save_polydata(
