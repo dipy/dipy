@@ -207,7 +207,7 @@ class Image3D(Visualization):
         self._synchronize = True
         self._sync_callabck = sync_callabck
         super().__init__(name, render_callback)
-
+        self.state = None
         self._create_slicer_actor()
         self.opacity = opacity
 
@@ -241,7 +241,8 @@ class Image3D(Visualization):
 
         self._apply_colormap(self.colormap)
         self.bounds = self._slicer.get_bounding_box()
-        self.state = np.mean(self.bounds, axis=0)
+        if self.state is None:
+            self.state = np.mean(self.bounds, axis=0)
         self._slicer.add_event_handler(self._pick_voxel, "pointer_down")
         show_slices(self._slicer, self.state)
         self.render()
