@@ -1,4 +1,5 @@
 import numpy as np
+from packaging.version import parse as parse_version
 
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
@@ -7,13 +8,30 @@ from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package(
     "fury", min_version="0.10.0", max_version="1.0.0"
 )
+vtk, have_vtk, _ = optional_package("vtk")
+ns, have_numpy_support, _ = optional_package("vtk.util.numpy_support")
 
 if have_fury:
     import fury.io
     import fury.utils
-    import vtk
-    import vtk.util.numpy_support as ns
 
+
+def _require_fury():
+    if not have_fury:
+        raise ImportError(
+            "fury is required for this function. Install fury>=0.10.0,<2.0.0."
+        )
+
+
+def _require_vtk():
+    if not have_vtk or not have_numpy_support:
+        raise ImportError(
+            "vtk and vtk.util.numpy_support are required for this function. "
+            "Install vtk."
+        )
+
+
+if have_vtk and have_numpy_support:
     DATATYPE_DICT = {
         np.dtype("int8"): vtk.VTK_CHAR,
         np.dtype("uint8"): vtk.VTK_UNSIGNED_CHAR,
@@ -26,6 +44,8 @@ if have_fury:
         np.dtype("float32"): vtk.VTK_FLOAT,
         np.dtype("float64"): vtk.VTK_DOUBLE,
     }
+else:
+    DATATYPE_DICT = {}
 
 
 def load_polydata(file_name):
@@ -42,6 +62,7 @@ def load_polydata(file_name):
     output : vtkPolyData
 
     """
+    _require_fury()
     return fury.io.load_polydata(str(file_name))
 
 
@@ -69,9 +90,10 @@ def save_polydata(
         Use legacy VTK file format. Only applied when fury >= 2.0
         is installed.
     """
+    _require_fury()
     # use kwargs for backward compatibility with fury < 2.0
     kwargs = {}
-    if fury.__version__.split(".")[0] >= "2":
+    if parse_version(fury.__version__) >= parse_version("2.0.0"):
         kwargs.update({"legacy_vtk_format": legacy_vtk_format})
 
     fury.io.save_polydata(
@@ -102,6 +124,7 @@ def save_vtk_streamlines(streamlines, filename, *, to_lps=True, binary=False):
         save the file as binary
 
     """
+    _require_fury()
     if to_lps:
         # ras (mm) to lps (mm)
         to_lps = np.eye(4)
@@ -133,6 +156,7 @@ def load_vtk_streamlines(filename, *, to_lps=True):
          list of 2D arrays
 
     """
+    _require_fury()
     polydata = load_polydata(filename)
     lines = fury.utils.get_polydata_lines(polydata)
     if to_lps:
@@ -161,6 +185,7 @@ def get_polydata_triangles(polydata, dtype=None):
         of the triangles.
 
     """
+    _require_vtk()
     vtk_polys = ns.vtk_to_numpy(polydata.GetPolys().GetData())
     if len(vtk_polys) == 0:
         nbr_cells = polydata.GetNumberOfCells()
@@ -195,6 +220,7 @@ def get_polydata_vertices(polydata, dtype=None):
         An array of shape (n_vertices, 3) containing the vertex coordinates.
 
     """
+    _require_vtk()
     vertices = ns.vtk_to_numpy(polydata.GetPoints().GetData())
     if dtype is not None:
         return vertices.astype(dtype)
@@ -221,6 +247,7 @@ def convert_to_polydata(vertices, triangles, data_per_point=None):
     polydata : vtkPolyData
         The resulting vtkPolyData object.
     """
+    _require_vtk()
     vtk_points = vtk.vtkPoints()
     vtk_points.SetData(ns.numpy_to_vtk(vertices, deep=True))
 
@@ -267,11 +294,12 @@ def _numpy_to_vtk_array(array, name=None, dtype=None, deep=True):
     vtk_array : vtkDataArray
         The resulting vtk array.
     """
+    _require_vtk()
     if dtype is not None:
         vtk_dtype = DATATYPE_DICT[np.dtype(dtype)]
     else:
         vtk_dtype = DATATYPE_DICT[np.dtype(array.dtype)]
-    vtk_array = ns.numpy_to_vtk(np.asarray(array), deep=True, array_type=vtk_dtype)
+    vtk_array = ns.numpy_to_vtk(np.asarray(array), deep=deep, array_type=vtk_dtype)
     if name is not None:
         vtk_array.SetName(name)
     return vtk_array
