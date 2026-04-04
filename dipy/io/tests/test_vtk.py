@@ -21,6 +21,44 @@ def test_get_polydata_vertices_requires_vtk(monkeypatch):
         io_vtk.get_polydata_vertices(object())
 
 
+def test_get_polydata_vertices_requires_numpy_support(monkeypatch):
+    monkeypatch.setattr(io_vtk, "have_vtk", True)
+    monkeypatch.setattr(io_vtk, "have_numpy_support", False)
+
+    with pytest.raises(ImportError, match="vtk and vtk.util.numpy_support"):
+        io_vtk.get_polydata_vertices(object())
+
+
+def test_save_vtk_streamlines_requires_fury(monkeypatch):
+    monkeypatch.setattr(io_vtk, "have_fury", False)
+
+    with pytest.raises(ImportError, match="fury is required"):
+        io_vtk.save_vtk_streamlines([], "tmp.vtk")
+
+
+def test_load_vtk_streamlines_requires_fury(monkeypatch):
+    monkeypatch.setattr(io_vtk, "have_fury", False)
+
+    with pytest.raises(ImportError, match="fury is required"):
+        io_vtk.load_vtk_streamlines("tmp.vtk")
+
+
+def test_get_polydata_triangles_requires_vtk(monkeypatch):
+    monkeypatch.setattr(io_vtk, "have_vtk", False)
+    monkeypatch.setattr(io_vtk, "have_numpy_support", True)
+
+    with pytest.raises(ImportError, match="vtk and vtk.util.numpy_support"):
+        io_vtk.get_polydata_triangles(object())
+
+
+def test_convert_to_polydata_requires_vtk(monkeypatch):
+    monkeypatch.setattr(io_vtk, "have_vtk", False)
+    monkeypatch.setattr(io_vtk, "have_numpy_support", True)
+
+    with pytest.raises(ImportError, match="vtk and vtk.util.numpy_support"):
+        io_vtk.convert_to_polydata(np.array([[0.0, 0.0, 0.0]]), np.array([[0, 0, 0]]))
+
+
 def test_save_polydata_legacy_kw_for_fury_ge_2(monkeypatch):
     called = {}
 
