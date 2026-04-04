@@ -1,5 +1,4 @@
 import numpy as np
-from packaging.version import parse as parse_version
 
 from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
@@ -93,7 +92,7 @@ def save_polydata(
     _require_fury()
     # use kwargs for backward compatibility with fury < 2.0
     kwargs = {}
-    if parse_version(fury.__version__) >= parse_version("2.0.0"):
+    if int(fury.__version__.split(".")[0]) >= 2:
         kwargs.update({"legacy_vtk_format": legacy_vtk_format})
 
     fury.io.save_polydata(
