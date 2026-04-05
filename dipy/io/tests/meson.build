@@ -9,6 +9,7 @@ python_sources = [
     'test_surface.py',
     'test_streamline.py',
     'test_utils.py',
+    'test_vtk.py',
 ]
 
 
