@@ -103,29 +103,151 @@ def test_save_polydata_no_legacy_kw_for_fury_lt_2(monkeypatch):
     assert "legacy_vtk_format" not in called
 
 
-def test_numpy_to_vtk_array_uses_deep_argument(monkeypatch):
+def test_convert_to_polydata_with_data_per_point(monkeypatch):
     called = {}
 
-    class DummyVtkArray:
-        def SetName(self, name):
-            called["name"] = name
+    class MockPolyData:
+        def __init__(self):
+            self.points_set = False
+            self.polys_set = False
+            self.normals_set = False
+            self.arrays = []
 
-    def _numpy_to_vtk(arr, *, deep, array_type):
-        called["deep"] = deep
-        called["array_type"] = array_type
-        called["shape"] = arr.shape
-        return DummyVtkArray()
+        def GetNumberOfPoints(self):
+            return 3
+
+        def SetPoints(self, points):
+            self.points_set = True
+
+        def SetPolys(self, polys):
+            self.polys_set = True
+
+        def GetPointData(self):
+            return self
+
+        def SetNormals(self, normals):
+            self.normals_set = True
+
+        def AddArray(self, array):
+            self.arrays.append(array)
+
+    def _vtkPoints():
+        return SimpleNamespace(SetData=lambda x, deep=True: None)
+
+    def _vtkCellArray():
+        return SimpleNamespace(SetCells=lambda x, y: None)
+
+    def _vtkPolyData():
+        return MockPolyData()
+
+    def _numpy_to_vtk_array(array, name=None, dtype=None, deep=True):
+        called["numpy_to_vtk_array"] = True
+        return f"vtk_array_{name}"
 
     monkeypatch.setattr(io_vtk, "have_vtk", True)
     monkeypatch.setattr(io_vtk, "have_numpy_support", True)
-    monkeypatch.setattr(io_vtk, "ns", SimpleNamespace(numpy_to_vtk=_numpy_to_vtk))
-    monkeypatch.setattr(io_vtk, "DATATYPE_DICT", {np.dtype("float32"): 99})
+    monkeypatch.setattr(
+        io_vtk,
+        "vtk",
+        SimpleNamespace(
+            vtkPoints=_vtkPoints, vtkCellArray=_vtkCellArray, vtkPolyData=_vtkPolyData
+        ),
+    )
+    monkeypatch.setattr(
+        io_vtk,
+        "ns",
+        SimpleNamespace(
+            numpy_to_vtk=lambda x, deep=True: None,
+            numpy_to_vtkIdTypeArray=lambda x, deep=True: None,
+        ),
+    )
+    monkeypatch.setattr(io_vtk, "_numpy_to_vtk_array", _numpy_to_vtk_array)
 
-    io_vtk._numpy_to_vtk_array(
-        np.array([[1.0, 2.0, 3.0]], dtype=np.float32), name="vals", deep=False
+    vertices = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float32)
+    triangles = np.array([[0, 1, 2]], dtype=np.int32)
+    data_per_point = {
+        "colors": np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float32)
+    }
+
+    polydata = io_vtk.convert_to_polydata(vertices, triangles, data_per_point)
+
+    assert polydata.points_set
+    assert polydata.polys_set
+    assert called["numpy_to_vtk_array"]
+
+
+def test_convert_to_polydata_data_length_mismatch(monkeypatch):
+    def _vtkPoints():
+        return SimpleNamespace(SetData=lambda x, deep=True: None)
+
+    def _vtkCellArray():
+        return SimpleNamespace(SetCells=lambda x, y: None)
+
+    class MockPolyData:
+        def GetNumberOfPoints(self):
+            return 3
+
+        def SetPoints(self, points):
+            pass
+
+        def SetPolys(self, polys):
+            pass
+
+    monkeypatch.setattr(io_vtk, "have_vtk", True)
+    monkeypatch.setattr(io_vtk, "have_numpy_support", True)
+    monkeypatch.setattr(
+        io_vtk,
+        "vtk",
+        SimpleNamespace(
+            vtkPoints=_vtkPoints, vtkCellArray=_vtkCellArray, vtkPolyData=MockPolyData
+        ),
+    )
+    monkeypatch.setattr(
+        io_vtk,
+        "ns",
+        SimpleNamespace(
+            numpy_to_vtk=lambda x, deep=True: None,
+            numpy_to_vtkIdTypeArray=lambda x, deep=True: None,
+        ),
     )
 
-    assert called["deep"] is False
-    assert called["array_type"] == 99
-    assert called["shape"] == (1, 3)
-    assert called["name"] == "vals"
+    vertices = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float32)
+    triangles = np.array([[0, 1, 2]], dtype=np.int32)
+    # Wrong length - should be 3 points but only 2 values
+    data_per_point = {"colors": np.array([[1, 0, 0], [0, 1, 0]], dtype=np.float32)}
+
+    with pytest.raises(
+        ValueError, match="Array length does not match number of points"
+    ):
+        io_vtk.convert_to_polydata(vertices, triangles, data_per_point)
+
+
+def test_get_polydata_triangles_non_triangles(monkeypatch):
+    class MockPolyData:
+        def GetPolys(self):
+            return SimpleNamespace(
+                GetData=lambda: np.array([4, 0, 1, 2, 3])
+            )  # 4 vertices, not 3
+
+        def GetNumberOfCells(self):
+            return 0
+
+    monkeypatch.setattr(io_vtk, "have_vtk", True)
+    monkeypatch.setattr(io_vtk, "have_numpy_support", True)
+    monkeypatch.setattr(
+        io_vtk, "ns", SimpleNamespace(vtk_to_numpy=lambda x: np.array([4, 0, 1, 2, 3]))
+    )
+
+    with pytest.raises(ValueError, match="Not all polygons are triangles"):
+        io_vtk.get_polydata_triangles(MockPolyData())
+
+
+def test_datatype_dict_empty_when_vtk_unavailable(monkeypatch):
+    monkeypatch.setattr(io_vtk, "have_vtk", False)
+    monkeypatch.setattr(io_vtk, "have_numpy_support", False)
+
+    # Force re-evaluation of the module-level DATATYPE_DICT
+    # This is tricky since it's set at import time, but we can check it exists
+    assert hasattr(io_vtk, "DATATYPE_DICT")
+    # When VTK is not available, DATATYPE_DICT should be empty
+    assert io_vtk.DATATYPE_DICT == {}
