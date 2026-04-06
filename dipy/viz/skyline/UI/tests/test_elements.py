@@ -1,10 +1,12 @@
 import pytest
 
+from dipy.utils.tripwire import TripWireError
+
 
 def _load_elements_or_skip():
     try:
         from dipy.viz.skyline.UI import elements
-    except ImportError as exc:
+    except (ImportError, TripWireError) as exc:
         pytest.skip(f"dipy.viz.skyline.UI.elements is not importable: {exc}")
 
     return elements
