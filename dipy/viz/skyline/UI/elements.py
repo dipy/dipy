@@ -27,6 +27,34 @@ _NUMERIC_INPUT_DRAFT = {}
 _LAST_DIR = Path("~").expanduser() / ".dipy"
 
 
+def _ensure_last_dir():
+    """Return a valid directory for native file dialogs.
+
+    Ensures ``_LAST_DIR`` points to an existing directory. If the path points to
+    a file, its parent directory is used. If directory creation fails, falls
+    back to the user home directory.
+
+    Returns
+    -------
+    pathlib.Path
+        Existing directory to use as dialog start location.
+    """
+
+    global _LAST_DIR
+
+    try:
+        if _LAST_DIR.is_file():
+            _LAST_DIR = _LAST_DIR.parent
+        _LAST_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        logger.warning(
+            f"Could not initialize skyline dialog directory at {_LAST_DIR}: {exc}"
+        )
+        _LAST_DIR = Path.home()
+
+    return _LAST_DIR
+
+
 def render_file_dialog(
     *,
     title="Select File(s)",
@@ -63,17 +91,18 @@ def render_file_dialog(
     None
     """
     global _LAST_DIR
+    dialog_dir = _ensure_last_dir()
     if dialog_type == "open":
         dialog = pfd.open_file(
             title,
-            str(_LAST_DIR),
+            str(dialog_dir),
             [name, extensions],
             pfd.opt.multiselect if multiselect else pfd.opt.none,
         )
     elif dialog_type == "save":
         dialog = pfd.save_file(
             title,
-            str(_LAST_DIR / file_name),
+            str(dialog_dir / file_name),
             [name, extensions],
         )
     if dialog.result():
