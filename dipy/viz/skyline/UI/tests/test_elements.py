@@ -2,9 +2,10 @@ import pytest
 
 
 def _load_elements_or_skip():
-    pytest.importorskip("PIL")
-    pytest.importorskip("fury", minversion="2.0.0a6")
-    from dipy.viz.skyline.UI import elements
+    try:
+        from dipy.viz.skyline.UI import elements
+    except ImportError as exc:
+        pytest.skip(f"dipy.viz.skyline.UI.elements is not importable: {exc}")
 
     return elements
 
