@@ -81,8 +81,9 @@ class TissueClassifierHMRF:
         neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
         seg_init = icm.initialize_maximum_likelihood(neglogl)
 
+        min_sigmasq = 1e-6
         mu, sigmasq = com.seg_stats(image, seg_init, nclasses)
-        sigmasq = np.maximum(sigmasq, 1e-6)
+        sigmasq = np.maximum(sigmasq, min_sigmasq)
 
         zero = np.zeros_like(image) + 0.001
         zero_noise = add_noise(zero, 10000, 1, noise_type="gaussian")
@@ -102,7 +103,7 @@ class TissueClassifierHMRF:
             ind = np.argsort(mu_upd)
             mu_upd = mu_upd[ind]
             sigmasq_upd = sigmasq_upd[ind]
-            sigmasq_upd = np.maximum(sigmasq_upd, 1e-6)
+            sigmasq_upd = np.maximum(sigmasq_upd, min_sigmasq)
 
             negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd, nclasses)
             final_segmentation, energy = icm.icm_ising(negll, beta, seg_init)
