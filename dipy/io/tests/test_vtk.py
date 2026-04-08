@@ -169,12 +169,54 @@ def test_get_polydata_triangles_non_triangles(monkeypatch):
         io_vtk.get_polydata_triangles(MockPolyData())
 
 
-def test_datatype_dict_empty_when_vtk_unavailable(monkeypatch):
-    monkeypatch.setattr(io_vtk, "have_vtk", False)
-    monkeypatch.setattr(io_vtk, "have_numpy_support", False)
+def test_numpy_to_vtk_array_uses_deep_and_name(monkeypatch):
+    called = {}
 
-    # Force re-evaluation of the module-level DATATYPE_DICT
-    # This is tricky since it's set at import time, but we can check it exists
-    assert hasattr(io_vtk, "DATATYPE_DICT")
-    # When VTK is not available, DATATYPE_DICT should be empty
-    assert io_vtk.DATATYPE_DICT == {}
+    class DummyVtkArray:
+        def SetName(self, name):
+            called["name"] = name
+
+    def _numpy_to_vtk(arr, *, deep, array_type):
+        called["deep"] = deep
+        called["array_type"] = array_type
+        called["shape"] = arr.shape
+        return DummyVtkArray()
+
+    monkeypatch.setattr(io_vtk, "have_vtk", True)
+    monkeypatch.setattr(io_vtk, "have_numpy_support", True)
+    monkeypatch.setattr(io_vtk, "ns", SimpleNamespace(numpy_to_vtk=_numpy_to_vtk))
+    monkeypatch.setattr(io_vtk, "DATATYPE_DICT", {np.dtype("float32"): 99})
+
+    io_vtk._numpy_to_vtk_array(
+        np.array([[1.0, 2.0, 3.0]], dtype=np.float32), name="vals", deep=False
+    )
+
+    assert called["deep"] is False
+    assert called["array_type"] == 99
+    assert called["shape"] == (1, 3)
+    assert called["name"] == "vals"
+
+
+def test_numpy_to_vtk_array_respects_dtype_override(monkeypatch):
+    called = {}
+
+    def _numpy_to_vtk(arr, *, deep, array_type):
+        called["deep"] = deep
+        called["array_type"] = array_type
+        return SimpleNamespace(SetName=lambda _: None)
+
+    monkeypatch.setattr(io_vtk, "have_vtk", True)
+    monkeypatch.setattr(io_vtk, "have_numpy_support", True)
+    monkeypatch.setattr(io_vtk, "ns", SimpleNamespace(numpy_to_vtk=_numpy_to_vtk))
+    monkeypatch.setattr(
+        io_vtk,
+        "DATATYPE_DICT",
+        {np.dtype("float32"): 99, np.dtype("int16"): 7},
+    )
+
+    io_vtk._numpy_to_vtk_array(
+        np.array([1.0, 2.0], dtype=np.float32), dtype=np.int16, deep=True
+    )
+
+    assert called["deep"] is True
+    assert called["array_type"] == 7
