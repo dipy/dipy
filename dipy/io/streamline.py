@@ -78,7 +78,9 @@ def save_tractogram(
     old_origin = deepcopy(sft.origin)
 
     timer = time.time()
-    if extension in [".trk", ".tck", ".trx"]:
+    if extension in [".trk", ".tck", ".trx"] and not (
+        to_origin == Origin.NIFTI and to_space == Space.RASMM
+    ):
         to_origin = Origin.NIFTI
         to_space = Space.RASMM
         logger.warning(
