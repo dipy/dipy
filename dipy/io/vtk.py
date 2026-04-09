@@ -7,8 +7,44 @@ from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package(
     "fury", min_version="0.10.0", max_version="1.0.0"
 )
-vtk, have_vtk, _ = optional_package("vtk")
-ns, have_numpy_support, _ = optional_package("vtk.util.numpy_support")
+
+vtk = None
+ns = None
+have_vtk = None
+have_numpy_support = None
+DATATYPE_DICT = {}
+
+
+def _setup_vtk():
+    global vtk, ns, have_vtk, have_numpy_support, DATATYPE_DICT
+    if have_vtk is not None:
+        return
+    try:
+        import vtk as _vtk
+        import vtk.util.numpy_support as _ns
+
+        vtk = _vtk
+        ns = _ns
+        have_vtk = True
+        have_numpy_support = True
+        DATATYPE_DICT.update(
+            {
+                np.dtype("int8"): vtk.VTK_CHAR,
+                np.dtype("uint8"): vtk.VTK_UNSIGNED_CHAR,
+                np.dtype("int16"): vtk.VTK_SHORT,
+                np.dtype("uint16"): vtk.VTK_UNSIGNED_SHORT,
+                np.dtype("int32"): vtk.VTK_INT,
+                np.dtype("uint32"): vtk.VTK_UNSIGNED_INT,
+                np.dtype("int64"): vtk.VTK_LONG_LONG,
+                np.dtype("uint64"): vtk.VTK_UNSIGNED_LONG_LONG,
+                np.dtype("float32"): vtk.VTK_FLOAT,
+                np.dtype("float64"): vtk.VTK_DOUBLE,
+            }
+        )
+    except ImportError:
+        have_vtk = False
+        have_numpy_support = False
+
 
 if have_fury:
     import fury.io
@@ -23,28 +59,12 @@ def _require_fury():
 
 
 def _require_vtk():
+    _setup_vtk()
     if not have_vtk or not have_numpy_support:
         raise ImportError(
             "vtk and vtk.util.numpy_support are required for this function. "
             "Install vtk."
         )
-
-
-if have_vtk and have_numpy_support:
-    DATATYPE_DICT = {
-        np.dtype("int8"): vtk.VTK_CHAR,
-        np.dtype("uint8"): vtk.VTK_UNSIGNED_CHAR,
-        np.dtype("int16"): vtk.VTK_SHORT,
-        np.dtype("uint16"): vtk.VTK_UNSIGNED_SHORT,
-        np.dtype("int32"): vtk.VTK_INT,
-        np.dtype("uint32"): vtk.VTK_UNSIGNED_INT,
-        np.dtype("int64"): vtk.VTK_LONG_LONG,
-        np.dtype("uint64"): vtk.VTK_UNSIGNED_LONG_LONG,
-        np.dtype("float32"): vtk.VTK_FLOAT,
-        np.dtype("float64"): vtk.VTK_DOUBLE,
-    }
-else:
-    DATATYPE_DICT = {}
 
 
 def load_polydata(file_name):
