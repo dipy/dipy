@@ -55,6 +55,12 @@ def _ensure_last_dir():
     return _LAST_DIR
 
 
+def _set_last_dir(path):
+    """Update ``_LAST_DIR`` using a selected file path."""
+    global _LAST_DIR
+    _LAST_DIR = Path(path).parent
+
+
 def render_file_dialog(
     *,
     title="Select File(s)",
@@ -90,7 +96,6 @@ def render_file_dialog(
         ``"shm_coeff"`` (``shm_coeffs=``), or ``"buan_pvals"`` (raw list/None).
     None
     """
-    global _LAST_DIR
     dialog_dir = _ensure_last_dir()
     if dialog_type == "open":
         dialog = pfd.open_file(
@@ -116,7 +121,7 @@ def render_file_dialog(
                 callback(shm_coeffs=selected_files)
             elif type == "buan_pvals":
                 callback(selected_files)
-        _LAST_DIR = Path(selected_files[0]).parent
+        _set_last_dir(selected_files[0])
     if not dialog.result() and dialog.kill():
         if callback is not None:
             if type == "buan_pvals":
