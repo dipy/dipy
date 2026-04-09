@@ -624,7 +624,7 @@ def _patch2self_version1(
         denoised_arr = np.take(denoised_arr, [0], axis=position)
 
     denoised_arr = _apply_post_processing(
-        denoised_arr, shift_intensity, clip_negative_vals
+        data, denoised_arr, shift_intensity, clip_negative_vals
     )
     return np.array(denoised_arr, dtype=out_dtype)
 
@@ -761,7 +761,7 @@ def _patch2self_version3(
         logger.info(f"Time taken for Patch2Self: {t2 - t1:.3f} seconds.")
 
     denoised_arr = _apply_post_processing(
-        denoised_arr, shift_intensity, clip_negative_vals
+        data, denoised_arr, shift_intensity, clip_negative_vals
     )
     del tmp
     os.unlink(data_dict["data"][0])
@@ -771,11 +771,13 @@ def _patch2self_version3(
     return result
 
 
-def _apply_post_processing(denoised_arr, shift_intensity, clip_negative_vals):
+def _apply_post_processing(data, denoised_arr, shift_intensity, clip_negative_vals):
     """Apply post-processing steps such as clipping and shifting intensities.
 
     Parameters
     ----------
+    data : ndarray
+        The original input data array.
     denoised_arr : ndarray
         The denoised array.
     shift_intensity : bool
@@ -792,7 +794,7 @@ def _apply_post_processing(denoised_arr, shift_intensity, clip_negative_vals):
     """
     if shift_intensity and not clip_negative_vals:
         for i in range(denoised_arr.shape[-1]):
-            shift = np.min(denoised_arr[..., i]) - np.min(denoised_arr[..., i])
+            shift = np.min(data[..., i]) - np.min(denoised_arr[..., i])
             denoised_arr[..., i] += shift
     elif clip_negative_vals and not shift_intensity:
         denoised_arr.clip(min=0, out=denoised_arr)
