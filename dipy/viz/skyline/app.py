@@ -399,6 +399,28 @@ class Skyline:
         """
         self._refresh_requested = True
 
+    def _scene_op_key(self, func):
+        """Build a stable key for deferred scene operation coalescing.
+
+        Parameters
+        ----------
+        func : callable
+            Deferred scene operation callable.
+
+        Returns
+        -------
+        tuple or None
+            Comparable key for the operation, or None when unavailable.
+        """
+        method = getattr(func, "__func__", None)
+        owner = getattr(func, "__self__", None)
+        if method is not None and owner is not None:
+            return (id(owner), method.__name__)
+        name = getattr(func, "__name__", None)
+        if name is not None:
+            return (None, name)
+        return None
+
     def enqueue_scene_op(self, func, *args, **kwargs):
         """Handle enqueue scene op for ``Skyline``.
 
@@ -412,6 +434,14 @@ class Skyline:
             Value for ``kwargs``.
         """
         if self._is_drawing_ui:
+            op_key = self._scene_op_key(func)
+            if op_key is not None:
+                for idx in range(len(self._pending_scene_ops) - 1, -1, -1):
+                    old_func, _, _ = self._pending_scene_ops[idx]
+                    if self._scene_op_key(old_func) == op_key:
+                        self._pending_scene_ops[idx] = (func, args, kwargs)
+                        self.request_refresh()
+                        return
             self._pending_scene_ops.append((func, args, kwargs))
             self.request_refresh()
             return
@@ -485,7 +515,11 @@ class Skyline:
             try:
                 func(*args, **kwargs)
             except Exception as e:
-                logger.error(f"Failed to apply deferred scene operation: {e}")
+                logger.exception(
+                    "Failed to apply deferred scene operation %s: %s",
+                    getattr(func, "__qualname__", repr(func)),
+                    e,
+                )
         self._refresh_requested = True
 
     def _drain_pending_visualizations(self):
