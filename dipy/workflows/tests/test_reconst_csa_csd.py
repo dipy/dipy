@@ -347,7 +347,9 @@ def reconst_flow_core(flow, **kwargs):
 
 
 @needs_cvxpy
-@pytest.mark.skipif(sys.platform.startswith('win'), reason="Parallel execution hangs on Windows CI")
+@pytest.mark.skipif(
+    sys.platform.startswith("win"), reason="Parallel execution hangs on Windows CI"
+)
 def test_reconst_csd_msmt_parallel():
     """Test MSMT-CSD with parallel processing."""
     with warnings.catch_warnings():
