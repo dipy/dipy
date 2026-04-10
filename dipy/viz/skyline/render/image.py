@@ -30,6 +30,7 @@ if has_fury_v2:
         show_slices,
         volume_slicer,
     )
+    from fury.colormap import distinguishable_colormap
     from fury.lib import gfx
 
 imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
@@ -199,7 +200,26 @@ class Image3D(Visualization):
         self._volume_idx = 0
         self.interpolation = interpolation or "linear"
         self._value_percentiles = value_percentiles
-        self._colormap_options = ("Gray", "Inferno", "Magma", "Plasma", "Viridis")
+        self._colormap_options = (
+            "Gray",
+            "Inferno",
+            "Magma",
+            "Plasma",
+            "Viridis",
+            "Cool",
+            "Hot",
+            "Bone",
+            "Copper",
+            "Pink",
+            "Spring",
+            "Summer",
+            "Autumn",
+            "Winter",
+            "Jet",
+            "Cividis",
+            "Distinct",
+            "Divergent",
+        )
         self.colormap = colormap
         self._picked_voxel = None
         self._picked_intensity = None
@@ -225,16 +245,12 @@ class Image3D(Visualization):
         self._picked_intensity = self.active_volume[voxel]
 
     def _create_slicer_actor(self):
-        """Handle  create slicer actor for ``Image3D``.
-        None
-        """
+        """Handle  create slicer actor for ``Image3D``."""
         volume = self.active_volume
-        self.value_range = self._value_range_from_percentile(volume)
         self._slicer = volume_slicer(
             volume,
             affine=self.affine,
             interpolation=self.interpolation,
-            value_range=self.value_range,
             alpha_mode="bayer",
             depth_write=True,
         )
@@ -245,6 +261,26 @@ class Image3D(Visualization):
         self._slicer.add_event_handler(self._pick_voxel, "pointer_down")
         show_slices(self._slicer, self.state)
         self.render()
+
+    def _is_divergent_colormap(self):
+        """Handle  whether active colormap is divergent for ``Image3D``.
+
+        Returns
+        -------
+        bool
+            True when the active colormap is divergent.
+        """
+        return self.colormap.lower() == "divergent"
+
+    def _is_distinct_colormap(self):
+        """Handle  whether active colormap is distinct for ``Image3D``.
+
+        Returns
+        -------
+        bool
+            True when the active colormap is distinct.
+        """
+        return self.colormap.lower() == "distinct"
 
     def _value_range_from_percentile(self, volume):
         """Handle  value range from percentile for ``Image3D``.
@@ -272,12 +308,34 @@ class Image3D(Visualization):
             Colormap used for scalar volumes; ignored when ``rgb`` is True.
         """
         self.colormap = colormap
+        self.value_range = self._value_range_from_percentile(self.active_volume)
         if self.colormap.lower() == "gray":
             for actor in self._slicer.children:
                 actor.material.map = None
+                actor.material.clim = self.value_range
+        elif self.colormap.lower() == "divergent":
+            map_colors = np.array([[0, 0, 1], [1, 0, 0]], dtype=np.float32)
+            map = gfx.cm.create_colormap(map_colors, n=2)
+            max_abs = np.max(np.abs(self.active_volume))
+            if max_abs == 0:
+                max_abs = 1.0
+            for actor in self._slicer.children:
+                actor.material.map = map
+                actor.material.clim = (-float(max_abs), float(max_abs))
+                actor.material.interpolation = "nearest"
+        elif self.colormap.lower() == "distinct":
+            map_colors = np.asarray(
+                distinguishable_colormap(nb_colors=256), dtype=np.float32
+            )
+            map = gfx.cm.create_colormap(map_colors, n=256)
+            for actor in self._slicer.children:
+                actor.material.map = map
+                actor.material.interpolation = "nearest"
+                actor.material.clim = self.value_range
         else:
             for actor in self._slicer.children:
                 actor.material.map = getattr(gfx.cm, self.colormap.lower())
+                actor.material.clim = self.value_range
 
     @property
     def actor(self):
@@ -361,6 +419,10 @@ class Image3D(Visualization):
             for actor in self._slicer.children:
                 actor.material.depth_write = False
                 actor.material.alpha_mode = "blend"
+        else:
+            for actor in self._slicer.children:
+                actor.material.depth_write = True
+                actor.material.alpha_mode = "bayer"
 
     def _set_slice_state(self, visibility, state):
         """Handle  set slice state for ``Image3D``.
@@ -372,6 +434,8 @@ class Image3D(Visualization):
         state : array-like
             Current slice state for X/Y/Z.
         """
+        if self._slicer is None:
+            return
         set_group_visibility(self._slicer, visibility)
         show_slices(self._slicer, state)
 
@@ -383,6 +447,8 @@ class Image3D(Visualization):
         value_range : tuple(float, float)
             Scalar range used for display intensity limits.
         """
+        if self._slicer is None:
+            return
         for actor in self._slicer.children:
             actor.material.clim = value_range
 
@@ -394,8 +460,12 @@ class Image3D(Visualization):
         interpolation : str, optional
             Slice interpolation mode (``"linear"`` or ``"nearest"``).
         """
+
+        if self._slicer is None:
+            return
         for actor in self._slicer.children:
             actor.material.interpolation = interpolation
+        self.interpolation = interpolation
 
     def render_widgets(self):
         """Handle render widgets for ``Image3D``."""
@@ -478,20 +548,21 @@ class Image3D(Visualization):
         volume_for_range = (
             self.dwi[..., self._volume_idx] if self._has_directions else self.dwi
         )
-        intensity_changed, new_percentiles = two_disk_slider(
-            "Intensities",
-            self._value_percentiles,
-            0,
-            100,
-            text_format=".1f",
-            step=1,
-            min_gap=0.1,
-            display_values=self.value_range,
-        )
-        if intensity_changed:
-            self._value_percentiles = new_percentiles
-            self.value_range = self._value_range_from_percentile(volume_for_range)
-            self.apply_scene_op(self._set_clim, self.value_range)
+        if not self._is_divergent_colormap():
+            intensity_changed, new_percentiles = two_disk_slider(
+                "Intensities",
+                self._value_percentiles,
+                0,
+                100,
+                text_format=".1f",
+                step=1,
+                min_gap=0.1,
+                display_values=self.value_range,
+            )
+            if intensity_changed:
+                self._value_percentiles = new_percentiles
+                self.value_range = self._value_range_from_percentile(volume_for_range)
+                self.apply_scene_op(self._set_clim, self.value_range)
 
         if self._has_directions and not self.rgb:
             imgui.spacing()
@@ -544,10 +615,11 @@ class Image3D(Visualization):
         imgui.spacing()
         imgui.spacing()
         changed, new = segmented_switch(
-            "Interpolation", ["Linear", "Nearest"], self.interpolation
+            "Interpolation",
+            ["Linear", "Nearest"],
+            self.interpolation.title(),
         )
         if changed:
-            self.interpolation = new
-            self.apply_scene_op(self._set_interpolation, self.interpolation)
+            self.apply_scene_op(self._set_interpolation, new.lower())
 
         imgui.spacing()

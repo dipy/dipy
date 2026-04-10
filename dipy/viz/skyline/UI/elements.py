@@ -970,7 +970,7 @@ def segmented_switch(label, options, value, *, width=0, height=28):
 
     imgui.push_id(label)
 
-    value_options = [option.lower() for option in options]
+    value_options = [option.title() for option in options]
     current_value = value if value in value_options else options[0]
     label_color = THEME["text"]
     imgui.push_style_var(imgui.StyleVar_.frame_padding, (12.0, 6.0))
