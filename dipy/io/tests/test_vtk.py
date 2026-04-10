@@ -13,6 +13,65 @@ def test_load_polydata_requires_fury(monkeypatch):
         io_vtk.load_polydata("tmp.vtk")
 
 
+def test_setup_vtk_handles_import_error(monkeypatch):
+    import sys
+
+    # Force the module to be unloaded if it's there
+    if "vtk" in sys.modules:
+        del sys.modules["vtk"]
+    if "vtk.util.numpy_support" in sys.modules:
+        del sys.modules["vtk.util.numpy_support"]
+
+    # Block importing vtk
+    monkeypatch.setitem(sys.modules, "vtk", None)
+
+    # Force re-initialization
+    monkeypatch.setattr(io_vtk, "have_vtk", None)
+
+    io_vtk._setup_vtk()
+    assert io_vtk.have_vtk is False
+    assert io_vtk.have_numpy_support is False
+
+
+def test_setup_vtk_successful(monkeypatch):
+    class MockVtkUtilNumpySupport:
+        pass
+
+    class MockVtk:
+        util = SimpleNamespace(numpy_support=MockVtkUtilNumpySupport())
+        VTK_CHAR = 1
+        VTK_UNSIGNED_CHAR = 2
+        VTK_SHORT = 3
+        VTK_UNSIGNED_SHORT = 4
+        VTK_INT = 5
+        VTK_UNSIGNED_INT = 6
+        VTK_LONG_LONG = 7
+        VTK_UNSIGNED_LONG_LONG = 8
+        VTK_FLOAT = 9
+        VTK_DOUBLE = 10
+
+    import sys
+
+    monkeypatch.setitem(sys.modules, "vtk", MockVtk())
+    monkeypatch.setitem(
+        sys.modules, "vtk.util.numpy_support", MockVtkUtilNumpySupport()
+    )
+
+    monkeypatch.setattr(io_vtk, "have_vtk", None)
+    monkeypatch.setattr(io_vtk, "DATATYPE_DICT", {})
+
+    io_vtk._setup_vtk()
+
+    assert io_vtk.have_vtk is True
+    assert io_vtk.have_numpy_support is True
+    assert np.dtype("float32") in io_vtk.DATATYPE_DICT
+
+    monkeypatch.setattr(io_vtk, "have_fury", False)
+
+    with pytest.raises(ImportError, match="fury is required"):
+        io_vtk.load_polydata("tmp.vtk")
+
+
 def test_get_polydata_vertices_requires_vtk(monkeypatch):
     monkeypatch.setattr(io_vtk, "have_vtk", False)
     monkeypatch.setattr(io_vtk, "have_numpy_support", False)
