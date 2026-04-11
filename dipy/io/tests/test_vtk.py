@@ -16,14 +16,9 @@ def test_load_polydata_requires_fury(monkeypatch):
 def test_setup_vtk_handles_import_error(monkeypatch):
     import sys
 
-    # Force the module to be unloaded if it's there
-    if "vtk" in sys.modules:
-        del sys.modules["vtk"]
-    if "vtk.util.numpy_support" in sys.modules:
-        del sys.modules["vtk.util.numpy_support"]
-
     # Block importing vtk
     monkeypatch.setitem(sys.modules, "vtk", None)
+    monkeypatch.setitem(sys.modules, "vtk.util.numpy_support", None)
 
     # Force re-initialization
     monkeypatch.setattr(io_vtk, "have_vtk", None)
