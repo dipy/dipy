@@ -1,10 +1,11 @@
 import numpy as np
 import pytest
 
-pytest.importorskip("fury")
+from dipy.viz.skyline.app import Skyline
+from dipy.viz.skyline.render.image import Image3D
+from dipy.viz.skyline.render.sh_slicer import SHGlyph3D
 
-from dipy.viz.skyline.app import Skyline  # noqa: E402
-from dipy.viz.skyline.render.sh_slicer import SHGlyph3D  # noqa: E402
+pytest.importorskip("fury")
 
 
 def _skyline_stub_for_load_visualizations():
@@ -91,7 +92,7 @@ def _skyline_stub_for_deferred_behaviour():
     Skyline
         Instance with the attributes needed by deferred operation methods.
     """
-    obj = Skyline.__new__(Skyline)
+    obj = Skyline(visualizer_type="stealth")
     obj._is_drawing_ui = True
     obj._pending_scene_ops = []
     obj._pending_sync_requests = []
@@ -140,3 +141,169 @@ def test_synchronize_visualizations_queues_snapshot_while_drawing():
     assert np.array_equal(queued_state, new_state)
     assert queued_state is not new_state
     assert sky._refresh_requested
+
+
+def test_get_reference_slice_state_none_when_empty():
+    """``_get_reference_slice_state`` returns None when no sync-capable views exist."""
+    sky = Skyline(visualizer_type="stealth")
+    sky.active_image = None
+    sky._slice_focus_viz = None
+    sky._image_visualizations = []
+    sky._peak_visualizations = []
+    sky._roi_visualizations = []
+    sky._surface_visualizations = []
+    sky._tractogram_visualizations = []
+    sky._sh_glyph_visualizations = []
+    assert sky._get_reference_slice_state() is None
+
+
+def test_get_reference_slice_state_prefers_active_image():
+    """``_get_reference_slice_state`` uses ``active_image.state`` when set."""
+    sky = Skyline(visualizer_type="stealth")
+    sky._slice_focus_viz = None
+    img_first = Image3D.__new__(Image3D)
+    img_first.state = np.array([1.0, 1.0, 1.0], dtype=float)
+    img_active = Image3D.__new__(Image3D)
+    img_active.state = np.array([4.0, 5.0, 6.0], dtype=float)
+    sky._image_visualizations = [img_first, img_active]
+    sky._peak_visualizations = []
+    sky._roi_visualizations = []
+    sky._surface_visualizations = []
+    sky._tractogram_visualizations = []
+    sky._sh_glyph_visualizations = []
+    sky.active_image = img_active
+    ref = sky._get_reference_slice_state()
+    assert np.array_equal(ref, np.array([4.0, 5.0, 6.0]))
+
+
+def test_get_reference_slice_state_uses_slice_focus_when_no_active_image():
+    """``_get_reference_slice_state`` follows ``_slice_focus_viz`` when set."""
+    sky = Skyline(visualizer_type="stealth")
+    sky.active_image = None
+    glyph = SHGlyph3D.__new__(SHGlyph3D)
+    glyph.state = np.array([2.0, 3.0, 4.0], dtype=float)
+    sky._image_visualizations = []
+    sky._peak_visualizations = []
+    sky._roi_visualizations = []
+    sky._surface_visualizations = []
+    sky._tractogram_visualizations = []
+    sky._sh_glyph_visualizations = [glyph]
+    sky._slice_focus_viz = glyph
+    ref = sky._get_reference_slice_state()
+    assert np.array_equal(ref, np.array([2.0, 3.0, 4.0]))
+
+
+def test_get_reference_slice_state_reversed_fallback():
+    """``_get_reference_slice_state`` uses the last sync-capable vis in stack order."""
+    sky = Skyline.__new__(Skyline)
+    sky.active_image = None
+    sky._slice_focus_viz = None
+    g_a = SHGlyph3D.__new__(SHGlyph3D)
+    g_a.state = np.array([0.0, 0.0, 0.0], dtype=float)
+    g_b = SHGlyph3D.__new__(SHGlyph3D)
+    g_b.state = np.array([7.0, 8.0, 9.0], dtype=float)
+    sky._image_visualizations = []
+    sky._peak_visualizations = []
+    sky._roi_visualizations = []
+    sky._surface_visualizations = []
+    sky._tractogram_visualizations = []
+    sky._sh_glyph_visualizations = [g_a, g_b]
+    ref = sky._get_reference_slice_state()
+    assert np.array_equal(ref, np.array([7.0, 8.0, 9.0]))
+
+
+def test_get_reference_slice_state_clears_stale_focus():
+    """``_get_reference_slice_state`` drops stale ``_slice_focus_viz`` references."""
+    sky = Skyline.__new__(Skyline)
+    sky.active_image = None
+    orphan = SHGlyph3D.__new__(SHGlyph3D)
+    sky._slice_focus_viz = orphan
+    sky._image_visualizations = []
+    sky._peak_visualizations = []
+    sky._roi_visualizations = []
+    sky._surface_visualizations = []
+    sky._tractogram_visualizations = []
+    sky._sh_glyph_visualizations = []
+    assert sky._get_reference_slice_state() is None
+    assert sky._slice_focus_viz is None
+
+
+def test_apply_reference_slice_state_to_new_visualizations():
+    """``_apply_reference_slice_state_to_new_visualizations`` on update."""
+    sky = Skyline(visualizer_type="stealth")
+
+    class Viz:
+        def __init__(self):
+            self.last = None
+
+        def update_state(self, s):
+            self.last = np.asarray(s, dtype=float).copy()
+
+    old = Viz()
+    new = Viz()
+    sky._image_visualizations = [old, new]
+    sky._peak_visualizations = []
+    sky._sh_glyph_visualizations = []
+    ref = np.array([10.0, 20.0, 30.0], dtype=float)
+    sky._apply_reference_slice_state_to_new_visualizations(ref, 1, 0, 0)
+    assert old.last is None
+    assert np.array_equal(new.last, ref)
+
+
+def test_apply_reference_slice_state_to_new_visualizations_noop_when_none():
+    """``_apply_reference_slice_state_to_new_visualizations`` skips when ref is None."""
+    sky = Skyline(visualizer_type="stealth")
+
+    class Viz:
+        def __init__(self):
+            self.called = False
+
+        def update_state(self, s):
+            self.called = True
+
+    new = Viz()
+    sky._image_visualizations = [new]
+    sky._peak_visualizations = []
+    sky._sh_glyph_visualizations = []
+    sky._apply_reference_slice_state_to_new_visualizations(None, 0, 0, 0)
+    assert new.called is False
+
+
+def test_remove_visualization_clears_slice_focus():
+    """``_remove_visualization`` clears ``_slice_focus_viz`` on removal."""
+    sky = Skyline(visualizer_type="stealth")
+    sky.active_image = None
+    sky.UI_window = None
+    sky._image_visualizations = []
+    sky._peak_visualizations = []
+    sky._roi_visualizations = []
+    sky._surface_visualizations = []
+    sky._tractogram_visualizations = []
+    g_keep = SHGlyph3D.__new__(SHGlyph3D)
+    g_focus = SHGlyph3D.__new__(SHGlyph3D)
+    sky._sh_glyph_visualizations = [g_keep, g_focus]
+    sky._slice_focus_viz = g_focus
+    sky._remove_visualization(g_focus)
+    assert sky._slice_focus_viz is None
+    assert sky._sh_glyph_visualizations == [g_keep]
+
+
+def test_synchronize_visualizations_sets_slice_focus():
+    """``_synchronize_visualizations`` stores the source for load-time reference."""
+    sky = Skyline(visualizer_type="stealth")
+    sky.active_image = None
+    sky._is_drawing_ui = False
+    sky._pending_sync_requests = []
+    sky._slice_focus_viz = None
+    sky._image_visualizations = []
+    sky._peak_visualizations = []
+    sky._roi_visualizations = []
+    sky._surface_visualizations = []
+    sky._tractogram_visualizations = []
+    sky._sh_glyph_visualizations = []
+    sky._synchronize_visualizations_from_source = lambda *a, **k: None
+    sky._arrange_image_actors = lambda: None
+    img = Image3D.__new__(Image3D)
+    img._synchronize = True
+    sky._synchronize_visualizations(img, np.array([1.0, 2.0, 3.0], dtype=np.float32))
+    assert sky._slice_focus_viz is img
