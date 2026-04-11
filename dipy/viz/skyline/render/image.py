@@ -322,6 +322,7 @@ class Image3D(Visualization):
             for actor in self._slicer.children:
                 actor.material.map = map
                 actor.material.clim = (-float(max_abs), float(max_abs))
+                self.interpolation = "nearest"
                 actor.material.interpolation = "nearest"
         elif self.colormap.lower() == "distinct":
             map_colors = np.asarray(
@@ -331,6 +332,7 @@ class Image3D(Visualization):
             for actor in self._slicer.children:
                 actor.material.map = map
                 actor.material.interpolation = "nearest"
+                self.interpolation = "nearest"
                 actor.material.clim = self.value_range
         else:
             for actor in self._slicer.children:
