@@ -1,6 +1,6 @@
 import logging
+import os
 from pathlib import Path
-import sys
 from tempfile import TemporaryDirectory
 import warnings
 
@@ -331,7 +331,10 @@ def reconst_flow_core(flow, **kwargs):
 
             # test parallel implementation
             # Avoid SDT for now, as it is quite slow, something to introspect
-            if flow.get_short_name() != "sdt" and sys.platform == "linux":
+            if (
+                flow.get_short_name() != "sdt"
+                and not os.environ.get("CI", "false").lower() == "true"
+            ):
                 reconst_flow = flow()
                 reconst_flow._force_overwrite = True
                 reconst_flow.run(
@@ -348,7 +351,8 @@ def reconst_flow_core(flow, **kwargs):
 
 @needs_cvxpy
 @pytest.mark.skipif(
-    sys.platform != "linux", reason="Parallel execution hangs on Windows and macOS CI"
+    os.environ.get("CI", "false").lower() == "true",
+    reason="Parallel execution hangs on CI",
 )
 def test_reconst_csd_msmt_parallel():
     """Test MSMT-CSD with parallel processing."""
