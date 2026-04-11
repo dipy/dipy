@@ -233,6 +233,7 @@ class Skyline:
         self.window.resize_callback(self.handle_resize)
         self._color_gen = distinguishable_colormap()
         self.active_image = None
+        self._slice_focus_viz = None
 
         if self._visualizer_type != "stealth":
             gpu_texture = load_image_as_wgpu_texture_view(
@@ -522,12 +523,67 @@ class Skyline:
                 )
         self._refresh_requested = True
 
+    def _get_reference_slice_state(self):
+        """Return a snapshot of the current slice pose for load-time alignment.
+
+        Returns
+        -------
+        np.ndarray or list or tuple or None
+            Snapshot of slice state from an existing synchronizable visualization,
+            or None when no such visualization exists (first load).
+        """
+        if self.active_image is not None:
+            return self._snapshot_state(
+                np.asarray(self.active_image.state, dtype=float)
+            )
+        if self._slice_focus_viz is not None:
+            if self._slice_focus_viz not in self.visualizations:
+                self._slice_focus_viz = None
+            else:
+                return self._snapshot_state(
+                    np.asarray(self._slice_focus_viz.state, dtype=float)
+                )
+        for viz in reversed(self.visualizations):
+            if isinstance(viz, (Image3D, Peak3D, SHGlyph3D)):
+                return self._snapshot_state(np.asarray(viz.state, dtype=float))
+        return None
+
+    def _apply_reference_slice_state_to_new_visualizations(
+        self, reference_state, n_img_before, n_peak_before, n_sh_before
+    ):
+        """Apply a pre-load slice pose to visualizations created in this batch.
+
+        Parameters
+        ----------
+        reference_state : array-like or None
+            Snapshot from ``_get_reference_slice_state`` before loading, or None.
+        n_img_before : int
+            Length of ``_image_visualizations`` before ``_load_visualiations``.
+        n_peak_before : int
+            Length of ``_peak_visualizations`` before ``_load_visualiations``.
+        n_sh_before : int
+            Length of ``_sh_glyph_visualizations`` before ``_load_visualiations``.
+        """
+        if reference_state is None:
+            return
+        new_visualizations = (
+            self._image_visualizations[n_img_before:]
+            + self._peak_visualizations[n_peak_before:]
+            + self._sh_glyph_visualizations[n_sh_before:]
+        )
+        for viz in new_visualizations:
+            viz.update_state(reference_state)
+
     def _drain_pending_visualizations(self):
         """Handle  drain pending visualizations for ``Skyline``.
         None
         """
         if self._pending_loaded_files:
             loaded_files = self._pending_loaded_files.pop(0)
+            n_img_before = len(self._image_visualizations)
+            n_peak_before = len(self._peak_visualizations)
+            n_sh_before = len(self._sh_glyph_visualizations)
+            reference_slice_state = self._get_reference_slice_state()
             self._load_visualiations(
                 loaded_files["images"],
                 loaded_files["peaks"],
@@ -538,11 +594,12 @@ class Skyline:
                 is_cluster=loaded_files.get("is_cluster_override"),
                 async_clustering=loaded_files.get("async_clustering_override"),
             )
-
-            if self.active_image is not None:
-                self._synchronize_visualizations_from_source(
-                    self.active_image, self.active_image.state
-                )
+            self._apply_reference_slice_state_to_new_visualizations(
+                reference_slice_state,
+                n_img_before,
+                n_peak_before,
+                n_sh_before,
+            )
 
             if self._visualizer_type != "stealth":
                 self._update_tractogram_helper()
@@ -848,6 +905,9 @@ class Skyline:
         else:
             raise ValueError("Unsupported visualization type")
 
+        if viz is self._slice_focus_viz:
+            self._slice_focus_viz = None
+
         if len(self.visualizations) == 0:
             self.UI_window.request_file_dialog = True
 
@@ -893,7 +953,6 @@ class Skyline:
                 viz.update_state(new_state)
 
     def _synchronize_visualizations(self, source_viz, new_state):
-        # Source-side guard: only push if this view has sync enabled.
         """Handle  synchronize visualizations for ``Skyline``.
 
         Parameters
@@ -906,6 +965,9 @@ class Skyline:
         if not getattr(source_viz, "_synchronize", True):
             return
 
+        if isinstance(source_viz, (Image3D, Peak3D, SHGlyph3D)):
+            self._slice_focus_viz = source_viz
+
         new_state = self._snapshot_state(new_state)
 
         if self._is_drawing_ui:
@@ -914,8 +976,6 @@ class Skyline:
             return
         self._synchronize_visualizations_from_source(source_viz, new_state)
         self.active_image and self._arrange_image_actors()
-
-    # self.window.render()
 
     def _update_background_color(self, new_color):
         """Handle  update background color for ``Skyline``.
@@ -934,9 +994,7 @@ class Skyline:
         self._render_window()
 
     def _process_tractogram_switches(self):
-        """Handle  process tractogram switches for ``Skyline``.
-        None
-        """
+        """Handle  process tractogram switches for ``Skyline``."""
         if not self._pending_tractogram_switches:
             return
         pending = self._pending_tractogram_switches.copy()
