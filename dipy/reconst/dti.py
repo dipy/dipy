@@ -1889,13 +1889,21 @@ def nlls_fit_tensor(
     err_func = nlls.err_func
     jac_func = nlls.jacobian_func if jac else None
 
+    if cholesky and jac:
+        warnings.warn(
+            "The analytical Jacobian is not currently implemented"
+            " for Cholesky parameterization. ",
+            UserWarning,
+            stacklevel=2,
+        )
+
     if return_S0_hat:
         model_S0 = np.empty((flat_data.shape[0], 1))
 
     # Start processing voxels
     for vox in range(flat_data.shape[0]):
 
-        # Check if voxel only contains zeros 
+        # Check if voxel only contains zeros
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")
 
