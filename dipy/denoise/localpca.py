@@ -8,7 +8,6 @@ from scipy.linalg.lapack import dgesvd as svd
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.testing.decorators import warning_for_keywords
 
-
 def dimensionality_problem_message(arr, num_samples, spr):
     """Message about the number of samples being smaller than one less the
     dimensionality of the data to be denoised.
@@ -104,7 +103,7 @@ def create_patch_radius_arr(arr, pr):
 
     if isinstance(patch_radius, int):
         patch_radius = np.ones(3, dtype=int) * patch_radius
-    if len(patch_radius) != 3:
+    if len(patch_radius) != 3: 
         raise ValueError("patch_radius should have length 3")
     else:
         patch_radius = np.asarray(patch_radius).astype(int)
@@ -253,6 +252,8 @@ def genpca(
     # We retain float64 precision, iff the input is in this precision:
     if arr.dtype == np.float64:
         calc_dtype = np.float64
+    elif arr.dtype == np.complex128:
+        calc_dtype = np.complex128
     # Otherwise, we'll calculate things in float32 (saving memory)
     else:
         calc_dtype = np.float32
@@ -333,24 +334,28 @@ def genpca(
 
                 if is_svd:
                     # PCA using an SVD
-                    svd_args = [1, 0]
-                    U, S, Vt = svd(X, *svd_args)[:3]
-                    # Items in S are the eigenvalues, but in ascending order
-                    # We invert the order (=> descending), square and normalize
+                    if calc_dtype == np.complex128:
+                        U, S, Vt = np.linalg.svd(X, full_matrices=False)
+                    else:
+                        svd_args = [1, 0]
+                        U, S, Vt = svd(X, *svd_args)[:3]
+                        # Items in S are the eigenvalues, but in ascending order
+                        # We invert the order (=> descending)
+                        S = S[::-1]
+                        # Rows of Vt are eigenvectors, but also in ascending
+                        # eigenvalue order:
+                        Vt = Vt[::-1]
+                    # We square and normalize
                     # \lambda_i = s_i^2 / n
-                    d = S[::-1] ** 2 / X.shape[0]
-                    # Rows of Vt are eigenvectors, but also in ascending
-                    # eigenvalue order:
-                    W = Vt[::-1].T
-
+                    d = S ** 2 / X.shape[0]
+                    W = Vt.conj().T
                 else:
-                    # PCA using an Eigenvalue decomposition
-                    C = np.transpose(X).dot(X)
+                    # PCA using an Eigenvalue decomposition  
+                    C = np.conjugate(np.transpose(X)).dot(X) 
                     C = C / X.shape[0]
                     [d, W] = eigh(C)
 
                 if sigma is None:
-                    # Random matrix theory
                     this_var, _ = _pca_classifier(d, num_samples)
                 else:
                     # Predefined variance
@@ -363,8 +368,8 @@ def genpca(
                 ncomps = np.sum(d < tau)
                 W[:, :ncomps] = 0
 
-                # This is equations 1 and 2 in Manjon 2013:
-                Xest = X.dot(W).dot(W.T) + M
+                # This is adapted from equations 1 and 2 in Manjon 2013:
+                Xest = X.dot(W).dot(W.conj().T) + M
                 Xest = Xest.reshape(patch_size[0], patch_size[1], patch_size[2], dim)
                 # This is equation 3 in Manjon 2013:
                 this_theta = 1.0 / (1.0 + dim - ncomps)
@@ -375,8 +380,12 @@ def genpca(
                     thetavar[ix1:ix2, jx1:jx2, kx1:kx2] += this_theta
 
     denoised_arr = thetax / theta
-    denoised_arr.clip(min=0, out=denoised_arr)
-    denoised_arr[mask == 0] = 0
+
+    if calc_dtype != np.complex128:
+        denoised_arr.clip(min=0, out=denoised_arr)   
+
+    denoised_arr[mask == 0] = 0 
+
     if return_sigma is True:
         if sigma is None:
             var = var / thetavar

@@ -125,7 +125,19 @@ def test_lpca_random_noise(rng):
     assert_(S0ns.min() > S0.min())
     assert_(S0ns.max() < S0.max())
     assert_equal(np.round(S0ns.mean()), 100)
-
+    
+    
+@set_random_number_generator()
+def test_lpca_complex_random_noise(rng):
+    S0 = 100 + 100j + (2/np.sqrt(2)) * (rng.standard_normal((22, 23, 30, 20)) + 1j * rng.standard_normal((22, 23, 30, 20)))
+    # The overall std remains 2 and is distributed by the real and imaginary components
+    S0ns, sigma_ns = localpca(S0, sigma=np.std(S0), return_sigma=True)
+    
+    assert_(S0ns.min() > S0.min())
+    assert_(S0ns.max() < S0.max())
+    assert_equal(np.round(S0ns.mean()), (100 + 100j))
+    assert_equal(sigma_ns, np.std(S0))
+    
 
 @set_random_number_generator()
 def test_lpca_boundary_behaviour(rng):
@@ -156,6 +168,28 @@ def test_lpca_rmse(rng):
     rmse_denoised = np.sqrt(np.mean((S0_denoised - 100) ** 2))
     # Denoising should always improve the RMSE:
     assert_(rmse_denoised < rmse_w_noise)
+    
+    
+@set_random_number_generator()
+def test_lpca_complex_rmse(rng):
+    S0_w_noise = 100 + 100j + (2/np.sqrt(2)) * (rng.standard_normal((22, 23, 30, 20)) + 1j * rng.standard_normal((22, 23, 30, 20)))
+    # The overall std remains 2 and is distributed by the real and imaginary components
+    rmse_w_noise = np.sqrt(np.mean((S0_w_noise - (100+  100j)) ** 2))
+    S0_denoised = localpca(S0_w_noise, sigma=np.std(S0_w_noise))
+    rmse_denoised = np.sqrt(np.mean((S0_denoised - (100 + 100j)) ** 2))
+    # Denoising should always improve the RMSE:
+    assert_(rmse_denoised < rmse_w_noise)
+    
+    
+@set_random_number_generator()
+def test_lpca_complex_phase(rng):
+    S0 = 100 * np.exp(1j * np.pi / 4)
+    S0_w_noise = S0 + (2/np.sqrt(2)) * (rng.standard_normal((22, 23, 30, 20)) + 1j * rng.standard_normal((22, 23, 30, 20)))
+    # The overall std remains 2 and is distributed by the real and imaginary components
+    S0_denoised = localpca(S0_w_noise, sigma=2)
+    
+    avg_phase = np.angle(np.mean(S0_denoised))
+    assert_array_almost_equal(avg_phase, np.pi / 4, decimal=2)
 
 
 @set_random_number_generator()
