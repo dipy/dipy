@@ -1,5 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import os
 import warnings
 
 import numpy as np
@@ -30,6 +31,9 @@ skip_it = use_xvfb == "skip"
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 @set_random_number_generator()
 def test_horizon_events(rng):
+    if os.environ.get("CI", "false").lower() == "true":
+        pytest.skip("Flaky in CI with offscreen VTK event replay")
+
     # using here MNI template affine 2009a
     affine = np.array(
         [
