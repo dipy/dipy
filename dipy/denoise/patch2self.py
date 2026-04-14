@@ -215,7 +215,7 @@ def vol_denoise(
         b0_denoising = False
     if not b0_denoising:
         if verbose:
-            logger.info("b0 denoising skipped.....")
+            logger.info("b0 denoising skipped...")
 
     for vol_idx in tqdm(
         range(data_shape[-1]), desc="Fitting and Denoising", leave=False
@@ -458,12 +458,6 @@ def _validate_inputs(data, out_dtype, patch_radius, version, tmp_dir):
             "Patch radius is not supported for Patch2Self version 3. \
                 Please do not set patch_radius."
         )
-
-    if isinstance(patch_radius, list) and len(patch_radius) == 1:
-        patch_radius = (patch_radius[0], patch_radius[0], patch_radius[0])
-
-    if isinstance(patch_radius, int):
-        patch_radius = (patch_radius, patch_radius, patch_radius)
 
     if version == 3 and tmp_dir is not None and not Path(tmp_dir).exists():
         raise ValueError("The temporary directory does not exist.")
@@ -792,6 +786,8 @@ def _apply_post_processing(data, denoised_arr, shift_intensity, clip_negative_va
 
     Parameters
     ----------
+    data : ndarray
+        The original noisy DWI data.
     denoised_arr : ndarray
         The denoised array.
     shift_intensity : bool
