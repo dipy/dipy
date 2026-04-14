@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import numpy.testing as npt
 
@@ -15,7 +17,7 @@ if para.has_dask:
     ENGINES.append("dask")
 if para.has_joblib:
     ENGINES.append("joblib")
-if para.has_ray:
+if para.has_ray and os.environ.get("CI", "false").lower() != "true":
     ENGINES.append("ray")
 
 

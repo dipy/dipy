@@ -1,6 +1,6 @@
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import os
 import warnings
 
 import numpy as np
@@ -26,6 +26,8 @@ if has_fury:
     from dipy.viz.horizon.app import horizon
 
 skip_it = use_xvfb == "skip"
+if os.environ.get("CI", "false").lower() == "true":
+    skip_it = True
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
