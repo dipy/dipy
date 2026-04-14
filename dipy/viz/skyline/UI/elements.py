@@ -56,7 +56,13 @@ def _ensure_last_dir():
 
 
 def _set_last_dir(path):
-    """Update ``_LAST_DIR`` using a selected file path."""
+    """Update ``_LAST_DIR`` using a selected file path.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Selected file path returned by the file dialog.
+    """
     global _LAST_DIR
     _LAST_DIR = Path(path).parent
 
@@ -94,7 +100,6 @@ def render_file_dialog(
     type : str, optional
         Callback convention: ``"viz"`` (``filenames=``), ``"roi"`` (``rois=``),
         ``"shm_coeff"`` (``shm_coeffs=``), or ``"buan_pvals"`` (raw list/None).
-    None
     """
     dialog_dir = _ensure_last_dir()
     if dialog_type == "open":
