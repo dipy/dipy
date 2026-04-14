@@ -309,6 +309,14 @@ def test_cti_fits():
         assert np.allclose(kt, wls_kt), "K do not match!"
         assert np.allclose(ct, wls_ct), "C do not match!"
 
+        # NLS fitting
+        cti_nlsM = cti.CorrelationTensorModel(gtab1, gtab2, fit_method="NLS")
+        cti_nlsF = cti_nlsM.fit(cti_pred_signals)
+        nls_evals, _, nls_kt, nls_ct = split_cti_params(cti_nlsF.model_params)
+        assert np.allclose(evals, nls_evals, atol=1e-3), "evals do not match!"
+        assert np.allclose(kt, nls_kt, atol=1e-3), "K do not match!"
+        assert np.allclose(ct, nls_ct, atol=1e-3), "C do not match!"
+
         # checking Mean Kurtosis Values
         mk_result = ctiF.mk(min_kurtosis=-3.0 / 7, max_kurtosis=10, analytical=True)
         mean_kurtosis_result = mean_kurtosis(
