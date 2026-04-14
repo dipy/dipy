@@ -1892,7 +1892,7 @@ def nlls_fit_tensor(
     if cholesky and jac:
         warnings.warn(
             "The analytical Jacobian is not currently implemented"
-            " for Cholesky parameterization. ",
+            " for Cholesky parameterization. Running with jac=False.",
             UserWarning,
             stacklevel=2,
         )
