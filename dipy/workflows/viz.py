@@ -14,7 +14,9 @@ from dipy.utils.optpkg import optional_package
 from dipy.viz import horizon
 from dipy.workflows.workflow import Workflow
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, has_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 
 
 if has_fury:
