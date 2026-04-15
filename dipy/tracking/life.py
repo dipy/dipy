@@ -122,7 +122,7 @@ def streamline_gradients(streamline):
 
 def grad_tensor(grad, evals):
     """
-    Calculate the 3 by 3 tensor for a given spatial gradient, 
+    Calculate the 3 by 3 tensor for a given spatial gradient,
     given a canonical tensor shape (also as a 3 by 3), pointing at [1,0,0]
 
     Parameters
@@ -133,12 +133,12 @@ def grad_tensor(grad, evals):
     evals : 1d array of shape (3,)
         The eigenvalues of a canonical tensor to be used as a response
         function.
-    
+
         Returns
         -------
         tensor : ndarray, shape (3, 3)
                The 3 by 3 diffusion tensor rotated to point in the direction
-               of the given spatial gradient 
+               of the given spatial gradient
     """
     # This is the rotation matrix from [1, 0, 0] to this gradient of the sl:
     R = la.svd([grad], overwrite_a=True)[2]
@@ -276,7 +276,7 @@ class LifeSignalMaker:
         sig_out : ndarray, shape (N, M)
             The estimated signal at each node of the streamline,
             where N is the number of nodes and M is the number of
-            non-b0 directions in the gradient table.                
+            non-b0 directions in the gradient table.
         """
         grad = streamline_gradients(streamline)
         sig_out = np.zeros((grad.shape[0], self.signal.shape[-1]))
