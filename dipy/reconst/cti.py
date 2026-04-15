@@ -280,7 +280,7 @@ class CorrelationTensorModel(ReconstModel):
                 *self.args,
                 **self.kwargs,
             )
-            if isinstance(result,tuple):
+            if isinstance(result, tuple):
                 params = result[0]
             else: 
                 params = result
