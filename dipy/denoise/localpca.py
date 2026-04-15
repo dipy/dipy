@@ -253,8 +253,8 @@ def genpca(
     # We retain float64 precision, iff the input is in this precision:
     if arr.dtype == np.float64:
         calc_dtype = np.float64
-    elif arr.dtype == np.complex128:
-        calc_dtype = np.complex128
+    elif np.issubdtype(arr.dtype, np.complexfloating):
+        calc_dtype = arr.dtype
     # Otherwise, we'll calculate things in float32 (saving memory)
     else:
         calc_dtype = np.float32
@@ -335,7 +335,7 @@ def genpca(
 
                 if is_svd:
                     # PCA using an SVD
-                    if calc_dtype == np.complex128:
+                    if np.issubdtype(calc_dtype, np.complexfloating):
                         U, S, Vt = np.linalg.svd(X, full_matrices=False)
                     else:
                         svd_args = [1, 0]
@@ -382,7 +382,7 @@ def genpca(
 
     denoised_arr = thetax / theta
 
-    if calc_dtype != np.complex128:
+    if not np.issubdtype(calc_dtype, np.complexfloating):
         denoised_arr.clip(min=0, out=denoised_arr)
 
     denoised_arr[mask == 0] = 0
