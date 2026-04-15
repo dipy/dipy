@@ -198,7 +198,7 @@ def streamline_signal(streamline, gtab, *, evals=(0.001, 0, 0)):
     sig : ndarray, shape (N, M)
         The signal estimated at each node of the streamline,
         where N is the number of nodes and M is the number of
-        non-b0 directions in the gradient table.    
+        non-b0 directions in the gradient table.
     """
     # Gotta have those tensors:
     tensors = streamline_tensors(streamline, evals=evals)
@@ -252,7 +252,7 @@ class LifeSignalMaker:
     def calc_signal(self, xyz):
         """
         Calculate the signal for a given position.
-        
+
         Parameters
         ----------
         xyz : ndarray, shape (3,)
@@ -262,7 +262,7 @@ class LifeSignalMaker:
         Returns
         -------
         signal : ndarray
-            the precomputed signal at the closest sphere to the given 
+            the precomputed signal at the closest sphere to the given
             xyz position
         """
         idx = self.sphere.find_closest(xyz)
@@ -375,7 +375,7 @@ class FiberModel(ReconstModel):
             gradients along the streamlines to calculate the matrix, instead of
             an approximation. Defaults to use the 724-vertex symmetric sphere
             from :mod:`dipy.data`
-            
+
         """
         if sphere is not False:
             SignalMaker = LifeSignalMaker(self.gtab, evals=evals, sphere=sphere)
