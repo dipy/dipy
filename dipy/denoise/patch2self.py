@@ -83,7 +83,7 @@ def _extract_3d_patches(arr, patch_radius):
     return np.array(all_patches)
 
 
-def _fit_denoising_model(train, vol_idx, model, alpha, copy_X=True):
+def _fit_denoising_model(train, vol_idx, model, alpha, *, copy_X=True):
     """Fit a single 3D volume using a train and test phase.
 
     Parameters
@@ -104,7 +104,7 @@ def _fit_denoising_model(train, vol_idx, model, alpha, copy_X=True):
         and other objects that inherit from `sklearn.base.RegressorMixin`.
     alpha : float
         Regularization parameter only for ridge and lasso regression models.
-    copy_X : bool
+    copy_X : bool, optional
         If True, the design matrix X will be copied; else, it may be overwritten.
 
     Returns
@@ -452,7 +452,7 @@ def _validate_inputs(data, out_dtype, patch_radius, version, tmp_dir):
     elif patch_radius.size == 3:
         patch_radius = tuple(patch_radius)
     else:
-        raise ValueError("patch_radius is not supported for Patch2Self version 3.")
+        raise ValueError("patch_radius must be a scalar or a 3-element array.")
     if patch_radius != (0, 0, 0) and version == 3:
         raise ValueError(
             "Patch radius is not supported for Patch2Self version 3. \
