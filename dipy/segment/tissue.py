@@ -77,16 +77,16 @@ class TissueClassifierHMRF:
         if image.max() > 1:
             image = np.interp(image, [0, image.max()], [0.0, 1.0])
 
-        mu, sigmasq = com.initialize_param_uniform(image, nclasses)
+        mu, var = com.initialize_param_uniform(image, nclasses)
         p = np.argsort(mu)
         mu = mu[p]
-        sigmasq = sigmasq[p]
+        var = var[p]
 
-        neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
+        neglogl = com.negloglikelihood(image, mu, var, nclasses)
         seg_init = icm.initialize_maximum_likelihood(neglogl)
 
-        mu, sigmasq = com.seg_stats(image, seg_init, nclasses)
-        sigmasq = np.maximum(sigmasq, min_var)
+        mu, var = com.seg_stats(image, seg_init, nclasses)
+        var = np.maximum(var, min_var)
 
         zero = np.zeros_like(image) + 0.001
         zero_noise = add_noise(zero, 10000, 1, noise_type="gaussian")
@@ -100,16 +100,16 @@ class TissueClassifierHMRF:
                 logger.info(f">> Iteration: {i}")
 
             PLN = icm.prob_neighborhood(seg_init, beta, nclasses)
-            PVE = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
+            PVE = com.prob_image(image_gauss, nclasses, mu, var, PLN)
 
-            mu_upd, sigmasq_upd = com.update_param(image_gauss, PVE, mu, nclasses)
+            mu_upd, var_upd = com.update_param(image_gauss, PVE, mu, nclasses)
             ind = np.argsort(mu_upd)
             mu_upd = mu_upd[ind]
-            sigmasq_upd = sigmasq_upd[ind]
-            print(f"{i}: sigmasq_upd: {sigmasq_upd}")
-            sigmasq_upd = np.maximum(sigmasq_upd, min_var)
+            var_upd = var_upd[ind]
+            print(f"{i}: var_upd: {var_upd}")
+            var_upd = np.maximum(var_upd, min_var)
 
-            negll = com.negloglikelihood(image_gauss, mu_upd, sigmasq_upd, nclasses)
+            negll = com.negloglikelihood(image_gauss, mu_upd, var_upd, nclasses)
             final_segmentation, energy = icm.icm_ising(negll, beta, seg_init)
 
             energy_sum.append(energy[energy > -np.inf].sum())
@@ -132,7 +132,7 @@ class TissueClassifierHMRF:
 
             seg_init = final_segmentation
             mu = mu_upd
-            sigmasq = sigmasq_upd
+            var = var_upd
 
         PVE = PVE[..., 1:]
 
