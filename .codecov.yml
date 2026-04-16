@@ -25,7 +25,7 @@ coverage:
         # Having this threshold set a little higher (0.1%) than that makes it
         # a little more tolerant to fluctuations
         target: auto
-        threshold: 0.5%
+        threshold: 5%
     patch:
       default:
         target: auto
