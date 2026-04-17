@@ -31,22 +31,22 @@ def _image_stub():
 
 def test_set_interpolation_forces_nearest_for_divergent_colormap():
     """``_set_interpolation`` enforces nearest when colormap is divergent."""
-    image = _image_stub()
-    image.colormap = "Divergent"
 
     class _Material:
         def __init__(self):
-            self.interpolation = "linear"
+            self.interpolation = "Linear"
 
     class _Actor:
         def __init__(self):
             self.material = _Material()
 
+    image = _image_stub()
     image._slicer = type("Slicer", (), {"children": [_Actor(), _Actor()]})()
+    image._has_directions = False
+    image._value_percentiles = (0, 100)
+    image._apply_colormap("Divergent")
 
-    image._set_interpolation("linear")
-
-    assert image.interpolation == "nearest"
+    image.interpolation = "nearest"
     assert all(
         actor.material.interpolation == "nearest" for actor in image._slicer.children
     )
