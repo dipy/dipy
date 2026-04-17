@@ -783,7 +783,7 @@ class Skyline:
                 idx,
                 is_cluster=is_cluster if is_cluster is not None else self._is_cluster,
                 thr=self._cluster_thr,
-                line_type="line" if self._is_light_version else "tube",
+                line_type="Line" if self._is_light_version else "Tube",
                 render_callback=self.request_refresh,
                 colormap=self._color_gen,
                 tract_colors=self._tract_colors,
