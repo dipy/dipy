@@ -568,14 +568,15 @@ class Streamline3D(Visualization):
             popup_id=self._color_picker_popup_id,
         )
         if is_open and not self._color_picker_open:
-            self._draft_color = normalize_picker_color(self._original_color)
+            self._draft_color = normalize_picker_color(self.color)
         if changed:
             self._draft_color = new_color
         if self._color_picker_open and not is_open:
-            if not colors_equal(self._draft_color, self._original_color):
+            if not colors_equal(self._draft_color, self.color):
                 self.color = self._draft_color
                 self.apply_scene_op(self._create_streamline_actor)
                 self.render()
+            self._draft_color = self.color
         self._color_picker_open = is_open
 
         if self._buan_pvals_file is not None and self._buan_pvals_data is not None:
