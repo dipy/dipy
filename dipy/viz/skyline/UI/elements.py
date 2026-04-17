@@ -61,7 +61,20 @@ def colors_equal(color_a, color_b):
 
 
 def normalize_picker_color(color, *, fallback=(1.0, 0.0, 0.0)):
-    """Return an RGB tuple suitable for ImGui color picker widgets."""
+    """Return an RGB tuple suitable for ImGui color picker widgets.
+
+    Parameters
+    ----------
+    color : tuple
+        Color to normalize.
+    fallback : tuple, optional
+        Fallback color to return if the input color is not valid.
+
+    Returns
+    -------
+    tuple
+        An RGB tuple suitable for ImGui color picker widgets.
+    """
     if isinstance(color, str):
         return fallback
 
