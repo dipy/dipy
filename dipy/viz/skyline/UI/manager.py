@@ -3,6 +3,7 @@
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import (
     color_picker,
+    colors_equal,
     loading,
     render_file_dialog,
     render_section_header,
@@ -127,6 +128,9 @@ class UIWindow:
         self.file_dialog_callback = file_dialog_callback
         self.bg_color_callback = bg_color_callback
         self._bg_color = (0.1, 0.1, 0.1)
+        self._draft_color = self._bg_color
+        self._color_picker_open = False
+        self._color_picker_popup_id = f"bg_color_picker_popup##{title}"
         self._is_dialog_open = False
 
         # Use direct imgui API to avoid font atlas rebuilds that cause
@@ -310,12 +314,23 @@ class UIWindow:
             imgui.end_popup()
 
         imgui.same_line(0, 8)
-        changed, color = color_picker(
-            selected_color=self._bg_color,
-            tooltip="Change Background Color",
+        selected_color = (
+            self._draft_color if self._color_picker_open else self._bg_color
         )
+        changed, color, is_open = color_picker(
+            selected_color=selected_color,
+            tooltip="Change Background Color",
+            popup_id=self._color_picker_popup_id,
+        )
+        if is_open and not self._color_picker_open:
+            self._draft_color = self._bg_color
         if changed:
-            self._update_bg_color(color)
+            self._draft_color = color
+        if self._color_picker_open and not is_open:
+            if not colors_equal(self._draft_color, self._bg_color):
+                self._update_bg_color(self._draft_color)
+            self._draft_color = self._bg_color
+        self._color_picker_open = is_open
 
         imgui.set_cursor_screen_pos(org_start)
         imgui.dummy((available_width, self.logo_size[1] + spacing * 5 + 1))
