@@ -1,6 +1,9 @@
 python_sources = [
   '__init__.py',
   'test_image.py',
+  'test_roi.py',
+  'test_streamline.py',
+  'test_surface.py',
   ]
 
 
