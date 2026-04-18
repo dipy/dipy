@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+import numpy.testing as npt
 from numpy.testing import assert_array_almost_equal, assert_raises
 
 from dipy.core.gradients import gradient_table
@@ -397,6 +398,13 @@ def test_cti_fits():
             f"ground truth {ground_truth_K_iso}"
         )
         assert np.isclose(K_iso, ground_truth_K_iso), error_msg
+
+        K_total = ctiF.K_total
+        K_aniso = ctiF.K_aniso
+        K_iso = ctiF.K_iso
+        K_micro = ctiF.K_micro
+
+        npt.assert_array_almost_equal(K_total, K_aniso + K_iso + K_micro)
 
         # checking microscopic source of kurtosis
         ground_truth_K_micro = 0
