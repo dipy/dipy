@@ -1,13 +1,13 @@
 python_sources = [
   '__init__.py',
   'test_ascm.py',
+  'test_bias_correction.py',
   'test_denoise.py',
   'test_gibbs.py',
   'test_kernel.py',
   'test_lpca.py',
   'test_nlmeans.py',
   'test_noise_estimate.py',
-  'test_non_local_means.py',
   'test_patch2self.py',
   ]
 

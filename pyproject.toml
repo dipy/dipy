@@ -3,7 +3,7 @@ name = "dipy"
 description = "Diffusion MRI Imaging in Python"
 license = {file = "LICENSE"}
 readme = "README.rst"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "DIPY developers", email = "dipy@python.org" }]
 maintainers = [
     {name = "Eleftherios Garyfallidis", email="neuroimaging@python.org"},
@@ -23,9 +23,10 @@ classifiers = [
     'License :: OSI Approved :: BSD License',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
+    'Programming Language :: Python :: 3.14',
     'Programming Language :: Python :: 3 :: Only',
     "Topic :: Software Development :: Libraries",
     'Topic :: Scientific/Engineering',
@@ -35,7 +36,7 @@ classifiers = [
     'Operating System :: Unix',
     'Operating System :: MacOS',
 ]
-version = "1.12.0.dev0"
+version = "1.13.0.dev0"
 dependencies = [
     "numpy>=1.22.4",
     "scipy>=1.8",
@@ -43,18 +44,20 @@ dependencies = [
     "h5py>=3.1.0",
     "packaging>=21",
     "tqdm>=4.30.0",
-    "trx-python>=0.3.0",
+    "trx-python>=0.4.0",
 ]
 
 [project.scripts]
 dipy_align_syn = "dipy.workflows.cli:run"
 dipy_align_affine = "dipy.workflows.cli:run"
 dipy_apply_transform = "dipy.workflows.cli:run"
+dipy_brain_mask = "dipy.workflows.cli:run"
 dipy_buan_shapes = "dipy.workflows.cli:run"
 dipy_buan_profiles = "dipy.workflows.cli:run"
 dipy_buan_lmm = "dipy.workflows.cli:run"
 dipy_bundlewarp = "dipy.workflows.cli:run"
 dipy_classify_tissue = "dipy.workflows.cli:run"
+dipy_cluster_streamlines = "dipy.workflows.cli:run"
 dipy_correct_biasfield = "dipy.workflows.cli:run"
 dipy_correct_motion = "dipy.workflows.cli:run"
 dipy_denoise_nlmeans = "dipy.workflows.cli:run"
@@ -69,11 +72,13 @@ dipy_fit_dki = "dipy.workflows.cli:run"
 dipy_fit_dsi = "dipy.workflows.cli:run"
 dipy_fit_dsid = "dipy.workflows.cli:run"
 dipy_fit_dti = "dipy.workflows.cli:run"
+dipy_fit_force = "dipy.workflows.cli:run"
 dipy_fit_forecast = "dipy.workflows.cli:run"
 dipy_fit_fwdti = "dipy.workflows.cli:run"
 dipy_fit_gqi = "dipy.workflows.cli:run"
 dipy_fit_ivim = "dipy.workflows.cli:run"
 dipy_fit_mapmri = "dipy.workflows.cli:run"
+dipy_fit_msmtcsd = "dipy.workflows.cli:run"
 dipy_fit_opdt = "dipy.workflows.cli:run"
 dipy_fit_powermap = "dipy.workflows.cli:run"
 dipy_fit_qball = "dipy.workflows.cli:run"
@@ -109,7 +114,7 @@ dipy_tensor2pam = "dipy.workflows.cli:run"
 build = [
     "meson-python>=0.13",
     "wheel",
-    "setuptools~=69.5",
+    "setuptools>=69.5,<83.0",
     "packaging>=21",
     "ninja",
     "Cython>=0.29.35",
@@ -121,7 +126,7 @@ all = ["dipy[build, dev, doc, style, viz, optional, benchmark]"]
 style = ["ruff", "pre-commit"]
 viz = ["fury>=0.12.0", "matplotlib"]
 test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
-ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "tensorflow", "torch"]
+ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
 dev = [
     "dipy[build, style]",
     "pytest",
@@ -172,14 +177,15 @@ requires = [
     "Cython>=3.0.4",
     "packaging>21.0",
     "wheel",
+    "scipy>=1.8.0",
     # numpy requirement for wheel builds for distribution on PyPI - building
     # against 2.x yields wheels that are also compatible with numpy 1.x at
     # runtime.
     # Note that building against numpy 1.x works fine too - users and
     # redistributors can do this by installing the numpy version they like and
     # disabling build isolation.
-    "numpy>=2.0.0rc1; python_version>='3.10' and platform_python_implementation!='PyPy'",
-    "numpy; python_version>='3.10' and platform_python_implementation=='PyPy'",
+    "numpy>=2.0.0rc1; python_version>='3.11' and platform_python_implementation!='PyPy'",
+    "numpy; python_version>='3.11' and platform_python_implementation=='PyPy'",
 ]
 
 [tool.spin]
@@ -201,20 +207,22 @@ Environments = [
 ]
 
 "Documentation" = [
-    "spin.cmds.meson.docs",
-    # ".spin/cmds.py:docs"
+    ".spin/cmds.py:docs",
 ]
 Metrics = [
     ".spin/cmds.py:bench",
     # ".spin/cmds.py:coverage
 ]
-# TODO: Add custom commands
+Release = [
+    ".spin/cmds.py:prepare_release",
+]
 
 [tool.pytest.ini_options]
 addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignore-glob=**/benchmarks/*"
 filterwarnings = [
     # FURY
     "ignore:.*You do not have FURY installed.*:UserWarning",
+    "ignore:.*'where' used without 'out'.*:UserWarning:fury.colormap",
     # pkg_resources (via Ray)
     "ignore:Implementing implicit namespace packages.*:DeprecationWarning",
     "ignore:Deprecated call to `pkg_resources.*:DeprecationWarning",
@@ -224,4 +232,7 @@ filterwarnings = [
     "ignore:The default value of raise_error will change.*:PendingDeprecationWarning",
     # Joblib:loky issue. see https://github.com/joblib/joblib/blob/71c2ce7f1b8bebc804ff8e9eb77571bb486ed34d/CHANGES.rst?plain=1#L79
     "ignore:.*is multi-threaded, use of fork.{2} may lead to deadlocks in the child.*:DeprecationWarning",
+    # scipy/h5py using deprecated numpy functions (np.find_common_type, np.product)
+    "ignore:.*np.find_common_type is deprecated.*:DeprecationWarning:scipy",
+    "ignore:.*`product` is deprecated.*:DeprecationWarning:h5py",
 ]

@@ -13,7 +13,6 @@ from dipy.nn.utils import (
 )
 from dipy.segment.utils import remove_holes_and_islands
 from dipy.testing.decorators import doctest_skip_parser
-from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -85,32 +84,108 @@ def prepare_img(image):
 
 
 class MoveDimLayer(Module):
+    """Layer to move a dimension of a tensor.
+
+    Parameters
+    ----------
+    source_dim : int
+        The dimension to move.
+    dest_dim : int
+        The dimension to move to.
+    """
+
     def __init__(self, source_dim, dest_dim):
         super(MoveDimLayer, self).__init__()
         self.source_dim = source_dim
         self.dest_dim = dest_dim
 
     def forward(self, x):
+        """Forward pass of the MoveDimLayer.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        torch.Tensor
+            Tensor with moved dimension.
+        """
         return torch.movedim(x, self.source_dim, self.dest_dim)
 
 
 class ChannelSum(Module):
+    """Layer to sum over the channel dimension."""
+
     def __init__(self):
         super(ChannelSum, self).__init__()
 
     def forward(self, inputs):
+        """Forward pass of the ChannelSum layer.
+
+        Parameters
+        ----------
+        inputs : torch.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        torch.Tensor
+            Summed tensor over the channel dimension.
+        """
         return torch.sum(inputs, dim=1, keepdim=True)
 
 
 class Add(Module):
+    """Layer to add two tensors."""
+
     def __init__(self):
         super(Add, self).__init__()
 
     def forward(self, x, passed):
+        """Forward pass of the Add layer.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            First input tensor.
+        passed : torch.Tensor
+            Second input tensor.
+
+        Returns
+        -------
+        torch.Tensor
+            Sum of the two input tensors.
+        """
         return x + passed
 
 
 class Block(Module):
+    """Building block for the EVAC+ model.
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    kernel_size : int
+        Size of the convolutional kernel.
+    strides : int
+        Stride of the convolution.
+    padding : int
+        Padding of the convolution.
+    drop_r : float
+        Dropout rate.
+    n_layers : int
+        Number of convolutional layers in the block.
+    passed_channel : int, optional
+        Number of channels in the skipped connection.
+    layer_type : str, optional
+        Type of the block: 'down', 'up', or 'none'.
+    """
+
     def __init__(
         self,
         in_channels,
@@ -160,6 +235,22 @@ class Block(Module):
         self.add = Add()
 
     def forward(self, input, passed):
+        """Forward pass of the Block.
+
+        Parameters
+        ----------
+        input : torch.Tensor
+            Input tensor.
+        passed : torch.Tensor
+            Tensor from skipped connection.
+
+        Returns
+        -------
+        fwd : torch.Tensor
+            Output of the convolutional layers after adding the passed tensor.
+        x : torch.Tensor
+            Output of the downsampling or upsampling layer.
+        """
         x = input
         for layer in self.layer_list:
             x = layer(x)
@@ -175,6 +266,14 @@ class Block(Module):
 
 
 class Model(Module):
+    """The Model class for the EVAC+ architecture.
+
+    Parameters
+    ----------
+    model_scale : int, optional
+        The scale of the model.
+    """
+
     def __init__(self, model_scale=16):
         super(Model, self).__init__()
 
@@ -271,6 +370,26 @@ class Model(Module):
         self.softmax = Softmax(dim=1)
 
     def forward(self, inputs, raw_input_2, raw_input_3, raw_input_4, raw_input_5):
+        """Forward pass of the EVAC+ model.
+
+        Parameters
+        ----------
+        inputs : torch.Tensor
+            Main input tensor.
+        raw_input_2 : torch.Tensor
+            Multi-resolution input tensor at scale 2.
+        raw_input_3 : torch.Tensor
+            Multi-resolution input tensor at scale 4.
+        raw_input_4 : torch.Tensor
+            Multi-resolution input tensor at scale 8.
+        raw_input_5 : torch.Tensor
+            Multi-resolution input tensor at scale 16.
+
+        Returns
+        -------
+        torch.Tensor
+            Predicted brain mask probability map.
+        """
         fwd1, x = self.block1(inputs, inputs)
         x = torch.cat([x, raw_input_2], dim=1)
 
@@ -352,6 +471,18 @@ class EVACPlus:
         self.fetch_default_weights()
 
     def init_model(self, model_scale=16):
+        """Initialize the EVAC+ model.
+
+        Parameters
+        ----------
+        model_scale : int, optional
+            The scale of the model.
+
+        Returns
+        -------
+        Model
+            Initialized EVAC+ model.
+        """
         return Model(model_scale)
 
     def fetch_default_weights(self):
@@ -398,19 +529,16 @@ class EVACPlus:
         np.ndarray (batch, ...)
             Predicted brain mask
         """
-        return self.model(*x_test)[:, 0].detach().numpy()
+        # Move input tensors to correct device (no-op when device=cpu)
+        x_test = [t.to(self.device) for t in x_test]
+        return self.model(*x_test)[:, 0].detach().cpu().numpy()
 
-    @deprecated_params(
-        "largest_area", new_name="finalize_mask", since="1.10", until="1.12"
-    )
     def predict(
         self,
         T1,
         affine,
         *,
-        voxsize=(1, 1, 1),
         batch_size=None,
-        return_affine=False,
         return_prob=False,
         finalize_mask=True,
     ):
@@ -425,9 +553,6 @@ class EVACPlus:
             or list of np.ndarrays with len of batch
             Affine matrix for the T1 image. Should have
             batch dimension if T1 has one.
-        voxsize : np.ndarray or list or tuple, optional
-            (3,) or (batch, 3)
-            voxel size of the T1 image.
         batch_size : int, optional
             Number of images per prediction pass. Only available if data
             is provided with a batch dimension.
@@ -435,9 +560,6 @@ class EVACPlus:
             Increase it if you want it to be faster and have a lot of data.
             If None, batch_size will be set to 1 if the provided image
             has a batch dimension.
-        return_affine : bool, optional
-            Whether to return the affine matrix. Useful if the input was a
-            file path.
         return_prob : bool, optional
             Whether to return the probability map instead of a
             binary mask. Useful for testing.
@@ -454,7 +576,6 @@ class EVACPlus:
             affine matrix of mask
             only if return_affine is True
         """
-        voxsize = np.array(voxsize)
         affine = np.array(affine)
 
         if isinstance(T1, (list, tuple)):
@@ -471,7 +592,6 @@ class EVACPlus:
 
             T1 = np.expand_dims(T1, 0)
             affine = np.expand_dims(affine, 0)
-            voxsize = np.expand_dims(voxsize, 0)
         else:
             raise ValueError(
                 "T1 data should be a np.ndarray of dimension 3 or a list/tuple of it"
@@ -480,28 +600,21 @@ class EVACPlus:
             batch_size = 1
 
         input_data = np.zeros((128, 128, 128, len(T1)))
-        affines = np.zeros((len(T1), 4, 4))
-        mid_shapes = np.zeros((len(T1), 3)).astype(int)
-        offset_arrays = np.zeros((len(T1), 4, 4)).astype(int)
-        scales = np.zeros(len(T1))
-        crop_vss = np.zeros((len(T1), 3, 2))
-        pad_vss = np.zeros((len(T1), 3, 2))
+        params_list = []
 
         # Normalize the data.
-        n_T1 = np.zeros(T1.shape)
         for i, T1_img in enumerate(T1):
-            n_T1[i] = normalize(T1_img, new_min=0, new_max=1)
-            t_img, t_affine, mid_shape, offset_array, scale, crop_vs, pad_vs = (
-                transform_img(n_T1[i], affine[i], voxsize=voxsize[i])
+            t_img, params = transform_img(
+                T1_img,
+                affine[i],
+                target_voxsize=(2.0, 2.0, 2.0),
+                final_size=(128, 128, 128),
+                order=3,
             )
+            min_v, max_v = np.percentile(t_img, (0.5, 99.5))
+            t_img = normalize(t_img, min_v=min_v, max_v=max_v, new_min=0, new_max=1)
             input_data[..., i] = t_img
-            affines[i] = t_affine
-            mid_shapes[i] = mid_shape
-            offset_arrays[i] = offset_array
-            scales[i] = scale
-            crop_vss[i] = crop_vs
-            pad_vss[i] = pad_vs
-
+            params_list.append(params)
         # Prediction stage
         prediction = np.zeros((len(T1), 128, 128, 128), dtype=np.float32)
         for batch_idx in range(batch_size, len(T1) + 1, batch_size):
@@ -517,17 +630,7 @@ class EVACPlus:
 
         output_mask = []
         for i in range(len(T1)):
-            output = recover_img(
-                prediction[i],
-                affines[i],
-                mid_shapes[i],
-                n_T1[i].shape,
-                offset_arrays[i],
-                voxsize=voxsize[i],
-                scale=scales[i],
-                crop_vs=crop_vss[i],
-                pad_vs=pad_vss[i],
-            )
+            output = recover_img(prediction[i], params_list[i])
             if not return_prob:
                 output = np.where(output >= 0.5, 1, 0)
                 if finalize_mask:
@@ -536,11 +639,6 @@ class EVACPlus:
 
         if dim == 3:
             output_mask = output_mask[0]
-            affine = affine[0]
 
         output_mask = np.array(output_mask)
-        affine = np.array(affine)
-        if return_affine:
-            return output_mask, affine
-        else:
-            return output_mask
+        return output_mask

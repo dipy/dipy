@@ -72,8 +72,19 @@ def nifti1_symmat(image_data, *args, **kwargs):
 
 
 def make5d(data):
-    """reshapes the input to have 5 dimensions, adds extra dimensions just
-    before the last dimension
+    """Reshape the input to have 5 dimensions.
+
+    Adds extra dimensions just before the last dimension.
+
+    Parameters
+    ----------
+    data : array-like
+        The input data to reshape.
+
+    Returns
+    -------
+    data : ndarray
+        The reshaped 5D data.
     """
     data = np.asarray(data)
     if data.ndim > 5:
@@ -393,13 +404,32 @@ def is_header_compatible(reference_1, reference_2):
 def create_tractogram_header(
     tractogram_type, affine, dimensions, voxel_sizes, voxel_order
 ):
-    """Write a standard trk/tck header from spatial attribute"""
-    if isinstance(tractogram_type, str):
-        tractogram_type = detect_format(tractogram_type)
+    """Write a standard trk/tck header from spatial attribute
+
+    Parameters
+    ----------
+    tractogram_type : str, Path or nibabel.streamlines.format.TractogramFile
+        The tractogram type to create a header for.
+    affine : ndarray (4, 4)
+        The affine transformation.
+    dimensions : array-like (3,)
+        The image dimensions.
+    voxel_sizes : array-like (3,)
+        The voxel sizes.
+    voxel_order : str
+        The voxel order (e.g., 'RAS').
+
+    Returns
+    -------
+    header : dict
+        A standard tractogram header.
+    """
+    if isinstance(tractogram_type, (str, Path)):
+        tractogram_type = detect_format(str(tractogram_type))
 
     new_header = tractogram_type.create_empty_header()
-    new_header[nib.streamlines.Field.VOXEL_SIZES] = tuple(voxel_sizes)
-    new_header[nib.streamlines.Field.DIMENSIONS] = tuple(dimensions)
+    new_header[nib.streamlines.Field.VOXEL_SIZES] = np.asarray(voxel_sizes)
+    new_header[nib.streamlines.Field.DIMENSIONS] = np.asarray(dimensions)
     new_header[nib.streamlines.Field.VOXEL_TO_RASMM] = affine
     new_header[nib.streamlines.Field.VOXEL_ORDER] = voxel_order
 
@@ -407,7 +437,22 @@ def create_tractogram_header(
 
 
 def create_nifti_header(affine, dimensions, voxel_sizes):
-    """Write a standard nifti header from spatial attribute"""
+    """Write a standard nifti header from spatial attribute
+
+    Parameters
+    ----------
+    affine : ndarray (4, 4)
+        The affine transformation.
+    dimensions : array-like (3,)
+        The image dimensions.
+    voxel_sizes : array-like (3,)
+        The voxel sizes.
+
+    Returns
+    -------
+    header : nibabel.nifti1.Nifti1Header
+        A standard NIfTI header.
+    """
     new_header = nib.Nifti1Header()
     new_header.set_sform(affine)
     new_header["dim"][1:4] = dimensions
@@ -480,6 +525,27 @@ def read_img_arr_or_path(data, *, affine=None):
 
 
 def recursive_compare(d1, d2, level="root"):
+    """Recursively compare two dictionaries or lists for matching structure and dtypes.
+
+    This function is primarily used to compare dtype dictionaries, ensuring that
+    they have the same keys/structure and that the leaf values have the same
+    itemsize.
+
+    Parameters
+    ----------
+    d1 : dict or list or object
+        The first object to compare.
+    d2 : dict or list or object
+        The second object to compare.
+    level : str, optional
+        The current level of recursion, used for reporting errors.
+
+    Raises
+    ------
+    ValueError
+        If the dictionaries have different keys, lists have different lengths,
+        or leaf values have different item sizes.
+    """
     if isinstance(d1, dict) and isinstance(d2, dict):
         if d1.keys() != d2.keys():
             s1 = set(d1.keys())

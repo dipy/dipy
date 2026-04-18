@@ -1,3 +1,9 @@
+"""Visualization tools.
+
+Functions and classes for visualizing diffusion MRI data,
+streamlines, and tensors (powered by FURY and Matplotlib).
+"""
+
 # Init file for visualization package
 import warnings
 
@@ -12,7 +18,7 @@ fury_pckg_msg = (
 
 # Allow import, but disable doctests if we don't have fury
 fury, has_fury, _ = optional_package(
-    "fury", trip_msg=fury_pckg_msg, min_version="0.10.0"
+    "fury", trip_msg=fury_pckg_msg, min_version="0.10.0", max_version="1.0.0"
 )
 
 

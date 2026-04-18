@@ -34,6 +34,16 @@ else:
 
 
 class UNet3D(Module):
+    """3D U-Net architecture for the DeepN4 model.
+
+    Parameters
+    ----------
+    n_in : int
+        Number of input channels.
+    n_out : int
+        Number of output channels.
+    """
+
     def __init__(self, n_in, n_out):
         super(UNet3D, self).__init__()
         # Encoder
@@ -73,6 +83,26 @@ class UNet3D(Module):
         self.dl = ConvTranspose3d(n_out, n_out, kernel_size=1, stride=1, padding=0)
 
     def encoder_block(self, in_channels, out_channels, kernel_size, stride, padding):
+        """Encoder block for the 3D U-Net.
+
+        Parameters
+        ----------
+        in_channels : int
+            Number of input channels.
+        out_channels : int
+            Number of output channels.
+        kernel_size : int
+            Size of the convolutional kernel.
+        stride : int
+            Stride of the convolution.
+        padding : int
+            Padding of the convolution.
+
+        Returns
+        -------
+        torch.nn.Sequential
+            The encoder block.
+        """
         layer = Sequential(
             Conv3d(
                 in_channels,
@@ -88,6 +118,26 @@ class UNet3D(Module):
         return layer
 
     def decoder_block(self, in_channels, out_channels, kernel_size, stride, padding):
+        """Decoder block for the 3D U-Net.
+
+        Parameters
+        ----------
+        in_channels : int
+            Number of input channels.
+        out_channels : int
+            Number of output channels.
+        kernel_size : int
+            Size of the convolutional kernel.
+        stride : int
+            Stride of the convolution.
+        padding : int
+            Padding of the convolution.
+
+        Returns
+        -------
+        torch.nn.Sequential
+            The decoder block.
+        """
         layer = Sequential(
             ConvTranspose3d(
                 in_channels,
@@ -103,6 +153,18 @@ class UNet3D(Module):
         return layer
 
     def forward(self, x):
+        """Forward pass of the 3D U-Net.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor.
+
+        Returns
+        -------
+        torch.Tensor
+            Output tensor.
+        """
         # Encodes
         e0 = self.ec0(x)
         syn0 = self.ec1(e0)
@@ -200,6 +262,7 @@ class DeepN4:
         else:
             self.device = torch.device("cpu")
         self.model = self.model.to(self.device)
+        self.fetch_default_weights()
 
     def fetch_default_weights(self):
         """Load the model pre-training weights to use for the fitting."""
@@ -243,9 +306,25 @@ class DeepN4:
         np.ndarray (batch, ...)
             Predicted bias field
         """
-        return self.model(x_test)[:, 0].detach().numpy()
+        return self.model(x_test)[:, 0].detach().cpu().numpy()
 
     def pad(self, img, sz):
+        """Pad or crop the image to the specified size.
+
+        Parameters
+        ----------
+        img : np.ndarray
+            The image to pad or crop.
+        sz : int
+            The target size for each dimension.
+
+        Returns
+        -------
+        tmp : np.ndarray
+            The padded or cropped image.
+        indices : list
+            A list of indices used for padding and cropping.
+        """
         tmp = np.zeros((sz, sz, sz))
 
         diff = int((sz - img.shape[0]) / 2)
@@ -277,6 +356,20 @@ class DeepN4:
         return tmp, [lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ]
 
     def load_resample(self, subj):
+        """Preprocess the subject image for the model.
+
+        This includes padding, normalization, and converting to a tensor.
+
+        Parameters
+        ----------
+        subj : np.ndarray
+            The subject image.
+
+        Returns
+        -------
+        tuple
+            A tuple containing the processed tensor and auxiliary parameters.
+        """
         input_data, [lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ] = self.pad(
             subj, 128
         )
@@ -303,7 +396,7 @@ class DeepN4:
             in_max,
         )
 
-    def predict(self, img, img_affine, *, voxsize=(1, 1, 1), threshold=0.5):
+    def predict(self, img, img_affine, *, threshold=0.5):
         """Wrapper function to facilitate prediction of larger dataset.
         The function will mask, normalize, split, predict and 're-assemble'
         the data as a volume.
@@ -314,8 +407,6 @@ class DeepN4:
             T1 image to predict and apply bias field
         img_affine : np.ndarray (4, 4)
             Affine matrix for the T1 image
-        voxsize : np.ndarray or list or tuple (3,), optional
-            voxel size of the T1 image.
         threshold : float, optional
             Threshold for cleaning the final correction field
 
@@ -326,8 +417,12 @@ class DeepN4:
             The volume has matching shape to the input data
         """
         # Preprocess input data (resample, normalize, and pad)
-        resampled_T1, inv_affine, mid_shape, offset_array, scale, crop_vs, pad_vs = (
-            transform_img(img, img_affine, voxsize=voxsize)
+        resampled_T1, params = transform_img(
+            img,
+            img_affine,
+            target_voxsize=(2.0, 2.0, 2.0),
+            final_size=(128, 128, 128),
+            order=3,
         )
         (in_features, lx, lX, ly, lY, lz, lZ, rx, rX, ry, rY, rz, rZ, in_max) = (
             self.load_resample(resampled_T1)
@@ -345,18 +440,7 @@ class DeepN4:
         )
         final_field[rx:rX, ry:rY, rz:rZ] = field[lx:lX, ly:lY, lz:lZ]
         final_fields = gaussian_filter(final_field, sigma=3)
-        upsample_final_field = recover_img(
-            final_fields,
-            inv_affine,
-            mid_shape,
-            img.shape,
-            offset_array,
-            voxsize,
-            scale,
-            crop_vs,
-            pad_vs,
-        )
-
+        upsample_final_field = recover_img(final_fields, params)
         # Correct the image
         below_threshold_mask = np.abs(upsample_final_field) < threshold
         with np.errstate(divide="ignore", invalid="ignore"):

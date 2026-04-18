@@ -1716,7 +1716,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
 
         for j in range(points*3):
             C[k]['hidden'][j]=cluster[k].hidden[j]
-        C[k]['hidden'].shape=(points,3)
+        C[k]['hidden'] = C[k]['hidden'].reshape((points, 3))
 
         C[k]['N']=cluster[k].N
         C[k]['indices']=np.zeros(cluster[k].N,dtype=np.int64)

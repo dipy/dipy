@@ -163,7 +163,7 @@ def test_tensor_model():
     # Signals
     Y = np.exp(np.dot(X, D))
     npt.assert_almost_equal(Y[0], b0)
-    Y.shape = (-1,) + Y.shape
+    Y = Y.reshape((-1,) + Y.shape)
 
     # Test fitting with different methods:
     for fit_method in ["OLS", "WLS", "NLLS"]:
@@ -178,7 +178,7 @@ def test_tensor_model():
         for i in range(3):
             # Eigenvectors have intrinsic sign ambiguity
             # (see
-            # http://prod.sandia.gov/techlib/access-control.cgi/2007/076422.pdf)
+            # https://prod.sandia.gov/techlib/access-control.cgi/2007/076422.pdf)
             # so we need to allow for sign flips. One of the following should
             # always be true:
             npt.assert_(
@@ -382,7 +382,7 @@ def test_wls_and_ls_fit():
     # Signals
     Y = np.exp(np.dot(X, D))
     npt.assert_almost_equal(Y[0], b0)
-    Y.shape = (-1,) + Y.shape
+    Y = Y.reshape((-1,) + Y.shape)
 
     # Testing WLS Fit on single voxel
     # If you do something wonky (passing min_signal<0), you should get an
@@ -501,7 +501,7 @@ def test_rwls_rnlls_irls_fit():
     # Signals
     Y = np.exp(np.dot(X, D))
     npt.assert_almost_equal(Y[0], b0)
-    Y.shape = (-1,) + Y.shape
+    Y = Y.reshape((-1,) + Y.shape)
 
     noise = 1 * np.random.normal(size=Y.shape)
     YN = Y + noise  # error, or weights irrelevant
@@ -797,7 +797,7 @@ def test_nlls_fit_tensor():
 
     # Signals
     Y = np.exp(np.dot(X, D))
-    Y.shape = (-1,) + Y.shape
+    Y = Y.reshape((-1,) + Y.shape)
 
     # Estimate tensor from test signals and compare against expected result
     # using non-linear least squares:

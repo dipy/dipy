@@ -4,6 +4,7 @@ from inspect import getmembers, isfunction
 import os
 from pathlib import Path
 import re
+import shutil
 import sys
 import warnings
 
@@ -34,6 +35,7 @@ from dipy.tracking.streamlinespeed import length
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tractogram import concatenate_tractogram
+from dipy.workflows.base import format_key_value_table
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
@@ -350,6 +352,58 @@ def _print_tractography_information(
     )
 
 
+def format_data_names_table(data):
+    """Format dataset names and fetcher summaries as an ASCII table.
+
+    Parameters
+    ----------
+    data : dict
+        Available dataset names mapped to fetcher functions.
+
+    Returns
+    -------
+    str
+        Dataset names and fetcher summaries formatted as an ASCII table.
+    """
+
+    def _doc_summary(fetcher_function):
+        """Extract a short description from a fetcher docstring.
+
+        Parameters
+        ----------
+        fetcher_function : callable
+            Dataset fetcher function.
+
+        Returns
+        -------
+        str
+            The first non-empty line from ``fetcher_function.__doc__``.
+            Returns ``"-"`` when no description is available.
+        """
+
+        doc = getattr(fetcher_function, "__doc__", None)
+        if not doc:
+            return "-"
+
+        for line in doc.splitlines():
+            stripped_line = line.strip()
+            if stripped_line:
+                return stripped_line.replace("|", "/")
+
+        return "-"
+
+    descriptions_by_name = {
+        dataset_name: _doc_summary(fetcher_function)
+        for dataset_name, fetcher_function in data.items()
+    }
+
+    return format_key_value_table(
+        descriptions_by_name,
+        key_header="Dataset",
+        value_header="Description",
+    )
+
+
 class IoInfoFlow(Workflow):
     @classmethod
     def get_short_name(cls):
@@ -625,7 +679,7 @@ class FetchFlow(Workflow):
         elif "list" in data_names:
             logger.info(
                 "Please, select between the following data names: \n"
-                f"{', '.join(available_data.keys())}"
+                f"{format_data_names_table(available_data)}"
             )
 
         else:
@@ -795,6 +849,29 @@ class ExtractB0Flow(Workflow):
             norms = np.linalg.norm(bvecs, axis=1, keepdims=True)
             bvecs = bvecs / norms
             gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
+            if not gtab.b0s_mask.sum():
+                logger.warning(
+                    "No b0 volumes found, omitting b0 extraction and "
+                    "returning original DWI"
+                )
+                logger.info(f"b0 saved as {ob0}")
+                source_file = Path(dwi)
+                link_file = Path(ob0)
+                try:
+                    link_file.symlink_to(source_file.resolve())
+                except OSError:
+                    # On Windows creating symlinks requires extra privileges; use a
+                    # hard link first to avoid duplicating potentially large data.
+                    try:
+                        os.link(source_file, link_file)
+                        logger.info(f"Hard link created for {ob0}")
+                    except OSError:
+                        shutil.copy(source_file, link_file)
+                        logger.warning(
+                            f"Link creation for {ob0} failed, copied instead."
+                        )
+                continue
+
             b0s_result = extract_b0(
                 data,
                 gtab.b0s_mask,

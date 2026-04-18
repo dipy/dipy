@@ -1,5 +1,6 @@
 from ast import literal_eval
 from pathlib import Path
+import sys
 from warnings import warn
 
 import nibabel as nib
@@ -9,6 +10,7 @@ from dipy.core.gradients import (
     gradient_table,
     gradient_table_from_bvals_bvecs,
     mask_non_weighted_bvals,
+    unique_bvals_tolerance,
 )
 from dipy.core.ndindex import ndindex
 from dipy.core.sphere import HemiSphere
@@ -47,6 +49,11 @@ from dipy.reconst.forecast import ForecastModel
 from dipy.reconst.fwdti import FreeWaterTensorModel, common_fit_methods
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.ivim import IvimModel
+from dipy.reconst.mcsd import (
+    MultiShellDeconvModel,
+    multi_shell_fiber_response,
+    response_from_mask_msmt,
+)
 from dipy.reconst.rumba import RumbaSDModel
 from dipy.reconst.sfm import SparseFascicleModel
 from dipy.reconst.shm import (
@@ -58,6 +65,7 @@ from dipy.reconst.shm import (
     smooth_pinv,
     sph_harm_lookup,
 )
+from dipy.segment.tissue import TissueClassifierHMRF
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
@@ -1008,6 +1016,15 @@ class ReconstCSDFlow(Workflow):
         bvalues_files,
         bvectors_files,
         mask_files,
+        *,
+        use_msmt=False,
+        t1_file=None,
+        wm_file=None,
+        gm_file=None,
+        csf_file=None,
+        iso=3,
+        beta=0.1,
+        bval_tol=20,
         b0_threshold=50.0,
         bvecs_tol=0.01,
         roi_center=None,
@@ -1035,21 +1052,48 @@ class ReconstCSDFlow(Workflow):
         """Constrained spherical deconvolution.
 
         See :footcite:p:`Tournier2007` for further details about the method.
+        See :footcite:p:`Jeurissen2014` if you use the MSMT method. This method extends
+        the SSST-CSD introduced in :footcite:p:`Tournier2007`.
 
         Parameters
         ----------
-        input_files : string
+        input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues_files : string
+        bvalues_files : string or Path
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors_files : string
+        bvectors_files : string or Path
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
-        mask_files : string
+        mask_files : string or Path
             Path to the input masks. This path may contain wildcards to use
-            multiple masks at once. (default: No mask used)
+            multiple masks at once.
+        use_msmt : bool, optional
+            If True, use the Multi-Shell Multi-Tissue method.
+        t1_file : string or Path, optional
+            Path to the T1 file. If not available, an anisotropic map will be computed.
+            Option available only for ``--use_msmt`` or ``use_msmt=True``.
+        wm_file : string or Path, optional
+            Path to the WM mask. If not provided, HMRF tissue classifier will be
+            used on the T1 image to obtain the WM mask. Option available
+            only for ``--use_msmt`` or ``use_msmt=True``
+        gm_file : string or Path, optional
+            Path to the GM mask. If not provided, HMRF tissue classifier will be
+            used on the T1 image to obtain the GM mask. Option available only
+            for ``--use_msmt`` or ``use_msmt=True``
+        csf_file : string or Path, optional
+            Path to the CSF mask. If not provided, HMRF tissue classifier will be
+            used on the T1 image to obtain the CSF mask. Option available only
+            for ``--use_msmt`` or ``use_msmt=True``
+        iso : int, optional
+            Number of isotropic compartments for running the MSMT-CSD.
+            Currently fixed at 3 (WM, GM, CSF); values below 3 are rejected.
+        beta : float, optional
+            The smoothness factor of the tissue segmentation during MSMT-CSD.
+            Good performance is achieved with values between 0 and 0.5.
+        bval_tol : int, optional
+            Tolerance gap for b-values clustering in MSMT-CSD.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
@@ -1114,6 +1158,17 @@ class ReconstCSDFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
+        model = MultiShellDeconvModel if use_msmt else ConstrainedSphericalDeconvModel
+
+        if use_msmt and iso < 3:
+            msg = f"With MSMT, the minimum number of compartments is 3, got {iso}"
+            logger.error(msg)
+            return sys.exit(1)
+
+        peaks_sphere = default_sphere
+        if sphere_name is not None:
+            peaks_sphere = get_sphere(name=sphere_name)
+
         for (
             dwi,
             bval,
@@ -1157,43 +1212,136 @@ class ReconstCSDFlow(Workflow):
                     " DWI volumes."
                 )
 
-            if frf is None:
-                logger.info("Computing response function")
-                if roi_center is not None:
-                    logger.info(f"Response ROI center:\n{roi_center}")
-                    logger.info(f"Response ROI radii:\n{roi_radii}")
-                response, ratio = auto_response_ssst(
-                    gtab,
-                    data,
-                    roi_center=roi_center,
-                    roi_radii=roi_radii,
-                    fa_thr=fa_thr,
+            model_args = {"gtab": gtab, "sh_order_max": sh_order_max}
+            if not use_msmt:
+                if frf is None:
+                    logger.info("Computing response function")
+                    if roi_center is not None:
+                        logger.info(f"Response ROI center:\n{roi_center}")
+                        logger.info(f"Response ROI radii:\n{roi_radii}")
+                    response, ratio = auto_response_ssst(
+                        gtab,
+                        data,
+                        roi_center=roi_center,
+                        roi_radii=roi_radii,
+                        fa_thr=fa_thr,
+                    )
+                    response = list(response)
+
+                else:
+                    logger.info("Using response function")
+                    if isinstance(frf, str):
+                        l01 = np.array(literal_eval(frf), dtype=np.float64)
+                    else:
+                        l01 = np.array(frf, dtype=np.float64)
+
+                    l01 *= 10**-4
+                    response = np.array([l01[0], l01[1], l01[1]])
+                    ratio = l01[1] / l01[0]
+                    response = (response, ratio)
+
+                model_args["response"] = response
+                logger.info(
+                    f"Eigenvalues for the frf of the input data are :{response[0]}"
                 )
-                response = list(response)
+                logger.info(f"Ratio for smallest to largest eigen value is {ratio}")
 
             else:
-                logger.info("Using response function")
-                if isinstance(frf, str):
-                    l01 = np.array(literal_eval(frf), dtype=np.float64)
-                else:
-                    l01 = np.array(frf, dtype=np.float64)
+                need_tissue_classification = (
+                    sum(x is not None for x in [wm_file, gm_file, csf_file]) < iso
+                )
+                need_powermap = t1_file is None and need_tissue_classification
+                wm = np.ones(data.shape[:3])
+                gm = np.ones(data.shape[:3])
+                csf = np.ones(data.shape[:3])
+                anat_affine = affine
+                if need_tissue_classification:
+                    if need_powermap:
+                        logger.info(
+                            "No T1 image provided, computing anisotropic power map"
+                        )
+                        dwi_mask = ~gtab.b0s_mask
+                        normed_data = normalize_data(data, gtab.b0s_mask)
+                        normed_data = normed_data[..., dwi_mask]
+                        normed_data = normed_data * mask_vol[..., None]
 
-                l01 *= 10**-4
-                response = np.array([l01[0], l01[1], l01[1]])
-                ratio = l01[1] / l01[0]
-                response = (response, ratio)
+                        signal_native_pts = HemiSphere(xyz=gtab.bvecs[dwi_mask])
+                        sh_basis = "descoteaux07"
+                        sph_harm_basis = sph_harm_lookup.get(sh_basis)
 
-            logger.info(f"Eigenvalues for the frf of the input data are :{response[0]}")
-            logger.info(f"Ratio for smallest to largest eigen value is {ratio}")
+                        Ba, m, n = sph_harm_basis(
+                            sh_order_max, signal_native_pts.theta, signal_native_pts.phi
+                        )
+                        L = -n * (n + 1)
+                        # no Laplace-Beltrami regularization for power map
+                        smooth = 0.0
+                        # L2 power norm as in Duy et al. 2016
+                        power = 2
+                        # small offset to avoid log(0) in anisotropic_power
+                        norm_factor = 0.00001
+                        non_negative = True
+                        invB = smooth_pinv(Ba, np.sqrt(smooth) * L)
 
-            peaks_sphere = default_sphere
-            if sphere_name is not None:
-                peaks_sphere = get_sphere(name=sphere_name)
+                        # fit SH basis to DWI signal
+                        shm_coeff_data = np.dot(normed_data, invB.T)
+
+                        anat = anisotropic_power(
+                            shm_coeff_data,
+                            norm_factor=norm_factor,
+                            power=power,
+                            non_negative=non_negative,
+                        )
+                    else:
+                        logger.info(f"Loading T1 image from {t1_file}")
+                        anat, anat_affine = load_nifti(t1_file)
+
+                    logger.info(
+                        "Computing tissue classifier from anatomical image using "
+                        "the HMRF method."
+                    )
+                    hmrf = TissueClassifierHMRF()
+                    _, final_segmentation, _ = hmrf.classify(anat, iso, beta)
+
+                    csf = np.where(final_segmentation == 1, 1, 0)
+                    gm = np.where(final_segmentation == 2, 1, 0)
+                    wm = np.where(final_segmentation == 3, 1, 0)
+
+                for fname_in, fname_out, label, tissue in zip(
+                    [wm_file, gm_file, csf_file],
+                    [
+                        Path(out_dir) / "wm_mask.nii.gz",
+                        Path(out_dir) / "gm_mask.nii.gz",
+                        Path(out_dir) / "csf_mask.nii.gz",
+                    ],
+                    ["WM", "GM", "CSF"],
+                    [wm, gm, csf],
+                ):
+                    if fname_in is not None:
+                        mask_tissue, mask_affine = load_nifti(fname_in)
+                        tissue *= mask_tissue
+                        anat_affine = mask_affine
+
+                    save_nifti(str(fname_out), tissue.astype(np.uint8), anat_affine)
+                    logger.info(f"{label} mask saved to {fname_out}")
+
+                response_wm, response_gm, response_csf = response_from_mask_msmt(
+                    gtab, data, wm, gm, csf
+                )
+                ubvals = unique_bvals_tolerance(gtab.bvals)
+                response_mcsd = multi_shell_fiber_response(
+                    sh_order_max=sh_order_max,
+                    bvals=ubvals,
+                    wm_rf=response_wm,
+                    gm_rf=response_gm,
+                    csf_rf=response_csf,
+                )
+                model_args["response"] = response_mcsd
+                model_args["reg_sphere"] = peaks_sphere
+                model_args["iso"] = response_mcsd.iso
+                model_args["tol"] = bval_tol
 
             logger.info("CSD computation started.")
-            csd_model = ConstrainedSphericalDeconvModel(
-                gtab, response, sh_order_max=sh_order_max
-            )
+            csd_model = model(**model_args)
 
             peaks_csd = peaks_from_model(
                 model=csd_model,
@@ -3291,3 +3439,353 @@ class ReconstFwdtiFlow(Workflow):
                     fname_qa=oqa,
                     reshape_dirs=True,
                 )
+
+
+class ReconstForceFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "force"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files,
+        b0_threshold=50,
+        bvecs_tol=0.01,
+        penalty=1e-5,
+        n_neighbors=50,
+        use_exact=False,
+        posterior_beta=2000.0,
+        compute_odf=False,
+        num_simulations=500000,
+        num_cpus=-1,
+        use_cache=True,
+        compute_kurtosis=False,
+        engine="serial",
+        save_metrics=None,
+        verbose=False,
+        out_dir="",
+        out_fa="fa.nii.gz",
+        out_md="md.nii.gz",
+        out_rd="rd.nii.gz",
+        out_wm_fraction="wm_fraction.nii.gz",
+        out_gm_fraction="gm_fraction.nii.gz",
+        out_csf_fraction="csf_fraction.nii.gz",
+        out_num_fibers="num_fibers.nii.gz",
+        out_dispersion="dispersion.nii.gz",
+        out_nd="nd.nii.gz",
+        out_ufa="ufa.nii.gz",
+        out_uncertainty="uncertainty.nii.gz",
+        out_ambiguity="ambiguity.nii.gz",
+        out_mk="mk.nii.gz",
+        out_ak="ak.nii.gz",
+        out_rk="rk.nii.gz",
+        out_kfa="kfa.nii.gz",
+        out_entropy="entropy.nii.gz",
+        out_predicted_signal="predicted_signal.nii.gz",
+        out_peaks="peaks.pam5",
+        out_micro_uncertainty_dir="microstructure_uncertainty",
+        out_micro_ambiguity_dir="microstructure_ambiguity",
+    ):
+        """Workflow for FORCE microstructure reconstruction.
+
+        Performs FORCE (FORward modeling for Complex microstructure Estimation)
+        reconstruction :footcite:p:`Shah2025` on the files by 'globing'
+        ``input_files`` and saves the FORCE metrics in a directory specified
+        by ``out_dir``.
+
+        Parameters
+        ----------
+        input_files : string or Path
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string or Path
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string or Path
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        mask_files : string or Path
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol.
+        penalty : float, optional
+            Penalty weight for fiber complexity in the FORCE model.
+        n_neighbors : int, optional
+            Number of neighbors for signal matching.
+        use_exact : bool, optional
+            Use best match instead of posterior averaging.
+        posterior_beta : float, optional
+            Softmax temperature for posterior averaging.
+        compute_odf : bool, optional
+            Compute posterior ODF maps.
+        num_simulations : int, optional
+            Number of simulated voxels for the simulation library.
+        num_cpus : int, optional
+            Number of CPU cores for simulation generation. Use -1 to use
+            all available cores.
+        use_cache : bool, optional
+            Load cached simulations if available.
+        compute_kurtosis : bool, optional
+            Compute kurtosis metrics (mk, ak, rk, kfa) during simulation.
+        engine : string, optional
+            Parallel engine for fitting: "ray" or "serial". If "ray" is
+            requested but not installed, falls back to "serial" with a warning.
+        save_metrics : variable string, optional
+            List of metrics to save. Possible values: fa, md, rd, wm_fraction,
+            gm_fraction, csf_fraction, num_fibers, dispersion, nd, ufa, uncertainty,
+            ambiguity, mk, ak, rk, kfa, entropy, predicted_signal.
+            If not set, all available metrics are saved.
+        verbose : bool, optional
+            Whether to print verbose messages during processing.
+        out_dir : string or Path, optional
+            Output directory.
+        out_fa : string, optional
+            Name of the fractional anisotropy volume to be saved.
+        out_md : string, optional
+            Name of the mean diffusivity volume to be saved.
+        out_rd : string, optional
+            Name of the radial diffusivity volume to be saved.
+        out_wm_fraction : string, optional
+            Name of the white matter fraction volume to be saved.
+        out_gm_fraction : string, optional
+            Name of the gray matter fraction volume to be saved.
+        out_csf_fraction : string, optional
+            Name of the CSF fraction volume to be saved.
+        out_num_fibers : string, optional
+            Name of the number of fibers volume to be saved.
+        out_dispersion : string, optional
+            Name of the orientation dispersion volume to be saved.
+        out_nd : string, optional
+            Name of the neurite density volume to be saved.
+        out_ufa : string, optional
+            Name of the micro-FA volume to be saved.
+        out_uncertainty : string, optional
+            Name of the uncertainty volume to be saved.
+        out_ambiguity : string, optional
+            Name of the ambiguity volume to be saved.
+        out_mk : string, optional
+            Name of the mean kurtosis volume to be saved (requires compute_kurtosis).
+        out_ak : string, optional
+            Name of the axial kurtosis volume to be saved (requires compute_kurtosis).
+        out_rk : string, optional
+            Name of the radial kurtosis volume to be saved (requires compute_kurtosis).
+        out_kfa : string, optional
+            Name of the kurtosis FA volume to be saved (requires compute_kurtosis).
+        out_entropy : string, optional
+            Name of the entropy volume to be saved (requires use_posterior).
+        out_predicted_signal : string, optional
+            Name of the predicted signal volume to be saved.
+        out_peaks : string, optional
+            Name of the peaks file to be saved (in .pam5 format).
+        out_micro_uncertainty_dir : string, optional
+            Name of the subdirectory for per-microstructure uncertainty maps
+            (weighted IQR of posterior density, normalized by prior range).
+            Maps saved: fa, md, rd, wm_fraction, gm_fraction, csf_fraction,
+            num_fibers, dispersion, nd, ufa, mk, ak, rk, kfa.
+        out_micro_ambiguity_dir : string, optional
+            Name of the subdirectory for per-microstructure ambiguity maps
+            (FWHM of posterior density, normalized by prior range).
+            Maps saved: fa, md, rd, wm_fraction, gm_fraction, csf_fraction,
+            num_fibers, dispersion, nd, ufa, mk, ak, rk, kfa.
+
+        References
+        ----------
+        .. footbibliography::
+
+        """
+        from dipy.reconst.force import MICRO_PARAMS, FORCEModel
+        from dipy.utils.optpkg import optional_package
+
+        use_posterior = not use_exact
+        save_metrics = save_metrics or []
+
+        if engine == "ray":
+            _, has_ray, _ = optional_package("ray")
+            if not has_ray:
+                logger.warning(
+                    "Ray is not installed. Falling back to serial engine. "
+                    "Install ray with: pip install ray"
+                )
+                engine = "serial"
+
+        io_it = self.get_io_iterator()
+
+        for (
+            dwi,
+            bval,
+            bvec,
+            mask,
+            ofa,
+            omd,
+            ord_,
+            owm_fraction,
+            ogm_fraction,
+            ocsf_fraction,
+            onum_fibers,
+            odispersion,
+            ond,
+            oufa,
+            ouncertainty,
+            oambiguity,
+            omk,
+            oak,
+            ork,
+            okfa,
+            oentropy,
+            opredicted_signal,
+            opeaks,
+            omicro_unc_dir,
+            omicro_amb_dir,
+        ) in io_it:
+            logger.info(f"Computing FORCE metrics for {dwi}")
+            data, affine = load_nifti(dwi)
+
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+            gtab = gradient_table(
+                bvals,
+                bvecs=bvecs,
+                b0_threshold=b0_threshold,
+                atol=bvecs_tol,
+            )
+
+            if mask is not None:
+                mask = load_nifti_data(mask).astype(bool)
+
+            model = FORCEModel(
+                gtab,
+                penalty=penalty,
+                n_neighbors=n_neighbors,
+                use_posterior=use_posterior,
+                posterior_beta=posterior_beta,
+                compute_odf=compute_odf,
+                verbose=verbose,
+            )
+
+            logger.info("Generating FORCE simulation library...")
+            model.generate(
+                num_simulations=num_simulations,
+                num_cpus=num_cpus,
+                use_cache=use_cache,
+                compute_dki=compute_kurtosis,
+                verbose=verbose,
+            )
+
+            logger.info("Fitting FORCE model...")
+            force_fit = model.fit(
+                data,
+                mask=mask,
+                engine=engine,
+                n_jobs=-1,
+                verbose=verbose,
+            )
+            from dipy.io.peaks import save_pam
+            from dipy.reconst.force import force_peaks
+
+            logger.info("Extracting peaks...")
+            res_peaks = force_peaks(force_fit, mask=mask)
+
+            save_pam(opeaks, res_peaks, affine=affine)
+
+            always_metrics = [
+                "fa",
+                "md",
+                "rd",
+                "wm_fraction",
+                "gm_fraction",
+                "csf_fraction",
+                "num_fibers",
+                "dispersion",
+                "nd",
+                "ufa",
+                "uncertainty",
+                "ambiguity",
+                "predicted_signal",
+            ]
+            conditional_metrics = []
+            if compute_kurtosis:
+                conditional_metrics.extend(["mk", "ak", "rk", "kfa"])
+            if use_posterior:
+                conditional_metrics.append("entropy")
+
+            metrics_to_save = save_metrics or (always_metrics + conditional_metrics)
+
+            output_map = {
+                "fa": (ofa, force_fit.fa),
+                "md": (omd, force_fit.md),
+                "rd": (ord_, force_fit.rd),
+                "wm_fraction": (owm_fraction, force_fit.wm_fraction),
+                "gm_fraction": (ogm_fraction, force_fit.gm_fraction),
+                "csf_fraction": (ocsf_fraction, force_fit.csf_fraction),
+                "num_fibers": (onum_fibers, force_fit.num_fibers),
+                "dispersion": (odispersion, force_fit.dispersion),
+                "nd": (ond, force_fit.nd),
+                "ufa": (oufa, force_fit.ufa_voxel),
+                "uncertainty": (ouncertainty, force_fit.uncertainty),
+                "ambiguity": (oambiguity, force_fit.ambiguity),
+                "mk": (omk, force_fit.mk),
+                "ak": (oak, force_fit.ak),
+                "rk": (ork, force_fit.rk),
+                "kfa": (okfa, force_fit.kfa),
+                "entropy": (oentropy, force_fit.entropy),
+                "predicted_signal": (opredicted_signal, force_fit.predicted_signal),
+            }
+
+            for metric in metrics_to_save:
+                if metric not in output_map:
+                    logger.warning(f"Unknown metric '{metric}', skipping.")
+                    continue
+                out_path, data_arr = output_map[metric]
+                if data_arr is None:
+                    logger.warning(
+                        f"Metric '{metric}' not available for this configuration, "
+                        "skipping."
+                    )
+                    continue
+                save_nifti(out_path, data_arr.astype(np.float32), affine)
+
+            micro_unc_map = {
+                p: getattr(force_fit, f"uncertainty_{p}", None) for p in MICRO_PARAMS
+            }
+            micro_amb_map = {
+                p: getattr(force_fit, f"ambiguity_{p}", None) for p in MICRO_PARAMS
+            }
+
+            unc_dir = Path(omicro_unc_dir)
+            amb_dir = Path(omicro_amb_dir)
+            unc_dir.mkdir(parents=True, exist_ok=True)
+            amb_dir.mkdir(parents=True, exist_ok=True)
+
+            for param in MICRO_PARAMS:
+                u_data = micro_unc_map.get(param)
+                if u_data is not None and np.issubdtype(
+                    getattr(u_data, "dtype", type(None)), np.floating
+                ):
+                    save_nifti(
+                        str(unc_dir / f"{param}.nii.gz"),
+                        u_data.astype(np.float32),
+                        affine,
+                    )
+                a_data = micro_amb_map.get(param)
+                if a_data is not None and np.issubdtype(
+                    getattr(a_data, "dtype", type(None)), np.floating
+                ):
+                    save_nifti(
+                        str(amb_dir / f"{param}.nii.gz"),
+                        a_data.astype(np.float32),
+                        affine,
+                    )
+
+            logger.info(
+                f"Per-microstructure uncertainty maps saved to {unc_dir.resolve()}"
+            )
+            logger.info(
+                f"Per-microstructure ambiguity maps saved to {amb_dir.resolve()}"
+            )
+
+            logger.info(f"FORCE metrics saved to {Path(out_dir).resolve()}")

@@ -5,7 +5,7 @@ Diffusion Imaging In Python - Documentation
 
 .. container:: index-paragraph
 
-   DIPY_ is the paragon 3D/4D+ imaging library in Python. Contains generic methods for
+   DIPY_ is the paragon 3D/4D+ imaging library in Python. It contains generic methods for
    spatial normalization, signal processing, machine learning, statistical analysis
    and visualization of medical images. Additionally, it contains
    specialized methods for computational anatomy including diffusion,
@@ -38,13 +38,13 @@ Quick links
         :link: recipes
         :link-type: ref
 
-        How do I do X in DIPY?  This dedicated section will provide you quick and direct answer.
+        How do I do X in DIPY?  This dedicated section will provide you with a quick and direct answer.
 
     .. grid-item-card:: :octicon:`zap` Workflows
         :link: interfaces/index
         :link-type: any
 
-        Not comfortable with coding? we have command line interfaces for you.
+        Not comfortable with coding? We have command line interfaces for you.
         An easy way to use DIPY_ via a terminal.
 
     .. grid-item-card:: :octicon:`rocket` Theory
@@ -64,7 +64,7 @@ Quick links
         :link: reference/index
         :link-type: any
 
-        A detailed description of DIPY public Python API.
+        A detailed description of the DIPY public Python API.
 
     .. grid-item-card:: :octicon:`repo` Workflows API reference
         :link: reference_cmd/index
@@ -90,17 +90,22 @@ Quick links
 Highlights
 **********
 
-**DIPY 1.11.0** is now available. New features include:
+**DIPY 1.12.0** is now available. New features include:
 
-- NF: Refactoring of the tracking API.
-- Deprecation of Tensorflow backend in favor of PyTorch.
-- Performance improvements of multiple functionalities.
-- DIPY Horizon improvements and minor features added.
-- Added support for Python 3.13.
-- Drop support for Python 3.9.
-- Multiple Workflows updated and added (15 workflows).
+- NF: FORCE reconstruction model.
+- NF: New BiasField correction method.
+- NF: Parallel EuDX tractography.
+- NF: Intermediate map for symmetric diffeomorphic registration.
+- NF: StatefulSurface class to handle surfaces.
+- NF: Multiple new workflows (dipy_fit_msmtcsd, dipy_brain_mask, dipy_cluster_streamlines, dipy_fit_powermap, dipy_fit_fwdti).
+- ENH: Cythonized AK, RK, and KFA kurtosis computations.
+- RF: TRX as default file format for tractography outputs.
+- RF: Adoption of pathlib across workflows.
+- RF: Refactoring of nlmeans denoising (classic and blockwise variants).
+- Added support for Python 3.14.
+- Drop support for Python 3.10.
 - Documentation update.
-- Closed 73 issues and merged 47 pull requests.
+- Closed 324 issues and merged 173 pull requests.
 
 
 See :ref:`Older Highlights <old_highlights>`.
@@ -108,9 +113,9 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
+- :doc:`DIPY 1.12.0 <release_notes/release1.12>` released March 14, 2026.
 - :doc:`DIPY 1.11.0 <release_notes/release1.11>` released March 15, 2025.
 - :doc:`DIPY 1.10.0 <release_notes/release1.10>` released December 12, 2024.
-- :doc:`DIPY 1.9.0 <release_notes/release1.9>` released March 8, 2024.
 
 
 

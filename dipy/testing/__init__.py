@@ -5,6 +5,7 @@ import operator
 from pathlib import Path
 import warnings
 
+import numpy as np
 import numpy.testing as npt
 from numpy.testing import assert_array_equal
 
@@ -38,6 +39,23 @@ assert_not_equal = partial(assert_operator, op=operator.ne)
 def assert_arrays_equal(arrays1, arrays2):
     for arr1, arr2 in zip(arrays1, arrays2):
         assert_array_equal(arr1, arr2)
+
+
+def assert_percent_almost_equal(a, b, decimal=7, percent=0.99):
+    a = np.asarray(a)
+    b = np.asarray(b)
+    tol = 1.5 * 10 ** (-decimal)
+
+    diff = np.abs(a - b)
+    ok = diff <= tol
+
+    fraction = np.mean(ok)
+
+    if fraction < percent:
+        raise AssertionError(
+            f"Only {fraction*100:.2f}% of elements match within {decimal} decimals; "
+            f"required {percent*100:.2f}%"
+        )
 
 
 class clear_and_catch_warnings(warnings.catch_warnings):

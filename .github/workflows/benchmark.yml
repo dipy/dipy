@@ -2,6 +2,9 @@ name: Benchmarks
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 concurrency:
   group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -10,6 +13,7 @@ jobs:
   benchmark:
     name: Linux
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     defaults:
       run:
         shell: bash
@@ -20,7 +24,7 @@ jobs:
 
     steps:
     - name: Set up system
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6.0.2
       with:
         fetch-depth: 0
     - name: Set up Python ${{ matrix.python-version }}
@@ -33,9 +37,9 @@ jobs:
         pip install .[dev,test,ml,extra,benchmark]
     - name: Set threading parameters for reliable benchmarking
       run: |
-        export OPENBLAS_NUM_THREADS=1
-        export MKL_NUM_THREADS=1
-        export OMP_NUM_THREADS=1
+        echo "OPENBLAS_NUM_THREADS=1" >> $GITHUB_ENV
+        echo "MKL_NUM_THREADS=1" >> $GITHUB_ENV
+        echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
     - name: Run benchmarks
       run: |
         asv machine --yes --config ${GITHUB_WORKSPACE}/benchmarks/asv.conf.json

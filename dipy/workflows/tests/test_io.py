@@ -23,6 +23,7 @@ from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.testing import assert_true, assert_warns
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWireError
+from dipy.workflows.base import format_key_value_table
 from dipy.workflows.io import (
     ConcatenateTractogramFlow,
     ConvertSHFlow,
@@ -38,6 +39,7 @@ from dipy.workflows.io import (
     PamToNiftisFlow,
     SplitFlow,
     TensorToPamFlow,
+    format_data_names_table,
 )
 
 ne, have_ne, _ = optional_package("numexpr")
@@ -101,10 +103,10 @@ def test_io_fetch():
     fetch_flow = FetchFlow()
     with TemporaryDirectory() as out_dir:
         fetch_flow.run(["bundle_fa_hcp"])
-        npt.assert_equal(Path(Path(dipy_home) / "bundle_fa_hcp").is_dir(), True)
+        npt.assert_equal(Path(dipy_home / "bundle_fa_hcp").is_dir(), True)
 
         fetch_flow.run(["bundle_fa_hcp"], out_dir=out_dir)
-        npt.assert_equal(Path(Path(dipy_home) / "bundle_fa_hcp").is_dir(), True)
+        npt.assert_equal(Path(dipy_home / "bundle_fa_hcp").is_dir(), True)
 
 
 def test_io_fetch_fetcher_datanames():
@@ -128,6 +130,107 @@ def test_io_fetch_fetcher_datanames():
     npt.assert_equal(
         all(dataset_name in available_data.keys() for dataset_name in fetcher_list),
         True,
+    )
+
+
+def test_io_fetch_list_outputs_table(caplog, monkeypatch):
+    fetch_flow = FetchFlow()
+
+    def _fetch_foo():
+        """Foo dataset description."""
+
+    def _fetch_bar():
+        """Bar dataset description."""
+
+    monkeypatch.setattr(
+        FetchFlow,
+        "get_fetcher_datanames",
+        staticmethod(lambda: {"foo": _fetch_foo, "bar": _fetch_bar}),
+    )
+
+    with caplog.at_level(logging.INFO, logger="dipy"):
+        fetch_flow.run(["list"])
+
+    table_lines = [
+        line for line in caplog.text.splitlines() if line.strip().startswith("|")
+    ]
+    npt.assert_equal(any("Dataset" in line for line in table_lines), True)
+    npt.assert_equal(any("Description" in line for line in table_lines), True)
+    npt.assert_equal(any("foo" in line for line in table_lines), True)
+    npt.assert_equal(any("bar" in line for line in table_lines), True)
+    npt.assert_equal(
+        any("Foo dataset description." in line for line in table_lines), True
+    )
+    npt.assert_equal(
+        any("Bar dataset description." in line for line in table_lines), True
+    )
+    npt.assert_equal("foo, bar" in caplog.text, False)
+
+
+def test_format_key_value_table():
+    # Basic rendering: headers and content appear in output
+    table = format_key_value_table(
+        {"foo": "Foo description", "bar": "x" * 200},
+        key_header="Dataset",
+        value_header="Description",
+    )
+    table_lines = table.splitlines()
+    npt.assert_equal(any("Dataset" in line for line in table_lines), True)
+    npt.assert_equal(any("Description" in line for line in table_lines), True)
+    npt.assert_equal(any("foo" in line for line in table_lines), True)
+    npt.assert_equal(any("Foo description" in line for line in table_lines), True)
+    # Long value wraps across multiple lines
+    npt.assert_equal(sum("x" in line for line in table_lines) > 1, True)
+
+    # sort=True (default): rows appear in alphabetical key order
+    table_sorted = format_key_value_table(
+        {"zebra": "last", "apple": "first"},
+        key_header="Key",
+        value_header="Value",
+    )
+    sorted_lines = [
+        line for line in table_sorted.splitlines() if "apple" in line or "zebra" in line
+    ]
+    npt.assert_equal(len(sorted_lines), 2)
+    npt.assert_equal("apple" in sorted_lines[0], True)
+    npt.assert_equal("zebra" in sorted_lines[1], True)
+
+    # sort=False: rows appear in insertion order
+    table_unsorted = format_key_value_table(
+        {"zebra": "last", "apple": "first"},
+        key_header="Key",
+        value_header="Value",
+        sort=False,
+    )
+    unsorted_lines = [
+        line
+        for line in table_unsorted.splitlines()
+        if "apple" in line or "zebra" in line
+    ]
+    npt.assert_equal(len(unsorted_lines), 2)
+    npt.assert_equal("zebra" in unsorted_lines[0], True)
+    npt.assert_equal("apple" in unsorted_lines[1], True)
+
+
+def test_format_data_names_table():
+    def _fetch_foo():
+        """Foo dataset description."""
+
+    def _fetch_no_doc():
+        pass
+
+    table = format_data_names_table({"foo": _fetch_foo, "no_doc": _fetch_no_doc})
+    table_lines = table.splitlines()
+
+    npt.assert_equal(any("Dataset" in line for line in table_lines), True)
+    npt.assert_equal(any("Description" in line for line in table_lines), True)
+    npt.assert_equal(any("foo" in line for line in table_lines), True)
+    npt.assert_equal(any("no_doc" in line for line in table_lines), True)
+    npt.assert_equal(
+        any("Foo dataset description." in line for line in table_lines), True
+    )
+    npt.assert_equal(
+        any("| no_doc" in line and "| -" in line for line in table_lines), True
     )
 
 

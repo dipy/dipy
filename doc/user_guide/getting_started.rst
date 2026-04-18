@@ -38,6 +38,6 @@ a slice should look like.
 Next Steps
 **********
 
-You can learn more about how you to use DIPY_ with  your datasets by reading the examples in our :ref:`examples`.
+You can learn more about how to use DIPY_ with your datasets by reading the examples in our :ref:`examples`.
 
 .. include:: ../links_names.inc

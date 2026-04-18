@@ -1,9 +1,9 @@
 cython_sources = [
   'denspeed',
   'enhancement_kernel',
-  'nlmeans_block',
   'pca_noise_estimate',
   'shift_twist_convolution',
+  '_bias_correction',
   ]
 
 foreach ext: cython_sources
@@ -20,11 +20,11 @@ endforeach
 
 python_sources = ['__init__.py',
   'adaptive_soft_matching.py',
+  'bias_correction.py',
   'gibbs.py',
   'localpca.py',
   'nlmeans.py',
   'noise_estimate.py',
-  'non_local_means.py',
   'patch2self.py',
   ]
 

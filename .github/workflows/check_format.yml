@@ -6,10 +6,13 @@ on:
   pull_request:
     branches: [master]
 
+permissions:
+  contents: read
+
 jobs:
   pre-commit:
-
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -18,7 +21,7 @@ jobs:
 
     steps:
     - name: Check out repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6.0.2
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v6

@@ -14,9 +14,6 @@ from dipy.io.utils import (
     is_reference_info_valid,
 )
 from dipy.io.vtk import convert_to_polydata
-from dipy.utils.optpkg import optional_package
-
-fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
 
 logger = logging.getLogger("StatefulSurface")
 logger.setLevel(level=logging.INFO)
@@ -467,8 +464,7 @@ class StatefulSurface:
             self.to_lpsmm()
         else:
             logger.error(
-                "Unsupported target space, please use Enum in "
-                "dipy.io.stateful_surface."
+                "Unsupported target space, please use Enum in dipy.io.stateful_surface."
             )
 
     def to_origin(self, target_origin):

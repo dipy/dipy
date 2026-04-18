@@ -3,11 +3,11 @@
 Patch2Self: Self-Supervised Denoising via Statistical Independence
 ==================================================================
 
-Patch2Self :footcite:p:`Fadnavis2020` and :footcite:p:`Fadnavis2024` is  a self-supervised learning method for
-denoising DWI data, which uses the entire volume to learn a full-rank locally
-linear denoiser for that volume. By taking advantage of the oversampled q-space
-of DWI data, Patch2Self can separate structure from noise without requiring an
-explicit model for either.
+Patch2Self :footcite:p:`Fadnavis2020` and :footcite:p:`Fadnavis2024` is
+a self-supervised learning method for denoising DWI data, which uses the
+entire volume to learn a full-rank locally linear denoiser for that volume.
+By taking advantage of the oversampled q-space of DWI data, Patch2Self can
+separate structure from noise without requiring an explicit model for either.
 
 Classical denoising algorithms such as Local PCA :footcite:p:`Manjon2013`,
 :footcite:p:`Veraart2016b`, Non-local Means :footcite:p:`Coupe2008`, Total

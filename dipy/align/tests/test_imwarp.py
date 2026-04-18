@@ -344,6 +344,15 @@ def test_diffeomorphic_map_simplification_3d():
     assert_equal(simplified.codomain_world2grid, None)
     assert_equal(simplified.disp_world2grid, None)
 
+    # Now do the same test for the backwards transform
+    domain_sphere = vfu.create_sphere(
+        domain_shape[0], domain_shape[1], domain_shape[2], radius
+    )
+    expected = diff_map.transform_inverse(domain_sphere, interpolation="linear")
+    warped = simplified.transform_inverse(domain_sphere, interpolation="linear")
+
+    assert_array_almost_equal(warped, expected)
+
 
 def test_optimizer_exceptions():
     r"""Test exceptions from SyN"""
@@ -459,6 +468,9 @@ def test_ssd_2d_demons():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -535,6 +547,9 @@ def test_ssd_2d_gauss_newton():
     )
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -677,6 +692,9 @@ def test_ssd_3d_demons():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -727,6 +745,9 @@ def test_ssd_3d_gauss_newton():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -765,6 +786,9 @@ def test_cc_2d():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -818,6 +842,9 @@ def test_cc_3d():
     )
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -878,6 +905,9 @@ def test_em_3d_gauss_newton():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -927,6 +957,9 @@ def test_em_2d_gauss_newton():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -987,6 +1020,9 @@ def test_em_3d_demons():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -1035,6 +1071,9 @@ def test_em_2d_demons():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)

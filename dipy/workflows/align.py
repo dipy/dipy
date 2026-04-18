@@ -1,5 +1,6 @@
+import os
 from pathlib import Path
-import sys
+import shutil
 from warnings import warn
 
 import numpy as np
@@ -61,23 +62,35 @@ class ResliceFlow(Workflow):
     def run(
         self,
         input_files,
-        new_vox_size,
+        new_vox_size=None,
         order=1,
         mode="constant",
         cval=0,
         num_processes=1,
+        vox_factor=0.14,
         out_dir="",
         out_resliced="resliced.nii.gz",
     ):
-        """Reslice data with new voxel resolution defined by ``new_vox_sz``
+        """Reslice data to a new voxel resolution with automatic or manual sizing.
+
+        This workflow resamples volumetric data to a specified voxel size or
+        automatically determines an optimal isotropic resolution. When automatic
+        calculation is used, the new voxel size balances data quality with
+        computational efficiency by interpolating between the original voxel
+        dimensions.
 
         Parameters
         ----------
         input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        new_vox_size : variable float
-            new voxel size.
+        new_vox_size : variable float, optional
+            New voxel size as (x, y, z) in mm. If None, it will be
+            automatically calculated using the formula:
+            new_vox = voxel_sorted[1] + (voxel_sorted[2] - voxel_sorted[1]) * vox_factor
+            where voxel_sorted are the original voxel dimensions sorted in
+            ascending order. The calculated value is applied isotropically
+            to all three dimensions.
         order : int, optional
             order of interpolation, from 0 to 5, for resampling/reslicing,
             0 nearest interpolation, 1 trilinear etc.. if you don't want any
@@ -86,36 +99,92 @@ class ResliceFlow(Workflow):
             Points outside the boundaries of the input are filled according
             to the given mode 'constant', 'nearest', 'reflect' or 'wrap'.
         cval : float, optional
-            Value used for points outside the boundaries of the input if
+            Fill value for points outside the input boundaries when
             mode='constant'.
         num_processes : int, optional
             Split the calculation to a pool of children processes. This only
             applies to 4D `data` arrays. Default is 1. If < 0 the maximal
             number of cores minus ``num_processes + 1`` is used (enter -1 to
             use as many cores as possible). 0 raises an error.
+        vox_factor : float, optional
+            Interpolation factor for automatic voxel size calculation,
+            ranging from 0.0 to 1.0. Controls the trade-off between the
+            second-largest and largest original voxel dimensions. 0.0: uses
+            second-largest voxel size (finer resolution). 1.0: uses largest voxel
+            size (coarser resolution). 0.14: recommended value for balanced resolution.
+            Only used when new_vox_size is None.
         out_dir : string, optional
-            Output directory.
+            Output directory for saving results.
         out_resliced : string, optional
-            Name of the resliced dataset to be saved.
+            Filename for the resliced output volume.
+
         """
 
         io_it = self.get_io_iterator()
 
         for inputfile, outpfile in io_it:
-            data, affine, vox_sz = load_nifti(inputfile, return_voxsize=True)
+            data, affine, zooms = load_nifti(inputfile, return_voxsize=True)
             logger.info(f"Processing {inputfile}")
-            new_data, new_affine = reslice(
-                data,
-                affine,
-                vox_sz,
-                new_vox_size,
-                order=order,
-                mode=mode,
-                cval=cval,
-                num_processes=num_processes,
-            )
-            save_nifti(outpfile, new_data, new_affine)
-            logger.info(f"Resliced file save in {outpfile}")
+
+            if new_vox_size is None:
+                voxsize_sorted = sorted(zooms)
+                max_vox_size = voxsize_sorted[-1]
+                smax_vox_size = voxsize_sorted[-2]
+                calculated_vox_size = (
+                    smax_vox_size + (max_vox_size - smax_vox_size) * vox_factor
+                )
+                new_vox_size_to_use = [calculated_vox_size] * 3
+                logger.warning(
+                    f"new_vox_size not provided. Automatically calculated as "
+                    f"{new_vox_size_to_use} based on original voxel size "
+                    f"{tuple(zooms)} using vox_factor={vox_factor}"
+                )
+            else:
+                new_vox_size_to_use = new_vox_size
+
+            new_vox_size_to_use = np.asarray(new_vox_size_to_use)
+            zooms_spatial = np.asarray(zooms[:3])
+
+            if np.allclose(zooms_spatial, new_vox_size_to_use, rtol=1e-3, atol=1e-3):
+                logger.info(
+                    f"Voxel size {tuple(zooms)} already matches target "
+                    f"{tuple(new_vox_size_to_use)}. Skipping reslicing."
+                    "return original data as a symlink."
+                )
+                source_file = Path(inputfile)
+                link_file = Path(outpfile)
+                if link_file.exists() and link_file.resolve() == source_file.resolve():
+                    logger.debug(f"{outpfile} already linked/copied. Skipping.")
+                    continue
+                if link_file.exists() or link_file.is_symlink():
+                    link_file.unlink()
+                try:
+                    link_file.symlink_to(source_file.resolve())
+                except OSError:
+                    # Symlinks may need elevated privileges on Windows; try a hard
+                    # link before falling back to copying large volumes.
+                    try:
+                        os.link(source_file, link_file)
+                        logger.info(f"Hard link created for {outpfile}")
+                    except OSError:
+                        shutil.copy(source_file, link_file)
+                        logger.warning(
+                            f"Link creation for {outpfile} failed, copied instead."
+                        )
+                continue
+            else:
+                new_data, new_affine = reslice(
+                    data,
+                    affine,
+                    zooms,
+                    new_vox_size_to_use,
+                    order=order,
+                    mode=mode,
+                    cval=cval,
+                    num_processes=num_processes,
+                )
+                save_nifti(outpfile, new_data, new_affine)
+                logger.info(f"Resliced file save in {outpfile}")
 
 
 class SlrWithQbxFlow(Workflow):
@@ -136,6 +205,7 @@ class SlrWithQbxFlow(Workflow):
         nb_pts=20,
         progressive=True,
         bbox_valid_check=True,
+        remove_invalid_streamlines=False,
         out_dir="",
         out_moved="moved.trx",
         out_affine="affine.txt",
@@ -183,6 +253,10 @@ class SlrWithQbxFlow(Workflow):
         bbox_valid_check : boolean, optional
             Verification for negative voxel coordinates or values above the volume
             dimensions.
+        remove_invalid_streamlines : bool, optional
+            If True, streamlines outside the volume bounding box are removed
+            before saving. When enabled, ``bbox_valid_check`` is automatically
+            set to False.
         out_dir : string, optional
             Output directory.
         out_moved : string, optional
@@ -234,23 +308,30 @@ class SlrWithQbxFlow(Workflow):
 
             if not len(static_obj.streamlines):
                 logger.error(f"Static file {static_file} is empty")
-                sys.exit(1)
+                continue
             if not len(moving_obj.streamlines):
                 logger.error(f"Moving file {moving_file} is empty")
-                sys.exit(1)
+                continue
 
-            moved, affine, centroids_static, centroids_moving = slr_with_qbx(
-                static_obj.streamlines,
-                moving_obj.streamlines,
-                x0=x0,
-                rm_small_clusters=rm_small_clusters,
-                greater_than=greater_than,
-                less_than=less_than,
-                qbx_thr=qbx_thr,
-                progressive=progressive,
-                nb_pts=nb_pts,
-                num_threads=num_threads,
-            )
+            try:
+                moved, affine, centroids_static, centroids_moving = slr_with_qbx(
+                    static_obj.streamlines,
+                    moving_obj.streamlines,
+                    x0=x0,
+                    rm_small_clusters=rm_small_clusters,
+                    greater_than=greater_than,
+                    less_than=less_than,
+                    qbx_thr=qbx_thr,
+                    progressive=progressive,
+                    nb_pts=nb_pts,
+                    num_threads=num_threads,
+                )
+            except Exception as e:
+                logger.error(f"SLR with QBX failed: {e}")
+                logger.warning(
+                    "Skipping this pair of tractograms, " "continuing with next pair."
+                )
+                continue
 
             logger.info(f"Saving output file {out_moved_file}")
 
@@ -259,8 +340,12 @@ class SlrWithQbxFlow(Workflow):
                 moving_obj,
                 moving_obj.space,
             )
+            if remove_invalid_streamlines:
+                new_tractogram.remove_invalid_streamlines()
             save_tractogram(
-                new_tractogram, str(out_moved_file), bbox_valid_check=bbox_valid_check
+                new_tractogram,
+                str(out_moved_file),
+                bbox_valid_check=bbox_valid_check and not remove_invalid_streamlines,
             )
 
             logger.info(f"Saving output file {out_affine_file}")
@@ -272,10 +357,12 @@ class SlrWithQbxFlow(Workflow):
                 moving_obj,
                 moving_obj.space,
             )
+            if remove_invalid_streamlines:
+                new_tractogram.remove_invalid_streamlines()
             save_tractogram(
                 new_tractogram,
                 str(static_centroids_file),
-                bbox_valid_check=bbox_valid_check,
+                bbox_valid_check=bbox_valid_check and not remove_invalid_streamlines,
             )
 
             logger.info(f"Saving output file {moving_centroids_file}")
@@ -284,10 +371,12 @@ class SlrWithQbxFlow(Workflow):
                 moving_obj,
                 moving_obj.space,
             )
+            if remove_invalid_streamlines:
+                new_tractogram.remove_invalid_streamlines()
             save_tractogram(
                 new_tractogram,
                 str(moving_centroids_file),
-                bbox_valid_check=bbox_valid_check,
+                bbox_valid_check=bbox_valid_check and not remove_invalid_streamlines,
             )
 
             centroids_moved = transform_streamlines(centroids_moving, affine)
@@ -299,10 +388,12 @@ class SlrWithQbxFlow(Workflow):
                 moving_obj,
                 moving_obj.space,
             )
+            if remove_invalid_streamlines:
+                new_tractogram.remove_invalid_streamlines()
             save_tractogram(
                 new_tractogram,
                 str(moved_centroids_file),
-                bbox_valid_check=bbox_valid_check,
+                bbox_valid_check=bbox_valid_check and not remove_invalid_streamlines,
             )
 
 
@@ -329,7 +420,7 @@ class ImageRegistrationFlow(Workflow):
         nbins=32,
         sampling_prop=None,
         metric="mi",
-        level_iters=(10000, 1000, 100),
+        level_iters=(1000, 500, 100),
         sigmas=(3.0, 1.0, 0.0),
         factors=(4, 2, 1),
         progressive=True,
@@ -394,6 +485,13 @@ class ImageRegistrationFlow(Workflow):
         out_quality : string, optional
             Name of the file containing the saved quality metric.
         """
+        if tuple(level_iters) == (1000, 500, 100):
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
 
         io_it = self.get_io_iterator()
         transform = transform.lower()
@@ -861,6 +959,7 @@ class MotionCorrectionFlow(Workflow):
         bvectors_files,
         b0_threshold=50,
         bvecs_tol=0.01,
+        level_iters=(1000, 500, 100),
         out_dir="",
         out_moved="moved.nii.gz",
         out_affine="affine.txt",
@@ -882,6 +981,8 @@ class MotionCorrectionFlow(Workflow):
         bvecs_tol : float, optional
             Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
             b-vectors are unit vectors
+        level_iters : variable int, optional
+            The number of iterations at each level of the Gaussian pyramid.
         out_dir : string or Path, optional
             Directory to save the transformed image and the affine matrix.
         out_moved : string, optional
@@ -889,6 +990,13 @@ class MotionCorrectionFlow(Workflow):
         out_affine : string, optional
             Name for the saved affine matrix.
         """
+        if tuple(level_iters) == (1000, 500, 100):
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
 
         io_it = self.get_io_iterator()
 
@@ -913,7 +1021,7 @@ class MotionCorrectionFlow(Workflow):
             )
 
             reg_img, reg_affines = motion_correction(
-                data=data, gtab=gtab, affine=affine
+                data=data, gtab=gtab, affine=affine, level_iters=level_iters
             )
 
             # Saving the corrected image file

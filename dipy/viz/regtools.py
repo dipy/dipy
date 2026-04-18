@@ -37,7 +37,7 @@ def simple_plot(file_name, title, x, y, xlabel, ylabel):
         y-axis values to be plotted
     xlabel : string
         label for x-axis
-    ylable : string
+    ylabel : string
         label for y-axis
 
     """

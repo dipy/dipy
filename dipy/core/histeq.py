@@ -7,7 +7,7 @@ from dipy.testing.decorators import warning_for_keywords
 def histeq(arr, *, num_bins=256):
     """Performs an histogram equalization on ``arr``.
     This was taken from:
-    http://www.janeriksolem.net/2009/06/histogram-equalization-with-python-and.html
+    https://www.janeriksolem.net/2009/06/histogram-equalization-with-python-and.html
 
     Parameters
     ----------

@@ -223,7 +223,7 @@ def spdot(A, B):
     sparse matrix. Otherwise, a dense result is returned
 
     See discussion here:
-    http://mail.scipy.org/pipermail/scipy-user/2010-November/027700.html
+    https://mail.scipy.org/pipermail/scipy-user/2010-November/027700.html
 
     """
     return A @ B

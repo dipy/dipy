@@ -1,3 +1,5 @@
+"""Tab components for the Horizon visualization application."""
+
 from dipy.viz.horizon.tab.base import (
     HorizonTab,
     TabManager,

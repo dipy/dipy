@@ -10,11 +10,13 @@ cli_flows = {
     "dipy_align_affine": ("dipy.workflows.align", "ImageRegistrationFlow"),
     "dipy_align_syn": ("dipy.workflows.align", "SynRegistrationFlow"),
     "dipy_apply_transform": ("dipy.workflows.align", "ApplyTransformFlow"),
+    "dipy_brain_mask": ("dipy.workflows.segment", "BrainMaskFlow"),
     "dipy_buan_lmm": ("dipy.workflows.stats", "LinearMixedModelsFlow"),
     "dipy_buan_shapes": ("dipy.workflows.stats", "BundleShapeAnalysis"),
     "dipy_buan_profiles": ("dipy.workflows.stats", "BundleAnalysisTractometryFlow"),
     "dipy_bundlewarp": ("dipy.workflows.align", "BundleWarpFlow"),
     "dipy_classify_tissue": ("dipy.workflows.segment", "ClassifyTissueFlow"),
+    "dipy_cluster_streamlines": ("dipy.workflows.segment", "ClusterStreamlinesFlow"),
     "dipy_correct_motion": ("dipy.workflows.align", "MotionCorrectionFlow"),
     "dipy_correct_biasfield": ("dipy.workflows.nn", "BiasFieldCorrectionFlow"),
     "dipy_concatenate_tractograms": ("dipy.workflows.io", "ConcatenateTractogramFlow"),
@@ -33,11 +35,13 @@ cli_flows = {
     "dipy_fit_dti": ("dipy.workflows.reconst", "ReconstDtiFlow"),
     "dipy_fit_dsi": ("dipy.workflows.reconst", "ReconstDsiFlow"),
     "dipy_fit_dsid": ("dipy.workflows.reconst", "ReconstDsiFlow"),
+    "dipy_fit_force": ("dipy.workflows.reconst", "ReconstForceFlow"),
     "dipy_fit_forecast": ("dipy.workflows.reconst", "ReconstForecastFlow"),
     "dipy_fit_fwdti": ("dipy.workflows.reconst", "ReconstFwdtiFlow"),
     "dipy_fit_gqi": ("dipy.workflows.reconst", "ReconstGQIFlow"),
     "dipy_fit_ivim": ("dipy.workflows.reconst", "ReconstIvimFlow"),
     "dipy_fit_mapmri": ("dipy.workflows.reconst", "ReconstMAPMRIFlow"),
+    "dipy_fit_msmtcsd": ("dipy.workflows.reconst", "ReconstCSDFlow"),
     "dipy_fit_opdt": ("dipy.workflows.reconst", "ReconstQBallBaseFlow"),
     "dipy_fit_powermap": ("dipy.workflows.reconst", "ReconstPowermapFlow"),
     "dipy_fit_qball": ("dipy.workflows.reconst", "ReconstQBallBaseFlow"),
@@ -88,6 +92,14 @@ def run():
         extra_args = {
             "remove_convolution": {
                 "dest": "remove_convolution",
+                "action": "store_true",
+                "default": True,
+            }
+        }
+    elif script_name == "dipy_fit_msmtcsd":
+        extra_args = {
+            "use_msmt": {
+                "dest": "use_msmt",
                 "action": "store_true",
                 "default": True,
             }
