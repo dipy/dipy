@@ -1224,3 +1224,30 @@ def test_quantize_evecs_parallel_engines():
         except Exception as e:
             # If an engine fails, that's okay - just skip it
             print(f"Warning: Could not test engine {engine}: {e}")
+
+
+def test_cti_params_in_dti_fit():
+    """Test that DTI handles CTI model parameters (npa=48).
+    This ensures the changes in dti.py for CTI support are working.
+    """
+
+    fdata, fbval, fbvec = get_fnames(name="small_25")
+    gtab = grad.gradient_table(fbval, bvecs=fbvec)
+
+    params = np.zeros((2, 2, 2, 48))
+
+    params[..., 0] = 1.5e-3
+    params[..., 1] = 0.5e-3
+    params[..., 2] = 0.5e-3
+    params[..., 3] = 1
+    params[..., 7] = 1
+    params[..., 11] = 1
+
+    fit = dti.TensorFit(dti.TensorModel(gtab), params)
+
+    # 4. Verificar se o DTI extrai as métricas básicas corretamente
+    # Se o teu código no dti.py estiver certo, fit.fa não deve ser NaN
+    npt.assert_equal(fit.fa.shape, (2, 2, 2))
+    npt.assert_array_almost_equal(fit.evals[0, 0, 0], [1.5e-3, 0.5e-3, 0.5e-3])
+    npt.assert_(not np.any(np.isnan(fit.fa)))
+    
