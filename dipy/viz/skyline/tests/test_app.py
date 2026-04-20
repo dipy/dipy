@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.app import Skyline
 from dipy.viz.skyline.render.image import Image3D
 from dipy.viz.skyline.render.sh_slicer import SHGlyph3D
@@ -307,3 +308,48 @@ def test_synchronize_visualizations_sets_slice_focus():
     img._synchronize = True
     sky._synchronize_visualizations(img, np.array([1.0, 2.0, 3.0], dtype=np.float32))
     assert sky._slice_focus_viz is img
+
+
+@pytest.mark.parametrize(
+    "filenames,expected_path",
+    [
+        (["/tmp/skyline_snapshot.png"], "/tmp/skyline_snapshot.png"),
+        ("/tmp/skyline_snapshot.png", "/tmp/skyline_snapshot.png"),
+    ],
+)
+def test_uiwindow_snapshot_dialog_closed_forwards_selected_path(
+    filenames, expected_path
+):
+    """``_snapshot_dialog_closed`` forwards save path through callback."""
+    ui_window = UIWindow.__new__(UIWindow)
+    captured_paths = []
+    ui_window.snapshot_callback = captured_paths.append
+
+    ui_window._snapshot_dialog_closed(filenames=filenames, rois=None, shm_coeffs=None)
+
+    assert captured_paths == [expected_path]
+
+
+@pytest.mark.parametrize(
+    "input_path,expected_path",
+    [
+        ("/tmp/scene", "/tmp/scene.png"),
+        ("/tmp/scene.png", "/tmp/scene.png"),
+    ],
+)
+def test_save_snapshot_uses_show_manager_snapshot(input_path, expected_path):
+    """``_save_snapshot`` delegates to ``ShowManager.snapshot`` with PNG extension."""
+    sky = Skyline.__new__(Skyline)
+    captured_paths = []
+
+    class _Window:
+        def snapshot(self, path):
+            captured_paths.append(path)
+
+    sky.window = _Window()
+    sky._is_drawing_ui = False
+    sky.request_refresh = lambda: None
+
+    sky._save_snapshot(input_path)
+
+    assert captured_paths == [expected_path]
