@@ -233,6 +233,5 @@ filterwarnings = [
     "ignore:.*is multi-threaded, use of fork.{2} may lead to deadlocks in the child.*:DeprecationWarning",
     # scipy/h5py using deprecated numpy functions (np.find_common_type, np.product)
     "ignore:.*np.find_common_type is deprecated.*:DeprecationWarning:scipy",
-    "ignore:.*`product` is deprecated.*:DeprecationWarning:h5py",
-	"ignore:.*Ray will no longer override accelerator visible devices.*:FutureWarning:ray._private.worker",
+    "ignore:.*`product` is deprecated.*:DeprecationWarning:h5py"
 ]
