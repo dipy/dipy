@@ -15,7 +15,9 @@ from dipy.core.gradients import (
     extract_b0,
     extract_dwi_shell,
     generate_bvecs,
+    get_affine_with_new_orientation,
     get_bval_indices,
+    get_orientation_from_affine,
     gradient_table,
     gradient_table_from_bvals_bvecs,
     gradient_table_from_gradient_strength_bvecs,
@@ -1081,3 +1083,52 @@ def test_extract_dwi_shell():
 
     npt.assert_raises(ValueError, extract_dwi_shell, dwi, gtab, bvals_to_extract=[5000])
     assert_warns(UserWarning, extract_dwi_shell, dwi, gtab, bvals_to_extract=[])
+
+
+def test_ensure_orientation():
+    affine = np.asarray(
+        [
+            [0.00000000e00, 0.00000000e00, 1.19999695e00, -8.86398926e01],
+            [-9.30352330e-01, 1.15545668e-01, 0.00000000e00, 1.16532005e02],
+            [1.15545668e-01, 9.30352330e-01, -2.49799545e-16, -1.12113556e02],
+            [0.00000000e00, 0.00000000e00, 0.00000000e00, 1.00000000e00],
+        ]
+    )
+    ras_affine = get_affine_with_new_orientation(affine)
+    npt.assert_equal(get_orientation_from_affine(ras_affine), "RAS")
+
+    with pytest.raises(ValueError, match="affine must be a \\(4, 4\\) numpy array"):
+        get_affine_with_new_orientation(np.eye(3))
+    with pytest.raises(ValueError, match="affine must be a \\(4, 4\\) numpy array"):
+        get_affine_with_new_orientation([[1, 0, 0, 0]] * 4)
+
+    with pytest.raises(ValueError, match="new_orientation must be a string"):
+        get_affine_with_new_orientation(affine, new_orientation=123)
+    with pytest.raises(ValueError, match="new_orientation must be a string"):
+        get_affine_with_new_orientation(affine, new_orientation="RA")
+    with pytest.raises(ValueError, match="new_orientation must be a string"):
+        get_affine_with_new_orientation(affine, new_orientation="RAX")
+    with pytest.raises(
+        ValueError, match="does not seem to be a valid orientation string"
+    ):
+        get_affine_with_new_orientation(affine, new_orientation="RRA")
+
+
+def test_get_orientation():
+    affine = np.asarray(
+        [
+            [0.00000000e00, 0.00000000e00, 1.19999695e00, -8.86398926e01],
+            [-9.30352330e-01, 1.15545668e-01, 0.00000000e00, 1.16532005e02],
+            [1.15545668e-01, 9.30352330e-01, -2.49799545e-16, -1.12113556e02],
+            [0.00000000e00, 0.00000000e00, 0.00000000e00, 1.00000000e00],
+        ]
+    )
+    npt.assert_equal(get_orientation_from_affine(affine), "PSR")
+
+    affine = np.eye(4)
+    npt.assert_equal(get_orientation_from_affine(affine), "RAS")
+
+    with pytest.raises(ValueError, match="affine must be a \\(4, 4\\) numpy array"):
+        get_orientation_from_affine(np.eye(3))
+    with pytest.raises(ValueError, match="affine must be a \\(4, 4\\) numpy array"):
+        get_orientation_from_affine([[1, 0, 0, 0]] * 4)
