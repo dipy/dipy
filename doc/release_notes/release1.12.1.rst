@@ -8,14 +8,13 @@ GitHub stats for 2026/03/15 - 2026/04/23 (tag: 1.12.0)
 
 These lists are automatically generated, and may be incomplete or contain duplicates.
 
-The following 6 authors contributed 27 commits.
+The following 5 authors contributed 27 commits.
 
 * Atharva Shah
 * Emmanuelle Renauld
 * Kaustav Deka
 * Serge Koudoro
 * Stany Gregor
-* Stany87
 
 
 We closed a total of 7 pull requests;
