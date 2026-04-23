@@ -3,6 +3,8 @@
 import math
 from pathlib import Path
 
+import numpy as np
+
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.theme import (
@@ -23,6 +25,7 @@ if has_imgui:
 
 
 _NUMERIC_INPUT_EDITING = {}
+
 _NUMERIC_INPUT_DRAFT = {}
 _LAST_DIR = Path("~").expanduser() / ".dipy"
 
@@ -65,6 +68,61 @@ def _set_last_dir(path):
     """
     global _LAST_DIR
     _LAST_DIR = Path(path).parent
+
+
+def colors_equal(color_a, color_b):
+    """Return True when two RGB-like values represent the same color.
+
+    This function ignores the alpha channel.
+
+    Parameters
+    ----------
+    color_a : tuple
+        First color to compare.
+    color_b : tuple
+        Second color to compare.
+
+    Returns
+    -------
+    bool
+        True when the two colors are equal, False otherwise.
+    """
+    if isinstance(color_a, str) and isinstance(color_b, str):
+        return color_a == color_b
+    elif isinstance(color_a, str) or isinstance(color_b, str):
+        return False
+
+    color_a_arr = np.asarray(color_a)
+    color_b_arr = np.asarray(color_b)
+    if color_a_arr.ndim != 1 or color_b_arr.ndim != 1:
+        return False
+
+    return np.array_equal(color_a_arr[:3], color_b_arr[:3])
+
+
+def normalize_picker_color(color, *, fallback=(1.0, 0.0, 0.0)):
+    """Return an RGB tuple suitable for ImGui color picker widgets.
+
+    Parameters
+    ----------
+    color : tuple
+        Color to normalize.
+    fallback : tuple, optional
+        Fallback color to return if the input color is not valid.
+
+    Returns
+    -------
+    tuple
+        An RGB tuple suitable for ImGui color picker widgets.
+    """
+    if isinstance(color, str):
+        return fallback
+
+    color_arr = np.asarray(color)
+    if color_arr.ndim != 1 or color_arr.size < 3:
+        return fallback
+
+    return tuple(float(channel) for channel in color_arr[:3])
 
 
 def render_file_dialog(
@@ -287,6 +345,7 @@ def color_picker(
     label="",
     selected_color=(0, 0, 0),
     tooltip="Pick color",
+    popup_id="color_picker_popup",
 ):
     """Create color picker from selected color.
 
@@ -298,32 +357,41 @@ def color_picker(
         Previously selected color.
     tooltip : str, optional
         Tooltip to show when hovering the color picker.
+    popup_id : str, optional
+        Stable popup identifier for this color picker instance.
 
     Returns
     -------
-    changed : bool
-        True if the user committed a new color this frame.
-    color : tuple of float
-        RGB values in ``[0, 1]`` after any edit.
+    tuple
+        A tuple containing the changed state, the color, and the open state.
+        - changed : bool
+            True if the user edited the color this frame.
+        - color : tuple of float
+            RGB values in ``[0, 1]`` after any edit.
+        - is_open : bool
+            True when the color picker popup is currently open.
     """
 
     changed = False
     color = selected_color
+    is_open = False
     color_palette_icon = icons_fontawesome_6.ICON_FA_PALETTE
     imgui.text_colored(THEME["text"], f"{color_palette_icon} {label}")
     if imgui.is_item_hovered():
         imgui.set_tooltip(tooltip)
     if imgui.is_item_clicked():
-        imgui.open_popup("color_picker_popup")
-    if imgui.begin_popup("color_picker_popup"):
+        imgui.open_popup(popup_id)
+    if imgui.begin_popup(popup_id):
+        is_open = True
         changed, color = imgui.color_picker3(
             "",
             imgui.ImVec4(selected_color[0], selected_color[1], selected_color[2], 1.0),
             imgui.ColorEditFlags_.no_side_preview,
         )
+        color = np.array([color[0], color[1], color[2]])
         imgui.end_popup()
 
-    return changed, color
+    return changed, color, is_open
 
 
 def downloader(label, callback, *, extension="*.*", type="viz", file_name="save.txt"):
@@ -1009,7 +1077,7 @@ def segmented_switch(label, options, value, *, width=0, height=28):
 
     imgui.push_id(label)
 
-    value_options = [option.lower() for option in options]
+    value_options = [option.title() for option in options]
     current_value = value if value in value_options else options[0]
     label_color = THEME["text"]
     imgui.push_style_var(imgui.StyleVar_.frame_padding, (12.0, 6.0))

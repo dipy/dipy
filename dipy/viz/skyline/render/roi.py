@@ -4,7 +4,7 @@ import numpy as np
 
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
-from dipy.viz.skyline.UI.elements import color_picker, thin_slider
+from dipy.viz.skyline.UI.elements import color_picker, colors_equal, thin_slider
 from dipy.viz.skyline.render.renderer import Visualization
 
 fury_trip_msg = (
@@ -134,13 +134,14 @@ class ROI3D(Visualization):
         self.affine = affine
         self.opacity = opacity
         self.color = color
+        self._draft_color = color
+        self._color_picker_open = False
+        self._color_picker_popup_id = f"roi_color_picker_popup##{name}"
         self._create_roi_actor()
         super().__init__(name, render_callback)
 
     def _create_roi_actor(self):
-        """Handle  create roi actor for ``ROI3D``.
-        None
-        """
+        """Handle  create roi actor for ``ROI3D``."""
         self._roi_surface = contour_from_roi(
             self.roi, affine=self.affine, color=self.color, opacity=self.opacity / 100.0
         )
@@ -208,12 +209,21 @@ class ROI3D(Visualization):
         imgui.spacing()
         color = np.asarray(self.color) * 255
         color = color.astype(np.uint8)
-        changed, new_color = color_picker(
-            selected_color=self.color,
-            tooltip="Pick surface color",
+        selected_color = self._draft_color if self._color_picker_open else self.color
+        changed, new_color, is_open = color_picker(
+            selected_color=selected_color,
+            tooltip="Pick ROI color",
             label=color,
+            popup_id=self._color_picker_popup_id,
         )
+        if is_open and not self._color_picker_open:
+            self._draft_color = self.color
         if changed:
-            self.color = (new_color[0], new_color[1], new_color[2])
-            self.apply_scene_op(self._create_roi_actor)
-            self.render()
+            self._draft_color = new_color
+        if self._color_picker_open and not is_open:
+            if not colors_equal(self._draft_color, self.color):
+                self.color = self._draft_color
+                self.apply_scene_op(self._create_roi_actor)
+                self.render()
+            self._draft_color = self.color
+        self._color_picker_open = is_open

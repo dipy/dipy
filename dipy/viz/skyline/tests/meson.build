@@ -1,14 +1,11 @@
 python_sources = [
   '__init__.py',
-  'manager.py',
-  'elements.py',
-  'theme.py'
+  'test_app.py',
   ]
+
 
 py3.install_sources(
   python_sources,
   pure: false,
-  subdir: 'dipy/viz/skyline/UI'
+  subdir: 'dipy/viz/skyline/tests'
 )
-
-subdir('tests')

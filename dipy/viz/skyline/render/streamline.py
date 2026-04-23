@@ -18,8 +18,10 @@ from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import (
     color_picker,
+    colors_equal,
     create_numeric_input,
     downloader,
+    normalize_picker_color,
     open_confirmation_dialog,
     segmented_switch,
     thin_slider,
@@ -178,7 +180,7 @@ def create_streamline_visualization(
     *,
     is_cluster=False,
     thr=15.0,
-    line_type="line",
+    line_type="Line",
     color=(1, 0, 0),
     render_callback=None,
     colormap=None,
@@ -203,7 +205,7 @@ def create_streamline_visualization(
     thr : float, optional
         Clustering distance threshold.
     line_type : str, optional
-        The type of line to render ("line" or "tube").
+        The type of line to render ("Line" or "Tube").
     color : tuple, optional
         Color of the streamline rendering.
     render_callback : callable, optional
@@ -284,7 +286,7 @@ def create_streamline_visualization(
     )
 
 
-def create_streamline(lines, *, color=(1, 0, 0), line_type="line", segments=4):
+def create_streamline(lines, *, color=(1, 0, 0), line_type="Line", segments=4):
     """Instantiate Fury line or tube geometry for polyline streamlines.
 
     Parameters
@@ -293,10 +295,10 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="line", segments=4):
         Each array is a (N, 3) polyline in world space.
     color : ndarray, tuple, or str, optional
         Per-point, per-line, directional (``"direction"``), or constant RGB colors.
-    line_type : {"line", "tube"}, optional
+    line_type : {"Line", "Tube"}, optional
         Primitive style passed to Fury.
     segments : int, optional
-        Tube tessellation segments when ``line_type`` is ``"tube"``.
+        Tube tessellation segments when ``line_type`` is ``"Tube"``.
 
     Returns
     -------
@@ -305,7 +307,7 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="line", segments=4):
     """
     if isinstance(color, str) and color == "direction" and lines:
         color = line_colors(lines)
-    if line_type == "tube":
+    if line_type == "Tube":
         if len(color) != len(lines) and color.ndim == 2:
             points_per_line = [len(line) for line in lines]
             if color.shape[0] == sum(points_per_line):
@@ -317,7 +319,7 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="line", segments=4):
             segments=segments,
         )
         return tubes
-    elif line_type == "line":
+    elif line_type == "Line":
         if len(color) == len(lines) and color.ndim == 2:
             color = np.repeat(color, [len(line) for line in lines], axis=0)
         lines = streamlines(
@@ -359,7 +361,7 @@ class Streamline3D(Visualization):
         name,
         sft,
         *,
-        line_type="line",
+        line_type="Line",
         color=(1, 0, 0),
         render_callback=None,
         switch_render_callback=None,
@@ -390,7 +392,9 @@ class Streamline3D(Visualization):
         self.sft = sft
         self.color = color
         self._original_color = color
-        self._color_picker = (1, 0, 0)
+        self._draft_color = color
+        self._color_picker_open = False
+        self._color_picker_popup_id = f"streamline_color_picker_popup##{name}"
         self._hue_low = 0.0
         self._hue_high = 0.1
         self._saturation_high = 0.8
@@ -496,10 +500,10 @@ class Streamline3D(Visualization):
 
         changed, new = segmented_switch("Line Type", ["Line", "Tube"], self._line_type)
         if changed:
-            requested_line_type = new.lower()
+            requested_line_type = new.title()
             require_confirmation = (
-                self._line_type == "line"
-                and requested_line_type == "tube"
+                self._line_type == "Line"
+                and requested_line_type == "Tube"
                 and len(self.sft.streamlines) > 20000
             )
             if require_confirmation:
@@ -552,20 +556,28 @@ class Streamline3D(Visualization):
             self._buan_pvals_file = False
             self._buan_pvals_data = None
             self.color = self._original_color
+            self._draft_color = self._original_color
             self.apply_scene_op(self._create_streamline_actor)
             self.render()
 
         imgui.same_line(0, 10)
-        changed, new_color = color_picker(
-            selected_color=self._color_picker,
+        selected_color = normalize_picker_color(self._draft_color)
+        changed, new_color, is_open = color_picker(
+            selected_color=selected_color,
             tooltip="Pick a color for the streamlines.",
+            popup_id=self._color_picker_popup_id,
         )
+        if is_open and not self._color_picker_open:
+            self._draft_color = normalize_picker_color(self.color)
         if changed:
-            self._color_picker = np.asarray((new_color[0], new_color[1], new_color[2]))
-
-            self.color = self._color_picker
-            self.apply_scene_op(self._create_streamline_actor)
-            self.render()
+            self._draft_color = new_color
+        if self._color_picker_open and not is_open:
+            if not colors_equal(self._draft_color, self.color):
+                self.color = self._draft_color
+                self.apply_scene_op(self._create_streamline_actor)
+                self.render()
+            self._draft_color = self.color
+        self._color_picker_open = is_open
 
         if self._buan_pvals_file is not None and self._buan_pvals_data is not None:
             imgui.spacing()
@@ -643,7 +655,7 @@ class ClusterStreamline3D(Visualization):
         sft,
         thr,
         *,
-        line_type="line",
+        line_type="Line",
         render_callback=None,
         switch_render_callback=None,
         loader=None,
@@ -1060,7 +1072,7 @@ class ClusterStreamline3D(Visualization):
 
         changed, new = segmented_switch("Line Type", ["Line", "Tube"], self._line_type)
         if changed:
-            self._line_type = new.lower()
+            self._line_type = new.title()
             self.apply_scene_op(self._apply_cluster_line_type_change)
 
         imgui.spacing()
