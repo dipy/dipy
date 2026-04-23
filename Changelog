@@ -18,6 +18,16 @@ The full VCS changelog is available here:
 
 Releases
 ~~~~~~~~
+* 1.12.1 (Wednesday, April 23, 2026)
+
+- BF: Fix nlmeans handling of 3D sigma for 4D data (PIESNO workflow).
+- BF: Fix PTT initialization threshold and probe position, adjust default max_angle.
+- BF: Revert to default value for optimizer in Image Registration.
+- BF: Add mask input for biasfield correction CLI.
+- ENH: FORCE microstructure uncertainties and additional doc changes.
+- FIX: Remove useless warning at saving time.
+- MTN: Fix python minimum version.
+
 * 1.12.0 (Friday, March 13, 2026)
 
 - NF: FORCE recon model - new signal matching reconstruction model added.
