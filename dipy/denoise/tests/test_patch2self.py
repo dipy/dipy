@@ -318,6 +318,19 @@ def test_single_slice_data():
 
 
 @needs_sklearn
+@set_random_number_generator(2026)
+def test_patch2self_small_data_edge_cases(rng):
+    data = (30 + 2 * rng.standard_normal((4, 4, 4, 5))).astype(np.float64)
+    bvals = np.array([0, 1000, 1000, 1000, 1000])
+
+    with pytest.warns(UserWarning, match="less than 10 3D volumes"):
+        out = p2s.patch2self(data, bvals, model="ols", version=3)
+
+    assert_equal(out.shape, data.shape)
+    assert np.all(np.isfinite(out))
+
+
+@needs_sklearn
 @set_random_number_generator(2025)
 def test_patch2self_v3_preserves_out_dtype_and_precision_invariance(rng):
     shape = (10, 10, 6, 13)
