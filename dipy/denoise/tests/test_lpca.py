@@ -322,6 +322,25 @@ def test_phantom(rng):
 
 
 @set_random_number_generator()
+def test_compare_pca_methods_complex(rng):
+    S0_w_noise = (
+        100
+        + 100j
+        + (2 / np.sqrt(2))
+        * (
+            rng.standard_normal((22, 23, 30, 20))
+            + 1j * rng.standard_normal((22, 23, 30, 20))
+        )
+    )
+    S0_den_svd = localpca(S0_w_noise, sigma=np.std(S0_w_noise), pca_method="svd")
+    S0_den_eig = localpca(S0_w_noise, sigma=np.std(S0_w_noise))
+
+    assert_array_almost_equal(S0_den_svd, S0_den_eig)
+    assert_(np.std(S0_den_svd) < np.std(S0_w_noise))
+    assert_(np.std(S0_den_eig) < np.std(S0_w_noise))
+
+
+@set_random_number_generator()
 def test_lpca_ill_conditioned(rng):
     DWI, sigma = rfiw_phantom(gtab, snr=30, rng=rng)
     for patch_radius in [1, [1, 1, 1]]:
