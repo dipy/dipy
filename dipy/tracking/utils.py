@@ -268,6 +268,22 @@ def reduce_labels(label_volume):
     """Reduce an array of labels to the integers from 0 to n with smallest
     possible n.
 
+    Parameters
+    ----------
+    label_volume : ndarray
+        An array of labels represented as integers. The labels do not
+        need to be contiguous or start from zero.
+
+    Returns
+    -------
+    new_labels : ndarray
+        An array of the same shape as `label_volume` where each label
+        has been replaced by its index in the sorted unique labels array,
+        giving contiguous integers starting from 0.
+    lookup : ndarray, shape (n,)
+        A 1D array of the unique labels in sorted order. The original
+        labels can be recovered using ``lookup[new_labels]``.
+
     Examples
     --------
     >>> labels = np.array([[1, 3, 9],
