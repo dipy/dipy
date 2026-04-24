@@ -247,22 +247,21 @@ def ndbincount(x, *, weights=None, shape=None):
 
     Parameters
     ----------
-    x : array_like (N, M)
+    x : array-like (N, M)
         M indices to a an Nd-array
-    weights : array_like (M,), optional
+    weights : array-like (M,), optional
         Weights associated with indices
-    shape : optional
-        the shape of the output
+    shape : tuple, optional
+        The shape of the output array. If not provided,
+        the shape is inferred from the maximum indices.
+
+    Returns
+    -------
+    out : ndarray
+        An Nd-array of counts (or weighted counts) where
+        each element represents the number of occurrences
+        of the corresponding index combination.
     """
-    x = np.asarray(x)
-    if shape is None:
-        shape = x.max(1) + 1
-
-    x = np.ravel_multi_index(x, shape)
-    out = np.bincount(x, weights, minlength=np.prod(shape))
-    out = out.reshape(shape)
-
-    return out
 
 
 def reduce_labels(label_volume):
