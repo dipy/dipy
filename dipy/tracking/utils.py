@@ -1100,6 +1100,27 @@ def path_length(streamlines, affine, aoi, *, fill_value=-1):
 
 
 def _part_segments(streamline, break_points):
+    """Generate segments of a streamline based on break points.
+
+    Splits a streamline at the given break points and yields each
+    segment that has more than one point, skipping the first segment
+    (all points before the first break point).
+
+    Parameters
+    ----------
+    streamline : ndarray, shape (N, 3)
+        A single streamline represented as an array of N points
+        in 3D space.
+    break_points : ndarray, shape (N,)
+        A boolean or integer array indicating where to split the
+        streamline. Non-zero values mark the break positions.
+
+    Yields
+    ------
+    segment : ndarray, shape (M, 3)
+        Each segment of the streamline with more than one point.
+    """
+
     segments = np.split(streamline, break_points.nonzero()[0])
     # Skip first segment, all points before first break
     # first segment is empty when break_points[0] == 0
@@ -1110,6 +1131,26 @@ def _part_segments(streamline, break_points):
 
 
 def _as_segments(streamline, break_points):
+    """Generate all segments of a streamline in both directions.
+
+    Yields segments from the streamline in forward direction followed
+    by segments from the streamline in reverse direction.
+
+    Parameters
+    ----------
+    streamline : ndarray, shape (N, 3)
+        A single streamline represented as an array of N points
+        in 3D space.
+    break_points : ndarray, shape (N,)
+        A boolean or integer array indicating where to split the
+        streamline. Non-zero values mark the break positions.
+
+    Yields
+    ------
+    segment : ndarray, shape (M, 3)
+        Each segment of the streamline with more than one point,
+        yielded in forward then reverse direction.
+    """
     for seg in _part_segments(streamline, break_points):
         yield seg
     for seg in _part_segments(streamline[::-1], break_points[::-1]):
