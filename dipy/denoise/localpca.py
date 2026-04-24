@@ -3,7 +3,7 @@ from warnings import warn
 
 import numpy as np
 from scipy.linalg import eigh
-from scipy.linalg.lapack import dgesvd as svd
+from scipy.linalg.lapack import dgesvd as real_svd, zgesvd as complex_svd
 
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.testing.decorators import warning_for_keywords
@@ -197,7 +197,8 @@ def genpca(
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
         are the diffusion gradient directions. The first 3 dimension must have
-        size >= 2 * patch_radius + 1 or size = 1.
+        size >= 2 * patch_radius + 1 or size = 1. Both real and complex-valued
+        arrays are supported.
     sigma : float or 3D array, optional
         Standard deviation of the noise estimated from the data. If no sigma
         is given, this will be estimated based on random matrix theory
@@ -236,8 +237,10 @@ def genpca(
     Returns
     -------
     denoised_arr : 4D array
-        This is the denoised array of the same size as that of the input data,
-        clipped to non-negative values.
+        This is the denoised array of the same size as that of the input data.
+        If the input data is real-valued, the output is clipped to non-negative
+        values. If complex-valued, the denoised complex signal is returned
+        without clipping.
 
     References
     ----------
@@ -335,21 +338,18 @@ def genpca(
 
                 if is_svd:
                     # PCA using an SVD
+                    svd_args = [1, 0]
                     if np.issubdtype(calc_dtype, np.complexfloating):
-                        U, S, Vt = np.linalg.svd(X, full_matrices=False)
+                        U, S, Vt = complex_svd(X, *svd_args)[:3]
                     else:
-                        svd_args = [1, 0]
-                        U, S, Vt = svd(X, *svd_args)[:3]
-                        # Items in S are the eigenvalues, but in ascending order
-                        # We invert the order (=> descending)
-                        S = S[::-1]
-                        # Rows of Vt are eigenvectors, but also in ascending
-                        # eigenvalue order:
-                        Vt = Vt[::-1]
-                    # We square and normalize
+                        U, S, Vt = real_svd(X, *svd_args)[:3]
+                    # Items in S are the eigenvalues, but in ascending order
+                    # We invert the order (=> descending), square and normalize
                     # \lambda_i = s_i^2 / n
-                    d = S**2 / X.shape[0]
-                    W = Vt.conj().T
+                    d = S[::-1] ** 2 / X.shape[0]
+                    # Rows of Vt are eigenvectors, but also in ascending
+                    # eigenvalue order:
+                    W = Vt[::-1].conj().T
                 else:
                     # PCA using an Eigenvalue decomposition
                     C = np.conjugate(np.transpose(X)).dot(X)
@@ -422,7 +422,8 @@ def localpca(
     ----------
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
-        are the diffusion gradient directions.
+        are the diffusion gradient directions. Both real and complex-valued
+        arrays are supported.
     sigma : float or 3D array, optional
         Standard deviation of the noise estimated from the data. If not given,
         calculate using method in :footcite:t:`Manjon2013`.
@@ -474,8 +475,10 @@ def localpca(
     Returns
     -------
     denoised_arr : 4D array
-        This is the denoised array of the same size as that of the input data,
-        clipped to non-negative values
+        This is the denoised array of the same size as that of the input data.
+        If the input data is real-valued, the output is clipped to non-negative
+        values. If complex-valued, the denoised complex signal is returned
+        without clipping.
 
     References
     ----------
@@ -528,7 +531,8 @@ def mppca(
     ----------
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
-        are the diffusion gradient directions.
+        are the diffusion gradient directions. Both real and complex-valued
+        arrays are supported.
     mask : 3D boolean array, optional
         A mask with voxels that are true inside the brain and false outside of
         it. The function denoises within the true part and returns zeros
@@ -553,8 +557,10 @@ def mppca(
     Returns
     -------
     denoised_arr : 4D array
-        This is the denoised array of the same size as that of the input data,
-        clipped to non-negative values
+        This is the denoised array of the same size as that of the input data.
+        If the input data is real-valued, the output is clipped to non-negative
+        values. If complex-valued, the denoised complex signal is returned
+        without clipping.
     sigma : 3D array (when return_sigma=True)
         Estimate of the spatial varying standard deviation of the noise
 
