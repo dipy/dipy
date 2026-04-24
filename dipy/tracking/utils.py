@@ -1004,6 +1004,27 @@ def reduce_rois(rois, include):
 
 
 def _min_at(a, index, value):
+    """Set minimum values at given indices of an array.
+
+    A fallback implementation of ``np.minimum.at`` for environments
+    where it is not available.
+
+    Parameters
+    ----------
+    a : ndarray
+        The array to update in place with minimum values.
+    index : sequence of array-like
+        Indices into `a` where the minimum operation is applied.
+        Each element corresponds to one dimension of `a`.
+    value : ndarray
+        Values to compare against the current values in `a`.
+        The minimum of the existing and new values is stored.
+
+    Returns
+    -------
+    None
+        The array `a` is modified in place.
+    """
     index = np.asarray(index)
     sort_keys = [value] + list(index)
     order = np.lexsort(sort_keys)
