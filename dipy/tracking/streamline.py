@@ -541,7 +541,28 @@ def orient_by_rois(
 
 
 def _orient_by_sl_generator(out, std_array, fgarray):
-    """Helper function that implements the generator version of this"""
+    """Helper function that implements the generator version of orient_by_sl.
+
+    Yields streamlines oriented to match the direction of a standard
+    streamline by comparing direct and flipped Euclidean distances.
+
+    Parameters
+    ----------
+    out : list of ndarray
+        A list of streamlines each of shape (N, 3) to be oriented.
+    std_array : ndarray, shape (N, 3)
+        The standard streamline used as a reference for orientation.
+        Each streamline in `fgarray` is compared against this.
+    fgarray : list of ndarray
+        A list of streamlines each of shape (N, 3) used to compute
+        distances against `std_array` to determine orientation.
+
+    Yields
+    ------
+    sl : ndarray, shape (N, 3)
+        Each streamline from `out` yielded in the correct orientation
+        to match the direction of `std_array`.
+    """
     for idx, sl in enumerate(fgarray):
         dist_direct = np.sum(np.sqrt(np.sum((sl - std_array) ** 2, -1)))
         dist_flipped = np.sum(np.sqrt(np.sum((sl[::-1] - std_array) ** 2, -1)))
