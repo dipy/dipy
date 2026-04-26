@@ -262,6 +262,15 @@ def ndbincount(x, *, weights=None, shape=None):
         each element represents the number of occurrences
         of the corresponding index combination.
     """
+    x = np.asarray(x)
+    if shape is None:
+        shape = x.max(1) + 1
+
+    x = np.ravel_multi_index(x, shape)
+    out = np.bincount(x, weights, minlength=np.prod(shape))
+    out = out.reshape(shape)
+
+    return out
 
 
 def reduce_labels(label_volume):
