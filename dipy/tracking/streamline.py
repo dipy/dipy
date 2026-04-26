@@ -787,5 +787,17 @@ def values_from_volume(data, streamlines, affine):
 
 
 def nbytes(streamlines):
-    """Calculate the memory footprint of a streamlines object."""
+    """Calculate the memory footprint of a streamlines object.
+
+    Parameters
+    ----------
+    streamlines : StatefulTractogram or ArraySequence
+        A streamlines object with a `_data` attribute containing
+        the raw streamline data as a numpy array.
+
+    Returns
+    -------
+    size : float
+        The memory footprint of the streamlines data in megabytes (MB).
+    """
     return streamlines._data.nbytes / 1024.0**2
