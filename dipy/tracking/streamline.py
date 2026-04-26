@@ -430,25 +430,35 @@ def _orient_by_roi_generator(out, roi1, roi2):
 
 
 def _orient_by_roi_list(out, roi1, roi2):
-    """
-    Helper function to `orient_by_rois`
+    """Helper function to `orient_by_rois`.
 
     Performs the inner loop separately. This is needed, because functions with
     `yield` always return a generator.
 
     Flips the streamlines in place (as needed) and returns a reference to the
     updated list.
+
+    Parameters
+    ----------
+    out : list of ndarray
+        A list of streamlines, each of shape (N, 3), to be oriented
+        in place based on their proximity to the two ROIs.
+    roi1 : ndarray, shape (M, 3)
+        An array of coordinates representing the first region of
+        interest. Streamlines will be oriented so that they start
+        closer to roi1.
+    roi2 : ndarray, shape (K, 3)
+        An array of coordinates representing the second region of
+        interest. Streamlines will be oriented so that they end
+        closer to roi2.
+
+    Returns
+    -------
+    out : list of ndarray
+        The same list of streamlines passed as input, with some
+        streamlines flipped in place so that they are oriented
+        from roi1 towards roi2.
     """
-    for idx, sl in enumerate(out):
-        dist1 = cdist(sl, roi1, "euclidean")
-        dist2 = cdist(sl, roi2, "euclidean")
-        min1 = np.argmin(dist1, 0)
-        min2 = np.argmin(dist2, 0)
-        if min1[0] > min2[0]:
-            out[idx][:, 0] = sl[::-1][:, 0]
-            out[idx][:, 1] = sl[::-1][:, 1]
-            out[idx][:, 2] = sl[::-1][:, 2]
-    return out
 
 
 @warning_for_keywords()
