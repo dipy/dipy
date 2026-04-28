@@ -35,6 +35,7 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
+from dipy.io.peaks import save_pam
 
 ###############################################################################
 # Download (or locate in cache) the Stanford HARDI dataset.  The first call
@@ -53,7 +54,7 @@ print(f"data shape: {data.shape}")
 
 from dipy.segment.mask import median_otsu
 
-_, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3, numpass=1)
+_, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=4, numpass=4)
 
 print(f"mask shape: {mask.shape}, brain voxels: {mask.sum()}")
 
@@ -76,9 +77,7 @@ model = FORCEModel(
 )
 
 ###############################################################################
-# Generate the simulation library.  For this tutorial we use a small library
-# (5 000 entries) so that the example completes quickly.  In practice,
-# 100 000–500 000 simulations are recommended for production analyses.
+# Generate the simulation library.  For this tutorial, we use 500,000 simulations.
 #
 # When ``use_cache=True`` (the default), FORCE stores the generated library in
 # ``~/.dipy/force_simulations/`` and reloads it automatically on subsequent
@@ -119,6 +118,21 @@ ambiguity = fit.ambiguity
 
 print(f"FA  — min: {fa_map[mask].min():.3f}  max: {fa_map[mask].max():.3f}")
 print(f"MD  — min: {md_map[mask].min():.6f}  max: {md_map[mask].max():.6f}")
+
+###############################################################################
+# To save the peaks generated from the FORCE directly, we need to call the force_peaks
+# function on the fitted object.  This will return a
+# PeaksAndMetrics object containing the peak directions, values, and indices, which can
+# be saved to disk using save_pam.
+peaks = force_peaks(fit)
+
+###############################################################################
+# Now lets import the save_pam function and save the peaks to disk as a .pam5 file.
+# The affine is needed to ensure that the peaks are correctly aligned with the original
+# data.
+
+save_pam("force_peaks.pam5", peaks, affine=affine)
+
 
 ###############################################################################
 # Save selected maps to disk as NIfTI files.
@@ -163,19 +177,6 @@ plt.tight_layout()
 plt.savefig("force_maps.png", dpi=150, bbox_inches="tight")
 # plt.show()
 
-
-# To save the peaks generated from the FORCE directly, we need to call the force_peaks
-# function on the fitted object.  This will return a
-# PeaksAndMetrics object containing the peak directions, values, and indices, which can
-# be saved to disk using save_pam.
-peaks = force_peaks(fit)
-
-# Now lets import the save_pam function and save the peaks to disk as a .pam5 file.
-# The affine is needed to ensure that the peaks are correctly aligned with the original
-# data.
-from dipy.io.peaks import save_pam
-
-save_pam("force_peaks.pam5", peaks, affine=affine)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

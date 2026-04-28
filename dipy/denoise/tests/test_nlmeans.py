@@ -208,7 +208,37 @@ def test_blockwise_sigma_array_support():
     assert np.abs(np.mean(result4) - np.mean(result1)) < 5.0
 
 
-def test_coordinate_consistency():
+@set_random_number_generator(42)
+def test_blockwise_3d_sigma_map_not_reduced_to_global_mean(rng=None):
+    """Blockwise 3D sigma maps should affect denoising beyond a global mean."""
+    arr = rng.normal(100, 15, size=(10, 10, 10)).astype(np.float64)
+
+    sigma_map = np.ones(arr.shape, dtype=np.float64)
+    sigma_map[:5, :, :] = 2.0
+    sigma_map[5:, :, :] = 20.0
+
+    result_map = nlmeans(
+        arr,
+        sigma=sigma_map,
+        method="blockwise",
+        rician=False,
+        num_threads=1,
+    )
+    result_scalar = nlmeans(
+        arr,
+        sigma=float(np.mean(sigma_map)),
+        method="blockwise",
+        rician=False,
+        num_threads=1,
+    )
+
+    assert result_map.shape == arr.shape
+    assert result_scalar.shape == arr.shape
+    assert np.max(np.abs(result_map - result_scalar)) > 1e-6
+
+
+@set_random_number_generator(42)
+def test_coordinate_consistency(rng=None):
     """
     Test that the nlmeans denoising respects coordinate geometry.
 
@@ -220,8 +250,7 @@ def test_coordinate_consistency():
 
     test_image[5:15, 5:15, 5:15] = 100.0
 
-    np.random.seed(42)
-    noisy_image = test_image + np.random.normal(0, 5, test_image.shape)
+    noisy_image = test_image + rng.normal(0, 5, test_image.shape)
 
     denoised_image = nlmeans(
         noisy_image,
@@ -244,3 +273,64 @@ def test_coordinate_consistency():
 
     assert isinstance(denoised_image, np.ndarray)
     assert denoised_image.dtype == np.float64 or denoised_image.dtype == np.float32
+
+
+@pytest.mark.parametrize("method", ["blockwise", "classic"])
+def test_nlmeans_4d_with_sigma_3d_volume(method):
+    """Regression test: nlmeans should accept non-scalar sigma for 4D data.
+
+    This includes:
+    - a 3D sigma volume (e.g., from PIESNO) with one value per spatial voxel
+    - a 1D sigma array with one value per volume
+    """
+    rng = np.random.default_rng(42)
+    arr = rng.normal(100, 10, size=(10, 10, 10, 5)).astype(np.float64)
+    # 3D sigma — one value per spatial voxel, as PIESNO would produce per slice
+    sigma_3d = np.ones(arr.shape[:3]) * 10.0
+    # This should NOT raise a ValueError
+    result_3d = nlmeans(arr, sigma=sigma_3d, method=method)
+    assert result_3d.shape == arr.shape
+
+    # 1D sigma array with one value per volume
+    sigma_1d = np.full(arr.shape[-1], 10.0)
+    result_1d = nlmeans(arr, sigma=sigma_1d, method=method)
+    assert result_1d.shape == arr.shape
+
+
+@pytest.mark.parametrize("method", ["classic", "blockwise"])
+def test_nlmeans_4d_invalid_sigma_shapes(method):
+    """Invalid 4D sigma shapes should raise clear validation errors."""
+    rng = np.random.default_rng(42)
+    arr = rng.normal(100, 10, size=(10, 10, 10, 5)).astype(np.float64)
+
+    with pytest.raises(ValueError, match="does not match the last dimension"):
+        nlmeans(arr, sigma=np.array([10.0, 11.0]), method=method)
+
+    with pytest.raises(ValueError, match="does not match the first 3 dimensions"):
+        nlmeans(arr, sigma=np.ones((9, 10, 10)), method=method)
+
+    with pytest.raises(ValueError, match="1D or 3D array for 4D data"):
+        nlmeans(arr, sigma=np.ones((10, 10)), method=method)
+
+
+def test_nlmeans_3d_invalid_sigma_and_mask_inputs():
+    arr = np.ones((10, 10, 10), dtype=np.float64)
+
+    with pytest.raises(ValueError, match="array of floats"):
+        nlmeans(
+            arr,
+            sigma=np.array([["bad", "worse"]], dtype=object),
+            method="classic",
+        )
+
+    with pytest.raises(ValueError, match="sigma should be scalar or a 3D array"):
+        nlmeans(arr, sigma=np.ones((9, 10, 10)), method="classic")
+
+    with pytest.raises(ValueError, match="at most 3D"):
+        nlmeans(arr, sigma=np.ones((2, 2, 2, 2)), method="blockwise")
+
+    with pytest.raises(ValueError, match="sigma should be a float"):
+        nlmeans(arr, sigma="bad", method="classic")
+
+    with pytest.raises(ValueError, match="mask needs to be a 3D ndarray"):
+        nlmeans(arr, sigma=1.0, mask=np.ones((10, 10)), method="classic")

@@ -566,7 +566,7 @@ class SynthSeg:
         np.ndarray (batch, ...)
             Predicted brain labels
         """
-        return self.model(x_test).detach().numpy()
+        return self.model(x_test).detach().cpu().numpy()
 
     def predict(
         self,

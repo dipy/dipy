@@ -6,7 +6,7 @@ import numpy as np
 from dipy.core.gradients import gradient_table
 from dipy.denoise.bias_correction import bias_field_correction
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti, save_nifti
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.nn.deepn4 import DeepN4
 from dipy.nn.evac import EVACPlus
 from dipy.utils.logging import logger
@@ -90,6 +90,7 @@ class BiasFieldCorrectionFlow(Workflow):
         input_files,
         bval=None,
         bvec=None,
+        mask=None,
         method="auto",
         threshold=0.5,
         use_cuda=False,
@@ -117,6 +118,9 @@ class BiasFieldCorrectionFlow(Workflow):
             Path to the b-value file.
         bvec : string or Path, optional
             Path to the b-vector file.
+        mask : string or Path, optional
+            Path to the brain mask file. If not provided, a mask will be estimated
+            from the input volume using Otsu's method for 'poly' and 'bspline' methods.
         method : string, optional
             Bias field correction method. Choose from:
                 - 'n4': DeepN4 bias field correction.
@@ -207,9 +211,11 @@ class BiasFieldCorrectionFlow(Workflow):
                 gtab = gradient_table(bvals, bvecs=bvecs)
                 levels = tuple(int(x.strip()) for x in pyramid_levels.split(","))
                 n_ctrl = (int(n_control_points),) * 3
+                mask_arr = load_nifti_data(mask) if mask is not None else None
                 corrected_data, bias = bias_field_correction(
                     data,
                     gtab,
+                    mask=mask_arr,
                     method=method.lower(),
                     order=int(order),
                     n_control_points=n_ctrl,

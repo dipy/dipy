@@ -70,7 +70,7 @@ def afb3D_A(x, af, d):
     Parameters
     ----------
     x : 3D ndarray
-        N1xN2xN2 matrix, where min(N1,N2,N3) > 2*length(filter)
+        N1xN2xN3 matrix, where min(N1,N2,N3) > 2*length(filter)
            (Ni are even)
     af : 2D ndarray
         analysis filter for the columns

@@ -46,7 +46,7 @@ jobs:
       run:
         shell: bash -el {0}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 2
       - name: Check commit message for [wheels]
@@ -86,11 +86,11 @@ jobs:
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
           ref: ${{ needs.check-commit.outputs.build-commit }}
-      - uses: pypa/cibuildwheel@v3.3.1
+      - uses: pypa/cibuildwheel@v3.4.1
         env:
             CIBW_SKIP: "*-musllinux_*"
             CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
@@ -113,11 +113,11 @@ jobs:
       matrix:
         os: [macos-15-intel, macos-latest]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
           ref: ${{ needs.check-commit.outputs.build-commit }}
-      - uses: pypa/cibuildwheel@v3.3.1
+      - uses: pypa/cibuildwheel@v3.4.1
         env:
           CIBW_BEFORE_ALL_MACOS: >
             curl -fsSL
@@ -142,11 +142,11 @@ jobs:
       matrix:
         os: [windows-latest]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
           ref: ${{ needs.check-commit.outputs.build-commit }}
-      - uses: pypa/cibuildwheel@v3.3.1
+      - uses: pypa/cibuildwheel@v3.4.1
         env:
             CIBW_CONFIG_SETTINGS: "setup-args=--vsenv compile-args=-v"
         with:
@@ -203,7 +203,7 @@ jobs:
           path: ./dist
           merge-multiple: true
       - name: Upload wheel
-        uses: scientific-python/upload-nightly-action@5748273c71e2d8d3a61f3a11a16421c8954f9ecf # 0.6.3
+        uses: scientific-python/upload-nightly-action@e76cfec8a4611fd02808a801b0ff5a7d7c1b2d99 # 0.6.4
         if: github.event_name != 'schedule'
         with:
           artifacts_path: dist
@@ -211,7 +211,7 @@ jobs:
           anaconda_nightly_upload_organization: dipy
           anaconda_nightly_upload_labels: dev
       - name: Upload wheel
-        uses: scientific-python/upload-nightly-action@5748273c71e2d8d3a61f3a11a16421c8954f9ecf # 0.6.3
+        uses: scientific-python/upload-nightly-action@e76cfec8a4611fd02808a801b0ff5a7d7c1b2d99 # 0.6.4
         if: needs.check-commit.outputs.build-commit == 'master'
         with:
           artifacts_path: dist

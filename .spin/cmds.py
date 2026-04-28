@@ -499,7 +499,7 @@ def _check_copyright_year():
         )
 
 
-def _generate_release_notes(*, last_tag, new_version):
+def _generate_release_notes(*, last_tag, new_version, branch=None):
     """Generate release notes via tools/github_stats.py.
 
     Parameters
@@ -508,10 +508,18 @@ def _generate_release_notes(*, last_tag, new_version):
         The previous release tag (e.g. ``"1.11.0"``).
     new_version : str
         The new version string (e.g. ``"1.12.0"``).
+    branch : str or None
+        When set, pass ``--branch`` to github_stats.py so that only pull
+        requests targeting this branch are included (used for maintenance
+        releases to exclude master-branch PRs).
     """
     notes_path = f"doc/release_notes/release{new_version}.rst"
     click.secho(f"--- Generating release notes → {notes_path} ---", bold=True)
-    _run_shell(f"python3 tools/github_stats.py {last_tag} > {notes_path}", check=False)
+    branch_arg = f" --branch {branch}" if branch else ""
+    _run_shell(
+        f"python3 tools/github_stats.py {last_tag}{branch_arg} > {notes_path}",
+        check=False,
+    )
     click.secho(
         f"\nPlease open {notes_path} and add a header / highlights section "
         "above the auto-generated stats.",
@@ -1026,7 +1034,26 @@ RELEASE_STEPS = [
     "website",  # 22
 ]
 
+# Reduced step list for patch releases on a maintenance branch.
+# Major-release-only steps (api-changes, doc/website updates, deprecations,
+# version-switcher, stateoftheart, toolchain, tutorials) are intentionally
+# omitted.
+MAINT_RELEASE_STEPS = [
+    "fetch-tag",  #  1
+    "mailmap",  #  2
+    "version",  #  3  (proposes X.Y.Z+1 patch bump)
+    "author",  #  4
+    "release-notes",  #  5  (filters PRs by base branch)
+    "changelog",  #  6
+    "pyproject",  #  7
+    "doctest",  #  8
+    "tests",  #  9
+]
+
 STEP_HELP = "\n".join(f"  {i + 1:>2}. {s}" for i, s in enumerate(RELEASE_STEPS))
+MAINT_STEP_HELP = "\n".join(
+    f"  {i + 1:>2}. {s}" for i, s in enumerate(MAINT_RELEASE_STEPS)
+)
 
 
 @click.command(name="prepare-release")
@@ -1034,8 +1061,8 @@ STEP_HELP = "\n".join(f"  {i + 1:>2}. {s}" for i, s in enumerate(RELEASE_STEPS))
     "--from-step",
     default=1,
     metavar="N",
-    help=("Resume from step N (1-based). Steps:\n" + STEP_HELP),
-    type=click.IntRange(1, len(RELEASE_STEPS)),
+    help="Resume from step N (1-based). See step list in the command help.",
+    type=click.IntRange(1, max(len(RELEASE_STEPS), len(MAINT_RELEASE_STEPS))),
 )
 @click.option(
     "--last-tag", default=None, metavar="TAG", help="Override auto-detected last tag."
@@ -1043,32 +1070,110 @@ STEP_HELP = "\n".join(f"  {i + 1:>2}. {s}" for i, s in enumerate(RELEASE_STEPS))
 @click.option(
     "--new-version", default=None, metavar="VER", help="Skip version prompt, use VER."
 )
-def prepare_release(*, from_step, last_tag, new_version):
-    (
-        """🚀 Prepare a DIPY release (interactive checklist).
+@click.option(
+    "--maint-branch",
+    default=None,
+    metavar="BRANCH",
+    help=(
+        "Release from a maintenance branch (e.g. 'maint/1.12.x'). "
+        "Runs a reduced 9-step checklist and filters GitHub stats to that "
+        "branch. Auto-detected when the current branch starts with 'maint/'."
+    ),
+)
+def prepare_release(*, from_step, last_tag, new_version, maint_branch):
+    """Prepare a DIPY release (interactive checklist).
 
-    Runs each preparation step in order. Use --from-step N to resume
+    Runs each preparation step in order.  Use --from-step N to resume
     after an interruption.
 
     \b
-    Steps:
-    """
-        + STEP_HELP
-    )  # noqa: E501
+    Full release steps (master):
+      1. fetch-tag        – detect the previous release tag
+      2. mailmap          – deduplicate authors in .mailmap
+      3. version          – choose the new version number
+      4. author           – regenerate the AUTHOR file
+      5. copyright        – update copyright years
+      6. release-notes    – generate doc/release_notes/releaseX.Y.Z.rst
+      7. changelog        – prepend entry in Changelog
+      8. api-changes      – review doc/api_changes.rst
+      9. index            – add announcement to doc/index.rst
+     10. old-news         – rotate old announcements to doc/old_news.rst
+     11. highlights       – move highlights to doc/old_highlights.rst
+     12. stateoftheart    – add release to doc/stateoftheart.rst toctree
+     13. toolchain        – update doc/devel/toolchain.rst
+     14. version-switcher – promote version in doc/_static/version_switcher.json
+     15. developers       – review doc/developers.rst contributor list
+     16. pyproject        – set version in pyproject.toml
+     17. deprecations     – confirm deprecated code removed
+     18. doctest          – run extension module doctests
+     19. tests            – run full test suite
+     20. docs             – build HTML documentation
+     21. tutorials        – build and review tutorials
+     22. website          – deploy docs and verify version switcher
+
+    \b
+    Maintenance release steps (--maint-branch):
+      1. fetch-tag        – detect the previous release tag
+      2. mailmap          – deduplicate authors in .mailmap
+      3. version          – propose patch-level bump (X.Y.Z+1)
+      4. author           – regenerate the AUTHOR file
+      5. release-notes    – generate notes filtered to the maint branch
+      6. changelog        – prepend entry in Changelog
+      7. pyproject        – set version in pyproject.toml
+      8. doctest          – run extension module doctests
+      9. tests            – run full test suite
+    """  # noqa: E501
     if not os.path.isdir("dipy") or not os.path.isfile("pyproject.toml"):
         raise click.ClickException("Run this command from the root 'dipy' directory.")
 
+    # ── Auto-detect maintenance branch ────────────────────────────────────
+    if maint_branch is None:
+        try:
+            import subprocess as _sp
+
+            current = _sp.check_output(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"], text=True
+            ).strip()
+            if current.startswith("maint/"):
+                maint_branch = current
+                click.secho(
+                    f"Auto-detected maintenance branch: {maint_branch}",
+                    fg="cyan",
+                )
+        except Exception:
+            pass
+
+    is_maint = maint_branch is not None
+    steps = MAINT_RELEASE_STEPS if is_maint else RELEASE_STEPS
+    N = len(steps)
+
+    if is_maint:
+        click.secho(
+            f"\nMaintenance release mode — branch: {maint_branch} " f"({N} steps)",
+            bold=True,
+            fg="cyan",
+        )
+
     ctx = {"last_tag": last_tag, "new_version": new_version}
 
-    def skip(step_n):
-        return step_n < from_step
+    def skip(step_name):
+        """Return True if the step should be skipped (before --from-step)."""
+        try:
+            idx = steps.index(step_name)
+        except ValueError:
+            return True  # step not in this release's list → skip
+        return (idx + 1) < from_step
 
-    N = len(RELEASE_STEPS)
+    def header(step_name, label):
+        try:
+            idx = steps.index(step_name) + 1
+        except ValueError:
+            return
+        click.secho(f"\n[Step {idx}/{N}] {label}", bold=True, fg="green")
 
-    # ── Step 1: Fetch latest tag ──────────────────────────────────────────
-    step = 1
-    if not skip(step):
-        click.secho(f"\n[Step {step}/{N}] Fetch latest tag", bold=True, fg="green")
+    # ── Step: fetch-tag ───────────────────────────────────────────────────
+    if not skip("fetch-tag"):
+        header("fetch-tag", "Fetch latest tag")
         if ctx["last_tag"] is None:
             ctx["last_tag"] = _get_latest_tag()
         if ctx["last_tag"] is None:
@@ -1081,178 +1186,133 @@ def prepare_release(*, from_step, last_tag, new_version):
             "Enter the last release tag (required, e.g., 1.11.0)"
         )
 
-    # ── Step 2: Update .mailmap / contributors ────────────────────────────
-    step = 2
-    if not skip(step):
-        click.secho(
-            f"\n[Step {step}/{N}] Update .mailmap and contributors",
-            bold=True,
-            fg="green",
-        )
+    # ── Step: mailmap ─────────────────────────────────────────────────────
+    if not skip("mailmap"):
+        header("mailmap", "Update .mailmap and contributors")
         _update_mailmap(last_tag=ctx["last_tag"])
 
-    # ── Step 3: Determine new version ────────────────────────────────────
-    step = 3
-    if not skip(step):
-        click.secho(f"\n[Step {step}/{N}] Determine new version", bold=True, fg="green")
+    # ── Step: version ─────────────────────────────────────────────────────
+    if not skip("version"):
+        header("version", "Determine new version")
         if ctx["new_version"] is None:
             last_ver = Version(ctx["last_tag"])
-            major, minor, _patch = last_ver.release
-            proposed = f"{major}.{minor + 1}.0"
+            major, minor, patch = last_ver.release
+            proposed = (
+                f"{major}.{minor}.{patch + 1}" if is_maint else f"{major}.{minor + 1}.0"
+            )
+            hint = "patch" if is_maint else "minor"
             while True:
-                entered = click.prompt("Enter new version", default=proposed)
+                entered = click.prompt(
+                    f"Enter new version ({hint} bump suggested)", default=proposed
+                )
                 if re.match(r"^\d+\.\d+\.\d+([a-zA-Z0-9]+)?$", entered):
                     ctx["new_version"] = entered
                     break
-                click.echo("Version must follow semver (e.g., 1.12.0 or 1.12.0rc1).")
+                click.echo("Version must follow semver (e.g., 1.12.1 or 1.12.0rc1).")
         click.echo(f"New version: {ctx['new_version']}")
     elif ctx["new_version"] is None:
         ctx["new_version"] = click.prompt(
-            "Enter the new version (required, e.g., 1.12.0)"
+            "Enter the new version (required, e.g., 1.12.1)"
         )
 
-    # ── Step 4: Update AUTHOR file ────────────────────────────────────────
-    step = 4
-    if not skip(step):
-        click.secho(f"\n[Step {step}/{N}] Update AUTHOR file", bold=True, fg="green")
+    # ── Step: author ──────────────────────────────────────────────────────
+    if not skip("author"):
+        header("author", "Update AUTHOR file")
         _update_author()
 
-    # ── Step 5: Check copyright years ─────────────────────────────────────
-    step = 5
-    if not skip(step):
-        click.secho(f"\n[Step {step}/{N}] Check copyright years", bold=True, fg="green")
+    # ── Step: copyright (full releases only) ──────────────────────────────
+    if not skip("copyright"):
+        header("copyright", "Check copyright years")
         _check_copyright_year()
 
-    # ── Step 6: Generate release notes ────────────────────────────────────
-    step = 6
-    if not skip(step):
-        click.secho(
-            f"\n[Step {step}/{N}] Generate release notes", bold=True, fg="green"
-        )
+    # ── Step: release-notes ───────────────────────────────────────────────
+    if not skip("release-notes"):
+        header("release-notes", "Generate release notes")
         _generate_release_notes(
-            last_tag=ctx["last_tag"], new_version=ctx["new_version"]
+            last_tag=ctx["last_tag"],
+            new_version=ctx["new_version"],
+            branch=maint_branch,
         )
 
-    # ── Step 7: Update Changelog ──────────────────────────────────────────
-    step = 7
-    if not skip(step):
-        click.secho(f"\n[Step {step}/{N}] Update Changelog", bold=True, fg="green")
+    # ── Step: changelog ───────────────────────────────────────────────────
+    if not skip("changelog"):
+        header("changelog", "Update Changelog")
         _update_changelog(new_version=ctx["new_version"])
 
-    # ── Step 8: Review API changes ────────────────────────────────────────
-    step = 8
-    if not skip(step):
-        click.secho(f"\n[Step {step}/{N}] Review API changes", bold=True, fg="green")
+    # ── Step: api-changes (full releases only) ────────────────────────────
+    if not skip("api-changes"):
+        header("api-changes", "Review API changes")
         _update_api_changes()
 
-    # ── Step 9: Update doc/index.rst announcements ────────────────────────
-    step = 9
-    if not skip(step):
-        click.secho(
-            f"\n[Step {step}/{N}] Update doc/index.rst announcements",
-            bold=True,
-            fg="green",
-        )
+    # ── Step: index (full releases only) ──────────────────────────────────
+    if not skip("index"):
+        header("index", "Update doc/index.rst announcements")
         _update_index_announcements(new_version=ctx["new_version"])
 
-    # ── Step 10: Rotate old announcements to old_news.rst ─────────────────
-    step = 10
-    if not skip(step):
-        click.secho(
-            f"\n[Step {step}/{N}] Rotate old announcements → old_news.rst",
-            bold=True,
-            fg="green",
-        )
+    # ── Step: old-news (full releases only) ───────────────────────────────
+    if not skip("old-news"):
+        header("old-news", "Rotate old announcements → old_news.rst")
         _update_old_news(new_version=ctx["new_version"])
 
-    # ── Step 11: Rotate highlights to old_highlights.rst ──────────────────
-    step = 11
-    if not skip(step):
-        click.secho(
-            f"\n[Step {step}/{N}] Rotate Highlights → old_highlights.rst",
-            bold=True,
-            fg="green",
-        )
+    # ── Step: highlights (full releases only) ─────────────────────────────
+    if not skip("highlights"):
+        header("highlights", "Rotate Highlights → old_highlights.rst")
         _update_highlights(new_version=ctx["new_version"])
 
-    # ── Step 12: Update stateoftheart.rst toctree ─────────────────────────
-    step = 12
-    if not skip(step):
-        click.secho(
-            f"\n[Step {step}/{N}] Update stateoftheart.rst toctree",
-            bold=True,
-            fg="green",
-        )
+    # ── Step: stateoftheart (full releases only) ──────────────────────────
+    if not skip("stateoftheart"):
+        header("stateoftheart", "Update stateoftheart.rst toctree")
         _update_stateoftheart(new_version=ctx["new_version"])
 
-    # ── Step 13: Update toolchain.rst ─────────────────────────────────────
-    step = 13
-    if not skip(step):
-        click.secho(f"\n[Step {step}/{N}] Update toolchain.rst", bold=True, fg="green")
+    # ── Step: toolchain (full releases only) ──────────────────────────────
+    if not skip("toolchain"):
+        header("toolchain", "Update toolchain.rst")
         _update_toolchain(new_version=ctx["new_version"])
 
-    # ── Step 14: Update version switcher ──────────────────────────────────
-    step = 14
-    if not skip(step):
-        click.secho(
-            f"\n[Step {step}/{N}] Update version switcher", bold=True, fg="green"
-        )
+    # ── Step: version-switcher (full releases only) ───────────────────────
+    if not skip("version-switcher"):
+        header("version-switcher", "Update version switcher")
         _update_version_switcher(new_version=ctx["new_version"])
 
-    # ── Step 15: Review developers.rst ────────────────────────────────────
-    step = 15
-    if not skip(step):
-        click.secho(f"\n[Step {step}/{N}] Review developers.rst", bold=True, fg="green")
+    # ── Step: developers (full releases only) ─────────────────────────────
+    if not skip("developers"):
+        header("developers", "Review developers.rst")
         _update_developers()
 
-    # ── Step 16: Update pyproject.toml version ────────────────────────────
-    step = 16
-    if not skip(step):
-        click.secho(
-            f"\n[Step {step}/{N}] Update pyproject.toml version",
-            bold=True,
-            fg="green",
-        )
+    # ── Step: pyproject ───────────────────────────────────────────────────
+    if not skip("pyproject"):
+        header("pyproject", "Update pyproject.toml version")
         _update_pyproject_version(new_version=ctx["new_version"])
 
-    # ── Step 17: Check deprecations ───────────────────────────────────────
-    step = 17
-    if not skip(step):
-        click.secho(f"\n[Step {step}/{N}] Check deprecations", bold=True, fg="green")
+    # ── Step: deprecations (full releases only) ───────────────────────────
+    if not skip("deprecations"):
+        header("deprecations", "Check deprecations")
         _confirm(
             "Have you checked deprecated functions/modules and removed"
             " those past their cycle?"
         )
 
-    # ── Step 18: Run Cython/extension doctests ────────────────────────────
-    step = 18
-    if not skip(step):
-        click.secho(
-            f"\n[Step {step}/{N}] Run extension module doctests",
-            bold=True,
-            fg="green",
-        )
+    # ── Step: doctest ─────────────────────────────────────────────────────
+    if not skip("doctest"):
+        header("doctest", "Run extension module doctests")
         _run_shell("./tools/doctest_extmods.py dipy", check=False)
         _confirm("Did the extension module doctests pass?")
 
-    # ── Step 19: Run test suite ───────────────────────────────────────────
-    step = 19
-    if not skip(step):
-        click.secho(f"\n[Step {step}/{N}] Run test suite", bold=True, fg="green")
+    # ── Step: tests ───────────────────────────────────────────────────────
+    if not skip("tests"):
+        header("tests", "Run test suite")
         _run_shell("pytest -svv --doctest-modules dipy", check=False)
         _confirm("Did the test suite pass?")
 
-    # ── Step 20: Build documentation ──────────────────────────────────────
-    step = 20
-    if not skip(step):
-        click.secho(f"\n[Step {step}/{N}] Build documentation", bold=True, fg="green")
+    # ── Step: docs (full releases only) ───────────────────────────────────
+    if not skip("docs"):
+        header("docs", "Build documentation")
         _run_shell("make -C doc clean && make -C doc html", check=False)
         _confirm("Have you reviewed the generated docs (API pages, figures)?")
 
-    # ── Step 21: Check tutorials ──────────────────────────────────────────
-    step = 21
-    if not skip(step):
-        click.secho(f"\n[Step {step}/{N}] Check tutorials", bold=True, fg="green")
+    # ── Step: tutorials (full releases only) ──────────────────────────────
+    if not skip("tutorials"):
+        header("tutorials", "Check tutorials")
         click.secho(
             "Run `spin docs <tutorial_name>` to build and inspect individual "
             "tutorials. Check plots, outputs, and narrative text.",
@@ -1260,10 +1320,9 @@ def prepare_release(*, from_step, last_tag, new_version):
         )
         _confirm("Have you reviewed the tutorials?")
 
-    # ── Step 22: Update website ───────────────────────────────────────────
-    step = 22
-    if not skip(step):
-        click.secho(f"\n[Step {step}/{N}] Update website", bold=True, fg="green")
+    # ── Step: website (full releases only) ────────────────────────────────
+    if not skip("website"):
+        header("website", "Update website")
         click.secho(
             "Deploy updated docs to docs.dipy.org and verify the version "
             "switcher reflects the new stable release.",
@@ -1273,15 +1332,37 @@ def prepare_release(*, from_step, last_tag, new_version):
 
     v = ctx["new_version"]
     click.secho("\n✅ Release preparation complete!", bold=True, fg="bright_green")
-    click.echo(
-        f"\nNext steps:\n"
-        f"  1. Stage and commit: git commit -m 'REL: set version to {v}'\n"
-        f"  2. Open a Pull Request and get it merged.\n"
-        f"  3. After merge, tag:  git tag -am 'Public release {v}' {v}\n"
-        f"  4. Build source dist: git clean -dfx && python -m build\n"
-        f"  5. Upload to PyPI:    twine upload dist/*\n"
-        f"  6. Push tag:          git push upstream {v}\n"
-        f"  7. Create maint branch: git checkout -b maint/{v}\n"
-        f"  8. Bump master version to {v.rsplit('.', 1)[0]}.dev0 in pyproject.toml.\n"
-        f"  9. Announce on mailing lists.\n"
-    )
+
+    if is_maint:
+        click.echo(
+            f"\nNext steps (maintenance release from {maint_branch}):\n"
+            f"  1. Stage and commit: git commit -m 'REL: set version to {v}'\n"
+            f"  2. Push to upstream {maint_branch} (or open a PR targeting it).\n"
+            f"  3. After merge, tag:  git tag -am 'Public release {v}' {v}\n"
+            f"  4. Build source dist: git clean -dfx && python -m build --sdist\n"
+            f"  5. Upload sdist:      twine upload dist/dipy-{v}.tar.gz\n"
+            f"  6. Push tag:          git push upstream {v}\n"
+            f"  7. Trigger wheels: "
+            f"gh workflow run nightly.yml --field branch_or_tag={v}\n"
+            f"  8. Download wheels: "
+            f"gh run download <run-id> --dir dist-wheels/\n"
+            f"     Upload wheels:  twine upload dist-wheels/**/*.whl\n"
+            f"  9. GitHub release: "
+            f"gh release create {v} --title 'DIPY {v}'\n"
+            f" 10. Bump maint version to next dev in pyproject.toml.\n"
+            f" 11. Announce on mailing lists.\n"
+        )
+    else:
+        next_dev = f"{v.rsplit('.', 1)[0]}.dev0"
+        click.echo(
+            f"\nNext steps:\n"
+            f"  1. Stage and commit: git commit -m 'REL: set version to {v}'\n"
+            f"  2. Open a Pull Request and get it merged.\n"
+            f"  3. After merge, tag: git tag -am 'Public release {v}' {v}\n"
+            f"  4. Build source dist: git clean -dfx && python -m build\n"
+            f"  5. Upload to PyPI:   twine upload dist/*\n"
+            f"  6. Push tag:         git push upstream {v}\n"
+            f"  7. Create maint branch: git checkout -b maint/{v}\n"
+            f"  8. Bump master version to {next_dev} in pyproject.toml.\n"
+            f"  9. Announce on mailing lists.\n"
+        )
