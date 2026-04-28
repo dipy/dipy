@@ -3,6 +3,7 @@ cython_sources = [
   'enhancement_kernel',
   'pca_noise_estimate',
   'shift_twist_convolution',
+  '_bias_correction',
   ]
 
 foreach ext: cython_sources
@@ -19,6 +20,7 @@ endforeach
 
 python_sources = ['__init__.py',
   'adaptive_soft_matching.py',
+  'bias_correction.py',
   'gibbs.py',
   'localpca.py',
   'nlmeans.py',

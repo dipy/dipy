@@ -6,7 +6,6 @@ from pathlib import Path
 import re
 import shutil
 import sys
-import textwrap
 import warnings
 
 import numpy as np
@@ -36,6 +35,7 @@ from dipy.tracking.streamlinespeed import length
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tractogram import concatenate_tractogram
+from dipy.workflows.base import format_key_value_table
 from dipy.workflows.utils import handle_vol_idx
 from dipy.workflows.workflow import Workflow
 
@@ -350,44 +350,6 @@ def _print_tractography_information(
         tuple(map(float, sft.voxel_sizes)),
         alignment_space,
     )
-
-
-def format_key_value_table(data, key_header="Key", value_header="Value"):
-    """Format key-value pairs as a simple ASCII table.
-
-    Parameters
-    ----------
-    data : dict
-        Key-value pairs to display in the table.
-    key_header : str, optional
-        Header title for the key column.
-    value_header : str, optional
-        Header title for the value column.
-
-    Returns
-    -------
-    str
-        Key-value pairs formatted as an ASCII table.
-    """
-
-    sorted_data = sorted(data.items())
-    key_width = max([len(key_header), *[len(key) for key, _ in sorted_data]])
-    terminal_width = shutil.get_terminal_size(fallback=(120, 20)).columns
-    value_width = max(len(value_header), min(120, terminal_width - key_width - 7))
-    separator = f"+-{'-' * key_width}-+-{'-' * value_width}-+"
-    rows = [
-        separator,
-        f"| {key_header:<{key_width}} | {value_header:<{value_width}} |",
-        separator,
-    ]
-
-    for key, value in sorted_data:
-        wrapped_value = textwrap.wrap(value, width=value_width) or [""]
-        rows.append(f"| {key:<{key_width}} | {wrapped_value[0]:<{value_width}} |")
-        for extra_line in wrapped_value[1:]:
-            rows.append(f"| {'':<{key_width}} | {extra_line:<{value_width}} |")
-    rows.append(separator)
-    return "\n".join(rows)
 
 
 def format_data_names_table(data):

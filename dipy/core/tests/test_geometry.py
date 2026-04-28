@@ -39,7 +39,7 @@ def test_vector_norm():
     A = np.array([[1, 0, 0], [3, 4, 0], [0, 5, 12], [1, 2, 3]])
     expected = np.array([1, 5, 13, np.sqrt(14)])
     assert_array_almost_equal(vector_norm(A), expected)
-    expected.shape = (4, 1)
+    expected = expected.reshape(4, 1)
     assert_array_almost_equal(vector_norm(A, keepdims=True), expected)
     assert_array_almost_equal(vector_norm(A.T, axis=0, keepdims=True), expected.T)
 

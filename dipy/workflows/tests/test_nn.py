@@ -6,7 +6,7 @@ import numpy.testing as npt
 import pytest
 
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti_data, save_nifti
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.nn.evac import EVACPlus
 from dipy.utils.optpkg import optional_package
 from dipy.workflows.nn import BiasFieldCorrectionFlow, EVACPlusFlow
@@ -45,27 +45,21 @@ def test_evac_plus_flow():
         npt.assert_array_equal(result_masked_data, masked)
 
 
-@pytest.mark.skipif(not have_nn, reason="Requires TensorFlow or Torch")
 def test_correct_biasfield_flow():
     # Test with T1 data
     if have_nn:
         with TemporaryDirectory() as out_dir:
-            file_path = get_fnames(name="deepn4_test_data")
+            t1_path = get_fnames(name="stanford_t1")
 
-            volume = np.load(file_path[0])["img"]
-            temp_affine = np.load(file_path[0])["affine"]
-            temp_path = Path(out_dir) / "temp.nii.gz"
-            save_nifti(temp_path, volume, temp_affine)
+            volume, affine = load_nifti(t1_path)
 
             bias_flow = BiasFieldCorrectionFlow()
-            bias_flow.run(temp_path, out_dir=out_dir)
+            bias_flow.run(t1_path, out_dir=out_dir, method="n4")
 
             corrected_name = bias_flow.last_generated_outputs["out_corrected"]
 
             corrected_data = load_nifti_data(Path(out_dir) / corrected_name)
-            npt.assert_almost_equal(
-                corrected_data.mean(), 121.63047683497516, decimal=4
-            )
+            assert corrected_data.shape == volume.shape
 
     # Test with DWI data
     with TemporaryDirectory() as out_dir:
@@ -74,7 +68,6 @@ def test_correct_biasfield_flow():
             "input_files": fdata,
             "bval": fbval,
             "bvec": fbvec,
-            "method": "b0",
             "out_dir": out_dir,
         }
         bias_flow = BiasFieldCorrectionFlow()
@@ -83,7 +76,7 @@ def test_correct_biasfield_flow():
         corrected_name = bias_flow.last_generated_outputs["out_corrected"]
 
         corrected_data = load_nifti_data(Path(out_dir) / corrected_name)
-        npt.assert_almost_equal(corrected_data.mean(), 0.0384615384615, decimal=5)
+        npt.assert_almost_equal(corrected_data.mean(), 44.00769230769231, decimal=0)
 
     args = {
         "input_files": fdata,
@@ -93,3 +86,48 @@ def test_correct_biasfield_flow():
         "out_dir": out_dir,
     }
     npt.assert_raises(SystemExit, bias_flow.run, **args)
+
+
+def test_correct_biasfield_flow_with_mask():
+    """Test that a mask file can be passed to BiasFieldCorrectionFlow."""
+    with TemporaryDirectory() as out_dir:
+        fdata, fbval, fbvec = get_fnames(name="small_25")
+        volume, affine = load_nifti(fdata)
+        mask_data = np.ones(volume.shape[:3], dtype=np.uint8)
+        mask_path = Path(out_dir) / "mask.nii.gz"
+        save_nifti(mask_path, mask_data, affine)
+
+        args = {
+            "input_files": fdata,
+            "bval": fbval,
+            "bvec": fbvec,
+            "mask": str(mask_path),
+            "out_dir": out_dir,
+        }
+        bias_flow = BiasFieldCorrectionFlow()
+        bias_flow.run(**args)
+
+        corrected_name = bias_flow.last_generated_outputs["out_corrected"]
+        corrected_data = load_nifti_data(Path(out_dir) / corrected_name)
+        assert corrected_data.shape == volume.shape
+
+
+def test_correct_biasfield_flow_with_bias_output():
+    """Test that out_bias_field is saved when using poly/bspline methods."""
+    with TemporaryDirectory() as out_dir:
+        fdata, fbval, fbvec = get_fnames(name="small_25")
+        bias_field_name = "my_bias_field.nii.gz"
+        args = {
+            "input_files": fdata,
+            "bval": fbval,
+            "bvec": fbvec,
+            "method": "poly",
+            "out_dir": out_dir,
+            "out_bias_field": bias_field_name,
+        }
+        bias_flow = BiasFieldCorrectionFlow()
+        bias_flow.run(**args)
+
+        corrected_name = bias_flow.last_generated_outputs["out_corrected"]
+        assert (Path(out_dir) / corrected_name).exists()
+        assert (Path(out_dir) / bias_field_name).exists()

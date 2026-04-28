@@ -17,21 +17,30 @@ In order to perform local fiber tracking, three things are needed:
 3. A set of seeds from which to begin tracking.
 
 This example shows how to combine the 3 parts described above
-to create a tractography reconstruction from a diffusion data set.
+to create a tractography reconstruction from a diffusion data set using
+the EuDX algorithm :footcite:p:`Garyfallidis2012b`.
+
+EuDX is a fast deterministic tracking algorithm that operates directly on
+discrete peaks extracted from the diffusion data, rather than on continuous
+orientation distribution functions (ODFs). This makes it computationally
+efficient and well-suited for quick exploratory tractography. A key feature
+of EuDX is its ability to handle fiber crossings by tracking along multiple
+peak directions at each seed point.
 
 Let's begin by importing the necessary modules.
 """
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 from dipy.core.gradients import gradient_table
-from dipy.data import default_sphere, get_fnames
-from dipy.direction import peaks_from_model
+from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
-from dipy.reconst.shm import CsaOdfModel
+from dipy.reconst.force import FORCEModel, force_peaks
+from dipy.segment.mask import median_otsu
 from dipy.tracking import utils
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines
@@ -67,23 +76,23 @@ white_matter = (labels == 1) | (labels == 2)
 # ---------------------------------------------------
 #
 # The first thing we need to begin fiber tracking is a way of getting
-# directions from this diffusion data set. In order to do that, we can fit the
-# data to a Constant Solid Angle ODF Model. This model will estimate the
-# Orientation Distribution Function (ODF) at each voxel. The ODF is the
-# distribution of water diffusion as a function of direction. The peaks of an
-# ODF are good estimates for the orientation of tract segments at a point in
-# the image. Here, we use ``peaks_from_model`` to fit the data and calculate
-# the fiber directions in all voxels of the white matter.
+# directions from this diffusion data set. Here, we use the FORCE model
+# :footcite:p:`Shah2025` to estimate fiber orientations. FORCE is a
+# forward-modeling approach that simulates a library of biologically
+# plausible fiber configurations and matches each voxel's signal to its
+# nearest library entry. We then extract discrete peaks from the FORCE fit
+# using ``force_peaks``, which produces a PeaksAndMetrics (PAM) object
+# containing peak directions, peak values, and spherical harmonic
+# coefficients at each voxel. EuDX tracking operates directly on these
+# extracted peaks.
 
-csa_model = CsaOdfModel(gtab, sh_order_max=6)
-csa_peaks = peaks_from_model(
-    csa_model,
-    data,
-    default_sphere,
-    relative_peak_threshold=0.8,
-    min_separation_angle=45,
-    mask=white_matter,
-)
+_, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3, numpass=1)
+
+model = FORCEModel(gtab, n_neighbors=50, use_posterior=False, verbose=True)
+model.generate(num_simulations=500000, num_cpus=-1, verbose=True, use_cache=True)
+fit = model.fit(data, mask=mask, n_jobs=-1, verbose=True)
+
+force_pam = force_peaks(fit)
 
 ###############################################################################
 # For quality assurance we can also visualize a slice from the direction field
@@ -94,11 +103,11 @@ if has_fury:
     scene = window.Scene()
     scene.add(
         actor.peak_slicer(
-            csa_peaks.peak_dirs, peaks_values=csa_peaks.peak_values, colors=None
+            force_pam.peak_dirs, peaks_values=force_pam.peak_values, colors=None
         )
     )
 
-    window.record(scene=scene, out_path="csa_direction_field.png", size=(900, 900))
+    window.record(scene=scene, out_path="force_direction_field.png", size=(900, 900))
 
     if interactive:
         window.show(scene, size=(800, 800))
@@ -114,30 +123,30 @@ if has_fury:
 # Next we need some way of restricting the fiber tracking to areas with good
 # directionality information. We've already created the white matter mask,
 # but we can go a step further and restrict fiber tracking to those areas where
-# the ODF shows significant restricted diffusion by thresholding on
-# the generalized fractional anisotropy (GFA).
+# the FORCE model shows significant restricted diffusion by thresholding on
+# the fractional anisotropy (FA) estimated by FORCE.
 
-stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, 0.25)
+stopping_criterion = ThresholdStoppingCriterion(fit.fa, 0.25)
 
 ###############################################################################
-# Again, for quality assurance, we can also visualize a slice of the GFA and
+# Again, for quality assurance, we can also visualize a slice of the FA and
 # the resulting tracking mask.
 
-sli = csa_peaks.gfa.shape[2] // 2
-plt.figure("GFA")
+sli = fit.fa.shape[2] // 2
+plt.figure("FA")
 plt.subplot(1, 2, 1).set_axis_off()
-plt.imshow(csa_peaks.gfa[:, :, sli].T, cmap="gray", origin="lower")
+plt.imshow(np.rot90(fit.fa[:, :, sli]), cmap="gray")
 
 plt.subplot(1, 2, 2).set_axis_off()
-plt.imshow((csa_peaks.gfa[:, :, sli] > 0.25).T, cmap="gray", origin="lower")
+plt.imshow(np.rot90((fit.fa[:, :, sli] > 0.25).astype(float)), cmap="gray")
 
-plt.savefig("gfa_tracking_mask.png")
+plt.savefig("fa_tracking_mask.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# An example of a tracking mask derived from the generalized fractional
-# anisotropy (GFA).
+# An example of a tracking mask derived from the fractional
+# anisotropy (FA).
 #
 #
 #
@@ -154,18 +163,19 @@ seed_mask = labels == 2
 seeds = utils.seeds_from_mask(seed_mask, affine, density=[2, 2, 2])
 
 ###############################################################################
-# Finally, we can bring it all together using ``eudx_tracking``, using
-# the EuDX algorithm :footcite:p:`Garyfallidis2012b`. ``EuDX`` is a fast
-# algorithm that we use here to generate streamlines. This algorithm is what is
-# used here and the default option when providing the output of peaks directly
-# in eudx_tracking.
+# Tracking
+# --------
+# Finally, we can bring it all together using ``eudx_tracking``. The EuDX
+# algorithm :footcite:p:`Garyfallidis2012b` is a fast deterministic tracking
+# method that follows the peaks extracted from the diffusion data. Unlike
+# other tracking methods such as deterministic or probabilistic tracking that
+# operate on continuous orientation distributions (SH or SF), EuDX works
+# directly with the discrete peak directions stored in the PAM object.
 
-# Initialization of eudx_tracking. The computation happens in the next step.
-streamlines_generator = eudx_tracking(
-    seeds, stopping_criterion, affine, step_size=0.5, pam=csa_peaks
+streamline_generator = eudx_tracking(
+    seeds, stopping_criterion, affine, pam=force_pam, step_size=0.5, random_seed=1
 )
-# Generate streamlines object
-streamlines = Streamlines(streamlines_generator)
+streamlines = Streamlines(streamline_generator)
 
 ###############################################################################
 # We will then display the resulting streamlines using the ``fury``
@@ -173,8 +183,6 @@ streamlines = Streamlines(streamlines_generator)
 
 if has_fury:
     # Prepare the display objects.
-    color = colormap.line_colors(streamlines)
-
     streamlines_actor = actor.line(
         streamlines, colors=colormap.line_colors(streamlines)
     )
@@ -197,13 +205,70 @@ if has_fury:
 # We've created a deterministic set of streamlines using the EuDX algorithm.
 # This is so called deterministic because if you repeat the fiber tracking
 # (keeping all the inputs the same) you will get exactly the same set of
-# streamlines. We can save the streamlines as a Trackvis file so it can be
+# streamlines. We can save the streamlines as a Tractogram file so it can be
 # loaded into other software for visualization or further analysis.
 
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_tractogram(sft, "tractogram_EuDX.trx")
 
 ###############################################################################
+# Handling Fiber Crossings with ``max_cross``
+# -------------------------------------------
+# A key feature of EuDX is its ability to handle fiber crossings. In voxels
+# where multiple fiber populations cross, FORCE extracts multiple peak
+# directions. By default, EuDX tracks along all valid peak directions at each
+# seed point, generating multiple streamlines per seed.
+#
+# The ``max_cross`` parameter controls how many crossing directions to follow
+# per seed. Setting ``max_cross=1`` restricts tracking to only the primary
+# (strongest) peak direction, while ``max_cross=None`` (the default) allows
+# tracking along all detected peaks.
+
+# Track only the primary peak direction at each seed
+streamline_generator = eudx_tracking(
+    seeds,
+    stopping_criterion,
+    affine,
+    pam=force_pam,
+    step_size=0.5,
+    max_cross=1,
+    random_seed=1,
+)
+streamlines_single = Streamlines(streamline_generator)
+
+print(f"Streamlines with all crossings: {len(streamlines)}")
+print(f"Streamlines with max_cross=1: {len(streamlines_single)}")
+
+###############################################################################
+# By comparing the two results, you can see that allowing all crossings
+# produces more streamlines, which may better capture the complex white matter
+# architecture but also increases the chance of false positives.
+#
+#
+# Running EuDX via the Command Line Interface (CLI)
+# -------------------------------------------------
+# DIPY also provides a command line interface for fiber tracking. This is
+# useful for scripting or for users who prefer working in the terminal.
+# The CLI uses the ``dipy_track`` command. To run EuDX tracking from the
+# command line, you need a saved PAM file (which can be generated from any
+# reconstruction model), a stopping criterion image (e.g. FA map), and a
+# seed mask. Then run:
+#
+# .. code-block:: bash
+#
+#     dipy_track pam.pam5 fa.nii.gz seed_mask.nii.gz \
+#         --tracking_method eudx \
+#         --step_size 0.5 \
+#         --stopping_thr 0.25 \
+#         --out_tractogram tractogram_EuDX.trx
+#
+# To see all available options:
+#
+# .. code-block:: bash
+#
+#     dipy_track --help
+#
+#
 # References
 # ----------
 #

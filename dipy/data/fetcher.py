@@ -122,7 +122,16 @@ def copyfileobj_withprogress(fsrc, fdst, total_length, *, length=16 * 1024):
 
 def _already_there_msg(folder):
     """
-    Prints a message indicating that a certain data-set is already in place
+    Log a message indicating that the dataset is already present.
+
+    Parameters
+    ----------
+    folder : str
+        Path to the folder containing the dataset.
+
+    Returns
+    -------
+    None
     """
     msg = "Dataset is already in place. If you want to fetch it again "
     msg += f"please first remove the folder {folder} "
@@ -148,7 +157,7 @@ def check_md5(filename, *, stored_md5=None):
     ----------
     filename : string
         Path to a file.
-    md5 : string
+    stored_md5 : string, optional
         Known md5 of filename to check against. If None (default), checking is
         skipped
     """
@@ -376,7 +385,7 @@ def fetch_data(
     """
     if not Path(folder).exists():
         logger.info(f"Creating new folder {folder}")
-        os.makedirs(folder)
+    os.makedirs(folder, exist_ok=True)
 
     if data_size is not None:
         logger.info(f"Data size is approximately {data_size}")
@@ -396,7 +405,7 @@ def fetch_data(
         try:
             _get_file_data(fullpath, url, use_headers=use_headers, stored_md5=md5)
             successful_downloads += 1
-        except (FetcherError, Exception) as e:
+        except Exception as e:
             failed_files.append((f, url, str(e)))
             if raise_on_error:
                 raise
@@ -473,7 +482,7 @@ def _make_fetcher(
     use_headers : bool, optional
         Whether to use headers when downloading files.
 
-    returns
+    Returns
     -------
     fetcher : function
         A function that, when called, fetches data according to the designated
@@ -548,13 +557,13 @@ fetch_stanford_labels = _make_fetcher(
 fetch_sherbrooke_3shell = _make_fetcher(
     "fetch_sherbrooke_3shell",
     dipy_home / "sherbrooke_3shell",
-    UW_RW_URL + "1773/38475/",
+    DIPY_MIRROR_URL + "researchworks/bitstream/handle/1773/38475/",
     ["HARDI193.nii.gz", "HARDI193.bval", "HARDI193.bvec"],
     [Path("HARDI193.nii.gz"), Path("HARDI193.bval"), Path("HARDI193.bvec")],
     md5_list=[
         "0b735e8f16695a37bfbd66aab136eb66",
         "e9b9bb56252503ea49d31fb30a0ac637",
-        "0c83f7e8b917cd677ad58a078658ebb7",
+        "72818d139f803f19ddb032cd011d452f",
     ],
     doc="Download a 3shell HARDI dataset with 192 gradient direction",
 )
@@ -803,6 +812,32 @@ fetch_mni_template = _make_fetcher(
     ],
     doc="fetch the MNI 2009a T1 and T2, and 2009c T1 and T1 mask files",
     data_size="70MB",
+)
+
+fetch_buan_bundle_profiles = _make_fetcher(
+    "fetch_buan_bundle_profiles",
+    dipy_home / "buan_bundle_profiles",
+    "https://ndownloader.figshare.com/files/",
+    [
+        "61064704",
+        "61064707",
+        "61064710",
+        "61064713",
+    ],
+    [
+        Path("AF_L_recognized_orig.trk"),
+        Path("AF_L_recognized.trk"),
+        Path("AF_L.trk"),
+        Path("fa.nii.gz"),
+    ],
+    md5_list=[
+        "17181c2cbbf517918a2c9a4f3a6934e1",
+        "bde75f00359273520193a23cd6100c09",
+        "4079e761c567d678f49303beda61ab22",
+        "e113da515c0d44f4aea015915b4260f2",
+    ],
+    doc="Download BUAN bundle profiles tutorial dataset.",
+    data_size="15.5MB",
 )
 
 fetch_scil_b0 = _make_fetcher(
@@ -2214,6 +2249,13 @@ def get_fnames(*, name="small_64D", include_optional=False):
         local_fetcher = globals().get(f"fetch_{name}_dataset")
         files, folder = local_fetcher(include_optional=include_optional)
         return [Path(folder) / f for f in files]
+    if name == "buan_bundle_profiles":
+        _, folder = fetch_buan_bundle_profiles()
+        af_orig = Path(folder) / "AF_L_recognized_orig.trk"
+        af_mni = Path(folder) / "AF_L_recognized.trk"
+        af_model = Path(folder) / "AF_L.trk"
+        fa = Path(folder) / "fa.nii.gz"
+        return af_orig, af_mni, af_model, fa
 
 
 def read_qtdMRI_test_retest_2subjects():
@@ -2877,11 +2919,14 @@ def read_cfin_t1():
 
 def get_file_formats():
     """
+    Get example bundle files and their reference anatomy image.
 
     Returns
     -------
-    bundles_list : all bundles (list)
-    ref_anat : reference
+    bundles_list : list of Path
+        List of bundle file paths in different formats.
+    ref_anat : Path
+        Path to the reference anatomical image.
     """
     ref_anat = dipy_home / "bundle_file_formats_example" / "template0.nii.gz"
     bundles_list = []
@@ -2900,10 +2945,19 @@ def get_file_formats():
 @warning_for_keywords()
 def get_bundle_atlas_hcp842(*, size=80):
     """
+    Get paths to the HCP842 bundle atlas files.
+
+    Parameters
+    ----------
+    size : int, optional
+        Atlas size. Must be either 80 or 30 bundles.
+
     Returns
     -------
-    file1 : string
-    file2 : string
+    file1 : Path
+        Path to whole brain tractogram.
+    file2 : Path
+        Path pattern to individual bundle tractograms.
     """
     size = 80 if size not in [80, 30] else size
 
@@ -2928,10 +2982,14 @@ def get_bundle_atlas_hcp842(*, size=80):
 
 def get_two_hcp842_bundles():
     """
+    Get paths to two example bundles from the HCP842 atlas.
+
     Returns
     -------
-    file1 : string
-    file2 : string
+    file1 : Path
+        Path to left arcuate fasciculus bundle.
+    file2 : Path
+        Path to left corticospinal tract bundle.
     """
     file1 = (
         dipy_home / "bundle_atlas_hcp842" / "Atlas_80_Bundles" / "bundles" / "AF_L.trk"
@@ -2946,9 +3004,12 @@ def get_two_hcp842_bundles():
 
 def get_target_tractogram_hcp():
     """
+    Get path to example HCP tractogram.
+
     Returns
     -------
-    file1 : string
+    file1 : Path
+        Path to tractogram file.
     """
     file1 = dipy_home / "target_tractogram_hcp" / "hcp_tractogram" / "streamlines.trk"
 

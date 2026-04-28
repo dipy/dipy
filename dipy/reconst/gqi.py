@@ -12,6 +12,8 @@ from dipy.utils.logging import logger
 
 
 class GeneralizedQSamplingModel(OdfModel, Cache):
+    """Generalized Q-Sampling Imaging (GQI) model."""
+
     @warning_for_keywords()
     def __init__(
         self, gtab, *, method="gqi2", sampling_length=1.2, normalize_peaks=False
@@ -88,6 +90,8 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
 
 
 class GeneralizedQSamplingFit(OdfFit):
+    """Fit object for Generalized Q-Sampling Imaging (GQI)."""
+
     def __init__(self, model, data):
         """Calculates PDF and ODF for a single voxel
 

@@ -1,6 +1,7 @@
 python_sources = [
   '__init__.py',
   'test_ascm.py',
+  'test_bias_correction.py',
   'test_denoise.py',
   'test_gibbs.py',
   'test_kernel.py',

@@ -53,6 +53,26 @@ from dipy.reconst.shm import (
 )
 from dipy.sims.voxel import multi_tensor_odf, single_tensor
 from dipy.testing import assert_true
+from dipy.testing.decorators import set_random_number_generator
+
+
+@set_random_number_generator(42)
+def test_anisotropic_power_non_negative(rng):
+    sh_coeffs = rng.normal(size=(10, 15))
+
+    ap = anisotropic_power(sh_coeffs, non_negative=True)
+
+    assert np.all(ap >= 0)
+
+
+@set_random_number_generator(0)
+def test_anisotropic_power_negative_allowed(rng):
+    # Use very small coefficients so ap < norm_factor, yielding negative log_ap
+    sh_coeffs = rng.normal(size=(5, 15)) * 1e-4
+
+    ap = anisotropic_power(sh_coeffs, non_negative=False)
+
+    assert np.any(ap < 0)
 
 
 def test_order_from_ncoeff():
@@ -709,7 +729,7 @@ def test_ResidualBootstrapWrapper():
     B = B.T
     H = hat(B)
     d = np.arange(10) / 8.0
-    d.shape = (2, 5)
+    d = d.reshape(2, 5)
     dhat = np.dot(d, H)
     signal_object = NearestNeighborInterpolator(dhat, (1,))
     ms = 0.2

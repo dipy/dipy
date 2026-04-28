@@ -3,8 +3,6 @@
 # cython: wraparound=False
 # cython: Nonecheck=False
 
-from libc.stdio cimport printf
-
 cimport ctime
 cimport cython
 from cython.parallel import prange
@@ -32,7 +30,6 @@ from nibabel.streamlines import ArraySequence as Streamlines
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy, memset
 from libc.math cimport ceil
-from libc.stdio cimport printf
 
 
 def generate_tractogram(double[:,::1] seed_positions,
@@ -168,12 +165,16 @@ cdef void generate_tractogram_c(double[:,::1] seed_positions,
     cdef:
         cnp.npy_intp _len=seed_positions.shape[0]
         cnp.npy_intp i
+        double* stream
+        int* stream_idx
 
-    if nbr_threads<= 0:
+    if nbr_threads <= 0:
         nbr_threads = 0
-    for i in prange(_len, nogil=True, num_threads=nbr_threads):
+
+    for i in prange(_len, nogil=True, num_threads=nbr_threads, schedule='dynamic', chunksize=64):
         stream = <double*> malloc((params.max_nbr_pts * 3 * 2 + 1) * sizeof(double))
         stream_idx = <int*> malloc(2 * sizeof(int))
+
         status[i] = generate_local_streamline(&seed_positions[i][0],
                                               &seed_directions[i][0],
                                               stream,
@@ -186,6 +187,7 @@ cdef void generate_tractogram_c(double[:,::1] seed_positions,
         lengths[i] = stream_idx[1] - stream_idx[0] + 1
         streamlines[i] = <double*> malloc(lengths[i] * 3 * sizeof(double))
         memcpy(&streamlines[i][0], &stream[stream_idx[0] * 3], lengths[i] * 3 * sizeof(double))
+
         free(stream)
         free(stream_idx)
 

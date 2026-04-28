@@ -13,6 +13,7 @@ from dipy.tracking.streamline import (
     Streamlines,
     orient_by_streamline,
     set_number_of_points,
+    transform_streamlines,
     values_from_volume,
 )
 
@@ -116,15 +117,18 @@ def assignment_map(target_bundle, model_bundle, no_disks):
 
     Parameters
     ----------
-    target_bundle : streamlines
+    target_bundle : Streamlines
         target bundle extracted from subject data in common space
-    model_bundle : streamlines
+    model_bundle : Streamlines
         atlas bundle used as reference
     no_disks : integer, optional
         Number of disks used for dividing bundle into disks.
 
     Returns
     -------
+    dist : ndarray
+        Distance of each target bundle point to its nearest model bundle
+        centroid point.
     indx : ndarray
         Assignment map of the target bundle streamline point indices to the
         model bundle centroid points.
@@ -142,11 +146,83 @@ def assignment_map(target_bundle, model_bundle, no_disks):
     clusters = qb.cluster(mbundle_streamlines)
     centroids = Streamlines(clusters.centroids)
 
-    _, indx = cKDTree(centroids.get_data(), 1, copy_data=True).query(
+    dist, indx = cKDTree(centroids.get_data(), 1, copy_data=True).query(
         target_bundle.get_data(), k=1
     )
 
-    return indx
+    return dist, indx
+
+
+def buan_profile(model_bundle, bundle, orig_bundle, metric, affine, *, no_disks=100):
+    """
+    Create BUAN weighted mean bundle profiles (lite).
+
+    See :footcite:p:`Chandio2020a` and :footcite:p:`chandio2024bundle`
+    for further details about the method.
+
+    Parameters
+    ----------
+    model_bundle : Streamlines
+        The atlas/template bundle used as the along-tract reference.
+        Must be in the same space as ``bundle`` (common/MNI space).
+    bundle : Streamlines
+        The subject bundle in common space (e.g., MNI). Used for segment
+        assignment against the model centroids.
+    orig_bundle : Streamlines
+        The same subject bundle in native/world (RAS) space. Used for
+        sampling the metric volume. Must correspond point-for-point to
+        ``bundle``.
+    metric : ndarray
+        3-D scalar volume (e.g., FA) in the same voxel space as ``affine``.
+    affine : ndarray
+        Voxel-to-world affine of the metric volume (as returned by
+        ``nib.load(...).affine``). Used to convert ``orig_bundle`` from
+        world to voxel coordinates for metric interpolation.
+    no_disks : int, optional
+        Number of alongtract segments/disks used for dividing bundle into
+        segments.
+
+    Returns
+    -------
+    bundle_profile : ndarray, shape (no_disks,)
+        Inverse-distance-weighted mean metric value for each disk segment.
+        Disks with no valid data points are set to NaN.
+
+    References
+    ----------
+    .. footbibliography::
+
+    """
+
+    if len(model_bundle) == 0 or len(bundle) == 0 or len(orig_bundle) == 0:
+        raise ValueError("One of the bundles contains no streamlines")
+
+    dist, indx = assignment_map(bundle, model_bundle, no_disks)
+    ind = np.array(indx)
+    affine_r = np.linalg.inv(affine)
+    transformed_orig_bundle = transform_streamlines(orig_bundle, affine_r)
+    bundle_profile = np.zeros(no_disks)
+    values = map_coordinates(metric, transformed_orig_bundle._data.T, order=1)
+
+    epsilon = 1e-8
+    weights = 1 / (dist + epsilon)
+
+    for i in range(no_disks):
+        valid_mask = ind == i
+        valid_mask &= ~np.isnan(values)
+
+        if np.any(valid_mask):
+            vals = values[valid_mask]
+            wts = weights[valid_mask]
+            wts /= np.sum(wts)
+            weighted_mean = np.sum(wts * vals)
+
+        else:
+            weighted_mean = np.nan
+
+        bundle_profile[i] = weighted_mean
+
+    return bundle_profile
 
 
 @warning_for_keywords()

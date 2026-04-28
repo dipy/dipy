@@ -6,253 +6,351 @@ A guide to making a DIPY release
 
 A guide for developers who are doing a DIPY release
 
+.. contents:: Contents
+   :local:
+   :depth: 2
+
 .. _release-checklist:
 
-Release checklist
-=================
+Major / minor releases (from master)
+=====================================
 
-* Review the open list of `dipy issues`_.  Check whether there are
-  outstanding issues that can be closed, and whether there are any issues that
-  should delay the release.  Label them !
+Automated release preparation
+-------------------------------
 
-* Check whether there are no build failing on `DIPY Github Actions`_. Indeed, ``PRE`` build is
-  allowed to fail and does not block a PR merge but it should block release !
-  So make sure that ``PRE`` build is not failing.
+Most of the manual steps below are automated by the ``spin prepare-release``
+command.  Run it from the root of the DIPY repository::
 
-* Generate, Review and update the release notes. Run the following command from
-  the root directory of DIPY::
+    spin prepare-release
 
-    python3 tools/github_stats.py 1.7.0 > doc/release_notes/release1.8.rst
+The command walks you through each step interactively.  If it is interrupted
+you can resume from any step with ``--from-step N``::
 
-  where ``1.7.0`` was the last release tag name.
+    spin prepare-release --from-step 6
 
-* Review and update the :file:`Changelog` file.  Get a partial list of
-  contributors with something like::
+You can also override the auto-detected previous tag or skip the version
+prompt::
 
-      git shortlog -ns 0.1.7.0..
+    spin prepare-release --last-tag 1.11.0 --new-version 1.12.0
 
-  where ``1.7.0`` was the last release tag name.
+Available steps (``--from-step`` values):
 
-  Then manually go over ``git shortlog 0.7.0..`` to make sure the release notes
-  are as complete as possible and that every contributor was recognized.
+.. code-block:: text
 
-* Use the opportunity to update the ``.mailmap`` file if there are any duplicate
-  authors listed from ``git shortlog -nse``.
+     1. fetch-tag        – detect the previous release tag
+     2. mailmap          – auto-detect duplicate authors, propose .mailmap entries, show full shortlog
+     3. version          – choose the new version number
+     4. author           – regenerate the AUTHOR file
+     5. copyright        – update copyright years in LICENSE and doc/conf.py
+     6. release-notes    – generate doc/release_notes/releaseX.Y.Z.rst
+     7. changelog        – prepend entry in Changelog
+     8. api-changes      – review and update doc/api_changes.rst
+     9. index            – add announcement line to doc/index.rst
+    10. old-news         – rotate oldest announcements from index.rst → doc/old_news.rst
+    11. highlights       – move previous highlights from index.rst → doc/old_highlights.rst
+    12. stateoftheart    – add new release to doc/stateoftheart.rst toctree
+    13. toolchain        – add new version row to doc/devel/toolchain.rst
+    14. version-switcher – promote new version to stable in doc/_static/version_switcher.json
+    15. developers       – review and update doc/developers.rst contributor list
+    16. pyproject        – set version in pyproject.toml
+    17. deprecations     – confirm deprecated code has been removed
+    18. doctest          – run Cython / extension module doctests
+    19. tests            – run the full test suite
+    20. docs             – build HTML documentation (without examples)
+    21. tutorials        – build and review individual tutorials with ``spin docs <name>``
+    22. website          – deploy docs to docs.dipy.org and verify version switcher
 
-* Add any new authors to the ``AUTHORS`` file.
+Before running the script, make sure to:
 
-* Check the copyright years in ``doc/conf.py`` and ``LICENSE``
+* Review the open list of `dipy issues`_.  Close or label outstanding issues,
+  and check whether any should delay the release.
 
-* Check the examples - we really need an automated check here.
+* Verify that no builds are failing on `DIPY Github Actions`_.  The ``PRE``
+  build is allowed to fail for PR merges but **must not** fail at release time.
 
-* Check the ``pyx`` file doctests with::
+* Check the ``README`` in the root directory and verify all links are still valid.
 
-    ./tools/doctest_extmods.py dipy
+Notes on individual steps
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  We really need an automated run of these using the buildbots, but we haven't
-  done it yet.
+**Step 2 – mailmap**
+  The script parses ``git log`` to detect duplicate authors automatically
+  (same email / different name, or same normalised name / different email).
+  Each new candidate entry is shown and you are asked ``yes / no / edit``.
+  Accepted entries are appended to ``.mailmap`` and a diff is shown.
+  A full ``git shortlog -nse <last_tag>..HEAD`` is printed afterwards for a
+  final manual review before you continue.
 
-* Check the ``README`` in the root directory. Check all the links are still valid.
+**Step 6 – release-notes**
+  Release notes are generated with ``tools/github_stats.py``::
 
-* Check all the DIPY builds are green on the nipy `DIPY Github Actions`_
+      python3 tools/github_stats.py <last_tag> > doc/release_notes/release<version>.rst
 
-* If you have `DIPY Github Actions`_ building set up you might want to push the code in its
-  current state to a branch that will build, e.g.::
+  You will be paused to add a header and highlights section above the
+  auto-generated contributor/PR/issue lists before continuing.
 
-    git branch -D pre-release-test # in case branch already exists
-    git co -b pre-release-test
+**Step 7 – changelog**
+  A skeleton entry is prepended to ``Changelog``.  You are paused to fill in
+  the highlights (derived from the release notes) before continuing.
 
-* Clean and compile::
+**Step 18 – doctest**
+  Runs ``./tools/doctest_extmods.py dipy``.  No output means all doctests
+  passed; the exit code is always printed so you can tell the command
+  actually ran.  Requires the package to be built in-place
+  (``spin build`` or ``pip install --no-build-isolation -e .``).
 
-    make distclean
-    git clean -fxd
-    python3 -m build  or  pip install --no-build-isolation  -e .
+**Step 19 – tests**
+  Runs ``pytest -svv --doctest-modules dipy`` from the repo root.
 
-* Make sure all tests pass on your local machine (from the ``<dipy root>`` directory)::
+**Step 20 – docs**
+  Runs ``make clean && make html`` inside ``doc/``.  Review the generated
+  output for broken tutorials, figures, or API pages before confirming.
 
-    cd ..
-    pytest -svv --with-doctest --pyargs dipy
-    cd dipy # back to the root directory
+  During development you can use ``spin docs`` for faster, selective builds::
 
-* Check the documentation doctests::
+      spin docs                      # full build with examples
+      spin docs --no-plot            # skip example execution
+      spin docs reconst_csa          # build only one tutorial
+      spin docs reconst_csa --no-plot  # RST only, no execution
 
-    cd doc
-    make doctest
-    cd ..
+  Tutorial names are matched as regex substrings against the example file
+  path; multiple names are joined with ``|`` (union).
 
-  At the moment this generates lots of errors from the autodoc documentation
-  running the doctests in the code, where the doctests pass when run in pytest -
-  we should find out why this is at some point, but leave it for now.
+Doing the major/minor release
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Build and test the DIPY wheels.  See the `wheel builder README
-  <https://github.com/MacPython/dipy-wheels>`_ for instructions.  In summary,
-  clone the wheel-building repo, edit the ``.github/workflows/wheel.yml``
-  text files (if present) with the branch or commit for the release, commit
-  and then push back up to github.  This will trigger a wheel build and test
-  on macOS, Linux and Windows. Check the build has passed on the Github Actions
-  interface at https://github.com/MacPython/dipy-wheels/actions.  You'll need
-  commit privileges to the ``dipy-wheels`` repo; ask Matthew Brett or on the
-  mailing list if you do not have them.
+Once ``spin prepare-release`` completes successfully:
 
-* The release should now be ready.
+1. Stage and commit all changes::
 
-Doing the release
-=================
+    git commit -m "REL: set version to <version>"
 
-Doing the release! This has two steps:
+2. Open a Pull Request, get it reviewed and merged.
 
-* build and upload the DIPY wheels;
-* make and upload the DIPY source release.
+3. After the merge, create an annotated tag on the merge commit::
 
-The trick here is to get all the testing, pushing to upstream done *before* you
-do the final release commit.  There should be only one commit with the release
-version number, so you might want to make the release commit on your local
-machine, push to `dipy pypi`_, review, fix, rebase, until all is good.  Then and only
-then do you push to upstream on github.
+    git tag -am 'Public release <version>' <version>
 
-* Make the release commit.  Edit :file:`pyproject.toml` and to get the correct version
-  number and commit it with a message like REL: set version to <version-number>.
-  Don’t push this commit to the DIPY_ repo yet.;
+4. Build the source distribution::
 
-* Finally tag the release locally with git tag <v1.x.y>. Continue with building
-  release artifacts (next section). Only push the release commit to the DIPY_
-  repo once you have built the sdists and docs successfully.
-  Then continue with building wheels. Only push the release tag to the repo once
-  all wheels have been built successfully on `DIPY Github Actions`_.
+    git clean -dfx
+    python -m build
 
-* For the wheel build / upload, follow the `wheel builder README`_
-  instructions again.  Edit the ``.github/workflows/wheel.yml`` files (if
-  present) to give the release tag to build.  Check the build has passed on
-  the Github Interface interface at https://github.com/MacPython/dipy-wheels/actions.
-  Now follow the instructions in the page above to download the built wheels to a
-  local machine and upload to PyPI.
-
-* Now it's time for the source release. Build the release files::
-
-    make distclean
-    git clean -fxd
-    make source-release
-
-* Once everything looks good, upload the source release to PyPi::
+5. Upload to PyPI::
 
     pip install twine
     twine upload dist/*
 
-* Check how everything looks on pypi - the description, the packages.  If
-  necessary delete the release and try again if it doesn't look right.
+6. Push the tag to trigger wheel builds on CI::
 
-* Make an annotated tag for the release with tag of form ``1.8.0``::
+    git push upstream <version>
 
-    git tag -am 'Public release 1.8.0' 1.8.0
+7. Create a maintenance branch and bump the development version::
 
-* Set up maintenance / development branches
+    git checkout -b maint/<version>
+    # set version to <major>.<minor+1>.0.dev0 in pyproject.toml on master
+    git checkout master
+    git merge -s ours maint/<version>
 
-  If this is a full release you need to set up two branches, one for
-  further substantial development (often called 'trunk') and another for
-  maintenance releases.
+8. Announce to the mailing lists.
 
-  * Branch to maintenance::
+Release checklist (manual reference)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-      git co -b maint/1.8.x
+The steps below are the manual equivalent of what ``spin prepare-release``
+does, kept here for reference.
 
-    Set ``_version_extra`` back to ``.dev`` and bump ``_version_micro`` by 1.
-    Thus the maintenance series will have version numbers like - say - '1.8.1.dev'
-    until the next maintenance release - say '1.8.1'.  Commit.
+* Detect the previous tag::
 
-    Push with something like ``git push upstream-rw maint/1.8.x --set-upstream``
+    git tag | sort -V | tail -1
 
-  * Start next development series::
+* Review contributors and update ``.mailmap``::
 
-      git co main-master
+    git shortlog -nse <last_tag>..HEAD
 
-    then restore ``.dev`` to ``_version_extra``, and bump ``_version_minor`` by 1.
-    Thus the development series ('trunk') will have a version number here of
-    '0.7.0.dev' and the next full release will be '0.7.0'.
+* Generate release notes::
 
-    Next merge the maintenance branch with the "ours" strategy.  This just labels
-    the maintenance branch `info.py` edits as seen but discarded, so we can
-    merge from maintenance in future without getting spurious merge conflicts::
+    python3 tools/github_stats.py <last_tag> > doc/release_notes/release<version>.rst
 
-       git merge -s ours maint/1.8.x
+  Edit the file to add a header and highlights section.
 
-    Push with something like ``git push upstream-rw main-master:master``
+* Prepend an entry to ``Changelog`` with the new version and highlights.
 
-  If this is just a maintenance release from ``maint/1.8.x`` or similar, just
-  tag and set the version number to - say - ``1.8.2.dev``.
+* Add the new announcement line to ``doc/index.rst``.
 
-* Push the tag with ``git push upstream-rw 1.8.0``
+* Regenerate the ``AUTHOR`` file from git history::
 
-Uploading binary builds for the release
-=======================================
+    git log --format='%aN' | sort -u > AUTHOR
 
-By far the easiest way to do this is via the buildbots.
+* Check copyright years in ``LICENSE`` and ``doc/conf.py``.
 
-In order to do this, you need first to push the release commit and the release
-tag to github, so the buildbots can find the released code and build it.
+* Set the version in ``pyproject.toml``.
 
-* In order to trigger the binary builds for the release commit, you need to go
-  to the web interface for the binary builder, go to the "Force build" section,
-  enter your username and password for the buildbot web service and enter the
-  commit tag name in the *revision* field.  For example, if the tag was
-  ``1.8.0`` then you would enter ``1.8.0`` in the revision field of the form.
-  This builds the exact commit labeled by the tag, which is what we want.
+* Confirm all deprecated functions past their removal cycle have been removed.
 
-* Trigger binary builds for Windows from the ``https://github.com/MacPython/dipy-wheels``
+* Run Cython / extension module doctests::
 
-  Download the builds and upload to pypi.
+    ./tools/doctest_extmods.py dipy
 
-  You can upload the exe files with the *files* interface for the new DIPY release.
-  Obviously you'll need to log in to do this, and you'll need to be an admin for
-  the DIPY pypi project.
+* Run the full test suite::
 
-  For reference, if you need to do binary exe builds by hand, use something
-  like::
+    pytest -svv --doctest-modules dipy
 
-    make distclean
-    git clean -fxd
+* Build the HTML documentation::
 
-* Trigger binary builds for macOS from the buildbots ``https://github.com/MacPython/dipy-wheels``.
-  Download the eggs and upload to pypi.
+    cd doc && make clean && make html && cd ..
 
-  Upload the dmg files with the *files* interface for the new DIPY release.
+* Build and test the DIPY wheels via `DIPY Github Actions`_.  Wheels are
+  built automatically on CI when a release tag is pushed.
 
-* Building macOS dmgs from the mpkg builds.
 
-  The buildbot binary builders build ``mpkg`` directories, which are installers
-  for macOS.
+.. _maint-release-guide:
 
-  These need their permissions to be fixed because the installers should install
-  the files as the root user, group ``admin``.  The all need to be converted to
-  macOS disk images.  Use the ``./tools/build_dmgs.py``, with something like
-  this command line::
+Patch releases (from a maintenance branch)
+===========================================
 
-    ./tools/build_dmgs "dipy-dist/dipy-1.8.0-py*.mpkg"
+Patch releases (e.g. ``1.12.1``) are cut from an existing ``maint/X.Y.x``
+branch, **not** from master.  They carry only backported bug fixes and require
+a much shorter preparation process — most documentation and website steps are
+skipped.
 
-  For this to work you'll need several things:
+Prerequisites
+--------------
 
-    * An account on a macOS box with sudo (Admin user) on which to run the
-      script.
-    * ssh access to the buildbot server https://nipy.bic.berkeley.edu (ask
-      Matthew or Eleftherios).
-    * a development version of ``bdist_mpkg`` installed from
-      https://github.com/matthew-brett/bdist_mpkg.  You need this second for the
-      script ``reown_mpkg`` that fixes the permissions.
+* The ``maint/X.Y.x`` branch must already exist (created when ``X.Y.0`` was
+  released).
+* All fixes to be included must already be backported to the branch (use the
+  ``backport-maint/X.Y.x`` label on PRs to trigger the automated backport
+  workflow, then verify each backport PR was merged).
+* Verify that CI is green on ``maint/X.Y.x`` before starting.
 
-  Upload the dmg files with the *files* interface for the new DIPY release.
+Automated preparation
+----------------------
+
+Switch to the maintenance branch and run ``spin prepare-release``.  The tool
+**auto-detects** that you are on a ``maint/`` branch and activates the reduced
+9-step checklist automatically::
+
+    git fetch upstream
+    git checkout maint/1.12.x
+    git merge --ff-only upstream/maint/1.12.x
+    spin prepare-release
+
+You can also pass ``--maint-branch`` explicitly (useful when resuming a
+partially-complete run from a detached HEAD or a different branch name)::
+
+    spin prepare-release --maint-branch maint/1.12.x
+
+To resume after an interruption::
+
+    spin prepare-release --from-step 5
+
+Reduced step list (9 steps):
+
+.. code-block:: text
+
+     1. fetch-tag        – detect the previous release tag on this branch
+     2. mailmap          – deduplicate authors (.mailmap updated for backport authors)
+     3. version          – propose patch bump (X.Y.Z+1); confirm or enter manually
+     4. author           – regenerate the AUTHOR file
+     5. release-notes    – generate notes filtered to PRs targeting maint/X.Y.x
+     6. changelog        – prepend patch entry in Changelog
+     7. pyproject        – set version in pyproject.toml
+     8. doctest          – run Cython / extension module doctests
+     9. tests            – run the full test suite
+
+Notes on maintenance-specific steps
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Step 5 – release-notes**
+  ``tools/github_stats.py`` is called with ``--branch maint/X.Y.x`` so that
+  only pull requests whose *base* (target) branch is the maintenance branch
+  are included.  Master-branch PRs do not appear in the list.
+
+  You can also run it manually::
+
+      python3 tools/github_stats.py <last_tag> --branch maint/1.12.x \
+          > doc/release_notes/release<version>.rst
+
+  Edit the file to add a short header; no full highlights section is needed
+  for a patch release.
+
+**Step 7 – pyproject**
+  Changes ``version = "X.Y.Z.dev0"`` to ``version = "X.Y.Z"`` in
+  ``pyproject.toml``.
+
+Doing the patch release
+------------------------
+
+Once ``spin prepare-release`` finishes, follow these steps:
+
+1. Commit the release preparation changes::
+
+    git add pyproject.toml doc/release_notes/release<version>.rst Changelog .mailmap
+    git commit -m "REL: set version to <version>"
+
+2. Push to ``maint/X.Y.x`` (directly or via a short-lived PR targeting that
+   branch — **not** master)::
+
+    git push upstream maint/X.Y.x
+
+3. After the commit lands on the branch, create an annotated tag::
+
+    git fetch upstream
+    git merge --ff-only upstream/maint/X.Y.x
+    git tag -am 'Public release <version>' <version>
+
+4. Build the source distribution::
+
+    git clean -dfx
+    python -m build --sdist
+
+5. Upload the sdist to PyPI::
+
+    twine upload dist/dipy-<version>.tar.gz
+
+6. Push the tag::
+
+    git push upstream <version>
+
+7. Trigger wheel builds via ``workflow_dispatch`` on the ``nightly.yml``
+   workflow — the ``upload_anaconda`` job will be skipped (it only runs for
+   master), but all wheels will be built and saved as artifacts::
+
+    gh workflow run nightly.yml --repo dipy/dipy --field branch_or_tag=<version>
+
+   Wait for all platform builds to finish (~40–60 min), then download and
+   upload the wheels::
+
+    gh run download <run-id> --dir dist-wheels/
+    twine upload dist-wheels/**/*.whl
+
+8. Create the GitHub release::
+
+    gh release create <version> --repo dipy/dipy --title "DIPY <version>"
+
+9. Bump the maintenance branch to the next patch dev version::
+
+    # edit pyproject.toml: version = "X.Y.(Z+1).dev0"
+    git commit -am "REL: bump version to X.Y.(Z+1).dev0"
+    git push upstream maint/X.Y.x
+
+10. Announce to the mailing lists.
+
+.. note::
+
+   Do **not** update ``doc/index.rst``, ``doc/stateoftheart.rst``,
+   ``doc/devel/toolchain.rst``, or ``doc/_static/version_switcher.json`` for a
+   patch release.  These files track major/minor versions only.
 
 Other stuff that needs doing for the release
 ============================================
 
-* Checkout the tagged release, build the html docs and upload them to
-  the github pages website::
+* Build and upload the HTML docs to the GitHub Pages website::
 
     make upload
 
-  You need to checkout the tagged version in order to get the version number
-  correct for the doc build.  The version number gets picked up from the
-  ``info.py`` version.
-
-* Announce to the mailing lists.  With fear and trembling.
+* Announce to the mailing lists.
 
 
 .. include:: ../links_names.inc

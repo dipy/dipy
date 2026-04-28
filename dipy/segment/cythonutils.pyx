@@ -1,4 +1,10 @@
 # cython: wraparound=False, cdivision=True, boundscheck=False
+"""Cython utilities for memory views and shapes.
+
+Internal helpers for efficient memoryview operations, shape
+manipulation, and low-level data structures used in segmentation.
+"""
+
 
 import numpy as np
 cimport numpy as cnp
