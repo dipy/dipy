@@ -410,13 +410,16 @@ def test_classify():
     npt.assert_(seg_final.max() == nclasses)
     npt.assert_(seg_final.min() == 0.0)
 
-    # Now we test what happens with heavily masked data
+    # Heavily masked data (50% zeroed) must not cause non-convergence
     masked_image = np.copy(image)
     masked_image[masked_image.shape[0] // 2 :, :, :] = 0
     seg_init, seg_final, PVE = imgseg.classify(masked_image, nclasses, beta)
 
+    npt.assert_(seg_init.max() == nclasses)
+    npt.assert_(seg_init.min() == 0.0)
     npt.assert_(seg_final.max() == nclasses)
     npt.assert_(seg_final.min() == 0.0)
+    npt.assert_(PVE.shape[-1] == nclasses)
 
     # Next we test saving the history of accumulated energies from ICM
     imgseg = TissueClassifierHMRF(save_history=True)

@@ -26,8 +26,9 @@ class TissueClassifierHMRF:
         self.verbose = verbose
 
     @warning_for_keywords()
-    def classify(self, image, nclasses, beta, *, tolerance=1e-05, max_iter=100,
-                 min_var=1e-6):
+    def classify(
+        self, image, nclasses, beta, *, tolerance=1e-05, max_iter=100, min_var=1e-6
+    ):
         """
         This method uses the Maximum a posteriori - Markov Random Field
         approach for segmentation by using the Iterative Conditional Modes
@@ -56,8 +57,8 @@ class TissueClassifierHMRF:
             and the algorithm will run for the specified number of
             iterations unless another stopping criterion is met.
         min_var : float, optional
-            Minimum variance within each tissue class to prevent division by 
-            zero. Default is 1e-6.
+            Minimum variance within each tissue class to prevent division by
+            zero when the image is heavily masked.
 
         Returns
         -------
@@ -81,6 +82,7 @@ class TissueClassifierHMRF:
         p = np.argsort(mu)
         mu = mu[p]
         var = var[p]
+        var = np.maximum(var, min_var)
 
         neglogl = com.negloglikelihood(image, mu, var, nclasses)
         seg_init = icm.initialize_maximum_likelihood(neglogl)
@@ -106,7 +108,6 @@ class TissueClassifierHMRF:
             ind = np.argsort(mu_upd)
             mu_upd = mu_upd[ind]
             var_upd = var_upd[ind]
-            print(f"{i}: var_upd: {var_upd}")
             var_upd = np.maximum(var_upd, min_var)
 
             negll = com.negloglikelihood(image_gauss, mu_upd, var_upd, nclasses)
