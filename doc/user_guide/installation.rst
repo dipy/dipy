@@ -151,7 +151,8 @@ and then remove the DIPY directory that contains that file.
 
 Alternatives to Anaconda
 -------------------------
-If you have problems installing Anaconda_, you can also use 'Miniforge <https://github.com/conda-forge/miniforge>'_ as a lightweight Alternative.
+
+If you have problems installing Anaconda_, you can also use `Miniforge <https://github.com/conda-forge/miniforge>`_ as a lightweight alternative.
 
 Memory issues
 -------------
