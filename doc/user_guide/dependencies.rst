@@ -5,7 +5,7 @@ Python versions and dependencies
 ================================
 
 DIPY follows the `Scientific Python`_ `SPEC 0 — Minimum Supported Versions`_
-recommendation as closely as possible. SPEC 0 defines the minimum supported versions 
+recommendation as closely as possible. SPEC 0 defines the minimum supported versions
 of Python and core dependencies based on their release dates.
 
 Further information can be found in :ref:`toolchain-roadmap`.
@@ -18,9 +18,9 @@ Core dependencies (required)
 
 DIPY depends on the following third-party Python packages:
 
-* numpy - numerical computation and array operations
-* scipy - mathematical and scientific operations
-* cython - performance-critical compiled extensions
+* numpy_ - numerical computation and array operations
+* scipy_ - mathematical and scientific operations
+* cython_ - performance-critical compiled extensions
 * nibabel_ - reading and writing neuroimaging file formats
 * h5py_ - handling large datasets in HDF5 formats
 * tqdm_ - progress bars for long-running operations
@@ -43,7 +43,7 @@ The following packages are required only for specific DIPY modules:
 * cvxpy_ - convex optimization (required for some reconstruction models)
 * scikit-learn_ - machine learning utilities
 * statsmodels_ - statistical analysis
-* pandas - data manipulation and analysis
+* pandas_ - data manipulation and analysis
 * tensorflow_ - deep learning models
 
 .. include:: ../links_names.inc

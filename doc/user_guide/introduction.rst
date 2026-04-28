@@ -7,7 +7,9 @@
 * **a Python package** for analyzing ``diffusion MRI data``
 
 * a free and open project to collaborate and **share** your code and expertise.
+
 * contains generic methods for spatial normalization, signal processing, machine learning, statistical analysis and visualization of medical images.
+
 * contains specialized methods for computational anatomy including diffusion, perfusion and structural imaging
 
 Want to know more? Read our :ref:`home`, :ref:`installation`
