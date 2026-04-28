@@ -128,6 +128,26 @@ def test_lpca_random_noise(rng):
 
 
 @set_random_number_generator()
+def test_lpca_complex_random_noise(rng):
+    S0 = (
+        100
+        + 100j
+        + (2 / np.sqrt(2))
+        * (
+            rng.standard_normal((22, 23, 30, 20))
+            + 1j * rng.standard_normal((22, 23, 30, 20))
+        )
+    )
+    # The overall std remains 2 and is distributed by the real and imaginary components
+    S0ns, sigma_ns = localpca(S0, sigma=np.std(S0), return_sigma=True)
+
+    assert_(S0ns.min() > S0.min())
+    assert_(S0ns.max() < S0.max())
+    assert_equal(np.round(S0ns.mean()), (100 + 100j))
+    assert_equal(sigma_ns, np.std(S0))
+
+
+@set_random_number_generator()
 def test_lpca_boundary_behaviour(rng):
     # check is first slice is getting denoised or not ?
     S0 = 100 * np.ones((20, 20, 20, 20), dtype="f8")
@@ -156,6 +176,39 @@ def test_lpca_rmse(rng):
     rmse_denoised = np.sqrt(np.mean((S0_denoised - 100) ** 2))
     # Denoising should always improve the RMSE:
     assert_(rmse_denoised < rmse_w_noise)
+
+
+@set_random_number_generator()
+def test_lpca_complex_rmse(rng):
+    S0_w_noise = (
+        100
+        + 100j
+        + (2 / np.sqrt(2))
+        * (
+            rng.standard_normal((22, 23, 30, 20))
+            + 1j * rng.standard_normal((22, 23, 30, 20))
+        )
+    )
+    # The overall std remains 2 and is distributed by the real and imaginary components
+    rmse_w_noise = np.sqrt(np.mean((S0_w_noise - (100 + 100j)) ** 2))
+    S0_denoised = localpca(S0_w_noise, sigma=np.std(S0_w_noise))
+    rmse_denoised = np.sqrt(np.mean((S0_denoised - (100 + 100j)) ** 2))
+    # Denoising should always improve the RMSE:
+    assert_(rmse_denoised < rmse_w_noise)
+
+
+@set_random_number_generator()
+def test_lpca_complex_phase(rng):
+    S0 = 100 * np.exp(1j * np.pi / 4)
+    S0_w_noise = S0 + (2 / np.sqrt(2)) * (
+        rng.standard_normal((22, 23, 30, 20))
+        + 1j * rng.standard_normal((22, 23, 30, 20))
+    )
+    # The overall std remains 2 and is distributed by the real and imaginary components
+    S0_denoised = localpca(S0_w_noise, sigma=2)
+
+    avg_phase = np.angle(np.mean(S0_denoised))
+    assert_array_almost_equal(avg_phase, np.pi / 4, decimal=2)
 
 
 @set_random_number_generator()
@@ -266,6 +319,25 @@ def test_phantom(rng):
     assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
     assert_(rmse_den < rmse_noisy)
     assert_(rmse_den_wrc < rmse_noisy_wrc)
+
+
+@set_random_number_generator()
+def test_compare_pca_methods_complex(rng):
+    S0_w_noise = (
+        100
+        + 100j
+        + (2 / np.sqrt(2))
+        * (
+            rng.standard_normal((22, 23, 30, 20))
+            + 1j * rng.standard_normal((22, 23, 30, 20))
+        )
+    )
+    S0_den_svd = localpca(S0_w_noise, sigma=np.std(S0_w_noise), pca_method="svd")
+    S0_den_eig = localpca(S0_w_noise, sigma=np.std(S0_w_noise))
+
+    assert_array_almost_equal(S0_den_svd, S0_den_eig)
+    assert_(np.std(S0_den_svd) < np.std(S0_w_noise))
+    assert_(np.std(S0_den_eig) < np.std(S0_w_noise))
 
 
 @set_random_number_generator()
