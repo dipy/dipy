@@ -206,6 +206,24 @@ class LocalTracking:
         self.save_seeds = save_seeds
 
     def _tracker(self, seed, first_step, streamline):
+        """Track a streamline from a seed point using local tracking.
+
+        Parameters
+        ----------
+        seed : ndarray, shape (3,)
+            The seed point in voxel coordinates where tracking starts.
+        first_step : ndarray, shape (3,)
+            The initial direction of the first tracking step.
+        streamline : ndarray
+            An array to store the streamline points generated
+            during tracking.
+
+        Returns
+        -------
+        end : int
+            An integer indicating the stopping criterion that ended
+            the streamline tracking.
+        """
         return local_tracker(
             self.direction_getter,
             self.stopping_criterion,
@@ -218,6 +236,17 @@ class LocalTracking:
         )
 
     def __iter__(self):
+        """Iterate over tractogram streamlines.
+
+        Generates streamlines from seeds, transforms them to point
+        space and returns them.
+
+        Yields
+        ------
+        streamline : ndarray, shape (N, 3)
+            A single streamline in world coordinates. If `save_seeds`
+            is True, yields a tuple of (streamline, seed).
+        """
         # Make tracks, move them to point space and return
         track = self._generate_tractogram()
 
@@ -226,7 +255,18 @@ class LocalTracking:
         )
 
     def _generate_tractogram(self):
-        """A streamline generator"""
+        """Generate a tractogram by tracking streamlines from seeds.
+
+        Tracks streamlines in both forward and backward directions
+        from each seed point using the direction getter and stopping
+        criterion. Applies random seeding if specified.
+
+        Yields
+        ------
+        streamline : ndarray, shape (N, 3)
+            A single streamline in voxel coordinates. If `save_seeds`
+            is True, yields a tuple of (streamline, seed).
+        """
 
         # Get inverse transform (lin/offset) for seeds
         inv_A = np.linalg.inv(self.affine)
@@ -472,6 +512,24 @@ class ParticleFilteringTracking(LocalTracking):
         )
 
     def _tracker(self, seed, first_step, streamline):
+        """Track a streamline using particle filtering tractography.
+
+        Parameters
+        ----------
+        seed : ndarray, shape (3,)
+            The seed point in voxel coordinates where tracking starts.
+        first_step : ndarray, shape (3,)
+            The initial direction of the first tracking step.
+        streamline : ndarray
+            An array to store the streamline points generated
+            during tracking.
+
+        Returns
+        -------
+        end : int
+            An integer indicating the stopping criterion that ended
+            the streamline tracking.
+        """
         return pft_tracker(
             self.direction_getter,
             self.stopping_criterion,
