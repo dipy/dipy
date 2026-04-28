@@ -23,10 +23,30 @@ from dipy.utils.deprecator import deprecate_with_version
     until="2.0.0",
 )
 def _warn_old_eudx_localtracking_api():
+    """Warn users about the deprecated EuDX local tracking API.
+
+    This function serves as a placeholder for backwards compatibility
+    and does not perform any operation.
+    """
     pass
 
 
 def _is_eudx_direction_getter(direction_getter):
+    """Check if a direction getter is an EuDX direction getter.
+
+    Parameters
+    ----------
+    direction_getter : object
+        The direction getter object to check. This can be any object
+        that has a class hierarchy accessible via ``__mro__``.
+
+    Returns
+    -------
+    bool
+        True if the direction getter is an instance of
+        ``EuDXDirectionGetter`` from
+        ``dipy.reconst.eudx_direction_getter``, False otherwise.
+    """
     return any(
         cls.__name__ == "EuDXDirectionGetter"
         and cls.__module__ == "dipy.reconst.eudx_direction_getter"
