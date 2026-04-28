@@ -157,7 +157,7 @@ def check_md5(filename, *, stored_md5=None):
     ----------
     filename : string
         Path to a file.
-    stored_md5 : string
+    stored_md5 : string, optional
         Known md5 of filename to check against. If None (default), checking is
         skipped
     """
@@ -383,7 +383,8 @@ def fetch_data(
         does not match the expected value or download fails.
 
     """
-    logger.info(f"Creating new folder {folder}")
+    if not Path(folder).exists():
+        logger.info(f"Creating new folder {folder}")
     os.makedirs(folder, exist_ok=True)
 
     if data_size is not None:
