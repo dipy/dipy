@@ -221,6 +221,10 @@ def genpca(
         If True and pca_method is 'eig', use the Cython-optimized
         solution. If False, use the pure Python solution. Both
         produce identical results.
+    fast : bool, optional
+        If True and pca_method is 'eig', use the Cython-optimized
+        solution. If False, use the pure Python solution. Both
+        produce identical results.
     tau_factor : float, optional
         Thresholding of PCA eigenvalues is done by nulling out eigenvalues that
         are smaller than:
@@ -321,6 +325,20 @@ def genpca(
     if return_sigma is True and sigma is None:
         var = np.zeros(arr.shape[:-1], dtype=calc_dtype)
         thetavar = np.zeros(arr.shape[:-1], dtype=calc_dtype)
+
+    # Fast Cython core only supports 'eig' for now
+    if not is_svd and fast:
+        return genpca_core_fast(
+            arr,
+            mask=mask,
+            var_map=None if sigma is None else var,
+            patch_radius_x=int(patch_radius_arr[0]),
+            patch_radius_y=int(patch_radius_arr[1]),
+            patch_radius_z=int(patch_radius_arr[2]),
+            tau_factor=tau_factor,
+            return_sigma=return_sigma,
+            out_dtype=out_dtype,
+        )
 
     # Fast Cython core only supports 'eig' for now
     if not is_svd and fast:
