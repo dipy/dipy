@@ -440,15 +440,11 @@ def test_patch_radius_accepts_numpy_array():
     bvals = np.zeros(10)
 
     # Scalar ndarray
-    out_scalar = p2s.patch2self(
-        data, bvals, patch_radius=np.array(1), version=1
-    )
+    out_scalar = p2s.patch2self(data, bvals, patch_radius=np.array(1), version=1)
     assert_equal(out_scalar.shape, data.shape)
 
     # 3-element ndarray
-    out_arr = p2s.patch2self(
-        data, bvals, patch_radius=np.array([1, 1, 1]), version=1
-    )
+    out_arr = p2s.patch2self(data, bvals, patch_radius=np.array([1, 1, 1]), version=1)
     assert_equal(out_arr.shape, data.shape)
 
     # Wrong length ndarray should raise
@@ -498,9 +494,9 @@ def test_patch2self_v3_volumes_count_not_divisible_by_5(rng):
 
     assert_equal(out.shape, data.shape)
     for i in range(out.shape[-1]):
-        assert out[..., i].std() > 0, (
-            f"Volume {i} was not written to the output buffer."
-        )
+        assert (
+            out[..., i].std() > 0
+        ), f"Volume {i} was not written to the output buffer."
 
 
 @needs_sklearn
