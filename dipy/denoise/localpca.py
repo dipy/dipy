@@ -221,10 +221,6 @@ def genpca(
         If True and pca_method is 'eig', use the Cython-optimized
         solution. If False, use the pure Python solution. Both
         produce identical results.
-    fast : bool, optional
-        If True and pca_method is 'eig', use the Cython-optimized
-        solution. If False, use the pure Python solution. Both
-        produce identical results.
     tau_factor : float, optional
         Thresholding of PCA eigenvalues is done by nulling out eigenvalues that
         are smaller than:
