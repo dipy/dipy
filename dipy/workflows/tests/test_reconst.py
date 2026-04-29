@@ -57,7 +57,7 @@ def test_reconst_rumba():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        reconst_flow_core(ReconstRUMBAFlow)
+        reconst_flow_core(ReconstRUMBAFlow, n_iter=5)
 
 
 @pytest.mark.skipif(not has_sklearn, reason="Requires sklearn")
