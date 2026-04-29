@@ -12,7 +12,7 @@ on:
         description: "Select Python version"
         type: string
         required: false
-        default: '["3.11", ]'
+        default: '["3.12", ]'
       use-pre:
         description: "Use pre-release versions"
         type: boolean

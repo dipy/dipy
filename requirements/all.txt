@@ -9,7 +9,7 @@ setuptools>=69.5,<83.0
 packaging>=21
 ninja
 Cython>=0.29.35
-numpy>=1.22.4
+numpy>=2.0.0
 spin>=0.5
 build
 ruff
@@ -21,7 +21,6 @@ codecov
 numpydoc
 sphinx>=7.2.6
 texext
-tomli; python_version < "3.11"
 sphinxcontrib-bibtex>=2.5.0
 sphinx_design>=0.5.0
 sphinx-gallery>=0.10.0

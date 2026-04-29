@@ -3,7 +3,7 @@ name = "dipy"
 description = "Diffusion MRI Imaging in Python"
 license = {file = "LICENSE"}
 readme = "README.rst"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 authors = [{ name = "DIPY developers", email = "dipy@python.org" }]
 maintainers = [
     {name = "Eleftherios Garyfallidis", email="neuroimaging@python.org"},
@@ -23,7 +23,6 @@ classifiers = [
     'License :: OSI Approved :: BSD License',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3.13',
     'Programming Language :: Python :: 3.14',
@@ -38,10 +37,10 @@ classifiers = [
 ]
 version = "1.13.0.dev0"
 dependencies = [
-    "numpy>=1.22.4",
-    "scipy>=1.8",
+    "numpy>=2.0.0",
+    "scipy>=1.13",
     "nibabel>=3.0.0",
-    "h5py>=3.1.0",
+    "h5py>=3.11.0",
     "packaging>=21",
     "tqdm>=4.30.0",
     "trx-python>=0.4.0",
@@ -118,7 +117,7 @@ build = [
     "packaging>=21",
     "ninja",
     "Cython>=0.29.35",
-    "numpy>=1.22.4",
+    "numpy>=2.0.0",
     "spin>=0.5",
     "build"
 ]
@@ -148,7 +147,6 @@ doc = [
     "numpydoc",
     "sphinx>=7.2.6",
     "texext",
-    "tomli; python_version < \"3.11\"",
     "sphinxcontrib-bibtex>=2.5.0",
     "sphinx_design>=0.5.0",
     "sphinx-gallery>=0.10.0",
@@ -177,15 +175,15 @@ requires = [
     "Cython>=3.0.4",
     "packaging>21.0",
     "wheel",
-    "scipy>=1.8.0",
+    "scipy>=1.13.0",
     # numpy requirement for wheel builds for distribution on PyPI - building
-    # against 2.x yields wheels that are also compatible with numpy 1.x at
+    # against 2.x yields wheels that are also compatible with numpy 2.x at
     # runtime.
-    # Note that building against numpy 1.x works fine too - users and
+    # Note that building against numpy 2.x works fine too - users and
     # redistributors can do this by installing the numpy version they like and
     # disabling build isolation.
-    "numpy>=2.0.0rc1; python_version>='3.11' and platform_python_implementation!='PyPy'",
-    "numpy; python_version>='3.11' and platform_python_implementation=='PyPy'",
+    "numpy>=2.0.0rc1; python_version>='3.12' and platform_python_implementation!='PyPy'",
+    "numpy; python_version>='3.12' and platform_python_implementation=='PyPy'",
 ]
 
 [tool.spin]
