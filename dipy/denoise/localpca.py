@@ -336,20 +336,6 @@ def genpca(
             out_dtype=out_dtype,
         )
 
-    # Fast Cython core only supports 'eig' for now
-    if not is_svd and fast:
-        return genpca_core_fast(
-            arr,
-            mask=mask,
-            var_map=None if sigma is None else var,
-            patch_radius_x=int(patch_radius_arr[0]),
-            patch_radius_y=int(patch_radius_arr[1]),
-            patch_radius_z=int(patch_radius_arr[2]),
-            tau_factor=tau_factor,
-            return_sigma=return_sigma,
-            out_dtype=out_dtype,
-        )
-
     # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius_arr[2], arr.shape[2] - patch_radius_arr[2]):
         for j in range(patch_radius_arr[1], arr.shape[1] - patch_radius_arr[1]):
