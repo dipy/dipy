@@ -356,3 +356,167 @@ def test_patch2self_v3_preserves_out_dtype_and_precision_invariance(rng):
     # Allow small-to-moderate diffs due to dtype & randomized count-sketch
     assert_allclose(m32, m64, rtol=2e-2, atol=1.25)
     assert_allclose(s32, s64, rtol=1e-1, atol=1.0)
+
+
+@needs_sklearn
+def test_patch_radius_requires_scalar_or_3_tuple():
+    data = np.random.rand(5, 5, 5, 10)
+    bvals = np.zeros(10)
+
+    with pytest.raises(
+        ValueError, match="patch_radius must be a scalar or a 3-element array."
+    ):
+        p2s.patch2self(data, bvals, patch_radius=(1, 1), version=1)
+
+
+@needs_sklearn
+@set_random_number_generator(2026)
+def test_fit_denoising_model_copy_x_is_keyword_only(rng):
+    train = rng.standard_normal((4, 3, 8))
+
+    with pytest.raises(TypeError, match="positional|keyword-only"):
+        p2s._fit_denoising_model(train, 0, "ridge", 1.0, False)
+
+    model, cur_x = p2s._fit_denoising_model(
+        train,
+        0,
+        "ridge",
+        1.0,
+        copy_X=False,
+    )
+    assert_equal(cur_x.shape, ((train.shape[0] - 1) * train.shape[1], train.shape[2]))
+    assert hasattr(model, "coef_")
+
+
+@needs_sklearn
+@set_random_number_generator(2026)
+def test_fit_denoising_model_accepts_non_linear_base_estimator(rng):
+    from sklearn.dummy import DummyRegressor
+
+    train = rng.standard_normal((4, 3, 8))
+    fit, cur_x = p2s._fit_denoising_model(
+        train, 0, DummyRegressor(strategy="mean"), 0.0
+    )
+    assert hasattr(fit, "predict")
+    pred = fit.predict(cur_x.T)
+    assert_equal(pred.shape[0], cur_x.shape[1])
+
+
+@needs_sklearn
+def test_fit_denoising_model_rejects_non_estimator():
+    train = np.zeros((4, 3, 8))
+    with pytest.raises(ValueError, match="sklearn.base.BaseEstimator"):
+        p2s._fit_denoising_model(train, 0, object(), 0.0)
+
+
+def test_apply_post_processing_shift_intensity_uses_original_data():
+    # Regression test: shift was previously computed as min(arr) - min(arr) == 0,
+    # which silently disabled shift_intensity. The fix uses the original data
+    # minimum so the denoised volume is shifted back to the input baseline.
+    rng = np.random.default_rng(0)
+    data = rng.uniform(50.0, 100.0, size=(3, 3, 3, 4))
+    denoised = data - 30.0  # has a lower per-volume minimum than `data`
+
+    out = p2s._apply_post_processing(
+        data, denoised.copy(), shift_intensity=True, clip_negative_vals=False
+    )
+
+    for i in range(data.shape[-1]):
+        assert_allclose(out[..., i].min(), data[..., i].min())
+
+
+def test_apply_post_processing_shift_intensity_no_op_when_baselines_match():
+    data = np.full((2, 2, 2, 3), 5.0)
+    denoised = data.copy()
+    out = p2s._apply_post_processing(
+        data, denoised.copy(), shift_intensity=True, clip_negative_vals=False
+    )
+    assert_allclose(out, denoised)
+
+
+@needs_sklearn
+def test_patch_radius_accepts_numpy_array():
+    data = np.random.rand(5, 5, 5, 10)
+    bvals = np.zeros(10)
+
+    # Scalar ndarray
+    out_scalar = p2s.patch2self(
+        data, bvals, patch_radius=np.array(1), version=1
+    )
+    assert_equal(out_scalar.shape, data.shape)
+
+    # 3-element ndarray
+    out_arr = p2s.patch2self(
+        data, bvals, patch_radius=np.array([1, 1, 1]), version=1
+    )
+    assert_equal(out_arr.shape, data.shape)
+
+    # Wrong length ndarray should raise
+    with pytest.raises(
+        ValueError, match="patch_radius must be a scalar or a 3-element array."
+    ):
+        p2s.patch2self(data, bvals, patch_radius=np.array([1, 1]), version=1)
+
+
+@needs_sklearn
+@set_random_number_generator(2026)
+def test_patch2self_v3_b0_passthrough_when_b0_denoising_disabled(rng):
+    # Regression test: when b0_denoising=False, the previous code copied
+    # data_tmp[..., b0_counter] which indexed the wrong volume whenever the
+    # b0s were not the leading volumes. The fix indexes by vol_idx so each
+    # b0 slot is filled with its own original volume.
+    data = (30 + 2 * rng.standard_normal((6, 6, 4, 12))).astype(np.float64)
+    bvals = np.array(
+        [1000, 1000, 0, 1000, 1000, 0, 1000, 1000, 0, 1000, 1000, 0],
+        dtype=float,
+    )
+
+    out = p2s.patch2self(
+        data,
+        bvals,
+        model="ols",
+        version=3,
+        b0_denoising=False,
+        shift_intensity=False,
+    )
+
+    b0_indices = np.where(bvals == 0)[0]
+    for idx in b0_indices:
+        assert_allclose(out[..., idx], data[..., idx])
+
+
+@needs_sklearn
+@set_random_number_generator(2026)
+def test_patch2self_v3_volumes_count_not_divisible_by_5(rng):
+    # Regression test for the buffer-flush bug: when data_shape[-1] % 5 != 0,
+    # the previous code computed denoised_arr_idx and full_result_idx using
+    # different bases, leaving a tail of zero volumes in the output.
+    data = (30 + 2 * rng.standard_normal((6, 6, 4, 13))).astype(np.float64)
+    bvals = np.repeat(1000.0, 13)
+
+    out = p2s.patch2self(data, bvals, model="ols", version=3)
+
+    assert_equal(out.shape, data.shape)
+    for i in range(out.shape[-1]):
+        assert out[..., i].std() > 0, (
+            f"Volume {i} was not written to the output buffer."
+        )
+
+
+@needs_sklearn
+@set_random_number_generator(2026)
+def test_patch2self_v3_small_spatial_uses_minimum_chunk_size(rng):
+    # Regression test: vol_denoise computed `p = data_tmp.shape[0] // 10`,
+    # which became 0 when the flattened spatial dimension had < 10 voxels and
+    # caused an empty inner loop. The fix uses `max(..., 1)`.
+    data = (30 + 2 * rng.standard_normal((10, 10, 10, 12))).astype(np.float64)
+    bvals = np.repeat(1000.0, 12)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        out = p2s.patch2self(data, bvals, model="ols", version=3)
+
+    assert_equal(out.shape, data.shape)
+    assert np.all(np.isfinite(out))
+    for i in range(out.shape[-1]):
+        assert out[..., i].std() > 0
