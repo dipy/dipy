@@ -3,16 +3,28 @@
 
 Taken from ipython
 
+Usage
+-----
+List all issues/PRs since a tag (whole repo)::
+
+    python3 tools/github_stats.py 1.12.0
+
+List only PRs merged into a specific branch (for maintenance releases)::
+
+    python3 tools/github_stats.py 1.12.0 --branch maint/1.12.x
+
 """
 # -----------------------------------------------------------------------------
 # Imports
 # -----------------------------------------------------------------------------
 
+import argparse
 from datetime import datetime, timedelta
 import json
 import re
 from subprocess import check_output
 import sys
+from urllib.parse import quote
 from urllib.request import urlopen
 
 # -----------------------------------------------------------------------------
@@ -85,12 +97,29 @@ def is_pull_request(issue):
     return 'pull_request_url' in issue
 
 
-def issues_closed_since(period=LAST_RELEASE, project="dipy/dipy", pulls=False):
+def issues_closed_since(
+    period=LAST_RELEASE, *, project="dipy/dipy", pulls=False, branch=None
+):
     """Get all issues closed since a particular point in time.
 
-    Period can either be a datetime object, or a timedelta object. In the
-    latter case, it is used as a time before the present.
+    Parameters
+    ----------
+    period : datetime or timedelta
+        If a timedelta, it is subtracted from the current time to get the
+        cutoff datetime.
+    project : str
+        GitHub project in ``owner/repo`` format.
+    pulls : bool
+        If True fetch pull requests; otherwise fetch regular issues.
+    branch : str or None
+        When ``pulls=True`` and a branch name is given, only pull requests
+        whose *base* (target) branch matches this value are returned.
+        Has no effect when ``pulls=False``.
 
+    Returns
+    -------
+    list
+        Closed issues (or merged PRs) since *period*.
     """
     which = 'pulls' if pulls else 'issues'
 
@@ -100,16 +129,20 @@ def issues_closed_since(period=LAST_RELEASE, project="dipy/dipy", pulls=False):
         f"https://api.github.com/repos/{project}/{which}?state=closed"
         f"&sort=updated&since={period.strftime(ISO8601)}&per_page={PER_PAGE}"
     )
+    if pulls and branch:
+        url += f"&base={quote(branch, safe='')}"
 
     allclosed = get_paged_request(url)
-    # allclosed = get_issues(project=project, state='closed', pulls=pulls,
-    #                        since=period)
     filtered = [i for i in allclosed
                 if _parse_datetime(i['closed_at']) > period]
 
-    # exclude rejected PRs
     if pulls:
+        # exclude unmerged PRs
         filtered = [pr for pr in filtered if pr['merged_at']]
+    else:
+        # exclude pull requests from the issues list to avoid duplicates;
+        # the /issues endpoint returns both issues and PRs
+        filtered = [i for i in filtered if 'pull_request' not in i]
 
     return filtered
 
@@ -139,16 +172,50 @@ if __name__ == "__main__":
     # Whether to add reST urls for all issues in printout.
     show_urls = True
 
-    # By default, search one month back
+    parser = argparse.ArgumentParser(
+        description=(
+            "Generate GitHub statistics for DIPY release notes.\n\n"
+            "Examples:\n"
+            "  # All issues/PRs since tag (master/full-repo release):\n"
+            "  python3 tools/github_stats.py 1.12.0\n\n"
+            "  # Only PRs merged into a maintenance branch:\n"
+            "  python3 tools/github_stats.py 1.12.0 --branch maint/1.12.x\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "tag_or_days",
+        nargs="?",
+        metavar="TAG_OR_DAYS",
+        help=(
+            "A git tag (e.g. '1.12.0') to use as the start of the period, "
+            "or an integer number of days to look back. "
+            "Defaults to the most recent tag."
+        ),
+    )
+    parser.add_argument(
+        "--branch", "-b",
+        default=None,
+        metavar="BRANCH",
+        help=(
+            "Filter pull requests by base (target) branch. "
+            "Use this for maintenance releases to avoid listing master PRs. "
+            "Example: --branch maint/1.12.x"
+        ),
+    )
+    args = parser.parse_args()
+
     tag = None
-    if len(sys.argv) > 1:
-        try:
-            days = int(sys.argv[1])
-        except:
-            tag = sys.argv[1]
-    else:
+    days = None
+
+    if args.tag_or_days is None:
         tag = check_output(['git', 'describe', '--abbrev=0'],
                            text=True).strip()
+    else:
+        try:
+            days = int(args.tag_or_days)
+        except ValueError:
+            tag = args.tag_or_days
 
     if tag:
         cmd = ['git', 'log', '-1', '--format=%ai', tag]
@@ -157,12 +224,16 @@ if __name__ == "__main__":
     else:
         since = datetime.now() - timedelta(days=days)
 
+    branch = args.branch
+
     print(f"fetching GitHub stats since {since} (tag: {tag})",
           file=sys.stderr)
-    # turn off to play interactively without redownloading, use %run -i
-    if 1:
-        issues = issues_closed_since(since, pulls=False)
-        pulls = issues_closed_since(since, pulls=True)
+    if branch:
+        print(f"filtering pull requests by base branch: {branch}",
+              file=sys.stderr)
+
+    issues = issues_closed_since(since, pulls=False)
+    pulls = issues_closed_since(since, pulls=True, branch=branch)
 
     # For regular reports, it's nice to show them in reverse
     # chronological order
@@ -184,30 +255,48 @@ if __name__ == "__main__":
     if tag:
         # print git info, in addition to GitHub info:
         since_tag = tag + '..'
-        cmd = ['git', 'log', '--oneline', since_tag]
+        if branch:
+            # limit git log to the specific branch when filtering
+            cmd = ['git', 'log', '--oneline', since_tag, branch]
+        else:
+            cmd = ['git', 'log', '--oneline', since_tag]
         ncommits = len(check_output(cmd, text=True).splitlines())
 
-        author_cmd = ['git', 'log', '--format=* %aN', since_tag]
-        all_authors = check_output(author_cmd, text=True) \
-            .splitlines()
+        if branch:
+            author_cmd = ['git', 'log', '--format=* %aN', since_tag, branch]
+        else:
+            author_cmd = ['git', 'log', '--format=* %aN', since_tag]
+        all_authors = check_output(author_cmd, text=True).splitlines()
         unique_authors = sorted(set(all_authors))
 
         if not unique_authors:
             print("No commits during this period.")
         else:
-            print(f"The following {len(unique_authors)} authors contributed {ncommits} commits.")
+            print(f"The following {len(unique_authors)} authors contributed"
+                  f" {ncommits} commits.")
             print()
             print('\n'.join(unique_authors))
             print()
 
             print()
-            print(f"We closed a total of {n_total} issues,"
-                  f" {n_pulls} pull requests and {n_issues} regular issues;\n"
-                  "this is the full list (generated with the script \n"
-                  ":file:`tools/github_stats.py`):")
+            if branch:
+                print(
+                    f"We closed a total of {n_pulls} pull requests"
+                    f" (merged into ``{branch}``);\n"
+                    "this is the full list (generated with the script \n"
+                    ":file:`tools/github_stats.py`):"
+                )
+            else:
+                print(
+                    f"We closed a total of {n_total} issues,"
+                    f" {n_pulls} pull requests and {n_issues} regular issues;\n"
+                    "this is the full list (generated with the script \n"
+                    ":file:`tools/github_stats.py`):"
+                )
             print()
             print(f'Pull Requests ({n_pulls}):\n')
             report(pulls, show_urls)
-            print()
-            print(f'Issues ({n_issues}):\n')
-            report(issues, show_urls)
+            if not branch:
+                print()
+                print(f'Issues ({n_issues}):\n')
+                report(issues, show_urls)

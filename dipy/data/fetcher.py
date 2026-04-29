@@ -157,7 +157,7 @@ def check_md5(filename, *, stored_md5=None):
     ----------
     filename : string
         Path to a file.
-    md5 : string
+    stored_md5 : string, optional
         Known md5 of filename to check against. If None (default), checking is
         skipped
     """
@@ -385,7 +385,7 @@ def fetch_data(
     """
     if not Path(folder).exists():
         logger.info(f"Creating new folder {folder}")
-        os.makedirs(folder)
+    os.makedirs(folder, exist_ok=True)
 
     if data_size is not None:
         logger.info(f"Data size is approximately {data_size}")
@@ -405,7 +405,7 @@ def fetch_data(
         try:
             _get_file_data(fullpath, url, use_headers=use_headers, stored_md5=md5)
             successful_downloads += 1
-        except (FetcherError, Exception) as e:
+        except Exception as e:
             failed_files.append((f, url, str(e)))
             if raise_on_error:
                 raise
