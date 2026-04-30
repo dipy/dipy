@@ -459,16 +459,6 @@ def _orient_by_roi_list(out, roi1, roi2):
         streamlines flipped in place so that they are oriented
         from roi1 towards roi2.
     """
-    for idx, sl in enumerate(out):
-        dist1 = cdist(sl, roi1, "euclidean")
-        dist2 = cdist(sl, roi2, "euclidean")
-        min1 = np.argmin(dist1, 0)
-        min2 = np.argmin(dist2, 0)
-        if min1[0] > min2[0]:
-            out[idx][:, 0] = sl[::-1][:, 0]
-            out[idx][:, 1] = sl[::-1][:, 1]
-            out[idx][:, 2] = sl[::-1][:, 2]
-    return out
 
 
 @warning_for_keywords()
