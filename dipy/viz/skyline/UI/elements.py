@@ -30,6 +30,46 @@ _NUMERIC_INPUT_DRAFT = {}
 _LAST_DIR = Path("~").expanduser() / ".dipy"
 
 
+def _ensure_last_dir():
+    """Return a valid directory for native file dialogs.
+
+    Ensures ``_LAST_DIR`` points to an existing directory. If the path points to
+    a file, its parent directory is used. If directory creation fails, falls
+    back to the user home directory.
+
+    Returns
+    -------
+    pathlib.Path
+        Existing directory to use as dialog start location.
+    """
+
+    global _LAST_DIR
+
+    try:
+        if _LAST_DIR.is_file():
+            _LAST_DIR = _LAST_DIR.parent
+        _LAST_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        logger.warning(
+            f"Could not initialize skyline dialog directory at {_LAST_DIR}: {exc}"
+        )
+        _LAST_DIR = Path.home()
+
+    return _LAST_DIR
+
+
+def _set_last_dir(path):
+    """Update ``_LAST_DIR`` using a selected file path.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Selected file path returned by the file dialog.
+    """
+    global _LAST_DIR
+    _LAST_DIR = Path(path).parent
+
+
 def colors_equal(color_a, color_b):
     """Return True when two RGB-like values represent the same color.
 
@@ -118,20 +158,19 @@ def render_file_dialog(
     type : str, optional
         Callback convention: ``"viz"`` (``filenames=``), ``"roi"`` (``rois=``),
         ``"shm_coeff"`` (``shm_coeffs=``), or ``"buan_pvals"`` (raw list/None).
-    None
     """
-    global _LAST_DIR
+    dialog_dir = _ensure_last_dir()
     if dialog_type == "open":
         dialog = pfd.open_file(
             title,
-            str(_LAST_DIR),
+            str(dialog_dir),
             [name, extensions],
             pfd.opt.multiselect if multiselect else pfd.opt.none,
         )
     elif dialog_type == "save":
         dialog = pfd.save_file(
             title,
-            str(_LAST_DIR / file_name),
+            str(dialog_dir / file_name),
             [name, extensions],
         )
     if dialog.result():
@@ -145,7 +184,7 @@ def render_file_dialog(
                 callback(shm_coeffs=selected_files)
             elif type == "buan_pvals":
                 callback(selected_files)
-        _LAST_DIR = Path(selected_files[0]).parent
+        _set_last_dir(selected_files[0])
     if not dialog.result() and dialog.kill():
         if callback is not None:
             if type == "buan_pvals":
