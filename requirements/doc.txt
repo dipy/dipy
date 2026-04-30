@@ -3,7 +3,6 @@
 numpydoc
 sphinx>=7.2.6
 texext
-tomli; python_version < "3.11"
 sphinxcontrib-bibtex>=2.5.0
 sphinx_design>=0.5.0
 sphinx-gallery>=0.10.0
