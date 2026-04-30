@@ -8,9 +8,13 @@ fury, have_fury, setup_module = optional_package(
     "fury", min_version="0.10.0", max_version="1.0.0"
 )
 
+vtk, have_vtk, _ = optional_package("vtk")
+
 if have_fury:
     import fury.io
     import fury.utils
+
+if have_vtk:
     import vtk
     import vtk.util.numpy_support as ns
 
