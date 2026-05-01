@@ -91,6 +91,13 @@ def test_io_info():
         reference=str(filepath_dix["gs_volume.nii"]),
     )
 
+    pam = generate_random_pam()
+    with TemporaryDirectory() as out_dir:
+        pam_fname = Path(out_dir) / "test_info.pam5"
+        save_pam(pam_fname, pam)
+        io_info_flow = IoInfoFlow()
+        io_info_flow.run(pam_fname)
+
     with open(fname_log, "r") as file:
         lines = file.readlines()
         try:
