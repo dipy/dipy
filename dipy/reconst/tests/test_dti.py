@@ -1240,22 +1240,38 @@ def test_cholesky_transformations():
     npt.assert_array_almost_equal(dt_gt, dt_recovered)
 
 
-def test_dti_nlls_cholesky_positivity():
-    """Test if NLLS with Cholesky enforces positive eigenvalues."""
+def test_dti_nlls_cholesky_accuracy():
+    """Test if NLLS with Cholesky retrieves correct ground truth parameters 
+    in non-problematic voxels."""
     evals_gt = np.array([0.0017, 0.0003, 0.0003])
     evecs_gt = np.eye(3)
 
     _, fbvals, fbvecs = get_fnames(name="small_25")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = grad.gradient_table(bvals, bvecs=bvecs)
+    
     Spred = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
-    X = design_matrix(gtab)
 
-    params_nls, _ = nlls_fit_tensor(X, Spred, cholesky=True)
-    evals_nls = params_nls[..., :3]
+    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True)
+    dtif = dtim.fit(Spred)
+    
+    npt.assert_array_almost_equal(dtif.evals, evals_gt)
 
-    # Assert all eigenvalues are non-negative (within float precision)
-    npt.assert_(np.all(evals_nls >= -1e-8))
 
-    fa_nls = fractional_anisotropy(evals_nls)
-    npt.assert_(np.all((fa_nls >= 0) & (fa_nls <= 1)))
+def test_dti_nlls_cholesky_positivity():
+    """Test if Cholesky enforces positivity even with negative 
+    ground truth eigenvalues."""
+    evals_gt = np.array([0.0017, 0.0003, -0.0001])
+    evecs_gt = np.eye(3)
+
+    _, fbvals, fbvecs = get_fnames(name="small_25")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
+    
+    Spred_corrupted = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
+
+    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True)
+    dtif = dtim.fit(Spred_corrupted)
+
+    npt.assert_(np.all(dtif.evals >= -1e-8))
+    npt.assert_(np.all((dtif.fa >= 0) & (dtif.fa <= 1)))
