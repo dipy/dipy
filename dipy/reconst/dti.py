@@ -92,8 +92,8 @@ def fractional_anisotropy(evals, *, axis=-1):
     ----------
     evals : array-like
         Eigenvalues of a diffusion tensor.
-    axis : int, optional
-        Axis of `evals` which contains 3 eigenvalues.
+        axis : int, optional
+        Axis of evals which contains 3 eigenvalues.
 
     Returns
     -------
