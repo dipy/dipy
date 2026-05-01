@@ -394,9 +394,7 @@ def _print_pam_information(pam, version, alignment_space, tab):
         indentation.
     """
 
-    _print_property_information(
-        PamPropertyName.VERSION.value, version, alignment_space
-    )
+    _print_property_information(PamPropertyName.VERSION.value, version, alignment_space)
     _print_property_information(
         PamPropertyName.DIMENSIONS.value,
         tuple(map(int, pam.peak_dirs.shape[:3])),
