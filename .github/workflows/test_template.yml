@@ -55,7 +55,7 @@ permissions:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
+    timeout-minutes: ${{ (matrix.install-type == 'conda' && runner.os == 'Windows') && 180 || 120 }}
     strategy:
       max-parallel: 3
       fail-fast: false
