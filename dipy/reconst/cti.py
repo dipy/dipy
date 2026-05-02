@@ -13,6 +13,7 @@ from dipy.reconst.dti import (
     decompose_tensor,
     from_lower_triangular,
     lower_triangular,
+    nlls_fit_tensor,
 )
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.utils import cti_design_matrix as design_matrix
@@ -269,15 +270,29 @@ class CorrelationTensorModel(ReconstModel):
             A boolean array of the same shape as data.shape[-1]. It
             designates which coordinates in the data should be analyzed.
         """
+
         data_thres = np.maximum(data, self.min_signal)
-        params = self.fit_method(
-            self.design_matrix,
-            data_thres,
-            self.inverse_design_matrix,
-            weights=self.weights,
-            *self.args,
-            **self.kwargs,
-        )
+
+        if self.fit_method is nlls_fit_tensor:
+            result = self.fit_method(
+                self.design_matrix,
+                data_thres,
+                *self.args,
+                **self.kwargs,
+            )
+            if isinstance(result, tuple):
+                params = result[0]
+            else: 
+                params = result
+        else:
+            params = self.fit_method(
+                self.design_matrix,
+                data_thres,
+                self.inverse_design_matrix,
+                weights=self.weights,
+                *self.args,
+                **self.kwargs,
+            )
 
         return CorrelationTensorFit(self, params)
 
@@ -502,7 +517,7 @@ class CorrelationTensorFit(DiffusionKurtosisFit):
                     + D[..., 2, 2] ** 2
                     + 2 * D[..., 0, 1] ** 2
                     + 2 * D[..., 0, 2] ** 2
-                    + D[..., 1, 2] ** 2
+                    + 2 * D[..., 1, 2] ** 2
                 )
                 / (mean_D**2)
             ) - (6 / 5)
@@ -600,4 +615,6 @@ common_fit_methods = {
     "ULLS": ls_fit_cti,
     "WLLS": ls_fit_cti,
     "OLLS": ls_fit_cti,
+    "NLS": nlls_fit_tensor,
+    "NLLS": nlls_fit_tensor,
 }
