@@ -429,3 +429,34 @@ def test_cti_design_matrix():
     assert np.allclose(
         A1, A2
     ), "The design matrices are not symmetric for different gradientdirections order."
+
+
+def test_cti_metrics():
+    """Test CTI metrics with a well-aligned structure to verify formula.
+    Regression test for the Dyz (indices 1,2) factor of 2 in Frobenius norm.
+    """
+
+    cti_params_gt = np.array([
+        1.075, 0.3255, 0.3255, 1., 0., 0.,
+        0., 0., 1., 0., 1., 0.,
+        1.59927944, 1.66389033, 1.66389033, 0., 0., 0.,
+        0., 0., 0., 0.14829682, 0.14829682, 0.55463011,
+        0., 0., 0., 0.013125, 0.18358725, 0.18358725,
+        0.18358725, 0.0490875, 0.0490875, 0., 0., 0.,
+        0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0.
+    ])
+
+    Kiso_gt = 0.5319401049184376
+    Kaniso_gt = 0.9504530935095312
+    Kmicro_gt = 0.2960649543684015
+    Ktotal_gt = 1.7784581527963703
+
+    model = cti.CorrelationTensorModel(gtab1, gtab2)
+    
+    fit = cti.CorrelationTensorFit(model, cti_params_gt)
+
+    npt.assert_almost_equal(fit.K_iso, Kiso_gt, decimal=6)
+    npt.assert_almost_equal(fit.K_aniso, Kaniso_gt, decimal=6)
+    npt.assert_almost_equal(fit.K_micro, Kmicro_gt, decimal=6)
+    npt.assert_almost_equal(fit.K_total, Ktotal_gt, decimal=6)
