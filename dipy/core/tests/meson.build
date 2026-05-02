@@ -18,6 +18,7 @@ endforeach
 
 python_sources = ['__init__.py',
   'test_geometry.py',
+  'test_gradient_check.py',
   'test_gradients.py',
   'test_graph.py',
   'test_interpolation.py',
