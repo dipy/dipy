@@ -157,10 +157,6 @@ def _fit_denoising_models(train, model, alpha):
         One entry per held-out volume, in vol_idx order.
 
     """
-    if not (isinstance(model, str) and model.lower() in ("ols", "ridge")):
-        raise ValueError(
-            f"_fit_denoising_models only supports 'ols' or 'ridge', got: {model!r}"
-        )
     ridge_alpha = 1e-10 if model.lower() == "ols" else alpha
 
     n_vols, n_patch, n_voxels = train.shape
