@@ -456,6 +456,24 @@ def test_patch_radius_accepts_numpy_array():
 
 @needs_sklearn
 @set_random_number_generator(2026)
+def test_patch2self_v1_lasso_and_verbose(rng):
+    # Lasso routes through the non-gram fallback in _patch2self_version1
+    data = rng.random((5, 5, 5, 12))
+    bvals = np.concatenate([np.zeros(2), np.full(10, 1000.0)])
+
+    out_lasso = p2s.patch2self(
+        data, bvals, model="lasso", version=1, alpha=0.5, verbose=True
+    )
+    assert_equal(out_lasso.shape, data.shape)
+
+    out_ridge = p2s.patch2self(
+        data, bvals, model="ridge", version=1, alpha=1.0, verbose=True
+    )
+    assert_equal(out_ridge.shape, data.shape)
+
+
+@needs_sklearn
+@set_random_number_generator(2026)
 def test_patch2self_v3_b0_passthrough_when_b0_denoising_disabled(rng):
     # Regression test: when b0_denoising=False, the previous code copied
     # data_tmp[..., b0_counter] which indexed the wrong volume whenever the
