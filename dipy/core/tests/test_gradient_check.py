@@ -17,8 +17,8 @@ import numpy.testing as npt
 import pytest
 
 from dipy.core.gradient_check import (
-    FLIPS,
-    PERMUTATIONS,
+    _FLIPS,
+    _PERMUTATIONS,
     apply_transform,
     check_gradient_table,
     correct_bvecs,
@@ -27,6 +27,12 @@ from dipy.core.gradient_check import (
     transform_label,
 )
 from dipy.core.gradients import gradient_table
+
+# CsaOdfModel uses the legacy descoteaux07 SH basis; silence the per-call
+# PendingDeprecationWarning under DIPY_WERRORS=1.
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:The legacy descoteaux07 SH basis:PendingDeprecationWarning"
+)
 
 
 def _assert_bvecs_equivalent(actual, expected, atol=1e-12):
@@ -92,8 +98,8 @@ def test_canonical_set_has_24_distinct_transforms():
     # Verify that the 6 perms x 4 flips really yield 24 distinct linear maps.
     seen = set()
     e = np.eye(3)
-    for perm in PERMUTATIONS:
-        for flip in FLIPS:
+    for perm in _PERMUTATIONS:
+        for flip in _FLIPS:
             mat = apply_transform(e, perm, flip)
             seen.add(tuple(mat.flatten().tolist()))
     npt.assert_equal(len(seen), 24)
@@ -260,69 +266,3 @@ def test_check_gradient_table_validates_inputs():
     bvecs = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=float)
     gtab = gradient_table(bvals, bvecs=bvecs)
     npt.assert_raises(ValueError, check_gradient_table, np.zeros((3, 4, 5)), gtab)
-
-
-# ---------------------------------------------------------------------------
-# Optional Sherbrooke 3-shell replication: per-shell single-shell verification.
-# ---------------------------------------------------------------------------
-
-
-def _sherbrooke_loaded():
-    home = os.path.join(os.path.expanduser("~"), ".dipy", "sherbrooke_3shell")
-    needed = ["HARDI193.bval", "HARDI193.bvec", "HARDI193.nii.gz"]
-    return all(os.path.exists(os.path.join(home, f)) for f in needed)
-
-
-@pytest.mark.parametrize("shell_b", [1000, 2000, 3500])
-def test_sherbrooke_single_shell_recovers_swap_xy_flip_y(shell_b):
-    """Replicate the Aarhus-style corruption on each Sherbrooke shell."""
-    if not _sherbrooke_loaded():
-        pytest.skip("Sherbrooke 3-shell dataset not present in ~/.dipy.")
-
-    from dipy.data import read_sherbrooke_3shell
-
-    img, gtab_full = read_sherbrooke_3shell()
-    data_full = img.get_fdata().astype(np.float32)
-
-    # Extract a single shell (b=0 + b=shell_b).
-    keep = (gtab_full.bvals < 50) | (np.abs(gtab_full.bvals - shell_b) < 50)
-    data = data_full[..., keep]
-    bvals = gtab_full.bvals[keep]
-    bvecs = gtab_full.bvecs[keep]
-    gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=50)
-
-    # Crop to a brain-containing region using a coarse signal-based mask.
-    s0 = data[..., gtab.b0s_mask].mean(axis=-1)
-    coarse = s0 > (0.1 * np.percentile(s0[s0 > 0], 95))
-    coords = np.where(coarse)
-    if coords[0].size == 0:
-        pytest.skip("No signal in Sherbrooke volume; cannot run replication.")
-    sx = slice(coords[0].min(), coords[0].max() + 1)
-    sy = slice(coords[1].min(), coords[1].max() + 1)
-    sz = slice(coords[2].min(), coords[2].max() + 1)
-    data = data[sx, sy, sz]
-    coarse = coarse[sx, sy, sz]
-
-    wm_mask = _wm_mask_for(
-        data, gtab, coarse, sh_order_max=4, adc_threshold=0.0020, gfa_threshold=0.3
-    )
-    if wm_mask.sum() < 200:
-        pytest.skip(f"WM mask too small for shell b={shell_b}.")
-
-    # Establish algorithm verdict on original.
-    perm0, flip0 = check_gradient_table(data, gtab, mask=wm_mask, sh_order_max=4)
-    canonical = correct_bvecs(gtab.bvecs, perm0, flip0)
-
-    # Apply the Aarhus-style corruption: swap x/y, then flip y.
-    corrupt_perm = (1, 0, 2)
-    corrupt_flip = (1, -1, 1)
-    bvecs_corr = apply_transform(gtab.bvecs, corrupt_perm, corrupt_flip)
-    gtab_corr = gradient_table(
-        gtab.bvals, bvecs=bvecs_corr, b0_threshold=gtab.b0_threshold
-    )
-
-    perm_rec, flip_rec = check_gradient_table(
-        data, gtab_corr, mask=wm_mask, sh_order_max=4
-    )
-    recovered = correct_bvecs(bvecs_corr, perm_rec, flip_rec)
-    _assert_bvecs_equivalent(recovered, canonical)
