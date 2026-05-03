@@ -138,6 +138,60 @@ def _fit_denoising_model(train, vol_idx, model, alpha, *, copy_X=True):
     return model_instance, cur_x
 
 
+def _fit_denoising_models(train, model, alpha):
+    """Fit every leave-one-out 3D volume from a shared Gram matrix.
+
+    Parameters
+    ----------
+    train : ndarray
+        Array of all 3D patches flattened out to be 2D.
+    model : {'ols', 'ridge'}
+        Closed-form linear models only. ``'ols'`` is mapped to
+        ``Ridge(alpha=1e-10)`` to match ``_fit_denoising_model``.
+    alpha : float
+        Regularization parameter for ridge regression.
+
+    Returns
+    -------
+    fits : list of (coef, intercept)
+        One entry per held-out volume, in vol_idx order.
+
+    """
+    if not (isinstance(model, str) and model.lower() in ("ols", "ridge")):
+        raise ValueError(
+            f"_fit_denoising_models only supports 'ols' or 'ridge', got: {model!r}"
+        )
+    ridge_alpha = 1e-10 if model.lower() == "ols" else alpha
+
+    n_vols, n_patch, n_voxels = train.shape
+    train_flat = train.reshape(n_vols * n_patch, n_voxels)
+
+    row_means = train_flat.mean(axis=1)
+    G_cent = train_flat @ train_flat.T - n_voxels * np.outer(row_means, row_means)
+
+    fits = []
+    center_offset = n_patch // 2
+    for vol_idx in range(n_vols):
+        held_start = vol_idx * n_patch
+        held_stop = held_start + n_patch
+        target_row = held_start + center_offset
+
+        keep = np.ones(n_vols * n_patch, dtype=bool)
+        keep[held_start:held_stop] = False
+
+        G_xx = G_cent[np.ix_(keep, keep)]
+        b = G_cent[keep, target_row]
+
+        coef = np.linalg.solve(
+            G_xx + ridge_alpha * np.eye(G_xx.shape[0], dtype=G_xx.dtype),
+            b,
+        )
+        intercept = row_means[target_row] - row_means[keep] @ coef
+        fits.append((coef, float(intercept)))
+
+    return fits
+
+
 def vol_denoise(
     data_dict, b0_idx, dwi_idx, model, alpha, b0_denoising, verbose, tmp_dir
 ):
@@ -544,6 +598,8 @@ def _patch2self_version1(
         position = data.shape.index(1)
         data = np.concatenate((data, data, data), position)
 
+    use_gram_solver = isinstance(model, str) and model.lower() in ("ols", "ridge")
+
     # Segregates volumes by b0 threshold
     b0_idx = np.argwhere(bvals <= b0_threshold)
     dwi_idx = np.argwhere(bvals > b0_threshold)
@@ -581,14 +637,21 @@ def _patch2self_version1(
             patch_radius=patch_radius,
         )
 
-        for vol_idx in range(0, data_b0s.shape[3]):
-            b0_model, cur_x = _fit_denoising_model(
-                train_b0, vol_idx, model, alpha=alpha
-            )
-
-            denoised_b0s[..., vol_idx] = b0_model.predict(cur_x.T).reshape(
-                data_b0s.shape[0], data_b0s.shape[1], data_b0s.shape[2]
-            )
+        if use_gram_solver:
+            fits = _fit_denoising_models(train_b0, model, alpha)
+            for vol_idx, (coef, intercept) in enumerate(fits):
+                cur_x, _ = _vol_split(train_b0, vol_idx)
+                denoised_b0s[..., vol_idx] = (cur_x.T @ coef + intercept).reshape(
+                    data_b0s.shape[0], data_b0s.shape[1], data_b0s.shape[2]
+                )
+        else:
+            for vol_idx in range(0, data_b0s.shape[3]):
+                b0_model, cur_x = _fit_denoising_model(
+                    train_b0, vol_idx, model, alpha=alpha
+                )
+                denoised_b0s[..., vol_idx] = b0_model.predict(cur_x.T).reshape(
+                    data_b0s.shape[0], data_b0s.shape[1], data_b0s.shape[2]
+                )
 
         if verbose is True:
             logger.info(f"Denoised b0 Volume: {vol_idx}")
@@ -608,14 +671,25 @@ def _patch2self_version1(
     )
 
     # Insert the separately denoised arrays into the respective empty arrays
-    for vol_idx in range(0, data_dwi.shape[3]):
-        dwi_model, cur_x = _fit_denoising_model(train_dwi, vol_idx, model, alpha=alpha)
-        denoised_dwi[..., vol_idx] = dwi_model.predict(cur_x.T).reshape(
-            data_dwi.shape[0], data_dwi.shape[1], data_dwi.shape[2]
-        )
-
-        if verbose is True:
-            logger.info(f"Denoised DWI Volume: {vol_idx}")
+    if use_gram_solver:
+        fits = _fit_denoising_models(train_dwi, model, alpha)
+        for vol_idx, (coef, intercept) in enumerate(fits):
+            cur_x, _ = _vol_split(train_dwi, vol_idx)
+            denoised_dwi[..., vol_idx] = (cur_x.T @ coef + intercept).reshape(
+                data_dwi.shape[0], data_dwi.shape[1], data_dwi.shape[2]
+            )
+            if verbose is True:
+                logger.info(f"Denoised DWI Volume: {vol_idx}")
+    else:
+        for vol_idx in range(0, data_dwi.shape[3]):
+            dwi_model, cur_x = _fit_denoising_model(
+                train_dwi, vol_idx, model, alpha=alpha
+            )
+            denoised_dwi[..., vol_idx] = dwi_model.predict(cur_x.T).reshape(
+                data_dwi.shape[0], data_dwi.shape[1], data_dwi.shape[2]
+            )
+            if verbose is True:
+                logger.info(f"Denoised DWI Volume: {vol_idx}")
 
     if verbose is True:
         t2 = time.time()
