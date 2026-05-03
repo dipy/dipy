@@ -41,8 +41,8 @@ from dipy.testing.decorators import warning_for_keywords
 # transforms identified in :footcite:p:`Aganj2018`.  Flipping all three axes is
 # equivalent to no flip thanks to the antipodal symmetry of the ODF, so we
 # only enumerate "no flip" plus the three single-axis flips.
-PERMUTATIONS = tuple(permutations(range(3)))
-FLIPS = (
+_PERMUTATIONS = tuple(permutations(range(3)))
+_FLIPS = (
     (1, 1, 1),
     (-1, 1, 1),
     (1, -1, 1),
@@ -221,8 +221,8 @@ def fiber_continuity_error(
     vertices = np.asarray(sphere.vertices, dtype=np.float64)
 
     errors = {}
-    for perm in PERMUTATIONS:
-        for flip in FLIPS:
+    for perm in _PERMUTATIONS:
+        for flip in _FLIPS:
             transformed = apply_transform(vertices, perm, flip)
             dots = np.einsum("vmd,md->vm", grad_masked, transformed)
             errors[(perm, flip)] = float(np.sum(dots * dots))
