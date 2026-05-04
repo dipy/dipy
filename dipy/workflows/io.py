@@ -250,7 +250,7 @@ def _print_bval_data_information(bvals, b0_threshold, bshell_thr, alignment_spac
 
 
 def _print_bvec_data_information(bvecs, bvecs_tol, alignment_space):
-    """Print b-vector information.
+    r"""Print b-vector information.
 
     Parameters
     ----------
@@ -258,7 +258,7 @@ def _print_bvec_data_information(bvecs, bvecs_tol, alignment_space):
         b-vectors.
     bvecs_tol : float
         Threshold used to check that
-        :math:`norm(\text{bvec}) = 1 \\pm \text{bvecs_tol}` b-vectors are
+        :math:`norm(\text{bvec}) = 1 \pm \text{bvecs_tol}` b-vectors are
         unit vectors.
     alignment_space : int
         Character width for the property, value pair alignment.
@@ -417,7 +417,7 @@ class IoInfoFlow(Workflow):
         bshell_thr=100,
         reference=None,
     ):
-        """Provides useful information about different files used in
+        r"""Provides useful information about different files used in
         medical imaging. Any number of input files can be provided. The
         program identifies the type of file by its extension.
 
@@ -429,7 +429,7 @@ class IoInfoFlow(Workflow):
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
             Threshold used to check that
-            :math:`norm(\text{bvec}) = 1 \\pm \text{bvecs_tol}` b-vectors are
+            :math:`norm(\text{bvec}) = 1 \pm \text{bvecs_tol}` b-vectors are
             unit vectors.
         bshell_thr : float, optional
             Threshold for distinguishing b-values in different shells.
@@ -627,7 +627,8 @@ class FetchFlow(Workflow):
     ):
         """Download files to folder and check their md5 checksums.
 
-        To see all available datasets, please type "list" in data_names.
+        - To see all available datasets, please type "dipy_fetch list".
+        - To download all datasets, please type "dipy_fetch all".
 
         Parameters
         ----------

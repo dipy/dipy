@@ -1,10 +1,30 @@
 import argparse
 import inspect
+import re
 import shutil
 import textwrap
 
 from dipy.utils.logging import logger
 from dipy.workflows.docstring_parser import NumpyDocString
+
+# LaTeX commands used in DIPY workflow docstrings. Add new entries here when
+# a new symbol shows up in a workflow docstring and needs CLI rendering.
+_LATEX_SYMBOLS = {
+    r"\pm": "±",
+    r"\mu": "μ",
+}
+
+
+def _strip_rst_markup(text):
+    """Strip RST inline markup for plain-text CLI display."""
+    # :role:`content` → content
+    text = re.sub(r":[a-z]+:`([^`]*)`", r"\1", text)
+    # \command{content} → content (e.g. \text{bvec} → bvec)
+    text = re.sub(r"\\[a-z]+\{([^}]*)\}", r"\1", text)
+    # known LaTeX symbols
+    for cmd, sym in _LATEX_SYMBOLS.items():
+        text = text.replace(cmd, sym)
+    return text
 
 
 def format_key_value_table(data, key_header="Key", value_header="Value", *, sort=True):
@@ -38,7 +58,15 @@ def format_key_value_table(data, key_header="Key", value_header="Value", *, sort
     ]
 
     for key, value in items:
-        wrapped_value = textwrap.wrap(value, width=value_width) or [""]
+        wrapped_value = []
+        for line in value.split("\n"):
+            stripped = line.lstrip()
+            indent = line[: len(line) - len(stripped)]
+            available = max(value_width - len(indent), 10)
+            wrapped_value.extend(
+                indent + w for w in (textwrap.wrap(stripped, width=available) or [""])
+            )
+        wrapped_value = wrapped_value or [""]
         rows.append(f"| {key:<{key_width}} | {wrapped_value[0]:<{value_width}} |")
         for extra_line in wrapped_value[1:]:
             rows.append(f"| {'':<{key_width}} | {extra_line:<{value_width}} |")
@@ -187,7 +215,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         add_default_args_to_docstring(npds, workflow.run)
         self.doc = npds["Parameters"]
         self.description = (
-            f"{' '.join(npds['Summary'])}\n\n{' '.join(npds['Extended Summary'])}"
+            f"{' '.join(npds['Summary'])}\n\n{'\n'.join(npds['Extended Summary'])}"
         )
 
         if npds["References"]:
@@ -233,7 +261,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
             typestr = self.doc[i][1]
             dtype, isnarg = self._select_dtype(typestr)
-            help_msg = " ".join(self.doc[i][2])
+            help_msg = _strip_rst_markup("\n".join(self.doc[i][2]))
 
             _args = [f"{prefix}{arg}"]
             _kwargs = {"help": help_msg, "type": dtype, "action": "store"}
@@ -319,7 +347,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 prefix = "--"
                 typestr = _doc[i][1]
                 dtype, isnarg = self._select_dtype(typestr)
-                help_msg = "".join(_doc[i][2])
+                help_msg = _strip_rst_markup("\n".join(_doc[i][2]))
 
                 _args = [f"{prefix}{arg_name}"]
                 _kwargs = {
