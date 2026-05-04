@@ -1,10 +1,51 @@
 import argparse
 import inspect
+import re
 import shutil
 import textwrap
 
 from dipy.utils.logging import logger
 from dipy.workflows.docstring_parser import NumpyDocString
+
+_LATEX_SYMBOLS = {
+    r"\pm": "±",
+    r"\mu": "μ",
+}
+
+
+def _strip_rst_markup(text):
+    """Convert RST and LaTeX inline markup to plain text for CLI display.
+
+    Workflow docstrings are written in reStructuredText with embedded LaTeX
+    so they render correctly in Sphinx HTML. When those docstrings are
+    surfaced in argparse ``--help`` output, the raw markup is unreadable.
+    This helper applies three substitutions, in order:
+
+    1. Strip RST inline roles, keeping the content
+       (e.g. ``:math:`x = 1``` → ``x = 1``).
+    2. Strip LaTeX commands that wrap content in braces, keeping the content
+       (e.g. ``\\text{bvec}`` → ``bvec``).
+    3. Replace known standalone LaTeX symbols with their Unicode equivalents
+       (see ``_LATEX_SYMBOLS``).
+
+    Only the returned string is modified; the original docstring on the
+    function is untouched, so Sphinx HTML rendering is unaffected.
+
+    Parameters
+    ----------
+    text : str
+        Docstring fragment that may contain RST roles or LaTeX commands.
+
+    Returns
+    -------
+    str
+        Plain-text version safe to display in a terminal.
+    """
+    text = re.sub(r":[a-z]+:`([^`]*)`", r"\1", text)
+    text = re.sub(r"\\[a-z]+\{([^}]*)\}", r"\1", text)
+    for cmd, sym in _LATEX_SYMBOLS.items():
+        text = text.replace(cmd, sym)
+    return text
 
 
 def format_key_value_table(data, key_header="Key", value_header="Value", *, sort=True):
@@ -38,7 +79,15 @@ def format_key_value_table(data, key_header="Key", value_header="Value", *, sort
     ]
 
     for key, value in items:
-        wrapped_value = textwrap.wrap(value, width=value_width) or [""]
+        wrapped_value = []
+        for line in value.split("\n"):
+            stripped = line.lstrip()
+            indent = line[: len(line) - len(stripped)]
+            available = max(value_width - len(indent), 10)
+            wrapped_value.extend(
+                indent + w for w in (textwrap.wrap(stripped, width=available) or [""])
+            )
+        wrapped_value = wrapped_value or [""]
         rows.append(f"| {key:<{key_width}} | {wrapped_value[0]:<{value_width}} |")
         for extra_line in wrapped_value[1:]:
             rows.append(f"| {'':<{key_width}} | {extra_line:<{value_width}} |")
@@ -186,9 +235,9 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         npds = NumpyDocString(doc)
         add_default_args_to_docstring(npds, workflow.run)
         self.doc = npds["Parameters"]
-        self.description = (
-            f"{' '.join(npds['Summary'])}\n\n{' '.join(npds['Extended Summary'])}"
-        )
+        summary = " ".join(npds["Summary"])
+        extended = "\n".join(npds["Extended Summary"])
+        self.description = f"{summary}\n\n{extended}"
 
         if npds["References"]:
             ref_text = [text or "\n" for text in npds["References"]]
@@ -233,7 +282,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
             typestr = self.doc[i][1]
             dtype, isnarg = self._select_dtype(typestr)
-            help_msg = " ".join(self.doc[i][2])
+            help_msg = _strip_rst_markup("\n".join(self.doc[i][2]))
 
             _args = [f"{prefix}{arg}"]
             _kwargs = {"help": help_msg, "type": dtype, "action": "store"}
@@ -319,7 +368,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 prefix = "--"
                 typestr = _doc[i][1]
                 dtype, isnarg = self._select_dtype(typestr)
-                help_msg = "".join(_doc[i][2])
+                help_msg = _strip_rst_markup("\n".join(_doc[i][2]))
 
                 _args = [f"{prefix}{arg_name}"]
                 _kwargs = {
