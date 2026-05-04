@@ -7,8 +7,6 @@ import textwrap
 from dipy.utils.logging import logger
 from dipy.workflows.docstring_parser import NumpyDocString
 
-# LaTeX commands used in DIPY workflow docstrings. Add new entries here when
-# a new symbol shows up in a workflow docstring and needs CLI rendering.
 _LATEX_SYMBOLS = {
     r"\pm": "±",
     r"\mu": "μ",
@@ -16,12 +14,35 @@ _LATEX_SYMBOLS = {
 
 
 def _strip_rst_markup(text):
-    """Strip RST inline markup for plain-text CLI display."""
-    # :role:`content` → content
+    """Convert RST and LaTeX inline markup to plain text for CLI display.
+
+    Workflow docstrings are written in reStructuredText with embedded LaTeX
+    so they render correctly in Sphinx HTML. When those docstrings are
+    surfaced in argparse ``--help`` output, the raw markup is unreadable.
+    This helper applies three substitutions, in order:
+
+    1. Strip RST inline roles, keeping the content
+       (e.g. ``:math:`x = 1``` → ``x = 1``).
+    2. Strip LaTeX commands that wrap content in braces, keeping the content
+       (e.g. ``\\text{bvec}`` → ``bvec``).
+    3. Replace known standalone LaTeX symbols with their Unicode equivalents
+       (see ``_LATEX_SYMBOLS``).
+
+    Only the returned string is modified; the original docstring on the
+    function is untouched, so Sphinx HTML rendering is unaffected.
+
+    Parameters
+    ----------
+    text : str
+        Docstring fragment that may contain RST roles or LaTeX commands.
+
+    Returns
+    -------
+    str
+        Plain-text version safe to display in a terminal.
+    """
     text = re.sub(r":[a-z]+:`([^`]*)`", r"\1", text)
-    # \command{content} → content (e.g. \text{bvec} → bvec)
     text = re.sub(r"\\[a-z]+\{([^}]*)\}", r"\1", text)
-    # known LaTeX symbols
     for cmd, sym in _LATEX_SYMBOLS.items():
         text = text.replace(cmd, sym)
     return text
@@ -214,9 +235,9 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         npds = NumpyDocString(doc)
         add_default_args_to_docstring(npds, workflow.run)
         self.doc = npds["Parameters"]
-        self.description = (
-            f"{' '.join(npds['Summary'])}\n\n{'\n'.join(npds['Extended Summary'])}"
-        )
+        summary = " ".join(npds["Summary"])
+        extended = "\n".join(npds["Extended Summary"])
+        self.description = f"{summary}\n\n{extended}"
 
         if npds["References"]:
             ref_text = [text or "\n" for text in npds["References"]]
