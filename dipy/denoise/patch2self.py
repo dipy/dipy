@@ -6,6 +6,7 @@ from warnings import warn
 
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
+from scipy.linalg import solve
 from tqdm import tqdm
 
 from dipy.stats.sketching import count_sketch
@@ -160,10 +161,14 @@ def _fit_denoising_models(train, model, alpha):
     ridge_alpha = 1e-10 if model.lower() == "ols" else alpha
 
     n_vols, n_patch, n_voxels = train.shape
+    if n_vols == 0:
+        return []
+
     train_flat = train.reshape(n_vols * n_patch, n_voxels)
 
     row_means = train_flat.mean(axis=1)
     G_cent = train_flat @ train_flat.T - n_voxels * np.outer(row_means, row_means)
+    reg = ridge_alpha * np.eye((n_vols - 1) * n_patch, dtype=G_cent.dtype)
 
     fits = []
     center_offset = n_patch // 2
@@ -178,10 +183,7 @@ def _fit_denoising_models(train, model, alpha):
         G_xx = G_cent[np.ix_(keep, keep)]
         b = G_cent[keep, target_row]
 
-        coef = np.linalg.solve(
-            G_xx + ridge_alpha * np.eye(G_xx.shape[0], dtype=G_xx.dtype),
-            b,
-        )
+        coef = solve(G_xx + reg, b, assume_a="pos")
         intercept = row_means[target_row] - row_means[keep] @ coef
         fits.append((coef, float(intercept)))
 
