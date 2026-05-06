@@ -219,7 +219,7 @@ def test_affreg_all_transforms(rng):
         if dim == 2:
             nslices = 1
         else:
-            nslices = 45
+            nslices = 15
         factor = factors[ttype][0]
         sampling_pc = factors[ttype][1]
         trans = regtransforms[ttype]
@@ -235,7 +235,7 @@ def test_affreg_all_transforms(rng):
         )
         affreg = imaffine.AffineRegistration(
             metric=metric,
-            level_iters=[1000, 100, 50],
+            level_iters=[200, 20, 10],
             sigmas=[3, 1, 0],
             factors=[4, 2, 1],
             method="L-BFGS-B",

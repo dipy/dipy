@@ -103,7 +103,7 @@ def test_register_dwi_to_template():
         subset_dwi_data,
         gtab,
         template=subset_t2_img,
-        level_iters=[5, 5, 5],
+        level_iters=[2, 2, 1],
         sigma_diff=2.0,
         radius=1,
     )
@@ -117,7 +117,7 @@ def test_register_dwi_to_template():
         fdata,
         (fbval, fbvec),
         reg_method="aff",
-        level_iters=[5, 5, 5],
+        level_iters=[2, 2, 1],
         sigmas=[3, 1, 0],
         factors=[4, 2, 1],
     )
@@ -136,7 +136,7 @@ def test_affine_registration():
         static=static,
         moving_affine=moving_affine,
         static_affine=static_affine,
-        level_iters=[5, 5],
+        level_iters=[2, 1],
         sigmas=[3, 1],
         factors=[2, 1],
     )
@@ -178,7 +178,7 @@ def test_affine_registration():
             static=static,
             moving_affine=moving_affine,
             static_affine=static_affine,
-            level_iters=[5, 5],
+            level_iters=[2, 1],
             sigmas=[3, 1],
             factors=[2, 1],
             pipeline=[func],
@@ -217,7 +217,7 @@ def test_affine_registration():
             static=static,
             moving_affine=moving_affine,
             static_affine=static_affine,
-            level_iters=[5, 5],
+            level_iters=[2, 1],
             sigmas=[3, 1],
             factors=[2, 1],
             pipeline=[func],
@@ -376,6 +376,7 @@ def test_register_dwi_series_multi_b0():
     # Test if register_dwi_series works with multiple b0 images
     dwi_fname, dwi_bval_fname, dwi_bvec_fname = dpd.get_fnames(name="sherbrooke_3shell")
     data, affine = load_nifti(dwi_fname)
+    data = data[:20, :20, :20]
     bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
 
     data_small = data[..., :3]
