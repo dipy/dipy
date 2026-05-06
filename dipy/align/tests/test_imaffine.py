@@ -235,7 +235,7 @@ def test_affreg_all_transforms(rng):
         )
         affreg = imaffine.AffineRegistration(
             metric=metric,
-            level_iters=[200, 20, 10],
+            level_iters=[1000, 100, 50],
             sigmas=[3, 1, 0],
             factors=[4, 2, 1],
             method="L-BFGS-B",
