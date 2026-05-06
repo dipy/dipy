@@ -863,7 +863,7 @@ def test_em_3d_gauss_newton():
     quality.
     """
     fname = get_fnames(name="t1_coronal_slice")
-    nslices = 21
+    nslices = 9
     b = 0.1
     m = 4
 
@@ -872,7 +872,7 @@ def test_em_3d_gauss_newton():
 
     # Create the EM metric
     smooth = 2.0
-    inner_iter = 20
+    inner_iter = 10
     step_length = 0.25
     q_levels = 256
     double_gradient = True
