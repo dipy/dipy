@@ -1,8 +1,7 @@
-import os
 from pathlib import Path
-import shutil
 from warnings import warn
 
+import nibabel as nib
 import numpy as np
 
 from dipy.align import affine_registration, motion_correction
@@ -121,9 +120,11 @@ class ResliceFlow(Workflow):
         """
 
         io_it = self.get_io_iterator()
+        corrected_outputs = list(self.flat_outputs)
 
-        for inputfile, outpfile in io_it:
-            data, affine, zooms = load_nifti(inputfile, return_voxsize=True)
+        for i, (inputfile, outpfile) in enumerate(io_it):
+            img = nib.load(inputfile)
+            zooms = img.header.get_zooms()[:3]
             logger.info(f"Processing {inputfile}")
 
             if new_vox_size is None:
@@ -148,31 +149,16 @@ class ResliceFlow(Workflow):
             if np.allclose(zooms_spatial, new_vox_size_to_use, rtol=1e-3, atol=1e-3):
                 logger.info(
                     f"Voxel size {tuple(zooms)} already matches target "
-                    f"{tuple(new_vox_size_to_use)}. Skipping reslicing."
-                    "return original data as a symlink."
+                    f"{tuple(new_vox_size_to_use)}. Skipping reslicing, "
+                    f"returning original path."
                 )
-                source_file = Path(inputfile)
-                link_file = Path(outpfile)
-                if link_file.exists() and link_file.resolve() == source_file.resolve():
-                    logger.debug(f"{outpfile} already linked/copied. Skipping.")
-                    continue
-                if link_file.exists() or link_file.is_symlink():
-                    link_file.unlink()
-                try:
-                    link_file.symlink_to(source_file.resolve())
-                except OSError:
-                    # Symlinks may need elevated privileges on Windows; try a hard
-                    # link before falling back to copying large volumes.
-                    try:
-                        os.link(source_file, link_file)
-                        logger.info(f"Hard link created for {outpfile}")
-                    except OSError:
-                        shutil.copy(source_file, link_file)
-                        logger.warning(
-                            f"Link creation for {outpfile} failed, copied instead."
-                        )
+                corrected_outputs[i] = Path(inputfile)
+                img.uncache()
                 continue
             else:
+                data = np.asanyarray(img.dataobj)
+                affine = img.affine
+                img.uncache()
                 new_data, new_affine = reslice(
                     data,
                     affine,
@@ -185,6 +171,9 @@ class ResliceFlow(Workflow):
                 )
                 save_nifti(outpfile, new_data, new_affine)
                 logger.info(f"Resliced file save in {outpfile}")
+
+        if corrected_outputs != self.flat_outputs:
+            self.update_flat_outputs(corrected_outputs, io_it)
 
 
 class SlrWithQbxFlow(Workflow):
