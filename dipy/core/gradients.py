@@ -1021,10 +1021,7 @@ def check_multi_b(gtab, n_bvals, *, non_zero=True, bmag=None):
         bvals = bvals[~gtab.b0s_mask]
 
     uniqueb = unique_bvals_magnitude(bvals, bmag=bmag)
-    if uniqueb.shape[0] < n_bvals:
-        return False
-    else:
-        return True
+    return uniqueb.shape[0] >= n_bvals
 
 
 def _btens_to_params_2d(btens_2d, ztol):

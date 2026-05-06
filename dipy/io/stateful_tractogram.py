@@ -272,10 +272,7 @@ class StatefulTractogram:
             dps_equal = dps_equal and np.allclose(
                 self.data_per_streamline[key], other.data_per_streamline[key], rtol=1e-3
             )
-        if not dps_equal:
-            return False
-
-        return True
+        return dps_equal
 
     def __ne__(self, other):
         """Robust StatefulTractogram equality test (NOT)"""
