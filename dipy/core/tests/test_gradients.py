@@ -160,7 +160,7 @@ def test_GradientTable_btensor_calculation():
             # Check that the b tensor magnitude is correct
             npt.assert_almost_equal(np.trace(bten), bval)
             # Check that the b tensor orientation is correct
-            if btens == ("LTE" or "CTE"):
+            if btens in ("LTE", "CTE"):
                 if bval != 0:
                     evals, evecs = np.linalg.eig(bten)
                     dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
@@ -180,7 +180,7 @@ def test_GradientTable_btensor_calculation():
         # Check that the b tensor magnitude is correct
         npt.assert_almost_equal(np.trace(bten), bval)
         # Check that the b tensor orientation is correct
-        if btens[i] == ("LTE" or "CTE"):
+        if btens[i] in ("LTE", "CTE"):
             if bval != 0:
                 evals, evecs = np.linalg.eig(bten)
                 dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
