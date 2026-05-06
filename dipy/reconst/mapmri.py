@@ -1188,12 +1188,10 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
         My_storage[:, n] = mapmri_phi_1d(n, qy, muy)
         Mz_storage[:, n] = mapmri_phi_1d(n, qz, muz)
 
-    counter = 0
-    for nx, ny, nz in ind_mat:
+    for counter, (nx, ny, nz) in enumerate(ind_mat):
         M[:, counter] = np.real(
             Mx_storage[:, nx] * My_storage[:, ny] * Mz_storage[:, nz]
         )
-        counter += 1
 
     return M
 
@@ -1260,10 +1258,8 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
         Ky_storage[:, n] = mapmri_psi_1d(n, ry, muy)
         Kz_storage[:, n] = mapmri_psi_1d(n, rz, muz)
 
-    counter = 0
-    for nx, ny, nz in ind_mat:
+    for counter, (nx, ny, nz) in enumerate(ind_mat):
         K[:, counter] = Kx_storage[:, nx] * Ky_storage[:, ny] * Kz_storage[:, nz]
-        counter += 1
 
     return K
 
