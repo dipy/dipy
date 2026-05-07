@@ -623,8 +623,8 @@ def get_warped_stacked_image(image, nslices, b, m):
 
 def get_synthetic_warped_circle(nslices):
     # get a subsampled circle
-    fname_cicle = get_fnames(name="reg_o")
-    circle = np.load(fname_cicle)[::4, ::4].astype(floating)
+    fname_circle = get_fnames(name="reg_o")
+    circle = np.load(fname_circle)[::4, ::4].astype(floating)
 
     # create a synthetic invertible map and warp the circle
     d, dinv = vfu.create_harmonic_fields_2d(64, 64, 0.1, 4)

@@ -1258,7 +1258,7 @@ def ornt_mapping(ornt1, ornt2):
 def reorient_vectors(bvecs, current_ornt, new_ornt, *, axis=0):
     """Change the orientation of gradients or other vectors.
 
-    Moves vectors, storted along axis, from current_ornt to new_ornt. For
+    Moves vectors, stored along axis, from current_ornt to new_ornt. For
     example the vector [x, y, z] in "RAS" will be [-x, -y, z] in "LPS".
 
     R: Right

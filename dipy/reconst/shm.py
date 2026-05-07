@@ -1217,7 +1217,7 @@ class ResidualBootstrapWrapper:
 
     @warning_for_keywords()
     def __init__(self, signal_object, B, where_dwi, *, min_signal=1e-5):
-        """Builds a ResidualBootstrapWapper
+        """Builds a ResidualBootstrapWrapper
 
         Given some linear model described by B, the design matrix, and a
         signal_object, returns an object which can sample the residual

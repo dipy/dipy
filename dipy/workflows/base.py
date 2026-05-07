@@ -361,8 +361,8 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             flow_args = self.add_argument_group(f"{name} arguments(optional)")
 
             for i, arg_name in enumerate(args):
-                is_not_optionnal = i < len_args - len_defaults
-                if "out_" in arg_name or is_not_optionnal:
+                is_not_optional = i < len_args - len_defaults
+                if "out_" in arg_name or is_not_optional:
                     continue
 
                 arg_name = f"{short_name}.{arg_name}"
