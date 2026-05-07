@@ -179,7 +179,7 @@ def squared_radial_component(x, *, tol=0.01):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         result = (2 * x * np.cos(x) + (x * x - 2) * np.sin(x)) / (x**3)
-    x_near_zero = (x < tol) & (x > -tol)
+    x_near_zero = -tol < x < tol
     return np.where(x_near_zero, 1.0 / 3, result)
 
 

@@ -661,16 +661,16 @@ def mask_for_response_msmt(
     md_mask_gm[(md < gm_md_thr)] = 1
 
     fa_mask_gm = np.zeros(fa.shape, dtype=np.int64)
-    fa_mask_gm[(fa < gm_fa_thr) & (fa > 0)] = 1
+    fa_mask_gm[0 < fa < gm_fa_thr] = 1
 
     mask_gm = md_mask_gm * fa_mask_gm
     mask_gm *= roi_mask
 
     md_mask_csf = np.zeros(md.shape, dtype=np.int64)
-    md_mask_csf[(md < csf_md_thr) & (md > 0)] = 1
+    md_mask_csf[0 < md < csf_md_thr] = 1
 
     fa_mask_csf = np.zeros(fa.shape, dtype=np.int64)
-    fa_mask_csf[(fa < csf_fa_thr) & (fa > 0)] = 1
+    fa_mask_csf[0 < fa < csf_fa_thr] = 1
 
     mask_csf = md_mask_csf * fa_mask_csf
     mask_csf *= roi_mask

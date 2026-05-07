@@ -137,7 +137,7 @@ def test_multi_tensor():
     mevecs = [all_tensor_evecs(e0), all_tensor_evecs(e1)]
     # odf = multi_tensor_odf(vertices, [0.5, 0.5], mevals, mevecs)
     # assert_(odf.shape == (len(vertices),))
-    # assert_(np.all(odf <= 1) & np.all(odf >= 0))
+    # assert_(np.all(odf <= 1) and np.all(odf >= 0))
 
     fimg, fbvals, fbvecs = get_fnames(name="small_101D")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)

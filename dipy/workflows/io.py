@@ -272,7 +272,7 @@ def _print_bvec_data_information(bvecs, bvecs_tol, alignment_space):
         bvecs = bvecs.T
     logger.info(f"{BvecPropertyName.B_VECTORS.value}\n{bvecs}")
     norms = np.array([np.linalg.norm(bvec) for bvec in bvecs])
-    res = np.where((norms <= 1 + bvecs_tol) & (norms >= 1 - bvecs_tol))
+    res = np.where(1 - bvecs_tol <= norms <= 1 + bvecs_tol)
     ncl1 = np.sum(norms < 1 - bvecs_tol)
     _print_property_information(
         BvecPropertyName.NUMBER_UNIT_B_VECTORS.value, len(res[0]), alignment_space

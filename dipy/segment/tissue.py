@@ -273,7 +273,7 @@ def dam_classifier(
             P_map[i, j, k] = P
 
     # Adding a small slope threshold for P_map to avoid 0 sloped background voxels
-    wm_mask = (P_map <= wm_threshold) & (P_map > 0.01)
+    wm_mask = 0.01 < P_map <= wm_threshold
     # Grey matter has a higher P value than white matter
     gm_mask = P_map > wm_threshold
 

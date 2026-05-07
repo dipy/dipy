@@ -86,7 +86,7 @@ def test_grayscale_image():
 
     PLN = icm.prob_neighborhood(initial_segmentation, beta, nclasses)
     print(PLN.shape)
-    npt.assert_(np.all((PLN >= 0) & (PLN <= 1.0)))
+    npt.assert_(np.all(0 <= PLN <= 1.0))
 
     if beta == 0.0:
         npt.assert_almost_equal(PLN[50, 50, 1, 0], 0.25, True)
@@ -108,7 +108,7 @@ def test_grayscale_image():
 
     PLY = com.prob_image(image, nclasses, mu, sigmasq, PLN)
     print(PLY)
-    npt.assert_(np.all((PLY >= 0) & (PLY <= 1.0)))
+    npt.assert_(np.all(0 <= PLY <= 1.0))
 
     mu_upd, sigmasq_upd = com.update_param(image, PLY, mu, nclasses)
     print(mu)
@@ -169,7 +169,7 @@ def test_grayscale_iter():
 
     for _ in range(max_iter):
         PLN = icm.prob_neighborhood(initial_segmentation, beta, nclasses)
-        npt.assert_(np.all((PLN >= 0) & (PLN <= 1.0)))
+        npt.assert_(np.all(0 <= PLN <= 1.0))
 
         if beta == 0.0:
             npt.assert_almost_equal(PLN[50, 50, 1, 0], 0.25, True)
@@ -190,7 +190,7 @@ def test_grayscale_iter():
             npt.assert_almost_equal(PLN[100, 100, 1, 3], 0.25, True)
 
         PLY = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
-        npt.assert_(np.all((PLY >= 0) & (PLY <= 1.0)))
+        npt.assert_(np.all(0 <= PLY <= 1.0))
         npt.assert_(PLY[50, 50, 1, 0] > PLY[50, 50, 1, 1])
         npt.assert_(PLY[50, 50, 1, 0] > PLY[50, 50, 1, 2])
         npt.assert_(PLY[50, 50, 1, 0] > PLY[50, 50, 1, 3])
@@ -262,7 +262,7 @@ def test_square_iter(rng):
         print("\n")
 
         PLN = icm.prob_neighborhood(initial_segmentation, beta, nclasses)
-        npt.assert_(np.all((PLN >= 0) & (PLN <= 1.0)))
+        npt.assert_(np.all(0 <= PLN <= 1.0))
 
         if beta == 0.0:
             npt.assert_(PLN[25, 25, 1, 0] == 0.25)
@@ -283,7 +283,7 @@ def test_square_iter(rng):
             npt.assert_(PLN[125, 125, 1, 3] == 0.25)
 
         PLY = com.prob_image(square_gauss, nclasses, mu, sigmasq, PLN)
-        npt.assert_(np.all((PLY >= 0) & (PLY <= 1.0)))
+        npt.assert_(np.all(0 <= PLY <= 1.0))
         npt.assert_(PLY[25, 25, 1, 0] > PLY[25, 25, 1, 1])
         npt.assert_(PLY[25, 25, 1, 0] > PLY[25, 25, 1, 2])
         npt.assert_(PLY[25, 25, 1, 0] > PLY[25, 25, 1, 3])

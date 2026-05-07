@@ -676,15 +676,15 @@ def test_seeds_from_mask(rng):
     mask[3, 3, 3] = True
     seeds = seeds_from_mask(mask, np.eye(4), density=[3, 4, 5])
     npt.assert_equal(len(seeds), 3 * 4 * 5)
-    assert_true(np.all((seeds > 2.5) & (seeds < 3.5)))
+    assert_true(np.all(2.5 < seeds < 3.5))
 
     mask[4, 4, 4] = True
     seeds = seeds_from_mask(mask, np.eye(4), density=[3, 4, 5])
     npt.assert_equal(len(seeds), 2 * 3 * 4 * 5)
-    assert_true(np.all((seeds > 2.5) & (seeds < 4.5)))
-    in_333 = ((seeds > 2.5) & (seeds < 3.5)).all(1)
+    assert_true(np.all(2.5 < seeds < 4.5))
+    in_333 = (2.5 < seeds < 3.5).all(1)
     npt.assert_equal(in_333.sum(), 3 * 4 * 5)
-    in_444 = ((seeds > 3.5) & (seeds < 4.5)).all(1)
+    in_444 = (3.5 < seeds < 4.5).all(1)
     npt.assert_equal(in_444.sum(), 3 * 4 * 5)
 
 
@@ -706,7 +706,7 @@ def test_random_seeds_from_mask(rng):
         mask, np.eye(4), seeds_count=8, seed_count_per_voxel=True
     )
     npt.assert_equal(mask.sum() * 8, len(seeds))
-    assert_true(np.all((seeds > 1.5) & (seeds < 2.5)))
+    assert_true(np.all(1.5 < seeds < 2.5))
 
     seeds = random_seeds_from_mask(
         mask, np.eye(4), seeds_count=24, seed_count_per_voxel=False
@@ -723,7 +723,7 @@ def test_random_seeds_from_mask(rng):
         mask, np.eye(4), seeds_count=100, seed_count_per_voxel=False
     )
     npt.assert_equal(100, len(seeds))
-    assert_true(np.all((seeds > 1.5) & (seeds < 2.5)))
+    assert_true(np.all(1.5 < seeds < 2.5))
 
     mask = np.zeros((15, 15, 15))
     mask[2:14, 2:14, 2:14] = 1

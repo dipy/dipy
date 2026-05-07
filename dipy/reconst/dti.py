@@ -1144,9 +1144,9 @@ class TensorFit:
         odf = np.zeros((self.evals.shape[:-1] + (sphere.vertices.shape[0],)))
         if len(self.evals.shape) > 1:
             mask = np.where(
-                (self.evals[..., 0] > 0)
-                & (self.evals[..., 1] > 0)
-                & (self.evals[..., 2] > 0)
+                self.evals[..., 0] > 0
+                and self.evals[..., 1] > 0
+                and self.evals[..., 2] > 0
             )
             evals = self.evals[mask]
             evecs = self.evecs[mask]

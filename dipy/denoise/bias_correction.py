@@ -535,12 +535,9 @@ def _build_bspline_design_matrix_py(*, log_b0_shape, n_control, mask_flat):
 
     # Validity: all three ctrl indices must be in bounds
     valid = (
-        (cz[:, :, np.newaxis, np.newaxis] >= 0)
-        & (cz[:, :, np.newaxis, np.newaxis] < ns)
-        & (cy[:, np.newaxis, :, np.newaxis] >= 0)
-        & (cy[:, np.newaxis, :, np.newaxis] < nr)
-        & (cx[:, np.newaxis, np.newaxis, :] >= 0)
-        & (cx[:, np.newaxis, np.newaxis, :] < nc)
+        0 <= cz[:, :, np.newaxis, np.newaxis] < ns
+        and 0 <= cy[:, np.newaxis, :, np.newaxis] < nr
+        and 0 <= cx[:, np.newaxis, np.newaxis, :] < nc
     )
 
     return sparse.csr_matrix(

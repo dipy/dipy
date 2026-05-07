@@ -166,7 +166,7 @@ def test_hemisphere_find_closest():
 def test_hemisphere_subdivide():
     def flip(vertices):
         x, y, z = vertices.T
-        f = (z < 0) | ((z == 0) & (y < 0)) | ((z == 0) & (y == 0) & (x < 0))
+        f = z < 0 or (z == 0 and y < 0) or (z == 0 and y == 0 and x < 0)
         return 1 - 2 * f[:, None]
 
     decimals = 6

@@ -1569,9 +1569,7 @@ def extract_dwi_shell(dwi, gtab, bvals_to_extract, *, tol=20, group_shells=True)
         output_bvecs.append(bvecs[indices])
     else:
         for i in bvals_to_extract:
-            selected_indices = indices[
-                (bvals[indices] >= i - tol) & (bvals[indices] <= i + tol)
-            ]
+            selected_indices = indices[i - tol <= bvals[indices] <= i + tol]
             output_indices.append(selected_indices)
             output_bvals.append(bvals[selected_indices])
             output_bvecs.append(bvecs[selected_indices])
