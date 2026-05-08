@@ -29,7 +29,7 @@ class MedianOtsuFlow(Workflow):
     def get_short_name(cls):
         return "medotsu"
 
-    @deprecated_params(["autocrop"], since="1.11.0", until="1.13.0")
+    @deprecated_params(["autocrop"], since="1.11", until="1.13")
     def run(
         self,
         input_files,
