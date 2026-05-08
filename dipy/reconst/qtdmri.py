@@ -1146,9 +1146,8 @@ def _qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau, isotropic):
     for o in range(time_order + 1):
         temporal_storage[o] = temporal_basis(o, ut, tau)
 
-    counter = 0
     mapmri_mat = np.zeros((n_elem_mapmri, n_elem_qtdmri))
-    for j, ll, m, o in qtdmri_ind_mat:
+    for counter, (j, ll, m, o) in enumerate(qtdmri_ind_mat):
         index_overlap = np.all(
             [
                 j == mapmri_ind_mat[:, 0],
@@ -1158,7 +1157,6 @@ def _qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau, isotropic):
             0,
         )
         mapmri_mat[:, counter] = temporal_storage[o] * index_overlap
-        counter += 1
     return mapmri_mat
 
 
@@ -1282,14 +1280,12 @@ def qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau):
         Qy_storage[:, n] = mapmri.mapmri_phi_1d(n, qy, muy)
         Qz_storage[:, n] = mapmri.mapmri_phi_1d(n, qz, muz)
 
-    counter = 0
     Q = np.zeros((n_dat, n_elem))
-    for nx, ny, nz, o in ind_mat:
+    for counter, (nx, ny, nz, o) in enumerate(ind_mat):
         Q[:, counter] = (
             np.real(Qx_storage[:, nx] * Qy_storage[:, ny] * Qz_storage[:, nz])
             * temporal_storage[:, o]
         )
-        counter += 1
 
     return Q
 
@@ -1319,16 +1315,14 @@ def qtdmri_eap_matrix(radial_order, time_order, us, ut, grid):
         Ky_storage[:, n] = mapmri.mapmri_psi_1d(n, ry, muy)
         Kz_storage[:, n] = mapmri.mapmri_psi_1d(n, rz, muz)
 
-    counter = 0
     K = np.zeros((n_dat, n_elem))
-    for nx, ny, nz, o in ind_mat:
+    for counter, (nx, ny, nz, o) in enumerate(ind_mat):
         K[:, counter] = (
             Kx_storage[:, nx]
             * Ky_storage[:, ny]
             * Kz_storage[:, nz]
             * temporal_storage[:, o]
         )
-        counter += 1
 
     return K
 
@@ -1381,14 +1375,12 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
 
     # Construct full design matrix
     M = np.zeros((n_dat, n_elem))
-    counter = 0
-    for j, ll, m, o in ind_mat:
+    for counter, (j, ll, m, o) in enumerate(ind_mat):
         M[:, counter] = (
             radial_storage[j - 1, ll // 2, :]
             * angular_storage[ll // 2, m + ll, :]
             * temporal_storage[o, :]
         )
-        counter += 1
     return M
 
 
@@ -1460,14 +1452,12 @@ def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid):
 
     # Construct full design matrix
     M = np.zeros((n_dat, n_elem))
-    counter = 0
-    for j, ll, m, o in ind_mat:
+    for counter, (j, ll, m, o) in enumerate(ind_mat):
         M[:, counter] = (
             radial_storage[j - 1, ll // 2, :]
             * angular_storage[j - 1, ll // 2, m + ll, :]
             * temporal_storage[o, :]
         )
-        counter += 1
     return M
 
 

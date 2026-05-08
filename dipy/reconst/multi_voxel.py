@@ -187,7 +187,7 @@ def multi_voxel_fit(
 
             # Get weights from kwargs if provided
             weights = kwargs["weights"] if "weights" in kwargs else None
-            weights_is_array = True if type(weights) is np.ndarray else False
+            weights_is_array = isinstance(weights, np.ndarray)
 
             # Fit data where mask is True
             fit_array = np.empty(data.shape[:-1], dtype=object)
