@@ -1,6 +1,7 @@
 python_sources = ['__init__.py',
   'test_api.py',
   'test_crosscorr.py',
+  'test_disco.py',
   'test_expectmax.py',
   'test_imaffine.py',
   'test_imwarp.py',
@@ -21,5 +22,4 @@ py3.install_sources(
   pure: false,
   subdir: 'dipy/align/tests'
 )
-
 

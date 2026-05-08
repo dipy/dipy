@@ -376,6 +376,8 @@ class AffineMap:
         # Transform the input image
         if interpolation == "linear":
             image = image.astype(np.float64)
+        elif image.dtype == np.bool_:
+            image = image.astype(np.int32)
         transformed = _transform_method[(dim, interpolation)](image, shape, affine=comp)
         return transformed
 
