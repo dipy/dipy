@@ -397,7 +397,7 @@ def fetch_data(
     for f in files:
         url, md5 = files[f]
         fullpath = Path(folder) / f
-        if fullpath.exists() and (_get_file_md5(fullpath) == md5):
+        if fullpath.exists() and (md5 is None or _get_file_md5(fullpath) == md5):
             continue
         all_skip = False
         logger.info(f'Downloading "{f}" to {folder}')
@@ -1929,6 +1929,104 @@ fetch_disco3_dataset = _make_fetcher(
 )
 
 
+_CBIG_SCHAEFER_URL = (
+    "https://raw.githubusercontent.com/ThomasYeoLab/CBIG/"
+    "v0.37.0-Xie2025_LBC/stable_projects/brain_parcellation/"
+    "Schaefer2018_LocalGlobal/Parcellations/MNI/"
+)
+
+# remote_fnames (URL path fragments) and local_fnames (flat filenames under schaefer_2018/)
+# Order: for each n_rois × yeo_networks: 1mm NIfTI, 2mm NIfTI, LUT
+_schaefer_remote_fnames = []
+_schaefer_local_fnames = []
+for _n in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]:
+    for _net in [7, 17]:
+        for _res in [1, 2]:
+            _nifti = f"Schaefer2018_{_n}Parcels_{_net}Networks_order_FSLMNI152_{_res}mm.nii.gz"
+            _schaefer_remote_fnames.append(_nifti)
+            _schaefer_local_fnames.append(Path(_nifti))
+        _lut = f"Schaefer2018_{_n}Parcels_{_net}Networks_order.lut"
+        _schaefer_remote_fnames.append(f"fsleyes_lut/{_lut}")
+        _schaefer_local_fnames.append(Path(_lut))
+
+fetch_atlas_schaefer_2018 = _make_fetcher(
+    "fetch_atlas_schaefer_2018",
+    dipy_home / "schaefer_2018",
+    _CBIG_SCHAEFER_URL,
+    _schaefer_remote_fnames,
+    _schaefer_local_fnames,
+    md5_list=[
+        "0709e73f84a0cd60687ff4add7f8fd05",
+        "6b818c184f05f9f349a01159e8b35de2",
+        "86334c261a135d69a84387d073eebf58",
+        "52fdf9073096aa55b7196e41619442bb",
+        "d9abc22bdda96f8cb46d70d62cb1b070",
+        "6efac8a4ef245ac504d5988148b51d55",
+        "444769dcc6e40edaa2f0ba8095c95bdd",
+        "8417f572d0ca7ab537c49bb675c0e11e",
+        "a2efb42c582a7105ddbe186bfb641b78",
+        "74b10470e93053e255b8dad06d00c9c4",
+        "3275f357163b9764e128771d4ea6ca25",
+        "ca893c1b57f39d849bff1e1a7f464950",
+        "a72a90d2c948453d8a236d605447a984",
+        "5662a875f0655503dff76782a0acae22",
+        "340144a3b8712df1326cc0008aa08455",
+        "8d18a8f7f0f1c2e4fef9df4b6541b172",
+        "c6e4fa64fad3f56a146b9ec9dff565d4",
+        "a7952094479be8641ffb60a29f7dc4da",
+        "c2d57ded9da1d980fc690e27a3c20954",
+        "f1597d576caf3183d3556b4bf95b00bb",
+        "44dd784201d0f40ecf80532819e17e15",
+        "3189b5377d95ca63f2fa096b266cc940",
+        "739d0c514b2ec3bbf0c1cdf4d5587191",
+        "b605e30f7faf9339431c74340125aa86",
+        "382f24cadded6b4f5a1a9c0bf1ad4d21",
+        "1d92d59dce7ede5c11e8616c9379df9b",
+        "a9ec00e61e95b5e3d2d56835428fc9e1",
+        "102ac3f8c261bed1ae211cf846381b08",
+        "496b139c53b9a2dcc34563a6977a6fe3",
+        "e9b8cf692595f6d876a7cce2af2d08ed",
+        "fd1901b9cbda75f89cb5b4a8a56ded70",
+        "9bf5f5689164152985aa2dccd4c4cd3f",
+        "c71cd38f2f473c3fded38ac0aadde0b4",
+        "4f606a39c85339c4df596606d8bceff2",
+        "4c81bca7608f9205317c3b163ad64c30",
+        "1a76cb45efe341c88303a6e1103e6314",
+        "a3685d898048138d8feddec8f375e03a",
+        "ad9cab36f881340a4fe0ff69207856af",
+        "0bac154a8156d0c2c09659a1e294506a",
+        "54fd2e4cf4121a4316e22a8217f212ef",
+        "f4391246c9ca0af8566db4006c4f9df0",
+        "7034aec0672208d0cb8c2a458862a891",
+        "161c71587aa3d69b3ec258fa01faccce",
+        "9c43eeeacd31c1e6d45cf5bff193ace5",
+        "c13925708ec43a852d7d6bf69b8e8510",
+        "86f995da10cebb10173490ae96e80571",
+        "97ac4e218ba80675dbd01c0a24f83cbd",
+        "a961d7a3cb8f7e56676d9d10d105efb8",
+        "d940f34b46b670f6b66a70ec246f013d",
+        "1d249da3a7404b886ef41e1758be3f05",
+        "5e8199dec8dbc01b79ef93c23cd31d8d",
+        "d38a1fae6c93283d4bcde725fc3c90c6",
+        "41ac333929523e7f2db54ba6d690fbda",
+        "d9986b919871f65ab1e2cd1808ca46f1",
+        "081966bd1041e413f012ac0de159dbc6",
+        "75e5529a38b9fc4886e54fffece5fb06",
+        "d6c2f3c0765794f22a50fffb81ef0a86",
+        "7d0629e04eca724ab5c728ca3d6bcdf3",
+        "621626ea22c061034aa6e0a615722c02",
+        "389a5d66c13a260993dd8b4f6b36ddaf",
+    ],
+    doc=(
+        "Download the Schaefer 2018 cortical parcellation atlas in MNI152 space "
+        "for all combinations of parcellation sizes (100-1000 ROIs), Yeo network "
+        "configurations (7 or 17), and resolutions (1mm and 2mm). See "
+        "Schaefer et al., Cereb Cortex, 29:3095-3114, 2018."
+    ),
+    data_size="~80MB",
+)
+
+
 def fetch_disco_dataset(*, include_optional=False):
     """Download All DISCO datasets.
 
@@ -1972,6 +2070,8 @@ def get_fnames(*, name="small_64D", include_optional=False):
         - 'reg_c' small 2D image used for validating registration
         - 'reg_o' small 2D image used for validation registration
         - 'cb_2' two vectorized cingulum bundles
+        - 'schaefer_2018_atlas' Schaefer 2018 parcellation atlas
+          (400 parcels, 7 networks, 1mm resolution)
     include_optional : bool, optional
         If True, include optional datasets.
 
@@ -2256,6 +2356,9 @@ def get_fnames(*, name="small_64D", include_optional=False):
         af_model = Path(folder) / "AF_L.trk"
         fa = Path(folder) / "fa.nii.gz"
         return af_orig, af_mni, af_model, fa
+    if name == "schaefer_2018_atlas":
+        fetch_atlas_schaefer_2018()
+        return get_atlas_schaefer_2018()
 
 
 def read_qtdMRI_test_retest_2subjects():
@@ -2997,6 +3100,57 @@ def get_two_hcp842_bundles():
     )
 
     return file1, file2
+
+
+def get_atlas_schaefer_2018(*, n_rois=400, yeo_networks=7, resolution_mm=1):
+    """Get paths to Schaefer 2018 parcellation atlas files.
+
+    Downloads the atlas if not already present locally.
+
+    Parameters
+    ----------
+    n_rois : int, optional
+        Number of regions of interest. Must be one of 100, 200, 300, 400,
+        500, 600, 700, 800, 900, or 1000.
+    yeo_networks : {7, 17}, optional
+        Number of Yeo networks used for parcellation.
+    resolution_mm : {1, 2}, optional
+        Spatial resolution of the atlas image in mm.
+
+    Returns
+    -------
+    nifti_path : Path
+        Path to the NIfTI parcellation atlas file.
+    labels_path : Path
+        Path to the FreeSurfer LUT labels file.
+    """
+    valid_n_rois = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+    valid_yeo_networks = [7, 17]
+    valid_resolution_mm = [1, 2]
+
+    if n_rois not in valid_n_rois:
+        raise ValueError(f"n_rois must be one of {valid_n_rois}, got {n_rois}.")
+    if yeo_networks not in valid_yeo_networks:
+        raise ValueError(
+            f"yeo_networks must be one of {valid_yeo_networks}, got {yeo_networks}."
+        )
+    if resolution_mm not in valid_resolution_mm:
+        raise ValueError(
+            f"resolution_mm must be one of {valid_resolution_mm}, got {resolution_mm}."
+        )
+
+    fetch_atlas_schaefer_2018()
+
+    folder = dipy_home / "schaefer_2018"
+    nifti_path = (
+        folder / f"Schaefer2018_{n_rois}Parcels_{yeo_networks}Networks_order_FSLMNI152"
+        f"_{resolution_mm}mm.nii.gz"
+    )
+    labels_path = (
+        folder / f"Schaefer2018_{n_rois}Parcels_{yeo_networks}Networks_order.lut"
+    )
+
+    return nifti_path, labels_path
 
 
 def get_target_tractogram_hcp():
