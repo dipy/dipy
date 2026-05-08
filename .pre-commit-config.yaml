@@ -12,7 +12,7 @@ repos:
     hooks:
       # Run the linter
       - id: ruff-check
-        args: [ "--fix", "--show-fixes" ]
+        args: ["--fix", "--show-fixes"]
       # Run the formatter
       - id: ruff-format
   - repo: https://github.com/codespell-project/codespell
