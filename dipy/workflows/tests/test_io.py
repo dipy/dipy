@@ -56,7 +56,7 @@ logging.basicConfig(
 is_big_endian = "big" in sys.byteorder.lower()
 
 
-def test_io_info():
+def test_io_info(caplog):
     fimg, fbvals, fbvecs = get_fnames(name="small_101D")
     io_info_flow = IoInfoFlow()
     io_info_flow.run([fimg, fbvals, fbvecs])
@@ -91,12 +91,65 @@ def test_io_info():
         reference=str(filepath_dix["gs_volume.nii"]),
     )
 
+    pam = generate_random_pam()
+    with TemporaryDirectory() as out_dir:
+        pam_fname = Path(out_dir) / "test_info.pam5"
+        save_pam(pam_fname, pam)
+        io_info_flow = IoInfoFlow()
+        with caplog.at_level(logging.INFO, logger="dipy"):
+            io_info_flow.run(pam_fname)
+
+    npt.assert_equal("PAM5 version" in caplog.text, True)
+    npt.assert_equal("Volume dimensions" in caplog.text, True)
+    npt.assert_equal("Peaks per voxel" in caplog.text, True)
+    npt.assert_equal("Affine matrix" in caplog.text, True)
+
     with open(fname_log) as file:
         lines = file.readlines()
         try:
             npt.assert_equal(lines[-3], "INFO Total number of unit bvectors 25\n")
         except IndexError:  # logging maybe disabled in IDE setting
             pass
+
+
+def test_io_info_pam_missing_fields(caplog):
+    pam = PeaksAndMetrics()
+    pam.peak_dirs = np.zeros((5, 5, 5, 3, 3))
+    pam.peak_values = np.zeros((5, 5, 5, 3))
+    pam.peak_indices = np.zeros((5, 5, 5, 3))
+    pam.sphere = default_sphere
+    # save_pam wraps these in np.array(...) so they cannot be None on disk
+    pam.total_weight = 0.0
+    pam.ang_thr = 0.0
+    # All of these will be omitted from the PAM5 file and reload as None
+    pam.affine = None
+    pam.shm_coeff = None
+    pam.B = None
+    pam.gfa = None
+    pam.qa = None
+    pam.odf = None
+
+    with TemporaryDirectory() as out_dir:
+        pam_fname = Path(out_dir) / "minimal.pam5"
+        save_pam(pam_fname, pam)
+        io_info_flow = IoInfoFlow()
+        with caplog.at_level(logging.INFO, logger="dipy"):
+            io_info_flow.run(pam_fname)
+
+    lines = caplog.text.splitlines()
+    for label in [
+        "Voxel size",
+        "Voxel order",
+        "SH coefficients shape",
+        "SH order",
+        "B matrix shape",
+        "GFA shape",
+        "QA shape",
+        "ODF shape",
+        "Affine matrix",
+    ]:
+        matching = [line for line in lines if label in line and "Not available" in line]
+        npt.assert_equal(len(matching) > 0, True)
 
 
 def test_io_fetch():

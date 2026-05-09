@@ -8,6 +8,7 @@ import shutil
 import sys
 import warnings
 
+import nibabel as nib
 import numpy as np
 import trx.trx_file_memmap as tmm
 
@@ -29,7 +30,7 @@ from dipy.io.peaks import (
 )
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.io.utils import split_filename_extension
-from dipy.reconst.shm import convert_sh_descoteaux_tournier
+from dipy.reconst.shm import convert_sh_descoteaux_tournier, order_from_ncoef
 from dipy.reconst.utils import convert_tensors
 from dipy.tracking.streamlinespeed import length
 from dipy.utils.logging import logger
@@ -99,6 +100,31 @@ class TractographyPropertyName(enum.Enum):
     ORIGIN = "Origin"
     SPACE = "Space"
     STEP_SIZE = "Step size (mm)"
+
+
+class PamPropertyName(enum.Enum):
+    """PAM5 (PeaksAndMetrics) data property names."""
+
+    VERSION = "PAM5 version"
+    DIMENSIONS = "Volume dimensions"
+    VOXEL_SIZE = "Voxel size"
+    VOXEL_ORDER = "Voxel order"
+    NUM_PEAKS = "Peaks per voxel (max)"
+    PEAK_COVERAGE = "Peak coverage (fraction)"
+    MEAN_PEAKS = "Mean peaks per non-empty voxel"
+    PEAK_DIRS_SHAPE = "Peak dirs shape"
+    PEAK_VALUES_SHAPE = "Peak values shape"
+    PEAK_INDICES_SHAPE = "Peak indices shape"
+    SPHERE_VERTICES = "Sphere vertices"
+    SHM_COEFF_SHAPE = "SH coefficients shape"
+    SH_ORDER = "SH order"
+    B_SHAPE = "B matrix shape"
+    GFA_SHAPE = "GFA shape"
+    QA_SHAPE = "QA shape"
+    ODF_SHAPE = "ODF shape"
+    TOTAL_WEIGHT = "Total weight"
+    ANG_THR = "Angular threshold"
+    AFFINE = "Affine matrix"
 
 
 def _print_property_information(prop, val, alignment_space):
@@ -352,6 +378,183 @@ def _print_tractography_information(
     )
 
 
+def _print_pam_information(pam, version, alignment_space, tab):
+    """Print PAM5 (PeaksAndMetrics) information.
+
+    Parameters
+    ----------
+    pam : PeaksAndMetrics
+        Loaded PAM5 object.
+    version : str
+        PAM5 file format version.
+    alignment_space : int
+        Character width for the property, value pair alignment.
+    tab : str
+        Whitespace characters corresponding to a tab character for the
+        indentation.
+    """
+
+    _print_property_information(PamPropertyName.VERSION.value, version, alignment_space)
+    _print_property_information(
+        PamPropertyName.DIMENSIONS.value,
+        tuple(map(int, pam.peak_dirs.shape[:3])),
+        alignment_space,
+    )
+    if hasattr(pam, "affine") and pam.affine is not None:
+        vox_sz = np.sqrt(np.sum(pam.affine[:3, :3] ** 2, axis=0))
+        _print_property_information(
+            PamPropertyName.VOXEL_SIZE.value,
+            tuple(map(float, vox_sz)),
+            alignment_space,
+        )
+        _print_property_information(
+            PamPropertyName.VOXEL_ORDER.value,
+            "".join(nib.aff2axcodes(pam.affine)),
+            alignment_space,
+        )
+    else:
+        _print_property_information(
+            PamPropertyName.VOXEL_SIZE.value, "Not available", alignment_space
+        )
+        _print_property_information(
+            PamPropertyName.VOXEL_ORDER.value, "Not available", alignment_space
+        )
+    _print_property_information(
+        PamPropertyName.NUM_PEAKS.value,
+        int(pam.peak_dirs.shape[3]),
+        alignment_space,
+    )
+
+    nonzero_peaks = pam.peak_values > 0
+    voxel_has_peak = np.any(nonzero_peaks, axis=-1)
+    n_voxels = int(np.prod(pam.peak_values.shape[:-1]))
+    n_nonempty = int(voxel_has_peak.sum())
+    coverage = n_nonempty / n_voxels if n_voxels else 0.0
+    _print_property_information(
+        PamPropertyName.PEAK_COVERAGE.value,
+        f"{coverage:.4f} ({n_nonempty}/{n_voxels})",
+        alignment_space,
+    )
+    if n_nonempty:
+        mean_peaks = float(nonzero_peaks.sum() / n_nonempty)
+    else:
+        mean_peaks = 0.0
+    _print_property_information(
+        PamPropertyName.MEAN_PEAKS.value,
+        f"{mean_peaks:.3f}",
+        alignment_space,
+    )
+
+    _print_property_information(
+        PamPropertyName.PEAK_DIRS_SHAPE.value,
+        pam.peak_dirs.shape,
+        alignment_space,
+    )
+    _print_property_information(
+        PamPropertyName.PEAK_VALUES_SHAPE.value,
+        pam.peak_values.shape,
+        alignment_space,
+    )
+    _print_property_information(
+        PamPropertyName.PEAK_INDICES_SHAPE.value,
+        pam.peak_indices.shape,
+        alignment_space,
+    )
+    _print_property_information(
+        PamPropertyName.SPHERE_VERTICES.value,
+        int(pam.sphere.vertices.shape[0]),
+        alignment_space,
+    )
+
+    logger.info("Peak values stats:")
+    _print_stats_information(pam.peak_values, alignment_space, tab)
+
+    if hasattr(pam, "shm_coeff") and pam.shm_coeff is not None:
+        _print_property_information(
+            PamPropertyName.SHM_COEFF_SHAPE.value,
+            pam.shm_coeff.shape,
+            alignment_space,
+        )
+        try:
+            sh_order = order_from_ncoef(pam.shm_coeff.shape[-1])
+            _print_property_information(
+                PamPropertyName.SH_ORDER.value, sh_order, alignment_space
+            )
+        except ValueError:
+            logger.warning(
+                f"Could not derive SH order from shm_coeff with "
+                f"{pam.shm_coeff.shape[-1]} coefficients."
+            )
+            _print_property_information(
+                PamPropertyName.SH_ORDER.value, "Not available", alignment_space
+            )
+    else:
+        _print_property_information(
+            PamPropertyName.SHM_COEFF_SHAPE.value, "Not available", alignment_space
+        )
+        _print_property_information(
+            PamPropertyName.SH_ORDER.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "B") and pam.B is not None:
+        _print_property_information(
+            PamPropertyName.B_SHAPE.value, pam.B.shape, alignment_space
+        )
+    else:
+        _print_property_information(
+            PamPropertyName.B_SHAPE.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "gfa") and pam.gfa is not None:
+        _print_property_information(
+            PamPropertyName.GFA_SHAPE.value, pam.gfa.shape, alignment_space
+        )
+        logger.info("GFA stats:")
+        _print_stats_information(pam.gfa, alignment_space, tab)
+    else:
+        _print_property_information(
+            PamPropertyName.GFA_SHAPE.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "qa") and pam.qa is not None:
+        _print_property_information(
+            PamPropertyName.QA_SHAPE.value, pam.qa.shape, alignment_space
+        )
+        logger.info("QA stats:")
+        _print_stats_information(pam.qa, alignment_space, tab)
+    else:
+        _print_property_information(
+            PamPropertyName.QA_SHAPE.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "odf") and pam.odf is not None:
+        _print_property_information(
+            PamPropertyName.ODF_SHAPE.value, pam.odf.shape, alignment_space
+        )
+    else:
+        _print_property_information(
+            PamPropertyName.ODF_SHAPE.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "total_weight") and pam.total_weight is not None:
+        _print_property_information(
+            PamPropertyName.TOTAL_WEIGHT.value, pam.total_weight, alignment_space
+        )
+    else:
+        _print_property_information(
+            PamPropertyName.TOTAL_WEIGHT.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "ang_thr") and pam.ang_thr is not None:
+        _print_property_information(
+            PamPropertyName.ANG_THR.value, pam.ang_thr, alignment_space
+        )
+    else:
+        _print_property_information(
+            PamPropertyName.ANG_THR.value, "Not available", alignment_space
+        )
+    if hasattr(pam, "affine") and pam.affine is not None:
+        logger.info(f"{PamPropertyName.AFFINE.value}:\n{pam.affine}")
+    else:
+        _print_property_information(
+            PamPropertyName.AFFINE.value, "Not available", alignment_space
+        )
+
+
 def format_data_names_table(data):
     """Format dataset names and fetcher summaries as an ASCII table.
 
@@ -424,7 +627,8 @@ class IoInfoFlow(Workflow):
         Parameters
         ----------
         input_files : variable string or Path
-            Any number of NIfTI, bvals, bvecs or tractography data files.
+            Any number of NIfTI, bvals, bvecs, tractography or PAM5
+            (``*.pam5``) data files.
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
@@ -558,6 +762,18 @@ class IoInfoFlow(Workflow):
                         tractogr_property_length,
                     )
                     + apply_tab_offset * len(tab),
+                    tab,
+                )
+
+            if extension == ".pam5":
+                pam_property_length = (
+                    len(max([item.value for item in PamPropertyName], key=len)) + 2
+                )
+                pam = load_pam(input_path)
+                _print_pam_information(
+                    pam,
+                    "0.0.1",
+                    max(pam_property_length, stats_property_length) + len(tab),
                     tab,
                 )
 
