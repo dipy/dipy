@@ -544,7 +544,7 @@ class QtdmriFit:
         coefficients for a given tau.
 
         Defined in :footcite:p:`Fick2018`, the conversion is performed by a
-        matrix multiplication that evaluates the time-depenent part of the basis
+        matrix multiplication that evaluates the time-dependent part of the basis
         and multiplies it with the coefficients, after which coefficients with
         the same spatial orders are summed up, resulting in mapmri coefficients.
 
@@ -629,7 +629,7 @@ class QtdmriFit:
         Parameters
         ----------
         sphere : dipy sphere object
-            sphere object with vertice orientations to compute the ODF on.
+            sphere object with vertex orientations to compute the ODF on.
         tau : float
             diffusion time (big_delta - small_delta / 3.) in seconds
         s : unsigned int

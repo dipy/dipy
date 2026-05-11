@@ -940,9 +940,11 @@ class SynRegistrationFlow(Workflow):
             # Saving
             logger.info(f"Saving warped {owarped_file}")
             save_nifti(owarped_file, warped_moving, static_grid2world)
-            logger.info(f"Saving inverse transformes static {oinv_static_file}")
+            logger.info(
+                f"Saving inverse static (backward warp applied to static) {oinv_static_file}"
+            )
             save_nifti(oinv_static_file, inv_static, static_grid2world)
-            logger.info(f"Saving Diffeomorphic map {omap_file}")
+            logger.info(f"Saving diffeomorphic map {omap_file}")
             save_nifti(omap_file, mapping_data, mapping.codomain_world2grid)
 
 

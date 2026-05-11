@@ -821,7 +821,7 @@ def test_maximum_deterministic_tracker():
         npt.assert_(np.allclose(sl, expected[2]))
 
 
-def test_bootstap_peak_tracker():
+def test_bootstrap_peak_tracker():
     """This tests that the Bootstrap Peak Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """

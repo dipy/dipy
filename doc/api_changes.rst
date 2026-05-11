@@ -431,7 +431,7 @@ DIPY 0.15 Changes
 
 **Gradient Table**
 
-The default value of ``b0_thresold`` has been changed(from 0 to 50). This change can impact your algorithm.
+The default value of ``b0_threshold`` has been changed(from 0 to 50). This change can impact your algorithm.
 If you want to assure that your code runs in exactly the same manner as before, please initialize your gradient table with the keyword argument ``b0_threshold`` set to 0.
 
 **Visualization**

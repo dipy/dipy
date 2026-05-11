@@ -19,8 +19,8 @@ from dipy.utils.deprecator import deprecate_with_version
     "Using EuDXDirectionGetter-based objects (e.g., PeaksAndMetrics) as "
     "direction_getter in LocalTracking is deprecated. "
     "Please use dipy.tracking.tracker.eudx_tracking instead.",
-    since="1.12.0",
-    until="2.0.0",
+    since="1.12",
+    until="2.0",
 )
 def _warn_old_eudx_localtracking_api():
     """Warn users about the deprecated EuDX local tracking API.

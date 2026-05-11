@@ -3,6 +3,8 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
+from dipy.utils.deprecator import deprecate_with_version
+
 from libc.stdio cimport printf
 cimport numpy as cnp
 
@@ -59,11 +61,23 @@ cdef void copy_point(double * a, double * b) noexcept nogil:
         b[i] = a[i]
 
 
-cdef void scalar_muliplication_point(double * a, double scalar) noexcept nogil:
+cdef void scalar_multiplication_point(double * a, double scalar) noexcept nogil:
     cdef:
         cnp.npy_intp i = 0
     for i in range(3):
         a[i] *= scalar
+
+
+# Python-level deprecated wrapper (emits DeprecationWarning)
+@deprecate_with_version(
+    "scalar_muliplication_point is a deprecated spelling. "
+    "Use scalar_multiplication_point instead.",
+    since="1.13",
+    until="2.0",
+)
+def scalar_muliplication_point(double[::1] point, double scalar):
+    """Deprecated. Use :func:`scalar_multiplication_point` instead."""
+    scalar_multiplication_point(&point[0], scalar)
 
 
 cdef double norm(double * v) noexcept nogil:

@@ -17,9 +17,10 @@ repos:
         args: ["--fix", "--show-fixes"]
       - id: ruff-format
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.2
     hooks:
       - id: codespell
+        args: ["--ignore-words-list", "indx" ]
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.10.0
     hooks:

@@ -509,7 +509,7 @@ class Horizon:
                     colors = None
 
                 if not self.world_coords:
-                    # TODO: Get affine from a StatefullTractogram
+                    # TODO: Get affine from a StatefulTractogram
                     raise ValueError(
                         "Currently native coordinates are not supported for "
                         "streamlines."
