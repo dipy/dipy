@@ -848,8 +848,11 @@ class FetchFlow(Workflow):
 
         Parameters
         ----------
-        data_names : variable string or Path
-            Any number of Nifti1, bvals or bvecs files.
+        data_names : variable string
+            One or more dataset names to fetch. Use ``list`` to print all
+            available names or ``all`` to fetch everything. Available names
+            include (among others): ``atlas_schaefer_2018``,
+            ``bundle_atlas_hcp842``, ``stanford_hardi``, ``mni_template``.
         subjects : variable string, optional
             Identifiers of the subjects to download. Used only by the HBN & HCP dataset.
             For example with HBN dataset: --subject NDARAA948VFH NDAREK918EC2
@@ -947,7 +950,7 @@ class FetchFlow(Workflow):
 
             nb_success = len(data_names) - len(skipped_names)
             logger.info("\n")
-            logger.info(f"Fetched {nb_success} / {len(data_names)} Files ")
+            logger.info(f"Fetched {nb_success} / {len(data_names)} Datasets ")
             if skipped_names:
                 logger.warning(f"Skipped data name(s): {' '.join(skipped_names)}")
                 logger.warning(
