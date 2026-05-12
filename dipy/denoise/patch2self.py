@@ -167,7 +167,8 @@ def _fit_denoising_models(train, model, alpha):
     train_flat = train.reshape(n_vols * n_patch, n_voxels)
 
     row_means = train_flat.mean(axis=1)
-    G_cent = train_flat @ train_flat.T - n_voxels * np.outer(row_means, row_means)
+    train_centered = train_flat - row_means[:, None]
+    G_cent = train_centered @ train_centered.T
     reg = ridge_alpha * np.eye((n_vols - 1) * n_patch, dtype=G_cent.dtype)
 
     fits = []
