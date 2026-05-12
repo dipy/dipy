@@ -27,13 +27,13 @@ References
 """
 
 from itertools import permutations
-import warnings
 
 import numpy as np
 
 from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere
 from dipy.reconst.shm import CsaOdfModel
+from dipy.segment.mask import median_otsu
 from dipy.testing.decorators import warning_for_keywords
 
 # Six axis permutations and four canonical flip configurations.
@@ -116,23 +116,42 @@ def _spatial_gradient(odf_vol, voxel_size=None):
     return np.stack([gx, gy, gz], axis=-1)
 
 
-def _make_default_mask(data, gtab, *, gfa_threshold=0.4, adc_threshold=0.01):
+def _make_default_mask(
+    data,
+    gtab,
+    fit,
+    *,
+    brain_mask=None,
+    gfa_threshold=0.3,
+    adc_threshold=0.0015,
+    median_radius=4,
+    numpass=4,
+):
     """Approximate white-matter mask following :footcite:p:`Aganj2018`.
 
-    A voxel is kept when its mean apparent diffusion coefficient is below
-    ``adc_threshold`` (in mm^2/s, assuming bvals in s/mm^2) and its
-    generalized fractional anisotropy exceeds ``gfa_threshold``. This
-    matches the simple anisotropy heuristic used in the paper when no
-    external white-matter segmentation is available.
+    Brain voxels are first isolated with :func:`dipy.segment.mask.median_otsu`
+    over the b=0 volumes (or taken from a user-supplied ``brain_mask``);
+    within that brain mask, a voxel is kept when its mean apparent diffusion
+    coefficient is below ``adc_threshold`` (in mm^2/s, assuming bvals in
+    s/mm^2) and its generalized fractional anisotropy exceeds
+    ``gfa_threshold``. GFA is read from ``fit`` so the caller's CSA-ODF
+    reconstruction is reused. ``median_radius`` and ``numpass`` are
+    forwarded to ``median_otsu`` when no ``brain_mask`` is provided.
     """
-    from dipy.reconst.shm import CsaOdfModel
-
     b0_mask = gtab.b0s_mask
     dwi_mask = ~b0_mask
     if not np.any(dwi_mask):
         raise ValueError("Gradient table contains no diffusion-weighted volumes.")
     if not np.any(b0_mask):
         raise ValueError("Gradient table contains no b=0 volume.")
+
+    if brain_mask is None:
+        b0_idx = np.where(b0_mask)[0].tolist()
+        _, brain = median_otsu(
+            data, vol_idx=b0_idx, median_radius=median_radius, numpass=numpass
+        )
+    else:
+        brain = np.asarray(brain_mask, dtype=bool)
 
     s0 = data[..., b0_mask].mean(axis=-1).astype(np.float64)
     sd = data[..., dwi_mask].astype(np.float64)
@@ -145,12 +164,9 @@ def _make_default_mask(data, gtab, *, gfa_threshold=0.4, adc_threshold=0.01):
     mean_adc = np.mean(adc_per_dir, axis=-1)
     mean_adc = np.where(np.isfinite(mean_adc), mean_adc, np.inf)
 
-    csa = CsaOdfModel(gtab, sh_order_max=4)
-    coarse_mask = (s0 > 0) & (mean_adc < adc_threshold) & (mean_adc > 0)
-    fit = csa.fit(data, mask=coarse_mask)
     gfa = np.nan_to_num(fit.gfa, nan=0.0, posinf=0.0, neginf=0.0)
 
-    return coarse_mask & (gfa > gfa_threshold)
+    return brain & (mean_adc < adc_threshold) & (mean_adc > 0) & (gfa > gfa_threshold)
 
 
 @warning_for_keywords()
@@ -159,6 +175,7 @@ def fiber_continuity_error(
     gtab,
     *,
     mask=None,
+    brain_mask=None,
     sphere=None,
     sh_order_max=4,
     voxel_size=None,
@@ -176,8 +193,12 @@ def fiber_continuity_error(
     gtab : GradientTable
         Original gradient table associated with ``data``.
     mask : array_like of bool, shape (X, Y, Z), optional
-        Mask of fibrous tissue. When ``None`` an internal ADC/GFA-based
-        white-matter approximation is used.
+        Mask of fibrous tissue used for scoring. When ``None`` an internal
+        ADC/GFA-based white-matter approximation is used.
+    brain_mask : array_like of bool, shape (X, Y, Z), optional
+        Brain mask used to restrict the CSA-ODF fit. When provided this is a
+        large speed-up on full-volume data because the fit is skipped outside
+        the brain. When ``None`` the fit runs over the entire volume.
     sphere : Sphere, optional
         Discrete sphere on which the ODF is sampled. Defaults to
         ``dipy.data.default_sphere``.
@@ -200,8 +221,11 @@ def fiber_continuity_error(
     if sphere is None:
         sphere = default_sphere
 
+    csa = CsaOdfModel(gtab, sh_order_max=sh_order_max, smooth=smooth)
+    fit = csa.fit(data, mask=brain_mask)
+
     if mask is None:
-        mask = _make_default_mask(data, gtab)
+        mask = _make_default_mask(data, gtab, fit, brain_mask=brain_mask)
     mask = np.asarray(mask, dtype=bool)
     if not np.any(mask):
         raise ValueError(
@@ -209,10 +233,6 @@ def fiber_continuity_error(
             "loosen the default ADC/GFA thresholds."
         )
 
-    csa = CsaOdfModel(gtab, sh_order_max=sh_order_max, smooth=smooth)
-    fit = csa.fit(data)
-    # Sample the ODF on the sphere for every voxel (we need the spatial
-    # gradient in voxels neighbouring the mask, so we sample everywhere).
     odf_vol = fit.odf(sphere)
 
     grad_vol = _spatial_gradient(odf_vol, voxel_size=voxel_size)
@@ -235,6 +255,7 @@ def check_gradient_table(
     gtab,
     *,
     mask=None,
+    brain_mask=None,
     sphere=None,
     sh_order_max=4,
     voxel_size=None,
@@ -256,7 +277,10 @@ def check_gradient_table(
     gtab : GradientTable
         Gradient table to verify.
     mask : array_like of bool, shape (X, Y, Z), optional
-        Fibrous-tissue mask.
+        Fibrous-tissue mask used for scoring.
+    brain_mask : array_like of bool, shape (X, Y, Z), optional
+        Brain mask used to restrict the CSA-ODF fit. Providing it on
+        full-brain HARDI is a large speed-up.
     sphere : Sphere, optional
         Sphere on which the ODF is sampled.
     sh_order_max : int, optional
@@ -289,6 +313,7 @@ def check_gradient_table(
         data,
         gtab,
         mask=mask,
+        brain_mask=brain_mask,
         sphere=sphere,
         sh_order_max=sh_order_max,
         voxel_size=voxel_size,
@@ -329,6 +354,7 @@ def correct_gradient_table(
     gtab,
     *,
     mask=None,
+    brain_mask=None,
     sphere=None,
     sh_order_max=4,
     voxel_size=None,
@@ -347,15 +373,15 @@ def correct_gradient_table(
         Diffusion-weighted volume series.
     gtab : GradientTable
         Gradient table to verify.
-    mask, sphere, sh_order_max, voxel_size, smooth :
+    mask, brain_mask, sphere, sh_order_max, voxel_size, smooth :
         Forwarded to :func:`check_gradient_table`.
 
     Returns
     -------
     gtab_corrected : GradientTable
-        Gradient table with corrected b-vectors. If the input gradient
-        table was already aligned with the image, this is functionally
-        equivalent to ``gtab``.
+        Gradient table with corrected b-vectors. If the recommended
+        transform is the identity, the input ``gtab`` is returned
+        unchanged.
     perm : tuple of int
         Axis permutation that was applied.
     flip : tuple of int
@@ -365,21 +391,17 @@ def correct_gradient_table(
         data,
         gtab,
         mask=mask,
+        brain_mask=brain_mask,
         sphere=sphere,
         sh_order_max=sh_order_max,
         voxel_size=voxel_size,
         smooth=smooth,
     )
 
-    bvecs_corr = correct_bvecs(gtab.bvecs, perm, flip)
-
     if (perm, flip) == ((0, 1, 2), (1, 1, 1)):
-        warnings.warn(
-            "check_gradient_table found no permutation or flip is needed; "
-            "the gradient table appears already aligned with the image.",
-            stacklevel=2,
-        )
+        return gtab, perm, flip
 
+    bvecs_corr = correct_bvecs(gtab.bvecs, perm, flip)
     gtab_corrected = gradient_table(
         gtab.bvals,
         bvecs=bvecs_corr,
