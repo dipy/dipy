@@ -12,4 +12,3 @@ scikit-image
 boto3
 numexpr
 matplotlib
-vtk>=9.0.0,<=9.1.0
