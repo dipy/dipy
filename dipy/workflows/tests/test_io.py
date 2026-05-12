@@ -674,11 +674,14 @@ def _write_phantom_dataset(out_dir):
     bval_path = Path(out_dir) / "dwi.bval"
     bvec_path = Path(out_dir) / "dwi.bvec"
     save_nifti(dwi_path, data, np.eye(4))
-    np.savetxt(bval_path, bvals[None, :])  # 1 row, N cols (FSL)
-    np.savetxt(bvec_path, bvecs.T)  # 3 rows, N cols (FSL)
+    np.savetxt(bval_path, bvals[None, :])
+    np.savetxt(bvec_path, bvecs.T)
     return dwi_path, bval_path, bvec_path
 
 
+@pytest.mark.filterwarnings(
+    "ignore:The legacy descoteaux07 SH basis:PendingDeprecationWarning"
+)
 def test_correct_bvecs_flow():
     """End-to-end run of dipy_correct_bvecs on a synthetic phantom."""
     with TemporaryDirectory() as out_dir:
@@ -705,11 +708,7 @@ def test_correct_bvecs_flow():
         out_path = flow.last_generated_outputs["out_bvecs"]
         bvecs_out = np.loadtxt(out_path)
 
-        # Output respects FSL convention (3 rows, N columns) and shares the
-        # column count with the input bvec file.
         npt.assert_equal(bvecs_out.shape, bvecs_in.shape)
-        # Every output bvec is some signed permutation of the corresponding
-        # input bvec (no rotation, no scaling).
         for vol in range(bvecs_in.shape[1]):
             sorted_in = np.sort(np.abs(bvecs_in[:, vol]))
             sorted_out = np.sort(np.abs(bvecs_out[:, vol]))

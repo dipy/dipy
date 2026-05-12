@@ -1716,7 +1716,7 @@ class CorrectBvecsFlow(Workflow):
         out_dir : string or Path, optional
             Output directory.
         out_bvecs : string, optional
-            Name of the corrected bvec file (FSL layout: 3 rows of N values).
+            Name of the corrected bvec file.
 
         References
         ----------
