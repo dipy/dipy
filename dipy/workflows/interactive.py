@@ -68,10 +68,10 @@ def analyze_bvals(*, bvals_file, b0_threshold=50):
         raise FileNotFoundError(f"B-values file not found: {bvals_file}")
 
     try:
-        with open(bvals_file, "r") as f:
+        with open(bvals_file) as f:
             content = f.read()
             bvals = [float(x) for x in content.split()]
-    except (ValueError, IOError) as e:
+    except (OSError, ValueError) as e:
         raise ValueError(f"Failed to parse b-values file: {e}") from e
 
     if not bvals:
@@ -340,7 +340,7 @@ def interactive_preprocessing_selection():
                         print(f"  {i}. {preprocessing_steps[method]}")
 
                     denoise_choice = input(
-                        "Enter choice [1-{}]: ".format(len(selected_denoise))
+                        f"Enter choice [1-{len(selected_denoise)}]: "
                     ).strip()
                     try:
                         denoise_idx = int(denoise_choice)
@@ -461,7 +461,7 @@ def interactive_tracking_selection(*, available_methods):
         selected = [
             available_methods[i - 1] for i in indices if 0 < i <= len(available_methods)
         ]
-        return selected if selected else available_methods
+        return selected or available_methods
     except (ValueError, IndexError):
         print("Invalid input, using all methods")
         return available_methods
@@ -500,7 +500,7 @@ def interactive_registration_selection(*, available_tractograms):
             for i in indices
             if 0 < i <= len(available_tractograms)
         ]
-        return selected if selected else available_tractograms
+        return selected or available_tractograms
     except (ValueError, IndexError):
         print("Invalid input, using all methods")
         return available_tractograms
@@ -539,7 +539,7 @@ def interactive_segmentation_selection(*, available_registered):
             for i in indices
             if 0 < i <= len(available_registered)
         ]
-        return selected if selected else available_registered
+        return selected or available_registered
     except (ValueError, IndexError):
         print("Invalid input, using all methods")
         return available_registered
@@ -959,6 +959,5 @@ def interactive_pipeline_selection(*, data_chars):
                 )
         except ValueError:
             print(
-                f"Invalid input. Please enter a number "
-                f"between 0 and {len(pipelines)}."
+                f"Invalid input. Please enter a number between 0 and {len(pipelines)}."
             )
