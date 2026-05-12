@@ -54,6 +54,7 @@ position = 4
 enable = true
 files = [
     "brain_extraction_dwi.py",
+    "check_gradient_table.py",
     "denoise_ascm.py",
     "denoise_nlmeans.py",
     "denoise_gibbs.py",

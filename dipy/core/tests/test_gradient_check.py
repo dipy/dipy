@@ -58,11 +58,6 @@ def _assert_bvecs_equivalent(actual, expected, atol=1e-12):
         )
 
 
-# ---------------------------------------------------------------------------
-# Pure-algebra tests (no data, fast).
-# ---------------------------------------------------------------------------
-
-
 def test_apply_transform_identity():
     rng = np.random.default_rng(0)
     v = rng.standard_normal((10, 3))
@@ -110,11 +105,6 @@ def test_transform_label_strings():
     assert "X Y Z" in s and "no flip" in s
     s = transform_label((1, 0, 2), (1, -1, 1))
     assert "Y X Z" in s and "flip y" in s
-
-
-# ---------------------------------------------------------------------------
-# Data-driven tests on Stanford HARDI.
-# ---------------------------------------------------------------------------
 
 
 def _stanford_hardi_loaded():
@@ -220,9 +210,6 @@ def test_recover_corruption_stanford_hardi(
         data, gtab_corr, mask=wm_mask, sh_order_max=4
     )
 
-    # Composing the recovered transform with the corrupted bvecs must
-    # reproduce the canonical bvecs (i.e., undo the corruption modulo any
-    # systematic transform the algorithm picks for the dataset).
     recovered_bvecs = correct_bvecs(bvecs_corr, perm_rec, flip_rec)
     _assert_bvecs_equivalent(recovered_bvecs, canonical_bvecs)
 
@@ -266,3 +253,165 @@ def test_check_gradient_table_validates_inputs():
     bvecs = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=float)
     gtab = gradient_table(bvals, bvecs=bvecs)
     npt.assert_raises(ValueError, check_gradient_table, np.zeros((3, 4, 5)), gtab)
+
+
+def _make_phantom(brain_shape=(8, 8, 8), border=2, n_dirs=30, seed=0):
+    """Synthetic DWI volume: anisotropic "brain" cube embedded in a zero border.
+
+    Half the brain slices along z have a fiber along the image x axis, the
+    other half along the image y axis (both in-plane with the z-boundary
+    so the identity transform is a valid minimum). The zero border lets
+    :func:`dipy.segment.mask.median_otsu` find a foreground region during
+    default-mask construction.
+    """
+    rng = np.random.default_rng(seed)
+    raw = rng.standard_normal((n_dirs, 3))
+    raw /= np.linalg.norm(raw, axis=1, keepdims=True)
+    bvecs = np.vstack([[0.0, 0.0, 0.0], raw])
+    bvals = np.concatenate([[0.0], np.full(n_dirs, 1000.0)])
+    gtab = gradient_table(bvals, bvecs=bvecs)
+
+    d_par, d_perp = 1.7e-3, 0.2e-3
+    s0 = 1000.0
+    shape = tuple(s + 2 * border for s in brain_shape)
+    data = np.zeros(shape + (len(bvals),), dtype=np.float32)
+    bx = slice(border, border + brain_shape[0])
+    by = slice(border, border + brain_shape[1])
+    data[bx, by, :, 0] = 0.0  # background b0 stays 0
+    for k in range(border, border + brain_shape[2]):
+        data[bx, by, k, 0] = s0
+        fiber_axis = 0 if k < border + brain_shape[2] // 2 else 1
+        for vol_idx in range(1, len(bvals)):
+            n = raw[vol_idx - 1]
+            adc = d_perp + (d_par - d_perp) * n[fiber_axis] ** 2
+            data[bx, by, k, vol_idx] = s0 * np.exp(-1000.0 * adc)
+    return data, gtab
+
+
+def test_check_gradient_table_synthetic_returns_valid_pick():
+    """Full pipeline on a phantom returns a transform in the canonical set."""
+    data, gtab = _make_phantom()
+    mask = np.ones(data.shape[:3], dtype=bool)
+    perm, flip = check_gradient_table(data, gtab, mask=mask, sh_order_max=2)
+    assert perm in _PERMUTATIONS
+    assert flip in _FLIPS
+
+
+def test_make_default_mask_full_body_on_phantom():
+    """Exercise _make_default_mask end-to-end with relaxed median_otsu params.
+
+    The production defaults (``median_radius=4, numpass=4``) erode the small
+    synthetic phantom to nothing; passing ``1, 1`` lets the brain step
+    survive while still exercising every line of the function.
+    """
+    from dipy.core.gradient_check import _make_default_mask
+    from dipy.reconst.shm import CsaOdfModel
+
+    data, gtab = _make_phantom()
+    fit = CsaOdfModel(gtab, sh_order_max=2).fit(data)
+    mask = _make_default_mask(data, gtab, fit, median_radius=1, numpass=1)
+    assert mask.dtype == bool
+    assert mask.shape == data.shape[:3]
+    assert mask.any()
+
+
+def test_make_default_mask_with_provided_brain_mask():
+    """When ``brain_mask`` is supplied, median_otsu is skipped."""
+    from dipy.core.gradient_check import _make_default_mask
+    from dipy.reconst.shm import CsaOdfModel
+
+    data, gtab = _make_phantom()
+    brain = data[..., 0] > 0
+    fit = CsaOdfModel(gtab, sh_order_max=2).fit(data, mask=brain)
+    mask = _make_default_mask(data, gtab, fit, brain_mask=brain)
+    assert mask.dtype == bool
+    assert mask.shape == brain.shape
+    # The WM mask must be contained inside the brain.
+    assert not mask[~brain].any()
+
+
+def test_check_gradient_table_brain_mask_kwarg():
+    """``brain_mask=`` limits the CSA fit and still returns a valid pick."""
+    data, gtab = _make_phantom()
+    brain = data[..., 0] > 0
+    perm, flip = check_gradient_table(
+        data, gtab, mask=brain, brain_mask=brain, sh_order_max=2
+    )
+    assert perm in _PERMUTATIONS and flip in _FLIPS
+
+
+def test_correct_gradient_table_identity_returns_input_object(monkeypatch):
+    """Identity short-circuit must hand back the same GradientTable object."""
+    from dipy.core import gradient_check as gc
+
+    data, gtab = _make_phantom()
+    mask = np.ones(data.shape[:3], dtype=bool)
+    monkeypatch.setattr(
+        gc, "check_gradient_table", lambda *_args, **_kwargs: ((0, 1, 2), (1, 1, 1))
+    )
+    gtab_out, perm, flip = gc.correct_gradient_table(
+        data, gtab, mask=mask, sh_order_max=2
+    )
+    assert gtab_out is gtab
+    npt.assert_equal(perm, (0, 1, 2))
+    npt.assert_equal(flip, (1, 1, 1))
+
+
+def test_correct_gradient_table_non_identity_rebuilds(monkeypatch):
+    """Non-identity result rebuilds the GradientTable with transformed bvecs."""
+    from dipy.core import gradient_check as gc
+
+    data, gtab = _make_phantom()
+    mask = np.ones(data.shape[:3], dtype=bool)
+    monkeypatch.setattr(
+        gc, "check_gradient_table", lambda *_args, **_kwargs: ((1, 0, 2), (1, -1, 1))
+    )
+    gtab_out, perm, flip = gc.correct_gradient_table(
+        data, gtab, mask=mask, sh_order_max=2
+    )
+    assert gtab_out is not gtab
+    npt.assert_equal(perm, (1, 0, 2))
+    npt.assert_equal(flip, (1, -1, 1))
+    expected_bvecs = apply_transform(gtab.bvecs, (1, 0, 2), (1, -1, 1))
+    npt.assert_allclose(gtab_out.bvecs, expected_bvecs)
+    npt.assert_allclose(gtab_out.bvals, gtab.bvals)
+
+
+def test_fiber_continuity_error_empty_mask_raises():
+    data, gtab = _make_phantom()
+    empty = np.zeros(data.shape[:3], dtype=bool)
+    npt.assert_raises(
+        ValueError, fiber_continuity_error, data, gtab, mask=empty, sh_order_max=2
+    )
+
+
+def test_fiber_continuity_error_voxel_size_branch():
+    """Non-default voxel_size must still produce 24 finite scores."""
+    data, gtab = _make_phantom()
+    mask = np.ones(data.shape[:3], dtype=bool)
+    errors = fiber_continuity_error(
+        data, gtab, mask=mask, sh_order_max=2, voxel_size=(2.0, 2.0, 2.0)
+    )
+    npt.assert_equal(len(errors), 24)
+    for val in errors.values():
+        assert val >= 0.0
+
+
+def test_default_mask_requires_b0_and_dwi():
+    """_make_default_mask raises when the gradient table is degenerate."""
+    from dipy.core.gradient_check import _make_default_mask
+
+    # All-b0 gradient table -> no DWI volumes.
+    bvals = np.zeros(4)
+    bvecs = np.zeros((4, 3))
+    gtab = gradient_table(bvals, bvecs=bvecs)
+    data = np.ones((3, 3, 3, 4), dtype=np.float32)
+    # The fit argument is unused on the validation branch; pass None.
+    npt.assert_raises(ValueError, _make_default_mask, data, gtab, None)
+
+    # No-b0 gradient table.
+    bvals = np.full(4, 1000.0)
+    bvecs = np.eye(3)
+    bvecs = np.vstack([bvecs, [1.0, 0.0, 0.0]])
+    gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=0)
+    npt.assert_raises(ValueError, _make_default_mask, data, gtab, None)

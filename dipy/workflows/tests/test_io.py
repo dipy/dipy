@@ -29,6 +29,7 @@ from dipy.workflows.io import (
     ConvertSHFlow,
     ConvertTensorsFlow,
     ConvertTractogramFlow,
+    CorrectBvecsFlow,
     ExtractB0Flow,
     ExtractShellFlow,
     ExtractVolumeFlow,
@@ -739,3 +740,77 @@ def test_extract_volume_flow():
         res5, _ = load_nifti(Path(out_dir) / "volume_5.nii.gz")
         npt.assert_array_equal(res2, data[..., 2])
         npt.assert_array_equal(res5, data[..., 5])
+
+
+def _write_phantom_dataset(out_dir):
+    """Write a small anisotropic DWI phantom + bval/bvec to ``out_dir``.
+
+    Returns the paths to ``dwi.nii.gz``, ``dwi.bval``, ``dwi.bvec``.
+    """
+    rng = np.random.default_rng(0)
+    n_dirs = 30
+    raw = rng.standard_normal((n_dirs, 3))
+    raw /= np.linalg.norm(raw, axis=1, keepdims=True)
+    bvecs = np.vstack([[0.0, 0.0, 0.0], raw])
+    bvals = np.concatenate([[0.0], np.full(n_dirs, 1000.0)])
+
+    brain = (8, 8, 8)
+    border = 2
+    d_par, d_perp = 1.7e-3, 0.2e-3
+    s0 = 1000.0
+    shape = tuple(s + 2 * border for s in brain) + (len(bvals),)
+    data = np.zeros(shape, dtype=np.float32)
+    bx = slice(border, border + brain[0])
+    by = slice(border, border + brain[1])
+    for k in range(border, border + brain[2]):
+        data[bx, by, k, 0] = s0
+        fiber_axis = 0 if k < border + brain[2] // 2 else 1
+        for v in range(1, len(bvals)):
+            n = raw[v - 1]
+            adc = d_perp + (d_par - d_perp) * n[fiber_axis] ** 2
+            data[bx, by, k, v] = s0 * np.exp(-1000.0 * adc)
+
+    dwi_path = Path(out_dir) / "dwi.nii.gz"
+    bval_path = Path(out_dir) / "dwi.bval"
+    bvec_path = Path(out_dir) / "dwi.bvec"
+    save_nifti(dwi_path, data, np.eye(4))
+    np.savetxt(bval_path, bvals[None, :])  # 1 row, N cols (FSL)
+    np.savetxt(bvec_path, bvecs.T)  # 3 rows, N cols (FSL)
+    return dwi_path, bval_path, bvec_path
+
+
+def test_correct_bvecs_flow():
+    """End-to-end run of dipy_correct_bvecs on a synthetic phantom."""
+    with TemporaryDirectory() as out_dir:
+        dwi_path, bval_path, bvec_path = _write_phantom_dataset(out_dir)
+        bvecs_in = np.loadtxt(bvec_path)
+
+        # The default median_otsu params erode the small phantom to nothing;
+        # supply a hand-built brain mask so the algorithm has voxels to score.
+        data_arr, affine_arr = load_nifti(str(dwi_path))
+        mask_arr = data_arr[..., 0] > 0
+        mask_path = Path(out_dir) / "mask.nii.gz"
+        save_nifti(mask_path, mask_arr.astype(np.uint8), affine_arr)
+
+        flow = CorrectBvecsFlow()
+        flow.run(
+            str(dwi_path),
+            str(bval_path),
+            str(bvec_path),
+            mask_files=str(mask_path),
+            brain_mask_files=str(mask_path),
+            sh_order_max=2,
+            out_dir=out_dir,
+        )
+        out_path = flow.last_generated_outputs["out_bvecs"]
+        bvecs_out = np.loadtxt(out_path)
+
+        # Output respects FSL convention (3 rows, N columns) and shares the
+        # column count with the input bvec file.
+        npt.assert_equal(bvecs_out.shape, bvecs_in.shape)
+        # Every output bvec is some signed permutation of the corresponding
+        # input bvec (no rotation, no scaling).
+        for vol in range(bvecs_in.shape[1]):
+            sorted_in = np.sort(np.abs(bvecs_in[:, vol]))
+            sorted_out = np.sort(np.abs(bvecs_out[:, vol]))
+            npt.assert_allclose(sorted_out, sorted_in, atol=1e-12)
