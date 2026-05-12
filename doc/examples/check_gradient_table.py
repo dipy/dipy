@@ -146,9 +146,8 @@ print(f"bvals unchanged?  {np.allclose(gtab_fixed.bvals, gtab_corrupt.bvals)}")
 # Without ``--brain_mask_files`` the workflow fits CSA over the entire volume
 # and runs an internal median-otsu brain extraction itself, which is several
 # times slower on full-brain HARDI. The recommended transform is logged at
-# INFO level and the corrected b-vectors are written in FSL layout (3 rows of
-# N values). If your dataset already has aligned bvecs the workflow logs that
-# and writes them through unchanged.
+# INFO level. If your dataset already has aligned bvecs the workflow logs
+# that and writes them through unchanged.
 #
 # Summary
 # -------
