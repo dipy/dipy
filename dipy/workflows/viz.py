@@ -92,7 +92,7 @@ class SkylineFlow(Workflow):
         out_stealth_png : str, optional
             Filename of saved picture if stealth mode is enabled.
         """
-        super(SkylineFlow, self).__init__(force=True)
+        super().__init__(force=True)
         skyline_input_files = []
         start_gui = input_files is not None and input_files[0] in (
             "run",
@@ -102,8 +102,7 @@ class SkylineFlow(Workflow):
         )
         if not start_gui:
             io_it = self.get_io_iterator()
-            for input_output in io_it:
-                skyline_input_files.append(input_output[0])
+            skyline_input_files.extend(input_output[0] for input_output in io_it)
 
         if cluster_length_thr == -1:
             # set default as None is not allowed in int
@@ -251,7 +250,7 @@ class HorizonFlow(SkylineFlow):
         ----------
         .. footbibliography::
         """
-        super(HorizonFlow, self).__init__(force=True)
+        super().__init__(force=True)
 
         logger.info(
             "Horizon is deprecated and will be removed with future releases. "
@@ -266,7 +265,7 @@ class HorizonFlow(SkylineFlow):
                     buan_pvals = [input_file]
                     break
 
-        super(HorizonFlow, self).run(
+        super().run(
             input_files,
             bg_color=bg_color,
             cluster=cluster,

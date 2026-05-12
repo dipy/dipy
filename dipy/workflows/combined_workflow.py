@@ -272,8 +272,7 @@ def validate_pipeline_config(pipeline_stages):
             errors.append(f"Stage '{stage_name}': {str(e)}")
         except Exception as e:
             errors.append(
-                f"Stage '{stage_name}': Failed to introspect CLI "
-                f"'{cli_name}': {str(e)}"
+                f"Stage '{stage_name}': Failed to introspect CLI '{cli_name}': {str(e)}"
             )
 
     for stage in pipeline_stages:
@@ -554,14 +553,15 @@ def get_workflow_output_params(*, cli_command):
             return []
 
         sig = inspect.signature(run_method)
-        output_params = []
 
         # Identify output parameters
         # Convention: parameters starting with 'out_' are outputs
         # Exclude 'out_dir' as it's a directory parameter, not an output file
-        for param_name in sig.parameters:
-            if param_name.startswith("out_") and param_name != "out_dir":
-                output_params.append(param_name)
+        output_params = [
+            param_name
+            for param_name in sig.parameters
+            if param_name.startswith("out_") and param_name != "out_dir"
+        ]
 
         return output_params
 
@@ -865,9 +865,13 @@ def execute_pipeline_stage(
     if "params" in resolved_config:
         workflow_params.update(resolved_config["params"])
 
-    for key, value in resolved_config.items():
-        if key not in ("name", "cli", "inputs", "params"):
-            workflow_params[key] = value
+    workflow_params.update(
+        {
+            key: value
+            for key, value in resolved_config.items()
+            if key not in ("name", "cli", "inputs", "params")
+        }
+    )
 
     module_name, class_name = cli_flows[cli_name]
     module = importlib.import_module(module_name)
@@ -1064,8 +1068,10 @@ def discover_stage_outputs(*, stage_name, stage_config, io_config):
         }
 
         if cli_name in cli_workflow_patterns:
-            for pattern in cli_workflow_patterns[cli_name]:
-                potential_patterns.append(os.path.join(out_dir, pattern))
+            potential_patterns.extend(
+                os.path.join(out_dir, pattern)
+                for pattern in cli_workflow_patterns[cli_name]
+            )
 
         stage_specific = stage_name.lower().replace("_", "")
         potential_patterns.extend(

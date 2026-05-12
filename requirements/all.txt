@@ -38,4 +38,5 @@ scikit-image
 boto3
 numexpr
 matplotlib
-vtk>=9.0.0,<=9.1.0
+fury>=2.0.0a6
+imgui_bundle>=1.92.600
