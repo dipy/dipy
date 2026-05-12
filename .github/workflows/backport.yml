@@ -46,7 +46,7 @@ jobs:
           fetch-depth: 0
 
       - name: Create backport pull requests
-        uses: korthout/backport-action@7c3f6cd5843cac11bc59a04a1b7699af93261670 # v4.5.0
+        uses: korthout/backport-action@66065406958f46e82238fd59546f5a99e69e22aa # v4.5.2
         with:
           # Match labels of the form "backport-maint/1.13.x".
           # The first capture group becomes the target branch name verbatim.
