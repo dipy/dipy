@@ -914,8 +914,7 @@ PREDEFINED_PIPELINES = {
     },
     "full": {
         "description": (
-            "Full pipeline: preprocessing + reconstruction + tracking + "
-            "SLR + bundles"
+            "Full pipeline: preprocessing + reconstruction + tracking + SLR + bundles"
         ),
         "config": FULL_PIPELINE,
     },
@@ -947,8 +946,7 @@ def get_predefined_pipeline(*, pipeline_name):
     if pipeline_name not in PREDEFINED_PIPELINES:
         available = ", ".join(list_predefined_pipelines())
         raise KeyError(
-            f"Pipeline '{pipeline_name}' not found. "
-            f"Available pipelines: {available}"
+            f"Pipeline '{pipeline_name}' not found. Available pipelines: {available}"
         )
     return PREDEFINED_PIPELINES[pipeline_name]["config"]
 
@@ -974,8 +972,7 @@ def get_pipeline_description(*, pipeline_name):
     if pipeline_name not in PREDEFINED_PIPELINES:
         available = ", ".join(list_predefined_pipelines())
         raise KeyError(
-            f"Pipeline '{pipeline_name}' not found. "
-            f"Available pipelines: {available}"
+            f"Pipeline '{pipeline_name}' not found. Available pipelines: {available}"
         )
     return PREDEFINED_PIPELINES[pipeline_name]["description"]
 
@@ -1026,7 +1023,7 @@ def list_pipelines_with_descriptions(*, log_level=None):
         lines.append(f"  {name:<15} - {desc}")
     lines.append("=" * 70)
     lines.append(
-        "\nEach pipeline uses semantic stage names with automatic " "DAG-based wiring."
+        "\nEach pipeline uses semantic stage names with automatic DAG-based wiring."
     )
     lines.append("Stages are executed in topological order based on dependencies.")
 
