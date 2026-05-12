@@ -3,7 +3,10 @@ import pytest
 
 pytest.importorskip("fury")
 
-from dipy.viz.skyline.render.surface import Surface, create_surface_visualization  # noqa: E402
+from dipy.viz.skyline.render.surface import (  # noqa: E402
+    Surface,
+    create_surface_visualization,
+)
 
 
 def _triangle_mesh():
@@ -27,9 +30,7 @@ def test_create_surface_visualization_rejects_invalid_input():
 def test_create_surface_visualization_two_tuple_names_surface_by_index():
     """A two-tuple ``(vertices, faces)`` uses the default ``Surface_{idx}`` filename."""
     vertices, faces = _triangle_mesh()
-    viz = create_surface_visualization(
-        (vertices, faces), idx=5, color=(0.1, 0.2, 0.3)
-    )
+    viz = create_surface_visualization((vertices, faces), idx=5, color=(0.1, 0.2, 0.3))
     assert viz.path == "Surface_5"
     assert viz._color_picker_popup_id == "surface_color_picker_popup##Surface_5"
 
