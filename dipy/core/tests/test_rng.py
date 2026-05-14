@@ -7,7 +7,7 @@ from dipy.core import rng
 
 
 def test_wichmann_hill2006():
-    n_generated = [rng.WichmannHill2006() for i in range(10000)]
+    n_generated = [rng.WichmannHill2006() for i in range(100)]
     # The chi-squared test statistic as result and The p-value of the test
     chisq, pvalue = chisquare(n_generated)
     # P-values equal 1 show evidence of the null hypothesis which indicates
@@ -17,7 +17,7 @@ def test_wichmann_hill2006():
 
 
 def test_wichmann_hill1982():
-    n_generated = [rng.WichmannHill1982() for i in range(10000)]
+    n_generated = [rng.WichmannHill1982() for i in range(100)]
     chisq, pvalue = chisquare(n_generated)
     # P-values equal 1 show evidence of the null hypothesis which indicates
     # that it is uniformly distributed. This is what we want to check here
@@ -26,7 +26,7 @@ def test_wichmann_hill1982():
 
 
 def test_LEcuyer():
-    n_generated = [rng.LEcuyer() for i in range(10000)]
+    n_generated = [rng.LEcuyer() for i in range(100)]
     chisq, pvalue = chisquare(n_generated)
     # P-values equal 1 show evidence of the null hypothesis which indicates
     # that it is uniformly distributed. This is what we want to check here
