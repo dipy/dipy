@@ -455,6 +455,17 @@ def test_patch_radius_accepts_numpy_array():
 
 
 @needs_sklearn
+@pytest.mark.parametrize("model", ["ols", "ridge", "lasso"])
+def test_patch2self_v1_models_and_verbose(model):
+    rng = np.random.default_rng(2026)
+    data = rng.random((5, 5, 5, 12))
+    bvals = np.concatenate([np.zeros(2), np.full(10, 1000.0)])
+
+    out = p2s.patch2self(data, bvals, model=model, version=1, alpha=0.5, verbose=True)
+    assert_equal(out.shape, data.shape)
+
+
+@needs_sklearn
 @set_random_number_generator(2026)
 def test_patch2self_v3_b0_passthrough_when_b0_denoising_disabled(rng):
     # Regression test: when b0_denoising=False, the previous code copied
