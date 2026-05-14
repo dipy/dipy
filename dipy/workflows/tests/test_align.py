@@ -148,6 +148,33 @@ def test_reslice_skip_idempotent(caplog):
         )
 
 
+def test_reslice_skip_returns_original_path(caplog):
+    """Test ResliceFlow returns original input path when voxel size matches."""
+    with TemporaryDirectory() as tmp_dir:
+        data_path, _, _ = get_fnames(name="small_25")
+        data, affine, zooms = load_nifti(data_path, return_voxsize=True)
+
+        nii_path = Path(tmp_dir) / "input.nii"
+        nib.save(nib.Nifti1Image(data, affine), str(nii_path))
+
+        out_dir = Path(tmp_dir) / "out"
+        out_dir.mkdir()
+
+        with caplog.at_level(logging.INFO, logger="dipy"):
+            reslice_flow = ResliceFlow()
+            reslice_flow.run(
+                str(nii_path), new_vox_size=list(zooms[:3]), out_dir=str(out_dir)
+            )
+
+        out_path = Path(reslice_flow.last_generated_outputs["out_resliced"])
+        assert out_path.resolve() == nii_path.resolve(), (
+            f"Expected original input path {nii_path}, got {out_path}"
+        )
+
+        resliced = np.array(load_nifti_data(str(out_path)))
+        npt.assert_equal(resliced.shape, data.shape)
+
+
 def test_slr_flow(caplog):
     with TemporaryDirectory() as out_dir:
         data_path = get_fnames(name="fornix")
