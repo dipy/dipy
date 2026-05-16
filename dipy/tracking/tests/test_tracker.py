@@ -38,8 +38,9 @@ def track(method, **kwargs):
     directions = np.random.random(seeds.shape)
     directions = np.array([v / np.linalg.norm(v) for v in directions])
 
+    use_jit = kwargs.get("use_jit", False)
     use_sf = kwargs.get("use_sf", False)
-    use_directions = kwargs.get("use_dirs", False)
+    use_directions = kwargs.get("use_dirs", False) and not use_jit
 
     # test return_all=True
     params = {
@@ -54,6 +55,7 @@ def track(method, **kwargs):
         "sh": sh if not use_sf else None,
         "seed_directions": directions if use_directions else None,
         "sphere": sphere,
+        "use_jit": use_jit
     }
     stream_gen = method(seeds, sc, affine, **params)
 
@@ -104,6 +106,8 @@ def test_probabilistic_tracking():
         )
         track(tracker.probabilistic_tracking, use_dirs=True)
         track(tracker.probabilistic_tracking, use_sf=True, use_dirs=True)
+        track(tracker.probabilistic_tracking, use_jit=True)
+        track(tracker.probabilistic_tracking, use_sf=True, use_jit=True)
 
 
 def test_ptt_tracking():

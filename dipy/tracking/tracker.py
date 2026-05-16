@@ -1,4 +1,5 @@
 from nibabel.affines import voxel_sizes
+from warnings import warn
 import numpy as np
 
 from dipy.data import default_sphere
@@ -13,27 +14,19 @@ from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTrackin
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tractogen import generate_tractogram
 from dipy.tracking.utils import seeds_directions_pairs
+from dipy.utils.optpkg import optional_package
 
 
-def generic_tracking(
-    seed_positions,
-    seed_directions,
-    sc,
-    params,
-    *,
-    affine=None,
+def _init_pmf(
     sh=None,
     pam=None,
     sf=None,
     sphere=None,
     basis_type=None,
     legacy=True,
-    max_cross=None,
-    nbr_threads=0,
-    seed_buffer_fraction=1.0,
-    save_seeds=False,
 ):
-    affine = affine if affine is not None else np.eye(4)
+    peak_data = None
+    odf_vertices = None
 
     pmf_type = [
         {"name": "sh", "value": sh, "cls": SHCoeffPmfGen},
@@ -97,6 +90,37 @@ def generic_tracking(
         pmf_gen = selected_pmf["cls"](
             np.asarray(selected_pmf["value"], dtype=float), sphere
         )
+    
+    return pmf_gen, selected_pmf, peak_data, odf_vertices
+
+
+def generic_tracking(
+    seed_positions,
+    seed_directions,
+    sc,
+    params,
+    *,
+    affine=None,
+    sh=None,
+    pam=None,
+    sf=None,
+    sphere=None,
+    basis_type=None,
+    legacy=True,
+    max_cross=None,
+    nbr_threads=0,
+    seed_buffer_fraction=1.0,
+    save_seeds=False,
+):
+    affine = affine if affine is not None else np.eye(4)
+    pmf_gen, selected_pmf, peak_data, odf_vertices = _init_pmf(
+        sh=sh,
+        pam=pam,
+        sf=sf,
+        sphere=sphere,
+        basis_type=basis_type,
+        legacy=legacy,
+    )
 
     if seed_directions is not None:
         if not isinstance(seed_directions, (np.ndarray, list)):
@@ -187,6 +211,8 @@ def probabilistic_tracking(
     seed_buffer_fraction=1.0,
     return_all=True,
     save_seeds=False,
+    use_jit=None,
+    jit_chunk_size=25000,
 ):
     """Probabilistic tracking algorithm.
 
@@ -243,7 +269,15 @@ def probabilistic_tracking(
         reached the stopping criterion.
     save_seeds: bool, optional
         True to return the seeds with the associated streamline.
-
+    use_jit : bool, optional
+        Use the Numba JIT implementation of the probabilistic tracking.
+        If None, will only use the JIT implementation if numba is installed.
+        Default: None.
+    jit_chunk_size : int, optional
+        Number of seeds to process in each chunk when using the JIT implementation.
+        A smaller chunk size will reduce memmory usage but may increase processing time.
+        Default: 25000
+        
     Returns
     -------
     Tractogram
@@ -263,22 +297,93 @@ def probabilistic_tracking(
         return_all=return_all,
     )
 
-    return generic_tracking(
-        seed_positions,
-        seed_directions,
-        sc,
-        params,
-        affine=affine,
-        sh=sh,
-        pam=pam,
-        sf=sf,
-        sphere=sphere,
-        basis_type=basis_type,
-        legacy=legacy,
-        nbr_threads=nbr_threads,
-        seed_buffer_fraction=seed_buffer_fraction,
-        save_seeds=save_seeds,
-    )
+    numba, have_numba, _ = optional_package("numba")
+    if use_jit is None:
+        use_jit = have_numba
+
+    if use_jit:
+        if not have_numba:
+            raise ImportError(
+                "Numba is not installed. Please install numba to use the JIT "
+                "probabilistic tracker."
+            )
+        else:
+            from dipy.tracking.jit import NumbaTracker
+
+        if seed_directions is not None:
+            warn((
+                "seed_directions are not supported when "
+                "using the JIT probabilistic tracker. "
+                "Set jit=False to use seed_directions."
+            ))
+
+        pmf_gen, selected_pmf, _, _ = _init_pmf(
+            sh=sh,
+            pam=pam,
+            sf=sf,
+            sphere=sphere,
+            basis_type=basis_type,
+            legacy=legacy,
+        )
+
+        # Precalculate the pmf field for all voxels and directions
+        # as well as the stop map for all voxels
+        pmf_field = np.zeros((
+            *selected_pmf["value"].shape[:3],
+            len(sphere.vertices)), dtype=np.float64)
+        stop_map = np.zeros(selected_pmf["value"].shape[:3], dtype=np.float64)
+        for ii in range(selected_pmf["value"].shape[0]):
+            for jj in range(selected_pmf["value"].shape[1]):
+                for kk in range(selected_pmf["value"].shape[2]):
+                    idx_ = np.array([ii, jj, kk], dtype="float64")
+                    pmf_field[ii, jj, kk] = pmf_gen.get_pmf(idx_)                    
+                    stop_map[ii, jj, kk] = sc.check_point(idx_)
+
+        # move seed_positions to voxel space
+        if affine is not None:
+            inv_affine = np.linalg.inv(affine)
+            seed_positions = np.dot(seed_positions, inv_affine[:3, :3].T)
+            seed_positions += inv_affine[:3, 3]
+
+        if nbr_threads != 0:
+            old_numba_n_threads = numba.get_num_threads()
+            numba.set_num_threads(nbr_threads)
+
+        tracker = NumbaTracker(
+            pmf=pmf_field,
+            stop_map=stop_map,
+            stop_threshold=0,
+            sphere=sphere,
+            max_angle=params.max_angle,
+            step_size=params.step_size,
+            min_steps=params.min_nbr_pts,
+            max_steps=params.max_nbr_pts,
+            pmf_threshold=pmf_threshold,
+            rng_seed=random_seed,
+            chunk_size=jit_chunk_size,
+        )
+
+        array_seq = tracker.generate_array_sequence(seed_positions)
+        if nbr_threads != 0:
+            numba.set_num_threads(old_numba_n_threads)
+        return array_seq
+    else:
+        return generic_tracking(
+            seed_positions,
+            seed_directions,
+            sc,
+            params,
+            affine=affine,
+            sh=sh,
+            pam=pam,
+            sf=sf,
+            sphere=sphere,
+            basis_type=basis_type,
+            legacy=legacy,
+            nbr_threads=nbr_threads,
+            seed_buffer_fraction=seed_buffer_fraction,
+            save_seeds=save_seeds,
+        )
 
 
 def deterministic_tracking(
