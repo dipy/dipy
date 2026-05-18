@@ -34,7 +34,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install .[dev,test,ml,benchmark]
+        pip install .[ml] --group dev --group test --group benchmark
     - name: Set threading parameters for reliable benchmarking
       run: |
         echo "OPENBLAS_NUM_THREADS=1" >> $GITHUB_ENV

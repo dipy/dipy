@@ -109,39 +109,38 @@ dipy_nifti2pam = "dipy.workflows.cli:run"
 dipy_pam2nifti = "dipy.workflows.cli:run"
 dipy_tensor2pam = "dipy.workflows.cli:run"
 
-[project.optional-dependencies]
+[dependency-groups]
 build = [
     "meson-python>=0.13",
-    "setuptools>=77.0.3,<83.0",
+    "setuptools>=77.0.3",
     "packaging>=21",
     "ninja",
     "Cython>=0.29.35",
     "numpy>=2.0.0",
     "spin>=0.5",
-    "build"
+    "build",
 ]
-all = ["dipy[build, dev, doc, style, viz, optional, benchmark]"]
+all = [
+    {include-group = "build"},
+    {include-group = "dev"},
+    {include-group = "doc"},
+    {include-group = "style"},
+    {include-group = "benchmark"},
+    {include-optional = "viz"},
+    {include-optional = "optional"},
+]
 style = ["ruff", "pre-commit"]
-viz = ["fury>=0.12.0", "matplotlib"]
 test = ["pytest>=9", "coverage", "coveralls", "codecov", "asv"]
-ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
 dev = [
-    "dipy[build, style]",
+    {include-group = "build"},
+    {include-group = "style"},
+    "dependency-groups",
     "pytest>=9",
     "coverage",
     "coveralls",
     "codecov",
-    "asv"
+    "asv",
 ]
-
-optional = [
-    "dipy[viz, ml]",
-    "cvxpy",
-    "scikit-image",
-    "boto3",
-    "numexpr"
-]
-
 doc = [
     "numpydoc",
     "sphinx>=7.2.6",
@@ -150,7 +149,7 @@ doc = [
     "sphinx_design>=0.5.0",
     "sphinx-gallery>=0.10.0",
     "grg-sphinx-theme>=0.4.0",
-    "Jinja2"
+    "Jinja2",
 ]
 benchmark = [
     "asv",
@@ -158,6 +157,16 @@ benchmark = [
     "virtualenv",
 ]
 
+[project.optional-dependencies]
+viz = ["fury>=0.12.0", "matplotlib"]
+ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
+optional = [
+    "dipy[viz, ml]",
+    "cvxpy",
+    "scikit-image",
+    "boto3",
+    "numexpr",
+]
 
 [project.urls]
 homepage = "https://dipy.org"

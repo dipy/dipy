@@ -32,6 +32,7 @@ repos:
     hooks:
       - id: generate_requirements.py
         name: generate_requirements.py
-        language: system
+        language: python
         entry: python tools/generate_requirements.py
         files: "pyproject.toml|requirements/.*\\.txt|tools/generate_requirements.py"
+        additional_dependencies: ["dependency-groups"]
