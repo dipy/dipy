@@ -353,6 +353,7 @@ def patch2self(
     shift_intensity=True,
     tmp_dir=None,
     version=3,
+    gram=True,
 ):
     """Patch2Self Denoiser.
 
@@ -399,6 +400,10 @@ def patch2self(
         files are saved in the system's default temporary directory.
     version : int, optional
         Version 1 or 3 of Patch2Self to use.
+    gram : bool, optional
+        Solve leave-one-out fits from a shared Gram matrix, reducing runtime
+        and memory. If False, perform per-volume regression as in the
+        original publication. Applies only to `version=1`.
 
     Returns
     -------
@@ -429,6 +434,7 @@ def patch2self(
             b0_denoising,
             clip_negative_vals,
             shift_intensity,
+            gram,
         )
     return _patch2self_version3(
         data,
@@ -538,6 +544,7 @@ def _patch2self_version1(
     b0_denoising,
     clip_negative_vals,
     shift_intensity,
+    gram=True,
 ):
     """Patch2Self Denoiser.
 
@@ -576,6 +583,10 @@ def _patch2self_version1(
     shift_intensity : bool
         Shifts the distribution of intensities per volume to give
         non-negative values.
+    gram : bool
+        Solve leave-one-out fits from a shared Gram matrix, reducing runtime
+        and memory. If False, perform per-volume regression as in the
+        original publication. Applies only to `version=1`.
 
     Returns
     -------
@@ -597,7 +608,9 @@ def _patch2self_version1(
         position = data.shape.index(1)
         data = np.concatenate((data, data, data), position)
 
-    use_gram_solver = isinstance(model, str) and model.lower() in ("ols", "ridge")
+    use_gram_solver = (
+        gram and isinstance(model, str) and model.lower() in ("ols", "ridge")
+    )
 
     # Segregates volumes by b0 threshold
     b0_idx = np.argwhere(bvals <= b0_threshold)
