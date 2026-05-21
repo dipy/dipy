@@ -1,6 +1,7 @@
 """Load and save pickles"""
 
 import pickle
+import warnings
 
 
 def save_pickle(fname, dix):
@@ -55,6 +56,11 @@ def load_pickle(fname):
     dipy.io.pickles.save_pickle
 
     """
+    warnings.warn(
+        "Loading pickles can execute arbitrary code. Only load pickles from trusted sources.",
+        UserWarning,
+        stacklevel=2,
+    )
     inp = open(fname, "rb")
     dix = pickle.load(inp)
     inp.close()
