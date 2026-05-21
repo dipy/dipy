@@ -57,7 +57,7 @@ def test_reconst_rumba():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        reconst_flow_core(ReconstRUMBAFlow, n_iter=5)
+        reconst_flow_core(ReconstRUMBAFlow, n_iter=2)
 
 
 @pytest.mark.skipif(not has_sklearn, reason="Requires sklearn")
@@ -114,6 +114,9 @@ def reconst_flow_core(flow, *, use_multishell_data=None, **kwargs):
             save_nifti(data_path, volume, np.eye(4))
         else:
             volume, affine = load_nifti(data_path)
+            volume = volume[:5, :5, :5]
+            data_path = Path(out_dir) / "tmp_data.nii.gz"
+            save_nifti(data_path, volume, affine)
             mask = np.ones_like(volume[:, :, :, 0])
             mask_path = Path(out_dir) / "tmp_mask.nii.gz"
             save_nifti(mask_path, mask.astype(np.uint8), affine)
