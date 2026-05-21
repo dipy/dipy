@@ -1,4 +1,4 @@
-name: code format
+name: Lint and format
 
 on:
   push:
@@ -10,23 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  pre-commit:
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.12']
-        requires: ['latest']
-
+  prek:
+    runs-on: ubuntu-latest
     steps:
-    - name: Check out repository
-      uses: actions/checkout@v6.0.2
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install and run pre-commit hooks
-      uses: pre-commit/action@v3.0.1
+      - uses: actions/checkout@v6.0.2
+      - uses: j178/prek-action@v2

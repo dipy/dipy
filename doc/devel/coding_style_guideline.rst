@@ -27,41 +27,43 @@ Coding style
 
 DIPY uses the standard Python PEP8_ style to ensure the
 readability and consistency across the toolkit. DIPY has adopted an automated
-style checking framework that uses `pre-commit <https://pre-commit.com/>`_ and
+style checking framework that uses `prek <https://github.com/j178/prek/>`_ and
 `ruff <https://docs.astral.sh/ruff/>`_. Style conformance rules are specified
 in the ``ruff.toml`` configuration file. When requesting to push to DIPY, the
 compliance to the set of rules is automatically checked using a GitHub Actions
 workflow.
 
-Pre-commit Setup
------------------
+Prek Setup
+----------
 
-`Pre-commit <https://pre-commit.com/>`_ is a framework for managing and maintaining multi-language pre-commit
+`Prek <https://github.com/j178/prek/>`_ is a framework for managing and maintaining multi-language pre-commit
 hooks. It helps catch issues before they are committed to the repository, ensuring
 code quality and consistency. DIPY's pre-commit configuration includes:
 
+* `pre-commit-hooks <https://github.com/pre-commit/pre-commit-hooks>`_
 * `ruff <https://docs.astral.sh/ruff/>`_: A fast Python linter and formatter
 * `codespell <https://github.com/codespell-project/codespell>`_: Spell checker for code and documentation
+* `pygrep-hooks <https://github.com/pre-commit/pygrep-hooks>`_: Basic checks for reStructuredText documentation
 * **generate_requirements.py**: Custom hook to keep requirements files synchronized
 
-Setting up pre-commit
-^^^^^^^^^^^^^^^^^^^^^^
+Setting up prek
+^^^^^^^^^^^^^^^
 
-1. Install the style dependencies (includes pre-commit and ruff)::
+1. Install the style dependencies (includes prek and ruff)::
 
      pip install -e .[style]
 
 2. Install the git hook scripts::
 
-     pre-commit install
+     prek install
 
-This installs pre-commit into your git hooks. After this, pre-commit will
+This installs prek into your git hooks. After this, prek will
 run automatically on every ``git commit``.
 
-Using pre-commit
-^^^^^^^^^^^^^^^^
+Using prek
+^^^^^^^^^^
 
-Once installed, pre-commit will automatically run on modified files when you commit::
+Once installed, prek will automatically run on modified files when you commit::
 
   git commit -m "Your commit message"
 
@@ -71,20 +73,20 @@ some issues (like formatting). Review the changes and stage them::
   git add <fixed-files>
   git commit -m "Your commit message"
 
-You can also manually run pre-commit on all files::
+You can also manually run prek on all files::
 
-  pre-commit run --all-files
+  prek run --all-files
 
 Or on specific files::
 
-  pre-commit run --files path/to/file.py
+  prek run --files path/to/file.py
 
-Updating pre-commit hooks
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+Updating prek hooks
+^^^^^^^^^^^^^^^^^^^
 
-To update the pre-commit hooks to their latest versions::
+To update the prek hooks to their latest versions::
 
-  pre-commit autoupdate
+  prek autoupdate
 
 This will update the hooks specified in ``.pre-commit-config.yaml`` to the
 latest available versions.
