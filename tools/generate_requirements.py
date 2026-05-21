@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 """Generate requirements/*.txt files from pyproject.toml."""
 
-import sys
 import tomllib
 from pathlib import Path
+
+from dependency_groups import resolve
 
 
 script_pth = Path(__file__)
@@ -198,19 +199,41 @@ def expand_project_extras(
 def main():
     """Load ``pyproject.toml`` and regenerate the requirements directory."""
     pyproject = tomllib.loads((repo_dir / "pyproject.toml").read_text())
+
     project = pyproject["project"]
     project_name = project["name"]
-    optional_deps = project.get("optional-dependencies", {})
 
     generate_requirement_file("default", project["dependencies"])
 
-    for key, opt_list in optional_deps.items():
+    optional_dependencies = project.get("optional-dependencies", {})
+    for key, dep_list in optional_dependencies.items():
         expanded = expand_project_extras(
-            opt_list,
+            dep_list,
             project_name=project_name,
-            optional_dependencies=optional_deps,
+            optional_dependencies=optional_dependencies,
         )
         generate_requirement_file(key, expanded)
+
+    dependency_groups = pyproject.get("dependency-groups", {})
+    for key in dependency_groups:
+        expanded = []
+        for item in dependency_groups[key]:
+            if isinstance(item, dict) and "include-optional" in item:
+                optional_key = item["include-optional"]
+                expanded.extend(
+                    expand_project_extras(
+                        optional_dependencies[optional_key],
+                        project_name=project_name,
+                        optional_dependencies=optional_dependencies,
+                    )
+                )
+            else:
+                expanded.append(item)
+        dependency_groups[key] = expanded
+        generate_requirement_file(
+            # deduplicate dependencies while preserving insertion order
+            key, list(dict.fromkeys(str(r) for r in resolve(dependency_groups, key)))
+        )
 
 
 if __name__ == "__main__":

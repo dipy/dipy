@@ -18,7 +18,7 @@
 ### Installing requirements
 
 ```bash
-$ pip install -U -r doc-requirements.txt
+$ pip install -U --group doc
 ```
 
 ### Generate all the Documentation
