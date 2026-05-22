@@ -41,6 +41,7 @@ python_sources = ['__init__.py',
   'scalespace.py',
   'streamlinear.py',
   'streamwarp.py',
+  'utils.py',
   ]
 
 
