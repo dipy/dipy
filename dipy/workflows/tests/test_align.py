@@ -175,6 +175,55 @@ def test_reslice_skip_returns_original_path(caplog):
         npt.assert_equal(resliced.shape, data.shape)
 
 
+def test_reslice_auto_scale_guard(caplog, tmp_path):
+    """Auto-calculated voxel size > 2.0mm gets halved to [1.0, 2.0)."""
+    affine = np.eye(4)
+
+    for orig_zooms, expected_divisor in [(2.5, 2), (5.0, 4), (3.9, 2)]:
+        data = np.random.rand(10, 10, 10).astype(np.float32)
+        img = nib.Nifti1Image(data, affine)
+        img.header.set_zooms([orig_zooms, orig_zooms, orig_zooms])
+        in_path = tmp_path / f"vol_{orig_zooms}.nii.gz"
+        nib.save(img, str(in_path))
+
+        with caplog.at_level(logging.WARNING, logger="dipy"):
+            caplog.clear()
+            out_dir = tmp_path / f"out_{orig_zooms}"
+            out_dir.mkdir()
+            ResliceFlow().run(str(in_path), out_dir=str(out_dir))
+
+        expected_vox = orig_zooms / expected_divisor
+        warning_messages = " ".join(
+            r.message for r in caplog.records if r.levelname == "WARNING"
+        )
+        assert f"Divided by {expected_divisor}" in warning_messages, (
+            f"Expected divisor {expected_divisor} for {orig_zooms}mm. Messages: {warning_messages}"
+        )
+        assert f"{expected_vox:.4f}" in warning_messages, (
+            f"Expected {expected_vox:.4f}mm in warning. Messages: {warning_messages}"
+        )
+
+
+def test_reslice_auto_scale_guard_no_trigger(caplog, tmp_path):
+    """Auto-calculated voxel size <= 2.0mm is not modified."""
+    affine = np.eye(4)
+    data = np.random.rand(10, 10, 10).astype(np.float32)
+    img = nib.Nifti1Image(data, affine)
+    img.header.set_zooms([2.0, 2.0, 2.0])
+    in_path = tmp_path / "vol_2mm.nii.gz"
+    nib.save(img, str(in_path))
+
+    with caplog.at_level(logging.WARNING, logger="dipy"):
+        ResliceFlow().run(str(in_path), out_dir=str(tmp_path / "out"))
+
+    warning_messages = " ".join(
+        r.message for r in caplog.records if r.levelname == "WARNING"
+    )
+    assert "Divided by" not in warning_messages, (
+        f"Should not trigger auto-scale at 2.0mm. Messages: {warning_messages}"
+    )
+
+
 def test_slr_flow(caplog):
     with TemporaryDirectory() as out_dir:
         data_path = get_fnames(name="fornix")
