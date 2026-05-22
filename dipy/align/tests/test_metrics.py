@@ -4,7 +4,6 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_raises
 from scipy import ndimage
 
-from dipy.align import floating
 from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
 from dipy.testing.decorators import set_random_number_generator
 
@@ -54,7 +53,7 @@ def test_EMMetric_image_dynamics(rng):
 
     target_shape = (10, 10)
     # create a random image
-    image = np.ndarray(target_shape, dtype=floating)
+    image = np.ndarray(target_shape, dtype=np.float32)
     image[...] = rng.integers(0, 10, np.size(image)).reshape(tuple(target_shape))
     # compute the expected binary mask
     expected = (image > 0).astype(np.int32)
@@ -119,14 +118,14 @@ def test_em_demons_step_2d():
     sigma_i_sq = (F - G) ** 2
     # Set the properties relevant to the demons methods
     metric.smooth = 3.0
-    metric.gradient_static = np.array(grad_F, dtype=floating)
-    metric.gradient_moving = np.array(grad_G, dtype=floating)
-    metric.static_image = np.array(F, dtype=floating)
-    metric.moving_image = np.array(G, dtype=floating)
-    metric.staticq_means_field = np.array(F, dtype=floating)
-    metric.staticq_sigma_sq_field = np.array(sigma_i_sq, dtype=floating)
-    metric.movingq_means_field = np.array(G, dtype=floating)
-    metric.movingq_sigma_sq_field = np.array(sigma_i_sq, dtype=floating)
+    metric.gradient_static = np.array(grad_F, dtype=np.float32)
+    metric.gradient_moving = np.array(grad_G, dtype=np.float32)
+    metric.static_image = np.array(F, dtype=np.float32)
+    metric.moving_image = np.array(G, dtype=np.float32)
+    metric.staticq_means_field = np.array(F, dtype=np.float32)
+    metric.staticq_sigma_sq_field = np.array(sigma_i_sq, dtype=np.float32)
+    metric.movingq_means_field = np.array(G, dtype=np.float32)
+    metric.movingq_sigma_sq_field = np.array(sigma_i_sq, dtype=np.float32)
 
     # compute the step using the implementation under test
     actual_forward = metric.compute_demons_step(forward_step=True)
@@ -213,14 +212,14 @@ def test_em_demons_step_3d():
     sigma_i_sq = (F - G) ** 2
     # Set the properties relevant to the demons methods
     metric.smooth = 3.0
-    metric.gradient_static = np.array(grad_F, dtype=floating)
-    metric.gradient_moving = np.array(grad_G, dtype=floating)
-    metric.static_image = np.array(F, dtype=floating)
-    metric.moving_image = np.array(G, dtype=floating)
-    metric.staticq_means_field = np.array(F, dtype=floating)
-    metric.staticq_sigma_sq_field = np.array(sigma_i_sq, dtype=floating)
-    metric.movingq_means_field = np.array(G, dtype=floating)
-    metric.movingq_sigma_sq_field = np.array(sigma_i_sq, dtype=floating)
+    metric.gradient_static = np.array(grad_F, dtype=np.float32)
+    metric.gradient_moving = np.array(grad_G, dtype=np.float32)
+    metric.static_image = np.array(F, dtype=np.float32)
+    metric.moving_image = np.array(G, dtype=np.float32)
+    metric.staticq_means_field = np.array(F, dtype=np.float32)
+    metric.staticq_sigma_sq_field = np.array(sigma_i_sq, dtype=np.float32)
+    metric.movingq_means_field = np.array(G, dtype=np.float32)
+    metric.movingq_sigma_sq_field = np.array(sigma_i_sq, dtype=np.float32)
 
     # compute the step using the implementation under test
     actual_forward = metric.compute_demons_step(forward_step=True)
