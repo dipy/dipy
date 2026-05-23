@@ -1,9 +1,5 @@
 from enum import IntEnum
 
-import numpy as np
-
-FLOAT_DTYPE = np.float32
-
 
 class RegistrationStages(IntEnum):
     """Callback stages for volumetric registration.
