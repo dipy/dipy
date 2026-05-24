@@ -78,6 +78,9 @@ def main():
     with open(commit_msg_path, "w") as f_out:
         f_out.writelines(input_file_lines)
 
+    if not input_file_lines:
+        die("Commit message is empty after stripping comments.", commit_msg_path)
+
     subject_line: str = input_file_lines[0]
 
     if len(subject_line) < MIN_SUBJ_LINE_LENGTH:
@@ -102,7 +105,7 @@ def main():
             f"The first line may not have leading or trailing space:\n[{subject_line}]",
             commit_msg_path,
         )
-    if re.match(r"\.$", subject_line):
+    if re.search(r"\.$", subject_line):
         die(
             f"The first line may not have a trailing period:\n[{subject_line}]",
             commit_msg_path,
@@ -127,7 +130,6 @@ To reference GitHub issue XXXX, add "Issue #XXXX" to the PR message.
 If the issue addresses an open issue, add "Closes #XXXX" to the PR message.""",
             commit_msg_path,
         )
-    del subject_line
 
     if len(input_file_lines) > 1:
         second_line: str = input_file_lines[
@@ -140,7 +142,6 @@ If the issue addresses an open issue, add "Closes #XXXX" to the PR message.""",
                 f'The second line of the commit message must be empty:\n"{second_line}" with length {len(second_line)}',
                 commit_msg_path,
             )
-        del second_line
 
 
 if __name__ == "__main__":
