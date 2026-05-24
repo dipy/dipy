@@ -21,7 +21,7 @@ def save_pickle(fname, dix):
     >>> fd, fname = mkstemp() # make temporary file (opened, attached to fh)
     >>> d={0:{'d':1}}
     >>> save_pickle(fname, d)
-    >>> d2=load_pickle(fname)
+    >>> d2=load_pickle(fname, check_safety=False)
 
     We remove the temporary file we created for neatness
 
@@ -33,18 +33,20 @@ def save_pickle(fname, dix):
     dipy.io.pickles.load_pickle
 
     """
-    out = open(fname, "wb")
-    pickle.dump(dix, out, protocol=pickle.HIGHEST_PROTOCOL)
-    out.close()
+    with open(fname, "wb") as out:
+        pickle.dump(dix, out, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def load_pickle(fname):
+def load_pickle(fname, *, check_safety=True):
     """Load object from pickle file `fname`.
 
     Parameters
     ----------
     fname : str
        filename to load dict or other python object
+    check_safety : bool, optional
+       If True, emit a warning that pickle files can execute arbitrary code.
+       Set to False only when loading files from trusted sources.
 
     Returns
     -------
@@ -56,12 +58,11 @@ def load_pickle(fname):
     dipy.io.pickles.save_pickle
 
     """
-    warnings.warn(
-        "Loading pickles can execute arbitrary code. Only load pickles from trusted sources.",
-        UserWarning,
-        stacklevel=2,
-    )
-    inp = open(fname, "rb")
-    dix = pickle.load(inp)
-    inp.close()
-    return dix
+    if check_safety:
+        warnings.warn(
+            "pickle.load() executes arbitrary code; only load files from trusted sources.",
+            UserWarning,
+            stacklevel=2,
+        )
+    with open(fname, "rb") as inp:
+        return pickle.load(inp)
