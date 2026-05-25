@@ -99,12 +99,6 @@ For smoothing, DIPY computes voxel-unit Gaussian sigmas as:
 sigma[d] = sigma_factor * (output_spacing[d] / input_spacing[d] - 1)
 ```
 
-For isotropic data, this simplifies to:
-
-```text
-sigma_i = sigma_factor * (2**i - 1)
-```
-
 Thus, DIPY's default smoothing can be much weaker than ANTs' default smoothing. For three isotropic levels and `sigma_factor = 0.2`, DIPY gives fine-to-coarse sigmas:
 
 ```text
@@ -117,7 +111,7 @@ whereas ANTs uses:
 [0, 1, 2]
 ```
 
-fine-to-coarse.
+fine-to-coarse. For Affine Registration, DIPY does accept the smoothing sigmas as a list, allowing for using the same smoothing scheme as ANTs for example.
 
 ---
 
