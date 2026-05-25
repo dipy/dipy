@@ -40,8 +40,8 @@ def run_ants_syn(
         grad_step=registration_cfg["grad_step"],
         flow_sigma=ants_cfg["flow_sigma"],
         total_sigma=ants_cfg["total_sigma"],
-        singleprecision=ants_cfg["singleprecision"],
-        use_legacy_histogram_matching=ants_cfg["use_legacy_histogram_matching"],
+        singleprecision=True,
+        use_legacy_histogram_matching=False,
         outprefix=str(out_dir / "ants_"),
         verbose=True,
     )
