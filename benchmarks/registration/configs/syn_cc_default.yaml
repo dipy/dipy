@@ -1,0 +1,23 @@
+name: syn_cc_default
+description: Initial SyN-only cross-correlation benchmark configuration.
+
+registration:
+  metric: CC
+  level_iters: [20, 20, 10]
+  grad_step: 0.25
+  cc_radius: 4
+  initial_transform: Identity
+  convergence_tol: 1.0e-7
+  convergence_window: 8
+
+dipy:
+  metric_class: CCMetric
+  update_field_sigma: 2.0
+  ss_sigma_factor: 0.5
+  inv_iter: 20
+  inv_tol: 1.0e-3
+
+ants:
+  syn_metric: CC
+  flow_sigma: 2.0
+  total_sigma: 0.0
