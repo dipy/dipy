@@ -114,6 +114,6 @@ def test_voxel_values_from_slice_state_inverts_affine():
         ]
     )
 
-    voxel_values = voxel_values_from_slice_state((18.0, 22.0, 45.0), affine)
+    voxel_values = voxel_values_from_slice_state((18.0, 22.0, 45.0), affine=affine)
 
     assert np.allclose(voxel_values, (4.0, 4.0, 5.0))
