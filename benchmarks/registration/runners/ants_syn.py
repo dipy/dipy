@@ -14,6 +14,17 @@ def load_config(path: str | Path) -> dict:
         return yaml.safe_load(f)
 
 
+def remove_transform_files(registration_result: dict) -> None:
+    transform_paths = [
+        *registration_result.get("fwdtransforms", []),
+        *registration_result.get("invtransforms", []),
+    ]
+    for transform_path in set(transform_paths):
+        path = Path(transform_path)
+        if path.exists():
+            path.unlink()
+
+
 def run_ants_syn(
     fixed_path: str | Path,
     moving_path: str | Path,
@@ -40,14 +51,14 @@ def run_ants_syn(
         grad_step=registration_cfg["grad_step"],
         flow_sigma=ants_cfg["flow_sigma"],
         total_sigma=ants_cfg["total_sigma"],
-        singleprecision=True,
-        use_legacy_histogram_matching=False,
-        outprefix=str(out_dir / "ants_"),
+        singleprecision=ants_cfg["singleprecision"],
+        use_legacy_histogram_matching=ants_cfg["use_legacy_histogram_matching"],
         verbose=True,
     )
 
     warped_path = out_dir / "warped_ants.nii.gz"
     ants.image_write(reg["warpedmovout"], str(warped_path))
+    remove_transform_files(reg)
 
     return {"warped_image": str(warped_path)}
 
