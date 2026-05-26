@@ -12,7 +12,12 @@ from dipy.viz.skyline.UI.elements import (
     two_disk_slider,
 )
 from dipy.viz.skyline.UI.theme import THEME
-from dipy.viz.skyline.render.renderer import Visualization
+from dipy.viz.skyline.render.renderer import (
+    Visualization,
+    slice_slider_bounds,
+    slice_slider_values_from_state,
+    slice_state_from_slider_values,
+)
 
 fury_trip_msg = (
     "Skyline requires Fury version 2.0.0a6 or higher."
@@ -500,25 +505,15 @@ class Image3D(Visualization):
         imgui.spacing()
 
         axis_labels = ("X", "Y", "Z")
-
-        def _axis_slider_bounds(axis):
-            lower = float(min(self.bounds[0][axis], self.bounds[1][axis]))
-            upper = float(max(self.bounds[0][axis], self.bounds[1][axis]))
-            min_bound = int(np.ceil(lower))
-            max_bound = int(np.floor(upper))
-            if min_bound > max_bound:
-                mid = int(round((lower + upper) * 0.5))
-                return mid, mid
-            return min_bound, max_bound
-
-        slider_bounds = tuple(_axis_slider_bounds(axis) for axis in range(3))
+        slider_bounds = slice_slider_bounds(self.dwi.shape[:3], affine=self.affine)
+        slider_state = slice_slider_values_from_state(self.state, affine=self.affine)
         slicers = []
         for axis, label in enumerate(axis_labels):
             min_bound, max_bound = slider_bounds[axis]
             slicers.append(
                 (
                     thin_slider,
-                    (label, self.state[axis], min_bound, max_bound),
+                    (label, slider_state[axis], min_bound, max_bound),
                     {
                         "value_type": "float",
                         "text_format": ".0f",
@@ -531,7 +526,10 @@ class Image3D(Visualization):
         render_data = render_group("Slice", slicers)
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
-                self.state[idx] = int(round(new))
+                slider_state[idx] = int(round(new))
+                self.state = slice_state_from_slider_values(
+                    slider_state, affine=self.affine
+                )
                 if self._synchronize and self._sync_callabck is not None:
                     self._sync_callabck(
                         self,
