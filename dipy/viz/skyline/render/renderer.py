@@ -127,12 +127,12 @@ def slice_slider_values_from_state(state, *, affine=None):
     if affine is None:
         return state
 
-    voxel_values = voxel_values_from_slice_state(state, affine)
+    voxel_values = voxel_values_from_slice_state(state, affine=affine)
     voxel_sizes = affine_voxel_sizes(affine)
     return np.where(voxel_sizes >= 1.0, voxel_values * voxel_sizes, voxel_values)
 
 
-def voxel_values_from_slice_state(state, affine=None):
+def voxel_values_from_slice_state(state, *, affine=None):
     """Convert slicing state coordinates to voxel coordinates.
 
     Parameters
