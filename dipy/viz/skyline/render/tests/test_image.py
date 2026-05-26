@@ -4,6 +4,11 @@ import pytest
 pytest.importorskip("fury")
 
 from dipy.viz.skyline.render.image import Image3D  # noqa: E402
+from dipy.viz.skyline.render.renderer import (  # noqa: E402
+    slice_slider_bounds,
+    slice_slider_values_from_state,
+    slice_state_from_slider_values,
+)
 
 
 def _image_stub():
@@ -77,3 +82,34 @@ def test_update_state_switches_direction_when_index_is_valid():
 
     assert image._volume_idx == 3
     assert len(image._scene_calls) == 2
+
+
+def test_image_slice_slider_bounds_use_affine_scaled_shape():
+    """Image slice sliders use affine-scaled bounds for large voxels."""
+    image = _image_stub()
+    image.dwi = np.zeros((10, 20, 30), dtype=np.float32)
+    image.affine = np.diag([2.0, 1.0, 3.0, 1.0])
+
+    bounds = slice_slider_bounds(image.dwi.shape[:3], affine=image.affine)
+
+    assert bounds == ((0, 20), (0, 20), (0, 90))
+
+
+def test_image_slice_slider_value_maps_to_world_state():
+    """Image slice slider values map back to world slice coordinates."""
+    image = _image_stub()
+    image.affine = np.array(
+        [
+            [2.0, 0.0, 0.0, 10.0],
+            [0.0, 0.5, 0.0, 20.0],
+            [0.0, 0.0, 3.0, 30.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+    slider_state = np.array([8.0, 4.0, 15.0])
+
+    image.state = slice_state_from_slider_values(slider_state, affine=image.affine)
+    displayed_state = slice_slider_values_from_state(image.state, affine=image.affine)
+
+    assert np.allclose(image.state, (18.0, 22.0, 45.0))
+    assert np.allclose(displayed_state, slider_state)
