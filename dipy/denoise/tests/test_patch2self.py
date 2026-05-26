@@ -343,14 +343,10 @@ def test_patch2self_v3_preserves_out_dtype_and_precision_invariance(rng):
     state = np.random.get_state()
     try:
         np.random.seed(2025)
-        den32 = p2s.patch2self(
-            data32, bvals, model="ridge", alpha=1.0, version=3
-        )
+        den32 = p2s.patch2self(data32, bvals, model="ridge", alpha=1.0, version=3)
 
         np.random.seed(2025)
-        den64 = p2s.patch2self(
-            data64, bvals, model="ridge", alpha=1.0, version=3
-        )
+        den64 = p2s.patch2self(data64, bvals, model="ridge", alpha=1.0, version=3)
     finally:
         np.random.set_state(state)
 
