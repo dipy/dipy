@@ -27,7 +27,8 @@ either backend:
 3. Fill holes and keep the largest connected mask component.
 4. Rigidly prealign the moving image to the fixed image.
 5. Run DIPY SyN and ANTsPy SyN from the same prealigned inputs.
-6. Evaluate both warped outputs with framework-independent metrics.
+6. Evaluate both warped outputs inside the fixed brain mask with
+   framework-independent metrics.
 
 The current evaluator computes:
 

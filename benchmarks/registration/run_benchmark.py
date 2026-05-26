@@ -127,11 +127,13 @@ def get_synthseg_model(use_cuda: bool):
 def skull_strip(
     in_path: str | Path,
     out_img_path: str | Path,
+    out_mask_path: str | Path,
     *,
     use_cuda: bool,
 ) -> Path:
     out_img_path = Path(out_img_path)
-    if out_img_path.exists():
+    out_mask_path = Path(out_mask_path)
+    if out_img_path.exists() and out_mask_path.exists():
         print(f"Reusing skull-stripped image: {out_img_path}")
         return out_img_path
 
@@ -151,6 +153,9 @@ def skull_strip(
 
     brain_img = nib.Nifti1Image(brain.astype(np.float32), img.affine)
     nib.save(brain_img, str(out_img_path))
+
+    mask_img = nib.Nifti1Image(mask.astype(np.uint8), img.affine)
+    nib.save(mask_img, str(out_mask_path))
 
     return out_img_path
 
@@ -241,11 +246,13 @@ def prepare_pair(
     fixed_brain = skull_strip(
         fixed_resliced,
         skullstrip_out / "fixed_brain.nii.gz",
+        skullstrip_out / "fixed_mask.nii.gz",
         use_cuda=use_cuda,
     )
     moving_brain = skull_strip(
         moving_resliced,
         skullstrip_out / "moving_brain.nii.gz",
+        skullstrip_out / "moving_mask.nii.gz",
         use_cuda=use_cuda,
     )
 
@@ -332,6 +339,7 @@ def run_pair(
         pair_id=pair_id,
         fixed_path=fixed,
         moving_path=moving,
+        fixed_mask_path=pair_out / "prepared" / "skullstrip" / "fixed_mask.nii.gz",
         warped_ants_path=ants_result["warped_image"],
         warped_dipy_path=dipy_result["warped_image"],
         out_json=pair_out / "evaluation.json",
