@@ -9,6 +9,8 @@ from pathlib import Path
 import nibabel as nib
 from nibabel.processing import resample_from_to
 import numpy as np
+from scipy.stats import pearsonr
+from skimage.metrics import mean_squared_error, normalized_mutual_information
 
 EPS = 1e-8
 
@@ -25,71 +27,23 @@ def same_grid(a: nib.Nifti1Image, b: nib.Nifti1Image) -> bool:
     return a.shape == b.shape and np.allclose(a.affine, b.affine, atol=1e-4)
 
 
-def normalize_in_mask(data: np.ndarray, mask: np.ndarray) -> np.ndarray:
-    out = np.zeros_like(data, dtype=np.float32)
-    values = data[mask].astype(np.float64)
-    out[mask] = (
-        (values - values.min()) / max(values.max() - values.min(), EPS)
-    ).astype(np.float32)
-    return out
-
-
-def ncc(x: np.ndarray, y: np.ndarray, mask: np.ndarray) -> float:
-    xv = x[mask].astype(np.float64)
-    yv = y[mask].astype(np.float64)
-    xv -= xv.mean()
-    yv -= yv.mean()
-    return float(np.dot(xv, yv) / max(np.linalg.norm(xv) * np.linalg.norm(yv), EPS))
-
-
-def mse(x: np.ndarray, y: np.ndarray, mask: np.ndarray) -> float:
-    diff = x[mask].astype(np.float64) - y[mask].astype(np.float64)
-    return float(np.mean(diff * diff))
-
-
-def mutual_information(
-    x: np.ndarray,
-    y: np.ndarray,
-    mask: np.ndarray,
-    bins: int = 64,
-) -> float:
-    hist, _, _ = np.histogram2d(x[mask].ravel(), y[mask].ravel(), bins=bins)
-    pxy = hist / max(hist.sum(), EPS)
-    px = pxy.sum(axis=1)
-    py = pxy.sum(axis=0)
-    nz = pxy > 0
-    independent = np.maximum(px[:, None] * py[None, :], EPS)
-    return float(np.sum(pxy[nz] * np.log(pxy[nz] / independent[nz])))
-
-
-def normalized_mutual_information(
-    x: np.ndarray,
-    y: np.ndarray,
-    mask: np.ndarray,
-    bins: int = 64,
-) -> float:
-    hist, _, _ = np.histogram2d(x[mask].ravel(), y[mask].ravel(), bins=bins)
-    pxy = hist / max(hist.sum(), EPS)
-    px = pxy.sum(axis=1)
-    py = pxy.sum(axis=0)
-    hx = -np.sum(px[px > 0] * np.log(px[px > 0]))
-    hy = -np.sum(py[py > 0] * np.log(py[py > 0]))
-    hxy = -np.sum(pxy[pxy > 0] * np.log(pxy[pxy > 0]))
-    return float((hx + hy) / max(hxy, EPS))
+def normalized_values(data: np.ndarray) -> np.ndarray:
+    values = data.astype(np.float64).ravel()
+    return (values - values.min()) / max(values.max() - values.min(), EPS)
 
 
 def evaluate_candidate(
     fixed: np.ndarray,
     candidate: np.ndarray,
-    mask: np.ndarray,
 ) -> dict[str, float]:
-    fixed_n = normalize_in_mask(fixed, mask)
-    candidate_n = normalize_in_mask(candidate, mask)
+    fixed_values = normalized_values(fixed)
+    candidate_values = normalized_values(candidate)
     return {
-        "ncc": ncc(fixed_n, candidate_n, mask),
-        "mse": mse(fixed_n, candidate_n, mask),
-        "mi": mutual_information(fixed_n, candidate_n, mask),
-        "nmi": normalized_mutual_information(fixed_n, candidate_n, mask),
+        "ncc": float(pearsonr(fixed_values, candidate_values)[0]),
+        "mse": float(mean_squared_error(fixed_values, candidate_values)),
+        "nmi": float(
+            normalized_mutual_information(fixed_values, candidate_values, bins=64)
+        ),
     }
 
 
@@ -121,16 +75,11 @@ def evaluate_registration(
         "ants": ants_warped,
         "dipy": dipy_warped,
     }
-    mask = np.isfinite(fixed) & (fixed > 0)
-    for candidate in candidates.values():
-        mask &= np.isfinite(candidate)
-    if not mask.any():
-        raise ValueError("Evaluation mask is empty.")
 
     output = {
         "pair_id": pair_id,
         "metrics": {
-            name: evaluate_candidate(fixed, candidate, mask)
+            name: evaluate_candidate(fixed, candidate)
             for name, candidate in candidates.items()
         },
     }

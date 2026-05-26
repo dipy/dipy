@@ -34,7 +34,6 @@ The current evaluator computes:
 ```text
 ncc
 mse
-mi
 nmi
 ```
 

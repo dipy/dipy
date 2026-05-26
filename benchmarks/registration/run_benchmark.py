@@ -45,7 +45,7 @@ from dipy.align.reslice import reslice
 from dipy.align.transforms import RigidTransform3D, TranslationTransform3D
 
 _SYNTHSEG_MODEL = None
-METRIC_NAMES = ("ncc", "mse", "mi", "nmi")
+METRIC_NAMES = ("ncc", "mse", "nmi")
 
 
 def load_yaml(path: str | Path) -> dict:
