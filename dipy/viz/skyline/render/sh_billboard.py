@@ -137,11 +137,11 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
 
     Parameters
     ----------
-    active_slice_x : int, optional
+    active_slice_x : float, optional
         Value for ``active slice x``.
-    active_slice_y : int, optional
+    active_slice_y : float, optional
         Value for ``active slice y``.
-    active_slice_z : int, optional
+    active_slice_z : float, optional
         Value for ``active slice z``.
     vis_x : int, optional
         Value for ``vis x``.
@@ -177,11 +177,11 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
 
         Parameters
         ----------
-        active_slice_x : int, optional
+        active_slice_x : float, optional
             Value for ``active slice x``.
-        active_slice_y : int, optional
+        active_slice_y : float, optional
             Value for ``active slice y``.
-        active_slice_z : int, optional
+        active_slice_z : float, optional
             Value for ``active slice z``.
         vis_x : int, optional
             Value for ``vis x``.
@@ -213,6 +213,19 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
         self.uniform_buffer.data[name] = int(value)
         self.uniform_buffer.update_full()
 
+    def _set_f4(self, name, value):
+        """Handle set f4 for ``SlicedSphGlyphMaterial``.
+
+        Parameters
+        ----------
+        name : str
+            Uniform name.
+        value : float
+            Value for ``value``.
+        """
+        self.uniform_buffer.data[name] = float(value)
+        self.uniform_buffer.update_full()
+
     def _get_i4(self, name):
         """Handle  get i4 for ``SlicedSphGlyphMaterial``.
 
@@ -228,16 +241,31 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
         """
         return int(self.uniform_buffer.data[name])
 
+    def _get_f4(self, name):
+        """Handle get f4 for ``SlicedSphGlyphMaterial``.
+
+        Parameters
+        ----------
+        name : str
+            Uniform name.
+
+        Returns
+        -------
+        float
+            The value of the uniform buffer.
+        """
+        return float(self.uniform_buffer.data[name])
+
     @property
     def active_slice_x(self):
         """Handle active slice x for ``SlicedSphGlyphMaterial``.
 
         Returns
         -------
-        int
+        float
             The value of the active slice x.
         """
-        return self._get_i4("active_slice_x")
+        return self._get_f4("active_slice_x")
 
     @active_slice_x.setter
     def active_slice_x(self, v):
@@ -245,10 +273,10 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
 
         Parameters
         ----------
-        v : int
+        v : float
             Value for ``v``.
         """
-        self._set_i4("active_slice_x", v)
+        self._set_f4("active_slice_x", v)
 
     @property
     def active_slice_y(self):
@@ -256,10 +284,10 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
 
         Returns
         -------
-        int
+        float
             The value of the active slice y.
         """
-        return self._get_i4("active_slice_y")
+        return self._get_f4("active_slice_y")
 
     @active_slice_y.setter
     def active_slice_y(self, v):
@@ -267,10 +295,10 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
 
         Parameters
         ----------
-        v : int
+        v : float
             Value for ``v``.
         """
-        self._set_i4("active_slice_y", v)
+        self._set_f4("active_slice_y", v)
 
     @property
     def active_slice_z(self):
@@ -278,10 +306,10 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
 
         Returns
         -------
-        int
+        float
             The value of the active slice z.
         """
-        return self._get_i4("active_slice_z")
+        return self._get_f4("active_slice_z")
 
     @active_slice_z.setter
     def active_slice_z(self, v):
@@ -289,10 +317,10 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
 
         Parameters
         ----------
-        v : int
+        v : float
             Value for ``v``.
         """
-        self._set_i4("active_slice_z", v)
+        self._set_f4("active_slice_z", v)
 
     @property
     def vis_x(self):

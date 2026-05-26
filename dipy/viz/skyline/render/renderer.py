@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 
 from PIL import Image
+import numpy as np
 
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
@@ -28,6 +29,130 @@ else:
 imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
 if has_imgui:
     imgui = imgui_bundle.imgui
+
+
+def affine_voxel_sizes(affine):
+    """Return voxel sizes from an affine matrix.
+
+    Parameters
+    ----------
+    affine : ndarray
+        Voxel-to-world affine.
+
+    Returns
+    -------
+    ndarray
+        Per-axis voxel sizes from the affine columns.
+    """
+    return np.linalg.norm(np.asarray(affine)[:3, :3], axis=0)
+
+
+def slice_slider_bounds(shape, *, affine=None):
+    """Return affine-aware integer bounds for slice sliders.
+
+    Parameters
+    ----------
+    shape : tuple(int, int, int)
+        Original spatial data shape.
+    affine : ndarray, optional
+        Voxel-to-world affine used to position slices in world coordinates.
+
+    Returns
+    -------
+    tuple(tuple(int, int), tuple(int, int), tuple(int, int))
+        Per-axis inclusive slider bounds.
+    """
+    spatial_shape = np.asarray(shape[:3], dtype=float)
+    if affine is None:
+        max_bounds = spatial_shape
+    else:
+        voxel_sizes = affine_voxel_sizes(affine)
+        max_bounds = np.where(
+            voxel_sizes >= 1.0, spatial_shape * voxel_sizes, spatial_shape
+        )
+
+    max_bounds = np.maximum(np.ceil(max_bounds - 1e-12).astype(int), 0)
+    return tuple((0, int(max_bound)) for max_bound in max_bounds)
+
+
+def slice_state_from_slider_values(slider_values, *, affine=None):
+    """Convert slice slider values to slicing state coordinates.
+
+    Parameters
+    ----------
+    slider_values : array-like
+        Per-axis values displayed by the slice sliders.
+    affine : ndarray, optional
+        Voxel-to-world affine used by the visualization.
+
+    Returns
+    -------
+    ndarray
+        Slicing state in world coordinates when affine is provided, otherwise
+        voxel coordinates.
+    """
+    slider_values = np.asarray(slider_values[:3], dtype=float)
+    if affine is None:
+        return slider_values
+
+    voxel_sizes = affine_voxel_sizes(affine)
+    scaled_axes = voxel_sizes >= 1.0
+    voxel_values = slider_values.copy()
+    np.divide(
+        slider_values,
+        voxel_sizes,
+        out=voxel_values,
+        where=scaled_axes,
+    )
+    return (np.asarray(affine) @ np.r_[voxel_values, 1.0])[:3]
+
+
+def slice_slider_values_from_state(state, *, affine=None):
+    """Convert slicing state coordinates to slice slider values.
+
+    Parameters
+    ----------
+    state : array-like
+        Current slicing state in world coordinates when affine is provided,
+        otherwise voxel coordinates.
+    affine : ndarray, optional
+        Voxel-to-world affine used by the visualization.
+
+    Returns
+    -------
+    ndarray
+        Per-axis values to display in slice sliders.
+    """
+    state = np.asarray(state[:3], dtype=float)
+    if affine is None:
+        return state
+
+    voxel_values = voxel_values_from_slice_state(state, affine)
+    voxel_sizes = affine_voxel_sizes(affine)
+    return np.where(voxel_sizes >= 1.0, voxel_values * voxel_sizes, voxel_values)
+
+
+def voxel_values_from_slice_state(state, affine=None):
+    """Convert slicing state coordinates to voxel coordinates.
+
+    Parameters
+    ----------
+    state : array-like
+        Current slicing state in world coordinates when affine is provided,
+        otherwise voxel coordinates.
+    affine : ndarray, optional
+        Voxel-to-world affine used by the visualization.
+
+    Returns
+    -------
+    ndarray
+        Per-axis voxel coordinates.
+    """
+    state = np.asarray(state[:3], dtype=float)
+    if affine is None:
+        return state
+
+    return (np.linalg.inv(np.asarray(affine)) @ np.r_[state, 1.0])[:3]
 
 
 class Visualization:
