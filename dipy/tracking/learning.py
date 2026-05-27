@@ -48,12 +48,10 @@ def detect_corresponding_tracks(indices, tracks1, tracks2):
     li = len(indices)
 
     track2track = np.zeros((li, 2))
-    cnt = 0
-    for i in indices:
+    for cnt, i in enumerate(indices):
         rt = [pf.mam_distances(tracks1[i], t, "avg") for t in tracks2]
         rt = np.array(rt)
         track2track[cnt] = np.array([i, rt.argmin()])
-        cnt += 1
 
     return track2track.astype(int)
 
@@ -107,10 +105,8 @@ def detect_corresponding_tracks_plus(indices, tracks1, indices2, tracks2):
     """
     li = len(indices)
     track2track = np.zeros((li, 2))
-    cnt = 0
-    for i in indices:
+    for cnt, i in enumerate(indices):
         rt = [pf.mam_distances(tracks1[i], t, "avg") for t in tracks2]
         rt = np.array(rt)
         track2track[cnt] = np.array([i, indices2[rt.argmin()]])
-        cnt += 1
     return track2track.astype(int)

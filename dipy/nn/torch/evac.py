@@ -95,7 +95,7 @@ class MoveDimLayer(Module):
     """
 
     def __init__(self, source_dim, dest_dim):
-        super(MoveDimLayer, self).__init__()
+        super().__init__()
         self.source_dim = source_dim
         self.dest_dim = dest_dim
 
@@ -119,7 +119,7 @@ class ChannelSum(Module):
     """Layer to sum over the channel dimension."""
 
     def __init__(self):
-        super(ChannelSum, self).__init__()
+        super().__init__()
 
     def forward(self, inputs):
         """Forward pass of the ChannelSum layer.
@@ -141,7 +141,7 @@ class Add(Module):
     """Layer to add two tensors."""
 
     def __init__(self):
-        super(Add, self).__init__()
+        super().__init__()
 
     def forward(self, x, passed):
         """Forward pass of the Add layer.
@@ -199,7 +199,7 @@ class Block(Module):
         passed_channel=1,
         layer_type="down",
     ):
-        super(Block, self).__init__()
+        super().__init__()
         self.n_layers = n_layers
         self.layer_list = ModuleList()
         self.layer_list2 = ModuleList()
@@ -275,7 +275,7 @@ class Model(Module):
     """
 
     def __init__(self, model_scale=16):
-        super(Model, self).__init__()
+        super().__init__()
 
         # Block structure
         self.block1 = Block(

@@ -25,7 +25,7 @@ estimate the noise standard deviation using the PCA algorithm based
 on the Marcenko-Pastur distribution :footcite:p:`Veraart2016b`
 
 Let's load the necessary modules
-"""  # noqa: E501
+"""
 
 # load general modules
 from time import time

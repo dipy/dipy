@@ -272,8 +272,7 @@ def validate_pipeline_config(pipeline_stages):
             errors.append(f"Stage '{stage_name}': {str(e)}")
         except Exception as e:
             errors.append(
-                f"Stage '{stage_name}': Failed to introspect CLI "
-                f"'{cli_name}': {str(e)}"
+                f"Stage '{stage_name}': Failed to introspect CLI '{cli_name}': {str(e)}"
             )
 
     for stage in pipeline_stages:
@@ -554,14 +553,15 @@ def get_workflow_output_params(*, cli_command):
             return []
 
         sig = inspect.signature(run_method)
-        output_params = []
 
         # Identify output parameters
         # Convention: parameters starting with 'out_' are outputs
         # Exclude 'out_dir' as it's a directory parameter, not an output file
-        for param_name in sig.parameters:
-            if param_name.startswith("out_") and param_name != "out_dir":
-                output_params.append(param_name)
+        output_params = [
+            param_name
+            for param_name in sig.parameters
+            if param_name.startswith("out_") and param_name != "out_dir"
+        ]
 
         return output_params
 
@@ -865,9 +865,13 @@ def execute_pipeline_stage(
     if "params" in resolved_config:
         workflow_params.update(resolved_config["params"])
 
-    for key, value in resolved_config.items():
-        if key not in ("name", "cli", "inputs", "params"):
-            workflow_params[key] = value
+    workflow_params.update(
+        {
+            key: value
+            for key, value in resolved_config.items()
+            if key not in ("name", "cli", "inputs", "params")
+        }
+    )
 
     module_name, class_name = cli_flows[cli_name]
     module = importlib.import_module(module_name)
@@ -1064,8 +1068,10 @@ def discover_stage_outputs(*, stage_name, stage_config, io_config):
         }
 
         if cli_name in cli_workflow_patterns:
-            for pattern in cli_workflow_patterns[cli_name]:
-                potential_patterns.append(os.path.join(out_dir, pattern))
+            potential_patterns.extend(
+                os.path.join(out_dir, pattern)
+                for pattern in cli_workflow_patterns[cli_name]
+            )
 
         stage_specific = stage_name.lower().replace("_", "")
         potential_patterns.extend(
@@ -1654,63 +1660,6 @@ def _serve_html_report(report_path):
 # - dipy cluster qbx
 
 
-def _serve_html_report(report_path):
-    """Serve an HTML pipeline report via a local HTTP server and open it.
-
-    Starts a ``http.server`` rooted at the report's directory, opens the
-    default browser, and blocks until the user presses Ctrl+C.
-
-    Parameters
-    ----------
-    report_path : str or Path
-        Path to the HTML report file (e.g., ``pipeline_report.html``).
-    """
-    import functools
-    import http.server
-    import socket
-    import socketserver
-    import webbrowser
-
-    report_path = Path(report_path).resolve()
-    report_dir = str(report_path.parent)
-    report_name = report_path.name
-
-    port = 8000
-    while True:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            try:
-                s.bind(("", port))
-                break
-            except OSError:
-                port += 1
-
-    handler = functools.partial(
-        http.server.SimpleHTTPRequestHandler, directory=report_dir
-    )
-    url = f"http://localhost:{port}/{report_name}"
-    logger.info(f"Serving report at: {url}")
-    logger.info("Press Ctrl+C to stop the server.")
-    webbrowser.open(url)
-    with socketserver.TCPServer(("", port), handler) as httpd:
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            logger.info("Server stopped.")
-
-
-# =============================================================================
-# AutoFlow Workflow
-# =============================================================================
-# TODO:
-# - Done: handle maskfile, check binary, % of white voxels.
-# - Add opposite phase encoding (AP/PA)
-# - Done: handle incorrect --start name.
-# - Done: Create dipy_brain_mask workflow and add to pipelines
-#   (SynthSeg, median_otsu, PUMBA, EVAC+)
-# - Create dipy_denoise
-# - dipy cluster qbx
-
-
 class AutoFlow(Workflow):
     """Automatic pipeline execution workflow with semantic DAG-based wiring.
 
@@ -1798,48 +1747,6 @@ class AutoFlow(Workflow):
         out_report : str, optional
             Path to the report file.
         """
-
-        if list_pipelines:
-            current_log_level = logger.getEffectiveLevel()
-            logger.info(
-                templates.list_pipelines_with_descriptions(log_level=current_log_level)
-            )
-            return
-
-        # =====================================================================
-        # Detect file types from input_files
-        # =====================================================================
-
-        config_file = None
-        dwi_file = None
-        bvals_file = None
-        bvecs_file = None
-
-        for f in input_files:
-            p = Path(f)
-            name_lower = p.name.lower()
-            full_suffix = "".join(p.suffixes).lower()
-
-            if re.match(r".*report.*\.html$", name_lower):
-                logger.info(
-                    f"HTML report detected: {f}. "
-                    "Ignoring all other inputs and opening report."
-                )
-                _serve_html_report(f)
-                return
-            elif full_suffix == ".toml":
-                config_file = f
-            elif full_suffix in (".nii.gz", ".nii"):
-                dwi_file = f
-            elif p.suffix.lower() in (".bval", ".bvals"):
-                bvals_file = f
-            elif p.suffix.lower() in (".bvec", ".bvecs"):
-                bvecs_file = f
-            else:
-                logger.warning(f"Unrecognized file type, ignoring: {f}")
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_dir = os.path.abspath(out_dir) or os.getcwd()
 
         if list_pipelines:
             current_log_level = logger.getEffectiveLevel()

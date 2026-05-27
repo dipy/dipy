@@ -133,7 +133,7 @@ class ForecastModel(OdfModel, Cache):
         ...         "ignore", message=descoteaux07_legacy_msg,
         ...         category=PendingDeprecationWarning)
         ...     fodf = f_fit.odf(default_sphere)
-        """  # noqa: E501
+        """
         OdfModel.__init__(self, gtab)
 
         # round the bvals in order to avoid numerical errors

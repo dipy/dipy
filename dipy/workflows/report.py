@@ -620,6 +620,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             background: #fff;
         }}
 
+
         @media print {{
             .topbar, .sidebar {{ display: none; }}
             .main-content {{ margin-left: 0; }}
@@ -783,16 +784,16 @@ def generate_config_section(config, config_file_path):
             </div>
         """.format(t1w=io_config["t1w"])
 
-    config_html += """
+    config_html += f"""
         </div>
         <h2>Configuration File</h2>
         <div class="output-item">
             <strong>Config Path</strong>
-            <code>{config_path}</code>
-            <a href="{config_path}" class="download-link">View Config File</a>
+            <code>{config_file_path}</code>
+            <a href="{config_file_path}" class="download-link">View Config File</a>
         </div>
     </section>
-    """.format(config_path=config_file_path)
+    """
 
     return config_html
 
@@ -867,7 +868,7 @@ def generate_timing_section(*, stages_info):
             status=status_str,
         )
 
-    timing_html = """
+    timing_html = f"""
     <section id="timing">
         <h1>Processing Time</h1>
         <table>
@@ -884,7 +885,7 @@ def generate_timing_section(*, stages_info):
             </tbody>
         </table>
     </section>
-    """.format(rows=rows)
+    """
 
     return timing_html
 
@@ -1119,7 +1120,7 @@ def generate_methods_section(stages_info, pipeline_name):
     """
     from dipy.workflows.cli import cli_flows
 
-    methods_html = """
+    methods_html = f"""
     <section id="methods">
         <h1>Methods</h1>
         <div class="boilerplate">
@@ -1127,9 +1128,9 @@ def generate_methods_section(stages_info, pipeline_name):
             (Diffusion Imaging in Python), a comprehensive pipeline for diffusion
             MRI data processing and analysis.</p>
 
-            <h2>Pipeline: {pipeline}</h2>
+            <h2>Pipeline: {pipeline_name}</h2>
             <p>The following processing steps were applied:</p>
-    """.format(pipeline=pipeline_name)
+    """
 
     unique_clis = set()
     stage_descriptions = []
@@ -1151,8 +1152,7 @@ def generate_methods_section(stages_info, pipeline_name):
                 first_line = doc.strip().split("\n")[0] if doc else cli_name
 
                 stage_descriptions.append(
-                    f"<li><strong>{stage_name}</strong>: "
-                    f"{first_line} ({cli_name})</li>"
+                    f"<li><strong>{stage_name}</strong>: {first_line} ({cli_name})</li>"
                 )
             except Exception:
                 stage_descriptions.append(
@@ -1386,33 +1386,26 @@ def generate_results_section(*, stages_info, html_dir, assets_dir):
             badge_html = ""
 
         stage_anchor = "stage_" + re.sub(r"[^A-Za-z0-9_-]", "_", stage_name)
-        results_html += """
-        <div class="stage-section" id="{anchor}">
+        results_html += f"""
+        <div class="stage-section" id="{stage_anchor}">
             <div class="stage-header">
-                <div class="stage-title">Stage {num}: {name}{badge}</div>
-                <div class="stage-time">{duration}</div>
+                <div class="stage-title">Stage {idx + 1}: {stage_name}{badge_html}</div>
+                <div class="stage-time">{duration_str}</div>
             </div>
             <p><strong>CLI Command:</strong> <code>{cli}</code></p>
-        """.format(
-            anchor=stage_anchor,
-            num=idx + 1,
-            name=stage_name,
-            badge=badge_html,
-            duration=duration_str,
-            cli=cli,
-        )
+        """
 
         if outputs:
             results_html += '<h3>Output Files</h3><div class="output-list">'
 
             for output_param, output_path in outputs.items():
-                results_html += """
+                results_html += f"""
                 <div class="output-item">
-                    <strong>{param}</strong>
-                    <code>{path}</code>
-                    <a href="{path}" class="download-link">Download</a>
+                    <strong>{output_param}</strong>
+                    <code>{output_path}</code>
+                    <a href="{output_path}" class="download-link">Download</a>
                 </div>
-                """.format(param=output_param, path=output_path)
+                """
 
                 if is_viewable_format(output_path):
                     viewer_id = f"nv_stage_{idx}_{output_param}"

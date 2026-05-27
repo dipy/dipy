@@ -267,10 +267,7 @@ class StatefulSurface:
                 other.data_per_vertex[key].get_data(),
                 rtol=1e-3,
             )
-        if not dpp_equal:
-            return False
-
-        return True
+        return dpp_equal
 
     def __ne__(self, other):
         """Robust StatefulSurface equality test (NOT)"""

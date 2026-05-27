@@ -122,7 +122,7 @@ class Block(Module):
         n_layers,
         layer_type,
     ):
-        super(Block, self).__init__()
+        super().__init__()
         self.n_layers = n_layers
         self.layer_list = ModuleList()
         self.layer_type = layer_type
@@ -192,7 +192,7 @@ class Model(Module):
     """
 
     def __init__(self, *, model_scale=24, n_levels=5, output_channels=33):
-        super(Model, self).__init__()
+        super().__init__()
 
         self.block_list = ModuleList()
         self.channels = [model_scale * (2**i) for i in range(n_levels)]

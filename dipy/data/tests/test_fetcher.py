@@ -309,7 +309,7 @@ def test_get_mirror_url_garbage_returns_none():
 def test_get_mirror_url_docstring_example():
     url = "https://stacks.stanford.edu/file/druid:yx282xq2090/dwi.nii.gz"
     expected = (
-        "https://workshop.dipy.org/services/data/" "file/druid:yx282xq2090/dwi.nii.gz"
+        "https://workshop.dipy.org/services/data/file/druid:yx282xq2090/dwi.nii.gz"
     )
     assert _get_mirror_url(url) == expected
 

@@ -224,7 +224,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             msg = "Multi-tissue CSD requires at least 2 tissue compartments"
             raise ValueError(msg)
 
-        super(MultiShellDeconvModel, self).__init__(gtab)
+        super().__init__(gtab)
 
         if not isinstance(response, MultiShellResponse):
             bvals = unique_bvals_tolerance(gtab.bvals, tol=tol)

@@ -109,7 +109,7 @@ master_doc = "index"
 
 build_date = datetime.datetime.fromtimestamp(
     int(os.environ.get("SOURCE_DATE_EPOCH", time.time())),
-    tz=datetime.timezone.utc,
+    tz=datetime.UTC,
 )
 
 # General information about the project.
@@ -452,22 +452,22 @@ html_theme_options = {
             "title": "Support",
             "links": [
                 {
-                    "name": "The department of Intelligent Systems Engineering of Indiana University",  # noqa: E501
+                    "name": "The department of Intelligent Systems Engineering of Indiana University",
                     "link": "https://engineering.indiana.edu/",
                     "link_type": "external",
                 },
                 {
-                    "name": "The National Institute of Biomedical Imaging and Bioengineering, NIH",  # noqa: E501
+                    "name": "The National Institute of Biomedical Imaging and Bioengineering, NIH",
                     "link": "https://www.nibib.nih.gov/",
                     "link_type": "external",
                 },
                 {
-                    "name": "The Gordon and Betty Moore Foundation and the Alfred P. Sloan Foundation, through the University of Washington eScience Institute Data Science Environment",  # noqa: E501
+                    "name": "The Gordon and Betty Moore Foundation and the Alfred P. Sloan Foundation, through the University of Washington eScience Institute Data Science Environment",
                     "link": "https://escience.washington.edu",
                     "link_type": "external",
                 },
                 {
-                    "name": "Google supported DIPY through the Google Summer of Code Program (2015-2024)",  # noqa: E501
+                    "name": "Google supported DIPY through the Google Summer of Code Program (2015-2024)",
                     "link": "https://summerofcode.withgoogle.com/",
                     "link_type": "external",
                 },

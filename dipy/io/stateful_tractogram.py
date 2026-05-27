@@ -272,10 +272,7 @@ class StatefulTractogram:
             dps_equal = dps_equal and np.allclose(
                 self.data_per_streamline[key], other.data_per_streamline[key], rtol=1e-3
             )
-        if not dps_equal:
-            return False
-
-        return True
+        return dps_equal
 
     def __ne__(self, other):
         """Robust StatefulTractogram equality test (NOT)"""
@@ -641,13 +638,12 @@ class StatefulTractogram:
         )
         ic_offsets_indices = np.where(np.logical_or(min_condition, max_condition))[0]
 
-        indices_to_remove = []
-        for i in ic_offsets_indices:
-            indices_to_remove.append(
+        indices_to_remove = sorted(
+            {
                 bisect(self._tractogram.streamlines._offsets, i) - 1
-            )
-
-        indices_to_remove = sorted(set(indices_to_remove))
+                for i in ic_offsets_indices
+            }
+        )
 
         indices_to_keep = list(
             np.setdiff1d(

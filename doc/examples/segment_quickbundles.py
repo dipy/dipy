@@ -176,7 +176,7 @@ print("QuickBundlesX cluster sizes:", qbx_cluster_sizes)
 #
 # .. raw:: html
 #
-#     <iframe width="420" height="315" src="https://www.youtube.com/embed/kstL7KKqu94" frameborder="0" allowfullscreen></iframe>  # noqa: E501
+#     <iframe width="420" height="315" src="https://www.youtube.com/embed/kstL7KKqu94" frameborder="0" allowfullscreen></iframe>
 #
 #
 # References

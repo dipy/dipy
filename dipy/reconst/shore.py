@@ -690,11 +690,12 @@ def create_rspace(gridsize, radius_max):
     """
 
     radius = gridsize // 2
-    vecs = []
-    for i in range(-radius, radius + 1):
-        for j in range(-radius, radius + 1):
-            for k in range(-radius, radius + 1):
-                vecs.append([i, j, k])
+    vecs = [
+        [i, j, k]
+        for i in range(-radius, radius + 1)
+        for j in range(-radius, radius + 1)
+        for k in range(-radius, radius + 1)
+    ]
 
     vecs = np.array(vecs, dtype=np.float32)
     tab = vecs / radius

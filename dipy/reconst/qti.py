@@ -429,7 +429,7 @@ def dtd_covariance(DTD):
     if len(dims) != 3 or (dims[1:3] != (3, 3) and dims[1:3] != (6, 1)):
         raise ValueError(
             "The shape of DTD must be (number of tensors, 3, 3) or (number of "
-            + "tensors, 6, 1)."
+            "tensors, 6, 1)."
         )
     if dims[1:3] == (3, 3):
         DTD = from_3x3_to_6x1(DTD)
@@ -497,7 +497,7 @@ def qti_signal(gtab, D, C, *, S0=1):
         if S0.shape != (1,) and S0.shape != D.shape[0:-2]:
             raise ValueError(
                 "S0 must be a single number or an array of the same shape "
-                + " compatible with D and C."
+                " compatible with D and C."
             )
 
     # Generate signals
@@ -822,8 +822,8 @@ class QtiModel(ReconstModel):
         if rank < 28:
             warn(
                 "The combination of the b-tensor shapes, sizes, and "
-                + "orientations does not enable all elements of the covariance "
-                + f"tensor to be estimated (rank(X.T @ X) = {rank} < 28).",
+                "orientations does not enable all elements of the covariance "
+                f"tensor to be estimated (rank(X.T @ X) = {rank} < 28).",
                 stacklevel=2,
             )
 
@@ -832,7 +832,7 @@ class QtiModel(ReconstModel):
         except KeyError as e:
             raise ValueError(
                 f"Invalid value ({fit_method}) for 'fit_method'."
-                + " Options: 'OLS', 'WLS', 'SDPdc', 'RWLS'."
+                " Options: 'OLS', 'WLS', 'SDPdc', 'RWLS'."
             ) from e
 
         self.cvxpy_solver = cvxpy_solver

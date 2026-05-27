@@ -388,7 +388,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
             termination. If gtol is None, fiber direction is directly taken
             from the initial sampled directions of the given sphere object
 
-        awf_only : bool, optiomal
+        awf_only : bool, optional
             If set to true only the axonal volume fraction is computed from
             the kurtosis tensor. Default = False
         """

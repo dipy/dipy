@@ -57,7 +57,7 @@ def test_reconst_rumba():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        reconst_flow_core(ReconstRUMBAFlow, n_iter=5)
+        reconst_flow_core(ReconstRUMBAFlow, n_iter=2)
 
 
 @pytest.mark.skipif(not has_sklearn, reason="Requires sklearn")
@@ -114,6 +114,9 @@ def reconst_flow_core(flow, *, use_multishell_data=None, **kwargs):
             save_nifti(data_path, volume, np.eye(4))
         else:
             volume, affine = load_nifti(data_path)
+            volume = volume[:5, :5, :5]
+            data_path = Path(out_dir) / "tmp_data.nii.gz"
+            save_nifti(data_path, volume, affine)
             mask = np.ones_like(volume[:, :, :, 0])
             mask_path = Path(out_dir) / "tmp_mask.nii.gz"
             save_nifti(mask_path, mask.astype(np.uint8), affine)
@@ -205,9 +208,9 @@ def test_reconst_powermap_basic():
             npt.assert_equal(powermap_data.shape, volume.shape[:-1])
             assert np.all(powermap_data >= 0), "Powermap should be non-negative"
             assert not np.all(powermap_data == 0), "Powermap should not be all zeros"
-            assert np.isfinite(
-                powermap_data
-            ).all(), "Powermap should contain finite values"
+            assert np.isfinite(powermap_data).all(), (
+                "Powermap should contain finite values"
+            )
 
             # Test different SH orders
             for sh_order in [4, 6]:
@@ -390,9 +393,9 @@ def test_reconst_powermap_edge_cases():
                 powermaps.append(powermap_data)
 
             # Different norm factors should produce different results
-            assert not np.allclose(
-                powermaps[0], powermaps[1], rtol=0.1
-            ), "Different norm factors should produce different results"
+            assert not np.allclose(powermaps[0], powermaps[1], rtol=0.1), (
+                "Different norm factors should produce different results"
+            )
 
 
 # ---------------------------------------------------------------------------

@@ -6,7 +6,7 @@ from numpy.testing import (
     assert_equal,
 )
 
-from dipy.align import floating, sumsqdiff as ssd
+from dipy.align import sumsqdiff as ssd
 from dipy.testing.decorators import set_random_number_generator
 
 
@@ -151,11 +151,11 @@ def test_compute_residual_displacement_field_ssd_2d(rng):
     grad_G = X - c_g
 
     Fnoise = rng.random(np.size(grad_F)).reshape(grad_F.shape) * grad_F.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     grad_F += Fnoise
 
     Gnoise = rng.random(np.size(grad_G)).reshape(grad_G.shape) * grad_G.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     grad_G += Gnoise
 
     # The squared norm of grad_G
@@ -166,17 +166,17 @@ def test_compute_residual_displacement_field_ssd_2d(rng):
     G = 0.5 * sq_norm_grad_G
 
     Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     F += Fnoise
 
     Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     G += Gnoise
 
-    delta_field = np.array(F - G, dtype=floating)
+    delta_field = np.array(F - G, dtype=np.float32)
 
     sigma_field = rng.standard_normal(delta_field.size).reshape(delta_field.shape)
-    sigma_field = sigma_field.astype(floating)
+    sigma_field = sigma_field.astype(np.float32)
 
     # Select some pixels to force sigma_field = infinite
     inf_sigma = rng.integers(0, 2, sh[0] * sh[1])
@@ -184,7 +184,7 @@ def test_compute_residual_displacement_field_ssd_2d(rng):
     sigma_field[inf_sigma == 1] = np.inf
 
     # Select an initial displacement field
-    d = rng.standard_normal(grad_G.size).reshape(grad_G.shape).astype(floating)
+    d = rng.standard_normal(grad_G.size).reshape(grad_G.shape).astype(np.float32)
     lambda_param = 1.5
 
     # Implementation under test
@@ -232,7 +232,7 @@ def test_compute_residual_displacement_field_ssd_2d(rng):
         actual = iut(
             delta_field,
             sigma_field,
-            grad_G.astype(floating),
+            grad_G.astype(np.float32),
             target,
             lambda_param,
             d,
@@ -240,13 +240,13 @@ def test_compute_residual_displacement_field_ssd_2d(rng):
         )
         assert_allclose(actual, expected, rtol=rtol, atol=atol)
         # destroy previous result
-        actual = np.ndarray(actual.shape, dtype=floating)
+        actual = np.ndarray(actual.shape, dtype=np.float32)
 
         # Test residual field computation starting with residual is not None
         iut(
             delta_field,
             sigma_field,
-            grad_G.astype(floating),
+            grad_G.astype(np.float32),
             target,
             lambda_param,
             d,
@@ -263,7 +263,7 @@ def test_compute_residual_displacement_field_ssd_2d(rng):
             iterate_residual_field_ssd_2d(
                 delta_field,
                 sigma_field,
-                grad_G.astype(floating),
+                grad_G.astype(np.float32),
                 residual,
                 lambda_param,
                 expected,
@@ -273,7 +273,7 @@ def test_compute_residual_displacement_field_ssd_2d(rng):
             ssd.iterate_residual_displacement_field_ssd_2d(
                 delta_field,
                 sigma_field,
-                grad_G.astype(floating),
+                grad_G.astype(np.float32),
                 residual,
                 lambda_param,
                 actual,
@@ -306,11 +306,11 @@ def test_compute_residual_displacement_field_ssd_3d(rng):
     grad_G = X - c_g
 
     Fnoise = rng.random(np.size(grad_F)).reshape(grad_F.shape) * grad_F.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     grad_F += Fnoise
 
     Gnoise = rng.random(np.size(grad_G)).reshape(grad_G.shape) * grad_G.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     grad_G += Gnoise
 
     # The squared norm of grad_G
@@ -321,17 +321,17 @@ def test_compute_residual_displacement_field_ssd_3d(rng):
     G = 0.5 * sq_norm_grad_G
 
     Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     F += Fnoise
 
     Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     G += Gnoise
 
-    delta_field = np.array(F - G, dtype=floating)
+    delta_field = np.array(F - G, dtype=np.float32)
 
     sigma_field = rng.random(delta_field.size).reshape(delta_field.shape)
-    sigma_field = sigma_field.astype(floating)
+    sigma_field = sigma_field.astype(np.float32)
 
     # Select some pixels to force sigma_field = infinite
     inf_sigma = rng.integers(0, 2, sh[0] * sh[1] * sh[2])
@@ -339,7 +339,7 @@ def test_compute_residual_displacement_field_ssd_3d(rng):
     sigma_field[inf_sigma == 1] = np.inf
 
     # Select an initial displacement field
-    d = rng.random(grad_G.size).reshape(grad_G.shape).astype(floating)
+    d = rng.random(grad_G.size).reshape(grad_G.shape).astype(np.float32)
     lambda_param = 1.5
 
     # Implementation under test
@@ -389,7 +389,7 @@ def test_compute_residual_displacement_field_ssd_3d(rng):
         actual = iut(
             delta_field,
             sigma_field,
-            grad_G.astype(floating),
+            grad_G.astype(np.float32),
             target,
             lambda_param,
             d,
@@ -397,13 +397,13 @@ def test_compute_residual_displacement_field_ssd_3d(rng):
         )
         assert_allclose(actual, expected, rtol=rtol, atol=atol)
         # destroy previous result
-        actual = np.ndarray(actual.shape, dtype=floating)
+        actual = np.ndarray(actual.shape, dtype=np.float32)
 
         # Test residual field computation starting with residual is not None
         iut(
             delta_field,
             sigma_field,
-            grad_G.astype(floating),
+            grad_G.astype(np.float32),
             target,
             lambda_param,
             d,
@@ -420,7 +420,7 @@ def test_compute_residual_displacement_field_ssd_3d(rng):
             iterate_residual_field_ssd_3d(
                 delta_field,
                 sigma_field,
-                grad_G.astype(floating),
+                grad_G.astype(np.float32),
                 residual,
                 lambda_param,
                 expected,
@@ -430,7 +430,7 @@ def test_compute_residual_displacement_field_ssd_3d(rng):
             ssd.iterate_residual_displacement_field_ssd_3d(
                 delta_field,
                 sigma_field,
-                grad_G.astype(floating),
+                grad_G.astype(np.float32),
                 residual,
                 lambda_param,
                 actual,
@@ -547,7 +547,7 @@ def test_compute_energy_ssd_2d():
     # being optimized). This test case should be updated after
     # further investigation
     expected = ((F - G) ** 2).sum()
-    actual = ssd.compute_energy_ssd_2d(np.array(F - G, dtype=floating))
+    actual = ssd.compute_energy_ssd_2d(np.array(F - G, dtype=np.float32))
     assert_almost_equal(expected, actual)
 
 
@@ -582,7 +582,7 @@ def test_compute_energy_ssd_3d():
     # being optimized). This test case should be updated after
     # further investigating
     expected = ((F - G) ** 2).sum()
-    actual = ssd.compute_energy_ssd_3d(np.array(F - G, dtype=floating))
+    actual = ssd.compute_energy_ssd_3d(np.array(F - G, dtype=np.float32))
     assert_almost_equal(expected, actual)
 
 
@@ -621,11 +621,11 @@ def test_compute_ssd_demons_step_2d(rng):
     grad_G = X - c_g
 
     Fnoise = rng.random(np.size(grad_F)).reshape(grad_F.shape) * grad_F.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     grad_F += Fnoise
 
     Gnoise = rng.random(np.size(grad_G)).reshape(grad_G.shape) * grad_G.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     grad_G += Gnoise
 
     # The squared norm of grad_G to be used later
@@ -636,14 +636,14 @@ def test_compute_ssd_demons_step_2d(rng):
     G = 0.5 * sq_norm_grad_G
 
     Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     F += Fnoise
 
     Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     G += Gnoise
 
-    delta_field = np.array(G - F, dtype=floating)
+    delta_field = np.array(G - F, dtype=np.float32)
 
     # Select some pixels to force gradient = 0 and F=G
     random_labels = rng.integers(0, 2, sh[0] * sh[1])
@@ -672,10 +672,10 @@ def test_compute_ssd_demons_step_2d(rng):
         expected[random_labels == 0, ...] = 0
 
         # Now compute it using the implementation under test
-        actual = np.empty_like(expected, dtype=floating)
+        actual = np.empty_like(expected, dtype=np.float32)
 
         ssd.compute_ssd_demons_step_2d(
-            delta_field, np.array(grad_G, dtype=floating), sigma_x_sq, actual
+            delta_field, np.array(grad_G, dtype=np.float32), sigma_x_sq, actual
         )
 
         assert_array_almost_equal(actual, expected)
@@ -719,11 +719,11 @@ def test_compute_ssd_demons_step_3d(rng):
     grad_G = X - c_g
 
     Fnoise = rng.random(np.size(grad_F)).reshape(grad_F.shape) * grad_F.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     grad_F += Fnoise
 
     Gnoise = rng.random(np.size(grad_G)).reshape(grad_G.shape) * grad_G.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     grad_G += Gnoise
 
     # The squared norm of grad_G to be used later
@@ -734,14 +734,14 @@ def test_compute_ssd_demons_step_3d(rng):
     G = 0.5 * sq_norm_grad_G
 
     Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     F += Fnoise
 
     Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     G += Gnoise
 
-    delta_field = np.array(G - F, dtype=floating)
+    delta_field = np.array(G - F, dtype=np.float32)
 
     # Select some pixels to force gradient = 0 and F=G
     random_labels = rng.integers(0, 2, sh[0] * sh[1] * sh[2])
@@ -771,10 +771,10 @@ def test_compute_ssd_demons_step_3d(rng):
         expected[random_labels == 0, ...] = 0
 
         # Now compute it using the implementation under test
-        actual = np.empty_like(expected, dtype=floating)
+        actual = np.empty_like(expected, dtype=np.float32)
 
         ssd.compute_ssd_demons_step_3d(
-            delta_field, np.array(grad_G, dtype=floating), sigma_x_sq, actual
+            delta_field, np.array(grad_G, dtype=np.float32), sigma_x_sq, actual
         )
 
         assert_array_almost_equal(actual, expected)

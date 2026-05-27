@@ -99,8 +99,8 @@ DIPY 1.10.0 changes
 
 **Align**
 
-- The `alpha` parameter in the BundleWarp method has been updated to provide better
-  result for the bundle warping. The default value of `alpha` has been changed
+- The ``alpha`` parameter in the BundleWarp method has been updated to provide better
+  result for the bundle warping. The default value of ``alpha`` has been changed
   from 0.3 to 0.5.
 
 **IO**
@@ -110,23 +110,23 @@ DIPY 1.10.0 changes
 
 **Reconstruction**
 
-- Applied the change of the default `cvxpy` solver from `ECOS` to `CLARABEL`.
+- Applied the change of the default ``cvxpy`` solver from ``ECOS`` to ``CLARABEL``.
   Starting in CXVPY 1.6.0, ECOS will no longer be installed by default with
   CVXPY. Since we do not want to add an explicit dependency on ECOS, we
   switched to the new default solver, Clarabel.
 
 **Workflows**
 
-- The `vol_idx` parameter datatype from ``dipy_median_otsu`` has been changed from `variable int` to `str`.
-  this change allows user to provide a range of values for the `vol_idx` parameter. e.g: `--vol_idx 0,1,2` or `--vol_idx 4,5,12-20,22`.
+- The ``vol_idx`` parameter datatype from ``dipy_median_otsu`` has been changed from ``variable int`` to ``str``.
+  this change allows user to provide a range of values for the ``vol_idx`` parameter. e.g: ``--vol_idx 0,1,2`` or ``--vol_idx 4,5,12-20,22``.
 
-- The `odf_to_sh_order` parameter has been removed from multiple workflows. The parameter
-  was not being used and was causing confusion with the `sh_order_order` parameter.
+- The ``odf_to_sh_order`` parameter has been removed from multiple workflows. The parameter
+  was not being used and was causing confusion with the ``sh_order_order`` parameter.
 
 **NN**
 
 - A new backend has been added: PyTorch. This backend is becoming the default backend
-  for the `NN` module. Tensorflow backend is still available but deprecated.
+  for the ``NN`` module. Tensorflow backend is still available but deprecated.
 
 
 DIPY 1.9.0 changes
@@ -226,8 +226,8 @@ DIPY 1.3.0 changes
 
 **Registration**
 
-- The argument `interp` of the method `dipy.align.imaffine.AffineMap.transform`  has been renamed `interpolation`.
-- The argument `interp` of the method `dipy.align.imaffine.AffineMap.transform_inverse`  has been renamed `interpolation`.
+- The argument ``interp`` of the method ``dipy.align.imaffine.AffineMap.transform``  has been renamed ``interpolation``.
+- The argument ``interp`` of the method ``dipy.align.imaffine.AffineMap.transform_inverse``  has been renamed ``interpolation``.
 
 **Segmentation**
 
@@ -315,7 +315,7 @@ more evenly distributed.
 **Segmentation**
 
 The API of ``dipy.segment.mask.median_otsu`` has changed in the following ways:
-if you are providing a 4D volume, `vol_idx` is now a required argument.
+if you are providing a 4D volume, ``vol_idx`` is now a required argument.
 The order of parameters has also changed.
 
 **Tractogram loading and saving**
@@ -355,11 +355,11 @@ affine parameter and uniform docstring. ``voxel2streamline``,
 
 **Interpolation**
 
-All interpolation functions have been moved to a new module name `dipy.core.interpolation`
+All interpolation functions have been moved to a new module name ``dipy.core.interpolation``
 
 **Tracking**
 
-The `voxel_size` parameter has been removed from the following function:
+The ``voxel_size`` parameter has been removed from the following function:
 
 - ``dipy.tracking.utils.connectivity_matrix``
 - ``dipy.tracking.utils.density_map``
@@ -369,27 +369,27 @@ The `voxel_size` parameter has been removed from the following function:
 The ``dipy.reconst.peak_direction_getter.PeaksAndMetricsDirectionGetter`` has
 been renamed ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
 
-The `LocalTracking` and `ParticleFilteringTracking` functions were moved from
+The ``LocalTracking`` and ``ParticleFilteringTracking`` functions were moved from
 ``dipy.tracking.local.localtracking`` to ``dipy.tracking.local_tracking``.
 They now need to be imported from ``dipy.tracking.local_tracking``.
 
-- functions argument `tissue_classifier` were renamed `stopping_criterion`
+- functions argument ``tissue_classifier`` were renamed ``stopping_criterion``
 
-The `TissueClassifier` were renamed `StoppingCriterion` and moved from
+The ``TissueClassifier`` were renamed ``StoppingCriterion`` and moved from
 ``dipy.tracking.local.tissue_classifier`` to ``dipy.tracking.stopping_criterion``.
 They now need to be imported from ``dipy.tracking.stopping_criterion``.
 
-- `TissueClassifier` -> `StoppingCriterion`
-- `BinaryTissueClassifier` -> `BinaryStoppingCriterion`
-- `ThresholdTissueClassifier` -> `ThresholdStoppingCriterion`
-- `ConstrainedTissueClassifier` -> `AnatomicalStoppingCriterion`
-- `ActTissueClassifier` -> `ActStoppingCriterion`
-- `CmcTissueClassifier` -> `CmcStoppingCriterion`
+- ``TissueClassifier`` -> ``StoppingCriterion``
+- ``BinaryTissueClassifier`` -> ``BinaryStoppingCriterion``
+- ``ThresholdTissueClassifier`` -> ``ThresholdStoppingCriterion``
+- ``ConstrainedTissueClassifier`` -> ``AnatomicalStoppingCriterion``
+- ``ActTissueClassifier`` -> ``ActStoppingCriterion``
+- ``CmcTissueClassifier`` -> ``CmcStoppingCriterion``
 
 The ``dipy.tracking.local.tissue_classifier.TissueClass`` was renamed
 ``dipy.tracking.stopping_criterion.StreamlineStatus``.
 
-The `EuDX` tracking function has been removed. EuDX tractography can be
+The ``EuDX`` tracking function has been removed. EuDX tractography can be
 performed using ``dipy.tracking.local_tracking`` using
 ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
 
@@ -431,7 +431,7 @@ DIPY 0.15 Changes
 
 **Gradient Table**
 
-The default value of ``b0_thresold`` has been changed(from 0 to 50). This change can impact your algorithm.
+The default value of ``b0_threshold`` has been changed(from 0 to 50). This change can impact your algorithm.
 If you want to assure that your code runs in exactly the same manner as before, please initialize your gradient table with the keyword argument ``b0_threshold`` set to 0.
 
 **Visualization**
@@ -519,10 +519,10 @@ more powerful and supports RGB images too. See tutorial ``viz_slice.py`` for
 more information.
 
 **Interpolation**
-The default behavior of the function `core.sphere.interp_rbf` has changed.
+The default behavior of the function ``core.sphere.interp_rbf`` has changed.
 The default smoothing parameter is now set to 0.1 (previously 0). In addition,
-the default norm is now `angle` (was previously `euclidean_norm`). Note that
-the use of `euclidean_norm` is discouraged, and this norm will be deprecated
+the default norm is now ``angle`` (was previously ``euclidean_norm``). Note that
+the use of ``euclidean_norm`` is discouraged, and this norm will be deprecated
 in the 0.11 release cycle.
 
 **Registration**

@@ -43,7 +43,7 @@ import numpy as np
 import numpy.linalg as npl
 import scipy.ndimage as ndimage
 
-from dipy.align import VerbosityLevels, vector_fields as vf
+from dipy.align import vector_fields as vf
 from dipy.align.imwarp import ScaleSpace, get_direction_and_spacings
 from dipy.align.parzenhist import (
     ParzenJointHistogram,
@@ -54,6 +54,7 @@ from dipy.align.scalespace import IsotropicScaleSpace
 from dipy.core.interpolation import interpolate_scalar_2d, interpolate_scalar_3d
 from dipy.core.optimize import Optimizer
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils import VerbosityLevels
 from dipy.utils.logging import logger
 
 _interp_options = ["nearest", "linear"]
@@ -983,8 +984,7 @@ class AffineRegistration:
 
     # Separately add a string that tells about the verbosity kwarg. This needs
     # to be separate, because it is set as a module-wide option in __init__:
-    docstring_addendum = (
-        """verbosity : int (one of {0, 1, 2, 3}), optional
+    docstring_addendum = f"""verbosity : int (one of {{0, 1, 2, 3}}), optional
             Set the verbosity level of the algorithm:
 
             - 0 : do not print anything
@@ -994,10 +994,8 @@ class AffineRegistration:
             - 3 : print as much information as possible to isolate the cause of
               a bug.
 
-            Default: % s
+            Default: {VerbosityLevels.STATUS: }
     """
-        % VerbosityLevels.STATUS
-    )
 
     __init__.__doc__ = __init__.__doc__ + docstring_addendum
 

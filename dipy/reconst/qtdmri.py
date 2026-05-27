@@ -325,9 +325,9 @@ class QtdmriModel(Cache):
         b0_indices = np.arange(self.gtab.tau.shape[0])[self.gtab.b0s_mask]
         tau0_ordered = self.gtab.tau[b0_indices]
         unique_taus = np.unique(self.gtab.tau)
-        first_tau_pos = []
-        for unique_tau in unique_taus:
-            first_tau_pos.append(np.where(tau0_ordered == unique_tau)[0][0])
+        first_tau_pos = [
+            np.where(tau0_ordered == unique_tau)[0][0] for unique_tau in unique_taus
+        ]
         M0 = M[b0_indices[first_tau_pos]]
 
         lopt = 0.0
@@ -544,7 +544,7 @@ class QtdmriFit:
         coefficients for a given tau.
 
         Defined in :footcite:p:`Fick2018`, the conversion is performed by a
-        matrix multiplication that evaluates the time-depenent part of the basis
+        matrix multiplication that evaluates the time-dependent part of the basis
         and multiplies it with the coefficients, after which coefficients with
         the same spatial orders are summed up, resulting in mapmri coefficients.
 
@@ -629,7 +629,7 @@ class QtdmriFit:
         Parameters
         ----------
         sphere : dipy sphere object
-            sphere object with vertice orientations to compute the ODF on.
+            sphere object with vertex orientations to compute the ODF on.
         tau : float
             diffusion time (big_delta - small_delta / 3.) in seconds
         s : unsigned int
@@ -1146,9 +1146,8 @@ def _qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau, isotropic):
     for o in range(time_order + 1):
         temporal_storage[o] = temporal_basis(o, ut, tau)
 
-    counter = 0
     mapmri_mat = np.zeros((n_elem_mapmri, n_elem_qtdmri))
-    for j, ll, m, o in qtdmri_ind_mat:
+    for counter, (j, ll, m, o) in enumerate(qtdmri_ind_mat):
         index_overlap = np.all(
             [
                 j == mapmri_ind_mat[:, 0],
@@ -1158,7 +1157,6 @@ def _qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau, isotropic):
             0,
         )
         mapmri_mat[:, counter] = temporal_storage[o] * index_overlap
-        counter += 1
     return mapmri_mat
 
 
@@ -1282,14 +1280,12 @@ def qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau):
         Qy_storage[:, n] = mapmri.mapmri_phi_1d(n, qy, muy)
         Qz_storage[:, n] = mapmri.mapmri_phi_1d(n, qz, muz)
 
-    counter = 0
     Q = np.zeros((n_dat, n_elem))
-    for nx, ny, nz, o in ind_mat:
+    for counter, (nx, ny, nz, o) in enumerate(ind_mat):
         Q[:, counter] = (
             np.real(Qx_storage[:, nx] * Qy_storage[:, ny] * Qz_storage[:, nz])
             * temporal_storage[:, o]
         )
-        counter += 1
 
     return Q
 
@@ -1319,16 +1315,14 @@ def qtdmri_eap_matrix(radial_order, time_order, us, ut, grid):
         Ky_storage[:, n] = mapmri.mapmri_psi_1d(n, ry, muy)
         Kz_storage[:, n] = mapmri.mapmri_psi_1d(n, rz, muz)
 
-    counter = 0
     K = np.zeros((n_dat, n_elem))
-    for nx, ny, nz, o in ind_mat:
+    for counter, (nx, ny, nz, o) in enumerate(ind_mat):
         K[:, counter] = (
             Kx_storage[:, nx]
             * Ky_storage[:, ny]
             * Kz_storage[:, nz]
             * temporal_storage[:, o]
         )
-        counter += 1
 
     return K
 
@@ -1381,14 +1375,12 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
 
     # Construct full design matrix
     M = np.zeros((n_dat, n_elem))
-    counter = 0
-    for j, ll, m, o in ind_mat:
+    for counter, (j, ll, m, o) in enumerate(ind_mat):
         M[:, counter] = (
             radial_storage[j - 1, ll // 2, :]
             * angular_storage[ll // 2, m + ll, :]
             * temporal_storage[o, :]
         )
-        counter += 1
     return M
 
 
@@ -1460,14 +1452,12 @@ def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid):
 
     # Construct full design matrix
     M = np.zeros((n_dat, n_elem))
-    counter = 0
-    for j, ll, m, o in ind_mat:
+    for counter, (j, ll, m, o) in enumerate(ind_mat):
         M[:, counter] = (
             radial_storage[j - 1, ll // 2, :]
             * angular_storage[j - 1, ll // 2, m + ll, :]
             * temporal_storage[o, :]
         )
-        counter += 1
     return M
 
 
@@ -1527,7 +1517,7 @@ def qtdmri_index_matrix(radial_order, time_order):
         for i in range(0, n + 1):
             for j in range(0, n - i + 1):
                 for o in range(0, time_order + 1):
-                    index_matrix.append([n - i - j, j, i, o])
+                    index_matrix.append([n - i - j, j, i, o])  # noqa: PERF401
 
     return np.array(index_matrix)
 
@@ -1540,7 +1530,7 @@ def qtdmri_isotropic_index_matrix(radial_order, time_order):
             ll = n + 2 - 2 * j
             for m in range(-ll, ll + 1):
                 for o in range(0, time_order + 1):
-                    index_matrix.append([j, ll, m, o])
+                    index_matrix.append([j, ll, m, o])  # noqa: PERF401
     return np.array(index_matrix)
 
 

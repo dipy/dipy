@@ -116,4 +116,3 @@ rotation about the $z$ axis.
 It's easy to do the same set of reductions, with the same conclusion,
 for the case where $\sin(\beta) = -1$ - see
 https://www.gregslabaugh.name/publications/euler.pdf.
-

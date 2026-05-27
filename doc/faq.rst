@@ -121,7 +121,7 @@ Practical
   by nibabel and pydicom.
 
   You can also read/save in Matlab version v4 (Level 1.0), v6 and v7 to 7.2,
-  using `scipy.io.loadmat`. For higher versions >= 7.3, you can use pytables_
+  using ``scipy.io.loadmat``. For higher versions >= 7.3, you can use pytables_
   or any other python-to-hdf5 library e.g. h5py.
 
   For object serialization, you can use ``dipy.io.pickles`` functions

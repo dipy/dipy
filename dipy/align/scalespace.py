@@ -2,7 +2,6 @@ import numpy as np
 import numpy.linalg as npl
 from scipy.ndimage import gaussian_filter
 
-from dipy.align import floating
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.logging import logger
 
@@ -64,7 +63,7 @@ class ScaleSpace:
 
         # The properties are saved in separate lists. Insert input image
         # properties at the first level of the scale space
-        self.images = [img.astype(floating)]
+        self.images = [img.astype(np.float32)]
         self.domain_shapes = [input_size.astype(np.int32)]
         if input_spacing is None:
             input_spacing = np.ones((self.dim,), dtype=np.int32)
@@ -111,7 +110,7 @@ class ScaleSpace:
                 filtered *= mask
 
             # Add current level to the scale space
-            self.images.append(filtered.astype(floating))
+            self.images.append(filtered.astype(np.float32))
             self.domain_shapes.append(output_size)
             self.spacings.append(output_spacing)
             self.scalings.append(scaling)
@@ -387,7 +386,7 @@ class IsotropicScaleSpace(ScaleSpace):
 
         # The properties are saved in separate lists. Insert input image
         # properties at the first level of the scale space
-        self.images = [img.astype(floating)]
+        self.images = [img.astype(np.float32)]
         self.domain_shapes = [input_size.astype(np.int32)]
         if input_spacing is None:
             input_spacing = np.ones((self.dim,), dtype=np.int32)
@@ -440,7 +439,7 @@ class IsotropicScaleSpace(ScaleSpace):
                 filtered *= mask
 
             # Add current level to the scale space
-            self.images.append(filtered.astype(floating))
+            self.images.append(filtered.astype(np.float32))
             self.domain_shapes.append(output_size)
             self.spacings.append(new_spacing)
             self.scalings.append(shrink_factors)

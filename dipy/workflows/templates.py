@@ -390,38 +390,6 @@ input_files = "${bias_correction.out_corrected}"
 bval_files = "${io.bvals}"
 verbose = true
 
-[[pipeline]]
-name = "gibbs"
-cli = "dipy_gibbs_ringing"
-input_files = "${brain_mask.out_masked}"
-slice_axis = 2
-num_processes = -1
-
-# Step 3: Motion correction
-[[pipeline]]
-name = "motion_correction"
-cli = "dipy_correct_motion"
-input_files = "${gibbs.out_unring}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
-
-# Step 4: Bias field correction (using median_otsu on b0)
-[[pipeline]]
-name = "bias_correction"
-cli = "dipy_correct_biasfield"
-input_files = "${gibbs.out_unring}"
-bval = "${io.bvals}"
-bvec = "${io.bvecs}"
-method = "auto"
-
-# Step 5: Denoising with Patch2Self
-[[pipeline]]
-name = "denoise"
-cli = "dipy_denoise_patch2self"
-input_files = "${bias_correction.out_corrected}"
-bval_files = "${io.bvals}"
-verbose = true
-
 # Multiple reconstructions
 [[pipeline]]
 name = "dti_fit"
@@ -443,7 +411,6 @@ bvectors_files = "${io.bvecs}"
 mask_files = "${brain_mask.out_mask}"
 extract_pam_values = true
 out_dir = "${io.out_dir}/csd"
-
 
 # Tractography
 [[pipeline]]
@@ -959,8 +926,7 @@ PREDEFINED_PIPELINES = {
     },
     "full": {
         "description": (
-            "Full pipeline: preprocessing + reconstruction + tracking + "
-            "SLR + bundles"
+            "Full pipeline: preprocessing + reconstruction + tracking + SLR + bundles"
         ),
         "config": FULL_PIPELINE,
     },
@@ -992,8 +958,7 @@ def get_predefined_pipeline(*, pipeline_name):
     if pipeline_name not in PREDEFINED_PIPELINES:
         available = ", ".join(list_predefined_pipelines())
         raise KeyError(
-            f"Pipeline '{pipeline_name}' not found. "
-            f"Available pipelines: {available}"
+            f"Pipeline '{pipeline_name}' not found. Available pipelines: {available}"
         )
     return PREDEFINED_PIPELINES[pipeline_name]["config"]
 
@@ -1019,8 +984,7 @@ def get_pipeline_description(*, pipeline_name):
     if pipeline_name not in PREDEFINED_PIPELINES:
         available = ", ".join(list_predefined_pipelines())
         raise KeyError(
-            f"Pipeline '{pipeline_name}' not found. "
-            f"Available pipelines: {available}"
+            f"Pipeline '{pipeline_name}' not found. Available pipelines: {available}"
         )
     return PREDEFINED_PIPELINES[pipeline_name]["description"]
 
@@ -1071,7 +1035,7 @@ def list_pipelines_with_descriptions(*, log_level=None):
         lines.append(f"  {name:<15} - {desc}")
     lines.append("=" * 70)
     lines.append(
-        "\nEach pipeline uses semantic stage names with automatic " "DAG-based wiring."
+        "\nEach pipeline uses semantic stage names with automatic DAG-based wiring."
     )
     lines.append("Stages are executed in topological order based on dependencies.")
 

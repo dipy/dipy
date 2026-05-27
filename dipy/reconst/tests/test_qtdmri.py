@@ -179,23 +179,29 @@ def test_normalization_time():
     tmax = 100
 
     int0 = integrate.quad(
-        lambda t: qtdmri.qtdmri_temporal_normalization(ut) ** 2
-        * qtdmri.temporal_basis(0, ut, t)
-        * qtdmri.temporal_basis(0, ut, t),
+        lambda t: (
+            qtdmri.qtdmri_temporal_normalization(ut) ** 2
+            * qtdmri.temporal_basis(0, ut, t)
+            * qtdmri.temporal_basis(0, ut, t)
+        ),
         tmin,
         tmax,
     )[0]
     int1 = integrate.quad(
-        lambda t: qtdmri.qtdmri_temporal_normalization(ut) ** 2
-        * qtdmri.temporal_basis(1, ut, t)
-        * qtdmri.temporal_basis(1, ut, t),
+        lambda t: (
+            qtdmri.qtdmri_temporal_normalization(ut) ** 2
+            * qtdmri.temporal_basis(1, ut, t)
+            * qtdmri.temporal_basis(1, ut, t)
+        ),
         tmin,
         tmax,
     )[0]
     int2 = integrate.quad(
-        lambda t: qtdmri.qtdmri_temporal_normalization(ut) ** 2
-        * qtdmri.temporal_basis(2, ut, t)
-        * qtdmri.temporal_basis(2, ut, t),
+        lambda t: (
+            qtdmri.qtdmri_temporal_normalization(ut) ** 2
+            * qtdmri.temporal_basis(2, ut, t)
+            * qtdmri.temporal_basis(2, ut, t)
+        ),
         tmin,
         tmax,
     )[0]

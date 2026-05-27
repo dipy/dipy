@@ -20,22 +20,22 @@ jobs:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
-      python-version: '["3.11", "3.12", "3.13"]'
+      python-version: '["3.12", "3.13", "3.14"]'
 
   optional-deps-pip:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
-      depends: cython!=0.29.29 numpy==1.24.2 matplotlib h5py==3.11.0 nibabel cvxpy==1.5.3 tqdm
-      extra-depends: scikit_learn pandas statsmodels tables scipy==1.10.1 numexpr
+      depends: cython!=0.29.29 numpy==2.0.0 matplotlib h5py==3.11.0 nibabel cvxpy==1.5.3 tqdm
+      extra-depends: scikit_learn pandas statsmodels tables scipy==1.13.0 numexpr
 
   optional-deps-conda:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["macos-latest", "windows-latest"]'
       install-type: '["conda"]'
-      depends: cython!=0.29.29 numpy=1.25.0 matplotlib h5py=3.11.0 nibabel cvxpy=1.5.2 tqdm
-      extra-depends: scikit-learn pandas statsmodels pytables scipy=1.10.1
+      depends: cython!=0.29.29 numpy=2.0.0 matplotlib h5py=3.11.0 nibabel cvxpy=1.5.2 tqdm
+      extra-depends: scikit-learn pandas statsmodels pytables scipy=1.13.0
 
   parallel:
     uses: ./.github/workflows/test_template.yml
@@ -43,12 +43,12 @@ jobs:
       runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
       extra-depends: dask joblib ray>=2.53.0
 
-  minimal-py311:
+  minimal-py312:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", ]'
-      python-version: '["3.11", ]'
-      depends: cython==0.29.32 numpy==1.23.5 scipy==1.9.3 nibabel==3.0.0 h5py==3.8.0 tqdm
+      python-version: '["3.12", ]'
+      depends: cython==0.29.32 numpy==2.0.0 scipy==1.13.0 nibabel==3.0.0 h5py==3.11.0 tqdm
 
   coverage:
     uses: ./.github/workflows/test_template.yml

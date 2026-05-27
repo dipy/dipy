@@ -59,11 +59,11 @@ answer it yourself and contribute to the documentation!
 
    The mapping fields is saved in a Nifti file. The data in the file is organized with
    shape (X, Y, Z, 3, 2), such that the forward mapping in each voxel is in
-   `data[i, j, k, :, 0]` and the backward mapping in each voxel is in
-   `data[i, j, k, :, 1]`.
+   ``data[i, j, k, :, 0]`` and the backward mapping in each voxel is in
+   ``data[i, j, k, :, 1]``.
 
    The output fields from the Symmetric Diffeomorphic Registration can be saved and
-   read using the functions `write_mapping` and `read_mapping` respectively.
+   read using the functions ``write_mapping`` and ``read_mapping`` respectively.
 
    .. code-block:: Python
 

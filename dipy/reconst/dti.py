@@ -1141,7 +1141,7 @@ class TensorFit:
         .. footbibliography::
 
         """
-        odf = np.zeros((self.evals.shape[:-1] + (sphere.vertices.shape[0],)))
+        odf = np.zeros(self.evals.shape[:-1] + (sphere.vertices.shape[0],))
         if len(self.evals.shape) > 1:
             mask = np.where(
                 (self.evals[..., 0] > 0)
@@ -2241,7 +2241,7 @@ def iterative_fit_tensor(
     evals, evecs = decompose_tensor(
         from_lower_triangular(D[:, :6]), min_diffusivity=tol / -design_matrix.min()
     )
-    params = np.empty((data.shape[0:-1] + (npa,)))
+    params = np.empty(data.shape[0:-1] + (npa,))
     params[:, :3] = evals
     params[:, 3:12] = evecs.reshape(params.shape[0:-1] + (-1,))
 

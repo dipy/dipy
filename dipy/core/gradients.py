@@ -1,6 +1,7 @@
 from pathlib import Path
 from warnings import warn
 
+import nibabel as nib
 import numpy as np
 from scipy.linalg import inv, polar
 
@@ -164,8 +165,8 @@ class GradientTable:
                 else:
                     raise ValueError(
                         f"{btens} is an invalid value for btens. "
-                        + "Please provide one of the following: "
-                        + "'LTE', 'PTE', 'STE', 'CTE'."
+                        "Please provide one of the following: "
+                        "'LTE', 'PTE', 'STE', 'CTE'."
                     )
                 for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
                     if btens == "STE":
@@ -199,8 +200,8 @@ class GradientTable:
                     else:
                         raise ValueError(
                             f"{btens[i]} is an invalid value in btens. "
-                            + "Array element options: 'LTE', 'PTE', 'STE', "
-                            + "'CTE'."
+                            "Array element options: 'LTE', 'PTE', 'STE', "
+                            "'CTE'."
                         )
                 self.btens = b_tensors
             elif isinstance(btens, np.ndarray) and btens.shape == (
@@ -212,9 +213,9 @@ class GradientTable:
             else:
                 raise ValueError(
                     f"{btens} is an invalid value for btens. "
-                    + "Please provide a string, an array of "
-                    + "strings, or an array of exact b-tensors. "
-                    + "String options: 'LTE', 'PTE', 'STE', 'CTE'"
+                    "Please provide a string, an array of "
+                    "strings, or an array of exact b-tensors. "
+                    "String options: 'LTE', 'PTE', 'STE', 'CTE'"
                 )
         else:
             self.btens = None
@@ -1020,10 +1021,7 @@ def check_multi_b(gtab, n_bvals, *, non_zero=True, bmag=None):
         bvals = bvals[~gtab.b0s_mask]
 
     uniqueb = unique_bvals_magnitude(bvals, bmag=bmag)
-    if uniqueb.shape[0] < n_bvals:
-        return False
-    else:
-        return True
+    return uniqueb.shape[0] >= n_bvals
 
 
 def _btens_to_params_2d(btens_2d, ztol):
@@ -1228,8 +1226,20 @@ def params_to_btens(bval, bdelta, b_eta):
 
 
 def ornt_mapping(ornt1, ornt2):
-    """Calculate the mapping needing to get from orn1 to orn2."""
+    """Calculate the mapping needing to get from orn1 to orn2.
 
+    Parameters
+    ----------
+    ornt1 : ndarray
+        The first orientation array.
+    ornt2 : ndarray
+        The second orientation array.
+
+    Returns
+    -------
+    mapping : ndarray
+        The mapping array.
+    """
     mapping = np.empty((len(ornt1), 2), "int")
     mapping[:, 0] = -1
     A = ornt1[:, 0].argsort()
@@ -1245,7 +1255,7 @@ def ornt_mapping(ornt1, ornt2):
 def reorient_vectors(bvecs, current_ornt, new_ornt, *, axis=0):
     """Change the orientation of gradients or other vectors.
 
-    Moves vectors, storted along axis, from current_ornt to new_ornt. For
+    Moves vectors, stored along axis, from current_ornt to new_ornt. For
     example the vector [x, y, z] in "RAS" will be [-x, -y, z] in "LPS".
 
     R: Right
@@ -1296,8 +1306,82 @@ def reorient_on_axis(bvecs, current_ornt, new_ornt, *, axis=0):
     return output
 
 
+def get_orientation_from_affine(affine):
+    """Get the orientation of the affine transformation matrix.
+
+    Parameters
+    ----------
+    affine : ndarray
+        The affine transformation matrix of shape (4, 4).
+
+    Returns
+    -------
+    orientation : str
+        The orientation of the affine transformation matrix.
+    """
+    if not isinstance(affine, np.ndarray) or affine.shape != (4, 4):
+        raise ValueError("affine must be a (4, 4) numpy array")
+    return "".join(nib.aff2axcodes(affine))
+
+
+def get_affine_with_new_orientation(affine, *, new_orientation="RAS"):
+    """Ensure the affine transformation matrix is in the new orientation.
+
+    Parameters
+    ----------
+    affine : ndarray
+        The affine transformation matrix of shape (4, 4).
+    new_orientation : str, optional
+        The new orientation to ensure. Valid orientations are 3 letter combinations
+        of the letters R, A, S, L, P, I. Where each letter should be used only once.
+
+    Returns
+    -------
+    new_affine : ndarray
+        The affine transformation matrix of shape (4, 4) in the new orientation.
+    """
+    current_orientation = get_orientation_from_affine(affine)
+    if (
+        not isinstance(new_orientation, str)
+        or len(new_orientation) != 3
+        or not all(
+            letter.lower() in {"r", "l", "a", "p", "s", "i"}
+            for letter in new_orientation
+        )
+    ):
+        raise ValueError(
+            "new_orientation must be a string containing the new orientation. "
+            "Valid orientations are 3 letter combinations of the letters "
+            "R, A, S, L, P, I. Where each letter should be used only once."
+        )
+
+    if current_orientation.lower() != new_orientation.lower():
+        co_mapping = orientation_from_string(current_orientation)
+        no_mapping = orientation_from_string(new_orientation)
+        mapping = ornt_mapping(co_mapping, no_mapping)
+
+        voxel_xform = np.zeros((4, 4), dtype=affine.dtype)
+        voxel_xform[3, 3] = 1
+        for out_axis, (in_axis, sign) in enumerate(mapping):
+            voxel_xform[int(in_axis), out_axis] = sign
+
+        new_affine = np.dot(affine, voxel_xform)
+    return new_affine
+
+
 def orientation_from_string(string_ornt):
-    """Return an array representation of an ornt string."""
+    """Return an array representation of an ornt string.
+
+    Parameters
+    ----------
+    string_ornt : str
+        The orientation string to convert to an array.
+
+    Returns
+    -------
+    ornt : ndarray
+        The orientation array.
+    """
     orientation_dict = {
         "r": (0, 1),
         "l": (0, -1),
@@ -1315,7 +1399,18 @@ def orientation_from_string(string_ornt):
 
 
 def orientation_to_string(ornt):
-    """Return a string representation of a 3d ornt."""
+    """Return a string representation of a 3d ornt.
+
+    Parameters
+    ----------
+    ornt : ndarray
+        The orientation array to convert to a string.
+
+    Returns
+    -------
+    string_ornt : str
+        The orientation string.
+    """
     if _check_ornt(ornt):
         msg = repr(ornt) + " does not seem to be a valid orientation"
         raise ValueError(msg)
@@ -1383,9 +1478,7 @@ def extract_b0(dwi, b0_mask, *, group_contiguous_b0=False, strategy="mean"):
     strategy = strategy.lower()
     if strategy not in ["first", "all", "mean"]:
         raise ValueError(
-            "Invalid strategy: {}. Valid strategies are: first, all, mean.".format(
-                strategy
-            )
+            f"Invalid strategy: {strategy}. Valid strategies are: first, all, mean."
         )
 
     if group_contiguous_b0:

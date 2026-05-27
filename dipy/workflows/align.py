@@ -1,8 +1,7 @@
-import os
 from pathlib import Path
-import shutil
 from warnings import warn
 
+import nibabel as nib
 import numpy as np
 
 from dipy.align import affine_registration, motion_correction
@@ -90,11 +89,14 @@ class ResliceFlow(Workflow):
             new_vox = voxel_sorted[1] + (voxel_sorted[2] - voxel_sorted[1]) * vox_factor
             where voxel_sorted are the original voxel dimensions sorted in
             ascending order. The calculated value is applied isotropically
-            to all three dimensions.
-        order : int, optional
-            order of interpolation, from 0 to 5, for resampling/reslicing,
-            0 nearest interpolation, 1 trilinear etc.. if you don't want any
-            smoothing 0 is the option you need.
+            to all three dimensions. If the auto-calculated value is strictly
+            greater than 2.0mm, it is halved repeatedly until it falls below
+            2.0mm (e.g. 2.5 → 1.25mm, 5.0 → 1.25mm).
+        order : str, optional
+            Interpolation order. Integer values 0–5 select spline order via
+            scipy (0 nearest, 1 trilinear, …). String values ``'lanczos'`` or
+            ``'lanczos2'`` select a 2-lobe Lanczos kernel; ``'lanczos3'``
+            selects a 3-lobe Lanczos kernel. Use 0 to avoid smoothing.
         mode : string, optional
             Points outside the boundaries of the input are filled according
             to the given mode 'constant', 'nearest', 'reflect' or 'wrap'.
@@ -120,10 +122,15 @@ class ResliceFlow(Workflow):
 
         """
 
-        io_it = self.get_io_iterator()
+        if isinstance(order, str) and order.lstrip("-").isdigit():
+            order = int(order)
 
-        for inputfile, outpfile in io_it:
-            data, affine, zooms = load_nifti(inputfile, return_voxsize=True)
+        io_it = self.get_io_iterator()
+        corrected_outputs = list(self.flat_outputs)
+
+        for i, (inputfile, outpfile) in enumerate(io_it):
+            img = nib.load(inputfile)
+            zooms = img.header.get_zooms()[:3]
             logger.info(f"Processing {inputfile}")
 
             if new_vox_size is None:
@@ -133,6 +140,15 @@ class ResliceFlow(Workflow):
                 calculated_vox_size = (
                     smax_vox_size + (max_vox_size - smax_vox_size) * vox_factor
                 )
+                if calculated_vox_size > 2.0:
+                    divisor = 2
+                    while calculated_vox_size / divisor >= 2.0:
+                        divisor *= 2
+                    calculated_vox_size /= divisor
+                    logger.warning(
+                        f"Auto-calculated voxel size > 2.0mm. "
+                        f"Divided by {divisor} → {calculated_vox_size:.4f}mm."
+                    )
                 new_vox_size_to_use = [calculated_vox_size] * 3
                 logger.warning(
                     f"new_vox_size not provided. Automatically calculated as "
@@ -148,31 +164,16 @@ class ResliceFlow(Workflow):
             if np.allclose(zooms_spatial, new_vox_size_to_use, rtol=1e-3, atol=1e-3):
                 logger.info(
                     f"Voxel size {tuple(zooms)} already matches target "
-                    f"{tuple(new_vox_size_to_use)}. Skipping reslicing."
-                    "return original data as a symlink."
+                    f"{tuple(new_vox_size_to_use)}. Skipping reslicing, "
+                    f"returning original path."
                 )
-                source_file = Path(inputfile)
-                link_file = Path(outpfile)
-                if link_file.exists() and link_file.resolve() == source_file.resolve():
-                    logger.debug(f"{outpfile} already linked/copied. Skipping.")
-                    continue
-                if link_file.exists() or link_file.is_symlink():
-                    link_file.unlink()
-                try:
-                    link_file.symlink_to(source_file.resolve())
-                except OSError:
-                    # Symlinks may need elevated privileges on Windows; try a hard
-                    # link before falling back to copying large volumes.
-                    try:
-                        os.link(source_file, link_file)
-                        logger.info(f"Hard link created for {outpfile}")
-                    except OSError:
-                        shutil.copy(source_file, link_file)
-                        logger.warning(
-                            f"Link creation for {outpfile} failed, copied instead."
-                        )
+                corrected_outputs[i] = Path(inputfile)
+                img.uncache()
                 continue
             else:
+                data = np.asanyarray(img.dataobj)
+                affine = img.affine
+                img.uncache()
                 new_data, new_affine = reslice(
                     data,
                     affine,
@@ -185,6 +186,9 @@ class ResliceFlow(Workflow):
                 )
                 save_nifti(outpfile, new_data, new_affine)
                 logger.info(f"Resliced file save in {outpfile}")
+
+        if corrected_outputs != self.flat_outputs:
+            self.update_flat_outputs(corrected_outputs, io_it)
 
 
 class SlrWithQbxFlow(Workflow):
@@ -329,7 +333,7 @@ class SlrWithQbxFlow(Workflow):
             except Exception as e:
                 logger.error(f"SLR with QBX failed: {e}")
                 logger.warning(
-                    "Skipping this pair of tractograms, " "continuing with next pair."
+                    "Skipping this pair of tractograms, continuing with next pair."
                 )
                 continue
 
@@ -586,8 +590,8 @@ class ImageRegistrationFlow(Workflow):
                 """
                 Saving the moved image file and the affine matrix.
                 """
-                logger.info(f"Optimal parameters: {str(xopt)}")
-                logger.info(f"Similarity metric: {str(fopt)}")
+                logger.info(f"Optimal parameters: {xopt}")
+                logger.info(f"Similarity metric: {fopt}")
 
                 if save_metric:
                     save_qa_metric(qual_val_file, xopt, fopt)
@@ -940,9 +944,11 @@ class SynRegistrationFlow(Workflow):
             # Saving
             logger.info(f"Saving warped {owarped_file}")
             save_nifti(owarped_file, warped_moving, static_grid2world)
-            logger.info(f"Saving inverse transformes static {oinv_static_file}")
+            logger.info(
+                f"Saving inverse static (backward warp applied to static) {oinv_static_file}"
+            )
             save_nifti(oinv_static_file, inv_static, static_grid2world)
-            logger.info(f"Saving Diffeomorphic map {omap_file}")
+            logger.info(f"Saving diffeomorphic map {omap_file}")
             save_nifti(omap_file, mapping_data, mapping.codomain_world2grid)
 
 

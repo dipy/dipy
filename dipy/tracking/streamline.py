@@ -64,8 +64,9 @@ def relist_streamlines(points, offsets):
 
     streamlines = [points[0 : offsets[0]]]
 
-    for i in range(len(offsets) - 1):
-        streamlines.append(points[offsets[i] : offsets[i + 1]])
+    streamlines.extend(
+        points[offsets[i] : offsets[i + 1]] for i in range(len(offsets) - 1)
+    )
 
     return streamlines
 
@@ -775,20 +776,18 @@ def values_from_volume(data, streamlines, affine):
             return _extract_vals(data, streamlines, affine, threedvec=True)
         if isinstance(streamlines, types.GeneratorType):
             streamlines = Streamlines(streamlines)
-        vals = []
-        for ii in range(data.shape[-1]):
-            vals.append(_extract_vals(data[..., ii], streamlines, affine))
+        vals = [
+            _extract_vals(data[..., ii], streamlines, affine)
+            for ii in range(data.shape[-1])
+        ]
 
         if isinstance(vals[-1], np.ndarray):
             return np.swapaxes(np.array(vals), 2, 1).T
         else:
-            new_vals = []
-            for sl_idx in range(len(streamlines)):
-                sl_vals = []
-                for ii in range(data.shape[-1]):
-                    sl_vals.append(vals[ii][sl_idx])
-                new_vals.append(np.array(sl_vals).T)
-            return new_vals
+            return [
+                np.array([vals[ii][sl_idx] for ii in range(data.shape[-1])]).T
+                for sl_idx in range(len(streamlines))
+            ]
 
     elif len(data.shape) == 3:
         return _extract_vals(data, streamlines, affine)

@@ -9,7 +9,6 @@ from scipy import ndimage
 from dipy.align import (
     crosscorr as cc,
     expectmax as em,
-    floating,
     sumsqdiff as ssd,
     vector_fields as vfu,
 )
@@ -228,7 +227,7 @@ class CCMetric(SimilarityMetric):
             the radius of the squared (cubic) neighborhood at each voxel to be
             considered to compute the cross correlation
         """
-        super(CCMetric, self).__init__(dim)
+        super().__init__(dim)
         self.sigma_diff = sigma_diff
         self.radius = radius
         self._connect_functions()
@@ -290,7 +289,7 @@ class CCMetric(SimilarityMetric):
         self.factors = np.array(self.factors)
 
         self.gradient_moving = np.empty(
-            shape=self.moving_image.shape + (self.dim,), dtype=floating
+            shape=self.moving_image.shape + (self.dim,), dtype=np.float32
         )
         for i, grad in enumerate(gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
@@ -302,7 +301,7 @@ class CCMetric(SimilarityMetric):
             self.reorient_vector_field(self.gradient_moving, self.moving_direction)
 
         self.gradient_static = np.empty(
-            shape=self.static_image.shape + (self.dim,), dtype=floating
+            shape=self.static_image.shape + (self.dim,), dtype=np.float32
         )
         for i, grad in enumerate(gradient(self.static_image)):
             self.gradient_static[..., i] = grad
@@ -403,7 +402,7 @@ class EMMetric(SimilarityMetric):
             Gauss-Seidel optimization algorithm (not used if Demons Step is
             selected)
         """
-        super(EMMetric, self).__init__(dim)
+        super().__init__(dim)
         self.smooth = smooth
         self.inner_iter = inner_iter
         self.q_levels = q_levels
@@ -470,7 +469,7 @@ class EMMetric(SimilarityMetric):
         self.staticq_means_field = self.staticq_means[staticq]
 
         self.gradient_moving = np.empty(
-            shape=self.moving_image.shape + (self.dim,), dtype=floating
+            shape=self.moving_image.shape + (self.dim,), dtype=np.float32
         )
 
         for i, grad in enumerate(gradient(self.moving_image)):
@@ -483,7 +482,7 @@ class EMMetric(SimilarityMetric):
             self.reorient_vector_field(self.gradient_moving, self.moving_direction)
 
         self.gradient_static = np.empty(
-            shape=self.static_image.shape + (self.dim,), dtype=floating
+            shape=self.static_image.shape + (self.dim,), dtype=np.float32
         )
 
         for i, grad in enumerate(gradient(self.static_image)):
@@ -584,7 +583,7 @@ class EMMetric(SimilarityMetric):
             delta = self.movingq_means_field - self.static_image
             sigma_sq_field = self.movingq_sigma_sq_field
 
-        displacement = np.zeros(shape=reference_shape + (self.dim,), dtype=floating)
+        displacement = np.zeros(shape=reference_shape + (self.dim,), dtype=np.float32)
 
         if self.dim == 2:
             self.energy = v_cycle_2d(
@@ -750,7 +749,7 @@ class SSDMetric(SimilarityMetric):
             and 'compute_backward' are called. Either 'demons' or
             'gauss_newton'
         """
-        super(SSDMetric, self).__init__(dim)
+        super().__init__(dim)
         self.smooth = smooth
         self.inner_iter = inner_iter
         self.step_type = step_type
@@ -786,7 +785,7 @@ class SSDMetric(SimilarityMetric):
         computation of the forward and backward steps.
         """
         self.gradient_moving = np.empty(
-            shape=self.moving_image.shape + (self.dim,), dtype=floating
+            shape=self.moving_image.shape + (self.dim,), dtype=np.float32
         )
         for i, grad in enumerate(gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
@@ -798,7 +797,7 @@ class SSDMetric(SimilarityMetric):
             self.reorient_vector_field(self.gradient_moving, self.moving_direction)
 
         self.gradient_static = np.empty(
-            shape=self.static_image.shape + (self.dim,), dtype=floating
+            shape=self.static_image.shape + (self.dim,), dtype=np.float32
         )
         for i, grad in enumerate(gradient(self.static_image)):
             self.gradient_static[..., i] = grad
@@ -856,7 +855,7 @@ class SSDMetric(SimilarityMetric):
             gradient = self.gradient_moving
             delta_field = self.moving_image - self.static_image
 
-        displacement = np.zeros(shape=reference_shape + (self.dim,), dtype=floating)
+        displacement = np.zeros(shape=reference_shape + (self.dim,), dtype=np.float32)
 
         if self.dim == 2:
             self.energy = v_cycle_2d(
@@ -1033,7 +1032,7 @@ def v_cycle_2d(
 
     shape = np.array(displacement.shape).astype(np.int32)
     half_shape = ((shape[0] + 1) // 2, (shape[1] + 1) // 2, 2)
-    sub_displacement = np.zeros(shape=half_shape, dtype=floating)
+    sub_displacement = np.zeros(shape=half_shape, dtype=np.float32)
     sublambda_param = lambda_param * 0.25
     v_cycle_2d(
         n - 1,
@@ -1154,7 +1153,7 @@ def v_cycle_3d(
     shape = np.array(displacement.shape).astype(np.int32)
     sub_displacement = np.zeros(
         shape=((shape[0] + 1) // 2, (shape[1] + 1) // 2, (shape[2] + 1) // 2, 3),
-        dtype=floating,
+        dtype=np.float32,
     )
     sublambda_param = lambda_param * 0.25
     v_cycle_3d(

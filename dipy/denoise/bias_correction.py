@@ -950,14 +950,14 @@ def _auto_select_fit(
 
     if cov_poly <= cov_bspline:
         logger.info(
-            "bias_field_correction auto: selected 'poly' " "(CoV %.4f vs bspline %.4f)",
+            "bias_field_correction auto: selected 'poly' (CoV %.4f vs bspline %.4f)",
             cov_poly,
             cov_bspline,
         )
         return log_bias_poly
 
     logger.info(
-        "bias_field_correction auto: selected 'bspline' " "(CoV %.4f vs poly %.4f)",
+        "bias_field_correction auto: selected 'bspline' (CoV %.4f vs poly %.4f)",
         cov_bspline,
         cov_poly,
     )

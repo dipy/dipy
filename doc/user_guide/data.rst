@@ -57,4 +57,3 @@ Datasets List
 Details about datasets available in DIPY are described in the table below:
 
 .. include:: dataset_list.rst
-

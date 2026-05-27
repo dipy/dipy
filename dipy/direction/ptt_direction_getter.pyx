@@ -463,4 +463,3 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 # maximum length has been reached, return everything
                 i = streamline.shape[0]
         return i, stream_status
-

@@ -842,7 +842,7 @@ def register_dwi_series(
     if np.sum(gtab.b0s_mask) > 1:
         # First, register the b0s into one image and average:
         logger.info(
-            "Creating Reference Image by Registering " "b0 Volumes to Each Other..."
+            "Creating Reference Image by Registering b0 Volumes to Each Other..."
         )
         b0_img = nib.Nifti1Image(data[..., gtab.b0s_mask], affine)
         trans_b0, b0_affines = register_series(

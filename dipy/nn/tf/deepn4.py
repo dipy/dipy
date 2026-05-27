@@ -55,7 +55,7 @@ class EncoderBlock(Layer):
     """
 
     def __init__(self, out_channels, kernel_size, strides, padding):
-        super(EncoderBlock, self).__init__()
+        super().__init__()
         self.conv3d = Conv3D(
             out_channels, kernel_size, strides=strides, padding=padding, use_bias=False
         )
@@ -100,7 +100,7 @@ class DecoderBlock(Layer):
     """
 
     def __init__(self, out_channels, kernel_size, strides, padding):
-        super(DecoderBlock, self).__init__()
+        super().__init__()
         self.conv3d = Conv3DTranspose(
             out_channels, kernel_size, strides=strides, padding=padding, use_bias=False
         )

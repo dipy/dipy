@@ -67,7 +67,7 @@ Windows
 
     pip install nibabel
 
-#. Finally, we are ready to install DIPY itself. Same as with `nibabel` above,
+#. Finally, we are ready to install DIPY itself. Same as with ``nibabel`` above,
    we will type at the terminal shell command line::
 
     pip install dipy
@@ -95,7 +95,7 @@ OSX
 
     pip install nibabel
 
-#. Finally, we are ready to install DIPY itself. Same as with `nibabel` above, we will type at the terminal shell command line::
+#. Finally, we are ready to install DIPY itself. Same as with ``nibabel`` above, we will type at the terminal shell command line::
 
     pip install dipy
 

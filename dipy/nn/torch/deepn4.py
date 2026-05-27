@@ -45,7 +45,7 @@ class UNet3D(Module):
     """
 
     def __init__(self, n_in, n_out):
-        super(UNet3D, self).__init__()
+        super().__init__()
         # Encoder
         c = 32
         self.ec0 = self.encoder_block(n_in, c, kernel_size=3, stride=1, padding=1)

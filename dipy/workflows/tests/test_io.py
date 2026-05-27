@@ -23,7 +23,7 @@ from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.testing import assert_true, assert_warns
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWireError
-from dipy.workflows.base import format_key_value_table
+from dipy.workflows.base import _strip_rst_markup, format_key_value_table
 from dipy.workflows.io import (
     ConcatenateTractogramFlow,
     ConvertSHFlow,
@@ -56,7 +56,7 @@ logging.basicConfig(
 is_big_endian = "big" in sys.byteorder.lower()
 
 
-def test_io_info():
+def test_io_info(caplog):
     fimg, fbvals, fbvecs = get_fnames(name="small_101D")
     io_info_flow = IoInfoFlow()
     io_info_flow.run([fimg, fbvals, fbvecs])
@@ -91,12 +91,65 @@ def test_io_info():
         reference=str(filepath_dix["gs_volume.nii"]),
     )
 
-    with open(fname_log, "r") as file:
+    pam = generate_random_pam()
+    with TemporaryDirectory() as out_dir:
+        pam_fname = Path(out_dir) / "test_info.pam5"
+        save_pam(pam_fname, pam)
+        io_info_flow = IoInfoFlow()
+        with caplog.at_level(logging.INFO, logger="dipy"):
+            io_info_flow.run(pam_fname)
+
+    npt.assert_equal("PAM5 version" in caplog.text, True)
+    npt.assert_equal("Volume dimensions" in caplog.text, True)
+    npt.assert_equal("Peaks per voxel" in caplog.text, True)
+    npt.assert_equal("Affine matrix" in caplog.text, True)
+
+    with open(fname_log) as file:
         lines = file.readlines()
         try:
             npt.assert_equal(lines[-3], "INFO Total number of unit bvectors 25\n")
         except IndexError:  # logging maybe disabled in IDE setting
             pass
+
+
+def test_io_info_pam_missing_fields(caplog):
+    pam = PeaksAndMetrics()
+    pam.peak_dirs = np.zeros((5, 5, 5, 3, 3))
+    pam.peak_values = np.zeros((5, 5, 5, 3))
+    pam.peak_indices = np.zeros((5, 5, 5, 3))
+    pam.sphere = default_sphere
+    # save_pam wraps these in np.array(...) so they cannot be None on disk
+    pam.total_weight = 0.0
+    pam.ang_thr = 0.0
+    # All of these will be omitted from the PAM5 file and reload as None
+    pam.affine = None
+    pam.shm_coeff = None
+    pam.B = None
+    pam.gfa = None
+    pam.qa = None
+    pam.odf = None
+
+    with TemporaryDirectory() as out_dir:
+        pam_fname = Path(out_dir) / "minimal.pam5"
+        save_pam(pam_fname, pam)
+        io_info_flow = IoInfoFlow()
+        with caplog.at_level(logging.INFO, logger="dipy"):
+            io_info_flow.run(pam_fname)
+
+    lines = caplog.text.splitlines()
+    for label in [
+        "Voxel size",
+        "Voxel order",
+        "SH coefficients shape",
+        "SH order",
+        "B matrix shape",
+        "GFA shape",
+        "QA shape",
+        "ODF shape",
+        "Affine matrix",
+    ]:
+        matching = [line for line in lines if label in line and "Not available" in line]
+        npt.assert_equal(len(matching) > 0, True)
 
 
 def test_io_fetch():
@@ -210,6 +263,53 @@ def test_format_key_value_table():
     npt.assert_equal(len(unsorted_lines), 2)
     npt.assert_equal("zebra" in unsorted_lines[0], True)
     npt.assert_equal("apple" in unsorted_lines[1], True)
+
+    # Newlines in values are preserved as separate output rows
+    multiline = format_key_value_table(
+        {"key": "first line\nsecond line"},
+        key_header="Key",
+        value_header="Value",
+    )
+    npt.assert_equal(any("first line" in line for line in multiline.splitlines()), True)
+    npt.assert_equal(
+        any("second line" in line for line in multiline.splitlines()), True
+    )
+
+    # Leading whitespace on a value line is preserved in the rendered row
+    indented = format_key_value_table(
+        {"key": "    indented text"},
+        key_header="Key",
+        value_header="Value",
+    )
+    npt.assert_equal(
+        any("    indented text" in line for line in indented.splitlines()), True
+    )
+
+
+def test_strip_rst_markup():
+    # Plain text passes through untouched
+    npt.assert_equal(_strip_rst_markup("hello world"), "hello world")
+
+    # RST inline roles are stripped, content preserved
+    npt.assert_equal(_strip_rst_markup(":math:`x = 1`"), "x = 1")
+    npt.assert_equal(_strip_rst_markup(":footcite:`Smith2020`"), "Smith2020")
+
+    # LaTeX brace commands are stripped, content preserved
+    npt.assert_equal(_strip_rst_markup(r"\text{bvec}"), "bvec")
+    npt.assert_equal(_strip_rst_markup(r"\mathbf{x}"), "x")
+
+    # Known LaTeX symbols are replaced with Unicode equivalents
+    npt.assert_equal(_strip_rst_markup(r"a \pm b"), "a ± b")
+    npt.assert_equal(_strip_rst_markup(r"\mu"), "μ")
+
+    # All three rules combined in one expression
+    npt.assert_equal(
+        _strip_rst_markup(r":math:`norm(\text{bvec}) = 1 \pm \text{bvecs_tol}`"),
+        "norm(bvec) = 1 ± bvecs_tol",
+    )
+
+    # Unknown LaTeX symbols are left as-is
+    npt.assert_equal(_strip_rst_markup(r"\unknown"), r"\unknown")
 
 
 def test_format_data_names_table():

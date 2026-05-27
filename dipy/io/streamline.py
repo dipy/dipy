@@ -84,8 +84,7 @@ def save_tractogram(
         to_origin = Origin.NIFTI
         to_space = Space.RASMM
         logger.warning(
-            "to_space and to_origin are ignored when saving "
-            ".trk or .tck or .trx files."
+            "to_space and to_origin are ignored when saving .trk or .tck or .trx files."
         )
     sft.to_space(to_space)
     sft.to_origin(to_origin)

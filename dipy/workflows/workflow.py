@@ -96,10 +96,7 @@ class Workflow:
         output independently of the outcome to tell the user something
         happened.
         """
-        duplicates = []
-        for output in self.flat_outputs:
-            if Path(output).is_file():
-                duplicates.append(output)
+        duplicates = [output for output in self.flat_outputs if Path(output).is_file()]
 
         if len(duplicates) > 0:
             if self._force_overwrite:
@@ -161,7 +158,7 @@ class CombinedWorkflow(Workflow):
         """
 
         self._optionals = {}
-        super(CombinedWorkflow, self).__init__(
+        super().__init__(
             output_strategy=output_strategy, mix_names=mix_names, force=force, skip=skip
         )
 
@@ -170,11 +167,10 @@ class CombinedWorkflow(Workflow):
         (sub flow name, sub flow run method, sub flow short name)
         to be used in the sub flow parameters extraction.
         """
-        sub_runs = []
-        for flow in self._get_sub_flows():
-            sub_runs.append((flow.__name__, flow.run, flow.get_short_name()))
-
-        return sub_runs
+        return [
+            (flow.__name__, flow.run, flow.get_short_name())
+            for flow in self._get_sub_flows()
+        ]
 
     def _get_sub_flows(self):
         """Returns a list of sub flows used in the combined_workflow. Needs to

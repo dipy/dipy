@@ -648,4 +648,3 @@ def evaluate_aabb_checks():
     res = aabb_overlap(&aabb1[0], &aabb2[0])
 
     return np.asarray(aabb1), np.asarray(aabb2), res
-

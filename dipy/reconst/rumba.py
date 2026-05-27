@@ -141,7 +141,7 @@ class RumbaSDModel(OdfModel):
         if R < 1 or n_iter < 1 or n_coils < 1:
             raise ValueError(
                 f"R, n_iter, and n_coils must be >= 1, but R={R},"
-                + f"n_iter={n_iter}, and n_coils={n_coils} "
+                f"n_iter={n_iter}, and n_coils={n_coils} "
             )
 
         self.R = R
@@ -232,8 +232,8 @@ class RumbaSDModel(OdfModel):
         if data.shape[:3] != mask.shape:
             raise ValueError(
                 "Mask shape should match first 3 dimensions of "
-                + f"data, but data dimensions are f{data.shape} "
-                + f"while mask dimensions are f{mask.shape}"
+                f"data, but data dimensions are f{data.shape} "
+                f"while mask dimensions are f{mask.shape}"
             )
 
         # Signal repair, normalization
@@ -362,8 +362,7 @@ class RumbaFit(OdfFit):
         """
         if sphere is not None and sphere != self.model.sphere:
             raise ValueError(
-                "Reconstruction sphere must be the same as used"
-                + " in the RUMBA-SD model."
+                "Reconstruction sphere must be the same as used in the RUMBA-SD model."
             )
 
         odf = self.model_params[..., :-2]
@@ -942,8 +941,8 @@ def rumba_deconv_global(
     if np.any(np.array(data.shape[:3]) == 1) and use_tv:
         raise ValueError(
             "Cannot use TV regularization if any spatial"
-            + "dimensions are 1; "
-            + f"provided dimensions were {data.shape[:3]}"
+            "dimensions are 1; "
+            f"provided dimensions were {data.shape[:3]}"
         )
 
     epsilon = 1e-7

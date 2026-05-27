@@ -29,7 +29,3 @@ $\Delta$ is the diffusion time scale of the sequence.
 
 $P_{\Delta}$ is the averages diffusion propagator (transition
 probability distribution).
-
-
-
-

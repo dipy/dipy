@@ -21,10 +21,10 @@ on:
 env:
   CIBW_BUILD_VERBOSITY: 1  # verbosity of 2 shows thousands of annoying pip lines!
   CIBW_ARCHS: "native"
-  CIBW_BUILD: "cp3{11,12,13,14}-*"
+  CIBW_BUILD: "cp3{12,13,14}-*"
   CIBW_BUILD_FRONTEND: 'pip; args: --pre --extra-index-url "https://pypi.anaconda.org/scientific-python-nightly-wheels/simple"'
   CIBW_TEST_SKIP: "*"
-  CIBW_TEST_REQUIRES: "-r requirements/build.txt pytest==8.0.0"
+  CIBW_TEST_REQUIRES: "--group build pytest"
   CIBW_TEST_COMMAND: pytest --pyargs dipy
   CIBW_CONFIG_SETTINGS: "compile-args=-v"
 
@@ -46,7 +46,7 @@ jobs:
       run:
         shell: bash -el {0}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 2
       - name: Check commit message for [wheels]
@@ -86,7 +86,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm]
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ needs.check-commit.outputs.build-commit }}
@@ -113,7 +113,7 @@ jobs:
       matrix:
         os: [macos-15-intel, macos-latest]
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ needs.check-commit.outputs.build-commit }}
@@ -142,7 +142,7 @@ jobs:
       matrix:
         os: [windows-latest]
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ needs.check-commit.outputs.build-commit }}

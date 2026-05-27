@@ -1,9 +1,10 @@
 [project]
 name = "dipy"
 description = "Diffusion MRI Imaging in Python"
-license = {file = "LICENSE"}
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
 readme = "README.rst"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 authors = [{ name = "DIPY developers", email = "dipy@python.org" }]
 maintainers = [
     {name = "Eleftherios Garyfallidis", email="neuroimaging@python.org"},
@@ -20,10 +21,8 @@ classifiers = [
     'Environment :: Console',
     'Intended Audience :: Developers',
     'Intended Audience :: Science/Research',
-    'License :: OSI Approved :: BSD License',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3.13',
     'Programming Language :: Python :: 3.14',
@@ -38,10 +37,10 @@ classifiers = [
 ]
 version = "1.13.0.dev0"
 dependencies = [
-    "numpy>=1.22.4",
-    "scipy>=1.8",
+    "numpy>=2.0.0",
+    "scipy>=1.13",
     "nibabel>=3.0.0",
-    "h5py>=3.1.0",
+    "h5py>=3.11.0",
     "packaging>=21",
     "tqdm>=4.30.0",
     "trx-python>=0.4.0",
@@ -112,52 +111,47 @@ dipy_nifti2pam = "dipy.workflows.cli:run"
 dipy_pam2nifti = "dipy.workflows.cli:run"
 dipy_tensor2pam = "dipy.workflows.cli:run"
 
-[project.optional-dependencies]
+[dependency-groups]
 build = [
     "meson-python>=0.13",
-    "wheel",
-    "setuptools>=69.5,<83.0",
+    "setuptools>=77.0.3",
     "packaging>=21",
     "ninja",
     "Cython>=0.29.35",
-    "numpy>=1.22.4",
+    "numpy>=2.0.0",
     "spin>=0.5",
-    "build"
+    "build",
 ]
-all = ["dipy[build, dev, doc, style, optional, benchmark, skyline]"]
+all = [
+    {include-group = "build"},
+    {include-group = "dev"},
+    {include-group = "doc"},
+    {include-group = "style"},
+    {include-group = "benchmark"},
+    {include-optional = "viz"},
+    {include-optional = "optional"},
+]
 style = ["ruff", "pre-commit"]
-skyline = ["fury>=2.0.0a6", "imgui_bundle>=1.92.600"]
-test = ["pytest", "coverage", "coveralls", "codecov", "asv"]
-ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
+test = ["pytest>=9", "coverage", "coveralls", "codecov", "asv"]
 dev = [
-    "dipy[build, style]",
-    "pytest",
+    {include-group = "build"},
+    {include-group = "style"},
+    "dependency-groups",
+    "pytest>=9",
     "coverage",
     "coveralls",
     "codecov",
-    "asv"
+    "asv",
 ]
-
-optional = [
-    "dipy[ml]",
-    "cvxpy",
-    "scikit-image",
-    "boto3",
-    "numexpr",
-    "matplotlib",
-]
-
 doc = [
     "numpydoc",
     "sphinx>=7.2.6",
     "texext",
-    "tomli; python_version < \"3.11\"",
     "sphinxcontrib-bibtex>=2.5.0",
     "sphinx_design>=0.5.0",
     "sphinx-gallery>=0.10.0",
-    "tomli>=2.0.1",
     "grg-sphinx-theme>=0.4.0",
-    "Jinja2"
+    "Jinja2",
 ]
 benchmark = [
     "asv",
@@ -165,6 +159,17 @@ benchmark = [
     "virtualenv",
 ]
 
+[project.optional-dependencies]
+skyline = ["fury>=2.0.0a6", "imgui_bundle>=1.92.600", "matplotlib"]
+viz = ["fury>0.12.0", "matplotlib", "imgui_bundle>=1.92.600"]
+ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
+optional = [
+    "dipy[viz, ml]",
+    "cvxpy",
+    "scikit-image",
+    "boto3",
+    "numexpr",
+]
 
 [project.urls]
 homepage = "https://dipy.org"
@@ -176,19 +181,18 @@ tracker = "https://github.com/dipy/dipy/issues"
 [build-system]
 build-backend = "mesonpy"
 requires = [
-    "meson-python>=0.13.1",
+    "meson-python>=0.18.0",
     "Cython>=3.0.4",
     "packaging>21.0",
-    "wheel",
-    "scipy>=1.8.0",
+    "scipy>=1.13.0",
     # numpy requirement for wheel builds for distribution on PyPI - building
-    # against 2.x yields wheels that are also compatible with numpy 1.x at
+    # against 2.x yields wheels that are also compatible with numpy 2.x at
     # runtime.
-    # Note that building against numpy 1.x works fine too - users and
+    # Note that building against numpy 2.x works fine too - users and
     # redistributors can do this by installing the numpy version they like and
     # disabling build isolation.
-    "numpy>=2.0.0rc1; python_version>='3.11' and platform_python_implementation!='PyPy'",
-    "numpy; python_version>='3.11' and platform_python_implementation=='PyPy'",
+    "numpy>=2.0.0rc1; python_version>='3.12' and platform_python_implementation!='PyPy'",
+    "numpy; python_version>='3.12' and platform_python_implementation=='PyPy'",
 ]
 
 [tool.spin]
@@ -220,12 +224,21 @@ Release = [
     ".spin/cmds.py:prepare_release",
 ]
 
-[tool.pytest.ini_options]
-addopts = "--ignore=dipy/testing/decorators.py --ignore-glob='bench*.py' --ignore-glob=**/benchmarks/*"
+[tool.pytest]
+minversion = "9"
+addopts = [
+    "-ra",
+    "--ignore=dipy/testing/decorators.py",
+    "--ignore-glob='bench*.py'",
+    "--ignore-glob=**/benchmarks/*"
+]
+log_level = "INFO"
+strict = true
 filterwarnings = [
     # FURY
     "ignore:.*You do not have FURY installed.*:UserWarning",
     "ignore:.*'where' used without 'out'.*:UserWarning:fury.colormap",
+    "ignore:.*Python 3.14 will, by default, filter extracted tar archives.*:DeprecationWarning",
     # pkg_resources (via Ray)
     "ignore:Implementing implicit namespace packages.*:DeprecationWarning",
     "ignore:Deprecated call to `pkg_resources.*:DeprecationWarning",

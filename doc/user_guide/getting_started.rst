@@ -4,7 +4,7 @@
 Getting Started
 ***************
 
-Here is a quick snippet showing how to calculate `color FA` also known as the
+Here is a quick snippet showing how to calculate ``color FA`` also known as the
 DEC map. We use a Tensor model to reconstruct the datasets which are
 saved in a Nifti file along with the b-values and b-vectors which are saved as
 text files. Finally, we save our result as a Nifti file ::
@@ -27,8 +27,8 @@ text files. Finally, we save our result as a Nifti file ::
 
     save_nifti('colorfa.nii.gz', tenfit.color_fa, affine)
 
-As an exercise, you can try to calculate `color FA` with your datasets. You will need
-to replace the filepaths `fdwi`, `fbval` and `fbvec`. Here is what
+As an exercise, you can try to calculate ``color FA`` with your datasets. You will need
+to replace the filepaths ``fdwi``, ``fbval`` and ``fbvec``. Here is what
 a slice should look like.
 
 .. image:: /_static/colorfa.png

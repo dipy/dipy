@@ -15,7 +15,7 @@ def expand_range(range_str):
 
     """
     range_str = range_str.replace(" ", "").strip()
-    range_str = range_str[:-1] if range_str.endswith(",") else range_str
+    range_str = range_str.removesuffix(",")
     result = []
     for part in range_str.split(","):
         if not part.replace("-", "").isdigit():

@@ -122,9 +122,9 @@ def connect_output_paths(
         else:
             dname = out_dir
 
-        updated_out_files = []
-        for out_file in out_files:
-            updated_out_files.append(Path(dname) / (mix_pref + str(out_file)))
+        updated_out_files = [
+            Path(dname) / (mix_pref + str(out_file)) for out_file in out_files
+        ]
 
         outputs.append(updated_out_files)
 
@@ -226,13 +226,9 @@ def _io_iterator(frame, fnc, *, output_strategy="absolute", mix_names=False):
     len_defaults = len(defaults)
     split_at = len_args - len_defaults
 
-    inputs = []
+    inputs = [values[arv] for arv in args[:split_at]]
     outputs = []
     out_dir = ""
-
-    # inputs
-    for arv in args[:split_at]:
-        inputs.append(values[arv])
 
     # defaults
     out_keys = []

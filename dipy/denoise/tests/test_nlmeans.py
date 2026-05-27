@@ -284,13 +284,13 @@ def test_coordinate_consistency(rng=None):
     )
 
     assert denoised_image.shape == noisy_image.shape
-    assert (
-        np.sum(denoised_image < 0) < 0.01 * denoised_image.size
-    ), "Too many negative values"
+    assert np.sum(denoised_image < 0) < 0.01 * denoised_image.size, (
+        "Too many negative values"
+    )
 
-    assert (
-        5 < np.mean(denoised_image) < 80
-    ), "Denoised mean should be in reasonable range"
+    assert 5 < np.mean(denoised_image) < 80, (
+        "Denoised mean should be in reasonable range"
+    )
 
     assert isinstance(denoised_image, np.ndarray)
     assert denoised_image.dtype == np.float64 or denoised_image.dtype == np.float32

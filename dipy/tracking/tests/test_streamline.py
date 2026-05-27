@@ -362,9 +362,7 @@ def test_set_number_of_points_memory_leaks(rng):
 
         rstreamlines = set_number_of_points(streamlines, nb_points=2)
         list_refcount_after = get_type_refcount()["list"]
-        del (
-            rstreamlines
-        )  # Delete `rstreamlines` because it holds a reference to `list  # noqa: F841
+        del rstreamlines  # Delete `rstreamlines` because it holds a reference to `list
 
         # Calling `set_number_of_points` should increase the refcount of `list`
         #  by one since we kept the returned value.
@@ -848,9 +846,7 @@ def test_compress_streamlines_memory_leaks(rng):
 
         cstreamlines = compress_streamlines(streamlines)
         list_refcount_after = get_type_refcount()["list"]
-        del (
-            cstreamlines
-        )  # Delete `cstreamlines` because it holds a reference to `list`   # noqa: F841
+        del cstreamlines  # Delete `cstreamlines` because it holds a reference to `list`
 
         # Calling `compress_streamlines` should increase the refcount of `list` by
         # one since we kept the returned value.
@@ -887,8 +883,7 @@ def generate_sl(streamlines):
     -------
     generator
     """
-    for sl in streamlines:
-        yield sl
+    yield from streamlines
 
 
 def test_select_by_rois():

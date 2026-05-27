@@ -39,7 +39,7 @@ class DenseModel(Module):
     """
 
     def __init__(self, sh_size, num_hidden):
-        super(DenseModel, self).__init__()
+        super().__init__()
         self.fc1 = Linear(sh_size, 400)
         self.fc2 = Linear(400, num_hidden)
         self.fc3 = Linear(num_hidden, 200)
@@ -126,7 +126,7 @@ class HistoResDNN:
         References
         ----------
         .. footbibliography::
-        """  # noqa: E501
+        """
         if not have_torch:
             raise torch()
 

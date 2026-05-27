@@ -74,6 +74,12 @@
      -
      - qtdMRI_test_retest_2subjects
      - Wassermann, D., Santin, M., Philippe, A.-C., Fick, R., Deriche, R., Lehericy, S., Petiet, A. (2017). Test-Retest qt-dMRI datasets for "Non-Parametric GraphNet-Regularized Representation of dMRI in Space and Time" [Data set]. Zenodo. https://doi.org/10.5281/zenodo.996889
+   * - Schaefer 2018 parcellation atlas
+     - Human
+     - Cortical parcellation atlas in MNI152 space; 100-1000 ROIs; 7 or 17 Yeo networks; 1mm and 2mm resolution
+     -
+     - atlas_schaefer_2018
+     - Schaefer A, Kong R, Gordon EM, Laumann TO, Zuo XN, Holmes AJ, Eickhoff SB, Yeo BTT. Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic Functional Connectivity MRI. Cereb Cortex, 29:3095-3114, 2018.
    * - SCIL b0
      -
      - b0
