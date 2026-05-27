@@ -202,18 +202,6 @@ ANTsPy `registration()` does not expose these inverse-field inversion parameters
 
 ---
 
-## Potential Implementation Detail to Verify
-
-There may be a possible issue in DIPY's `CCMetric.compute_backward()`:
-
-```text
-compute_backward() assigns the returned energy to a local variable `energy`, whereas compute_forward() stores it as `self.energy`.
-```
-
-If true, `get_energy()` after the backward computation may not reflect the backward energy.
-
----
-
 ## Recommended Benchmarking Strategy
 
 1. **Start with SyN-only comparisons**
