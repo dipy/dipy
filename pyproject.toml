@@ -144,15 +144,6 @@ dev = [
     "asv"
 ]
 
-optional = [
-    "dipy[ml]",
-    "cvxpy",
-    "scikit-image",
-    "boto3",
-    "numexpr",
-    "matplotlib",
-]
-
 doc = [
     "numpydoc",
     "sphinx>=7.2.6",
