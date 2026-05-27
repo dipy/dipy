@@ -89,11 +89,14 @@ class ResliceFlow(Workflow):
             new_vox = voxel_sorted[1] + (voxel_sorted[2] - voxel_sorted[1]) * vox_factor
             where voxel_sorted are the original voxel dimensions sorted in
             ascending order. The calculated value is applied isotropically
-            to all three dimensions.
-        order : int, optional
-            order of interpolation, from 0 to 5, for resampling/reslicing,
-            0 nearest interpolation, 1 trilinear etc.. if you don't want any
-            smoothing 0 is the option you need.
+            to all three dimensions. If the auto-calculated value is strictly
+            greater than 2.0mm, it is halved repeatedly until it falls below
+            2.0mm (e.g. 2.5 → 1.25mm, 5.0 → 1.25mm).
+        order : str, optional
+            Interpolation order. Integer values 0–5 select spline order via
+            scipy (0 nearest, 1 trilinear, …). String values ``'lanczos'`` or
+            ``'lanczos2'`` select a 2-lobe Lanczos kernel; ``'lanczos3'``
+            selects a 3-lobe Lanczos kernel. Use 0 to avoid smoothing.
         mode : string, optional
             Points outside the boundaries of the input are filled according
             to the given mode 'constant', 'nearest', 'reflect' or 'wrap'.
@@ -119,6 +122,9 @@ class ResliceFlow(Workflow):
 
         """
 
+        if isinstance(order, str) and order.lstrip("-").isdigit():
+            order = int(order)
+
         io_it = self.get_io_iterator()
         corrected_outputs = list(self.flat_outputs)
 
@@ -134,6 +140,15 @@ class ResliceFlow(Workflow):
                 calculated_vox_size = (
                     smax_vox_size + (max_vox_size - smax_vox_size) * vox_factor
                 )
+                if calculated_vox_size > 2.0:
+                    divisor = 2
+                    while calculated_vox_size / divisor >= 2.0:
+                        divisor *= 2
+                    calculated_vox_size /= divisor
+                    logger.warning(
+                        f"Auto-calculated voxel size > 2.0mm. "
+                        f"Divided by {divisor} → {calculated_vox_size:.4f}mm."
+                    )
                 new_vox_size_to_use = [calculated_vox_size] * 3
                 logger.warning(
                     f"new_vox_size not provided. Automatically calculated as "
