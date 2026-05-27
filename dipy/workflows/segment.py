@@ -16,6 +16,7 @@ from dipy.segment.clustering import QuickBundles, qbx_and_merge
 from dipy.segment.fss import FastStreamlineSearch, nearest_from_matrix_col
 from dipy.segment.mask import median_otsu
 from dipy.segment.tissue import TissueClassifierHMRF, dam_classifier
+from dipy.segment.utils import remove_holes_and_islands
 from dipy.tracking import Streamlines
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
@@ -669,7 +670,7 @@ class BrainMaskFlow(Workflow):
             'median_otsu' method.
         finalize_mask : bool, optional
             Whether to remove potential holes or islands. Useful for solving
-            minor errors. Used only for 'median_otsu' method.
+            minor errors. Used for 'median_otsu' and 'synthseg' methods.
         save_masked : bool, optional
             Save the masked volume in addition to the mask.
         use_cuda : bool, optional
@@ -786,6 +787,8 @@ class BrainMaskFlow(Workflow):
                     )
                 vol = data[..., 0] if data.ndim == 4 else data
                 _, _, mask_volume = synthseg_model.predict(vol, affine)
+                if finalize_mask:
+                    mask_volume = remove_holes_and_islands(mask_volume).astype(np.int32)
                 mask_for_apply = (
                     mask_volume[..., np.newaxis] if data.ndim == 4 else mask_volume
                 )
