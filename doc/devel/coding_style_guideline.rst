@@ -54,6 +54,7 @@ Setting up pre-commit
 2. Install the git hook scripts::
 
      pre-commit install
+     pre-commit install --hook-type commit-msg
 
 This installs pre-commit into your git hooks. After this, pre-commit will
 run automatically on every ``git commit``.

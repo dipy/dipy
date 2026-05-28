@@ -36,3 +36,8 @@ repos:
         entry: python tools/generate_requirements.py
         files: "pyproject.toml|requirements/.*\\.txt|tools/generate_requirements.py"
         additional_dependencies: ["dependency-groups"]
+      - id: dipy-commit-msg
+        name: dipy-commit-msg
+        entry: tools/hooks/commit-msg.py
+        language: python
+        stages: [commit-msg]
