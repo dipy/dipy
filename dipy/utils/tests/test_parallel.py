@@ -119,17 +119,31 @@ def test_auto_ray_chunk_size_memory_scales_with_ram():
 
 
 def test_auto_ray_chunk_size_negative_n_jobs():
-    # n_jobs=-1 must not collapse to 1 worker (which would yield 1 giant chunk)
+    # n_jobs=-1 must behave the same as the resolved worker count
     from dipy.utils.multiproc import determine_num_processes
 
     n_vox = 100_000
-    chunk_neg = auto_ray_chunk_size(n_jobs=-1, n_gradients=160, n_vox=n_vox)
-    chunk_pos = auto_ray_chunk_size(
-        n_jobs=determine_num_processes(-1), n_gradients=160, n_vox=n_vox
+    resolved_jobs = determine_num_processes(-1)
+
+    chunk_neg = auto_ray_chunk_size(
+        n_jobs=-1,
+        n_gradients=160,
+        n_vox=n_vox,
     )
+
+    chunk_pos = auto_ray_chunk_size(
+        n_jobs=resolved_jobs,
+        n_gradients=160,
+        n_vox=n_vox,
+    )
+
     assert chunk_neg == chunk_pos
-    # Must produce more than one chunk
-    assert chunk_neg < n_vox
+
+    # Multiple chunks are only expected when more than one worker exists
+    if resolved_jobs > 1:
+        assert chunk_neg < n_vox
+    else:
+        assert chunk_neg == n_vox
 
 
 def test_auto_ray_chunk_size_more_jobs_smaller_chunks():
