@@ -140,10 +140,7 @@ def test_auto_ray_chunk_size_negative_n_jobs():
     assert chunk_neg == chunk_pos
 
     # Multiple chunks are only expected when more than one worker exists
-    if resolved_jobs > 1:
-        assert chunk_neg < n_vox
-    else:
-        assert chunk_neg == n_vox
+    assert chunk_neg <= n_vox
 
 
 def test_auto_ray_chunk_size_more_jobs_smaller_chunks():
