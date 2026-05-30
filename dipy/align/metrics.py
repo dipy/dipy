@@ -340,7 +340,7 @@ class CCMetric(SimilarityMetric):
         Computes the update displacement field to be used for registration of
         the static image towards the moving image
         """
-        displacement, energy = self.compute_backward_step(
+        displacement, self.energy = self.compute_backward_step(
             self.gradient_moving, self.factors, self.radius
         )
         displacement = np.array(displacement)

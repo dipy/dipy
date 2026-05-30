@@ -1,7 +1,12 @@
 import itertools
 
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_raises
+from numpy.testing import (
+    assert_almost_equal,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_raises,
+)
 from scipy import ndimage
 
 from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
@@ -45,6 +50,83 @@ def test_exceptions():
     # expected to pass for any dimension == 2*radius + 1.
     metric = init_metric((9, 9), 4)
     metric.initialize_iteration()
+
+
+def setup_metric(metric, static, moving):
+    r"""Initialize a metric with a simple pair of images for one iteration."""
+    metric.set_static_image(static, None, np.ones(metric.dim), None)
+    metric.set_moving_image(moving, None, np.ones(metric.dim), None)
+    metric.initialize_iteration()
+    return metric
+
+
+def cc_energy_from_factors(factors, radius):
+    r"""Compute CC energy as implemented in ``crosscorr.pyx`` step functions.
+
+    This replicates the local NCC energy accumulation used by
+    ``compute_cc_forward_step_2d`` and ``compute_cc_backward_step_2d``
+    """
+    energy = 0
+    factors = np.asarray(factors)
+    for r in range(radius, factors.shape[0] - radius):
+        for c in range(radius, factors.shape[1] - radius):
+            sfm = factors[r, c, 2]
+            sff = factors[r, c, 3]
+            smm = factors[r, c, 4]
+            if sff == 0 or smm == 0:
+                continue
+            local_correlation = 0
+            if sff * smm > 1e-5:
+                local_correlation = sfm * sfm / (sff * smm)
+            if local_correlation < 1:
+                energy -= local_correlation
+    return energy
+
+
+@set_random_number_generator(7181309)
+def test_cc_metric_energy_matches_local_cross_correlation(rng):
+    r"""Verify that CCMetric reports the local cross-correlation energy.
+
+    The forward and backward CC steps both should store the same scalar data
+    energy for the initialized image pair.
+    """
+    static = rng.random((5, 5)).astype(np.float32)
+    moving = rng.random((5, 5)).astype(np.float32)
+    radius = 1
+
+    metric = setup_metric(CCMetric(2, radius=radius, sigma_diff=0), static, moving)
+    expected = cc_energy_from_factors(metric.factors, radius)
+    metric.compute_forward()
+    assert_almost_equal(metric.get_energy(), expected)
+    metric.free_iteration()
+
+    metric = setup_metric(CCMetric(2, radius=radius, sigma_diff=0), static, moving)
+    expected = cc_energy_from_factors(metric.factors, radius)
+    metric.compute_backward()
+    assert_almost_equal(metric.get_energy(), expected)
+    metric.free_iteration()
+
+
+@set_random_number_generator(7181309)
+def test_ssd_metric_energy_matches_squared_difference(rng):
+    r"""Verify that SSDMetric reports the sum of squared differences energy.
+
+    The forward and backward SSD steps both should store the same
+    squared-difference energy for the initialized image pair.
+    """
+    static = rng.random((5, 5)).astype(np.float32)
+    moving = rng.random((5, 5)).astype(np.float32)
+    expected = np.sum((static - moving) ** 2)
+
+    metric = setup_metric(SSDMetric(2, smooth=0), static, moving)
+    metric.compute_forward()
+    assert_almost_equal(metric.get_energy(), expected)
+    metric.free_iteration()
+
+    metric = setup_metric(SSDMetric(2, smooth=0), static, moving)
+    metric.compute_backward()
+    assert_almost_equal(metric.get_energy(), expected)
+    metric.free_iteration()
 
 
 @set_random_number_generator(7181309)
