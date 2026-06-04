@@ -53,15 +53,14 @@ def test_exceptions():
 
 
 def setup_metric(metric, static, moving):
-    r"""Initialize a metric with a simple pair of images for one iteration."""
+    """Initialize a metric with a simple pair of images for one iteration."""
     metric.set_static_image(static, None, np.ones(metric.dim), None)
     metric.set_moving_image(moving, None, np.ones(metric.dim), None)
     metric.initialize_iteration()
-    return metric
 
 
 def cc_energy_from_factors(factors, radius):
-    r"""Compute CC energy as implemented in ``crosscorr.pyx`` step functions.
+    """Compute CC energy as implemented in ``crosscorr.pyx`` step functions.
 
     This replicates the local NCC energy accumulation used by
     ``compute_cc_forward_step_2d`` and ``compute_cc_backward_step_2d``
@@ -85,7 +84,7 @@ def cc_energy_from_factors(factors, radius):
 
 @set_random_number_generator(7181309)
 def test_cc_metric_energy_matches_local_cross_correlation(rng):
-    r"""Verify that CCMetric reports the local cross-correlation energy.
+    """Verify that CCMetric reports the local cross-correlation energy.
 
     The forward and backward CC steps both should store the same scalar data
     energy for the initialized image pair.
@@ -94,13 +93,15 @@ def test_cc_metric_energy_matches_local_cross_correlation(rng):
     moving = rng.random((5, 5)).astype(np.float32)
     radius = 1
 
-    metric = setup_metric(CCMetric(2, radius=radius, sigma_diff=0), static, moving)
+    metric = CCMetric(2, radius=radius, sigma_diff=0)
+    setup_metric(metric, static, moving)
     expected = cc_energy_from_factors(metric.factors, radius)
     metric.compute_forward()
     assert_almost_equal(metric.get_energy(), expected)
     metric.free_iteration()
 
-    metric = setup_metric(CCMetric(2, radius=radius, sigma_diff=0), static, moving)
+    metric = CCMetric(2, radius=radius, sigma_diff=0)
+    setup_metric(metric, static, moving)
     expected = cc_energy_from_factors(metric.factors, radius)
     metric.compute_backward()
     assert_almost_equal(metric.get_energy(), expected)
@@ -109,7 +110,7 @@ def test_cc_metric_energy_matches_local_cross_correlation(rng):
 
 @set_random_number_generator(7181309)
 def test_ssd_metric_energy_matches_squared_difference(rng):
-    r"""Verify that SSDMetric reports the sum of squared differences energy.
+    """Verify that SSDMetric reports the sum of squared differences energy.
 
     The forward and backward SSD steps both should store the same
     squared-difference energy for the initialized image pair.
@@ -118,12 +119,14 @@ def test_ssd_metric_energy_matches_squared_difference(rng):
     moving = rng.random((5, 5)).astype(np.float32)
     expected = np.sum((static - moving) ** 2)
 
-    metric = setup_metric(SSDMetric(2, smooth=0), static, moving)
+    metric = SSDMetric(2, smooth=0)
+    setup_metric(metric, static, moving)
     metric.compute_forward()
     assert_almost_equal(metric.get_energy(), expected)
     metric.free_iteration()
 
-    metric = setup_metric(SSDMetric(2, smooth=0), static, moving)
+    metric = SSDMetric(2, smooth=0)
+    setup_metric(metric, static, moving)
     metric.compute_backward()
     assert_almost_equal(metric.get_energy(), expected)
     metric.free_iteration()
