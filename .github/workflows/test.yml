@@ -27,7 +27,7 @@ jobs:
     with:
       runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
       depends: cython!=0.29.29 numpy==2.0.0 matplotlib h5py==3.11.0 nibabel cvxpy==1.5.3 tqdm
-      extra-depends: scikit_learn pandas statsmodels tables scipy==1.13.0 numexpr
+      extra-depends: scikit_learn pandas statsmodels tables scipy==1.13.0 numexpr numba
 
   optional-deps-conda:
     uses: ./.github/workflows/test_template.yml
@@ -35,7 +35,7 @@ jobs:
       runs-on: '["macos-latest", "windows-latest"]'
       install-type: '["conda"]'
       depends: cython!=0.29.29 numpy=2.0.0 matplotlib h5py=3.11.0 nibabel cvxpy=1.5.2 tqdm
-      extra-depends: scikit-learn pandas statsmodels pytables scipy=1.13.0
+      extra-depends: scikit-learn pandas statsmodels pytables scipy=1.13.0 numba
 
   parallel:
     uses: ./.github/workflows/test_template.yml
