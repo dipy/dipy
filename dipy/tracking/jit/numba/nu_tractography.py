@@ -228,7 +228,6 @@ class NumbaTracker(GenericJITTracker):
             for i in range(self.nSlines):
                 npts = int(sline_lens[i])
                 if npts < self.min_steps or npts > self.max_steps:
-                    print("here")
                     continue
                 yield np.asarray(
                     slines[i * step : i * step + npts], dtype=self.REAL_DTYPE
