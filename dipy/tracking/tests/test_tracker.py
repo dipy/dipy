@@ -62,6 +62,8 @@ def track(method, **kwargs):
     }
     if "use_jit" in kwargs:
         params["use_jit"] = use_jit
+        if use_jit:
+            params["seed_directions"] = None
     stream_gen = method(seeds, sc, affine, **params)
 
     streamlines = Streamlines(stream_gen)
@@ -84,6 +86,10 @@ def track(method, **kwargs):
         "seed_directions": directions if use_directions else None,
         "sphere": sphere,
     }
+    if "use_jit" in kwargs:
+        params["use_jit"] = use_jit
+        if use_jit:
+            params["seed_directions"] = None
 
     stream_gen = method(seeds, sc, affine, **params)
 
