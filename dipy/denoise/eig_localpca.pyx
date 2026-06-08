@@ -42,7 +42,7 @@ cdef inline f_t mean_from_start(const f_t* a, int n) noexcept nogil:
     """
     Return the mean of the first ``n`` values in ``a``.
     """
-    
+
     cdef int i
     cdef f_t s = 0
     for i in range(n):
@@ -432,7 +432,7 @@ cdef void genpca_loop(
     tau_factor : float
         Thresholding of PCA eigenvalues.
     """
-    
+
     cdef Py_ssize_t Xdim = data.shape[0]
     cdef Py_ssize_t Ydim = data.shape[1]
     cdef Py_ssize_t Zdim = data.shape[2]
@@ -466,7 +466,7 @@ cdef void genpca_loop(
             C = np.empty((N, N), dtype=np.float32, order='F')
             d = np.empty((N,), dtype=np.float32)
             proj_buf = np.empty((n_samples, N), dtype=np.float32)
-            
+
             ssyev(b'V', b'L',
               &N,
               &C[0, 0], &N,
@@ -493,7 +493,7 @@ cdef void genpca_loop(
 
             lwork = <int>work_query64[0]
             work = np.empty((lwork,), dtype=np.float64)
-            
+
     cdef Py_ssize_t i, j, k
     cdef int dx, dy, dz
     cdef Py_ssize_t ii, jj, kk
@@ -537,7 +537,7 @@ cdef void genpca_loop(
                           &d[0],
                           &work[0], &lwork,
                           &info)
-                
+
                 if info != 0:
                     with gil:
                         if info < 0:
@@ -933,7 +933,7 @@ cdef tuple run_core_f32(
     Execute the float32 implementation of the local PCA core.
 
     This helper allocates float32 accumulation buffers and dispatches the main
-    Cython loop. 
+    Cython loop.
 
     Parameters
     ----------
@@ -1006,7 +1006,7 @@ cdef tuple run_core_f64(
     Execute the float64 implementation of the local PCA core.
 
     This helper allocates float64 accumulation buffers and dispatches the main
-    Cython loop. 
+    Cython loop.
 
     Parameters
     ----------
@@ -1160,7 +1160,7 @@ def genpca_core(
     out_dtype=None,
 ):
     """
-    Perform PCA-based denoising on a 4D volume. This is a Python wrapper 
+    Perform PCA-based denoising on a 4D volume. This is a Python wrapper
     around the optimized Cython core function `genpca_loop`. The code only supports
     eigenvalue decomposition.
 
@@ -1176,7 +1176,7 @@ def genpca_core(
         outside of those voxels.
     var_map : 3D array, optional
         Voxelwise noise variance map estimated from the data. If it is not given, it
-        will be estimated based on random matrix theory 
+        will be estimated based on random matrix theory
         :footcite:p:`Veraart2016b`, :footcite:p:`Veraart2016c`.
     return_sigma : bool, optional
         If true, the Standard deviation of the noise will be returned.
