@@ -313,6 +313,33 @@ def test_register_dwi_series_and_motion_correction():
         npt.assert_array_equal(reg_affines, reg_affines_2)
 
 
+def test_register_dwi_series_parallel():
+    # Parallel (num_processes > 1) registration must match the serial result,
+    # since the per-volume registrations are independent.
+    fdata, fbval, fbvec = dpd.get_fnames(name="small_64D")
+    with TemporaryDirectory() as tmpdir:
+        # Use an abbreviated data-set:
+        img = nib.load(fdata)
+        data = img.get_fdata()[..., :10]
+        bvals = np.loadtxt(fbval)
+        bvecs = np.loadtxt(fbvec)
+        np.savetxt(Path(tmpdir) / "bvals.txt", bvals[:10])
+        np.savetxt(Path(tmpdir) / "bvecs.txt", bvecs[:10])
+        gtab = dpg.gradient_table(
+            Path(tmpdir) / "bvals.txt", bvecs=Path(tmpdir) / "bvecs.txt"
+        )
+
+        reg_img, reg_affines = motion_correction(
+            data, gtab, affine=img.affine, num_processes=1
+        )
+        reg_img_par, reg_affines_par = motion_correction(
+            data, gtab, affine=img.affine, num_processes=2
+        )
+
+        npt.assert_array_almost_equal(reg_img.get_fdata(), reg_img_par.get_fdata())
+        npt.assert_array_almost_equal(reg_affines, reg_affines_par)
+
+
 @set_random_number_generator()
 def test_streamline_registration(rng):
     sl1 = [

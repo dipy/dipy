@@ -966,6 +966,7 @@ class MotionCorrectionFlow(Workflow):
         b0_threshold=50,
         bvecs_tol=0.01,
         level_iters=(1000, 500, 100),
+        num_processes=1,
         out_dir="",
         out_moved="moved.nii.gz",
         out_affine="affine.txt",
@@ -989,6 +990,11 @@ class MotionCorrectionFlow(Workflow):
             b-vectors are unit vectors
         level_iters : variable int, optional
             The number of iterations at each level of the Gaussian pyramid.
+        num_processes : int, optional
+            Split the registration of the series volumes across a pool of
+            child processes. Default is 1. If < 0 the maximal number of cores
+            minus ``num_processes + 1`` is used (enter -1 to use as many cores
+            as possible). 0 raises an error.
         out_dir : string or Path, optional
             Directory to save the transformed image and the affine matrix.
         out_moved : string, optional
@@ -1027,7 +1033,11 @@ class MotionCorrectionFlow(Workflow):
             )
 
             reg_img, reg_affines = motion_correction(
-                data=data, gtab=gtab, affine=affine, level_iters=level_iters
+                data=data,
+                gtab=gtab,
+                affine=affine,
+                level_iters=level_iters,
+                num_processes=num_processes,
             )
 
             # Saving the corrected image file

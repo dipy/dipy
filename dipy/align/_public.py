@@ -8,6 +8,7 @@ streamlines.
 
 import collections.abc
 from functools import partial
+import multiprocessing as mp
 import numbers
 from pathlib import Path
 import re
@@ -41,6 +42,7 @@ from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points
 from dipy.tracking.utils import transform_tracking_output
 from dipy.utils.logging import logger
+from dipy.utils.multiproc import determine_num_processes
 
 __all__ = [
     "syn_registration",
@@ -667,6 +669,71 @@ _METHOD_DICT = {  # mapping from str key -> (callable, class) tuple
 }
 
 
+_REGISTER_CTX = {}
+
+
+def _init_register_worker(
+    ref,
+    series_affine,
+    ref_affine,
+    pipeline,
+    static_mask,
+    level_iters,
+    optimizer_options,
+):
+    """Initialize the per-worker context for the parallel branch of
+    :func:`register_series`.
+
+    Runs once per worker process (the ``initializer`` of the pool), storing the
+    arguments that are constant across all volumes so :func:`_register_one_volume`
+    can reuse them without re-pickling them per task.
+    """
+    _REGISTER_CTX.update(
+        ref=ref,
+        series_affine=series_affine,
+        ref_affine=ref_affine,
+        pipeline=pipeline,
+        static_mask=static_mask,
+        level_iters=level_iters,
+        optimizer_options=optimizer_options,
+    )
+
+
+def _register_one_volume(args):
+    """Register a single moving volume to the static reference.
+
+    Module-level worker for the parallel branch of :func:`register_series`
+    (must be importable/picklable for the ``spawn`` start method). The constant
+    arguments come from the worker context set up by
+    :func:`_init_register_worker`; only the per-volume payload is passed in.
+
+    Parameters
+    ----------
+    args : tuple
+        ``(index, moving)`` -- the volume index and the 3D volume to register.
+
+    Returns
+    -------
+    index, transformed, reg_affine : int, ndarray, ndarray
+        The volume index (used to scatter the result back into place), the
+        registered 3D volume, and its associated 4x4 affine.
+    """
+    index, moving = args
+    ctx = _REGISTER_CTX
+    logger.info(f"Registering volume {index} of the series...")
+    transformed, reg_affine = affine_registration(
+        moving,
+        ctx["ref"],
+        moving_affine=ctx["series_affine"],
+        static_affine=ctx["ref_affine"],
+        pipeline=ctx["pipeline"],
+        static_mask=ctx["static_mask"],
+        level_iters=ctx["level_iters"],
+        optimizer_options=ctx["optimizer_options"],
+    )
+    return index, transformed, reg_affine
+
+
 @warning_for_keywords()
 def register_series(
     series,
@@ -678,6 +745,7 @@ def register_series(
     static_mask=None,
     level_iters=None,
     optimizer_options=None,
+    num_processes=1,
 ):
     """Register a series to a reference image.
 
@@ -714,6 +782,12 @@ def register_series(
         Options to be passed to the optimizer. See `scipy.optimize.minimize`
         documentation for details.
 
+    num_processes : int, optional
+        Split the registration of the series volumes across a pool of child
+        processes. Default is 1. If < 0 the maximal number of cores minus
+        ``num_processes + 1`` is used (enter -1 to use as many cores as
+        possible). 0 raises an error.
+
     Returns
     -------
     xformed, affines : 4D array with transformed data and a (4,4,n) array
@@ -739,16 +813,24 @@ def register_series(
                 " or the index of one or more volumes",
             )
 
+    num_processes = determine_num_processes(num_processes)
+
     xformed = np.zeros(series.shape)
     affines = np.zeros((4, 4, series.shape[-1]))
+
+    to_register = []
     for ii in range(series.shape[-1]):
-        logger.info(f"Registering volume {ii} of the series...")
         this_moving = series[..., ii]
         if isinstance(ref_as_idx, numbers.Number) and ii == ref_as_idx:
             # This is the reference! No need to move and the xform is I(4):
             xformed[..., ii] = this_moving
             affines[..., ii] = np.eye(4)
         else:
+            to_register.append((ii, this_moving))
+
+    if num_processes == 1:
+        for ii, this_moving in to_register:
+            logger.info(f"Registering volume {ii} of the series...")
             transformed, reg_affine = affine_registration(
                 this_moving,
                 ref,
@@ -761,6 +843,29 @@ def register_series(
             )
             xformed[..., ii] = transformed
             affines[..., ii] = reg_affine
+    else:
+        logger.info(
+            f"Registering {len(to_register)} volumes of the series "
+            f"using {num_processes} processes..."
+        )
+        with mp.get_context("spawn").Pool(
+            num_processes,
+            initializer=_init_register_worker,
+            initargs=(
+                ref,
+                series_affine,
+                ref_affine,
+                pipeline,
+                static_mask,
+                level_iters,
+                optimizer_options,
+            ),
+        ) as pool:
+            for ii, transformed, reg_affine in pool.imap_unordered(
+                _register_one_volume, to_register
+            ):
+                xformed[..., ii] = transformed
+                affines[..., ii] = reg_affine
 
     return xformed, affines
 
@@ -776,6 +881,7 @@ def register_dwi_series(
     static_mask=None,
     level_iters=None,
     optimizer_options=None,
+    num_processes=1,
 ):
     """Register a DWI series to the mean of the B0 images in that series.
 
@@ -817,6 +923,12 @@ def register_dwi_series(
         Options to be passed to the optimizer. See `scipy.optimize.minimize`
         documentation for details.
 
+    num_processes : int, optional
+        Split the registration of the series volumes across a pool of child
+        processes. Default is 1. If < 0 the maximal number of cores minus
+        ``num_processes + 1`` is used (enter -1 to use as many cores as
+        possible). 0 raises an error.
+
     Returns
     -------
     xform_img, affine_array: a Nifti1Image containing the registered data and
@@ -852,6 +964,7 @@ def register_dwi_series(
             static_mask=static_mask,
             level_iters=level_iters,
             optimizer_options=optimizer_options,
+            num_processes=num_processes,
         )
         ref_data = np.mean(trans_b0, -1, keepdims=True)
     else:
@@ -871,6 +984,7 @@ def register_dwi_series(
         static_mask=static_mask,
         level_iters=level_iters,
         optimizer_options=optimizer_options,
+        num_processes=num_processes,
     )
     # Cut out the part pertaining to that first volume:
     affines = affines[..., 1:]
