@@ -12,6 +12,11 @@ import nibabel as nib
 import numpy as np
 import trx.trx_file_memmap as tmm
 
+from dipy.core.gradient_check import (
+    check_gradient_table,
+    correct_bvecs,
+    transform_label,
+)
 from dipy.core.gradients import (
     extract_b0,
     extract_dwi_shell,
@@ -1877,3 +1882,99 @@ class MathFlow(Workflow):
         out_fname = Path(out_dir) / out_file
         logger.info(f"Saving result to {out_fname}")
         save_nifti(out_fname, res, affine)
+
+
+class CorrectBvecsFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "correct_bvecs"
+
+    def run(
+        self,
+        input_files,
+        bvalues_files,
+        bvectors_files,
+        mask_files=None,
+        brain_mask_files=None,
+        b0_threshold=50,
+        sh_order_max=4,
+        smooth=0.006,
+        out_dir="",
+        out_bvecs="corrected.bvec",
+    ):
+        """Auto-correct DWI b-vectors with the Aganj-2018 fiber-continuity criterion.
+
+        The fiber-continuity error of :footcite:p:`Aganj2018` scores all 24
+        axis-permutation/flip configurations of the gradient table against
+        the reconstructed ODF volume. The minimizing transform is applied to
+        the input b-vectors and the result is written to ``out_bvecs``.
+
+        Parameters
+        ----------
+        input_files : string or Path
+            Path to the input DWI volumes. May contain wildcards to process
+            multiple inputs at once.
+        bvalues_files : string or Path
+            Path to the bvalues files matching ``input_files``.
+        bvectors_files : string or Path
+            Path to the bvectors files matching ``input_files``.
+        mask_files : variable string or Path, optional
+            Path to the fibrous-tissue mask used for scoring. When omitted
+            the algorithm builds an internal ADC/GFA-based white-matter
+            approximation.
+        brain_mask_files : variable string or Path, optional
+            Path to a brain mask used to restrict the CSA-ODF fit. Providing
+            it on full-brain HARDI is a large speed-up because the per-voxel
+            fit is skipped outside the brain. When omitted the fit covers the
+            entire volume.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        sh_order_max : int, optional
+            Maximum spherical-harmonic order for the CSA-ODF reconstruction.
+        smooth : float, optional
+            Laplace-Beltrami regularization for the CSA-ODF fit.
+        out_dir : string or Path, optional
+            Output directory.
+        out_bvecs : string, optional
+            Name of the corrected bvec file.
+
+        References
+        ----------
+        .. footbibliography::
+        """
+        io_it = self.get_io_iterator()
+        if mask_files is not None and not isinstance(mask_files, list):
+            mask_files = [mask_files]
+        if brain_mask_files is not None and not isinstance(brain_mask_files, list):
+            brain_mask_files = [brain_mask_files]
+
+        for idx, (dwi, bval, bvec, o_bvecs) in enumerate(io_it):
+            logger.info(f"Checking gradient table for {dwi}")
+            data, _ = load_nifti(dwi)
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+            gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
+
+            mask = None
+            if mask_files is not None:
+                mask_data, _ = load_nifti(mask_files[idx])
+                mask = mask_data.astype(bool)
+            brain_mask = None
+            if brain_mask_files is not None:
+                bm_data, _ = load_nifti(brain_mask_files[idx])
+                brain_mask = bm_data.astype(bool)
+
+            perm, flip = check_gradient_table(
+                data,
+                gtab,
+                mask=mask,
+                brain_mask=brain_mask,
+                sh_order_max=sh_order_max,
+                smooth=smooth,
+            )
+            if (perm, flip) == ((0, 1, 2), (1, 1, 1)):
+                logger.info("bvecs are already aligned; writing unchanged copy.")
+            else:
+                logger.info(f"Recommended transform: {transform_label(perm, flip)}")
+            corrected = correct_bvecs(bvecs, perm, flip)
+            np.savetxt(o_bvecs, corrected.T, fmt="%.18f")
+            logger.info(f"Corrected bvecs saved to {o_bvecs}")
