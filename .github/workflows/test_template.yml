@@ -147,7 +147,7 @@ jobs:
             tools/ci/run_tests.sh
           fi
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         if: ${{ fromJSON(env.COVERAGE) }}
         with:
           token: ${{ inputs.codecov-token || secrets.CODECOV_TOKEN }}
