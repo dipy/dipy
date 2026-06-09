@@ -736,7 +736,7 @@ class SynthSeg:
                 ].astype("int32")
                 temp = recover_img(temp, params_list[i], order=0)
                 labels[i] = np.round(temp).astype(np.int32)
-            masks[i] = (labels[i] > 0).astype(np.int32)
+            masks[i] = remove_holes_and_islands(labels[i] > 0).astype(np.int32)
 
         if dim == 3:
             labels = labels[0]
