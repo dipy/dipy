@@ -54,5 +54,6 @@ py3.install_sources(
   subdir: 'dipy/tracking'
 )
 
+subdir('jit')
 
 subdir('tests')

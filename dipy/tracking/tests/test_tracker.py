@@ -3,6 +3,7 @@ import warnings
 import nibabel as nib
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import get_fnames, get_sphere
@@ -15,6 +16,9 @@ from dipy.tracking.stopping_criterion import (
 )
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.utils import random_seeds_from_mask
+from dipy.utils.optpkg import optional_package
+
+_, have_numba, _ = optional_package("numba")
 
 
 def track(method, **kwargs):
@@ -38,8 +42,9 @@ def track(method, **kwargs):
     directions = np.random.random(seeds.shape)
     directions = np.array([v / np.linalg.norm(v) for v in directions])
 
+    use_jit = kwargs.get("use_jit", False)
     use_sf = kwargs.get("use_sf", False)
-    use_directions = kwargs.get("use_dirs", False)
+    use_directions = kwargs.get("use_dirs", False) and not use_jit
 
     # test return_all=True
     params = {
@@ -55,6 +60,10 @@ def track(method, **kwargs):
         "seed_directions": directions if use_directions else None,
         "sphere": sphere,
     }
+    if "use_jit" in kwargs:
+        params["use_jit"] = use_jit
+        if use_jit:
+            params["seed_directions"] = None
     stream_gen = method(seeds, sc, affine, **params)
 
     streamlines = Streamlines(stream_gen)
@@ -77,6 +86,10 @@ def track(method, **kwargs):
         "seed_directions": directions if use_directions else None,
         "sphere": sphere,
     }
+    if "use_jit" in kwargs:
+        params["use_jit"] = use_jit
+        if use_jit:
+            params["seed_directions"] = None
 
     stream_gen = method(seeds, sc, affine, **params)
 
@@ -102,8 +115,23 @@ def test_probabilistic_tracking():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        track(tracker.probabilistic_tracking, use_dirs=True)
-        track(tracker.probabilistic_tracking, use_sf=True, use_dirs=True)
+        track(tracker.probabilistic_tracking, use_dirs=True, use_jit=False)
+        track(tracker.probabilistic_tracking, use_sf=True, use_dirs=True, use_jit=False)
+
+
+@pytest.mark.skipif(
+    not have_numba,
+    reason="Requires Numba",
+)
+def test_numba_probabilistic_tracking():
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        track(tracker.probabilistic_tracking, use_jit=True)
+        track(tracker.probabilistic_tracking, use_sf=True, use_jit=True)
 
 
 def test_ptt_tracking():
