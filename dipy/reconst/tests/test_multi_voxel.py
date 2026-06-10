@@ -418,6 +418,41 @@ def test_multi_voxel_fit_warns_on_dropped_kwargs(rng):
         model.fit(data, engine="serial", n_jobs=1)
 
 
+def test_multi_voxel_fit_orchestration_reaches_paramap(monkeypatch):
+    """Orchestration kwargs are forwarded to ``paramap`` while the per-chunk
+    kwargs are stripped. ``paramap`` is replaced by an in-process spy so the
+    routing is checked deterministically without spawning workers.
+    """
+    import dipy.reconst.multi_voxel as mv
+
+    captured = {}
+
+    def spy(func, in_list, *, func_args=None, func_kwargs=None, **kwargs):
+        captured["parallel_kwargs"] = kwargs
+        captured["per_chunk_kwargs"] = func_kwargs
+        func_args = func_args or []
+        if isinstance(func_kwargs, (list, tuple)):
+            return [func(x, *func_args, **fk) for x, fk in zip(in_list, func_kwargs)]
+        return [func(x, *func_args, **(func_kwargs or {})) for x in in_list]
+
+    monkeypatch.setattr(mv, "paramap", spy)
+
+    received = []
+    model = _recording_model(received)
+    data = np.zeros((6, 8))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        model.fit(data, engine="joblib", n_jobs=2, vox_per_chunk=3, verbose=False)
+
+    # The orchestration kwargs were handed to paramap / the engine:
+    for key in ("engine", "n_jobs", "vox_per_chunk", "verbose"):
+        assert key in captured["parallel_kwargs"], f"{key} did not reach paramap"
+    # ... but none of them leaked into the per-chunk (per-voxel) kwargs:
+    for chunk_kwargs in captured["per_chunk_kwargs"]:
+        for key in ORCHESTRATION_KWARGS:
+            assert key not in chunk_kwargs
+
+
 # --- Real-model parity fixtures (built once) --------------------------------
 _GTAB_2S = _DKI_DATA = _DKI_REF = None
 _CSD_MODEL = _CSD_DATA = _CSD_REF = None
