@@ -38,6 +38,14 @@ if has_ray:
 # Engines that actually run work in a (potentially) parallel backend.
 NONSERIAL_ENGINES = [e for e in PARALLEL_ENGINES if e != "serial"]
 
+# Engines that execute the per-voxel fit in the *calling* process, so a test can
+# observe what the fit received via shared in-memory state. "ray" always runs in
+# separate worker processes (worker-side state never reaches the parent), and
+# "serial"/joblib(n_jobs=1)/dask(threading) run in-process. Ray's per-chunk kwarg
+# stripping is covered instead by test_multi_voxel_fit_orchestration_reaches_paramap
+# (inspects the kwargs handed to paramap) and the real-engine parity tests.
+INPROCESS_ENGINES = [e for e in PARALLEL_ENGINES if e != "ray"]
+
 
 def test_squash():
     A = np.ones((3, 3), dtype=float)
@@ -346,14 +354,14 @@ def _verbose_declaring_model(seen_verbose):
 def test_multi_voxel_fit_no_orchestration_leak(rng):
     """Orchestration kwargs never reach a per-voxel fit that doesn't declare them.
 
-    Covers the serial (explicit ``engine="serial"``) and every available
-    parallel path. A legitimate model kwarg (``fit_method``) and a per-voxel
-    ``weights`` array must still pass through.
+    Covers the serial (explicit ``engine="serial"``) and the in-process parallel
+    paths (the recorder lives in the calling process). A legitimate model kwarg
+    (``fit_method``) and a per-voxel ``weights`` array must still pass through.
     """
     n_vox, n_grad = 6, 8
     data = rng.random((n_vox, n_grad))
 
-    for engine in PARALLEL_ENGINES:
+    for engine in INPROCESS_ENGINES:
         received = []
         model = _recording_model(received)
         weights = rng.random((n_vox, n_grad))
@@ -392,7 +400,7 @@ def test_multi_voxel_fit_forwards_declared_kwarg(rng):
     n_vox, n_grad = 6, 8
     data = rng.random((n_vox, n_grad))
 
-    for engine in PARALLEL_ENGINES:
+    for engine in INPROCESS_ENGINES:
         seen_verbose = []
         model = _verbose_declaring_model(seen_verbose)
 
