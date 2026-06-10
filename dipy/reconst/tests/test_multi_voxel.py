@@ -1,16 +1,42 @@
 from functools import reduce
+import warnings
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
+from dipy.core.gradients import gradient_table
 from dipy.core.sphere import unit_icosahedron
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
+from dipy.reconst.dki import DiffusionKurtosisModel
 from dipy.reconst.multi_voxel import CallableArray, _squash, multi_voxel_fit
+from dipy.sims.voxel import multi_tensor_dki, single_tensor
 from dipy.testing.decorators import set_random_number_generator, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 joblib, has_joblib, _ = optional_package("joblib")
 dask, has_dask, _ = optional_package("dask")
 ray, has_ray, _ = optional_package("ray")
+
+# Orchestration kwargs consumed by the ``multi_voxel_fit`` decorator / ``paramap``;
+# none of these may leak into a per-voxel model fit that does not declare them.
+ORCHESTRATION_KWARGS = ("engine", "n_jobs", "vox_per_chunk", "verbose", "inflight_cap")
+
+# Engines available for parallel testing (mirrors dipy/utils/tests/test_parallel.py).
+# "serial" is included on purpose: the serial (non-batched) path leaks the same
+# orchestration kwargs when ``engine=`` is passed explicitly.
+PARALLEL_ENGINES = ["serial"]
+if has_joblib:
+    PARALLEL_ENGINES.append("joblib")
+if has_dask:
+    PARALLEL_ENGINES.append("dask")
+if has_ray:
+    PARALLEL_ENGINES.append("ray")
+
+# Engines that actually run work in a (potentially) parallel backend.
+NONSERIAL_ENGINES = [e for e in PARALLEL_ENGINES if e != "serial"]
 
 
 def test_squash():
@@ -154,6 +180,14 @@ def test_multi_voxel_fit(rng):
             # Make sure that an argument that is not passed is still
             # usable in the fitting procedure:
             assert kwarg_untouched
+            # Orchestration kwargs (engine, n_jobs, ...) configure parallelization
+            # only; they must never leak into the per-voxel fit (regression for
+            # dipy#4053). ``SillyModel.fit`` declares none of them, so the decorator
+            # must strip every one before dispatch.
+            leaked = [k for k in ORCHESTRATION_KWARGS if k in kwargs]
+            assert not leaked, (
+                f"orchestration kwargs leaked into per-voxel fit: {leaked}"
+            )
             return SillyFit(model, data)
 
         def predict(self, S0):
@@ -256,3 +290,216 @@ def test_multi_voxel_fit(rng):
     # Test indexing into a fit
     npt.assert_equal(type(fit[0, 0, 0]), SillyFit)
     npt.assert_equal(fit[:2, :2, :2].shape, (2, 2, 2))
+
+
+# ---------------------------------------------------------------------------
+# Regression tests for dipy#4053: ``multi_voxel_fit`` must not leak the
+# orchestration kwargs (engine, n_jobs, vox_per_chunk, verbose, inflight_cap)
+# into the per-voxel model fit.
+# ---------------------------------------------------------------------------
+
+
+class _RecordingFit:
+    """Minimal fit object that knows how to predict a constant signal."""
+
+    def __init__(self, model, data):
+        self.model = model
+        self.data = data
+
+    def predict(self, S0):
+        return np.ones(self.data.shape) * S0
+
+
+def _recording_model(received):
+    """A model whose per-voxel fit records the kwargs it actually receives.
+
+    ``fit_method`` is a legitimate, explicitly declared model kwarg used to
+    check that real model kwargs are *not* stripped.  Everything else lands in
+    ``**kwargs``, where any leaked orchestration kwarg would show up.
+    """
+
+    class RecordingModel:
+        @multi_voxel_fit
+        def fit(self, data, *, fit_method="LS", **kwargs):
+            received.append((fit_method, dict(kwargs)))
+            return _RecordingFit(self, data)
+
+    return RecordingModel()
+
+
+def _verbose_declaring_model(seen_verbose):
+    """A model whose per-voxel fit *declares* ``verbose`` (as MCSD does)."""
+
+    class VerboseModel:
+        @multi_voxel_fit
+        def fit(self, data, *, verbose=False, **kwargs):
+            seen_verbose.append(verbose)
+            # Keys this fit does NOT declare are still stripped:
+            assert "engine" not in kwargs
+            assert "n_jobs" not in kwargs
+            return _RecordingFit(self, data)
+
+    return VerboseModel()
+
+
+@set_random_number_generator()
+def test_multi_voxel_fit_no_orchestration_leak(rng):
+    """Orchestration kwargs never reach a per-voxel fit that doesn't declare them.
+
+    Covers the serial (explicit ``engine="serial"``) and every available
+    parallel path. A legitimate model kwarg (``fit_method``) and a per-voxel
+    ``weights`` array must still pass through.
+    """
+    n_vox, n_grad = 6, 8
+    data = rng.random((n_vox, n_grad))
+
+    for engine in PARALLEL_ENGINES:
+        received = []
+        model = _recording_model(received)
+        weights = rng.random((n_vox, n_grad))
+        with warnings.catch_warnings():
+            # warn-on-drop is asserted separately; silence it here
+            warnings.simplefilter("ignore")
+            model.fit(
+                data,
+                engine=engine,
+                n_jobs=1,
+                vox_per_chunk=2,
+                verbose=False,
+                fit_method="WLS",
+                weights=weights,
+            )
+
+        assert received, f"per-voxel fit was never called (engine={engine})"
+        for fit_method, received_kwargs in received:
+            # Legitimate, explicitly declared model kwarg survived:
+            npt.assert_equal(fit_method, "WLS")
+            # No orchestration kwarg leaked into the per-voxel fit:
+            for key in ORCHESTRATION_KWARGS:
+                assert key not in received_kwargs, (
+                    f"{key!r} leaked into the per-voxel fit (engine={engine})"
+                )
+            # A per-voxel model kwarg (weights) was forwarded and sliced:
+            assert "weights" in received_kwargs
+            assert isinstance(received_kwargs["weights"], np.ndarray)
+
+
+@set_random_number_generator()
+def test_multi_voxel_fit_forwards_declared_kwarg(rng):
+    """A reserved key the fit *declares* (e.g. ``verbose``, as in MCSD) is
+    forwarded — and is not warned about — while undeclared keys are stripped.
+    """
+    n_vox, n_grad = 6, 8
+    data = rng.random((n_vox, n_grad))
+
+    for engine in PARALLEL_ENGINES:
+        seen_verbose = []
+        model = _verbose_declaring_model(seen_verbose)
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            model.fit(data, engine=engine, n_jobs=1, verbose=True)
+
+        # The declared ``verbose`` reached every per-voxel fit:
+        assert seen_verbose and all(v is True for v in seen_verbose)
+        # ... and was not reported as a dropped kwarg:
+        assert not any("verbose" in str(w.message) for w in caught), (
+            "verbose was dropped/warned despite being declared by the fit"
+        )
+
+
+@set_random_number_generator()
+def test_multi_voxel_fit_warns_on_dropped_kwargs(rng):
+    """Dropping orchestration kwargs is never silent: a warning names them."""
+    data = rng.random((6, 8))
+    received = []
+    model = _recording_model(received)
+    with pytest.warns(UserWarning, match="engine"):
+        model.fit(data, engine="serial", n_jobs=1)
+
+
+# --- Real-model parity fixtures (built once) --------------------------------
+_GTAB_2S = _DKI_DATA = _DKI_REF = None
+_CSD_MODEL = _CSD_DATA = _CSD_REF = None
+
+
+def _unwrap(fit):
+    """Some decorated fits return ``(MultiVoxelFit, extra)``; take the fit."""
+    return fit[0] if isinstance(fit, tuple) else fit
+
+
+def setup_module():
+    """Build small, per-voxel-distinct datasets and serial-reference fits."""
+    global _GTAB_2S, _DKI_DATA, _DKI_REF
+    global _CSD_MODEL, _CSD_DATA, _CSD_REF
+
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+
+    # Distinct per-voxel scaling so a chunk-ordering bug would surface.
+    scale = (1.0 + 0.02 * np.arange(6))[:, None]
+
+    # Two-shell table for DKI (multi-shell model).
+    bvals_2s = np.concatenate((bvals, bvals * 2))
+    bvecs_2s = np.concatenate((bvecs, bvecs))
+    _GTAB_2S = gradient_table(bvals_2s, bvecs=bvecs_2s)
+    mevals = np.array([[0.00099, 0, 0], [0.00226, 0.00087, 0.00087]])
+    signal, _, _ = multi_tensor_dki(
+        _GTAB_2S, mevals, S0=100, fractions=[50, 50], snr=None
+    )
+    _DKI_DATA = (signal[None, :] * scale).astype(float)
+    # Reference: default serial path (no engine kwarg -> no leak).
+    _DKI_REF = _unwrap(DiffusionKurtosisModel(_GTAB_2S).multi_fit(_DKI_DATA))
+
+    # Single-shell table for CSD.
+    gtab_1s = gradient_table(bvals, bvecs=bvecs)
+    response = (np.array([0.0015, 0.0003, 0.0003]), 100.0)
+    _CSD_MODEL = ConstrainedSphericalDeconvModel(gtab_1s, response)
+    csd_signal = single_tensor(
+        gtab_1s,
+        100.0,
+        evals=np.array([0.0015, 0.0003, 0.0003]),
+        evecs=np.eye(3),
+        snr=None,
+    )
+    _CSD_DATA = (csd_signal[None, :] * scale).astype(float)
+    _CSD_REF = _unwrap(_CSD_MODEL.fit(_CSD_DATA))
+
+
+@pytest.mark.skipif(not NONSERIAL_ENGINES, reason="no parallel engine installed")
+@pytest.mark.parametrize("engine", NONSERIAL_ENGINES)
+@pytest.mark.parametrize("vox_per_chunk", [1, 4, 100])  # ==1, <n_vox, >n_vox
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_dki_multi_fit_parallel_matches_serial(engine, vox_per_chunk, n_jobs):
+    """DKI (single-voxel fit rejects ``engine``) parallel == serial, exactly."""
+    model = DiffusionKurtosisModel(_GTAB_2S)
+    got = _unwrap(
+        model.multi_fit(
+            _DKI_DATA, engine=engine, n_jobs=n_jobs, vox_per_chunk=vox_per_chunk
+        )
+    )
+    npt.assert_allclose(
+        np.asarray(got.model_params),
+        np.asarray(_DKI_REF.model_params),
+        rtol=1e-6,
+        atol=1e-8,
+    )
+    npt.assert_allclose(
+        np.asarray(got.kt), np.asarray(_DKI_REF.kt), rtol=1e-6, atol=1e-8
+    )
+
+
+@pytest.mark.skipif(not NONSERIAL_ENGINES, reason="no parallel engine installed")
+@pytest.mark.parametrize("engine", NONSERIAL_ENGINES)
+@pytest.mark.parametrize("vox_per_chunk", [1, 4, 100])
+def test_csd_fit_parallel_matches_serial(engine, vox_per_chunk):
+    """CSD parallel == serial (guards against regressions on the absorb path)."""
+    got = _unwrap(
+        _CSD_MODEL.fit(_CSD_DATA, engine=engine, n_jobs=1, vox_per_chunk=vox_per_chunk)
+    )
+    npt.assert_allclose(
+        np.asarray(got.shm_coeff),
+        np.asarray(_CSD_REF.shm_coeff),
+        rtol=1e-6,
+        atol=1e-8,
+    )
