@@ -342,7 +342,7 @@ def cut_plane(tracks, ref):
                             hit_ptr[1] = hit[1]
                             hit_ptr[2] = hit[2]
                             hit_ptr[3] = rcd
-                            hit_ptr[4] = t_no
+                            hit_ptr[4] = <float>t_no
                             hit_no += 1
         # convert hits list to hits array
         n_hits = hit_no
@@ -667,10 +667,10 @@ cdef inline cnp.float32_t czhang(cnp.npy_intp t1_len,
         cnp.float32_t mean_t2t1 = 0, mean_t1t2 = 0, dist_val = 0
     for t1_pi from 0<= t1_pi < t1_len:
         mean_t1t2+=min_t1t2[t1_pi]
-    mean_t1t2=mean_t1t2/t1_len
+    mean_t1t2=mean_t1t2/<cnp.float32_t>t1_len
     for t2_pi from 0<= t2_pi < t2_len:
         mean_t2t1+=min_t2t1[t2_pi]
-    mean_t2t1=mean_t2t1/t2_len
+    mean_t2t1=mean_t2t1/<cnp.float32_t>t2_len
     if metric_type == 0:
         dist_val=(mean_t2t1+mean_t1t2)/2.0
     elif metric_type == 1:
@@ -798,10 +798,10 @@ def mam_distances(xyz1,xyz2,metric='all'):
         cnp.float32_t mean_t2t1 = 0, mean_t1t2 = 0
     for t1_pi from 0<= t1_pi < t1_len:
         mean_t1t2+=min_t1t2[t1_pi]
-    mean_t1t2=mean_t1t2/t1_len
+    mean_t1t2=mean_t1t2/<cnp.float32_t>t1_len
     for t2_pi from 0<= t2_pi < t2_len:
         mean_t2t1+=min_t2t1[t2_pi]
-    mean_t2t1=mean_t2t1/t2_len
+    mean_t2t1=mean_t2t1/<cnp.float32_t>t2_len
     if metric=='all':
         return ((mean_t2t1+mean_t1t2)/2.0,
                 np.min((mean_t2t1,mean_t1t2)),
