@@ -272,11 +272,11 @@ def test_classify_tissue_flow_synthseg(rng=None):
                 pass
 
             def predict(self, img, affine, **kwargs):
-                return (
-                    np.zeros(img.shape, dtype=np.int32),
-                    {0: "Background"},
-                    np.zeros(img.shape),
-                )
+                labels = np.zeros(img.shape, dtype=np.int32)
+                label_dict = {0: "Background"}
+                if kwargs.get("return_masks", False):
+                    return labels, label_dict, np.zeros(img.shape)
+                return labels, label_dict
 
         with pytest.MonkeyPatch.context() as mp:
             mp.setattr("dipy.workflows.segment.SynthSeg", _FakeSynthSeg)
@@ -382,11 +382,11 @@ def test_brain_mask_flow(rng=None):
                     pass
 
                 def predict(self, img, affine, **kwargs):
-                    return (
-                        np.zeros(img.shape, dtype=np.int32),
-                        {0: "Background"},
-                        np.zeros(img.shape),
-                    )
+                    labels = np.zeros(img.shape, dtype=np.int32)
+                    label_dict = {0: "Background"}
+                    if kwargs.get("return_masks", False):
+                        return labels, label_dict, np.zeros(img.shape)
+                    return labels, label_dict
 
             with pytest.MonkeyPatch.context() as mp:
                 mp.setattr("dipy.workflows.segment.SynthSeg", _FakeSynthSeg)
