@@ -260,7 +260,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static,
                         firstc = _int_max(0, cc - radius)
                         lastc = _int_min(nc - 1, cc + radius)
                         sidec = (lastc - firstc + 1)
-                        cnt = sides*sider*sidec
+                        cnt = <double>sides * <double>sider * <double>sidec
                         Imean = temp[sss, rr, cc, SI] / cnt
                         Jmean = temp[sss, rr, cc, SJ] / cnt
                         IJprods = (temp[sss, rr, cc, SIJ] -
