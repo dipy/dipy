@@ -11,7 +11,7 @@ from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.reconst.dki import DiffusionKurtosisModel
-from dipy.reconst.multi_voxel import CallableArray, _squash, multi_voxel_fit
+from dipy.reconst.multi_voxel import CallableArray, _squash, multi_voxel_fit, ORCHESTRATION_KWARGS
 from dipy.sims.voxel import multi_tensor_dki, single_tensor
 from dipy.testing.decorators import set_random_number_generator, warning_for_keywords
 from dipy.utils.optpkg import optional_package
@@ -453,7 +453,7 @@ def test_multi_voxel_fit_orchestration_reaches_paramap(monkeypatch):
         model.fit(data, engine="joblib", n_jobs=2, vox_per_chunk=3, verbose=False)
 
     # The orchestration kwargs were handed to paramap / the engine:
-    for key in ("engine", "n_jobs", "vox_per_chunk", "verbose"):
+    for key in ("engine", "n_jobs", "vox_per_chunk", "verbose", "inflight_cap"):
         assert key in captured["parallel_kwargs"], f"{key} did not reach paramap"
     # ... but none of them leaked into the per-chunk (per-voxel) kwargs:
     for chunk_kwargs in captured["per_chunk_kwargs"]:
