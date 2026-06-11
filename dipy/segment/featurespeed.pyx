@@ -235,7 +235,7 @@ cdef class CenterOfMassFeature(CythonFeature):
         return shape
 
     cdef void c_extract(CenterOfMassFeature self, Data2D datum, Data2D out) noexcept nogil:
-        cdef int N = datum.shape[0], D = datum.shape[1]
+        cdef cnp.npy_intp N = datum.shape[0], D = datum.shape[1]
         cdef cnp.npy_intp i, d
 
         for d in range(D):
@@ -246,7 +246,7 @@ cdef class CenterOfMassFeature(CythonFeature):
                 out[0, d] += datum[i, d]
 
         for d in range(D):
-            out[0, d] /= N
+            out[0, d] /= <float>N
 
 
 cdef class MidpointFeature(CythonFeature):
