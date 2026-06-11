@@ -585,7 +585,7 @@ class ClassifyTissueFlow(Workflow):
 
             elif method.lower() == "synthseg":
                 synthseg = SynthSeg(verbose=True)
-                segmentation_final, label_dict, _ = synthseg.predict(data, affine)
+                segmentation_final, label_dict = synthseg.predict(data, affine)
                 for label, name in label_dict.items():
                     class_list.append([f"{label}", name])
 
@@ -786,7 +786,9 @@ class BrainMaskFlow(Workflow):
                         "be used for 'synthseg' brain masking."
                     )
                 vol = data[..., 0] if data.ndim == 4 else data
-                _, _, mask_volume = synthseg_model.predict(vol, affine)
+                _, _, mask_volume = synthseg_model.predict(
+                    vol, affine, return_masks=True
+                )
                 if finalize_mask:
                     mask_volume = remove_holes_and_islands(mask_volume).astype(np.int32)
                 mask_for_apply = (
