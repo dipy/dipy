@@ -3,7 +3,6 @@
 from functools import partial
 import inspect
 import multiprocessing
-import warnings
 
 import numpy as np
 from tqdm import tqdm
@@ -11,6 +10,7 @@ from tqdm import tqdm
 from dipy.core.ndindex import ndindex
 from dipy.reconst.base import ReconstFit
 from dipy.reconst.quick_squash import quick_squash as _squash
+from dipy.utils.logging import logger
 from dipy.utils.multiproc import determine_num_processes
 from dipy.utils.parallel import auto_ray_chunk_size, paramap
 
@@ -198,12 +198,11 @@ def multi_voxel_fit(
 
             dropped = [k for k in _drop_kwargs if k in kwargs]
             if dropped:
-                warnings.warn(
-                    f"multi_voxel_fit: {dropped} consumed for parallelization/"
-                    "orchestration; not forwarded to the per-voxel fit "
-                    "(it does not declare these keyword arguments).",
-                    UserWarning,
-                    stacklevel=2,
+                logger.debug(
+                    "multi_voxel_fit: %s consumed for parallelization/orchestration; "
+                    "not forwarded to the per-voxel fit (it does not declare these "
+                    "keyword arguments).",
+                    dropped,
                 )
             fit_kwargs = {k: v for k, v in kwargs.items() if k not in _drop_kwargs}
 

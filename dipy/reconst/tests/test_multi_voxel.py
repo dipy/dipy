@@ -1,4 +1,5 @@
 from functools import reduce
+import logging
 import warnings
 
 import numpy as np
@@ -17,6 +18,7 @@ from dipy.reconst.multi_voxel import (
     _squash,
     multi_voxel_fit,
 )
+from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.sims.voxel import multi_tensor_dki, single_tensor
 from dipy.testing.decorators import set_random_number_generator, warning_for_keywords
 from dipy.utils.optpkg import optional_package
@@ -293,6 +295,16 @@ def test_multi_voxel_fit(rng):
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture
+def dipy_log_propagate():
+    """Enable propagation on the dipy logger so pytest caplog can capture records."""
+    dipy_logger = logging.getLogger("dipy")
+    old = dipy_logger.propagate
+    dipy_logger.propagate = True
+    yield
+    dipy_logger.propagate = old
+
+
 class _RecordingFit:
     """Minimal fit object that knows how to predict a constant signal."""
 
@@ -351,18 +363,15 @@ def test_multi_voxel_fit_no_orchestration_leak(rng):
         received = []
         model = _recording_model(received)
         weights = rng.random((n_vox, n_grad))
-        with warnings.catch_warnings():
-            # warn-on-drop is asserted separately; silence it here
-            warnings.simplefilter("ignore")
-            model.fit(
-                data,
-                engine=engine,
-                n_jobs=1,
-                vox_per_chunk=2,
-                verbose=False,
-                fit_method="WLS",
-                weights=weights,
-            )
+        model.fit(
+            data,
+            engine=engine,
+            n_jobs=1,
+            vox_per_chunk=2,
+            verbose=False,
+            fit_method="WLS",
+            weights=weights,
+        )
 
         assert received, f"per-voxel fit was never called (engine={engine})"
         for fit_method, received_kwargs in received:
@@ -378,38 +387,45 @@ def test_multi_voxel_fit_no_orchestration_leak(rng):
             assert isinstance(received_kwargs["weights"], np.ndarray)
 
 
-@set_random_number_generator()
-def test_multi_voxel_fit_forwards_declared_kwarg(rng):
+def test_multi_voxel_fit_forwards_declared_kwarg(caplog, dipy_log_propagate):
     """A reserved key the fit *declares* (e.g. ``verbose``, as in MCSD) is
-    forwarded — and is not warned about — while undeclared keys are stripped.
+    forwarded to the per-voxel fit, while undeclared keys are stripped and traced.
     """
-    n_vox, n_grad = 6, 8
-    data = rng.random((n_vox, n_grad))
+    data = np.zeros((6, 8))
 
     for engine in INPROCESS_ENGINES:
         seen_verbose = []
         model = _verbose_declaring_model(seen_verbose)
 
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
+        caplog.clear()
+        with caplog.at_level(logging.DEBUG, logger="dipy"):
             model.fit(data, engine=engine, n_jobs=1, verbose=True)
 
         # The declared ``verbose`` reached every per-voxel fit:
         assert seen_verbose and all(v is True for v in seen_verbose)
-        # ... and was not reported as a dropped kwarg:
-        assert not any("verbose" in str(w.message) for w in caught), (
-            "verbose was dropped/warned despite being declared by the fit"
+        # The undeclared orchestration kwargs are traced as dropped ...
+        drop_logs = [
+            r.getMessage() for r in caplog.records if "consumed for" in r.getMessage()
+        ]
+        assert drop_logs, f"expected a debug trace for dropped kwargs (engine={engine})"
+        # ... but the declared ``verbose`` is not among them:
+        assert not any("verbose" in msg for msg in drop_logs), (
+            "verbose was reported as dropped despite being declared by the fit"
         )
 
 
-@set_random_number_generator()
-def test_multi_voxel_fit_warns_on_dropped_kwargs(rng):
-    """Dropping orchestration kwargs is never silent: a warning names them."""
-    data = rng.random((6, 8))
+def test_multi_voxel_fit_logs_dropped_kwargs(caplog, dipy_log_propagate):
+    """Dropping orchestration kwargs leaves a debug trace — it is never silent."""
+    data = np.zeros((6, 8))
     received = []
     model = _recording_model(received)
-    with pytest.warns(UserWarning, match="engine"):
+    with caplog.at_level(logging.DEBUG, logger="dipy"):
         model.fit(data, engine="serial", n_jobs=1)
+    drop_logs = [
+        r.getMessage() for r in caplog.records if "consumed for" in r.getMessage()
+    ]
+    assert drop_logs, "expected a debug trace naming the dropped orchestration kwargs"
+    assert "engine" in drop_logs[0] and "n_jobs" in drop_logs[0]
 
 
 def test_multi_voxel_fit_orchestration_reaches_paramap(monkeypatch):
@@ -434,16 +450,14 @@ def test_multi_voxel_fit_orchestration_reaches_paramap(monkeypatch):
     received = []
     model = _recording_model(received)
     data = np.zeros((6, 8))
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        model.fit(
-            data,
-            engine="joblib",
-            n_jobs=2,
-            vox_per_chunk=3,
-            verbose=False,
-            inflight_cap=4,
-        )
+    model.fit(
+        data,
+        engine="joblib",
+        n_jobs=2,
+        vox_per_chunk=3,
+        verbose=False,
+        inflight_cap=4,
+    )
 
     # Every orchestration kwarg was handed to paramap / the engine:
     for key in ORCHESTRATION_KWARGS:
@@ -490,7 +504,6 @@ def setup_module():
     # Single-shell table for CSD.
     gtab_1s = gradient_table(bvals, bvecs=bvecs)
     response = (np.array([0.0015, 0.0003, 0.0003]), 100.0)
-    _CSD_MODEL = ConstrainedSphericalDeconvModel(gtab_1s, response)
     csd_signal = single_tensor(
         gtab_1s,
         100.0,
@@ -499,7 +512,16 @@ def setup_module():
         snr=None,
     )
     _CSD_DATA = (csd_signal[None, :] * scale).astype(float)
-    _CSD_REF = _unwrap(_CSD_MODEL.fit(_CSD_DATA))
+    with warnings.catch_warnings():
+        # CSD uses the legacy descoteaux07 SH basis by default (unrelated to
+        # this PR); silence it so DIPY_WERRORS does not fail on it.
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        _CSD_MODEL = ConstrainedSphericalDeconvModel(gtab_1s, response)
+        _CSD_REF = _unwrap(_CSD_MODEL.fit(_CSD_DATA))
 
 
 @pytest.mark.skipif(not NONSERIAL_ENGINES, reason="no parallel engine installed")
@@ -530,9 +552,17 @@ def test_dki_multi_fit_parallel_matches_serial(engine, vox_per_chunk, n_jobs):
 @pytest.mark.parametrize("vox_per_chunk", [1, 4, 100])
 def test_csd_fit_parallel_matches_serial(engine, vox_per_chunk):
     """CSD parallel == serial (guards against regressions on the absorb path)."""
-    got = _unwrap(
-        _CSD_MODEL.fit(_CSD_DATA, engine=engine, n_jobs=1, vox_per_chunk=vox_per_chunk)
-    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        got = _unwrap(
+            _CSD_MODEL.fit(
+                _CSD_DATA, engine=engine, n_jobs=1, vox_per_chunk=vox_per_chunk
+            )
+        )
     npt.assert_allclose(
         np.asarray(got.shm_coeff),
         np.asarray(_CSD_REF.shm_coeff),
