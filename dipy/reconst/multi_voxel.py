@@ -14,12 +14,11 @@ from dipy.reconst.quick_squash import quick_squash as _squash
 from dipy.utils.multiproc import determine_num_processes
 from dipy.utils.parallel import auto_ray_chunk_size, paramap
 
-# Keyword arguments that configure parallelization/orchestration for the
-# ``multi_voxel_fit`` decorator and :func:`dipy.utils.parallel.paramap`.  They
-# must not reach a per-voxel model fit unless that fit explicitly declares them
-# (see ``_accepts_kwarg``); otherwise they would raise ``TypeError`` in fits
-# that forward ``**kwargs`` to a strict solver (e.g. ``ls_fit_dki``).
 ORCHESTRATION_KWARGS = ("engine", "n_jobs", "vox_per_chunk", "verbose", "inflight_cap")
+"""
+Keyword arguments that configure parallelization/orchestration for the ``multi_voxel_fit`` decorator
+and :func:`dipy.utils.parallel.paramap`.
+"""
 
 
 def _accepts_kwarg(func, name):
@@ -190,9 +189,6 @@ def multi_voxel_fit(
     """
 
     def decorator(single_voxel_fit):
-        # Reserved orchestration keys this fit does NOT declare explicitly are
-        # stripped before per-voxel dispatch; ones it declares (e.g. MCSD's
-        # ``verbose``) are forwarded.  Computed once per decorated function.
         _drop_kwargs = tuple(
             k for k in ORCHESTRATION_KWARGS if not _accepts_kwarg(single_voxel_fit, k)
         )
@@ -200,9 +196,6 @@ def multi_voxel_fit(
         def new_fit(self, data, *, mask=None, **kwargs):
             """Fit method for every voxel in data"""
 
-            # Orchestration kwargs configure parallelization only; they must not
-            # leak into the per-voxel fit unless it declares them.  Warn so a
-            # dropped keyword argument is never silent, then strip for dispatch.
             dropped = [k for k in _drop_kwargs if k in kwargs]
             if dropped:
                 warnings.warn(
@@ -212,7 +205,6 @@ def multi_voxel_fit(
                     UserWarning,
                     stacklevel=2,
                 )
-            # Per-voxel kwargs: orchestration keys removed, model kwargs kept.
             fit_kwargs = {k: v for k, v in kwargs.items() if k not in _drop_kwargs}
 
             # If only one voxel just return a standard fit, passing through

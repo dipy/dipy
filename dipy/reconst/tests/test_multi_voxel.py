@@ -20,13 +20,6 @@ joblib, has_joblib, _ = optional_package("joblib")
 dask, has_dask, _ = optional_package("dask")
 ray, has_ray, _ = optional_package("ray")
 
-# Orchestration kwargs consumed by the ``multi_voxel_fit`` decorator / ``paramap``;
-# none of these may leak into a per-voxel model fit that does not declare them.
-ORCHESTRATION_KWARGS = ("engine", "n_jobs", "vox_per_chunk", "verbose", "inflight_cap")
-
-# Engines available for parallel testing (mirrors dipy/utils/tests/test_parallel.py).
-# "serial" is included on purpose: the serial (non-batched) path leaks the same
-# orchestration kwargs when ``engine=`` is passed explicitly.
 PARALLEL_ENGINES = ["serial"]
 if has_joblib:
     PARALLEL_ENGINES.append("joblib")
@@ -35,15 +28,7 @@ if has_dask:
 if has_ray:
     PARALLEL_ENGINES.append("ray")
 
-# Engines that actually run work in a (potentially) parallel backend.
 NONSERIAL_ENGINES = [e for e in PARALLEL_ENGINES if e != "serial"]
-
-# Engines that execute the per-voxel fit in the *calling* process, so a test can
-# observe what the fit received via shared in-memory state. "ray" always runs in
-# separate worker processes (worker-side state never reaches the parent), and
-# "serial"/joblib(n_jobs=1)/dask(threading) run in-process. Ray's per-chunk kwarg
-# stripping is covered instead by test_multi_voxel_fit_orchestration_reaches_paramap
-# (inspects the kwargs handed to paramap) and the real-engine parity tests.
 INPROCESS_ENGINES = [e for e in PARALLEL_ENGINES if e != "ray"]
 
 
@@ -188,9 +173,7 @@ def test_multi_voxel_fit(rng):
             # Make sure that an argument that is not passed is still
             # usable in the fitting procedure:
             assert kwarg_untouched
-            # Orchestration kwargs (engine, n_jobs, ...) configure parallelization
-            # only; they must never leak into the per-voxel fit (regression for
-            # dipy#4053). ``SillyModel.fit`` declares none of them, so the decorator
+            # ``SillyModel.fit`` declares no orchestration flags, so the decorator
             # must strip every one before dispatch.
             leaked = [k for k in ORCHESTRATION_KWARGS if k in kwargs]
             assert not leaked, (
@@ -301,11 +284,8 @@ def test_multi_voxel_fit(rng):
 
 
 # ---------------------------------------------------------------------------
-# Regression tests for dipy#4053: ``multi_voxel_fit`` must not leak the
-# orchestration kwargs (engine, n_jobs, vox_per_chunk, verbose, inflight_cap)
-# into the per-voxel model fit.
+# Regression tests for dipy#4053
 # ---------------------------------------------------------------------------
-
 
 class _RecordingFit:
     """Minimal fit object that knows how to predict a constant signal."""
