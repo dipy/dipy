@@ -66,6 +66,38 @@ def test_default_weights_batch():
 
 
 @pytest.mark.skipif(not have_torch, reason="Requires Torch")
+def test_default_weights_labels():
+    file_path = get_fnames(name="synthseg_test_data")
+    input_arr = np.load(file_path)["input"][0]
+
+    synthseg_model = synthseg.SynthSeg()
+    labels, label_dict = synthseg_model.predict(input_arr, np.eye(4))
+
+    npt.assert_equal(labels.shape, input_arr.shape)
+    npt.assert_equal(labels.dtype, np.int32)
+    assert isinstance(label_dict, dict)
+
+
+@pytest.mark.skipif(not have_torch, reason="Requires Torch")
+def test_default_weights_return_masks():
+    file_path = get_fnames(name="synthseg_test_data")
+    input_arr = np.load(file_path)["input"][0]
+
+    synthseg_model = synthseg.SynthSeg()
+    with pytest.warns(UserWarning, match="The returned brain masks"):
+        labels, label_dict, masks = synthseg_model.predict(
+            input_arr, np.eye(4), return_masks=True
+        )
+
+    npt.assert_equal(labels.shape, input_arr.shape)
+    npt.assert_equal(masks.shape, input_arr.shape)
+    npt.assert_equal(labels.dtype, np.int32)
+    npt.assert_equal(masks.dtype, np.int32)
+    npt.assert_equal(np.isin(masks, [0, 1]).all(), True)
+    assert isinstance(label_dict, dict)
+
+
+@pytest.mark.skipif(not have_torch, reason="Requires Torch")
 def test_T1_error():
     T1 = np.ones((3, 32, 32, 32))
     synthseg_model = synthseg.SynthSeg()
