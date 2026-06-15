@@ -719,7 +719,7 @@ class SynthSeg:
                 UserWarning,
                 stacklevel=2,
             )
-            masks = np.zeros((len(T1),) + ori_shape)
+            masks = np.zeros((len(T1),) + ori_shape, dtype=np.int32)
         for i in range(len(T1)):
             output = prediction[i]
 
