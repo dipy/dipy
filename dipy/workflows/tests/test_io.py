@@ -782,8 +782,8 @@ def _write_phantom_dataset(out_dir):
 @pytest.mark.filterwarnings(
     "ignore:The legacy descoteaux07 SH basis:PendingDeprecationWarning"
 )
-def test_correct_bvecs_flow():
-    """End-to-end run of dipy_correct_bvecs on a synthetic phantom."""
+def test_correct_bvecs_flow_aganj2018():
+    """End-to-end run of dipy_correct_bvecs --method aganj2018."""
     with TemporaryDirectory() as out_dir:
         dwi_path, bval_path, bvec_path = _write_phantom_dataset(out_dir)
         bvecs_in = np.loadtxt(bvec_path)
@@ -797,11 +797,12 @@ def test_correct_bvecs_flow():
 
         flow = CorrectBvecsFlow()
         flow.run(
-            str(dwi_path),
-            str(bval_path),
             str(bvec_path),
-            mask_files=str(mask_path),
-            brain_mask_files=str(mask_path),
+            method="aganj2018",
+            dwi_files=[str(dwi_path)],
+            bvalues_files=[str(bval_path)],
+            mask_files=[str(mask_path)],
+            brain_mask_files=[str(mask_path)],
             sh_order_max=2,
             out_dir=out_dir,
         )
@@ -813,3 +814,70 @@ def test_correct_bvecs_flow():
             sorted_in = np.sort(np.abs(bvecs_in[:, vol]))
             sorted_out = np.sort(np.abs(bvecs_out[:, vol]))
             npt.assert_allclose(sorted_out, sorted_in, atol=1e-12)
+
+
+def test_correct_bvecs_flow_schilling2019():
+    """End-to-end run of dipy_correct_bvecs --method schilling2019."""
+    with TemporaryDirectory() as out_dir:
+        _, bval_path, bvec_path = get_fnames(name="small_25")
+        bvec = np.loadtxt(bvec_path)
+
+        shape = (5, 5, 5)
+        affine = np.eye(4)
+
+        mask = np.ones(shape, dtype=np.uint8)
+        mask_path = str(Path(out_dir) / "mask.nii.gz")
+        save_nifti(mask_path, mask, affine)
+
+        fa = np.zeros(shape, dtype=float)
+        fa[:, 2, 2] = 0.8
+        fa_path = str(Path(out_dir) / "fa.nii.gz")
+        save_nifti(fa_path, fa, affine)
+
+        # Test 1 (NIfTI): X-aligned peaks on X-axis tract → identity wins.
+        peaks = np.zeros(shape + (3,), dtype=float)
+        peaks[:, 2, 2] = [1, 0, 0]
+        peaks_path = str(Path(out_dir) / "peaks.nii.gz")
+        save_nifti(peaks_path, peaks, affine)
+
+        flow = CorrectBvecsFlow()
+        flow.run(
+            bvec_path,
+            method="schilling2019",
+            fa_files=[fa_path],
+            peaks_files=[peaks_path],
+            mask_files=[mask_path],
+            out_dir=out_dir,
+        )
+        assert Path(out_dir, "corrected_bvecs.txt").exists()
+        bvec_corrected = np.loadtxt(Path(out_dir, "corrected_bvecs.txt"))
+        npt.assert_array_equal(bvec_corrected, bvec)
+
+        flow._force_overwrite = True
+
+        # Test 2 (PAM): Z-aligned peaks on X-axis tract → non-identity wins.
+        peaks_wrong = np.zeros(shape + (3,), dtype=float)
+        peaks_wrong[:, 2, 2] = [0, 0, 1]
+        pam_path = str(Path(out_dir) / "peaks.pam5")
+        pam = PeaksAndMetrics()
+        pam.affine = affine
+        pam.peak_dirs = peaks_wrong
+        pam.peak_values = np.zeros(peaks_wrong.shape[:-1])
+        pam.peak_indices = np.zeros(peaks_wrong.shape[:-1])
+        pam.sphere = default_sphere
+        save_pam(pam_path, pam, affine=affine)
+
+        flow.run(
+            bvec_path,
+            method="schilling2019",
+            fa_files=[fa_path],
+            peaks_files=[pam_path],
+            mask_files=[mask_path],
+            out_dir=out_dir,
+            out_bvecs="corrected_bvecs_2.txt",
+        )
+        assert Path(out_dir, "corrected_bvecs_2.txt").exists()
+        bvec_corrected_2 = np.loadtxt(Path(out_dir, "corrected_bvecs_2.txt"))
+        assert not np.allclose(bvec_corrected_2, bvec), (
+            "Z-aligned peaks on X-axis tract should trigger bvec correction"
+        )
