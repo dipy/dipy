@@ -492,9 +492,8 @@ class Streamline3D(Visualization):
             self.render()
 
         changed, is_clustered = toggle_button(False, label="Cluster")
-        if changed:
-            if self._switch_render_callback is not None:
-                self._switch_render_callback(self, is_clustered)
+        if changed and self._switch_render_callback is not None:
+            self._switch_render_callback(self, is_clustered)
 
         imgui.spacing()
 
@@ -1064,9 +1063,8 @@ class ClusterStreamline3D(Visualization):
     def render_widgets(self):
         """Handle render widgets for ``ClusterStreamline3D``."""
         changed, is_clustered = toggle_button(True, label="Cluster")
-        if changed:
-            if self._switch_render_callback is not None:
-                self._switch_render_callback(self, is_clustered)
+        if changed and self._switch_render_callback is not None:
+            self._switch_render_callback(self, is_clustered)
 
         imgui.spacing()
 
@@ -1074,13 +1072,6 @@ class ClusterStreamline3D(Visualization):
         if changed:
             self._line_type = new.title()
             self.apply_scene_op(self._apply_cluster_line_type_change)
-
-        imgui.spacing()
-        imgui.spacing()
-        warning_message(
-            "We recommend using type 'Line' for better"
-            "\nperformance with large tractograms."
-        )
 
         imgui.spacing()
         imgui.spacing()
