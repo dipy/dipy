@@ -2101,44 +2101,38 @@ fn vs_main(in: VertexInput) -> Varyings {
     let billboard_index = i32(in.index) / 6;
     let vertex_in_quad = i32(in.index) % 6;
 
-    let raw_center = load_s_positions(billboard_index * 6);
-    var w_center = u_wobject.world_transform * vec4<f32>(raw_center.xyz, 1.0);
+    var raw_center = load_s_positions(billboard_index * 6);
 
     // --- Slice-based visibility: discard glyphs not on active slice ---
     {$ if use_slicing == 'true' $}
     {
-        let cross_section = vec3<f32>(u_material.active_slice_x, u_material.active_slice_y, u_material.active_slice_z);
+        let active_slice = vec3<i32>(
+            i32(round(u_material.active_slice_x)),
+            i32(round(u_material.active_slice_y)),
+            i32(round(u_material.active_slice_z)),
+        );
         let visibility = vec3<i32>(u_material.vis_x, u_material.vis_y, u_material.vis_z);
+        let slice_index_offset = u32(billboard_index) * 3u;
+        let voxel_index = vec3<i32>(
+            s_slice_indices[slice_index_offset],
+            s_slice_indices[slice_index_offset + 1u],
+            s_slice_indices[slice_index_offset + 2u],
+        );
         var is_visible = false;
 
         if (!all(visibility == vec3<i32>(-1))) {
-            let is_near_x_plane = is_point_on_plane_equation(
-                vec4<f32>(-1.0, 0.0, 0.0, cross_section.x),
-                w_center.xyz,
-                abs(u_wobject.world_transform[0][0])
-            );
-            if (is_near_x_plane && visibility.x != 0) {
-                w_center.x = cross_section.x; // Snap center to plane
+            if (voxel_index.x == active_slice.x && visibility.x != 0) {
+                raw_center.x = u_material.active_slice_x;
                 is_visible = true;
             }
 
-            let is_near_y_plane = is_point_on_plane_equation(
-                vec4<f32>(0.0, -1.0, 0.0, cross_section.y),
-                w_center.xyz,
-                abs(u_wobject.world_transform[1][1])
-            );
-            if (is_near_y_plane && visibility.y != 0) {
-                w_center.y = cross_section.y; // Snap center to plane
+            if (voxel_index.y == active_slice.y && visibility.y != 0) {
+                raw_center.y = u_material.active_slice_y;
                 is_visible = true;
             }
 
-            let is_near_z_plane = is_point_on_plane_equation(
-                vec4<f32>(0.0, 0.0, -1.0, cross_section.z),
-                w_center.xyz,
-                abs(u_wobject.world_transform[2][2])
-            );
-            if (is_near_z_plane && visibility.z != 0) {
-                w_center.z = cross_section.z; // Snap center to plane
+            if (voxel_index.z == active_slice.z && visibility.z != 0) {
+                raw_center.z = u_material.active_slice_z;
                 is_visible = true;
             }
         } else {
@@ -2152,6 +2146,8 @@ fn vs_main(in: VertexInput) -> Varyings {
         }
     }
     {$ endif $}
+
+    var w_center = u_wobject.world_transform * vec4<f32>(raw_center.xyz, 1.0);
 
     var local_pos: vec2<f32>;
     switch vertex_in_quad {
