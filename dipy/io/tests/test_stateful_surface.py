@@ -241,7 +241,7 @@ def test_random_space_transformations():
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
-@pytest.mark.parametrize("space, origin", itertools.product(SPACES, ORIGINS))
+@pytest.mark.parametrize("space, origin", list(itertools.product(SPACES, ORIGINS)))
 def test_space_origin_gold_standard(space, origin):
     fname = FILEPATH_DIX[f"gs_mesh_{space.value.lower()}_{origin.value.lower()}.ply"]
     sfs = load_surface(
