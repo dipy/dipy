@@ -261,8 +261,16 @@ class MIMetric(SimilarityMetric):
         Computes image gradients in physical coordinates and prepares the
         histogram quantities needed to evaluate mutual information updates.
         """
+        if self.static_image.dtype != self.moving_image.dtype:
+            raise ValueError("Static and moving images must have the same dtype.")
+
+        dtype = np.asarray(self.moving_image).dtype
+
+        if dtype not in (np.float32, np.float64):
+            raise ValueError("MIMetric expects float32 or float64 images.")
+
         self.gradient_moving = np.empty(
-            shape=self.moving_image.shape + (self.dim,), dtype=np.float32
+            shape=self.moving_image.shape + (self.dim,), dtype=dtype
         )
         for i, grad in enumerate(gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
@@ -274,7 +282,7 @@ class MIMetric(SimilarityMetric):
             self.reorient_vector_field(self.gradient_moving, self.moving_direction)
 
         self.gradient_static = np.empty(
-            shape=self.static_image.shape + (self.dim,), dtype=np.float32
+            shape=self.static_image.shape + (self.dim,), dtype=dtype
         )
         for i, grad in enumerate(gradient(self.static_image)):
             self.gradient_static[..., i] = grad
