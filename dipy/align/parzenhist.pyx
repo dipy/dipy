@@ -226,16 +226,41 @@ class ParzenJointHistogram:
         if not self.setup_called:
             self.setup(static, moving, smask=None, mmask=None)
 
-        if dim == 2:
-            _compute_pdfs_dense_2d(static, moving, smask, mmask, self.smin,
-                                   self.sdelta, self.mmin, self.mdelta,
-                                   self.nbins, self.padding, self.joint,
-                                   self.smarginal, self.mmarginal)
-        elif dim == 3:
-            _compute_pdfs_dense_3d(static, moving, smask, mmask, self.smin,
-                                   self.sdelta, self.mmin, self.mdelta,
-                                   self.nbins, self.padding, self.joint,
-                                   self.smarginal, self.mmarginal)
+        if static.dtype != moving.dtype:
+            raise ValueError("Static and moving images must have the same dtype")
+
+        if static.dtype == np.float64:
+            if dim == 2:
+                _compute_pdfs_dense_2d[cython.double](
+                    static, moving, smask, mmask,
+                    self.smin, self.sdelta, self.mmin, self.mdelta,
+                    self.nbins, self.padding,
+                    self.joint, self.smarginal, self.mmarginal
+                )
+            elif dim == 3:
+                _compute_pdfs_dense_3d[cython.double](
+                    static, moving, smask, mmask,
+                    self.smin, self.sdelta, self.mmin, self.mdelta,
+                    self.nbins, self.padding,
+                    self.joint, self.smarginal, self.mmarginal
+                )
+        elif static.dtype == np.float32:
+            if dim == 2:
+                _compute_pdfs_dense_2d[cython.float](
+                    static, moving, smask, mmask,
+                    self.smin, self.sdelta, self.mmin, self.mdelta,
+                    self.nbins, self.padding,
+                    self.joint, self.smarginal, self.mmarginal
+                )
+            elif dim == 3:
+                _compute_pdfs_dense_3d[cython.float](
+                    static, moving, smask, mmask,
+                    self.smin, self.sdelta, self.mmin, self.mdelta,
+                    self.nbins, self.padding,
+                    self.joint, self.smarginal, self.mmarginal
+                )
+        else:
+            raise ValueError("Images must be of dtype float32 or float64")
 
     def update_pdfs_sparse(self, sval, mval):
         r""" Computes the Probability Density Functions from a set of samples
@@ -431,6 +456,15 @@ class ParzenJointHistogram:
 
         if update_field.dtype != mgradient.dtype:
             raise ValueError('Gradient and update field dtypes must match.')
+
+        if static.dtype != moving.dtype:
+            raise ValueError("Static and moving images must have the same dtype.")
+
+        if static.dtype != mgradient.dtype:
+            raise ValueError("Images and gradient field must have the same dtype.")
+
+        if update_field.dtype != mgradient.dtype:
+            raise ValueError("Gradient and update field dtypes must match.")
 
         if not self.setup_called:
             self.setup(static, moving, smask=smask, mmask=mmask)
@@ -699,7 +733,7 @@ cdef inline double _cubic_spline_derivative(double x) nogil:
     return 0.0
 
 
-cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
+cdef _compute_pdfs_dense_2d(floating[:, :] static, floating[:, :] moving,
                             int[:, :] smask, int[:, :] mmask,
                             double smin, double sdelta,
                             double mmin, double mdelta,
@@ -785,7 +819,7 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
                     mmarginal[j] += joint[i, j]
 
 
-cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
+cdef _compute_pdfs_dense_3d(floating[:, :, :] static, floating[:, :, :] moving,
                             int[:, :, :] smask, int[:, :, :] mmask,
                             double smin, double sdelta,
                             double mmin, double mdelta,
@@ -1350,8 +1384,8 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                         grad_pdf[i, j, k] /= norm_factor
 
 
-cdef _joint_pdf_gradient_dense_local_support_2d(double[:, :] static,
-                                                double[:, :] moving,
+cdef _joint_pdf_gradient_dense_local_support_2d(floating[:, :] static,
+                                                floating[:, :] moving,
                                                 floating[:, :, :] mgradient,
                                                 double[:, :] mi_weights,
                                                 int[:, :] smask,
@@ -1441,8 +1475,8 @@ cdef _joint_pdf_gradient_dense_local_support_2d(double[:, :] static,
                     update_field[i, j, 1] /= norm_factor
 
 
-cdef _joint_pdf_gradient_dense_local_support_3d(double[:, :, :] static,
-                                                double[:, :, :] moving,
+cdef _joint_pdf_gradient_dense_local_support_3d(floating[:, :, :] static,
+                                                floating[:, :, :] moving,
                                                 floating[:, :, :, :] mgradient,
                                                 double[:, :] mi_weights,
                                                 int[:, :, :] smask,
