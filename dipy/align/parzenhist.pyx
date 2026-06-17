@@ -652,10 +652,10 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
         if total_sum > 0:
             for i in range(nbins):
                 for j in range(nbins):
-                    joint[i, j] /= valid_points
+                    joint[i, j] /= <double>valid_points
 
             for i in range(nbins):
-                smarginal[i] /= valid_points
+                smarginal[i] /= <double>valid_points
 
             for j in range(nbins):
                 mmarginal[j] = 0
@@ -746,7 +746,7 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
                     joint[i, j] /= total_sum
 
             for i in range(nbins):
-                smarginal[i] /= valid_points
+                smarginal[i] /= <double>valid_points
 
             for j in range(nbins):
                 mmarginal[j] = 0
@@ -822,7 +822,7 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
                     joint[i, j] /= total_sum
 
             for i in range(nbins):
-                smarginal[i] /= valid_points
+                smarginal[i] /= <double>valid_points
 
             for j in range(nbins):
                 mmarginal[j] = 0
@@ -907,8 +907,8 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
                     continue
 
                 valid_points += 1
-                x[0] = _apply_affine_2d_x0(i, j, 1, grid2world)
-                x[1] = _apply_affine_2d_x1(i, j, 1, grid2world)
+                x[0] = _apply_affine_2d_x0(<double>i, <double>j, 1, grid2world)
+                x[1] = _apply_affine_2d_x1(<double>i, <double>j, 1, grid2world)
 
                 if constant_jacobian == 0:
                     constant_jacobian = transform._jacobian(theta, x, J)
@@ -929,7 +929,7 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
                         grad_pdf[r, c + offset, k] -= val * prod[k]
                     spline_arg += 1.0
 
-        norm_factor = valid_points * mdelta
+        norm_factor = <double>valid_points * mdelta
         if norm_factor > 0:
             for i in range(nbins):
                 for j in range(nbins):
@@ -1018,9 +1018,9 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                     if mmask is not None and mmask[k, i, j] == 0:
                         continue
                     valid_points += 1
-                    x[0] = _apply_affine_3d_x0(k, i, j, 1, grid2world)
-                    x[1] = _apply_affine_3d_x1(k, i, j, 1, grid2world)
-                    x[2] = _apply_affine_3d_x2(k, i, j, 1, grid2world)
+                    x[0] = _apply_affine_3d_x0(<double>k, <double>i, <double>j, 1, grid2world)
+                    x[1] = _apply_affine_3d_x1(<double>k, <double>i, <double>j, 1, grid2world)
+                    x[2] = _apply_affine_3d_x2(<double>k, <double>i, <double>j, 1, grid2world)
 
                     if constant_jacobian == 0:
                         constant_jacobian = transform._jacobian(theta, x, J)
@@ -1042,7 +1042,7 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                             grad_pdf[r, c + offset, l] -= val * prod[l]
                         spline_arg += 1.0
 
-        norm_factor = valid_points * mdelta
+        norm_factor = <double>valid_points * mdelta
         if norm_factor > 0:
             for i in range(nbins):
                 for j in range(nbins):
@@ -1132,7 +1132,7 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
                     grad_pdf[r, c + offset, j] -= val * prod[j]
                 spline_arg += 1.0
 
-        norm_factor = valid_points * mdelta
+        norm_factor = <double>valid_points * mdelta
         if norm_factor > 0:
             for i in range(nbins):
                 for j in range(nbins):
@@ -1224,7 +1224,7 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                     grad_pdf[r, c + offset, j] -= val * prod[j]
                 spline_arg += 1.0
 
-        norm_factor = valid_points * mdelta
+        norm_factor = <double>valid_points * mdelta
         if norm_factor > 0:
             for i in range(nbins):
                 for j in range(nbins):
