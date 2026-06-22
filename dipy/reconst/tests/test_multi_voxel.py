@@ -12,6 +12,7 @@ from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.reconst.dki import DiffusionKurtosisModel
+import dipy.reconst.multi_voxel as mv
 from dipy.reconst.multi_voxel import (
     ORCHESTRATION_KWARGS,
     CallableArray,
@@ -433,7 +434,6 @@ def test_multi_voxel_fit_orchestration_reaches_paramap(monkeypatch):
     kwargs are stripped. ``paramap`` is replaced by an in-process spy so the
     routing is checked deterministically without spawning workers.
     """
-    import dipy.reconst.multi_voxel as mv
 
     captured = {}
 
