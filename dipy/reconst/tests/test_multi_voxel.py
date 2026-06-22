@@ -429,6 +429,18 @@ def test_multi_voxel_fit_logs_dropped_kwargs(caplog, dipy_log_propagate):
     assert "engine" in drop_logs[0] and "n_jobs" in drop_logs[0]
 
 
+@pytest.mark.parametrize("unintrospectable", [object(), 42, min])
+def test_accepts_kwarg_unintrospectable_callable(unintrospectable):
+    """Objects whose signature cannot be determined are not forwarded reserved keys.
+
+    When ``inspect.signature`` raises ``TypeError`` (non-callable) or
+    ``ValueError`` (signature-less builtin such as ``min``), ``_accepts_kwarg``
+    treats the object as *not* declaring the keyword, so reserved orchestration
+    keys are never forwarded to it.
+    """
+    assert mv._accepts_kwarg(unintrospectable, "verbose") is False
+
+
 def test_multi_voxel_fit_orchestration_reaches_paramap(monkeypatch):
     """Orchestration kwargs are forwarded to ``paramap`` while the per-chunk
     kwargs are stripped. ``paramap`` is replaced by an in-process spy so the
