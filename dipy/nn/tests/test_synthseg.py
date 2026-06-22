@@ -44,7 +44,8 @@ def test_default_weights():
     output_arr = np.load(file_path)["output"][0]
 
     synthseg_model = synthseg.SynthSeg()
-    results_arr = synthseg_model.predict(input_arr, np.eye(4), return_prob=True)[..., 5]
+    results_arr, _, _ = synthseg_model.predict(input_arr, np.eye(4), return_prob=True)
+    results_arr = results_arr[..., 5]
     assert_percent_almost_equal(results_arr, output_arr, decimal=4, percent=0.99)
 
 
@@ -59,9 +60,10 @@ def test_default_weights_batch():
 
     synthseg_model = synthseg.SynthSeg()
     fake_affine = np.array([np.eye(4)])
-    results_arr = synthseg_model.predict(
+    results_arr, _, _ = synthseg_model.predict(
         input_arr, fake_affine, batch_size=1, return_prob=True
-    )[0, ..., 5]
+    )
+    results_arr = results_arr[0, ..., 5]
     assert_percent_almost_equal(results_arr, output_arr, decimal=4, percent=0.99)
 
 
@@ -71,7 +73,7 @@ def test_default_weights_labels():
     input_arr = np.load(file_path)["input"][0]
 
     synthseg_model = synthseg.SynthSeg()
-    labels, label_dict = synthseg_model.predict(input_arr, np.eye(4))
+    labels, label_dict, _ = synthseg_model.predict(input_arr, np.eye(4))
 
     npt.assert_equal(labels.shape, input_arr.shape)
     npt.assert_equal(labels.dtype, np.int32)
@@ -93,7 +95,7 @@ def test_default_weights_return_masks():
     npt.assert_equal(masks.shape, input_arr.shape)
     npt.assert_equal(labels.dtype, np.int32)
     npt.assert_equal(masks.dtype, np.int32)
-    npt.assert_equal(np.isin(masks, [0, 1]).all(), True)
+    assert np.isin(masks, [0, 1]).all()
     assert isinstance(label_dict, dict)
 
 
