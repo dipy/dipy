@@ -2,6 +2,7 @@ cython_sources = [
   'dirspeed',
   'dkispeed',
   'eudx_direction_getter',
+  'odffp_matching',
   'quick_squash',
   'recspeed',
   'vec_val_sum',
