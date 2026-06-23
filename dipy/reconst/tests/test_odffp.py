@@ -5,14 +5,17 @@ from dipy.core.gradients import gradient_table
 from dipy.core.sphere import Sphere
 from dipy.data import get_sphere
 from dipy.direction import peak_directions
+from dipy.io.peaks import load_pam, save_pam
 from dipy.reconst.multi_voxel import MultiVoxelFit
 from dipy.reconst.odffp import (
     OdffpDictionary,
     OdffpFit,
     OdffpModel,
     _rotation_to_pole,
+    odffp_peaks,
 )
 from dipy.reconst.odffp_matching import select_best_match
+from dipy.reconst.shm import sh_to_sf
 from dipy.sims.voxel import multi_tensor
 
 
@@ -152,6 +155,49 @@ def test_dictionary_save_load(tmp_path):
     npt.assert_array_equal(loaded.odf, odf_dict.odf)
     npt.assert_array_equal(loaded.peaks_per_voxel, odf_dict.peaks_per_voxel)
     npt.assert_equal(loaded.max_peaks_num, odf_dict.max_peaks_num)
+
+
+def test_odffp_peaks_stores_odf_and_roundtrips(tmp_path):
+    # odffp_peaks (FORCE-style) must build a PeaksAndMetrics whose stored SH
+    # coefficients reconstruct the fit ODFs, for both a volume MultiVoxelFit
+    # and a single OdffpFit, and survive a PAM5 save/load.
+    gtab = _make_gtab()
+    odf_dict = _make_dictionary(gtab, dict_size=1500)
+    model = OdffpModel(gtab, odf_dict, penalty=1e-4)
+    half = len(odf_dict.sphere.vertices) // 2
+
+    mevals = np.array([[0.0015, 0.0003, 0.0003]] * 2)
+    data = np.stack(
+        [
+            _single_voxel(gtab, mevals[:1], [(90, 0)], [100]),
+            _single_voxel(gtab, mevals, [(20, 0), (90, 0)], [50, 50]),
+        ]
+    ).reshape(2, 1, 1, -1)
+    mask = np.ones((2, 1, 1), dtype=bool)
+
+    mfit = model.fit(data, mask=mask)
+    npt.assert_(isinstance(mfit, MultiVoxelFit))
+    peaks = odffp_peaks(mfit)
+
+    npt.assert_equal(peaks.shm_coeff.shape[:3], (2, 1, 1))
+    npt.assert_equal(peaks.sphere.vertices.shape[0], half)
+    npt.assert_equal(peaks.peak_dirs.shape[:3], (2, 1, 1))
+
+    odf_map = np.asarray(mfit.odf())
+    recon = sh_to_sf(peaks.shm_coeff, peaks.sphere, sh_order_max=8, legacy=False)
+    npt.assert_allclose(recon, odf_map, atol=1e-5)
+
+    fname = str(tmp_path / "odffp.pam5")
+    save_pam(fname, peaks, affine=np.eye(4))
+    loaded = load_pam(fname)
+    npt.assert_array_almost_equal(loaded.affine, np.eye(4))
+    recon2 = sh_to_sf(loaded.shm_coeff, loaded.sphere, sh_order_max=8, legacy=False)
+    npt.assert_allclose(recon2, odf_map, atol=1e-5)
+
+    # Single voxel: same SH width, valid peak directions.
+    single = odffp_peaks(model.fit(data[0, 0, 0]))
+    npt.assert_(isinstance(single, type(peaks)))
+    npt.assert_equal(single.shm_coeff.shape[-1], peaks.shm_coeff.shape[-1])
 
 
 def test_rotation_to_pole_is_orthogonal():

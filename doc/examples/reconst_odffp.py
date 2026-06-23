@@ -32,7 +32,7 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, get_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
-from dipy.reconst.odffp import OdffpDictionary, OdffpModel
+from dipy.reconst.odffp import OdffpDictionary, OdffpModel, odffp_peaks
 from dipy.segment.mask import median_otsu
 
 ###############################################################################
@@ -86,6 +86,17 @@ fit = model.fit(dataslice, mask=mask)
 
 odfs = fit.odf(sphere)
 print(f"ODF map shape: {odfs.shape}")
+
+###############################################################################
+# As with FORCE, the peaks are obtained by passing the fit to ``odffp_peaks``,
+# which returns a ``PeaksAndMetrics`` object holding the peak directions,
+# values and indices, with the matched ODFs stored as SH coefficients. It is
+# written to a PAM5 file with ``save_pam``.
+
+from dipy.io.peaks import save_pam
+
+peaks = odffp_peaks(fit)
+save_pam("odffp_peaks.pam5", peaks, affine=affine)
 
 ###############################################################################
 # Visualize the ODFs of the slice.
