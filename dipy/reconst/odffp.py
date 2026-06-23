@@ -19,14 +19,60 @@ References
 
 import numpy as np
 
+from dipy.core.geometry import sphere2cart
+from dipy.core.sphere import Sphere
 from dipy.data import get_sphere
+from dipy.direction import peak_directions
+from dipy.reconst.base import ReconstFit, ReconstModel
 from dipy.reconst.gqi import GeneralizedQSamplingModel
+from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.odffp_matching import select_best_match
+from dipy.reconst.shm import real_sh_descoteaux, sf_to_sh, sh_to_sf, smooth_pinv
 
+DEFAULT_RECON_EDGE = 1.2
 DEFAULT_DICT_EDGE = 1.2
+
+DEFAULT_FIT_PENALTY = 1e-5
+MAX_FIT_PENALTY = 0.1
+
+# SH order used to resample ODFs between tessellations.
+SH_ORDER_MAX = 4
 
 
 def _default_sphere():
     return get_sphere(name="repulsion724")
+
+
+def _rotation_to_pole(direction, pole=(0.0, 0.0, 1.0)):
+    """Rotation matrix taking the unit vector ``direction`` onto ``pole``."""
+    pole = np.asarray(pole)
+    rotation = np.eye(3)
+    cross = np.cross(direction, pole)
+    sin_sqr = np.sum(cross**2)
+    if sin_sqr != 0:
+        skew = np.array(
+            [
+                [0, -cross[2], cross[1]],
+                [cross[2], 0, -cross[0]],
+                [-cross[1], cross[0], 0],
+            ]
+        )
+        rotation += skew + np.dot(skew, skew) * (1 - np.dot(direction, pole)) / sin_sqr
+    return rotation
+
+
+def _sh_operators(sphere):
+    """Real descoteaux07 SH synthesis ``B`` and analysis ``inv_B`` matrices.
+
+    These reproduce :func:`~dipy.reconst.shm.sf_to_sh`/``sh_to_sf`` with no
+    regularization, so that ``inv_B`` and ``B`` match the SH fit and evaluation
+    used by :meth:`OdffpModel.resample_odf`.
+    """
+    basis, _, order = real_sh_descoteaux(
+        SH_ORDER_MAX, sphere.theta, sphere.phi, legacy=False
+    )
+    inv_basis = smooth_pinv(basis, np.sqrt(0.0) * (-order * (order + 1)))
+    return basis, inv_basis
 
 
 class OdffpDictionary:
@@ -338,3 +384,237 @@ class OdffpDictionary:
         self.ratio = data["ratio"]
         self.peaks_per_voxel = data["peaks_per_voxel"]
         self.max_peaks_num = int(data["max_peaks_num"])
+
+
+class OdffpModel(ReconstModel):
+    """ODF-Fingerprinting reconstruction model."""
+
+    def __init__(
+        self,
+        gtab,
+        dictionary,
+        *,
+        penalty=DEFAULT_FIT_PENALTY,
+        drop_negative_odf=True,
+        zero_baseline_odf=False,
+        output_dict_odf=True,
+        num_threads=None,
+        odf_recon_model=None,
+    ):
+        if not hasattr(dictionary, "odf") or dictionary.odf is None:
+            raise ValueError("The specified ODF-dictionary is empty.")
+
+        ReconstModel.__init__(self, gtab)
+        self.dictionary = dictionary
+        self.sphere = dictionary.sphere
+        self.penalty = float(np.clip(penalty, 0.0, MAX_FIT_PENALTY))
+        self.num_threads = num_threads
+        self._drop_negative_odf = drop_negative_odf
+        self._zero_baseline_odf = zero_baseline_odf
+        self._output_dict_odf = output_dict_odf
+        if odf_recon_model is None:
+            odf_recon_model = GeneralizedQSamplingModel(
+                gtab, sampling_length=DEFAULT_RECON_EDGE
+            )
+        self._odf_recon_model = odf_recon_model
+
+        self._half_size = len(self.sphere.vertices) // 2
+        self._basis, self._inv_basis = _sh_operators(self.sphere)
+        self._dict_trace, _ = self._normalize_odf(dictionary.odf)
+
+        # Penalty group of each fingerprint (negative -> ignored in matching).
+        n_fibers = dictionary.peaks_per_voxel
+        group = np.where(n_fibers < 0, -1, np.maximum(0, n_fibers - 1))
+        self._group = np.ascontiguousarray(group, dtype=np.intp)
+        self._n_groups = int(self._group.max()) + 1
+
+        # Resampling operators, cached by main-peak vertex across voxels/fits.
+        self._operators = {}
+
+    @staticmethod
+    def resample_odf(odf, in_sphere, out_sphere):
+        """Resample full-sphere ODF(s) from ``in_sphere`` to ``out_sphere``.
+
+        ``odf`` is a single ODF vector or a matrix of ODF row-vectors. Returns a
+        half-sphere ODF trace.
+        """
+        sphere_half_size = len(in_sphere.vertices) // 2
+        odf = np.atleast_2d(odf)
+        if odf.shape[1] == sphere_half_size:
+            odf = np.hstack((odf, odf))
+        resampled = sh_to_sf(
+            sf_to_sh(odf, in_sphere, legacy=False), out_sphere, legacy=False
+        )
+        return np.squeeze(resampled[:, :sphere_half_size])
+
+    def _normalize_odf(self, odf):
+        """Drop negatives/baseline and L2-normalize ODF column-vectors."""
+        if self._drop_negative_odf:
+            odf = np.maximum(0, odf)
+        if self._zero_baseline_odf:
+            odf = odf - np.min(odf, axis=0)
+        odf_norm = np.maximum(1e-8, np.sqrt(np.sum(odf**2, axis=0)))
+        return odf / odf_norm, odf_norm
+
+    def _main_peak_vertices(self, odfs):
+        """Vertex of each ODF's main peak (-1 when the ODF has no peak)."""
+        vertices = np.full(len(odfs), -1)
+        for i, odf in enumerate(odfs):
+            _, _, indices = peak_directions(odf, self.sphere)
+            if len(indices):
+                vertices[i] = indices[0]
+        return vertices
+
+    def _resampling_operators(self, peak_vertices):
+        """Rotation and SH operators aligning each main peak with the pole.
+
+        The main peak is always a tessellation vertex, so the rotations come
+        from a finite set; the spherical harmonics of any not-yet-seen rotation
+        are evaluated in a single batched call and cached for reuse.
+        """
+        new = sorted(set(peak_vertices.tolist()) - self._operators.keys())
+        if new:
+            rotations = np.stack(
+                [
+                    np.eye(3) if v < 0 else _rotation_to_pole(self.sphere.vertices[v])
+                    for v in new
+                ]
+            )
+            rotated = np.einsum("pj,rjk->rpk", self.sphere.vertices, rotations)
+            sphere = Sphere(xyz=rotated.reshape(-1, 3))
+            basis, _, _ = real_sh_descoteaux(
+                SH_ORDER_MAX, sphere.theta, sphere.phi, legacy=False
+            )
+            n_points, n_sh = len(self.sphere.vertices), basis.shape[1]
+            basis = basis.reshape(len(new), n_points, n_sh)
+            pad = np.zeros((len(new), n_sh, n_sh))
+            inv_basis = np.linalg.pinv(np.concatenate((basis, pad), axis=1))[
+                :, :, :n_points
+            ]
+            for i, v in enumerate(new):
+                self._operators[v] = (rotations[i], basis[i], inv_basis[i])
+
+        rotations = np.stack([self._operators[v][0] for v in peak_vertices])
+        basis = np.stack([self._operators[v][1] for v in peak_vertices])
+        inv_basis = np.stack([self._operators[v][2] for v in peak_vertices])
+        return rotations, basis, inv_basis
+
+    def _rotate_peak_dirs(self, peak_dirs, rotation):
+        directions = np.array(
+            sphere2cart(1, np.pi / 2 + peak_dirs[1, :], peak_dirs[0, :])
+        )
+        return np.dot(directions.T, rotation)
+
+    @multi_voxel_fit(
+        batched=True,
+        shared_obj=("_dict_trace", "dictionary"),
+        # Matching builds a (chunk x dictionary) similarity matrix, so the chunk
+        # is kept small to bound its memory for large (~1M) dictionaries. Pass
+        # ``vox_per_chunk`` to fit() to override.
+        chunk_size={"serial": 1000, "ray": "auto"},
+    )
+    def fit(self, data, *, mask=None, **kwargs):
+        """Match each voxel to its best ODF fingerprint.
+
+        Decorated with ``@multi_voxel_fit(batched=True)``: the decorator chunks
+        the volume and hands each batch (2-D) to this method, which aligns every
+        ODF to the pole and matches the whole batch against the dictionary in a
+        single parallel call. Returns an :class:`OdffpFit` for a single voxel
+        (1-D input) or a :class:`~dipy.reconst.multi_voxel.MultiVoxelFit`.
+        """
+        single = data.ndim == 1
+        batch = data.reshape(1, -1) if single else data
+        n_vox = batch.shape[0]
+        half = self._half_size
+
+        input_odf = self._odf_recon_model.fit(batch).odf(self.sphere)
+        peak_vertices = self._main_peak_vertices(input_odf)
+        rotations, basis, inv_basis = self._resampling_operators(peak_vertices)
+
+        # Align every ODF to the pole and match the batch to the dictionary.
+        coeffs = input_odf @ self._inv_basis.T
+        aligned = np.einsum("vk,vpk->vp", coeffs, basis)[:, :half]
+        trace, norm = self._normalize_odf(aligned.T)
+        similarity = np.ascontiguousarray(trace.T @ self._dict_trace)
+        matched = select_best_match(
+            similarity,
+            self._group,
+            self.penalty,
+            self._n_groups,
+            num_threads=self.num_threads,
+        )
+
+        if self._output_dict_odf:
+            # Rotate the matched dictionary ODFs back to the voxel frame.
+            scaled = norm[:, np.newaxis] * self.dictionary.odf[:, matched].T
+            full = np.concatenate((scaled, scaled), axis=1)
+            out_coeffs = np.einsum("vp,vkp->vk", full, inv_basis)
+            output_odf = (out_coeffs @ self._basis.T)[:, :half]
+        else:
+            output_odf = input_odf[:, :half]
+
+        peak_dirs = np.stack(
+            [
+                self._rotate_peak_dirs(
+                    self.dictionary.peak_dirs[:, :, matched[i]], rotations[i]
+                )
+                for i in range(n_vox)
+            ]
+        )
+
+        params = {
+            "odf": output_odf,
+            "peak_dirs": peak_dirs,
+            "dict_idx": matched,
+            "microstructure": np.moveaxis(self.dictionary.micro[..., matched], -1, 0),
+            "compartment_volume": self.dictionary.ratio[:, matched].T,
+        }
+        if kwargs.pop("_raw", False):
+            return params
+
+        fits = np.empty(n_vox, dtype=object)
+        for i in range(n_vox):
+            fits[i] = OdffpFit(self, {k: v[i] for k, v in params.items()})
+        return fits[0] if single else fits
+
+
+class OdffpFit(ReconstFit):
+    """Result of an :class:`OdffpModel` fit for a single voxel."""
+
+    def __init__(self, model, params):
+        self.model = model
+        self._params = params
+
+    def odf(self, sphere=None):
+        """Matched fingerprint ODF, normalized to a unit maximum."""
+        odf = self._params["odf"]
+        if (
+            sphere is not None
+            and self.model is not None
+            and sphere is not self.model.sphere
+        ):
+            odf = OdffpModel.resample_odf(odf, self.model.sphere, sphere)
+        return odf / np.maximum(1e-8, np.max(odf))
+
+    @property
+    def peak_dirs(self):
+        """Fiber directions of the matched fingerprint in the voxel frame."""
+        return self._params["peak_dirs"]
+
+    @property
+    def dict_idx(self):
+        """Index of the matched fingerprint in the dictionary."""
+        return self._params["dict_idx"]
+
+    @property
+    def microstructure(self):
+        """Microstructure parameters of the matched fingerprint."""
+        return self._params["microstructure"]
+
+    @property
+    def compartment_volume(self):
+        """Compartment volume fractions of the matched fingerprint."""
+        return self._params["compartment_volume"]
+
+
+OdffpModel._fit_class = OdffpFit
