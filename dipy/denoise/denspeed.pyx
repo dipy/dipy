@@ -288,18 +288,18 @@ cdef cnp.npy_intp copy_block_3d(double * dest,
 
 # ==== BLOCKWISE NON-LOCAL MEANS IMPLEMENTATION ====
 
-cdef inline int _int_max(int a, int b):
+cdef inline cnp.npy_intp _int_max(cnp.npy_intp a, cnp.npy_intp b):
     return a if a >= b else b
-cdef inline int _int_min(int a, int b):
+cdef inline cnp.npy_intp _int_min(cnp.npy_intp a, cnp.npy_intp b):
     return a if a <= b else b
 
 
 def _firdn_vector(double[:] f, double[:] h, double[:] out):
-    cdef int n = len(f)
-    cdef int klen = len(h)
-    cdef int outLen = (n + klen) // 2
+    cdef cnp.npy_intp n = len(f)
+    cdef cnp.npy_intp klen = len(h)
+    cdef cnp.npy_intp outLen = (n + klen) // 2
     cdef double ss
-    cdef int i, k, limInf, limSup, x = 0, ox = 0, ks = 0
+    cdef cnp.npy_intp i, k, limInf, limSup, x = 0, ox = 0, ks = 0
     for i in range(outLen):
         ss = 0
         limInf = _int_max(0, x - klen + 1)
@@ -314,10 +314,10 @@ def _firdn_vector(double[:] f, double[:] h, double[:] out):
 
 
 def _upfir_vector(double[:] f, double[:] h, double[:] out):
-    cdef int n = f.shape[0]
-    cdef int klen = h.shape[0]
-    cdef int outLen = 2 * n + klen - 2
-    cdef int x, limInf, limSup, k, ks
+    cdef cnp.npy_intp n = f.shape[0]
+    cdef cnp.npy_intp klen = h.shape[0]
+    cdef cnp.npy_intp outLen = 2 * n + klen - 2
+    cdef cnp.npy_intp x, limInf, limSup, k, ks
     cdef double ss
     for x in range(outLen):
         limInf = _int_max(0, x - klen + 1)
@@ -337,16 +337,16 @@ def _upfir_vector(double[:] f, double[:] h, double[:] out):
 
 
 def _firdn_matrix(double[:, :] F, double[:] h, double[:, :] out):
-    cdef int n = F.shape[0]
-    cdef int m = F.shape[1]
-    cdef int j
+    cdef cnp.npy_intp n = F.shape[0]
+    cdef cnp.npy_intp m = F.shape[1]
+    cdef cnp.npy_intp j
     for j in range(m):
         _firdn_vector(F[:, j], h, out[:, j])
 
 
 def _upfir_matrix(double[:, :] F, double[:] h, double[:, :] out):
-    cdef int n = F.shape[0]
-    cdef int m = F.shape[1]
+    cdef cnp.npy_intp n = F.shape[0]
+    cdef cnp.npy_intp m = F.shape[1]
     for j in range(m):
         _upfir_vector(F[:, j], h, out[:, j])
 
