@@ -41,7 +41,7 @@ jobs:
         cd doc
         make -C . html-no-examples SPHINXOPTS="-W --keep-going"
     - name: Deploy dev docs to docs.dipy.org
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master' && github.repository == 'dipy/dipy'
       env:
         DOCS_DEPLOY_TOKEN: ${{ secrets.DOCS_DEPLOY_TOKEN }}
       run: |
