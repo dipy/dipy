@@ -23,6 +23,7 @@ from dipy.core.geometry import sphere2cart
 from dipy.core.sphere import Sphere
 from dipy.data import get_sphere
 from dipy.direction import peak_directions
+from dipy.direction.peaks import PeaksAndMetrics
 from dipy.reconst.base import ReconstFit, ReconstModel
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
@@ -37,6 +38,9 @@ MAX_FIT_PENALTY = 0.1
 
 # SH order used to resample ODFs between tessellations.
 SH_ORDER_MAX = 4
+
+# SH order used to store the ODFs in the peaks (PAM5) output.
+DEFAULT_PEAKS_SH_ORDER = 8
 
 
 def _default_sphere():
@@ -520,7 +524,9 @@ class OdffpModel(ReconstModel):
         the volume and hands each batch (2-D) to this method, which aligns every
         ODF to the pole and matches the whole batch against the dictionary in a
         single parallel call. Returns an :class:`OdffpFit` for a single voxel
-        (1-D input) or a :class:`~dipy.reconst.multi_voxel.MultiVoxelFit`.
+        (1-D input) or a :class:`~dipy.reconst.multi_voxel.MultiVoxelFit`. Pass
+        the fit to :func:`odffp_peaks` to build a
+        :class:`~dipy.direction.peaks.PeaksAndMetrics`.
         """
         single = data.ndim == 1
         batch = data.reshape(1, -1) if single else data
@@ -618,3 +624,67 @@ class OdffpFit(ReconstFit):
 
 
 OdffpModel._fit_class = OdffpFit
+
+
+def odffp_peaks(fit, *, sh_order_max=DEFAULT_PEAKS_SH_ORDER):
+    """Create a :class:`~dipy.direction.peaks.PeaksAndMetrics` from an ODF-FP fit.
+
+    Mirrors :func:`dipy.reconst.force.force_peaks`: it takes the fit object and
+    returns a ``PeaksAndMetrics`` holding the peak directions, indices and
+    amplitudes, with the matched ODFs stored as SH coefficients on
+    ``shm_coeff`` (reconstruct them with
+    :func:`~dipy.reconst.shm.sh_to_sf`). The result can be written to disk
+    with :func:`~dipy.io.peaks.save_pam`.
+
+    Works for a single :class:`OdffpFit` and for the
+    :class:`~dipy.reconst.multi_voxel.MultiVoxelFit` returned for a volume.
+
+    Parameters
+    ----------
+    fit : OdffpFit or MultiVoxelFit
+        The result of :meth:`OdffpModel.fit`.
+    sh_order_max : int, optional
+        Maximum SH order used to represent the stored ODFs.
+
+    Returns
+    -------
+    peaks : PeaksAndMetrics
+    """
+    sphere = fit.model.sphere
+    half = len(sphere.vertices) // 2
+    half_sphere = Sphere(xyz=sphere.vertices[:half])
+
+    odf = np.asarray(fit.odf())  # (..., half) on the reconstruction hemisphere
+    peak_dirs = np.nan_to_num(np.asarray(fit.peak_dirs), nan=0.0)
+    n_peaks = peak_dirs.shape[-2]
+    lead = peak_dirs.shape[:-2]  # () for a single voxel, (X, Y, Z) for a volume
+    n_vox = int(np.prod(lead)) if lead else 1
+
+    # Matched ODFs stored as SH coefficients, like FORCE.
+    shm_coeff = sf_to_sh(
+        odf, half_sphere, sh_order_max=sh_order_max, legacy=False
+    ).astype(np.float32)
+
+    # Main-peak vertex on the hemisphere and its ODF amplitude.
+    dirs = peak_dirs.reshape(n_vox, n_peaks, 3)
+    odf_flat = odf.reshape(n_vox, half)
+    valid = np.any(dirs != 0, axis=-1)  # (n_vox, n_peaks)
+    flat_valid = valid.reshape(-1)
+    flat_idx = np.zeros(n_vox * n_peaks, dtype=np.intp)
+    flat_dirs = dirs.reshape(-1, 3)
+    flat_idx[flat_valid] = (
+        np.argmax(flat_dirs[flat_valid] @ sphere.vertices.T, axis=1) % half
+    )
+    idx = flat_idx.reshape(n_vox, n_peaks)
+    values = np.take_along_axis(odf_flat, idx, axis=1)
+    values[~valid] = 0.0
+    indices = idx.astype(np.int32)
+    indices[~valid] = -1
+
+    peaks = PeaksAndMetrics()
+    peaks.peak_dirs = peak_dirs.astype(np.float32)
+    peaks.peak_values = values.reshape(lead + (n_peaks,)).astype(np.float32)
+    peaks.peak_indices = indices.reshape(lead + (n_peaks,))
+    peaks.shm_coeff = shm_coeff
+    peaks.sphere = half_sphere
+    return peaks
