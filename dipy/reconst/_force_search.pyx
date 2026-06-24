@@ -86,9 +86,9 @@ cdef void compute_distances_blas(
 
     Computes: distances_out[i, j] = queries[i, :] . database[j, :]
     """
-    cdef int nd = database.shape[0]
-    cdef int nq = queries.shape[0]
-    cdef int d = queries.shape[1]
+    cdef int nd = <int>database.shape[0]
+    cdef int nq = <int>queries.shape[0]
+    cdef int d = <int>queries.shape[1]
 
     cdef float alpha = 1.0
     cdef float beta = 0.0
@@ -252,9 +252,9 @@ def search_inner_product(
     indices : int64 array (n_queries, k)
         Indices of nearest neighbors
     """
-    cdef int n_queries = queries.shape[0]
-    cdef int n_database = database.shape[0]
-    cdef int d = queries.shape[1]
+    cdef cnp.npy_intp n_queries = queries.shape[0]
+    cdef cnp.npy_intp n_database = database.shape[0]
+    cdef cnp.npy_intp d = queries.shape[1]
 
     if queries.shape[1] != database.shape[1]:
         raise ValueError(
@@ -311,7 +311,7 @@ def inner_product_single(
     float
         Inner product
     """
-    cdef int d = x.shape[0]
+    cdef cnp.npy_intp d = x.shape[0]
 
     if x.shape[0] != y.shape[0]:
         raise ValueError(f"Dimension mismatch: {x.shape[0]} != {y.shape[0]}")
@@ -342,7 +342,7 @@ def l2sqr_single(
     float
         Squared L2 distance
     """
-    cdef int d = x.shape[0]
+    cdef cnp.npy_intp d = x.shape[0]
 
     if x.shape[0] != y.shape[0]:
         raise ValueError(f"Dimension mismatch: {x.shape[0]} != {y.shape[0]}")
