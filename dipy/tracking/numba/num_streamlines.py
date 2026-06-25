@@ -2,10 +2,10 @@ import math
 
 import numpy as np
 
-from dipy.tracking.jit.numba_njit.tracking_helpers import trilinear_interp_generator
+from dipy.tracking.jit.numba.tracking_helpers import trilinear_interp_generator
 
 
-def getNumStreamlinesProb_generator(
+def get_num_streamlines_prob_generator(
     DIMX,
     DIMY,
     DIMZ,
@@ -15,6 +15,7 @@ def getNumStreamlinesProb_generator(
     NUM_EDGES,
     SPHERE_SYMM,
     PMF_THRESHOLD_P,
+    REAL_DTYPE,
 ):
     from numba import njit, prange
 
@@ -139,27 +140,27 @@ def getNumStreamlinesProb_generator(
         return ndir
 
     @njit(parallel=True)
-    def getNumStreamlinesProb(
+    def get_num_streamlines_prob(
         seeds,  # float[nseed, 3]
         pmf_volume,  # float[nz, ny, nx, DIMT]
         sphere_vertices,  # float[DIMT, 3]
         sphere_edges,  # int[E, 2]
-        shDir0,  # float[nseed * DIMT, 3]   output: peak dirs per seed
-        slineOutOff,  # int[nseed + 1]      output: prefix-sum offsets
+        peak_dirs,  # float[nseed * DIMT, 3]   output: peak dirs per seed
+        sline_offsets,  # int[nseed + 1]      output: prefix-sum offsets
     ):
         nseed = seeds.shape[0]
 
         for slid in prange(nseed):
-            pmf_scratch = np.empty(DIMT, dtype=np.float64)
+            pmf_scratch = np.empty(DIMT, dtype=REAL_DTYPE)
 
             #  get peak directions at this seed
-            slineOutOff[slid] = get_direction_prob_start(
+            sline_offsets[slid] = get_direction_prob_start(
                 pmf_volume,
                 seeds[slid],
                 sphere_vertices,
                 sphere_edges,
-                shDir0[slid],
+                peak_dirs[slid],
                 pmf_scratch,
             )
 
-    return getNumStreamlinesProb
+    return get_num_streamlines_prob
