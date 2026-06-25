@@ -3,10 +3,10 @@ import random
 
 import numpy as np
 
-from dipy.tracking.jit.numba_njit.tracking_helpers import trilinear_interp_generator
+from dipy.tracking.jit.numba.tracking_helpers import trilinear_interp_generator
 
 
-def genStreamlinesMergeProb_generator(
+def gen_streamlines_prob_generator(
     DIMX,
     DIMY,
     DIMZ,
@@ -17,6 +17,7 @@ def genStreamlinesMergeProb_generator(
     TC_THRESHOLD,
     MAX_SLINE_LEN,
     PMF_THRESHOLD_P,
+    REAL_DTYPE,
 ):
     from numba import njit, prange
 
@@ -66,12 +67,12 @@ def genStreamlinesMergeProb_generator(
 
     @njit
     def get_direction_prob_step(
-        pmf_volume,  # float64[DIMX, DIMY, DIMZ, DIMT]
-        direction,  # float64[3]  current propagation direction
-        point,  # float64[3]                   current position
-        sphere_vertices,  # float64[DIMT, 3]
-        new_dir,  # float64[3]    output: chosen next direction
-        pmf_scratch,  # float64[DIMT]            scratch buffer
+        pmf_volume,  # float[DIMX, DIMY, DIMZ, DIMT]
+        direction,  # float[3]  current propagation direction
+        point,  # float[3]                   current position
+        sphere_vertices,  # float[DIMT, 3]
+        new_dir,  # float[3]    output: chosen next direction
+        pmf_scratch,  # float[DIMT]            scratch buffer
     ):
         # interpolate PMF
         rv = trilinear_interp(pmf_volume, point, pmf_scratch)
@@ -147,17 +148,17 @@ def genStreamlinesMergeProb_generator(
 
     @njit
     def tracker(
-        seed,  # float64[3]  starting position
-        first_step,  # float64[3]  initial direction
-        pmf_volume,  # float64[DIMX, DIMY, DIMZ, DIMT]
-        metric_map,  # float64[DIMX, DIMY, DIMZ]
-        sphere_vertices,  # float64[DIMT, 3]
-        streamline,  # float64[MAX_SLINE_LEN*2, 3]
-        pmf_scratch,  # float64[DIMT]  scratch buffer
+        seed,  # float[3]  starting position
+        first_step,  # float[3]  initial direction
+        pmf_volume,  # float[DIMX, DIMY, DIMZ, DIMT]
+        metric_map,  # float[DIMX, DIMY, DIMZ]
+        sphere_vertices,  # float[DIMT, 3]
+        streamline,  # float[MAX_SLINE_LEN*2, 3]
+        pmf_scratch,  # float[DIMT]  scratch buffer
     ):
-        point = np.empty(3, dtype=np.float64)
-        direction = np.empty(3, dtype=np.float64)
-        new_dir = np.empty(3, dtype=np.float64)
+        point = np.empty(3, dtype=REAL_DTYPE)
+        direction = np.empty(3, dtype=REAL_DTYPE)
+        new_dir = np.empty(3, dtype=REAL_DTYPE)
 
         point[0] = seed[0]
         point[1] = seed[1]
@@ -208,36 +209,36 @@ def genStreamlinesMergeProb_generator(
         return i, tissue_class
 
     @njit(parallel=True)
-    def genStreamlinesMergeProb(
-        seeds,  # float64[nseed, 3]
-        pmf_volume,  # float64[DIMX, DIMY, DIMZ, DIMT]
-        metric_map,  # float64[DIMX, DIMY, DIMZ]
-        sphere_vertices,  # float64[DIMT, 3]
-        slineOutOff,  # int32[nseed+1]   prefix-sum offsets from getNumStreamlinesProb
-        shDir0,  # float64[nseed*DIMT, 3]   peak directions from getNumStreamlinesProb
+    def gen_streamlines_prob(
+        seeds,  # float[nseed, 3]
+        pmf_volume,  # float[DIMX, DIMY, DIMZ, DIMT]
+        metric_map,  # float[DIMX, DIMY, DIMZ]
+        sphere_vertices,  # float[DIMT, 3]
+        sline_offsets,  # int32[nseed+1]   prefix-sum offsets from get_num_streamlines_prob
+        peak_dirs,  # float[nseed*DIMT, 3]   peak directions from get_num_streamlines_prob
         slineSeed,  # int32[total_slines]            output: seed index per streamline
-        slineLen,  # int32[total_slines]             output: length of each streamline
-        sline,  # float64[total_slines * MAX_SLINE_LEN*2, 3] output: streamline points
+        sline_len,  # int32[total_slines]             output: length of each streamline
+        sline,  # float[total_slines * MAX_SLINE_LEN*2, 3] output: streamline points
     ):
         nseed = seeds.shape[0]
 
         for slid in prange(nseed):
-            ndir = slineOutOff[slid + 1] - slineOutOff[slid]
-            slineOff = slineOutOff[slid]
+            ndir = sline_offsets[slid + 1] - sline_offsets[slid]
+            slineOff = sline_offsets[slid]
 
-            pmf_scratch = np.empty(DIMT, dtype=np.float64)
+            pmf_scratch = np.empty(DIMT, dtype=REAL_DTYPE)
 
             seed = seeds[slid]
 
             for i in range(ndir):
-                first_step = shDir0[slid, i]
+                first_step = peak_dirs[slid, i]
 
                 sline_start = slineOff * MAX_SLINE_LEN * 2
 
                 slineSeed[slineOff] = slid
 
                 # Backward pass: start from seed, direction = -first_step
-                neg_first = np.empty(3, dtype=np.float64)
+                neg_first = np.empty(3, dtype=REAL_DTYPE)
                 neg_first[0] = -first_step[0]
                 neg_first[1] = -first_step[1]
                 neg_first[2] = -first_step[2]
@@ -284,8 +285,8 @@ def genStreamlinesMergeProb_generator(
                 )
 
                 # Total length: backward points + forward points, junction counted once
-                slineLen[slineOff] = stepsB - 1 + stepsF
+                sline_len[slineOff] = stepsB - 1 + stepsF
 
                 slineOff += 1
 
-    return genStreamlinesMergeProb
+    return gen_streamlines_prob
