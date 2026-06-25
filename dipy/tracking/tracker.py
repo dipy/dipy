@@ -1,5 +1,3 @@
-from warnings import warn
-
 from nibabel.affines import voxel_sizes
 import numpy as np
 
@@ -11,11 +9,7 @@ from dipy.direction import (
 )
 from dipy.direction.peaks import peaks_from_positions
 from dipy.direction.pmf import SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
-from dipy.tracking.generic_jit_tracker import (
-    generate_array_sequence,
-    prepare_jit_tracker_data,
-    streamline_generator,
-)
+from dipy.tracking.generic_jit_tracker import prepare_jit_tracker_data
 from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tractogen import generate_tractogram
@@ -300,7 +294,7 @@ def probabilistic_tracking(
         return_all=return_all,
     )
 
-    numba, have_numba, _ = optional_package("numba")
+    _, have_numba, _ = optional_package("numba")
 
     if use_jit:
         if not have_numba:
@@ -309,18 +303,7 @@ def probabilistic_tracking(
                 "probabilistic tracker."
             )
         else:
-            from dipy.tracking.numba import numba_sl_chunk_generator
-
-        # TODO: implement seed_directions, save_seeds, and return_all
-        if seed_directions is not None:
-            warn(
-                (
-                    "seed_directions are not supported when "
-                    "using the JIT probabilistic tracker. "
-                    "Set jit=False to use seed_directions."
-                ),
-                stacklevel=2,
-            )
+            from dipy.tracking.numba import numba_sl_generator
 
         pmf_gen, selected_pmf, _, _ = _init_pmf(
             sh=sh,
@@ -350,10 +333,6 @@ def probabilistic_tracking(
             seed_positions = np.dot(seed_positions, inv_affine[:3, :3].T)
             seed_positions += inv_affine[:3, 3]
 
-        if nbr_threads != 0:
-            old_numba_n_threads = numba.get_num_threads()
-            numba.set_num_threads(nbr_threads)
-
         tracker_data = prepare_jit_tracker_data(
             pmf=pmf_field,
             stop_map=stop_map,
@@ -368,15 +347,17 @@ def probabilistic_tracking(
             chunk_size=jit_chunk_size,
         )
 
-        chunk_generator = numba_sl_chunk_generator(tracker_data)
+        sl_generator = numba_sl_generator(
+            tracker_data,
+            seed_positions,
+            seed_directions=seed_directions,
+            nbr_threads=nbr_threads,
+        )
 
-        if save_seeds or not return_all:
-            result = streamline_generator(chunk_generator, seed_positions)
+        if save_seeds:
+            return sl_generator, seed_positions
         else:
-            result = generate_array_sequence(chunk_generator, seed_positions)
-        if nbr_threads != 0:
-            numba.set_num_threads(old_numba_n_threads)
-        return result
+            return sl_generator
     else:
         return generic_tracking(
             seed_positions,
