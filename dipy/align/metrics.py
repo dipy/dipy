@@ -216,11 +216,7 @@ class SimilarityMetric:
 class MIMetric(SimilarityMetric):
     @warning_for_keywords()
     def __init__(self, dim, *, nbins=32, smooth=0.0):
-        r"""Mutual Information metric for SyN registration.
-
-        Similarity metric based on a Parzen-window estimate of the joint
-        intensity distribution. The metric computes dense displacement update
-        fields through the ``SimilarityMetric`` API.
+        r"""Mutual Information Similarity metric.
 
         Parameters
         ----------
@@ -235,9 +231,6 @@ class MIMetric(SimilarityMetric):
         super().__init__(dim)
         self.nbins = nbins
         self.smooth = smooth
-        self.energy = np.inf
-        self.gradient_static = None
-        self.gradient_moving = None
         self.forward_histogram = ph.ParzenJointHistogram(nbins)
         self.backward_histogram = ph.ParzenJointHistogram(nbins)
         self._connect_functions()
@@ -261,16 +254,8 @@ class MIMetric(SimilarityMetric):
         Computes image gradients in physical coordinates and prepares the
         histogram quantities needed to evaluate mutual information updates.
         """
-        if self.static_image.dtype != self.moving_image.dtype:
-            raise ValueError("Static and moving images must have the same dtype.")
-
-        dtype = np.asarray(self.moving_image).dtype
-
-        if dtype not in (np.float32, np.float64):
-            raise ValueError("MIMetric expects float32 or float64 images.")
-
         self.gradient_moving = np.empty(
-            shape=self.moving_image.shape + (self.dim,), dtype=dtype
+            shape=self.moving_image.shape + (self.dim,), dtype=np.float32
         )
         for i, grad in enumerate(gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
@@ -282,7 +267,7 @@ class MIMetric(SimilarityMetric):
             self.reorient_vector_field(self.gradient_moving, self.moving_direction)
 
         self.gradient_static = np.empty(
-            shape=self.static_image.shape + (self.dim,), dtype=dtype
+            shape=self.static_image.shape + (self.dim,), dtype=np.float32
         )
         for i, grad in enumerate(gradient(self.static_image)):
             self.gradient_static[..., i] = grad
@@ -294,16 +279,7 @@ class MIMetric(SimilarityMetric):
             self.reorient_vector_field(self.gradient_static, self.static_direction)
 
         self.forward_histogram.setup(self.static_image, self.moving_image)
-        self.forward_histogram.update_pdfs_dense(self.static_image, self.moving_image)
-        self.forward_histogram.mi_weights = np.zeros_like(self.forward_histogram.joint)
-        self.energy = self.forward_histogram.compute_mi(local_support=True)
-
         self.backward_histogram.setup(self.moving_image, self.static_image)
-        self.backward_histogram.update_pdfs_dense(self.moving_image, self.static_image)
-        self.backward_histogram.mi_weights = np.zeros_like(
-            self.backward_histogram.joint
-        )
-        self.backward_histogram.compute_mi(local_support=True)
 
     def compute_forward(self):
         r"""Computes one step bringing the moving image towards the static.
@@ -321,6 +297,7 @@ class MIMetric(SimilarityMetric):
             self.gradient_moving,
             displacement,
         )
+        self.energy = self.forward_histogram.metric_val
         for i in range(self.dim):
             displacement[..., i] = ndimage.gaussian_filter(
                 displacement[..., i], self.smooth
@@ -343,6 +320,7 @@ class MIMetric(SimilarityMetric):
             self.gradient_static,
             displacement,
         )
+        self.energy = self.backward_histogram.metric_val
         for i in range(self.dim):
             displacement[..., i] = ndimage.gaussian_filter(
                 displacement[..., i], self.smooth

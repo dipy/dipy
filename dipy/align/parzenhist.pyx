@@ -426,23 +426,20 @@ class ParzenJointHistogram:
         """
         if static.shape != moving.shape:
             raise ValueError("Images must have the same shape")
+
         dim = len(static.shape)
-        if not dim in [2, 3]:
-            msg = 'Only dimensions 2 and 3 are supported. ' +\
-                str(dim) + ' received'
+        if dim not in [2, 3]:
+            msg = "Only dimensions 2 and 3 are supported. " + str(dim) + " received"
             raise ValueError(msg)
 
         if mgradient.shape != moving.shape + (dim,):
-            raise ValueError('Invalid gradient field dimensions.')
+            raise ValueError("Invalid gradient field dimensions.")
 
         if update_field is None:
-            raise ValueError('An update field buffer is required.')
+            raise ValueError("An update field buffer is required.")
 
         if update_field.shape != moving.shape + (dim,):
-            raise ValueError('Invalid update field dimensions.')
-
-        if update_field.dtype != mgradient.dtype:
-            raise ValueError('Gradient and update field dtypes must match.')
+            raise ValueError("Invalid update field dimensions.")
 
         if static.dtype != moving.dtype:
             raise ValueError("Static and moving images must have the same dtype.")
@@ -453,40 +450,69 @@ class ParzenJointHistogram:
         if update_field.dtype != mgradient.dtype:
             raise ValueError("Gradient and update field dtypes must match.")
 
+        if static.dtype not in [np.float32, np.float64]:
+            raise ValueError("Images must be of dtype float32 or float64.")
+
         if not self.setup_called:
             self.setup(static, moving, smask=smask, mmask=mmask)
 
+        n_offsets = 2 * self.padding + 1
+        local_derivative_by_parzen_bin = np.zeros(
+            (n_offsets,) + moving.shape + (dim,), dtype=mgradient.dtype)
+        joint_pdf_index = np.zeros(moving.shape, dtype=np.intp)
+
         if self.mi_weights is None or self.mi_weights.shape != self.joint.shape:
             self.mi_weights = np.zeros_like(self.joint)
-            self.compute_mi(local_support=True)
 
-        update_field[...] = 0
         if dim == 2:
             if mgradient.dtype == np.float64:
-                _joint_pdf_gradient_dense_local_support_2d[cython.double](
-                    static, moving, mgradient, self.mi_weights, smask, mmask,
+                _compute_pdfs_dense_and_local_derivatives_2d[cython.double](
+                    static, moving, mgradient, smask, mmask,
                     self.smin, self.sdelta, self.mmin, self.mdelta,
-                    self.nbins, self.padding, update_field)
+                    self.nbins, self.padding, self.joint, self.smarginal,
+                    self.mmarginal, local_derivative_by_parzen_bin,
+                    joint_pdf_index)
             elif mgradient.dtype == np.float32:
-                _joint_pdf_gradient_dense_local_support_2d[cython.float](
-                    static, moving, mgradient, self.mi_weights, smask, mmask,
+                _compute_pdfs_dense_and_local_derivatives_2d[cython.float](
+                    static, moving, mgradient, smask, mmask,
                     self.smin, self.sdelta, self.mmin, self.mdelta,
-                    self.nbins, self.padding, update_field)
+                    self.nbins, self.padding, self.joint, self.smarginal,
+                    self.mmarginal, local_derivative_by_parzen_bin,
+                    joint_pdf_index)
             else:
                 raise ValueError('Grad. field dtype must be floating point')
+
+            self.compute_mi(local_support=True)
+
+            _apply_mi_weights_to_cached_local_derivatives_2d(
+                local_derivative_by_parzen_bin, joint_pdf_index,
+                smask, mmask, self.mi_weights, self.mdelta,
+                self.nbins, self.padding, update_field)
+
         elif dim == 3:
             if mgradient.dtype == np.float64:
-                _joint_pdf_gradient_dense_local_support_3d[cython.double](
-                    static, moving, mgradient, self.mi_weights, smask, mmask,
+                _compute_pdfs_dense_and_local_derivatives_3d[cython.double](
+                    static, moving, mgradient, smask, mmask,
                     self.smin, self.sdelta, self.mmin, self.mdelta,
-                    self.nbins, self.padding, update_field)
+                    self.nbins, self.padding, self.joint, self.smarginal,
+                    self.mmarginal, local_derivative_by_parzen_bin,
+                    joint_pdf_index)
             elif mgradient.dtype == np.float32:
-                _joint_pdf_gradient_dense_local_support_3d[cython.float](
-                    static, moving, mgradient, self.mi_weights, smask, mmask,
+                _compute_pdfs_dense_and_local_derivatives_3d[cython.float](
+                    static, moving, mgradient, smask, mmask,
                     self.smin, self.sdelta, self.mmin, self.mdelta,
-                    self.nbins, self.padding, update_field)
+                    self.nbins, self.padding, self.joint, self.smarginal,
+                    self.mmarginal, local_derivative_by_parzen_bin,
+                    joint_pdf_index)
             else:
                 raise ValueError('Grad. field dtype must be floating point')
+
+            self.compute_mi(local_support=True)
+
+            _apply_mi_weights_to_cached_local_derivatives_3d(
+                local_derivative_by_parzen_bin, joint_pdf_index,
+                smask, mmask, self.mi_weights, self.mdelta,
+                self.nbins, self.padding, update_field)
 
     def update_gradient_sparse(self, theta, transform, sval, mval,
                                sample_points, mgradient):
@@ -786,14 +812,135 @@ cdef _compute_pdfs_dense_2d(floating[:, :] static, floating[:, :] moving,
                 r = _bin_index(rn, nbins, padding)
                 cn = _bin_normalize(moving[i, j], mmin, mdelta)
                 c = _bin_index(cn, nbins, padding)
-                spline_arg = (c - 2) - cn
+                spline_arg = (c - padding) - cn
 
                 smarginal[r] += 1
-                for offset in range(-2, 3):
+                for offset in range(-padding, padding + 1):
                     val = _cubic_spline(spline_arg)
                     joint[r, c + offset] += val
                     total_sum += val
                     spline_arg += 1.0
+        if total_sum > 0:
+            for i in range(nbins):
+                for j in range(nbins):
+                    joint[i, j] /= valid_points
+
+            for i in range(nbins):
+                smarginal[i] /= valid_points
+
+            for j in range(nbins):
+                mmarginal[j] = 0
+                for i in range(nbins):
+                    mmarginal[j] += joint[i, j]
+
+
+cdef _compute_pdfs_dense_and_local_derivatives_2d(
+        floating[:, :] static, floating[:, :] moving,
+        floating[:, :, :] mgradient, int[:, :] smask, int[:, :] mmask,
+        double smin, double sdelta, double mmin, double mdelta,
+        int nbins, int padding, double[:, :] joint,
+        double[:] smarginal, double[:] mmarginal,
+        floating[:, :, :, :] local_derivative_by_parzen_bin,
+        cnp.npy_intp[:, :] joint_pdf_index):
+    r"""Joint Probability Density Function of intensities and cached dense
+    local-support derivatives for two 2D images.
+
+    This function has the same PDF-building role as `_compute_pdfs_dense_2d`,
+    but it also caches the local derivative contributions required by the dense
+    local-support MI update.
+
+    Parameters
+    ----------
+    static : array, shape (R, C)
+        static image
+    moving : array, shape (R, C)
+        moving image
+    mgradient : array, shape (R, C, 2)
+        gradient of the moving image
+    smask : array, shape (R, C)
+        mask of static object being registered (a binary array with 1's inside
+        the object of interest and 0's along the background)
+    mmask : array, shape (R, C)
+        mask of moving object being registered (a binary array with 1's inside
+        the object of interest and 0's along the background)
+    smin : float
+        the minimum observed intensity associated with the static image, which
+        was used to define the joint PDF
+    sdelta : float
+        bin size associated with the intensities of the static image
+    mmin : float
+        the minimum observed intensity associated with the moving image, which
+        was used to define the joint PDF
+    mdelta : float
+        bin size associated with the intensities of the moving image
+    nbins : int
+        number of histogram bins
+    padding : int
+        number of bins used as padding (the total bins used for padding at both
+        sides of the histogram is actually 2*padding)
+    joint : array, shape (nbins, nbins)
+        the array to write the joint PDF
+    smarginal : array, shape (nbins,)
+        the array to write the marginal PDF associated with the static image
+    mmarginal : array, shape (nbins,)
+        the array to write the marginal PDF associated with the moving image
+    local_derivative_by_parzen_bin : array, shape (2*padding + 1, R, C, 2)
+        the array to write the unweighted local derivative contribution of each
+        pixel displacement component to each affected moving Parzen bin
+    joint_pdf_index : array, shape (R, C)
+        the array to write the flattened index of the first joint-PDF bin affected
+        by each pixel. For a voxel assigned to static bin r and moving bin c, this
+        value is r * nbins + (c - padding)
+    """
+    cdef:
+        cnp.npy_intp nrows = static.shape[0]
+        cnp.npy_intp ncols = static.shape[1]
+        cnp.npy_intp offset, offset_id, valid_points
+        cnp.npy_intp i, j, r, c
+        double rn, cn
+        double val, dval, spline_arg, total_sum
+
+    joint[...] = 0
+    smarginal[:] = 0
+    mmarginal[:] = 0
+    local_derivative_by_parzen_bin[...] = 0
+    joint_pdf_index[...] = 0
+    total_sum = 0
+    with nogil:
+        valid_points = 0
+        for i in range(nrows):
+            for j in range(ncols):
+                if smask is not None and smask[i, j] == 0:
+                    continue
+                if mmask is not None and mmask[i, j] == 0:
+                    continue
+                valid_points += 1
+                rn = _bin_normalize(static[i, j], smin, sdelta)
+                r = _bin_index(rn, nbins, padding)
+                cn = _bin_normalize(moving[i, j], mmin, mdelta)
+                c = _bin_index(cn, nbins, padding)
+
+                joint_pdf_index[i, j] = r * nbins + (c - padding)
+
+                spline_arg = (c - padding) - cn
+                smarginal[r] += 1
+
+                offset_id = 0
+                for offset in range(-padding, padding + 1):
+                    val = _cubic_spline(spline_arg)
+                    dval = _cubic_spline_derivative(spline_arg)
+
+                    joint[r, c + offset] += val
+                    total_sum += val
+
+                    local_derivative_by_parzen_bin[offset_id, i, j, 0] = (
+                        -dval * mgradient[i, j, 0])
+                    local_derivative_by_parzen_bin[offset_id, i, j, 1] = (
+                        -dval * mgradient[i, j, 1])
+
+                    spline_arg += 1.0
+                    offset_id += 1
+
         if total_sum > 0:
             for i in range(nbins):
                 for j in range(nbins):
@@ -876,14 +1023,141 @@ cdef _compute_pdfs_dense_3d(floating[:, :, :] static, floating[:, :, :] moving,
                     r = _bin_index(rn, nbins, padding)
                     cn = _bin_normalize(moving[k, i, j], mmin, mdelta)
                     c = _bin_index(cn, nbins, padding)
-                    spline_arg = (c - 2) - cn
+                    spline_arg = (c - padding) - cn
 
                     smarginal[r] += 1
-                    for offset in range(-2, 3):
+                    for offset in range(-padding, padding + 1):
                         val = _cubic_spline(spline_arg)
                         joint[r, c + offset] += val
                         total_sum += val
                         spline_arg += 1.0
+
+        if total_sum > 0:
+            for i in range(nbins):
+                for j in range(nbins):
+                    joint[i, j] /= total_sum
+
+            for i in range(nbins):
+                smarginal[i] /= valid_points
+
+            for j in range(nbins):
+                mmarginal[j] = 0
+                for i in range(nbins):
+                    mmarginal[j] += joint[i, j]
+
+
+cdef _compute_pdfs_dense_and_local_derivatives_3d(
+        floating[:, :, :] static, floating[:, :, :] moving,
+        floating[:, :, :, :] mgradient, int[:, :, :] smask,
+        int[:, :, :] mmask, double smin, double sdelta,
+        double mmin, double mdelta, int nbins, int padding,
+        double[:, :] joint, double[:] smarginal, double[:] mmarginal,
+        floating[:, :, :, :, :] local_derivative_by_parzen_bin,
+        cnp.npy_intp[:, :, :] joint_pdf_index):
+    r"""Joint Probability Density Function of intensities and cached dense
+    local-support derivatives for 3D images.
+
+    This function has the same PDF-building role as `_compute_pdfs_dense_3d`,
+    but it also caches the local derivative contributions required by the dense
+    local-support MI update.
+
+    Parameters
+    ----------
+    static : array, shape (S, R, C)
+        static image
+    moving : array, shape (S, R, C)
+        moving image
+    mgradient : array, shape (S, R, C, 3)
+        gradient of the moving image
+    smask : array, shape (S, R, C)
+        mask of static object being registered (a binary array with 1's inside
+        the object of interest and 0's along the background)
+    mmask : array, shape (S, R, C)
+        mask of moving object being registered (a binary array with 1's inside
+        the object of interest and 0's along the background)
+    smin : float
+        the minimum observed intensity associated with the static image, which
+        was used to define the joint PDF
+    sdelta : float
+        bin size associated with the intensities of the static image
+    mmin : float
+        the minimum observed intensity associated with the moving image, which
+        was used to define the joint PDF
+    mdelta : float
+        bin size associated with the intensities of the moving image
+    nbins : int
+        number of histogram bins
+    padding : int
+        number of bins used as padding (the total bins used for padding at both
+        sides of the histogram is actually 2*padding)
+    joint : array, shape (nbins, nbins)
+        the array to write the joint PDF
+    smarginal : array, shape (nbins,)
+        the array to write the marginal PDF associated with the static image
+    mmarginal : array, shape (nbins,)
+        the array to write the marginal PDF associated with the moving image
+    local_derivative_by_parzen_bin : array, shape (2*padding + 1, S, R, C, 3)
+        the array to write the unweighted local derivative contribution of each
+        voxel displacement component to each affected moving Parzen bin
+    joint_pdf_index : array, shape (S, R, C)
+        the array to write the flattened index of the first joint-PDF bin affected
+        by each voxel. For a voxel assigned to static bin r and moving bin c, this
+        value is r * nbins + (c - padding)
+    """
+    cdef:
+        cnp.npy_intp nslices = static.shape[0]
+        cnp.npy_intp nrows = static.shape[1]
+        cnp.npy_intp ncols = static.shape[2]
+        cnp.npy_intp offset, offset_id, valid_points
+        cnp.npy_intp k, i, j, r, c
+        double rn, cn
+        double val, dval, spline_arg, total_sum
+
+    joint[...] = 0
+    smarginal[:] = 0
+    mmarginal[:] = 0
+    local_derivative_by_parzen_bin[...] = 0
+    joint_pdf_index[...] = 0
+
+    total_sum = 0
+    with nogil:
+        valid_points = 0
+        for k in range(nslices):
+            for i in range(nrows):
+                for j in range(ncols):
+                    if smask is not None and smask[k, i, j] == 0:
+                        continue
+                    if mmask is not None and mmask[k, i, j] == 0:
+                        continue
+
+                    valid_points += 1
+                    rn = _bin_normalize(static[k, i, j], smin, sdelta)
+                    r = _bin_index(rn, nbins, padding)
+                    cn = _bin_normalize(moving[k, i, j], mmin, mdelta)
+                    c = _bin_index(cn, nbins, padding)
+
+                    joint_pdf_index[k, i, j] = r * nbins + (c - padding)
+
+                    spline_arg = (c - padding) - cn
+                    smarginal[r] += 1
+
+                    offset_id = 0
+                    for offset in range(-padding, padding + 1):
+                        val = _cubic_spline(spline_arg)
+                        dval = _cubic_spline_derivative(spline_arg)
+
+                        joint[r, c + offset] += val
+                        total_sum += val
+
+                        local_derivative_by_parzen_bin[offset_id, k, i, j, 0] = (
+                            -dval * mgradient[k, i, j, 0])
+                        local_derivative_by_parzen_bin[offset_id, k, i, j, 1] = (
+                            -dval * mgradient[k, i, j, 1])
+                        local_derivative_by_parzen_bin[offset_id, k, i, j, 2] = (
+                            -dval * mgradient[k, i, j, 2])
+
+                        spline_arg += 1.0
+                        offset_id += 1
 
         if total_sum > 0:
             for i in range(nbins):
@@ -952,10 +1226,10 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
             r = _bin_index(rn, nbins, padding)
             cn = _bin_normalize(mval[i], mmin, mdelta)
             c = _bin_index(cn, nbins, padding)
-            spline_arg = (c - 2) - cn
+            spline_arg = (c - padding) - cn
 
             smarginal[r] += 1
-            for offset in range(-2, 3):
+            for offset in range(-padding, padding + 1):
                 val = _cubic_spline(spline_arg)
                 joint[r, c + offset] += val
                 total_sum += val
@@ -1066,9 +1340,9 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
                 r = _bin_index(rn, nbins, padding)
                 cn = _bin_normalize(moving[i, j], mmin, mdelta)
                 c = _bin_index(cn, nbins, padding)
-                spline_arg = (c - 2) - cn
+                spline_arg = (c - padding) - cn
 
-                for offset in range(-2, 3):
+                for offset in range(-padding, padding + 1):
                     val = _cubic_spline_derivative(spline_arg)
                     for k in range(n):
                         grad_pdf[r, c + offset, k] -= val * prod[k]
@@ -1179,9 +1453,9 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                     r = _bin_index(rn, nbins, padding)
                     cn = _bin_normalize(moving[k, i, j], mmin, mdelta)
                     c = _bin_index(cn, nbins, padding)
-                    spline_arg = (c - 2) - cn
+                    spline_arg = (c - padding) - cn
 
-                    for offset in range(-2, 3):
+                    for offset in range(-padding, padding + 1):
                         val = _cubic_spline_derivative(spline_arg)
                         for l in range(n):
                             grad_pdf[r, c + offset, l] -= val * prod[l]
@@ -1269,9 +1543,9 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
             r = _bin_index(rn, nbins, padding)
             cn = _bin_normalize(mval[i], mmin, mdelta)
             c = _bin_index(cn, nbins, padding)
-            spline_arg = (c - 2) - cn
+            spline_arg = (c - padding) - cn
 
-            for offset in range(-2, 3):
+            for offset in range(-padding, padding + 1):
                 val = _cubic_spline_derivative(spline_arg)
                 for j in range(n):
                     grad_pdf[r, c + offset, j] -= val * prod[j]
@@ -1361,9 +1635,9 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
             r = _bin_index(rn, nbins, padding)
             cn = _bin_normalize(mval[i], mmin, mdelta)
             c = _bin_index(cn, nbins, padding)
-            spline_arg = (c - 2) - cn
+            spline_arg = (c - padding) - cn
 
-            for offset in range(-2, 3):
+            for offset in range(-padding, padding + 1):
                 val = _cubic_spline_derivative(spline_arg)
                 for j in range(n):
                     grad_pdf[r, c + offset, j] -= val * prod[j]
@@ -1377,48 +1651,36 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                         grad_pdf[i, j, k] /= norm_factor
 
 
-cdef _joint_pdf_gradient_dense_local_support_2d(floating[:, :] static,
-                                                floating[:, :] moving,
-                                                floating[:, :, :] mgradient,
-                                                double[:, :] mi_weights,
-                                                int[:, :] smask,
-                                                int[:, :] mmask,
-                                                double smin,
-                                                double sdelta,
-                                                double mmin,
-                                                double mdelta,
-                                                int nbins,
-                                                int padding,
-                                                floating[:, :, :] update_field):
-    r""" Dense local-support gradient of the mutual information
+cdef _apply_mi_weights_to_cached_local_derivatives_2d(
+        floating[:, :, :, :] local_derivative_by_parzen_bin,
+        cnp.npy_intp[:, :] joint_pdf_index,
+        int[:, :] smask, int[:, :] mmask,
+        double[:, :] mi_weights, double mdelta, int nbins, int padding,
+        floating[:, :, :] update_field):
+    r"""Apply MI bin weights to cached 2D local-support derivatives.
 
-    Computes the dense vector field of partial derivatives of the mutual
-    information w.r.t. local displacement parameters.
+    This function combines the MI weights computed from the joint PDF with the
+    cached local derivative contributions produced by
+    `_compute_pdfs_dense_and_local_derivatives_2d`. For each valid pixel, the
+    flattened joint-PDF index is used to recover the affected joint histogram bins.
+    The corresponding MI weights are multiplied by the cached local derivatives and
+    accumulated into the dense update field.
 
     Parameters
     ----------
-    static : array, shape (R, C)
-        static image
-    moving : array, shape (R, C)
-        moving image
-    mgradient : array, shape (R, C, 2)
-        the gradient of the moving image
-    mi_weights : array, shape (nbins, nbins)
-        the mutual information weight associated with each joint histogram bin
+    local_derivative_by_parzen_bin : array, shape (2*padding + 1, R, C, 2)
+        cached unweighted local derivative contribution of each pixel displacement
+        component to each affected moving Parzen bin
+    joint_pdf_index : array, shape (R, C)
+        flattened index of the first joint-PDF bin affected by each pixel
     smask : array, shape (R, C)
-        mask of static object being registered (a binary array with 1's inside
-        the object of interest and 0's along the background)
+        mask of static object being registered. Pixels with value 0 are ignored
+        when applying the cached local derivative contributions.
     mmask : array, shape (R, C)
-        mask of moving object being registered (a binary array with 1's inside
-        the object of interest and 0's along the background)
-    smin : float
-        the minimum observed intensity associated with the static image, which
-        was used to define the joint PDF
-    sdelta : float
-        bin size associated with the intensities of the static image
-    mmin : float
-        the minimum observed intensity associated with the moving image, which
-        was used to define the joint PDF
+        mask of moving object being registered. Pixels with value 0 are ignored
+        when applying the cached local derivative contributions.
+    mi_weights : array, shape (nbins, nbins)
+        MI derivative weight associated with each joint histogram bin
     mdelta : float
         bin size associated with the intensities of the moving image
     nbins : int
@@ -1427,15 +1689,15 @@ cdef _joint_pdf_gradient_dense_local_support_2d(floating[:, :] static,
         number of bins used as padding (the total bins used for padding at both
         sides of the histogram is actually 2*padding)
     update_field : array, shape (R, C, 2)
-        the array to write the dense update field to
+        the array to write the dense local-support MI update field
     """
     cdef:
-        cnp.npy_intp nrows = static.shape[0]
-        cnp.npy_intp ncols = static.shape[1]
-        cnp.npy_intp offset, valid_points
-        cnp.npy_intp i, j, r, c
-        double rn, cn
-        double val, spline_arg, norm_factor
+        cnp.npy_intp nrows = update_field.shape[0]
+        cnp.npy_intp ncols = update_field.shape[1]
+        cnp.npy_intp i, j, offset_id, idx, r, c, valid_points
+        double weight, norm_factor
+
+    update_field[...] = 0
 
     with nogil:
         valid_points = 0
@@ -1447,18 +1709,21 @@ cdef _joint_pdf_gradient_dense_local_support_2d(floating[:, :] static,
                     continue
 
                 valid_points += 1
-                rn = _bin_normalize(static[i, j], smin, sdelta)
-                r = _bin_index(rn, nbins, padding)
-                cn = _bin_normalize(moving[i, j], mmin, mdelta)
-                c = _bin_index(cn, nbins, padding)
-                spline_arg = (c - 2) - cn
+                idx = joint_pdf_index[i, j]
 
-                for offset in range(-2, 3):
-                    val = (_cubic_spline_derivative(spline_arg) *
-                           mi_weights[r, c + offset])
-                    update_field[i, j, 0] -= val * mgradient[i, j, 0]
-                    update_field[i, j, 1] -= val * mgradient[i, j, 1]
-                    spline_arg += 1.0
+                for offset_id in range(2 * padding + 1):
+                    r = idx // nbins
+                    c = idx - r * nbins
+                    weight = mi_weights[r, c]
+
+                    update_field[i, j, 0] += (
+                        weight * local_derivative_by_parzen_bin[
+                            offset_id, i, j, 0])
+                    update_field[i, j, 1] += (
+                        weight * local_derivative_by_parzen_bin[
+                            offset_id, i, j, 1])
+
+                    idx += 1
 
         norm_factor = valid_points * mdelta
         if norm_factor > 0:
@@ -1468,48 +1733,36 @@ cdef _joint_pdf_gradient_dense_local_support_2d(floating[:, :] static,
                     update_field[i, j, 1] /= norm_factor
 
 
-cdef _joint_pdf_gradient_dense_local_support_3d(floating[:, :, :] static,
-                                                floating[:, :, :] moving,
-                                                floating[:, :, :, :] mgradient,
-                                                double[:, :] mi_weights,
-                                                int[:, :, :] smask,
-                                                int[:, :, :] mmask,
-                                                double smin,
-                                                double sdelta,
-                                                double mmin,
-                                                double mdelta,
-                                                int nbins,
-                                                int padding,
-                                                floating[:, :, :, :] update_field):
-    r""" Dense local-support gradient of the mutual information
+cdef _apply_mi_weights_to_cached_local_derivatives_3d(
+        floating[:, :, :, :, :] local_derivative_by_parzen_bin,
+        cnp.npy_intp[:, :, :] joint_pdf_index,
+        int[:, :, :] smask, int[:, :, :] mmask,
+        double[:, :] mi_weights, double mdelta, int nbins, int padding,
+        floating[:, :, :, :] update_field):
+    r"""Apply MI bin weights to cached 3D local-support derivatives.
 
-    Computes the dense vector field of partial derivatives of the mutual
-    information w.r.t. local displacement parameters.
+    This function combines the MI weights computed from the joint PDF with the
+    cached local derivative contributions produced by
+    `_compute_pdfs_dense_and_local_derivatives_3d`. For each valid voxel, the
+    flattened joint-PDF index is used to recover the affected joint histogram bins.
+    The corresponding MI weights are multiplied by the cached local derivatives and
+    accumulated into the dense update field.
 
     Parameters
     ----------
-    static : array, shape (S, R, C)
-        static image
-    moving : array, shape (S, R, C)
-        moving image
-    mgradient : array, shape (S, R, C, 3)
-        the gradient of the moving image
-    mi_weights : array, shape (nbins, nbins)
-        the mutual information weight associated with each joint histogram bin
+    local_derivative_by_parzen_bin : array, shape (2*padding + 1, S, R, C, 3)
+        cached unweighted local derivative contribution of each voxel displacement
+        component to each affected moving Parzen bin
+    joint_pdf_index : array, shape (S, R, C)
+        flattened index of the first joint-PDF bin affected by each voxel
     smask : array, shape (S, R, C)
-        mask of static object being registered (a binary array with 1's inside
-        the object of interest and 0's along the background)
+        mask of static object being registered. Voxels with value 0 are ignored
+        when applying the cached local derivative contributions.
     mmask : array, shape (S, R, C)
-        mask of moving object being registered (a binary array with 1's inside
-        the object of interest and 0's along the background)
-    smin : float
-        the minimum observed intensity associated with the static image, which
-        was used to define the joint PDF
-    sdelta : float
-        bin size associated with the intensities of the static image
-    mmin : float
-        the minimum observed intensity associated with the moving image, which
-        was used to define the joint PDF
+        mask of moving object being registered. Voxels with value 0 are ignored
+        when applying the cached local derivative contributions.
+    mi_weights : array, shape (nbins, nbins)
+        MI derivative weight associated with each joint histogram bin
     mdelta : float
         bin size associated with the intensities of the moving image
     nbins : int
@@ -1518,16 +1771,16 @@ cdef _joint_pdf_gradient_dense_local_support_3d(floating[:, :, :] static,
         number of bins used as padding (the total bins used for padding at both
         sides of the histogram is actually 2*padding)
     update_field : array, shape (S, R, C, 3)
-        the array to write the dense update field to
+        the array to write the dense local-support MI update field
     """
     cdef:
-        cnp.npy_intp nslices = static.shape[0]
-        cnp.npy_intp nrows = static.shape[1]
-        cnp.npy_intp ncols = static.shape[2]
-        cnp.npy_intp offset, valid_points
-        cnp.npy_intp k, i, j, r, c
-        double rn, cn
-        double val, spline_arg, norm_factor
+        cnp.npy_intp nslices = update_field.shape[0]
+        cnp.npy_intp nrows = update_field.shape[1]
+        cnp.npy_intp ncols = update_field.shape[2]
+        cnp.npy_intp k, i, j, offset_id, idx, r, c, valid_points
+        double weight, norm_factor
+
+    update_field[...] = 0
 
     with nogil:
         valid_points = 0
@@ -1540,22 +1793,24 @@ cdef _joint_pdf_gradient_dense_local_support_3d(floating[:, :, :] static,
                         continue
 
                     valid_points += 1
-                    rn = _bin_normalize(static[k, i, j], smin, sdelta)
-                    r = _bin_index(rn, nbins, padding)
-                    cn = _bin_normalize(moving[k, i, j], mmin, mdelta)
-                    c = _bin_index(cn, nbins, padding)
-                    spline_arg = (c - 2) - cn
+                    idx = joint_pdf_index[k, i, j]
 
-                    for offset in range(-2, 3):
-                        val = (_cubic_spline_derivative(spline_arg) *
-                               mi_weights[r, c + offset])
-                        update_field[k, i, j, 0] -= (
-                            val * mgradient[k, i, j, 0])
-                        update_field[k, i, j, 1] -= (
-                            val * mgradient[k, i, j, 1])
-                        update_field[k, i, j, 2] -= (
-                            val * mgradient[k, i, j, 2])
-                        spline_arg += 1.0
+                    for offset_id in range(2 * padding + 1):
+                        r = idx // nbins
+                        c = idx - r * nbins
+                        weight = mi_weights[r, c]
+
+                        update_field[k, i, j, 0] += (
+                            weight * local_derivative_by_parzen_bin[
+                                offset_id, k, i, j, 0])
+                        update_field[k, i, j, 1] += (
+                            weight * local_derivative_by_parzen_bin[
+                                offset_id, k, i, j, 1])
+                        update_field[k, i, j, 2] += (
+                            weight * local_derivative_by_parzen_bin[
+                                offset_id, k, i, j, 2])
+
+                        idx += 1
 
         norm_factor = valid_points * mdelta
         if norm_factor > 0:
