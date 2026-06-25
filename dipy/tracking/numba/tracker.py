@@ -1,4 +1,3 @@
-import numba
 import numpy as np
 
 from dipy.tracking.generic_jit_tracker import StreamlineChunk, streamline_generator
@@ -11,6 +10,8 @@ from dipy.tracking.numba.num_streamlines import (
 
 
 def numba_sl_generator(jit_tracker_data, seeds, seed_directions=None, nbr_threads=0):
+    import numba
+
     if nbr_threads != 0:
         old_numba_n_threads = numba.get_num_threads()
         numba.set_num_threads(nbr_threads)
