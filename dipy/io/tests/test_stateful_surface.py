@@ -11,6 +11,7 @@ from dipy.data import get_fnames
 from dipy.io.stateful_surface import StatefulSurface
 from dipy.io.surface import load_surface, save_surface
 from dipy.io.utils import Origin, Space, recursive_compare
+from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
 vtk, have_vtk, setup_module = optional_package(
@@ -217,7 +218,8 @@ def test_equality():
     npt.assert_(sfs_1 == sfs_2)
 
 
-def test_random_space_transformations():
+@set_random_number_generator(0)
+def test_random_space_transformations(rng):
     sfs = load_surface(
         FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
     )
@@ -229,15 +231,15 @@ def test_random_space_transformations():
 
     # Apply 100 random transformations
     for _ in range(100):
-        space = np.random.choice(SPACES, 1, replace=False)
-        origin = np.random.choice(ORIGINS, 1, replace=False)
+        space = rng.choice(SPACES)
+        origin = rng.choice(ORIGINS)
         sfs.to_space(space)
         sfs.to_origin(origin)
 
     # Return to initial space and compare
     sfs.to_rasmm()
     sfs.to_center()
-    npt.assert_almost_equal(initial_vertices, sfs.vertices, decimal=5)
+    npt.assert_array_almost_equal(initial_vertices, sfs.vertices, decimal=5)
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
