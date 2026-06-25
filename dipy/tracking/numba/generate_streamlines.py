@@ -3,7 +3,7 @@ import random
 
 import numpy as np
 
-from dipy.tracking.jit.numba.tracking_helpers import trilinear_interp_generator
+from dipy.tracking.numba.tracking_helpers import trilinear_interp_generator
 
 
 def gen_streamlines_prob_generator(

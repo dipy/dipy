@@ -1,17 +1,12 @@
-from collections.abc import Callable
 from dataclasses import dataclass
 import logging
-import math
 
-from nibabel.streamlines.array_sequence import MEGABYTE, ArraySequence
-from nibabel.streamlines.tractogram import Tractogram
 import numpy as np
 from tqdm import tqdm
 from trx.trx_file_memmap import TrxFile
 
 from dipy.core.sphere import HemiSphere
 from dipy.data import default_sphere
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
 
 logger = logging.getLogger("GPUStreamlines")
 
@@ -28,7 +23,7 @@ class JITTrackerData:
     dimz: int
     dimt: int
     max_angle: float
-    tc_threshold: float
+    stop_threshold: float
     step_size: float
     relative_peak_thresh: float
     min_separation_angle: float
@@ -51,47 +46,6 @@ class StreamlineChunk:
     min_steps: int
     max_steps: int
     real_dtype: type
-
-
-@dataclass(frozen=True)
-class ChunkGenerator:
-    propagate: Callable[[np.ndarray], StreamlineChunk]
-    chunk_size: int
-    n_procs: int = 1
-
-
-def _iter_streamlines_result(result):
-    slines = result.slines
-    sline_lens = result.sline_lens
-    step = result.step
-    for i in range(result.n_slines):
-        npts = int(sline_lens[i])
-        if npts < result.min_steps or npts > result.max_steps:
-            continue
-        yield np.asarray(slines[i * step : i * step + npts], dtype=result.real_dtype)
-
-
-def _buffer_size_mb(result):
-    """Return estimated buffer size in MB"""
-    if result.n_slines == 0:
-        return 0
-    total_pts = sum(
-        len_
-        for len_ in result.sline_lens[: result.n_slines]
-        if result.min_steps <= len_ <= result.max_steps
-    )
-    itemsize = np.dtype(result.real_dtype).itemsize
-    return math.ceil(total_pts * 3 * itemsize / MEGABYTE)
-
-
-def _divide_chunks(chunk_generator, seeds):
-    global_chunk_sz = chunk_generator.chunk_size * chunk_generator.n_procs
-    nchunks = (seeds.shape[0] + global_chunk_sz - 1) // global_chunk_sz
-    return global_chunk_sz, nchunks
-
-
-def _to_array_sequence(result):
-    return ArraySequence(_iter_streamlines_result(result), _buffer_size_mb(result))
 
 
 def prepare_jit_tracker_data(
@@ -191,7 +145,7 @@ def prepare_jit_tracker_data(
         dimz=dimz,
         dimt=dimt,
         max_angle=float(max_angle),
-        tc_threshold=float(stop_threshold),
+        stop_threshold=float(stop_threshold),
         step_size=float(step_size),
         relative_peak_thresh=float(relative_peak_thresh),
         min_separation_angle=float(min_separation_angle),
@@ -206,101 +160,86 @@ def prepare_jit_tracker_data(
     )
 
 
-def streamline_generator(chunk_generator, seeds):
-    global_chunk_sz, nchunks = _divide_chunks(chunk_generator, seeds)
-    for idx in range(nchunks):
-        chunk = seeds[idx * global_chunk_sz : (idx + 1) * global_chunk_sz]
-        result = chunk_generator.propagate(chunk)
-        yield from _iter_streamlines_result(result)
-
-
-def generate_array_sequence(chunk_generator, seeds):
-    global_chunk_sz, nchunks = _divide_chunks(chunk_generator, seeds)
-    buffer_size = 0
-    results = []
-
-    with tqdm(total=seeds.shape[0]) as pbar:
+def streamline_generator(propagate, chunk_size, n_procs, seeds, close):
+    global_chunk_sz = chunk_size * n_procs
+    nchunks = (seeds.shape[0] + global_chunk_sz - 1) // global_chunk_sz
+    try:
         for idx in range(nchunks):
             chunk = seeds[idx * global_chunk_sz : (idx + 1) * global_chunk_sz]
-            result = chunk_generator.propagate(chunk)
-            buffer_size += _buffer_size_mb(result)
-            results.append(result)
-            pbar.update(chunk.shape[0])
+            result = propagate(chunk)
+            slines = result.slines
+            sline_lens = result.sline_lens
+            step = result.step
+            for i in range(result.n_slines):
+                npts = int(sline_lens[i])
+                if npts < result.min_steps or npts > result.max_steps:
+                    continue
+                yield np.asarray(
+                    slines[i * step : i * step + npts], dtype=result.real_dtype
+                )
 
-    return ArraySequence(
-        (item for r in results for item in _iter_streamlines_result(r)), buffer_size
-    )
-
-
-def generate_tractogram(chunk_generator, seeds, affine):
-    return Tractogram(
-        generate_array_sequence(chunk_generator, seeds), affine_to_rasmm=affine
-    )
-
-
-def generate_sft(chunk_generator, seeds, ref_img):
-    return StatefulTractogram(
-        generate_array_sequence(chunk_generator, seeds), ref_img, Space.VOX
-    )
+    finally:
+        close()
 
 
-def generate_trx(chunk_generator, seeds, ref_img):
-    global_chunk_sz, nchunks = _divide_chunks(chunk_generator, seeds)
+def generate_trx(
+    sl_generator,
+    ref_img,
+    nb_streamlines_estimate=None,
+    nb_vertices_estimate=None,
+    offset_dtype=np.uint64,
+    data_dtype=np.float16,
+):
+    if nb_streamlines_estimate is None:
+        nb_streamlines_estimate = int(1e6)
+    if nb_vertices_estimate is None:
+        nb_vertices_estimate = nb_streamlines_estimate * 100
 
-    # Will resize by a factor of 2 if these are exceeded
-    sl_len_guess = 100
-    sl_per_seed_guess = 2
-    n_sls_guess = sl_per_seed_guess * seeds.shape[0]
-
-    # trx files use memory mapping
     trx_reference = TrxFile(reference=ref_img)
-    trx_reference.streamlines._data = trx_reference.streamlines._data.astype(np.float32)
+    trx_reference.streamlines._data = trx_reference.streamlines._data.astype(data_dtype)
     trx_reference.streamlines._offsets = trx_reference.streamlines._offsets.astype(
-        np.uint64
+        offset_dtype
     )
 
     trx_file = TrxFile(
-        nb_streamlines=n_sls_guess,
-        nb_vertices=n_sls_guess * sl_len_guess,
+        nb_streamlines=nb_streamlines_estimate,
+        nb_vertices=nb_vertices_estimate,
         init_as=trx_reference,
     )
-    offsets_idx = 0
-    sls_data_idx = 0
 
-    with tqdm(total=seeds.shape[0]) as pbar:
-        for idx in range(int(nchunks)):
-            chunk = seeds[idx * global_chunk_sz : (idx + 1) * global_chunk_sz]
-            result = chunk_generator.propagate(chunk)
-            tractogram = Tractogram(
-                _to_array_sequence(result),
-                affine_to_rasmm=ref_img.affine,
-            )
-            tractogram.to_world()
-            sls = tractogram.streamlines
+    affine = ref_img.affine
+    aff_A = affine[:3, :3].T
+    aff_b = affine[:3, 3]
 
-            new_offsets_idx = offsets_idx + len(sls._offsets)
-            new_sls_data_idx = sls_data_idx + len(sls._data)
+    sl_idx = 0
+    data_idx = 0
+
+    with tqdm(total=nb_streamlines_estimate) as pbar:
+        for sl in sl_generator:
+            n = sl.shape[0]
+            new_data_idx = data_idx + n
 
             if (
-                new_offsets_idx > trx_file.header["NB_STREAMLINES"]
-                or new_sls_data_idx > trx_file.header["NB_VERTICES"]
+                sl_idx + 1 > trx_file.header["NB_STREAMLINES"]
+                or new_data_idx > trx_file.header["NB_VERTICES"]
             ):
                 logger.info("TRX resizing...")
                 trx_file.resize(
-                    nb_streamlines=new_offsets_idx * 2,
-                    nb_vertices=new_sls_data_idx * 2,
+                    nb_streamlines=(sl_idx + 1) * 2,
+                    nb_vertices=new_data_idx * 2,
                 )
 
-            # TRX uses memmaps here
-            trx_file.streamlines._data[sls_data_idx:new_sls_data_idx] = sls._data
-            trx_file.streamlines._offsets[offsets_idx:new_offsets_idx] = (
-                sls_data_idx + sls._offsets
-            )
-            trx_file.streamlines._lengths[offsets_idx:new_offsets_idx] = sls._lengths
+            trx_file.streamlines._data[data_idx:new_data_idx] = sl.dot(aff_A) + aff_b
+            trx_file.streamlines._offsets[sl_idx] = data_idx
+            trx_file.streamlines._lengths[sl_idx] = n
 
-            offsets_idx = new_offsets_idx
-            sls_data_idx = new_sls_data_idx
-            pbar.update(chunk.shape[0])
-    trx_file.resize()
+            sl_idx += 1
+            data_idx = new_data_idx
+            pbar.update(1)
 
+    if (
+        sl_idx < trx_file.header["NB_STREAMLINES"]
+        or data_idx < trx_file.header["NB_VERTICES"]
+    ):
+        trx_file.resize()
     return trx_file

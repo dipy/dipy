@@ -44,7 +44,7 @@ def track(method, **kwargs):
 
     use_jit = kwargs.get("use_jit", False)
     use_sf = kwargs.get("use_sf", False)
-    use_directions = kwargs.get("use_dirs", False) and not use_jit
+    use_directions = kwargs.get("use_dirs", False)
 
     # test return_all=True
     params = {
@@ -62,8 +62,6 @@ def track(method, **kwargs):
     }
     if "use_jit" in kwargs:
         params["use_jit"] = use_jit
-        if use_jit:
-            params["seed_directions"] = None
     stream_gen = method(seeds, sc, affine, **params)
 
     streamlines = Streamlines(stream_gen)
@@ -88,8 +86,6 @@ def track(method, **kwargs):
     }
     if "use_jit" in kwargs:
         params["use_jit"] = use_jit
-        if use_jit:
-            params["seed_directions"] = None
 
     stream_gen = method(seeds, sc, affine, **params)
 
@@ -131,6 +127,7 @@ def test_numba_probabilistic_tracking():
             category=PendingDeprecationWarning,
         )
         track(tracker.probabilistic_tracking, use_jit=True)
+        track(tracker.probabilistic_tracking, use_dirs=True, use_jit=True)
         track(tracker.probabilistic_tracking, use_sf=True, use_jit=True)
 
 
