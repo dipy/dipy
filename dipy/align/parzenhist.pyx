@@ -472,6 +472,14 @@ class ParzenJointHistogram:
                     self.nbins, self.padding, self.joint, self.smarginal,
                     self.mmarginal, local_derivative_by_parzen_bin,
                     joint_pdf_index)
+
+                self.compute_mi(local_support=True)
+
+                _apply_mi_weights_to_cached_local_derivatives_2d[cython.double](
+                    local_derivative_by_parzen_bin, joint_pdf_index,
+                    smask, mmask, self.mi_weights, self.mdelta,
+                    self.nbins, self.padding, update_field)
+
             elif mgradient.dtype == np.float32:
                 _compute_pdfs_dense_and_local_derivatives_2d[cython.float](
                     static, moving, mgradient, smask, mmask,
@@ -479,15 +487,16 @@ class ParzenJointHistogram:
                     self.nbins, self.padding, self.joint, self.smarginal,
                     self.mmarginal, local_derivative_by_parzen_bin,
                     joint_pdf_index)
+
+                self.compute_mi(local_support=True)
+
+                _apply_mi_weights_to_cached_local_derivatives_2d[cython.float](
+                    local_derivative_by_parzen_bin, joint_pdf_index,
+                    smask, mmask, self.mi_weights, self.mdelta,
+                    self.nbins, self.padding, update_field)
+
             else:
-                raise ValueError('Grad. field dtype must be floating point')
-
-            self.compute_mi(local_support=True)
-
-            _apply_mi_weights_to_cached_local_derivatives_2d(
-                local_derivative_by_parzen_bin, joint_pdf_index,
-                smask, mmask, self.mi_weights, self.mdelta,
-                self.nbins, self.padding, update_field)
+                raise ValueError("Grad. field dtype must be floating point")
 
         elif dim == 3:
             if mgradient.dtype == np.float64:
@@ -497,6 +506,14 @@ class ParzenJointHistogram:
                     self.nbins, self.padding, self.joint, self.smarginal,
                     self.mmarginal, local_derivative_by_parzen_bin,
                     joint_pdf_index)
+
+                self.compute_mi(local_support=True)
+
+                _apply_mi_weights_to_cached_local_derivatives_3d[cython.double](
+                    local_derivative_by_parzen_bin, joint_pdf_index,
+                    smask, mmask, self.mi_weights, self.mdelta,
+                    self.nbins, self.padding, update_field)
+
             elif mgradient.dtype == np.float32:
                 _compute_pdfs_dense_and_local_derivatives_3d[cython.float](
                     static, moving, mgradient, smask, mmask,
@@ -504,15 +521,16 @@ class ParzenJointHistogram:
                     self.nbins, self.padding, self.joint, self.smarginal,
                     self.mmarginal, local_derivative_by_parzen_bin,
                     joint_pdf_index)
+
+                self.compute_mi(local_support=True)
+
+                _apply_mi_weights_to_cached_local_derivatives_3d[cython.float](
+                    local_derivative_by_parzen_bin, joint_pdf_index,
+                    smask, mmask, self.mi_weights, self.mdelta,
+                    self.nbins, self.padding, update_field)
+
             else:
-                raise ValueError('Grad. field dtype must be floating point')
-
-            self.compute_mi(local_support=True)
-
-            _apply_mi_weights_to_cached_local_derivatives_3d(
-                local_derivative_by_parzen_bin, joint_pdf_index,
-                smask, mmask, self.mi_weights, self.mdelta,
-                self.nbins, self.padding, update_field)
+                raise ValueError("Grad. field dtype must be floating point")
 
     def update_gradient_sparse(self, theta, transform, sval, mval,
                                sample_points, mgradient):
