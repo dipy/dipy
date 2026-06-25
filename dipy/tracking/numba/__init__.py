@@ -1,3 +1,3 @@
-from dipy.tracking.numba.tracker import NumbaTracker
+from dipy.tracking.numba.tracker import numba_sl_generator
 
-__all__ = ["NumbaTracker"]
+__all__ = ["numba_sl_generator"]
