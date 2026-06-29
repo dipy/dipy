@@ -89,9 +89,12 @@ def test_odffp_recovers_single_fiber():
     fit = OdffpModel(gtab, odf_dict, penalty=1e-4).fit(data)
     npt.assert_(isinstance(fit, OdffpFit))
 
-    # The fiber points along +x; it must appear among the recovered peaks.
+    # The fiber points along +x. The *main* (first) recovered peak must be that
+    # orientation -- guards against the alignment reference (vertex 0) and the
+    # pole disagreeing, which silently rotates every output.
     peaks = fit.peak_dirs
     valid = ~np.isnan(peaks).any(axis=1)
+    npt.assert_(np.abs(peaks[0] @ [1, 0, 0]) > 0.9)
     npt.assert_(np.abs(peaks[valid] @ [1, 0, 0]).max() > 0.9)
     npt.assert_equal(fit.odf().shape[-1], len(odf_dict.sphere.vertices) // 2)
 
@@ -118,7 +121,7 @@ def test_odffp_fit_is_faithful_to_naive_resampling():
         [
             _single_voxel(gtab, mevals[:1], [(90, 0)], [100]),
             _single_voxel(gtab, mevals, [(20, 0), (90, 0)], [50, 50]),
-            _single_voxel(gtab, mevals, [(0, 0), (0, 90)], [50, 50]),
+            _single_voxel(gtab, mevals, [(40, 0), (90, 0)], [60, 40]),
         ]
     )
 
@@ -132,7 +135,7 @@ def test_odffp_fit_is_faithful_to_naive_resampling():
         odf = model._odf_recon_model.fit(data[v]).odf(sphere)
         _, _, indices = peak_directions(odf, sphere)
         rotation = (
-            _rotation_to_pole(sphere.vertices[indices[0]])
+            _rotation_to_pole(sphere.vertices[indices[0]], pole=model._pole)
             if len(indices)
             else np.eye(3)
         )
