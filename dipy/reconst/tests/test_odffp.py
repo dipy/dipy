@@ -125,7 +125,9 @@ def test_odffp_fit_is_faithful_to_naive_resampling():
         ]
     )
 
-    model = OdffpModel(gtab, odf_dict, penalty=1e-4)
+    # Exact float64 matching, so the blocked/streamed match must reproduce the
+    # naive full-matrix arg-max bit-for-bit.
+    model = OdffpModel(gtab, odf_dict, penalty=1e-4, matching_precision="float64")
     multi_fit = model.fit(data)
     npt.assert_(isinstance(multi_fit, MultiVoxelFit))
 
@@ -201,6 +203,39 @@ def test_odffp_peaks_stores_odf_and_roundtrips(tmp_path):
     single = odffp_peaks(model.fit(data[0, 0, 0]))
     npt.assert_(isinstance(single, type(peaks)))
     npt.assert_equal(single.shm_coeff.shape[-1], peaks.shm_coeff.shape[-1])
+
+
+def test_odffp_sh_order_max_is_configurable():
+    # The match runs in the SH subspace of the chosen order; both orders must
+    # reproduce the naive full-trace arg-max (exact in float64).
+    gtab = _make_gtab()
+    odf_dict = _make_dictionary(gtab, dict_size=1200)
+    sphere = odf_dict.sphere
+    data = _single_voxel(
+        gtab, np.array([[0.0015, 0.0003, 0.0003]] * 2), [(30, 0), (90, 0)], [50, 50]
+    )
+    for order, n_sh in [(4, 15), (8, 45)]:
+        model = OdffpModel(
+            gtab,
+            odf_dict,
+            penalty=1e-4,
+            sh_order_max=order,
+            matching_precision="float64",
+        )
+        npt.assert_equal(model._dict_trace.shape[1], n_sh)
+        fit = model.fit(data)
+
+        odf = model._odf_recon_model.fit(data).odf(sphere)
+        _, _, indices = peak_directions(odf, sphere)
+        rotation = _rotation_to_pole(sphere.vertices[indices[0]], pole=model._pole)
+        rotated = Sphere(xyz=np.dot(sphere.vertices, rotation))
+        aligned = OdffpModel.resample_odf(odf, sphere, rotated, sh_order_max=order)
+        trace, _ = model._normalize_odf(aligned)
+        dict_trace, _ = model._normalize_odf(odf_dict.odf)
+        ref = _reference_match(
+            (trace @ dict_trace)[np.newaxis], odf_dict.peaks_per_voxel, 1e-4
+        )[0]
+        npt.assert_equal(fit.dict_idx, ref)
 
 
 def test_rotation_to_pole_is_orthogonal():
