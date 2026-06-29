@@ -423,6 +423,8 @@ class OdffpModel(ReconstModel):
         self._odf_recon_model = odf_recon_model
 
         self._half_size = len(self.sphere.vertices) // 2
+        # Align each main peak to vertex 0, the dictionary's obligatory fiber.
+        self._pole = self.sphere.vertices[0]
         self._basis, self._inv_basis = _sh_operators(self.sphere)
         self._dict_trace, _ = self._normalize_odf(dictionary.odf)
 
@@ -480,7 +482,9 @@ class OdffpModel(ReconstModel):
         if new:
             rotations = np.stack(
                 [
-                    np.eye(3) if v < 0 else _rotation_to_pole(self.sphere.vertices[v])
+                    np.eye(3)
+                    if v < 0
+                    else _rotation_to_pole(self.sphere.vertices[v], pole=self._pole)
                     for v in new
                 ]
             )
