@@ -473,6 +473,27 @@ MICRO_PARAMS = (
 )
 
 
+def _postproc_n_threads():
+    """Thread count for the per-microstructure post-processing loop.
+
+    Returns 1 inside a Ray worker, where process-level parallelism already
+    uses the cores, to avoid oversubscription. Otherwise scales with the
+    number of parameters and available CPUs.
+
+    Returns
+    -------
+    n_threads : int
+    """
+    try:
+        import ray
+
+        if ray.is_initialized():
+            return 1
+    except Exception:
+        pass
+    return min(len(MICRO_PARAMS), os.cpu_count() or 1)
+
+
 def _weighted_percentile(vals, weights, q):
     """Batch weighted percentile.
 
@@ -1087,16 +1108,30 @@ class FORCEModel(ReconstModel):
             params_arrays["ambiguity"] = A
             params_arrays["entropy"] = np.full(n_vox, np.nan, dtype=np.float32)
 
-        # Per-microstructure uncertainty and ambiguity from posterior density
+        # Per-microstructure uncertainty and ambiguity from posterior density.
+        # The FWHM-KDE ambiguity is the dominant serial cost; numpy releases the
+        # GIL on its large reductions, so fan the per-parameter loop over threads.
         prior_ranges = getattr(self, "_prior_ranges", {})
-        for param in MICRO_PARAMS:
-            if param in d and param in prior_ranges:
-                vals = d[param][neighbors].astype(np.float32)
-                u, a = compute_microstructure_uncertainty_ambiguity(
-                    vals, W, prior_ranges[param]
-                )
-                params_arrays[f"uncertainty_{param}"] = u
-                params_arrays[f"ambiguity_{param}"] = a
+        todo = [p for p in MICRO_PARAMS if p in d and p in prior_ranges]
+
+        def _micro(param):
+            vals = d[param][neighbors].astype(np.float32)
+            return param, compute_microstructure_uncertainty_ambiguity(
+                vals, W, prior_ranges[param]
+            )
+
+        n_threads = _postproc_n_threads()
+        if n_threads > 1 and len(todo) > 1:
+            from concurrent.futures import ThreadPoolExecutor
+
+            with ThreadPoolExecutor(max_workers=min(n_threads, len(todo))) as ex:
+                micro_results = list(ex.map(_micro, todo))
+        else:
+            micro_results = [_micro(p) for p in todo]
+
+        for param, (u, a) in micro_results:
+            params_arrays[f"uncertainty_{param}"] = u
+            params_arrays[f"ambiguity_{param}"] = a
 
         if kwargs.pop("_raw", False):
             return params_arrays
