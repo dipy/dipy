@@ -93,10 +93,15 @@ model.generate(
 ###############################################################################
 # Fit the model to the data.
 #
-# For serial execution (one CPU), simply call ``model.fit()``.  To exploit
-# multiple cores, pass ``engine="ray"`` and ``n_jobs=<N>``.  The
-# ``@multi_voxel_fit`` decorator handles chunking, masking, and result
-# assembly automatically.
+# ``model.fit()`` runs serially by default. The ``ray`` engine is considerably
+# faster, as it parallelises the matching and post-processing across worker
+# processes instead of a single one. To use it, pass ``engine="ray"`` (and
+# optionally ``n_jobs=<N>``)::
+#
+#     fit = model.fit(data, mask=mask, engine="ray", n_jobs=-1)
+#
+# The ``ray`` engine requires Ray to be installed (``pip install ray``); if it
+# is not available the fit falls back to serial execution.
 
 fit = model.fit(data, mask=mask, n_jobs=-1, verbose=True)
 
@@ -152,26 +157,34 @@ import matplotlib.pyplot as plt
 
 mid_z = (fa_map.shape[2] // 2) - 5
 
-fig, axes = plt.subplots(2, 3, figsize=(15, 10))
 
-panels = [
-    (axes[0, 0], fa_map, "FA", "gray", 0, 1),
-    (axes[0, 1], md_map, "MD", "hot", None, None),
-    (axes[0, 2], wm_fraction, "WM Fraction", "gray", 0, 1),
-    (axes[1, 0], num_fibers, "Num Fibers", "viridis", 0, 3),
-    (axes[1, 1], gm_fraction, "GM Fraction", "gray", 0, 1),
-    (axes[1, 2], csf_fraction, "CSF Fraction", "Blues", 0, 1),
-]
-
-for ax, arr, title, cmap, vmin, vmax in panels:
+def _show(ax, arr, title, cmap, vmin=None, vmax=None):
     kwargs = {"cmap": cmap}
     if vmin is not None:
         kwargs["vmin"] = vmin
         kwargs["vmax"] = vmax
     im = ax.imshow(np.rot90(arr[:, :, mid_z]), **kwargs)
-    ax.set_title(f"{title} (slice {mid_z})")
+    ax.set_title(title)
     ax.axis("off")
     plt.colorbar(im, ax=ax, fraction=0.046)
+
+
+# Colormaps follow the map family: DTI -> viridis, partial volume estimates
+# (tissue fractions) -> gray, and NODDI-like maps (NDI, ODI) -> inferno.
+fig, axes = plt.subplots(2, 4, figsize=(20, 10))
+
+panels = [
+    (axes[0, 0], fa_map, "FA", "viridis", 0, 1),
+    (axes[0, 1], md_map, "MD", "viridis", None, None),
+    (axes[0, 2], nd, "NDI", "inferno", 0, 1),
+    (axes[0, 3], dispersion, "ODI", "inferno", None, None),
+    (axes[1, 0], wm_fraction, "WM fraction", "gray", 0, 1),
+    (axes[1, 1], gm_fraction, "GM fraction", "gray", 0, 1),
+    (axes[1, 2], csf_fraction, "CSF fraction", "gray", 0, 1),
+    (axes[1, 3], num_fibers, "Number of fibers", "viridis", 0, 3),
+]
+for ax, arr, title, cmap, vmin, vmax in panels:
+    _show(ax, arr, title, cmap, vmin, vmax)
 
 plt.tight_layout()
 plt.savefig("force_maps.png", dpi=150, bbox_inches="tight")
@@ -182,8 +195,30 @@ plt.savefig("force_maps.png", dpi=150, bbox_inches="tight")
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # FORCE microstructure maps for an axial slice of the Stanford HARDI dataset.
-# From left to right, top to bottom: FA, MD, WM fraction, number of fibers,
-# GM fraction, CSF fraction.
+# DTI maps (FA, MD) use *viridis*, NODDI maps (NDI, ODI) use *inferno*, and the
+# partial volume estimates (WM/GM/CSF fractions) use *gray*.
+#
+# FORCE also reports, for each microstructure parameter, an **uncertainty** map
+# (spread of the posterior) and an **ambiguity** map (multi-modality of the
+# posterior), both normalised to the prior range. Below we show them for the
+# NODDI parameters NDI and ODI.
+
+fig, axes = plt.subplots(2, 2, figsize=(10, 10))
+_show(axes[0, 0], fit.uncertainty_nd, "NDI uncertainty", "hot")
+_show(axes[0, 1], fit.ambiguity_nd, "NDI ambiguity", "hot")
+_show(axes[1, 0], fit.uncertainty_dispersion, "ODI uncertainty", "hot")
+_show(axes[1, 1], fit.ambiguity_dispersion, "ODI ambiguity", "hot")
+
+plt.tight_layout()
+plt.savefig("force_uncertainty_ambiguity.png", dpi=150, bbox_inches="tight")
+# plt.show()
+
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Per-microstructure uncertainty (left) and ambiguity (right) maps for NDI (top)
+# and ODI (bottom).
 #
 # References
 # ----------
