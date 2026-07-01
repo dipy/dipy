@@ -275,7 +275,7 @@ def test_classify_tissue_flow_synthseg(rng=None):
                 return (
                     np.zeros(img.shape, dtype=np.int32),
                     {0: "Background"},
-                    np.zeros(img.shape),
+                    None,
                 )
 
         with pytest.MonkeyPatch.context() as mp:
