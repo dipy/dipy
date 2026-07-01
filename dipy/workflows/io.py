@@ -12,6 +12,11 @@ import nibabel as nib
 import numpy as np
 import trx.trx_file_memmap as tmm
 
+from dipy.core.gradient_check import (
+    check_gradient_table,
+    correct_bvecs,
+    transform_label,
+)
 from dipy.core.gradients import (
     extract_b0,
     extract_dwi_shell,
@@ -31,7 +36,10 @@ from dipy.io.peaks import (
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.io.utils import split_filename_extension
 from dipy.reconst.shm import convert_sh_descoteaux_tournier, order_from_ncoef
-from dipy.reconst.utils import convert_tensors
+from dipy.reconst.utils import (
+    compute_coherence_table_for_gradient_transforms,
+    convert_tensors,
+)
 from dipy.tracking.streamlinespeed import length
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
@@ -1877,3 +1885,217 @@ class MathFlow(Workflow):
         out_fname = Path(out_dir) / out_file
         logger.info(f"Saving result to {out_fname}")
         save_nifti(out_fname, res, affine)
+
+
+class CorrectBvecsFlow(Workflow):
+    """Correct DWI b-vectors by detecting and fixing axis permutation/flip errors.
+
+    Two methods are available, selectable via the ``method`` parameter:
+
+    * ``'aganj2018'`` (default) — Aganj 2018 fiber-continuity criterion.
+      Requires only the raw DWI volume (``dwi_files``, ``bvalues_files``,
+      ``bvectors_files``). Fits a CSA-ODF model internally and scores all 24
+      axis-permutation/flip candidates; applies the one that minimises the
+      fiber-continuity error.
+
+    * ``'schilling2019'`` — Schilling 2019 fiber-coherence index.
+      Requires pre-computed peaks and FA (``fa_files``, ``peaks_files``,
+      ``mask_files``).  Scores all 24 candidates by how well the fiber
+      directions agree with inter-voxel displacement; applies the one that
+      maximises the coherence index.
+
+    Use ``'aganj2018'`` when you have only raw DWI data.
+    Use ``'schilling2019'`` when peaks and FA are already computed — it is
+    substantially faster in that case.
+    """
+
+    @classmethod
+    def get_short_name(cls):
+        return "correct_bvecs"
+
+    def run(
+        self,
+        bvectors_files,
+        method="aganj2018",
+        dwi_files=None,
+        bvalues_files=None,
+        brain_mask_files=None,
+        b0_threshold=50,
+        sh_order_max=4,
+        smooth=0.006,
+        fa_files=None,
+        peaks_files=None,
+        mask_files=None,
+        fa_thr=0.2,
+        nb_flips=4,
+        angle_thr=None,
+        out_dir="",
+        out_bvecs="corrected_bvecs.txt",
+    ):
+        """Correct b-vectors by detecting and fixing axis permutation/flip errors.
+
+        Two methods are available via ``method``:
+
+        * ``'aganj2018'``: fiber-continuity criterion (:footcite:p:`Aganj2018`).
+          Requires ``dwi_files`` and ``bvalues_files``.
+        * ``'schilling2019'``: fiber-coherence index (:footcite:p:`Schilling2019b`).
+          Requires ``fa_files``, ``peaks_files``, and ``mask_files``.
+
+        Parameters
+        ----------
+        bvectors_files : str or Path
+            Path to the b-vector files. May contain wildcards to process
+            multiple files at once.
+        method : str, optional
+            Algorithm to use. ``'aganj2018'`` (default) or ``'schilling2019'``.
+        dwi_files : list of str or Path, optional
+            DWI volume paths matching ``bvectors_files``.
+            Required when ``method='aganj2018'``.
+        bvalues_files : list of str or Path, optional
+            B-value file paths matching ``bvectors_files``.
+            Required when ``method='aganj2018'``.
+        brain_mask_files : list of str or Path, optional
+            Brain mask paths matching ``bvectors_files``. When omitted the CSA
+            fit covers the full volume. Only used with ``method='aganj2018'``.
+        b0_threshold : float, optional
+            B-value threshold for identifying b0 volumes.
+            Only used with ``method='aganj2018'``.
+        sh_order_max : int, optional
+            Maximum spherical-harmonic order for the CSA-ODF fit.
+            Only used with ``method='aganj2018'``.
+        smooth : float, optional
+            Laplace–Beltrami regularisation for the CSA-ODF fit.
+            Only used with ``method='aganj2018'``.
+        fa_files : list of str or Path, optional
+            FA map paths matching ``bvectors_files``.
+            Required when ``method='schilling2019'``.
+        peaks_files : list of str or Path, optional
+            Peak direction files (``*.pam5`` or NIfTI) matching
+            ``bvectors_files``. Required when ``method='schilling2019'``.
+        mask_files : list of str or Path, optional
+            Brain/tissue mask paths matching ``bvectors_files``.
+            Required when ``method='schilling2019'``.
+        fa_thr : float, optional
+            FA threshold; voxels below this value are excluded.
+            Only used with ``method='schilling2019'``.
+        nb_flips : int, optional
+            Number of flip variants per permutation (max 4).
+            Only used with ``method='schilling2019'``.
+        angle_thr : float, optional
+            Maximum coherence angle in radians.
+            Only used with ``method='schilling2019'``.
+        out_dir : str or Path, optional
+            Output directory.
+        out_bvecs : str, optional
+            Name of the corrected b-vector file.
+
+        References
+        ----------
+        .. footbibliography::
+
+        """
+        _METHODS = {"aganj2018", "schilling2019"}
+        if method not in _METHODS:
+            raise ValueError(
+                f"Unknown method {method!r}. Choose from {sorted(_METHODS)}."
+            )
+
+        io_it = self.get_io_iterator()
+
+        if dwi_files is not None and not isinstance(dwi_files, list):
+            dwi_files = [dwi_files]
+        if bvalues_files is not None and not isinstance(bvalues_files, list):
+            bvalues_files = [bvalues_files]
+        if brain_mask_files is not None and not isinstance(brain_mask_files, list):
+            brain_mask_files = [brain_mask_files]
+        if fa_files is not None and not isinstance(fa_files, list):
+            fa_files = [fa_files]
+        if peaks_files is not None and not isinstance(peaks_files, list):
+            peaks_files = [peaks_files]
+        if mask_files is not None and not isinstance(mask_files, list):
+            mask_files = [mask_files]
+
+        for idx, (bvec, o_bvecs) in enumerate(io_it):
+            logger.info(f"Processing b-vectors: {bvec}")
+            _, bvecs = read_bvals_bvecs(None, bvec)
+
+            if method == "aganj2018":
+                if dwi_files is None or bvalues_files is None:
+                    raise ValueError(
+                        "method='aganj2018' requires dwi_files and bvalues_files."
+                    )
+                data, _ = load_nifti(dwi_files[idx])
+                bvals, _ = read_bvals_bvecs(bvalues_files[idx], None)
+                gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
+
+                aganj_mask = None
+                if mask_files is not None:
+                    aganj_mask_data, _ = load_nifti(mask_files[idx])
+                    aganj_mask = aganj_mask_data.astype(bool)
+                brain_mask = None
+                if brain_mask_files is not None:
+                    bm_data, _ = load_nifti(brain_mask_files[idx])
+                    brain_mask = bm_data.astype(bool)
+
+                perm, flip = check_gradient_table(
+                    data,
+                    gtab,
+                    mask=aganj_mask,
+                    brain_mask=brain_mask,
+                    sh_order_max=sh_order_max,
+                    smooth=smooth,
+                )
+                if (perm, flip) == ((0, 1, 2), (1, 1, 1)):
+                    logger.info("b-vectors already aligned; writing unchanged copy.")
+                else:
+                    logger.info(f"Recommended transform: {transform_label(perm, flip)}")
+                corrected = correct_bvecs(bvecs, perm, flip)
+
+            else:  # schilling2019
+                if fa_files is None or peaks_files is None or mask_files is None:
+                    raise ValueError(
+                        "method='schilling2019' requires fa_files, "
+                        "peaks_files, and mask_files."
+                    )
+                fa_data, _ = load_nifti(fa_files[idx])
+                tissue_mask, _ = load_nifti(mask_files[idx])
+                tissue_mask = tissue_mask.astype(bool)
+
+                fa_data[~tissue_mask] = 0
+                fa_data[fa_data < fa_thr] = 0
+
+                fpeak = peaks_files[idx]
+                if str(fpeak).endswith(".pam5"):
+                    pam = load_pam(fpeak)
+                    peaks_data = pam.peak_dirs
+                elif str(fpeak).endswith(".nii.gz") or str(fpeak).endswith(".nii"):
+                    peaks_data, _ = load_nifti(fpeak)
+                else:
+                    raise ValueError(
+                        f"peaks_files must be *.pam5 or NIfTI; got {fpeak!r}"
+                    )
+
+                if peaks_data.ndim == 5:
+                    peaks_data = peaks_data[..., 0, :]
+
+                peaks_data[~tissue_mask] = 0
+
+                coherence_values, transforms = (
+                    compute_coherence_table_for_gradient_transforms(
+                        peaks_data,
+                        fa_data,
+                        nb_flips=nb_flips,
+                        angle_threshold=angle_thr,
+                    )
+                )
+
+                best_t = transforms[np.argmax(coherence_values)]
+                if (best_t == np.eye(3)).all():
+                    logger.info("b-vectors already aligned; writing unchanged copy.")
+                    corrected = bvecs.copy()
+                else:
+                    logger.info(f"Applying Schilling 2019 transform:\n{best_t}")
+                    corrected = np.dot(bvecs, best_t.T)
+
+            np.savetxt(o_bvecs, corrected.T, fmt="%.18f")
+            logger.info(f"Corrected b-vectors saved to {o_bvecs}")
