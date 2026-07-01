@@ -25,8 +25,8 @@ cdef extern from "stdlib.h" nogil:
 DTYPE = np.float32
 DEF BIGGEST_DOUBLE = 1.7976931348623157e+308  # np.finfo('f8').max
 DEF BIGGEST_INT = 2147483647  # np.iinfo('i4').max
-DEF BIGGEST_FLOAT = 3.4028235e+38  # np.finfo('f4').max
-DEF SMALLEST_FLOAT = -3.4028235e+38  # np.finfo('f4').max
+DEF BIGGEST_FLOAT = 3.402823e+38  # np.finfo('f4').max
+DEF SMALLEST_FLOAT = -3.402823e+38  # np.finfo('f4').max
 
 
 cdef print_node(CentroidNode* node, prepend=""):
@@ -67,8 +67,8 @@ cdef void aabb_creation(Data2D streamline, float* aabb) noexcept nogil:
         float max_[3]
 
     for d in range(D):
-        min_[d] = BIGGEST_FLOAT
-        max_[d] = SMALLEST_FLOAT
+        min_[d] = <float>BIGGEST_FLOAT
+        max_[d] = <float>SMALLEST_FLOAT
         for n in range(N):
 
             if max_[d] < streamline[n, d]:
@@ -108,9 +108,9 @@ cdef CentroidNode* create_empty_node(Shape centroid_shape, float threshold) nogi
     node.aabb[0] = 0
     node.aabb[1] = 0
     node.aabb[2] = 0
-    node.aabb[3] = BIGGEST_FLOAT
-    node.aabb[4] = BIGGEST_FLOAT
-    node.aabb[5] = BIGGEST_FLOAT
+    node.aabb[3] = <float>BIGGEST_FLOAT
+    node.aabb[4] = <float>BIGGEST_FLOAT
+    node.aabb[5] = <float>BIGGEST_FLOAT
     node.threshold = threshold
     node.indices = NULL
     node.size = 0
