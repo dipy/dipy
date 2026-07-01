@@ -27,7 +27,7 @@ cdef extern from "dpy_math.h" nogil:
 #@cython.wraparound(False)
 
 DEF biggest_double = 1.79769e+308 #np.finfo('f8').max
-DEF biggest_float = 3.4028235e+38 #np.finfo('f4').max
+DEF biggest_float = 3.402823e+38  # < FLT_MAX (3.4028235e+38); avoids double-to-float overflow
 
 cdef inline cnp.ndarray[cnp.float32_t, ndim=1] as_float_3vec(object vec):
     """ Utility function to convert object to 3D float vector """
@@ -1284,7 +1284,7 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
         float n[3]
         float md,nd,dd, nn, mn, a, k, c,b, discr
 
-        float epsilon_float=5.96e-08
+        float epsilon_float = <float>5.96e-08
 
     csub_3vecs(q,p,d)
     csub_3vecs(sa,p,m)
@@ -1672,7 +1672,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
                     flip[k]=1
                 alld[k]=d[0]
 
-            m_d = biggest_float
+            m_d = <float>biggest_float
             #find minimum distance and index
             for k from 0<=k<lenC:
                 if alld[k] < m_d:
