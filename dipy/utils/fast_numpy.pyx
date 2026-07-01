@@ -293,7 +293,7 @@ cdef cnp.npy_uint32 next_rng(RNGState* rng_state) noexcept nogil:
     rng_state.state = oldstate * 6364136223846793005ULL + rng_state.inc
     cdef cnp.npy_uint32 xorshifted = ((oldstate >> 18) ^ oldstate) >> 27
     cdef cnp.npy_uint32 rot = oldstate >> 59
-    return (xorshifted >> rot) | (xorshifted << ((-rot) & 31))
+    return (xorshifted >> rot) | (xorshifted << ((32 - rot) & 31))
 
 
 cdef double random_float(RNGState* rng_state) noexcept nogil:
