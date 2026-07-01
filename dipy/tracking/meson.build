@@ -41,6 +41,7 @@ python_sources = ['__init__.py',
   'learning.py',
   'life.py',
   'local_tracking.py',
+  'generic_jit_tracker.py',
   'mesh.py',
   'metrics.py',
   'streamline.py',
@@ -54,5 +55,6 @@ py3.install_sources(
   subdir: 'dipy/tracking'
 )
 
+subdir('numba')
 
 subdir('tests')
