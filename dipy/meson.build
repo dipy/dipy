@@ -324,6 +324,14 @@ if cpp.get_id() == 'msvc'
   cython_cpp_args += ['/wd4551']
 endif
 
+# GCC raises -Wmaybe-uninitialized on __pyx_clineno in Cython-generated code.
+# This is a well-known false positive: Cython always initializes the variable
+# before use, but GCC's flow analysis cannot prove it. Not fixable in sources.
+if cc.get_id() == 'gcc'
+  cython_c_args += cc.get_supported_arguments('-Wno-maybe-uninitialized')
+  cython_cpp_args += cpp.get_supported_arguments('-Wno-maybe-uninitialized')
+endif
+
 
 # ------------------------------------------------------------------------
 #  include openmp

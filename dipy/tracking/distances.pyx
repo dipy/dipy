@@ -27,7 +27,7 @@ cdef extern from "dpy_math.h" nogil:
 #@cython.wraparound(False)
 
 DEF biggest_double = 1.79769e+308 #np.finfo('f8').max
-DEF biggest_float = 3.402823e+38 #np.finfo('f4').max
+DEF biggest_float = 3.402823e+38  # < FLT_MAX (3.4028235e+38); avoids double-to-float overflow
 
 cdef inline cnp.ndarray[cnp.float32_t, ndim=1] as_float_3vec(object vec):
     """ Utility function to convert object to 3D float vector """

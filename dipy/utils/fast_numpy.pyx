@@ -249,13 +249,6 @@ cpdef void seed(cnp.npy_uint32 s) noexcept nogil:
     srand(s)
 
 
-cdef void print_c_array_pointer(double* arr, int size) noexcept nogil:
-    cdef int i
-    for i in range(size):
-        printf("%f, ", arr[i])
-    printf("\n\n\n")
-
-
 cdef void seed_rng(RNGState* rng_state, cnp.npy_uint64 seed) noexcept nogil:
     """
     Seed the RNG state (thread-safe).
