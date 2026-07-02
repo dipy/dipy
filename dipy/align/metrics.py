@@ -9,6 +9,7 @@ from scipy import ndimage
 from dipy.align import (
     crosscorr as cc,
     expectmax as em,
+    parzenhist as ph,
     sumsqdiff as ssd,
     vector_fields as vfu,
 )
@@ -210,6 +211,136 @@ class SimilarityMetric:
         image matches the current static image. Lower energy is typically
         considered better (optimizer minimizes).
         """
+
+
+class MIMetric(SimilarityMetric):
+    @warning_for_keywords()
+    def __init__(self, dim, *, nbins=32, smooth=0.0):
+        r"""Mutual Information Similarity metric.
+
+        Parameters
+        ----------
+        dim : int (either 2 or 3)
+            The dimension of the image domain.
+        nbins : int, optional
+            Number of bins to use for the joint intensity histogram.
+        smooth : float, optional
+            Standard deviation of the Gaussian smoothing kernel to apply to
+            update fields before they are returned.
+        """
+        super().__init__(dim)
+        self.nbins = nbins
+        self.smooth = smooth
+        self.forward_histogram = ph.ParzenJointHistogram(nbins)
+        self.backward_histogram = ph.ParzenJointHistogram(nbins)
+        self._connect_functions()
+
+    def _connect_functions(self):
+        r"""Assign the methods to be called according to the image dimension
+
+        Assigns the appropriate functions to be called for vector field
+        reorientation according to the dimension of the input images.
+        """
+        if self.dim == 2:
+            self.reorient_vector_field = vfu.reorient_vector_field_2d
+        elif self.dim == 3:
+            self.reorient_vector_field = vfu.reorient_vector_field_3d
+        else:
+            raise ValueError(f"MI Metric not defined for dim. {self.dim}")
+
+    def initialize_iteration(self):
+        r"""Prepares the metric to compute one displacement field iteration.
+
+        Computes image gradients in physical coordinates and prepares the
+        histogram quantities needed to evaluate mutual information updates.
+        """
+        self.gradient_moving = np.empty(
+            shape=self.moving_image.shape + (self.dim,), dtype=np.float32
+        )
+        for i, grad in enumerate(gradient(self.moving_image)):
+            self.gradient_moving[..., i] = grad
+
+        # Convert moving image's gradient field from voxel to physical space
+        if self.moving_spacing is not None:
+            self.gradient_moving /= self.moving_spacing
+        if self.moving_direction is not None:
+            self.reorient_vector_field(self.gradient_moving, self.moving_direction)
+
+        self.gradient_static = np.empty(
+            shape=self.static_image.shape + (self.dim,), dtype=np.float32
+        )
+        for i, grad in enumerate(gradient(self.static_image)):
+            self.gradient_static[..., i] = grad
+
+        # Convert static image's gradient field from voxel to physical space
+        if self.static_spacing is not None:
+            self.gradient_static /= self.static_spacing
+        if self.static_direction is not None:
+            self.reorient_vector_field(self.gradient_static, self.static_direction)
+
+        self.forward_histogram.setup(self.static_image, self.moving_image)
+        self.backward_histogram.setup(self.moving_image, self.static_image)
+
+    def compute_forward(self):
+        r"""Computes one step bringing the moving image towards the static.
+
+        Computes the update displacement field to be used for registration of
+        the moving image towards the static image.
+        """
+        displacement = np.zeros(
+            shape=self.static_image.shape + (self.dim,),
+            dtype=self.gradient_moving.dtype,
+        )
+        self.forward_histogram.compute_dense_mi_update(
+            self.static_image,
+            self.moving_image,
+            self.gradient_moving,
+            displacement,
+        )
+        self.energy = self.forward_histogram.metric_val
+        for i in range(self.dim):
+            displacement[..., i] = ndimage.gaussian_filter(
+                displacement[..., i], self.smooth
+            )
+        return displacement
+
+    def compute_backward(self):
+        r"""Computes one step bringing the static image towards the moving.
+
+        Computes the update displacement field to be used for registration of
+        the static image towards the moving image.
+        """
+        displacement = np.zeros(
+            shape=self.static_image.shape + (self.dim,),
+            dtype=self.gradient_static.dtype,
+        )
+        self.backward_histogram.compute_dense_mi_update(
+            self.moving_image,
+            self.static_image,
+            self.gradient_static,
+            displacement,
+        )
+        self.energy = self.backward_histogram.metric_val
+        for i in range(self.dim):
+            displacement[..., i] = ndimage.gaussian_filter(
+                displacement[..., i], self.smooth
+            )
+        return displacement
+
+    def get_energy(self):
+        r"""The numerical value assigned by this metric to the current image pair
+
+        Returns the Mutual Information energy computed for the current image
+        pair.
+        """
+        return self.energy
+
+    def free_iteration(self):
+        r"""Frees the resources allocated during initialization"""
+        del self.gradient_static
+        del self.gradient_moving
+        self.forward_histogram.mi_weights = None
+        self.backward_histogram.mi_weights = None
 
 
 class CCMetric(SimilarityMetric):
