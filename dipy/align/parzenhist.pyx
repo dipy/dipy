@@ -66,9 +66,22 @@ class ParzenJointHistogram:
         # than one bin, we need to add extra bins to both sides of the
         # histogram to account for the contributions of the minimum and maximum
         # intensities. Padding is the number of extra bins used at each side
-        # of the histogram (a total of [2 * padding] extra bins). Since the
-        # support of the cubic spline is 5 bins (the center plus 2 bins at each
-        # side) we need a padding of 2, in the case of cubic splines.
+        # of the histogram (a total of [2 * padding] extra bins).
+        #
+        # The cubic B-spline kernel has radius 2: a sample can only affect
+        # histogram bins whose centers are less than 2 bins away from the
+        # sample's continuous bin position.
+        #
+        # Here, c is the integer bin immediately to the left of the sample
+        # position cn. Therefore, for an in-range sample, the bin c - 2 is
+        # already at distance >= 2 from cn and receives zero weight. The first
+        # possibly nonzero bin is c - 1, and the last one is c + 2.
+        #
+        # More generally, with padding = 2, the nonzero moving-bin offsets are:
+        #
+        #     1 - padding, ..., padding
+        #
+        # which gives -1, 0, 1, 2.
         self.padding = 2
         self.setup_called = False
 
@@ -641,10 +654,10 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
                 r = _bin_index(rn, nbins, padding)
                 cn = _bin_normalize(moving[i, j], mmin, mdelta)
                 c = _bin_index(cn, nbins, padding)
-                spline_arg = (c - 2) - cn
+                spline_arg = (c - padding + 1) - cn
 
                 smarginal[r] += 1
-                for offset in range(-2, 3):
+                for offset in range(1 - padding, padding + 1):
                     val = _cubic_spline(spline_arg)
                     joint[r, c + offset] += val
                     total_sum += val
@@ -731,10 +744,10 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
                     r = _bin_index(rn, nbins, padding)
                     cn = _bin_normalize(moving[k, i, j], mmin, mdelta)
                     c = _bin_index(cn, nbins, padding)
-                    spline_arg = (c - 2) - cn
+                    spline_arg = (c - padding + 1) - cn
 
                     smarginal[r] += 1
-                    for offset in range(-2, 3):
+                    for offset in range(1 - padding, padding + 1):
                         val = _cubic_spline(spline_arg)
                         joint[r, c + offset] += val
                         total_sum += val
@@ -807,10 +820,10 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
             r = _bin_index(rn, nbins, padding)
             cn = _bin_normalize(mval[i], mmin, mdelta)
             c = _bin_index(cn, nbins, padding)
-            spline_arg = (c - 2) - cn
+            spline_arg = (c - padding + 1) - cn
 
             smarginal[r] += 1
-            for offset in range(-2, 3):
+            for offset in range(1 - padding, padding + 1):
                 val = _cubic_spline(spline_arg)
                 joint[r, c + offset] += val
                 total_sum += val
@@ -921,9 +934,9 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
                 r = _bin_index(rn, nbins, padding)
                 cn = _bin_normalize(moving[i, j], mmin, mdelta)
                 c = _bin_index(cn, nbins, padding)
-                spline_arg = (c - 2) - cn
+                spline_arg = (c - padding + 1) - cn
 
-                for offset in range(-2, 3):
+                for offset in range(1 - padding, padding + 1):
                     val = _cubic_spline_derivative(spline_arg)
                     for k in range(n):
                         grad_pdf[r, c + offset, k] -= val * prod[k]
@@ -1034,9 +1047,9 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                     r = _bin_index(rn, nbins, padding)
                     cn = _bin_normalize(moving[k, i, j], mmin, mdelta)
                     c = _bin_index(cn, nbins, padding)
-                    spline_arg = (c - 2) - cn
+                    spline_arg = (c - padding + 1) - cn
 
-                    for offset in range(-2, 3):
+                    for offset in range(1 - padding, padding + 1):
                         val = _cubic_spline_derivative(spline_arg)
                         for l in range(n):
                             grad_pdf[r, c + offset, l] -= val * prod[l]
@@ -1101,7 +1114,7 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
         cnp.npy_intp m = sval.shape[0]
         cnp.npy_intp offset
         int constant_jacobian = 0
-        cnp.npy_intp i, j, r, c, valid_points
+        cnp.npy_intp i, j, k, r, c, valid_points
         double rn, cn
         double val, spline_arg, norm_factor
         double[:, :] J = np.empty(shape=(2, n), dtype=np.float64)
@@ -1124,9 +1137,9 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
             r = _bin_index(rn, nbins, padding)
             cn = _bin_normalize(mval[i], mmin, mdelta)
             c = _bin_index(cn, nbins, padding)
-            spline_arg = (c - 2) - cn
+            spline_arg = (c - padding + 1) - cn
 
-            for offset in range(-2, 3):
+            for offset in range(1 - padding, padding + 1):
                 val = _cubic_spline_derivative(spline_arg)
                 for j in range(n):
                     grad_pdf[r, c + offset, j] -= val * prod[j]
@@ -1216,9 +1229,9 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
             r = _bin_index(rn, nbins, padding)
             cn = _bin_normalize(mval[i], mmin, mdelta)
             c = _bin_index(cn, nbins, padding)
-            spline_arg = (c - 2) - cn
+            spline_arg = (c - padding + 1) - cn
 
-            for offset in range(-2, 3):
+            for offset in range(1 - padding, padding + 1):
                 val = _cubic_spline_derivative(spline_arg)
                 for j in range(n):
                     grad_pdf[r, c + offset, j] -= val * prod[j]
