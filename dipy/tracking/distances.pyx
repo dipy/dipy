@@ -26,8 +26,7 @@ cdef extern from "dpy_math.h" nogil:
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
 
-DEF biggest_double = 1.79769e+308 #np.finfo('f8').max
-DEF biggest_float = 3.402823e+38  # < FLT_MAX (3.4028235e+38); avoids double-to-float overflow
+cimport dipy.utils.constants as consts
 
 cdef inline cnp.ndarray[cnp.float32_t, ndim=1] as_float_3vec(object vec):
     """ Utility function to convert object to 3D float vector """
@@ -1672,7 +1671,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
                     flip[k]=1
                 alld[k]=d[0]
 
-            m_d = <float>biggest_float
+            m_d = <float>consts.BIGGEST_FLOAT
             #find minimum distance and index
             for k from 0<=k<lenC:
                 if alld[k] < m_d:

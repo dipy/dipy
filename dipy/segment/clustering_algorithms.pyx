@@ -16,10 +16,7 @@ cdef extern from "stdlib.h" nogil:
     void *memset(void *ptr, int value, size_t num)
 
 
-DTYPE = np.float32
-DEF BIGGEST_DOUBLE = 1.7976931348623157e+308  # np.finfo('f8').max
-DEF BIGGEST_FLOAT = 3.402823e+38  # < FLT_MAX (3.4028235e+38); avoids double-to-float overflow
-DEF BIGGEST_INT = 2147483647  # np.iinfo('i4').max
+cimport dipy.utils.constants as consts
 
 
 def clusters_centroid2clustermap_centroid(ClustersCentroid clusters_list):
@@ -63,7 +60,7 @@ def peek(iterable):
 
 
 def quickbundles(streamlines, Metric metric, double threshold,
-                 long max_nb_clusters=BIGGEST_INT, ordering=None):
+                 long max_nb_clusters=consts.BIGGEST_INT, ordering=None):
     """ Clusters streamlines using QuickBundles.
 
     See :footcite:p:`Garyfallidis2012a` for further details about the method.
@@ -92,7 +89,7 @@ def quickbundles(streamlines, Metric metric, double threshold,
     .. footbibliography::
     """
     # Threshold of np.inf is not supported, set it to 'biggest_double'
-    threshold = min(threshold, BIGGEST_DOUBLE)
+    threshold = min(threshold, consts.BIGGEST_DOUBLE)
     # Threshold of -np.inf is not supported, set it to 0
     threshold = max(threshold, 0)
     if ordering is None:
@@ -103,13 +100,13 @@ def quickbundles(streamlines, Metric metric, double threshold,
     if first_idx is None or len(streamlines) == 0:
         return ClusterMapCentroid()
 
-    features_shape = shape2tuple(metric.feature.c_infer_shape(streamlines[first_idx].astype(DTYPE)))
+    features_shape = shape2tuple(metric.feature.c_infer_shape(streamlines[first_idx].astype(consts.DTYPE)))
     cdef QuickBundles qb = QuickBundles(features_shape, metric, threshold, max_nb_clusters)
     cdef int idx
     for idx in ordering:
         streamline = streamlines[idx]
-        if not streamline.flags.writeable or streamline.dtype != DTYPE:
-            streamline = streamline.astype(DTYPE)
+        if not streamline.flags.writeable or streamline.dtype != consts.DTYPE:
+            streamline = streamline.astype(consts.DTYPE)
         cluster_id = qb.assignment_step(streamline, idx)
         # The update step is performed right after the assignment step instead
         # of after all streamlines have been assigned like k-means algorithm.
@@ -155,14 +152,14 @@ def quickbundlesx(streamlines, Metric metric, thresholds, ordering=None):
     if first_idx is None or len(streamlines) == 0:
         return ClusterMapCentroid()
 
-    features_shape = shape2tuple(metric.feature.c_infer_shape(streamlines[first_idx].astype(DTYPE)))
+    features_shape = shape2tuple(metric.feature.c_infer_shape(streamlines[first_idx].astype(consts.DTYPE)))
     cdef QuickBundlesX qbx = QuickBundlesX(features_shape, thresholds, metric)
     cdef int idx
 
     for idx in ordering:
         streamline = streamlines[idx]
-        if not streamline.flags.writeable or streamline.dtype != DTYPE:
-            streamline = streamline.astype(DTYPE)
+        if not streamline.flags.writeable or streamline.dtype != consts.DTYPE:
+            streamline = streamline.astype(consts.DTYPE)
 
         qbx.insert(streamline, idx)
 

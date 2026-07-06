@@ -22,12 +22,7 @@ cdef extern from "stdlib.h" nogil:
     void *realloc(void *ptr, size_t elsize)
     void *memset(void *ptr, int value, size_t num)
 
-DTYPE = np.float32
-DEF BIGGEST_DOUBLE = 1.7976931348623157e+308  # np.finfo('f8').max
-DEF BIGGEST_INT = 2147483647  # np.iinfo('i4').max
-DEF BIGGEST_FLOAT = 3.402823e+38  # < FLT_MAX (3.4028235e+38); avoids double-to-float overflow
-DEF SMALLEST_FLOAT = -3.402823e+38  # > -FLT_MAX; avoids double-to-float overflow
-
+cimport dipy.utils.constants as consts
 
 cdef print_node(CentroidNode* node, prepend=""):
     if node == NULL:
@@ -67,8 +62,8 @@ cdef void aabb_creation(Data2D streamline, float* aabb) noexcept nogil:
         float max_[3]
 
     for d in range(D):
-        min_[d] = <float>BIGGEST_FLOAT
-        max_[d] = <float>SMALLEST_FLOAT
+        min_[d] = <float>consts.BIGGEST_FLOAT
+        max_[d] = <float>consts.SMALLEST_FLOAT
         for n in range(N):
 
             if max_[d] < streamline[n, d]:
@@ -108,9 +103,9 @@ cdef CentroidNode* create_empty_node(Shape centroid_shape, float threshold) nogi
     node.aabb[0] = 0
     node.aabb[1] = 0
     node.aabb[2] = 0
-    node.aabb[3] = <float>BIGGEST_FLOAT
-    node.aabb[4] = <float>BIGGEST_FLOAT
-    node.aabb[5] = <float>BIGGEST_FLOAT
+    node.aabb[3] = <float>consts.BIGGEST_FLOAT
+    node.aabb[4] = <float>consts.BIGGEST_FLOAT
+    node.aabb[5] = <float>consts.BIGGEST_FLOAT
     node.threshold = threshold
     node.indices = NULL
     node.size = 0
@@ -212,7 +207,7 @@ cdef class QuickBundlesX:
             return
 
         nearest_cluster.id = -1
-        nearest_cluster.dist = BIGGEST_DOUBLE
+        nearest_cluster.dist = consts.BIGGEST_DOUBLE
         nearest_cluster.flip = 0
 
         for k in range(node.nb_children):
@@ -492,14 +487,14 @@ cdef class ClustersCentroid(Clusters):
 
 cdef class QuickBundles:
     def __init__(QuickBundles self, features_shape, Metric metric, double threshold,
-                 int max_nb_clusters=BIGGEST_INT):
+                 int max_nb_clusters=consts.BIGGEST_INT):
         self.metric = metric
         self.features_shape = tuple2shape(features_shape)
         self.threshold = threshold
         self.max_nb_clusters = max_nb_clusters
         self.clusters = ClustersCentroid(features_shape)
-        self.features = np.empty(features_shape, dtype=DTYPE)
-        self.features_flip = np.empty(features_shape, dtype=DTYPE)
+        self.features = np.empty(features_shape, dtype=consts.DTYPE)
+        self.features_flip = np.empty(features_shape, dtype=consts.DTYPE)
 
         self.stats.nb_mdf_calls = 0
         self.stats.nb_aabb_calls = 0
@@ -524,7 +519,7 @@ cdef class QuickBundles:
             float aabb[6]
 
         nearest_cluster.id = -1
-        nearest_cluster.dist = BIGGEST_DOUBLE
+        nearest_cluster.dist = consts.BIGGEST_DOUBLE
         nearest_cluster.flip = 0
 
         for k in range(self.clusters.c_size()):
