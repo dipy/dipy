@@ -4,6 +4,14 @@ import numpy as np
 from dipy.utils.deprecator import deprecate_with_version
 
 from dipy.align.fused_types cimport floating
+from dipy.align.transforms cimport Transform
+from dipy.align.vector_fields cimport (
+    _apply_affine_2d_x0,
+    _apply_affine_2d_x1,
+    _apply_affine_3d_x0,
+    _apply_affine_3d_x1,
+    _apply_affine_3d_x2,
+)
 cimport cython
 cimport numpy as cnp
 
@@ -719,3 +727,339 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
                                 cnp.npy_intp radius):
     """Deprecated. Use :func:`compute_cc_step_2d` with ``forward_step=False``."""
     return compute_cc_step_2d(grad_moving, factors, radius, False)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def compute_cc_energy_2d(floating[:, :, :] factors, cnp.npy_intp radius):
+    """Return the local cross-correlation energy for a 2D factors array.
+
+    Computes the data term associated with the local normalized
+    cross-correlation metric using the precomputed factors obtained from
+    `precompute_cc_factors_2d`.
+
+    The returned value is the negative sum of squared local
+    normalized cross-correlations over the valid image region. Therefore, this
+    value can be directly minimized by an optimizer.
+
+    Parameters
+    ----------
+    factors : array, shape (R, C, 5)
+        the precomputed cross correlation terms obtained via
+        precompute_cc_factors_2d
+    radius : int
+        the radius of the neighborhood used for the CC metric when computing
+        the factors. The energy is computed only over the valid image region,
+        excluding a boundary of width radius pixels.
+
+    Returns
+    -------
+    energy : float
+        the cross correlation energy (data term)
+
+    """
+    cdef:
+        cnp.npy_intp nr = factors.shape[0]
+        cnp.npy_intp nc = factors.shape[1]
+        cnp.npy_intp r, c
+        double sfm, sff, smm, localCorrelation, energy = 0
+
+    with nogil:
+        # Same energy accumulation used by the displacement-field CC routines.
+        # The affine metric reuses this value-only path when the optimizer
+        # requests the distance without its gradient.
+        for r in range(radius, nr-radius):
+            for c in range(radius, nc-radius):
+                sfm = factors[r, c, 2]
+                sff = factors[r, c, 3]
+                smm = factors[r, c, 4]
+                if sff == 0.0 or smm == 0.0:
+                    continue
+                localCorrelation = 0
+                if sff * smm > 1e-5:
+                    localCorrelation = sfm * sfm / (sff * smm)
+                if localCorrelation < 1:  # avoid bad values...
+                    energy -= localCorrelation
+    return energy
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def compute_cc_energy_3d(floating[:, :, :, :] factors, cnp.npy_intp radius):
+    """Return the local cross-correlation energy for a 3D factors array.
+
+    Computes the data term associated with the local normalized
+    cross-correlation metric using the precomputed factors obtained from
+    `precompute_cc_factors_3d`.
+
+    The returned value is the negative sum of squared local
+    normalized cross-correlations over the valid image region. Therefore, this
+    value can be directly minimized by an optimizer.
+
+    Parameters
+    ----------
+    factors : array, shape (S, R, C, 5)
+        the precomputed cross correlation terms obtained via
+        precompute_cc_factors_3d
+    radius : int
+        the radius of the neighborhood used for the CC metric when computing
+        the factors. The energy is computed only over the valid image region,
+        excluding a boundary of width radius voxels.
+
+    Returns
+    -------
+    energy : float
+        the cross correlation energy (data term)
+
+    """
+    cdef:
+        cnp.npy_intp ns = factors.shape[0]
+        cnp.npy_intp nr = factors.shape[1]
+        cnp.npy_intp nc = factors.shape[2]
+        cnp.npy_intp s, r, c
+        double sfm, sff, smm, localCorrelation, energy = 0
+
+    with nogil:
+        # Same energy accumulation used by the displacement-field CC routines.
+        # The affine metric reuses this value-only path when the optimizer
+        # requests the distance without its gradient.
+        for s in range(radius, ns-radius):
+            for r in range(radius, nr-radius):
+                for c in range(radius, nc-radius):
+                    sfm = factors[s, r, c, 2]
+                    sff = factors[s, r, c, 3]
+                    smm = factors[s, r, c, 4]
+                    if sff == 0.0 or smm == 0.0:
+                        continue
+                    localCorrelation = 0
+                    if sff * smm > 1e-5:
+                        localCorrelation = sfm * sfm / (sff * smm)
+                    if localCorrelation < 1:  # avoid bad values...
+                        energy -= localCorrelation
+    return energy
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def compute_cc_affine_2d(
+        floating[:, :, :] grad_moving,
+        floating[:, :, :] factors,
+        cnp.npy_intp radius,
+        double[:] theta,
+        Transform transform,
+        double[:, :] grid2world,
+        double[:] metric_gradient):
+    """Return 2D CC energy and write its affine-parameter gradient.
+
+    Computes the local normalized cross-correlation energy and its gradient
+    with respect to the parameters of an affine transform.
+
+    The returned value is the negative sum of squared local
+    normalized cross-correlations over the valid image region. Therefore, this
+    value can be directly minimized by an optimizer.
+
+    The gradient is computed using the same local CC scalar factor used by
+    `compute_cc_backward_step_2d`. Instead of returning a dense displacement
+    field, this function projects that image-space gradient onto the affine
+    transform parameters using the transform Jacobian.
+
+    Parameters
+    ----------
+    grad_moving : array, shape (R, C, 2)
+        the gradient of the moving image
+    factors : array, shape (R, C, 5)
+        the precomputed cross correlation terms obtained via
+        precompute_cc_factors_2d
+    radius : int
+        the radius of the neighborhood used for the CC metric when computing
+        the factors. The gradient is computed only over the valid image
+        region, excluding a boundary of width radius pixels.
+    theta : array, shape (n,)
+        current parameter vector of the affine transform
+    transform : instance of Transform
+        transform with respect to whose parameters the gradient must be
+        computed
+    grid2world : array, shape (3, 3)
+        transform from static grid coordinates to the physical coordinates
+        where the affine transform Jacobian must be evaluated
+    metric_gradient : array, shape (n,)
+        array to write the gradient of the cross correlation energy with
+        respect to `theta`
+
+    Returns
+    -------
+    energy : float
+        the cross correlation energy (data term)
+
+    """
+    cdef:
+        cnp.npy_intp nr = grad_moving.shape[0]
+        cnp.npy_intp nc = grad_moving.shape[1]
+        cnp.npy_intp n = theta.shape[0]
+        cnp.npy_intp r, c, k
+        int constant_jacobian = 0
+        double energy = 0
+        double Ii, Ji, sfm, sff, smm, localCorrelation, temp
+        double spatial_derivative
+        double[:, :] J = np.empty((2, n), dtype=np.float64)
+        double[:] x = np.empty((2,), dtype=np.float64)
+
+    with nogil:
+        metric_gradient[:] = 0
+
+        for r in range(radius, nr-radius):
+            for c in range(radius, nc-radius):
+                Ii = factors[r, c, 0]
+                Ji = factors[r, c, 1]
+                sfm = factors[r, c, 2]
+                sff = factors[r, c, 3]
+                smm = factors[r, c, 4]
+                if sff == 0.0 or smm == 0.0:
+                    continue
+
+                localCorrelation = 0
+                if sff * smm > 1e-5:
+                    localCorrelation = sfm * sfm / (sff * smm)
+                if localCorrelation < 1:  # avoid bad values...
+                    energy -= localCorrelation
+
+                temp = 2.0 * sfm / (sff * smm) * (
+                    Ii - sfm / smm * Ji
+                )
+
+                x[0] = _apply_affine_2d_x0(
+                    <double>r, <double>c, 1.0, grid2world
+                )
+                x[1] = _apply_affine_2d_x1(
+                    <double>r, <double>c, 1.0, grid2world
+                )
+
+                if constant_jacobian == 0:
+                    constant_jacobian = transform._jacobian(theta, x, J)
+
+                for k in range(n):
+                    spatial_derivative = (
+                        J[0, k] * grad_moving[r, c, 0]
+                        + J[1, k] * grad_moving[r, c, 1]
+                    )
+                    metric_gradient[k] -= temp * spatial_derivative
+
+    return energy
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def compute_cc_affine_3d(
+        floating[:, :, :, :] grad_moving,
+        floating[:, :, :, :] factors,
+        cnp.npy_intp radius,
+        double[:] theta,
+        Transform transform,
+        double[:, :] grid2world,
+        double[:] metric_gradient):
+    """Return 3D CC energy and write its affine-parameter gradient.
+
+    Computes the local normalized cross-correlation energy and its gradient
+    with respect to the parameters of an affine transform.
+
+    The returned value is the negative sum of squared local
+    normalized cross-correlations over the valid image region. Therefore, this
+    value can be directly minimized by an optimizer.
+
+    The gradient is computed using the same local CC scalar factor used by
+    `compute_cc_backward_step_3d`. Instead of returning a dense displacement
+    field, this function projects that image-space gradient onto the affine
+    transform parameters using the transform Jacobian.
+
+    Parameters
+    ----------
+    grad_moving : array, shape (S, R, C, 3)
+        the gradient of the moving volume
+    factors : array, shape (S, R, C, 5)
+        the precomputed cross correlation terms obtained via
+        precompute_cc_factors_3d
+    radius : int
+        the radius of the neighborhood used for the CC metric when computing
+        the factors. The gradient is computed only over the valid image
+        region, excluding a boundary of width radius voxels.
+    theta : array, shape (n,)
+        current parameter vector of the affine transform
+    transform : instance of Transform
+        transform with respect to whose parameters the gradient must be
+        computed
+    grid2world : array, shape (4, 4)
+        transform from static grid coordinates to the physical coordinates
+        where the affine transform Jacobian must be evaluated
+    metric_gradient : array, shape (n,)
+        array to write the gradient of the cross correlation energy with
+        respect to `theta`
+
+    Returns
+    -------
+    energy : float
+        the cross correlation energy (data term)
+
+    """
+    cdef:
+        cnp.npy_intp ns = grad_moving.shape[0]
+        cnp.npy_intp nr = grad_moving.shape[1]
+        cnp.npy_intp nc = grad_moving.shape[2]
+        cnp.npy_intp n = theta.shape[0]
+        cnp.npy_intp s, r, c, k
+        int constant_jacobian = 0
+        double energy = 0
+        double Ii, Ji, sfm, sff, smm, localCorrelation, temp
+        double spatial_derivative
+        double[:, :] J = np.empty((3, n), dtype=np.float64)
+        double[:] x = np.empty((3,), dtype=np.float64)
+
+    with nogil:
+        metric_gradient[:] = 0
+
+        for s in range(radius, ns-radius):
+            for r in range(radius, nr-radius):
+                for c in range(radius, nc-radius):
+                    Ii = factors[s, r, c, 0]
+                    Ji = factors[s, r, c, 1]
+                    sfm = factors[s, r, c, 2]
+                    sff = factors[s, r, c, 3]
+                    smm = factors[s, r, c, 4]
+                    if sff == 0.0 or smm == 0.0:
+                        continue
+
+                    localCorrelation = 0
+                    if sff * smm > 1e-5:
+                        localCorrelation = sfm * sfm / (sff * smm)
+                    if localCorrelation < 1:  # avoid bad values...
+                        energy -= localCorrelation
+
+                    temp = 2.0 * sfm / (sff * smm) * (
+                        Ii - sfm / smm * Ji
+                    )
+
+                    x[0] = _apply_affine_3d_x0(
+                        <double>s, <double>r, <double>c, 1.0, grid2world
+                    )
+                    x[1] = _apply_affine_3d_x1(
+                        <double>s, <double>r, <double>c, 1.0, grid2world
+                    )
+                    x[2] = _apply_affine_3d_x2(
+                        <double>s, <double>r, <double>c, 1.0, grid2world
+                    )
+
+                    if constant_jacobian == 0:
+                        constant_jacobian = transform._jacobian(theta, x, J)
+
+                    for k in range(n):
+                        spatial_derivative = (
+                            J[0, k] * grad_moving[s, r, c, 0]
+                            + J[1, k] * grad_moving[s, r, c, 1]
+                            + J[2, k] * grad_moving[s, r, c, 2]
+                        )
+                        metric_gradient[k] -= temp * spatial_derivative
+
+    return energy
