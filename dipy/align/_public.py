@@ -19,6 +19,7 @@ import numpy as np
 from dipy.align.imaffine import (
     AffineMap,
     AffineRegistration,
+    CrossCorrelationMetric,
     MutualInformationMetric,
     transform_centers_of_mass,
 )
@@ -64,7 +65,10 @@ __all__ = [
 # Global dicts for choosing metrics for registration:
 syn_metric_dict = {"CC": CCMetric, "EM": EMMetric, "SSD": SSDMetric}
 
-affine_metric_dict = {"MI": MutualInformationMetric}
+affine_metric_dict = {
+    "CC": CrossCorrelationMetric,
+    "MI": MutualInformationMetric,
+}
 
 
 @warning_for_keywords()
@@ -456,7 +460,8 @@ def affine_registration(
         Default: identity.
 
     metric : str, optional.
-        Currently only supports 'MI' for MutualInformationMetric.
+        The metric to optimize. Supported values are 'MI' MutualInformationMetric`
+        and 'CC' for CrossCorrelationMetric.
 
     level_iters : sequence, optional
         AffineRegistration key-word argument: the number of iterations at each
@@ -513,6 +518,11 @@ def affine_registration(
         where `sampling_proportion` specifies the proportion of voxels to
         be used. The default is None (dense sampling).
 
+    radius : int, optional
+        CrossCorrelationMetric key-word argument: radius of the square (2D)
+        or cubic (3D) neighborhood used for local cross-correlation. The
+        default is 4.
+
     Returns
     -------
     resampled : array with moving data resampled to the static space
@@ -554,8 +564,7 @@ def affine_registration(
     )
 
     # Define the Affine registration object we'll use with the chosen metric.
-    # For now, there is only one metric (mutual information)
-    use_metric = affine_metric_dict[metric](**metric_kwargs)
+    use_metric = affine_metric_dict[metric.upper()](**metric_kwargs)
 
     affreg = AffineRegistration(
         metric=use_metric,

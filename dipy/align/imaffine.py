@@ -903,7 +903,6 @@ class MutualInformationMetric:
 
 
 class CrossCorrelationMetric:
-    @warning_for_keywords()
     def __init__(self, *, radius=4):
         r"""Initialize an instance of the Cross Correlation metric.
 
@@ -944,7 +943,6 @@ class CrossCorrelationMetric:
                 f"Cross-correlation is not defined for dimension {self.dim}"
             )
 
-    @warning_for_keywords()
     def setup(
         self,
         transform,
@@ -1058,7 +1056,6 @@ class CrossCorrelationMetric:
         factors = np.asarray(factors)
         return factors
 
-    @warning_for_keywords()
     def _update_cross_correlation(self, params, *, update_gradient=True):
         r"""Update local cross-correlation and its affine gradient.
 
