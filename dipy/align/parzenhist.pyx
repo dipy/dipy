@@ -469,7 +469,7 @@ class ParzenJointHistogram:
         if not self.setup_called:
             self.setup(static, moving, smask=smask, mmask=mmask)
 
-        n_offsets = 2 * self.padding + 1
+        n_offsets = 2 * self.padding
         local_derivative_by_parzen_bin = np.zeros(
             (n_offsets,) + moving.shape + (dim,), dtype=mgradient.dtype)
         joint_pdf_index = np.zeros(moving.shape, dtype=np.intp)
@@ -913,13 +913,13 @@ cdef _compute_pdfs_dense_and_local_derivatives_2d(
         the array to write the marginal PDF associated with the static image
     mmarginal : array, shape (nbins,)
         the array to write the marginal PDF associated with the moving image
-    local_derivative_by_parzen_bin : array, shape (2*padding + 1, R, C, 2)
+    local_derivative_by_parzen_bin : array, shape (2*padding, R, C, 2)
         the array to write the unweighted local derivative contribution of each
         pixel displacement component to each affected moving Parzen bin
     joint_pdf_index : array, shape (R, C)
         the array to write the flattened index of the first joint-PDF bin affected
         by each pixel. For a voxel assigned to static bin r and moving bin c, this
-        value is r * nbins + (c - padding)
+        value is r * nbins + (c - padding + 1)
     """
     cdef:
         cnp.npy_intp nrows = static.shape[0]
@@ -949,13 +949,13 @@ cdef _compute_pdfs_dense_and_local_derivatives_2d(
                 cn = _bin_normalize(moving[i, j], mmin, mdelta)
                 c = _bin_index(cn, nbins, padding)
 
-                joint_pdf_index[i, j] = r * nbins + (c - padding)
+                joint_pdf_index[i, j] = r * nbins + (c - padding + 1)
 
-                spline_arg = (c - padding) - cn
+                spline_arg = (c - padding + 1) - cn
                 smarginal[r] += 1
 
                 offset_id = 0
-                for offset in range(-padding, padding + 1):
+                for offset in range(1 - padding, padding + 1):
                     val = _cubic_spline(spline_arg)
                     dval = _cubic_spline_derivative(spline_arg)
 
@@ -1123,13 +1123,13 @@ cdef _compute_pdfs_dense_and_local_derivatives_3d(
         the array to write the marginal PDF associated with the static image
     mmarginal : array, shape (nbins,)
         the array to write the marginal PDF associated with the moving image
-    local_derivative_by_parzen_bin : array, shape (2*padding + 1, S, R, C, 3)
+    local_derivative_by_parzen_bin : array, shape (2*padding, S, R, C, 3)
         the array to write the unweighted local derivative contribution of each
         voxel displacement component to each affected moving Parzen bin
     joint_pdf_index : array, shape (S, R, C)
         the array to write the flattened index of the first joint-PDF bin affected
         by each voxel. For a voxel assigned to static bin r and moving bin c, this
-        value is r * nbins + (c - padding)
+        value is r * nbins + (c - padding + 1)
     """
     cdef:
         cnp.npy_intp nslices = static.shape[0]
@@ -1163,13 +1163,14 @@ cdef _compute_pdfs_dense_and_local_derivatives_3d(
                     cn = _bin_normalize(moving[k, i, j], mmin, mdelta)
                     c = _bin_index(cn, nbins, padding)
 
-                    joint_pdf_index[k, i, j] = r * nbins + (c - padding)
+                    joint_pdf_index[k, i, j] = (
+                        r * nbins + (c - padding + 1))
 
-                    spline_arg = (c - padding) - cn
+                    spline_arg = (c - padding + 1) - cn
                     smarginal[r] += 1
 
                     offset_id = 0
-                    for offset in range(-padding, padding + 1):
+                    for offset in range(1 - padding, padding + 1):
                         val = _cubic_spline(spline_arg)
                         dval = _cubic_spline_derivative(spline_arg)
 
@@ -1693,7 +1694,7 @@ cdef _apply_mi_weights_to_cached_local_derivatives_2d(
 
     Parameters
     ----------
-    local_derivative_by_parzen_bin : array, shape (2*padding + 1, R, C, 2)
+    local_derivative_by_parzen_bin : array, shape (2*padding, R, C, 2)
         cached unweighted local derivative contribution of each pixel displacement
         component to each affected moving Parzen bin
     joint_pdf_index : array, shape (R, C)
@@ -1736,7 +1737,7 @@ cdef _apply_mi_weights_to_cached_local_derivatives_2d(
                 valid_points += 1
                 idx = joint_pdf_index[i, j]
 
-                for offset_id in range(2 * padding + 1):
+                for offset_id in range(2 * padding):
                     r = idx // nbins
                     c = idx - r * nbins
                     weight = mi_weights[r, c]
@@ -1775,7 +1776,7 @@ cdef _apply_mi_weights_to_cached_local_derivatives_3d(
 
     Parameters
     ----------
-    local_derivative_by_parzen_bin : array, shape (2*padding + 1, S, R, C, 3)
+    local_derivative_by_parzen_bin : array, shape (2*padding, S, R, C, 3)
         cached unweighted local derivative contribution of each voxel displacement
         component to each affected moving Parzen bin
     joint_pdf_index : array, shape (S, R, C)
@@ -1820,7 +1821,7 @@ cdef _apply_mi_weights_to_cached_local_derivatives_3d(
                     valid_points += 1
                     idx = joint_pdf_index[k, i, j]
 
-                    for offset_id in range(2 * padding + 1):
+                    for offset_id in range(2 * padding):
                         r = idx // nbins
                         c = idx - r * nbins
                         weight = mi_weights[r, c]
