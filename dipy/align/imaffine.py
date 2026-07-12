@@ -932,11 +932,9 @@ class CrossCorrelationMetric:
         r"""Connect the dimension-specific cross-correlation functions."""
         if self.dim == 2:
             self.precompute_factors = cc.precompute_cc_factors_2d
-            self.compute_energy = cc.compute_cc_energy_2d
             self.compute_affine = cc.compute_cc_affine_2d
         elif self.dim == 3:
             self.precompute_factors = cc.precompute_cc_factors_3d
-            self.compute_energy = cc.compute_cc_energy_3d
             self.compute_affine = cc.compute_cc_affine_3d
         else:
             raise ValueError(
@@ -1107,16 +1105,16 @@ class CrossCorrelationMetric:
 
             # The Jacobian must be evaluated at the pre-aligned points
             self.metric_val = self.compute_affine(
-                moving_gradient,
                 factors,
                 self.radius,
+                moving_gradient,
                 params,
                 self.transform,
                 static2prealigned,
                 self.metric_grad,
             )
         else:
-            self.metric_val = self.compute_energy(factors, self.radius)
+            self.metric_val = self.compute_affine(factors, self.radius)
 
     def distance(self, params):
         r"""Numeric value of the local cross-correlation energy.
