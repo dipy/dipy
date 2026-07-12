@@ -460,7 +460,7 @@ def affine_registration(
         Default: identity.
 
     metric : str, optional.
-        The metric to optimize. Supported values are 'MI' MutualInformationMetric`
+        The metric to optimize. Supported values are 'MI' for MutualInformationMetric`
         and 'CC' for CrossCorrelationMetric.
 
     level_iters : sequence, optional
@@ -564,7 +564,15 @@ def affine_registration(
     )
 
     # Define the Affine registration object we'll use with the chosen metric.
-    use_metric = affine_metric_dict[metric.upper()](**metric_kwargs)
+    if not isinstance(metric, str):
+        raise TypeError("metric must be a string")
+    metric = metric.upper()
+    if metric not in affine_metric_dict:
+        supported = ", ".join(sorted(affine_metric_dict))
+        raise ValueError(
+            f"Unsupported affine metric {metric!r}. Supported metrics are: {supported}."
+        )
+    use_metric = affine_metric_dict[metric](**metric_kwargs)
 
     affreg = AffineRegistration(
         metric=use_metric,
