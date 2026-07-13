@@ -504,19 +504,19 @@ def peaks_from_model(
             raise ValueError("Mask is not the same shape as data.")
 
     gfa_array = np.zeros(shape)
-    qa_array = np.zeros((shape + (npeaks,)))
+    qa_array = np.zeros(shape + (npeaks,))
 
-    peak_dirs = np.zeros((shape + (npeaks, 3)))
-    peak_values = np.zeros((shape + (npeaks,)))
+    peak_dirs = np.zeros(shape + (npeaks, 3))
+    peak_values = np.zeros(shape + (npeaks,))
     peak_indices = np.zeros((shape + (npeaks,)), dtype=np.int32)
     peak_indices.fill(-1)
 
     if return_sh:
         n_shm_coeff = (sh_order_max + 2) * (sh_order_max + 1) // 2
-        shm_coeff = np.zeros((shape + (n_shm_coeff,)))
+        shm_coeff = np.zeros(shape + (n_shm_coeff,))
 
     if return_odf:
-        odf_array = np.zeros((shape + (len(sphere.vertices),)))
+        odf_array = np.zeros(shape + (len(sphere.vertices),))
 
     global_max = -np.inf
     for idx in ndindex(shape):

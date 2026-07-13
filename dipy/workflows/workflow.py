@@ -96,10 +96,7 @@ class Workflow:
         output independently of the outcome to tell the user something
         happened.
         """
-        duplicates = []
-        for output in self.flat_outputs:
-            if Path(output).is_file():
-                duplicates.append(output)
+        duplicates = [output for output in self.flat_outputs if Path(output).is_file()]
 
         if len(duplicates) > 0:
             if self._force_overwrite:

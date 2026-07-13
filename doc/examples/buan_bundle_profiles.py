@@ -78,9 +78,7 @@ rng = np.random.default_rng()
 
 colors = [rng.random(3) for si in range(n_segments)]
 
-disks_color = []
-for i in range(len(indx)):
-    disks_color.append(tuple(colors[indx[i]]))
+disks_color = [tuple(colors[i]) for i in indx]
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)

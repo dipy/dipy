@@ -13,6 +13,7 @@ from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.sphere import HemiSphere, Sphere
 from dipy.data.fetcher import (
     fetch_30_bundle_atlas_hcp842,
+    fetch_atlas_schaefer_2018,
     fetch_bundle_atlas_hcp842,
     fetch_bundle_fa_hcp,
     fetch_bundle_warp_dataset,
@@ -53,6 +54,7 @@ from dipy.data.fetcher import (
     fetch_taiwan_ntu_dsi,
     fetch_target_tractogram_hcp,
     fetch_tissue_data,
+    get_atlas_schaefer_2018,
     get_bundle_atlas_hcp842,
     get_fnames,
     get_target_tractogram_hcp,
@@ -85,6 +87,7 @@ from dipy.utils.arrfuncs import as_native_array
 
 __all__ = [
     "fetch_30_bundle_atlas_hcp842",
+    "fetch_atlas_schaefer_2018",
     "fetch_bundle_atlas_hcp842",
     "fetch_bundle_fa_hcp",
     "fetch_bundle_warp_dataset",
@@ -125,6 +128,7 @@ __all__ = [
     "fetch_taiwan_ntu_dsi",
     "fetch_target_tractogram_hcp",
     "fetch_tissue_data",
+    "get_atlas_schaefer_2018",
     "get_bundle_atlas_hcp842",
     "get_fnames",
     "get_target_tractogram_hcp",
@@ -283,7 +287,7 @@ def get_sphere(*, name="symmetric362"):
         ...
     DataError: No sphere called "not a sphere name"
 
-    """  # noqa: E501
+    """
     fname = SPHERE_FILES.get(name)
     if fname is None:
         raise DataError(f'No sphere called "{name}"')
@@ -451,7 +455,7 @@ def load_sdp_constraints(model_name, *, order=None):
 
     file = model_name + "_constraint"
     if order is not None:
-        file += f"_{str(order)}"
+        file += f"_{order}"
     if order is None:
         file += "_SC"
     file += ".npz"

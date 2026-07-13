@@ -378,7 +378,7 @@ def slicer_panel(
             message = f"{res:.3f}"
         except TypeError:
             message = f"{res[0]:.3f} {res[1]:.3f} {res[2]:.3f}"
-        picker_label.message = f"({str(i)}, {str(j)}, {str(k)}) {message}"
+        picker_label.message = f"({i}, {j}, {k}) {message}"
 
     mem.slicer_vol_idx = 0
     mem.slicer_vol = tmp_new

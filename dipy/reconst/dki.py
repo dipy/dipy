@@ -685,7 +685,7 @@ def apparent_kurtosis_coef(
     # reshape data according to input data
     akc[rel_i] = akci
 
-    return akc.reshape((outshape + (len(V),)))
+    return akc.reshape(outshape + (len(V),))
 
 
 @warning_for_keywords()

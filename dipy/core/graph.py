@@ -77,9 +77,10 @@ class Graph:
         paths = []
         for node in graph[start]:
             if node not in path:
-                newpaths = self.all_paths(graph, node, end=end, path=path)
-                for newpath in newpaths:
-                    paths.append(newpath)
+                paths.extend(
+                    newpath
+                    for newpath in self.all_paths(graph, node, end=end, path=path)
+                )
         return paths
 
     @warning_for_keywords()

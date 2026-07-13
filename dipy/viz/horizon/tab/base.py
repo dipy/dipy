@@ -186,7 +186,7 @@ class TabManager:
         if not self._synchronize_slices and slices_tabs:
             msg = (
                 "Images are of different dimensions, "
-                + "synchronization of slices will not work"
+                "synchronization of slices will not work"
             )
             logger.warning(msg)
 
@@ -269,8 +269,7 @@ class TabManager:
         for element in args:
             if element.__class__.__name__ == "HorizonUIElement":
                 if isinstance(element.obj, list):
-                    for obj in element.obj:
-                        elements.append(obj)
+                    elements.extend(obj for obj in element.obj)
                 else:
                     elements.append(element.obj)
             else:
@@ -361,8 +360,9 @@ class TabManager:
         """
         return list(
             filter(
-                lambda x: x.__class__.__name__ in types
-                and not x.tab_id == active_tab_id,
+                lambda x: (
+                    x.__class__.__name__ in types and not x.tab_id == active_tab_id
+                ),
                 self._tabs,
             )
         )

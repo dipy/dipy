@@ -3,6 +3,8 @@
 # cython: wraparound=False
 # cython: cdivision=True
 
+from dipy.utils.deprecator import deprecate_with_version
+
 from libc.stdio cimport printf
 cimport numpy as cnp
 
@@ -59,11 +61,23 @@ cdef void copy_point(double * a, double * b) noexcept nogil:
         b[i] = a[i]
 
 
-cdef void scalar_muliplication_point(double * a, double scalar) noexcept nogil:
+cdef void scalar_multiplication_point(double * a, double scalar) noexcept nogil:
     cdef:
         cnp.npy_intp i = 0
     for i in range(3):
         a[i] *= scalar
+
+
+# Python-level deprecated wrapper (emits DeprecationWarning)
+@deprecate_with_version(
+    "scalar_muliplication_point is a deprecated spelling. "
+    "Use scalar_multiplication_point instead.",
+    since="1.13",
+    until="2.0",
+)
+def scalar_muliplication_point(double[::1] point, double scalar):
+    """Deprecated. Use :func:`scalar_multiplication_point` instead."""
+    scalar_multiplication_point(&point[0], scalar)
 
 
 cdef double norm(double * v) noexcept nogil:
@@ -235,13 +249,6 @@ cpdef void seed(cnp.npy_uint32 s) noexcept nogil:
     srand(s)
 
 
-cdef void print_c_array_pointer(double* arr, int size) noexcept nogil:
-    cdef int i
-    for i in range(size):
-        printf("%f, ", arr[i])
-    printf("\n\n\n")
-
-
 cdef void seed_rng(RNGState* rng_state, cnp.npy_uint64 seed) noexcept nogil:
     """
     Seed the RNG state (thread-safe).
@@ -279,7 +286,7 @@ cdef cnp.npy_uint32 next_rng(RNGState* rng_state) noexcept nogil:
     rng_state.state = oldstate * 6364136223846793005ULL + rng_state.inc
     cdef cnp.npy_uint32 xorshifted = ((oldstate >> 18) ^ oldstate) >> 27
     cdef cnp.npy_uint32 rot = oldstate >> 59
-    return (xorshifted >> rot) | (xorshifted << ((-rot) & 31))
+    return (xorshifted >> rot) | (xorshifted << ((32 - rot) & 31))
 
 
 cdef double random_float(RNGState* rng_state) noexcept nogil:

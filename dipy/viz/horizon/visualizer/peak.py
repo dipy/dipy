@@ -79,7 +79,7 @@ class PeakActor(Actor):
         If True, peaks are drawn for both peaks_dirs and -peaks_dirs. Else,
         peaks are only drawn for directions given by peaks_dirs.
 
-    """  # noqa: E501
+    """
 
     @warning_for_keywords()
     def __init__(

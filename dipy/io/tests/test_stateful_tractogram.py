@@ -65,7 +65,7 @@ def test_direct_trx_loading():
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
-@pytest.mark.parametrize("ext, space", itertools.product(EXTENSIONS, SPACES))
+@pytest.mark.parametrize("ext, space", list(itertools.product(EXTENSIONS, SPACES)))
 def test_space_gold_standard(ext, space):
     # VTK/FIB in the gold standard dataset are in LPSMM space.
     from_space = Space.LPSMM if ext in ["vtk", "fib"] else Space.RASMM

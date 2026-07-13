@@ -20,6 +20,7 @@ from dipy.reconst.rumba import RumbaSDModel, generate_kernel
 from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 from dipy.sims.voxel import multi_tensor, single_tensor, sticks_and_ball
+from dipy.testing.decorators import set_random_number_generator
 
 
 def test_rumba():
@@ -177,10 +178,14 @@ def test_multishell_rumba():
     assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
 
-def test_mvoxel_rumba():
+@set_random_number_generator(42)
+def test_mvoxel_rumba(*, rng):
     # Verify form of results in multi-voxel situation.
 
-    data, gtab = dsi_voxels()  # multi-voxel data
+    data, gtab = dsi_voxels()
+    n_vox = data.shape[0] * data.shape[1] * data.shape[2]
+    idx = rng.choice(n_vox, size=16, replace=False)
+    data = data.reshape(-1, data.shape[-1])[idx].reshape(2, 2, 4, -1)
     sphere = default_sphere  # repulsion 724
 
     # Models to validate
@@ -322,10 +327,14 @@ def test_global_fit():
             assert_equal(f_iso[0, 0, 0] > 0.8, True)
 
 
-def test_mvoxel_global_fit():
+@set_random_number_generator(42)
+def test_mvoxel_global_fit(*, rng):
     # Verify form of results in global fitting paradigm.
 
-    data, gtab = dsi_voxels()  # multi-voxel data
+    data, gtab = dsi_voxels()
+    n_vox = data.shape[0] * data.shape[1] * data.shape[2]
+    idx = rng.choice(n_vox, size=16, replace=False)
+    data = data.reshape(-1, data.shape[-1])[idx].reshape(2, 2, 4, -1)
     sphere = default_sphere  # repulsion 724
 
     # Models to validate

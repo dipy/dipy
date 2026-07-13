@@ -95,7 +95,7 @@ class Cluster:
         return "[" + ", ".join(map(str, self.indices)) + "]"
 
     def __repr__(self):
-        return f"Cluster({str(self)})"
+        return f"Cluster({self})"
 
     def __eq__(self, other):
         return isinstance(other, Cluster) and self.indices == other.indices
@@ -144,7 +144,7 @@ class ClusterCentroid(Cluster):
     def __init__(self, centroid, *, id=0, indices=None, refdata=None):
         if refdata is None:
             refdata = Identity()
-        super(ClusterCentroid, self).__init__(id=id, indices=indices, refdata=refdata)
+        super().__init__(id=id, indices=indices, refdata=refdata)
         self.centroid = centroid.copy()
         self.new_centroid = centroid.copy()
 
@@ -152,7 +152,7 @@ class ClusterCentroid(Cluster):
         return (
             isinstance(other, ClusterCentroid)
             and np.all(self.centroid == other.centroid)
-            and super(ClusterCentroid, self).__eq__(other)
+            and super().__eq__(other)
         )
 
     def assign(self, id_datum, features):
@@ -167,7 +167,7 @@ class ClusterCentroid(Cluster):
         """
         N = len(self)
         self.new_centroid = ((self.new_centroid * N) + features) / (N + 1.0)
-        super(ClusterCentroid, self).assign(id_datum)
+        super().assign(id_datum)
 
     def update(self):
         """Update centroid of this cluster.
@@ -254,7 +254,7 @@ class ClusterMap:
         return "[" + ", ".join(map(str, self)) + "]"
 
     def __repr__(self):
-        return f"ClusterMap({str(self)})"
+        return f"ClusterMap({self})"
 
     def _richcmp(self, other, op):
         """Compares this cluster map with another cluster map or an integer.
@@ -617,7 +617,7 @@ class QuickBundlesX(Clustering):
 class TreeCluster(ClusterCentroid):
     @warning_for_keywords()
     def __init__(self, threshold, centroid, *, indices=None):
-        super(TreeCluster, self).__init__(centroid=centroid, indices=indices)
+        super().__init__(centroid=centroid, indices=indices)
         self.threshold = threshold
         self.parent = None
         self.children = []

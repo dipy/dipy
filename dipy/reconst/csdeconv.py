@@ -427,17 +427,20 @@ def forward_sdt_deconv_mat(ratio, l_values, *, r2_term=False):
     for j in np.arange(0, n_orders * 2, 2):
         if r2_term:
             sharp = quad(
-                lambda z, j=j: lpn(j, z)[0][-1]
-                * sps.gamma(1.5)
-                * np.sqrt(ratio / (4 * np.pi**3))
-                / np.power((1 - (1 - ratio) * z**2), 1.5),
+                lambda z, j=j: (
+                    lpn(j, z)[0][-1]
+                    * sps.gamma(1.5)
+                    * np.sqrt(ratio / (4 * np.pi**3))
+                    / np.power((1 - (1 - ratio) * z**2), 1.5)
+                ),
                 -1.0,
                 1.0,
             )
         else:
             sharp = quad(
-                lambda z, j=j: lpn(j, z)[0][-1]
-                * np.sqrt(1 / (1 - (1 - ratio) * z * z)),
+                lambda z, j=j: (
+                    lpn(j, z)[0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z))
+                ),
                 -1.0,
                 1.0,
             )
@@ -894,7 +897,7 @@ def mask_for_response_ssst(gtab, data, *, roi_center=None, roi_radii=10, fa_thr=
     mask[fa > fa_thr] = 1
 
     if np.sum(mask) == 0:
-        msg = f"""No voxel with a FA higher than {str(fa_thr)} were found.
+        msg = f"""No voxel with a FA higher than {fa_thr} were found.
         Try a larger roi or a lower threshold."""
         warnings.warn(msg, UserWarning, stacklevel=2)
 

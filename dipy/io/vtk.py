@@ -8,9 +8,13 @@ fury, have_fury, setup_module = optional_package(
     "fury", min_version="0.10.0", max_version="1.0.0"
 )
 
+vtk, have_vtk, _ = optional_package("vtk")
+
 if have_fury:
     import fury.io
     import fury.utils
+
+if have_vtk:
     import vtk
     import vtk.util.numpy_support as ns
 
@@ -168,7 +172,7 @@ def get_polydata_triangles(polydata, dtype=None):
         for i in range(nbr_cells):
             ids = polydata.GetCell(i).GetPointIds()
             for j in range(ids.GetNumberOfIds() - 2):
-                triangles.append([ids.GetId(j), ids.GetId(j + 1), ids.GetId(j + 2)])
+                triangles.append([ids.GetId(j), ids.GetId(j + 1), ids.GetId(j + 2)])  # noqa: PERF401
         triangles = np.array(triangles)
     else:
         if not (vtk_polys[::4] == 3).all():

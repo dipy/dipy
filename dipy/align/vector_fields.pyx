@@ -127,11 +127,11 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                 dj = _apply_affine_2d_x1(dii, djj, 0, premult_disp)
 
             if premult_index is None:
-                diii = i
-                djjj = j
+                diii = <double>i
+                djjj = <double>j
             else:
-                diii = _apply_affine_2d_x0(i, j, 1, premult_index)
-                djjj = _apply_affine_2d_x1(i, j, 1, premult_index)
+                diii = _apply_affine_2d_x0(<double>i, <double>j, 1, premult_index)
+                djjj = _apply_affine_2d_x1(<double>i, <double>j, 1, premult_index)
 
             diii += di
             djjj += dj
@@ -331,13 +331,13 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                     dj = _apply_affine_3d_x2(dkk, dii, djj, 0, premult_disp)
 
                 if premult_index is None:
-                    dkkk = k
-                    diii = i
-                    djjj = j
+                    dkkk = <double>k
+                    diii = <double>i
+                    djjj = <double>j
                 else:
-                    dkkk = _apply_affine_3d_x0(k, i, j, 1, premult_index)
-                    diii = _apply_affine_3d_x1(k, i, j, 1, premult_index)
-                    djjj = _apply_affine_3d_x2(k, i, j, 1, premult_index)
+                    dkkk = _apply_affine_3d_x0(<double>k, <double>i, <double>j, 1, premult_index)
+                    diii = _apply_affine_3d_x1(<double>k, <double>i, <double>j, 1, premult_index)
+                    djjj = _apply_affine_3d_x2(<double>k, <double>i, <double>j, 1, premult_index)
 
                 dkkk += dk
                 diii += di
@@ -754,9 +754,9 @@ def simplify_warp_function_2d(floating[:, :, :] d,
                     djj = d[i, j, 1]
                 else:
                     di = _apply_affine_2d_x0(
-                        i, j, 1, affine_idx_in)
+                        <double>i, <double>j, 1, affine_idx_in)
                     dj = _apply_affine_2d_x1(
-                        i, j, 1, affine_idx_in)
+                        <double>i, <double>j, 1, affine_idx_in)
                     _interpolate_vector_2d[floating](d, di, dj, &tmp[0])
                     dii = tmp[0]
                     djj = tmp[1]
@@ -773,10 +773,10 @@ def simplify_warp_function_2d(floating[:, :, :] d,
 
                 # Apply outer index multiplication and add the displacements
                 if affine_idx_out is not None:
-                    out[i, j, 0] = di + _apply_affine_2d_x0(i, j, 1,
-                                                            affine_idx_out) - i
-                    out[i, j, 1] = dj + _apply_affine_2d_x1(i, j, 1,
-                                                            affine_idx_out) - j
+                    out[i, j, 0] = di + _apply_affine_2d_x0(<double>i, <double>j, 1,
+                                                            affine_idx_out) - <double>i
+                    out[i, j, 1] = dj + _apply_affine_2d_x1(<double>i, <double>j, 1,
+                                                            affine_idx_out) - <double>j
                 else:
                     out[i, j, 0] = di
                     out[i, j, 1] = dj
@@ -878,11 +878,11 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
                         djj = d[k, i, j, 2]
                     else:
                         dk = _apply_affine_3d_x0(
-                            k, i, j, 1, affine_idx_in)
+                            <double>k, <double>i, <double>j, 1, affine_idx_in)
                         di = _apply_affine_3d_x1(
-                            k, i, j, 1, affine_idx_in)
+                            <double>k, <double>i, <double>j, 1, affine_idx_in)
                         dj = _apply_affine_3d_x2(
-                            k, i, j, 1, affine_idx_in)
+                            <double>k, <double>i, <double>j, 1, affine_idx_in)
                         inside = _interpolate_vector_3d[floating](d, dk, di,
                                                                   dj, &tmp[0])
                         dkk = tmp[0]
@@ -903,11 +903,11 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
 
                     if affine_idx_out is not None:
                         out[k, i, j, 0] = dk +\
-                            _apply_affine_3d_x0(k, i, j, 1, affine_idx_out) - k
+                            _apply_affine_3d_x0(<double>k, <double>i, <double>j, 1, affine_idx_out) - <double>k
                         out[k, i, j, 1] = di +\
-                            _apply_affine_3d_x1(k, i, j, 1, affine_idx_out) - i
+                            _apply_affine_3d_x1(<double>k, <double>i, <double>j, 1, affine_idx_out) - <double>i
                         out[k, i, j, 2] = dj +\
-                            _apply_affine_3d_x2(k, i, j, 1, affine_idx_out) - j
+                            _apply_affine_3d_x2(<double>k, <double>i, <double>j, 1, affine_idx_out) - <double>j
                     else:
                         out[k, i, j, 0] = dk
                         out[k, i, j, 1] = di
@@ -1414,11 +1414,11 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
                         djj = d1[k, i, j, 2]
                     else:
                         dk = _apply_affine_3d_x0(
-                            k, i, j, 1, affine_idx_in)
+                            <double>k, <double>i, <double>j, 1, affine_idx_in)
                         di = _apply_affine_3d_x1(
-                            k, i, j, 1, affine_idx_in)
+                            <double>k, <double>i, <double>j, 1, affine_idx_in)
                         dj = _apply_affine_3d_x2(
-                            k, i, j, 1, affine_idx_in)
+                            <double>k, <double>i, <double>j, 1, affine_idx_in)
                         inside = _interpolate_vector_3d[floating](d1, dk, di,
                                                                   dj, &tmp[0])
                         dkk = tmp[0]
@@ -1438,16 +1438,16 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
                         dj = djj
 
                     if affine_idx_out is not None:
-                        dkk = dk + _apply_affine_3d_x0(k, i, j, 1,
+                        dkk = dk + _apply_affine_3d_x0(<double>k, <double>i, <double>j, 1,
                                                        affine_idx_out)
-                        dii = di + _apply_affine_3d_x1(k, i, j, 1,
+                        dii = di + _apply_affine_3d_x1(<double>k, <double>i, <double>j, 1,
                                                        affine_idx_out)
-                        djj = dj + _apply_affine_3d_x2(k, i, j, 1,
+                        djj = dj + _apply_affine_3d_x2(<double>k, <double>i, <double>j, 1,
                                                        affine_idx_out)
                     else:
-                        dkk = dk + k
-                        dii = di + i
-                        djj = dj + j
+                        dkk = dk + <double>k
+                        dii = di + <double>i
+                        djj = dj + <double>j
 
                     inside = _interpolate_scalar_3d[floating](volume, dkk,
                                                               dii, djj,
@@ -1509,13 +1509,13 @@ def transform_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
             for i in range(nrows):
                 for j in range(ncols):
                     if affine is not None:
-                        dkk = _apply_affine_3d_x0(k, i, j, 1, affine)
-                        dii = _apply_affine_3d_x1(k, i, j, 1, affine)
-                        djj = _apply_affine_3d_x2(k, i, j, 1, affine)
+                        dkk = _apply_affine_3d_x0(<double>k, <double>i, <double>j, 1, affine)
+                        dii = _apply_affine_3d_x1(<double>k, <double>i, <double>j, 1, affine)
+                        djj = _apply_affine_3d_x2(<double>k, <double>i, <double>j, 1, affine)
                     else:
-                        dkk = k
-                        dii = i
-                        djj = j
+                        dkk = <double>k
+                        dii = <double>i
+                        djj = <double>j
                     inside = _interpolate_scalar_3d[floating](volume, dkk,
                         dii, djj, &out[k, i, j])
     return np.asarray(out)
@@ -1614,11 +1614,11 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                         djj = d1[k, i, j, 2]
                     else:
                         dk = _apply_affine_3d_x0(
-                            k, i, j, 1, affine_idx_in)
+                            <double>k, <double>i, <double>j, 1, affine_idx_in)
                         di = _apply_affine_3d_x1(
-                            k, i, j, 1, affine_idx_in)
+                            <double>k, <double>i, <double>j, 1, affine_idx_in)
                         dj = _apply_affine_3d_x2(
-                            k, i, j, 1, affine_idx_in)
+                            <double>k, <double>i, <double>j, 1, affine_idx_in)
                         inside = _interpolate_vector_3d[floating](d1, dk, di,
                                                                   dj, &tmp[0])
                         dkk = tmp[0]
@@ -1638,16 +1638,16 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                         dj = djj
 
                     if affine_idx_out is not None:
-                        dkk = dk + _apply_affine_3d_x0(k, i, j, 1,
+                        dkk = dk + _apply_affine_3d_x0(<double>k, <double>i, <double>j, 1,
                                                        affine_idx_out)
-                        dii = di + _apply_affine_3d_x1(k, i, j, 1,
+                        dii = di + _apply_affine_3d_x1(<double>k, <double>i, <double>j, 1,
                                                        affine_idx_out)
-                        djj = dj + _apply_affine_3d_x2(k, i, j, 1,
+                        djj = dj + _apply_affine_3d_x2(<double>k, <double>i, <double>j, 1,
                                                        affine_idx_out)
                     else:
-                        dkk = dk + k
-                        dii = di + i
-                        djj = dj + j
+                        dkk = dk + <double>k
+                        dii = di + <double>i
+                        djj = dj + <double>j
 
                     inside = _interpolate_scalar_nn_3d[number](volume,
                                         dkk, dii, djj, &warped[k, i, j])
@@ -1707,13 +1707,13 @@ def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
             for i in range(nrows):
                 for j in range(ncols):
                     if affine is not None:
-                        dkk = _apply_affine_3d_x0(k, i, j, 1, affine)
-                        dii = _apply_affine_3d_x1(k, i, j, 1, affine)
-                        djj = _apply_affine_3d_x2(k, i, j, 1, affine)
+                        dkk = _apply_affine_3d_x0(<double>k, <double>i, <double>j, 1, affine)
+                        dii = _apply_affine_3d_x1(<double>k, <double>i, <double>j, 1, affine)
+                        djj = _apply_affine_3d_x2(<double>k, <double>i, <double>j, 1, affine)
                     else:
-                        dkk = k
-                        dii = i
-                        djj = j
+                        dkk = <double>k
+                        dii = <double>i
+                        djj = <double>j
                     _interpolate_scalar_nn_3d[number](volume, dkk, dii, djj,
                                                       &out[k, i, j])
     return np.asarray(out)
@@ -1805,9 +1805,9 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
                     djj = d1[i, j, 1]
                 else:
                     di = _apply_affine_2d_x0(
-                        i, j, 1, affine_idx_in)
+                        <double>i, <double>j, 1, affine_idx_in)
                     dj = _apply_affine_2d_x1(
-                        i, j, 1, affine_idx_in)
+                        <double>i, <double>j, 1, affine_idx_in)
                     _interpolate_vector_2d[floating](d1, di, dj, &tmp[0])
                     dii = tmp[0]
                     djj = tmp[1]
@@ -1824,11 +1824,11 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
 
                 # Apply outer index multiplication and add the displacements
                 if affine_idx_out is not None:
-                    dii = di + _apply_affine_2d_x0(i, j, 1, affine_idx_out)
-                    djj = dj + _apply_affine_2d_x1(i, j, 1, affine_idx_out)
+                    dii = di + _apply_affine_2d_x0(<double>i, <double>j, 1, affine_idx_out)
+                    djj = dj + _apply_affine_2d_x1(<double>i, <double>j, 1, affine_idx_out)
                 else:
-                    dii = di + i
-                    djj = dj + j
+                    dii = di + <double>i
+                    djj = dj + <double>j
 
                 # Interpolate the input image at the resulting location
                 _interpolate_scalar_2d[floating](image, dii, djj,
@@ -1886,11 +1886,11 @@ def transform_2d_affine(floating[:, :] image, int[:] ref_shape,
         for i in range(nrows):
             for j in range(ncols):
                 if affine is not None:
-                    dii = _apply_affine_2d_x0(i, j, 1, affine)
-                    djj = _apply_affine_2d_x1(i, j, 1, affine)
+                    dii = _apply_affine_2d_x0(<double>i, <double>j, 1, affine)
+                    djj = _apply_affine_2d_x1(<double>i, <double>j, 1, affine)
                 else:
-                    dii = i
-                    djj = j
+                    dii = <double>i
+                    djj = <double>j
                 _interpolate_scalar_2d[floating](image, dii, djj,
                                                  &out[i, j])
     return np.asarray(out)
@@ -1982,9 +1982,9 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
                     djj = d1[i, j, 1]
                 else:
                     di = _apply_affine_2d_x0(
-                        i, j, 1, affine_idx_in)
+                        <double>i, <double>j, 1, affine_idx_in)
                     dj = _apply_affine_2d_x1(
-                        i, j, 1, affine_idx_in)
+                        <double>i, <double>j, 1, affine_idx_in)
                     _interpolate_vector_2d[floating](d1, di, dj, &tmp[0])
                     dii = tmp[0]
                     djj = tmp[1]
@@ -2001,11 +2001,11 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
 
                 # Apply outer index multiplication and add the displacements
                 if affine_idx_out is not None:
-                    dii = di + _apply_affine_2d_x0(i, j, 1, affine_idx_out)
-                    djj = dj + _apply_affine_2d_x1(i, j, 1, affine_idx_out)
+                    dii = di + _apply_affine_2d_x0(<double>i, <double>j, 1, affine_idx_out)
+                    djj = dj + _apply_affine_2d_x1(<double>i, <double>j, 1, affine_idx_out)
                 else:
-                    dii = di + i
-                    djj = dj + j
+                    dii = di + <double>i
+                    djj = dj + <double>j
 
                 # Interpolate the input image at the resulting location
                 _interpolate_scalar_nn_2d[number](image, dii, djj,
@@ -2063,11 +2063,11 @@ def transform_2d_affine_nn(number[:, :] image, int[:] ref_shape,
         for i in range(nrows):
             for j in range(ncols):
                 if affine is not None:
-                    dii = _apply_affine_2d_x0(i, j, 1, affine)
-                    djj = _apply_affine_2d_x1(i, j, 1, affine)
+                    dii = _apply_affine_2d_x0(<double>i, <double>j, 1, affine)
+                    djj = _apply_affine_2d_x1(<double>i, <double>j, 1, affine)
                 else:
-                    dii = i
-                    djj = j
+                    dii = <double>i
+                    djj = <double>j
                 _interpolate_scalar_nn_2d[number](image, dii, djj,
                                                   &out[i, j])
     return np.asarray(out)
@@ -2225,19 +2225,19 @@ def create_random_displacement_2d(int[:] from_shape,
 
             # convert the input point to physical coordinates
             if from_grid2world is not None:
-                di = _apply_affine_2d_x0(i, j, 1, from_grid2world)
-                dj = _apply_affine_2d_x1(i, j, 1, from_grid2world)
+                di = _apply_affine_2d_x0(<double>i, <double>j, 1, from_grid2world)
+                dj = _apply_affine_2d_x1(<double>i, <double>j, 1, from_grid2world)
             else:
-                di = i
-                dj = j
+                di = <double>i
+                dj = <double>j
 
             # convert the output point to physical coordinates
             if to_grid2world is not None:
-                dii = _apply_affine_2d_x0(ri, rj, 1, to_grid2world)
-                djj = _apply_affine_2d_x1(ri, rj, 1, to_grid2world)
+                dii = _apply_affine_2d_x0(<double>ri, <double>rj, 1, to_grid2world)
+                djj = _apply_affine_2d_x1(<double>ri, <double>rj, 1, to_grid2world)
             else:
-                dii = ri
-                djj = rj
+                dii = <double>ri
+                djj = <double>rj
 
             # the displacement vector at (i,j) must be the target point minus
             # the original point, both in physical space
@@ -2316,23 +2316,23 @@ def create_random_displacement_3d(int[:] from_shape,
 
                 # convert the input point to physical coordinates
                 if from_grid2world is not None:
-                    dk = _apply_affine_3d_x0(k, i, j, 1, from_grid2world)
-                    di = _apply_affine_3d_x1(k, i, j, 1, from_grid2world)
-                    dj = _apply_affine_3d_x2(k, i, j, 1, from_grid2world)
+                    dk = _apply_affine_3d_x0(<double>k, <double>i, <double>j, 1, from_grid2world)
+                    di = _apply_affine_3d_x1(<double>k, <double>i, <double>j, 1, from_grid2world)
+                    dj = _apply_affine_3d_x2(<double>k, <double>i, <double>j, 1, from_grid2world)
                 else:
-                    dk = k
-                    di = i
-                    dj = j
+                    dk = <double>k
+                    di = <double>i
+                    dj = <double>j
 
                 # convert the output point to physical coordinates
                 if to_grid2world is not None:
-                    dkk = _apply_affine_3d_x0(rk, ri, rj, 1, to_grid2world)
-                    dii = _apply_affine_3d_x1(rk, ri, rj, 1, to_grid2world)
-                    djj = _apply_affine_3d_x2(rk, ri, rj, 1, to_grid2world)
+                    dkk = _apply_affine_3d_x0(<double>rk, <double>ri, <double>rj, 1, to_grid2world)
+                    dii = _apply_affine_3d_x1(<double>rk, <double>ri, <double>rj, 1, to_grid2world)
+                    djj = _apply_affine_3d_x2(<double>rk, <double>ri, <double>rj, 1, to_grid2world)
                 else:
-                    dkk = rk
-                    dii = ri
-                    djj = rj
+                    dkk = <double>rk
+                    dii = <double>ri
+                    djj = <double>rj
 
                 # the displacement vector at (i,j) must be the target point
                 # minus the original point, both in physical space
@@ -2385,7 +2385,7 @@ def create_harmonic_fields_2d(cnp.npy_intp nrows, cnp.npy_intp ncols,
         for j in range(ncols):
             ii = i - mid_row
             jj = j - mid_col
-            theta = atan2(ii, jj)
+            theta = atan2(<double>ii, <double>jj)
             d[i, j, 0] = ii * (1.0 / (1 + b * cos(m * theta)) - 1.0)
             d[i, j, 1] = jj * (1.0 / (1 + b * cos(m * theta)) - 1.0)
             inv[i, j, 0] = b * cos(m * theta) * ii
@@ -2442,7 +2442,7 @@ def create_harmonic_fields_3d(int nslices, cnp.npy_intp nrows,
                 kk = k - mid_slice
                 ii = i - mid_row
                 jj = j - mid_col
-                theta = atan2(ii, jj)
+                theta = atan2(<double>ii, <double>jj)
                 d[k, i, j, 0] = kk * (1.0 / (1 + b * cos(m * theta)) - 1.0)
                 d[k, i, j, 1] = ii * (1.0 / (1 + b * cos(m * theta)) - 1.0)
                 d[k, i, j, 2] = jj * (1.0 / (1 + b * cos(m * theta)) - 1.0)
@@ -2482,7 +2482,7 @@ def create_circle(cnp.npy_intp nrows, cnp.npy_intp ncols, cnp.npy_intp radius):
         for j in range(ncols):
             ii = i - mid_row
             jj = j - mid_col
-            r = sqrt(ii*ii + jj*jj)
+            r = sqrt(<double>(ii*ii + jj*jj))
             if r <= radius:
                 c[i, j] = 1
             else:
@@ -2526,7 +2526,7 @@ def create_sphere(cnp.npy_intp nslices, cnp.npy_intp nrows,
                 kk = k - mid_slice
                 ii = i - mid_row
                 jj = j - mid_col
-                r = sqrt(ii*ii + jj*jj + kk*kk)
+                r = sqrt(<double>(ii*ii + jj*jj + kk*kk))
                 if r <= radius:
                     s[k, i, j] = 1
                 else:
@@ -2590,9 +2590,9 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
                 for j in range(ncols):
                     inside[k, i, j] = 1
                     # Compute coordinates of index (k, i, j) in physical space
-                    x[0] = _apply_affine_3d_x0(k, i, j, 1, out_grid2world)
-                    x[1] = _apply_affine_3d_x1(k, i, j, 1, out_grid2world)
-                    x[2] = _apply_affine_3d_x2(k, i, j, 1, out_grid2world)
+                    x[0] = _apply_affine_3d_x0(<double>k, <double>i, <double>j, 1, out_grid2world)
+                    x[1] = _apply_affine_3d_x1(<double>k, <double>i, <double>j, 1, out_grid2world)
+                    x[2] = _apply_affine_3d_x2(<double>k, <double>i, <double>j, 1, out_grid2world)
                     dx[:] = x[:]
                     for p in range(3):
                         # Compute coordinates of point dx on img's grid
@@ -2768,8 +2768,8 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
             for j in range(ncols):
                 inside[i, j] = 1
                 # Compute coordinates of index (i, j) in physical space
-                x[0] = _apply_affine_2d_x0(i, j, 1, out_grid2world)
-                x[1] = _apply_affine_2d_x1(i, j, 1, out_grid2world)
+                x[0] = _apply_affine_2d_x0(<double>i, <double>j, 1, out_grid2world)
+                x[1] = _apply_affine_2d_x1(<double>i, <double>j, 1, out_grid2world)
                 dx[:] = x[:]
                 for p in range(2):
                     # Compute coordinates of point dx on img's grid

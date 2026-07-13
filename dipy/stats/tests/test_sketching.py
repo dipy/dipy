@@ -72,9 +72,9 @@ def test_count_sketch_randomness(setup_matrices):
         matrixc_2 = np.memmap(matrixc_file_name_2, dtype=matrixa_dtype, mode="r+")
 
         # Verify that the two resulting sketches are different
-        assert not np.allclose(
-            matrixc_1, matrixc_2
-        ), "Sketches should differ with different random seeds"
+        assert not np.allclose(matrixc_1, matrixc_2), (
+            "Sketches should differ with different random seeds"
+        )
 
         # Clean up
         del matrixc_1

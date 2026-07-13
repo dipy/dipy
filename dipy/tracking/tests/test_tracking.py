@@ -821,7 +821,7 @@ def test_maximum_deterministic_tracker():
         npt.assert_(np.allclose(sl, expected[2]))
 
 
-def test_bootstap_peak_tracker():
+def test_bootstrap_peak_tracker():
     """This tests that the Bootstrap Peak Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
@@ -1147,9 +1147,9 @@ def test_affine_transformations():
         affine_inv = np.linalg.inv(affine)
         lin = affine_inv[:3, :3]
         offset = affine_inv[:3, 3]
-        streamlines_inv = []
-        for line in streamlines:
-            streamlines_inv.append([np.dot(pts, lin) + offset for pts in line])
+        streamlines_inv = [
+            [np.dot(pts, lin) + offset for pts in line] for line in streamlines
+        ]
 
         npt.assert_equal(len(streamlines_inv[0]), len(expected[0]))
         npt.assert_(np.allclose(streamlines_inv[0], expected[0], atol=0.3))

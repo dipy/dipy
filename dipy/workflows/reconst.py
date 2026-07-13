@@ -294,8 +294,8 @@ class ReconstMAPMRIFlow(Workflow):
                 sphere = get_sphere(sphere_name)
 
             shape = data.shape[:-1]
-            peak_dirs = np.zeros((shape + (npeaks, 3)))
-            peak_values = np.zeros((shape + (npeaks,)))
+            peak_dirs = np.zeros(shape + (npeaks, 3))
+            peak_values = np.zeros(shape + (npeaks,))
             peak_indices = np.zeros((shape + (npeaks,)), dtype=np.int32)
             peak_indices.fill(-1)
 

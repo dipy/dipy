@@ -224,7 +224,7 @@ def test_deprecated_argument():
         def test4(self, scale):
             return scale
 
-        @deprecated_params("height", new_name="scale", since="0.3", until="10.0.0")
+        @deprecated_params("height", new_name="scale", since="0.3", until="10.0")
         def test5(self, scale):
             return scale
 

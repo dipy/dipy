@@ -528,7 +528,7 @@ class TestQballModel:
 
         assert_array_almost_equal(odf, odf_with_norm)
 
-    def test_mulit_voxel_fit(self):
+    def test_multi_voxel_fit(self):
         signal, gtab, expected = make_fake_signal()
         sphere = hemi_icosahedron
         nd_signal = np.vstack([signal, signal])

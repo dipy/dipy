@@ -38,7 +38,7 @@ def int_func(n):
     f = (
         np.sqrt(2)
         * factorial(n)
-        / float(((gamma(1 + n / 2.0)) * np.sqrt(2 ** (n + 1) * factorial(n))))
+        / float((gamma(1 + n / 2.0)) * np.sqrt(2 ** (n + 1) * factorial(n)))
     )
     return f
 
@@ -59,26 +59,34 @@ def test_orthogonality_basis_functions():
     qmax = 1000
 
     int1 = integrate.quad(
-        lambda x: np.real(mapmri.mapmri_phi_1d(0, x, diffusivity))
-        * np.real(mapmri.mapmri_phi_1d(2, x, diffusivity)),
+        lambda x: (
+            np.real(mapmri.mapmri_phi_1d(0, x, diffusivity))
+            * np.real(mapmri.mapmri_phi_1d(2, x, diffusivity))
+        ),
         qmin,
         qmax,
     )[0]
     int2 = integrate.quad(
-        lambda x: np.real(mapmri.mapmri_phi_1d(2, x, diffusivity))
-        * np.real(mapmri.mapmri_phi_1d(4, x, diffusivity)),
+        lambda x: (
+            np.real(mapmri.mapmri_phi_1d(2, x, diffusivity))
+            * np.real(mapmri.mapmri_phi_1d(4, x, diffusivity))
+        ),
         qmin,
         qmax,
     )[0]
     int3 = integrate.quad(
-        lambda x: np.real(mapmri.mapmri_phi_1d(4, x, diffusivity))
-        * np.real(mapmri.mapmri_phi_1d(6, x, diffusivity)),
+        lambda x: (
+            np.real(mapmri.mapmri_phi_1d(4, x, diffusivity))
+            * np.real(mapmri.mapmri_phi_1d(6, x, diffusivity))
+        ),
         qmin,
         qmax,
     )[0]
     int4 = integrate.quad(
-        lambda x: np.real(mapmri.mapmri_phi_1d(6, x, diffusivity))
-        * np.real(mapmri.mapmri_phi_1d(8, x, diffusivity)),
+        lambda x: (
+            np.real(mapmri.mapmri_phi_1d(6, x, diffusivity))
+            * np.real(mapmri.mapmri_phi_1d(8, x, diffusivity))
+        ),
         qmin,
         qmax,
     )[0]
@@ -96,30 +104,38 @@ def test_orthogonality_basis_functions():
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=integrate.IntegrationWarning)
         int1 = integrate.quad(
-            lambda q: mapmri.mapmri_isotropic_radial_signal_basis(1, 0, diffusivity, q)
-            * mapmri.mapmri_isotropic_radial_signal_basis(2, 0, diffusivity, q)
-            * q**2,
+            lambda q: (
+                mapmri.mapmri_isotropic_radial_signal_basis(1, 0, diffusivity, q)
+                * mapmri.mapmri_isotropic_radial_signal_basis(2, 0, diffusivity, q)
+                * q**2
+            ),
             qmin,
             qmax,
         )[0]
         int2 = integrate.quad(
-            lambda q: mapmri.mapmri_isotropic_radial_signal_basis(2, 0, diffusivity, q)
-            * mapmri.mapmri_isotropic_radial_signal_basis(3, 0, diffusivity, q)
-            * q**2,
+            lambda q: (
+                mapmri.mapmri_isotropic_radial_signal_basis(2, 0, diffusivity, q)
+                * mapmri.mapmri_isotropic_radial_signal_basis(3, 0, diffusivity, q)
+                * q**2
+            ),
             qmin,
             qmax,
         )[0]
         int3 = integrate.quad(
-            lambda q: mapmri.mapmri_isotropic_radial_signal_basis(3, 0, diffusivity, q)
-            * mapmri.mapmri_isotropic_radial_signal_basis(4, 0, diffusivity, q)
-            * q**2,
+            lambda q: (
+                mapmri.mapmri_isotropic_radial_signal_basis(3, 0, diffusivity, q)
+                * mapmri.mapmri_isotropic_radial_signal_basis(4, 0, diffusivity, q)
+                * q**2
+            ),
             qmin,
             qmax,
         )[0]
         int4 = integrate.quad(
-            lambda q: mapmri.mapmri_isotropic_radial_signal_basis(4, 0, diffusivity, q)
-            * mapmri.mapmri_isotropic_radial_signal_basis(5, 0, diffusivity, q)
-            * q**2,
+            lambda q: (
+                mapmri.mapmri_isotropic_radial_signal_basis(4, 0, diffusivity, q)
+                * mapmri.mapmri_isotropic_radial_signal_basis(5, 0, diffusivity, q)
+                * q**2
+            ),
             qmin,
             qmax,
         )[0]

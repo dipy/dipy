@@ -64,8 +64,9 @@ def relist_streamlines(points, offsets):
 
     streamlines = [points[0 : offsets[0]]]
 
-    for i in range(len(offsets) - 1):
-        streamlines.append(points[offsets[i] : offsets[i + 1]])
+    streamlines.extend(
+        points[offsets[i] : offsets[i + 1]] for i in range(len(offsets) - 1)
+    )
 
     return streamlines
 
@@ -430,14 +431,34 @@ def _orient_by_roi_generator(out, roi1, roi2):
 
 
 def _orient_by_roi_list(out, roi1, roi2):
-    """
-    Helper function to `orient_by_rois`
+    """Helper function to `orient_by_rois`.
 
     Performs the inner loop separately. This is needed, because functions with
     `yield` always return a generator.
 
     Flips the streamlines in place (as needed) and returns a reference to the
     updated list.
+
+    Parameters
+    ----------
+    out : list of ndarray
+        A list of streamlines, each of shape (N, 3), to be oriented
+        in place based on their proximity to the two ROIs.
+    roi1 : ndarray, shape (M, 3)
+        An array of coordinates representing the first region of
+        interest. Streamlines will be oriented so that they start
+        closer to roi1.
+    roi2 : ndarray, shape (K, 3)
+        An array of coordinates representing the second region of
+        interest. Streamlines will be oriented so that they end
+        closer to roi2.
+
+    Returns
+    -------
+    out : list of ndarray
+        The same list of streamlines passed as input, with some
+        streamlines flipped in place so that they are oriented
+        from roi1 towards roi2.
     """
     for idx, sl in enumerate(out):
         dist1 = cdist(sl, roi1, "euclidean")
@@ -531,7 +552,28 @@ def orient_by_rois(
 
 
 def _orient_by_sl_generator(out, std_array, fgarray):
-    """Helper function that implements the generator version of this"""
+    """Helper function that implements the generator version of orient_by_sl.
+
+    Yields streamlines oriented to match the direction of a standard
+    streamline by comparing direct and flipped Euclidean distances.
+
+    Parameters
+    ----------
+    out : list of ndarray
+        A list of streamlines each of shape (N, 3) to be oriented.
+    std_array : ndarray, shape (N, 3)
+        The standard streamline used as a reference for orientation.
+        Each streamline in `fgarray` is compared against this.
+    fgarray : list of ndarray
+        A list of streamlines each of shape (N, 3) used to compute
+        distances against `std_array` to determine orientation.
+
+    Yields
+    ------
+    sl : ndarray, shape (N, 3)
+        Each streamline from `out` yielded in the correct orientation
+        to match the direction of `std_array`.
+    """
     for idx, sl in enumerate(fgarray):
         dist_direct = np.sum(np.sqrt(np.sum((sl - std_array) ** 2, -1)))
         dist_flipped = np.sum(np.sqrt(np.sum((sl[::-1] - std_array) ** 2, -1)))
@@ -542,7 +584,30 @@ def _orient_by_sl_generator(out, std_array, fgarray):
 
 
 def _orient_by_sl_list(out, std_array, fgarray):
-    """Helper function that implements the sequence version of this"""
+    """Helper function that implements the sequence version of orient_by_sl.
+
+    Orients streamlines in place to match the direction of a standard
+    streamline by comparing direct and flipped Euclidean distances.
+
+    Parameters
+    ----------
+    out : list of ndarray
+        A list of streamlines each of shape (N, 3) to be oriented
+        in place based on comparison with `std_array`.
+    std_array : ndarray, shape (N, 3)
+        The standard streamline used as a reference for orientation.
+        Each streamline in `fgarray` is compared against this.
+    fgarray : list of ndarray
+        A list of streamlines each of shape (N, 3) used to compute
+        distances against `std_array` to determine orientation.
+
+    Returns
+    -------
+    out : list of ndarray
+        The same list of streamlines passed as input, with some
+        streamlines flipped in place to match the direction of
+        `std_array`.
+    """
     for idx, sl in enumerate(fgarray):
         dist_direct = np.sum(np.sqrt(np.sum((sl - std_array) ** 2, -1)))
         dist_flipped = np.sum(np.sqrt(np.sum((sl[::-1] - std_array) ** 2, -1)))
@@ -711,20 +776,18 @@ def values_from_volume(data, streamlines, affine):
             return _extract_vals(data, streamlines, affine, threedvec=True)
         if isinstance(streamlines, types.GeneratorType):
             streamlines = Streamlines(streamlines)
-        vals = []
-        for ii in range(data.shape[-1]):
-            vals.append(_extract_vals(data[..., ii], streamlines, affine))
+        vals = [
+            _extract_vals(data[..., ii], streamlines, affine)
+            for ii in range(data.shape[-1])
+        ]
 
         if isinstance(vals[-1], np.ndarray):
             return np.swapaxes(np.array(vals), 2, 1).T
         else:
-            new_vals = []
-            for sl_idx in range(len(streamlines)):
-                sl_vals = []
-                for ii in range(data.shape[-1]):
-                    sl_vals.append(vals[ii][sl_idx])
-                new_vals.append(np.array(sl_vals).T)
-            return new_vals
+            return [
+                np.array([vals[ii][sl_idx] for ii in range(data.shape[-1])]).T
+                for sl_idx in range(len(streamlines))
+            ]
 
     elif len(data.shape) == 3:
         return _extract_vals(data, streamlines, affine)
@@ -733,5 +796,17 @@ def values_from_volume(data, streamlines, affine):
 
 
 def nbytes(streamlines):
-    """Calculate the memory footprint of a streamlines object."""
+    """Calculate the memory footprint of a streamlines object.
+
+    Parameters
+    ----------
+    streamlines : StatefulTractogram or ArraySequence
+        A streamlines object with a `_data` attribute containing
+        the raw streamline data as a numpy array.
+
+    Returns
+    -------
+    size : float
+        The memory footprint of the streamlines data in megabytes (MB).
+    """
     return streamlines._data.nbytes / 1024.0**2

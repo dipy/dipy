@@ -16,6 +16,7 @@ from dipy.segment.clustering import QuickBundles, qbx_and_merge
 from dipy.segment.fss import FastStreamlineSearch, nearest_from_matrix_col
 from dipy.segment.mask import median_otsu
 from dipy.segment.tissue import TissueClassifierHMRF, dam_classifier
+from dipy.segment.utils import remove_holes_and_islands
 from dipy.tracking import Streamlines
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
@@ -29,7 +30,7 @@ class MedianOtsuFlow(Workflow):
     def get_short_name(cls):
         return "medotsu"
 
-    @deprecated_params(["autocrop"], since="1.11.0", until="1.13.0")
+    @deprecated_params(["autocrop"], since="1.11", until="1.13")
     def run(
         self,
         input_files,
@@ -108,8 +109,7 @@ class MedianOtsuFlow(Workflow):
         if len(bvalues_files or []) > 0 and io_it:
             if len(bvalues_files) != len(io_it.inputs):
                 logger.error(
-                    "Number of b-values files must match the number of "
-                    "input volumes."
+                    "Number of b-values files must match the number of input volumes."
                 )
                 sys.exit(1)
 
@@ -551,8 +551,7 @@ class ClassifyTissueFlow(Workflow):
                 save_nifti(tissue_out_path, segmentation_final, affine)
                 save_nifti(opve, PVE, affine)
                 class_list.append(["0", "Background"])
-                for i in range(1, nclass + 1):
-                    class_list.append([f"{i}", f"Tissue_{i}"])
+                class_list.extend([f"{i}", f"Tissue_{i}"] for i in range(1, nclass + 1))
                 class_list.append(
                     [
                         "# Due to the nature of the HMRF algorithm",
@@ -671,7 +670,7 @@ class BrainMaskFlow(Workflow):
             'median_otsu' method.
         finalize_mask : bool, optional
             Whether to remove potential holes or islands. Useful for solving
-            minor errors. Used only for 'median_otsu' method.
+            minor errors. Used for 'median_otsu' and 'synthseg' methods.
         save_masked : bool, optional
             Save the masked volume in addition to the mask.
         use_cuda : bool, optional
@@ -708,8 +707,7 @@ class BrainMaskFlow(Workflow):
         if method == "median_otsu":
             if vol_idx is not None and bvalues_files is not None and io_it:
                 logger.warning(
-                    "'vol_idx' parameter is ignored when 'bvalues_files' is "
-                    "provided."
+                    "'vol_idx' parameter is ignored when 'bvalues_files' is provided."
                 )
 
             if bvalues_files is not None and not isinstance(bvalues_files, list):
@@ -789,6 +787,8 @@ class BrainMaskFlow(Workflow):
                     )
                 vol = data[..., 0] if data.ndim == 4 else data
                 _, _, mask_volume = synthseg_model.predict(vol, affine)
+                if finalize_mask:
+                    mask_volume = remove_holes_and_islands(mask_volume).astype(np.int32)
                 mask_for_apply = (
                     mask_volume[..., np.newaxis] if data.ndim == 4 else mask_volume
                 )

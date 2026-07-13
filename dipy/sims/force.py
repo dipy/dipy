@@ -808,7 +808,7 @@ def generate_force_simulations(
         del mm
     gc.collect()
 
-    for _name, path in memmap_paths.items():
+    for path in memmap_paths.values():
         try:
             if os.path.exists(path):
                 os.remove(path)

@@ -108,7 +108,7 @@ BinghamMetrics = sf_to_bingham(csd_odf, sphere, max_search_angle)
 #
 # - amplitude_lobe (the maximum value for each lobe. Also known as Bingham's
 #       f_0 parameter.)
-# - fd_lobe (fiber densitiy: as defined in :footcite:p:`Riffert2014`,
+# - fd_lobe (fiber density: as defined in :footcite:p:`Riffert2014`,
 #       one for each peak.)
 # - fs_lobe (fiber spread: as defined in :footcite:p:`Riffert2014`,
 #       one for each peak.)

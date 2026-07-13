@@ -7,36 +7,12 @@ from nibabel.streamlines import ArraySequence as Streamlines
 import numpy as np
 import numpy.linalg as npl
 
-from dipy.align import Bunch, VerbosityLevels, floating, vector_fields as vfu
+from dipy.align import vector_fields as vfu
 from dipy.align.scalespace import ScaleSpace
+from dipy.align.utils import RegistrationStages
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils import VerbosityLevels
 from dipy.utils.logging import logger
-
-RegistrationStages = Bunch(
-    INIT_START=0,
-    INIT_END=1,
-    OPT_START=2,
-    OPT_END=3,
-    SCALE_START=4,
-    SCALE_END=5,
-    ITER_START=6,
-    ITER_END=7,
-)
-"""Registration Stages
-
-This enum defines the different stages which the Volumetric Registration
-may be in. The value of the stage is passed as a parameter to the call-back
-function so that it can react accordingly.
-
-INIT_START: optimizer initialization starts
-INIT_END: optimizer initialization ends
-OPT_START: optimization starts
-OPT_END: optimization ends
-SCALE_START: optimization at a new scale space resolution starts
-SCALE_END: optimization at the current scale space resolution ends
-ITER_START: a new iteration starts
-ITER_END: the current iteration ends
-"""
 
 
 def mult_aff(A, B):
@@ -257,8 +233,8 @@ class DiffeomorphicMap:
 
         Creates a zero displacement field (the identity transformation).
         """
-        self.forward = np.zeros(tuple(self.disp_shape) + (self.dim,), dtype=floating)
-        self.backward = np.zeros(tuple(self.disp_shape) + (self.dim,), dtype=floating)
+        self.forward = np.zeros(tuple(self.disp_shape) + (self.dim,), dtype=np.float32)
+        self.backward = np.zeros(tuple(self.disp_shape) + (self.dim,), dtype=np.float32)
 
     @warning_for_keywords()
     def _get_warping_function(self, interpolation, *, warp_coordinates=False):
@@ -462,12 +438,12 @@ class DiffeomorphicMap:
 
         # Convert the data to required types to use the cythonized functions
         if interpolation == "nearest":
-            if image.dtype is np.dtype("float64") and floating is np.float32:
-                image = image.astype(floating)
+            if image.dtype is np.dtype("float64"):
+                image = image.astype(np.float32)
             elif image.dtype is np.dtype("int64"):
                 image = image.astype(np.int32)
         else:
-            image = np.asarray(image, dtype=floating)
+            image = np.asarray(image, dtype=np.float32)
 
         warp_f = self._get_warping_function(interpolation)
 
@@ -585,12 +561,12 @@ class DiffeomorphicMap:
         affine_disp = mult_aff(W, Pinv)
 
         if interpolation == "nearest":
-            if image.dtype is np.dtype("float64") and floating is np.float32:
-                image = image.astype(floating)
+            if image.dtype is np.dtype("float64"):
+                image = image.astype(np.float32)
             elif image.dtype is np.dtype("int64"):
                 image = image.astype(np.int32)
         else:
-            image = np.asarray(image, dtype=floating)
+            image = np.asarray(image, dtype=np.float32)
 
         warp_f = self._get_warping_function(interpolation)
 
@@ -1170,7 +1146,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             to be called after each iteration (this optimizer will call this
             function passing self as parameter)
         """
-        super(SymmetricDiffeomorphicRegistration, self).__init__(metric=metric)
+        super().__init__(metric=metric)
         if level_iters is None:
             level_iters = [100, 100, 25]
 
@@ -1836,8 +1812,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 logger.info(f"Pre-align: {prealign}")
 
         self._init_optimizer(
-            static.astype(floating),
-            moving.astype(floating),
+            static.astype(np.float32),
+            moving.astype(np.float32),
             static_grid2world,
             moving_grid2world,
             prealign,

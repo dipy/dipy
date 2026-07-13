@@ -370,7 +370,7 @@ def paramap(
                     results.append(func(in_element, *func_args, **func_kwargs))
                     pbar.update(1)
     else:
-        raise ValueError("%s is not a valid engine" % engine)
+        raise ValueError(f"{engine} is not a valid engine")
 
     if out_shape is not None:
         return np.array(results).reshape(out_shape)

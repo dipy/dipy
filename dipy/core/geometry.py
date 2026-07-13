@@ -1034,7 +1034,7 @@ def perpendicular_directions(v, *, num=30, half=False):
     For more details on this calculation, see
     `here <https://gsoc2015dipydki.blogspot.com/2015/07/rnh-post-8-computing-perpendicular.html>`_.
 
-    """  # noqa: E501
+    """
     v = np.array(v, dtype=float)
 
     # Float error used for floats comparison
@@ -1116,7 +1116,7 @@ def is_hemispherical(vecs):
     ----------
     https://rstudio-pubs-static.s3.amazonaws.com/27121_a22e51b47c544980bad594d5e0bb2d04.html
 
-    """  # noqa: E501
+    """
     if vecs.shape[1] != 3:
         raise ValueError("Input vectors must be 3D vectors")
     if not np.allclose(1, np.linalg.norm(vecs, axis=1)):

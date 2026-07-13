@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 
-from dipy.align import crosscorr as cc, floating
+from dipy.align import crosscorr as cc
 from dipy.testing.decorators import set_random_number_generator
 
 
@@ -11,8 +11,8 @@ def test_cc_factors_2d():
     correlation factors against a direct (not optimized, but less error prone)
     implementation.
     """
-    a = np.array(range(20 * 20), dtype=floating).reshape(20, 20)
-    b = np.array(range(20 * 20)[::-1], dtype=floating).reshape(20, 20)
+    a = np.array(range(20 * 20), dtype=np.float32).reshape(20, 20)
+    b = np.array(range(20 * 20)[::-1], dtype=np.float32).reshape(20, 20)
     a /= a.max()
     b /= b.max()
     for radius in [0, 1, 3, 6]:
@@ -27,8 +27,8 @@ def test_cc_factors_3d():
     correlation factors against a direct (not optimized, but less error prone)
     implementation.
     """
-    a = np.array(range(20 * 20 * 20), dtype=floating).reshape(20, 20, 20)
-    b = np.array(range(20 * 20 * 20)[::-1], dtype=floating).reshape(20, 20, 20)
+    a = np.array(range(20 * 20 * 20), dtype=np.float32).reshape(20, 20, 20)
+    b = np.array(range(20 * 20 * 20)[::-1], dtype=np.float32).reshape(20, 20, 20)
     a /= a.max()
     b /= b.max()
     for radius in [0, 1, 3, 6]:
@@ -56,35 +56,35 @@ def test_compute_cc_steps_2d(rng):
     X[..., 1] = x_1[None, :] * _O
 
     # Compute the gradient fields of F and G
-    gradF = np.array(X - c_f, dtype=floating)
-    gradG = np.array(X - c_g, dtype=floating)
+    gradF = np.array(X - c_f, dtype=np.float32)
+    gradG = np.array(X - c_g, dtype=np.float32)
 
     sz = np.size(gradF)
     Fnoise = rng.random(sz).reshape(gradF.shape) * gradF.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     gradF += Fnoise
 
     sz = np.size(gradG)
     Gnoise = rng.random(sz).reshape(gradG.shape) * gradG.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     gradG += Gnoise
 
     sq_norm_grad_G = np.sum(gradG**2, -1)
 
-    F = np.array(0.5 * np.sum(gradF**2, -1), dtype=floating)
-    G = np.array(0.5 * sq_norm_grad_G, dtype=floating)
+    F = np.array(0.5 * np.sum(gradF**2, -1), dtype=np.float32)
+    G = np.array(0.5 * sq_norm_grad_G, dtype=np.float32)
 
     Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     F += Fnoise
 
     Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     G += Gnoise
 
     # precompute the cross correlation factors
     factors = cc.precompute_cc_factors_2d_test(F, G, radius)
-    factors = np.array(factors, dtype=floating)
+    factors = np.array(factors, dtype=np.float32)
 
     # test the forward step against the exact expression
     _I = factors[..., 0]
@@ -92,7 +92,7 @@ def test_compute_cc_steps_2d(rng):
     sfm = factors[..., 2]
     sff = factors[..., 3]
     smm = factors[..., 4]
-    expected = np.ndarray(shape=sh + (2,), dtype=floating)
+    expected = np.ndarray(shape=sh + (2,), dtype=np.float32)
     factor = (-2.0 * sfm / (sff * smm)) * (_J - (sfm / sff) * _I)
     expected[..., 0] = factor * gradF[..., 0]
     factor = (-2.0 * sfm / (sff * smm)) * (_J - (sfm / sff) * _I)
@@ -143,35 +143,35 @@ def test_compute_cc_steps_3d(rng):
     X[..., 2] = x_2[None, None, :] * _O
 
     # Compute the gradient fields of F and G
-    gradF = np.array(X - c_f, dtype=floating)
-    gradG = np.array(X - c_g, dtype=floating)
+    gradF = np.array(X - c_f, dtype=np.float32)
+    gradG = np.array(X - c_g, dtype=np.float32)
 
     sz = np.size(gradF)
     Fnoise = rng.random(sz).reshape(gradF.shape) * gradF.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     gradF += Fnoise
 
     sz = np.size(gradG)
     Gnoise = rng.random(sz).reshape(gradG.shape) * gradG.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     gradG += Gnoise
 
     sq_norm_grad_G = np.sum(gradG**2, -1)
 
-    F = np.array(0.5 * np.sum(gradF**2, -1), dtype=floating)
-    G = np.array(0.5 * sq_norm_grad_G, dtype=floating)
+    F = np.array(0.5 * np.sum(gradF**2, -1), dtype=np.float32)
+    G = np.array(0.5 * sq_norm_grad_G, dtype=np.float32)
 
     Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     F += Fnoise
 
     Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     G += Gnoise
 
     # precompute the cross correlation factors
     factors = cc.precompute_cc_factors_3d_test(F, G, radius)
-    factors = np.array(factors, dtype=floating)
+    factors = np.array(factors, dtype=np.float32)
 
     # test the forward step against the exact expression
     _I = factors[..., 0]
@@ -179,7 +179,7 @@ def test_compute_cc_steps_3d(rng):
     sfm = factors[..., 2]
     sff = factors[..., 3]
     smm = factors[..., 4]
-    expected = np.ndarray(shape=sh + (3,), dtype=floating)
+    expected = np.ndarray(shape=sh + (3,), dtype=np.float32)
     factor = (-2.0 * sfm / (sff * smm)) * (_J - (sfm / sff) * _I)
     expected[..., 0] = factor * gradF[..., 0]
     expected[..., 1] = factor * gradF[..., 1]

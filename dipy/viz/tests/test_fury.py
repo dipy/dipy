@@ -171,7 +171,7 @@ def test_bundle_maps(rng):
     scene.clear()
 
     nb_points = np.sum([len(b) for b in bundle])
-    values = 100 * rng.random((nb_points))
+    values = 100 * rng.random(nb_points)
     # values[:nb_points/2] = 0
 
     line = actor.streamtube(bundle, colors=values, linewidth=0.1, lookup_colormap=lut)

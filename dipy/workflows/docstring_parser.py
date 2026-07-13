@@ -167,7 +167,7 @@ class NumpyDocString:
             return True
 
         l2 = self._doc.peek(1).strip()  # ---------- or ==========
-        return l2.startswith("-" * len(l1)) or l2.startswith("=" * len(l1))
+        return l2.startswith(("-" * len(l1), "=" * len(l1)))
 
     def _strip(self, doc):
         _i = 0
@@ -225,7 +225,7 @@ class NumpyDocString:
     _name_rgx = re.compile(
         r"^\s*(:(?P<role>\w+):`(?P<name>[a-zA-Z0-9_.-]+)`|"
         r" (?P<name2>[a-zA-Z0-9_.-]+))\s*",
-        re.X,
+        re.VERBOSE,
     )
 
     def _parse_see_also(self, content):

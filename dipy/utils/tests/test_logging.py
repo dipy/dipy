@@ -33,7 +33,7 @@ def test_logger_file(tmp_path):
         handler.flush()
         handler.close()
     assert filename.exists()
-    with open(filename, "r") as f:
+    with open(filename) as f:
         content = f.read()
     assert "A message for file" in content
     assert "\n" in content  # The empty line

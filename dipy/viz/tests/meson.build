@@ -13,5 +13,3 @@ py3.install_sources(
   pure: false,
   subdir: 'dipy/viz/tests'
 )
-
-

@@ -30,4 +30,3 @@ Create your own forked copy of DIPY_
    should find yourself at the home page for your own forked copy of `dipy`_.
 
 .. include:: links.inc
-

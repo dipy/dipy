@@ -129,8 +129,8 @@ def test_freesurfer_density_operation(dataset, hemisphere, type):
     sfs.to_corner()
 
     # Compute density map in the numpy grid
-    for vertice in sfs.vertices:
-        coord = tuple(vertice.astype(np.int32))
+    for vertex in sfs.vertices:
+        coord = tuple(vertex.astype(np.int32))
         data[coord] += 1
 
     with TemporaryDirectory() as tmpdir:

@@ -416,6 +416,7 @@ def affine_registration(
     moving_mask=None,
     static_mask=None,
     optimizer_options=None,
+    optimizer_method=None,
     **metric_kwargs,
 ):
     """
@@ -490,6 +491,14 @@ def affine_registration(
         AffineRegistration key-word argument: options to be passed to the
         optimizer. See `scipy.optimize.minimize` documentation for details.
 
+    optimizer_method : str, optional
+        Optimization method passed to :class:`~dipy.align.imaffine.AffineRegistration`.
+        Can be any gradient-based method supported by `dipy.core.optimize`:
+        ``'CG'``, ``'BFGS'``, ``'Newton-CG'``, ``'L-BFGS-B'``, ``'TNC'``,
+        ``'SLSQP'``. If ``None``, defaults to ``'L-BFGS-B'``.
+
+        .. versionadded:: 1.13
+
     nbins : int, optional
         MutualInformationMetric key-word argument: the number of bins to be
         used for computing the intensity histograms. The default is 32.
@@ -531,6 +540,7 @@ def affine_registration(
         )
     sigmas = sigmas or [3, 1, 0.0]
     factors = factors or [4, 2, 1]
+    optimizer_method = optimizer_method or "L-BFGS-B"
 
     starting_was_supplied = starting_affine is not None
     static, static_affine, moving, moving_affine, starting_affine = (
@@ -552,6 +562,7 @@ def affine_registration(
         level_iters=level_iters,
         sigmas=sigmas,
         factors=factors,
+        method=optimizer_method,
         options=optimizer_options,
         verbosity=0,
     )
@@ -842,7 +853,7 @@ def register_dwi_series(
     if np.sum(gtab.b0s_mask) > 1:
         # First, register the b0s into one image and average:
         logger.info(
-            "Creating Reference Image by Registering " "b0 Volumes to Each Other..."
+            "Creating Reference Image by Registering b0 Volumes to Each Other..."
         )
         b0_img = nib.Nifti1Image(data[..., gtab.b0s_mask], affine)
         trans_b0, b0_affines = register_series(

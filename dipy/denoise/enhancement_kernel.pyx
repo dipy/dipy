@@ -181,9 +181,9 @@ cdef class EnhancementKernel:
                         for yp in range(-hn, hn + 1):
                             for zp in range(-hn, hn + 1):
 
-                                x[0] = xp
-                                x[1] = yp
-                                x[2] = zp
+                                x[0] = <double>xp
+                                x[1] = <double>yp
+                                x[2] = <double>zp
 
                                 lookuptablelocal[angv,
                                                  angr,

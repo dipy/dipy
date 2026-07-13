@@ -15,4 +15,3 @@ DIPY Developer Guide
    bibliography
    benchmarking
    toolchain
-

@@ -281,9 +281,9 @@ cdef class AveragePointwiseEuclideanMetric(SumPointwiseEuclideanMetric):
     s2[0], $b$ between s1[1] and s2[1] and $c$ between s1[2] and s2[2].
     """
     cdef double c_dist(AveragePointwiseEuclideanMetric self, Data2D features1, Data2D features2) except -1 nogil:
-        cdef int N = features1.shape[0]
+        cdef cnp.npy_intp N = features1.shape[0]
         cdef double dist = SumPointwiseEuclideanMetric.c_dist(self, features1, features2)
-        return dist / N
+        return dist / <double>N
 
 
 cdef class MinimumAverageDirectFlipMetric(AveragePointwiseEuclideanMetric):

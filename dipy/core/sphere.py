@@ -13,17 +13,11 @@ __all__ = ["Sphere", "HemiSphere", "faces_from_sphere_vertices", "unique_edges"]
 
 
 def _all_specified(*args):
-    for a in args:
-        if a is None:
-            return False
-    return True
+    return all(a is not None for a in args)
 
 
 def _some_specified(*args):
-    for a in args:
-        if a is not None:
-            return True
-    return False
+    return any(a is not None for a in args)
 
 
 def faces_from_sphere_vertices(vertices):
@@ -731,7 +725,7 @@ def _get_grad_forces_alt(vects, *, alpha=2.0, **kwargs):
     forces = forces[:nb_points] + forces[nb_points:]
     forces = forces * weights.reshape((nb_points, nb_points, 1))
     forces = forces.sum(0)
-    return forces.reshape((nb_points * 3))
+    return forces.reshape(nb_points * 3)
 
 
 @warning_for_keywords()

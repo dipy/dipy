@@ -197,8 +197,10 @@ class ClustersTab(HorizonTab):
         list
         """
         actors = []
-        for cluster_actor in self.cluster_actors.values():
-            actors.append(cluster_actor["actor"])
-        for centroid_actor in self.centroid_actors.values():
-            actors.append(centroid_actor["actor"])
+        actors.extend(
+            cluster_actor["actor"] for cluster_actor in self.cluster_actors.values()
+        )
+        actors.extend(
+            centroid_actor["actor"] for centroid_actor in self.centroid_actors.values()
+        )
         return actors

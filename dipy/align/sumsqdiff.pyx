@@ -311,7 +311,7 @@ cpdef double compute_energy_ssd_2d(floating[:, :] delta_field):
     corresponding to this re-projection to the space of diffeomorphisms,
     a more precise energy computation including the regularization term
     is useless. Instead, convergence is checked considering the data-term
-    energy only and detecting oscilations in the energy profile.
+    energy only and detecting oscillations in the energy profile.
 
     """
     cdef:
@@ -507,7 +507,7 @@ cpdef double compute_energy_ssd_3d(floating[:, :, :] delta_field):
     corresponding to this re-projection to the space of diffeomorphisms,
     a more precise energy computation including the regularization term
     is useless. Instead, convergence is checked considering the data-term
-    energy only and detecting oscilations in the energy profile.
+    energy only and detecting oscillations in the energy profile.
     """
     cdef:
         cnp.npy_intp nslices = delta_field.shape[0]

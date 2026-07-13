@@ -3,7 +3,7 @@ from warnings import warn
 
 import numpy as np
 from scipy.linalg import eigh
-from scipy.linalg.lapack import dgesvd as svd
+from scipy.linalg.lapack import dgesvd as real_svd, zgesvd as complex_svd
 
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.testing.decorators import warning_for_keywords
@@ -197,7 +197,8 @@ def genpca(
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
         are the diffusion gradient directions. The first 3 dimension must have
-        size >= 2 * patch_radius + 1 or size = 1.
+        size >= 2 * patch_radius + 1 or size = 1. Both real and complex-valued
+        arrays are supported.
     sigma : float or 3D array, optional
         Standard deviation of the noise estimated from the data. If no sigma
         is given, this will be estimated based on random matrix theory
@@ -236,8 +237,10 @@ def genpca(
     Returns
     -------
     denoised_arr : 4D array
-        This is the denoised array of the same size as that of the input data,
-        clipped to non-negative values.
+        This is the denoised array of the same size as that of the input data.
+        If the input data is real-valued, the output is clipped to non-negative
+        values. If complex-valued, the denoised complex signal is returned
+        without clipping.
 
     References
     ----------
@@ -253,6 +256,8 @@ def genpca(
     # We retain float64 precision, iff the input is in this precision:
     if arr.dtype == np.float64:
         calc_dtype = np.float64
+    elif np.issubdtype(arr.dtype, np.complexfloating):
+        calc_dtype = arr.dtype
     # Otherwise, we'll calculate things in float32 (saving memory)
     else:
         calc_dtype = np.float32
@@ -334,23 +339,24 @@ def genpca(
                 if is_svd:
                     # PCA using an SVD
                     svd_args = [1, 0]
-                    U, S, Vt = svd(X, *svd_args)[:3]
+                    if np.issubdtype(calc_dtype, np.complexfloating):
+                        U, S, Vt = complex_svd(X, *svd_args)[:3]
+                    else:
+                        U, S, Vt = real_svd(X, *svd_args)[:3]
                     # Items in S are the eigenvalues, but in ascending order
                     # We invert the order (=> descending), square and normalize
                     # \lambda_i = s_i^2 / n
                     d = S[::-1] ** 2 / X.shape[0]
                     # Rows of Vt are eigenvectors, but also in ascending
                     # eigenvalue order:
-                    W = Vt[::-1].T
-
+                    W = Vt[::-1].conj().T
                 else:
                     # PCA using an Eigenvalue decomposition
-                    C = np.transpose(X).dot(X)
+                    C = np.conjugate(np.transpose(X)).dot(X)
                     C = C / X.shape[0]
                     [d, W] = eigh(C)
 
                 if sigma is None:
-                    # Random matrix theory
                     this_var, _ = _pca_classifier(d, num_samples)
                 else:
                     # Predefined variance
@@ -363,8 +369,8 @@ def genpca(
                 ncomps = np.sum(d < tau)
                 W[:, :ncomps] = 0
 
-                # This is equations 1 and 2 in Manjon 2013:
-                Xest = X.dot(W).dot(W.T) + M
+                # This is adapted from equations 1 and 2 in Manjon 2013:
+                Xest = X.dot(W).dot(W.conj().T) + M
                 Xest = Xest.reshape(patch_size[0], patch_size[1], patch_size[2], dim)
                 # This is equation 3 in Manjon 2013:
                 this_theta = 1.0 / (1.0 + dim - ncomps)
@@ -375,8 +381,12 @@ def genpca(
                     thetavar[ix1:ix2, jx1:jx2, kx1:kx2] += this_theta
 
     denoised_arr = thetax / theta
-    denoised_arr.clip(min=0, out=denoised_arr)
+
+    if not np.issubdtype(calc_dtype, np.complexfloating):
+        denoised_arr.clip(min=0, out=denoised_arr)
+
     denoised_arr[mask == 0] = 0
+
     if return_sigma is True:
         if sigma is None:
             var = var / thetavar
@@ -412,7 +422,8 @@ def localpca(
     ----------
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
-        are the diffusion gradient directions.
+        are the diffusion gradient directions. Both real and complex-valued
+        arrays are supported.
     sigma : float or 3D array, optional
         Standard deviation of the noise estimated from the data. If not given,
         calculate using method in :footcite:t:`Manjon2013`.
@@ -464,8 +475,10 @@ def localpca(
     Returns
     -------
     denoised_arr : 4D array
-        This is the denoised array of the same size as that of the input data,
-        clipped to non-negative values
+        This is the denoised array of the same size as that of the input data.
+        If the input data is real-valued, the output is clipped to non-negative
+        values. If complex-valued, the denoised complex signal is returned
+        without clipping.
 
     References
     ----------
@@ -518,7 +531,8 @@ def mppca(
     ----------
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
-        are the diffusion gradient directions.
+        are the diffusion gradient directions. Both real and complex-valued
+        arrays are supported.
     mask : 3D boolean array, optional
         A mask with voxels that are true inside the brain and false outside of
         it. The function denoises within the true part and returns zeros
@@ -543,8 +557,10 @@ def mppca(
     Returns
     -------
     denoised_arr : 4D array
-        This is the denoised array of the same size as that of the input data,
-        clipped to non-negative values
+        This is the denoised array of the same size as that of the input data.
+        If the input data is real-valued, the output is clipped to non-negative
+        values. If complex-valued, the denoised complex signal is returned
+        without clipping.
     sigma : 3D array (when return_sigma=True)
         Estimate of the spatial varying standard deviation of the noise
 

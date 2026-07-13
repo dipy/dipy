@@ -364,7 +364,7 @@ def deprecated_params(
                 # positional-only argument, varargs, varkwargs or some
                 # unknown type:
                 msg = f'cannot replace argument "{n_name}" '
-                msg += f"of kind {repr(param.kind)}."
+                msg += f"of kind {param.kind!r}."
                 raise TypeError(msg)
 
         @functools.wraps(function)

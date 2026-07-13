@@ -590,7 +590,7 @@ class MapmriFit(ReconstFit):
             return rtpp
 
         else:
-            rtpp_vec = np.zeros((ind_mat.shape[0]))
+            rtpp_vec = np.zeros(ind_mat.shape[0])
             count = 0
             for n in range(0, self.model.radial_order + 1, 2):
                 for j in range(1, 2 + n // 2):
@@ -644,7 +644,7 @@ class MapmriFit(ReconstFit):
             rtap_vec = const * Bm[sel] * ind_sum * self._mapmri_coef[sel]
             rtap = np.sum(rtap_vec)
         else:
-            rtap_vec = np.zeros((ind_mat.shape[0]))
+            rtap_vec = np.zeros(ind_mat.shape[0])
             count = 0
 
             for n in range(0, self.model.radial_order + 1, 2):
@@ -1051,11 +1051,12 @@ def mapmri_index_matrix(radial_order):
     ----------
     .. footbibliography::
     """
-    index_matrix = []
-    for n in range(0, radial_order + 1, 2):
-        for i in range(0, n + 1):
-            for j in range(0, n - i + 1):
-                index_matrix.append([n - i - j, j, i])
+    index_matrix = [
+        [n - i - j, j, i]
+        for n in range(0, radial_order + 1, 2)
+        for i in range(0, n + 1)
+        for j in range(0, n - i + 1)
+    ]
 
     return np.array(index_matrix)
 
@@ -1113,7 +1114,7 @@ def b_mat_isotropic(index_matrix):
     .. footbibliography::
     """
 
-    B = np.zeros((index_matrix.shape[0]))
+    B = np.zeros(index_matrix.shape[0])
     for i in range(index_matrix.shape[0]):
         if index_matrix[i, 1] == 0:
             B[i] = genlaguerre(index_matrix[i, 0] - 1, 0.5)(0)
@@ -1187,12 +1188,10 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
         My_storage[:, n] = mapmri_phi_1d(n, qy, muy)
         Mz_storage[:, n] = mapmri_phi_1d(n, qz, muz)
 
-    counter = 0
-    for nx, ny, nz in ind_mat:
+    for counter, (nx, ny, nz) in enumerate(ind_mat):
         M[:, counter] = np.real(
             Mx_storage[:, nx] * My_storage[:, ny] * Mz_storage[:, nz]
         )
-        counter += 1
 
     return M
 
@@ -1259,10 +1258,8 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
         Ky_storage[:, n] = mapmri_psi_1d(n, ry, muy)
         Kz_storage[:, n] = mapmri_psi_1d(n, rz, muz)
 
-    counter = 0
-    for nx, ny, nz in ind_mat:
+    for counter, (nx, ny, nz) in enumerate(ind_mat):
         K[:, counter] = Kx_storage[:, nx] * Ky_storage[:, ny] * Kz_storage[:, nz]
-        counter += 1
 
     return K
 
@@ -1842,11 +1839,12 @@ def mapmri_isotropic_index_matrix(radial_order):
     .. footbibliography::
 
     """
-    index_matrix = []
-    for n in range(0, radial_order + 1, 2):
-        for j in range(1, 2 + n // 2):
-            for m in range(-1 * (n + 2 - 2 * j), (n + 3 - 2 * j)):
-                index_matrix.append([j, n + 2 - 2 * j, m])
+    index_matrix = [
+        [j, n + 2 - 2 * j, m]
+        for n in range(0, radial_order + 1, 2)
+        for j in range(1, 2 + n // 2)
+        for m in range(-1 * (n + 2 - 2 * j), (n + 3 - 2 * j))
+    ]
 
     return np.array(index_matrix)
 
@@ -1870,11 +1868,12 @@ def create_rspace(gridsize, radius_max):
     """
 
     radius = gridsize // 2
-    vecs = []
-    for i in range(-radius, radius + 1):
-        for j in range(-radius, radius + 1):
-            for k in range(0, radius + 1):
-                vecs.append([i, j, k])
+    vecs = [
+        [i, j, k]
+        for i in range(-radius, radius + 1)
+        for j in range(-radius, radius + 1)
+        for k in range(0, radius + 1)
+    ]
 
     vecs = np.array(vecs, dtype=np.float32)
 

@@ -388,7 +388,7 @@ class StreamlineLinearRegistration:
         ----------
         .. footbibliography::
 
-        """  # noqa: E501
+        """
         self.x0 = self._set_x0(x0)
         self.metric = metric
 
@@ -493,15 +493,13 @@ class StreamlineLinearRegistration:
 
         mat = compose_transformations(moving_mat, opt_mat, static_mat)
 
-        mat_history = []
-
-        if opt.evolution is not None:
-            for vecs in opt.evolution:
-                mat_history.append(
-                    compose_transformations(
-                        moving_mat, compose_matrix44(vecs), static_mat
-                    )
-                )
+        if opt.evolution is None:
+            mat_history = []
+        else:
+            mat_history = [
+                compose_transformations(moving_mat, compose_matrix44(vecs), static_mat)
+                for vecs in opt.evolution
+            ]
 
         # If we are running halfway streamline linear registration (for
         # groupwise registration or atlasing) the registration map is different
@@ -1318,7 +1316,7 @@ def groupwise_slr(
         if verbose:
             logger.info(
                 f"Preprocessing: bundle {i}/{n_bundle}: "
-                + f"{len(bundles[i])} streamlines found."
+                f"{len(bundles[i])} streamlines found."
             )
 
         if select_random is not None:

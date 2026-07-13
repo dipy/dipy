@@ -204,9 +204,9 @@ def test_cti_prediction():
         cti_params = construct_cti_params(evals, evecs, K, ccti)
         cti_pred_signals = ctiM.predict(cti_params, S0=S0)
         qti_pred_signals = qti.qti_signal(gtab, D, C, S0=S0)[np.newaxis, :]
-        assert np.allclose(
-            cti_pred_signals, qti_pred_signals
-        ), "CTI and QTI signals do not match!"
+        assert np.allclose(cti_pred_signals, qti_pred_signals), (
+            "CTI and QTI signals do not match!"
+        )
 
         # check the function predict of the CorrelationTensorFit object
         ctiF = ctiM.fit(cti_pred_signals)
@@ -450,6 +450,9 @@ def test_cti_fits():
         npt.assert_almost_equal(fit.K_aniso, Kaniso_gt, decimal=6)
         npt.assert_almost_equal(fit.K_micro, Kmicro_gt, decimal=6)
         npt.assert_almost_equal(fit.K_total, Ktotal_gt, decimal=6)
+        assert np.allclose(K_micro, ground_truth_K_micro), (
+            "K_micro values don't match ground truth values"
+        )
 
 
 def test_cti_errors():
@@ -469,4 +472,5 @@ def test_cti_design_matrix():
     # Check if the two matrices are the same
     assert np.allclose(A1, A2), (
         "The design matrices are not symmetric for different gradientdirections order."
+    )
     )

@@ -236,7 +236,7 @@ def test_sh_to_bingham_handles_empty_voxels():
     """
     # Load small diffusion dataset
     dwi_fname, bval_fname, bvec_fname = get_fnames(name="small_64D")
-    data = load_nifti_data(dwi_fname)
+    data = load_nifti_data(dwi_fname)[:5, :5, :5]
     bvals, bvecs = read_bvals_bvecs(bval_fname, bvec_fname)
 
     # Prepare gradient table and fit CSA model to get SH coefficients

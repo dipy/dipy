@@ -2,7 +2,6 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_raises
 import scipy as sp
 
-from dipy.align import floating
 from dipy.align.imwarp import get_direction_and_spacings
 from dipy.align.scalespace import IsotropicScaleSpace, ScaleSpace
 from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
@@ -73,7 +72,7 @@ def test_scale_space():
 def test_scale_space_exceptions(rng):
     target_shape = (32, 32)
     # create a random image
-    image = np.ndarray(target_shape, dtype=floating)
+    image = np.ndarray(target_shape, dtype=np.float32)
     ns = np.size(image)
     image[...] = rng.integers(0, 10, ns).reshape(tuple(target_shape))
     zeros = (image == 0).astype(np.int32)

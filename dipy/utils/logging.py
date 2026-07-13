@@ -1,3 +1,4 @@
+from enum import IntEnum
 import logging
 import os
 import sys
@@ -122,3 +123,19 @@ def configure_logger(
 
 # Provide a default logger for convenience
 logger = get_logger()
+
+
+class VerbosityLevels(IntEnum):
+    """Verbosity levels for dipy algorithms.
+
+    NONE : do not print anything
+    STATUS : print information about the current status of the algorithm
+    DIAGNOSE : print high level information of the components involved in the
+        registration that can be used to detect a failing component
+    DEBUG : print as much information as possible to isolate the cause of a bug
+    """
+
+    NONE = 0
+    STATUS = 1
+    DIAGNOSE = 2
+    DEBUG = 3

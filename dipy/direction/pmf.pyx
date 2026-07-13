@@ -173,7 +173,7 @@ cdef class SHCoeffPmfGen(PmfGen):
 cdef class SimplePeakGen(PmfGen):
     """PmfGen subclass for sphere-based peak data.
 
-    This class stores peak indices and values, providing the PmfGen 
+    This class stores peak indices and values, providing the PmfGen
     interface required by the tractogram generator.
 
     Parameters

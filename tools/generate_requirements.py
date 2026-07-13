@@ -1,16 +1,11 @@
 #!/usr/bin/env python
 """Generate requirements/*.txt files from pyproject.toml."""
 
-import sys
+import tomllib
 from pathlib import Path
 
-try:  # standard module since Python 3.11
-    import tomllib as toml
-except ImportError:
-    try:  # available for older Python via pip
-        import tomli as toml
-    except ImportError:
-        sys.exit("Please install `tomli` first: `pip install tomli`")
+from dependency_groups import resolve
+
 
 script_pth = Path(__file__)
 repo_dir = script_pth.parent.parent
@@ -203,20 +198,42 @@ def expand_project_extras(
 
 def main():
     """Load ``pyproject.toml`` and regenerate the requirements directory."""
-    pyproject = toml.loads((repo_dir / "pyproject.toml").read_text())
+    pyproject = tomllib.loads((repo_dir / "pyproject.toml").read_text())
+
     project = pyproject["project"]
     project_name = project["name"]
-    optional_deps = project.get("optional-dependencies", {})
 
     generate_requirement_file("default", project["dependencies"])
 
-    for key, opt_list in optional_deps.items():
+    optional_dependencies = project.get("optional-dependencies", {})
+    for key, dep_list in optional_dependencies.items():
         expanded = expand_project_extras(
-            opt_list,
+            dep_list,
             project_name=project_name,
-            optional_dependencies=optional_deps,
+            optional_dependencies=optional_dependencies,
         )
         generate_requirement_file(key, expanded)
+
+    dependency_groups = pyproject.get("dependency-groups", {})
+    for key in dependency_groups:
+        expanded = []
+        for item in dependency_groups[key]:
+            if isinstance(item, dict) and "include-optional" in item:
+                optional_key = item["include-optional"]
+                expanded.extend(
+                    expand_project_extras(
+                        optional_dependencies[optional_key],
+                        project_name=project_name,
+                        optional_dependencies=optional_dependencies,
+                    )
+                )
+            else:
+                expanded.append(item)
+        dependency_groups[key] = expanded
+        generate_requirement_file(
+            # deduplicate dependencies while preserving insertion order
+            key, list(dict.fromkeys(str(r) for r in resolve(dependency_groups, key)))
+        )
 
 
 if __name__ == "__main__":

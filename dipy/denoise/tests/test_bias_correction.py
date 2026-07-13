@@ -440,9 +440,9 @@ def test_noise_stability():
     # CoV = std / mean; correction should not dramatically inflate it
     cov_orig = orig_b0.std() / (orig_b0.mean() + 1e-10)
     cov_corr = corr_b0.std() / (corr_b0.mean() + 1e-10)
-    assert (
-        cov_corr < cov_orig * 1.1
-    ), f"Correction inflated CoV: {cov_orig:.4f} → {cov_corr:.4f}"
+    assert cov_corr < cov_orig * 1.1, (
+        f"Correction inflated CoV: {cov_orig:.4f} → {cov_corr:.4f}"
+    )
 
 
 def test_mask_robustness():

@@ -1,28 +1,4 @@
-import numpy as np
-
-floating = np.float32
-
-
-class Bunch:
-    def __init__(self, **kwds):
-        r"""A 'bunch' of values (a replacement of Enum)
-
-        This is a temporary replacement of Enum, which is not available
-        on all versions of Python 2
-        """
-        self.__dict__.update(kwds)
-
-
-VerbosityLevels = Bunch(NONE=0, STATUS=1, DIAGNOSE=2, DEBUG=3)
-r""" VerbosityLevels
-This enum defines the four levels of verbosity we use in the align
-module.
-NONE : do not print anything
-STATUS : print information about the current status of the algorithm
-DIAGNOSE : print high level information of the components involved in the
-registration that can be used to detect a failing component.
-DEBUG : print as much information as possible to isolate the cause of a bug.
-"""
+import warnings
 
 from dipy.align._public import (
     affine,
@@ -31,7 +7,7 @@ from dipy.align._public import (
     motion_correction,
     read_mapping,
     register_dwi_series,
-    register_dwi_to_template,  # noqa
+    register_dwi_to_template,
     register_series,
     resample,
     rigid,
@@ -61,3 +37,31 @@ __all__ = [
     "register_dwi_series",
     "streamline_registration",
 ]
+
+
+def __getattr__(name):
+    if name == "floating":
+        warnings.warn(
+            "Importing 'floating' from dipy.align is deprecated. "
+            "Use np.float32 directly.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        import numpy as np
+
+        return np.float32
+    if name == "VerbosityLevels":
+        warnings.warn(
+            "Importing 'VerbosityLevels' from dipy.align is deprecated. "
+            "Use 'from dipy.utils import VerbosityLevels'.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        from dipy.utils import VerbosityLevels
+
+        return VerbosityLevels
+    if name == "Bunch":
+        raise ImportError(
+            "'Bunch' has been removed from dipy.align. Use enum.IntEnum instead."
+        )
+    raise AttributeError(f"module 'dipy.align' has no attribute {name!r}")

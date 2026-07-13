@@ -295,7 +295,7 @@ def gibbs_removal(vol, *, slice_axis=2, n_points=3, inplace=True, num_processes=
     if slice_axis > 2:
         raise ValueError(
             "Different slices have to be organized along"
-            + "one of the 3 first matrix dimensions"
+            "one of the 3 first matrix dimensions"
         )
 
     # 2) Reorder axis to allow iteration over the first axis

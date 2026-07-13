@@ -25,7 +25,7 @@ def test_identity_feature():
     # Test subclassing Feature
     class IdentityFeature(dipysfeature.Feature):
         def __init__(self):
-            super(IdentityFeature, self).__init__(is_order_invariant=False)
+            super().__init__(is_order_invariant=False)
 
         def infer_shape(self, streamline):
             return streamline.shape
@@ -58,7 +58,7 @@ def test_feature_resample():
     # Test subclassing Feature
     class ResampleFeature(dipysfeature.Feature):
         def __init__(self, nb_points):
-            super(ResampleFeature, self).__init__(is_order_invariant=False)
+            super().__init__(is_order_invariant=False)
             self.nb_points = nb_points
             if nb_points <= 0:
                 msg = (
@@ -108,7 +108,7 @@ def test_feature_center_of_mass():
     # Test subclassing Feature
     class CenterOfMassFeature(dipysfeature.Feature):
         def __init__(self):
-            super(CenterOfMassFeature, self).__init__(is_order_invariant=True)
+            super().__init__(is_order_invariant=True)
 
         def infer_shape(self, streamline):
             return 1, streamline.shape[1]
@@ -138,7 +138,7 @@ def test_feature_midpoint():
     # Test subclassing Feature
     class MidpointFeature(dipysfeature.Feature):
         def __init__(self):
-            super(MidpointFeature, self).__init__(is_order_invariant=False)
+            super().__init__(is_order_invariant=False)
 
         def infer_shape(self, streamline):
             return 1, streamline.shape[1]
@@ -173,7 +173,7 @@ def test_feature_arclength():
     # Test subclassing Feature
     class ArcLengthFeature(dipysfeature.Feature):
         def __init__(self):
-            super(ArcLengthFeature, self).__init__(is_order_invariant=True)
+            super().__init__(is_order_invariant=True)
 
         def infer_shape(self, streamline):
             return 1, 1
@@ -203,7 +203,7 @@ def test_feature_vector_of_endpoints():
     # Test subclassing Feature
     class VectorOfEndpointsFeature(dipysfeature.Feature):
         def __init__(self):
-            super(VectorOfEndpointsFeature, self).__init__(False)
+            super().__init__(False)
 
         def infer_shape(self, streamline):
             return 1, streamline.shape[1]

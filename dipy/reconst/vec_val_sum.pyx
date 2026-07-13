@@ -19,7 +19,7 @@ def vec_val_vect(vecs, vals):
     Returns
     -------
     res : shape (..., M, M) array
-        For all the dimensions ellided by ``...``, loops to get (M, N) ``vec``
+        For all the dimensions elided by ``...``, loops to get (M, N) ``vec``
         matrix, and (N,) ``vals`` vector, and calculates
         ``vec.dot(np.diag(val).dot(vec.T)``.
 

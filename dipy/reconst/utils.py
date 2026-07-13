@@ -288,7 +288,7 @@ def convert_tensors(tensor, from_format, to_format):
     - FSL: [Dxx, Dxy, Dxz, Dyy, Dyz, Dzz]
       Shape: [i, j , k, 6]. (Also used for the Fibernavigator)
       Ref: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT/UserGuide
-    """  # noqa: E501
+    """
     tensor_order = {
         "fsl": [[0, 1, 3, 2, 4, 5], [0, 1, 3, 2, 4, 5]],
         "mrtrix": [[0, 3, 1, 4, 5, 2], [0, 2, 5, 1, 3, 4]],

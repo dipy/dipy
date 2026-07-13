@@ -188,7 +188,7 @@ cdef cnp.npy_intp _propagation_direction(double *point,
                                          double total_weight) noexcept nogil:
     cdef:
         double total_w = 0 # total weighting useful for interpolation
-        double delta = 0 # store delta function (stopping function) result
+        cnp.npy_intp delta = 0 # store delta function (stopping function) result
         double new_direction[3] # new propagation direction
         double w[8]
         double qa_tmp[PEAK_NO]

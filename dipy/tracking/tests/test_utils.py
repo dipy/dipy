@@ -273,8 +273,7 @@ def test_connectivity_matrix_with_generator():
 
     # Create a generator version of streamlines
     def streamline_generator():
-        for sl in streamlines:
-            yield sl
+        yield from streamlines
 
     # Test that generator input works
     matrix = connectivity_matrix(
@@ -598,8 +597,7 @@ def test_near_roi():
 
     # Test with a generator input:
     def generate_sl(streamlines):
-        for sl in streamlines:
-            yield sl
+        yield from streamlines
 
     npt.assert_array_equal(
         near_roi(generate_sl(streamlines), np.eye(4), mask, mode="both_end"),

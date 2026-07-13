@@ -65,7 +65,7 @@ def sph_project(
     >>> from dipy.data import default_sphere
     >>> verts = default_sphere.vertices
     >>> _ax = sph_project(verts.T, np.random.rand(len(verts.T))) # skip if not has_basemap
-    """  # noqa: E501
+    """
     if ax is None:
         fig, ax = plt.subplots(1)
     else:

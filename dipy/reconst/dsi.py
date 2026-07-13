@@ -103,7 +103,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         --------
         dipy.reconst.gqi.GeneralizedQSampling
 
-        """  # noqa: E501
+        """
 
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
@@ -263,7 +263,7 @@ class DiffusionSpectrumFit(OdfFit):
         ----------
         .. footbibliography::
 
-        """  # noqa: E501
+        """
 
         Pr = self.pdf(normalized=normalized)
 
@@ -276,7 +276,7 @@ class DiffusionSpectrumFit(OdfFit):
         z = np.tile(a.reshape(gridsize, 1, 1), (1, gridsize, gridsize))
         r2 = x**2 + y**2 + z**2
 
-        msd = np.sum(Pr * r2) / float((gridsize**3))
+        msd = np.sum(Pr * r2) / float(gridsize**3)
         return msd
 
     def odf(self, sphere):
@@ -554,7 +554,7 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
         ----------
         .. footbibliography::
 
-        """  # noqa: E501
+        """
         DiffusionSpectrumModel.__init__(
             self,
             gtab,

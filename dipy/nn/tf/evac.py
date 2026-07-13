@@ -123,7 +123,7 @@ class Block(Layer):
         *,
         layer_type="down",
     ):
-        super(Block, self).__init__()
+        super().__init__()
         self.layer_list = []
         self.layer_list2 = []
         self.n_layers = n_layers
@@ -179,7 +179,7 @@ class ChannelSum(Layer):
     """Layer to sum over the channel dimension."""
 
     def __init__(self):
-        super(ChannelSum, self).__init__()
+        super().__init__()
 
     def call(self, inputs):
         """Forward pass of the ChannelSum layer.

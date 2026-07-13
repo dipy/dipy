@@ -140,7 +140,7 @@ def remove_similar_vertices(
     if vertices.shape[1] != 3:
         raise ValueError('Vertices should be 2D with second dim length 3')
 
-    cdef int n = vertices.shape[0]
+    cdef cnp.npy_intp n = vertices.shape[0]
     if n >= 2**16:
         raise ValueError("Too many vertices")
 

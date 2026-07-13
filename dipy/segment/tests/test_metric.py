@@ -50,7 +50,7 @@ def test_metric_minimum_average_direct_flip():
 
     class MinimumAverageDirectFlipMetric(dipysmetric.Metric):
         def __init__(self, feature):
-            super(MinimumAverageDirectFlipMetric, self).__init__(feature=feature)
+            super().__init__(feature=feature)
 
         @property
         def is_order_invariant(self):
@@ -150,7 +150,7 @@ def test_metric_cosine():
 
     class CosineMetric(dipysmetric.Metric):
         def __init__(self, feature):
-            super(CosineMetric, self).__init__(feature=feature)
+            super().__init__(feature=feature)
 
         def are_compatible(self, shape1, shape2):
             # Cosine metric works on vectors.

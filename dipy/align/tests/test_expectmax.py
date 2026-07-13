@@ -6,7 +6,7 @@ from numpy.testing import (
     assert_raises,
 )
 
-from dipy.align import expectmax as em, floating
+from dipy.align import expectmax as em
 from dipy.testing.decorators import set_random_number_generator
 
 
@@ -103,11 +103,11 @@ def test_compute_em_demons_step_2d(rng):
 
     # Now compute it using the implementation under test
 
-    actual = np.empty_like(expected, dtype=floating)
+    actual = np.empty_like(expected, dtype=np.float32)
     em.compute_em_demons_step_2d(
-        np.array(delta_field, dtype=floating),
-        np.array(sigma_i_sq, dtype=floating),
-        np.array(grad_G, dtype=floating),
+        np.array(delta_field, dtype=np.float32),
+        np.array(sigma_i_sq, dtype=np.float32),
+        np.array(grad_G, dtype=np.float32),
         sigma_x_sq,
         actual,
     )
@@ -251,11 +251,11 @@ def test_compute_em_demons_step_3d(rng):
     expected[random_labels >= 3, ...] *= (num / den)[..., None]
 
     # Now compute it using the implementation under test
-    actual = np.empty_like(expected, dtype=floating)
+    actual = np.empty_like(expected, dtype=np.float32)
     em.compute_em_demons_step_3d(
-        np.array(delta_field, dtype=floating),
-        np.array(sigma_i_sq, dtype=floating),
-        np.array(grad_G, dtype=floating),
+        np.array(delta_field, dtype=np.float32),
+        np.array(sigma_i_sq, dtype=np.float32),
+        np.array(grad_G, dtype=np.float32),
         sigma_x_sq,
         actual,
     )
@@ -331,8 +331,8 @@ def test_quantize_positive_2d(rng):
     noise_amplitude = np.min([delta / 4.0, min_positive / 4.0])
     sz = np.size(true_quantization)
     noise = rng.random(sz).reshape(img_shape) * noise_amplitude
-    noise = noise.astype(floating)
-    input_image = np.ndarray(img_shape, dtype=floating)
+    noise = noise.astype(np.float32)
+    input_image = np.ndarray(img_shape, dtype=np.float32)
     # assign intensities plus noise
     input_image[...] = true_levels[true_quantization] + noise
     # preserve original zeros
@@ -354,10 +354,12 @@ def test_quantize_positive_2d(rng):
     assert_raises(ValueError, em.quantize_positive_2d, input_image, 0)
     assert_raises(ValueError, em.quantize_positive_2d, input_image, 1)
 
-    out, levels, hist = em.quantize_positive_2d(np.zeros(img_shape, dtype=floating), 2)
+    out, levels, hist = em.quantize_positive_2d(
+        np.zeros(img_shape, dtype=np.float32), 2
+    )
     assert_equal(out, np.zeros(img_shape, dtype=np.int32))
 
-    out, levels, hist = em.quantize_positive_2d(np.ones(img_shape, dtype=floating), 2)
+    out, levels, hist = em.quantize_positive_2d(np.ones(img_shape, dtype=np.float32), 2)
     assert_equal(out, np.ones(img_shape, dtype=np.int32))
 
 
@@ -391,8 +393,8 @@ def test_quantize_positive_3d(rng):
     noise_amplitude = np.min([delta / 4.0, min_positive / 4.0])
     sz = np.size(true_quantization)
     noise = rng.random(sz).reshape(img_shape) * noise_amplitude
-    noise = noise.astype(floating)
-    input_image = np.ndarray(img_shape, dtype=floating)
+    noise = noise.astype(np.float32)
+    input_image = np.ndarray(img_shape, dtype=np.float32)
     # assign intensities plus noise
     input_image[...] = true_levels[true_quantization] + noise
     # preserve original zeros
@@ -414,10 +416,12 @@ def test_quantize_positive_3d(rng):
     assert_raises(ValueError, em.quantize_positive_3d, input_image, 0)
     assert_raises(ValueError, em.quantize_positive_3d, input_image, 1)
 
-    out, levels, hist = em.quantize_positive_3d(np.zeros(img_shape, dtype=floating), 2)
+    out, levels, hist = em.quantize_positive_3d(
+        np.zeros(img_shape, dtype=np.float32), 2
+    )
     assert_equal(out, np.zeros(img_shape, dtype=np.int32))
 
-    out, levels, hist = em.quantize_positive_3d(np.ones(img_shape, dtype=floating), 2)
+    out, levels, hist = em.quantize_positive_3d(np.ones(img_shape, dtype=np.float32), 2)
     assert_equal(out, np.ones(img_shape, dtype=np.int32))
 
 
@@ -432,7 +436,7 @@ def test_compute_masked_class_stats_2d(rng):
     labels[0, 0] = 1
 
     # Create random values
-    values = rng.standard_normal((shape[0], shape[1])).astype(floating)
+    values = rng.standard_normal((shape[0], shape[1])).astype(np.float32)
     values *= labels
     values += labels
 
@@ -459,7 +463,7 @@ def test_compute_masked_class_stats_3d(rng):
     labels[0, 0, 0] = 1
 
     # Create random values
-    values = rng.standard_normal((shape[0], shape[1], shape[2])).astype(floating)
+    values = rng.standard_normal((shape[0], shape[1], shape[2])).astype(np.float32)
     values *= labels
     values += labels
 

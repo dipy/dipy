@@ -60,7 +60,7 @@ class SlicesVisualizer:
             if self._data_ndim == 4 and rgb and self._data_shape[-1] != 3:
                 warnings.warn(
                     "The rgb flag is enabled but the color "
-                    + "channel information is not provided",
+                    "channel information is not provided",
                     stacklevel=2,
                 )
             vol_data = self._volume_calculations(self._percentiles)

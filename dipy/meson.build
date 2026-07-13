@@ -309,6 +309,29 @@ if cc.compiles(neon_prog, args: test_neon_cflags, name: 'ARM NEON intrinsics')
   cython_cpp_args = cython_c_args
 endif
 
+# Treat compiler warnings as errors for Cython-generated C/C++ code.
+if cc.get_id() == 'msvc'
+  cython_c_args += ['/WX']
+else
+  cython_c_args += cc.get_supported_arguments('-Werror')
+endif
+cython_cpp_args = cython_c_args
+
+# MSVC's C++ front-end raises C4551 on Cython's own
+# `(void)some_utility_func;` unused-function-silencing boilerplate
+# (its C front-end does not). Not fixable in dipy sources.
+if cpp.get_id() == 'msvc'
+  cython_cpp_args += ['/wd4551']
+endif
+
+# GCC raises -Wmaybe-uninitialized on __pyx_clineno in Cython-generated code.
+# This is a well-known false positive: Cython always initializes the variable
+# before use, but GCC's flow analysis cannot prove it. Not fixable in sources.
+if cc.get_id() == 'gcc'
+  cython_c_args += cc.get_supported_arguments('-Wno-maybe-uninitialized')
+  cython_cpp_args += cpp.get_supported_arguments('-Wno-maybe-uninitialized')
+endif
+
 
 # ------------------------------------------------------------------------
 #  include openmp

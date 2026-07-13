@@ -127,7 +127,7 @@ def crop(vol, mins, maxs):
     return vol[tuple(slice(i, j) for i, j in zip(mins, maxs))]
 
 
-@deprecated_params("autocrop", since="1.11.0", until="1.13.0")
+@deprecated_params("autocrop", since="1.11", until="1.13")
 @warning_for_keywords()
 def median_otsu(
     input_volume,

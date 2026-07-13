@@ -121,7 +121,7 @@ def _load_cache_registry(cache_dir):
     """
     registry_path = cache_dir / "cache_registry.json"
     if registry_path.exists():
-        with open(registry_path, "r") as f:
+        with open(registry_path) as f:
             return json.load(f)
     return []
 
@@ -349,8 +349,7 @@ class SignalIndex:
 
         if k > self.ntotal:
             warnings.warn(
-                f"k={k} exceeds index size ({self.ntotal}); "
-                f"clamping to {self.ntotal}.",
+                f"k={k} exceeds index size ({self.ntotal}); clamping to {self.ntotal}.",
                 UserWarning,
                 stacklevel=2,
             )

@@ -561,7 +561,7 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
         Array representing x,y,z of N points in a streamline.
     tol_error : float, optional
         Tolerance error in mm. A rule of thumb is to set it
-        to 0.01mm for deterministic streamlines and 0.1mm for probabilitic
+        to 0.01mm for deterministic streamlines and 0.1mm for probabilistic
         streamlines.
     max_segment_length : float, optional
         Maximum length in mm of any given segment produced by the compression.
