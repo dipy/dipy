@@ -275,7 +275,7 @@ def test_classify_tissue_flow_synthseg(rng=None):
                 return (
                     np.zeros(img.shape, dtype=np.int32),
                     {0: "Background"},
-                    None,
+                    np.zeros(img.shape, dtype=np.int32),
                 )
 
         with pytest.MonkeyPatch.context() as mp:
@@ -385,7 +385,7 @@ def test_brain_mask_flow(rng=None):
                     return (
                         np.zeros(img.shape, dtype=np.int32),
                         {0: "Background"},
-                        np.zeros(img.shape),
+                        np.zeros(img.shape, dtype=np.int32),
                     )
 
             with pytest.MonkeyPatch.context() as mp:
