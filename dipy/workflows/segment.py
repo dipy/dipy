@@ -620,7 +620,7 @@ class BrainMaskFlow(Workflow):
         numpass=5,
         vol_idx=None,
         dilate=None,
-        finalize_mask=False,
+        finalize_mask=True,
         save_masked=False,
         use_cuda=False,
         out_dir="",
@@ -669,7 +669,7 @@ class BrainMaskFlow(Workflow):
             'median_otsu' method.
         finalize_mask : bool, optional
             Whether to remove potential holes or islands. Useful for solving
-            minor errors. Used only for the 'median_otsu' method.
+            minor errors. Used for 'median_otsu' and 'synthseg' methods.
         save_masked : bool, optional
             Save the masked volume in addition to the mask.
         use_cuda : bool, optional
@@ -786,7 +786,7 @@ class BrainMaskFlow(Workflow):
                     )
                 vol = data[..., 0] if data.ndim == 4 else data
                 _, _, mask_volume = synthseg_model.predict(
-                    vol, affine, return_masks=True
+                    vol, affine, finalize_mask=finalize_mask
                 )
                 mask_for_apply = (
                     mask_volume[..., np.newaxis] if data.ndim == 4 else mask_volume
