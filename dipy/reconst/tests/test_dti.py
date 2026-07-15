@@ -1275,3 +1275,16 @@ def test_dti_nlls_cholesky_positivity():
 
     npt.assert_(np.all(dtif.evals >= -1e-8))
     npt.assert_(np.all((dtif.fa >= 0) & (dtif.fa <= 1)))
+    
+
+def test_cholesky_jac_warning():
+    """Test that a warning is raised when jac=True is combined with
+    cholesky=True, since the analytical Jacobian is not implemented
+    for the Cholesky parameterization."""
+    _, fbvals, fbvecs = get_fnames(name="small_25")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
+
+    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True, jac=True)
+    data = np.ones(bvals.shape[0]) * 100
+    assert_warns(UserWarning, dtim.fit, data)

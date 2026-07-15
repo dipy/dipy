@@ -92,8 +92,8 @@ def fractional_anisotropy(evals, *, axis=-1):
     ----------
     evals : array-like
         Eigenvalues of a diffusion tensor.
-        axis : int, optional
-        Axis of evals which contains 3 eigenvalues.
+    axis : int, optional
+        Axis of `evals` which contains 3 eigenvalues.
 
     Returns
     -------
@@ -1896,6 +1896,7 @@ def nlls_fit_tensor(
             UserWarning,
             stacklevel=2,
         )
+        jac_func = None
 
     if return_S0_hat:
         model_S0 = np.empty((flat_data.shape[0], 1))
@@ -1930,7 +1931,7 @@ def nlls_fit_tensor(
                 err_func,
                 start_params,
                 args=(design_matrix, flat_data[vox], weights_vox, cholesky),
-                Dfun=jac_func if not cholesky else None,
+                Dfun=jac_func,
             )
 
             if cholesky:
