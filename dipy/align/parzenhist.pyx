@@ -291,34 +291,6 @@ class ParzenJointHistogram:
                                       self.padding, self.joint,
                                       self.smarginal, self.mmarginal)
 
-    def compute_mi(self, local_support=False):
-        """Computes mutual information using the current joint PDF.
-
-        This method supports two derivative-reduction paths. With
-        ``local_support=False``, it follows the global-parameter path used by
-        affine registration: the joint PDF derivative stored in
-        ``self.joint_grad`` is reduced into ``metric_grad``. With
-        ``local_support=True``, it follows the dense local-support path used by
-        displacement-field registration: no global ``joint_grad`` tensor is
-        reduced, and the per-bin MI derivative weights are stored in
-        ``self.mi_weights`` for a later voxelwise update computation.
-
-        Parameters
-        ----------
-        local_support : bool, optional
-            If True, compute MI bin weights instead of a global parameter
-            gradient.
-        """
-        if local_support:
-            self.metric_val = compute_parzen_mi_weights(
-                self.joint, self.smarginal, self.mmarginal, self.mi_weights)
-            return self.metric_val
-
-        self.metric_val = compute_parzen_mi(
-            self.joint, self.joint_grad, self.smarginal, self.mmarginal,
-            self.metric_grad)
-        return self.metric_val
-
     def update_gradient_dense(self, theta, transform, static, moving,
                               grid2world, mgradient, smask=None, mmask=None):
         r""" Computes the Gradient of the joint PDF w.r.t. transform parameters
@@ -437,6 +409,8 @@ class ParzenJointHistogram:
             inside the object of interest and 0's along the background).
             The default is None, indicating all voxels are considered.
         """
+        cdef object compute_update
+
         if static.shape != moving.shape:
             raise ValueError("Images must have the same shape")
 
@@ -478,72 +452,16 @@ class ParzenJointHistogram:
             self.mi_weights = np.zeros_like(self.joint)
 
         if dim == 2:
-            if mgradient.dtype == np.float64:
-                _compute_pdfs_dense_and_local_derivatives_2d[cython.double](
-                    static, moving, mgradient, smask, mmask,
-                    self.smin, self.sdelta, self.mmin, self.mdelta,
-                    self.nbins, self.padding, self.joint, self.smarginal,
-                    self.mmarginal, local_derivative_by_parzen_bin,
-                    joint_pdf_index)
+            compute_update = _compute_dense_mi_update_2d
+        else:
+            compute_update = _compute_dense_mi_update_3d
 
-                self.compute_mi(local_support=True)
-
-                _apply_mi_weights_to_cached_local_derivatives_2d[cython.double](
-                    local_derivative_by_parzen_bin, joint_pdf_index,
-                    smask, mmask, self.mi_weights, self.mdelta,
-                    self.nbins, self.padding, update_field)
-
-            elif mgradient.dtype == np.float32:
-                _compute_pdfs_dense_and_local_derivatives_2d[cython.float](
-                    static, moving, mgradient, smask, mmask,
-                    self.smin, self.sdelta, self.mmin, self.mdelta,
-                    self.nbins, self.padding, self.joint, self.smarginal,
-                    self.mmarginal, local_derivative_by_parzen_bin,
-                    joint_pdf_index)
-
-                self.compute_mi(local_support=True)
-
-                _apply_mi_weights_to_cached_local_derivatives_2d[cython.float](
-                    local_derivative_by_parzen_bin, joint_pdf_index,
-                    smask, mmask, self.mi_weights, self.mdelta,
-                    self.nbins, self.padding, update_field)
-
-            else:
-                raise ValueError("Grad. field dtype must be floating point")
-
-        elif dim == 3:
-            if mgradient.dtype == np.float64:
-                _compute_pdfs_dense_and_local_derivatives_3d[cython.double](
-                    static, moving, mgradient, smask, mmask,
-                    self.smin, self.sdelta, self.mmin, self.mdelta,
-                    self.nbins, self.padding, self.joint, self.smarginal,
-                    self.mmarginal, local_derivative_by_parzen_bin,
-                    joint_pdf_index)
-
-                self.compute_mi(local_support=True)
-
-                _apply_mi_weights_to_cached_local_derivatives_3d[cython.double](
-                    local_derivative_by_parzen_bin, joint_pdf_index,
-                    smask, mmask, self.mi_weights, self.mdelta,
-                    self.nbins, self.padding, update_field)
-
-            elif mgradient.dtype == np.float32:
-                _compute_pdfs_dense_and_local_derivatives_3d[cython.float](
-                    static, moving, mgradient, smask, mmask,
-                    self.smin, self.sdelta, self.mmin, self.mdelta,
-                    self.nbins, self.padding, self.joint, self.smarginal,
-                    self.mmarginal, local_derivative_by_parzen_bin,
-                    joint_pdf_index)
-
-                self.compute_mi(local_support=True)
-
-                _apply_mi_weights_to_cached_local_derivatives_3d[cython.float](
-                    local_derivative_by_parzen_bin, joint_pdf_index,
-                    smask, mmask, self.mi_weights, self.mdelta,
-                    self.nbins, self.padding, update_field)
-
-            else:
-                raise ValueError("Grad. field dtype must be floating point")
+        self.metric_val = compute_update(
+            static, moving, mgradient, smask, mmask,
+            self.smin, self.sdelta, self.mmin, self.mdelta,
+            self.nbins, self.padding, self.joint, self.smarginal,
+            self.mmarginal, local_derivative_by_parzen_bin,
+            joint_pdf_index, self.mi_weights, update_field)
 
     def update_gradient_sparse(self, theta, transform, sval, mval,
                                sample_points, mgradient):
@@ -1846,6 +1764,176 @@ cdef _apply_mi_weights_to_cached_local_derivatives_3d(
                         update_field[k, i, j, 0] /= norm_factor
                         update_field[k, i, j, 1] /= norm_factor
                         update_field[k, i, j, 2] /= norm_factor
+
+
+def _compute_dense_mi_update_2d(
+        floating[:, :] static, floating[:, :] moving,
+        floating[:, :, :] mgradient, int[:, :] smask, int[:, :] mmask,
+        double smin, double sdelta, double mmin, double mdelta,
+        int nbins, int padding, double[:, :] joint,
+        double[:] smarginal, double[:] mmarginal,
+        floating[:, :, :, :] local_derivative_by_parzen_bin,
+        cnp.npy_intp[:, :] joint_pdf_index, double[:, :] mi_weights,
+        floating[:, :, :] update_field):
+    r"""Compute the dense local-support MI update for two 2D images.
+
+    Computes the joint PDF and its cached local derivatives, computes the
+    mutual information and its bin weights, and applies those weights to the
+    cached derivatives to produce the dense update field.
+
+    Parameters
+    ----------
+    static : array, shape (R, C)
+        static image
+    moving : array, shape (R, C)
+        moving image
+    mgradient : array, shape (R, C, 2)
+        gradient of the moving image
+    smask : array, shape (R, C)
+        mask of static object being registered (a binary array with 1's inside
+        the object of interest and 0's along the background)
+    mmask : array, shape (R, C)
+        mask of moving object being registered (a binary array with 1's inside
+        the object of interest and 0's along the background)
+    smin : float
+        the minimum observed intensity associated with the static image, which
+        was used to define the joint PDF
+    sdelta : float
+        bin size associated with the intensities of the static image
+    mmin : float
+        the minimum observed intensity associated with the moving image, which
+        was used to define the joint PDF
+    mdelta : float
+        bin size associated with the intensities of the moving image
+    nbins : int
+        number of histogram bins
+    padding : int
+        number of bins used as padding (the total bins used for padding at both
+        sides of the histogram is actually 2*padding)
+    joint : array, shape (nbins, nbins)
+        the array to write the joint PDF
+    smarginal : array, shape (nbins,)
+        the array to write the marginal PDF associated with the static image
+    mmarginal : array, shape (nbins,)
+        the array to write the marginal PDF associated with the moving image
+    local_derivative_by_parzen_bin : array, shape (2*padding, R, C, 2)
+        the array to write the unweighted local derivative contribution of each
+        pixel displacement component to each affected moving Parzen bin
+    joint_pdf_index : array, shape (R, C)
+        the array to write the flattened index of the first joint-PDF bin affected
+        by each pixel. For a voxel assigned to static bin r and moving bin c, this
+        value is r * nbins + (c - padding + 1)
+    mi_weights : array, shape (nbins, nbins), optional
+        the buffer in which to write the mutual information weight associated
+        with each joint bin. If None, the bin weights are not computed
+    update_field : array, shape (R, C, 2)
+        the array to write the dense local-support MI update field
+
+    Returns
+    -------
+    metric_val : float
+        the mutual information computed from the joint PDF
+    """
+    cdef double metric_val
+
+    _compute_pdfs_dense_and_local_derivatives_2d[floating](
+        static, moving, mgradient, smask, mmask,
+        smin, sdelta, mmin, mdelta, nbins, padding,
+        joint, smarginal, mmarginal, local_derivative_by_parzen_bin,
+        joint_pdf_index)
+
+    metric_val = compute_parzen_mi_weights(
+        joint, smarginal, mmarginal, mi_weights)
+
+    _apply_mi_weights_to_cached_local_derivatives_2d[floating](
+        local_derivative_by_parzen_bin, joint_pdf_index, smask, mmask,
+        mi_weights, mdelta, nbins, padding, update_field)
+    return metric_val
+
+
+def _compute_dense_mi_update_3d(
+        floating[:, :, :] static, floating[:, :, :] moving,
+        floating[:, :, :, :] mgradient, int[:, :, :] smask,
+        int[:, :, :] mmask, double smin, double sdelta,
+        double mmin, double mdelta, int nbins, int padding,
+        double[:, :] joint, double[:] smarginal, double[:] mmarginal,
+        floating[:, :, :, :, :] local_derivative_by_parzen_bin,
+        cnp.npy_intp[:, :, :] joint_pdf_index, double[:, :] mi_weights,
+        floating[:, :, :, :] update_field):
+    r"""Compute the dense local-support MI update for two 3D images.
+
+    Computes the joint PDF and its cached local derivatives, computes the
+    mutual information and its bin weights, and applies those weights to the
+    cached derivatives to produce the dense update field.
+
+    Parameters
+    ----------
+    static : array, shape (S, R, C)
+        static image
+    moving : array, shape (S, R, C)
+        moving image
+    mgradient : array, shape (S, R, C, 3)
+        gradient of the moving image
+    smask : array, shape (S, R, C)
+        mask of static object being registered (a binary array with 1's inside
+        the object of interest and 0's along the background)
+    mmask : array, shape (S, R, C)
+        mask of moving object being registered (a binary array with 1's inside
+        the object of interest and 0's along the background)
+    smin : float
+        the minimum observed intensity associated with the static image, which
+        was used to define the joint PDF
+    sdelta : float
+        bin size associated with the intensities of the static image
+    mmin : float
+        the minimum observed intensity associated with the moving image, which
+        was used to define the joint PDF
+    mdelta : float
+        bin size associated with the intensities of the moving image
+    nbins : int
+        number of histogram bins
+    padding : int
+        number of bins used as padding (the total bins used for padding at both
+        sides of the histogram is actually 2*padding)
+    joint : array, shape (nbins, nbins)
+        the array to write the joint PDF
+    smarginal : array, shape (nbins,)
+        the array to write the marginal PDF associated with the static image
+    mmarginal : array, shape (nbins,)
+        the array to write the marginal PDF associated with the moving image
+    local_derivative_by_parzen_bin : array, shape (2*padding, S, R, C, 3)
+        the array to write the unweighted local derivative contribution of each
+        voxel displacement component to each affected moving Parzen bin
+    joint_pdf_index : array, shape (S, R, C)
+        the array to write the flattened index of the first joint-PDF bin affected
+        by each voxel. For a voxel assigned to static bin r and moving bin c, this
+        value is r * nbins + (c - padding + 1)
+    mi_weights : array, shape (nbins, nbins), optional
+        the buffer in which to write the mutual information weight associated
+        with each joint bin. If None, the bin weights are not computed
+    update_field : array, shape (S, R, C, 3)
+        the array to write the dense local-support MI update field
+
+    Returns
+    -------
+    metric_val : float
+        the mutual information computed from the joint PDF
+    """
+    cdef double metric_val
+
+    _compute_pdfs_dense_and_local_derivatives_3d[floating](
+        static, moving, mgradient, smask, mmask,
+        smin, sdelta, mmin, mdelta, nbins, padding,
+        joint, smarginal, mmarginal, local_derivative_by_parzen_bin,
+        joint_pdf_index)
+
+    metric_val = compute_parzen_mi_weights(
+        joint, smarginal, mmarginal, mi_weights)
+
+    _apply_mi_weights_to_cached_local_derivatives_3d[floating](
+        local_derivative_by_parzen_bin, joint_pdf_index, smask, mmask,
+        mi_weights, mdelta, nbins, padding, update_field)
+    return metric_val
 
 
 def compute_parzen_mi(double[:, :] joint,
