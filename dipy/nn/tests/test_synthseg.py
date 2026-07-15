@@ -123,7 +123,9 @@ def test_default_weights_mask():
     input_arr = np.load(file_path)["input"][0]
 
     synthseg_model = synthseg.SynthSeg()
-    labels, label_dict, masks = synthseg_model.predict(input_arr, np.eye(4))
+    labels, label_dict, masks = synthseg_model.predict(
+        input_arr, np.eye(4), finalize_mask=False
+    )
 
     npt.assert_equal(labels.shape, input_arr.shape)
     npt.assert_equal(masks.shape, input_arr.shape)
