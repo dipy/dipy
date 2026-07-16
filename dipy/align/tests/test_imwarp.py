@@ -709,6 +709,98 @@ def get_synthetic_warped_circle(nslices):
     return circle_3d, wcircle_3d
 
 
+def test_mi_2d():
+    r"""Test 2D SyN with MI metric
+
+    Register a coronal slice from a T1w brain MRI before and after warping
+    it under a synthetic invertible map. We verify that the final
+    registration is of good quality.
+    """
+    fname = get_fnames(name="t1_coronal_slice")
+    nslices = 1
+    b = 0.1
+    m = 4
+
+    image = np.load(fname)
+    moving, static = get_warped_stacked_image(image, nslices, b, m)
+
+    # Configure the metric
+    metric = metrics.MIMetric(2, nbins=16, smooth=1.0)
+
+    # Configure and run the Optimizer
+    level_iters = [15, 5]
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(
+        metric=metric, level_iters=level_iters
+    )
+    optimizer.verbosity = VerbosityLevels.DEBUG
+    mapping = optimizer.optimize(static, moving, static_grid2world=None)
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
+
+    warped = mapping.transform(moving)
+    starting_energy = np.sum((static - moving) ** 2)
+    final_energy = np.sum((static - warped) ** 2)
+    reduced = 1.0 - final_energy / starting_energy
+
+    assert reduced > 0.6
+
+
+def test_mi_3d():
+    r"""Test 3D SyN with MI metric
+
+    Register a volume created by stacking copies of a coronal slice from
+    a T1w brain MRI before and after warping it under a synthetic
+    invertible map. We verify that the final registration is of good quality.
+    """
+    fname = get_fnames(name="t1_coronal_slice")
+    nslices = 21
+    b = 0.1
+    m = 4
+
+    image = np.load(fname)
+    moving, static = get_warped_stacked_image(image, nslices, b, m)
+
+    # Create the MI metric
+    metric = metrics.MIMetric(3, nbins=16, smooth=1.0)
+
+    # Create the optimizer
+    level_iters = [20, 5]
+    step_length = 0.25
+    opt_tol = 1e-4
+    inv_iter = 20
+    inv_tol = 1e-3
+    ss_sigma_factor = 0.2
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(
+        metric,
+        level_iters=level_iters,
+        step_length=step_length,
+        ss_sigma_factor=ss_sigma_factor,
+        opt_tol=opt_tol,
+        inv_iter=inv_iter,
+        inv_tol=inv_tol,
+    )
+    optimizer.verbosity = VerbosityLevels.DEBUG
+
+    mapping = optimizer.optimize(
+        static, moving, static_grid2world=None, moving_grid2world=None, prealign=None
+    )
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
+
+    warped = mapping.transform(moving)
+    starting_energy = np.sum((static - moving) ** 2)
+    final_energy = np.sum((static - warped) ** 2)
+    reduced = 1.0 - final_energy / starting_energy
+
+    assert reduced > 0.5
+
+
 def test_ssd_3d_demons():
     r"""Test 3D SyN with SSD metric, demons-like optimizer
 

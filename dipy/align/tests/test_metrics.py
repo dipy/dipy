@@ -9,7 +9,7 @@ from numpy.testing import (
 )
 from scipy import ndimage
 
-from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
+from dipy.align.metrics import CCMetric, EMMetric, MIMetric, SSDMetric
 from dipy.testing.decorators import set_random_number_generator
 
 
@@ -17,6 +17,7 @@ def test_exceptions():
     for invalid_dim in [-1, 0, 1, 4, 5]:
         assert_raises(ValueError, CCMetric, invalid_dim)
         assert_raises(ValueError, EMMetric, invalid_dim)
+        assert_raises(ValueError, MIMetric, invalid_dim)
         assert_raises(ValueError, SSDMetric, invalid_dim)
     assert_raises(ValueError, SSDMetric, 3, step_type="unknown_metric_name")
     assert_raises(ValueError, EMMetric, 3, step_type="unknown_metric_name")
@@ -80,6 +81,49 @@ def cc_energy_from_factors(factors, radius):
             if local_correlation < 1:
                 energy -= local_correlation
     return energy
+
+
+def mi_energy_from_pdfs(joint, smarginal, mmarginal):
+    """Compute mutual information from joint and marginal PDFs."""
+    independent = smarginal[:, None] * mmarginal[None, :]
+    valid = joint > 0
+    return np.sum(joint[valid] * np.log(joint[valid] / independent[valid]))
+
+
+@set_random_number_generator(7181309)
+def test_mi_metric_energy_matches_mutual_information(rng):
+    """Verify that MIMetric reports the mutual information energy.
+
+    The forward and backward MI steps both should store the same scalar data
+    energy for the initialized image pair.
+    """
+    for dim, shape in [(2, (5, 5)), (3, (5, 5, 5))]:
+        static = rng.random(shape).astype(np.float32)
+        moving = rng.random(shape).astype(np.float32)
+
+        metric = MIMetric(dim, nbins=16, smooth=0)
+        setup_metric(metric, static, moving)
+        metric.forward_histogram.update_pdfs_dense(static, moving)
+        expected = mi_energy_from_pdfs(
+            metric.forward_histogram.joint,
+            metric.forward_histogram.smarginal,
+            metric.forward_histogram.mmarginal,
+        )
+        metric.compute_forward()
+        assert_almost_equal(metric.get_energy(), expected)
+        metric.free_iteration()
+
+        metric = MIMetric(dim, nbins=16, smooth=0)
+        setup_metric(metric, static, moving)
+        metric.backward_histogram.update_pdfs_dense(moving, static)
+        expected = mi_energy_from_pdfs(
+            metric.backward_histogram.joint,
+            metric.backward_histogram.smarginal,
+            metric.backward_histogram.mmarginal,
+        )
+        metric.compute_backward()
+        assert_almost_equal(metric.get_energy(), expected)
+        metric.free_iteration()
 
 
 @set_random_number_generator(7181309)
