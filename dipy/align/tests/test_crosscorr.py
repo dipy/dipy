@@ -2,6 +2,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 
 from dipy.align import crosscorr as cc
+from dipy.align.transforms import regtransforms
 from dipy.testing.decorators import set_random_number_generator
 
 
@@ -35,6 +36,87 @@ def test_cc_factors_3d():
         factors = np.asarray(cc.precompute_cc_factors_3d(a, b, radius))
         expected = np.asarray(cc.precompute_cc_factors_3d_test(a, b, radius))
         assert_array_almost_equal(factors, expected, decimal=5)
+
+
+@set_random_number_generator(1147572)
+def test_compute_cc_affine_2d(rng):
+    """Compare affine CC with the existing dense backward step in 2D."""
+    sh = (32, 32)
+    radius = 2
+    static = rng.random(sh)
+    moving = rng.random(sh)
+    grad_moving = np.stack(np.gradient(moving), axis=-1)
+    factors = cc.precompute_cc_factors_2d(static, moving, radius)
+
+    update, expected_energy = cc.compute_cc_backward_step_2d(
+        grad_moving, factors, radius
+    )
+    for (_, dim), transform in sorted(regtransforms.items()):
+        if dim != 2:
+            continue
+        theta = transform.get_identity_parameters()
+        actual_gradient = np.empty(transform.get_number_of_parameters())
+        actual_energy = cc.compute_cc_affine_2d(
+            factors,
+            radius,
+            grad_moving,
+            theta,
+            transform,
+            np.eye(3),
+            actual_gradient,
+        )
+
+        expected_gradient = np.zeros_like(actual_gradient)
+        for r in range(radius, sh[0] - radius):
+            for c in range(radius, sh[1] - radius):
+                jacobian = transform.jacobian(
+                    theta, np.asarray([r, c], dtype=np.float64)
+                )
+                expected_gradient += jacobian.T.dot(update[r, c])
+
+        assert_array_almost_equal(actual_energy, expected_energy)
+        assert_array_almost_equal(actual_gradient, expected_gradient)
+
+
+@set_random_number_generator(1147572)
+def test_compute_cc_affine_3d(rng):
+    """Compare affine CC with the existing dense backward step in 3D."""
+    sh = (32, 32, 32)
+    radius = 2
+    static = rng.random(sh)
+    moving = rng.random(sh)
+    grad_moving = np.stack(np.gradient(moving), axis=-1)
+    factors = cc.precompute_cc_factors_3d(static, moving, radius)
+
+    update, expected_energy = cc.compute_cc_backward_step_3d(
+        grad_moving, factors, radius
+    )
+    for (_, dim), transform in sorted(regtransforms.items()):
+        if dim != 3:
+            continue
+        theta = transform.get_identity_parameters()
+        actual_gradient = np.empty(transform.get_number_of_parameters())
+        actual_energy = cc.compute_cc_affine_3d(
+            factors,
+            radius,
+            grad_moving,
+            theta,
+            transform,
+            np.eye(4),
+            actual_gradient,
+        )
+
+        expected_gradient = np.zeros_like(actual_gradient)
+        for s in range(radius, sh[0] - radius):
+            for r in range(radius, sh[1] - radius):
+                for c in range(radius, sh[2] - radius):
+                    jacobian = transform.jacobian(
+                        theta, np.asarray([s, r, c], dtype=np.float64)
+                    )
+                    expected_gradient += jacobian.T.dot(update[s, r, c])
+
+        assert_array_almost_equal(actual_energy, expected_energy)
+        assert_array_almost_equal(actual_gradient, expected_gradient)
 
 
 @set_random_number_generator(1147572)

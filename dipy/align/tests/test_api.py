@@ -140,6 +140,21 @@ def test_affine_registration():
     # We don't ask for much:
     npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
 
+    # Test affine registration with cross-correlation
+    xformed, affine_mat = affine_registration(
+        moving=moving,
+        static=static,
+        moving_affine=moving_affine,
+        static_affine=static_affine,
+        pipeline=["translation"],
+        metric="cc",
+        level_iters=[2],
+        sigmas=[0],
+        factors=[1],
+        radius=1,
+    )
+    npt.assert_almost_equal(affine_mat, np.eye(4), decimal=1)
+
     # [center_of_mass] + ret_metric=True should raise an error
     with pytest.raises(ValueError):
         xformed, affine_mat = affine_registration(
