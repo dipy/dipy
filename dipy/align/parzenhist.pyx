@@ -1595,12 +1595,12 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                         grad_pdf[i, j, k] /= norm_factor
 
 
-cdef _apply_mi_weights_to_cached_local_derivatives_2d(
+cdef void _apply_mi_weights_to_cached_local_derivatives_2d(
         floating[:, :, :, :] local_derivative_by_parzen_bin,
         cnp.npy_intp[:, :] joint_pdf_index,
         int[:, :] smask, int[:, :] mmask,
         double[:, :] mi_weights, double mdelta, int nbins, int padding,
-        floating[:, :, :] update_field):
+        floating[:, :, :] update_field) noexcept nogil:
     r"""Apply MI bin weights to cached 2D local-support derivatives.
 
     This function combines the MI weights computed from the joint PDF with the
@@ -1643,46 +1643,45 @@ cdef _apply_mi_weights_to_cached_local_derivatives_2d(
 
     update_field[...] = 0
 
-    with nogil:
-        valid_points = 0
+    valid_points = 0
+    for i in range(nrows):
+        for j in range(ncols):
+            if smask is not None and smask[i, j] == 0:
+                continue
+            if mmask is not None and mmask[i, j] == 0:
+                continue
+
+            valid_points += 1
+            idx = joint_pdf_index[i, j]
+
+            for offset_id in range(2 * padding):
+                r = idx // nbins
+                c = idx - r * nbins
+                weight = mi_weights[r, c]
+
+                update_field[i, j, 0] += (
+                    weight * local_derivative_by_parzen_bin[
+                        offset_id, i, j, 0])
+                update_field[i, j, 1] += (
+                    weight * local_derivative_by_parzen_bin[
+                        offset_id, i, j, 1])
+
+                idx += 1
+
+    norm_factor = valid_points * mdelta
+    if norm_factor > 0:
         for i in range(nrows):
             for j in range(ncols):
-                if smask is not None and smask[i, j] == 0:
-                    continue
-                if mmask is not None and mmask[i, j] == 0:
-                    continue
-
-                valid_points += 1
-                idx = joint_pdf_index[i, j]
-
-                for offset_id in range(2 * padding):
-                    r = idx // nbins
-                    c = idx - r * nbins
-                    weight = mi_weights[r, c]
-
-                    update_field[i, j, 0] += (
-                        weight * local_derivative_by_parzen_bin[
-                            offset_id, i, j, 0])
-                    update_field[i, j, 1] += (
-                        weight * local_derivative_by_parzen_bin[
-                            offset_id, i, j, 1])
-
-                    idx += 1
-
-        norm_factor = valid_points * mdelta
-        if norm_factor > 0:
-            for i in range(nrows):
-                for j in range(ncols):
-                    update_field[i, j, 0] /= norm_factor
-                    update_field[i, j, 1] /= norm_factor
+                update_field[i, j, 0] /= norm_factor
+                update_field[i, j, 1] /= norm_factor
 
 
-cdef _apply_mi_weights_to_cached_local_derivatives_3d(
+cdef void _apply_mi_weights_to_cached_local_derivatives_3d(
         floating[:, :, :, :, :] local_derivative_by_parzen_bin,
         cnp.npy_intp[:, :, :] joint_pdf_index,
         int[:, :, :] smask, int[:, :, :] mmask,
         double[:, :] mi_weights, double mdelta, int nbins, int padding,
-        floating[:, :, :, :] update_field):
+        floating[:, :, :, :] update_field) noexcept nogil:
     r"""Apply MI bin weights to cached 3D local-support derivatives.
 
     This function combines the MI weights computed from the joint PDF with the
@@ -1726,44 +1725,43 @@ cdef _apply_mi_weights_to_cached_local_derivatives_3d(
 
     update_field[...] = 0
 
-    with nogil:
-        valid_points = 0
+    valid_points = 0
+    for k in range(nslices):
+        for i in range(nrows):
+            for j in range(ncols):
+                if smask is not None and smask[k, i, j] == 0:
+                    continue
+                if mmask is not None and mmask[k, i, j] == 0:
+                    continue
+
+                valid_points += 1
+                idx = joint_pdf_index[k, i, j]
+
+                for offset_id in range(2 * padding):
+                    r = idx // nbins
+                    c = idx - r * nbins
+                    weight = mi_weights[r, c]
+
+                    update_field[k, i, j, 0] += (
+                        weight * local_derivative_by_parzen_bin[
+                            offset_id, k, i, j, 0])
+                    update_field[k, i, j, 1] += (
+                        weight * local_derivative_by_parzen_bin[
+                            offset_id, k, i, j, 1])
+                    update_field[k, i, j, 2] += (
+                        weight * local_derivative_by_parzen_bin[
+                            offset_id, k, i, j, 2])
+
+                    idx += 1
+
+    norm_factor = valid_points * mdelta
+    if norm_factor > 0:
         for k in range(nslices):
             for i in range(nrows):
                 for j in range(ncols):
-                    if smask is not None and smask[k, i, j] == 0:
-                        continue
-                    if mmask is not None and mmask[k, i, j] == 0:
-                        continue
-
-                    valid_points += 1
-                    idx = joint_pdf_index[k, i, j]
-
-                    for offset_id in range(2 * padding):
-                        r = idx // nbins
-                        c = idx - r * nbins
-                        weight = mi_weights[r, c]
-
-                        update_field[k, i, j, 0] += (
-                            weight * local_derivative_by_parzen_bin[
-                                offset_id, k, i, j, 0])
-                        update_field[k, i, j, 1] += (
-                            weight * local_derivative_by_parzen_bin[
-                                offset_id, k, i, j, 1])
-                        update_field[k, i, j, 2] += (
-                            weight * local_derivative_by_parzen_bin[
-                                offset_id, k, i, j, 2])
-
-                        idx += 1
-
-        norm_factor = valid_points * mdelta
-        if norm_factor > 0:
-            for k in range(nslices):
-                for i in range(nrows):
-                    for j in range(ncols):
-                        update_field[k, i, j, 0] /= norm_factor
-                        update_field[k, i, j, 1] /= norm_factor
-                        update_field[k, i, j, 2] /= norm_factor
+                    update_field[k, i, j, 0] /= norm_factor
+                    update_field[k, i, j, 1] /= norm_factor
+                    update_field[k, i, j, 2] /= norm_factor
 
 
 def _compute_dense_mi_update_2d(
@@ -1845,9 +1843,10 @@ def _compute_dense_mi_update_2d(
     metric_val = compute_parzen_mi_weights(
         joint, smarginal, mmarginal, mi_weights)
 
-    _apply_mi_weights_to_cached_local_derivatives_2d[floating](
-        local_derivative_by_parzen_bin, joint_pdf_index, smask, mmask,
-        mi_weights, mdelta, nbins, padding, update_field)
+    with nogil:
+        _apply_mi_weights_to_cached_local_derivatives_2d[floating](
+            local_derivative_by_parzen_bin, joint_pdf_index, smask, mmask,
+            mi_weights, mdelta, nbins, padding, update_field)
     return metric_val
 
 
@@ -1930,9 +1929,10 @@ def _compute_dense_mi_update_3d(
     metric_val = compute_parzen_mi_weights(
         joint, smarginal, mmarginal, mi_weights)
 
-    _apply_mi_weights_to_cached_local_derivatives_3d[floating](
-        local_derivative_by_parzen_bin, joint_pdf_index, smask, mmask,
-        mi_weights, mdelta, nbins, padding, update_field)
+    with nogil:
+        _apply_mi_weights_to_cached_local_derivatives_3d[floating](
+            local_derivative_by_parzen_bin, joint_pdf_index, smask, mmask,
+            mi_weights, mdelta, nbins, padding, update_field)
     return metric_val
 
 
