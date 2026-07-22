@@ -424,6 +424,7 @@ class ImageRegistrationFlow(Workflow):
         nbins=32,
         sampling_prop=None,
         metric="mi",
+        radius=4,
         level_iters=(1000, 500, 100),
         sigmas=(3.0, 1.0, 0.0),
         factors=(4, 2, 1),
@@ -449,12 +450,17 @@ class ImageRegistrationFlow(Workflow):
             ``'rigid_scaling'``: rigid body + scaling; ``'affine'``: full affine
             including translation, rotation, shearing and scaling.
         nbins : int, optional
-            Number of bins to discretize the joint and marginal PDF.
+            Number of bins to discretize the joint and marginal PDF
+            for the mutual information metric.
         sampling_prop : int, optional
-            Number ([0-100]) of voxels for calculating the PDF. None implies all
-            voxels.
+            Number ([0-100]) of voxels for calculating the PDF for the
+            mutual information metric. None implies all
         metric : string, optional
-            Similarity metric for gathering mutual information.
+            Similarity metric. Supported values are ``'mi'`` for mutual
+            information and ``'cc'`` for local cross-correlation.
+        radius : int, optional
+            Radius of the square (2D) or cubic (3D) neighborhood used by the
+            local cross-correlation metric.
         level_iters : variable int, optional
             The number of iterations at each scale of the scale space.
             `level_iters[0]` corresponds to the coarsest scale,
@@ -500,8 +506,21 @@ class ImageRegistrationFlow(Workflow):
         io_it = self.get_io_iterator()
         transform = transform.lower()
         metric = metric.upper()
-        if metric != "MI":
-            raise ValueError("Invalid similarity metric: Please provide avalid metric.")
+        supported_metrics = {"CC", "MI"}
+        if metric not in supported_metrics:
+            supported = ", ".join(sorted(supported_metrics))
+            raise ValueError(
+                f"Unsupported affine metric {metric!r}. Supported metrics are: "
+                f"{supported}."
+            )
+
+        if metric == "MI":
+            metric_kwargs = {
+                "nbins": nbins,
+                "sampling_proportion": sampling_prop,
+            }
+        else:
+            metric_kwargs = {"radius": radius}
 
         if progressive:
             pipeline_opt = {
@@ -567,8 +586,7 @@ class ImageRegistrationFlow(Workflow):
                     level_iters=level_iters,
                     sigmas=sigmas,
                     factors=factors,
-                    nbins=nbins,
-                    sampling_proportion=sampling_prop,
+                    **metric_kwargs,
                 )
             else:
                 moved_image, affine_matrix, xopt, fopt = affine_registration(
@@ -583,8 +601,7 @@ class ImageRegistrationFlow(Workflow):
                     sigmas=sigmas,
                     factors=factors,
                     ret_metric=True,
-                    nbins=nbins,
-                    sampling_proportion=sampling_prop,
+                    **metric_kwargs,
                 )
 
                 """

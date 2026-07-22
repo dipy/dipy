@@ -414,6 +414,28 @@ def test_image_registration(rng):
             npt.assert_almost_equal(float(dist), -0.42097809101318934, 1)
             check_existence(out_moved, out_affine)
 
+        def test_translation_cc():
+            out_moved = Path(temp_out_dir) / "trans_cc_moved.nii.gz"
+            out_affine = Path(temp_out_dir) / "trans_cc_affine.txt"
+
+            image_registration_flow._force_overwrite = True
+            image_registration_flow.run(
+                static_image_file,
+                moving_image_file,
+                transform="trans",
+                metric="cc",
+                out_dir=temp_out_dir,
+                out_moved=out_moved,
+                out_affine=out_affine,
+                save_metric=True,
+                level_iters=[100, 10, 1],
+                out_quality="trans_cc_q.txt",
+            )
+
+            dist = read_distance("trans_cc_q.txt")
+            npt.assert_almost_equal(float(dist), -189758.99583579277, 1)
+            check_existence(out_moved, out_affine)
+
         def test_rigid():
             out_moved = Path(temp_out_dir) / "rigid_moved.nii.gz"
             out_affine = Path(temp_out_dir) / "rigid_affine.txt"
@@ -599,6 +621,7 @@ def test_image_registration(rng):
 
         test_com()
         test_translation()
+        test_translation_cc()
         test_rigid()
         test_rigid_isoscaling()
         test_rigid_scaling()
