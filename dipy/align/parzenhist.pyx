@@ -636,10 +636,9 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
         cnp.npy_intp offset, valid_points
         cnp.npy_intp i, j, r, c
         double rn, cn
-        double val, spline_arg, total_sum
+        double val, spline_arg
 
     joint[...] = 0
-    total_sum = 0
     valid_points = 0
     with nogil:
         smarginal[:] = 0
@@ -660,9 +659,8 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
                 for offset in range(1 - padding, padding + 1):
                     val = _cubic_spline(spline_arg)
                     joint[r, c + offset] += val
-                    total_sum += val
                     spline_arg += 1.0
-        if total_sum > 0:
+        if valid_points > 0:
             for i in range(nbins):
                 for j in range(nbins):
                     joint[i, j] /= <double>valid_points
@@ -725,10 +723,9 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
         cnp.npy_intp offset, valid_points
         cnp.npy_intp k, i, j, r, c
         double rn, cn
-        double val, spline_arg, total_sum
+        double val, spline_arg
 
     joint[...] = 0
-    total_sum = 0
     with nogil:
         valid_points = 0
         smarginal[:] = 0
@@ -750,13 +747,12 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
                     for offset in range(1 - padding, padding + 1):
                         val = _cubic_spline(spline_arg)
                         joint[r, c + offset] += val
-                        total_sum += val
                         spline_arg += 1.0
 
-        if total_sum > 0:
+        if valid_points > 0:
             for i in range(nbins):
                 for j in range(nbins):
-                    joint[i, j] /= total_sum
+                    joint[i, j] /= <double>valid_points
 
             for i in range(nbins):
                 smarginal[i] /= <double>valid_points
@@ -806,10 +802,9 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
         cnp.npy_intp offset, valid_points
         cnp.npy_intp i, r, c
         double rn, cn
-        double val, spline_arg, total_sum
+        double val, spline_arg
 
     joint[...] = 0
-    total_sum = 0
 
     with nogil:
         valid_points = 0
@@ -826,13 +821,12 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
             for offset in range(1 - padding, padding + 1):
                 val = _cubic_spline(spline_arg)
                 joint[r, c + offset] += val
-                total_sum += val
                 spline_arg += 1.0
 
-        if total_sum > 0:
+        if valid_points > 0:
             for i in range(nbins):
                 for j in range(nbins):
-                    joint[i, j] /= total_sum
+                    joint[i, j] /= <double>valid_points
 
             for i in range(nbins):
                 smarginal[i] /= <double>valid_points
