@@ -388,23 +388,24 @@ class ParzenJointHistogram:
 
         Computes the dense vector field of partial derivatives of the mutual
         information w.r.t. local displacement parameters. The update is stored
-        in `update_field`.
+        in `update_field`, and the mutual information is stored in
+        `self.metric_val`.
 
         Parameters
         ----------
-        static : array, shape (S, R, C)
+        static : array, shape (R, C) or (S, R, C)
             static image
-        moving : array, shape (S, R, C)
+        moving : array, shape (R, C) or (S, R, C)
             moving image
-        mgradient : array, shape (S, R, C, 3)
+        mgradient : array, shape (R, C, 2) or (S, R, C, 3)
             gradient of the moving image
-        update_field : array, shape (S, R, C, 3)
+        update_field : array, shape (R, C, 2) or (S, R, C, 3)
             the buffer in which to write the dense update field
-        smask : array, shape (S, R, C), optional
+        smask : array, shape (R, C) or (S, R, C), optional
             mask of static object being registered (a binary array with 1's
             inside the object of interest and 0's along the background).
             The default is None, indicating all voxels are considered.
-        mmask : array, shape (S, R, C), optional
+        mmask : array, shape (R, C) or (S, R, C), optional
             mask of moving object being registered (a binary array with 1's
             inside the object of interest and 0's along the background).
             The default is None, indicating all voxels are considered.
@@ -1819,11 +1820,11 @@ def _compute_dense_mi_update_2d(
         pixel displacement component to each affected moving Parzen bin
     joint_pdf_index : array, shape (R, C)
         the array to write the flattened index of the first joint-PDF bin affected
-        by each pixel. For a voxel assigned to static bin r and moving bin c, this
+        by each pixel. For a pixel assigned to static bin r and moving bin c, this
         value is r * nbins + (c - padding + 1)
-    mi_weights : array, shape (nbins, nbins), optional
+    mi_weights : array, shape (nbins, nbins)
         the buffer in which to write the mutual information weight associated
-        with each joint bin. If None, the bin weights are not computed
+        with each joint bin
     update_field : array, shape (R, C, 2)
         the array to write the dense local-support MI update field
 
@@ -1907,9 +1908,9 @@ def _compute_dense_mi_update_3d(
         the array to write the flattened index of the first joint-PDF bin affected
         by each voxel. For a voxel assigned to static bin r and moving bin c, this
         value is r * nbins + (c - padding + 1)
-    mi_weights : array, shape (nbins, nbins), optional
+    mi_weights : array, shape (nbins, nbins)
         the buffer in which to write the mutual information weight associated
-        with each joint bin. If None, the bin weights are not computed
+        with each joint bin
     update_field : array, shape (S, R, C, 3)
         the array to write the dense local-support MI update field
 
@@ -2000,6 +2001,11 @@ def compute_parzen_mi_weights(double[:, :] joint,
     mi_weights : array, shape (nbins, nbins), optional
         the buffer in which to write the mutual information weight associated
         with each joint bin. If None, the bin weights are not computed
+
+    Returns
+    -------
+    metric_value : float
+        the mutual information computed from the joint PDF
     """
     cdef:
         double epsilon = 2.2204460492503131e-016
