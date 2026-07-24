@@ -232,6 +232,8 @@ class MIMetric(SimilarityMetric):
         self.smooth = smooth
         self.forward_histogram = ph.ParzenJointHistogram(nbins)
         self.backward_histogram = ph.ParzenJointHistogram(nbins)
+        self.forward_displacement = None
+        self.backward_displacement = None
         self._connect_functions()
 
     def _connect_functions(self):
@@ -259,6 +261,17 @@ class MIMetric(SimilarityMetric):
         dtype = np.asarray(self.moving_image).dtype
         if dtype not in (np.float32, np.float64):
             raise ValueError("MIMetric expects float32 or float64 images.")
+
+        # Reuse displacement buffers across iterations. Reallocate when a new
+        # pyramid level changes their shape or when the input dtype changes.
+        displacement_shape = self.static_image.shape + (self.dim,)
+        if (
+            self.forward_displacement is None
+            or self.forward_displacement.shape != displacement_shape
+            or self.forward_displacement.dtype != dtype
+        ):
+            self.forward_displacement = np.empty(displacement_shape, dtype=dtype)
+            self.backward_displacement = np.empty(displacement_shape, dtype=dtype)
 
         self.gradient_moving = np.empty(
             shape=self.moving_image.shape + (self.dim,), dtype=dtype
@@ -293,10 +306,7 @@ class MIMetric(SimilarityMetric):
         Computes the update displacement field to be used for registration of
         the moving image towards the static image.
         """
-        displacement = np.zeros(
-            shape=self.static_image.shape + (self.dim,),
-            dtype=self.gradient_moving.dtype,
-        )
+        displacement = self.forward_displacement
         self.forward_histogram.compute_dense_mi_update(
             self.static_image,
             self.moving_image,
@@ -316,10 +326,7 @@ class MIMetric(SimilarityMetric):
         Computes the update displacement field to be used for registration of
         the static image towards the moving image.
         """
-        displacement = np.zeros(
-            shape=self.static_image.shape + (self.dim,),
-            dtype=self.gradient_static.dtype,
-        )
+        displacement = self.backward_displacement
         self.backward_histogram.compute_dense_mi_update(
             self.moving_image,
             self.static_image,
@@ -342,7 +349,7 @@ class MIMetric(SimilarityMetric):
         return self.energy
 
     def free_iteration(self):
-        r"""Frees the resources allocated during initialization"""
+        r"""Frees resources that are not reused between iterations."""
         del self.gradient_static
         del self.gradient_moving
         self.forward_histogram.mi_weights = None
