@@ -63,7 +63,7 @@ def cc_energy_from_factors(factors, radius):
     """Compute CC energy as implemented in ``crosscorr.pyx`` step functions.
 
     This replicates the local NCC energy accumulation used by
-    ``compute_cc_forward_step_2d`` and ``compute_cc_backward_step_2d``
+    ``compute_cc_step_2d``.
     """
     energy = 0
     factors = np.asarray(factors)

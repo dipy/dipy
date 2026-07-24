@@ -241,13 +241,11 @@ class CCMetric(SimilarityMetric):
         """
         if self.dim == 2:
             self.precompute_factors = cc.precompute_cc_factors_2d
-            self.compute_forward_step = cc.compute_cc_forward_step_2d
-            self.compute_backward_step = cc.compute_cc_backward_step_2d
+            self.compute_step = cc.compute_cc_step_2d
             self.reorient_vector_field = vfu.reorient_vector_field_2d
         elif self.dim == 3:
             self.precompute_factors = cc.precompute_cc_factors_3d
-            self.compute_forward_step = cc.compute_cc_forward_step_3d
-            self.compute_backward_step = cc.compute_cc_backward_step_3d
+            self.compute_step = cc.compute_cc_step_3d
             self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
             raise ValueError(f"CC Metric not defined for dim. {self.dim}")
@@ -324,8 +322,8 @@ class CCMetric(SimilarityMetric):
         Computes the update displacement field to be used for registration of
         the moving image towards the static image
         """
-        displacement, self.energy = self.compute_forward_step(
-            self.gradient_static, self.factors, self.radius
+        displacement, self.energy = self.compute_step(
+            self.gradient_static, self.factors, self.radius, forward_step=True
         )
         displacement = np.array(displacement)
         for i in range(self.dim):
@@ -340,8 +338,8 @@ class CCMetric(SimilarityMetric):
         Computes the update displacement field to be used for registration of
         the static image towards the moving image
         """
-        displacement, self.energy = self.compute_backward_step(
-            self.gradient_moving, self.factors, self.radius
+        displacement, self.energy = self.compute_step(
+            self.gradient_moving, self.factors, self.radius, forward_step=False
         )
         displacement = np.array(displacement)
         for i in range(self.dim):
