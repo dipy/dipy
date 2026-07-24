@@ -1940,8 +1940,9 @@ def _compute_dense_mi_update_3d(
 def compute_parzen_mi(double[:, :] joint,
                       double[:, :, :] joint_gradient,
                       double[:] smarginal, double[:] mmarginal,
-                      double[:] mi_gradient):
-    r""" Computes the mutual information and its gradient (if requested)
+                      double[:] mi_gradient,
+                      double[:, :] mi_weights=None):
+    r"""Computes the mutual information and optionally its gradient and bin weights
 
     Parameters
     ----------
@@ -1949,7 +1950,7 @@ def compute_parzen_mi(double[:, :] joint,
         the joint intensity distribution
     joint_gradient : array, shape (nbins, nbins, n)
         the gradient of the joint distribution w.r.t. the transformation
-        parameters
+        parameters. May be None only if `mi_gradient` is also None
     smarginal : array, shape (nbins,)
         the marginal intensity distribution of the static image
     mmarginal : array, shape (nbins,)
@@ -1957,47 +1958,6 @@ def compute_parzen_mi(double[:, :] joint,
     mi_gradient : array, shape (n,)
         the buffer in which to write the gradient of the mutual information.
         If None, the gradient is not computed
-    """
-    cdef:
-        double epsilon = 2.2204460492503131e-016
-        double metric_value
-        cnp.npy_intp nrows = joint.shape[0]
-        cnp.npy_intp ncols = joint.shape[1]
-        cnp.npy_intp n = joint_gradient.shape[2]
-    with nogil:
-        mi_gradient[:] = 0
-        metric_value = 0
-        for i in range(nrows):
-            for j in range(ncols):
-                if joint[i, j] < epsilon or mmarginal[j] < epsilon:
-                    continue
-
-                factor = log(joint[i, j] / mmarginal[j])
-
-                if mi_gradient is not None:
-                    for k in range(n):
-                        mi_gradient[k] += joint_gradient[i, j, k] * factor
-
-                if smarginal[i] > epsilon:
-                    metric_value += joint[i, j] * (factor - log(smarginal[i]))
-
-    return metric_value
-
-
-def compute_parzen_mi_weights(double[:, :] joint,
-                              double[:] smarginal,
-                              double[:] mmarginal,
-                              double[:, :] mi_weights):
-    r""" Computes the mutual information and its bin weights (if requested)
-
-    Parameters
-    ----------
-    joint : array, shape (nbins, nbins)
-        the joint intensity distribution
-    smarginal : array, shape (nbins,)
-        the marginal intensity distribution of the static image
-    mmarginal : array, shape (nbins,)
-        the marginal intensity distribution of the moving image
     mi_weights : array, shape (nbins, nbins), optional
         the buffer in which to write the mutual information weight associated
         with each joint bin. If None, the bin weights are not computed
@@ -2010,12 +1970,20 @@ def compute_parzen_mi_weights(double[:, :] joint,
     cdef:
         double epsilon = 2.2204460492503131e-016
         double metric_value
-        double factor
-        cnp.npy_intp i, j
         cnp.npy_intp nrows = joint.shape[0]
         cnp.npy_intp ncols = joint.shape[1]
+        cnp.npy_intp n = 0
+
+    if mi_gradient is not None:
+        if joint_gradient is None:
+            raise ValueError(
+                "A joint gradient is required to compute the MI gradient"
+            )
+        n = joint_gradient.shape[2]
 
     with nogil:
+        if mi_gradient is not None:
+            mi_gradient[:] = 0
         if mi_weights is not None:
             mi_weights[:, :] = 0
         metric_value = 0
@@ -2025,6 +1993,11 @@ def compute_parzen_mi_weights(double[:, :] joint,
                     continue
 
                 factor = log(joint[i, j] / mmarginal[j])
+
+                if mi_gradient is not None:
+                    for k in range(n):
+                        mi_gradient[k] += joint_gradient[i, j, k] * factor
+
                 if mi_weights is not None:
                     mi_weights[i, j] = factor
 
@@ -2032,6 +2005,33 @@ def compute_parzen_mi_weights(double[:, :] joint,
                     metric_value += joint[i, j] * (factor - log(smarginal[i]))
 
     return metric_value
+
+
+def compute_parzen_mi_weights(double[:, :] joint,
+                              double[:] smarginal,
+                              double[:] mmarginal,
+                              double[:, :] mi_weights):
+    r"""Computes the mutual information and its bin weights
+
+    Parameters
+    ----------
+    joint : array, shape (nbins, nbins)
+        the joint intensity distribution
+    smarginal : array, shape (nbins,)
+        the marginal intensity distribution of the static image
+    mmarginal : array, shape (nbins,)
+        the marginal intensity distribution of the moving image
+    mi_weights : array, shape (nbins, nbins)
+        the buffer in which to write the mutual information weight associated
+        with each joint bin
+
+    Returns
+    -------
+    metric_value : float
+        the mutual information computed from the joint PDF
+    """
+    return compute_parzen_mi(
+        joint, None, smarginal, mmarginal, None, mi_weights)
 
 
 def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world,
