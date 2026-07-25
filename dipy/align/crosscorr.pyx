@@ -1,6 +1,8 @@
 """ Utility functions used by the Cross Correlation (CC) metric """
 
 import numpy as np
+from dipy.utils.deprecator import deprecate_with_version
+
 from dipy.align.fused_types cimport floating
 cimport cython
 cimport numpy as cnp
@@ -421,6 +423,32 @@ def compute_cc_step_3d(floating[:, :, :, :] gradient,
     return np.asarray(out), energy
 
 
+@deprecate_with_version(
+    "compute_cc_forward_step_3d is deprecated. "
+    "Use compute_cc_step_3d with forward_step=True instead.",
+    since="1.13",
+    until="2.0",
+)
+def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
+                               floating[:, :, :, :] factors,
+                               cnp.npy_intp radius):
+    """Deprecated. Use :func:`compute_cc_step_3d` with ``forward_step=True``."""
+    return compute_cc_step_3d(grad_static, factors, radius, True)
+
+
+@deprecate_with_version(
+    "compute_cc_backward_step_3d is deprecated. "
+    "Use compute_cc_step_3d with forward_step=False instead.",
+    since="1.13",
+    until="2.0",
+)
+def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
+                                floating[:, :, :, :] factors,
+                                cnp.npy_intp radius):
+    """Deprecated. Use :func:`compute_cc_step_3d` with ``forward_step=False``."""
+    return compute_cc_step_3d(grad_moving, factors, radius, False)
+
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
@@ -665,3 +693,29 @@ def compute_cc_step_2d(floating[:, :, :] gradient,
                 out[r, c, 0] -= temp * gradient[r, c, 0]
                 out[r, c, 1] -= temp * gradient[r, c, 1]
     return np.asarray(out), energy
+
+
+@deprecate_with_version(
+    "compute_cc_forward_step_2d is deprecated. "
+    "Use compute_cc_step_2d with forward_step=True instead.",
+    since="1.13",
+    until="2.0",
+)
+def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
+                               floating[:, :, :] factors,
+                               cnp.npy_intp radius):
+    """Deprecated. Use :func:`compute_cc_step_2d` with ``forward_step=True``."""
+    return compute_cc_step_2d(grad_static, factors, radius, True)
+
+
+@deprecate_with_version(
+    "compute_cc_backward_step_2d is deprecated. "
+    "Use compute_cc_step_2d with forward_step=False instead.",
+    since="1.13",
+    until="2.0",
+)
+def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
+                                floating[:, :, :] factors,
+                                cnp.npy_intp radius):
+    """Deprecated. Use :func:`compute_cc_step_2d` with ``forward_step=False``."""
+    return compute_cc_step_2d(grad_moving, factors, radius, False)
