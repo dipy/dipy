@@ -84,6 +84,8 @@ class ParzenJointHistogram:
         # which gives -1, 0, 1, 2.
         self.padding = 2
         self.setup_called = False
+        self.local_derivative_by_parzen_bin = None
+        self.joint_pdf_index = None
 
     def setup(self, static, moving, smask=None, mmask=None):
         r""" Compute histogram settings to store the PDF of input images
@@ -445,9 +447,23 @@ class ParzenJointHistogram:
             self.setup(static, moving, smask=smask, mmask=mmask)
 
         n_offsets = 2 * self.padding
-        local_derivative_by_parzen_bin = np.zeros(
-            (n_offsets,) + moving.shape + (dim,), dtype=mgradient.dtype)
-        joint_pdf_index = np.zeros(moving.shape, dtype=np.intp)
+        local_derivative_shape = (n_offsets,) + moving.shape + (dim,)
+
+        # Reuse buffers across updates
+        if (
+            self.local_derivative_by_parzen_bin is None
+            or self.local_derivative_by_parzen_bin.shape != local_derivative_shape
+            or self.local_derivative_by_parzen_bin.dtype != mgradient.dtype
+        ):
+            self.local_derivative_by_parzen_bin = np.empty(
+                local_derivative_shape, dtype=mgradient.dtype
+            )
+
+        if (
+            self.joint_pdf_index is None
+            or self.joint_pdf_index.shape != moving.shape
+        ):
+            self.joint_pdf_index = np.empty(moving.shape, dtype=np.intp)
 
         if self.mi_weights is None or self.mi_weights.shape != self.joint.shape:
             self.mi_weights = np.zeros_like(self.joint)
@@ -461,8 +477,8 @@ class ParzenJointHistogram:
             static, moving, mgradient, smask, mmask,
             self.smin, self.sdelta, self.mmin, self.mdelta,
             self.nbins, self.padding, self.joint, self.smarginal,
-            self.mmarginal, local_derivative_by_parzen_bin,
-            joint_pdf_index, self.mi_weights, update_field)
+            self.mmarginal, self.local_derivative_by_parzen_bin,
+            self.joint_pdf_index, self.mi_weights, update_field)
 
     def update_gradient_sparse(self, theta, transform, sval, mval,
                                sample_points, mgradient):
