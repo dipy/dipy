@@ -1886,16 +1886,31 @@ def H(value):
 
 
 @warning_for_keywords()
-def generalized_crossvalidation(data, M, LR, *, startpoint=5e-4):
+def generalized_crossvalidation(data, M, LR, *, startpoint=1e-4):
     r"""Generalized Cross Validation Function.
 
     See :footcite:p:`Craven1979` for further details about the method.
+
+    Parameters
+    ----------
+    data : ndarray
+        Measured signal to fit.
+    M : ndarray
+        Observation matrix.
+    LR : ndarray
+        Regularization matrix.
+    startpoint : float, optional
+        Initial guess handed to the optimizer for the regularization weight.
+
+    Returns
+    -------
+    float
+        The optimal regularization weight.
 
     References
     ----------
     .. footbibliography::
     """
-    startpoint = 1e-4
     MMt = np.dot(M.T, M)
     K = len(data)
     input_stuff = (data, M, MMt, K, LR)

@@ -8,7 +8,7 @@ import warnings
 import numpy as np
 
 from dipy.core.gradients import unique_bvals_tolerance
-from dipy.direction.peaks import PeaksAndMetrics
+from dipy.direction.peaks import PeaksAndMetrics, _pam_from_attrs
 from dipy.reconst._force_search import search_inner_product as _cython_search
 from dipy.reconst.base import ReconstFit, ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
@@ -1664,16 +1664,20 @@ def force_peaks(fitted_object, *, mask=None, sh_order=8):
         ):
             v_max = np.max(odf, axis=-1, keepdims=True)
             v_min = np.min(odf, axis=-1, keepdims=True)
-            mask = v_max > 1.0
+            norm_mask = v_max > 1.0
             denom = (v_max - v_min) + 1e-12
             normalized_odf = (odf - v_min) / denom
-            odf = np.where(mask, normalized_odf, odf)
+            odf = np.where(norm_mask, normalized_odf, odf)
             res_sh = sf_to_sh(odf, default_sphere, sh_order=sh_order)
-    peaks = PeaksAndMetrics()
-    peaks.peak_dirs = res_dirs
-    peaks.peak_values = res_vals
-    peaks.peak_indices = res_inds
-    peaks.shm_coeff = res_sh
-    peaks.sphere = default_sphere
-
-    return peaks
+    return _pam_from_attrs(
+        PeaksAndMetrics,
+        default_sphere,
+        res_inds,
+        res_vals,
+        res_dirs,
+        None,
+        None,
+        res_sh,
+        None,
+        None,
+    )
