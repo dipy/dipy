@@ -269,7 +269,7 @@ def patch_maximum(vertices, odf, pole, width):
         logger.info(
             f"empty cone around pole {np.array_str(pole)} with with width {width:f}"
         )
-        return np.Null, np.Null
+        return None, None
     eqvals = [odf[i] for i in eqvert]
     eqargmax = np.argmax(eqvals)
     eqvertmax = eqvert[eqargmax]
@@ -288,7 +288,7 @@ def patch_sum(vertices, odf, pole, width):
         logger.info(
             f"empty cone around pole {np.array_str(pole)} with with width {width:f}"
         )
-        return np.Null
+        return None
     return np.sum([odf[i] for i in eqvert])
 
 
