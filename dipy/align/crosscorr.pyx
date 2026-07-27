@@ -1,6 +1,8 @@
 """ Utility functions used by the Cross Correlation (CC) metric """
 
 import numpy as np
+from dipy.utils.deprecator import deprecate_with_version
+
 from dipy.align.fused_types cimport floating
 cimport cython
 cimport numpy as cnp
@@ -345,20 +347,21 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
-                               floating[:, :, :, :] factors,
-                               cnp.npy_intp radius):
-    """Gradient of the CC Metric w.r.t. the forward transformation.
+def compute_cc_step_3d(floating[:, :, :, :] gradient,
+                       floating[:, :, :, :] factors,
+                       cnp.npy_intp radius,
+                       bint forward_step):
+    """Gradient of the 3D CC metric for one SyN step.
 
-    Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) :footcite:p:`Avants2008` w.r.t. the displacement
-    associated to the moving volume ('forward' step) as in
+    Computes either the forward or backward gradient of the Cross Correlation
+    metric for symmetric registration (SyN) :footcite:p:`Avants2008`, as in
     :footcite:t:`Avants2009`.
 
     Parameters
     ----------
-    grad_static : array, shape (S, R, C, 3)
-        the gradient of the static volume
+    gradient : array, shape (S, R, C, 3)
+        the gradient of the static volume for a forward step, or the gradient
+        of the moving volume for a backward step
     factors : array, shape (S, R, C, 5)
         the precomputed cross correlation terms obtained via
         precompute_cc_factors_3d
@@ -366,12 +369,15 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
         the radius of the neighborhood used for the CC metric when
         computing the factors. The returned vector field will be
         zero along a boundary of width radius voxels.
+    forward_step : bool
+        if True, compute the forward step. Otherwise, compute the backward
+        step.
 
     Returns
     -------
     out : array, shape (S, R, C, 3)
         the gradient of the cross correlation metric with respect to the
-        displacement associated to the moving volume
+        selected displacement
     energy : the cross correlation energy (data term) at this iteration
 
     References
@@ -379,14 +385,14 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
     .. footbibliography::
     """
     cdef:
-        cnp.npy_intp ns = grad_static.shape[0]
-        cnp.npy_intp nr = grad_static.shape[1]
-        cnp.npy_intp nc = grad_static.shape[2]
+        cnp.npy_intp ns = gradient.shape[0]
+        cnp.npy_intp nr = gradient.shape[1]
+        cnp.npy_intp nc = gradient.shape[2]
         double energy = 0
         cnp.npy_intp s, r, c
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
         floating[:, :, :, :] out =\
-            np.zeros((ns, nr, nc, 3), dtype=np.asarray(grad_static).dtype)
+            np.zeros((ns, nr, nc, 3), dtype=np.asarray(gradient).dtype)
     with nogil:
         for s in range(radius, ns-radius):
             for r in range(radius, nr-radius):
@@ -403,81 +409,44 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
                         localCorrelation = sfm * sfm / (sff * smm)
                     if localCorrelation < 1:  # avoid bad values...
                         energy -= localCorrelation
-                    temp = 2.0 * sfm / (sff * smm) * (Ji - sfm / sff * Ii)
-                    out[s, r, c, 0] -= temp * grad_static[s, r, c, 0]
-                    out[s, r, c, 1] -= temp * grad_static[s, r, c, 1]
-                    out[s, r, c, 2] -= temp * grad_static[s, r, c, 2]
+                    if forward_step:
+                        temp = 2.0 * sfm / (sff * smm) * (
+                            Ji - sfm / sff * Ii
+                        )
+                    else:
+                        temp = 2.0 * sfm / (sff * smm) * (
+                            Ii - sfm / smm * Ji
+                        )
+                    out[s, r, c, 0] -= temp * gradient[s, r, c, 0]
+                    out[s, r, c, 1] -= temp * gradient[s, r, c, 1]
+                    out[s, r, c, 2] -= temp * gradient[s, r, c, 2]
     return np.asarray(out), energy
 
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.cdivision(True)
+@deprecate_with_version(
+    "compute_cc_forward_step_3d is deprecated. "
+    "Use compute_cc_step_3d with forward_step=True instead.",
+    since="1.13",
+    until="2.0",
+)
+def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
+                               floating[:, :, :, :] factors,
+                               cnp.npy_intp radius):
+    """Deprecated. Use :func:`compute_cc_step_3d` with ``forward_step=True``."""
+    return compute_cc_step_3d(grad_static, factors, radius, True)
+
+
+@deprecate_with_version(
+    "compute_cc_backward_step_3d is deprecated. "
+    "Use compute_cc_step_3d with forward_step=False instead.",
+    since="1.13",
+    until="2.0",
+)
 def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
                                 floating[:, :, :, :] factors,
                                 cnp.npy_intp radius):
-    """Gradient of the CC Metric w.r.t. the backward transformation.
-
-    Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) :footcite:p:`Avants2008`. w.r.t. the displacement
-    associated to the static volume ('backward' step) as in
-    :footcite:t:`Avants2009`.
-
-    Parameters
-    ----------
-    grad_moving : array, shape (S, R, C, 3)
-        the gradient of the moving volume
-    factors : array, shape (S, R, C, 5)
-        the precomputed cross correlation terms obtained via
-        precompute_cc_factors_3d
-    radius : int
-        the radius of the neighborhood used for the CC metric when
-        computing the factors. The returned vector field will be
-        zero along a boundary of width radius voxels.
-
-    Returns
-    -------
-    out : array, shape (S, R, C, 3)
-        the gradient of the cross correlation metric with respect to the
-        displacement associated to the static volume
-    energy : the cross correlation energy (data term) at this iteration
-
-    References
-    ----------
-    .. footbibliography::
-    """
-    ftype = np.asarray(grad_moving).dtype
-    cdef:
-        cnp.npy_intp ns = grad_moving.shape[0]
-        cnp.npy_intp nr = grad_moving.shape[1]
-        cnp.npy_intp nc = grad_moving.shape[2]
-        cnp.npy_intp s, r, c
-        double energy = 0
-        double Ii, Ji, sfm, sff, smm, localCorrelation, temp
-        floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), dtype=ftype)
-
-    with nogil:
-
-        for s in range(radius, ns-radius):
-            for r in range(radius, nr-radius):
-                for c in range(radius, nc-radius):
-                    Ii = factors[s, r, c, 0]
-                    Ji = factors[s, r, c, 1]
-                    sfm = factors[s, r, c, 2]
-                    sff = factors[s, r, c, 3]
-                    smm = factors[s, r, c, 4]
-                    if sff == 0.0 or smm == 0.0:
-                        continue
-                    localCorrelation = 0
-                    if sff * smm > 1e-5:
-                        localCorrelation = sfm * sfm / (sff * smm)
-                    if localCorrelation < 1:  # avoid bad values...
-                        energy -= localCorrelation
-                    temp = 2.0 * sfm / (sff * smm) * (Ii - sfm / smm * Ji)
-                    out[s, r, c, 0] -= temp * grad_moving[s, r, c, 0]
-                    out[s, r, c, 1] -= temp * grad_moving[s, r, c, 1]
-                    out[s, r, c, 2] -= temp * grad_moving[s, r, c, 2]
-    return np.asarray(out), energy
+    """Deprecated. Use :func:`compute_cc_step_3d` with ``forward_step=False``."""
+    return compute_cc_step_3d(grad_moving, factors, radius, False)
 
 
 @cython.boundscheck(False)
@@ -652,50 +621,51 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
-                               floating[:, :, :] factors,
-                               cnp.npy_intp radius):
-    """Gradient of the CC Metric w.r.t. the forward transformation.
+def compute_cc_step_2d(floating[:, :, :] gradient,
+                       floating[:, :, :] factors,
+                       cnp.npy_intp radius,
+                       bint forward_step):
+    """Gradient of the 2D CC metric for one SyN step.
 
-    Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) :footcite:p:`Avants2008` w.r.t. the displacement
-    associated to the moving image ('backward' step) as in
+    Computes either the forward or backward gradient of the Cross Correlation
+    metric for symmetric registration (SyN) :footcite:p:`Avants2008`, as in
     :footcite:t:`Avants2009`.
 
     Parameters
     ----------
-    grad_static : array, shape (R, C, 2)
-        the gradient of the static image
+    gradient : array, shape (R, C, 2)
+        the gradient of the static image for a forward step, or the gradient
+        of the moving image for a backward step
     factors : array, shape (R, C, 5)
         the precomputed cross correlation terms obtained via
         precompute_cc_factors_2d
+    radius : int
+        the radius of the neighborhood used for the CC metric when
+        computing the factors. The returned vector field will be
+        zero along a boundary of width radius pixels.
+    forward_step : bool
+        if True, compute the forward step. Otherwise, compute the backward
+        step.
 
     Returns
     -------
     out : array, shape (R, C, 2)
         the gradient of the cross correlation metric with respect to the
-        displacement associated to the moving image
+        selected displacement
     energy : the cross correlation energy (data term) at this iteration
-
-    Notes
-    -----
-    Currently, the gradient of the static image is not being used, but some
-    authors suggest that symmetrizing the gradient by including both, the
-    moving and static gradients may improve the registration quality. We are
-    leaving this parameter as a placeholder for future investigation
 
     References
     ----------
     .. footbibliography::
     """
     cdef:
-        cnp.npy_intp nr = grad_static.shape[0]
-        cnp.npy_intp nc = grad_static.shape[1]
+        cnp.npy_intp nr = gradient.shape[0]
+        cnp.npy_intp nc = gradient.shape[1]
         double energy = 0
         cnp.npy_intp r, c
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
         floating[:, :, :] out = np.zeros((nr, nc, 2),
-                                         dtype=np.asarray(grad_static).dtype)
+                                         dtype=np.asarray(gradient).dtype)
     with nogil:
 
         for r in range(radius, nr-radius):
@@ -712,70 +682,40 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                     localCorrelation = sfm * sfm / (sff * smm)
                 if localCorrelation < 1:  # avoid bad values...
                     energy -= localCorrelation
-                temp = 2.0 * sfm / (sff * smm) * (Ji - sfm / sff * Ii)
-                out[r, c, 0] -= temp * grad_static[r, c, 0]
-                out[r, c, 1] -= temp * grad_static[r, c, 1]
+                if forward_step:
+                    temp = 2.0 * sfm / (sff * smm) * (
+                        Ji - sfm / sff * Ii
+                    )
+                else:
+                    temp = 2.0 * sfm / (sff * smm) * (
+                        Ii - sfm / smm * Ji
+                    )
+                out[r, c, 0] -= temp * gradient[r, c, 0]
+                out[r, c, 1] -= temp * gradient[r, c, 1]
     return np.asarray(out), energy
 
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.cdivision(True)
+@deprecate_with_version(
+    "compute_cc_forward_step_2d is deprecated. "
+    "Use compute_cc_step_2d with forward_step=True instead.",
+    since="1.13",
+    until="2.0",
+)
+def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
+                               floating[:, :, :] factors,
+                               cnp.npy_intp radius):
+    """Deprecated. Use :func:`compute_cc_step_2d` with ``forward_step=True``."""
+    return compute_cc_step_2d(grad_static, factors, radius, True)
+
+
+@deprecate_with_version(
+    "compute_cc_backward_step_2d is deprecated. "
+    "Use compute_cc_step_2d with forward_step=False instead.",
+    since="1.13",
+    until="2.0",
+)
 def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
                                 floating[:, :, :] factors,
                                 cnp.npy_intp radius):
-    """Gradient of the CC Metric w.r.t. the backward transformation.
-
-    Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) :footcite:p:`Avants2008` w.r.t. the displacement
-    associated to the static image ('forward' step) as in
-    :footcite:t:`Avants2009`.
-
-    Parameters
-    ----------
-    grad_moving : array, shape (R, C, 2)
-        the gradient of the moving image
-    factors : array, shape (R, C, 5)
-        the precomputed cross correlation terms obtained via
-        precompute_cc_factors_2d
-
-    Returns
-    -------
-    out : array, shape (R, C, 2)
-        the gradient of the cross correlation metric with respect to the
-        displacement associated to the static image
-    energy : the cross correlation energy (data term) at this iteration
-
-    References
-    ----------
-    .. footbibliography::
-    """
-    ftype = np.asarray(grad_moving).dtype
-    cdef:
-        cnp.npy_intp nr = grad_moving.shape[0]
-        cnp.npy_intp nc = grad_moving.shape[1]
-        cnp.npy_intp r, c
-        double energy = 0
-        double Ii, Ji, sfm, sff, smm, localCorrelation, temp
-        floating[:, :, :] out = np.zeros((nr, nc, 2), dtype=ftype)
-
-    with nogil:
-
-        for r in range(radius, nr-radius):
-            for c in range(radius, nc-radius):
-                Ii = factors[r, c, 0]
-                Ji = factors[r, c, 1]
-                sfm = factors[r, c, 2]
-                sff = factors[r, c, 3]
-                smm = factors[r, c, 4]
-                if sff == 0.0 or smm == 0.0:
-                    continue
-                localCorrelation = 0
-                if sff * smm > 1e-5:
-                    localCorrelation = sfm * sfm / (sff * smm)
-                if localCorrelation < 1:  # avoid bad values...
-                    energy -= localCorrelation
-                temp = 2.0 * sfm / (sff * smm) * (Ii - sfm / smm * Ji)
-                out[r, c, 0] -= temp * grad_moving[r, c, 0]
-                out[r, c, 1] -= temp * grad_moving[r, c, 1]
-    return np.asarray(out), energy
+    """Deprecated. Use :func:`compute_cc_step_2d` with ``forward_step=False``."""
+    return compute_cc_step_2d(grad_moving, factors, radius, False)

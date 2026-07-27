@@ -97,14 +97,16 @@ def test_compute_cc_steps_2d(rng):
     expected[..., 0] = factor * gradF[..., 0]
     factor = (-2.0 * sfm / (sff * smm)) * (_J - (sfm / sff) * _I)
     expected[..., 1] = factor * gradF[..., 1]
-    actual, energy = cc.compute_cc_forward_step_2d(gradF, factors, 0)
+    actual, energy = cc.compute_cc_step_2d(gradF, factors, 0, forward_step=True)
     assert_array_almost_equal(actual, expected)
     for radius in range(1, 5):
         expected[:radius, ...] = 0
         expected[:, :radius, ...] = 0
         expected[-radius::, ...] = 0
         expected[:, -radius::, ...] = 0
-        actual, energy = cc.compute_cc_forward_step_2d(gradF, factors, radius)
+        actual, energy = cc.compute_cc_step_2d(
+            gradF, factors, radius, forward_step=True
+        )
         assert_array_almost_equal(actual, expected)
 
     # test the backward step against the exact expression
@@ -112,14 +114,16 @@ def test_compute_cc_steps_2d(rng):
     expected[..., 0] = factor * gradG[..., 0]
     factor = (-2.0 * sfm / (sff * smm)) * (_I - (sfm / smm) * _J)
     expected[..., 1] = factor * gradG[..., 1]
-    actual, energy = cc.compute_cc_backward_step_2d(gradG, factors, 0)
+    actual, energy = cc.compute_cc_step_2d(gradG, factors, 0, forward_step=False)
     assert_array_almost_equal(actual, expected)
     for radius in range(1, 5):
         expected[:radius, ...] = 0
         expected[:, :radius, ...] = 0
         expected[-radius::, ...] = 0
         expected[:, -radius::, ...] = 0
-        actual, energy = cc.compute_cc_backward_step_2d(gradG, factors, radius)
+        actual, energy = cc.compute_cc_step_2d(
+            gradG, factors, radius, forward_step=False
+        )
         assert_array_almost_equal(actual, expected)
 
 
@@ -184,7 +188,7 @@ def test_compute_cc_steps_3d(rng):
     expected[..., 0] = factor * gradF[..., 0]
     expected[..., 1] = factor * gradF[..., 1]
     expected[..., 2] = factor * gradF[..., 2]
-    actual, energy = cc.compute_cc_forward_step_3d(gradF, factors, 0)
+    actual, energy = cc.compute_cc_step_3d(gradF, factors, 0, forward_step=True)
     assert_array_almost_equal(actual, expected)
     for radius in range(1, 5):
         expected[:radius, ...] = 0
@@ -193,7 +197,9 @@ def test_compute_cc_steps_3d(rng):
         expected[-radius::, ...] = 0
         expected[:, -radius::, ...] = 0
         expected[:, :, -radius::, ...] = 0
-        actual, energy = cc.compute_cc_forward_step_3d(gradF, factors, radius)
+        actual, energy = cc.compute_cc_step_3d(
+            gradF, factors, radius, forward_step=True
+        )
         assert_array_almost_equal(actual, expected)
 
     # test the backward step against the exact expression
@@ -201,7 +207,7 @@ def test_compute_cc_steps_3d(rng):
     expected[..., 0] = factor * gradG[..., 0]
     expected[..., 1] = factor * gradG[..., 1]
     expected[..., 2] = factor * gradG[..., 2]
-    actual, energy = cc.compute_cc_backward_step_3d(gradG, factors, 0)
+    actual, energy = cc.compute_cc_step_3d(gradG, factors, 0, forward_step=False)
     assert_array_almost_equal(actual, expected)
     for radius in range(1, 5):
         expected[:radius, ...] = 0
@@ -210,5 +216,7 @@ def test_compute_cc_steps_3d(rng):
         expected[-radius::, ...] = 0
         expected[:, -radius::, ...] = 0
         expected[:, :, -radius::, ...] = 0
-        actual, energy = cc.compute_cc_backward_step_3d(gradG, factors, radius)
+        actual, energy = cc.compute_cc_step_3d(
+            gradG, factors, radius, forward_step=False
+        )
         assert_array_almost_equal(actual, expected)
