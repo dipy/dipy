@@ -1557,10 +1557,10 @@ def force_peaks(fitted_object, *, mask=None, sh_order=8):
         ):
             v_max = np.max(odf, axis=-1, keepdims=True)
             v_min = np.min(odf, axis=-1, keepdims=True)
-            mask = v_max > 1.0
+            norm_mask = v_max > 1.0
             denom = (v_max - v_min) + 1e-12
             normalized_odf = (odf - v_min) / denom
-            odf = np.where(mask, normalized_odf, odf)
+            odf = np.where(norm_mask, normalized_odf, odf)
             res_sh = sf_to_sh(odf, default_sphere, sh_order=sh_order)
     peaks = PeaksAndMetrics()
     peaks.peak_dirs = res_dirs
