@@ -11,13 +11,22 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 def get_level(lvl):
-    """Transforms the logging level passed on the commandline into a proper
-    logging level name.
+    """Transform the logging level passed on the commandline into a logging
+    level value.
+
+    Parameters
+    ----------
+    lvl : str
+        Level name, e.g. ``"DEBUG"``. Unknown names fall back to ``INFO``.
+
+    Returns
+    -------
+    int
+        The numeric logging level.
     """
-    try:
-        return logging._levelNames[lvl]
-    except Exception:
+    if not isinstance(lvl, str):
         return logging.INFO
+    return logging.getLevelNamesMapping().get(lvl.upper(), logging.INFO)
 
 
 def run_flow(flow, *, extra_args=None):
