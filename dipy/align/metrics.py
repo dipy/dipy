@@ -313,7 +313,7 @@ class MIMetric(SimilarityMetric):
             self.gradient_moving,
             displacement,
         )
-        self.energy = self.forward_histogram.metric_val
+        self.energy = -self.forward_histogram.metric_val
         for i in range(self.dim):
             displacement[..., i] = ndimage.gaussian_filter(
                 displacement[..., i], self.smooth
@@ -333,7 +333,7 @@ class MIMetric(SimilarityMetric):
             self.gradient_static,
             displacement,
         )
-        self.energy = self.backward_histogram.metric_val
+        self.energy = -self.backward_histogram.metric_val
         for i in range(self.dim):
             displacement[..., i] = ndimage.gaussian_filter(
                 displacement[..., i], self.smooth
@@ -343,8 +343,8 @@ class MIMetric(SimilarityMetric):
     def get_energy(self):
         r"""The numerical value assigned by this metric to the current image pair
 
-        Returns the Mutual Information energy computed for the current image
-        pair.
+        Returns the negative Mutual Information energy computed for the
+        current image pair.
         """
         return self.energy
 

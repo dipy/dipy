@@ -91,11 +91,11 @@ def mi_energy_from_pdfs(joint, smarginal, mmarginal):
 
 
 @set_random_number_generator(7181309)
-def test_mi_metric_energy_matches_mutual_information(rng):
-    """Verify that MIMetric reports the mutual information energy.
+def test_mi_metric_energy_matches_negative_mutual_information(rng):
+    """Verify that MIMetric reports the negative mutual information energy.
 
-    The forward and backward MI steps both should store the same scalar data
-    energy for the initialized image pair.
+    The forward and backward MI steps both should store the negative of the
+    same scalar data energy for the initialized image pair.
     """
     for dim, shape in [(2, (5, 5)), (3, (5, 5, 5))]:
         static = rng.random(shape).astype(np.float32)
@@ -104,7 +104,7 @@ def test_mi_metric_energy_matches_mutual_information(rng):
         metric = MIMetric(dim, nbins=16, smooth=0)
         setup_metric(metric, static, moving)
         metric.forward_histogram.update_pdfs_dense(static, moving)
-        expected = mi_energy_from_pdfs(
+        expected = -mi_energy_from_pdfs(
             metric.forward_histogram.joint,
             metric.forward_histogram.smarginal,
             metric.forward_histogram.mmarginal,
@@ -116,7 +116,7 @@ def test_mi_metric_energy_matches_mutual_information(rng):
         metric = MIMetric(dim, nbins=16, smooth=0)
         setup_metric(metric, static, moving)
         metric.backward_histogram.update_pdfs_dense(moving, static)
-        expected = mi_energy_from_pdfs(
+        expected = -mi_energy_from_pdfs(
             metric.backward_histogram.joint,
             metric.backward_histogram.smarginal,
             metric.backward_histogram.mmarginal,
