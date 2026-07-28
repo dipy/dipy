@@ -48,8 +48,8 @@ def test_compute_cc_affine_2d(rng):
     grad_moving = np.stack(np.gradient(moving), axis=-1)
     factors = cc.precompute_cc_factors_2d(static, moving, radius)
 
-    update, expected_energy = cc.compute_cc_backward_step_2d(
-        grad_moving, factors, radius
+    update, expected_energy = cc.compute_cc_step_2d(
+        grad_moving, factors, radius, forward_step=False
     )
     for (_, dim), transform in sorted(regtransforms.items()):
         if dim != 2:
@@ -88,8 +88,8 @@ def test_compute_cc_affine_3d(rng):
     grad_moving = np.stack(np.gradient(moving), axis=-1)
     factors = cc.precompute_cc_factors_3d(static, moving, radius)
 
-    update, expected_energy = cc.compute_cc_backward_step_3d(
-        grad_moving, factors, radius
+    update, expected_energy = cc.compute_cc_step_3d(
+        grad_moving, factors, radius, forward_step=False
     )
     for (_, dim), transform in sorted(regtransforms.items()):
         if dim != 3:
