@@ -862,14 +862,13 @@ cdef _compute_pdfs_dense_and_local_derivatives_2d(
         cnp.npy_intp offset, offset_id, valid_points
         cnp.npy_intp i, j, r, c
         double rn, cn
-        double val, dval, spline_arg, total_sum
+        double val, dval, spline_arg
 
     joint[...] = 0
     smarginal[:] = 0
     mmarginal[:] = 0
     local_derivative_by_parzen_bin[...] = 0
     joint_pdf_index[...] = 0
-    total_sum = 0
     with nogil:
         valid_points = 0
         for i in range(nrows):
@@ -895,7 +894,6 @@ cdef _compute_pdfs_dense_and_local_derivatives_2d(
                     dval = _cubic_spline_derivative(spline_arg)
 
                     joint[r, c + offset] += val
-                    total_sum += val
 
                     local_derivative_by_parzen_bin[offset_id, i, j, 0] = (
                         -dval * mgradient[i, j, 0])
@@ -905,13 +903,13 @@ cdef _compute_pdfs_dense_and_local_derivatives_2d(
                     spline_arg += 1.0
                     offset_id += 1
 
-        if total_sum > 0:
+        if valid_points > 0:
             for i in range(nbins):
                 for j in range(nbins):
-                    joint[i, j] /= valid_points
+                    joint[i, j] /= <double>valid_points
 
             for i in range(nbins):
-                smarginal[i] /= valid_points
+                smarginal[i] /= <double>valid_points
 
             for j in range(nbins):
                 mmarginal[j] = 0
@@ -1073,7 +1071,7 @@ cdef _compute_pdfs_dense_and_local_derivatives_3d(
         cnp.npy_intp offset, offset_id, valid_points
         cnp.npy_intp k, i, j, r, c
         double rn, cn
-        double val, dval, spline_arg, total_sum
+        double val, dval, spline_arg
 
     joint[...] = 0
     smarginal[:] = 0
@@ -1081,7 +1079,6 @@ cdef _compute_pdfs_dense_and_local_derivatives_3d(
     local_derivative_by_parzen_bin[...] = 0
     joint_pdf_index[...] = 0
 
-    total_sum = 0
     with nogil:
         valid_points = 0
         for k in range(nslices):
@@ -1110,7 +1107,6 @@ cdef _compute_pdfs_dense_and_local_derivatives_3d(
                         dval = _cubic_spline_derivative(spline_arg)
 
                         joint[r, c + offset] += val
-                        total_sum += val
 
                         local_derivative_by_parzen_bin[offset_id, k, i, j, 0] = (
                             -dval * mgradient[k, i, j, 0])
@@ -1122,13 +1118,13 @@ cdef _compute_pdfs_dense_and_local_derivatives_3d(
                         spline_arg += 1.0
                         offset_id += 1
 
-        if total_sum > 0:
+        if valid_points > 0:
             for i in range(nbins):
                 for j in range(nbins):
-                    joint[i, j] /= total_sum
+                    joint[i, j] /= <double>valid_points
 
             for i in range(nbins):
-                smarginal[i] /= valid_points
+                smarginal[i] /= <double>valid_points
 
             for j in range(nbins):
                 mmarginal[j] = 0
