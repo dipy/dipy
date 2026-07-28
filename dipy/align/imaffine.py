@@ -1128,7 +1128,7 @@ class CrossCorrelationMetric:
 
         Returns
         -------
-        cc_energy : float
+        float
             the local cross-correlation energy of the input images after
             transforming the moving image by the currently set transform
             with `params` parameters. The returned value is already the
@@ -1154,7 +1154,7 @@ class CrossCorrelationMetric:
 
         Returns
         -------
-        grad : array, shape (n,)
+        array, shape (n,)
             the gradient of the local cross-correlation energy
 
         """
@@ -1176,13 +1176,13 @@ class CrossCorrelationMetric:
 
         Returns
         -------
-        cc_energy : float
+        float
             the local cross-correlation energy of the input images after
             transforming the moving image by the currently set transform
             with `params` parameters. The returned value is already the
             negative local cross-correlation energy and can be minimized
             directly.
-        cc_grad : array, shape (n,)
+        array, shape (n,)
             the gradient of the local cross-correlation energy
 
         """
