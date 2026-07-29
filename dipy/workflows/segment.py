@@ -16,7 +16,6 @@ from dipy.segment.clustering import QuickBundles, qbx_and_merge
 from dipy.segment.fss import FastStreamlineSearch, nearest_from_matrix_col
 from dipy.segment.mask import median_otsu
 from dipy.segment.tissue import TissueClassifierHMRF, dam_classifier
-from dipy.segment.utils import remove_holes_and_islands
 from dipy.tracking import Streamlines
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
@@ -621,7 +620,7 @@ class BrainMaskFlow(Workflow):
         numpass=5,
         vol_idx=None,
         dilate=None,
-        finalize_mask=False,
+        finalize_mask=True,
         save_masked=False,
         use_cuda=False,
         out_dir="",
@@ -786,9 +785,9 @@ class BrainMaskFlow(Workflow):
                         "be used for 'synthseg' brain masking."
                     )
                 vol = data[..., 0] if data.ndim == 4 else data
-                _, _, mask_volume = synthseg_model.predict(vol, affine)
-                if finalize_mask:
-                    mask_volume = remove_holes_and_islands(mask_volume).astype(np.int32)
+                _, _, mask_volume = synthseg_model.predict(
+                    vol, affine, finalize_mask=finalize_mask
+                )
                 mask_for_apply = (
                     mask_volume[..., np.newaxis] if data.ndim == 4 else mask_volume
                 )

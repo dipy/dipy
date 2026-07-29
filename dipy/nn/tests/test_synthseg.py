@@ -44,7 +44,13 @@ def test_default_weights():
     output_arr = np.load(file_path)["output"][0]
 
     synthseg_model = synthseg.SynthSeg()
-    results_arr = synthseg_model.predict(input_arr, np.eye(4), return_prob=True)[..., 5]
+
+    with pytest.warns(UserWarning, match="SynthSeg model space"):
+        results_arr, _, _ = synthseg_model.predict(
+            input_arr, np.eye(4), return_prob=True
+        )
+
+    results_arr = results_arr[..., 5]
     assert_percent_almost_equal(results_arr, output_arr, decimal=4, percent=0.99)
 
 
@@ -59,9 +65,13 @@ def test_default_weights_batch():
 
     synthseg_model = synthseg.SynthSeg()
     fake_affine = np.array([np.eye(4)])
-    results_arr = synthseg_model.predict(
-        input_arr, fake_affine, batch_size=1, return_prob=True
-    )[0, ..., 5]
+
+    with pytest.warns(UserWarning, match="SynthSeg model space"):
+        results_arr, _, _ = synthseg_model.predict(
+            input_arr, fake_affine, batch_size=1, return_prob=True
+        )
+
+    results_arr = results_arr[0, ..., 5]
     assert_percent_almost_equal(results_arr, output_arr, decimal=4, percent=0.99)
 
 
@@ -92,6 +102,59 @@ def test_input_shapes(monkeypatch):
 
         probabilities = synthseg_model.predict(input_arr, np.eye(4), return_prob=True)
         npt.assert_equal(probabilities.shape, model_shape + (33,))
+
+
+@pytest.mark.skipif(not have_torch, reason="Requires Torch")
+def test_default_weights_labels():
+    file_path = get_fnames(name="synthseg_test_data")
+    input_arr = np.load(file_path)["input"][0]
+
+    synthseg_model = synthseg.SynthSeg()
+    labels, label_dict, _ = synthseg_model.predict(input_arr, np.eye(4))
+
+    npt.assert_equal(labels.shape, input_arr.shape)
+    npt.assert_equal(labels.dtype, np.int32)
+    assert isinstance(label_dict, dict)
+
+
+@pytest.mark.skipif(not have_torch, reason="Requires Torch")
+def test_default_weights_mask():
+    file_path = get_fnames(name="synthseg_test_data")
+    input_arr = np.load(file_path)["input"][0]
+
+    synthseg_model = synthseg.SynthSeg()
+    labels, label_dict, masks = synthseg_model.predict(
+        input_arr, np.eye(4), finalize_mask=False
+    )
+
+    npt.assert_equal(labels.shape, input_arr.shape)
+    npt.assert_equal(masks.shape, input_arr.shape)
+    npt.assert_equal(labels.dtype, np.int32)
+    npt.assert_equal(masks.dtype, np.int32)
+    npt.assert_array_equal(masks, labels > 0)
+    assert isinstance(label_dict, dict)
+
+
+@pytest.mark.skipif(not have_torch, reason="Requires Torch")
+def test_default_weights_finalize_mask():
+    file_path = get_fnames(name="synthseg_test_data")
+    input_arr = np.load(file_path)["input"][0]
+
+    synthseg_model = synthseg.SynthSeg()
+
+    with pytest.warns(UserWarning, match="The finalized brain mask"):
+        labels, label_dict, masks = synthseg_model.predict(
+            input_arr,
+            np.eye(4),
+            finalize_mask=True,
+        )
+
+    expected_mask = synthseg.remove_holes_and_islands(labels > 0).astype(np.int32)
+
+    npt.assert_equal(masks.shape, input_arr.shape)
+    npt.assert_equal(masks.dtype, np.int32)
+    npt.assert_array_equal(masks, expected_mask)
+    assert isinstance(label_dict, dict)
 
 
 @pytest.mark.skipif(not have_torch, reason="Requires Torch")

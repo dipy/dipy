@@ -17,6 +17,8 @@ It remains licensed as the rest of SynthSeg
 # ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 """
 
+import warnings
+
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
@@ -577,6 +579,7 @@ class SynthSeg:
         *,
         batch_size=None,
         return_prob=False,
+        finalize_mask=True,
     ):
         """Wrapper function to facilitate prediction of larger dataset.
 
@@ -598,8 +601,10 @@ class SynthSeg:
             has a batch dimension.
         return_prob : bool, optional
             Whether to return the probability map instead of a
-            label map. Probability maps remain in the 1 mm isotropic model
-            space, padded to dimensions divisible by 32. Useful for testing.
+            label map. Useful for testing.
+        finalize_mask : bool, optional
+            Whether to remove potential holes or islands.
+            Useful for solving minor errors.
 
         Returns
         -------
@@ -609,11 +614,12 @@ class SynthSeg:
 
         label_dict : dict
             Dictionary mapping label indices to anatomical structure names.
-            Only if return_prob is False.
 
-        mask : np.ndarray (...) or (batch, ...)
-            Predicted brain mask.
-            Only if return_prob is False.
+        masks : np.ndarray (...) or (batch, ...)
+            Predicted brain masks in the original image space. By default, each
+            mask is generated as ``predicted_labels > 0``. If
+            ``finalize_mask`` is True, ``remove_holes_and_islands`` is
+            additionally applied.
         """
         affine = np.array(affine)
 
@@ -713,7 +719,23 @@ class SynthSeg:
             labels = np.zeros((len(T1),) + model_shape + (33,), dtype=np.float32)
         else:
             labels = np.zeros((len(T1),) + ori_shape).astype(np.int32)
-            masks = np.zeros((len(T1),) + ori_shape)
+        masks = np.zeros((len(T1),) + ori_shape).astype(np.int32)
+        if finalize_mask:
+            warnings.warn(
+                "The finalized brain mask may differ from the non-background "
+                "region of the returned segmentation because holes are filled "
+                "and disconnected components are removed.",
+                UserWarning,
+                stacklevel=2,
+            )
+        if return_prob:
+            warnings.warn(
+                "The probability maps are returned in SynthSeg model space, "
+                "while the brain masks are returned in the original image "
+                "space.",
+                UserWarning,
+                stacklevel=2,
+            )
         for i in range(len(T1)):
             output = prediction[i]
 
@@ -743,20 +765,20 @@ class SynthSeg:
             output /= np.sum(output, axis=-1)[..., np.newaxis]
             if return_prob:
                 labels[i] = output.astype("float32")
-                continue
-            else:
-                temp = self.labels_segmentation[
-                    output.argmax(-1).astype("int32")
-                ].astype("int32")
-                temp = recover_img(temp, params_list[i], order=0)
-                labels[i] = np.round(temp).astype(np.int32)
-            masks[i] = (labels[i] > 0).astype(np.int32)
+            temp = self.labels_segmentation[output.argmax(-1).astype("int32")].astype(
+                "int32"
+            )
+            temp = recover_img(temp, params_list[i], order=0)
+            temp = np.round(temp).astype(np.int32)
+            if not return_prob:
+                labels[i] = temp
+            mask = temp > 0
+            if finalize_mask:
+                mask = remove_holes_and_islands(mask)
+            masks[i] = mask.astype(np.int32)
 
         if dim == 3:
             labels = labels[0]
-            if not return_prob:
-                masks = masks[0]
+            masks = masks[0]
 
-        if return_prob:
-            return labels
         return labels, self.label_dict, masks
