@@ -264,6 +264,70 @@ def test_parzen_densities(rng):
         assert_array_almost_equal(actual_smarginal_sparse, expected_smarginal_sparse)
 
 
+@set_random_number_generator(1246592)
+def test_dense_mi_update(rng):
+    # Compare the analytical and numerical (finite differences) gradient of
+    # mutual information w.r.t. a local displacement at one voxel. The effect
+    # of a small displacement is approximated directly in intensity space
+    # using the moving-image gradient. Unlike the affine-gradient test, this
+    # does not resample the full image or introduce interpolation and boundary
+    # errors, so the analytical and numerical values can be compared directly.
+    h = 1e-4
+
+    for shape in [(5, 5), (5, 5, 5)]:
+        dim = len(shape)
+        static, moving = create_random_image_pair(shape, 20, rng)
+        mask = np.ones(shape, dtype=np.int32)
+        mask[0] = 0
+
+        for dtype in [np.float32, np.float64]:
+            static_typed = static.astype(dtype)
+            moving_typed = moving.astype(dtype)
+            moving_gradient = np.stack(np.gradient(moving_typed), axis=-1).astype(dtype)
+            update = np.zeros(shape + (dim,), dtype=dtype)
+            histogram = ParzenJointHistogram(16)
+
+            histogram.compute_dense_mi_update(
+                static_typed,
+                moving_typed,
+                moving_gradient,
+                update,
+                smask=mask,
+                mmask=mask,
+            )
+
+            assert np.all(np.isfinite(update))
+            assert np.any(update[mask != 0] != 0)
+            assert_array_equal(update[mask == 0], 0)
+            assert_almost_equal(histogram.joint.sum(), 1)
+            assert np.isfinite(histogram.metric_val)
+            assert histogram.mi_weights is not None
+            assert_equal(histogram.mi_weights.shape, histogram.joint.shape)
+
+            # Get the analytical MI gradient at the selected voxel
+            actual = np.copy(update[(2,) * dim])
+            metric0 = histogram.metric_val
+
+            # Compute the MI gradient using finite differences
+            expected = np.empty_like(actual)
+            for i in range(dim):
+                moved = moving_typed.copy()
+                # Approximate displacing this voxel by h along axis i
+                moved[(2,) * dim] += h * moving_gradient[(2,) * dim + (i,)]
+                histogram.update_pdfs_dense(static_typed, moved, smask=mask, mmask=mask)
+                joint = histogram.joint
+                independent = (
+                    histogram.smarginal[:, None] * histogram.mmarginal[None, :]
+                )
+                valid = (joint > 0) & (independent > 0)
+                metric1 = np.sum(
+                    joint[valid] * np.log(joint[valid] / independent[valid])
+                )
+                expected[i] = (metric1 - metric0) / h
+
+            assert_array_almost_equal(actual, expected, decimal=4)
+
+
 def setup_random_transform(transform, rfactor, nslices=45, sigma=1, rng=None):
     r"""Creates a pair of images related to each other by an affine transform
 
@@ -606,6 +670,83 @@ def test_exceptions():
     assert_raises(ValueError, H.update_pdfs_dense, valid, invalid)
     assert_raises(ValueError, H.update_pdfs_dense, invalid, valid)
     assert_raises(ValueError, H.update_pdfs_dense, invalid, invalid)
+    assert_raises(ValueError, H.update_pdfs_dense, valid.astype(np.float32), valid)
+    assert_raises(
+        ValueError, H.update_pdfs_dense, valid.astype(np.int32), valid.astype(np.int32)
+    )
+
+    # Test exceptions from `ParzenJointHistogram.compute_dense_mi_update`.
+    shape = (5, 5)
+    image = np.arange(np.prod(shape), dtype=np.float64).reshape(shape)
+    gradient = np.stack(np.gradient(image), axis=-1)
+    update = np.zeros_like(gradient)
+    assert_raises(
+        ValueError,
+        H.compute_dense_mi_update,
+        image,
+        image[:, :-1],
+        gradient,
+        update,
+    )
+    assert_raises(
+        ValueError,
+        H.compute_dense_mi_update,
+        image[0],
+        image[0],
+        gradient[0],
+        update[0],
+    )
+    assert_raises(
+        ValueError,
+        H.compute_dense_mi_update,
+        image,
+        image,
+        gradient[..., :1],
+        update,
+    )
+    assert_raises(ValueError, H.compute_dense_mi_update, image, image, gradient, None)
+    assert_raises(
+        ValueError,
+        H.compute_dense_mi_update,
+        image,
+        image,
+        gradient,
+        update[..., :1],
+    )
+    assert_raises(
+        ValueError,
+        H.compute_dense_mi_update,
+        image.astype(np.float32),
+        image,
+        gradient,
+        update,
+    )
+    assert_raises(
+        ValueError,
+        H.compute_dense_mi_update,
+        image,
+        image,
+        gradient.astype(np.float32),
+        update,
+    )
+    assert_raises(
+        ValueError,
+        H.compute_dense_mi_update,
+        image,
+        image,
+        gradient,
+        update.astype(np.float32),
+    )
+    integer_image = image.astype(np.int32)
+    integer_gradient = gradient.astype(np.int32)
+    assert_raises(
+        ValueError,
+        H.compute_dense_mi_update,
+        integer_image,
+        integer_image,
+        integer_gradient,
+        integer_gradient.copy(),
+    )
 
     # Test exception from `ParzenJointHistogram.update_gradient_dense`
     for shape in [(5, 5), (5, 5, 5)]:
