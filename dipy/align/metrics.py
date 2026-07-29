@@ -255,12 +255,7 @@ class MIMetric(SimilarityMetric):
         Computes image gradients in physical coordinates and prepares the
         histogram quantities needed to evaluate mutual information updates.
         """
-        if self.static_image.dtype != self.moving_image.dtype:
-            raise ValueError("Static and moving images must have the same dtype.")
-
-        dtype = np.asarray(self.moving_image).dtype
-        if dtype not in (np.float32, np.float64):
-            raise ValueError("MIMetric expects float32 or float64 images.")
+        dtype = self.moving_image.dtype
 
         # Reuse displacement buffers across iterations. Reallocate when a new
         # pyramid level changes their shape or when the input dtype changes.
