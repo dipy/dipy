@@ -768,19 +768,9 @@ def test_mi_3d():
 
     # Create the optimizer
     level_iters = [20, 5]
-    step_length = 0.25
-    opt_tol = 1e-4
-    inv_iter = 20
-    inv_tol = 1e-3
-    ss_sigma_factor = 0.2
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(
         metric,
         level_iters=level_iters,
-        step_length=step_length,
-        ss_sigma_factor=ss_sigma_factor,
-        opt_tol=opt_tol,
-        inv_iter=inv_iter,
-        inv_tol=inv_tol,
     )
     optimizer.verbosity = VerbosityLevels.DEBUG
 
