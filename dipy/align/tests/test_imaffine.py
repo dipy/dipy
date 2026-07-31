@@ -305,6 +305,40 @@ def test_affreg_all_transforms(rng):
 
 
 @set_random_number_generator(202311)
+def test_affreg_cc(rng):
+    """Test affine registration with cross-correlation in 2D and 3D."""
+    for ttype in [("TRANSLATION", 2), ("TRANSLATION", 3)]:
+        dim = ttype[1]
+        nslices = 1 if dim == 2 else 15
+        transform = regtransforms[ttype]
+        static, moving, static_g2w, moving_g2w, _, _, _ = setup_random_transform(
+            transform, factors[ttype][0], nslices, 1.0, rng=rng
+        )
+        start_sad = np.abs(static - moving).sum()
+
+        metric = imaffine.CrossCorrelationMetric(radius=1)
+        affreg = imaffine.AffineRegistration(
+            metric=metric,
+            level_iters=[50, 25],
+            sigmas=[1, 0],
+            factors=[2, 1],
+        )
+        affine_map = affreg.optimize(
+            static,
+            moving,
+            transform,
+            transform.get_identity_parameters(),
+            static_grid2world=static_g2w,
+            moving_grid2world=moving_g2w,
+        )
+
+        transformed = affine_map.transform(moving)
+        end_sad = np.abs(static - transformed).sum()
+        reduction = 1 - end_sad / start_sad
+        assert reduction > 0.8
+
+
+@set_random_number_generator(202311)
 def test_affreg_defaults(rng):
     # Test all default arguments with an arbitrary transform
     # Select an arbitrary transform (all of them are already tested
@@ -425,6 +459,47 @@ def test_mi_gradient(rng):
         anorm = npl.norm(actual)
         nprod = dp / (enorm * anorm)
         assert nprod >= 0.99
+
+
+@set_random_number_generator(2022966)
+def test_cc_gradient(rng):
+    """Compare affine CC gradients with finite differences in 2D and 3D."""
+    h = 1e-4
+
+    for ttype in [("RIGID", 2), ("RIGID", 3)]:
+        transform = regtransforms[ttype]
+        dim = ttype[1]
+        nslices = 1 if dim == 2 else 45
+        factor = factors[ttype][0]
+        theta = factors[ttype][2]
+
+        start = regtransforms[("ROTATION", dim)]
+        nrot = start.get_number_of_parameters()
+        starting_affine = start.param_to_matrix(0.25 * rng.standard_normal(nrot))
+        static, moving, _, _, _, _, _ = setup_random_transform(
+            transform, factor, nslices, 5.0, rng=rng
+        )
+
+        cc_metric = imaffine.CrossCorrelationMetric(radius=2)
+        cc_metric.setup(transform, static, moving, starting_affine=starting_affine)
+        actual = cc_metric.gradient(theta)
+
+        n = transform.get_number_of_parameters()
+        expected = np.empty(n, dtype=np.float64)
+        for i in range(n):
+            theta0 = theta.copy()
+            theta1 = theta.copy()
+            theta0[i] -= h
+            theta1[i] += h
+            val0 = cc_metric.distance(theta0)
+            val1 = cc_metric.distance(theta1)
+            expected[i] = (val1 - val0) / (2 * h)
+
+        dp = expected.dot(actual)
+        enorm = npl.norm(expected)
+        anorm = npl.norm(actual)
+        nprod = dp / (enorm * anorm)
+        assert nprod >= 0.98, (ttype, nprod)
 
 
 def create_affine_transforms(dim, translations, rotations, scales, rot_axis=None):
@@ -713,3 +788,58 @@ def test_MIMetric_invalid_params(rng):
         actual_val, actual_grad = mi_metric.distance_and_gradient(theta)
         assert np.isinf(actual_val)
         assert_equal(actual_grad, expected_grad)
+
+
+@set_random_number_generator()
+def test_CCMetric_invalid_params(rng):
+    """Test affine CC behavior for invalid transform parameters."""
+    transform = regtransforms[("AFFINE", 3)]
+    static = rng.random((20, 20, 20))
+    moving = rng.random((20, 20, 20))
+    n = transform.get_number_of_parameters()
+    theta_sing = np.zeros(n)
+    theta_nan = np.full(n, np.nan)
+    theta_inf = np.full(n, np.inf)
+
+    cc_metric = imaffine.CrossCorrelationMetric(radius=2)
+    cc_metric.setup(transform, static, moving)
+    for theta in [theta_sing, theta_nan, theta_inf]:
+        actual_val = cc_metric.distance(theta)
+        assert np.isinf(actual_val)
+
+        expected_grad = np.zeros(n)
+        actual_grad = cc_metric.gradient(theta)
+        assert_equal(actual_grad, expected_grad)
+
+        actual_val, actual_grad = cc_metric.distance_and_gradient(theta)
+        assert np.isinf(actual_val)
+        assert_equal(actual_grad, expected_grad)
+
+
+def test_CCMetric_exceptions():
+    """Test validation specific to affine cross-correlation."""
+    assert_raises(ValueError, imaffine.CrossCorrelationMetric, radius=-1)
+    assert_raises(ValueError, imaffine.CrossCorrelationMetric, radius=1.5)
+
+    transform = regtransforms[("TRANSLATION", 2)]
+    static = np.zeros((9, 9))
+    moving = np.zeros((9, 9))
+
+    metric = imaffine.CrossCorrelationMetric(radius=1)
+    assert_raises(ValueError, metric.setup, transform, static, moving[..., None])
+
+    metric = imaffine.CrossCorrelationMetric(radius=1)
+    assert_raises(ValueError, metric.setup, transform, static[0], moving[0])
+
+    metric = imaffine.CrossCorrelationMetric(radius=2)
+    assert_raises(ValueError, metric.setup, transform, static[:4], moving[:4])
+
+    metric = imaffine.CrossCorrelationMetric(radius=1)
+    assert_raises(
+        NotImplementedError,
+        metric.setup,
+        transform,
+        static,
+        moving,
+        static_mask=np.ones_like(static),
+    )
