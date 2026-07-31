@@ -460,7 +460,7 @@ def affine_registration(
         Default: identity.
 
     metric : str, optional.
-        The metric to optimize. Supported values are 'MI' for MutualInformationMetric`
+        The metric to optimize. Supported values are 'MI' for MutualInformationMetric
         and 'CC' for CrossCorrelationMetric.
 
     level_iters : sequence, optional

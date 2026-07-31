@@ -913,7 +913,7 @@ class CrossCorrelationMetric:
         ----------
         radius : int, optional
             the radius of the square (2D) or cubic (3D) neighborhood used to
-            compute the local normalized cross-correlation. The default is 4.
+            compute the local normalized cross-correlation.
 
         Notes
         -----

@@ -442,6 +442,31 @@ def test_image_registration(rng):
             npt.assert_allclose(float(dist), -189758.99583579277, rtol=1e-3)
             check_existence(out_moved, out_affine)
 
+        def test_rigid_cc():
+            out_moved = Path(temp_out_dir) / "rigid_cc_moved.nii.gz"
+            out_affine = Path(temp_out_dir) / "rigid_cc_affine.txt"
+
+            image_registration_flow._force_overwrite = True
+            image_registration_flow.run(
+                static_image_file,
+                moving_image_file,
+                transform="rigid",
+                metric="cc",
+                out_dir=temp_out_dir,
+                out_moved=out_moved,
+                out_affine=out_affine,
+                save_metric=True,
+                level_iters=[100, 10, 1],
+                out_quality="rigid_cc_q.txt",
+            )
+
+            dist = read_distance("rigid_cc_q.txt")
+            # Same cross-platform BLAS/LAPACK caveat as test_translation_cc,
+            # amplified here since the rigid transform's Jacobian depends on
+            # the rotation parameters (not constant like translation).
+            npt.assert_allclose(float(dist), -198329.15149667568, rtol=1e-3)
+            check_existence(out_moved, out_affine)
+
         def test_rigid():
             out_moved = Path(temp_out_dir) / "rigid_moved.nii.gz"
             out_affine = Path(temp_out_dir) / "rigid_affine.txt"
@@ -628,6 +653,7 @@ def test_image_registration(rng):
         test_com()
         test_translation()
         test_translation_cc()
+        test_rigid_cc()
         test_rigid()
         test_rigid_isoscaling()
         test_rigid_scaling()

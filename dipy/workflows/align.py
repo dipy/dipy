@@ -454,7 +454,7 @@ class ImageRegistrationFlow(Workflow):
             for the mutual information metric.
         sampling_prop : int, optional
             Number ([0-100]) of voxels for calculating the PDF for the
-            mutual information metric. None implies all
+            mutual information metric. None implies all voxels.
         metric : string, optional
             Similarity metric. Supported values are ``'mi'`` for mutual
             information and ``'cc'`` for local cross-correlation.
