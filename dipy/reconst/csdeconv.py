@@ -67,8 +67,6 @@ class AxSymShResponse:
 
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
-    """Constrained Spherical Deconvolution (CSD) model."""
-
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     @warning_for_keywords()
     def __init__(
@@ -190,7 +188,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self.tau = tau
         self.convergence = convergence
         self._X = X = self.R.diagonal() * self.B_dwi
-        self._P = np.dot(X.T, X)
+        self._P, self._P_chol = _regularized_cholesky(np.dot(X.T, X), 1e-5)
 
     @multi_voxel_fit
     def fit(self, data, **kwargs):
@@ -202,6 +200,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             tau=self.tau,
             convergence=self.convergence,
             P=self._P,
+            P_chol=self._P_chol,
         )
         return SphHarmFit(self, shm_coeff, None)
 
@@ -251,8 +250,6 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
 
 class ConstrainedSDTModel(SphHarmModel):
-    """Constrained Spherical Deconvolution Transform (SDT) model."""
-
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     @warning_for_keywords()
     def __init__(
@@ -457,7 +454,24 @@ def forward_sdt_deconv_mat(ratio, l_values, *, r2_term=False):
 potrf, potrs = ll.get_lapack_funcs(("potrf", "potrs"))
 
 
-def _solve_cholesky(Q, z):
+def _cholesky_factor(Q):
+    """Compute the upper-triangular Cholesky factor of a symmetric matrix.
+
+    Parameters
+    ----------
+    Q : ndarray
+        Symmetric positive-definite matrix to factorize.
+
+    Returns
+    -------
+    L : ndarray
+        Upper-triangular Cholesky factor such that ``L.T @ L == Q``.
+
+    Raises
+    ------
+    LinAlgError
+        If `Q` is not positive definite.
+    """
     L, info = potrf(Q, lower=False, overwrite_a=False, clean=False)
     if info > 0:
         msg = f"{info}-th leading minor not positive definite"
@@ -465,6 +479,25 @@ def _solve_cholesky(Q, z):
     if info < 0:
         msg = f"illegal value in {-info}-th argument of internal potrf"
         raise ValueError(msg)
+    return L
+
+
+def _solve_from_cholesky(L, z):
+    """Solve a linear system given a precomputed Cholesky factor.
+
+    Parameters
+    ----------
+    L : ndarray
+        Upper-triangular Cholesky factor of the system matrix, as returned by
+        `_cholesky_factor`.
+    z : ndarray
+        Right-hand side of the linear system.
+
+    Returns
+    -------
+    f : ndarray
+        Solution of the linear system.
+    """
     f, info = potrs(L, z, lower=False, overwrite_b=False)
     if info != 0:
         msg = f"illegal value in {-info}-th argument of internal potrs"
@@ -472,8 +505,58 @@ def _solve_cholesky(Q, z):
     return f
 
 
+def _solve_cholesky(Q, z):
+    """Solve a linear system via Cholesky factorization.
+
+    Parameters
+    ----------
+    Q : ndarray
+        Symmetric positive-definite system matrix.
+    z : ndarray
+        Right-hand side of the linear system.
+
+    Returns
+    -------
+    f : ndarray
+        Solution of the linear system.
+    """
+    L = _cholesky_factor(Q)
+    return _solve_from_cholesky(L, z)
+
+
+def _regularized_cholesky(P, mu):
+    """Cholesky-factorize `P`, falling back to a regularized matrix.
+
+    If `P` is not positive definite, ``mu * I`` is added to `P` before
+    retrying the factorization.
+
+    Parameters
+    ----------
+    P : ndarray
+        Symmetric matrix to factorize.
+    mu : float
+        Regularization weight added to the diagonal of `P` if the initial
+        factorization fails.
+
+    Returns
+    -------
+    P : ndarray
+        The matrix that was actually factorized, i.e. either the input `P`
+        or ``P + mu * I``.
+    L : ndarray
+        Upper-triangular Cholesky factor of the returned `P`.
+    """
+    try:
+        L = _cholesky_factor(P)
+        return P, L
+    except la.LinAlgError:
+        P = P + mu * np.eye(P.shape[0])
+        L = _cholesky_factor(P)
+        return P, L
+
+
 @warning_for_keywords()
-def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None):
+def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None, P_chol=None):
     r"""Constrained-regularized spherical deconvolution (CSD).
 
     Deconvolves the axially symmetric single fiber response function `r_rh` in
@@ -505,6 +588,10 @@ def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None):
         This is an optimization to avoid computing ``dot(X.T, X)`` many times.
         If the same ``X`` is used many times, ``P`` can be precomputed and
         passed to this function.
+    P_chol : ndarray, optional
+        Cholesky factor (upper-triangular) of ``P``. If provided, this is
+        reused for the initial unconstrained solve and avoids refactorizing
+        ``P`` for every voxel.
 
     Returns
     -------
@@ -587,13 +674,11 @@ def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None):
     mu = 1e-5
     if P is None:
         P = np.dot(X.T, X)
-    z = np.dot(X.T, dwsignal)
+    if P_chol is None:
+        P, P_chol = _regularized_cholesky(P, mu)
 
-    try:
-        fodf_sh = _solve_cholesky(P, z)
-    except la.LinAlgError:
-        P = P + mu * np.eye(P.shape[0])
-        fodf_sh = _solve_cholesky(P, z)
+    z = np.dot(X.T, dwsignal)
+    fodf_sh = _solve_from_cholesky(P_chol, z)
     # For the first iteration we use a smooth FOD that only uses SH orders up
     # to 4 (the first 15 coefficients).
     fodf = np.dot(B_reg[:, :15], fodf_sh[:15])
@@ -897,7 +982,7 @@ def mask_for_response_ssst(gtab, data, *, roi_center=None, roi_radii=10, fa_thr=
     mask[fa > fa_thr] = 1
 
     if np.sum(mask) == 0:
-        msg = f"""No voxel with a FA higher than {fa_thr} were found.
+        msg = f"""No voxel with a FA higher than {str(fa_thr)} were found.
         Try a larger roi or a lower threshold."""
         warnings.warn(msg, UserWarning, stacklevel=2)
 
