@@ -188,7 +188,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self.tau = tau
         self.convergence = convergence
         self._X = X = self.R.diagonal() * self.B_dwi
-        self._P, self._P_chol = _regularized_cholesky(np.dot(X.T, X), 1e-5)
+        self._P, self._P_chol = _regularized_cholesky(np.dot(X.T, X))
 
     @multi_voxel_fit
     def fit(self, data, **kwargs):
@@ -524,7 +524,7 @@ def _solve_cholesky(Q, z):
     return _solve_from_cholesky(L, z)
 
 
-def _regularized_cholesky(P, mu):
+def _regularized_cholesky(P, *, mu=1e-5):
     """Cholesky-factorize `P`, falling back to a regularized matrix.
 
     If `P` is not positive definite, ``mu * I`` is added to `P` before
@@ -534,7 +534,7 @@ def _regularized_cholesky(P, mu):
     ----------
     P : ndarray
         Symmetric matrix to factorize.
-    mu : float
+    mu : float, optional
         Regularization weight added to the diagonal of `P` if the initial
         factorization fails.
 
@@ -671,11 +671,10 @@ def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None, P_chol=None
     .. footbibliography::
 
     """
-    mu = 1e-5
     if P is None:
         P = np.dot(X.T, X)
     if P_chol is None:
-        P, P_chol = _regularized_cholesky(P, mu)
+        P, P_chol = _regularized_cholesky(P)
 
     z = np.dot(X.T, dwsignal)
     fodf_sh = _solve_from_cholesky(P_chol, z)
