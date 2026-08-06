@@ -134,8 +134,7 @@ def geodesic_anisotropy(evals, *, axis=-1):
     evals : array-like
         Eigenvalues of a diffusion tensor.
     axis : int, optional
-        Axis of `
-        ` which contains 3 eigenvalues.
+        Axis of evals which contains 3 eigenvalues.
 
     Returns
     -------
