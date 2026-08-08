@@ -86,11 +86,11 @@ def test_vtk_matching_space(space, origin):
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
 @pytest.mark.parametrize(
-    "type,fname,space,origin",
+    "_type,fname,space,origin",
     list(itertools.product(FOLDERS_GII, FILENAMES_GII, SPACES, ORIGINS)),
 )
-def test_gifti_matching_space(type, fname, space, origin):
-    if type == "gzip_base64":
+def test_gifti_matching_space(_type, fname, space, origin):
+    if _type == "gzip_base64":
         fname += ".gz"
     sfs = load_surface(FILEPATH_DIX[fname], FILEPATH_DIX["anat.nii.gz"])
     sfs.to_rasmm()
