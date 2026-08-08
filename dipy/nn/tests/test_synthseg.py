@@ -100,7 +100,9 @@ def test_input_shapes(monkeypatch):
         npt.assert_equal(labels.shape, shape)
         npt.assert_equal(mask.shape, shape)
 
-        probabilities = synthseg_model.predict(input_arr, np.eye(4), return_prob=True)
+        probabilities, _, _ = synthseg_model.predict(
+            input_arr, np.eye(4), return_prob=True
+        )
         npt.assert_equal(probabilities.shape, model_shape + (33,))
 
 
