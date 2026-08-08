@@ -203,7 +203,7 @@ def test_reconst_powermap_basic():
             )
 
             powermap_path = reconst_flow.last_generated_outputs["out_powermap"]
-            assert os.path.exists(powermap_path), "Powermap file was not created"
+            assert powermap_path.exists(), "Powermap file was not created"
             powermap_data = load_nifti_data(powermap_path)
             npt.assert_equal(powermap_data.shape, volume.shape[:-1])
             assert np.all(powermap_data >= 0), "Powermap should be non-negative"
@@ -224,7 +224,7 @@ def test_reconst_powermap_basic():
                     out_powermap=f"powermap_sh{sh_order}.nii.gz",
                 )
                 powermap_path = reconst_flow.last_generated_outputs["out_powermap"]
-                assert os.path.exists(powermap_path)
+                assert powermap_path.exists()
 
             # Test different power values and norm factors
             for power in [1, 3]:
@@ -238,7 +238,7 @@ def test_reconst_powermap_basic():
                     out_powermap=f"powermap_power{power}.nii.gz",
                 )
                 powermap_path = reconst_flow.last_generated_outputs["out_powermap"]
-                assert os.path.exists(powermap_path)
+                assert powermap_path.exists()
 
             # Test with smoothing
             reconst_flow.run(
@@ -251,7 +251,7 @@ def test_reconst_powermap_basic():
                 out_powermap="powermap_smooth.nii.gz",
             )
             powermap_path = reconst_flow.last_generated_outputs["out_powermap"]
-            assert os.path.exists(powermap_path)
+            assert powermap_path.exists()
 
             # Test non_negative=False
             reconst_flow.run(
@@ -264,7 +264,7 @@ def test_reconst_powermap_basic():
                 out_powermap="powermap_negative_allowed.nii.gz",
             )
             powermap_path = reconst_flow.last_generated_outputs["out_powermap"]
-            assert os.path.exists(powermap_path)
+            assert powermap_path.exists()
             assert reconst_flow.get_short_name() == "powermap"
 
 
@@ -311,7 +311,7 @@ def test_reconst_powermap_with_shm_files():
                 out_powermap="powermap_from_shm.nii.gz",
             )
             powermap_path = powermap_flow.last_generated_outputs["out_powermap"]
-            assert os.path.exists(powermap_path)
+            assert powermap_path.exists()
             powermap_data = load_nifti_data(powermap_path)
             npt.assert_equal(powermap_data.shape, volume.shape[:-1])
 
@@ -326,7 +326,7 @@ def test_reconst_powermap_with_shm_files():
                 out_powermap="powermap_from_pam.nii.gz",
             )
             powermap_path = powermap_flow.last_generated_outputs["out_powermap"]
-            assert os.path.exists(powermap_path)
+            assert powermap_path.exists()
 
 
 def test_reconst_powermap_edge_cases():
@@ -371,7 +371,7 @@ def test_reconst_powermap_edge_cases():
                 out_powermap="powermap_invalid_basis.nii.gz",
             )
             powermap_path = reconst_flow.last_generated_outputs["out_powermap"]
-            assert os.path.exists(powermap_path)
+            assert powermap_path.exists()
 
             # Test different norm factors produce different results
             norm_factors = [0.00001, 0.001]
@@ -501,7 +501,7 @@ def test_reconst_force_basic(monkeypatch, tmp_path):
         "ambiguity",
     ]:
         out_path = flow.last_generated_outputs[f"out_{metric}"]
-        assert os.path.exists(out_path), f"Missing output: {metric}"
+        assert out_path.exists(), f"Missing output: {metric}"
         data_arr = load_nifti_data(out_path)
         npt.assert_equal(data_arr.shape, volume.shape[:3])
         assert np.isfinite(data_arr).all(), f"Non-finite values in {metric}"
@@ -532,8 +532,8 @@ def test_reconst_force_select_metrics(monkeypatch, tmp_path):
         out_md="only_md.nii.gz",
     )
 
-    assert os.path.exists(flow.last_generated_outputs["out_fa"])
-    assert os.path.exists(flow.last_generated_outputs["out_md"])
+    assert flow.last_generated_outputs["out_fa"].exists()
+    assert flow.last_generated_outputs["out_md"].exists()
 
 
 def test_reconst_force_dki_metrics(monkeypatch, tmp_path):
@@ -561,7 +561,7 @@ def test_reconst_force_dki_metrics(monkeypatch, tmp_path):
 
     for metric in ["mk", "ak", "rk", "kfa"]:
         out_path = flow.last_generated_outputs[f"out_{metric}"]
-        assert os.path.exists(out_path), f"Missing DKI output: {metric}"
+        assert out_path.exists(), f"Missing DKI output: {metric}"
         data_arr = load_nifti_data(out_path)
         npt.assert_equal(data_arr.shape, volume.shape[:3])
 
@@ -598,7 +598,7 @@ def test_reconst_force_ray_fallback(monkeypatch, tmp_path):
     )
 
     out_path = flow.last_generated_outputs["out_fa"]
-    assert os.path.exists(out_path)
+    assert out_path.exists()
 
 
 def _patch_generate_capture(monkeypatch, fake_sims):
