@@ -69,7 +69,7 @@ def test_cluster_assign():
 
 
 @set_random_number_generator()
-def test_cluster_iter(rng):
+def test_cluster_iter(rng=None):
     indices = list(range(len(data)))
     rng.shuffle(indices)  # None trivial ordering
 
@@ -85,7 +85,7 @@ def test_cluster_iter(rng):
 
 
 @set_random_number_generator()
-def test_cluster_getitem(rng):
+def test_cluster_getitem(rng=None):
     indices = list(range(len(data)))
     rng.shuffle(indices)  # None trivial ordering
     advanced_indices = indices + [0, 1, 2, -1, -2, -3]
@@ -145,7 +145,7 @@ def test_cluster_getitem(rng):
 
 
 @set_random_number_generator()
-def test_cluster_str_and_repr(rng):
+def test_cluster_str_and_repr(rng=None):
     indices = list(range(len(data)))
     rng.shuffle(indices)  # None trivial ordering
 
@@ -199,7 +199,7 @@ def test_cluster_centroid_assign():
 
 
 @set_random_number_generator()
-def test_cluster_centroid_iter(rng):
+def test_cluster_centroid_iter(rng=None):
     indices = list(range(len(data)))
     rng.shuffle(indices)  # None trivial ordering
 
@@ -218,7 +218,7 @@ def test_cluster_centroid_iter(rng):
 
 
 @set_random_number_generator()
-def test_cluster_centroid_getitem(rng):
+def test_cluster_centroid_getitem(rng=None):
     indices = list(range(len(data)))
     rng.shuffle(indices)  # None trivial ordering
     advanced_indices = indices + [0, 1, 2, -1, -2, -3]
@@ -374,7 +374,7 @@ def test_cluster_map_clear():
 
 
 @set_random_number_generator(42)
-def test_cluster_map_iter(rng):
+def test_cluster_map_iter(rng=None):
     nb_clusters = 11
 
     # Test without specifying refdata in ClusterMap
@@ -401,7 +401,7 @@ def test_cluster_map_iter(rng):
 
 
 @set_random_number_generator()
-def test_cluster_map_getitem(rng):
+def test_cluster_map_getitem(rng=None):
     nb_clusters = 11
     indices = list(range(nb_clusters))
     rng.shuffle(indices)  # None trivial ordering
@@ -462,7 +462,7 @@ def test_cluster_map_size():
 
 
 @set_random_number_generator(42)
-def test_cluster_map_clusters_sizes(rng):
+def test_cluster_map_clusters_sizes(rng=None):
     nb_clusters = 11
     # Generate random indices
     indices = [range(rng.integers(1, 10)) for _ in range(nb_clusters)]
@@ -475,7 +475,7 @@ def test_cluster_map_clusters_sizes(rng):
 
 
 @set_random_number_generator(42)
-def test_cluster_map_get_small_and_large_clusters(rng):
+def test_cluster_map_get_small_and_large_clusters(rng=None):
     nb_clusters = 11
     cluster_map = ClusterMap()
 
@@ -614,7 +614,7 @@ def test_cluster_map_centroid_add_cluster():
 
 
 @set_random_number_generator()
-def test_cluster_map_centroid_remove_cluster(rng):
+def test_cluster_map_centroid_remove_cluster(rng=None):
     clusters = ClusterMapCentroid()
 
     centroid1 = rng.random(features_shape).astype(dtype)
@@ -653,7 +653,7 @@ def test_cluster_map_centroid_remove_cluster(rng):
 
 
 @set_random_number_generator(42)
-def test_cluster_map_centroid_iter(rng):
+def test_cluster_map_centroid_iter(rng=None):
     nb_clusters = 11
 
     cluster_map = ClusterMapCentroid()
@@ -678,7 +678,7 @@ def test_cluster_map_centroid_iter(rng):
 
 
 @set_random_number_generator()
-def test_cluster_map_centroid_getitem(rng):
+def test_cluster_map_centroid_getitem(rng=None):
     nb_clusters = 11
     indices = list(range(len(data)))
     rng.shuffle(indices)  # None trivial ordering

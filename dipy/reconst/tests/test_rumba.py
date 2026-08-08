@@ -179,7 +179,7 @@ def test_multishell_rumba():
 
 
 @set_random_number_generator(42)
-def test_mvoxel_rumba(*, rng):
+def test_mvoxel_rumba(*, rng=None):
     # Verify form of results in multi-voxel situation.
 
     data, gtab = dsi_voxels()
@@ -328,7 +328,7 @@ def test_global_fit():
 
 
 @set_random_number_generator(42)
-def test_mvoxel_global_fit(*, rng):
+def test_mvoxel_global_fit(*, rng=None):
     # Verify form of results in global fitting paradigm.
 
     data, gtab = dsi_voxels()

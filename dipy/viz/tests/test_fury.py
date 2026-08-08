@@ -1,5 +1,3 @@
-from pathlib import Path
-from tempfile import TemporaryDirectory
 import warnings
 
 import numpy as np
@@ -31,7 +29,7 @@ skip_it = use_xvfb == "skip"
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 @set_random_number_generator()
-def test_slicer(rng):
+def test_slicer(rng=None):
     scene = window.Scene()
     data = 255 * rng.random((50, 50, 50))
     affine = np.diag([1, 3, 2, 1])
@@ -52,7 +50,7 @@ def test_slicer(rng):
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
-def test_contour_from_roi():
+def test_contour_from_roi(tmp_path):
     hardi_img, gtab, labels_img = read_stanford_labels()
     data = np.asanyarray(hardi_img.dataobj)
     labels = np.asanyarray(labels_img.dataobj)
@@ -106,37 +104,32 @@ def test_contour_from_roi():
         seed_mask, affine=affine, color=[0, 1, 1], opacity=0.5
     )
 
-    with TemporaryDirectory() as out_dir:
-        # Create the 3d display.
-        sc = window.Scene()
-        sc2 = window.Scene()
-        sc.add(streamlines_actor)
-        arr3 = window.snapshot(
-            sc, fname=Path(out_dir) / "test_surface3.png", offscreen=True
-        )
-        report3 = window.analyze_snapshot(arr3, find_objects=True)
-        sc2.add(streamlines_actor)
-        sc2.add(seedroi_actor)
-        arr4 = window.snapshot(
-            sc2, fname=Path(out_dir) / "test_surface4.png", offscreen=True
-        )
-        report4 = window.analyze_snapshot(arr4, find_objects=True)
+    # Create the 3d display.
+    sc = window.Scene()
+    sc2 = window.Scene()
+    sc.add(streamlines_actor)
+    arr3 = window.snapshot(sc, fname=tmp_path / "test_surface3.png", offscreen=True)
+    report3 = window.analyze_snapshot(arr3, find_objects=True)
+    sc2.add(streamlines_actor)
+    sc2.add(seedroi_actor)
+    arr4 = window.snapshot(sc2, fname=tmp_path / "test_surface4.png", offscreen=True)
+    report4 = window.analyze_snapshot(arr4, find_objects=True)
 
-        # assert that the seed ROI rendering is not far
-        # away from the streamlines (affine error).
-        # If the ROI were affine-shifted far away, it would appear as a
-        # completely separate object, increasing the count beyond report3.
-        # Platform rendering differences (e.g. Windows vs Linux) can cause
-        # the streamlines to appear as more or fewer connected regions, so
-        # we only require that adding the ROI does not increase the count.
-        npt.assert_array_less(report4.objects, report3.objects + 1)
-        # window.show(sc)
-        # window.show(sc2)
+    # assert that the seed ROI rendering is not far
+    # away from the streamlines (affine error).
+    # If the ROI were affine-shifted far away, it would appear as a
+    # completely separate object, increasing the count beyond report3.
+    # Platform rendering differences (e.g. Windows vs Linux) can cause
+    # the streamlines to appear as more or fewer connected regions, so
+    # we only require that adding the ROI does not increase the count.
+    npt.assert_array_less(report4.objects, report3.objects + 1)
+    # window.show(sc)
+    # window.show(sc2)
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 @set_random_number_generator()
-def test_bundle_maps(rng):
+def test_bundle_maps(rng=None):
     scene = window.Scene()
     bundle = fornix_streamlines()
     bundle, _ = center_streamlines(bundle)

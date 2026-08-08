@@ -69,7 +69,7 @@ def test_scale_space():
 
 
 @set_random_number_generator(2022966)
-def test_scale_space_exceptions(rng):
+def test_scale_space_exceptions(rng=None):
     target_shape = (32, 32)
     # create a random image
     image = np.ndarray(target_shape, dtype=np.float32)

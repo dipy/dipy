@@ -14,7 +14,7 @@ _, have_matplotlib, _ = optional_package("matplotlib")
 
 @pytest.mark.skipif(not have_matplotlib, reason="Requires Matplotlib")
 @set_random_number_generator()
-def test_plot_2d_diffeomorphic_map(rng):
+def test_plot_2d_diffeomorphic_map(rng=None):
     # Test the regtools plotting interface (lightly).
     mv_shape = (11, 12)
     moving = rng.random(mv_shape)

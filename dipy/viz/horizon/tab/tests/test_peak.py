@@ -18,7 +18,7 @@ skip_it = use_xvfb == "skip" or not has_fury
 
 @pytest.fixture
 @set_random_number_generator()
-def peak_actor(rng):
+def peak_actor(rng=None):
     """Fixture to create a Peaks Actor."""
     peak_dirs = 255 * rng.random((5, 5, 5, 5, 3))
     pam = PeaksAndMetrics()

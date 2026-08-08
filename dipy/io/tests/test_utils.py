@@ -240,7 +240,7 @@ def test_all_zeros_affine():
 
 
 @set_random_number_generator()
-def test_read_img_arr_or_path(rng):
+def test_read_img_arr_or_path(rng=None):
     data = rng.random((4, 4, 4, 3))
     aff = np.eye(4)
     aff[:3, :] = rng.standard_normal((3, 4))

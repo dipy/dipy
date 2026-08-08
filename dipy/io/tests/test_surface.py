@@ -1,6 +1,4 @@
 import itertools
-from pathlib import Path
-from tempfile import TemporaryDirectory
 from urllib.error import HTTPError, URLError
 
 import nibabel as nib
@@ -40,7 +38,7 @@ def setup_module():
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
-def test_pial_load_save():
+def test_pial_load_save(tmp_path):
     data_raw = nib.freesurfer.read_geometry(FILEPATH_DIX["naf_lh.pial"])
 
     sfs = load_surface(
@@ -51,17 +49,14 @@ def test_pial_load_save():
     sfs.to_vox()
     sfs.to_corner()
 
-    with TemporaryDirectory() as tmpdir:
-        save_surface(
-            sfs, Path(tmpdir) / "lh.pial", ref_pial=FILEPATH_DIX["naf_lh.pial"]
-        )
-        data_save = nib.freesurfer.read_geometry(Path(tmpdir) / "lh.pial")
+    save_surface(sfs, tmp_path / "lh.pial", ref_pial=FILEPATH_DIX["naf_lh.pial"])
+    data_save = nib.freesurfer.read_geometry(tmp_path / "lh.pial")
     npt.assert_almost_equal(data_raw[0], data_save[0], decimal=5)
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
 @pytest.mark.parametrize("space,origin", list(itertools.product(SPACES, ORIGINS)))
-def test_vtk_matching_space(space, origin):
+def test_vtk_matching_space(tmp_path, space, origin):
     sfs = load_surface(
         FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
     )
@@ -69,19 +64,18 @@ def test_vtk_matching_space(space, origin):
     sfs.to_center()
     ref_vertices = sfs.vertices.copy()
 
-    with TemporaryDirectory() as tmpdir:
-        save_surface(sfs, Path(tmpdir) / "tmp.vtk", to_space=space, to_origin=origin)
-        sfs = load_surface(
-            Path(tmpdir) / "tmp.vtk",
-            FILEPATH_DIX["naf_mni_masked.nii.gz"],
-            from_space=space,
-            from_origin=origin,
-        )
+    save_surface(sfs, tmp_path / "tmp.vtk", to_space=space, to_origin=origin)
+    sfs = load_surface(
+        tmp_path / "tmp.vtk",
+        FILEPATH_DIX["naf_mni_masked.nii.gz"],
+        from_space=space,
+        from_origin=origin,
+    )
 
-        sfs.to_rasmm()
-        sfs.to_center()
-        save_vertices = sfs.vertices.copy()
-        npt.assert_almost_equal(ref_vertices, save_vertices, decimal=5)
+    sfs.to_rasmm()
+    sfs.to_center()
+    save_vertices = sfs.vertices.copy()
+    npt.assert_almost_equal(ref_vertices, save_vertices, decimal=5)
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
@@ -89,7 +83,7 @@ def test_vtk_matching_space(space, origin):
     "_type,fname,space,origin",
     list(itertools.product(FOLDERS_GII, FILENAMES_GII, SPACES, ORIGINS)),
 )
-def test_gifti_matching_space(_type, fname, space, origin):
+def test_gifti_matching_space(tmp_path, _type, fname, space, origin):
     if _type == "gzip_base64":
         fname += ".gz"
     sfs = load_surface(FILEPATH_DIX[fname], FILEPATH_DIX["anat.nii.gz"])
@@ -97,26 +91,25 @@ def test_gifti_matching_space(_type, fname, space, origin):
     sfs.to_center()
     ref_vertices = sfs.vertices.copy()
 
-    with TemporaryDirectory() as tmpdir:
-        save_surface(sfs, Path(tmpdir) / "tmp.gii", to_space=space, to_origin=origin)
-        sfs = load_surface(
-            Path(tmpdir) / "tmp.gii",
-            FILEPATH_DIX["anat.nii.gz"],
-            from_space=space,
-            from_origin=origin,
-        )
+    save_surface(sfs, tmp_path / "tmp.gii", to_space=space, to_origin=origin)
+    sfs = load_surface(
+        tmp_path / "tmp.gii",
+        FILEPATH_DIX["anat.nii.gz"],
+        from_space=space,
+        from_origin=origin,
+    )
 
-        sfs.to_rasmm()
-        sfs.to_center()
-        save_vertices = sfs.vertices.copy()
-        npt.assert_almost_equal(ref_vertices, save_vertices, decimal=5)
+    sfs.to_rasmm()
+    sfs.to_center()
+    save_vertices = sfs.vertices.copy()
+    npt.assert_almost_equal(ref_vertices, save_vertices, decimal=5)
 
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
 @pytest.mark.parametrize(
     "dataset,hemisphere,type", list(itertools.product(FOLDERS, HEMISPHERES, TYPES))
 )
-def test_freesurfer_density_operation(dataset, hemisphere, type):
+def test_freesurfer_density_operation(tmp_path, dataset, hemisphere, type):
     prefix = "baf" if dataset == "big_affine_freesurfer" else "saf"
     fname = f"{prefix}_{hemisphere}.{type}"
     sfs = load_surface(FILEPATH_DIX[fname], FILEPATH_DIX[f"{prefix}_t1.nii.gz"])
@@ -133,11 +126,10 @@ def test_freesurfer_density_operation(dataset, hemisphere, type):
         coord = tuple(vertex.astype(np.int32))
         data[coord] += 1
 
-    with TemporaryDirectory() as tmpdir:
-        nib.save(
-            nib.Nifti1Image(data, sfs.affine),
-            Path(tmpdir) / f"{hemisphere}_{type}.nii.gz",
-        )
+    nib.save(
+        nib.Nifti1Image(data, sfs.affine),
+        tmp_path / f"{hemisphere}_{type}.nii.gz",
+    )
 
     # Compute the barycenter of the density map and compare it to the
     # approximate barycenter

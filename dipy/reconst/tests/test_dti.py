@@ -54,7 +54,7 @@ def test_roll_evals():
 
 
 @set_random_number_generator()
-def test_tensor_algebra(rng):
+def test_tensor_algebra(rng=None):
     # Test that the computation of tensor determinant and norm is correct
     test_arr = rng.random((10, 3, 3))
     t_det = dti.determinant(test_arr)
@@ -719,7 +719,7 @@ def test_mask():
 
 
 @set_random_number_generator()
-def test_nnls_jacobian_func(rng):
+def test_nnls_jacobian_func(rng=None):
     b0 = 1000.0
     bval, bvecs = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     gtab = grad.gradient_table(bval, bvecs=bvecs)

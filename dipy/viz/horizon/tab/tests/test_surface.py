@@ -16,7 +16,7 @@ skip_it = use_xvfb == "skip" or not has_fury
 
 @pytest.fixture
 @set_random_number_generator()
-def surface_viz(rng):
+def surface_viz(rng=None):
     """Fixture to create a Surface Visualizer."""
     vertices = rng.random((100, 3))
     faces = rng.integers(0, 100, size=(100, 3))

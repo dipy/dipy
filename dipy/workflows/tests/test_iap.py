@@ -1,6 +1,5 @@
 from pathlib import Path
 import sys
-from tempfile import TemporaryDirectory
 
 import numpy.testing as npt
 
@@ -53,30 +52,24 @@ def test_none_or_dtype():
     dec = none_or_dtype(tuple)
 
 
-def test_variable_type():
-    with TemporaryDirectory() as out_dir:
-        open(Path(out_dir) / "test", "w").close()
-        open(Path(out_dir) / "test1", "w").close()
-        open(Path(out_dir) / "test2", "w").close()
+def test_variable_type(tmp_path):
+    open(tmp_path / "test", "w").close()
+    open(tmp_path / "test1", "w").close()
+    open(tmp_path / "test2", "w").close()
 
-        sys.argv = [sys.argv[0]]
-        pos_results = [
-            Path(out_dir) / "test",
-            Path(out_dir) / "test1",
-            Path(out_dir) / "test2",
-            12,
-        ]
-        inputs = inputs_from_results(pos_results)
-        sys.argv.extend(inputs)
-        dcwf = DummyVariableTypeWorkflow()
-        _, positional_res, positional_res2 = run_flow(dcwf)
-        npt.assert_equal(positional_res2, 12)
+    sys.argv = [sys.argv[0]]
+    pos_results = [tmp_path / "test", tmp_path / "test1", tmp_path / "test2", 12]
+    inputs = inputs_from_results(pos_results)
+    sys.argv.extend(inputs)
+    dcwf = DummyVariableTypeWorkflow()
+    _, positional_res, positional_res2 = run_flow(dcwf)
+    npt.assert_equal(positional_res2, 12)
 
-        for k, v in zip(positional_res, pos_results[:-1]):
-            npt.assert_equal(Path(k), v)
+    for k, v in zip(positional_res, pos_results[:-1]):
+        npt.assert_equal(Path(k), v)
 
-        dcwf = DummyVariableTypeErrorWorkflow()
-        npt.assert_raises(ValueError, run_flow, dcwf)
+    dcwf = DummyVariableTypeErrorWorkflow()
+    npt.assert_raises(ValueError, run_flow, dcwf)
 
 
 def test_iap():

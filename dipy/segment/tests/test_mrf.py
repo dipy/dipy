@@ -231,7 +231,7 @@ def test_grayscale_iter():
 
 
 @set_random_number_generator()
-def test_square_iter(rng):
+def test_square_iter(rng=None):
     nclasses = 4
     beta = np.float64(0.0)
     max_iter = 10
@@ -322,7 +322,7 @@ def test_square_iter(rng):
 
 
 @set_random_number_generator()
-def test_icm_square(rng):
+def test_icm_square(rng=None):
     nclasses = 4
     max_iter = 10
 

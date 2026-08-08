@@ -265,7 +265,7 @@ def test_save_seeds():
 
 
 @set_random_number_generator(0)
-def test_tracking_max_angle(rng):
+def test_tracking_max_angle(rng=None):
     """This tests that the angle between streamline points is always smaller
     then the input `max_angle` parameter.
     """
@@ -421,7 +421,7 @@ def test_probabilistic_odf_weighted_tracker():
 
 
 @set_random_number_generator(0)
-def test_particle_filtering_tractography(rng):
+def test_particle_filtering_tractography(rng=None):
     """This tests that the ParticleFilteringTracking produces
     more streamlines connecting the gray matter than LocalTracking.
     """
@@ -1158,7 +1158,7 @@ def test_affine_transformations():
 
 
 @set_random_number_generator()
-def test_random_seed_initialization(rng):
+def test_random_seed_initialization(rng=None):
     """Test that the random generator can be initialized correctly with the
     tracking seeds.
     """

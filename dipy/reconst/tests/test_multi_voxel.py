@@ -168,7 +168,7 @@ def test_CallableArray():
 
 
 @set_random_number_generator()
-def test_multi_voxel_fit(rng):
+def test_multi_voxel_fit(rng=None):
     class SillyModel:
         @warning_for_keywords()
         @multi_voxel_fit
@@ -350,7 +350,7 @@ def _verbose_declaring_model(seen_verbose):
 
 
 @set_random_number_generator()
-def test_multi_voxel_fit_no_orchestration_leak(rng):
+def test_multi_voxel_fit_no_orchestration_leak(rng=None):
     """Orchestration kwargs never reach a per-voxel fit that doesn't declare them.
 
     Covers the serial (explicit ``engine="serial"``) and the in-process parallel

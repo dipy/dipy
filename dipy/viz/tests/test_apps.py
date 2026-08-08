@@ -1,5 +1,4 @@
 from pathlib import Path
-from tempfile import TemporaryDirectory
 import warnings
 
 import numpy as np
@@ -29,7 +28,7 @@ skip_it = use_xvfb == "skip"
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 @set_random_number_generator()
-def test_horizon_events(rng):
+def test_horizon_events(tmp_path, rng=None):
     # using here MNI template affine 2009a
     affine = np.array(
         [
@@ -70,29 +69,28 @@ def test_horizon_events(rng):
     # blocks recording
     fname = Path(DATA_DIR) / "record_horizon.log.gz"
 
-    with TemporaryDirectory() as out_dir:
-        horizon(
-            tractograms=tractograms,
-            images=images,
-            pams=pams,
-            cluster=True,
-            cluster_thr=5.0,
-            roi_images=True,
-            random_colors=False,
-            length_gt=0,
-            length_lt=np.inf,
-            clusters_gt=0,
-            clusters_lt=np.inf,
-            world_coords=True,
-            interactive=True,
-            out_png=str(Path(out_dir) / "horizon-event.png"),
-            recorded_events=str(fname),
-        )
+    horizon(
+        tractograms=tractograms,
+        images=images,
+        pams=pams,
+        cluster=True,
+        cluster_thr=5.0,
+        roi_images=True,
+        random_colors=False,
+        length_gt=0,
+        length_lt=np.inf,
+        clusters_gt=0,
+        clusters_lt=np.inf,
+        world_coords=True,
+        interactive=True,
+        out_png=str(tmp_path / "horizon-event.png"),
+        recorded_events=str(fname),
+    )
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 @set_random_number_generator()
-def test_horizon(rng):
+def test_horizon(tmp_path, rng=None):
     s1 = 10 * np.array(
         [[0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0], [4, 0, 0]], dtype="f8"
     )
@@ -131,7 +129,24 @@ def test_horizon(rng):
     # only tractograms
     tractograms = [sft]
     images = None
-    with TemporaryDirectory() as out_dir:
+    horizon(
+        tractograms=tractograms,
+        images=images,
+        cluster=True,
+        cluster_thr=5,
+        random_colors=False,
+        length_lt=np.inf,
+        length_gt=0,
+        clusters_lt=np.inf,
+        clusters_gt=0,
+        world_coords=True,
+        interactive=False,
+        out_png=tmp_path / "only-tractograms.png",
+    )
+
+    images = [(data, affine, "/test/filename.nii.gz")]
+    # tractograms in native coords (not supported for now)
+    with npt.assert_raises(ValueError) as ve:
         horizon(
             tractograms=tractograms,
             images=images,
@@ -142,68 +157,50 @@ def test_horizon(rng):
             length_gt=0,
             clusters_lt=np.inf,
             clusters_gt=0,
-            world_coords=True,
+            world_coords=False,
             interactive=False,
-            out_png=Path(out_dir) / "only-tractograms.png",
+            out_png=tmp_path / "native-tractograms.png",
         )
 
-        images = [(data, affine, "/test/filename.nii.gz")]
-        # tractograms in native coords (not supported for now)
-        with npt.assert_raises(ValueError) as ve:
-            horizon(
-                tractograms=tractograms,
-                images=images,
-                cluster=True,
-                cluster_thr=5,
-                random_colors=False,
-                length_lt=np.inf,
-                length_gt=0,
-                clusters_lt=np.inf,
-                clusters_gt=0,
-                world_coords=False,
-                interactive=False,
-                out_png=Path(out_dir) / "native-tractograms.png",
-            )
+    msg = "Currently native coordinates are not supported for streamlines."
+    npt.assert_(msg in str(ve.exception))
 
-        msg = "Currently native coordinates are not supported for streamlines."
-        npt.assert_(msg in str(ve.exception))
+    # only images
+    tractograms = None
+    horizon(
+        tractograms=tractograms,
+        images=images,
+        cluster=True,
+        cluster_thr=5,
+        random_colors=False,
+        length_lt=np.inf,
+        length_gt=0,
+        clusters_lt=np.inf,
+        clusters_gt=0,
+        world_coords=True,
+        interactive=False,
+        out_png=tmp_path / "only-images.png",
+    )
 
-        # only images
-        tractograms = None
-        horizon(
-            tractograms=tractograms,
-            images=images,
-            cluster=True,
-            cluster_thr=5,
-            random_colors=False,
-            length_lt=np.inf,
-            length_gt=0,
-            clusters_lt=np.inf,
-            clusters_gt=0,
-            world_coords=True,
-            interactive=False,
-            out_png=Path(out_dir) / "only-images.png",
-        )
-
-        # no clustering tractograms and images
-        horizon(
-            tractograms=tractograms,
-            images=images,
-            cluster=False,
-            cluster_thr=5,
-            random_colors=False,
-            length_lt=np.inf,
-            length_gt=0,
-            clusters_lt=np.inf,
-            clusters_gt=0,
-            world_coords=True,
-            interactive=False,
-            out_png=Path(out_dir) / "no-clusting-tractograms-and-images.png",
-        )
+    # no clustering tractograms and images
+    horizon(
+        tractograms=tractograms,
+        images=images,
+        cluster=False,
+        cluster_thr=5,
+        random_colors=False,
+        length_lt=np.inf,
+        length_gt=0,
+        clusters_lt=np.inf,
+        clusters_gt=0,
+        world_coords=True,
+        interactive=False,
+        out_png=tmp_path / "no-clusting-tractograms-and-images.png",
+    )
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
-def test_horizon_wrong_dtype_images():
+def test_horizon_wrong_dtype_images(tmp_path):
     affine = np.array(
         [
             [1.0, 0.0, 0.0, -98.0],
@@ -215,21 +212,18 @@ def test_horizon_wrong_dtype_images():
 
     data = np.random.rand(197, 233, 189).astype(np.bool_)
     images = [(data, affine)]
-    with TemporaryDirectory() as out_dir:
-        horizon(
-            images=images,
-            interactive=False,
-            out_png=str(Path(out_dir) / "wrong-dtype.png"),
-        )
-        # Asserting the image will not get added and the image will be black.
-        assert (
-            len(np.unique(io.load_image(str(Path(out_dir) / "wrong-dtype.png")))) == 1
-        )
+    horizon(
+        images=images,
+        interactive=False,
+        out_png=str(tmp_path / "wrong-dtype.png"),
+    )
+    # Asserting the image will not get added and the image will be black.
+    assert len(np.unique(io.load_image(tmp_path / "wrong-dtype.png"))) == 1
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 @set_random_number_generator()
-def test_horizon_empty_tractogram(rng):
+def test_horizon_empty_tractogram(tmp_path, rng=None):
     """Test that empty tractograms are handled gracefully without errors."""
     # Create an empty streamlines container
     empty_streamlines = Streamlines()
@@ -257,22 +251,21 @@ def test_horizon_empty_tractogram(rng):
     # with a warning
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        with TemporaryDirectory() as out_dir:
-            horizon(
-                tractograms=tractograms,
-                images=images,
-                cluster=False,
-                world_coords=True,
-                interactive=False,
-                out_png=Path(out_dir) / "empty-tractogram.png",
-            )
-        # Check that a warning was raised about empty tractogram
-        check_for_warnings(w, "Tractogram 0 is empty and will be skipped.")
+        horizon(
+            tractograms=tractograms,
+            images=images,
+            cluster=False,
+            world_coords=True,
+            interactive=False,
+            out_png=tmp_path / "empty-tractogram.png",
+        )
+    # Check that a warning was raised about empty tractogram
+    check_for_warnings(w, "Tractogram 0 is empty and will be skipped.")
 
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 @set_random_number_generator(42)
-def test_roi_images(rng):
+def test_roi_images(rng=None):
     img1 = rng.random((5, 5, 5))
     img2 = np.zeros((5, 5, 5))
     img2[2, 2, 2] = 1
@@ -296,7 +289,7 @@ def test_roi_images(rng):
 
 @pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 @set_random_number_generator(42)
-def test_surfaces(rng):
+def test_surfaces(rng=None):
     vertices = rng.random((100, 3))
     faces = rng.integers(0, 100, size=(100, 3))
     surfaces = [

@@ -8,7 +8,7 @@ from dipy.testing.decorators import set_random_number_generator
 
 
 @set_random_number_generator()
-def test_wichmann_hill2006(rng):
+def test_wichmann_hill2006(rng=None):
     # These functions are stateless: same seeds → same value each call.
     # Use varied seeds to generate a sequence and verify outputs are in [0, 1].
     seeds = rng.integers(1, 2**20, size=(100, 4))
@@ -25,7 +25,7 @@ def test_wichmann_hill2006(rng):
 
 
 @set_random_number_generator()
-def test_wichmann_hill1982(rng):
+def test_wichmann_hill1982(rng=None):
     seeds = rng.integers(1, 2**15, size=(100, 3))
     n_generated = np.array(
         [
@@ -38,7 +38,7 @@ def test_wichmann_hill1982(rng):
 
 
 @set_random_number_generator()
-def test_LEcuyer(rng):
+def test_LEcuyer(rng=None):
     seeds = rng.integers(1, 2**20, size=(100, 2))
     n_generated = np.array(
         [core_rng.LEcuyer(s1=int(s[0]), s2=int(s[1])) for s in seeds]

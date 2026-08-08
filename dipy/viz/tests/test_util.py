@@ -14,7 +14,7 @@ from dipy.viz.horizon.util import (
 
 
 @set_random_number_generator()
-def test_check_img_shapes(rng):
+def test_check_img_shapes(rng=None):
     affine = np.array(
         [
             [1.0, 0.0, 0.0, -98.0],
@@ -65,7 +65,7 @@ def test_check_img_shapes(rng):
 
 
 @set_random_number_generator()
-def test_check_img_dtype(rng):
+def test_check_img_dtype(rng=None):
     affine = np.array(
         [
             [1.0, 0.0, 0.0, -98.0],
@@ -116,7 +116,7 @@ def test_show_ellipsis():
 
 
 @set_random_number_generator()
-def test_unpack_surface(rng):
+def test_unpack_surface(rng=None):
     vertices = rng.random((100, 4))
     faces = rng.integers(0, 100, size=(100, 3))
 
@@ -138,7 +138,7 @@ def test_unpack_surface(rng):
 
 
 @set_random_number_generator()
-def test_check_peak_size(rng):
+def test_check_peak_size(rng=None):
     peak_dirs = rng.random((100, 100, 100, 10, 6))
 
     pam = PeaksAndMetrics()
@@ -175,7 +175,7 @@ def test_check_peak_size(rng):
 
 
 @set_random_number_generator()
-def test_unpack_data(rng):
+def test_unpack_data(rng=None):
     # Test with a non-tuple object (single data array)
     pam_data = rng.random((10, 10))
     result = unpack_data(pam_data, return_size=2)

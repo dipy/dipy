@@ -209,7 +209,7 @@ def test_raise_mdf():
 
 
 @set_random_number_generator(42)
-def test_qbx_and_merge(rng):
+def test_qbx_and_merge(rng=None):
     # Generate synthetic streamlines
     bundles = bearing_bundles(4, 2)
     bundles.append(straight_bundle(1, rng=rng))

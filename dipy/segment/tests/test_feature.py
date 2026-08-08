@@ -235,7 +235,7 @@ def test_feature_vector_of_endpoints():
 
 
 @set_random_number_generator(1234)
-def test_feature_extract(rng):
+def test_feature_extract(rng=None):
     # Test that features are automatically cast into float32 when
     # coming from Python space
     class CenterOfMass64bit(dipysfeature.Feature):

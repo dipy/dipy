@@ -206,7 +206,7 @@ def test_transform_origins_3d():
 
 
 @set_random_number_generator(202311)
-def test_affreg_all_transforms(rng):
+def test_affreg_all_transforms(rng=None):
     # Test affine registration using all transforms with typical settings
 
     # Make sure dictionary entries are processed in the same order regardless
@@ -305,7 +305,7 @@ def test_affreg_all_transforms(rng):
 
 
 @set_random_number_generator(202311)
-def test_affreg_cc(rng):
+def test_affreg_cc(rng=None):
     """Test affine registration with cross-correlation in 2D and 3D."""
     for ttype in [("TRANSLATION", 2), ("TRANSLATION", 3)]:
         dim = ttype[1]
@@ -339,7 +339,7 @@ def test_affreg_cc(rng):
 
 
 @set_random_number_generator(202311)
-def test_affreg_defaults(rng):
+def test_affreg_defaults(rng=None):
     # Test all default arguments with an arbitrary transform
     # Select an arbitrary transform (all of them are already tested
     # in test_affreg_all_transforms)
@@ -408,7 +408,7 @@ def test_affreg_defaults(rng):
 
 
 @set_random_number_generator(2022966)
-def test_mi_gradient(rng):
+def test_mi_gradient(rng=None):
     # Test the gradient of mutual information
     h = 1e-5
     # Make sure dictionary entries are processed in the same order regardless
@@ -462,7 +462,7 @@ def test_mi_gradient(rng):
 
 
 @set_random_number_generator(2022966)
-def test_cc_gradient(rng):
+def test_cc_gradient(rng=None):
     """Compare affine CC gradients with finite differences in 2D and 3D."""
     h = 1e-4
 
@@ -558,7 +558,7 @@ def create_affine_transforms(dim, translations, rotations, scales, rot_axis=None
 
 
 @set_random_number_generator(2112927)
-def test_affine_map(rng):
+def test_affine_map(rng=None):
     dom_shape = np.array([64, 64, 64], dtype=np.int32)
     cod_shape = np.array([80, 80, 80], dtype=np.int32)
     # Radius of the circle/sphere (testing image)
@@ -758,7 +758,7 @@ def test_affine_map(rng):
 
 
 @set_random_number_generator()
-def test_MIMetric_invalid_params(rng):
+def test_MIMetric_invalid_params(rng=None):
     transform = regtransforms[("AFFINE", 3)]
     static = rng.random((20, 20, 20))
     moving = rng.random((20, 20, 20))
@@ -791,7 +791,7 @@ def test_MIMetric_invalid_params(rng):
 
 
 @set_random_number_generator()
-def test_CCMetric_invalid_params(rng):
+def test_CCMetric_invalid_params(rng=None):
     """Test affine CC behavior for invalid transform parameters."""
     transform = regtransforms[("AFFINE", 3)]
     static = rng.random((20, 20, 20))

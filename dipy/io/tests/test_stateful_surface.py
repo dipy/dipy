@@ -1,6 +1,4 @@
 import itertools
-from os.path import join as pjoin
-from tempfile import TemporaryDirectory
 from urllib.error import HTTPError, URLError
 
 import numpy as np
@@ -219,7 +217,7 @@ def test_equality():
 
 
 @set_random_number_generator(0)
-def test_random_space_transformations(rng):
+def test_random_space_transformations(rng=None):
     sfs = load_surface(
         FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
     )
@@ -426,21 +424,20 @@ def test_from_sfs_dtype_dict_attributes():
 
 @pytest.mark.skipif(not have_vtk, reason="Requires VTK")
 @pytest.mark.parametrize("extension", ["vtk", "gii", "pial"])
-def test_save_load_many_times(extension):
+def test_save_load_many_times(tmp_path, extension):
     # Load initial surface
     sfs = load_surface(
         FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
     )
     ref_vertices = sfs.vertices.copy()
 
-    with TemporaryDirectory() as tmpdir:
-        # Save and load 10 times
-        for i in range(10):
-            save_surface(sfs, pjoin(tmpdir, f"test_{i}.{extension}"))
-            sfs = load_surface(
-                pjoin(tmpdir, f"test_{i}.{extension}"),
-                FILEPATH_DIX["naf_mni_masked.nii.gz"],
-            )
+    # Save and load 10 times
+    for i in range(10):
+        save_surface(sfs, tmp_path / f"test_{i}.{extension}")
+        sfs = load_surface(
+            tmp_path / f"test_{i}.{extension}",
+            FILEPATH_DIX["naf_mni_masked.nii.gz"],
+        )
 
-        # Final vertices should match original
-        npt.assert_almost_equal(ref_vertices, sfs.vertices, decimal=5)
+    # Final vertices should match original
+    npt.assert_almost_equal(ref_vertices, sfs.vertices, decimal=5)

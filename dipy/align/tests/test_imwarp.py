@@ -40,7 +40,7 @@ def test_mult_aff():
 
 
 @set_random_number_generator(2022966)
-def test_diffeomorphic_map_2d(rng):
+def test_diffeomorphic_map_2d(rng=None):
     r"""Test 2D DiffeomorphicMap
 
     Creates a random displacement field that exactly maps pixels from an
@@ -354,7 +354,7 @@ def test_diffeomorphic_map_simplification_3d():
 
 
 @set_random_number_generator(1234)
-def test_diffeomorphic_map_warp_threading(rng):
+def test_diffeomorphic_map_warp_threading(rng=None):
     """Threaded map warping matches one-thread map warping."""
     cases = (
         (2, (32, 29)),
@@ -1221,7 +1221,7 @@ def test_em_2d_demons():
 
 
 @set_random_number_generator(1741332)
-def test_coordinate_mapping(rng):
+def test_coordinate_mapping(rng=None):
     r"""Test coordinate mapping with DiffeomorphicMap
 
     1. Create a random displacement field and a small affine transform to map

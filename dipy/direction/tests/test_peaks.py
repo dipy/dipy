@@ -455,7 +455,7 @@ def test_difference_with_minmax():
 
 
 @set_random_number_generator()
-def test_degenerate_cases(rng):
+def test_degenerate_cases(rng=None):
     sphere = default_sphere
 
     # completely isotropic and degenerate case
@@ -788,7 +788,7 @@ def test_peaks_shm_coeff():
 
 
 @set_random_number_generator()
-def test_reshape_peaks_for_visualization(rng):
+def test_reshape_peaks_for_visualization(rng=None):
     data1 = rng.standard_normal((10, 5, 3)).astype("float32")
     data2 = rng.standard_normal((10, 2, 5, 3)).astype("float32")
     data3 = rng.standard_normal((10, 2, 12, 5, 3)).astype("float32")

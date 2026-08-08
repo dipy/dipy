@@ -263,20 +263,19 @@ def test_fetch_data_all_skip_logs_already_there(
     assert "already" in caplog.text.lower()
 
 
-def test_dipy_home():
+def test_dipy_home(tmp_path):
     old_home = os.environ.pop("DIPY_HOME", None)
     try:
         importlib.reload(fetcher)
-        expected = str(Path("~").expanduser() / ".dipy")
-        assert str(fetcher.dipy_home) == expected
+        expected = Path("~").expanduser() / ".dipy"
+        assert fetcher.dipy_home == expected
 
-        with tempfile.TemporaryDirectory() as test_path:
-            os.environ["DIPY_HOME"] = test_path
-            importlib.reload(fetcher)
-            assert str(fetcher.dipy_home) == test_path
+        os.environ["DIPY_HOME"] = str(tmp_path)
+        importlib.reload(fetcher)
+        assert fetcher.dipy_home == tmp_path
     finally:
         if old_home is not None:
-            os.environ["DIPY_HOME"] = old_home
+            os.environ["DIPY_HOME"] = str(old_home)
         elif "DIPY_HOME" in os.environ:
             del os.environ["DIPY_HOME"]
         importlib.reload(fetcher)

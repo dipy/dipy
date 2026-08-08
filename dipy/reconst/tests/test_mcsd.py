@@ -303,7 +303,7 @@ def test_multi_shell_fiber_response():
 
 
 @set_random_number_generator()
-def test_mask_for_response_msmt(rng):
+def test_mask_for_response_msmt(rng=None):
     gtab, data, masks_gt, _ = get_test_data(rng)
 
     with warnings.catch_warnings(record=True) as w:
@@ -333,7 +333,7 @@ def test_mask_for_response_msmt(rng):
 
 
 @set_random_number_generator()
-def test_mask_for_response_msmt_nvoxels(rng):
+def test_mask_for_response_msmt_nvoxels(rng=None):
     gtab, data, _, _ = get_test_data(rng)
 
     with warnings.catch_warnings(record=True) as w:
@@ -390,7 +390,7 @@ def test_mask_for_response_msmt_nvoxels(rng):
 
 
 @set_random_number_generator()
-def test_response_from_mask_msmt(rng):
+def test_response_from_mask_msmt(rng=None):
     gtab, data, masks_gt, responses_gt = get_test_data(rng)
 
     response_wm, response_gm, response_csf = response_from_mask_msmt(
@@ -415,7 +415,7 @@ def test_response_from_mask_msmt(rng):
 
 
 @set_random_number_generator()
-def test_auto_response_msmt(rng):
+def test_auto_response_msmt(rng=None):
     gtab, data, _, _ = get_test_data(rng)
 
     with warnings.catch_warnings(record=True) as w:

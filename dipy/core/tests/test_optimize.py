@@ -69,7 +69,7 @@ def test_optimize_new_scipy():
 
 
 @set_random_number_generator()
-def test_sklearn_linear_solver(rng):
+def test_sklearn_linear_solver(rng=None):
     class SillySolver(opt.SKLearnLinearSolver):
         def fit(self, X, y):
             self.coef_ = np.ones(X.shape[-1])
@@ -85,7 +85,7 @@ def test_sklearn_linear_solver(rng):
 
 
 @set_random_number_generator()
-def test_nonnegativeleastsquares(rng):
+def test_nonnegativeleastsquares(rng=None):
     n = 100
     X = np.eye(n)
     beta = rng.random(n)
@@ -97,7 +97,7 @@ def test_nonnegativeleastsquares(rng):
 
 
 @set_random_number_generator()
-def test_spdot(rng):
+def test_spdot(rng=None):
     n = 100
     m = 20
     k = 10
@@ -113,7 +113,7 @@ def test_spdot(rng):
 
 
 @set_random_number_generator()
-def test_sparse_nnls(rng):
+def test_sparse_nnls(rng=None):
     # Set up the regression:
     beta = rng.random(10)
     X = rng.standard_normal((1000, 10))

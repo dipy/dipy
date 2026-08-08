@@ -39,7 +39,7 @@ def test_cc_factors_3d():
 
 
 @set_random_number_generator(1147572)
-def test_compute_cc_affine_2d(rng):
+def test_compute_cc_affine_2d(rng=None):
     """Compare affine CC with the existing dense backward step in 2D."""
     sh = (32, 32)
     radius = 2
@@ -79,7 +79,7 @@ def test_compute_cc_affine_2d(rng):
 
 
 @set_random_number_generator(1147572)
-def test_compute_cc_affine_3d(rng):
+def test_compute_cc_affine_3d(rng=None):
     """Compare affine CC with the existing dense backward step in 3D."""
     sh = (32, 32, 32)
     radius = 2
@@ -120,7 +120,7 @@ def test_compute_cc_affine_3d(rng):
 
 
 @set_random_number_generator(1147572)
-def test_compute_cc_steps_2d(rng):
+def test_compute_cc_steps_2d(rng=None):
     # Select arbitrary images' shape (same shape for both images)
     sh = (32, 32)
     radius = 2
@@ -210,7 +210,7 @@ def test_compute_cc_steps_2d(rng):
 
 
 @set_random_number_generator(12465825)
-def test_compute_cc_steps_3d(rng):
+def test_compute_cc_steps_3d(rng=None):
     sh = (32, 32, 32)
     radius = 2
 

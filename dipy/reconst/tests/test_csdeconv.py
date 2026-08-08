@@ -614,7 +614,7 @@ def test_r2_term_odf_sharp():
 
 
 @set_random_number_generator()
-def test_csd_predict(rng):
+def test_csd_predict(rng=None):
     """
     Test prediction API
     """
@@ -694,7 +694,7 @@ def test_csd_predict(rng):
 
 
 @set_random_number_generator()
-def test_csd_predict_multi(rng):
+def test_csd_predict_multi(rng=None):
     """
     Check that we can predict reasonably from multi-voxel fits:
 
