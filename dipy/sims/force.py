@@ -19,6 +19,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import gc
 import multiprocessing as mp
 import os
+from pathlib import Path
 import sys
 import tempfile
 
@@ -172,7 +173,7 @@ def init_worker(base_seed=None):
 
 def _create_memmap(output_dir, name, dtype, shape):
     """Create a memory-mapped file."""
-    path = os.path.join(output_dir, f"{name}.mmap")
+    path = output_dir / f"{name}.mmap"
     return np.memmap(path, mode="w+", dtype=dtype, shape=shape), path
 
 
@@ -454,7 +455,7 @@ def generate_force_simulations(
         Gradient table with b-values and b-vectors.
     num_simulations : int, optional
         Number of simulated voxels.
-    output_dir : str, optional
+    output_dir : str or Path, optional
         Directory for output files. If None, uses a temporary directory.
     num_cpus : int or None, optional
         Number of CPU cores for parallel processing.
@@ -560,7 +561,7 @@ def generate_force_simulations(
     memmap_paths = {}
 
     def create_mm(name, dt, shape):
-        mm, path = _create_memmap(output_dir, name, dt, shape)
+        mm, path = _create_memmap(Path(output_dir), name, dt, shape)
         memmap_paths[name] = path
         return mm
 
@@ -889,7 +890,7 @@ def generate_force_simulations(
 
     for path in memmap_paths.values():
         try:
-            if os.path.exists(path):
+            if path.exists():
                 os.remove(path)
         except OSError:
             pass

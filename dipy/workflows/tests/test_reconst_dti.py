@@ -1,4 +1,3 @@
-import os
 from os.path import join as pjoin
 from tempfile import TemporaryDirectory
 import warnings
@@ -179,8 +178,8 @@ def test_fwdti():
         bvals_2s = np.concatenate((bvals, bvals * 1.5), axis=0)
         bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
         gtab_2s = gradient_table(bvals_2s, bvecs=bvecs_2s)
-        fbvals = pjoin(out_dir, os.path.basename(fbvals))
-        fbvecs = pjoin(out_dir, os.path.basename(fbvecs))
+        fbvals = pjoin(out_dir, fbvals.name)
+        fbvecs = pjoin(out_dir, fbvecs.name)
         np.savetxt(fbvals, bvals_2s)
         np.savetxt(fbvecs, bvecs_2s)
 

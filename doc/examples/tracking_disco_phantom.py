@@ -13,8 +13,6 @@ See
 for detailed examples of those algorithms.
 """
 
-import os
-
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import binary_erosion
@@ -45,7 +43,7 @@ print("Downloading data...")
 # Prepare the synthetic DiSCo data for tractography. The ground-truth
 # connectome will be use to evaluate tractography performances.
 fnames = get_fnames(name="disco1")
-disco1_fnames = [os.path.basename(f) for f in fnames]
+disco1_fnames = [f.name for f in fnames]
 
 GT_connectome_fname = fnames[
     disco1_fnames.index("DiSCo1_Connectivity_Matrix_Cross-Sectional_Area.txt")

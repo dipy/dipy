@@ -1,5 +1,4 @@
 import logging
-import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import warnings
@@ -101,8 +100,8 @@ def reconst_flow_core(flow, *, use_multishell_data=None, **kwargs):
             bvals_2s = np.concatenate((bvals, bvals * 1.5), axis=0)
             bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
             gtab_2s = gradient_table(bvals_2s, bvecs=bvecs_2s)
-            bval_path = Path(out_dir) / os.path.basename(bval_path)
-            bvec_path = Path(out_dir) / os.path.basename(bvec_path)
+            bval_path = Path(out_dir) / bval_path.name
+            bvec_path = Path(out_dir) / bvec_path.name
             np.savetxt(bval_path, bvals_2s)
             np.savetxt(bvec_path, bvecs_2s)
 
