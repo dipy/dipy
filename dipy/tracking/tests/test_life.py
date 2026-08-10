@@ -1,5 +1,3 @@
-import os.path as op
-
 import nibabel as nib
 import numpy as np
 import numpy.testing as npt
@@ -12,8 +10,6 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 import dipy.tracking.life as life
-
-THIS_DIR = op.dirname(__file__)
 
 
 def test_streamline_gradients():

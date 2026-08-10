@@ -2370,7 +2370,7 @@ def get_fnames(*, name="small_64D", include_optional=False):
         filepath_dix = {}
         files, folder = fetch_real_data_io()
         for filename in files:
-            filepath_dix[filename] = os.path.join(folder, filename)
+            filepath_dix[filename] = folder / filename
 
         return filepath_dix
     if name in ["disco", "disco1", "disco2", "disco3"]:

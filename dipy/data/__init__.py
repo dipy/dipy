@@ -2,7 +2,6 @@
 
 import gzip
 import json
-from os.path import dirname, exists
 from pathlib import Path
 import pickle
 
@@ -160,7 +159,7 @@ def loads_compat(byte_data):
     return pickle.loads(byte_data, encoding="latin1")
 
 
-DATA_DIR = Path(dirname(__file__)) / "files"
+DATA_DIR = Path(__file__).resolve().parent / "files"
 SPHERE_FILES = {
     "symmetric362": Path(DATA_DIR) / "evenly_distributed_sphere_362.npz",
     "symmetric642": Path(DATA_DIR) / "evenly_distributed_sphere_642.npz",
@@ -462,7 +461,7 @@ def load_sdp_constraints(model_name, *, order=None):
 
     path = Path(DATA_DIR) / file
 
-    if not exists(path):
+    if not path.exists():
         raise ValueError(f"Constraints file '{file}' not found.")
 
     try:
