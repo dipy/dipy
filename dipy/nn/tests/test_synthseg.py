@@ -38,6 +38,7 @@ def teardown_module(module):
 
 
 @pytest.mark.skipif(not have_torch, reason="Requires Torch")
+@pytest.mark.filterwarnings("ignore:The finalized brain mask may differ.*:UserWarning")
 def test_default_weights():
     file_path = get_fnames(name="synthseg_test_data")
     input_arr = np.load(file_path)["input"][0]
@@ -55,6 +56,7 @@ def test_default_weights():
 
 
 @pytest.mark.skipif(not have_torch, reason="Requires Torch")
+@pytest.mark.filterwarnings("ignore:The finalized brain mask may differ.*:UserWarning")
 def test_default_weights_batch():
     file_path = get_fnames(name="synthseg_test_data")
     data = np.load(file_path)
@@ -76,6 +78,8 @@ def test_default_weights_batch():
 
 
 @pytest.mark.skipif(not have_torch, reason="Requires Torch")
+@pytest.mark.filterwarnings("ignore:The finalized brain mask may differ.*:UserWarning")
+@pytest.mark.filterwarnings("ignore:The probability maps are returned.*:UserWarning")
 def test_input_shapes(monkeypatch):
     synthseg_model = synthseg.SynthSeg()
 
@@ -100,11 +104,14 @@ def test_input_shapes(monkeypatch):
         npt.assert_equal(labels.shape, shape)
         npt.assert_equal(mask.shape, shape)
 
-        probabilities = synthseg_model.predict(input_arr, np.eye(4), return_prob=True)
+        probabilities, _, _ = synthseg_model.predict(
+            input_arr, np.eye(4), return_prob=True
+        )
         npt.assert_equal(probabilities.shape, model_shape + (33,))
 
 
 @pytest.mark.skipif(not have_torch, reason="Requires Torch")
+@pytest.mark.filterwarnings("ignore:The finalized brain mask may differ.*:UserWarning")
 def test_default_weights_labels():
     file_path = get_fnames(name="synthseg_test_data")
     input_arr = np.load(file_path)["input"][0]
