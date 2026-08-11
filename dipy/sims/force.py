@@ -560,10 +560,10 @@ def generate_force_simulations(
     # Create memmaps for large arrays
     memmap_paths = {}
 
-    def create_mm(name, dt, shape):
-        mm, path = _create_memmap(Path(output_dir), name, dt, shape)
-        memmap_paths[name] = path
-        return mm
+    def create_mm(_name, dt, shape):
+        _mm, _path = _create_memmap(Path(output_dir), _name, dt, shape)
+        memmap_paths[_name] = _path
+        return _mm
 
     signals_mm = create_mm("signals", dtype, (num_simulations, n_bvals))
     labels_mm = create_mm("labels", label_dtype, (num_simulations, n_dirs))
