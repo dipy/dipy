@@ -29,9 +29,9 @@ from dipy.stats.analysis import spectra_assignment_map, spectra_profile
 # Load the data
 # -------------
 #
-# We use the same arcuate fasciculus dataset used in the BUAN bundle profile
-# example. The dataset contains the original subject bundle, the subject
-# bundle transformed to common space, a model bundle, and an FA image.
+# We use the same arcuate fasciculus example dataset that contains
+# the original subject bundle, the subject bundle transformed to atlas space,
+# a model bundle, and an FA image.
 
 af_orig_file, af_mni_file, af_model_file, fa_file = get_fnames(
     name="buan_bundle_profiles"
@@ -118,7 +118,8 @@ plt.show()
 # profile.
 #
 # The subject bundle in common space is used for spatial assignment, while
-# ``orig_bundle`` is used to sample FA in the original image space.
+# ``orig_bundle`` is used to sample FA in the original image space similar to
+# BUAN tractometry.
 
 profile = spectra_profile(
     model_bundle,
