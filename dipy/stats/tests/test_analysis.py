@@ -1,7 +1,18 @@
 import numpy as np
 import numpy.testing as npt
+from numpy.testing import assert_allclose
 
-from dipy.stats.analysis import afq_profile, buan_profile, gaussian_weights
+from dipy.stats.analysis import (
+    afq_profile,
+    buan_profile,
+    compute_robust_centroid,
+    create_radial_bins,
+    gaussian_weights,
+    get_grid_from_atlas,
+    parameterize_bundle,
+    spectra_assignment_map,
+    spectra_profile,
+)
 from dipy.tracking.streamline import Streamlines
 
 
@@ -182,3 +193,186 @@ def test_buan_profile():
         affine,
         no_disks=10,
     )
+
+
+def test_compute_robust_centroid():
+    x = np.linspace(0, 20, 21)
+    bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.zeros_like(x)))
+            for y in [-2, -1, 0, 1, 2]
+        ]
+    )
+
+    centroid = compute_robust_centroid(bundle, n_segments=10)
+
+    assert centroid.shape == (10, 3)
+    assert_allclose(centroid[:, 1], 0, atol=1e-6)
+    assert_allclose(centroid[:, 2], 0, atol=1e-6)
+
+
+def test_create_radial_bins():
+    radial_distance = np.array([-2, -1, 0, 1, 2])
+
+    r_index, n_radial, r_edges = create_radial_bins(radial_distance, n_radial=3)
+
+    assert n_radial == 3
+    assert len(r_edges) == 4
+    assert np.all(r_index >= 0)
+    assert np.all(r_index < n_radial)
+
+
+def test_get_grid_from_atlas():
+    x = np.linspace(0, 20, 21)
+    bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.zeros_like(x)))
+            for y in [-2, -1, 0, 1, 2]
+        ]
+    )
+
+    result = get_grid_from_atlas(bundle, n_segments=10, n_radial=3)
+    s_index, r_index, centroid, radial_vectors, r_edges, s_len, r_len = result
+
+    assert centroid.shape == (10, 3)
+    assert radial_vectors.shape == (10, 3)
+    assert len(r_edges) == 4
+    assert np.all(s_index >= 0)
+    assert np.all(s_index < 10)
+    assert np.all(r_index >= 0)
+    assert np.all(r_index < 3)
+    assert s_len > 0
+    assert r_len > 0
+
+    assert_allclose(np.linalg.norm(radial_vectors, axis=1), 1, atol=1e-6)
+
+
+def test_parameterize_bundle():
+    x = np.linspace(0, 20, 21)
+
+    model_bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.zeros_like(x)))
+            for y in [-2, -1, 0, 1, 2]
+        ]
+    )
+
+    target_bundle = Streamlines(
+        [np.column_stack((x, np.full_like(x, y), np.zeros_like(x))) for y in [-1, 0, 1]]
+    )
+
+    result = get_grid_from_atlas(model_bundle, n_segments=10, n_radial=3)
+    _, _, centroid, radial_vectors, r_edges, _, _ = result
+
+    s_index, r_index, dist, valid_mask, counts = parameterize_bundle(
+        target_bundle, centroid, radial_vectors, r_edges
+    )
+
+    n_points = sum(len(streamline) for streamline in target_bundle)
+
+    assert len(s_index) == n_points
+    assert len(r_index) == n_points
+    assert len(dist) == n_points
+    assert len(valid_mask) == n_points
+    assert counts.shape == (10, 3)
+
+    assert np.all(s_index >= 0)
+    assert np.all(s_index < 10)
+    assert np.all(r_index >= 0)
+    assert np.all(r_index < 3)
+    assert np.all(dist >= 0)
+
+
+def test_spectra_assignment_map():
+    x = np.linspace(0, 20, 21)
+
+    model_bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.zeros_like(x)))
+            for y in [-2, -1, 0, 1, 2]
+        ]
+    )
+
+    target_bundle = Streamlines(
+        [np.column_stack((x, np.full_like(x, y), np.zeros_like(x))) for y in [-1, 0, 1]]
+    )
+
+    s_index, r_index, dist, valid_mask, counts = spectra_assignment_map(
+        target_bundle, model_bundle, n_segments=10, n_radial=3
+    )
+
+    n_points = sum(len(streamline) for streamline in target_bundle)
+
+    assert len(s_index) == n_points
+    assert len(r_index) == n_points
+    assert len(dist) == n_points
+    assert len(valid_mask) == n_points
+    assert counts.shape == (10, 3)
+
+    assert np.all(s_index >= 0)
+    assert np.all(s_index < 10)
+    assert np.all(r_index >= 0)
+    assert np.all(r_index < 3)
+
+
+def test_spectra_radial_assignment():
+    x = np.linspace(0, 20, 21)
+
+    model_bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.zeros_like(x)))
+            for y in [-2, -1, 0, 1, 2]
+        ]
+    )
+
+    lower = np.column_stack((x, np.full_like(x, -1.5), np.zeros_like(x)))
+    upper = np.column_stack((x, np.full_like(x, 1.5), np.zeros_like(x)))
+
+    target_bundle = Streamlines([lower, upper])
+
+    _, r_index, _, _, _ = spectra_assignment_map(
+        target_bundle, model_bundle, n_segments=10, n_radial=3
+    )
+
+    n_points = len(x)
+    lower_index = r_index[:n_points]
+    upper_index = r_index[n_points:]
+
+    assert np.median(lower_index) != np.median(upper_index)
+
+
+def test_spectra_profile():
+    x = np.linspace(2, 22, 101)
+
+    model_bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.full_like(x, 10)))
+            for y in np.linspace(8, 12, 61)
+        ]
+    )
+
+    bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.full_like(x, 10)))
+            for y in np.linspace(8.5, 11.5, 61)
+        ]
+    )
+
+    metric = np.full((30, 30, 30), 2.5)
+
+    profile = spectra_profile(
+        model_bundle,
+        bundle,
+        bundle,
+        metric,
+        np.eye(4),
+        n_segments=10,
+        n_radial=3,
+    )
+
+    assert profile.shape == (10, 3)
+
+    valid = np.isfinite(profile)
+
+    assert np.any(valid)
+    assert_allclose(profile[valid], 2.5)
