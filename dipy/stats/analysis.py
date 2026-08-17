@@ -711,6 +711,10 @@ def spectra_assignment_map(
     counts : ndarray
         Number of points in each SPECTRA grid cell.
 
+    References
+    ----------
+    .. footbibliography::
+
     """
     _, _, centroid, radial_vectors, radial_edges, _, _ = get_grid_from_atlas(
         model_bundle,
@@ -832,6 +836,10 @@ def spectra_profile(
     -------
     profile : ndarray
         Two-dimensional bundle profile with shape ``(n_segments, n_radial)``.
+
+    References
+    ----------
+    .. footbibliography::
 
     """
     if len(model_bundle) == 0 or len(bundle) == 0 or len(orig_bundle) == 0:
