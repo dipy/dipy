@@ -1765,6 +1765,38 @@ def test_gradient_3d(rng):
 
 
 @set_random_number_generator(1234)
+def test_gradient_threading(rng):
+    """Threaded dense gradients match one-thread gradients."""
+    for shape in ((32, 29), (16, 15, 14)):
+        dim = len(shape)
+        img_world2grid = np.eye(dim + 1)
+        img_spacing = np.ones(dim)
+        out_grid2world = np.eye(dim + 1)
+
+        for dtype in (np.float32, np.float64):
+            img = rng.normal(size=shape).astype(dtype)
+            serial, serial_inside = vfu.gradient(
+                img,
+                img_world2grid,
+                img_spacing,
+                shape,
+                out_grid2world,
+                num_threads=1,
+            )
+            threaded, threaded_inside = vfu.gradient(
+                img,
+                img_world2grid,
+                img_spacing,
+                shape,
+                out_grid2world,
+                num_threads=2,
+            )
+
+            assert_array_equal(threaded, serial)
+            assert_array_equal(threaded_inside, serial_inside)
+
+
+@set_random_number_generator(1234)
 def test_compose_vector_fields_threading(rng):
     """Threaded composition matches one-thread composition and statistics."""
     cases = (
