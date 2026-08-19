@@ -94,16 +94,23 @@ def set_random_number_generator(seed_v=1234):
     """
 
     def _set_random_number_generator(func):
-        def _set_random_number_generator_wrapper(pytestconfig, *args, **kwargs):
+        @wraps(func)
+        def _set_random_number_generator_wrapper(*args, **kwargs):
             rng = np.random.default_rng(seed_v)
             kwargs["rng"] = rng
-            signature = inspect.signature(func)
-            if pytestconfig and "pytestconfig" in signature.parameters.keys():
-                output = func(pytestconfig, *args, **kwargs)
-            else:
-                output = func(*args, **kwargs)
-            return output
 
+            sig = inspect.signature(func)
+            params = sig.parameters
+
+            # If the wrapped test expects pytestconfig, preserve it as the
+            # first positional argument when present.
+            if "pytestconfig" in params and args:
+                return func(*args, **kwargs)
+
+            return func(*args, **kwargs)
+
+        _set_random_number_generator_wrapper.__wrapped__ = func
+        _set_random_number_generator_wrapper.__signature__ = inspect.signature(func)
         return _set_random_number_generator_wrapper
 
     return _set_random_number_generator

@@ -185,7 +185,7 @@ def test_parzen_joint_histogram():
 
 
 @set_random_number_generator(1246592)
-def test_parzen_densities(rng):
+def test_parzen_densities(rng=None):
     # Test the computation of the joint intensity distribution
     # using a dense and a sparse set of values
     nbins = 32
@@ -265,7 +265,7 @@ def test_parzen_densities(rng):
 
 
 @set_random_number_generator(1246592)
-def test_dense_mi_update(rng):
+def test_dense_mi_update(rng=None):
     # Compare the analytical and numerical (finite differences) gradient of
     # mutual information w.r.t. a local displacement at one voxel. The effect
     # of a small displacement is approximated directly in intensity space
@@ -394,7 +394,7 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1, rng=None):
 
 
 @set_random_number_generator(3147702)
-def test_joint_pdf_gradients_dense(rng):
+def test_joint_pdf_gradients_dense(rng=None):
     # Compare the analytical and numerical (finite differences) gradient of
     # the joint distribution (i.e. derivatives of each histogram cell) w.r.t.
     # the transform parameters. Since the histograms are discrete partitions
@@ -501,7 +501,7 @@ def test_joint_pdf_gradients_dense(rng):
 
 
 @set_random_number_generator(3147702)
-def test_joint_pdf_gradients_sparse(rng):
+def test_joint_pdf_gradients_sparse(rng=None):
     h = 1e-4
 
     # Make sure dictionary entries are processed in the same order regardless

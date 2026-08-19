@@ -347,7 +347,7 @@ def test_set_number_of_points():
 
 
 @set_random_number_generator(1234)
-def test_set_number_of_points_memory_leaks(rng):
+def test_set_number_of_points_memory_leaks(rng=None):
     # Test some dtypes
     dtypes = [np.float32, np.float64, np.int32, np.int64]
     for dtype in dtypes:
@@ -497,7 +497,7 @@ def test_length():
 
 
 @set_random_number_generator(1234)
-def test_length_memory_leaks(rng):
+def test_length_memory_leaks(rng=None):
     # Test some dtypes
     dtypes = [np.float32, np.float64, np.int32, np.int64]
     for dtype in dtypes:
@@ -537,7 +537,7 @@ def test_length_memory_leaks(rng):
 
 
 @set_random_number_generator()
-def test_unlist_relist_streamlines(rng):
+def test_unlist_relist_streamlines(rng=None):
     streamlines = [rng.random((10, 3)), rng.random((20, 3)), rng.random((5, 3))]
     points, offsets = unlist_streamlines(streamlines)
     assert_equal(offsets.dtype, np.dtype("i8"))
@@ -583,7 +583,7 @@ def test_transform_empty_streamlines():
 
 
 @set_random_number_generator()
-def test_deform_streamlines(rng):
+def test_deform_streamlines(rng=None):
     # Create Random deformation field
     deformation_field = rng.standard_normal((200, 200, 200, 3))
     stream2grid = np.array(
@@ -646,7 +646,7 @@ def test_center_and_transform():
 
 
 @set_random_number_generator()
-def test_select_random_streamlines(rng):
+def test_select_random_streamlines(rng=None):
     streamlines = [rng.random((10, 3)), rng.random((20, 3)), rng.random((5, 3))]
     new_streamlines = select_random_set_of_streamlines(streamlines, 2)
     assert_equal(len(new_streamlines), 2)
@@ -831,7 +831,7 @@ def test_compress_streamlines_identical_points():
 
 
 @set_random_number_generator(1234)
-def test_compress_streamlines_memory_leaks(rng):
+def test_compress_streamlines_memory_leaks(rng=None):
     # Test some dtypes
     dtypes = [np.float32, np.float64, np.int32, np.int64]
     for dtype in dtypes:

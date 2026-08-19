@@ -17,7 +17,7 @@ skip_it = use_xvfb == "skip" or not has_fury
 
 @pytest.fixture
 @set_random_number_generator()
-def slice_viz(rng):
+def slice_viz(rng=None):
     """Fixture to create a Slice Actors."""
     affine = np.array(
         [

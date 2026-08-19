@@ -1,6 +1,4 @@
 import os
-from pathlib import Path
-from tempfile import TemporaryDirectory
 import time
 
 import numpy.testing as npt
@@ -10,31 +8,30 @@ from dipy.workflows.segment import MedianOtsuFlow
 from dipy.workflows.workflow import Workflow
 
 
-def test_force_overwrite():
-    with TemporaryDirectory() as out_dir:
-        data_path, _, _ = get_fnames(name="small_25")
-        mo_flow = MedianOtsuFlow(output_strategy="absolute")
+def test_force_overwrite(tmp_path):
+    data_path, _, _ = get_fnames(name="small_25")
+    mo_flow = MedianOtsuFlow(output_strategy="absolute")
 
-        # Generate the first results
-        mo_flow.run(data_path, out_dir=out_dir, vol_idx=[0])
-        mask_file = mo_flow.last_generated_outputs["out_mask"]
-        first_time = os.path.getmtime(mask_file)
+    # Generate the first results
+    mo_flow.run(data_path, out_dir=tmp_path, vol_idx=[0])
+    mask_file = mo_flow.last_generated_outputs["out_mask"]
+    first_time = os.path.getmtime(mask_file)
 
-        # re-run with no force overwrite, modified time should not change
-        mo_flow.run(data_path, out_dir=out_dir)
-        mask_file = mo_flow.last_generated_outputs["out_mask"]
-        second_time = os.path.getmtime(mask_file)
-        assert first_time == second_time
+    # re-run with no force overwrite, modified time should not change
+    mo_flow.run(data_path, out_dir=tmp_path)
+    mask_file = mo_flow.last_generated_outputs["out_mask"]
+    second_time = os.path.getmtime(mask_file)
+    assert first_time == second_time
 
-        # re-run with force overwrite, modified time should change
-        mo_flow = MedianOtsuFlow(output_strategy="absolute", force=True)
-        # Make sure that at least one second elapsed, so that time-stamp is
-        # different (sometimes measured in whole seconds)
-        time.sleep(1)
-        mo_flow.run(data_path, out_dir=out_dir, vol_idx=[0])
-        mask_file = mo_flow.last_generated_outputs["out_mask"]
-        third_time = os.path.getmtime(mask_file)
-        assert third_time != second_time
+    # re-run with force overwrite, modified time should change
+    mo_flow = MedianOtsuFlow(output_strategy="absolute", force=True)
+    # Make sure that at least one second elapsed, so that time-stamp is
+    # different (sometimes measured in whole seconds)
+    time.sleep(1)
+    mo_flow.run(data_path, out_dir=tmp_path, vol_idx=[0])
+    mask_file = mo_flow.last_generated_outputs["out_mask"]
+    third_time = os.path.getmtime(mask_file)
+    assert third_time != second_time
 
 
 def test_get_sub_runs():
@@ -47,7 +44,7 @@ def test_run():
     npt.assert_raises(Exception, wf.run, None)
 
 
-def test_missing_file():
+def test_missing_file(tmp_path):
     # The function is invoking a dummy workflow with a non-existent file.
     # So, an OSError will be raised.
 
@@ -66,5 +63,4 @@ def test_missing_file():
             _ = self.get_io_iterator()
 
     dummyflow = TestMissingFile()
-    with TemporaryDirectory() as tempdir:
-        npt.assert_raises(OSError, dummyflow.run, str(Path(tempdir) / "dummy_file.txt"))
+    npt.assert_raises(OSError, dummyflow.run, str(tmp_path / "dummy_file.txt"))

@@ -17,7 +17,7 @@ from dipy.utils.omp import cpu_count, have_openmp
 
 
 @set_random_number_generator()
-def test_nlmeans_padding(rng):
+def test_nlmeans_padding(rng=None):
     S0 = 100 + 2 * rng.standard_normal((50, 50, 50))
     S0 = S0.astype("f8")
     S0n = add_padding_reflection(S0, 5)
@@ -43,7 +43,7 @@ def test_nlmeans_wrong():
 
 
 @set_random_number_generator()
-def test_nlmeans_random_noise(rng):
+def test_nlmeans_random_noise(rng=None):
     """Test random noise reduction with classic method."""
     S0 = 100 + 2 * rng.standard_normal((22, 23, 30))
 
@@ -58,7 +58,7 @@ def test_nlmeans_random_noise(rng):
 
 
 @set_random_number_generator()
-def test_nlmeans_boundary(rng):
+def test_nlmeans_boundary(rng=None):
     """Test boundary preservation with classic method."""
     S0 = 100 + np.zeros((20, 20, 20))
     noise = 2 * rng.standard_normal((20, 20, 20))
@@ -72,7 +72,7 @@ def test_nlmeans_boundary(rng):
 
 
 @set_random_number_generator(42)
-def test_nlmeans_rician_noise_reduction(rng):
+def test_nlmeans_rician_noise_reduction(rng=None):
     """Test rician=True output is non-negative and reduces variance."""
     clean = np.zeros((30, 30, 30), dtype="f8")
     clean[8:22, 8:22, 8:22] = 100.0

@@ -18,7 +18,7 @@ from dipy.testing.decorators import set_random_number_generator
 
 
 @set_random_number_generator(3921116)
-def test_random_displacement_field_2d(rng):
+def test_random_displacement_field_2d(rng=None):
     from_shape = (25, 32)
     to_shape = (33, 29)
 
@@ -103,7 +103,7 @@ def test_random_displacement_field_2d(rng):
 
 
 @set_random_number_generator(7127562)
-def test_random_displacement_field_3d(rng):
+def test_random_displacement_field_3d(rng=None):
     from_shape = (25, 32, 31)
     to_shape = (33, 29, 35)
 
@@ -636,7 +636,7 @@ def test_warping_3d():
 
 
 @set_random_number_generator(1234)
-def test_warping_threading(rng):
+def test_warping_threading(rng=None):
     """Threaded warping matches one-thread warping."""
     cases = (
         (vfu.warp_2d, vfu.warp_2d_nn, (32, 29), 2),
@@ -848,7 +848,7 @@ def test_affine_transforms_3d():
 
 
 @set_random_number_generator(8315759)
-def test_compose_vector_fields_2d(rng):
+def test_compose_vector_fields_2d(rng=None):
     r"""
     Creates two random displacement field that exactly map pixels from an input
     image to an output image. The resulting displacements and their
@@ -1022,7 +1022,7 @@ def test_compose_vector_fields_2d(rng):
 
 
 @set_random_number_generator(8315759)
-def test_compose_vector_fields_3d(rng):
+def test_compose_vector_fields_3d(rng=None):
     r"""
     Creates two random displacement field that exactly map pixels from an input
     image to an output image. The resulting displacements and their
@@ -1373,7 +1373,7 @@ def test_resample_vector_field_3d():
 
 
 @set_random_number_generator(8315759)
-def test_downsample_scalar_field_2d(rng):
+def test_downsample_scalar_field_2d(rng=None):
     size = 32
     sh = (size, size)
     for reduce_r in [True, False]:
@@ -1405,7 +1405,7 @@ def test_downsample_scalar_field_2d(rng):
 
 
 @set_random_number_generator(2115556)
-def test_downsample_displacement_field_2d(rng):
+def test_downsample_displacement_field_2d(rng=None):
     size = 32
     sh = (size, size, 2)
     for reduce_r in [True, False]:
@@ -1437,7 +1437,7 @@ def test_downsample_displacement_field_2d(rng):
 
 
 @set_random_number_generator(8315759)
-def test_downsample_scalar_field_3d(rng):
+def test_downsample_scalar_field_3d(rng=None):
     size = 32
     sh = (size, size, size)
     for reduce_s in [True, False]:
@@ -1479,7 +1479,7 @@ def test_downsample_scalar_field_3d(rng):
 
 
 @set_random_number_generator(8315759)
-def test_downsample_displacement_field_3d(rng):
+def test_downsample_displacement_field_3d(rng=None):
     size = 32
     sh = (size, size, size, 3)
     for reduce_s in [True, False]:
@@ -1584,7 +1584,7 @@ def test_reorient_vector_field_3d():
 
 
 @set_random_number_generator(1134781)
-def test_reorient_random_vector_fields(rng):
+def test_reorient_random_vector_fields(rng=None):
     # Test reorienting vector field
     for n_dims, func in (
         (2, vfu.reorient_vector_field_2d),
@@ -1609,7 +1609,7 @@ def test_reorient_random_vector_fields(rng):
 
 
 @set_random_number_generator(3921116)
-def test_gradient_2d(rng):
+def test_gradient_2d(rng=None):
     sh = (25, 32)
     # Create grid coordinates
     x_0 = np.asarray(range(sh[0]))
@@ -1681,7 +1681,7 @@ def test_gradient_2d(rng):
 
 
 @set_random_number_generator(3921116)
-def test_gradient_3d(rng):
+def test_gradient_3d(rng=None):
     shape = (25, 32, 15)
     # Create grid coordinates
     x_0 = np.asarray(range(shape[0]))
@@ -1765,7 +1765,7 @@ def test_gradient_3d(rng):
 
 
 @set_random_number_generator(1234)
-def test_compose_vector_fields_threading(rng):
+def test_compose_vector_fields_threading(rng=None):
     """Threaded composition matches one-thread composition and statistics."""
     cases = (
         (vfu.compose_vector_fields_2d, (32, 29, 2)),

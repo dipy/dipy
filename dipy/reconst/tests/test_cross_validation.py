@@ -21,7 +21,7 @@ fdata, fbval, fbvec = dpd.get_fnames(name="small_64D")
 
 
 @set_random_number_generator()
-def test_coeff_of_determination(rng):
+def test_coeff_of_determination(rng=None):
     model = rng.standard_normal((10, 10, 10, 150))
     data = np.copy(model)
     # If the model predicts the data perfectly, the COD is all 100s:
@@ -64,7 +64,7 @@ def test_dti_xval():
 
 
 @set_random_number_generator(12345)
-def test_csd_xval(rng):
+def test_csd_xval(rng=None):
     # First, let's see that it works with some data:
     data = load_nifti_data(fdata)[1:3, 1:3, 1:3]  # Make it *small*
     gtab = gt.gradient_table(fbval, bvecs=fbvec)

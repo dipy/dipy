@@ -57,7 +57,7 @@ from dipy.testing.decorators import set_random_number_generator
 
 
 @set_random_number_generator(42)
-def test_anisotropic_power_non_negative(rng):
+def test_anisotropic_power_non_negative(rng=None):
     sh_coeffs = rng.normal(size=(10, 15))
 
     ap = anisotropic_power(sh_coeffs, non_negative=True)
@@ -66,7 +66,7 @@ def test_anisotropic_power_non_negative(rng):
 
 
 @set_random_number_generator(0)
-def test_anisotropic_power_negative_allowed(rng):
+def test_anisotropic_power_negative_allowed(rng=None):
     # Use very small coefficients so ap < norm_factor, yielding negative log_ap
     sh_coeffs = rng.normal(size=(5, 15)) * 1e-4
 

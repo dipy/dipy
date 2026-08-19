@@ -11,7 +11,7 @@ from dipy.testing.decorators import set_random_number_generator
 
 
 @set_random_number_generator(1346491)
-def test_compute_em_demons_step_2d(rng):
+def test_compute_em_demons_step_2d(rng=None):
     r"""
     Compares the output of the demons step in 2d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the
@@ -154,7 +154,7 @@ def test_compute_em_demons_step_2d(rng):
 
 
 @set_random_number_generator(1346491)
-def test_compute_em_demons_step_3d(rng):
+def test_compute_em_demons_step_3d(rng=None):
     r"""
     Compares the output of the demons step in 3d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the
@@ -302,7 +302,7 @@ def test_compute_em_demons_step_3d(rng):
 
 
 @set_random_number_generator(1246592)
-def test_quantize_positive_2d(rng):
+def test_quantize_positive_2d(rng=None):
     # an arbitrary number of quantization levels
     num_levels = 11
     # arbitrary test image shape (must contain at least 3 elements)
@@ -364,7 +364,7 @@ def test_quantize_positive_2d(rng):
 
 
 @set_random_number_generator(1246592)
-def test_quantize_positive_3d(rng):
+def test_quantize_positive_3d(rng=None):
     # an arbitrary number of quantization levels
     num_levels = 11
     # arbitrary test image shape (must contain at least 3 elements)
@@ -426,7 +426,7 @@ def test_quantize_positive_3d(rng):
 
 
 @set_random_number_generator(1246592)
-def test_compute_masked_class_stats_2d(rng):
+def test_compute_masked_class_stats_2d(rng=None):
     shape = (32, 32)
 
     # Create random labels
@@ -452,7 +452,7 @@ def test_compute_masked_class_stats_2d(rng):
 
 
 @set_random_number_generator(1246592)
-def test_compute_masked_class_stats_3d(rng):
+def test_compute_masked_class_stats_3d(rng=None):
     shape = (32, 32, 32)
 
     # Create random labels

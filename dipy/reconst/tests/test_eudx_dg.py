@@ -9,7 +9,7 @@ from dipy.testing.decorators import set_random_number_generator
 
 
 @set_random_number_generator()
-def test_EuDXDirectionGetter(rng):
+def test_EuDXDirectionGetter(rng=None):
     class SillyModel:
         def fit(self, data, mask=None):
             return SillyFit(self)

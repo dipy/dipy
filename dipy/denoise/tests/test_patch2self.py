@@ -27,7 +27,7 @@ needs_sklearn = pytest.mark.skipif(not has_sklearn, reason="Requires sklearn")
 
 @needs_sklearn
 @set_random_number_generator(1234)
-def test_patch2self_random_noise(rng):
+def test_patch2self_random_noise(rng=None):
     S0 = 30 + 2 * rng.standard_normal((20, 20, 20, 50))
 
     bvals = np.repeat(30, 50)
@@ -96,7 +96,7 @@ def test_patch2self_random_noise(rng):
 
 @needs_sklearn
 @set_random_number_generator(1234)
-def test_patch2self_boundary(rng):
+def test_patch2self_boundary(rng=None):
     # patch2self preserves boundaries
     S0 = 100 + np.zeros((20, 20, 20, 20))
     noise = 2 * rng.standard_normal((20, 20, 20, 20))
@@ -182,7 +182,7 @@ def rfiw_phantom(gtab, snr=None, rng=None):
 
 @needs_sklearn
 @set_random_number_generator(4321)
-def test_phantom(rng):
+def test_phantom(rng=None):
     # generate a gradient table for phantom data
     directions8 = generate_bvecs(8)
     directions30 = generate_bvecs(20)
@@ -319,7 +319,7 @@ def test_single_slice_data():
 
 @needs_sklearn
 @set_random_number_generator(2026)
-def test_patch2self_small_data_edge_cases(rng):
+def test_patch2self_small_data_edge_cases(rng=None):
     data = (30 + 2 * rng.standard_normal((4, 4, 4, 5))).astype(np.float64)
     bvals = np.array([0, 1000, 1000, 1000, 1000])
 
@@ -332,7 +332,7 @@ def test_patch2self_small_data_edge_cases(rng):
 
 @needs_sklearn
 @set_random_number_generator(2025)
-def test_patch2self_v3_preserves_out_dtype_and_precision_invariance(rng):
+def test_patch2self_v3_preserves_out_dtype_and_precision_invariance(rng=None):
     shape = (10, 10, 6, 13)
     base = 30.0 + 2.0 * rng.standard_normal(shape)
     bvals = np.repeat(1000.0, shape[-1])
@@ -375,7 +375,7 @@ def test_patch_radius_requires_scalar_or_3_tuple():
 
 @needs_sklearn
 @set_random_number_generator(2026)
-def test_fit_denoising_model_copy_x_is_keyword_only(rng):
+def test_fit_denoising_model_copy_x_is_keyword_only(rng=None):
     train = rng.standard_normal((4, 3, 8))
 
     with pytest.raises(TypeError, match="positional|keyword-only"):
@@ -394,7 +394,7 @@ def test_fit_denoising_model_copy_x_is_keyword_only(rng):
 
 @needs_sklearn
 @set_random_number_generator(2026)
-def test_fit_denoising_model_accepts_non_linear_base_estimator(rng):
+def test_fit_denoising_model_accepts_non_linear_base_estimator(rng=None):
     from sklearn.dummy import DummyRegressor
 
     train = rng.standard_normal((4, 3, 8))
@@ -471,7 +471,7 @@ def test_patch2self_v1_models_and_verbose(model):
 
 @needs_sklearn
 @set_random_number_generator(2026)
-def test_patch2self_v3_b0_passthrough_when_b0_denoising_disabled(rng):
+def test_patch2self_v3_b0_passthrough_when_b0_denoising_disabled(rng=None):
     # Regression test: when b0_denoising=False, the previous code copied
     # data_tmp[..., b0_counter] which indexed the wrong volume whenever the
     # b0s were not the leading volumes. The fix indexes by vol_idx so each
@@ -498,7 +498,7 @@ def test_patch2self_v3_b0_passthrough_when_b0_denoising_disabled(rng):
 
 @needs_sklearn
 @set_random_number_generator(2026)
-def test_patch2self_v3_volumes_count_not_divisible_by_5(rng):
+def test_patch2self_v3_volumes_count_not_divisible_by_5(rng=None):
     # Regression test for the buffer-flush bug: when data_shape[-1] % 5 != 0,
     # the previous code computed denoised_arr_idx and full_result_idx using
     # different bases, leaving a tail of zero volumes in the output.
@@ -516,7 +516,7 @@ def test_patch2self_v3_volumes_count_not_divisible_by_5(rng):
 
 @needs_sklearn
 @set_random_number_generator(2026)
-def test_patch2self_v3_small_spatial_uses_minimum_chunk_size(rng):
+def test_patch2self_v3_small_spatial_uses_minimum_chunk_size(rng=None):
     # Regression test: vol_denoise computed `p = data_tmp.shape[0] // 10`,
     # which became 0 when the flattened spatial dimension had < 10 voxels and
     # caused an empty inner loop. The fix uses `max(..., 1)`.

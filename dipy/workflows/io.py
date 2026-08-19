@@ -878,7 +878,7 @@ class FetchFlow(Workflow):
         """
         if out_dir:
             dipy_home = os.environ.get("DIPY_HOME", None)
-            os.environ["DIPY_HOME"] = out_dir
+            os.environ["DIPY_HOME"] = str(out_dir)
 
         available_data = FetchFlow.get_fetcher_datanames()
 

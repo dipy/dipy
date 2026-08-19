@@ -91,7 +91,7 @@ def mi_energy_from_pdfs(joint, smarginal, mmarginal):
 
 
 @set_random_number_generator(7181309)
-def test_mi_metric_energy_matches_negative_mutual_information(rng):
+def test_mi_metric_energy_matches_negative_mutual_information(rng=None):
     """Verify that MIMetric reports the negative mutual information energy.
 
     The forward and backward MI steps both should store the negative of the
@@ -127,7 +127,7 @@ def test_mi_metric_energy_matches_negative_mutual_information(rng):
 
 
 @set_random_number_generator(7181309)
-def test_cc_metric_energy_matches_local_cross_correlation(rng):
+def test_cc_metric_energy_matches_local_cross_correlation(rng=None):
     """Verify that CCMetric reports the local cross-correlation energy.
 
     The forward and backward CC steps both should store the same scalar data
@@ -153,7 +153,7 @@ def test_cc_metric_energy_matches_local_cross_correlation(rng):
 
 
 @set_random_number_generator(7181309)
-def test_ssd_metric_energy_matches_squared_difference(rng):
+def test_ssd_metric_energy_matches_squared_difference(rng=None):
     """Verify that SSDMetric reports the sum of squared differences energy.
 
     The forward and backward SSD steps both should store the same
@@ -177,7 +177,7 @@ def test_ssd_metric_energy_matches_squared_difference(rng):
 
 
 @set_random_number_generator(7181309)
-def test_EMMetric_image_dynamics(rng):
+def test_EMMetric_image_dynamics(rng=None):
     metric = EMMetric(2)
 
     target_shape = (10, 10)

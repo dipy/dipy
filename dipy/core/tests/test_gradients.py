@@ -416,7 +416,7 @@ def test_qvalues():
 
 
 @set_random_number_generator()
-def test_reorient_bvecs(rng):
+def test_reorient_bvecs(rng=None):
     sq2 = np.sqrt(2) / 2
     bvals = np.concatenate([[0], np.ones(6) * 1000])
     bvecs = np.array(
@@ -516,7 +516,7 @@ def test_nan_bvecs():
 
 
 @set_random_number_generator()
-def test_generate_bvecs(rng):
+def test_generate_bvecs(rng=None):
     """Tests whether we have properly generated bvecs."""
     # Test if the generated b-vectors are unit vectors
     bvecs = generate_bvecs(100, rng=rng)
@@ -709,7 +709,7 @@ def test_check_multi_b():
 
 
 @set_random_number_generator()
-def test_btens_to_params(rng):
+def test_btens_to_params(rng=None):
     """
     Checks if bvals, bdeltas and b_etas are as expected for 4 b-tensor shapes
     (LTE, PTE, STE, CTE) as well as scaled and rotated versions of them

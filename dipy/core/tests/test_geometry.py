@@ -150,7 +150,7 @@ def test_sphere_distance():
 
 
 @set_random_number_generator()
-def test_vector_cosine(rng):
+def test_vector_cosine(rng=None):
     a = [0, 1]
     b = [1, 0]
     assert_array_almost_equal(vector_cosine(a, b), 0)
@@ -266,7 +266,7 @@ def test_compose_transformations():
 
 
 @set_random_number_generator()
-def test_compose_decompose_matrix(rng):
+def test_compose_decompose_matrix(rng=None):
     for translate in permutations(40 * rng.random(3), 3):
         for angles in permutations(np.deg2rad(90 * rng.random(3)), 3):
             for shears in permutations(3 * rng.random(3), 3):
@@ -346,7 +346,7 @@ def _rotation_from_angles(r):
 
 
 @set_random_number_generator()
-def test_dist_to_corner(rng):
+def test_dist_to_corner(rng=None):
     affine = np.eye(4)
     # Calculate the distance with the pythagorean theorem:
     pythagoras = np.sqrt(np.sum((np.diag(affine)[:-1] / 2) ** 2))

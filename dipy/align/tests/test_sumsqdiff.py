@@ -130,7 +130,7 @@ def iterate_residual_field_ssd_3d(
 
 
 @set_random_number_generator(5512751)
-def test_compute_residual_displacement_field_ssd_2d(rng):
+def test_compute_residual_displacement_field_ssd_2d(rng=None):
     # Select arbitrary images' shape (same shape for both images)
     sh = (20, 10)
 
@@ -283,7 +283,7 @@ def test_compute_residual_displacement_field_ssd_2d(rng):
 
 
 @set_random_number_generator(5512751)
-def test_compute_residual_displacement_field_ssd_3d(rng):
+def test_compute_residual_displacement_field_ssd_3d(rng=None):
     # Select arbitrary images' shape (same shape for both images)
     sh = (20, 15, 10)
 
@@ -587,7 +587,7 @@ def test_compute_energy_ssd_3d():
 
 
 @set_random_number_generator(1137271)
-def test_compute_ssd_demons_step_2d(rng):
+def test_compute_ssd_demons_step_2d(rng=None):
     r"""
     Compares the output of the demons step in 2d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the
@@ -682,7 +682,7 @@ def test_compute_ssd_demons_step_2d(rng):
 
 
 @set_random_number_generator(1137271)
-def test_compute_ssd_demons_step_3d(rng):
+def test_compute_ssd_demons_step_3d(rng=None):
     r"""
     Compares the output of the demons step in 3d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the

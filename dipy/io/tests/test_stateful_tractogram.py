@@ -2,7 +2,6 @@ from copy import deepcopy
 import itertools
 from pathlib import Path
 import sys
-from tempfile import TemporaryDirectory
 from urllib.error import HTTPError, URLError
 
 import numpy as np
@@ -249,7 +248,7 @@ def test_empty_sft_case():
 
 @pytest.mark.skipif(not have_vtk, reason="Requires FURY")
 @pytest.mark.parametrize("ext", EXTENSIONS)
-def test_iterative_saving_loading(ext):
+def test_iterative_saving_loading(tmp_path, ext):
     # VTK/FIB in the gold standard dataset are in LPSMM space.
     from_space = Space.LPSMM if ext in ["vtk", "fib"] else Space.RASMM
     sft = load_tractogram(
@@ -258,20 +257,19 @@ def test_iterative_saving_loading(ext):
         to_space=Space.RASMM,
         from_space=from_space,
     )
-    with TemporaryDirectory() as tmp_dir:
-        save_tractogram(sft, Path(tmp_dir) / f"gs_iter.{ext}")
-        tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
+    save_tractogram(sft, tmp_path / f"gs_iter.{ext}")
+    tmp_points_rasmm = np.loadtxt(FILEPATH_DIX["gs_streamlines_rasmm_space.txt"])
 
-        for _ in range(100):
-            sft_iter = load_tractogram(
-                Path(tmp_dir) / f"gs_iter.{ext}",
-                FILEPATH_DIX["gs_volume.nii"],
-                to_space=Space.RASMM,
-            )
-            npt.assert_allclose(
-                tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
-            )
-            save_tractogram(sft_iter, Path(tmp_dir) / f"gs_iter.{ext}")
+    for _ in range(100):
+        sft_iter = load_tractogram(
+            tmp_path / f"gs_iter.{ext}",
+            FILEPATH_DIX["gs_volume.nii"],
+            to_space=Space.RASMM,
+        )
+        npt.assert_allclose(
+            tmp_points_rasmm, sft_iter.streamlines.get_data(), atol=1e-3, rtol=1e-6
+        )
+        save_tractogram(sft_iter, tmp_path / f"gs_iter.{ext}")
 
 
 def test_iterative_to_vox_transformation():
@@ -457,7 +455,7 @@ def test_bounding_bbox_valid(standard):
 
 
 @set_random_number_generator(0)
-def test_random_point_color(rng):
+def test_random_point_color(tmp_path, rng=None):
     sft = load_tractogram(
         FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"]
     )
@@ -467,15 +465,14 @@ def test_random_point_color(rng):
 
     try:
         sft.data_per_point = coloring_dict
-        with TemporaryDirectory() as tmp_dir:
-            save_tractogram(sft, Path(tmp_dir) / "random_points_color.trk")
+        save_tractogram(sft, tmp_path / "random_points_color.trk")
         npt.assert_(True)
     except (TypeError, ValueError):
         npt.assert_(False)
 
 
 @set_random_number_generator(0)
-def test_random_point_gray(rng):
+def test_random_point_gray(tmp_path, rng=None):
     sft = load_tractogram(
         FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"]
     )
@@ -489,15 +486,14 @@ def test_random_point_gray(rng):
 
     try:
         sft.data_per_point = coloring_dict
-        with TemporaryDirectory() as tmp_dir:
-            save_tractogram(sft, Path(tmp_dir) / "random_points_gray.trk")
+        save_tractogram(sft, tmp_path / "random_points_gray.trk")
         npt.assert_(True)
     except ValueError:
         npt.assert_(False)
 
 
 @set_random_number_generator(0)
-def test_random_streamline_color(rng):
+def test_random_streamline_color(tmp_path, rng=None):
     sft = load_tractogram(
         FILEPATH_DIX["gs_streamlines.tck"], FILEPATH_DIX["gs_volume.nii"]
     )
@@ -517,8 +513,7 @@ def test_random_streamline_color(rng):
 
     try:
         sft.data_per_point = coloring_dict
-        with TemporaryDirectory() as tmp_dir:
-            save_tractogram(sft, Path(tmp_dir) / "random_streamlines_color.trk")
+        save_tractogram(sft, tmp_path / "random_streamlines_color.trk")
         npt.assert_(True)
     except (TypeError, ValueError):
         npt.assert_(False)

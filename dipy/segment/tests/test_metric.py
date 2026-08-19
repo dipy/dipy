@@ -238,7 +238,7 @@ def test_subclassing_metric():
 
 
 @set_random_number_generator()
-def test_distance_matrix(rng):
+def test_distance_matrix(rng=None):
     metric = dipysmetric.SumPointwiseEuclideanMetric()
 
     for dtype in [np.int32, np.int64, np.float32, np.float64]:
@@ -269,7 +269,7 @@ def test_distance_matrix(rng):
 
 
 @set_random_number_generator()
-def test_mean_distances(rng):
+def test_mean_distances(rng=None):
     nb_slines = 10
     nb_pts = 22
     dim = 3
