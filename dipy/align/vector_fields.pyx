@@ -2847,9 +2847,113 @@ def create_sphere(cnp.npy_intp nslices, cnp.npy_intp nrows,
     return np.asarray(s)
 
 
+cdef void _gradient_3d_slice(floating[:, :, :] img,
+                             double[:, :] img_world2grid,
+                             double[:] img_spacing,
+                             double[:, :] out_grid2world,
+                             floating[:, :, :, :] out,
+                             int[:, :, :] inside,
+                             cnp.npy_intp k,
+                             cnp.npy_intp nrows,
+                             cnp.npy_intp ncols) noexcept nogil:
+    r"""Compute the image gradient for one slice of a 3D output volume.
+
+    This performs the inner two loops of :func:`_gradient_3d` for one output
+    volume slice. It was added so the outer slice loop can run with ``prange``
+    while the temporary interpolation arrays remain local to each worker.
+
+    Parameters
+    ----------
+    img : array, shape (S, R, C)
+        the input volume whose gradient will be computed
+    img_world2grid : array, shape (4, 4)
+        the space-to-grid transform matrix associated to img
+    img_spacing : array, shape (3,)
+        the spacing between voxels (voxel size along each axis) of the input
+        volume
+    out_grid2world : array, shape (4, 4)
+        the grid-to-space transform associated to the sampling grid
+    out : array, shape (S', R', C', 3)
+        the buffer in which to store the image gradient
+    inside : array, shape (S', R', C')
+        the buffer in which to store the flags indicating whether the sample
+        point lies inside (=1) or outside (=0) the image grid
+    k : int
+        index of the output slice to compute.
+    nrows : int
+        number of rows in the output slice.
+    ncols : int
+        number of columns in the output slice.
+
+    Returns
+    -------
+    out : array, shape (S', R', C', 3)
+        on output, slice ``k`` contains the image gradient.
+    inside : array, shape (S', R', C')
+        on output, slice ``k`` contains the inside-image flags.
+    """
+    cdef:
+        cnp.npy_intp i, j, p, in_flag
+        double tmp
+        double x[3]
+        double dx[3]
+        double h[3]
+        double q[3]
+
+    h[0] = 0.5 * img_spacing[0]
+    h[1] = 0.5 * img_spacing[1]
+    h[2] = 0.5 * img_spacing[2]
+    for i in range(nrows):
+        for j in range(ncols):
+            inside[k, i, j] = 1
+            # Compute coordinates of index (k, i, j) in physical space
+            x[0] = _apply_affine_3d_x0(<double>k, <double>i, <double>j, 1, out_grid2world)
+            x[1] = _apply_affine_3d_x1(<double>k, <double>i, <double>j, 1, out_grid2world)
+            x[2] = _apply_affine_3d_x2(<double>k, <double>i, <double>j, 1, out_grid2world)
+            dx[0] = x[0]
+            dx[1] = x[1]
+            dx[2] = x[2]
+            for p in range(3):
+                # Compute coordinates of point dx on img's grid
+                dx[p] = x[p] - h[p]
+                q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
+                                            img_world2grid)
+                q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
+                                            img_world2grid)
+                q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
+                                            img_world2grid)
+                # Interpolate img at q
+                in_flag = _interpolate_scalar_3d[floating](img, q[0],
+                    q[1], q[2], &out[k, i, j, p])
+                if in_flag == 0:
+                    out[k, i, j, p] = 0
+                    inside[k, i, j] = 0
+                    continue
+                tmp = out[k, i, j, p]
+                # Compute coordinates of point dx on img's grid
+                dx[p] = x[p] + h[p]
+                q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
+                                            img_world2grid)
+                q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
+                                            img_world2grid)
+                q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
+                                            img_world2grid)
+                # Interpolate img at q
+                in_flag = _interpolate_scalar_3d[floating](img, q[0],
+                                        q[1], q[2], &out[k, i, j, p])
+                if in_flag == 0:
+                    out[k, i, j, p] = 0
+                    inside[k, i, j] = 0
+                    continue
+                out[k, i, j, p] = ((out[k, i, j, p] - tmp) /
+                                    img_spacing[p])
+                dx[p] = x[p]
+
+
 def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
                  double[:] img_spacing, double[:, :] out_grid2world,
-                 floating[:, :, :, :] out, int[:, :, :] inside):
+                 floating[:, :, :, :] out, int[:, :, :] inside,
+                 *, num_threads=None):
     r""" Gradient of a 3D image in physical space coordinates
 
     Each grid cell (i, j, k) in the sampling grid (determined by
@@ -2883,65 +2987,26 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
     inside : array, shape (S', R', C')
         the buffer in which to store the flags indicating whether the sample
         point lies inside (=1) or outside (=0) the image grid
+    num_threads : int or None, optional
+        Number of OpenMP threads to use. If None, use DIPY's default thread
+        count.
     """
     cdef:
         cnp.npy_intp nslices = out.shape[0]
         cnp.npy_intp nrows = out.shape[1]
         cnp.npy_intp ncols = out.shape[2]
-        cnp.npy_intp i, j, k, in_flag
-        double tmp
-        double[:] x = np.empty(shape=(3,), dtype=np.float64)
-        double[:] dx = np.empty(shape=(3,), dtype=np.float64)
-        double[:] h = np.empty(shape=(3,), dtype=np.float64)
-        double[:] q = np.empty(shape=(3,), dtype=np.float64)
+        cnp.npy_intp k
+        int threads_to_use
+
+    threads_to_use = min(determine_num_threads(num_threads), nslices)
+
     with nogil:
-        h[0] = 0.5 * img_spacing[0]
-        h[1] = 0.5 * img_spacing[1]
-        h[2] = 0.5 * img_spacing[2]
-        for k in range(nslices):
-            for i in range(nrows):
-                for j in range(ncols):
-                    inside[k, i, j] = 1
-                    # Compute coordinates of index (k, i, j) in physical space
-                    x[0] = _apply_affine_3d_x0(<double>k, <double>i, <double>j, 1, out_grid2world)
-                    x[1] = _apply_affine_3d_x1(<double>k, <double>i, <double>j, 1, out_grid2world)
-                    x[2] = _apply_affine_3d_x2(<double>k, <double>i, <double>j, 1, out_grid2world)
-                    dx[:] = x[:]
-                    for p in range(3):
-                        # Compute coordinates of point dx on img's grid
-                        dx[p] = x[p] - h[p]
-                        q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
-                                                   img_world2grid)
-                        q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
-                                                   img_world2grid)
-                        q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
-                                                   img_world2grid)
-                        # Interpolate img at q
-                        in_flag = _interpolate_scalar_3d[floating](img, q[0],
-                            q[1], q[2], &out[k, i, j, p])
-                        if in_flag == 0:
-                            out[k, i, j, p] = 0
-                            inside[k, i, j] = 0
-                            continue
-                        tmp = out[k, i, j, p]
-                        # Compute coordinates of point dx on img's grid
-                        dx[p] = x[p] + h[p]
-                        q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
-                                                   img_world2grid)
-                        q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
-                                                   img_world2grid)
-                        q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
-                                                   img_world2grid)
-                        # Interpolate img at q
-                        in_flag = _interpolate_scalar_3d[floating](img, q[0],
-                                                q[1], q[2], &out[k, i, j, p])
-                        if in_flag == 0:
-                            out[k, i, j, p] = 0
-                            inside[k, i, j] = 0
-                            continue
-                        out[k, i, j, p] = ((out[k, i, j, p] - tmp) /
-                                           img_spacing[p])
-                        dx[p] = x[p]
+        for k in prange(
+            nslices, schedule="static", num_threads=threads_to_use
+        ):
+            _gradient_3d_slice[floating](
+                img, img_world2grid, img_spacing, out_grid2world,
+                out, inside, k, nrows, ncols)
 
 
 def _sparse_gradient_3d(floating[:, :, :] img,
@@ -3029,9 +3094,97 @@ def _sparse_gradient_3d(floating[:, :, :] img,
                 dx[p] = sample_points[i, p]
 
 
+cdef void _gradient_2d_row(floating[:, :] img,
+                           double[:, :] img_world2grid,
+                           double[:] img_spacing,
+                           double[:, :] out_grid2world,
+                           floating[:, :, :] out,
+                           int[:, :] inside,
+                           cnp.npy_intp i,
+                           cnp.npy_intp ncols) noexcept nogil:
+    r"""Compute the image gradient for one row of a 2D output image.
+
+    This performs the inner loop of :func:`_gradient_2d` for one output image
+    row. It was added so the outer row loop can run with ``prange`` while the
+    temporary interpolation arrays remain local to each worker.
+
+    Parameters
+    ----------
+    img : array, shape (R, C)
+        the input image whose gradient will be computed
+    img_world2grid : array, shape (3, 3)
+        the space-to-grid transform matrix associated to img
+    img_spacing : array, shape (2,)
+        the spacing between pixels (pixel size along each axis) of the input
+        image
+    out_grid2world : array, shape (3, 3)
+        the grid-to-space transform associated to the sampling grid
+    out : array, shape (R', C', 2)
+        the buffer in which to store the image gradient
+    inside : array, shape (R', C')
+        the buffer in which to store the flags indicating whether the sample
+        point lies inside (=1) or outside (=0) the image grid
+    i : int
+        index of the output row to compute.
+    ncols : int
+        number of columns in the output row.
+
+    Returns
+    -------
+    out : array, shape (R', C', 2)
+        on output, row ``i`` contains the image gradient.
+    inside : array, shape (R', C')
+        on output, row ``i`` contains the inside-image flags.
+    """
+    cdef:
+        cnp.npy_intp j, p, in_flag
+        double tmp
+        double x[2]
+        double dx[2]
+        double h[2]
+        double q[2]
+
+    h[0] = 0.5 * img_spacing[0]
+    h[1] = 0.5 * img_spacing[1]
+    for j in range(ncols):
+        inside[i, j] = 1
+        # Compute coordinates of index (i, j) in physical space
+        x[0] = _apply_affine_2d_x0(<double>i, <double>j, 1, out_grid2world)
+        x[1] = _apply_affine_2d_x1(<double>i, <double>j, 1, out_grid2world)
+        dx[0] = x[0]
+        dx[1] = x[1]
+        for p in range(2):
+            # Compute coordinates of point dx on img's grid
+            dx[p] = x[p] - h[p]
+            q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_world2grid)
+            q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
+            # Interpolate img at q
+            in_flag = _interpolate_scalar_2d[floating](img, q[0],
+                                            q[1], &out[i, j, p])
+            if in_flag == 0:
+                out[i, j, p] = 0
+                inside[i, j] = 0
+                continue
+            tmp = out[i, j, p]
+            # Compute coordinates of point dx on img's grid
+            dx[p] = x[p] + h[p]
+            q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_world2grid)
+            q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
+            # Interpolate img at q
+            in_flag = _interpolate_scalar_2d[floating](img, q[0],
+                                            q[1], &out[i, j, p])
+            if in_flag == 0:
+                out[i, j, p] = 0
+                inside[i, j] = 0
+                continue
+            out[i, j, p] = (out[i, j, p] - tmp) / img_spacing[p]
+            dx[p] = x[p]
+
+
 def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                  double[:] img_spacing, double[:, :] out_grid2world,
-                 floating[:, :, :] out, int[:, :] inside):
+                 floating[:, :, :] out, int[:, :] inside,
+                 *, num_threads=None):
     r""" Gradient of a 2D image in physical space coordinates
 
     Each grid cell (i, j) in the sampling grid (determined by
@@ -3059,57 +3212,30 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
         image
     out_grid2world : array, shape (3, 3)
         the grid-to-space transform associated to the sampling grid
-    out : array, shape (S', R', 2)
+    out : array, shape (R', C', 2)
         the buffer in which to store the image gradient
-    inside : array, shape (S', R')
+    inside : array, shape (R', C')
         the buffer in which to store the flags indicating whether the sample
         point lies inside (=1) or outside (=0) the image grid
+    num_threads : int or None, optional
+        Number of OpenMP threads to use. If None, use DIPY's default thread
+        count.
     """
     cdef:
         cnp.npy_intp nrows = out.shape[0]
         cnp.npy_intp ncols = out.shape[1]
-        cnp.npy_intp i, j, k, in_flag
-        double tmp
-        double[:] x = np.empty(shape=(2,), dtype=np.float64)
-        double[:] dx = np.empty(shape=(2,), dtype=np.float64)
-        double[:] h = np.empty(shape=(2,), dtype=np.float64)
-        double[:] q = np.empty(shape=(2,), dtype=np.float64)
+        cnp.npy_intp i
+        int threads_to_use
+
+    threads_to_use = min(determine_num_threads(num_threads), nrows)
+
     with nogil:
-        h[0] = 0.5 * img_spacing[0]
-        h[1] = 0.5 * img_spacing[1]
-        for i in range(nrows):
-            for j in range(ncols):
-                inside[i, j] = 1
-                # Compute coordinates of index (i, j) in physical space
-                x[0] = _apply_affine_2d_x0(<double>i, <double>j, 1, out_grid2world)
-                x[1] = _apply_affine_2d_x1(<double>i, <double>j, 1, out_grid2world)
-                dx[:] = x[:]
-                for p in range(2):
-                    # Compute coordinates of point dx on img's grid
-                    dx[p] = x[p] - h[p]
-                    q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_world2grid)
-                    q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
-                    # Interpolate img at q
-                    in_flag = _interpolate_scalar_2d[floating](img, q[0],
-                                                    q[1], &out[i, j, p])
-                    if in_flag == 0:
-                        out[i, j, p] = 0
-                        inside[i, j] = 0
-                        continue
-                    tmp = out[i, j, p]
-                    # Compute coordinates of point dx on img's grid
-                    dx[p] = x[p] + h[p]
-                    q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_world2grid)
-                    q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
-                    # Interpolate img at q
-                    in_flag = _interpolate_scalar_2d[floating](img, q[0],
-                                                    q[1], &out[i, j, p])
-                    if in_flag == 0:
-                        out[i, j, p] = 0
-                        inside[i, j] = 0
-                        continue
-                    out[i, j, p] = (out[i, j, p] - tmp) / img_spacing[p]
-                    dx[p] = x[p]
+        for i in prange(
+            nrows, schedule="static", num_threads=threads_to_use
+        ):
+            _gradient_2d_row[floating](
+                img, img_world2grid, img_spacing, out_grid2world,
+                out, inside, i, ncols)
 
 
 def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
@@ -3189,7 +3315,7 @@ def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
 
 
 def gradient(img, img_world2grid, img_spacing, out_shape,
-             out_grid2world):
+             out_grid2world, *, num_threads=None):
     r""" Gradient of an image in physical space
 
     Parameters
@@ -3205,6 +3331,9 @@ def gradient(img, img_world2grid, img_spacing, out_shape,
         the number of (slices), rows and columns of the sampling grid
     out_grid2world : array, shape (dim+1, dim+1)
         the grid-to-space transform associated to the sampling grid
+    num_threads : int or None, optional
+        Number of OpenMP threads to use. If None, use DIPY's default thread
+        count.
 
     Returns
     -------
@@ -3235,7 +3364,15 @@ def gradient(img, img_world2grid, img_spacing, out_shape,
         img_spacing = img_spacing.astype(np.float64)
     if out_grid2world.dtype != np.float64:
         out_grid2world = out_grid2world.astype(np.float64)
-    jd_grad(img, img_world2grid, img_spacing, out_grid2world, out, inside)
+    jd_grad(
+        img,
+        img_world2grid,
+        img_spacing,
+        out_grid2world,
+        out,
+        inside,
+        num_threads=num_threads,
+    )
     return np.asarray(out), np.asarray(inside)
 
 
