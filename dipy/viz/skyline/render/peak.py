@@ -17,19 +17,21 @@ from dipy.viz.skyline.render.renderer import (
 )
 
 fury_trip_msg = (
-    "Skyline requires Fury version 2.0.0a6 or higher."
+    "Skyline requires Fury version 2.0.0 or higher."
     " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
 )
 fury, has_fury_v2, _ = optional_package(
     "fury",
-    min_version="2.0.0a6",
+    min_version="2.0.0",
     trip_msg=fury_trip_msg,
 )
 if has_fury_v2:
-    from fury.actor import peaks_slicer
+    from fury.actor import peaks_slicer, set_group_opacity
     from fury.transform import apply_transformation
 
-imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
+imgui_bundle, has_imgui, _ = optional_package(
+    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
+)
 if has_imgui:
     imgui = imgui_bundle.imgui
 
@@ -162,7 +164,7 @@ class Peak3D(Visualization):
             peak_values=self.peak_values * self._scale,
             visibility=self._slice_visibility,
         )
-        self.state = np.asarray(self._slicer.cross_section, dtype=np.float32)
+        self.state = self._get_cross_section()
         self._cross_section_state = np.asarray(self.state, dtype=np.float32)
         lower_bounds = np.zeros(3)
         upper_bounds = np.array(self.peaks.shape[:3]) - 1
@@ -198,10 +200,35 @@ class Peak3D(Visualization):
 
         Returns
         -------
-        VectorField
+        Group
             The actor of the peak visualization.
         """
         return self._slicer
+
+    def _get_cross_section(self):
+        """Handle  get cross section for ``Peak3D``.
+
+        ``peaks_slicer`` returns a ``Group`` of chunked ``VectorField`` actors and
+        only the chunks carry the ``cross_section`` property, so read it off the
+        first chunk. Every chunk is kept at the same cross section.
+
+        Returns
+        -------
+        np.ndarray
+            The cross section of the peak visualization.
+        """
+        return np.asarray(self._slicer.children[0].cross_section, dtype=np.float32)
+
+    def _set_cross_section(self, cross_section):
+        """Handle  set cross section for ``Peak3D``.
+
+        Parameters
+        ----------
+        cross_section : array-like
+            Cross section to propagate to every chunk of the slicer.
+        """
+        for chunk in self._slicer.children:
+            chunk.cross_section = cross_section
 
     def _infer_cross_section_space(self):
         """Handle  infer cross section space for ``Peak3D``.
@@ -214,7 +241,7 @@ class Peak3D(Visualization):
         if self.affine is None:
             return "voxel"
 
-        cross_section = np.asarray(self._slicer.cross_section, dtype=np.float32)
+        cross_section = self._get_cross_section()
         voxel_center = (np.array(self.peaks.shape[:3], dtype=np.float32) - 1.0) * 0.5
         world_center = apply_transformation(
             np.array([voxel_center], dtype=np.float32), self.affine
@@ -251,7 +278,7 @@ class Peak3D(Visualization):
         if self.affine is None:
             voxel_state = np.round(self.state).astype(np.int16)
             self._cross_section_state = voxel_state.astype(np.float32)
-            self._slicer.cross_section = voxel_state
+            self._set_cross_section(voxel_state)
             return
 
         voxel_state = self._voxel_from_world_state(self.state)
@@ -260,10 +287,10 @@ class Peak3D(Visualization):
                 np.array([voxel_state], dtype=np.float32), self.affine
             )[0]
             self._cross_section_state = np.asarray(world_state, dtype=np.float32)
-            self._slicer.cross_section = self._cross_section_state
+            self._set_cross_section(self._cross_section_state)
         else:
             self._cross_section_state = voxel_state.astype(np.float32)
-            self._slicer.cross_section = voxel_state
+            self._set_cross_section(voxel_state)
 
     def update_state(self, new_state):
         """Handle update state for ``Peak3D``.
@@ -282,20 +309,24 @@ class Peak3D(Visualization):
 
         Parameters
         ----------
-        opacity : int, optional
-            Slice opacity in percent, expected in ``[0, 100]``.
+        opacity : float
+            Slice opacity, expected in ``[0, 1]``.
         """
-        self._slicer.material.opacity = opacity
+        set_group_opacity(self._slicer, opacity)
 
     def _set_slice_visibility(self, visibility):
         """Handle  set slice visibility for ``Peak3D``.
+
+        ``peaks_slicer`` returns a ``Group`` whose ``material`` is ``None``; the
+        per-axis visibility flags live on the material of each chunk.
 
         Parameters
         ----------
         visibility : tuple(bool, bool, bool)
             Per-axis visibility flags for X/Y/Z slices.
         """
-        self._slicer.material.visibility = visibility
+        for chunk in self._slicer.children:
+            chunk.material.visibility = visibility
 
     def render_widgets(self):
         """Handle render widgets for ``Peak3D``."""

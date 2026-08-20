@@ -12,7 +12,9 @@ from dipy.viz.skyline.UI.elements import (
 )
 from dipy.viz.skyline.UI.theme import FONT, FONT_AWESOME, THEME
 
-imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
+imgui_bundle, has_imgui, _ = optional_package(
+    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
+)
 if has_imgui:
     imgui = imgui_bundle.imgui
     icons_fontawesome_6 = imgui_bundle.icons_fontawesome_6
