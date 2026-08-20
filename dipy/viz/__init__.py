@@ -14,7 +14,7 @@ fury_pckg_msg = (
 )
 # Allow import, but disable doctests if we don't have fury
 fury, has_fury, _ = optional_package(
-    "fury", trip_msg=fury_pckg_msg, min_version="2.0.0a6"
+    "fury", trip_msg=fury_pckg_msg, min_version="2.0.0"
 )
 if has_fury:
     from dipy.viz.horizon.app import horizon

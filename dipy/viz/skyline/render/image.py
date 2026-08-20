@@ -20,12 +20,12 @@ from dipy.viz.skyline.render.renderer import (
 )
 
 fury_trip_msg = (
-    "Skyline requires Fury version 2.0.0a6 or higher."
+    "Skyline requires Fury version 2.0.0 or higher."
     " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
 )
 fury, has_fury_v2, _ = optional_package(
     "fury",
-    min_version="2.0.0a6",
+    min_version="2.0.0",
     trip_msg=fury_trip_msg,
 )
 if has_fury_v2:
@@ -38,7 +38,9 @@ if has_fury_v2:
     from fury.colormap import distinguishable_colormap
     from fury.lib import gfx
 
-imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
+imgui_bundle, has_imgui, _ = optional_package(
+    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
+)
 if has_imgui:
     imgui = imgui_bundle.imgui
 

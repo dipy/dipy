@@ -5,7 +5,9 @@ from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI import elements
 from dipy.viz.skyline.UI.elements import colors_equal, normalize_picker_color
 
-_, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
+_, has_imgui, _ = optional_package(
+    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
+)
 
 
 @pytest.mark.parametrize(
@@ -63,7 +65,7 @@ def test_normalize_picker_color_default_fallback():
     assert normalize_picker_color("direction") == (1.0, 0.0, 0.0)
 
 
-@pytest.mark.skipif(not has_imgui, reason="Requires imgui_bundle>=1.92.600")
+@pytest.mark.skipif(not has_imgui, reason="Requires imgui_bundle>=1.92.600,<=1.92.801")
 def test_ensure_last_dir_creates_missing_directory(tmp_path):
     missing_dir = tmp_path / "new" / ".dipy"
     original_last_dir = elements._LAST_DIR
@@ -79,7 +81,7 @@ def test_ensure_last_dir_creates_missing_directory(tmp_path):
         elements._LAST_DIR = original_last_dir
 
 
-@pytest.mark.skipif(not has_imgui, reason="Requires imgui_bundle>=1.92.600")
+@pytest.mark.skipif(not has_imgui, reason="Requires imgui_bundle>=1.92.600,<=1.92.801")
 def test_ensure_last_dir_uses_parent_when_last_dir_is_file(tmp_path):
     file_path = tmp_path / "last_location.txt"
     file_path.write_text("placeholder")
@@ -94,3 +96,12 @@ def test_ensure_last_dir_uses_parent_when_last_dir_is_file(tmp_path):
         assert resolved_dir.is_dir()
     finally:
         elements._LAST_DIR = original_last_dir
+
+
+@pytest.mark.skipif(not has_imgui, reason="Requires imgui_bundle>=1.92.600,<=1.92.801")
+def test_imgui_add_rect_exposes_thickness_keyword():
+    """The installed bindings accept the ``thickness`` keyword we rely on."""
+    signature = elements.imgui.ImDrawList.add_rect.__doc__ or ""
+
+    assert "thickness" in signature
+    assert "flags" in signature

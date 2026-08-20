@@ -34,12 +34,12 @@ from dipy.viz.skyline.io import load_npy
 from dipy.viz.skyline.render.renderer import Visualization
 
 fury_trip_msg = (
-    "Skyline requires Fury version 2.0.0a6 or higher."
+    "Skyline requires Fury version 2.0.0 or higher."
     " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
 )
 fury, has_fury_v2, _ = optional_package(
     "fury",
-    min_version="2.0.0a6",
+    min_version="2.0.0",
     trip_msg=fury_trip_msg,
 )
 if has_fury_v2:
@@ -50,7 +50,9 @@ if has_fury_v2:
 else:
     actor = fury.actor
 
-imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
+imgui_bundle, has_imgui, _ = optional_package(
+    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
+)
 if has_imgui:
     imgui = imgui_bundle.imgui
     icons_fontawesome_6 = imgui_bundle.icons_fontawesome_6
@@ -308,7 +310,11 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="Line", segments=4):
     if isinstance(color, str) and color == "direction" and lines:
         color = line_colors(lines)
     if line_type == "Tube":
-        if len(color) != len(lines) and color.ndim == 2:
+        if (
+            isinstance(color, np.ndarray)
+            and color.ndim == 2
+            and len(color) != len(lines)
+        ):
             points_per_line = [len(line) for line in lines]
             if color.shape[0] == sum(points_per_line):
                 color = np.split(color, np.cumsum(points_per_line)[:-1])
@@ -320,7 +326,11 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="Line", segments=4):
         )
         return tubes
     elif line_type == "Line":
-        if len(color) == len(lines) and color.ndim == 2:
+        if (
+            isinstance(color, np.ndarray)
+            and color.ndim == 2
+            and len(color) == len(lines)
+        ):
             color = np.repeat(color, [len(line) for line in lines], axis=0)
         lines = streamlines(
             lines=lines,

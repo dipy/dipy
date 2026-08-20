@@ -5,8 +5,8 @@ pandas
 statsmodels>=0.14.0
 tables
 torch
-fury>=2.0.0a6,<2.0.0
-imgui_bundle==1.92.600
+fury>=2.0.0
+imgui_bundle>=1.92.600,<=1.92.801
 matplotlib
 cvxpy
 scikit-image

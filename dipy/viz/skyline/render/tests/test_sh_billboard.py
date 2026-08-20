@@ -1,6 +1,6 @@
 import pytest
 
-pytest.importorskip("fury", minversion="2.0.0a6")
+pytest.importorskip("fury", minversion="2.0.0")
 
 from dipy.viz.skyline.render.sh_billboard import SlicedSphGlyphMaterial  # noqa: E402
 

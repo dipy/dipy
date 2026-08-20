@@ -26,8 +26,8 @@ grg-sphinx-theme>=0.4.0
 Jinja2
 pyperf
 virtualenv
-fury<2.0.0,>=2.0.0a6
-imgui_bundle==1.92.600
+fury>=2.0.0
+imgui_bundle<=1.92.801,>=1.92.600
 matplotlib
 scikit_learn
 pandas
@@ -40,6 +40,3 @@ boto3
 numexpr
 polyxios>=0.2.0
 matplotlib
-fury>=2.0.0a6
-imgui_bundle==1.92.600
-vtk>=9.0.0,<=9.1.0

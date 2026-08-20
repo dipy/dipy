@@ -26,12 +26,12 @@ from dipy.viz.skyline.render.streamline import (
 from dipy.viz.skyline.render.surface import Surface, create_surface_visualization
 
 fury_trip_msg = (
-    "Skyline requires Fury version 2.0.0a6 or higher."
+    "Skyline requires Fury version 2.0.0 or higher."
     " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
 )
 fury, has_fury_v2, _ = optional_package(
     "fury",
-    min_version="2.0.0a6",
+    min_version="2.0.0",
     trip_msg=fury_trip_msg,
 )
 if has_fury_v2:

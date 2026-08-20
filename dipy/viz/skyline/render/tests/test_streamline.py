@@ -35,3 +35,42 @@ def test_create_streamline_legacy_lowercase_does_not_match():
     lines = _minimal_polylines()
     assert create_streamline(lines, line_type="line") is None
     assert create_streamline(lines, line_type="tube") is None
+
+
+def _polylines(n_lines, *, n_points=8):
+    """``n_lines`` short streamlines of ``n_points`` points each."""
+    rng = np.random.default_rng(7)
+    return [
+        np.cumsum(rng.random((n_points, 3)), axis=0).astype(np.float32)
+        for _ in range(n_lines)
+    ]
+
+
+@pytest.mark.parametrize("line_type", ["Line", "Tube"])
+@pytest.mark.parametrize("n_lines", [2, 3, 4, 10])
+def test_create_streamline_accepts_default_tuple_color(line_type, n_lines):
+    """A plain RGB tuple works for any line count.
+
+    ``len(color)`` used to be compared against ``len(lines)`` before the array
+    check, so a 3-tuple raised ``AttributeError`` looking for ``.ndim``.
+    """
+    actor = create_streamline(_polylines(n_lines), line_type=line_type)
+
+    assert actor is not None
+
+
+@pytest.mark.parametrize("line_type", ["Line", "Tube"])
+def test_create_streamline_color_forms(line_type):
+    """Constant, per-line, per-point and directional colors all build actors."""
+    lines = _polylines(5)
+    n_points = sum(len(line) for line in lines)
+    rng = np.random.default_rng(11)
+
+    for color in (
+        (1, 0, 0),
+        np.array([1.0, 0.0, 0.0], dtype=np.float32),
+        rng.random((len(lines), 3)).astype(np.float32),
+        rng.random((n_points, 3)).astype(np.float32),
+        "direction",
+    ):
+        assert create_streamline(lines, color=color, line_type=line_type) is not None
