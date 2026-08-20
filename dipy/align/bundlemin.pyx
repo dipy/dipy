@@ -9,7 +9,7 @@ cimport numpy as cnp
 cimport safe_openmp as openmp
 from safe_openmp cimport have_openmp
 
-from cython.parallel import prange
+from cython.parallel import prange, threadid
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt
 
@@ -17,6 +17,10 @@ from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
 cdef cnp.dtype f64_dt = np.dtype(np.float64)
+
+# Minimum number of streamline pairs before _bundle_minimum_distance
+# spawns an OpenMP team rather than running serially.
+cdef cnp.npy_intp PARALLEL_MIN_PAIRS = 1000000
 
 
 cdef double min_direct_flip_dist(double *a,double *b,
@@ -170,51 +174,85 @@ def _bundle_minimum_distance(double [:, ::1] static,
     """
 
     cdef:
-        cnp.npy_intp i=0, j=0
-        double sum_i=0, sum_j=0, tmp=0
+        cnp.npy_intp i=0, j=0, t=0
+        cnp.npy_intp n_teams=1, tid=0
+        double sum_i=0, sum_j=0, tmp=0, local_min_j=0, cand=0
         double inf = np.finfo('f8').max
         double dist=0
         double * min_j
         double * min_i
-        openmp.omp_lock_t lock
+        double * min_i_priv
+        double * row_i
         int threads_to_use = -1
 
     threads_to_use = determine_num_threads(num_threads)
     set_num_threads(threads_to_use)
 
-    with nogil:
+    # Running an OpenMP team costs more than the work itself on small inputs,
+    # so only go parallel once there are enough pairs to amortise the fork.
+    if have_openmp and static_size * moving_size >= PARALLEL_MIN_PAIRS:
+        n_teams = threads_to_use
+    else:
+        n_teams = 1
 
-        if have_openmp:
-            openmp.omp_init_lock(&lock)
+    with nogil:
 
         min_j = <double *> malloc(static_size * sizeof(double))
         min_i = <double *> malloc(moving_size * sizeof(double))
-
-        for i in range(static_size):
-            min_j[i] = inf
+        # Per-thread copies of min_i: each thread reduces into its own row, so
+        # no two threads ever write the same address and no lock is needed.
+        min_i_priv = <double *> malloc(n_teams * moving_size * sizeof(double))
 
         for j in range(moving_size):
             min_i[j] = inf
 
-        for i in prange(static_size):
+        for t in range(n_teams * moving_size):
+            min_i_priv[t] = inf
 
+        if n_teams > 1:
+            for i in prange(static_size, num_threads=n_teams):
+                tid = <cnp.npy_intp> threadid()
+                row_i = min_i_priv + tid * moving_size
+                local_min_j = inf
+
+                for j in range(moving_size):
+
+                    tmp = min_direct_flip_dist(&static[i * rows, 0],
+                                               &moving[j * rows, 0], rows)
+
+                    if tmp < local_min_j:
+                        local_min_j = tmp
+
+                    if tmp < row_i[j]:
+                        row_i[j] = tmp
+
+                min_j[i] = local_min_j
+        else:
+            for i in range(static_size):
+                local_min_j = inf
+
+                for j in range(moving_size):
+
+                    tmp = min_direct_flip_dist(&static[i * rows, 0],
+                                               &moving[j * rows, 0], rows)
+
+                    if tmp < local_min_j:
+                        local_min_j = tmp
+
+                    if tmp < min_i_priv[j]:
+                        min_i_priv[j] = tmp
+
+                min_j[i] = local_min_j
+
+        # Reduce the per-thread rows. min() is exactly associative and
+        # commutative on doubles, so this matches the serial result bit for bit
+        # whatever the thread count or the schedule.
+        for t in range(n_teams):
+            row_i = min_i_priv + t * moving_size
             for j in range(moving_size):
-
-                tmp = min_direct_flip_dist(&static[i * rows, 0],
-                                       &moving[j * rows, 0], rows)
-
-                if have_openmp:
-                    openmp.omp_set_lock(&lock)
-                if tmp < min_j[i]:
-                    min_j[i] = tmp
-
-                if tmp < min_i[j]:
-                    min_i[j] = tmp
-                if have_openmp:
-                    openmp.omp_unset_lock(&lock)
-
-        if have_openmp:
-            openmp.omp_destroy_lock(&lock)
+                cand = row_i[j]
+                if cand < min_i[j]:
+                    min_i[j] = cand
 
         for i in range(static_size):
             sum_i += min_j[i]
@@ -224,6 +262,7 @@ def _bundle_minimum_distance(double [:, ::1] static,
 
         free(min_j)
         free(min_i)
+        free(min_i_priv)
 
         dist = (sum_i / <double>static_size + sum_j / <double>moving_size)
 
