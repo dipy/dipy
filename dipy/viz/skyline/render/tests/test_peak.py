@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-pytest.importorskip("fury", minversion="2.0.0a6")
+pytest.importorskip("fury", minversion="2.0.0")
 
 from dipy.viz.skyline.render.peak import Peak3D  # noqa: E402
 

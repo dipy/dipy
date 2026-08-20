@@ -12,12 +12,12 @@ from dipy.viz.skyline.UI.elements import render_section_header
 from dipy.viz.skyline.UI.theme import LOGO_SMALL
 
 fury_trip_msg = (
-    "Skyline requires Fury version 2.0.0a6 or higher."
+    "Skyline requires Fury version 2.0.0 or higher."
     " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
 )
 fury, has_fury_v2, _ = optional_package(
     "fury",
-    min_version="2.0.0a6",
+    min_version="2.0.0",
     trip_msg=fury_trip_msg,
 )
 if has_fury_v2:
@@ -26,7 +26,9 @@ if has_fury_v2:
 else:
     window = fury.window
 
-imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
+imgui_bundle, has_imgui, _ = optional_package(
+    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
+)
 if has_imgui:
     imgui = imgui_bundle.imgui
 

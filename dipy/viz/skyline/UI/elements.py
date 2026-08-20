@@ -15,7 +15,9 @@ from dipy.viz.skyline.UI.theme import (
     WINDOW_THEME,
 )
 
-imgui_bundle, has_imgui, _ = optional_package("imgui_bundle", min_version="1.92.600")
+imgui_bundle, has_imgui, _ = optional_package(
+    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
+)
 if has_imgui:
     imgui = imgui_bundle.imgui
     hello_imgui = imgui_bundle.hello_imgui
@@ -923,7 +925,7 @@ def create_numeric_input(
     middle_y = (frame_min.y + frame_max.y) * 0.5
 
     draw_list.add_rect_filled(frame_min, frame_max, frame_color, 6.0)
-    draw_list.add_rect(frame_min, frame_max, chrome_color, 6.0, 0, 1.0)
+    draw_list.add_rect(frame_min, frame_max, chrome_color, 6.0, thickness=1.0)
     draw_list.add_line(
         imgui.ImVec2(separator_x, frame_min.y + 1),
         imgui.ImVec2(separator_x, frame_max.y - 1),
@@ -1152,7 +1154,7 @@ def segmented_switch(label, options, value, *, width=0, height=28):
 
         imgui.pop_style_color(1)
 
-    draw_list.add_rect(start, end, border_color, container_rounding, 0, 1.5)
+    draw_list.add_rect(start, end, border_color, container_rounding, thickness=1.5)
 
     imgui.pop_style_color(3)
     imgui.pop_style_var(4)
