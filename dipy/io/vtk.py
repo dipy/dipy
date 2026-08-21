@@ -5,43 +5,50 @@ for tractograms and :mod:`dipy.io.surface` for surfaces, both through polyxios.
 This module only re-exports them and is removed in DIPY 2.0.
 """
 
-import warnings
+import importlib
 
-from dipy.io.stateful_surface import convert_to_polydata
-from dipy.io.streamline import (
-    convert_to_polydata_lines,
-    get_polydata_lines,
-    load_vtk_streamlines,
-    save_vtk_streamlines,
-)
-from dipy.io.surface import (
-    get_polydata_triangles,
-    get_polydata_vertex_attrs,
-    get_polydata_vertices,
-    load_polydata,
-    save_polydata,
-)
+from dipy.utils.deprecator import deprecate_with_version
 
-__all__ = [
-    "convert_to_polydata",
-    "convert_to_polydata_lines",
-    "get_polydata_lines",
-    "get_polydata_triangles",
-    "get_polydata_vertex_attrs",
-    "get_polydata_vertices",
-    "load_polydata",
-    "load_vtk_streamlines",
-    "save_polydata",
-    "save_vtk_streamlines",
-]
+_NEW_LOCATIONS = {
+    "convert_to_polydata": "dipy.io.stateful_surface",
+    "convert_to_polydata_lines": "dipy.io.streamline",
+    "get_polydata_lines": "dipy.io.streamline",
+    "get_polydata_triangles": "dipy.io.surface",
+    "get_polydata_vertex_attrs": "dipy.io.surface",
+    "get_polydata_vertices": "dipy.io.surface",
+    "load_polydata": "dipy.io.surface",
+    "load_vtk_streamlines": "dipy.io.streamline",
+    "save_polydata": "dipy.io.surface",
+    "save_vtk_streamlines": "dipy.io.streamline",
+}
 
-warnings.warn(
-    "dipy.io.vtk is deprecated and will be removed in DIPY 2.0. VTK formats "
-    "(.vtk, .vtp, .fib) are handled directly by dipy.io.streamline for "
-    "tractograms and dipy.io.surface for surfaces, both through polyxios. "
-    "Import from those modules instead.\n"
-    "* deprecated from version: 1.13\n"
-    "* Will be removed as of version: 2.0",
-    FutureWarning,
-    stacklevel=2,
-)
+__all__ = list(_NEW_LOCATIONS)
+
+
+def __getattr__(name):
+    """Resolve a deprecated re-export from its new location.
+
+    Parameters
+    ----------
+    name : str
+        Name of the attribute being looked up on this module.
+
+    Returns
+    -------
+    callable
+        The re-exported function, wrapped so that calling it warns.
+
+    Raises
+    ------
+    AttributeError
+        If `name` is not one of the deprecated re-exports.
+    """
+    if name not in _NEW_LOCATIONS:
+        raise AttributeError(f"module 'dipy.io.vtk' has no attribute {name!r}")
+
+    module = _NEW_LOCATIONS[name]
+    return deprecate_with_version(
+        f"dipy.io.vtk is deprecated. Import '{name}' from {module} instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )(getattr(importlib.import_module(module), name))

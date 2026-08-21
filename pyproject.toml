@@ -166,6 +166,7 @@ optional = [
     "scikit-image",
     "boto3",
     "numexpr",
+    "polyxios>=0.2.0",
 ]
 
 [project.urls]

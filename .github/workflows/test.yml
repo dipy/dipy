@@ -56,7 +56,7 @@ jobs:
       runs-on: '["ubuntu-latest", ]'
       coverage: true
       enable-viz-tests: true
-      extra-depends: scikit-learn scipy statsmodels pandas tables fury tensorflow==2.18 torch
+      extra-depends: scikit-learn scipy statsmodels pandas tables fury polyxios tensorflow==2.18 torch
     secrets:
       codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
