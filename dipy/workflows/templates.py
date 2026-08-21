@@ -344,11 +344,48 @@ out_dir = "."
 atlas_tractogram = ""
 bundle_atlas_dir = ""
 
-# Full preprocessing chain
+# Full preprocessing chain.
+#
+# Stage order is constrained, in decreasing strictness:
+#   1. Denoising and Gibbs unringing both exploit properties of the data as it
+#      came off the scanner, so every stage that interpolates (reslice, motion
+#      and eddy correction, registration) has to run after them.
+#   2. Denoising comes first. Gibbs unringing selects its subvoxel shift by
+#      minimising local total variation, and noise corrupts that choice. The
+#      ordering is a hard requirement for MP-PCA, whose noise-level estimate
+#      assumes spatially white noise that unringing would correlate.
+#   3. Gibbs unringing is FFT-based and needs the full field of view. Handing
+#      it a skull-stripped volume puts a hard edge at the mask boundary, which
+#      is itself a source of ringing.
+#   4. The brain mask is thresholded on intensity, so it is computed last: on
+#      denoised, unrung, bias-corrected data, and on the final grid.
+[[pipeline]]
+name = "denoise"
+cli = "dipy_denoise_patch2self"
+input_files = "${io.dwi}"
+bval_files = "${io.bvals}"
+verbose = true
+
+[[pipeline]]
+name = "gibbs"
+cli = "dipy_gibbs_ringing"
+input_files = "${denoise.out_denoised}"
+slice_axis = 2
+num_processes = -1
+
+[[pipeline]]
+name = "bias_correction"
+cli = "dipy_correct_biasfield"
+input_files = "${gibbs.out_unring}"
+bval = "${io.bvals}"
+bvec = "${io.bvecs}"
+method = "bspline"
+
+# Resampling. Everything below this point works on the resliced grid.
 [[pipeline]]
 name = "reslice"
 cli = "dipy_reslice"
-input_files = "${io.dwi}"
+input_files = "${bias_correction.out_corrected}"
 order = "lanczos2"
 
 [[pipeline]]
@@ -368,35 +405,11 @@ numpass = 5
 finalize_mask = true
 save_masked = true
 
-[[pipeline]]
-name = "gibbs"
-cli = "dipy_gibbs_ringing"
-input_files = "${brain_mask.out_masked}"
-slice_axis = 2
-num_processes = -1
-
-# Step 4: Bias field correction (using median_otsu on b0)
-[[pipeline]]
-name = "bias_correction"
-cli = "dipy_correct_biasfield"
-input_files = "${gibbs.out_unring}"
-bval = "${io.bvals}"
-bvec = "${io.bvecs}"
-method = "auto"
-
-# Step 5: Denoising with Patch2Self
-[[pipeline]]
-name = "denoise"
-cli = "dipy_denoise_patch2self"
-input_files = "${bias_correction.out_corrected}"
-bval_files = "${io.bvals}"
-verbose = true
-
 # Multiple reconstructions
 [[pipeline]]
 name = "dti_fit"
 cli = "dipy_fit_dti"
-input_files = "${denoise.out_denoised}"
+input_files = "${reslice.out_resliced}"
 bvalues_files = "${io.bvals}"
 bvectors_files = "${io.bvecs}"
 mask_files = "${brain_mask.out_mask}"
@@ -407,7 +420,7 @@ out_dir = "${io.out_dir}/dti"
 [[pipeline]]
 name = "force_fit"
 cli = "dipy_fit_force"
-input_files = "${denoise.out_denoised}"
+input_files = "${reslice.out_resliced}"
 bvalues_files = "${io.bvals}"
 bvectors_files = "${io.bvecs}"
 mask_files = "${brain_mask.out_mask}"
@@ -529,7 +542,7 @@ input_files = "${motion_correction.out_moved}"
 bval = "${io.bvals}"
 bvec = "${io.bvecs}"
 mask = "${brain_mask.out_mask}"
-method = "auto"
+method = "bspline"
 
 # Step 5: Denoising with Patch2Self
 [[pipeline]]
