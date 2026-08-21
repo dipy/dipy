@@ -315,7 +315,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         return pred_sig
 
     @multi_voxel_fit
-    def fit(self, data, verbose=True, **kwargs):
+    def fit(self, data, *, verbose=True, **kwargs):
         """Fits the model to diffusion data and returns the model fit.
 
         Sometimes the solving process of some voxels can end in a SolverError
@@ -523,7 +523,7 @@ def multi_shell_fiber_response(
     if bvals[0] < tol:
         gtab = GradientTable(big_sphere.vertices * 0, btens=btens[0])
         wm_response = single_tensor(
-            gtab, wm_rf[0, 3], evals=wm_rf[0, :3], evecs=evecs, snr=None
+            gtab, S0=wm_rf[0, 3], evals=wm_rf[0, :3], evecs=evecs, snr=None
         )
         response[0, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
@@ -533,7 +533,7 @@ def multi_shell_fiber_response(
         for i, bvalue in enumerate(bvals[1:]):
             gtab = GradientTable(big_sphere.vertices * bvalue, btens=btens[i + 1])
             wm_response = single_tensor(
-                gtab, wm_rf[i, 3], evals=wm_rf[i, :3], evecs=evecs, snr=None
+                gtab, S0=wm_rf[i, 3], evals=wm_rf[i, :3], evecs=evecs, snr=None
             )
             response[i + 1, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
@@ -549,7 +549,7 @@ def multi_shell_fiber_response(
         for i, bvalue in enumerate(bvals):
             gtab = GradientTable(big_sphere.vertices * bvalue, btens=btens[i])
             wm_response = single_tensor(
-                gtab, wm_rf[i, 3], evals=wm_rf[i, :3], evecs=evecs, snr=None
+                gtab, S0=wm_rf[i, 3], evals=wm_rf[i, :3], evecs=evecs, snr=None
             )
             response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 

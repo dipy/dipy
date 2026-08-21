@@ -30,6 +30,21 @@ repos:
       - id: rst-inline-touching-normal
   - repo: local
     hooks:
+      - id: enforce-pep3102-defaults
+        name: Enforce keyword-only default arguments (PEP 3102)
+        entry: python tools/check_pep3102.py
+        language: system
+        types: [python]
+        exclude: |
+          (?x)^(
+            \.spin/|
+            tools/|
+            doc/|
+            # workflows expose ``run`` parameters as a CLI through
+            # IntrospectiveArgumentParser, which needs them positional-or-keyword
+            dipy/workflows/|
+            (.*/)?tests/
+          )
       - id: generate_requirements.py
         name: generate_requirements.py
         language: python

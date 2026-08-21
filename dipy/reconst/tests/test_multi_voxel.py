@@ -518,7 +518,7 @@ def setup_module():
     response = (np.array([0.0015, 0.0003, 0.0003]), 100.0)
     csd_signal = single_tensor(
         gtab_1s,
-        100.0,
+        S0=100.0,
         evals=np.array([0.0015, 0.0003, 0.0003]),
         evecs=np.eye(3),
         snr=None,

@@ -47,7 +47,7 @@ def test_dti_xval():
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
     ]
-    S = sims.single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
+    S = sims.single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None)
 
     dm = dti.TensorModel(gtab, fit_method="LS")
     kf_xval = xval.kfold_xval(dm, S, 2)
@@ -83,7 +83,7 @@ def test_csd_xval(rng=None):
         np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
     ]
     S0 = 100
-    S = sims.single_tensor(gtab, S0, evals=mevals[0], evecs=mevecs[0], snr=None)
+    S = sims.single_tensor(gtab, S0=S0, evals=mevals[0], evecs=mevecs[0], snr=None)
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",

@@ -686,13 +686,13 @@ class TreeClusterMap(ClusterMap):
     def get_clusters(self, wanted_level):
         clusters = ClusterMapCentroid()
 
-        def _traverse(node, level=0):
+        def _traverse(node, *, level=0):
             if level == wanted_level:
                 clusters.add_cluster(node)
                 return
 
             for child in node.children:
-                _traverse(child, level + 1)
+                _traverse(child, level=level + 1)
 
         _traverse(self.root)
         return clusters

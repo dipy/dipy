@@ -1628,7 +1628,8 @@ def _ols_fit_matrix(design_matrix):
 class _NllsHelper:
     r"""Class with member functions to return nlls error and derivative."""
 
-    def err_func(self, tensor, design_matrix, data, weights=None):
+    # scipy.optimize.leastsq calls this with args=(design_matrix, data, weights)
+    def err_func(self, tensor, design_matrix, data, weights=None):  # pep3102: ignore
         r"""
         Error function for the non-linear least-squares fit of the tensor.
 
@@ -1671,7 +1672,10 @@ class _NllsHelper:
                     self.sqrt_w = self.sqrt_w[:, None]
                 return ans
 
-    def jacobian_func(self, tensor, design_matrix, data, weights=None):
+    # scipy.optimize.leastsq calls this with args=(design_matrix, data, weights)
+    def jacobian_func(
+        self, tensor, design_matrix, data, weights=None
+    ):  # pep3102: ignore
         r"""The Jacobian is the first derivative of the error function.
 
         Parameters

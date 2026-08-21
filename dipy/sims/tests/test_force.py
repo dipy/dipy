@@ -250,29 +250,32 @@ def test_generate_force_simulations_no_dti_no_dki():
 def test_resolve_num_odi_values_autoscale():
     """None autoscales the ODI grid to keep sampling density constant."""
     # Default range resolves to the historical fixed grid (backward compatible).
-    assert resolve_num_odi_values(DEFAULT_ODI_RANGE, None) == DEFAULT_NUM_ODI_VALUES
+    assert (
+        resolve_num_odi_values(DEFAULT_ODI_RANGE, num_odi_values=None)
+        == DEFAULT_NUM_ODI_VALUES
+    )
 
     # Doubling the span roughly doubles the number of grid points.
-    assert resolve_num_odi_values((0.01, 0.6), None) == 19
+    assert resolve_num_odi_values((0.01, 0.6), num_odi_values=None) == 19
 
     # Narrower span -> fewer points; wider -> more.
-    n_narrow = resolve_num_odi_values((0.05, 0.15), None)
-    n_wide = resolve_num_odi_values((0.01, 0.9), None)
+    n_narrow = resolve_num_odi_values((0.05, 0.15), num_odi_values=None)
+    n_wide = resolve_num_odi_values((0.01, 0.9), num_odi_values=None)
     assert n_narrow < DEFAULT_NUM_ODI_VALUES < n_wide
 
     # A degenerate (zero-width) range still yields a valid grid (>= 2).
-    assert resolve_num_odi_values((0.2, 0.2), None) == 2
+    assert resolve_num_odi_values((0.2, 0.2), num_odi_values=None) == 2
 
 
 def test_resolve_num_odi_values_explicit_and_invalid():
     """An explicit count is passed through; counts < 2 are rejected."""
     # Explicit value is honored regardless of the range.
-    assert resolve_num_odi_values((0.01, 0.9), 7) == 7
-    assert resolve_num_odi_values(DEFAULT_ODI_RANGE, 3) == 3
+    assert resolve_num_odi_values((0.01, 0.9), num_odi_values=7) == 7
+    assert resolve_num_odi_values(DEFAULT_ODI_RANGE, num_odi_values=3) == 3
 
     for bad in (1, 0, -5):
         with pytest.raises(ValueError, match="must be >= 2"):
-            resolve_num_odi_values(DEFAULT_ODI_RANGE, bad)
+            resolve_num_odi_values(DEFAULT_ODI_RANGE, num_odi_values=bad)
 
 
 def test_generate_force_simulations_honors_odi_grid():

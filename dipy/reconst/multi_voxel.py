@@ -26,7 +26,7 @@ def _accepts_kwarg(func, name):
 
     A parameter absorbed only by ``**kwargs`` does not count, so a reserved
     orchestration key is forwarded solely to fits that name it explicitly
-    (e.g. ``MCSD.fit(self, data, verbose=True, **kwargs)``).
+    (e.g. ``MCSD.fit(self, data, *, verbose=True, **kwargs)``).
     """
     try:
         param = inspect.signature(func).parameters.get(name)
@@ -138,7 +138,8 @@ def _parallel_fit_worker(vox_data, fit_func, **kwargs):
     return [fit_func(data, **kwargs) for data in vox_data]
 
 
-def multi_voxel_fit(
+# Applied bare as @multi_voxel_fit, so _func stays positional.
+def multi_voxel_fit(  # pep3102: ignore
     _func=None,
     *,
     batched=False,

@@ -32,7 +32,7 @@ from dipy.nn.utils import (
     transform_img,
 )
 from dipy.segment.utils import remove_holes_and_islands
-from dipy.testing.decorators import doctest_skip_parser
+from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -468,7 +468,8 @@ class SynthSeg:
             60: "right ventral DC",
         }
 
-    def init_model(self, model_scale=24, n_levels=5, output_channels=33):
+    @warning_for_keywords(from_version="1.13.0")
+    def init_model(self, *, model_scale=24, n_levels=5, output_channels=33):
         """Initialize the SynthSeg model.
 
         Parameters

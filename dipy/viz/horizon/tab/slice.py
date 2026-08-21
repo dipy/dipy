@@ -288,7 +288,7 @@ class SlicesTab(HorizonTab):
         selected_slice.obj.set_visibility(visibility)
         self._visualizer.slice_actors[actor_idx].SetVisibility(visibility)
 
-    def _change_volume(self, slider, sync_vol=False):
+    def _change_volume(self, slider, *, sync_vol=False):
         value = int(np.rint(slider.value))
         if value != self._volume.selected_value:
             if not sync_vol:

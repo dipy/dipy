@@ -31,6 +31,11 @@ jobs:
     - name: Install and run pre-commit hooks
       uses: pre-commit/action@v3.0.1
 
+    - name: Test the pre-commit helpers
+      run: |
+        python -m pip install --upgrade pip pytest
+        python -m pytest tools/tests -q
+
   commit-messages:
     runs-on: ubuntu-latest
     timeout-minutes: 5

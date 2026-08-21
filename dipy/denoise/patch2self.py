@@ -434,7 +434,7 @@ def patch2self(
             b0_denoising,
             clip_negative_vals,
             shift_intensity,
-            gram,
+            gram=gram,
         )
     return _patch2self_version3(
         data,
@@ -544,6 +544,7 @@ def _patch2self_version1(
     b0_denoising,
     clip_negative_vals,
     shift_intensity,
+    *,
     gram=True,
 ):
     """Patch2Self Denoiser.

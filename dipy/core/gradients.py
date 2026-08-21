@@ -298,9 +298,8 @@ class GradientTable:
         # of GradientTable.
 
     @property
-    def info(self, use_logging=False):
-        show = logger.info if use_logging else print
-        show(self.__str__())
+    def info(self):
+        print(self.__str__())
 
     def __str__(self):
         msg = f"B-values shape {self.bvals.shape}\n"

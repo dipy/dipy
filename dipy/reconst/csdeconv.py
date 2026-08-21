@@ -375,7 +375,7 @@ def estimate_response(gtab, evals, S0):
     """
     evecs = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
 
-    return single_tensor(gtab, S0, evals=evals, evecs=evecs, snr=None)
+    return single_tensor(gtab, S0=S0, evals=evals, evecs=evecs, snr=None)
 
 
 @deprecated_params("n", new_name="l_values", since="1.9", until="2.0")
@@ -1187,7 +1187,7 @@ def recursive_response(
     .. footbibliography::
     """
     S0 = 1.0
-    evals = fa_trace_to_lambdas(init_fa, init_trace)
+    evals = fa_trace_to_lambdas(fa=init_fa, trace=init_trace)
     res_obj = (evals, S0)
 
     if mask is None:
@@ -1244,7 +1244,8 @@ def recursive_response(
     return res_obj
 
 
-def fa_trace_to_lambdas(fa=0.08, trace=0.0021):
+@warning_for_keywords(from_version="1.13.0")
+def fa_trace_to_lambdas(*, fa=0.08, trace=0.0021):
     lambda1 = (trace / 3.0) * (1 + 2 * fa / (3 - 2 * fa**2) ** (1 / 2.0))
     lambda2 = (trace / 3.0) * (1 - fa / (3 - 2 * fa**2) ** (1 / 2.0))
     evals = np.array([lambda1, lambda2, lambda2])

@@ -557,7 +557,7 @@ class IvimModelVP(ReconstModel):
         self.bounds = bounds or (BOUNDS[0][1:], BOUNDS[1][1:])
 
     @multi_voxel_fit
-    def fit(self, data, bounds_de=None, **kwargs):
+    def fit(self, data, *, bounds_de=None, **kwargs):
         r"""Fit method of the IvimModelVP model class
 
         MicroLearn framework (VarPro) :footcite:p:`Fadnavis2019`.

@@ -21,7 +21,7 @@ logger = logging.getLogger("StatefulSurface")
 logger.setLevel(level=logging.INFO)
 
 
-def convert_to_polydata(vertices, triangles, data_per_point=None):
+def convert_to_polydata(vertices, triangles, *, data_per_point=None):
     """Convert vertices and triangles to a polyxios PolyData.
 
     Parameters
@@ -415,7 +415,9 @@ class StatefulSurface:
 
     def get_polydata(self):
         """Build a polyxios PolyData from the surface."""
-        return convert_to_polydata(self._vertices, self._faces, self._data_per_vertex)
+        return convert_to_polydata(
+            self._vertices, self._faces, data_per_point=self._data_per_vertex
+        )
 
     @vertices.setter
     def vertices(self, data):

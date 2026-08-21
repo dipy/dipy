@@ -325,7 +325,9 @@ class TabManager:
         if not self._synchronize_slices and not self._synchronize_peaks:
             return
 
-        for tab in self._get_non_active_tabs(active_tab_id, ["SlicesTab", "PeaksTab"]):
+        for tab in self._get_non_active_tabs(
+            active_tab_id, types=["SlicesTab", "PeaksTab"]
+        ):
             tab.update_slices(x_value, y_value, z_value)
 
     def synchronize_volumes(self, active_tab_id, value):
@@ -346,7 +348,7 @@ class TabManager:
         for slices_tab in self._get_non_active_tabs(active_tab_id):
             slices_tab.update_volume(value)
 
-    def _get_non_active_tabs(self, active_tab_id, types=("SlicesTab",)):
+    def _get_non_active_tabs(self, active_tab_id, *, types=("SlicesTab",)):
         """Get tabs which are not active and slice tabs.
 
         Parameters

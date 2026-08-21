@@ -193,7 +193,7 @@ def orbital_phantom(
 
     for i in range(len(dx)):
         evecs, R = diff2eigenvectors(dx[i], dy[i], dz[i])
-        S = single_tensor(gtab, S0, evals=evals, evecs=evecs, snr=None)
+        S = single_tensor(gtab, S0=S0, evals=evals, evecs=evecs, snr=None)
 
         vol[int(x[i]), int(y[i]), int(z[i]), :] += S
 

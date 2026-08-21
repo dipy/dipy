@@ -265,7 +265,7 @@ class RecoBundles:
         """
         map_ind = np.zeros(len(streamlines))
         for i in range(len(streamlines)):
-            map_ind[i] = check_range(streamlines[i], greater_than, less_than)
+            map_ind[i] = check_range(streamlines[i], gt=greater_than, lt=less_than)
         map_ind = map_ind.astype(bool)
 
         self.orig_indices = np.array(list(range(0, len(streamlines))))

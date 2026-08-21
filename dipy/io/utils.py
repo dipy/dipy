@@ -524,7 +524,8 @@ def read_img_arr_or_path(data, *, affine=None):
     return data, affine
 
 
-def recursive_compare(d1, d2, level="root"):
+@warning_for_keywords(from_version="1.13.0")
+def recursive_compare(d1, d2, *, level="root"):
     """Recursively compare two dictionaries or lists for matching structure and dtypes.
 
     This function is primarily used to compare dtype dictionaries, ensuring that
