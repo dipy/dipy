@@ -276,6 +276,23 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 "in the run method is same as the doc string."
             )
 
+        documented_args = [param[0] for param in self.doc]
+        if documented_args != args:
+            mismatches = "\n".join(
+                f"  position {i}: run() declares {arg!r}, "
+                f"doc string documents {documented!r}"
+                for i, (arg, documented) in enumerate(zip(args, documented_args))
+                if arg != documented
+            )
+            raise ValueError(
+                f"{self.prog}: Parameter names in the doc string and run "
+                "method do not match. Doc string parameters are paired "
+                "with the run method signature by position, so a mismatch "
+                "assigns the wrong help text and default value to a "
+                "command line argument. Please ensure that both list the "
+                f"same parameters in the same order.\n{mismatches}"
+            )
+
         for i, arg in enumerate(args):
             prefix = ""
             is_optional = i >= len_args - len_defaults

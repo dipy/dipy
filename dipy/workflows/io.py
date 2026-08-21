@@ -1284,7 +1284,7 @@ class ConcatenateTractogramFlow(Workflow):
 
         Parameters
         ----------
-        tractogram_list : variable string or Path
+        tractogram_files : variable string or Path
             The stateful tractogram filenames to concatenate
         reference : string or Path, optional
             Reference anatomy for tck/vtk/fib/dpy file.
