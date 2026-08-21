@@ -65,7 +65,7 @@ def vec_val_vect(vecs, vals):
     common_shape = vecs.shape[:(ndim-2)]
     rows, cols = vecs.shape[ndim-2], vecs.shape[ndim-1]
     if vals.shape != common_shape + (cols,):
-        raise ValueError('dimensions do not match')
+        raise ValueError("dimensions do not match")
     N = np.prod(common_shape, dtype=np.int64)
     vecr = np.array(vecs.reshape((N, rows, cols)), dtype=float)
     valr = np.array(vals.reshape((N, cols)), dtype=float)

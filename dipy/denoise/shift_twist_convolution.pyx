@@ -12,7 +12,7 @@ from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 from dipy.utils.deprecator import deprecated_params
 
 
-@deprecated_params('sh_order', new_name='sh_order_max', since='1.9', until='2.0')
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
 def convolve(odfs_sh, kernel, sh_order_max, test_mode=False, num_threads=None, normalize=True):
     """Perform the shift-twist convolution with the ODF data and
     the lookup-table of the kernel.
@@ -173,7 +173,7 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
     with nogil:
 
         # loop over ODFs cx,cy,cz,orient --> y and v
-        for corient in prange(OR1, schedule='guided'):
+        for corient in prange(OR1, schedule="guided"):
             for cx in range(nx):
                 for cy in range(ny):
                     for cz in range(nz):

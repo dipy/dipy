@@ -138,7 +138,7 @@ def remove_similar_vertices(
 
     """
     if vertices.shape[1] != 3:
-        raise ValueError('Vertices should be 2D with second dim length 3')
+        raise ValueError("Vertices should be 2D with second dim length 3")
 
     cdef cnp.npy_intp n = vertices.shape[0]
     if n >= 2**16:
@@ -610,7 +610,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
             cnp.PyArray_ISCONTIGUOUS(cvertinds) and
             cnp.PyArray_ISCONTIGUOUS(cadj_counts) and
             cnp.PyArray_ISCONTIGUOUS(cadj_inds)):
-        raise ValueError('Need contiguous arrays as input')
+        raise ValueError("Need contiguous arrays as input")
     vals_size = cnp.PyArray_DIM(cvals, 0)
     vals_ptr = <cnp.float64_t *> cnp.PyArray_DATA(cvals)
     vertinds_ptr = <cnp.uint32_t *> cnp.PyArray_DATA(cvertinds)
@@ -619,22 +619,22 @@ def argmax_from_countarrs(cnp.ndarray vals,
     V = cnp.PyArray_DIM(cadj_counts, 0)
     adj_size = cnp.PyArray_DIM(cadj_inds, 0)
     if cnp.PyArray_DIM(cvertinds, 0) < V:
-        raise ValueError('Too few indices for adj arrays')
+        raise ValueError("Too few indices for adj arrays")
     for i in range(V):
         vert_ind = vertinds_ptr[i]
         if vert_ind >= vals_size:
-            raise IndexError('Overshoot on vals')
+            raise IndexError("Overshoot on vals")
         val = vals_ptr[vert_ind]
         C = counts_ptr[i]
         # check for overshoot
         adj_pos += C
         if adj_pos > adj_size:
-            raise IndexError('Overshoot on adj_inds array')
+            raise IndexError("Overshoot on adj_inds array")
         is_max = 1
         for j in range(C):
             ind = adj_ptr[j]
             if ind >= vals_size:
-                raise IndexError('Overshoot on vals')
+                raise IndexError("Overshoot on vals")
             if val <= vals_ptr[ind]:
                 is_max = 0
                 break

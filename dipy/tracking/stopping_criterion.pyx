@@ -29,7 +29,7 @@ cdef class BinaryStoppingCriterion(StoppingCriterion):
     """
 
     def __cinit__(self, mask):
-        self.mask = (mask > 0).astype('uint8')
+        self.mask = (mask > 0).astype("uint8")
 
     cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
         cdef:
@@ -57,7 +57,7 @@ cdef class BinaryStoppingCriterion(StoppingCriterion):
 cdef class ThresholdStoppingCriterion(StoppingCriterion):
 
     def __cinit__(self, metric_map, double threshold):
-        self.metric_map = np.asarray(metric_map, 'float64')
+        self.metric_map = np.asarray(metric_map, "float64")
         self.threshold = threshold
 
     cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
@@ -99,8 +99,8 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
 
     """
     def __cinit__(self, include_map, exclude_map, *args, **kw):
-        self.include_map = np.asarray(include_map, 'float64')
-        self.exclude_map = np.asarray(exclude_map, 'float64')
+        self.include_map = np.asarray(include_map, "float64")
+        self.exclude_map = np.asarray(exclude_map, "float64")
 
     @classmethod
     def from_pve(cls, wm_map, gm_map, csf_map, **kw):
@@ -176,8 +176,8 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
     """
 
     def __cinit__(self, include_map, exclude_map):
-        self.include_map = np.asarray(include_map, 'float64')
-        self.exclude_map = np.asarray(exclude_map, 'float64')
+        self.include_map = np.asarray(include_map, "float64")
+        self.exclude_map = np.asarray(exclude_map, "float64")
 
     cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
         cdef:

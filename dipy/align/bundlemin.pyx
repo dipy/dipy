@@ -177,7 +177,7 @@ def _bundle_minimum_distance(double [:, ::1] static,
         cnp.npy_intp i=0, j=0, t=0
         cnp.npy_intp n_teams=1, tid=0
         double sum_i=0, sum_j=0, tmp=0, local_min_j=0, cand=0
-        double inf = np.finfo('f8').max
+        double inf = np.finfo("f8").max
         double dist=0
         double * min_j
         double * min_i
@@ -320,7 +320,7 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
     cdef:
         cnp.npy_intp i=0, j=0
         double sum_i=0, sum_j=0, tmp=0
-        double inf = np.finfo('f8').max
+        double inf = np.finfo("f8").max
         double dist=0
         double * min_j
         openmp.omp_lock_t lock
@@ -396,8 +396,8 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
     tracksB64 = np.zeros((lentB,), dtype=object)
     DM = np.zeros((lentA,lentB), dtype=np.double)
     if streamlines_a[0].shape[0] != streamlines_b[0].shape[0]:
-        msg = 'Streamlines should have the same number of points as required'
-        msg += 'by the MDF distance'
+        msg = "Streamlines should have the same number of points as required"
+        msg += "by the MDF distance"
         raise ValueError(msg)
     # process tracks to predictable memory layout
     for i in range(lentA):

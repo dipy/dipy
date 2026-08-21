@@ -27,7 +27,7 @@ def generate_tracking_parameters(algo_name, *,
 
     algo_name = algo_name.lower()
 
-    if algo_name in ['deterministic', 'det']:
+    if algo_name in ["deterministic", "det"]:
         params = TrackerParameters(max_len=max_len,
                                    min_len=min_len,
                                    step_size=step_size,
@@ -38,7 +38,7 @@ def generate_tracking_parameters(algo_name, *,
                                    return_all=return_all)
         params.set_tracker_c(deterministic_propagator)
         return params
-    elif algo_name in ['probabilistic', 'prob']:
+    elif algo_name in ["probabilistic", "prob"]:
         params = TrackerParameters(max_len=max_len,
                                    min_len=min_len,
                                    step_size=step_size,
@@ -49,7 +49,7 @@ def generate_tracking_parameters(algo_name, *,
                                    return_all=return_all)
         params.set_tracker_c(probabilistic_propagator)
         return params
-    elif algo_name == 'ptt':
+    elif algo_name == "ptt":
         params = TrackerParameters(max_len=max_len,
                                    min_len=min_len,
                                    step_size=step_size,
@@ -65,7 +65,7 @@ def generate_tracking_parameters(algo_name, *,
                                    return_all=return_all)
         params.set_tracker_c(parallel_transport_propagator)
         return params
-    elif algo_name == 'eudx':
+    elif algo_name == "eudx":
         params = TrackerParameters(max_len=max_len,
                                    min_len=min_len,
                                    step_size=step_size,

@@ -3228,7 +3228,7 @@ def gradient(img, img_world2grid, img_spacing, out_shape,
     elif dim == 3:
         jd_grad = _gradient_3d
     else:
-        raise ValueError('Undefined gradient for image dimension %d' % (dim,))
+        raise ValueError("Undefined gradient for image dimension %d" % (dim,))
     if img_world2grid.dtype != np.float64:
         img_world2grid = img_world2grid.astype(np.float64)
     if img_spacing.dtype != np.float64:

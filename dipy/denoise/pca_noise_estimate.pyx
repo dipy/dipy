@@ -124,7 +124,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
     W = Vt.T
 
     if images_as_samples:
-        W = W.astype('double')
+        W = W.astype("double")
         # #vox(features) >> # img(samples), last eigval zero (X is centered)
         idx = n3 - 2  # use second-to-last eigvec
         V = W[:, idx].reshape(n0, n1, n2)
@@ -180,7 +180,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
         # xi is practically equal to 1 above 37.4, and we overflow, raising
         # warnings and creating ot-a-numbers.
         # Instead, we will replace these values with 1 below
-        with np.errstate(over='ignore', invalid='ignore'):
+        with np.errstate(over="ignore", invalid="ignore"):
             xi = (2 + snr_sq - (np.pi / 8) * np.exp(-snr_sq / 2) *
                   ((2 + snr_sq) * sps.iv(0, snr_sq / 4) +
                   snr_sq * sps.iv(1, snr_sq / 4)) ** 2).astype(float)

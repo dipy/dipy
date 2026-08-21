@@ -289,11 +289,11 @@ cdef class QuickBundlesX:
     def get_stats(self):
         stats_per_level = []
         for i in range(self.nb_levels):
-            stats_per_level.append({'nb_mdf_calls': self.stats.stats_per_layer[i].nb_mdf_calls,
-                                    'nb_aabb_calls': self.stats.stats_per_layer[i].nb_aabb_calls,
-                                    'threshold': self.thresholds[i]})
+            stats_per_level.append({"nb_mdf_calls": self.stats.stats_per_layer[i].nb_mdf_calls,
+                                    "nb_aabb_calls": self.stats.stats_per_layer[i].nb_aabb_calls,
+                                    "threshold": self.thresholds[i]})
 
-        stats = {'stats_per_level': stats_per_level}
+        stats = {"stats_per_level": stats_per_level}
 
         return stats
 
@@ -611,8 +611,8 @@ cdef class QuickBundles:
         self.clusters.c_update(cluster_id)
 
     def get_stats(self):
-        stats = {'nb_mdf_calls': self.stats.nb_mdf_calls,
-                 'nb_aabb_calls': self.stats.nb_aabb_calls}
+        stats = {"nb_mdf_calls": self.stats.nb_mdf_calls,
+                 "nb_aabb_calls": self.stats.nb_aabb_calls}
 
         return stats
 
@@ -632,8 +632,8 @@ cdef class QuickBundles:
 
 def evaluate_aabb_checks():
     cdef:
-        Data2D feature1 = np.array([[1, 0, 0], [1, 1, 0], [1 + np.sqrt(2)/2., 1 + np.sqrt(2)/2., 0]], dtype='f4')
-        Data2D feature2 = np.array([[1, 0, 0], [1, 1, 0], [1 + np.sqrt(2)/2., 1 + np.sqrt(2)/2., 0]], dtype='f4') + np.array([0.5, 0, 0], dtype='f4')
+        Data2D feature1 = np.array([[1, 0, 0], [1, 1, 0], [1 + np.sqrt(2)/2., 1 + np.sqrt(2)/2., 0]], dtype="f4")
+        Data2D feature2 = np.array([[1, 0, 0], [1, 1, 0], [1 + np.sqrt(2)/2., 1 + np.sqrt(2)/2., 0]], dtype="f4") + np.array([0.5, 0, 0], dtype="f4")
         float[6] aabb1
         float[6] aabb2
         int res

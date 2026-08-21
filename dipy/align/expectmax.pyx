@@ -66,9 +66,9 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
     #Quantizing at one level is not supported because we want to make sure the
     #maximum level in the quantization is never greater than num_levels-1
     if num_levels < 2:
-        raise ValueError('Quantization levels must be at least 2')
+        raise ValueError("Quantization levels must be at least 2")
     if num_levels >= 2**31:
-        raise ValueError('Quantization levels must be < 2**31')
+        raise ValueError("Quantization levels must be < 2**31")
 
     num_levels -= 1  # zero is one of the levels
 
@@ -169,7 +169,7 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
     #Quantizing at one level is not supported because we want to make sure the
     #maximum level in the quantization is never greater than num_levels-1
     if num_levels < 2:
-        raise ValueError('Quantization levels must be at least 2')
+        raise ValueError("Quantization levels must be at least 2")
 
     num_levels -= 1  # zero is one of the levels
 
