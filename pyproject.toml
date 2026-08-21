@@ -250,3 +250,6 @@ filterwarnings = [
     "ignore:.*np.find_common_type is deprecated.*:DeprecationWarning:scipy",
     "ignore:.*`product` is deprecated.*:DeprecationWarning:h5py"
 ]
+
+[tool.cython-lint]
+max-line-length = 88
