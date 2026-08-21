@@ -12,9 +12,8 @@ from dipy.io.utils import Origin, Space, recursive_compare
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
-vtk, have_vtk, setup_module = optional_package(
-    "vtk", min_version="9.0.0", max_version="9.1.0"
-)
+_, have_polyxios, _ = optional_package("polyxios", min_version="0.2.0")
+
 SPACES = [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX]
 ORIGINS = [Origin.NIFTI, Origin.TRACKVIS]
 
@@ -240,7 +239,7 @@ def test_random_space_transformations(rng=None):
     npt.assert_array_almost_equal(initial_vertices, sfs.vertices, decimal=5)
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 @pytest.mark.parametrize("space, origin", list(itertools.product(SPACES, ORIGINS)))
 def test_space_origin_gold_standard(space, origin):
     fname = FILEPATH_DIX[f"gs_mesh_{space.value.lower()}_{origin.value.lower()}.ply"]
@@ -281,7 +280,7 @@ def test_equivalent_gii():
     npt.assert_allclose(vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_create_from_sfs():
     sfs_1 = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -308,7 +307,7 @@ def test_create_from_sfs():
         )
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_init_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -325,7 +324,7 @@ def test_init_dtype_dict_attributes():
         npt.assert_(False, msg=e)
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_set_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -346,7 +345,7 @@ def test_set_dtype_dict_attributes():
         npt.assert_(False, msg="dtype_dict should be identical after set.")
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_set_partial_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -373,7 +372,7 @@ def test_set_partial_dtype_dict_attributes():
         )
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_non_existing_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -395,7 +394,7 @@ def test_non_existing_dtype_dict_attributes():
         npt.assert_(True)
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_from_sfs_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -422,7 +421,7 @@ def test_from_sfs_dtype_dict_attributes():
         npt.assert_(False, msg="from_sfs() should not modify the dtype_dict.")
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 @pytest.mark.parametrize("extension", ["vtk", "gii", "pial"])
 def test_save_load_many_times(tmp_path, extension):
     # Load initial surface

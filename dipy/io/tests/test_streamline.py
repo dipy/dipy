@@ -7,15 +7,19 @@ import pytest
 
 from dipy.data import get_fnames
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import load_tractogram, load_trk, save_tractogram, save_trk
+from dipy.io.streamline import (
+    load_tractogram,
+    load_trk,
+    load_vtk_streamlines,
+    save_tractogram,
+    save_trk,
+    save_vtk_streamlines,
+)
 from dipy.io.utils import Origin, Space, create_nifti_header
-from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 
-vtk, have_vtk, setup_module = optional_package(
-    "vtk", min_version="9.0.0", max_version="9.1.0"
-)
+_, have_polyxios, _ = optional_package("polyxios", min_version="0.2.0")
 
 FILEPATH_DIX = None
 SPACES = [Space.RASMM, Space.LPSMM, Space.VOXMM, Space.VOX]
@@ -202,7 +206,7 @@ def io_tractogram(tmp_path, extension):
     npt.assert_array_almost_equal(sft.streamlines[1], STREAMLINE, decimal=4)
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 @pytest.mark.parametrize("space,origin", list(itertools.product(SPACES, ORIGINS)))
 def test_vtk_matching_space(tmp_path, space, origin):
     # VTK/FIB in the gold standard dataset are in LPSMM space.
@@ -234,13 +238,13 @@ def test_io_ext_non_vtk(tmp_path, ext):
     io_tractogram(tmp_path, ext)
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 @pytest.mark.parametrize("ext", ["vtk", "vtp"])
 def test_io_vtk(tmp_path, ext):
     io_tractogram(tmp_path, ext)
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_low_io_vtk(tmp_path):
     fname = tmp_path / "test.fib"
 
