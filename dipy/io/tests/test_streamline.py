@@ -206,26 +206,26 @@ def io_tractogram(tmp_path, extension):
 @pytest.mark.parametrize("space,origin", list(itertools.product(SPACES, ORIGINS)))
 def test_vtk_matching_space(tmp_path, space, origin):
     # VTK/FIB in the gold standard dataset are in LPSMM space.
-    sfs = load_tractogram(
+    sft = load_tractogram(
         FILEPATH_DIX["gs_streamlines.vtk"],
         FILEPATH_DIX["gs_volume.nii"],
         from_space=Space.LPSMM,
     )
-    sfs.to_rasmm()
-    sfs.to_center()
-    ref_coords = sfs.streamlines._data.copy()
+    sft.to_rasmm()
+    sft.to_center()
+    ref_coords = sft.streamlines._data.copy()
 
-    save_tractogram(sfs, tmp_path / "tmp.vtk", to_space=space, to_origin=origin)
-    sfs = load_tractogram(
+    save_tractogram(sft, tmp_path / "tmp.vtk", to_space=space, to_origin=origin)
+    sft = load_tractogram(
         tmp_path / "tmp.vtk",
         FILEPATH_DIX["gs_volume.nii"],
         from_space=space,
         from_origin=origin,
     )
 
-    sfs.to_rasmm()
-    sfs.to_center()
-    save_coords = sfs.streamlines._data.copy()
+    sft.to_rasmm()
+    sft.to_center()
+    save_coords = sft.streamlines._data.copy()
     npt.assert_almost_equal(ref_coords, save_coords, decimal=5)
 
 
