@@ -3,7 +3,7 @@ cimport numpy as cnp
 cimport cython
 
 from safe_openmp cimport have_openmp
-from cython.parallel import parallel, prange, threadid
+from cython.parallel import prange
 
 from scipy.spatial import KDTree
 from scipy.interpolate import interp1d
