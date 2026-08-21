@@ -331,10 +331,10 @@ def test_add_default_args_to_docstring():
 
 
 def test_workflow_docstring_matches_signature():
-    # ``IntrospectiveArgumentParser.add_workflow`` pairs the ``run`` method
-    # signature with the doc string ``Parameters`` section by position, so an
-    # entry that is missing, extra or out of order silently assigns the wrong
-    # help text and default value to a command line argument.
+    # ``IntrospectiveArgumentParser.add_workflow`` documents each command line
+    # argument with the docstring ``Parameters`` entry in the same position, so
+    # an entry that is missing, extra or out of order silently attaches the
+    # wrong help text and default value to an argument.
     mismatched = []
     for cli_name, (mod_name, flow_name) in cli_flows.items():
         mod, have_mod, _ = optional_package(mod_name)
@@ -349,13 +349,13 @@ def test_workflow_docstring_matches_signature():
         if documented_args != args:
             mismatched.append(
                 f"{cli_name} ({mod_name}.{flow_name}):"
-                f"\n  run() declares    {args}"
-                f"\n  doc string lists  {documented_args}"
+                f"\n  arguments  {args}"
+                f"\n  documented {documented_args}"
             )
 
     npt.assert_equal(
         mismatched,
         [],
-        err_msg="Doc string parameters do not match the run method "
-        "signature:\n" + "\n".join(mismatched),
+        err_msg="Docstring parameters do not match the command line "
+        "arguments:\n" + "\n".join(mismatched),
     )
