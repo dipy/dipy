@@ -9,7 +9,6 @@
 # cython: embedsignature=True
 
 cimport cython
-from cython.parallel import prange
 
 import numpy as np
 cimport numpy as cnp
@@ -32,8 +31,7 @@ from dipy.tracking.tractogen cimport prepare_pmf
 from dipy.tracking.tracker_parameters cimport TrackerParameters, TrackerStatus
 
 from libc.stdlib cimport malloc, free
-from libc.math cimport M_PI, pow, sin, cos, fabs
-from libc.stdio cimport printf
+from libc.math cimport pow, sin, cos, fabs
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double x)

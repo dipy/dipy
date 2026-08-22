@@ -4,11 +4,10 @@ cimport cython
 cimport numpy as cnp
 
 import numpy as np
-import warnings
 
 from libc.math cimport floor
 
-from scipy.interpolate import Rbf, RBFInterpolator
+from scipy.interpolate import RBFInterpolator
 
 from dipy.align.fused_types cimport floating, number
 

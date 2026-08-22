@@ -18,7 +18,6 @@ References
 
 cimport numpy as cnp
 from libc.math cimport M_PI, pow, sin, cos, fabs
-from libc.stdlib cimport malloc, free
 
 from dipy.direction.probabilistic_direction_getter cimport \
         ProbabilisticDirectionGetter

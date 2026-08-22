@@ -9,7 +9,6 @@ discrete distribution (pmf) at each step of the tracking.
 """
 from random import random
 
-import numpy as np
 cimport numpy as cnp
 
 from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
