@@ -104,7 +104,7 @@ cdef class SimplePmfGen(PmfGen):
             double pmf_value = 0
 
         idx = self.find_closest(xyz)
-        trilinear_interpolate4d_c(self.data[:,:,:,idx:idx+1],
+        trilinear_interpolate4d_c(self.data[:, :, :, idx:idx+1],
                                   point,
                                   &pmf_value)
         return pmf_value

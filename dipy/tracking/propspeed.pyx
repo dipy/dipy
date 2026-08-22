@@ -126,7 +126,7 @@ cdef cnp.npy_intp _nearest_direction(double* dx,
     """
     cdef:
         double max_dot = 0
-        double angl,curr_dot
+        double angl, curr_dot
         double odfv[3]
         cnp.npy_intp i, j, max_doti = 0
 
@@ -246,7 +246,7 @@ cdef cnp.npy_intp _propagation_direction(double *point,
     return 1
 
 
-cdef cnp.npy_intp _initial_direction(double* seed,double *qa,
+cdef cnp.npy_intp _initial_direction(double* seed, double *qa,
                                      double* ind, double* odf_vertices,
                                      double qa_thr,
                                      cnp.npy_intp* strides,
@@ -258,7 +258,7 @@ cdef cnp.npy_intp _initial_direction(double* seed,double *qa,
         cnp.npy_intp point[4]
         cnp.npy_intp off
         cnp.npy_intp i
-        double qa_tmp,ind_tmp
+        double qa_tmp, ind_tmp
     # Very tricky/cool addition/flooring that helps create a valid neighborhood
     # (grid) for the trilinear interpolation to run smoothly.
     # Find the index for qa
@@ -266,7 +266,7 @@ cdef cnp.npy_intp _initial_direction(double* seed,double *qa,
         point[i] = <cnp.npy_intp>floor(seed[i] + .5)
     point[3] = ref
     # Find the offset in memory to access the qa value
-    off = offset(<cnp.npy_intp*>point,strides, 4, 8)
+    off = offset(<cnp.npy_intp*>point, strides, 4, 8)
     qa_tmp = qa[off]
     # Check for scalar threshold
     if qa_tmp < qa_thr:

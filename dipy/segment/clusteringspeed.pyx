@@ -9,7 +9,7 @@ from dipy.segment.clustering import TreeCluster, TreeClusterMap
 
 
 from libc.math cimport fabs
-from dipy.segment.cythonutils cimport Data2D, Shape,\
+from dipy.segment.cythonutils cimport Data2D, Shape, \
     tuple2shape, same_shape, create_memview_2d, free_memview_2d
 
 cdef extern from "math.h" nogil:
@@ -29,7 +29,7 @@ cdef print_node(CentroidNode* node, prepend=""):
     if node == NULL:
         return ""
     cdef Data2D centroid
-    centroid = <float[:node.centroid_shape.dims[0],:node.centroid_shape.dims[1]]> &node.centroid[0][0,0]
+    centroid = <float[:node.centroid_shape.dims[0], :node.centroid_shape.dims[1]]> &node.centroid[0][0, 0]
     txt = "{}".format(np.asarray(centroid).tolist())
     txt += " {" + ",".join(map(str, np.asarray(<int[:node.size]> node.indices))) + "}"
     txt += " children({})".format(node.nb_children)
@@ -271,7 +271,7 @@ cdef class QuickBundlesX:
 
     cdef object _build_tree_clustermap(self, CentroidNode* node):
         cdef Data2D centroid
-        centroid = <float[:self.features_shape.dims[0],:self.features_shape.dims[1]]> &node.centroid[0][0,0]
+        centroid = <float[:self.features_shape.dims[0], :self.features_shape.dims[1]]> &node.centroid[0][0, 0]
         tree_cluster = TreeCluster(threshold=node.threshold,
                                    centroid=np.asarray(centroid),
                                    indices=np.asarray(<int[:node.size]> node.indices).copy())

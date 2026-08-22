@@ -358,11 +358,11 @@ def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_em_demons_step_2d(floating[:,:] delta_field,
-                              floating[:,:] sigma_sq_field,
-                              floating[:,:,:] gradient_moving,
+def compute_em_demons_step_2d(floating[:, :] delta_field,
+                              floating[:, :] sigma_sq_field,
+                              floating[:, :, :] gradient_moving,
                               double sigma_sq_x,
-                              floating[:,:,:] out):
+                              floating[:, :, :] out):
     r"""Demons step for EM metric in 2D
 
     Computes the demons step :footcite:p:`Vercauteren2009` for SSD-driven
@@ -422,8 +422,8 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         energy = 0
         for i in range(nr):
             for j in range(nc):
-                sigma_sq_i = sigma_sq_field[i,j]
-                delta = delta_field[i,j]
+                sigma_sq_i = sigma_sq_field[i, j]
+                delta = delta_field[i, j]
                 energy += (delta**2)
                 if dpy_isinf(sigma_sq_i) != 0:
                     out[i, j, 0], out[i, j, 1] = 0, 0
@@ -449,11 +449,11 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_em_demons_step_3d(floating[:,:,:] delta_field,
-                              floating[:,:,:] sigma_sq_field,
-                              floating[:,:,:,:] gradient_moving,
+def compute_em_demons_step_3d(floating[:, :, :] delta_field,
+                              floating[:, :, :] sigma_sq_field,
+                              floating[:, :, :, :] gradient_moving,
                               double sigma_sq_x,
-                              floating[:,:,:,:] out):
+                              floating[:, :, :, :] out):
     r"""Demons step for EM metric in 3D
 
     Computes the demons step :footcite:p:`Vercauteren2009` for SSD-driven
@@ -515,8 +515,8 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
         for k in range(ns):
             for i in range(nr):
                 for j in range(nc):
-                    sigma_sq_i = sigma_sq_field[k,i,j]
-                    delta = delta_field[k,i,j]
+                    sigma_sq_i = sigma_sq_field[k, i, j]
+                    delta = delta_field[k, i, j]
                     energy += (delta**2)
                     if dpy_isinf(sigma_sq_i) != 0:
                         out[k, i, j, 0] = 0

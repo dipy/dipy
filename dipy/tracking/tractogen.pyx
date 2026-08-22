@@ -28,8 +28,8 @@ from libc.string cimport memcpy, memset
 from libc.math cimport ceil
 
 
-def generate_tractogram(double[:,::1] seed_positions,
-                        double[:,::1] seed_directions,
+def generate_tractogram(double[:, ::1] seed_positions,
+                        double[:, ::1] seed_directions,
                         StoppingCriterion sc,
                         TrackerParameters params,
                         PmfGen pmf_gen,
@@ -106,7 +106,7 @@ def generate_tractogram(double[:,::1] seed_positions,
                 and (length_arr[i] >= params.min_nbr_pts
                      and length_arr[i] <= params.max_nbr_pts)):
                 s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
-                track = s.copy().reshape((-1,3))
+                track = s.copy().reshape((-1, 3))
                 if save_seeds:
                     yield np.dot(track, lin_T) + offset, np.dot(seed_positions[seed_start + i], lin_T) + offset
                 else:
@@ -123,8 +123,8 @@ def generate_tractogram(double[:,::1] seed_positions,
             seed_end = _len
 
 
-cdef void generate_tractogram_c(double[:,::1] seed_positions,
-                                double[:,::1] seed_directions,
+cdef void generate_tractogram_c(double[:, ::1] seed_positions,
+                                double[:, ::1] seed_directions,
                                int nbr_threads,
                                StoppingCriterion sc,
                                TrackerParameters params,

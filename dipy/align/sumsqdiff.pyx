@@ -101,7 +101,7 @@ cdef int _solve_3d_symmetric_positive_definite(double* g,
         1 if M is singular, otherwise 0
     """
     cdef:
-        double a,b,c,d,e,f, y0, y1, y2, sub_det
+        double a, b, c, d, e, f, y0, y1, y2, sub_det
     a = g[0] ** 2 + tau
     if a < 1e-9:
         return 1
@@ -737,10 +737,10 @@ cpdef compute_residual_displacement_field_ssd_2d(
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_ssd_demons_step_2d(floating[:,:] delta_field,
-                               floating[:,:,:] gradient_moving,
+def compute_ssd_demons_step_2d(floating[:, :] delta_field,
+                               floating[:, :, :] gradient_moving,
                                double sigma_sq_x,
-                               floating[:,:,:] out):
+                               floating[:, :, :] out):
     r"""Demons step for 2D SSD-driven registration
 
     Computes the demons step for SSD-driven registration
@@ -786,7 +786,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
         energy = 0
         for i in range(nr):
             for j in range(nc):
-                delta = delta_field[i,j]
+                delta = delta_field[i, j]
                 delta_2 = delta**2
                 energy += delta_2
                 nrm2 = gradient_moving[i, j, 0]**2 + gradient_moving[i, j, 1]**2
@@ -804,10 +804,10 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
-                               floating[:,:,:,:] gradient_moving,
+def compute_ssd_demons_step_3d(floating[:, :, :] delta_field,
+                               floating[:, :, :, :] gradient_moving,
                                double sigma_sq_x,
-                               floating[:,:,:,:] out):
+                               floating[:, :, :, :] out):
     r"""Demons step for 3D SSD-driven registration
 
     Computes the demons step for SSD-driven registration
@@ -855,7 +855,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
         for k in range(ns):
             for i in range(nr):
                 for j in range(nc):
-                    delta = delta_field[k,i,j]
+                    delta = delta_field[k, i, j]
                     delta_2 = delta**2
                     energy += delta_2
                     nrm2 = (gradient_moving[k, i, j, 0]**2 +

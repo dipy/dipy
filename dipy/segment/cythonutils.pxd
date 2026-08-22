@@ -4,12 +4,12 @@ cdef extern from "cythonutils.h":
     enum: MAX_NDIM
 
 ctypedef float[:] Data1D
-ctypedef float[:,:] Data2D
-ctypedef float[:,:,:] Data3D
-ctypedef float[:,:,:,:] Data4D
-ctypedef float[:,:,:,:,:] Data5D
-ctypedef float[:,:,:,:,:,:] Data6D
-ctypedef float[:,:,:,:,:,:,:] Data7D
+ctypedef float[:, :] Data2D
+ctypedef float[:, :, :] Data3D
+ctypedef float[:, :, :, :] Data4D
+ctypedef float[:, :, :, :, :] Data5D
+ctypedef float[:, :, :, :, :, :] Data6D
+ctypedef float[:, :, :, :, :, :, :] Data7D
 
 ctypedef fused Data:
     Data1D

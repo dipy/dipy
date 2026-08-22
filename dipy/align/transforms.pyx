@@ -419,10 +419,10 @@ cdef class RotationTransform3D(Transform):
             double sc = sin(theta[2])
             double cc = cos(theta[2])
 
-        R[0,0], R[0,1], R[0,2] = cc*cb-sc*sa*sb, -sc*ca, cc*sb+sc*sa*cb
-        R[1,0], R[1,1], R[1,2] = sc*cb+cc*sa*sb, cc*ca, sc*sb-cc*sa*cb
-        R[2,0], R[2,1], R[2,2] = -ca*sb, sa, ca*cb
-        R[3,0], R[3,1], R[3,2] = 0, 0, 0
+        R[0, 0], R[0, 1], R[0, 2] = cc*cb-sc*sa*sb, -sc*ca, cc*sb+sc*sa*cb
+        R[1, 0], R[1, 1], R[1, 2] = sc*cb+cc*sa*sb, cc*ca, sc*sb-cc*sa*cb
+        R[2, 0], R[2, 1], R[2, 2] = -ca*sb, sa, ca*cb
+        R[3, 0], R[3, 1], R[3, 2] = 0, 0, 0
         R[0, 3] = 0
         R[1, 3] = 0
         R[2, 3] = 0
@@ -632,14 +632,14 @@ cdef class RigidTransform3D(Transform):
             double dy = theta[4]
             double dz = theta[5]
 
-        R[0,0], R[0,1], R[0,2] = cc*cb-sc*sa*sb, -sc*ca, cc*sb+sc*sa*cb
-        R[1,0], R[1,1], R[1,2] = sc*cb+cc*sa*sb, cc*ca, sc*sb-cc*sa*cb
-        R[2,0], R[2,1], R[2,2] = -ca*sb, sa, ca*cb
-        R[3,0], R[3,1], R[3,2] = 0, 0, 0
-        R[0,3] = dx
-        R[1,3] = dy
-        R[2,3] = dz
-        R[3,3] = 1
+        R[0, 0], R[0, 1], R[0, 2] = cc*cb-sc*sa*sb, -sc*ca, cc*sb+sc*sa*cb
+        R[1, 0], R[1, 1], R[1, 2] = sc*cb+cc*sa*sb, cc*ca, sc*sb-cc*sa*cb
+        R[2, 0], R[2, 1], R[2, 2] = -ca*sb, sa, ca*cb
+        R[3, 0], R[3, 1], R[3, 2] = 0, 0, 0
+        R[0, 3] = dx
+        R[1, 3] = dy
+        R[2, 3] = dz
+        R[3, 3] = 1
 
 
 cdef class RigidIsoScalingTransform2D(Transform):
@@ -876,14 +876,14 @@ cdef class RigidIsoScalingTransform3D(Transform):
             double dz = theta[5]
             double sxyz = theta[6]
 
-        R[0,0], R[0,1], R[0,2] = (cc*cb-sc*sa*sb)*sxyz, -sc*ca*sxyz, (cc*sb+sc*sa*cb)*sxyz
-        R[1,0], R[1,1], R[1,2] = (sc*cb+cc*sa*sb)*sxyz, cc*ca*sxyz, (sc*sb-cc*sa*cb)*sxyz
-        R[2,0], R[2,1], R[2,2] = -ca*sb*sxyz, sa*sxyz, ca*cb*sxyz
-        R[3,0], R[3,1], R[3,2] = 0, 0, 0
-        R[0,3] = dx
-        R[1,3] = dy
-        R[2,3] = dz
-        R[3,3] = 1
+        R[0, 0], R[0, 1], R[0, 2] = (cc*cb-sc*sa*sb)*sxyz, -sc*ca*sxyz, (cc*sb+sc*sa*cb)*sxyz
+        R[1, 0], R[1, 1], R[1, 2] = (sc*cb+cc*sa*sb)*sxyz, cc*ca*sxyz, (sc*sb-cc*sa*cb)*sxyz
+        R[2, 0], R[2, 1], R[2, 2] = -ca*sb*sxyz, sa*sxyz, ca*cb*sxyz
+        R[3, 0], R[3, 1], R[3, 2] = 0, 0, 0
+        R[0, 3] = dx
+        R[1, 3] = dy
+        R[2, 3] = dz
+        R[3, 3] = 1
 
 
 cdef class RigidScalingTransform2D(Transform):
@@ -1134,14 +1134,14 @@ cdef class RigidScalingTransform3D(Transform):
             double fy = theta[7]
             double fz = theta[8]
 
-        R[0,0], R[0,1], R[0,2] = (cc*cb-sc*sa*sb)*fx, -sc*ca*fx, (cc*sb+sc*sa*cb)*fx
-        R[1,0], R[1,1], R[1,2] = (sc*cb+cc*sa*sb)*fy, cc*ca*fy, (sc*sb-cc*sa*cb)*fy
-        R[2,0], R[2,1], R[2,2] = -ca*sb*fz, sa*fz, ca*cb*fz
-        R[3,0], R[3,1], R[3,2] = 0, 0, 0
-        R[0,3] = dx
-        R[1,3] = dy
-        R[2,3] = dz
-        R[3,3] = 1
+        R[0, 0], R[0, 1], R[0, 2] = (cc*cb-sc*sa*sb)*fx, -sc*ca*fx, (cc*sb+sc*sa*cb)*fx
+        R[1, 0], R[1, 1], R[1, 2] = (sc*cb+cc*sa*sb)*fy, cc*ca*fy, (sc*sb-cc*sa*cb)*fy
+        R[2, 0], R[2, 1], R[2, 2] = -ca*sb*fz, sa*fz, ca*cb*fz
+        R[3, 0], R[3, 1], R[3, 2] = 0, 0, 0
+        R[0, 3] = dx
+        R[1, 3] = dy
+        R[2, 3] = dz
+        R[3, 3] = 1
 
 
 cdef class ScalingTransform2D(Transform):

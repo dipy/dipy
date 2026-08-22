@@ -112,7 +112,7 @@ cdef class DirectionGetter:
             step = _step_to_boundary
 
         copy_point(&seed[0], point)
-        copy_point(&seed[0], &streamline[0,0])
+        copy_point(&seed[0], &streamline[0, 0])
 
         stream_status = TRACKPOINT
         for i in range(1, len_streamlines):

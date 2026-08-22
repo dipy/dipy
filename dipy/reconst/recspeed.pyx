@@ -480,18 +480,18 @@ def le_to_odf(cnp.ndarray[double, ndim=1] odf,
 @cython.wraparound(False)
 def sum_on_blocks_1d(cnp.ndarray[double, ndim=1] arr,
     cnp.ndarray[long, ndim=1] blocks,
-    cnp.ndarray[double, ndim=1] out,int outn):
+    cnp.ndarray[double, ndim=1] out, int outn):
     """Summations on blocks of 1d array
     """
     cdef:
-        int m,i,j
+        int m, i, j
         double blocksum
 
     with nogil:
         j=0
         for m in range(outn):
             blocksum=0
-            for i in range(j,j+blocks[m]):
+            for i in range(j, j+blocks[m]):
                 blocksum+=arr[i]
             out[m]=blocksum
             j+=blocks[m]
