@@ -797,7 +797,7 @@ cdef class RigidIsoScalingTransform3D(Transform):
         J[0, 0] = (-sc * ca * sb) * px * scale + (sc * sa) * py * scale + \
                   (sc * ca * cb) * pz * scale
         J[1, 0] = (cc * ca * sb) * px * scale + (-cc * sa) * py * scale + \
-                  (-cc * ca * cb) * pz  * scale
+                  (-cc * ca * cb) * pz * scale
         J[2, 0] = (sa * sb) * px * scale + ca * py * scale + \
                   (-sa * cb) * pz * scale
 
@@ -808,7 +808,7 @@ cdef class RigidIsoScalingTransform3D(Transform):
         J[2, 1] = (-ca * cb) * px * scale + (-ca * sb) * pz * scale
 
         J[0, 2] = (-sc * cb - cc * sa * sb) * px * scale + \
-                  (-cc * ca) * py  * scale + \
+                  (-cc * ca) * py * scale + \
                   (-sc * sb + cc * sa * cb) * pz * scale
         J[1, 2] = (cc * cb - sc * sa * sb) * px * scale + \
                   (-sc * ca) * py * scale + \

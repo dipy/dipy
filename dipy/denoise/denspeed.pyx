@@ -281,7 +281,7 @@ cdef cnp.npy_intp copy_block_3d(double * dest,
 
     for i in range(I):
         for j in range(J):
-            memcpy(&dest[i * J * K  + j * K], &source[i + min_i, j + min_j, min_k], K * sizeof(double))
+            memcpy(&dest[i * J * K + j * K], &source[i + min_i, j + min_j, min_k], K * sizeof(double))
 
     return 1
 

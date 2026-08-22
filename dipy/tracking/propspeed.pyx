@@ -582,7 +582,7 @@ cdef void prepare_ptt_propagator(TrackerParameters params,
         if fabs(stream_data[25]) < params.ptt.k_small:  # k2
             stream_data[25] = params.ptt.k_small
 
-        tmp_arclength  = arclength * arclength / 2.0
+        tmp_arclength = arclength * arclength / 2.0
 
         # stream_data[10:18] -> propagator
         stream_data[11] = stream_data[24] * tmp_arclength
