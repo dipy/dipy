@@ -222,8 +222,8 @@ class ParzenJointHistogram:
             raise ValueError("Images must have the same shape")
         dim = len(static.shape)
         if not dim in [2, 3]:
-            msg = 'Only dimensions 2 and 3 are supported. ' +\
-                    str(dim) + ' received'
+            msg = "Only dimensions 2 and 3 are supported. " +\
+                    str(dim) + " received"
             raise ValueError(msg)
         if not self.setup_called:
             self.setup(static, moving, smask=None, mmask=None)
@@ -341,12 +341,12 @@ class ParzenJointHistogram:
             raise ValueError("Images must have the same shape")
         dim = len(static.shape)
         if not dim in [2, 3]:
-            msg = 'Only dimensions 2 and 3 are supported. ' +\
-                str(dim) + ' received'
+            msg = "Only dimensions 2 and 3 are supported. " +\
+                str(dim) + " received"
             raise ValueError(msg)
 
         if mgradient.shape != moving.shape + (dim,):
-            raise ValueError('Invalid gradient field dimensions.')
+            raise ValueError("Invalid gradient field dimensions.")
 
         if not self.setup_called:
             self.setup(static, moving, smask=smask, mmask=mmask)
@@ -368,7 +368,7 @@ class ParzenJointHistogram:
                     self.smin, self.sdelta, self.mmin, self.mdelta,
                     self.nbins, self.padding, self.joint_grad)
             else:
-                raise ValueError('Grad. field dtype must be floating point')
+                raise ValueError("Grad. field dtype must be floating point")
 
         elif dim == 3:
             if mgradient.dtype == np.float64:
@@ -382,7 +382,7 @@ class ParzenJointHistogram:
                     self.smin, self.sdelta, self.mmin, self.mdelta,
                     self.nbins, self.padding, self.joint_grad)
             else:
-                raise ValueError('Grad. field dtype must be floating point')
+                raise ValueError("Grad. field dtype must be floating point")
 
     def compute_dense_mi_update(self, static, moving, mgradient, update_field,
                                 smask=None, mmask=None):
@@ -515,15 +515,15 @@ class ParzenJointHistogram:
         """
         dim = sample_points.shape[1]
         if mgradient.shape[1] != dim:
-            raise ValueError('Dimensions of gradients and points are different')
+            raise ValueError("Dimensions of gradients and points are different")
 
         nsamples = sval.shape[0]
         if ((mgradient.shape[0] != nsamples) or (mval.shape[0] != nsamples)
             or sample_points.shape[0] != nsamples):
-            raise ValueError('Number of points and gradients are different.')
+            raise ValueError("Number of points and gradients are different.")
 
         if not mgradient.dtype in [np.float32, np.float64]:
-            raise ValueError('Gradients dtype must be floating point')
+            raise ValueError("Gradients dtype must be floating point")
 
         n = theta.shape[0]
         nbins = self.nbins
@@ -543,7 +543,7 @@ class ParzenJointHistogram:
                     self.sdelta, self.mmin, self.mdelta, self.nbins,
                     self.padding, self.joint_grad)
             else:
-                raise ValueError('Gradients dtype must be floating point')
+                raise ValueError("Gradients dtype must be floating point")
 
         elif dim == 3:
             if mgradient.dtype == np.float64:
@@ -557,10 +557,10 @@ class ParzenJointHistogram:
                     self.sdelta, self.mmin, self.mdelta, self.nbins,
                     self.padding, self.joint_grad)
             else:
-                raise ValueError('Gradients dtype must be floating point')
+                raise ValueError("Gradients dtype must be floating point")
         else:
-            msg = 'Only dimensions 2 and 3 are supported. ' + str(dim) +\
-                ' received'
+            msg = "Only dimensions 2 and 3 are supported. " + str(dim) +\
+                " received"
             raise ValueError(msg)
 
 

@@ -5,7 +5,7 @@ import os
 cimport safe_openmp as openmp
 have_openmp = <int> openmp.have_openmp
 
-__all__ = ['have_openmp', 'default_threads', 'cpu_count', 'thread_count']
+__all__ = ["have_openmp", "default_threads", "cpu_count", "thread_count"]
 
 
 def cpu_count():
@@ -31,7 +31,7 @@ def _get_default_threads():
     """
     if have_openmp:
         try:
-            default_threads = int(os.environ.get('OMP_NUM_THREADS', None))
+            default_threads = int(os.environ.get("OMP_NUM_THREADS", None))
             if default_threads < 1:
                 raise ValueError("invalid number of threads")
         except (ValueError, TypeError):

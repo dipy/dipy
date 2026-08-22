@@ -64,7 +64,7 @@ cdef void compute_distances_simd(
     cdef size_t j
 
     # Parallel loop over queries
-    for i in prange(<Py_ssize_t>n_queries, schedule='static', nogil=True):
+    for i in prange(<Py_ssize_t>n_queries, schedule="static", nogil=True):
         for j in range(n_database):
             distances[<size_t>i * n_database + j] = fvec_inner_product(
                 &queries[i, 0],
@@ -92,8 +92,8 @@ cdef void compute_distances_blas(
 
     cdef float alpha = 1.0
     cdef float beta = 0.0
-    cdef char trans_a = b'T'
-    cdef char trans_b = b'N'
+    cdef char trans_a = b"T"
+    cdef char trans_b = b"N"
 
     cdef int m = nd
     cdef int n = nq
@@ -268,10 +268,10 @@ def search_inner_product(
         raise ValueError(f"k ({k}) cannot be larger than database size ({n_database})")
 
     # Allocate output arrays (C-contiguous)
-    cdef cnp.ndarray[cnp.float32_t, ndim=2, mode='c'] distances = \
-        np.empty((n_queries, k), dtype=np.float32, order='C')
-    cdef cnp.ndarray[cnp.int64_t, ndim=2, mode='c'] indices = \
-        np.empty((n_queries, k), dtype=np.int64, order='C')
+    cdef cnp.ndarray[cnp.float32_t, ndim=2, mode="c"] distances = \
+        np.empty((n_queries, k), dtype=np.float32, order="C")
+    cdef cnp.ndarray[cnp.int64_t, ndim=2, mode="c"] indices = \
+        np.empty((n_queries, k), dtype=np.int64, order="C")
 
     # Get memoryviews
     cdef float[:, ::1] distances_view = distances

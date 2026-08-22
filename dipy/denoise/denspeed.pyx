@@ -58,9 +58,9 @@ def nlmeans_3d_classic(arr, mask=None, sigma=None, patch_radius=1,
         raise ValueError(f'data needs to be a 3D ndarray, got shape {arr.shape}')
 
     if mask is None:
-        mask = np.ones(arr.shape, dtype='f8')
+        mask = np.ones(arr.shape, dtype="f8")
     else:
-        mask = np.ascontiguousarray(mask, dtype='f8')
+        mask = np.ascontiguousarray(mask, dtype="f8")
 
     if mask.ndim != 3:
         raise ValueError(f'mask needs to be a 3D ndarray, got shape {mask.shape}')
@@ -68,11 +68,11 @@ def nlmeans_3d_classic(arr, mask=None, sigma=None, patch_radius=1,
     if sigma.ndim != 3:
         raise ValueError(f'sigma needs to be a 3D ndarray, got shape {sigma.shape}')
 
-    arr = np.ascontiguousarray(arr, dtype='f8')
+    arr = np.ascontiguousarray(arr, dtype="f8")
     arr = add_padding_reflection(arr, block_radius)
-    mask = add_padding_reflection(mask.astype('f8'), block_radius)
-    sigma = np.ascontiguousarray(sigma, dtype='f8')
-    sigma = add_padding_reflection(sigma.astype('f8'), block_radius)
+    mask = add_padding_reflection(mask.astype("f8"), block_radius)
+    sigma = np.ascontiguousarray(sigma, dtype="f8")
+    sigma = add_padding_reflection(sigma.astype("f8"), block_radius)
     arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius,
                          rician, num_threads)
 
@@ -912,7 +912,7 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
     cdef double local_noise_variance_doubled
     cdef double local_filtering_strength
 
-    if hasattr(noise_sigma, 'ndim'):
+    if hasattr(noise_sigma, "ndim"):
         if noise_sigma.ndim != 3:
             raise ValueError(
                 f'noise_sigma should be scalar or a 3D ndarray, '
@@ -923,7 +923,7 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
                 f'3D noise_sigma shape {noise_sigma.shape} does not match '
                 f'image shape ({img_height}, {img_width}, {img_depth})'
             )
-        sigma_map = np.ascontiguousarray(noise_sigma, dtype='f8')
+        sigma_map = np.ascontiguousarray(noise_sigma, dtype="f8")
         use_sigma_map = True
     else:
         sigma_scalar = float(noise_sigma)
@@ -1058,7 +1058,7 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
 
 
 def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
-               block_radius=5, rician=True, num_threads=None, method='classic'):
+               block_radius=5, rician=True, num_threads=None, method="classic"):
     """ Non-local means for denoising 3D images with selectable algorithm
 
     Parameters
@@ -1095,24 +1095,24 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
         raise ValueError(f'data needs to be a 3D ndarray, got shape {arr.shape}')
 
     if mask is None:
-        mask = np.ones(arr.shape, dtype='f8')
+        mask = np.ones(arr.shape, dtype="f8")
     else:
-        mask = np.ascontiguousarray(mask, dtype='f8')
+        mask = np.ascontiguousarray(mask, dtype="f8")
 
     if mask.ndim != 3:
         raise ValueError(f'mask needs to be a 3D ndarray, got shape {mask.shape}')
 
     # Handle sigma validation based on method
-    if method == 'classic':
+    if method == "classic":
         # Classic method requires 3D sigma array
-        if not hasattr(sigma, 'ndim') or sigma.ndim != 3:
+        if not hasattr(sigma, "ndim") or sigma.ndim != 3:
             raise ValueError(
                 f'sigma needs to be a 3D ndarray for classic method, '
                 f'got {getattr(sigma, "shape", type(sigma))}'
             )
-    elif method == 'blockwise':
+    elif method == "blockwise":
         # Blockwise method can accept scalar or array sigma
-        if hasattr(sigma, 'ndim'):
+        if hasattr(sigma, "ndim"):
             if sigma.ndim > 3:
                 raise ValueError(
                     f'sigma should be at most 3D for blockwise method, '
@@ -1122,23 +1122,23 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     else:
         raise ValueError(f"Unknown method '{method}'. Use 'classic' or 'blockwise'.")
 
-    arr = np.ascontiguousarray(arr, dtype='f8')
+    arr = np.ascontiguousarray(arr, dtype="f8")
 
-    if method == 'classic':
+    if method == "classic":
         # Use original classic algorithm with padding
         arr = add_padding_reflection(arr, block_radius)
-        mask = add_padding_reflection(mask.astype('f8'), block_radius)
-        sigma = np.ascontiguousarray(sigma, dtype='f8')
-        sigma = add_padding_reflection(sigma.astype('f8'), block_radius)
+        mask = add_padding_reflection(mask.astype("f8"), block_radius)
+        sigma = np.ascontiguousarray(sigma, dtype="f8")
+        sigma = add_padding_reflection(sigma.astype("f8"), block_radius)
         arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius,
                              rician, num_threads)
         return remove_padding(arrnlm, block_radius)
-    elif method == 'blockwise':
+    elif method == "blockwise":
         # Use new blockwise algorithm without padding
         # For blockwise, scalar or 3D sigma map are supported
-        if hasattr(sigma, 'shape'):
+        if hasattr(sigma, "shape"):
             if sigma.shape == arr.shape:
-                sigma_input = np.ascontiguousarray(sigma, dtype='f8')
+                sigma_input = np.ascontiguousarray(sigma, dtype="f8")
             elif sigma.ndim == 1:
                 # 1D sigma for 3D input: take the mean as a fallback.
                 # For 4D inputs, nlmeans.py extracts per-volume scalars before reaching here.

@@ -14,7 +14,7 @@ from dipy.align.fused_types cimport floating, number
 
 
 def rbf_interpolation(data, sphere_origin, sphere_target, *,
-                      function='multiquadric', epsilon=None, smoothing=0.1):
+                      function="multiquadric", epsilon=None, smoothing=0.1):
     """Interpolate `data` on the sphere, using radial basis functions,
     where `data` can be scalar- (1D), vector- (2D), or tensor-valued (3D and beyond).
 
@@ -130,7 +130,7 @@ def trilinear_interp(cnp.float32_t[:, :, :, :] data, cython.floating[:] index,
         cnp.npy_intp x_ind, y_ind, z_ind, ii, jj, kk, LL
         cnp.npy_intp last_d = data.shape[3]
         bint bounds_check
-        cnp.ndarray[cnp.float32_t, ndim=1, mode='c'] result
+        cnp.ndarray[cnp.float32_t, ndim=1, mode="c"] result
 
     bounds_check = (x < 0 or y < 0 or z < 0 or
                     x > data.shape[0] or
@@ -143,7 +143,7 @@ def trilinear_interp(cnp.float32_t[:, :, :, :] data, cython.floating[:] index,
     splitoffset(&y, &y_ind, data.shape[1])
     splitoffset(&z, &z_ind, data.shape[2])
 
-    result = np.zeros(last_d, dtype='float32')
+    result = np.zeros(last_d, dtype="float32")
     for ii from 0 <= ii <= 1:
         for jj from 0 <= jj <= 1:
             for kk from 0 <= kk <= 1:
@@ -1081,7 +1081,7 @@ class NearestNeighborInterpolator(Interpolator):
     def __getitem__(self, index):
         index = tuple(index / self.voxel_size)
         if min(index) < 0:
-            raise OutsideImage('Negative Index')
+            raise OutsideImage("Negative Index")
         try:
             return self.data[tuple(np.array(index).astype(int))]
         except IndexError:

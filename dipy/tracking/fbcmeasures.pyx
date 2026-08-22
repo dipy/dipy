@@ -260,7 +260,7 @@ cdef class FBCMeasures:
         # compute fiber LFBC measures
         with nogil:
 
-            for line_id in prange(num_fibers, schedule='guided'):
+            for line_id in prange(num_fibers, schedule="guided"):
                 for point_id in range(streamlines_length[line_id] - 1):
                     score_mp[line_id] = 0.0
                     for line_id2 in range(num_fibers):

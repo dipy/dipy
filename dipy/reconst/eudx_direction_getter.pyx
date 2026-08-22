@@ -51,7 +51,7 @@ cdef class EuDXDirectionGetter(DirectionGetter):
         self._qa = np.ascontiguousarray(self.peak_values, dtype=np.double)
         self._ind = np.ascontiguousarray(self.peak_indices, dtype=np.double)
         self._odf_vertices = np.asarray(
-            self.sphere.vertices, dtype=np.double, order='C'
+            self.sphere.vertices, dtype=np.double, order="C"
         )
 
         self.initialized = True

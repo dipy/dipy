@@ -171,7 +171,7 @@ cdef void generate_tractogram_c(double[:,::1] seed_positions,
     if nbr_threads <= 0:
         nbr_threads = 0
 
-    for i in prange(_len, nogil=True, num_threads=nbr_threads, schedule='dynamic', chunksize=64):
+    for i in prange(_len, nogil=True, num_threads=nbr_threads, schedule="dynamic", chunksize=64):
         stream = <double*> malloc((params.max_nbr_pts * 3 * 2 + 1) * sizeof(double))
         stream_idx = <int*> malloc(2 * sizeof(int))
 

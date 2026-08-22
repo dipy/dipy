@@ -57,7 +57,7 @@ def test_tracker_deterministic():
                 category=PendingDeprecationWarning,
             )
             fit = model.fit(data.astype(dtype))
-            sh_pmf_gen = SHCoeffPmfGen(fit.shm_coeff, sphere, 'descoteaux07')
+            sh_pmf_gen = SHCoeffPmfGen(fit.shm_coeff, sphere, "descoteaux07")
             sf_pmf_gen = SimplePmfGen(fit.odf(sphere), sphere)
 
         point = np.zeros(3)
@@ -129,7 +129,7 @@ def test_tracker_probabilistic():
                 category=PendingDeprecationWarning,
             )
             fit = model.fit(data.astype(dtype))
-            sh_pmf_gen = SHCoeffPmfGen(fit.shm_coeff, sphere, 'descoteaux07')
+            sh_pmf_gen = SHCoeffPmfGen(fit.shm_coeff, sphere, "descoteaux07")
             sf_pmf_gen = SimplePmfGen(fit.odf(sphere), sphere)
 
         point = np.zeros(3)
@@ -202,7 +202,7 @@ def test_tracker_ptt():
                 category=PendingDeprecationWarning,
             )
             fit = model.fit(data.astype(dtype))
-            sh_pmf_gen = SHCoeffPmfGen(fit.shm_coeff, sphere, 'descoteaux07')
+            sh_pmf_gen = SHCoeffPmfGen(fit.shm_coeff, sphere, "descoteaux07")
             sf_pmf_gen = SimplePmfGen(fit.odf(sphere), sphere)
 
         point = np.zeros(3)

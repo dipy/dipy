@@ -358,7 +358,7 @@ def cut_plane(tracks, ref):
 
 
 
-def most_similar_track_mam(tracks,metric='avg'):
+def most_similar_track_mam(tracks,metric="avg"):
     """ Find the most similar track in a bundle
     using distances calculated from Zhang et. al 2008.
 
@@ -399,14 +399,14 @@ def most_similar_track_mam(tracks,metric='avg'):
     cdef:
         cnp.npy_intp i, j, lent
         int metric_type
-    if metric=='avg':
+    if metric=="avg":
         metric_type = 0
-    elif metric == 'min':
+    elif metric == "min":
         metric_type = 1
-    elif metric == 'max':
+    elif metric == "max":
         metric_type = 2
     else:
-        raise ValueError('Metric should be one of avg, min, max')
+        raise ValueError("Metric should be one of avg, min, max")
     # preprocess tracks
     cdef:
         cnp.npy_intp longest_track_len = 0, track_len
@@ -471,7 +471,7 @@ def most_similar_track_mam(tracks,metric='avg'):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def bundles_distances_mam(tracksA, tracksB, metric='avg'):
+def bundles_distances_mam(tracksA, tracksB, metric="avg"):
     """ Calculate distances between list of tracks A and list of tracks B
 
     Parameters
@@ -496,14 +496,14 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
     cdef:
         cnp.npy_intp i, j, lentA, lentB
         int metric_type
-    if metric=='avg':
+    if metric=="avg":
         metric_type = 0
-    elif metric == 'min':
+    elif metric == "min":
         metric_type = 1
-    elif metric == 'max':
+    elif metric == "max":
         metric_type = 2
     else:
-        raise ValueError('Metric should be one of avg, min, max')
+        raise ValueError("Metric should be one of avg, min, max")
     # preprocess tracks
     cdef:
         cnp.npy_intp longest_track_len = 0, track_len
@@ -728,7 +728,7 @@ cdef inline void min_distances(cnp.npy_intp t1_len,
 
 
 
-def mam_distances(xyz1,xyz2,metric='all'):
+def mam_distances(xyz1,xyz2,metric="all"):
     """ Min/Max/Mean Average Minimum Distance between tracks xyz1 and xyz2
 
     Based on the metrics in Zhang, Correia, Laidlaw 2008
@@ -801,18 +801,18 @@ def mam_distances(xyz1,xyz2,metric='all'):
     for t2_pi from 0<= t2_pi < t2_len:
         mean_t2t1+=min_t2t1[t2_pi]
     mean_t2t1=mean_t2t1/<cnp.float32_t>t2_len
-    if metric=='all':
+    if metric=="all":
         return ((mean_t2t1+mean_t1t2)/2.0,
                 np.min((mean_t2t1,mean_t1t2)),
                 np.max((mean_t2t1,mean_t1t2)))
-    elif metric=='avg':
+    elif metric=="avg":
         return (mean_t2t1+mean_t1t2)/2.0
-    elif metric=='min':
+    elif metric=="min":
         return np.min((mean_t2t1,mean_t1t2))
-    elif metric =='max':
+    elif metric =="max":
         return np.max((mean_t2t1,mean_t1t2))
     else :
-        ValueError('Wrong argument for metric')
+        ValueError("Wrong argument for metric")
 
 
 def minimum_closest_distance(xyz1,xyz2):
@@ -1711,19 +1711,19 @@ def local_skeleton_clustering(tracks, d_thr=10):
     for k in range(lenC):
 
         C[k]={}
-        C[k]['hidden']=np.zeros(points*3,dtype=np.float32)
+        C[k]["hidden"]=np.zeros(points*3,dtype=np.float32)
 
         for j in range(points*3):
-            C[k]['hidden'][j]=cluster[k].hidden[j]
-        C[k]['hidden'] = C[k]['hidden'].reshape((points, 3))
+            C[k]["hidden"][j]=cluster[k].hidden[j]
+        C[k]["hidden"] = C[k]["hidden"].reshape((points, 3))
 
-        C[k]['N']=cluster[k].N
-        C[k]['indices']=np.zeros(cluster[k].N,dtype=np.int64)
+        C[k]["N"]=cluster[k].N
+        C[k]["indices"]=np.zeros(cluster[k].N,dtype=np.int64)
 
         for i in range(cluster[k].N):
-            C[k]['indices'][i]=cluster[k].indices[i]
+            C[k]["indices"][i]=cluster[k].indices[i]
 
-        C[k]['indices']=list(C[k]['indices'])
+        C[k]["indices"]=list(C[k]["indices"])
 
     #Free memory
     with nogil:
@@ -1787,7 +1787,7 @@ def local_skeleton_clustering_3pts(tracks, d_thr=10):
     lent=len(tracks)
 
     #Network C
-    C={0:{'indices':[0],'hidden':tracks[0].copy(),'N':1}}
+    C={0:{"indices":[0],"hidden":tracks[0].copy(),"N":1}}
     ts=np.zeros((3,3),dtype=np.float32)
 
     #for (it,t) in enumerate(tracks[1:]):
@@ -1799,7 +1799,7 @@ def local_skeleton_clustering_3pts(tracks, d_thr=10):
         alld=np.zeros(lenC)
         flip=np.zeros(lenC)
         for k in range(lenC):
-            h=np.ascontiguousarray(C[k]['hidden']/C[k]['N'],dtype=f32_dt)
+            h=np.ascontiguousarray(C[k]["hidden"]/C[k]["N"],dtype=f32_dt)
             #print track
             #print h
             track_direct_flip_3dist(
@@ -1818,18 +1818,18 @@ def local_skeleton_clustering_3pts(tracks, d_thr=10):
         if m_k<d_thr:
             if flip[i_k]==1:
                 ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
-                C[i_k]['hidden'] = C[i_k]['hidden'] + ts
+                C[i_k]["hidden"] = C[i_k]["hidden"] + ts
             else:
                 #print(track.shape)
                 #print(track.dtype)
-                C[i_k]['hidden'] = C[i_k]['hidden'] + track
-            C[i_k]['N'] = C[i_k]['N'] + 1
-            C[i_k]['indices'].append(it)
+                C[i_k]["hidden"] = C[i_k]["hidden"] + track
+            C[i_k]["N"] = C[i_k]["N"] + 1
+            C[i_k]["indices"].append(it)
         else:
             C[lenC]={}
-            C[lenC]['hidden']=track.copy()
-            C[lenC]['N']=1
-            C[lenC]['indices']=[it]
+            C[lenC]["hidden"]=track.copy()
+            C[lenC]["N"]=1
+            C[lenC]["indices"]=[it]
     return C
 
 
@@ -1928,10 +1928,10 @@ def larch_3split(tracks, indices=None, thr=10.):
 
     lent=len(tracks)
     if indices is None:
-        C={0:{'indices':[0],'rep3':tracks[0].copy(),'N':1}}
+        C={0:{"indices":[0],"rep3":tracks[0].copy(),"N":1}}
         itrange=range(1,lent)
     else:
-        C={0:{'indices':[indices[0]],'rep3':tracks[indices[0]].copy(),'N':1}}
+        C={0:{"indices":[indices[0]],"rep3":tracks[indices[0]].copy(),"N":1}}
         itrange=indices[1:]
 
     ts=np.zeros((3,3),dtype=np.float32)
@@ -1942,7 +1942,7 @@ def larch_3split(tracks, indices=None, thr=10.):
         flip=np.zeros(lenC)
 
         for k in range(lenC):
-            h=np.ascontiguousarray(C[k]['rep3']/C[k]['N'],dtype=f32_dt)
+            h=np.ascontiguousarray(C[k]["rep3"]/C[k]["N"],dtype=f32_dt)
             track_direct_flip_3dist(asfp(track[0]),asfp(track[1]),asfp(track[2]),
                                     asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
             if d[1]<d[0]:
@@ -1953,17 +1953,17 @@ def larch_3split(tracks, indices=None, thr=10.):
         if m_k<thr:
             if flip[i_k]==1:
                 ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
-                C[i_k]['rep3']+=ts
+                C[i_k]["rep3"]+=ts
             else:
-                C[i_k]['rep3']+=track
-            C[i_k]['N']+=1
-            C[i_k]['indices'].append(it)
+                C[i_k]["rep3"]+=track
+            C[i_k]["N"]+=1
+            C[i_k]["indices"].append(it)
 
         else:
             C[lenC]={}
-            C[lenC]['rep3']=track.copy()
-            C[lenC]['N']=1
-            C[lenC]['indices']=[it]
+            C[lenC]["rep3"]=track.copy()
+            C[lenC]["N"]=1
+            C[lenC]["indices"]=[it]
 
 
     return C
@@ -2001,13 +2001,13 @@ def larch_3merge(C,thr=10.):
     C2=C.copy()
 
     for c in range(0,lenC-1):
-        ch=np.ascontiguousarray(C[c]['rep3']/C[c]['N'],dtype=f32_dt)
+        ch=np.ascontiguousarray(C[c]["rep3"]/C[c]["N"],dtype=f32_dt)
         krange=range(c+1,lenC)
         klen=len(krange)
         alld=np.zeros(klen)
         flip=np.zeros(klen)
         for k in range(c+1,lenC):
-            h=np.ascontiguousarray(C[k]['rep3']/C[k]['N'],dtype=f32_dt)
+            h=np.ascontiguousarray(C[k]["rep3"]/C[k]["N"],dtype=f32_dt)
             track_direct_flip_3dist(
                 asfp(ch[0]),asfp(ch[1]),asfp(ch[2]),
                 asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
@@ -2022,11 +2022,11 @@ def larch_3merge(C,thr=10.):
         if m_k<thr:
             if flip[i_k]==1:
                 ts[0]=ch[-1];ts[1]=ch[1];ts[-1]=ch[0]
-                C2[i_k+c]['rep3']+=ts
+                C2[i_k+c]["rep3"]+=ts
             else:
-                C2[i_k+c]['rep3']+=ch
-            C2[i_k+c]['N']+=C2[c]['N']
-            C2[i_k+c]['indices']+=C2[c]['indices']
+                C2[i_k+c]["rep3"]+=ch
+            C2[i_k+c]["N"]+=C2[c]["N"]
+            C2[i_k+c]["indices"]+=C2[c]["indices"]
             del C2[c]
 
     return C2

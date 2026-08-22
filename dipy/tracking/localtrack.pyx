@@ -62,7 +62,7 @@ def local_tracker(
 
     if (seed_pos.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
-        raise ValueError('Invalid input parameter dimensions.')
+        raise ValueError("Invalid input parameter dimensions.")
 
     copy_point(&first_step[0], input_direction)
     copy_point(&voxel_size[0], input_voxel_size)
@@ -163,7 +163,7 @@ def pft_tracker(
 
     if (seed_pos.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
-        raise ValueError('Invalid input parameter dimensions.')
+        raise ValueError("Invalid input parameter dimensions.")
 
     copy_point(&first_step[0], input_direction)
     copy_point(&voxel_size[0], input_voxel_size)
