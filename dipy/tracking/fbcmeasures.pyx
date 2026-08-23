@@ -170,7 +170,6 @@ cdef class FBCMeasures:
             cnp.npy_intp num_fibers, max_length, dim
             double [:, :, :] streamlines
             int [:] streamlines_length
-            double [:, :, :] streamlines_tangent
             int [:, :] streamlines_nearestp
             double [:, :] streamline_scores
             cnp.npy_intp line_id = 0
@@ -178,10 +177,9 @@ cdef class FBCMeasures:
             cnp.npy_intp line_id2 = 0
             cnp.npy_intp point_id2 = 0
             cnp.npy_intp dims
-            double score
             double [:] score_mp
             int [:] xd_mp, yd_mp, zd_mp
-            cnp.npy_intp xd, yd, zd, N, hn
+            cnp.npy_intp N, hn
             double [:, :, :, :, ::1] lut
             cnp.npy_intp threads_to_use = -1
 

@@ -401,7 +401,6 @@ def track_counts(tracks, vol_dims, vox_sizes=(1, 1, 1), return_elements=True):
     cdef cnp.ndarray[cnp.npy_intp, ndim=1] tcs = \
         np.zeros((n_voxels,), dtype=np.intp)
     # pointer to output track indices
-    cdef cnp.npy_intp i
     if return_elements:
         el_inds = {}
     # cython numpy pointer to individual track array
