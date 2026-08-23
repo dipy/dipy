@@ -187,7 +187,6 @@ def map_coordinates_trilinear_iso(cnp.ndarray[double, ndim=3] data,
     """
     cdef:
         double w[8]
-        double values[24]
         cnp.npy_intp index[24]
         cnp.npy_intp off, i, j
         double *ds=<double *> cnp.PyArray_DATA(data)
