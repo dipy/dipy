@@ -498,7 +498,6 @@ def mean_kurtosis_analytical(double[:, :] dki_params_flat,
         cnp.npy_intp n_voxels = dki_params_flat.shape[0]
         cnp.npy_intp v
         double[:] MK = np.zeros(n_voxels, dtype=np.float64)
-        double[:] evals = np.zeros(3, dtype=np.float64)
         double[:, :] evecs = np.zeros((3, 3), dtype=np.float64)
         double[:] kt = np.zeros(15, dtype=np.float64)
         double L1, L2, L3
