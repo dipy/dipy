@@ -163,6 +163,7 @@ def mul_3vecs(vec1, vec2):
                <float *> cnp.PyArray_DATA(vec_out))
     return vec_out
 
+
 cdef inline void cmul_3vecs(float *vec1, float *vec2, float *vec_out) noexcept nogil:
     cdef cnp.npy_intp i
     for i from 0<=i<3:
@@ -174,6 +175,7 @@ def mul_3vec(a, vec):
     cmul_3vec(a, <float *> cnp.PyArray_DATA(fvec),
               <float *> cnp.PyArray_DATA(vec_out))
     return vec_out
+
 
 cdef inline void cmul_3vec(float a, float *vec, float *vec_out) noexcept nogil:
     cdef cnp.npy_intp i
@@ -1265,6 +1267,7 @@ def intersect_segment_cylinder(sa,sb,p,q,r):
     tmp = cintersect_segment_cylinder(csa,csb,cp, cq, cr, ct)
 
     return tmp, ct[0], ct[1]
+
 
 cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, float r, float *t):
     """ Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p,q and r
