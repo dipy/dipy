@@ -2458,17 +2458,8 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
     cdef:
         cnp.npy_intp trows = out_shape[0]
         cnp.npy_intp tcols = out_shape[1]
-        cnp.npy_intp i, j
-        int inside
-        double dii, djj
         floating[:, :, :] expanded = np.zeros((trows, tcols, 2), dtype=ftype)
 
-    for i in range(trows):
-        for j in range(tcols):
-            dii = i*factors[0]
-            djj = j*factors[1]
-            inside = _interpolate_vector_2d[floating](field, dii, djj,
-                                                      &expanded[i, j, 0])
     return np.asarray(expanded)
 
 
