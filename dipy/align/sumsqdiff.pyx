@@ -198,7 +198,6 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
     ----------
     .. footbibliography::
     """
-    ftype = np.asarray(delta_field).dtype
     cdef:
         int NUM_NEIGHBORS = 4
         int* dRow = [-1, 0, 1,  0]
@@ -212,7 +211,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
         double* y = [0, 0]
         double* A = [0, 0, 0]
 
-        double xx, yy, opt, nrm2, delta, sigmasq, max_displacement, det
+        double xx, yy, opt, nrm2, sigmasq, max_displacement, det
 
     max_displacement = 0
 
@@ -220,7 +219,6 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
 
         for r in range(nrows):
             for c in range(ncols):
-                delta = delta_field[r, c]
                 sigmasq = sigmasq_field[r, c] if sigmasq_field is not None else 1
                 if target is None:
                     b[0] = delta_field[r, c] * grad[r, c, 0]
@@ -368,7 +366,6 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
     ----------
     .. footbibliography::
     """
-    ftype = np.asarray(delta_field).dtype
     cdef:
         int NUM_NEIGHBORS = 6
         int* dSlice = [-1, 0, 0, 0,  0, 1]
@@ -382,8 +379,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
         double* b = [0, 0, 0]
         double* d = [0, 0, 0]
         double* y = [0, 0, 0]
-        double* A = [0, 0, 0, 0, 0, 0]
-        double xx, yy, zz, opt, nrm2, delta, sigmasq, max_displacement
+        double xx, yy, zz, opt, nrm2, sigmasq, max_displacement
         cnp.npy_intp dr, ds, dc, s, r, c
     max_displacement = 0
 
@@ -395,7 +391,6 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                     g[0] = grad[s, r, c, 0]
                     g[1] = grad[s, r, c, 1]
                     g[2] = grad[s, r, c, 2]
-                    delta = delta_field[s, r, c]
                     sigmasq = sigmasq_field[s, r, c] if sigmasq_field is not None else 1
                     if target is None:
                         b[0] = delta_field[s, r, c] * g[0]
@@ -708,7 +703,6 @@ cpdef compute_residual_displacement_field_ssd_2d(
                     b[1] = target[r, c, 1]
                 y[0] = 0  # reset y
                 y[1] = 0
-                nn=0
                 for k in range(NUM_NEIGHBORS):
                     dr = r + dRow[k]
                     if dr < 0 or dr >= nrows:
