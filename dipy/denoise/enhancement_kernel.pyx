@@ -73,7 +73,7 @@ cdef class EnhancementKernel:
                 theta = np.pi * rng.random(n_pts)
                 phi = 2 * np.pi * rng.random(n_pts)
                 hsph_initial = HemiSphere(theta=theta, phi=phi)
-                sphere, potential = disperse_charges(hsph_initial, 5000)
+                sphere, _ = disperse_charges(hsph_initial, 5000)
         else:
             # use default
             sphere = get_sphere(name="repulsion100")
@@ -165,9 +165,6 @@ cdef class EnhancementKernel:
             double [:] x
             double [:] y
             cdef double [:, :, :, :, :] lookuptablelocal
-            double kmax = self.kernelmax
-            double l1norm
-            double kernelval
 
         lookuptablelocal = np.zeros((OR1, OR2, N, N, N))
         x = np.zeros(3)
