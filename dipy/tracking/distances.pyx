@@ -18,7 +18,7 @@ cdef extern from "dpy_math.h" nogil:
     double floor(double x)
     float sqrt(float x)
     float fabs(float x)
-    float acos(float x )
+    float acos(float x)
     bint dpy_isnan(double x)
     double dpy_log2(double x)
 

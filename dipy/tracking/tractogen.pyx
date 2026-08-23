@@ -262,7 +262,7 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         # update position
         for j in range(3):
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
-        fast_numpy.copy_point(point, &stream[(params.max_nbr_pts + i )* 3])
+        fast_numpy.copy_point(point, &stream[(params.max_nbr_pts + i)* 3])
 
         status_forward = sc.check_point_c(point, &rng)
         if (status_forward == ENDPOINT or
@@ -296,7 +296,7 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         # update position
         for j in range(3):
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
-        fast_numpy.copy_point(point, &stream[(params.max_nbr_pts - i )* 3])
+        fast_numpy.copy_point(point, &stream[(params.max_nbr_pts - i)* 3])
 
         status_backward = sc.check_point_c(point, &rng)
         if (status_backward == ENDPOINT or
