@@ -39,6 +39,8 @@ def _get_default_threads():
         return default_threads
     else:
         return 1
+
+
 default_threads = _get_default_threads()
 
 
