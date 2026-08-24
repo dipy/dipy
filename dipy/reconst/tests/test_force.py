@@ -17,6 +17,7 @@ from dipy.reconst.force import (
     SignalIndex,
     _fwhm_kde_batch,
     _odi_grid_matches,
+    _seed_matches,
     _weighted_percentile,
     compute_microstructure_uncertainty_ambiguity,
     compute_uncertainty_ambiguity,
@@ -351,6 +352,21 @@ def test_odi_grid_matches_legacy_and_exact():
     assert not _odi_grid_matches(entry, (0.01, 0.3), 19)  # diff range, same grid
 
 
+def test_seed_matches_legacy_and_exact():
+    """Cache matching on the generation seed, incl. legacy (keyless) entries."""
+    # A legacy entry (written before the seed was part of the key) was not
+    # generated reproducibly, so it only satisfies seed=None requests.
+    legacy = {"num_simulations": 100}
+    assert _seed_matches(legacy, None)
+    assert not _seed_matches(legacy, 2298)
+
+    # A modern entry matches only its exact seed.
+    entry = {"seed": 2298}
+    assert _seed_matches(entry, 2298)
+    assert not _seed_matches(entry, 42)
+    assert not _seed_matches(entry, None)
+
+
 def _registry(dipy_home):
     path = dipy_home / "force_simulations" / "cache_registry.json"
     return json.load(open(path)) if path.exists() else []
@@ -389,6 +405,35 @@ def test_force_cache_keys_on_odi_grid(tmp_path, monkeypatch):
     gen(num_odi_values=5)
     assert ((0.01, 0.3), 5) in entries()
     assert len(entries()) == 3
+
+
+def test_force_cache_keys_on_seed(tmp_path, monkeypatch):
+    """The simulation cache is keyed on the generation seed."""
+    monkeypatch.setenv("DIPY_HOME", str(tmp_path))
+    gtab = _make_gtab([1000])
+
+    def gen(**kwargs):
+        model = FORCEModel(gtab)
+        model.generate(num_simulations=60, num_cpus=1, verbose=False, **kwargs)
+        return model
+
+    # 1. the default seed (2298) is recorded in the registry.
+    first = gen()
+    assert [e["seed"] for e in _registry(tmp_path)] == [2298]
+
+    # 2. re-running with the default seed hits the cache (no new entry) and
+    # serves the identical library.
+    again = gen()
+    assert len(_registry(tmp_path)) == 1
+    npt.assert_array_equal(again.simulations["signals"], first.simulations["signals"])
+
+    # 3. a different seed is a distinct library, not a cache hit.
+    other = gen(seed=42)
+    assert len(_registry(tmp_path)) == 2
+    assert {e["seed"] for e in _registry(tmp_path)} == {2298, 42}
+    assert not np.array_equal(
+        other.simulations["signals"], first.simulations["signals"]
+    )
 
 
 def test_cache_registry_separates_min_crossing_angles(tmp_path, monkeypatch):
