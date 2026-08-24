@@ -146,27 +146,21 @@ def smallest_shell_bval(bvals, *, b0_threshold=50, shell_tolerance=50, n=1):
     return min_shells, shell_mask
 
 
-def init_worker(base_seed=None):
+def init_worker():
     """Initialize a ProcessPoolExecutor worker with a unique RNG state.
 
-    With ``base_seed=None``, seed = PID + high-resolution time so every
-    worker has a different stream. With ``initargs=(base_seed,)`` for
-    reproducibility, seed = base_seed + PID so workers differ but the run
-    is reproducible for a fixed worker count.
-
-    Parameters
-    ----------
-    base_seed : int, optional
-        Base seed for reproducible worker initialization.
+    Seeds the global :mod:`numpy.random` and :mod:`random` states from the
+    PID and high-resolution time so forked workers do not inherit identical
+    streams from the parent. Reproducibility does not rely on this state:
+    when :func:`generate_force_simulations` is given a ``seed``, every batch
+    reseeds itself from ``(seed, batch_index)`` in the batch worker,
+    independently of the number of workers.
     """
     import random
     import time
 
-    if base_seed is not None:
-        seed = (int(base_seed) + os.getpid()) % (2**32)
-    else:
-        # Unique per process and run: PID + high-resolution time
-        seed = (os.getpid() * (2**16) + int(time.perf_counter_ns())) % (2**32)
+    # Unique per process and run: PID + high-resolution time
+    seed = (os.getpid() * (2**16) + int(time.perf_counter_ns())) % (2**32)
     np.random.seed(seed)
     random.seed(seed)
 
@@ -180,6 +174,7 @@ def _create_memmap(output_dir, name, dtype, shape):
 def _generate_batch_worker(
     start_idx,
     batch_size,
+    batch_seed,
     sphere,
     evecs,
     bingham,
@@ -194,10 +189,16 @@ def _generate_batch_worker(
 ):
     """Worker function for parallel batch generation.
 
-    Opens memmaps by path in each process and writes directly.
+    Opens memmaps by path in each process and writes directly. When
+    ``batch_seed`` is not None, the global NumPy RNG is reseeded with it so
+    the batch's random draws are deterministic regardless of which worker
+    process executes it.
     """
     from dipy.sims._force_core import create_mixed_signal, set_diffusivity_ranges
     from dipy.sims._multi_tensor_omp import multi_tensor
+
+    if batch_seed is not None:
+        np.random.seed(batch_seed)
 
     # Unpack memmap info
     (
@@ -431,6 +432,7 @@ def generate_force_simulations(
     output_dir=None,
     num_cpus=1,
     batch_size=1000,
+    seed=2298,
     wm_threshold=0.5,
     tortuosity=False,
     odi_range=DEFAULT_ODI_RANGE,
@@ -465,6 +467,12 @@ def generate_force_simulations(
         (e.g. ``-2`` = all minus one). ``0`` raises ``ValueError``.
     batch_size : int, optional
         Batch size for processing.
+    seed : int or None, optional
+        Seed for reproducible simulation generation. Each batch draws from
+        an independent random stream derived from ``(seed, batch_index)``,
+        so identical seeds yield identical libraries for any ``num_cpus``.
+        Note that changing ``batch_size`` changes the batch layout and
+        therefore the library. When None, every run uses fresh entropy.
     wm_threshold : float, optional
         Minimum WM fraction to include fiber labels.
     tortuosity : bool, optional
@@ -610,11 +618,20 @@ def generate_force_simulations(
     remainder = num_simulations % batch_size
     total_batches = num_batches_full + (1 if remainder > 0 else 0)
 
+    # Derive one independent stream per batch so results depend only on
+    # (seed, batch_index) — not on num_cpus or worker scheduling — while
+    # every batch still draws different random values.
     batch_specs = []
     current_start = 0
     for batch_idx in range(total_batches):
         bs = batch_size if batch_idx < num_batches_full else remainder
-        batch_specs.append((current_start, bs))
+        if seed is None:
+            batch_seed = None
+        else:
+            batch_seed = int(
+                np.random.SeedSequence([int(seed), batch_idx]).generate_state(1)[0]
+            )
+        batch_specs.append((current_start, bs, batch_seed))
         current_start += bs
 
     # Pack memmap info for workers
@@ -681,10 +698,11 @@ def generate_force_simulations(
     if num_cpus == 1:
         # Serial in-process path — no subprocess spawned, safe on all platforms
         init_worker()
-        for start_idx, bs in batch_specs:
+        for start_idx, bs, batch_seed in batch_specs:
             batch_done = _generate_batch_worker(
                 start_idx,
                 bs,
+                batch_seed,
                 target_sphere,
                 evecs,
                 dispersion_sf,
@@ -709,6 +727,7 @@ def generate_force_simulations(
                         _generate_batch_worker,
                         start_idx,
                         bs,
+                        batch_seed,
                         target_sphere,
                         evecs,
                         dispersion_sf,
@@ -721,7 +740,7 @@ def generate_force_simulations(
                         diffusivity_config,
                         min_crossing_angles,
                     ): (start_idx, bs)
-                    for start_idx, bs in batch_specs
+                    for start_idx, bs, batch_seed in batch_specs
                 }
                 for future in as_completed(futures):
                     batch_done = future.result()
@@ -733,10 +752,11 @@ def generate_force_simulations(
                 "Falling back to serial execution."
             )
             init_worker()
-            for start_idx, bs in batch_specs:
+            for start_idx, bs, batch_seed in batch_specs:
                 batch_done = _generate_batch_worker(
                     start_idx,
                     bs,
+                    batch_seed,
                     target_sphere,
                     evecs,
                     dispersion_sf,
@@ -764,6 +784,7 @@ def generate_force_simulations(
                     _generate_batch_worker,
                     start_idx,
                     bs,
+                    batch_seed,
                     target_sphere,
                     evecs,
                     dispersion_sf,
@@ -776,7 +797,7 @@ def generate_force_simulations(
                     diffusivity_config,
                     min_crossing_angles,
                 ): (start_idx, bs)
-                for start_idx, bs in batch_specs
+                for start_idx, bs, batch_seed in batch_specs
             }
 
             for future in as_completed(futures):
