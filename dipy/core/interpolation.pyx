@@ -243,14 +243,14 @@ cdef void _trilinear_interpolation_iso(double *X,
     # the initial rectangular box for more on trilinear have a look here
     # https://en.wikipedia.org/wiki/Trilinear_interpolation
     # http://local.wasp.uwa.edu.au/~pbourke/miscellaneous/interpolation/index.html
-    W[0]=nd[0] * nd[1] * nd[2]
-    W[1]= d[0] * nd[1] * nd[2]
-    W[2]=nd[0] *  d[1] * nd[2]
-    W[3]=nd[0] * nd[1] *  d[2]
-    W[4]= d[0] *  d[1] * nd[2]
-    W[5]=nd[0] *  d[1] *  d[2]
-    W[6]= d[0] * nd[1] *  d[2]
-    W[7]= d[0] *  d[1] *  d[2]
+    W[0] = nd[0] * nd[1] * nd[2]
+    W[1] = d[0] * nd[1] * nd[2]
+    W[2] = nd[0] * d[1] * nd[2]
+    W[3] = nd[0] * nd[1] * d[2]
+    W[4] = d[0] * d[1] * nd[2]
+    W[5] = nd[0] * d[1] * d[2]
+    W[6] = d[0] * nd[1] * d[2]
+    W[7] = d[0] * d[1] * d[2]
     # indices
     # the indices give you the indices of the neighboring voxels (the corners
     # of the box) e.g. the qa coordinates

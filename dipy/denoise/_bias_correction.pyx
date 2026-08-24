@@ -265,7 +265,7 @@ def compute_tukey_weights(
     then applies the Tukey bisquare function::
 
         weights[i] *= (1 - (r_i / (c * MAD))^2)^2   if |r_i| < c * MAD
-        weights[i]  = 0                               otherwise
+        weights[i] = 0                               otherwise
 
     where ``MAD = median(|residuals|) / 0.6745``.
 

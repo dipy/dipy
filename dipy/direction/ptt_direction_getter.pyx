@@ -209,7 +209,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             if fabs(self.k2) < self.k_small:
                 self.k2 = self.k_small
 
-            tmp_arclength  = arclength * arclength / 2.0
+            tmp_arclength = arclength * arclength / 2.0
 
             self.propagator[0] = arclength
             self.propagator[1] = self.k1 * tmp_arclength
