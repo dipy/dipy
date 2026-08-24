@@ -362,8 +362,8 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
             # check for boundaries
             tmp = ps[i] + step_sz * dx[i]
             if tmp > qa_shape[i] - 1 or tmp < 0.:
-                 d = 0
-                 break
+                d = 0
+                break
             # propagate
             ps[i] = tmp
             point[i] = ps[i]
@@ -390,8 +390,8 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
             # check for boundaries
             tmp=ps2[i] + step_sz*dx[i]
             if tmp > qa_shape[i] - 1 or tmp < 0.:
-                 d = 0
-                 break
+                d = 0
+                break
             # propagate
             ps2[i] = tmp
             point[i] = ps2[i] # to be changed

@@ -19,7 +19,7 @@ cdef class StoppingCriterion:
         return self.check_point_c(&point[0])
 
     cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
-         pass
+        pass
 
 
 cdef class BinaryStoppingCriterion(StoppingCriterion):

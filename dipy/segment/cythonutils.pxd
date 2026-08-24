@@ -21,9 +21,9 @@ ctypedef fused Data:
     Data7D
 
 cdef struct Shape:
-   Py_ssize_t ndim
-   Py_ssize_t dims[MAX_NDIM]
-   Py_ssize_t size
+    Py_ssize_t ndim
+    Py_ssize_t dims[MAX_NDIM]
+    Py_ssize_t size
 
 
 cdef Shape shape_from_memview(Data data) noexcept nogil

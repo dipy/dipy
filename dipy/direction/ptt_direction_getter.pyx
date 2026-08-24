@@ -427,7 +427,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             double average_voxel_size = 0
 
         if not fixedstep > 0:
-           raise ValueError("PTT only supports fixed step size.")
+            raise ValueError("PTT only supports fixed step size.")
 
         self.step_size = step_size
         for i in range(3):

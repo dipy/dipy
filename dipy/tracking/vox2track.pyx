@@ -172,9 +172,9 @@ cdef inline void c_get_closest_edge(cnp.double_t* p,
                                     cnp.double_t* direction,
                                     cnp.double_t* edge,
                                     double eps=1.) noexcept nogil:
-     edge[0] = floor(p[0] + eps) if direction[0] >= 0.0 else ceil(p[0] - eps)
-     edge[1] = floor(p[1] + eps) if direction[1] >= 0.0 else ceil(p[1] - eps)
-     edge[2] = floor(p[2] + eps) if direction[2] >= 0.0 else ceil(p[2] - eps)
+    edge[0] = floor(p[0] + eps) if direction[0] >= 0.0 else ceil(p[0] - eps)
+    edge[1] = floor(p[1] + eps) if direction[1] >= 0.0 else ceil(p[1] - eps)
+    edge[2] = floor(p[2] + eps) if direction[2] >= 0.0 else ceil(p[2] - eps)
 
 
 @cython.boundscheck(False)
