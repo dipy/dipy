@@ -65,10 +65,10 @@ cdef class Transform:
         """
         n = theta.shape[0]
         if n != self.number_of_parameters:
-            raise ValueError("Invalid number of parameters: %d"%(n,))
+            raise ValueError("Invalid number of parameters: %d" % (n,))
         m = x.shape[0]
         if m < self.dim:
-            raise ValueError("Invalid point dimension: %d"%(m,))
+            raise ValueError("Invalid point dimension: %d" % (m,))
         J = np.zeros((self.dim, n))
         ret = self._jacobian(theta, x, J)
         return np.asarray(J)
@@ -102,7 +102,7 @@ cdef class Transform:
         """
         n = len(theta)
         if n != self.number_of_parameters:
-            raise ValueError("Invalid number of parameters: %d"%(n,))
+            raise ValueError("Invalid number of parameters: %d" % (n,))
         T = np.eye(self.dim + 1)
         self._param_to_matrix(theta, T)
         return np.asarray(T)
