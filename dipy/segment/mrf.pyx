@@ -32,7 +32,6 @@ class ConstantObservationModel:
         """
         pass
 
-
     def initialize_param_uniform(self, image, nclasses):
         r""" Initializes the means and variances uniformly
 
@@ -61,7 +60,6 @@ class ConstantObservationModel:
         _initialize_param_uniform(image, mu, sigma)
 
         return np.array(mu), np.array(sigma)
-
 
     def seg_stats(self, input_image, seg_image, cnp.npy_intp nclass):
         r""" Mean and standard variation for N desired  tissue classes
@@ -122,7 +120,6 @@ class ConstantObservationModel:
 
         return mu, var
 
-
     def negloglikelihood(self, image, mu, sigmasq, cnp.npy_intp nclasses):
         r""" Computes the gaussian negative log-likelihood of each class at
         each voxel of `image` assuming a gaussian distribution with means and
@@ -153,7 +150,6 @@ class ConstantObservationModel:
             _negloglikelihood(image, mu, sigmasq, l, nloglike)
 
         return nloglike
-
 
     def prob_image(self, img, cnp.npy_intp nclasses, mu, sigmasq, P_L_N):
         r""" Conditional probability of the label given the image
@@ -193,7 +189,6 @@ class ConstantObservationModel:
             P_L_Y[:, :, :, l] = P_L_Y[:, :, :, l] / P_L_Y_norm
 
         return P_L_Y
-
 
     def update_param(self, image, P_L_Y, mu, cnp.npy_intp nclasses):
         r""" Updates the means and the variances in each iteration for all
@@ -423,7 +418,6 @@ class IteratedConditionalModes:
 
         return seg
 
-
     def icm_ising(self, nloglike, beta, seg):
         r""" Executes one iteration of the ICM algorithm for MRF MAP
         estimation. The prior distribution of the MRF is a Gibbs
@@ -457,7 +451,6 @@ class IteratedConditionalModes:
         _icm_ising(nloglike, beta, seg, energy, new_seg)
 
         return new_seg, energy
-
 
     def prob_neighborhood(self, seg, beta, cnp.npy_intp nclasses):
         r""" Conditional probability of the label given the neighborhood

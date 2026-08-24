@@ -17,7 +17,6 @@ from dipy.tracking.utils import (connectivity_matrix, random_seeds_from_mask,
                                  seeds_from_mask, seeds_directions_pairs)
 
 
-
 def get_fast_tracking_performances(params, *, nbr_seeds=1000, nbr_threads=0):
     """
     Generate streamlines and return performances on the DiSCo dataset.
@@ -170,7 +169,6 @@ def test_tracking_step_size():
             dists.extend(np.linalg.norm(sl[0:-1] - sl[1:], axis=1))
         return dists
 
-
     for step_size in [0.02, 0.5, 1]:
         params = generate_tracking_parameters("det",
                                               max_len=500,
@@ -189,7 +187,6 @@ def test_return_all():
     """This tests that the number of streamlines equals the number of seeds
     when return_all=True.
     """
-
 
     fnames = get_fnames(name="disco1", include_optional=True)
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))

@@ -63,7 +63,6 @@ cdef inline int get_kt_index(int key) noexcept nogil:
         return 0
 
 
-
 cdef inline bint positive_evals_single(double L1, double L2, double L3,
                                         double er=2e-7) noexcept nogil:
     """Check if all eigenvalues are significantly larger than zero.
@@ -85,7 +84,6 @@ cdef inline bint positive_evals_single(double L1, double L2, double L3,
         True if all three eigenvalues exceed ``er``, False otherwise.
     """
     return L1 > er and L2 > er and L3 > er
-
 
 
 cdef double carlson_rf_single(double x, double y, double z,
@@ -145,7 +143,6 @@ cdef double carlson_rf_single(double x, double y, double z,
                            (E2 * E2) / 24.0 - 3.0 / 44.0 * E2 * E3)
 
     return RF
-
 
 
 cdef double carlson_rd_single(double x, double y, double z,
@@ -218,7 +215,6 @@ cdef double carlson_rd_single(double x, double y, double z,
     return RD
 
 
-
 cdef double F2m_single(double a, double b, double c, double er=2.5e-2) noexcept nogil:
     """Compute function F2 for a single voxel.
 
@@ -286,7 +282,6 @@ cdef double F2m_single(double a, double b, double c, double er=2.5e-2) noexcept 
     return F2
 
 
-
 cdef double F1m_single(double a, double b, double c, double er=2.5e-2) noexcept nogil:
     """Compute function F1 for a single voxel.
 
@@ -348,7 +343,6 @@ cdef double F1m_single(double a, double b, double c, double er=2.5e-2) noexcept 
     return F1
 
 
-
 cdef double G1m_single(double a, double b, double c, double er=2.5e-2) noexcept nogil:
     """Compute function G1 for a single voxel.
 
@@ -388,7 +382,6 @@ cdef double G1m_single(double a, double b, double c, double er=2.5e-2) noexcept 
     L2 = b
     G1 = (L1 + 2.0 * L2) * (L1 + 2.0 * L2) / (24.0 * L2 * L2)
     return G1
-
 
 
 cdef double G2m_single(double a, double b, double c, double er=2.5e-2) noexcept nogil:
@@ -432,7 +425,6 @@ cdef double G2m_single(double a, double b, double c, double er=2.5e-2) noexcept 
     return G2
 
 
-
 cdef double Wrotate_element_single(double[:] kt, int indi, int indj,
                                     int indk, int indl,
                                     double[:, :] B) noexcept nogil:
@@ -468,7 +460,6 @@ cdef double Wrotate_element_single(double[:] kt, int indi, int indj,
                     Wre = Wre + multiplyB * kt[idx]
 
     return Wre
-
 
 
 def mean_kurtosis_analytical(double[:, :] dki_params_flat,
@@ -558,7 +549,6 @@ def mean_kurtosis_analytical(double[:, :] dki_params_flat,
     return np.asarray(MK)
 
 
-
 def axial_kurtosis_analytical(double[:, :] dki_params_flat,
                                double min_kurtosis=-3.0/7.0,
                                double max_kurtosis=10.0):
@@ -617,7 +607,6 @@ def axial_kurtosis_analytical(double[:, :] dki_params_flat,
             AK[v] = ak_val
 
     return np.asarray(AK)
-
 
 
 def radial_kurtosis_analytical(double[:, :] dki_params_flat,
@@ -683,7 +672,6 @@ def radial_kurtosis_analytical(double[:, :] dki_params_flat,
             RK[v] = rk_val
 
     return np.asarray(RK)
-
 
 
 def kurtosis_fractional_anisotropy_c(double[:, :] dki_params_flat):

@@ -79,13 +79,11 @@ cdef void _fixed_step(double * point, double * direction, double step_size) noex
         point[i] += direction[i] * step_size
 
 
-
 cdef class DirectionGetter:
 
     cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(
             self, double[::1] point):
         pass
-
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
