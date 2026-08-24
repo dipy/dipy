@@ -10,7 +10,6 @@ This module contains Cython-optimized versions of computationally intensive
 DKI functions, particularly the mean kurtosis calculation.
 """
 
-cimport cython
 import numpy as np
 cimport numpy as cnp
 from libc.math cimport sqrt, fabs, atan, log

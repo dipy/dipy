@@ -12,8 +12,6 @@ Low-level signal generation for multi-compartment diffusion simulations.
 import numpy as np
 cimport numpy as cnp
 
-from libc.math cimport exp
-
 ctypedef cnp.float64_t DTYPE_t
 ctypedef cnp.uint8_t LABEL_t
 

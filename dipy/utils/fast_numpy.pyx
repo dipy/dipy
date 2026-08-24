@@ -5,7 +5,6 @@
 
 from dipy.utils.deprecator import deprecate_with_version
 
-from libc.stdio cimport printf
 cimport numpy as cnp
 
 

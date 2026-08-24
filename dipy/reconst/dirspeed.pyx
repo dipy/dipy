@@ -12,7 +12,6 @@ cimport numpy as cnp
 import cython
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
-from libc.math cimport cos, M_PI, INFINITY
 
 from dipy.core.math cimport f_max, f_array_min
 from dipy.reconst.recspeed cimport local_maxima_c, search_descending_c, remove_similar_vertices_c

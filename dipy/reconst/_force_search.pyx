@@ -29,7 +29,6 @@ cdef extern from "force_src/distances.h" namespace "faiss" nogil:
 
 # Import heap functions from local module
 from dipy.reconst._force_heap cimport (
-    select_top_k_parallel,
     heap_init_parallel,
     heap_update_batch_parallel,
     heap_finalize_parallel

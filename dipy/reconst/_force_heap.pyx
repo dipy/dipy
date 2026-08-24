@@ -8,8 +8,6 @@ Uses Cython with OpenMP (prange) for parallel heap operations.
 
 cimport cython
 from cython.parallel cimport prange
-from libc.stdlib cimport malloc, free
-from libc.string cimport memcpy
 from libc.stdint cimport int64_t
 
 

@@ -4,7 +4,6 @@
 # cython: Nonecheck=False
 
 cimport ctime
-cimport cython
 from cython.parallel import prange
 import numpy as np
 cimport numpy as cnp
@@ -22,10 +21,7 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                VALIDSTREAMLIME,
                                                INVALIDSTREAMLIME)
 from dipy.tracking.tracker_parameters cimport (TrackerParameters,
-                                               TrackerStatus,
-                                               func_ptr)
-
-from nibabel.streamlines import ArraySequence as Streamlines
+                                               TrackerStatus)
 
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy, memset
@@ -66,7 +62,7 @@ def generate_tractogram(double[:,::1] seed_positions,
 
     Yields
     ------
-    streamlines : Streamlines
+    streamlines : nibabel.streamlines.ArraySequence
         Streamlines generated from the seed points.
     seeds : ndarray, optional
         seed points associated with the generated streamlines.
