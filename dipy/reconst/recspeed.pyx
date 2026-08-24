@@ -21,7 +21,7 @@ cdef extern from "dpy_math.h" nogil:
     double fabs(double x)
     double cos(double x)
     double sin(double x)
-    float acos(float x )
+    float acos(float x)
     double sqrt(double x)
     double DPY_PI
 

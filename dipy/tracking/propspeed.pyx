@@ -37,7 +37,7 @@ from libc.stdio cimport printf
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double x)
-    float acos(float x )
+    float acos(float x)
     double sqrt(double x)
     double DPY_PI
 
