@@ -27,7 +27,7 @@ cdef class EuDXDirectionGetter(DirectionGetter):
         int initialized
 
     def __cinit__(self):
-        initialized = False
+        self.initialized = False
         self.qa_thr = 0.0239
         self.ang_thr = 60
         self.total_weight = .5
