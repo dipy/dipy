@@ -380,6 +380,7 @@ cdef class EnhancementKernel:
 
 cdef double PI = 3.1415926535897932
 
+
 @cython.wraparound(False)
 @cython.boundscheck(False)
 cdef double [:] euler_angles(double [:] inp) noexcept nogil:
@@ -424,6 +425,7 @@ cdef double [:] euler_angles(double [:] inp) noexcept nogil:
         output[1] = atan2(y, x)
 
     return output
+
 
 @cython.wraparound(False)
 @cython.boundscheck(False)

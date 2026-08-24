@@ -216,6 +216,7 @@ cdef cnp.npy_intp search_descending_c(cython.floating* arr, cnp.npy_intp size, d
 
     return left
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def search_descending(cython.floating[::1] a, double relative_threshold):
@@ -286,6 +287,7 @@ cdef long local_maxima_c(double[:] odf, cnp.uint16_t[:, :] edges, double[::1] ou
     free(wpeak)
 
     return count
+
 
 @cython.wraparound(False)
 @cython.boundscheck(False)

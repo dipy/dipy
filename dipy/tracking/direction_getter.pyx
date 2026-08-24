@@ -16,6 +16,7 @@ cdef extern from "dpy_math.h" nogil:
     double dpy_rint(double x)
     double fabs(double)
 
+
 @cython.cdivision(True)
 cdef inline double _stepsize(double point, double increment) noexcept nogil:
     """Compute the step size to the closest boundary in units of increment."""

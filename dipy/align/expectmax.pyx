@@ -15,6 +15,7 @@ cdef extern from "dpy_math.h" nogil:
 cdef inline int ifloor(double x) nogil:
     return int(floor(x))
 
+
 def quantize_positive_2d(floating[:, :] v, int num_levels):
     """Quantize a 2D image to num_levels quantization levels.
 
@@ -353,6 +354,7 @@ def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
                 variances[i] = INF64
     return np.asarray(means), np.asarray(variances)
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
@@ -442,6 +444,7 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                         out[i, j, 0] = prod * gradient_moving[i, j, 0] / den
                         out[i, j, 1] = prod * gradient_moving[i, j, 1] / den
     return np.asarray(out), energy
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

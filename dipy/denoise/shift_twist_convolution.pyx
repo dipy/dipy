@@ -70,6 +70,7 @@ def convolve(odfs_sh, kernel, sh_order_max, test_mode=False, num_threads=None, n
 
     return output_sh
 
+
 def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, normalize=True):
     """Perform the shift-twist convolution with the ODF data and
     the lookup-table of the kernel.
@@ -108,6 +109,7 @@ def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, normalize=Tr
         output = np.multiply(output, np.amax(odfs_sf)/np.amax(output))
 
     return output
+
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
