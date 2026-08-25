@@ -8,7 +8,7 @@ from libc.math cimport sqrt, acos
 from dipy.segment.cythonutils cimport tuple2shape, shape2tuple, same_shape
 from dipy.segment.featurespeed cimport IdentityFeature
 
-DEF biggest_double = 1.7976931348623157e+308  #  np.finfo('f8').max
+DEF biggest_double = 1.7976931348623157e+308  # np.finfo('f8').max
 
 import math
 cdef double PI = math.pi

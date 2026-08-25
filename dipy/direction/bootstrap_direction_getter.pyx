@@ -54,7 +54,7 @@ cdef class BootDirectionGetter(DirectionGetter):
             if hasattr(model, "sh_order"):
                 self.sh_order = model.sh_order
             else:
-                self.sh_order = 4 #  DEFAULT Value
+                self.sh_order = 4  # DEFAULT Value
 
         self.dwi_mask = model.gtab.b0s_mask == 0
         x, y, z = model.gtab.gradients[self.dwi_mask].T

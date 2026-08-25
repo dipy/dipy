@@ -1295,8 +1295,8 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
     dd=cinner_3vecs(d,d)
 
     #test if segment fully outside either endcap of cylinder
-    if md < 0. and md + nd < 0.:  return 0 #segment outside p side
-    if md > dd and md + nd > dd:  return 0 #segment outside q side
+    if md < 0. and md + nd < 0.:  return 0  # segment outside p side
+    if md > dd and md + nd > dd:  return 0  # segment outside q side
 
     nn=cinner_3vecs(n,n)
     mn=cinner_3vecs(m,n)
@@ -1676,7 +1676,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
                     i_k=k
 
             if m_d < cd_thr:
-                if flip[i_k]==1:#correct if flipping is needed
+                if flip[i_k]==1:  # correct if flipping is needed
                     for i from 0<=i<rows:
                         for j from 0<=j<3:
                             cluster[i_k].hidden[i*3+j]+=ptr[(rows-1-i)*3+j]
@@ -1688,7 +1688,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
                 cluster[i_k].indices=<long *>realloc(cluster[i_k].indices,cluster[i_k].N*sizeof(long))
                 cluster[i_k].indices[cluster[i_k].N-1]=cit
 
-            else:#New cluster added
+            else:  # New cluster added
                 lenC+=1
                 cluster=<LSC_Cluster *>realloc(cluster,lenC*sizeof(LSC_Cluster))
                 cluster[lenC-1].indices=<long *>realloc(NULL,sizeof(long))

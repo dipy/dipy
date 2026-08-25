@@ -146,7 +146,7 @@ cdef cnp.npy_intp _nearest_direction(double* dx,
             odfv[j]=odf_vertices[3 * <cnp.npy_intp>ind[i] + j]
         # calculate the absolute dot product between dx and odf_vertices
         curr_dot = dx[0] * odfv[0] + dx[1] * odfv[1] + dx[2] * odfv[2]
-        if curr_dot < 0: #abs check
+        if curr_dot < 0:  # abs check
             curr_dot = -curr_dot
         # maximum dot means minimum angle
         # store the maximum dot and the corresponding index from the
