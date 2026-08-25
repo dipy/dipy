@@ -317,13 +317,12 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         """
         cdef double data_support = 0
         cdef double max_posterior = 0
-        cdef int tries
 
         self.position[0] = seed_point[0]
         self.position[1] = seed_point[1]
         self.position[2] = seed_point[2]
 
-        for tries in range(self.rejection_sampling_nbr_sample):
+        for _ in range(self.rejection_sampling_nbr_sample):
             self.initialize_candidate(seed_direction)
             data_support = self.calculate_data_support()
             if data_support > max_posterior:
@@ -334,7 +333,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Initialization is successful if a suitable candidate can be sampled
         # within the trial limit
-        for tries in range(self.rejection_sampling_max_try):
+        for _ in range(self.rejection_sampling_max_try):
             self.initialize_candidate(seed_direction)
             if (random() * max_posterior <= self.calculate_data_support()):
                 self.last_val = self.last_val_cand
@@ -359,7 +358,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double max_posterior = 0
         cdef double data_support = 0
         cdef double[3] tangent
-        cdef int tries
         cdef cnp.npy_intp i
 
         self.prepare_propagator(self.step_size)
@@ -384,7 +382,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.frame[0][1] = tangent[1]
         self.frame[0][2] = tangent[2]
 
-        for tries in range(self.rejection_sampling_nbr_sample):
+        for _ in range(self.rejection_sampling_nbr_sample):
             self.k1, self.k2 = random_point_within_circle(self.max_curvature)
             data_support = self.calculate_data_support()
             if data_support > max_posterior:
@@ -395,7 +393,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Propagation is successful if a suitable candidate can be sampled
         # within the trial limit
-        for tries in range(self.rejection_sampling_max_try):
+        for _ in range(self.rejection_sampling_max_try):
             self.k1, self.k2 = random_point_within_circle(self.max_curvature)
             if random() * max_posterior <= self.calculate_data_support():
                 self.last_val = self.last_val_cand

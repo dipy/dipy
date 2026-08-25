@@ -298,8 +298,8 @@ def _firdn_vector(double[:] f, double[:] h, double[:] out):
     cdef cnp.npy_intp klen = len(h)
     cdef cnp.npy_intp outLen = (n + klen) // 2
     cdef double ss
-    cdef cnp.npy_intp i, k, limInf, limSup, x = 0, ox = 0, ks = 0
-    for i in range(outLen):
+    cdef cnp.npy_intp k, limInf, limSup, x = 0, ox = 0, ks = 0
+    for _ in range(outLen):
         ss = 0
         limInf = _int_max(0, x - klen + 1)
         limSup = 1 + _int_min(n - 1, x)
