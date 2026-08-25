@@ -437,7 +437,7 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
                 if v < 0:
                     v = 0
                 elif v >= vd[cno]:
-                    v = vd[cno]-1 # last index for this dimension
+                    v = vd[cno]-1  # last index for this dimension
                 out_pt[cno] = v
             # calculate element number in flattened tcs array
             el_no = out_pt[0] * yz + out_pt[1] * vd[2] + out_pt[2]

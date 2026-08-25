@@ -292,11 +292,11 @@ def cut_plane(tracks, ref):
                 # q = track[q_no]
                 # r = track[q_no+1]
                 # float* versions of above: p == this_ref_p
-                this_trk_p = next_trk_p # q
-                next_trk_p = asfp(track[q_no+1]) # r
+                this_trk_p = next_trk_p  # q
+                next_trk_p = asfp(track[q_no+1])  # r
                 #if np.inner(normal,q-p)*np.inner(normal,r-p) <= 0:
-                csub_3vecs(this_trk_p, this_ref_p, qMp) # q-p
-                csub_3vecs(next_trk_p, this_ref_p, rMp) # r-p
+                csub_3vecs(this_trk_p, this_ref_p, qMp)  # q-p
+                csub_3vecs(next_trk_p, this_ref_p, rMp)  # r-p
                 if (cinner_3vecs(normal, qMp) * cinner_3vecs(normal, rMp)) <=0:
                     #if np.inner((r-q),normal) != 0:
                     csub_3vecs(next_trk_p, this_trk_p, rMq)
@@ -315,7 +315,7 @@ def cut_plane(tracks, ref):
                             csub_3vecs(hit, this_ref_p, hitMp)
                             # |h-p|
                             lhp = cnorm_3vec(hitMp)
-                            delta = rMq # just renaming
+                            delta = rMq  # just renaming
                             # |r-q| == |delta|
                             ld = cnorm_3vec(delta)
                             """ # Summary of stuff in comments
@@ -720,8 +720,8 @@ cdef inline void min_distances(cnp.npy_intp t1_len,
                 min_t2t1[t2_pi]=delta2
             if delta2 < min_t1t2[t1_pi]:
                 min_t1t2[t1_pi]=delta2
-            t2_pt += 3 # to next point in track 2
-        t1_pt += 3 # to next point in track 1
+            t2_pt += 3  # to next point in track 2
+        t1_pt += 3  # to next point in track 1
     # sqrt to get Euclidean distance from squared distance
     for t1_pi from 0<= t1_pi < t1_len:
         min_t1t2[t1_pi]=sqrt(min_t1t2[t1_pi])
@@ -1308,26 +1308,26 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
 
     if fabs(a) < epsilon_float:
         #segment runs parallel to cylinder axis
-        if c>0.:  return 0. # segment lies outside cylinder
+        if c>0.:  return 0.  # segment lies outside cylinder
         if md < 0.:
-            t[0]=-mn/nn # intersect against p endcap
+            t[0]=-mn/nn  # intersect against p endcap
         elif md > dd :
-            t[0]=(nd-mn)/nn # intersect against q endcap
+            t[0]=(nd-mn)/nn  # intersect against q endcap
         else:
-            t[0]=0. # lies inside cylinder
+            t[0]=0.  # lies inside cylinder
         return 1
 
     b=dd*mn -nd*md
     discr=b*b-a*c
-    if discr < 0.: return 0. # no real roots ; no intersection
+    if discr < 0.: return 0.  # no real roots ; no intersection
 
     t[0]=(-b-sqrt(discr))/a
     t[1]=(-b+sqrt(discr))/a
-    if t[0]<0. or t[0] > 1. : return 0. # intersection lies outside segment
+    if t[0]<0. or t[0] > 1. : return 0.  # intersection lies outside segment
 
     if md + t[0]* nd < 0.:
         #intersection outside cylinder on 'p' side
-        if nd <= 0. : return 0. # segment pointing away from endcap
+        if nd <= 0. : return 0.  # segment pointing away from endcap
         t[0]=-md/nd
         #keep intersection if Dot(S(t)-p,S(t)-p) <= r^2
         if k+2*t[0]*(mn+t[0]*nn) <=0.:
@@ -1335,7 +1335,7 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
 
     elif md+t[0]*nd > dd :
         #intersection outside cylinder on 'q' side
-        if nd >= 0.: return 0. # segment pointing away from endcap
+        if nd >= 0.: return 0.  # segment pointing away from endcap
         t[0]= (dd-md)/nd
         #keep intersection if Dot(S(t)-q,S(t)-q) <= r^2
         if k+dd-2*md+t[0]*(2*(mn-nd)+t[0]*nn) <= 0.:

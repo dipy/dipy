@@ -73,7 +73,7 @@ cdef void aabb_creation(Data2D streamline, float* aabb) noexcept nogil:
             if min_[d] > streamline[n, d]:
                 min_[d] = streamline[n, d]
 
-        aabb[d + 3] = (max_[d] - min_[d]) / 2.0 # radius
+        aabb[d + 3] = (max_[d] - min_[d]) / 2.0  # radius
         aabb[d] = min_[d] + aabb[d + 3]  # center
 
 

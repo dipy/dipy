@@ -91,9 +91,9 @@ def quick_squash(obj_arr, mask=None, fill=0):
             common_shape = e.shape
             dtype = e.dtype
             break
-        else: # something other than scalar or array
+        else:  # something other than scalar or array
             return obj_arr
-    else: # Nothing outside mask / all None
+    else:  # Nothing outside mask / all None
         return obj_arr
     # Check rest of values to confirm common type / shape, and collect dtypes
     last_dtype = dtype
@@ -109,7 +109,7 @@ def quick_squash(obj_arr, mask=None, fill=0):
             if not issubclass(t, np.generic) and not t in SCALAR_TYPES:
                 return obj_arr
             dtype = np.dtype(t)
-        else: # search_for == ARRAY:
+        else:  # search_for == ARRAY:
             if not t == cnp.ndarray:
                 return obj_arr
             if not e.shape == common_shape:
