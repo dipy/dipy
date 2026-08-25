@@ -87,7 +87,7 @@ cdef class EnhancementKernel:
 
         # file location of the lut table for saving/loading
         kernellutpath = os.path.join(gettempdir(),
-                                     "kernel_d33@%4.2f_d44@%4.2f_t@%4.2f_numverts%d.npy" \
+                                     "kernel_d33@%4.2f_d44@%4.2f_t@%4.2f_numverts%d.npy"
                                        % (D33, D44, t, len(self.orientations_list)))
 
         # if LUT exists, load
@@ -345,7 +345,7 @@ cdef class EnhancementKernel:
                     (x*beta*beta*cg*sg * (1 - 0.5*q*cotq2)) / (q*q) + \
                     y * (1 - (beta*beta*sg*sg * (1 - 0.5*q*cotq2)) / (q*q))
             c[2] = 0.5*x*beta*cg + 0.5*y*beta*sg + \
-                   z * (1 + ((1 - 0.5*q*cotq2) * (-beta*beta*cg*cg - \
+                   z * (1 + ((1 - 0.5*q*cotq2) * (-beta*beta*cg*cg -
                         beta*beta*sg*sg)) / (q*q))
             c[3] = beta * (-sg)
             c[4] = beta * cg
@@ -372,9 +372,9 @@ cdef class EnhancementKernel:
         cdef double output = 1 / (8*sqrt(2))
         output *= sqrt(PI)*self.t*sqrt(self.t*self.D33)*sqrt(self.D33*self.D44)
         output *= 1 / (16*PI*PI*self.D33*self.D33*self.D44*self.D44*self.t*self.t*self.t*self.t)
-        output *= exp(-sqrt((c[0]*c[0] + c[1]*c[1]) / (self.D33*self.D44) + \
-                   (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) * \
-                   (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) + \
+        output *= exp(-sqrt((c[0]*c[0] + c[1]*c[1]) / (self.D33*self.D44) +
+                   (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) *
+                   (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) +
                     c[5]*c[5]/self.D44) / (4*self.t))
         return output
 
