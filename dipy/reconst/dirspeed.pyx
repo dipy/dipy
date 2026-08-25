@@ -31,7 +31,7 @@ cdef cnp.uint16_t peak_directions_c(
     cnp.uint16_t[:] mapping,
     cnp.uint16_t[:] index
 ) noexcept nogil:
-    """Get the directions of odf peaks.
+    r"""Get the directions of odf peaks.
 
     Peaks are defined as points on the odf that are greater than at least one
     neighbor and greater than or equal to all neighbors. Peaks are sorted in
