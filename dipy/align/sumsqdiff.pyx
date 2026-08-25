@@ -437,15 +437,15 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                         if max_displacement < opt:
                             max_displacement = opt
                     elif sigmasq < 1e-9:
-                            nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
-                            if nrm2 < 1e-9:
-                                disp[s, r, c, 0] = 0
-                                disp[s, r, c, 1] = 0
-                                disp[s, r, c, 2] = 0
-                            else:
-                                disp[s, r, c, 0] = (b[0]) / nrm2
-                                disp[s, r, c, 1] = (b[1]) / nrm2
-                                disp[s, r, c, 2] = (b[2]) / nrm2
+                        nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
+                        if nrm2 < 1e-9:
+                            disp[s, r, c, 0] = 0
+                            disp[s, r, c, 1] = 0
+                            disp[s, r, c, 2] = 0
+                        else:
+                            disp[s, r, c, 0] = (b[0]) / nrm2
+                            disp[s, r, c, 1] = (b[1]) / nrm2
+                            disp[s, r, c, 2] = (b[2]) / nrm2
                     else:
                         tau = sigmasq * lambda_param * nn
                         y[0] = b[0] + sigmasq * lambda_param * y[0]

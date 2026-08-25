@@ -415,55 +415,55 @@ cdef int initialize_ptt(TrackerParameters params,
                         double* seed_point,
                         double* seed_direction,
                         RNGState* rng) noexcept nogil:
-        """Sample an initial curve by rejection sampling.
+    """Sample an initial curve by rejection sampling.
 
-        Parameters
-        ----------
-        params : TrackerParameters
-            PTT tracking parameters.
-        stream_data : double*
-            Streamline data persitant across tracking steps.
-        pmf_gen : PmfGen
-            Orientation data.
-        seed_point : double[3]
-            Initial point
-        seed_direction : double[3]
-            Initial direction
-        rng : RNGState*
-            Random number generator state. (Threadsafe)
+    Parameters
+    ----------
+    params : TrackerParameters
+        PTT tracking parameters.
+    stream_data : double*
+        Streamline data persitant across tracking steps.
+    pmf_gen : PmfGen
+        Orientation data.
+    seed_point : double[3]
+        Initial point
+    seed_direction : double[3]
+        Initial direction
+    rng : RNGState*
+        Random number generator state. (Threadsafe)
 
-        Returns
-        -------
-        status : int
-            Returns 0 if the initialization was successful, or
-            1 otherwise.
-        """
-        cdef double data_support = 0
-        cdef double max_posterior = 0
-        cdef int tries
+    Returns
+    -------
+    status : int
+        Returns 0 if the initialization was successful, or
+        1 otherwise.
+    """
+    cdef double data_support = 0
+    cdef double max_posterior = 0
+    cdef int tries
 
-        # position
-        stream_data[19] = seed_point[0]
-        stream_data[20] = seed_point[1]
-        stream_data[21] = seed_point[2]
+    # position
+    stream_data[19] = seed_point[0]
+    stream_data[20] = seed_point[1]
+    stream_data[21] = seed_point[2]
 
-        for tries in range(params.ptt.rejection_sampling_nbr_sample):
-            initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction, rng)
-            data_support = calculate_ptt_data_support(params, stream_data, pmf_gen)
-            if data_support > max_posterior:
-                max_posterior = data_support
+    for tries in range(params.ptt.rejection_sampling_nbr_sample):
+        initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction, rng)
+        data_support = calculate_ptt_data_support(params, stream_data, pmf_gen)
+        if data_support > max_posterior:
+            max_posterior = data_support
 
-        # Compensation for underestimation of max posterior estimate
-        max_posterior = pow(2.0 * max_posterior, params.ptt.data_support_exponent)
+    # Compensation for underestimation of max posterior estimate
+    max_posterior = pow(2.0 * max_posterior, params.ptt.data_support_exponent)
 
-        # Initialization is successful if a suitable candidate can be sampled
-        # within the trial limit
-        for tries in range(params.ptt.rejection_sampling_max_try):
-            initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction, rng)
-            if (random_float(rng) * max_posterior <= calculate_ptt_data_support(params, stream_data, pmf_gen)):
-                stream_data[22] = stream_data[23]  # last_val = last_val_cand
-                return 0
-        return 1
+    # Initialization is successful if a suitable candidate can be sampled
+    # within the trial limit
+    for tries in range(params.ptt.rejection_sampling_max_try):
+        initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction, rng)
+        if (random_float(rng) * max_posterior <= calculate_ptt_data_support(params, stream_data, pmf_gen)):
+            stream_data[22] = stream_data[23]  # last_val = last_val_cand
+            return 0
+    return 1
 
 
 cdef void initialize_ptt_candidate(TrackerParameters params,
