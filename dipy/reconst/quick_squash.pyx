@@ -64,7 +64,7 @@ def quick_squash(obj_arr, mask=None, fill=0):
         object [:] flat_obj
         char [:] flat_mask
         cnp.dtype [:] dtypes
-        int have_mask = not mask is None
+        int have_mask = mask is not None
         int search_for
         cnp.ndarray result
         cnp.dtype dtype, last_dtype
