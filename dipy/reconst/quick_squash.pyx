@@ -64,7 +64,7 @@ def quick_squash(obj_arr, mask=None, fill=0):
         object [:] flat_obj
         char [:] flat_mask
         cnp.dtype [:] dtypes
-        int have_mask = not mask is None
+        int have_mask = mask is not None
         int search_for
         cnp.ndarray result
         cnp.dtype dtype, last_dtype
@@ -106,7 +106,7 @@ def quick_squash(obj_arr, mask=None, fill=0):
             continue
         t = type(e)
         if search_for == SCALAR:
-            if not issubclass(t, np.generic) and not t in SCALAR_TYPES:
+            if not issubclass(t, np.generic) and t not in SCALAR_TYPES:
                 return obj_arr
             dtype = np.dtype(t)
         else:  # search_for == ARRAY:

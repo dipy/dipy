@@ -222,7 +222,7 @@ class ParzenJointHistogram:
         if static.shape != moving.shape:
             raise ValueError("Images must have the same shape")
         dim = len(static.shape)
-        if not dim in [2, 3]:
+        if dim not in [2, 3]:
             msg = "Only dimensions 2 and 3 are supported. " +\
                     str(dim) + " received"
             raise ValueError(msg)
@@ -341,7 +341,7 @@ class ParzenJointHistogram:
         if static.shape != moving.shape:
             raise ValueError("Images must have the same shape")
         dim = len(static.shape)
-        if not dim in [2, 3]:
+        if dim not in [2, 3]:
             msg = "Only dimensions 2 and 3 are supported. " +\
                 str(dim) + " received"
             raise ValueError(msg)
@@ -523,7 +523,7 @@ class ParzenJointHistogram:
             or sample_points.shape[0] != nsamples):
             raise ValueError("Number of points and gradients are different.")
 
-        if not mgradient.dtype in [np.float32, np.float64]:
+        if mgradient.dtype not in [np.float32, np.float64]:
             raise ValueError("Gradients dtype must be floating point")
 
         n = theta.shape[0]
