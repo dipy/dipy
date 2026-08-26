@@ -22,6 +22,7 @@ cdef extern from "dpy_math.h" nogil:
     double sin(double)
     double log(double)
 
+
 class ParzenJointHistogram:
     def __init__(self, nbins):
         r""" Computes joint histogram and derivatives with Parzen windows

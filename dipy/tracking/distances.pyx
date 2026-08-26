@@ -154,6 +154,7 @@ cdef inline void cadd_3vecs(float *vec1, float *vec2, float *vec_out) noexcept n
     for i from 0<=i<3:
         vec_out[i] = vec1[i]+vec2[i]
 
+
 def mul_3vecs(vec1, vec2):
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1 = as_float_3vec(vec1)
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec2 = as_float_3vec(vec2)
@@ -168,6 +169,7 @@ cdef inline void cmul_3vecs(float *vec1, float *vec2, float *vec_out) noexcept n
     cdef cnp.npy_intp i
     for i from 0<=i<3:
         vec_out[i] = vec1[i]*vec2[i]
+
 
 def mul_3vec(a, vec):
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec = as_float_3vec(vec)
@@ -468,6 +470,7 @@ def most_similar_track_mam(tracks,metric="avg"):
         track2others[j] = czhang(t1_len, t1_ptr, t2_len, t2_ptr, min_buffer, metric_type)
     return si, track2others
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def bundles_distances_mam(tracksA, tracksB, metric="avg"):
@@ -641,6 +644,7 @@ def bundles_distances_mdf(tracksA, tracksB):
 
 cdef cnp.float32_t inf = np.inf
 
+
 @cython.cdivision(True)
 cdef inline cnp.float32_t czhang(cnp.npy_intp t1_len,
                                  cnp.float32_t *track1_ptr,
@@ -680,6 +684,7 @@ cdef inline cnp.float32_t czhang(cnp.npy_intp t1_len,
         else:
             dist_val=mean_t1t2
     return dist_val
+
 
 @cython.cdivision(True)
 cdef inline void min_distances(cnp.npy_intp t1_len,
@@ -1726,6 +1731,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
 
     return C
 
+
 def local_skeleton_clustering_3pts(tracks, d_thr=10):
     """ Does a first pass clustering
 
@@ -2080,6 +2086,7 @@ def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track,
         return True
     else:
         return False
+
 
 def track_roi_intersection_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[float,ndim=2] roi, double sq_dist_thr):
     """ Check if a track is intersecting a region of interest
