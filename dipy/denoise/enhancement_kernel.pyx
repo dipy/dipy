@@ -171,7 +171,7 @@ cdef class EnhancementKernel:
 
         lookuptablelocal = np.zeros((OR1, OR2, N, N, N))
         x = np.zeros(3)
-        y = np.zeros(3) # constant at (0,0,0)
+        y = np.zeros(3)  # constant at (0,0,0)
 
         with nogil:
 

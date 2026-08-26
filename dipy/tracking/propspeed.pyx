@@ -185,9 +185,9 @@ cdef cnp.npy_intp _propagation_direction(double *point,
                                          double *direction,
                                          double total_weight) noexcept nogil:
     cdef:
-        double total_w = 0 # total weighting useful for interpolation
-        cnp.npy_intp delta = 0 # store delta function (stopping function) result
-        double new_direction[3] # new propagation direction
+        double total_w = 0  # total weighting useful for interpolation
+        cnp.npy_intp delta = 0  # store delta function (stopping function) result
+        double new_direction[3]  # new propagation direction
         double w[8]
         double qa_tmp[PEAK_NO]
         double ind_tmp[PEAK_NO]
@@ -236,7 +236,7 @@ cdef cnp.npy_intp _propagation_direction(double *point,
         for i from 0 <= i < 3:
             new_direction[i] += w[m] * direction[i]
     # if less than half the volume is time to stop propagating
-    if total_w < total_weight: # termination
+    if total_w < total_weight:  # termination
         return 0
     # all good return normalized weighted next direction
     normd = new_direction[0]**2 + new_direction[1]**2 + new_direction[2]**2
@@ -272,7 +272,7 @@ cdef cnp.npy_intp _initial_direction(double* seed,double *qa,
     if qa_tmp < qa_thr:
         return 0
     # Find the correct direction from the indices
-    ind_tmp = ind[off] # similar to ind[point] in numpy syntax
+    ind_tmp = ind[off]  # similar to ind[point] in numpy syntax
     # Return initial direction through odf_vertices by ind
     for i from 0 <= i < 3:
         direction[i] = odf_vertices[3 * <cnp.npy_intp>ind_tmp + i]
@@ -394,7 +394,7 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
                 break
             # propagate
             ps2[i] = tmp
-            point[i] = ps2[i] # to be changed
+            point[i] = ps2[i]  # to be changed
         # add track point
         if d == 1:
             track.insert(0, point.copy())
@@ -461,7 +461,7 @@ cdef int initialize_ptt(TrackerParameters params,
         for tries in range(params.ptt.rejection_sampling_max_try):
             initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction, rng)
             if (random_float(rng) * max_posterior <= calculate_ptt_data_support(params, stream_data, pmf_gen)):
-                stream_data[22] = stream_data[23] # last_val = last_val_cand
+                stream_data[22] = stream_data[23]  # last_val = last_val_cand
                 return 0
         return 1
 
@@ -1045,7 +1045,7 @@ cdef TrackerStatus parallel_transport_propagator(double* point,
         stream_data[24], stream_data[25] = \
             random_point_within_circle(params.max_curvature, rng)
         if random_float(rng) * max_posterior < calculate_ptt_data_support(params, stream_data, pmf_gen):
-            stream_data[22] = stream_data[23] # last_val = last_val_cand
+            stream_data[22] = stream_data[23]  # last_val = last_val_cand
             # Propagation is successful if a suitable candidate can be sampled
             # within the trial limit
             # update the point and return

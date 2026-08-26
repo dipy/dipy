@@ -71,7 +71,7 @@ def vec_val_vect(vecs, vals):
     valr = np.array(vals.reshape((N, cols)), dtype=float)
     out = np.zeros((N, rows, rows))
     with nogil:
-        for t in range(N): # loop over the early dimensions
+        for t in range(N):  # loop over the early dimensions
             vec = vecr[t]
             val = valr[t]
             out_vec = out[t]
