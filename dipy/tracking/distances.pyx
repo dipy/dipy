@@ -1,4 +1,4 @@
- # A type of -*- python -*- file
+# A type of -*- python -*- file
 """ Optimized track distances, similarities and distanch clustering algorithms
 """
 
@@ -1676,7 +1676,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
                         for j from 0<=j<3:
                             cluster[i_k].hidden[i*3+j]+=ptr[(rows-1-i)*3+j]
                 else:
-                     for i from 0<=i<rows:
+                    for i from 0<=i<rows:
                         for j from 0<=j<3:
                             cluster[i_k].hidden[i*3+j]+=ptr[i*3+j]
                 cluster[i_k].N+=1

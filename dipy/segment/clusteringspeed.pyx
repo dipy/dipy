@@ -96,7 +96,7 @@ cdef CentroidNode* create_empty_node(Shape centroid_shape, float threshold) nogi
     # otherwise during assignment CPython will try to call _PYX_XDEC_MEMVIEW on it and segfault.
     cdef CentroidNode* node = <CentroidNode*> calloc(1, sizeof(CentroidNode))
     node.centroid = create_memview_2d(centroid_shape.size, centroid_shape.dims)
-        #node.updated_centroid = <float[:centroid_shape.dims[0], :centroid_shape.dims[1]]> calloc(centroid_shape.size, sizeof(float))
+    #node.updated_centroid = <float[:centroid_shape.dims[0], :centroid_shape.dims[1]]> calloc(centroid_shape.size, sizeof(float))
 
     node.father = NULL
     node.children = NULL

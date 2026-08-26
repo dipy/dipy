@@ -37,7 +37,7 @@ cdef class BootDirectionGetter(DirectionGetter):
             double[:, :] B
 
         if max_attempts < 1:
-             raise ValueError("max_attempts must be greater than 0.")
+            raise ValueError("max_attempts must be greater than 0.")
 
         if b_tol <= 0:
             raise ValueError("b_tol must be greater than 0.")
