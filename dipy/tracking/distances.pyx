@@ -357,9 +357,6 @@ def cut_plane(tracks, ref):
     return Hit[1:]
 
 
-
-
-
 def most_similar_track_mam(tracks,metric="avg"):
     """ Find the most similar track in a bundle
     using distances calculated from Zhang et. al 2008.
@@ -642,8 +639,6 @@ def bundles_distances_mdf(tracksA, tracksB):
     return DM
 
 
-
-
 cdef cnp.float32_t inf = np.inf
 
 @cython.cdivision(True)
@@ -727,7 +722,6 @@ cdef inline void min_distances(cnp.npy_intp t1_len,
         min_t1t2[t1_pi]=sqrt(min_t1t2[t1_pi])
     for t2_pi from 0<= t2_pi < t2_len:
         min_t2t1[t2_pi]=sqrt(min_t2t1[t2_pi])
-
 
 
 def mam_distances(xyz1,xyz2,metric="all"):
@@ -956,7 +950,6 @@ cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1,
 
     csub_3vecs(end1,start1,tmp)
     l1 = cinner_3vecs(tmp, tmp)
-
 
     #csub_3vecs(end0,start0,k0)
 
@@ -1537,14 +1530,10 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float *c1,float *a
     #out[1]=(tmp1f+tmp2+tmp3f)/3.0
 
 
-
-
 ctypedef struct LSC_Cluster:
     long *indices
     float *hidden
     long N
-
-
 
 
 @cython.boundscheck(False)
@@ -1706,7 +1695,6 @@ def local_skeleton_clustering(tracks, d_thr=10):
 
             free(alld)
             free(flip)
-
 
     #Copy results to a dictionary
 
@@ -1968,7 +1956,6 @@ def larch_3split(tracks, indices=None, thr=10.):
             C[lenC]["N"]=1
             C[lenC]["indices"]=[it]
 
-
     return C
 
 
@@ -2033,7 +2020,6 @@ def larch_3merge(C,thr=10.):
             del C2[c]
 
     return C2
-
 
 
 def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track,

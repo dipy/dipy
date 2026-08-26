@@ -807,7 +807,6 @@ cdef TrackerStatus probabilistic_propagator(double* point,
         double last_cdf, cos_sim
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
 
-
     if norm(direction) == 0:
         return TrackerStatus.FAIL
     normalize(direction)
@@ -1040,7 +1039,6 @@ cdef TrackerStatus parallel_transport_propagator(double* point,
 
     # Compensation for underestimation of max posterior estimate
     max_posterior = pow(2.0 * max_posterior, params.ptt.data_support_exponent)
-
 
     for tries in range(params.ptt.rejection_sampling_max_try):
         # k1, k2

@@ -363,7 +363,6 @@ def trilinear_interpolate4d(floating[:, :, :, :] data,
     return out
 
 
-
 def nearestneighbor_interpolate(data, point):
     index = tuple(np.round(point).astype(int))
     return data[index]

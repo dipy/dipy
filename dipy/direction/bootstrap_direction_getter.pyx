@@ -29,7 +29,6 @@ cdef class BootDirectionGetter(DirectionGetter):
         object model
         object sphere
 
-
     def __init__(self, data, model, max_angle, sphere=default_sphere,
                  max_attempts=5, sh_order=0, b_tol=20, **kwargs):
         cdef:
@@ -70,7 +69,6 @@ cdef class BootDirectionGetter(DirectionGetter):
         self.vox_data = np.empty(self.data.shape[3])
         self.pmf = np.empty(sphere.vertices.shape[0])
 
-
     @classmethod
     def from_data(cls, data, model, max_angle, sphere=default_sphere,
                   sh_order=0, max_attempts=5, b_tol=20, **kwargs):
@@ -104,7 +102,6 @@ cdef class BootDirectionGetter(DirectionGetter):
         return cls(data, model, max_angle, sphere=sphere, max_attempts=max_attempts, sh_order=sh_order,
                    b_tol=b_tol, **kwargs)
 
-
     cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(self,
                                                              double[::1] point):
         """Returns best directions at seed location to start tracking.
@@ -126,7 +123,6 @@ cdef class BootDirectionGetter(DirectionGetter):
 
         return peak_directions(pmf, self.sphere, **self._pf_kwargs)[0]
 
-
     cpdef double[:] get_pmf(self, double[::1] point):
         """Produces an ODF from a SH bootstrap sample"""
         if trilinear_interpolate4d_c(self.data,
@@ -138,7 +134,6 @@ cdef class BootDirectionGetter(DirectionGetter):
                 np.asarray(self.vox_data)[self.dwi_mask], self.H, self.R)
             self.pmf = self.model.fit(np.asarray(self.vox_data)).odf(self.sphere)
         return self.pmf
-
 
     cpdef double[:] get_pmf_no_boot(self, double[::1] point):
 
@@ -157,7 +152,6 @@ cdef class BootDirectionGetter(DirectionGetter):
 
         for i in range(len_pmf):
             self.pmf[i] = 0.0
-
 
     cdef int get_direction_c(self, double[::1] point, double[::1] direction):
         """Attempt direction getting on a few bootstrap samples.

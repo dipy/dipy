@@ -11,7 +11,6 @@ operations used throughout DIPY core modules.
 """
 
 
-
 from dipy.align.fused_types cimport floating
 
 

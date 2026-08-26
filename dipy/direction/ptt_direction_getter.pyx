@@ -60,7 +60,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef double[3]    voxel_size
     cdef double[3]    inv_voxel_size
 
-
     def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=None,
                  double probe_length=0.5, double probe_radius=0,
                  int probe_quality=3, int probe_count=1,
@@ -127,7 +126,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                        pmf_threshold=pmf_threshold, **kwargs)
 
-
     cdef void initialize_candidate(self, double[:] init_dir):
         """"Initialize the parallel transport frame.
 
@@ -177,7 +175,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 self.last_val += self.pmf_gen.get_pmf_value_c(position,
                                                               self.frame[0])
 
-
     cdef void prepare_propagator(self, double arclength) nogil:
         """Prepare the propagator.
 
@@ -221,7 +218,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             self.propagator[6] = -self.k2 * arclength
             self.propagator[7] = -self.k1 * self.k2 * tmp_arclength
             self.propagator[8] = (1 - self.k2 * self.k2 * tmp_arclength)
-
 
     cdef double calculate_data_support(self):
         """Calculates data support for the candidate probe."""
@@ -302,7 +298,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             likelihood = pow(likelihood, self.data_support_exponent)
 
         return likelihood
-
 
     cdef int initialize(self, double[:] seed_point, double[:] seed_direction):
         """Sample an initial curve by rejection sampling.
@@ -407,7 +402,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 return 0
 
         return 1
-
 
     # @cython.boundscheck(False)
     # @cython.wraparound(False)

@@ -53,7 +53,6 @@ cdef double min_direct_flip_dist(double *a,double *b,
         cnp.npy_intp i=0, j=0
         double sub=0, subf=0, distf=0, dist=0, tmprow=0, tmprowf=0
 
-
     for i in range(rows):
         tmprow = 0
         tmprowf = 0
@@ -272,7 +271,6 @@ def _bundle_minimum_distance(double [:, ::1] static,
         restore_default_num_threads()
 
     return dist
-
 
 
 def _bundle_minimum_distance_asymmetric(double [:, ::1] static,

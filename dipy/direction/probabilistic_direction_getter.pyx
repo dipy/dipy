@@ -59,7 +59,6 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         # The vertices need to be in a contiguous array
         self.vertices = self.sphere.vertices.copy()
 
-
     cdef int get_direction_c(self, double[::1] point, double[::1] direction):
         """Samples a pmf to updates ``direction`` array with a new direction.
 
@@ -85,7 +84,6 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
 
         _len = self.len_pmf
         pmf = self._get_pmf(point)
-
 
         if norm(&direction[0]) == 0:
             return 1

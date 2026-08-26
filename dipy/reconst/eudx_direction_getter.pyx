@@ -94,7 +94,6 @@ cdef class EuDXDirectionGetter(DirectionGetter):
 
         return res
 
-
     @cython.initializedcheck(False)
     @cython.boundscheck(False)
     @cython.wraparound(False)

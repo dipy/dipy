@@ -114,8 +114,6 @@ cdef CentroidNode* create_empty_node(Shape centroid_shape, float threshold) nogi
     return node
 
 
-
-
 cdef class QuickBundlesX:
 
     def __init__(self, features_shape, levels_thresholds, Metric metric):
@@ -399,7 +397,6 @@ cdef class ClustersCentroid(Clusters):
             free_memview_2d(self.centroids[i].features)
             free_memview_2d(self._updated_centroids[i].features)
 
-
         free(self.centroids)
         self.centroids = NULL
         free(self._updated_centroids)
@@ -532,7 +529,6 @@ cdef class QuickBundles:
             if dist < nearest_cluster.dist:
                 nearest_cluster.dist = dist
                 nearest_cluster.id = k
-
 
         return nearest_cluster
 
