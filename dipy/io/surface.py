@@ -1,6 +1,6 @@
 from copy import deepcopy
+from dataclasses import replace
 import gzip
-import logging
 from pathlib import Path
 import time
 
@@ -14,22 +14,83 @@ from dipy.io.utils import (
     get_reference_info,
     split_filename_extension,
 )
-from dipy.io.vtk import (
-    get_polydata_triangles,
-    get_polydata_vertices,
-    load_polydata,
-    save_polydata,
-)
 from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
-vtk, have_vtk, setup_module = optional_package(
-    "vtk", min_version="9.0.0", max_version="9.1.0"
-)
+px, have_polyxios, setup_module = optional_package("polyxios", min_version="0.2.0")
 
-if have_vtk:
-    import vtk
-    import vtk.util.numpy_support as ns
+COLOR_ARRAY_NAME = "colors"
+
+
+def load_polydata(file_name):
+    """Load a polydata from a supported format file.
+
+    Supported file formats are OBJ, VTK, VTP, PLY and STL.
+
+    Parameters
+    ----------
+    file_name : string or Path
+
+    Returns
+    -------
+    output : polyxios.PolyData
+
+    """
+    return px.read(str(file_name))
+
+
+@warning_for_keywords()
+def save_polydata(polydata, file_name, *, binary=False, color_array_name=None):
+    """Save a polydata to a supported format file.
+
+    Save formats can be OBJ, VTK, VTP, PLY and STL.
+
+    Parameters
+    ----------
+    polydata : polyxios.PolyData
+        The polydata object to be saved.
+    file_name : string or Path
+        The output filename (.obj, .vtk, .vtp, .ply and .stl)
+    binary : bool, optional
+        Save the file in binary format.
+    color_array_name : str, optional
+        Name of the vertex attribute holding the colors. It is written under
+        the name readers pick colors up from, so that it survives the
+        round-trip. Every other vertex attribute is written under its own.
+    """
+    if color_array_name is not None and color_array_name in polydata.vertex_attrs:
+        vertex_attrs = dict(polydata.vertex_attrs)
+        vertex_attrs[COLOR_ARRAY_NAME] = vertex_attrs.pop(color_array_name)
+        polydata = replace(polydata, vertex_attrs=vertex_attrs)
+
+    opts = {"binary": binary}
+    if Path(file_name).suffix.lower() == ".vtk":
+        opts["vtk_version"] = "4.2"
+
+    px.write(polydata, str(file_name), **opts)
+
+
+def get_polydata_vertices(polydata):
+    """Get the (n_vertices, 3) vertex coordinates of a polyxios PolyData."""
+    return polydata.vertices
+
+
+def get_polydata_triangles(polydata):
+    """Get the (n_triangles, 3) vertex indices of a polyxios PolyData.
+
+    A surface element that is not a triangle is triangulated: a quad splits
+    in two, a polygon is fanned.
+    """
+    triangles = polydata.faces
+    if triangles is None:
+        return np.empty((0, 3), dtype=np.int32)
+    return triangles
+
+
+def get_polydata_vertex_attrs(polydata):
+    """Get every per-vertex array of a polyxios PolyData, keyed by name."""
+    return dict(polydata.vertex_attrs)
 
 
 def load_surface(
@@ -85,20 +146,20 @@ def load_surface(
     vtk_ext = [".vtk", ".vtp", ".obj", ".stl", ".ply"]
     freesurfer_ext = [".gii", ".gii.gz", ".pial", ".nofix", ".orig", ".smoothwm", ".T1"]
 
-    name, ext = split_filename_extension(fname)
+    _, ext = split_filename_extension(fname)
     if ext.lower() not in freesurfer_ext + vtk_ext:
-        logging.error("Input extension is not one of the supported format.")
+        logger.error("Input extension is not one of the supported format.")
         return False
 
     if to_space not in Space:
-        logging.error(
+        logger.error(
             f"Space MUST be one of the {len(Space)} choices:"
             f" {list(Space.__members__.keys())}."
         )
         return False
 
     if to_origin not in Origin:
-        logging.error(
+        logger.error(
             f"Origin MUST be one of the {len(Origin)} choices:"
             f" {list(Origin.__members__.keys())}."
         )
@@ -108,7 +169,7 @@ def load_surface(
         if ext in [".gii", ".gii.gz"]:
             reference = fname
         else:
-            logging.error(
+            logger.error(
                 'Reference must be provided, "same" is only available for GII file.'
             )
             return False
@@ -126,25 +187,14 @@ def load_surface(
         data = load_polydata(fname)
         vertices = get_polydata_vertices(data)
         faces = get_polydata_triangles(data)
-        vertex_data = data.GetPointData()
-        scalar_names = [
-            vertex_data.GetArrayName(i) for i in range(vertex_data.GetNumberOfArrays())
-        ]
-        if scalar_names:
-            for name in scalar_names:
-                scalar = data.GetPointData().GetScalars(name)
-                if name in data_per_vertex:
-                    logging.warning(
-                        f"Scalar {name} already in data_per_vertex, overwriting"
-                    )
-                data_per_vertex[name] = ns.vtk_to_numpy(scalar)
+        data_per_vertex = get_polydata_vertex_attrs(data) or None
     else:
         data = load_pial(fname, return_meta=True)
         data, metadata = data[0:2], data[2]
 
         data = (apply_freesurfer_transform(data[0], reference, inv=True), data[1])
         if from_space is not None or from_origin is not None:
-            logging.warning(
+            logger.warning(
                 "from_space and from_origin are ignored when loading pial files."
             )
         from_space = Space.RASMM
@@ -167,7 +217,7 @@ def load_surface(
     elif isinstance(metadata, nib.filebasedimages.FileBasedHeader):
         sfs.gii_header = metadata
 
-    logging.debug(
+    logger.debug(
         f"Load {fname} with {len(sfs)} vertices in {round(time.time() - timer, 3)}"
         f" seconds."
     )
@@ -214,7 +264,8 @@ def save_surface(
             NIFTI standard, default (center of the voxel)
             TRACKVIS standard (corner of the voxel)
     legacy_vtk_format : bool, optional
-        Whether to save the file in legacy VTK format or not.
+        Kept for backward compatibility and ignored: polyxios always writes
+        the classic VTK 4.2 layout, which every VTK reader takes.
     bbox_valid_check : bool, optional
         Verification for negative voxel coordinates or values above the
         volume dimensions. Default is True, to enforce valid file.
@@ -250,9 +301,9 @@ def save_surface(
         sfs.to_space(to_space)
         sfs.to_origin(to_origin)
 
+        color_array_name = None
         if sfs.data_per_vertex is not None:
             # Check if rgb, colors, colors, etc. are available
-            color_array_name = None
             for key in ["rgb", "colors", "color"]:
                 if key in sfs.data_per_vertex:
                     color_array_name = key
@@ -261,26 +312,10 @@ def save_surface(
                     color_array_name = key.upper()
                     break
 
-        polydata = sfs.get_polydata()
-        if color_array_name is not None:
-            color_array = sfs.data_per_vertex[color_array_name]
-            if len(color_array) != polydata.GetNumberOfPoints():
-                raise ValueError("Array length does not match number of vertices.")
-            vtk_array = ns.numpy_to_vtk(
-                np.array(color_array), deep=True, array_type=vtk.VTK_UNSIGNED_CHAR
-            )
-            vtk_array.SetName("RGB")
-
-            if "normal" in color_array_name.lower():
-                polydata.GetPointData().SetNormals(vtk_array)
-            else:
-                try:
-                    polydata.GetPointData().SetScalars(vtk_array)
-                except ValueError:
-                    polydata.GetPointData().AddArray(vtk_array)
-
         save_polydata(
-            polydata, fname, legacy_vtk_format=legacy_vtk_format, color_array_name="RGB"
+            sfs.get_polydata(),
+            fname,
+            color_array_name=color_array_name,
         )
     elif ext in [".gii", ".gii.gz"]:
         if not hasattr(sfs, "gii_header") and ref_gii is None:
@@ -320,7 +355,7 @@ def save_surface(
             metadata = sfs.fs_metadata
 
         if to_space is not None or to_origin is not None:
-            logging.warning(
+            logger.warning(
                 "to_space and to_origin are ignored when loading pial files."
             )
         sfs.to_space(Space.RASMM)
@@ -330,7 +365,7 @@ def save_surface(
 
         save_pial(fname, vertices, sfs.faces, metadata=metadata)
     else:
-        logging.error("Output extension is not one of the supported format.")
+        logger.error("Output extension is not one of the supported format.")
 
     sfs.to_space(old_space)
     sfs.to_origin(old_origin)
@@ -358,7 +393,7 @@ def load_pial(fname, *, return_meta=False):
     except ValueError:
         try:
             data = nib.freesurfer.read_geometry(fname, read_metadata=False)
-            logging.warning("No metadata found, please use a pial file with metadata.")
+            logger.warning("No metadata found, please use a pial file with metadata.")
         except ValueError:
             raise ValueError(f"{fname} provided does not have geometry data.") from None
 

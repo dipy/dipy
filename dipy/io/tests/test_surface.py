@@ -11,9 +11,7 @@ from dipy.io.surface import load_surface, save_surface
 from dipy.io.utils import Origin, Space
 from dipy.utils.optpkg import optional_package
 
-vtk, have_vtk, setup_module = optional_package(
-    "vtk", min_version="9.0.0", max_version="9.1.0"
-)
+_, have_polyxios, _ = optional_package("polyxios", min_version="0.2.0")
 
 FOLDERS_GII = ["ascii", "base64", "gzip_base64"]
 FILENAMES_GII = ["pial.L.surf.gii", "smoothwm.L.surf.gii"]
@@ -37,7 +35,7 @@ def setup_module():
         return
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_pial_load_save(tmp_path):
     data_raw = nib.freesurfer.read_geometry(FILEPATH_DIX["naf_lh.pial"])
 
@@ -54,7 +52,7 @@ def test_pial_load_save(tmp_path):
     npt.assert_almost_equal(data_raw[0], data_save[0], decimal=5)
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 @pytest.mark.parametrize("space,origin", list(itertools.product(SPACES, ORIGINS)))
 def test_vtk_matching_space(tmp_path, space, origin):
     sfs = load_surface(
@@ -78,7 +76,7 @@ def test_vtk_matching_space(tmp_path, space, origin):
     npt.assert_almost_equal(ref_vertices, save_vertices, decimal=5)
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 @pytest.mark.parametrize(
     "_type,fname,space,origin",
     list(itertools.product(FOLDERS_GII, FILENAMES_GII, SPACES, ORIGINS)),
@@ -105,7 +103,7 @@ def test_gifti_matching_space(tmp_path, _type, fname, space, origin):
     npt.assert_almost_equal(ref_vertices, save_vertices, decimal=5)
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 @pytest.mark.parametrize(
     "dataset,hemisphere,type", list(itertools.product(FOLDERS, HEMISPHERES, TYPES))
 )

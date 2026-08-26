@@ -25,10 +25,7 @@ from dipy.io.utils import (
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
-vtk, have_vtk, setup_module = optional_package(
-    "vtk", min_version="9.0.0", max_version="9.1.0"
-)
-
+_, have_polyxios, _ = optional_package("polyxios", min_version="0.2.0")
 
 FILEPATH_DIX = None
 
@@ -49,7 +46,7 @@ def teardown_module():
     FILEPATH_DIX = (None,)
 
 
-@pytest.mark.skipif(not have_vtk, reason="Requires VTK")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_equivalence_lpsmm_sft_sfs():
     sft = load_tractogram(
         FILEPATH_DIX["gs_streamlines.vtk"],

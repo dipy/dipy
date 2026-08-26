@@ -1,4 +1,5 @@
 from copy import deepcopy
+from pathlib import Path
 import time
 
 import nibabel as nib
@@ -16,9 +17,152 @@ from dipy.io.utils import (
     is_header_compatible,
     split_filename_extension,
 )
-from dipy.io.vtk import load_vtk_streamlines, save_vtk_streamlines
 from dipy.testing.decorators import warning_for_keywords
+from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.logging import logger
+from dipy.utils.optpkg import optional_package
+
+px, have_polyxios, setup_module = optional_package("polyxios", min_version="0.2.0")
+
+if have_polyxios:
+    from polyxios._element_types import ELEMENT_TYPES
+
+
+def _polyxios_format(filename):
+    """Name the codec for a suffix polyxios does not register, else None.
+
+    A ``.fib`` file is a legacy VTK file that tractography tools happen to
+    name differently. polyxios picks its codec from the extension and only
+    registers ``.vtk``, so that one has to be asked for by name.
+    """
+    return ".vtk" if Path(filename).suffix.lower() == ".fib" else None
+
+
+def convert_to_polydata_lines(lines):
+    """Convert a list of lines to a polyxios PolyData.
+
+    Parameters
+    ----------
+    lines : list
+        list of 2D arrays or ArraySequence, each of shape (n_points, 3).
+
+    Returns
+    -------
+    polydata : polyxios.PolyData
+        One ``poly_line`` element per input line, in the order given.
+    """
+    lines = [np.asarray(line, dtype=np.float64) for line in lines]
+    lengths = np.array([len(line) for line in lines], dtype=np.int64)
+
+    if len(lines):
+        vertices = np.concatenate(lines, axis=0)
+    else:
+        vertices = np.empty((0, 3), dtype=np.float64)
+
+    idx_dtype = np.int64 if len(vertices) >= 2**31 else np.int32
+    offsets = np.zeros(len(lengths) + 1, dtype=idx_dtype)
+    offsets[1:] = np.cumsum(lengths)
+
+    return px.PolyData(
+        vertices=vertices,
+        connectivity=np.arange(len(vertices), dtype=idx_dtype),
+        offsets=offsets,
+        element_types=np.full(len(lengths), ELEMENT_TYPES["poly_line"], dtype=np.uint8),
+    )
+
+
+def get_polydata_lines(polydata):
+    """Get the lines of a polyxios PolyData as a list of coordinate arrays.
+
+    Parameters
+    ----------
+    polydata : polyxios.PolyData
+
+    Returns
+    -------
+    lines : list of numpy.ndarray
+        One array of shape (n_points, 3) per line.
+
+    Notes
+    -----
+    A PolyData holding no line element falls back to its raw connectivity,
+    which is what keeps a tractogram saved as ``.vtp`` readable: the polyxios
+    VTP writer files every element under ``Polys``.
+
+    """
+    vertices = polydata.vertices
+    indices = polydata.lines
+    if indices is None:
+        offsets = polydata.offsets
+        indices = [
+            polydata.connectivity[offsets[i] : offsets[i + 1]]
+            for i in range(len(polydata.element_types))
+        ]
+    return [vertices[idx] for idx in indices]
+
+
+@warning_for_keywords()
+def save_vtk_streamlines(streamlines, filename, *, to_lps=True, binary=False):
+    """Save streamlines as polydata to a supported format file.
+
+    File formats can be VTK, VTP and FIB.
+
+    Parameters
+    ----------
+    streamlines : list
+        list of 2D arrays or ArraySequence
+    filename : string or Path
+        output filename (.vtk, .vtp or .fib)
+    to_lps : bool
+        Default to True, will follow the vtk file convention for streamlines
+        Will be supported by MITKDiffusion and MI-Brain
+    binary : bool
+        save the file as binary
+
+    """
+    if to_lps:
+        to_lps = np.eye(4)
+        to_lps[0, 0] = -1
+        to_lps[1, 1] = -1
+        streamlines = transform_streamlines(streamlines, to_lps)
+
+    fmt = _polyxios_format(filename)
+    opts = {"binary": binary}
+    if (fmt or Path(filename).suffix.lower()) == ".vtk":
+        opts["vtk_version"] = "4.2"
+
+    px.write(convert_to_polydata_lines(streamlines), str(filename), fmt=fmt, **opts)
+
+
+@warning_for_keywords()
+def load_vtk_streamlines(filename, *, to_lps=True):
+    """Load streamlines from polydata.
+
+    Load formats can be VTK, VTP and FIB.
+
+    Parameters
+    ----------
+    filename : string or Path
+        input filename (.vtk, .vtp or .fib)
+    to_lps : bool
+        Default to True, will follow the vtk file convention for streamlines
+        Will be supported by MITK-Diffusion and MI-Brain
+
+    Returns
+    -------
+    output :  list
+         list of 2D arrays
+
+    """
+    polydata = px.read(str(filename), fmt=_polyxios_format(filename))
+    lines = get_polydata_lines(polydata)
+    if to_lps:
+        to_lps = np.eye(4)
+        to_lps[0, 0] = -1
+        to_lps[1, 1] = -1
+        return transform_streamlines(lines, to_lps)
+
+    return lines
 
 
 @warning_for_keywords()
