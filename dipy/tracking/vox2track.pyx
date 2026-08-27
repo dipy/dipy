@@ -71,7 +71,7 @@ def _voxel2streamline(sl,
                 v2fn[s_idx][voxel_id].append(node_idx)
             else:
                 v2fn[s_idx][voxel_id] = [node_idx]
-    return v2f ,v2fn
+    return v2f, v2fn
 
 
 def streamline_mapping(streamlines, affine=None,
@@ -181,7 +181,7 @@ cdef inline void c_get_closest_edge(cnp.double_t* p,
 @cython.wraparound(False)
 @cython.cdivision(True)
 def _streamlines_in_mask(list streamlines,
-                         cnp.uint8_t[:,:,:] mask,
+                         cnp.uint8_t[:, :, :] mask,
                          lin_T, offset):
     """Filters streamlines based on whether or not they pass through a ROI,
     using a line-based algorithm for compressed streamlines.
@@ -208,7 +208,7 @@ def _streamlines_in_mask(list streamlines,
         0 if passing through mask, 1 otherwise
         (2 for single-point streamline)
     """
-    cdef cnp.double_t[:,:] voxel_indices
+    cdef cnp.double_t[:, :] voxel_indices
 
     cdef cnp.npy_intp nb_streamlines = len(streamlines)
     cdef cnp.uint8_t[:] in_mask = np.zeros(nb_streamlines, dtype=np.uint8)
@@ -227,8 +227,8 @@ def _streamlines_in_mask(list streamlines,
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef cnp.npy_intp _streamline_in_mask(
-        cnp.double_t[:,:] streamline,
-        cnp.uint8_t[:,:,:] mask) noexcept nogil:
+        cnp.double_t[:, :] streamline,
+        cnp.uint8_t[:, :, :] mask) noexcept nogil:
     """
     Check if a single streamline is passing through a mask. This is an utility
     function to make streamlines_in_mask() more readable.
@@ -326,7 +326,7 @@ cdef cnp.npy_intp _streamline_in_mask(
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.profile(False)
-def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
+def track_counts(tracks, vol_dims, vox_sizes=(1, 1, 1), return_elements=True):
     """ Counts of points in `tracks` that pass through voxels in volume
 
     We find whether a point passed through a track by rounding the mm

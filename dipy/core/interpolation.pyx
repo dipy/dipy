@@ -148,7 +148,7 @@ def trilinear_interp(cnp.float32_t[:, :, :, :] data, cython.floating[:] index,
             for kk from 0 <= kk <= 1:
                 weight = wght(ii, x)*wght(jj, y)*wght(kk, z)
                 for LL from 0 <= LL < last_d:
-                    result[LL] += data[x_ind+ii,y_ind+jj,z_ind+kk,LL]*weight
+                    result[LL] += data[x_ind+ii, y_ind+jj, z_ind+kk, LL]*weight
     return result
 
 
@@ -807,7 +807,7 @@ def interpolate_scalar_3d(floating[:, :, :] image, locations):
         cnp.npy_intp i, n = locations.shape[0]
         floating[:] out = np.zeros(shape=(n,), dtype=ftype)
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
-        double[:,:] _locations = np.array(locations, dtype=np.float64)
+        double[:, :] _locations = np.array(locations, dtype=np.float64)
     with nogil:
         for i in range(n):
             inside[i] = _interpolate_scalar_3d[floating](image,

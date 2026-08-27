@@ -497,8 +497,8 @@ class IteratedConditionalModes:
         return PLN
 
 
-cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike,
-                                         cnp.npy_short[:,:,:] seg) noexcept nogil:
+cdef void _initialize_maximum_likelihood(double[:, :, :, :] nloglike,
+                                         cnp.npy_short[:, :, :] seg) noexcept nogil:
     r""" Initializes the segmentation of an image with given
     neg-log-likelihood.
 
@@ -541,9 +541,9 @@ cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike,
                 seg[x, y, z] = best_class
 
 
-cdef void _icm_ising(double[:,:,:,:] nloglike, double beta,
-                     cnp.npy_short[:,:,:] seg, double[:,:,:] energy,
-                     cnp.npy_short[:,:,:] new_seg) noexcept nogil:
+cdef void _icm_ising(double[:, :, :, :] nloglike, double beta,
+                     cnp.npy_short[:, :, :] seg, double[:, :, :] energy,
+                     cnp.npy_short[:, :, :] new_seg) noexcept nogil:
     r""" Executes one iteration of the ICM algorithm for MRF MAP estimation
     The prior distribution of the MRF is a Gibbs distribution with the
     Potts/Ising model with parameter `beta`:

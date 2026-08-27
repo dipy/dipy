@@ -23,7 +23,7 @@ cdef cnp.dtype f64_dt = np.dtype(np.float64)
 cdef cnp.npy_intp PARALLEL_MIN_PAIRS = 1000000
 
 
-cdef double min_direct_flip_dist(double *a,double *b,
+cdef double min_direct_flip_dist(double *a, double *b,
                                  cnp.npy_intp rows) noexcept nogil:
     r""" Minimum of direct and flip average (MDF) distance between two
     streamlines.
@@ -392,7 +392,7 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
     lentB = len(streamlines_b)
     tracksA64 = np.zeros((lentA,), dtype=object)
     tracksB64 = np.zeros((lentB,), dtype=object)
-    DM = np.zeros((lentA,lentB), dtype=np.double)
+    DM = np.zeros((lentA, lentB), dtype=np.double)
     if streamlines_a[0].shape[0] != streamlines_b[0].shape[0]:
         msg = "Streamlines should have the same number of points as required"
         msg += "by the MDF distance"
@@ -421,6 +421,6 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
             t2 = tracksB64[j]
             t2_ptr = <cnp.float64_t *> cnp.PyArray_DATA(t2)
 
-            DM[i, j] = min_direct_flip_dist(t1_ptr, t2_ptr,t_len)
+            DM[i, j] = min_direct_flip_dist(t1_ptr, t2_ptr, t_len)
 
     return DM

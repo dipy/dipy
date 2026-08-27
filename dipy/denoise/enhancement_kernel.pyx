@@ -82,7 +82,7 @@ cdef class EnhancementKernel:
             self.orientations_list = sphere.vertices
             self.sphere = sphere
         else:
-            self.orientations_list = np.zeros((0,0))
+            self.orientations_list = np.zeros((0, 0))
             self.sphere = None
 
         # file location of the lut table for saving/loading
@@ -189,7 +189,7 @@ cdef class EnhancementKernel:
                                                  angr,
                                                  xp + hn,
                                                  yp + hn,
-                                                 zp + hn] = self.k2(x, y, orientations[angr,:], orientations[angv,:])
+                                                 zp + hn] = self.k2(x, y, orientations[angr, :], orientations[angv, :])
 
         # save to class member
         self.lookuptable = lookuptablelocal
@@ -268,7 +268,7 @@ cdef class EnhancementKernel:
         """
         cdef:
             double [:] a
-            double [:,:] transm
+            double [:, :] transm
             double [:] arg1
             double [:] arg2p
             double [:] arg2
@@ -429,7 +429,7 @@ cdef double [:] euler_angles(double [:] inp) noexcept nogil:
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef double [:,:] R(double [:] inp) noexcept nogil:
+cdef double [:, :] R(double [:] inp) noexcept nogil:
     """ Compute the Rotation matrix for a given input vector
 
     Parameters
@@ -474,4 +474,4 @@ cdef double [:,:] R(double [:] inp) noexcept nogil:
 
     with gil:
 
-        return np.reshape(output, (3,3))
+        return np.reshape(output, (3, 3))

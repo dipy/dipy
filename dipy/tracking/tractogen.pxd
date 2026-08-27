@@ -5,8 +5,8 @@ from dipy.direction.pmf cimport PmfGen
 from dipy.tracking.tracker_parameters cimport TrackerParameters
 
 
-cdef void generate_tractogram_c(double[:,::1] seed_positions,
-                                double[:,::1] seed_directions,
+cdef void generate_tractogram_c(double[:, ::1] seed_positions,
+                                double[:, ::1] seed_directions,
                                 int nbr_threads,
                                 StoppingCriterion sc,
                                 TrackerParameters params,

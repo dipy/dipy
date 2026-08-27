@@ -433,7 +433,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.max_curvature = 1 / min_radius_curvature_from_angle(
             self.max_angle * M_PI / 180.0, self.step_size / average_voxel_size)
 
-        copy_point(&seed[0], &streamline[0,0])
+        copy_point(&seed[0], &streamline[0, 0])
         i = 0
         stream_status = TRACKPOINT
 

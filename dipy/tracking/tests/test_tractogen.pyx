@@ -78,7 +78,7 @@ def get_disco_performances(streamlines):
     labels_img = nib.load(fnames[23])
     affine = labels_img.affine
     labels = np.round(labels_img.get_fdata()).astype(int)
-    connectome = connectivity_matrix(streamlines, affine, labels)[1:,1:]
+    connectome = connectivity_matrix(streamlines, affine, labels)[1:, 1:]
 
     r, _ = pearsonr(GT_connectome[connectome_mask].flatten(),
                     connectome[connectome_mask].flatten())
@@ -144,7 +144,7 @@ def test_tracking_max_angle():
         get_sphere(name="repulsion100"),
         HemiSphere.from_sphere(get_sphere(name="repulsion100")),
     ]:
-        for max_angle in [20,45]:
+        for max_angle in [20, 45]:
 
             params = generate_tracking_parameters("det",
                                                 max_len=500,
@@ -327,7 +327,7 @@ def test_buffer_frac():
                                               buffer_frac=1.0))
 
     # test the results are identical with various buffer fractions
-    for frac in [0.01,0.1,0.5]:
+    for frac in [0.01, 0.1, 0.5]:
         frac_streams = Streamlines(generate_tractogram(seeds,
                                                        directions,
                                                        sc,

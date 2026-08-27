@@ -209,7 +209,7 @@ cdef _pft_tracker(DirectionGetter dg,
         void (*step)(double* , double*, double) noexcept nogil
 
     copy_point(seed, point)
-    copy_point(seed, &streamline[0,0])
+    copy_point(seed, &streamline[0, 0])
     copy_point(&direction[0], &directions[0, 0])
 
     stream_status[0] = TRACKPOINT

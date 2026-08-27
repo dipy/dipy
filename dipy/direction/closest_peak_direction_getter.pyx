@@ -43,9 +43,9 @@ cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
         double closest_peak_dot=0
 
     for i in range(_len):
-        _dot = (peak_dirs[i,0] * direction[0]
-                + peak_dirs[i,1] * direction[1]
-                + peak_dirs[i,2] * direction[2])
+        _dot = (peak_dirs[i, 0] * direction[0]
+                + peak_dirs[i, 1] * direction[1]
+                + peak_dirs[i, 2] * direction[2])
 
         if np.abs(_dot) > np.abs(closest_peak_dot):
             closest_peak_dot = _dot
@@ -162,7 +162,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
                    "points in sphere.")
             raise ValueError(msg)
 
-        pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float), sphere)
+        pmf_gen = SimplePmfGen(np.asarray(pmf, dtype=float), sphere)
         return cls(pmf_gen, max_angle, sphere, pmf_threshold=pmf_threshold, **kwargs)
 
     @classmethod
@@ -215,9 +215,9 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             pmf = shm.sh_to_sf(shcoeff, sphere, sh_order_max=sh_order,
                                basis_type=basis_type, legacy=legacy)
             pmf[pmf<0] = 0
-            pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float), sphere)
+            pmf_gen = SimplePmfGen(np.asarray(pmf, dtype=float), sphere)
         else:
-            pmf_gen = SHCoeffPmfGen(np.asarray(shcoeff,dtype=float), sphere,
+            pmf_gen = SHCoeffPmfGen(np.asarray(shcoeff, dtype=float), sphere,
                                     basis_type, legacy=legacy)
         return cls(pmf_gen, max_angle, sphere, pmf_threshold=pmf_threshold, **kwargs)
 
