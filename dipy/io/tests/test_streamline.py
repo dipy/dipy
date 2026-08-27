@@ -25,6 +25,14 @@ FILEPATH_DIX = None
 SPACES = [Space.RASMM, Space.LPSMM, Space.VOXMM, Space.VOX]
 ORIGINS = [Origin.NIFTI, Origin.TRACKVIS]
 
+# Local, so the VTK format regressions do not ride on the fetched fixtures.
+# Uneven lengths on purpose: a fixed-width layout would hide an offsets bug.
+VTK_STREAMLINES = [
+    np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [2.0, 2.0, 2.0]]),
+    np.array([[3.0, 3.0, 3.0], [4.0, 4.0, 4.0]]),
+    np.array([[5.0, 0.0, 1.0], [6.0, 1.0, 2.0], [7.0, 2.0, 3.0], [8.0, 3.0, 4.0]]),
+]
+
 
 def setup_module():
     global FILEPATH_DIX, STREAMLINE, STREAMLINES
@@ -253,6 +261,52 @@ def test_low_io_vtk(tmp_path):
     tracks = load_vtk_streamlines(fname)
     npt.assert_equal(len(tracks), len(STREAMLINES))
     npt.assert_array_almost_equal(tracks[1], STREAMLINE, decimal=4)
+
+
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
+@pytest.mark.parametrize("ext", [".vtk", ".fib"])
+def test_save_vtk_streamlines_pins_file_version_4_2(tmp_path, ext):
+    """Legacy VTK output stays at file version 4.2.
+
+    Version 5.1 spells its cells as OFFSETS + CONNECTIVITY, a layout older
+    readers such as MI-Brain and MITK Diffusion do not take. ``.fib`` is the
+    same format under another name, so it is pinned too.
+    """
+    fname = tmp_path / f"tracks{ext}"
+    save_vtk_streamlines(VTK_STREAMLINES, fname, to_lps=False, binary=False)
+
+    content = fname.read_bytes()
+    npt.assert_equal(content.splitlines()[0], b"# vtk DataFile Version 4.2")
+    npt.assert_(b"OFFSETS" not in content, msg="the v5.1 cell layout was written")
+
+
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
+@pytest.mark.parametrize("ext", [".vtk", ".fib", ".vtp"])
+@pytest.mark.parametrize("binary", [False, True])
+def test_vtk_streamlines_roundtrip(tmp_path, ext, binary):
+    """Every VTK flavour keeps the streamline count, order and coordinates."""
+    fname = tmp_path / f"tracks{ext}"
+    save_vtk_streamlines(VTK_STREAMLINES, fname, to_lps=False, binary=binary)
+    loaded = load_vtk_streamlines(fname, to_lps=False)
+
+    npt.assert_equal(len(loaded), len(VTK_STREAMLINES))
+    for expected, got in zip(VTK_STREAMLINES, loaded):
+        npt.assert_array_almost_equal(got, expected, decimal=4)
+
+
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
+def test_vtk_streamlines_to_lps(tmp_path):
+    """The LPS flip is applied on the way out and undone on the way in."""
+    fname = tmp_path / "tracks.vtk"
+    save_vtk_streamlines(VTK_STREAMLINES, fname, to_lps=True)
+
+    as_written = load_vtk_streamlines(fname, to_lps=False)
+    npt.assert_array_almost_equal(as_written[0][:, 0], -VTK_STREAMLINES[0][:, 0])
+    npt.assert_array_almost_equal(as_written[0][:, 2], VTK_STREAMLINES[0][:, 2])
+
+    npt.assert_array_almost_equal(
+        load_vtk_streamlines(fname, to_lps=True)[0], VTK_STREAMLINES[0]
+    )
 
 
 def trk_loader(tmp_path, filename):
