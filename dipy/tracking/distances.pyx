@@ -1295,8 +1295,8 @@ cdef float cintersect_segment_cylinder(float *sa, float *sb, float *p, float *q,
     dd=cinner_3vecs(d, d)
 
     #test if segment fully outside either endcap of cylinder
-    if md < 0. and md + nd < 0.:  return 0 #segment outside p side
-    if md > dd and md + nd > dd:  return 0 #segment outside q side
+    if md < 0. and md + nd < 0.:  return 0  # segment outside p side
+    if md > dd and md + nd > dd:  return 0  # segment outside q side
 
     nn=cinner_3vecs(n, n)
     mn=cinner_3vecs(m, n)
