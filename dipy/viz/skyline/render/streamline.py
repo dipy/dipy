@@ -310,7 +310,11 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="Line", segments=4):
     if isinstance(color, str) and color == "direction" and lines:
         color = line_colors(lines)
     if line_type == "Tube":
-        if len(color) != len(lines) and color.ndim == 2:
+        if (
+            isinstance(color, np.ndarray)
+            and color.ndim == 2
+            and len(color) != len(lines)
+        ):
             points_per_line = [len(line) for line in lines]
             if color.shape[0] == sum(points_per_line):
                 color = np.split(color, np.cumsum(points_per_line)[:-1])
@@ -322,7 +326,11 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="Line", segments=4):
         )
         return tubes
     elif line_type == "Line":
-        if len(color) == len(lines) and color.ndim == 2:
+        if (
+            isinstance(color, np.ndarray)
+            and color.ndim == 2
+            and len(color) == len(lines)
+        ):
             color = np.repeat(color, [len(line) for line in lines], axis=0)
         lines = streamlines(
             lines=lines,
