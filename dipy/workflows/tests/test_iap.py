@@ -1,13 +1,18 @@
+import inspect
 from pathlib import Path
 import sys
 
 import numpy.testing as npt
 
+from dipy.utils.optpkg import optional_package
 from dipy.workflows.base import (
     IntrospectiveArgumentParser,
     add_default_args_to_docstring,
+    get_args_default,
     none_or_dtype,
 )
+from dipy.workflows.cli import cli_flows
+from dipy.workflows.docstring_parser import NumpyDocString
 from dipy.workflows.flow_runner import run_flow
 from dipy.workflows.tests.workflow_tests_utils import (
     DummyCombinedWorkflow,
@@ -323,3 +328,34 @@ def test_add_default_args_to_docstring():
         "multiple lines of description.",
         "(default: 0.3)",
     ]
+
+
+def test_workflow_docstring_matches_signature():
+    # ``IntrospectiveArgumentParser.add_workflow`` documents each command line
+    # argument with the docstring ``Parameters`` entry in the same position, so
+    # an entry that is missing, extra or out of order silently attaches the
+    # wrong help text and default value to an argument.
+    mismatched = []
+    for cli_name, (mod_name, flow_name) in cli_flows.items():
+        mod, have_mod, _ = optional_package(mod_name)
+        if not have_mod:
+            continue
+
+        run_method = getattr(mod, flow_name).run
+        args, _ = get_args_default(run_method)
+        npds = NumpyDocString(inspect.getdoc(run_method))
+        documented_args = [param[0] for param in npds["Parameters"]]
+
+        if documented_args != args:
+            mismatched.append(
+                f"{cli_name} ({mod_name}.{flow_name}):"
+                f"\n  arguments  {args}"
+                f"\n  documented {documented_args}"
+            )
+
+    npt.assert_equal(
+        mismatched,
+        [],
+        err_msg="Docstring parameters do not match the command line "
+        "arguments:\n" + "\n".join(mismatched),
+    )

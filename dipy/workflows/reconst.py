@@ -1689,9 +1689,7 @@ class ReconstDkiFlow(Workflow):
         out_dir : string or Path, optional
             Output directory.
         out_dt_tensor : string, optional
-            Name of the tensors volume to be saved.
-        out_dk_tensor : string, optional
-            Name of the tensors volume to be saved.
+            Name of the diffusion tensor volume to be saved.
         out_fa : string, optional
             Name of the fractional anisotropy volume to be saved.
         out_ga : string, optional
@@ -1710,6 +1708,8 @@ class ReconstDkiFlow(Workflow):
             Name of the eigenvectors volume to be saved.
         out_eval : string, optional
             Name of the eigenvalues to be saved.
+        out_dk_tensor : string, optional
+            Name of the kurtosis tensor volume to be saved.
         out_mk : string, optional
             Name of the mean kurtosis to be saved.
         out_ak : string, optional
@@ -2124,7 +2124,7 @@ class ReconstRUMBAFlow(Workflow):
             FA threshold to compute the WM response function.
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
-        sh_order : int, optional
+        sh_order_max : int, optional
             Spherical harmonics order (l) used in the RUMBA fit.
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
