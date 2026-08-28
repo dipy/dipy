@@ -1,7 +1,7 @@
 #!python
-#cython: boundscheck=False
-#cython: wraparound=False
-#cython: cdivision=True
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 
 import numpy as np
@@ -63,9 +63,9 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
         cnp.npy_int32[:, :] out = np.zeros(shape=(nrows, ncols,), dtype=np.int32)
         floating[:] levels = np.zeros(shape=(num_levels,), dtype=ftype)
 
-    #Quantizing at zero levels is undefined
-    #Quantizing at one level is not supported because we want to make sure the
-    #maximum level in the quantization is never greater than num_levels-1
+    # Quantizing at zero levels is undefined
+    # Quantizing at one level is not supported because we want to make sure the
+    # maximum level in the quantization is never greater than num_levels-1
     if num_levels < 2:
         raise ValueError("Quantization levels must be at least 2")
     if num_levels >= 2**31:
@@ -166,9 +166,9 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
                                     dtype=np.int32)
         floating[:] levels = np.zeros(shape=(num_levels,), dtype=ftype)
 
-    #Quantizing at zero levels is undefined
-    #Quantizing at one level is not supported because we want to make sure the
-    #maximum level in the quantization is never greater than num_levels-1
+    # Quantizing at zero levels is undefined
+    # Quantizing at one level is not supported because we want to make sure the
+    # maximum level in the quantization is never greater than num_levels-1
     if num_levels < 2:
         raise ValueError("Quantization levels must be at least 2")
 

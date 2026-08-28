@@ -453,7 +453,7 @@ cdef class ClustersCentroid(Clusters):
                 converged &= fabs(centroid[n, d] - updated_centroid[n, d]) < self.eps
                 centroid[n, d] = updated_centroid[n, d]
 
-        #cdef float * aabb = &self.centroids[id_cluster].aabb[0]
+        # cdef float * aabb = &self.centroids[id_cluster].aabb[0]
 
         aabb_creation(centroid, self.centroids[id_cluster].aabb)
 

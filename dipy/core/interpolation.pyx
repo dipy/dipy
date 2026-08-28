@@ -988,7 +988,7 @@ cdef inline int _interpolate_vector_3d(floating[:, :, :, :] field, double dkk,
         out[1] = 0
         out[2] = 0
         return 0
-    #---top-left
+    # ---top-left
     kk = <int>floor(dkk)
     ii = <int>floor(dii)
     jj = <int>floor(djj)

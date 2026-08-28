@@ -29,7 +29,7 @@ cdef extern from "dpy_math.h" nogil:
 # initialize numpy runtime
 cnp.import_array()
 
-#numpy pointers
+# numpy pointers
 cdef inline float* asfp(cnp.ndarray pt):
     return <float *> cnp.PyArray_DATA(pt)
 

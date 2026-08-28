@@ -23,8 +23,8 @@ cdef extern from "dpy_math.h" nogil:
     double dpy_log2(double x)
 
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False)
+# @cython.boundscheck(False)
+# @cython.wraparound(False)
 
 cimport dipy.utils.constants as consts
 
@@ -296,15 +296,15 @@ def cut_plane(tracks, ref):
                 # float* versions of above: p == this_ref_p
                 this_trk_p = next_trk_p  # q
                 next_trk_p = asfp(track[q_no+1])  # r
-                #if np.inner(normal,q-p)*np.inner(normal,r-p) <= 0:
+                # if np.inner(normal,q-p)*np.inner(normal,r-p) <= 0:
                 csub_3vecs(this_trk_p, this_ref_p, qMp)  # q-p
                 csub_3vecs(next_trk_p, this_ref_p, rMp)  # r-p
                 if (cinner_3vecs(normal, qMp) * cinner_3vecs(normal, rMp)) <=0:
-                    #if np.inner((r-q),normal) != 0:
+                    # if np.inner((r-q),normal) != 0:
                     csub_3vecs(next_trk_p, this_trk_p, rMq)
                     beta = cinner_3vecs(rMq, normal)
                     if beta !=0:
-                        #alpha = np.inner((p-q),normal)/np.inner((r-q),normal)
+                        # alpha = np.inner((p-q),normal)/np.inner((r-q),normal)
                         csub_3vecs(this_ref_p, this_trk_p, pMq)
                         alpha = (cinner_3vecs(pMq, normal) /
                                   cinner_3vecs(rMq, normal))
@@ -355,7 +355,7 @@ def cut_plane(tracks, ref):
         for hit_no in range(n_hits):
             hit_arr[hit_no] = hits[hit_no]
         Hit.append(hit_arr)
-        #Div.append(divs[1:])
+        # Div.append(divs[1:])
     return Hit[1:]
 
 
@@ -627,13 +627,13 @@ def bundles_distances_mdf(tracksA, tracksB):
 
     for i from 0 <= i < lentA:
         t1 = tracksA32[i]
-        #t1_len = t1.shape[0]
+        # t1_len = t1.shape[0]
         t1_ptr = <cnp.float32_t *> cnp.PyArray_DATA(t1)
         for j from 0 <= j < lentB:
             t2 = tracksB32[j]
-            #t2_len = t2.shape[0]
+            # t2_len = t2.shape[0]
             t2_ptr = <cnp.float32_t *> cnp.PyArray_DATA(t2)
-            #DM[i,j] = czhang(t1_len, t1_ptr, t2_len, t2_ptr, min_buffer, metric_type)
+            # DM[i,j] = czhang(t1_len, t1_ptr, t2_len, t2_ptr, min_buffer, metric_type)
             track_direct_flip_dist(t1_ptr, t2_ptr, t_len, <float *>d)
             if d[0]<d[1]:
                 DM[i, j]=d[0]
@@ -956,10 +956,10 @@ cdef float clee_perpendicular_distance(float *start0, float *end0, float *start1
     csub_3vecs(end1, start1, tmp)
     l1 = cinner_3vecs(tmp, tmp)
 
-    #csub_3vecs(end0,start0,k0)
+    # csub_3vecs(end0,start0,k0)
 
-    #u1 = np.inner(start1-start0,k0)/l0
-    #u2 = np.inner(end1-start0,k0)/l0
+    # u1 = np.inner(start1-start0,k0)/l0
+    # u2 = np.inner(end1-start0,k0)/l0
     csub_3vecs(start1, start0, tmp)
     u1 = cinner_3vecs(tmp, k0)/l0
 
@@ -972,8 +972,8 @@ cdef float clee_perpendicular_distance(float *start0, float *end0, float *start1
     cmul_3vec(u2, k0, tmp)
     cadd_3vecs(start0, tmp, pe)
 
-    #lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))
-    #lperp2 = np.sqrt(np.inner(pe-end1,pe-end1))
+    # lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))
+    # lperp2 = np.sqrt(np.inner(pe-end1,pe-end1))
 
     csub_3vecs(ps, start1, ps1)
     csub_3vecs(pe, end1, pe1)
@@ -1047,16 +1047,16 @@ cdef float clee_angle_distance(float *start0, float *end0, float *start1, float 
 
     csub_3vecs(end0, start0, k0)
     l0 = cinner_3vecs(k0, k0)
-    #print l0
+    # print l0
 
     csub_3vecs(end1, start1, k1)
     l1 = cinner_3vecs(k1, k1)
-    #print l1
+    # print l1
 
     ltmp=cinner_3vecs(k0, k1)
 
     cos_theta_squared = (ltmp*ltmp)/ (l0*l1)
-    #print cos_theta_squared
+    # print cos_theta_squared
     return sqrt((1-cos_theta_squared)*l1)
 
 
@@ -1125,12 +1125,12 @@ def approx_polygon_track(xyz, alpha=0.392):
     angle=0
 
     while mid_index < t_len-1:
-        #fvec0 = as_float_3vec(track[mid_index-1])
-        #<float *> cnp.PyArray_DATA(track[0])
+        # fvec0 = as_float_3vec(track[mid_index-1])
+        # <float *> cnp.PyArray_DATA(track[0])
         fvec0 = asfp(track[mid_index-1])
         fvec1 = asfp(track[mid_index])
         fvec2 = asfp(track[mid_index+1])
-        #csub_3vecs(<float *> cnp.PyArray_DATA(fvec1),<float *> cnp.PyArray_DATA(fvec0),vec0)
+        # csub_3vecs(<float *> cnp.PyArray_DATA(fvec1),<float *> cnp.PyArray_DATA(fvec0),vec0)
         csub_3vecs(fvec1, fvec0, vec0)
         csub_3vecs(fvec2, fvec1, vec1)
         denom = cnorm_3vec(vec0)*cnorm_3vec(vec1)
@@ -1182,7 +1182,7 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
     characteristic_points=[xyz[0]]
     start_index = 0
     length = 2
-    #print t_len
+    # print t_len
 
     while start_index+length < <int>t_len-1:
         current_index = start_index+length
@@ -1193,11 +1193,11 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
                    <float *> cnp.PyArray_DATA(fvec1), tmp)
         cost_par=dpy_log2(sqrt(cinner_3vecs(tmp, tmp)))
         cost_nopar=0
-        #print start_index,current_index
+        # print start_index,current_index
         # L(D|H)
-        #for i in range(start_index+1,current_index):#+1):
+        # for i in range(start_index+1,current_index):#+1):
         for i in range(start_index, current_index+1):
-            #print i
+            # print i
             fvec3 = as_float_3vec(track[i])
             fvec4 = as_float_3vec(track[i+1])
             cost_par += dpy_log2(clee_perpendicular_distance(<float *> cnp.PyArray_DATA(fvec3),
@@ -1212,7 +1212,7 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
                        <float *> cnp.PyArray_DATA(fvec3), tmp)
             cost_nopar += dpy_log2(cinner_3vecs(tmp, tmp))
         cost_nopar /= 2
-        #print cost_par, cost_nopar, start_index, length
+        # print cost_par, cost_nopar, start_index, length
         if alphac*cost_par>cost_nopar:
             characteristic_points.append(track[current_index-1])
             start_index = current_index-1
@@ -1294,7 +1294,7 @@ cdef float cintersect_segment_cylinder(float *sa, float *sb, float *p, float *q,
     nd=cinner_3vecs(n, d)
     dd=cinner_3vecs(d, d)
 
-    #test if segment fully outside either endcap of cylinder
+    # test if segment fully outside either endcap of cylinder
     if md < 0. and md + nd < 0.:  return 0  # segment outside p side
     if md > dd and md + nd > dd:  return 0  # segment outside q side
 
@@ -1305,7 +1305,7 @@ cdef float cintersect_segment_cylinder(float *sa, float *sb, float *p, float *q,
     c=dd*k-md*md
 
     if fabs(a) < epsilon_float:
-        #segment runs parallel to cylinder axis
+        # segment runs parallel to cylinder axis
         if c>0.:  return 0.  # segment lies outside cylinder
         if md < 0.:
             t[0]=-mn/nn  # intersect against p endcap
@@ -1324,18 +1324,18 @@ cdef float cintersect_segment_cylinder(float *sa, float *sb, float *p, float *q,
     if t[0]<0. or t[0] > 1. : return 0.  # intersection lies outside segment
 
     if md + t[0]* nd < 0.:
-        #intersection outside cylinder on 'p' side
+        # intersection outside cylinder on 'p' side
         if nd <= 0. : return 0.  # segment pointing away from endcap
         t[0]=-md/nd
-        #keep intersection if Dot(S(t)-p,S(t)-p) <= r^2
+        # keep intersection if Dot(S(t)-p,S(t)-p) <= r^2
         if k+2*t[0]*(mn+t[0]*nn) <=0.:
             return 1.
 
     elif md+t[0]*nd > dd :
-        #intersection outside cylinder on 'q' side
+        # intersection outside cylinder on 'q' side
         if nd >= 0.: return 0.  # segment pointing away from endcap
         t[0]= (dd-md)/nd
-        #keep intersection if Dot(S(t)-q,S(t)-q) <= r^2
+        # keep intersection if Dot(S(t)-q,S(t)-q) <= r^2
         if k+dd-2*md+t[0]*(2*(mn-nd)+t[0]*nn) <= 0.:
             return 1.
     # segment intersects cylinder between the endcaps; t is correct
@@ -1389,13 +1389,13 @@ cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c) noexce
     csub_3vecs(c, b, bc)
 
     e = cinner_3vecs(ac, ab)
-    #Handle cases where c projects outside ab
+    # Handle cases where c projects outside ab
     if e <= 0.:
         return cinner_3vecs(ac, ac)
     f = cinner_3vecs(ab, ab)
     if e >= f :
         return cinner_3vecs(bc, bc)
-    #Handle case where c projects onto ab
+    # Handle case where c projects onto ab
     return cinner_3vecs(ac, ac) - e * e / f
 
 
@@ -1520,7 +1520,7 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1, float  *c1, float
         cnp.npy_intp i
         float tmp1=0, tmp2=0, tmp3=0, tmp1f=0, tmp3f=0
 
-    #for i in range(3):
+    # for i in range(3):
     for i from 0<=i<3:
         tmp1=tmp1+(a1[i]-a2[i])*(a1[i]-a2[i])
         tmp2=tmp2+(b1[i]-b2[i])*(b1[i]-b2[i])
@@ -1531,8 +1531,8 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1, float  *c1, float
     out[0]=(sqrt(tmp1)+sqrt(tmp2)+sqrt(tmp3))/3.0
     out[1]=(sqrt(tmp1f)+sqrt(tmp2)+sqrt(tmp3f))/3.0
 
-    #out[0]=(tmp1+tmp2+tmp3)/3.0
-    #out[1]=(tmp1f+tmp2+tmp3f)/3.0
+    # out[0]=(tmp1+tmp2+tmp3)/3.0
+    # out[1]=(tmp1f+tmp2+tmp3f)/3.0
 
 
 ctypedef struct LSC_Cluster:
@@ -1627,7 +1627,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
     rows = points
     cd_thr = d_thr
 
-    #Allocate and copy memory for first cluster
+    # Allocate and copy memory for first cluster
     cluster=<LSC_Cluster *>realloc(NULL, sizeof(LSC_Cluster))
     cluster[0].indices=<long *>realloc(NULL, sizeof(long))
     cluster[0].hidden=<float *>realloc(NULL, dim*sizeof(float))
@@ -1638,13 +1638,13 @@ def local_skeleton_clustering(tracks, d_thr=10):
         cluster[0].hidden[i]=ptr[i]
     cluster[0].N=1
 
-    #holds number of clusters
+    # holds number of clusters
     lenC = 1
 
-    #store memory for the hid variable
+    # store memory for the hid variable
     hid=<float *>realloc(NULL, dim*sizeof(float))
 
-    #Work with the rest of the tracks
+    # Work with the rest of the tracks
     lent=len(tracks)
     for it in range(1, lent):
         track=np.ascontiguousarray(tracks[it], dtype=f32_dt)
@@ -1659,8 +1659,8 @@ def local_skeleton_clustering(tracks, d_thr=10):
                 for i from 0<=i<dim:
                     hid[i]=cluster[k].hidden[i]/<float>cluster[k].N
 
-                #track_direct_flip_3dist(&ptr[0],&ptr[3],&ptr[6],&hid[0],&hid[3],&hid[6],d)
-                #track_direct_flip_3dist(ptr,ptr+3,ptr+6,hid,hid+3,hid+6,<float *>d)
+                # track_direct_flip_3dist(&ptr[0],&ptr[3],&ptr[6],&hid[0],&hid[3],&hid[6],d)
+                # track_direct_flip_3dist(ptr,ptr+3,ptr+6,hid,hid+3,hid+6,<float *>d)
                 track_direct_flip_dist(ptr, hid, rows, <float *>d)
 
                 if d[1]<d[0]:
@@ -1669,7 +1669,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
                 alld[k]=d[0]
 
             m_d = <float>consts.BIGGEST_FLOAT
-            #find minimum distance and index
+            # find minimum distance and index
             for k from 0<=k<lenC:
                 if alld[k] < m_d:
                     m_d=alld[k]
@@ -1701,7 +1701,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
             free(alld)
             free(flip)
 
-    #Copy results to a dictionary
+    # Copy results to a dictionary
 
     C={}
     for k in range(lenC):
@@ -1721,7 +1721,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
 
         C[k]["indices"]=list(C[k]["indices"])
 
-    #Free memory
+    # Free memory
     with nogil:
 
         for k from 0<=k<lenC:
@@ -1779,33 +1779,33 @@ def local_skeleton_clustering_3pts(tracks, d_thr=10):
         cnp.ndarray[cnp.float32_t, ndim=2] h
         int lent, k, it
         float d[2]
-        #float d_sq=d_thr**2
+        # float d_sq=d_thr**2
 
     lent=len(tracks)
 
-    #Network C
+    # Network C
     C={0: {"indices": [0], "hidden": tracks[0].copy(), "N": 1}}
     ts=np.zeros((3, 3), dtype=np.float32)
 
-    #for (it, t) in enumerate(tracks[1:]):
+    # for (it, t) in enumerate(tracks[1:]):
     for it in range(1, lent):
         track=np.ascontiguousarray(tracks[it], dtype=f32_dt)
         lenC=len(C.keys())
-        #if it%1000==0:
+        # if it%1000==0:
         #    print it,lenC
         alld=np.zeros(lenC)
         flip=np.zeros(lenC)
         for k in range(lenC):
             h=np.ascontiguousarray(C[k]["hidden"]/C[k]["N"], dtype=f32_dt)
-            #print track
-            #print h
+            # print track
+            # print h
             track_direct_flip_3dist(
                 asfp(track[0]), asfp(track[1]), asfp(track[2]),
                 asfp(h[0]), asfp(h[1]), asfp(h[2]), <float *>d)
-            #d=np.sum(np.sqrt(np.sum((t-h)**2, axis=1)))/3.0
-            #ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
-            #ds=np.sum(np.sqrt(np.sum((ts-h)**2,axis=1)))/3.0
-            #print d[0],d[1]
+            # d=np.sum(np.sqrt(np.sum((t-h)**2, axis=1)))/3.0
+            # ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
+            # ds=np.sum(np.sqrt(np.sum((ts-h)**2,axis=1)))/3.0
+            # print d[0],d[1]
             if d[1]<d[0]:
                 d[0]=d[1]
                 flip[k]=1
@@ -1817,8 +1817,8 @@ def local_skeleton_clustering_3pts(tracks, d_thr=10):
                 ts[0]=track[-1]; ts[1]=track[1]; ts[-1]=track[0]
                 C[i_k]["hidden"] = C[i_k]["hidden"] + ts
             else:
-                #print(track.shape)
-                #print(track.dtype)
+                # print(track.shape)
+                # print(track.dtype)
                 C[i_k]["hidden"] = C[i_k]["hidden"] + track
             C[i_k]["N"] = C[i_k]["N"] + 1
             C[i_k]["indices"].append(it)
@@ -1850,7 +1850,8 @@ cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1, float  *c1, fl
     cdef:
         cnp.npy_intp i
         float tmp1=0, tmp2=0, tmp3=0, tmp1f=0, tmp3f=0
-    #for i in range(3):
+
+    # for i in range(3):
     for i from 0<=i<3:
         tmp1=tmp1+(a1[i]-a2[i])*(a1[i]-a2[i])
         tmp2=tmp2+(b1[i]-b2[i])*(b1[i]-b2[i])
