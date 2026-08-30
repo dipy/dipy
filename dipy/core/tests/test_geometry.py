@@ -20,6 +20,8 @@ from dipy.core.geometry import (
     compose_transformations,
     decompose_matrix,
     dist_to_corner,
+    generate_random_affine,
+    generate_unit_determinant_matrix,
     is_hemispherical,
     lambert_equal_area_projection_polar,
     nearest_pos_semi_def,
@@ -374,3 +376,13 @@ def test_is_hemispherical():
 
     # Smoke test the ValueError for non unit-vectors
     assert_raises(ValueError, is_hemispherical, xyz * 2.0)
+
+
+def test_generate_unit_determinant_matrix():
+    mat = generate_unit_determinant_matrix()
+    assert_almost_equal(np.linalg.det(mat), 1)
+
+
+def test_generate_random_affine():
+    affine = generate_random_affine()
+    assert_raises(AssertionError, assert_array_equal, np.linalg.det(affine), 0)
