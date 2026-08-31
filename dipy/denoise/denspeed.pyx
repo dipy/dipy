@@ -90,7 +90,6 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
     cdef:
         cnp.npy_intp i, j, k, I, J, K
         double[:, :, ::1] out = np.zeros_like(arr)
-        double summ = 0
         cnp.npy_intp P = patch_radius
         cnp.npy_intp B = block_radius
         int threads_to_use = -1
@@ -150,7 +149,7 @@ cdef double process_block(double[:, :, ::1] arr,
     """
 
     cdef:
-        cnp.npy_intp m, n, o, M, N, O, patch_vol_size, a, b, c, cnt, step
+        cnp.npy_intp m, n, o, patch_vol_size, a, b, c, cnt
         double summ, d, w, sumw, sum_out, x, sigm
         double * W
         double * cache
@@ -228,7 +227,6 @@ def add_padding_reflection(double[:, :, ::1] arr, padding):
     cdef:
         double[:, :, ::1] final
         cnp.npy_intp i, j, k
-        cnp.npy_intp B = padding
         cnp.npy_intp[::1] indices_i = correspond_indices(arr.shape[0], padding)
         cnp.npy_intp[::1] indices_j = correspond_indices(arr.shape[1], padding)
         cnp.npy_intp[::1] indices_k = correspond_indices(arr.shape[2], padding)
@@ -336,7 +334,6 @@ def _upfir_vector(double[:] f, double[:] h, double[:] out):
 
 
 def _firdn_matrix(double[:, :] F, double[:] h, double[:, :] out):
-    cdef cnp.npy_intp n = F.shape[0]
     cdef cnp.npy_intp m = F.shape[1]
     cdef cnp.npy_intp j
     for j in range(m):
@@ -344,7 +341,6 @@ def _firdn_matrix(double[:, :] F, double[:] h, double[:, :] out):
 
 
 def _upfir_matrix(double[:, :] F, double[:] h, double[:, :] out):
-    cdef cnp.npy_intp n = F.shape[0]
     cdef cnp.npy_intp m = F.shape[1]
     for j in range(m):
         _upfir_vector(F[:, j], h, out[:, j])
@@ -933,7 +929,6 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
     cdef double epsilon = 1e-5
     cdef double mean_ratio_threshold = 0.95
     cdef double variance_ratio_min = 0.5 + 1e-7
-    cdef double variance_ratio_max = 1.0 / variance_ratio_min
 
     # Output arrays
     cdef double[:, :, :] denoised_image = np.zeros_like(image)
@@ -942,18 +937,9 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
     cdef double[:, :, :] accumulated_estimates = np.zeros_like(image)
     cdef double[:, :, :] weight_counts = np.zeros_like(image)
 
-    # Thread-local working memory (allocated per thread to avoid race conditions)
-    cdef double *thread_weighted_averages = NULL
-    cdef int block_volume = block_size * block_size * block_size
-
     # Loop variables
     cdef int center_y, center_x, center_z
-    cdef int neighbor_y, neighbor_x, neighbor_z
-    cdef int offset_y, offset_x, offset_z
-    cdef double mean_ratio, variance_ratio
-    cdef double patch_distance, similarity_weight, max_weight, total_weight
     cdef double current_mean, current_variance
-    cdef double neighbor_mean, neighbor_variance
     cdef int thread_id
 
     # Set number of threads

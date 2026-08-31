@@ -155,7 +155,6 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
         cnp.npy_intp ny = odfs.shape[1]
         cnp.npy_intp nz = odfs.shape[2]
         cnp.npy_intp threads_to_use = -1
-        cnp.npy_intp all_cores = openmp.omp_get_num_procs()
         cnp.npy_intp corient, orient, cx, cy, cz, x, y, z
         cnp.npy_intp expectedvox
         cnp.npy_intp edgeNormalization = True
