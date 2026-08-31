@@ -326,7 +326,6 @@ def local_maxima(double[:] odf, cnp.uint16_t[:, :] edges):
 
     """
     cdef:
-        cnp.ndarray[cnp.npy_intp] wpeak
         double[::1] out_values
         cnp.npy_intp[::1] out_indices
 
@@ -607,7 +606,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
         cnp.uint32_t *vertinds_ptr
         cnp.uint32_t *counts_ptr
         cnp.uint32_t *adj_ptr
-        cnp.uint32_t vals_size, vert_size
+        cnp.uint32_t vals_size
     if not (cnp.PyArray_ISCONTIGUOUS(cvals) and
             cnp.PyArray_ISCONTIGUOUS(cvertinds) and
             cnp.PyArray_ISCONTIGUOUS(cadj_counts) and

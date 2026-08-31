@@ -142,7 +142,6 @@ cdef void knn_inner_product_streaming(
     """
     cdef size_t n_queries = queries.shape[0]
     cdef size_t n_database = database.shape[0]
-    cdef size_t d = queries.shape[1]
 
     cdef size_t chunk_start, chunk_end, chunk_size
     cdef size_t batch_size
@@ -253,7 +252,6 @@ def search_inner_product(
     """
     cdef cnp.npy_intp n_queries = queries.shape[0]
     cdef cnp.npy_intp n_database = database.shape[0]
-    cdef cnp.npy_intp d = queries.shape[1]
 
     if queries.shape[1] != database.shape[1]:
         raise ValueError(
