@@ -440,14 +440,13 @@ cdef int initialize_ptt(TrackerParameters params,
     """
     cdef double data_support = 0
     cdef double max_posterior = 0
-    cdef int tries
 
     # position
     stream_data[19] = seed_point[0]
     stream_data[20] = seed_point[1]
     stream_data[21] = seed_point[2]
 
-    for tries in range(params.ptt.rejection_sampling_nbr_sample):
+    for _ in range(params.ptt.rejection_sampling_nbr_sample):
         initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction, rng)
         data_support = calculate_ptt_data_support(params, stream_data, pmf_gen)
         if data_support > max_posterior:
@@ -458,7 +457,7 @@ cdef int initialize_ptt(TrackerParameters params,
 
     # Initialization is successful if a suitable candidate can be sampled
     # within the trial limit
-    for tries in range(params.ptt.rejection_sampling_max_try):
+    for _ in range(params.ptt.rejection_sampling_max_try):
         initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction, rng)
         if (random_float(rng) * max_posterior <= calculate_ptt_data_support(params, stream_data, pmf_gen)):
             stream_data[22] = stream_data[23]  # last_val = last_val_cand
@@ -996,7 +995,6 @@ cdef TrackerStatus parallel_transport_propagator(double* point,
     cdef double max_posterior = 0
     cdef double data_support = 0
     cdef double[3] tangent
-    cdef int tries
     cdef int i
 
     if stream_data[0] == 0:
@@ -1029,7 +1027,7 @@ cdef TrackerStatus parallel_transport_propagator(double* point,
     stream_data[2] = tangent[1]
     stream_data[3] = tangent[2]
 
-    for tries in range(params.ptt.rejection_sampling_nbr_sample):
+    for _ in range(params.ptt.rejection_sampling_nbr_sample):
         # k1, k2
         stream_data[24], stream_data[25] = \
             random_point_within_circle(params.max_curvature, rng)
@@ -1040,7 +1038,7 @@ cdef TrackerStatus parallel_transport_propagator(double* point,
     # Compensation for underestimation of max posterior estimate
     max_posterior = pow(2.0 * max_posterior, params.ptt.data_support_exponent)
 
-    for tries in range(params.ptt.rejection_sampling_max_try):
+    for _ in range(params.ptt.rejection_sampling_max_try):
         # k1, k2
         stream_data[24], stream_data[25] = \
             random_point_within_circle(params.max_curvature, rng)

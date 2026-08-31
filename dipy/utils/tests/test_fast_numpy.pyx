@@ -66,7 +66,7 @@ def test_cross():
     cdef double[:] vec2
     cdef double[:] out
     out = np.zeros(3, dtype=np.double)
-    for i in range(10):
+    for _ in range(10):
         vec1 = np.random.random(3).astype(np.double)
         vec2 = np.random.random(3).astype(np.double)
         out2 = np.cross(vec1, vec2).astype(np.double)
