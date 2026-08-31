@@ -727,7 +727,7 @@ class FORCEModel(ReconstModel):
         verbose=False,
     ):
         r"""
-        FORCE (FORward modeling for Complex microstructure Estimation) model
+        FORCE (FORward matching for Complex microstructure Estimation) model
         :footcite:p:`Shah2025`.
 
         FORCE is a forward modeling paradigm that reframes how diffusion data

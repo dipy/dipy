@@ -1,5 +1,5 @@
 """
-FORCE: Forward modeling for complex microstructure estimation
+FORCE: Forward matching for complex microstructure estimation
 
 This module provides signal simulation for matching-based diffusion MRI
 reconstruction using multi-compartment tissue models.

@@ -1,6 +1,6 @@
 """
 ==================================================================================
-Reconstruction with FORCE (FORward modeling for Complex microstructure Estimation)
+Reconstruction with FORCE (FORward matching for Complex microstructure Estimation)
 ==================================================================================
 
 FORCE :footcite:p:`Shah2025` is a forward-modeling paradigm that reframes how
