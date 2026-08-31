@@ -1,12 +1,18 @@
 """Testing decorators module."""
 
+import inspect
 import warnings
 
+import numpy as np
 from numpy.testing import assert_equal, assert_raises
 
 import dipy
 from dipy.testing import assert_true
-from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
+from dipy.testing.decorators import (
+    doctest_skip_parser,
+    set_random_number_generator,
+    warning_for_keywords,
+)
 
 
 def test_skipper():
@@ -135,3 +141,33 @@ def test_warning_for_keywords():
 
     # Restore the original version
     dipy.__version__ = original_version
+
+
+@set_random_number_generator(1234)
+def test_set_random_number_generator_seeds_rng(rng=None):
+    assert_true(isinstance(rng, np.random.Generator))
+    assert_equal(rng.random(), np.random.default_rng(1234).random())
+
+
+@set_random_number_generator()
+def test_set_random_number_generator_with_tmp_path_fixture(tmp_path, rng):
+    # `rng` deliberately carries no default value here: the decorator supplies
+    # it, so `pytest` must resolve `tmp_path` and leave `rng` alone.
+    assert_true(isinstance(rng, np.random.Generator))
+    assert_true(tmp_path.is_dir())
+
+
+@set_random_number_generator()
+def test_set_random_number_generator_with_pytestconfig_fixture(pytestconfig, rng):
+    assert_true(isinstance(rng, np.random.Generator))
+    assert_true(pytestconfig is not None)
+
+
+def test_set_random_number_generator_hides_rng_from_signature():
+    @set_random_number_generator()
+    def func(tmp_path, rng):
+        return tmp_path, rng
+
+    parameters = inspect.signature(func).parameters
+    assert_true("tmp_path" in parameters)
+    assert_true("rng" not in parameters)

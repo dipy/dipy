@@ -96,21 +96,19 @@ def set_random_number_generator(seed_v=1234):
     def _set_random_number_generator(func):
         @wraps(func)
         def _set_random_number_generator_wrapper(*args, **kwargs):
-            rng = np.random.default_rng(seed_v)
-            kwargs["rng"] = rng
-
-            sig = inspect.signature(func)
-            params = sig.parameters
-
-            # If the wrapped test expects pytestconfig, preserve it as the
-            # first positional argument when present.
-            if "pytestconfig" in params and args:
-                return func(*args, **kwargs)
-
+            kwargs["rng"] = np.random.default_rng(seed_v)
             return func(*args, **kwargs)
 
-        _set_random_number_generator_wrapper.__wrapped__ = func
-        _set_random_number_generator_wrapper.__signature__ = inspect.signature(func)
+        # `pytest` builds a test's fixture request from the signature it can
+        # see, so the wrapper must advertise the parameters the test owns
+        # (`tmp_path`, `pytestconfig`, ...) while hiding `rng`, which this
+        # decorator supplies. Leaving `rng` visible makes `pytest` look for a
+        # fixture of that name and fail at setup with `fixture 'rng' not
+        # found`, unless the test happens to give `rng` a default value.
+        sig = inspect.signature(func)
+        _set_random_number_generator_wrapper.__signature__ = sig.replace(
+            parameters=[p for name, p in sig.parameters.items() if name != "rng"]
+        )
         return _set_random_number_generator_wrapper
 
     return _set_random_number_generator
