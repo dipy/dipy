@@ -1,9 +1,13 @@
 import numpy as np
 import pytest
 
-pytest.importorskip("fury")
+from dipy.utils.optpkg import optional_package
 
-from dipy.viz.skyline.render.roi import ROI3D, create_roi_visualization  # noqa: E402
+_, has_fury, _ = optional_package("fury", min_version="2.0.0")
+if not has_fury:
+    pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
+else:
+    from dipy.viz.skyline.render.roi import ROI3D, create_roi_visualization
 
 
 def _binary_roi(shape=(16, 16, 16)):

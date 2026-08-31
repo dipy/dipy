@@ -1,8 +1,12 @@
 import pytest
 
-pytest.importorskip("fury", minversion="2.0.0")
+from dipy.utils.optpkg import optional_package
 
-from dipy.viz.skyline.render.sh_billboard import SlicedSphGlyphMaterial  # noqa: E402
+_, has_fury, _ = optional_package("fury", min_version="2.0.0")
+if not has_fury:
+    pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
+else:
+    from dipy.viz.skyline.render.sh_billboard import SlicedSphGlyphMaterial
 
 
 class _UniformBuffer:

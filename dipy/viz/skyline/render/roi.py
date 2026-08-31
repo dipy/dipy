@@ -229,3 +229,7 @@ class ROI3D(Visualization):
                 self.render()
             self._draft_color = self.color
         self._color_picker_open = is_open
+
+
+if not has_fury_v2:
+    create_roi_visualization = ROI3D = fury

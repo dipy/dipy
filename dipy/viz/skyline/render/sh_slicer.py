@@ -525,7 +525,6 @@ class SHGlyph3D(Visualization):
             self._synchronize = new
 
         imgui.spacing()
-
         changed, new_scale = create_numeric_input(
             "Scale", self._scale, value_type="float", format="%.1f", step=0.1, height=24
         )
@@ -537,7 +536,6 @@ class SHGlyph3D(Visualization):
                 self._scale = new_scale
 
         imgui.spacing()
-
         changed, new_op = thin_slider(
             "Opacity",
             self._opacity,
@@ -588,3 +586,7 @@ class SHGlyph3D(Visualization):
             self._last_state[idx] = -1
 
         imgui.spacing()
+
+
+if not has_fury_v2:
+    create_shm_visualization = SHSlicer = SHGlyph3D = fury

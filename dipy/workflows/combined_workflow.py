@@ -511,7 +511,7 @@ def get_workflow_output_params(*, cli_command):
     """Dynamically discover output parameters for a workflow CLI.
 
     Uses inspect to examine the workflow's run() method signature
-    and identify output parameters (those starting with 'out_').
+    and identify output parameters whose names start with ``out_``.
 
     Parameters
     ----------

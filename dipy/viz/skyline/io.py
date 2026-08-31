@@ -46,14 +46,8 @@ def load_files(fnames, *, rois=None, shm_coeffs=None):
     Returns
     -------
     dict
-         A dictionary containing the loaded data in the following keys:
-        - "images": List of tuples (data, affine, filename) for each image file.
-        - "peaks": List of tuples (pam, filename) for each peak file.
-        - "rois": List of tuples (data, affine, filename) for each ROI.
-        - "surfaces": List of tuples (vertices, faces, filename) for each surface file.
-        - "tractograms": List of tuples (sft, filename) for each tractogram file.
-        - "shm_coeffs": List of tuples (shm_coeff, affine, filename, basis_type) for
-            each SH coefficient file.
+        Dictionary containing the loaded images, peaks, ROIs, surfaces,
+        tractograms, and spherical-harmonic coefficient data.
     """
     if fnames is None:
         fnames = []

@@ -393,4 +393,9 @@ class Peak3D(Visualization):
                     self._sync_callabck(self, self.state)
             self._slice_visibility[idx] = toggle
         self.apply_scene_op(self._set_slice_visibility, tuple(self._slice_visibility))
+
         imgui.spacing()
+
+
+if not has_fury_v2:
+    create_peak_visualization = Peak3D = fury

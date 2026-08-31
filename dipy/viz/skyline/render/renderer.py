@@ -3,7 +3,6 @@
 from pathlib import Path
 import sys
 
-from PIL import Image
 import numpy as np
 
 from dipy.utils.logging import logger
@@ -20,11 +19,15 @@ fury, has_fury_v2, _ = optional_package(
     min_version="2.0.0",
     trip_msg=fury_trip_msg,
 )
+
 if has_fury_v2:
+    from PIL import Image
     from fury import window
     import glfw
 else:
-    window = fury.window
+    window = fury
+    Image = fury
+    glfw = fury
 
 imgui_bundle, has_imgui, _ = optional_package(
     "imgui_bundle", min_version="1.92.600", max_version="1.92.801"

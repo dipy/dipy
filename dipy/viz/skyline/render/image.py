@@ -625,3 +625,7 @@ class Image3D(Visualization):
             self.apply_scene_op(self._set_interpolation, new.lower())
 
         imgui.spacing()
+
+
+if not has_fury_v2:
+    create_image_visualization = Image3D = fury

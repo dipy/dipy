@@ -1,6 +1,7 @@
 """GPU billboard pipeline for dense spherical-harmonic glyphs in Skyline."""
 
 from math import ceil
+from typing import ClassVar
 
 import numpy as np
 
@@ -32,6 +33,21 @@ if has_fury_v2:
     )
     from fury.utils import create_sh_basis_matrix, get_lmax, get_n_coeffs
     import wgpu
+else:
+
+    class _FuryBase:
+        uniform_type: ClassVar = {}
+
+    SphGlyphMaterial = Mesh = MeshShader = _FuryBase
+    Binding = Buffer = buffer_to_geometry = create_sh_basis_matrix = fury
+    get_lmax = get_n_coeffs = validate_opacity = fury
+    fp = wgpu = fury
+
+    def register_wgpu_render_function(*args, **kwargs):
+        def decorator(func):
+            return func
+
+        return decorator
 
 
 _GPU_DEVICE_LIMITS_CACHE: dict = {}
@@ -1417,3 +1433,13 @@ def _register_sliced_sph_glyph_render(wobject):
     """Return the shader pair used for sliced SH billboards."""
 
     return (BillboardSphGlyphShader(wobject),)
+
+
+if not has_fury_v2:
+    (
+        SlicedSphGlyphMaterial,
+        Billboard,
+        SphGlyphBillboard,
+        BillboardSphGlyphShader,
+        sph_glyph_billboard_sliced,
+    ) = (fury,) * 5

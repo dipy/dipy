@@ -1,14 +1,18 @@
 import numpy as np
 import pytest
 
-pytest.importorskip("fury")
+from dipy.utils.optpkg import optional_package
 
-from dipy.viz.skyline.render.image import Image3D  # noqa: E402
-from dipy.viz.skyline.render.renderer import (  # noqa: E402
-    slice_slider_bounds,
-    slice_slider_values_from_state,
-    slice_state_from_slider_values,
-)
+_, has_fury, _ = optional_package("fury", min_version="2.0.0")
+if not has_fury:
+    pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
+else:
+    from dipy.viz.skyline.render.image import Image3D
+    from dipy.viz.skyline.render.renderer import (
+        slice_slider_bounds,
+        slice_slider_values_from_state,
+        slice_state_from_slider_values,
+    )
 
 
 def _image_stub():

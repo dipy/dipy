@@ -1,12 +1,16 @@
 import numpy as np
 import pytest
 
-from dipy.viz.skyline.UI.manager import UIWindow
-from dipy.viz.skyline.app import Skyline
-from dipy.viz.skyline.render.image import Image3D
-from dipy.viz.skyline.render.sh_slicer import SHGlyph3D
+from dipy.utils.optpkg import optional_package
 
-pytest.importorskip("fury")
+_, has_fury, _ = optional_package("fury", min_version="2.0.0")
+if not has_fury:
+    pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
+else:
+    from dipy.viz.skyline.UI.manager import UIWindow
+    from dipy.viz.skyline.app import Skyline
+    from dipy.viz.skyline.render.image import Image3D
+    from dipy.viz.skyline.render.sh_slicer import SHGlyph3D
 
 
 def _skyline_stub_for_load_visualizations():

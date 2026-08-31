@@ -1,12 +1,19 @@
 import numpy as np
+import pytest
 
-from dipy.viz.skyline.render.renderer import (
-    affine_voxel_sizes,
-    slice_slider_bounds,
-    slice_slider_values_from_state,
-    slice_state_from_slider_values,
-    voxel_values_from_slice_state,
-)
+from dipy.utils.optpkg import optional_package
+
+_, has_fury, _ = optional_package("fury", min_version="2.0.0")
+if not has_fury:
+    pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
+else:
+    from dipy.viz.skyline.render.renderer import (
+        affine_voxel_sizes,
+        slice_slider_bounds,
+        slice_slider_values_from_state,
+        slice_state_from_slider_values,
+        voxel_values_from_slice_state,
+    )
 
 
 def test_affine_voxel_sizes_use_affine_columns():

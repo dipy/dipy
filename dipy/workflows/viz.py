@@ -1,7 +1,19 @@
 from dipy.io.utils import split_filename_extension
 from dipy.utils.logging import logger
-from dipy.viz import skyline_from_files
+from dipy.utils.optpkg import optional_package
 from dipy.workflows.workflow import Workflow
+
+fury_pckg_msg = (
+    "Skyline requires FURY version 2.0.0 or higher. "
+    "Please install or upgrade FURY using pip install -U fury --pre."
+)
+fury, has_fury, _ = optional_package(
+    "fury", trip_msg=fury_pckg_msg, min_version="2.0.0"
+)
+if has_fury:
+    from dipy.viz import skyline_from_files
+else:
+    skyline_from_files = fury
 
 
 class SkylineFlow(Workflow):
@@ -24,8 +36,8 @@ class SkylineFlow(Workflow):
         cluster_size_thr=-1,
         cluster_length_thr=-1,
         buan_pvals=None,
-        rgb=False,
         stealth=False,
+        rgb=False,
         out_dir="",
         out_stealth_png="out_skyline.png",
     ):

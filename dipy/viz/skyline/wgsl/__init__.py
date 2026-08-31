@@ -38,9 +38,8 @@ def load_dipy_wgsl(name: str) -> str:
     import importlib.resources
 
     ref = importlib.resources.files(__package__) / name
-    with importlib.resources.as_file(ref) as path:
-        with open(path, "rb") as fh:
-            return fh.decode() if isinstance(fh, bytes) else fh.read().decode()
+    with importlib.resources.as_file(ref) as path, open(path, "rb") as fh:
+        return fh.decode() if isinstance(fh, bytes) else fh.read().decode()
 
 
 _register_dipy_wgsl_loader()
