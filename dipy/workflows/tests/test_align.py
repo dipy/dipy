@@ -9,6 +9,7 @@ import pytest
 from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
+from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -817,6 +818,19 @@ def test_motion_correction(tmp_path):
     npt.assert_equal(corrected.shape, data.shape)
     npt.assert_equal(corrected.min(), data.min())
     npt.assert_equal(corrected.max(), data.max())
+
+    bvecs_path = motion_correction_flow.last_generated_outputs["out_bvecs"]
+    new_bvecs = np.loadtxt(bvecs_path)
+    gtab = gradient_table(bvals[:10], bvecs=bvecs[:10])
+
+    npt.assert_equal(new_bvecs.shape, (3, 10))
+    npt.assert_allclose(new_bvecs[:, gtab.b0s_mask], 0, atol=1e-12)
+    npt.assert_allclose(
+        np.linalg.norm(new_bvecs[:, ~gtab.b0s_mask], axis=0), 1.0, atol=1e-6
+    )
+    npt.assert_(
+        not np.allclose(new_bvecs.T[~gtab.b0s_mask], gtab.bvecs[~gtab.b0s_mask])
+    )
 
 
 def test_syn_registration_flow(tmp_path):

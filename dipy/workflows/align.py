@@ -11,7 +11,11 @@ from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
 from dipy.align.reslice import reslice
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.align.streamwarp import bundlewarp
-from dipy.core.gradients import gradient_table, mask_non_weighted_bvals
+from dipy.core.gradients import (
+    gradient_table,
+    mask_non_weighted_bvals,
+    reorient_bvecs,
+)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti, save_qa_metric
 from dipy.io.stateful_tractogram import StatefulTractogram
@@ -986,6 +990,7 @@ class MotionCorrectionFlow(Workflow):
         out_dir="",
         out_moved="moved.nii.gz",
         out_affine="affine.txt",
+        out_bvecs="moved.bvec",
     ):
         """
         Parameters
@@ -1012,6 +1017,8 @@ class MotionCorrectionFlow(Workflow):
             Name for the saved transformed image.
         out_affine : string, optional
             Name for the saved affine matrix.
+        out_bvecs : string, optional
+            Name for the saved reoriented b-vectors.
         """
         if tuple(level_iters) == (1000, 500, 100):
             logger.info(
@@ -1023,7 +1030,7 @@ class MotionCorrectionFlow(Workflow):
 
         io_it = self.get_io_iterator()
 
-        for dwi, bval, bvec, omoved, oafffine in io_it:
+        for dwi, bval, bvec, omoved, oafffine, obvecs in io_it:
             # Load the data from the input files and store into objects.
             logger.info(f"Loading {dwi}")
             data, affine = load_nifti(dwi)
@@ -1047,6 +1054,10 @@ class MotionCorrectionFlow(Workflow):
                 data=data, gtab=gtab, affine=affine, level_iters=level_iters
             )
 
+            reoriented_gtab = reorient_bvecs(
+                gtab, reg_affines[..., ~gtab.b0s_mask], atol=bvecs_tol
+            )
+
             # Saving the corrected image file
             save_nifti(omoved, reg_img.get_fdata(), affine)
             # Write the affine matrix array to disk
@@ -1055,6 +1066,8 @@ class MotionCorrectionFlow(Workflow):
                 for affine_slice in reg_affines:
                     np.savetxt(outfile, affine_slice, fmt="%-7.2f")
                     outfile.write("# New slice\n")
+            np.savetxt(obvecs, reoriented_gtab.bvecs.T, fmt="%.8f")
+            logger.info(f"Reoriented b-vectors saved as {obvecs}")
 
 
 class BundleWarpFlow(Workflow):
