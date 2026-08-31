@@ -3499,7 +3499,7 @@ class ReconstForceFlow(Workflow):
     ):
         """Workflow for FORCE microstructure reconstruction.
 
-        Performs FORCE (FORward modeling for Complex microstructure Estimation)
+        Performs FORCE (FORward matching for Complex microstructure Estimation)
         reconstruction :footcite:p:`Shah2025` on the files by 'globing'
         ``input_files`` and saves the FORCE metrics in a directory specified
         by ``out_dir``.
