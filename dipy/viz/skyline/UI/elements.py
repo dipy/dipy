@@ -366,12 +366,9 @@ def color_picker(
     -------
     tuple
         A tuple containing the changed state, the color, and the open state.
-        - changed : bool
-            True if the user edited the color this frame.
-        - color : tuple of float
-            RGB values in ``[0, 1]`` after any edit.
-        - is_open : bool
-            True when the color picker popup is currently open.
+        ``changed`` is True if the user edited the color this frame,
+        ``color`` contains RGB values in ``[0, 1]`` after any edit, and
+        ``is_open`` is True when the color picker popup is currently open.
     """
 
     changed = False

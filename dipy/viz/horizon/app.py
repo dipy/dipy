@@ -1,17 +1,27 @@
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecate_with_version
-from dipy.viz.skyline.app import skyline
+from dipy.utils.optpkg import optional_package
 
-
-@deprecate_with_version(
-    (
-        "Horizon is deprecated and will be removed in future releases. "
-        "Please use Skyline instead."
-    ),
-    since="1.13.0",
-    until="2.0.0",
+fury_pckg_msg = (
+    "Skyline requires FURY version 2.0.0 or higher. "
+    "Please install or upgrade FURY using pip install -U fury --pre."
 )
+fury, has_fury, _ = optional_package(
+    "fury", trip_msg=fury_pckg_msg, min_version="2.0.0"
+)
+if has_fury:
+    from dipy.viz.skyline.app import skyline
+
+
 class Horizon:
+    @deprecate_with_version(
+        (
+            "Horizon is deprecated and will be removed in future releases. "
+            "Please use Skyline instead."
+        ),
+        since="1.13.0",
+        until="2.0.0",
+    )
     @warning_for_keywords()
     def __init__(
         self,

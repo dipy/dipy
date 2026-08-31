@@ -3,9 +3,14 @@
 from pathlib import Path
 from urllib.request import urlretrieve
 
-from PIL import Image
-
 from dipy.utils.logging import logger
+from dipy.utils.optpkg import optional_package
+
+fury, has_fury, _ = optional_package("fury", min_version="2.0.0")
+if has_fury:
+    from PIL import Image
+else:
+    Image = fury
 
 DIPY_DATA_MIRROR = "https://github.com/dipy/dipy_data/raw/refs/heads/master"
 SKYLINE_HOME = Path("~").expanduser() / ".dipy-skyline"
@@ -30,23 +35,25 @@ LOGO_SMALL = IMAGES / "dipy-logo-small.png"
 if not LOGO.exists():
     logger.info("Downloading Skyline UI logo...")
     urlretrieve(f"{DIPY_DATA_MIRROR}/dipy-skyline/assets/images/dipy-logo.png", LOGO)
-with Image.open(LOGO) as img:
-    logo_img = img.convert("RGBA")
-    logo_img.load()
-    logo_img = logo_img.copy()
 
-if logo_img.size != (48, 48):
-    logo_img = logo_img.resize((48, 48), Image.Resampling.LANCZOS)
-    logo_img.save(LOGO, format="PNG", optimize=True)
+if has_fury:
+    with Image.open(LOGO) as img:
+        logo_img = img.convert("RGBA")
+        logo_img.load()
+        logo_img = logo_img.copy()
 
-logo_small_ok = False
-if LOGO_SMALL.exists():
-    with Image.open(LOGO_SMALL) as img_small_existing:
-        logo_small_ok = img_small_existing.size == (32, 32)
+    if logo_img.size != (48, 48):
+        logo_img = logo_img.resize((48, 48), Image.Resampling.LANCZOS)
+        logo_img.save(LOGO, format="PNG", optimize=True)
 
-if not logo_small_ok:
-    img_small = logo_img.resize((32, 32), Image.Resampling.LANCZOS)
-    img_small.save(LOGO_SMALL, format="PNG", optimize=True)
+    logo_small_ok = False
+    if LOGO_SMALL.exists():
+        with Image.open(LOGO_SMALL) as img_small_existing:
+            logo_small_ok = img_small_existing.size == (32, 32)
+
+    if not logo_small_ok:
+        img_small = logo_img.resize((32, 32), Image.Resampling.LANCZOS)
+        img_small.save(LOGO_SMALL, format="PNG", optimize=True)
 
 
 FONT = FONTS / "Inter_18pt-Regular.ttf"

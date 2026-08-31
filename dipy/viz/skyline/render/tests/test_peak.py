@@ -1,12 +1,16 @@
 import numpy as np
 import pytest
 
-pytest.importorskip("fury", minversion="2.0.0")
+from dipy.utils.optpkg import optional_package
 
-from dipy.viz.skyline.render.peak import (  # noqa: E402
-    Peak3D,
-    create_peak_visualization,
-)
+_, has_fury, _ = optional_package("fury", min_version="2.0.0")
+if not has_fury:
+    pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
+else:
+    from dipy.viz.skyline.render.peak import (
+        Peak3D,
+        create_peak_visualization,
+    )
 
 
 class _PeakChunk:

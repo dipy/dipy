@@ -1,12 +1,16 @@
 import numpy as np
 import pytest
 
-pytest.importorskip("fury")
+from dipy.utils.optpkg import optional_package
 
-from dipy.viz.skyline.render.surface import (  # noqa: E402
-    Surface,
-    create_surface_visualization,
-)
+_, has_fury, _ = optional_package("fury", min_version="2.0.0")
+if not has_fury:
+    pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
+else:
+    from dipy.viz.skyline.render.surface import (
+        Surface,
+        create_surface_visualization,
+    )
 
 
 def _quad_mesh():

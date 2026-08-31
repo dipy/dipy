@@ -2,8 +2,16 @@ import numpy as np
 import pytest
 
 from dipy.utils.optpkg import optional_package
-from dipy.viz.skyline.UI import elements
-from dipy.viz.skyline.UI.elements import colors_equal, normalize_picker_color
+
+_, has_fury, _ = optional_package("fury", min_version="2.0.0")
+if not has_fury:
+    pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
+else:
+    from dipy.viz.skyline.UI import elements
+    from dipy.viz.skyline.UI.elements import (
+        colors_equal,
+        normalize_picker_color,
+    )
 
 _, has_imgui, _ = optional_package(
     "imgui_bundle", min_version="1.92.600", max_version="1.92.801"

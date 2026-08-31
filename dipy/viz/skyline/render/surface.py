@@ -17,6 +17,7 @@ fury, has_fury_v2, _ = optional_package(
 )
 if has_fury_v2:
     from fury.actor import surface
+
 imgui_bundle, has_imgui, _ = optional_package(
     "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
 )
@@ -239,3 +240,7 @@ class Surface(Visualization):
                 self.render()
             self._draft_color = self.color
         self._color_picker_open = is_open
+
+
+if not has_fury_v2:
+    create_surface_visualization = Surface = fury

@@ -12,18 +12,6 @@ from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO_SMALL
 from dipy.viz.skyline.compute import process_async_callbacks, run_async
 from dipy.viz.skyline.io import load_files
-from dipy.viz.skyline.render.image import Image3D, create_image_visualization
-from dipy.viz.skyline.render.peak import Peak3D, create_peak_visualization
-from dipy.viz.skyline.render.renderer import create_window
-from dipy.viz.skyline.render.roi import ROI3D, create_roi_visualization
-from dipy.viz.skyline.render.sh_slicer import SHGlyph3D, create_shm_visualization
-from dipy.viz.skyline.render.streamline import (
-    ClusterStreamline3D,
-    Streamline3D,
-    create_cluster_help,
-    create_streamline_visualization,
-)
-from dipy.viz.skyline.render.surface import Surface, create_surface_visualization
 
 fury_trip_msg = (
     "Skyline requires Fury version 2.0.0 or higher."
@@ -39,8 +27,21 @@ if has_fury_v2:
     from fury.colormap import distinguishable_colormap
     from fury.io import load_image_as_wgpu_texture_view
     from fury.window import update_camera
+
+    from dipy.viz.skyline.render.image import Image3D, create_image_visualization
+    from dipy.viz.skyline.render.peak import Peak3D, create_peak_visualization
+    from dipy.viz.skyline.render.renderer import create_window
+    from dipy.viz.skyline.render.roi import ROI3D, create_roi_visualization
+    from dipy.viz.skyline.render.sh_slicer import SHGlyph3D, create_shm_visualization
+    from dipy.viz.skyline.render.streamline import (
+        ClusterStreamline3D,
+        Streamline3D,
+        create_cluster_help,
+        create_streamline_visualization,
+    )
+    from dipy.viz.skyline.render.surface import Surface, create_surface_visualization
 else:
-    actor = fury.actor
+    actor = fury
 
 
 class Skyline:
@@ -1332,3 +1333,7 @@ def skyline(
         out_dir=out_dir,
         out_stealth_png=out_stealth_png,
     )
+
+
+if not has_fury_v2:
+    Skyline = skyline = skyline_from_files = fury

@@ -47,8 +47,9 @@ if has_fury_v2:
     from fury.actor import Group, streamlines, streamtube
     from fury.colormap import line_colors
     from fury.ui import TextBlock2D
+
 else:
-    actor = fury.actor
+    actor = fury
 
 imgui_bundle, has_imgui, _ = optional_package(
     "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
@@ -1144,3 +1145,13 @@ class ClusterStreamline3D(Visualization):
 
         if imgui.is_item_hovered():
             imgui.set_tooltip("Download the selected cluster tractogram as a .trx file")
+
+
+if not has_fury_v2:
+    (
+        create_cluster_help,
+        create_streamline_visualization,
+        create_streamline,
+        Streamline3D,
+        ClusterStreamline3D,
+    ) = (fury,) * 5
