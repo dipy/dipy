@@ -70,7 +70,7 @@ cdef class Transform:
         if m < self.dim:
             raise ValueError("Invalid point dimension: %d" % (m,))
         J = np.zeros((self.dim, n))
-        ret = self._jacobian(theta, x, J)
+        self._jacobian(theta, x, J)
         return np.asarray(J)
 
     def get_identity_parameters(self):

@@ -959,7 +959,7 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
         cnp.npy_intp nslices = out_shape[0]
         cnp.npy_intp nrows = out_shape[1]
         cnp.npy_intp ncols = out_shape[2]
-        cnp.npy_intp i, j, k, inside
+        cnp.npy_intp i, j, k
         double di, dj, dk, dii, djj, dkk
         floating[:] tmp = np.zeros((3,), dtype=np.asarray(d).dtype)
         floating[:, :, :, :] out = np.zeros(shape=(nslices, nrows, ncols, 3),
@@ -988,8 +988,7 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
                             <double>k, <double>i, <double>j, 1, affine_idx_in)
                         dj = _apply_affine_3d_x2(
                             <double>k, <double>i, <double>j, 1, affine_idx_in)
-                        inside = _interpolate_vector_3d[floating](d, dk, di,
-                                                                  dj, &tmp[0])
+                        _interpolate_vector_3d[floating](d, dk, di, dj, &tmp[0])
                         dkk = tmp[0]
                         dii = tmp[1]
                         djj = tmp[2]
@@ -1303,7 +1302,6 @@ def warp_coordinates_3d(points,  floating[:, :, :, :] d1,
         double[:, :] out = np.zeros(shape=(n, 3), dtype=np.float64)
         double[:, :] _points = np.array(points, dtype=np.float64)
         double[:, :] in2grid
-        int inside
         floating[:] tmp = np.zeros(shape=(3,), dtype=np.asarray(d1).dtype)
     # in2grid maps points to displacement's grid
     if in2world is None:  # then points are already in world coordinates
@@ -1340,7 +1338,7 @@ def warp_coordinates_3d(points,  floating[:, :, :, :] d1,
                 gz = z
 
             # Interpolate deformation field at (gx, gy, gz)
-            inside = _interpolate_vector_3d[floating](d1, gx, gy, gz, &tmp[0])
+            _interpolate_vector_3d[floating](d1, gx, gy, gz, & tmp[0])
 
             # Warp input point
             wx += tmp[0]
@@ -1379,7 +1377,6 @@ def warp_coordinates_2d(points,  floating[:, :, :] d1,
         double[:, :] out = np.zeros(shape=(n, 2), dtype=np.float64)
         double[:, :] _points = np.array(points, dtype=np.float64)
         double[:, :] in2grid
-        int inside
         floating[:] tmp = np.zeros(shape=(2,), dtype=np.asarray(d1).dtype)
     # in2grid maps points to displacement's grid
     if in2world is None:  # then points are already in world coordinates
@@ -1410,7 +1407,7 @@ def warp_coordinates_2d(points,  floating[:, :, :] d1,
                 gy = y
 
             # Interpolate deformation field at (gx, gy, gz)
-            inside = _interpolate_vector_2d[floating](d1, gx, gy, &tmp[0])
+            _interpolate_vector_2d[floating](d1, gx, gy, & tmp[0])
 
             # Warp input point
             wx += tmp[0]
@@ -1649,13 +1646,8 @@ def transform_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
         cnp.npy_intp nslices = ref_shape[0]
         cnp.npy_intp nrows = ref_shape[1]
         cnp.npy_intp ncols = ref_shape[2]
-        cnp.npy_intp nsVol = volume.shape[0]
-        cnp.npy_intp nrVol = volume.shape[1]
-        cnp.npy_intp ncVol = volume.shape[2]
-        cnp.npy_intp i, j, k, ii, jj, kk
-        int inside
-        double dkk, dii, djj, tmp0, tmp1
-        double alpha, beta, gamma, calpha, cbeta, cgamma
+        cnp.npy_intp i, j, k
+        double dkk, dii, djj
         floating[:, :, :] out = np.zeros(shape=(nslices, nrows, ncols),
                                          dtype=np.asarray(volume).dtype)
 
@@ -1675,8 +1667,7 @@ def transform_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
                         dkk = <double>k
                         dii = <double>i
                         djj = <double>j
-                    inside = _interpolate_scalar_3d[floating](volume, dkk,
-                        dii, djj, &out[k, i, j])
+                    _interpolate_scalar_3d[floating](volume, dkk, dii, djj, &out[k, i, j])
     return np.asarray(out)
 
 
@@ -1904,12 +1895,8 @@ def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
         cnp.npy_intp nslices = ref_shape[0]
         cnp.npy_intp nrows = ref_shape[1]
         cnp.npy_intp ncols = ref_shape[2]
-        cnp.npy_intp nsVol = volume.shape[0]
-        cnp.npy_intp nrVol = volume.shape[1]
-        cnp.npy_intp ncVol = volume.shape[2]
-        double dkk, dii, djj, tmp0, tmp1
-        double alpha, beta, gamma, calpha, cbeta, cgamma
-        cnp.npy_intp k, i, j, kk, ii, jj
+        double dkk, dii, djj
+        cnp.npy_intp k, i, j
         number[:, :, :] out = np.zeros((nslices, nrows, ncols),
                                         dtype=np.asarray(volume).dtype)
 
@@ -2134,11 +2121,8 @@ def transform_2d_affine(floating[:, :] image, int[:] ref_shape,
     cdef:
         cnp.npy_intp nrows = ref_shape[0]
         cnp.npy_intp ncols = ref_shape[1]
-        cnp.npy_intp nrVol = image.shape[0]
-        cnp.npy_intp ncVol = image.shape[1]
-        cnp.npy_intp i, j, ii, jj
-        double dii, djj, tmp0
-        double alpha, beta, calpha, cbeta
+        cnp.npy_intp i, j
+        double dii, djj
         floating[:, :] out = np.zeros(shape=(nrows, ncols),
                                       dtype=np.asarray(image).dtype)
 
@@ -2360,11 +2344,8 @@ def transform_2d_affine_nn(number[:, :] image, int[:] ref_shape,
     cdef:
         cnp.npy_intp nrows = ref_shape[0]
         cnp.npy_intp ncols = ref_shape[1]
-        cnp.npy_intp nrVol = image.shape[0]
-        cnp.npy_intp ncVol = image.shape[1]
-        double dii, djj, tmp0
-        double alpha, beta, calpha, cbeta
-        cnp.npy_intp i, j, ii, jj
+        double dii, djj
+        cnp.npy_intp i, j
         number[:, :] out = np.zeros((nrows, ncols),
                                     dtype=np.asarray(image).dtype)
 
@@ -2415,7 +2396,6 @@ def resample_displacement_field_3d(floating[:, :, :, :] field,
         cnp.npy_intp trows = out_shape[1]
         cnp.npy_intp tcols = out_shape[2]
         cnp.npy_intp k, i, j
-        int inside
         double dkk, dii, djj
         floating[:, :, :, :] expanded = np.zeros((tslices, trows, tcols, 3),
                                                  dtype=ftype)
@@ -2459,7 +2439,6 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
         cnp.npy_intp trows = out_shape[0]
         cnp.npy_intp tcols = out_shape[1]
         cnp.npy_intp i, j
-        int inside
         double dii, djj
         floating[:, :, :] expanded = np.zeros((trows, tcols, 2), dtype=ftype)
 
@@ -2467,8 +2446,7 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
         for j in range(tcols):
             dii = i*factors[0]
             djj = j*factors[1]
-            inside = _interpolate_vector_2d[floating](field, dii, djj,
-                                                      &expanded[i, j, 0])
+            _interpolate_vector_2d[floating](field, dii, djj, &expanded[i, j, 0])
     return np.asarray(expanded)
 
 
@@ -2516,7 +2494,6 @@ def create_random_displacement_2d(int[:] from_shape,
                                           dtype=np.int32)
         double[:, :, :] output = np.zeros(tuple(from_shape) + (2,),
                                           dtype=np.float64)
-        cnp.npy_intp dom_size = from_shape[0]*from_shape[1]
 
     if not is_valid_affine(from_grid2world, 2):
         raise ValueError("Invalid 'from' affine transform matrix")
@@ -2605,7 +2582,6 @@ def create_random_displacement_3d(int[:] from_shape,
                                              dtype=np.int32)
         double[:, :, :, :] output = np.zeros(tuple(from_shape) + (3,),
                                              dtype=np.float64)
-        cnp.npy_intp dom_size = from_shape[0]*from_shape[1]*from_shape[2]
 
     if not is_valid_affine(from_grid2world, 3):
         raise ValueError("Invalid 'from' affine transform matrix")
@@ -3068,7 +3044,7 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
     cdef:
         cnp.npy_intp nrows = out.shape[0]
         cnp.npy_intp ncols = out.shape[1]
-        cnp.npy_intp i, j, k, in_flag
+        cnp.npy_intp i, j, in_flag
         double tmp
         double[:] x = np.empty(shape=(2,), dtype=np.float64)
         double[:] dx = np.empty(shape=(2,), dtype=np.float64)

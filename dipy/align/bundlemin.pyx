@@ -111,7 +111,7 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
     """
 
     cdef:
-        cnp.npy_intp i=0, j=0, mov_i=0, mov_j=0
+        cnp.npy_intp i=0, j=0
         int threads_to_use = -1
 
     threads_to_use = determine_num_threads(num_threads)
@@ -317,7 +317,7 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
 
     cdef:
         cnp.npy_intp i=0, j=0
-        double sum_i=0, sum_j=0, tmp=0
+        double sum_i=0, tmp=0
         double inf = np.finfo("f8").max
         double dist=0
         double * min_j
@@ -382,8 +382,6 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
         cnp.npy_intp i, j, lentA, lentB
     # preprocess tracks
     cdef:
-        cnp.npy_intp longest_track_len = 0, track_len
-        longest_track_lenA, longest_track_lenB
         cnp.ndarray[object, ndim=1] tracksA64
         cnp.ndarray[object, ndim=1] tracksB64
         cnp.ndarray[cnp.double_t, ndim=2] DM
@@ -406,12 +404,9 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
     cdef:
         cnp.float64_t *t1_ptr
         cnp.float64_t *t2_ptr
-        cnp.float64_t *min_buffer
     # cycle over tracks
     cdef:
         cnp.ndarray [cnp.float64_t, ndim=2] t1, t2
-        cnp.npy_intp t1_len, t2_len
-        double d[2]
     t_len = tracksA64[0].shape[0]
 
     for i from 0 <= i < lentA:

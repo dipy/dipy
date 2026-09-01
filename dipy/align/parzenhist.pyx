@@ -289,10 +289,10 @@ class ParzenJointHistogram:
         if not self.setup_called:
             self.setup(sval, mval)
 
-        energy = _compute_pdfs_sparse(sval, mval, self.smin, self.sdelta,
-                                      self.mmin, self.mdelta, self.nbins,
-                                      self.padding, self.joint,
-                                      self.smarginal, self.mmarginal)
+        _compute_pdfs_sparse(sval, mval, self.smin, self.sdelta,
+                             self.mmin, self.mdelta, self.nbins,
+                             self.padding, self.joint,
+                             self.smarginal, self.mmarginal)
 
     def update_gradient_dense(self, theta, transform, static, moving,
                               grid2world, mgradient, smask=None, mmask=None):
