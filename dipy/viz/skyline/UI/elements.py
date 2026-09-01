@@ -195,7 +195,7 @@ def render_file_dialog(
                 callback(filenames=None, rois=None, shm_coeffs=None)
 
 
-def _calculate_hit_box(pos, size, padding=4):
+def _calculate_hit_box(pos, size, *, padding=4):
     """Calculate hit box for given size and position.
 
     Parameters

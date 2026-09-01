@@ -193,6 +193,7 @@ class SHSlicer:
     def __init__(
         self,
         coeffs_4d,
+        *,
         voxel_sizes=(1.0, 1.0, 1.0),
         scale=1.0,
         l_max=8,

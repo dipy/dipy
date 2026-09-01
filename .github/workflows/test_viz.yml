@@ -24,5 +24,8 @@ jobs:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
-      extra-depends: scikit_learn fury polyxios scipy
+      extra-depends: scikit_learn fury polyxios imgui_bundle==1.92.801 scipy
+      coverage: true
       enable-viz-tests: true
+    secrets:
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}

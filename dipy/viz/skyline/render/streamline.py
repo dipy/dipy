@@ -1021,7 +1021,7 @@ class ClusterStreamline3D(Visualization):
                 visible_streamlines.extend(cluster_streamlines)
         return StatefulTractogram.from_sft(visible_streamlines, self.sft)
 
-    def save_tractogram(self, filenames, rois=None, shm_coeffs=None):
+    def save_tractogram(self, filenames, *, rois=None, shm_coeffs=None):
         """Handle save tractogram for ``ClusterStreamline3D``.
 
         Parameters

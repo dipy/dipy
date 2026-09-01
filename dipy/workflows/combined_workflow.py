@@ -526,7 +526,7 @@ def get_workflow_output_params(*, cli_command):
     Examples
     --------
     >>> get_workflow_output_params(cli_command="dipy_fit_csa")
-    ['out_pam', 'out_shm', 'out_peaks_dir', 'out_peaks_values']
+    ['out_pam', 'out_shm', 'out_peaks_dir', 'out_peaks_values', 'out_peaks_indices', 'out_sphere', 'out_gfa', 'out_b', 'out_qa']
     """
     try:
         # Get workflow class from cli_flows
@@ -595,8 +595,7 @@ def detect_output_conflicts(*, pipeline_stages):
     ... ]
     >>> conflicts = detect_output_conflicts(pipeline_stages=stages)
     >>> conflicts
-    {'out_pam': ['csa_fit', 'csd_fit'],
-     'out_shm': ['csa_fit', 'csd_fit']}
+    {'out_pam': ['csa_fit', 'csd_fit'], 'out_shm': ['csa_fit', 'csd_fit'], 'out_peaks_dir': ['csa_fit', 'csd_fit'], 'out_peaks_values': ['csa_fit', 'csd_fit'], 'out_peaks_indices': ['csa_fit', 'csd_fit'], 'out_sphere': ['csa_fit', 'csd_fit'], 'out_gfa': ['csa_fit', 'csd_fit'], 'out_b': ['csa_fit', 'csd_fit'], 'out_qa': ['csa_fit', 'csd_fit']}
     """
     # Track which stages produce which output parameters
     # Map: (output_param, out_dir) -> list of (stage_name, cli)
@@ -1894,14 +1893,6 @@ class AutoFlow(Workflow):
         # =================================================================
 
         if config_file is None:
-            logging.info(
-                "No configuration files provided. Selecting default configuration."
-            )
-            try:
-                config = toml.loads(DEFAULT_AUTO_CONFIG)
-            except Exception as e:
-                logging.error(f"Error decoding default TOML file: {e}")
-                sys.exit(1)
             if interactive_mode and pipeline_type:
                 logger.warning("Both --interactive and --pipeline_type specified.")
                 choice = input(
@@ -1994,16 +1985,6 @@ class AutoFlow(Workflow):
             config["io"]["out_dir"] = out_dir
             config["io"]["out_report"] = os.path.join(out_dir, out_report)
 
-            config_file = os.path.join(out_dir, "dipy_auto.toml")
-            if not have_tomli_w:
-                logging.error(
-                    "tomli_w is not installed. "
-                    "Please install it to write the configuration file.\n"
-                    "python -m pip install tomli_w"
-                )
-                sys.exit(1)
-            with open(config_file, "wb") as f:
-                tomli_w.dump(config, f)
             os.makedirs(out_dir, exist_ok=True)
 
             pipeline_name = pipeline_type or "default"
@@ -2037,53 +2018,6 @@ class AutoFlow(Workflow):
             logger.error(f"Error decoding TOML file: {e}")
             sys.exit(1)
 
-        # Checks io section in the configuration file
-        logging.info(f"Checking io in configuration file: {cfg_name}")
-        if "io" not in config:
-            logging.error(f"Missing 'io' section in configuration file: {cfg_name}")
-            sys.exit(1)
-
-        required_keys = {
-            "dwi",
-            "bvals",
-            "bvecs",
-            "t1w",
-            "bids_folder",
-        }
-
-        # Update the required keys values based on cli
-        for config_key, cli_key in zip(
-            required_keys, [dwi_file, bvals_file, bvecs_file, t1_file, bids_folder]
-        ):
-            if cli_key:
-                fpath = config.get("io", {}).get(config_key, "")
-                if fpath:
-                    logging.warning(
-                        f"Overriding {config_key} file in configuration file: {fpath} with {cli_key}"
-                    )
-                config["io"]["config_key"] = cli_key
-
-        # Check if all input paths are empty
-        if all(not x for k, x in config.get("io", {}).items() if k in required_keys):
-            logging.error(f"All input paths are empty in {config_file}.")
-            sys.exit(1)
-
-        # Check if io section have the required keys
-        required_keys.add("out_dir")
-
-        if not required_keys.issubset(config["io"].keys()):
-            logging.error(f"Missing required keys in 'io' section: {required_keys}")
-            sys.exit(1)
-
-        # check if defined paths exist
-        unknown_paths = []
-        for k, ipath in config.get("io", {}).items():
-            if k.startswith("out_"):
-                continue
-            if ipath and not os.path.exists(ipath):
-                unknown_paths.append(ipath)
-        if unknown_paths:
-            logging.error(f"One or more file paths not found: {unknown_paths}")
         # =================================================================
         # Interactive Mode Support
         # =================================================================
@@ -2122,114 +2056,6 @@ class AutoFlow(Workflow):
             logger.error("Expected TOML structure with [[pipeline]] array sections")
             sys.exit(1)
 
-        all_steps_keys = [key for key in config.keys() if key.startswith("step_")]
-        if len(all_steps_keys) == 0:
-            logging.info("Starting auto mode")
-            add_dipy_auto_config(config)
-
-        logging.info(f"Scanning configuration file: {config_file}")
-        cli_errors = []
-        # option to initialize the cli
-        init_cli_keys = ["force", "skip", "output_strategy", "mix_names"]
-        for k_step in all_steps_keys:
-            cli_step = {}
-            step = config.pop(k_step)
-            config[k_step] = []
-            for cli_name, cli_args in step.items():
-                if cli_name not in cli_flows:
-                    cli_errors.append(f"{cli_name} CLI not found in DIPY.")
-                    continue
-
-                # add try except block to handle bad import
-                module = importlib.import_module(f"{cli_flows[cli_name][0]}")
-                wflw = getattr(module, cli_flows[cli_name][1])
-                sig = inspect.signature(wflw.run)
-                sig_dict = {
-                    name: param.default
-                    if param.default is not inspect.Parameter.empty
-                    else None
-                    for name, param in sig.parameters.items()
-                    if name != "self"
-                }
-                init_cli_dict = {
-                    key: cli_args.pop(key) for key in init_cli_keys if key in cli_args
-                }
-                # Check if all keys in cli_args are valid from the config file
-                if not set(cli_args.keys()).issubset(sig_dict):
-                    wrong_keys = set(cli_args.keys()) - set(sig_dict)
-                    cli_errors.append(f"Invalid keys in {cli_name} CLI: {wrong_keys}")
-                    continue
-                cli_step[cli_name] = {**sig_dict, **cli_args, "init": init_cli_dict}
-
-            config[k_step].append(cli_step)
-
-        flatten_config = flatten_dict(config)
-        flatten_config, var_errors = resolve_variables(flatten_config)
-
-        all_errors = cli_errors + var_errors
-        if all_errors:
-            logging.error(f"Errors found in configuration file {config_file}")
-            for error in all_errors:
-                logging.error(error)
-            sys.exit(1)
-
-        config = unflatten_dict(flatten_config)
-        logging.info(f"Starting Pipeline from {config_file}")
-
-        for k_step in all_steps_keys:
-            msg = f"Running {k_step}"
-            sep = "=" * len(msg)
-            logging.info(f"\n{sep}\n{msg}\n{sep}")
-            for cli_name, cli_args in config[k_step].items():
-                t_start = time.perf_counter()
-                try:
-                    init_args = cli_args.pop("init", {})
-                    module = importlib.import_module(f"{cli_flows[cli_name][0]}")
-                    wflw = getattr(module, cli_flows[cli_name][1])
-                    wflw(**init_args).run(**cli_args)
-                except Exception as e:
-                    logging.error(e)
-                    logging.error(f"Error when running {cli_name}")
-                    sys.exit(1)
-                logging.info(
-                    f"Finished {cli_name} in {time.perf_counter() - t_start:.2f} seconds"
-                )
-
-
-DEFAULT_AUTO_CONFIG = """
-[General]
-name =  "dipy_auto"
-flow_name =  "dipy_auto"
-summary = "Dipy is the parrot of the python scientific community"
-description = ""
-version = "0.1.0"
-author = "Dipy Developers"
-
-[io]
-dwi = ""
-bvals = ""
-bvecs = ""
-t1w = ""
-bids_folder = ""
-out_dir = "."
-
-[step_0.dipy_denoise_nlmeans]
-input_files = "${io.dwi}"
-
-
-[step_0.dipy_median_otsu]
-input_files = "${step_0.dipy_denoise_nlmeans.out_denoised}"
-save_masked = true
-vol_idx = "0, 1"
-
-[step_1.dipy_mask]
-input_files = "${step_0.dipy_denoise_nlmeans.out_denoised}"
-lb = 15
-force = "True"
-
-[step_1.dipy_info]
-input_files = "${step_1.dipy_mask.out_mask}"
-"""
         io_config = config.get("io", {})
         if out_dir:
             io_config["out_dir"] = out_dir

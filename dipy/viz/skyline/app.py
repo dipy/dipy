@@ -98,6 +98,7 @@ class Skyline:
 
     def __init__(
         self,
+        *,
         visualizer_type="standalone",
         images=None,
         peaks=None,
@@ -695,7 +696,7 @@ class Skyline:
             raise ValueError("Unsupported visualization type")
         viz._scene_op_callback = self.enqueue_scene_op
         if self.UI_window is not None:
-            self.UI_window.add(viz_id, viz.renderer, viz.viz_type)
+            self.UI_window.add(viz_id, viz.renderer, viz_type=viz.viz_type)
 
     def _load_visualiations(
         self,
@@ -910,7 +911,7 @@ class Skyline:
         if viz is self._slice_focus_viz:
             self._slice_focus_viz = None
 
-        if len(self.visualizations) == 0:
+        if len(self.visualizations) == 0 and self.UI_window is not None:
             self.UI_window.request_file_dialog = True
 
     @staticmethod
@@ -1022,7 +1023,7 @@ class Skyline:
                 pass
 
             def _on_delay_done(
-                _, exception, _sft=sft, _path=path, _is_clustered=is_clustered
+                _, exception, *, _sft=sft, _path=path, _is_clustered=is_clustered
             ):
                 self._loading_done += 1
                 self._pending_loaded_files.append(
@@ -1083,7 +1084,7 @@ class Skyline:
             snapshot_path = f"{snapshot_path}.png"
 
         logger.info(f"Saving snapshot to {snapshot_path}")
-        self.enqueue_scene_op(self.window.snapshot, snapshot_path)
+        self.enqueue_scene_op(self.window.snapshot, fname=snapshot_path)
 
     @property
     def visualizations(self):

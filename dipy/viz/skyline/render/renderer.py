@@ -245,7 +245,7 @@ class Visualization:
             return "sh_glyph"
         return None
 
-    def renderer(self, is_open, group_visible=True):
+    def renderer(self, is_open, *, group_visible=True):
         """Draw the sidebar header and optional widget body for this layer.
 
         Parameters

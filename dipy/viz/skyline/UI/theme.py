@@ -72,7 +72,7 @@ if not FONT_AWESOME.exists():
     )
 
 
-def hex_to_rgba(hex_color, alpha=1.0):
+def hex_to_rgba(hex_color, *, alpha=1.0):
     """Convert hex colors to rgba
 
     Parameters

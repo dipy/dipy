@@ -8,6 +8,15 @@ matplotlib, has_mpl, setup_module = optional_package("matplotlib")
 plt, _, _ = optional_package("matplotlib.pyplot")
 
 
+def _is_default_grid2world(grid2world):
+    """Whether ``grid2world`` still holds the "unspecified" sentinel ``-1``.
+
+    ``None`` is a meaningful value (the identity), so the sentinel has to be
+    distinguishable from it and from an actual affine matrix.
+    """
+    return isinstance(grid2world, int) and grid2world == -1
+
+
 def _tile_plot(imgs, titles, **kwargs):
     """
     Helper function
@@ -243,25 +252,25 @@ def plot_2d_diffeomorphic_map(
         # By default, direct_grid_shape is the codomain grid
         if direct_grid_shape is None:
             direct_grid_shape = mapping.codomain_shape
-        if direct_grid2world == -1:
+        if _is_default_grid2world(direct_grid2world):
             direct_grid2world = mapping.codomain_grid2world
 
         # By default, the inverse grid is the domain grid
         if inverse_grid_shape is None:
             inverse_grid_shape = mapping.domain_shape
-        if inverse_grid2world == -1:
+        if _is_default_grid2world(inverse_grid2world):
             inverse_grid2world = mapping.domain_grid2world
     else:
         # Now by default, direct_grid_shape is the mapping's input grid
         if direct_grid_shape is None:
             direct_grid_shape = mapping.domain_shape
-        if direct_grid2world == -1:
+        if _is_default_grid2world(direct_grid2world):
             direct_grid2world = mapping.domain_grid2world
 
         # By default, the output grid is the mapping's domain grid
         if inverse_grid_shape is None:
             inverse_grid_shape = mapping.codomain_shape
-        if inverse_grid2world == -1:
+        if _is_default_grid2world(inverse_grid2world):
             inverse_grid2world = mapping.codomain_grid2world
 
     # The world-to-image (image = drawn lattice on the output grid)

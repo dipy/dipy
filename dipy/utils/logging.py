@@ -135,6 +135,7 @@ def configure_logger(
 
 def add_file_handler(
     filename,
+    *,
     level=None,
     fmt="[%(asctime)s][%(name)s] %(levelname)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",

@@ -83,6 +83,7 @@ def _get_gpu_max_buffer_size():
 def _calculate_lut_chunking(
     glyph_count,
     samples_per_glyph,
+    *,
     bytes_per_sample=4,
 ):
     """Plan LUT buffer chunking so each storage buffer stays within GPU limits.
@@ -181,6 +182,7 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
 
     def __init__(
         self,
+        *,
         active_slice_x=-1,
         active_slice_y=-1,
         active_slice_z=-1,
@@ -551,7 +553,7 @@ class BillboardSphGlyphShader(MeshShader):
             render_info = {"indices": (vertex_count, int(n_instances), 0, 0)}
         return render_info
 
-    def get_bindings(self, wobject, shared, scene=None):
+    def get_bindings(self, wobject, shared, scene=None):  # pep3102: ignore
         """Handle get bindings for ``BillboardSphGlyphShader``.
 
         Parameters
@@ -809,7 +811,7 @@ def _populate_radius_lut_cube_cpu_chunked(
 
 
 def _populate_hermite_lut_cube_cpu_chunked(
-    actor, lut_res, glyph_count, n_coeffs, chunk_info, use_float16=False
+    actor, lut_res, glyph_count, n_coeffs, chunk_info, *, use_float16=False
 ):
     N = lut_res
     g = 1
@@ -908,7 +910,7 @@ def _populate_hermite_lut_cube_cpu_chunked(
 
 
 def _populate_hermite_lut_cube_gpu(
-    actor, lut_res, glyph_count, n_coeffs, chunk_info, use_float16=False
+    actor, lut_res, glyph_count, n_coeffs, chunk_info, *, use_float16=False
 ):
     """GPU-accelerated cube-mapped Hermite LUT bake (two-pass compute).
 
@@ -1149,6 +1151,7 @@ def _populate_hermite_lut_cube_gpu(
 
 def enable_octahedral_lut(
     actor,
+    *,
     lut_res=64,
     use_hermite=False,
     force_rebake=False,
@@ -1192,7 +1195,7 @@ def enable_octahedral_lut(
 
     bytes_per_sample = (8 if use_float16 else 16) if use_hermite else 4
     chunk_info = _calculate_lut_chunking(
-        glyph_count, samples_per_glyph, bytes_per_sample
+        glyph_count, samples_per_glyph, bytes_per_sample=bytes_per_sample
     )
 
     if not chunk_info["feasible"]:
@@ -1363,7 +1366,9 @@ def sph_glyph_billboard_sliced(
         material_n_coeffs = get_n_coeffs(l_max, basis_type="standard")
 
     sphere_verts, _ = fp.prim_sphere(name="symmetric362")
-    basis_matrix = create_sh_basis_matrix(sphere_verts, l_max)
+    # The radii below are evaluated from every supplied coefficient, so the basis
+    # has to span ``n_coeff``. ``l_max`` only truncates what the material shades.
+    basis_matrix = create_sh_basis_matrix(sphere_verts, inferred_l_max)
     if basis_matrix.shape[1] > n_coeff:
         basis_matrix = basis_matrix[:, :n_coeff]
 
