@@ -526,7 +526,7 @@ def get_workflow_output_params(*, cli_command):
     Examples
     --------
     >>> get_workflow_output_params(cli_command="dipy_fit_csa")
-    ['out_pam', 'out_shm', 'out_peaks_dir', 'out_peaks_values']
+    ['out_pam', 'out_shm', 'out_peaks_dir', 'out_peaks_values', 'out_peaks_indices', 'out_sphere', 'out_gfa', 'out_b', 'out_qa']
     """
     try:
         # Get workflow class from cli_flows
@@ -595,8 +595,7 @@ def detect_output_conflicts(*, pipeline_stages):
     ... ]
     >>> conflicts = detect_output_conflicts(pipeline_stages=stages)
     >>> conflicts
-    {'out_pam': ['csa_fit', 'csd_fit'],
-     'out_shm': ['csa_fit', 'csd_fit']}
+    {'out_pam': ['csa_fit', 'csd_fit'], 'out_shm': ['csa_fit', 'csd_fit'], 'out_peaks_dir': ['csa_fit', 'csd_fit'], 'out_peaks_values': ['csa_fit', 'csd_fit'], 'out_peaks_indices': ['csa_fit', 'csd_fit'], 'out_sphere': ['csa_fit', 'csd_fit'], 'out_gfa': ['csa_fit', 'csd_fit'], 'out_b': ['csa_fit', 'csd_fit'], 'out_qa': ['csa_fit', 'csd_fit']}
     """
     # Track which stages produce which output parameters
     # Map: (output_param, out_dir) -> list of (stage_name, cli)

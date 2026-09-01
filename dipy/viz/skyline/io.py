@@ -31,6 +31,28 @@ EMERGENCY_REF = create_nifti_header(
 )
 
 
+def _reference_from_image(data, affine):
+    """Build a NIfTI header usable as a tractogram spatial reference.
+
+    Formats without an embedded header (``.tck``, ``.vtk``, ``.dpy``, ...) need
+    a full reference, not just an affine.
+
+    Parameters
+    ----------
+    data : ndarray
+        Volume the reference geometry is taken from.
+    affine : ndarray, shape (4, 4)
+        Voxel-to-world transform of ``data``.
+
+    Returns
+    -------
+    nibabel.nifti1.Nifti1Header
+        Header carrying the volume's affine, dimensions and voxel sizes.
+    """
+    vox_size = np.linalg.norm(affine[:3, :3], axis=0)
+    return create_nifti_header(affine, data.shape[:3], vox_size)
+
+
 def load_files(fnames, *, rois=None, shm_coeffs=None):
     """Load the provided list of files.
 
@@ -97,7 +119,9 @@ def load_files(fnames, *, rois=None, shm_coeffs=None):
         elif ext in [".dpy", ".tck", ".vtk", ".vtp", ".fib"]:
             if skyline_images:
                 sft = load_tractogram(
-                    fname, skyline_images[0][1], bbox_valid_check=False
+                    fname,
+                    _reference_from_image(*skyline_images[0][:2]),
+                    bbox_valid_check=False,
                 )
             else:
                 sft = load_tractogram(fname, EMERGENCY_REF)

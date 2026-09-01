@@ -133,6 +133,9 @@ class UIWindow:
         self.render_callback = render_callback
         if render_callback is None or not isinstance(render_callback, Callable):
             self.render_callback = lambda: None
+        # ``render`` calls this after dropping a closed section; keep it in sync
+        # with the normalized callback so a missing one is a no-op, not a crash.
+        self._render_callback = self.render_callback
         self.file_dialog_callback = file_dialog_callback
         if file_dialog_callback is None or not isinstance(
             file_dialog_callback, Callable

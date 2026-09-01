@@ -1363,7 +1363,9 @@ def sph_glyph_billboard_sliced(
         material_n_coeffs = get_n_coeffs(l_max, basis_type="standard")
 
     sphere_verts, _ = fp.prim_sphere(name="symmetric362")
-    basis_matrix = create_sh_basis_matrix(sphere_verts, l_max)
+    # The radii below are evaluated from every supplied coefficient, so the basis
+    # has to span ``n_coeff``. ``l_max`` only truncates what the material shades.
+    basis_matrix = create_sh_basis_matrix(sphere_verts, inferred_l_max)
     if basis_matrix.shape[1] > n_coeff:
         basis_matrix = basis_matrix[:, :n_coeff]
 

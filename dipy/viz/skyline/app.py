@@ -910,7 +910,7 @@ class Skyline:
         if viz is self._slice_focus_viz:
             self._slice_focus_viz = None
 
-        if len(self.visualizations) == 0:
+        if len(self.visualizations) == 0 and self.UI_window is not None:
             self.UI_window.request_file_dialog = True
 
     @staticmethod
@@ -1083,7 +1083,7 @@ class Skyline:
             snapshot_path = f"{snapshot_path}.png"
 
         logger.info(f"Saving snapshot to {snapshot_path}")
-        self.enqueue_scene_op(self.window.snapshot, snapshot_path)
+        self.enqueue_scene_op(self.window.snapshot, fname=snapshot_path)
 
     @property
     def visualizations(self):

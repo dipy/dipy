@@ -90,3 +90,64 @@ def test_roi3d_populate_info_and_actor():
     assert "(10, 10, 10)" in info
     assert str(n_positive) in info
     assert viz.actor is viz._roi_surface
+
+
+def test_roi3d_reports_shape_dtype_and_voxel_count():
+    roi = _binary_roi()
+    viz = ROI3D("mask.nii.gz", roi, affine=np.eye(4))
+
+    info = viz._populate_info()
+
+    assert f"ROI shape: {roi.shape}" in info
+    assert "ROI dtype: uint8" in info
+    assert f"Total voxels in ROI: {int(np.sum(roi > 0))}" in info
+    assert "Affine:" in info
+
+
+def test_roi3d_info_without_an_affine():
+    viz = ROI3D("mask.nii.gz", _binary_roi(), affine=None)
+
+    assert "Affine:" not in viz._populate_info()
+
+
+def test_roi3d_default_opacity_is_opaque():
+    viz = ROI3D("mask.nii.gz", _binary_roi(), affine=np.eye(4))
+
+    assert viz.opacity == 100
+    assert viz.actor is viz._roi_surface
+    for actor in viz.actor.children:
+        assert actor.material.alpha_mode == "blend"
+        assert actor.material.depth_write is True
+
+
+def test_roi3d_partial_opacity_disables_depth_writes_at_creation():
+    viz = ROI3D("mask.nii.gz", _binary_roi(), affine=np.eye(4), opacity=30)
+
+    assert viz.opacity == 30
+    for actor in viz.actor.children:
+        assert actor.material.depth_write is False
+
+
+def test_roi3d_set_opacity_updates_every_contour_actor():
+    viz = ROI3D("mask.nii.gz", _binary_roi(), affine=np.eye(4))
+
+    viz._set_opacity(25)
+
+    for actor in viz.actor.children:
+        assert actor.material.opacity == pytest.approx(0.25)
+        assert actor.material.depth_write is False
+
+    viz._set_opacity(100)
+
+    for actor in viz.actor.children:
+        assert actor.material.opacity == pytest.approx(1.0)
+        assert actor.material.depth_write is True
+
+
+def test_roi3d_keeps_its_constructor_color():
+    viz = ROI3D("mask.nii.gz", _binary_roi(), affine=np.eye(4), color=(0.0, 0.5, 1.0))
+
+    assert viz.color == (0.0, 0.5, 1.0)
+    assert viz._draft_color == (0.0, 0.5, 1.0)
+    assert viz._color_picker_open is False
+    assert viz.viz_type == "roi"

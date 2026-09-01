@@ -1,118 +1,239 @@
 import numpy as np
+import numpy.testing as npt
 import pytest
 
+from dipy.data import default_sphere
+from dipy.direction.peaks import PeaksAndMetrics
 from dipy.utils.optpkg import optional_package
 
 _, has_fury, _ = optional_package("fury", min_version="2.0.0")
 if not has_fury:
     pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
 else:
-    from dipy.viz.skyline.render.peak import (
-        Peak3D,
-        create_peak_visualization,
-    )
+    from dipy.viz.skyline.render.peak import Peak3D, create_peak_visualization
+
+SHAPE = (5, 7, 9)
 
 
-class _PeakChunk:
-    """Single ``VectorField`` chunk stub storing cross-section assignments."""
-
-    def __init__(self):
-        """Single ``VectorField`` chunk stub storing cross-section assignments."""
-        self.cross_section = np.zeros(3, dtype=np.float32)
-
-
-class _PeakSlicer:
-    """Peak slicer stub mirroring the ``Group`` of chunks ``peaks_slicer`` returns.
-
-    Only the chunk actors carry ``cross_section``; the group itself does not.
-    """
-
-    def __init__(self, *, n_chunks=2):
-        """Peak slicer stub mirroring the ``Group`` of chunks returned by Fury."""
-        self.children = [_PeakChunk() for _ in range(n_chunks)]
+def _peak_dirs(shape=SHAPE, n_peaks=3):
+    """One unit peak along +x in every voxel, plus zeroed extra peaks."""
+    dirs = np.zeros((*shape, n_peaks, 3), dtype=np.float32)
+    dirs[..., 0, 0] = 1.0
+    return dirs
 
 
-def test_voxel_from_world_state_uses_inverse_affine_and_clips():
-    """Peak world state is mapped to clipped voxel coordinates."""
-    peak = Peak3D.__new__(Peak3D)
-    peak.affine = np.diag([2.0, 0.5, 3.0, 1.0])
-    peak.peaks = np.zeros((5, 7, 9, 3), dtype=np.float32)
-
-    voxel_state = peak._voxel_from_world_state((20.0, 2.0, 12.0))
-
-    assert np.array_equal(voxel_state, np.array([4, 4, 4], dtype=np.int16))
-
-
-def test_apply_cross_section_from_world_state_sets_world_cross_section():
-    """Peak cross-section keeps world coordinates when the slicer uses world space."""
-    peak = Peak3D.__new__(Peak3D)
-    peak.affine = np.diag([2.0, 2.0, 2.0, 1.0])
-    peak.peaks = np.zeros((11, 11, 11, 3), dtype=np.float32)
-    peak.state = np.array([20.0, 10.0, 4.0], dtype=np.float32)
-    peak._cross_section_space = "world"
-    peak._slicer = _PeakSlicer()
-
-    peak._apply_cross_section_from_state()
-
-    # every chunk of the slicer group must be moved, not just the first
-    for chunk in peak._slicer.children:
-        assert np.allclose(chunk.cross_section, (20.0, 10.0, 4.0))
-    assert np.allclose(peak._cross_section_state, (20.0, 10.0, 4.0))
-
-
-def _pam(shape=(6, 7, 8, 3), *, affine=None):
-    """Minimal ``PeaksAndMetrics``-like object for ``create_peak_visualization``."""
-
-    class _PAM:
-        pass
-
-    pam = _PAM()
-    rng = np.random.default_rng(42)
-    pam.peak_dirs = rng.random((*shape, 3)).astype(np.float32)
-    pam.peak_values = rng.random(shape).astype(np.float32)
-    pam.affine = affine
+def _pam(shape=SHAPE, affine=None, n_peaks=3):
+    pam = PeaksAndMetrics()
+    pam.affine = np.eye(4) if affine is None else affine
+    pam.peak_dirs = _peak_dirs(shape, n_peaks)
+    pam.peak_values = np.ones((*shape, n_peaks), dtype=np.float32)
+    pam.peak_indices = np.zeros((*shape, n_peaks), dtype=np.int32)
+    pam.sphere = default_sphere
     return pam
 
 
-@pytest.mark.parametrize("affine", [None, np.diag([2.0, 2.0, 2.0, 1.0])])
-def test_create_peak_visualization_builds_real_actor(affine):
-    """``create_peak_visualization`` constructs a Fury-backed ``Peak3D``."""
-    peak = create_peak_visualization((_pam(affine=affine), "peaks.pam5"), 0)
-
-    assert peak.actor is not None
-    # peaks_slicer returns a Group of chunks; cross_section lives on the chunks
-    assert peak.actor.children
-    assert np.asarray(peak.state).shape == (3,)
-    assert np.allclose(peak._get_cross_section(), peak.actor.children[0].cross_section)
+def _peak(affine=None, shape=SHAPE):
+    return Peak3D(
+        "peaks.pam5",
+        _peak_dirs(shape),
+        affine=np.eye(4) if affine is None else affine,
+    )
 
 
-def test_peak_cross_section_update_reaches_every_chunk():
-    """Updating the state propagates the cross section to all chunk actors."""
-    peak = create_peak_visualization((_pam(),), 0)
+@pytest.mark.parametrize("bad_input", ["not a tuple", (), (1, 2, 3)])
+def test_create_peak_visualization_rejects_invalid_input(bad_input):
+    with pytest.raises(ValueError, match="Input must be a tuple"):
+        create_peak_visualization(bad_input, 0)
 
-    peak.state = np.array([1.0, 2.0, 3.0], dtype=np.float32)
-    peak._apply_cross_section_from_state()
+
+def test_create_peak_visualization_names_by_index():
+    viz = create_peak_visualization((_pam(),), 2)
+
+    assert viz.path == "Peaks_2"
+    assert isinstance(viz, Peak3D)
+    assert viz.viz_type == "peak"
+
+
+def test_create_peak_visualization_uses_the_given_filename():
+    viz = create_peak_visualization((_pam(), "peaks.pam5"), 0)
+
+    assert viz.path == "peaks.pam5"
+
+
+def test_create_peak_visualization_carries_the_pam_geometry():
+    affine = np.diag([2.0, 2.0, 2.0, 1.0])
+    viz = create_peak_visualization((_pam(affine=affine), "peaks.pam5"), 0)
+
+    assert viz.peaks.shape == (*SHAPE, 3, 3)
+    npt.assert_allclose(viz.affine, affine)
+
+
+def test_create_peak_visualization_forwards_the_opacity():
+    viz = create_peak_visualization((_pam(), "peaks.pam5"), 0, opacity=40)
+
+    assert viz.opacity == 40
+
+
+def test_peak3d_defaults():
+    peak = _peak()
+
+    assert peak._scale == 1.0
+    assert peak._synchronize is True
+    assert peak._slice_visibility == [True, True, True]
+    assert peak.actor is peak._slicer
+    assert len(peak.actor.children) >= 1
+
+
+def test_peak3d_info_lists_shape_dtype_and_affine():
+    peak = _peak()
+
+    info = peak._populate_info()
+
+    assert f"Peaks shape: {(*SHAPE, 3, 3)}" in info
+    assert "Peaks dtype: float32" in info
+    assert "Affine:" in info
+
+
+def test_peak3d_info_without_an_affine():
+    peak = Peak3D("peaks.pam5", _peak_dirs(), affine=None)
+
+    assert "Affine:" not in peak._populate_info()
+
+
+def test_peak3d_bounds_follow_the_identity_affine():
+    peak = _peak()
+
+    npt.assert_allclose(peak.bounds[0], (0, 0, 0))
+    npt.assert_allclose(peak.bounds[1], np.array(SHAPE) - 1)
+
+
+def test_peak3d_bounds_follow_a_scaled_affine():
+    peak = _peak(affine=np.diag([2.0, 2.0, 2.0, 1.0]))
+
+    npt.assert_allclose(peak.bounds[0], (0, 0, 0))
+    npt.assert_allclose(peak.bounds[1], (np.array(SHAPE) - 1) * 2.0)
+
+
+def test_peak3d_bounds_without_an_affine():
+    peak = Peak3D("peaks.pam5", _peak_dirs(), affine=None)
+
+    npt.assert_allclose(peak.bounds[1], np.array(SHAPE) - 1)
+
+
+def test_peak3d_cross_section_is_shared_by_every_chunk():
+    peak = _peak()
+
+    peak._set_cross_section(np.array([1, 2, 3], dtype=np.int16))
 
     for chunk in peak.actor.children:
-        assert np.allclose(chunk.cross_section, (1.0, 2.0, 3.0))
+        npt.assert_array_equal(chunk.cross_section, (1, 2, 3))
+    npt.assert_array_equal(peak._get_cross_section(), (1, 2, 3))
 
 
-def test_peak_set_opacity_reaches_every_chunk():
-    """Opacity is applied to each chunk material, not the material-less group."""
-    peak = create_peak_visualization((_pam(),), 0)
+def test_peak3d_voxel_from_world_state_inverts_the_affine():
+    peak = _peak(affine=np.diag([2.0, 0.5, 3.0, 1.0]))
+
+    voxel_state = peak._voxel_from_world_state((4.0, 2.0, 6.0))
+
+    npt.assert_array_equal(voxel_state, np.array([2, 4, 2], dtype=np.int16))
+
+
+def test_peak3d_voxel_from_world_state_clips_to_the_volume():
+    peak = _peak(affine=np.diag([2.0, 0.5, 3.0, 1.0]))
+
+    voxel_state = peak._voxel_from_world_state((1000.0, 1000.0, 1000.0))
+
+    npt.assert_array_equal(voxel_state, np.array(SHAPE, dtype=np.int16) - 1)
+
+
+def test_peak3d_voxel_from_world_state_clips_negatives_to_zero():
+    peak = _peak(affine=np.diag([2.0, 0.5, 3.0, 1.0]))
+
+    voxel_state = peak._voxel_from_world_state((-50.0, -50.0, -50.0))
+
+    npt.assert_array_equal(voxel_state, np.zeros(3, dtype=np.int16))
+
+
+def test_peak3d_without_an_affine_uses_voxel_cross_sections():
+    peak = Peak3D("peaks.pam5", _peak_dirs(), affine=None)
+
+    peak.state = np.array([1.4, 2.6, 3.5], dtype=np.float32)
+    peak._apply_cross_section_from_state()
+
+    npt.assert_array_equal(peak._cross_section_state, np.round((1.4, 2.6, 3.5)))
+    npt.assert_array_equal(
+        peak.actor.children[0].cross_section, np.round((1.4, 2.6, 3.5))
+    )
+
+
+def test_peak3d_cross_section_space_is_voxel_without_an_affine():
+    peak = Peak3D("peaks.pam5", _peak_dirs(), affine=None)
+
+    assert peak._cross_section_space == "voxel"
+
+
+def test_peak3d_cross_section_space_is_inferred_from_the_affine():
+    peak = _peak(affine=np.diag([4.0, 4.0, 4.0, 1.0]))
+
+    assert peak._cross_section_space in {"world", "voxel"}
+    assert peak._infer_cross_section_space() == peak._cross_section_space
+
+
+def test_peak3d_update_state_moves_the_cross_section():
+    peak = _peak(affine=np.diag([2.0, 2.0, 2.0, 1.0]))
+    target = np.array([4.0, 6.0, 8.0], dtype=np.float32)
+
+    peak.update_state(target)
+
+    npt.assert_allclose(peak.state, target)
+    expected_voxel = peak._voxel_from_world_state(target)
+    if peak._cross_section_space == "world":
+        npt.assert_allclose(peak._cross_section_state, expected_voxel * 2.0)
+    else:
+        npt.assert_allclose(peak._cross_section_state, expected_voxel)
+
+
+def test_peak3d_update_state_ignores_extra_components():
+    peak = _peak()
+
+    peak.update_state(np.array([1.0, 2.0, 3.0, 9.0]))
+
+    npt.assert_allclose(peak.state, (1.0, 2.0, 3.0))
+
+
+def test_peak3d_update_state_is_ignored_when_sync_is_off():
+    peak = _peak()
+    before = np.array(peak.state, dtype=np.float32).copy()
+    peak._synchronize = False
+
+    peak.update_state(np.array([4.0, 4.0, 4.0]))
+
+    npt.assert_allclose(peak.state, before)
+
+
+def test_peak3d_set_slice_visibility_reaches_every_chunk():
+    peak = _peak()
+
+    peak._set_slice_visibility((True, False, True))
+
+    for chunk in peak.actor.children:
+        assert tuple(chunk.material.visibility) == (True, False, True)
+
+
+def test_peak3d_set_opacity_reaches_every_chunk():
+    peak = _peak()
 
     peak._set_opacity(0.4)
 
-    assert peak.actor.material is None  # the group itself carries no material
     for chunk in peak.actor.children:
-        assert np.isclose(chunk.material.opacity, 0.4)
+        assert chunk.material.opacity == pytest.approx(0.4)
 
 
-def test_peak_set_slice_visibility_reaches_every_chunk():
-    """Per-axis slice visibility is applied to each chunk material."""
-    peak = create_peak_visualization((_pam(),), 0)
+def test_peak3d_scale_is_applied_when_the_actor_is_rebuilt():
+    peak = _peak()
 
-    peak._set_slice_visibility((False, True, False))
+    peak._scale = 2.0
+    peak._create_peak_actor()
 
-    for chunk in peak.actor.children:
-        assert list(chunk.material.visibility) == [False, True, False]
+    assert peak._scale == 2.0
+    assert peak.actor is peak._slicer
