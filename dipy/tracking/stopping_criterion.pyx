@@ -34,7 +34,6 @@ cdef class BinaryStoppingCriterion(StoppingCriterion):
     cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
         cdef:
             unsigned char result
-            int err
             int voxel[3]
 
         voxel[0] = <int>dpy_rint(point[0])

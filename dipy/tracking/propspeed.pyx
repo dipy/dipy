@@ -321,13 +321,12 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
         double *pverts = <double*> cnp.PyArray_DATA(odf_vertices)
         cnp.npy_intp *pstr = <cnp.npy_intp *> cnp.PyArray_STRIDES(qa)
         cnp.npy_intp *qa_shape = <cnp.npy_intp *> cnp.PyArray_DIMS(qa)
-        cnp.npy_intp *pvstr = <cnp.npy_intp *> cnp.PyArray_STRIDES(odf_vertices)
-        cnp.npy_intp d, i, j, cnt
+        cnp.npy_intp d, i, cnt
         double direction[3]
         double dx[3]
         double idirection[3]
         double ps2[3]
-        double tmp, ftmp
+        double tmp
     if not cnp.PyArray_CHKFLAGS(seed, cnp.NPY_ARRAY_C_CONTIGUOUS):
         raise ValueError("seed is not C contiguous")
     if not cnp.PyArray_CHKFLAGS(qa, cnp.NPY_ARRAY_C_CONTIGUOUS):
@@ -502,7 +501,6 @@ cdef void initialize_ptt_candidate(TrackerParameters params,
     cdef double fod_amp
     cdef int count
     cdef int i
-    cdef double* pmf
 
     # Initialize Frame
     stream_data[1] = init_dir[0]
@@ -621,7 +619,6 @@ cdef double calculate_ptt_data_support(TrackerParameters params,
     cdef double[3] new_position
     cdef double likelihood
     cdef int c, i, j, q
-    cdef double* pmf
 
     prepare_ptt_propagator(params, stream_data, params.ptt.probe_step_size)
 

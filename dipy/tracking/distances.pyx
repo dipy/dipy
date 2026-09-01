@@ -227,7 +227,7 @@ def cut_plane(tracks, ref):
     """
     cdef:
         cnp.npy_intp n_hits, hit_no, max_hit_len
-        float alpha, beta, lrq, rcd, lhp, ld
+        float alpha, beta, rcd, lhp, ld
         cnp.ndarray[cnp.float32_t, ndim=2] ref32
         cnp.ndarray[cnp.float32_t, ndim=2] track
         object hits
@@ -508,7 +508,7 @@ def bundles_distances_mam(tracksA, tracksB, metric="avg"):
         raise ValueError("Metric should be one of avg, min, max")
     # preprocess tracks
     cdef:
-        cnp.npy_intp longest_track_len = 0, track_len
+        cnp.npy_intp track_len
         cnp.npy_intp longest_track_lenA = 0, longest_track_lenB = 0
         cnp.ndarray[object, ndim=1] tracksA32
         cnp.ndarray[object, ndim=1] tracksB32
@@ -591,8 +591,6 @@ def bundles_distances_mdf(tracksA, tracksB):
         cnp.npy_intp i, j, lentA, lentB
     # preprocess tracks
     cdef:
-        cnp.npy_intp longest_track_len = 0, track_len
-        longest_track_lenA, longest_track_lenB
         cnp.ndarray[object, ndim=1] tracksA32
         cnp.ndarray[object, ndim=1] tracksB32
         cnp.ndarray[cnp.double_t, ndim=2] DM
@@ -617,11 +615,9 @@ def bundles_distances_mdf(tracksA, tracksB):
     cdef:
         cnp.float32_t *t1_ptr
         cnp.float32_t *t2_ptr
-        cnp.float32_t *min_buffer
     # cycle over tracks
     cdef:
         cnp.ndarray [cnp.float32_t, ndim=2] t1, t2
-        cnp.npy_intp t1_len, t2_len
         float d[2]
     t_len = tracksA32[0].shape[0]
 
@@ -940,9 +936,7 @@ cdef float clee_perpendicular_distance(float *start0, float *end0, float *start1
     """
 
     cdef:
-        float l0, l1, ltmp, u1, u2, lperp1, lperp2
-        float *s_tmp
-        float *e_tmp
+        float l0, u1, u2, lperp1, lperp2
         float k0[3]
         float ps[3]
         float pe[3]
@@ -952,9 +946,6 @@ cdef float clee_perpendicular_distance(float *start0, float *end0, float *start1
 
     csub_3vecs(end0, start0, k0)
     l0 = cinner_3vecs(k0, k0)
-
-    csub_3vecs(end1, start1, tmp)
-    l1 = cinner_3vecs(tmp, tmp)
 
     # csub_3vecs(end0,start0,k0)
 
@@ -1039,11 +1030,8 @@ cdef float clee_angle_distance(float *start0, float *end0, float *start1, float 
 
     cdef:
         float l0, l1, ltmp, cos_theta_squared
-        float *s_tmp
-        float *e_tmp
         float k0[3]
         float k1[3]
-        float tmp[3]
 
     csub_3vecs(end0, start0, k0)
     l0 = cinner_3vecs(k0, k0)
@@ -1363,8 +1351,6 @@ def point_segment_sq_distance(a, b, c):
         float *ca
         float *cb
         float *cc
-        float cr
-        float ct[2]
 
     ca = asfp(a)
     cb = asfp(b)
@@ -1614,7 +1600,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
         cnp.ndarray[cnp.float32_t, ndim=2] track
         LSC_Cluster *cluster
         long lent = 0, lenC = 0, dim = 0, points=0
-        long i=0, j=0, c=0, i_k=0, rows=0, cit=0
+        long i=0, j=0, i_k=0, rows=0, cit=0
         float *ptr
         float *hid
         float *alld

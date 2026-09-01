@@ -247,10 +247,9 @@ cdef void c_set_number_of_points_from_arraysequence(Streamline points,
                                                     long nb_points,
                                                     Streamline out) noexcept nogil:
     cdef:
-        cnp.npy_intp i, j, k
+        cnp.npy_intp i
         cnp.npy_intp offset, length
         cnp.npy_intp offset_out = 0
-        double dn, sum_dn_sqr
 
     for i in range(offsets.shape[0]):
         offset = offsets[i]
@@ -492,7 +491,6 @@ cdef cnp.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
         cnp.npy_intp D = streamline.shape[1]
         cnp.npy_intp nb_points = 0
         cnp.npy_intp d, prev, next, curr
-        double segment_length
 
     # Copy first point since it is always kept.
     for d in range(D):
