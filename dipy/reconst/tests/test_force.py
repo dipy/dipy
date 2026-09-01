@@ -11,6 +11,7 @@ from numpy.testing import assert_almost_equal, assert_array_less
 from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere
 from dipy.reconst.force import (
+    DEFAULT_FORCE_SEED,
     DEFAULT_NUM_ODI_VALUES,
     DEFAULT_ODI_RANGE,
     FORCEModel,
@@ -358,11 +359,11 @@ def test_seed_matches_legacy_and_exact():
     # generated reproducibly, so it only satisfies seed=None requests.
     legacy = {"num_simulations": 100}
     assert _seed_matches(legacy, None)
-    assert not _seed_matches(legacy, 2298)
+    assert not _seed_matches(legacy, DEFAULT_FORCE_SEED)
 
     # A modern entry matches only its exact seed.
-    entry = {"seed": 2298}
-    assert _seed_matches(entry, 2298)
+    entry = {"seed": DEFAULT_FORCE_SEED}
+    assert _seed_matches(entry, DEFAULT_FORCE_SEED)
     assert not _seed_matches(entry, 42)
     assert not _seed_matches(entry, None)
 
@@ -417,9 +418,9 @@ def test_force_cache_keys_on_seed(tmp_path, monkeypatch):
         model.generate(num_simulations=60, num_cpus=1, verbose=False, **kwargs)
         return model
 
-    # 1. the default seed (2298) is recorded in the registry.
+    # 1. the default seed is recorded in the registry.
     first = gen()
-    assert [e["seed"] for e in _registry(tmp_path)] == [2298]
+    assert [e["seed"] for e in _registry(tmp_path)] == [DEFAULT_FORCE_SEED]
 
     # 2. re-running with the default seed hits the cache (no new entry) and
     # serves the identical library.
@@ -430,10 +431,46 @@ def test_force_cache_keys_on_seed(tmp_path, monkeypatch):
     # 3. a different seed is a distinct library, not a cache hit.
     other = gen(seed=42)
     assert len(_registry(tmp_path)) == 2
-    assert {e["seed"] for e in _registry(tmp_path)} == {2298, 42}
+    assert {e["seed"] for e in _registry(tmp_path)} == {DEFAULT_FORCE_SEED, 42}
     assert not np.array_equal(
         other.simulations["signals"], first.simulations["signals"]
     )
+
+
+def test_force_cache_reports_seedless_legacy_entry(tmp_path, monkeypatch):
+    """A legacy cache miss explains why a seeded library is regenerated."""
+    monkeypatch.setenv("DIPY_HOME", str(tmp_path))
+    gtab = _make_gtab([1000])
+
+    FORCEModel(gtab).generate(
+        num_simulations=10,
+        num_cpus=1,
+        seed=None,
+        compute_dti=False,
+        verbose=False,
+    )
+
+    registry_path = tmp_path / "force_simulations" / "cache_registry.json"
+    registry = _registry(tmp_path)
+    registry[0].pop("seed")
+    with open(registry_path, "w") as f:
+        json.dump(registry, f)
+
+    messages = []
+    monkeypatch.setattr("dipy.reconst.force.logger.info", messages.append)
+    FORCEModel(gtab).generate(
+        num_simulations=10,
+        num_cpus=1,
+        compute_dti=False,
+        verbose=False,
+    )
+
+    assert any(
+        "predate seed tracking" in message
+        and "new seeded library will be generated" in message
+        for message in messages
+    )
+    assert _registry(tmp_path)[-1]["seed"] == DEFAULT_FORCE_SEED
 
 
 def test_cache_registry_separates_min_crossing_angles(tmp_path, monkeypatch):

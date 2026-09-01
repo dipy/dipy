@@ -18,6 +18,7 @@ from dipy.sims._force_core import (
     DEFAULT_TWO_FIBER_MIN_ANGLE,
 )
 from dipy.sims.force import (
+    DEFAULT_FORCE_SEED,
     DEFAULT_NUM_ODI_VALUES,
     DEFAULT_ODI_RANGE,
     generate_force_simulations,
@@ -266,6 +267,7 @@ def _find_cached_simulation(
         Path to the cached ``.npz`` file, or None if no match found.
     """
     registry = _load_cache_registry(cache_dir)
+    legacy_seed_cache_reported = False
     for entry in registry:
         if entry["num_simulations"] != num_simulations:
             continue
@@ -277,6 +279,15 @@ def _find_cached_simulation(
             continue
         if not _min_angles_match(entry, min_crossing_angles):
             continue
+        if "seed" not in entry and seed is not None:
+            candidate = cache_dir / entry["filename"]
+            if candidate.exists() and not legacy_seed_cache_reported:
+                logger.info(
+                    f"Cached FORCE simulations at {candidate} predate seed "
+                    "tracking and cannot guarantee reproducibility. A new "
+                    "seeded library will be generated."
+                )
+                legacy_seed_cache_reported = True
         if not _seed_matches(entry, seed):
             continue
         candidate = cache_dir / entry["filename"]
@@ -810,7 +821,7 @@ class FORCEModel(ReconstModel):
         num_simulations=500000,
         output_path=None,
         num_cpus=1,
-        seed=2298,
+        seed=DEFAULT_FORCE_SEED,
         wm_threshold=0.5,
         tortuosity=False,
         odi_range=DEFAULT_ODI_RANGE,
@@ -851,8 +862,8 @@ class FORCEModel(ReconstModel):
             Seed for reproducible library generation (see
             :func:`~dipy.sims.force.generate_force_simulations`). Identical
             seeds yield identical libraries for any ``num_cpus``. The seed
-            is part of the cache key. When None, every run uses fresh
-            entropy.
+            is part of the cache key. When None, each newly generated library
+            uses fresh entropy; a matching cached library may still be reused.
         wm_threshold : float, optional
             Minimum WM fraction to include fiber labels.
         tortuosity : bool, optional

@@ -67,6 +67,7 @@ from dipy.reconst.shm import (
     sph_harm_lookup,
 )
 from dipy.segment.tissue import TissueClassifierHMRF
+from dipy.sims.force import DEFAULT_FORCE_SEED
 from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.workflows.workflow import Workflow
@@ -3487,7 +3488,7 @@ class ReconstForceFlow(Workflow):
         gm_d_iso_range=None,
         csf_d=None,
         num_cpus=-1,
-        seed=2298,
+        seed=DEFAULT_FORCE_SEED,
         use_cache=True,
         compute_kurtosis=False,
         engine="serial",
