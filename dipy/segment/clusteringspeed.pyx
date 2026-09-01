@@ -514,7 +514,6 @@ cdef class QuickBundles:
             cnp.npy_intp k
             double dist
             NearestCluster nearest_cluster
-            float aabb[6]
 
         nearest_cluster.id = -1
         nearest_cluster.dist = consts.BIGGEST_DOUBLE

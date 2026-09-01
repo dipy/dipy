@@ -583,7 +583,7 @@ cdef void _icm_ising(double[:, :, :, :] nloglike, double beta,
         cnp.npy_intp ny = nloglike.shape[1]
         cnp.npy_intp nz = nloglike.shape[2]
         cnp.npy_intp nclasses = nloglike.shape[3]
-        cnp.npy_intp x, y, z, xx, yy, zz, i, j, k
+        cnp.npy_intp x, y, z, xx, yy, zz, i, k
         double min_energy = NPY_INFINITY
         double this_energy = NPY_INFINITY
         cnp.npy_short best_class
