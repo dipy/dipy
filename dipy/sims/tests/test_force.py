@@ -4,14 +4,30 @@ import numpy as np
 import pytest
 
 from dipy.sims.force import (
+    DEFAULT_FORCE_SEED,
     DEFAULT_NUM_ODI_VALUES,
     DEFAULT_ODI_RANGE,
     dispersion_lut,
     get_default_diffusivity_config,
+    init_worker,
     resolve_num_odi_values,
     smallest_shell_bval,
     validate_diffusivity_config,
 )
+
+
+def test_init_worker_base_seed_deprecated():
+    """The removed base_seed argument remains available during deprecation."""
+    import random
+
+    numpy_state = np.random.get_state()
+    random_state = random.getstate()
+    try:
+        with pytest.warns(DeprecationWarning, match='"base_seed" was deprecated'):
+            init_worker(base_seed=42)
+    finally:
+        np.random.set_state(numpy_state)
+        random.setstate(random_state)
 
 
 def test_dispersion_lut_structure():
@@ -376,6 +392,51 @@ def test_generate_force_simulations_seed_reproducible():
     sims_f = generate_force_simulations(gtab, seed=None, **kwargs)
     sims_g = generate_force_simulations(gtab, seed=None, **kwargs)
     assert not np.array_equal(sims_f["signals"], sims_g["signals"])
+
+
+@pytest.mark.parametrize("seed", [DEFAULT_FORCE_SEED, None])
+def test_generate_force_simulations_preserves_numpy_rng_state(seed):
+    """Serial generation does not alter the caller's global NumPy RNG."""
+    from dipy.sims.force import generate_force_simulations
+
+    state = np.random.get_state()
+    try:
+        np.random.seed(1234)
+        expected = np.random.random(5)
+        np.random.seed(1234)
+
+        generate_force_simulations(
+            _make_gtab([1000]),
+            num_simulations=10,
+            batch_size=10,
+            num_cpus=1,
+            seed=seed,
+            compute_dti=False,
+            verbose=False,
+        )
+
+        np.testing.assert_array_equal(np.random.random(5), expected)
+    finally:
+        np.random.set_state(state)
+
+
+def test_seeded_serial_generation_skips_worker_initialization(monkeypatch):
+    """A deterministic batch seed makes worker initialization unnecessary."""
+    from dipy.sims.force import generate_force_simulations
+
+    def fail_if_called():
+        pytest.fail("init_worker should not run for seeded serial generation")
+
+    monkeypatch.setattr("dipy.sims.force.init_worker", fail_if_called)
+    generate_force_simulations(
+        _make_gtab([1000]),
+        num_simulations=10,
+        batch_size=10,
+        num_cpus=1,
+        seed=42,
+        compute_dti=False,
+        verbose=False,
+    )
 
 
 def test_generate_force_simulations_seed_independent_of_num_cpus():

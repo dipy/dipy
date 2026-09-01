@@ -32,6 +32,7 @@ from dipy.sims._force_core import (
     DEFAULT_TWO_FIBER_MIN_ANGLE,
 )
 from dipy.sims.voxel import all_tensor_evecs
+from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
 from dipy.utils.multiproc import determine_num_processes
 
@@ -41,6 +42,7 @@ from dipy.utils.multiproc import determine_num_processes
 # autoscale the number of grid points to any custom ``odi_range``.
 DEFAULT_ODI_RANGE = (0.01, 0.3)
 DEFAULT_NUM_ODI_VALUES = 10
+DEFAULT_FORCE_SEED = 2298
 
 
 def resolve_num_odi_values(odi_range, num_odi_values=None):
@@ -146,15 +148,18 @@ def smallest_shell_bval(bvals, *, b0_threshold=50, shell_tolerance=50, n=1):
     return min_shells, shell_mask
 
 
-def init_worker():
+@deprecated_params("base_seed", since="1.13.0", until="2.0.0")
+def init_worker(base_seed=None):
     """Initialize a ProcessPoolExecutor worker with a unique RNG state.
 
     Seeds the global :mod:`numpy.random` and :mod:`random` states from the
     PID and high-resolution time so forked workers do not inherit identical
-    streams from the parent. Reproducibility does not rely on this state:
-    when :func:`generate_force_simulations` is given a ``seed``, every batch
-    reseeds itself from ``(seed, batch_index)`` in the batch worker,
-    independently of the number of workers.
+    streams from the parent.
+
+    Parameters
+    ----------
+    base_seed : int or None, optional
+        Deprecated and ignored.
     """
     import random
     import time
@@ -187,13 +192,7 @@ def _generate_batch_worker(
     diffusivity_cfg,
     min_crossing_angles,
 ):
-    """Worker function for parallel batch generation.
-
-    Opens memmaps by path in each process and writes directly. When
-    ``batch_seed`` is not None, the global NumPy RNG is reseeded with it so
-    the batch's random draws are deterministic regardless of which worker
-    process executes it.
-    """
+    """Worker function for parallel batch generation."""
     from dipy.sims._force_core import create_mixed_signal, set_diffusivity_ranges
     from dipy.sims._multi_tensor_omp import multi_tensor
 
@@ -432,7 +431,7 @@ def generate_force_simulations(
     output_dir=None,
     num_cpus=1,
     batch_size=1000,
-    seed=2298,
+    seed=DEFAULT_FORCE_SEED,
     wm_threshold=0.5,
     tortuosity=False,
     odi_range=DEFAULT_ODI_RANGE,
@@ -618,9 +617,6 @@ def generate_force_simulations(
     remainder = num_simulations % batch_size
     total_batches = num_batches_full + (1 if remainder > 0 else 0)
 
-    # Derive one independent stream per batch so results depend only on
-    # (seed, batch_index) — not on num_cpus or worker scheduling — while
-    # every batch still draws different random values.
     batch_specs = []
     current_start = 0
     for batch_idx in range(total_batches):
@@ -695,32 +691,43 @@ def generate_force_simulations(
     # Run simulations with progress bar
     pbar = tqdm(total=num_simulations, desc="Simulating", disable=not verbose)
 
+    def run_serial():
+        """Run batches in-process without altering the caller's NumPy RNG."""
+        state = np.random.get_state()
+        try:
+            if seed is None:
+                init_worker()
+            for start_idx, bs, batch_seed in batch_specs:
+                batch_done = _generate_batch_worker(
+                    start_idx,
+                    bs,
+                    batch_seed,
+                    target_sphere,
+                    evecs,
+                    dispersion_sf,
+                    odi_list,
+                    bvals,
+                    bvecs,
+                    wm_threshold,
+                    tortuosity,
+                    memmap_info,
+                    diffusivity_config,
+                    min_crossing_angles,
+                )
+                pbar.update(batch_done)
+        finally:
+            np.random.set_state(state)
+
     if num_cpus == 1:
         # Serial in-process path — no subprocess spawned, safe on all platforms
-        init_worker()
-        for start_idx, bs, batch_seed in batch_specs:
-            batch_done = _generate_batch_worker(
-                start_idx,
-                bs,
-                batch_seed,
-                target_sphere,
-                evecs,
-                dispersion_sf,
-                odi_list,
-                bvals,
-                bvecs,
-                wm_threshold,
-                tortuosity,
-                memmap_info,
-                diffusivity_config,
-                min_crossing_angles,
-            )
-            pbar.update(batch_done)
+        run_serial()
     elif sys.platform == "win32":
         if _main_is_guarded():
             ctx = mp.get_context("spawn")
             with ProcessPoolExecutor(
-                max_workers=num_cpus, initializer=init_worker, mp_context=ctx
+                max_workers=num_cpus,
+                initializer=init_worker if seed is None else None,
+                mp_context=ctx,
             ) as executor:
                 futures = {
                     executor.submit(
@@ -751,25 +758,7 @@ def generate_force_simulations(
                 "protected with `if __name__ == '__main__':`. "
                 "Falling back to serial execution."
             )
-            init_worker()
-            for start_idx, bs, batch_seed in batch_specs:
-                batch_done = _generate_batch_worker(
-                    start_idx,
-                    bs,
-                    batch_seed,
-                    target_sphere,
-                    evecs,
-                    dispersion_sf,
-                    odi_list,
-                    bvals,
-                    bvecs,
-                    wm_threshold,
-                    tortuosity,
-                    memmap_info,
-                    diffusivity_config,
-                    min_crossing_angles,
-                )
-                pbar.update(batch_done)
+            run_serial()
     else:
         # fork: workers are copies of the parent — __main__ is NOT re-run,
         # so no `if __name__ == '__main__':` guard is needed in the caller's
@@ -777,7 +766,9 @@ def generate_force_simulations(
         # (no GUI/ObjC).
         ctx = mp.get_context("fork")
         with ProcessPoolExecutor(
-            max_workers=num_cpus, initializer=init_worker, mp_context=ctx
+            max_workers=num_cpus,
+            initializer=init_worker if seed is None else None,
+            mp_context=ctx,
         ) as executor:
             futures = {
                 executor.submit(
