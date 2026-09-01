@@ -947,8 +947,6 @@ cdef float clee_perpendicular_distance(float *start0, float *end0, float *start1
     csub_3vecs(end0, start0, k0)
     l0 = cinner_3vecs(k0, k0)
 
-    csub_3vecs(end1, start1, tmp)
-
     # csub_3vecs(end0,start0,k0)
 
     # u1 = np.inner(start1-start0,k0)/l0

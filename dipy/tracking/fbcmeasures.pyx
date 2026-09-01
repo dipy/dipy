@@ -212,8 +212,6 @@ cdef class FBCMeasures:
         # prepare numpy arrays for speed
         streamlines = np.zeros((num_fibers, max_length, dim),
                                dtype=np.float64) * np.nan
-        streamlines_tangents = np.zeros((num_fibers, max_length, dim),
-                                        dtype=np.float64)
         streamlines_nearestp = np.zeros((num_fibers, max_length),
                                         dtype=np.int32)
         streamline_scores = np.zeros((num_fibers, max_length),
@@ -226,15 +224,6 @@ cdef class FBCMeasures:
                     streamlines[line_id, point_id, dims] = \
                         py_streamlines[line_id][point_id][dims]
         self.streamline_points = streamlines
-
-        # compute tangents
-        for line_id in range(num_fibers):
-            for point_id in range(streamlines_length[line_id] - 1):
-                tangent = np.subtract(streamlines[line_id, point_id + 1],
-                                      streamlines[line_id, point_id])
-                streamlines_tangents[line_id, point_id] = \
-                    np.divide(tangent,
-                              np.sqrt(np.dot(tangent, tangent)))
 
         # estimate which kernel LUT index corresponds to angles
         tree = KDTree(kernel.get_orientations())
