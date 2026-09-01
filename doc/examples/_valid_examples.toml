@@ -165,6 +165,7 @@ enable = true
 files = [
     "afq_tract_profiles.py",
     "buan_bundle_profiles.py",
+    "spectra_bundle_profiles.py",
     "cluster_confidence.py",
     "path_length_map.py",
     "streamline_length.py",
