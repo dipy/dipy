@@ -33,13 +33,18 @@ repos:
       - id: enforce-pep3102-defaults
         name: Enforce keyword-only default arguments (PEP 3102)
         entry: python tools/check_pep3102.py
-        language: system
+        language: python
         types: [python]
+        # ``dipy/workflows/`` is exempt by design; the other exemptions are a
+        # backlog, not a policy: run ``python tools/check_pep3102.py`` on them
+        # to see what is left (~310 in tests/, ~75 in workflows/, 13 in doc/ and
+        # 7 in the two legacy scripts below, as of 1.13.0). Cython is out of
+        # reach entirely -- ``ast`` cannot parse ``.pyx``.
         exclude: |
           (?x)^(
-            \.spin/|
-            tools/|
             doc/|
+            # vendored from IPython and nipy respectively; not DIPY's API
+            tools/(github_stats|gitwash_dumper)\.py|
             # workflows expose ``run`` parameters as a CLI through
             # IntrospectiveArgumentParser, which needs them positional-or-keyword
             dipy/workflows/|

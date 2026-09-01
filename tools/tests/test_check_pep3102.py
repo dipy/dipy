@@ -30,8 +30,19 @@ def test_keyword_only_default_is_clean():
     assert violations("def f(a, b): pass") == []
 
 
-def test_dunder_is_exempt():
-    assert violations("class C:\n    def __init__(self, x=1): pass") == []
+@pytest.mark.parametrize("name", sorted(check_pep3102.CHECKED_DUNDERS))
+def test_user_facing_dunder_is_checked(name):
+    """Their arguments come from the call site, not from the interpreter."""
+    assert violations(f"class C:\n    def {name}(self, x=1): pass") == [(name, ["x"])]
+
+
+@pytest.mark.parametrize("name", ["__get__", "__exit__", "__reduce_ex__"])
+def test_protocol_dunder_is_exempt(name):
+    assert violations(f"class C:\n    def {name}(self, x=1): pass") == []
+
+
+def test_bare_underscores_are_not_a_dunder():
+    assert violations("def __(a=1): pass") == [("__", ["a"])]
 
 
 def test_name_mangled_method_is_not_a_dunder():
@@ -78,9 +89,40 @@ def test_ignore_comment_on_closing_line_of_wrapped_signature():
     assert violations(source) == []
 
 
+def test_ignore_comment_on_closing_line_sharing_the_body():
+    source = f"def f(\n    a,\n    b=1,\n): pass  {check_pep3102.IGNORE}\n"
+    assert violations(source) == []
+
+
+def test_marker_inside_a_string_default_is_not_an_opt_out():
+    source = f'def f(a, b="{check_pep3102.IGNORE}"): pass\n'
+    assert violations(source) == [("f", ["b"])]
+
+
 def test_ignore_comment_below_the_signature_is_not_honored():
     source = f"def f(a, b=1):\n    pass  {check_pep3102.IGNORE}\n"
     assert violations(source) == [("f", ["b"])]
+
+
+def test_ignore_comment_on_a_decorator_line():
+    """The decorator is often what forces the exemption, so it may carry it."""
+    source = f"@d  {check_pep3102.IGNORE}\ndef f(a, b=1): pass\n"
+    assert violations(source) == []
+
+
+def test_ignore_comment_between_stacked_decorators():
+    source = f"@outer\n@inner  {check_pep3102.IGNORE}\ndef f(a, b=1): pass\n"
+    assert violations(source) == []
+
+
+def test_ignore_comment_above_the_first_decorator_is_not_honored():
+    source = f"{check_pep3102.IGNORE}\n@d\ndef f(a, b=1): pass\n"
+    assert violations(source) == [("f", ["b"])]
+
+
+def test_marker_lines_reports_only_comment_tokens():
+    source = f'x = "{check_pep3102.IGNORE}"  {check_pep3102.IGNORE}\n'
+    assert check_pep3102._marker_lines(source) == {1}
 
 
 def test_violations_are_sorted_by_line_number():
@@ -107,6 +149,14 @@ def test_check_file_reports_undecodable_files(tmp_path):
     binary.write_bytes(b"def f(a=\xff): pass\n")
     (message,) = check_pep3102.check_file(str(binary))
     assert "could not decode" in message
+
+
+def test_check_file_reports_files_with_null_bytes(tmp_path):
+    """A whole-file parse failure has no line number to report."""
+    binary = tmp_path / "nul.py"
+    binary.write_bytes(b"def f(a=1):\x00 pass\n")
+    (message,) = check_pep3102.check_file(str(binary))
+    assert message.startswith(f"{binary}:1: could not parse:")
 
 
 def test_check_file_message_points_at_the_definition(tmp_path):

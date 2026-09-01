@@ -16,7 +16,9 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 class Optimizer:
     @warning_for_keywords()
-    def __init__(
+    # ``args`` mirrors ``scipy.optimize.minimize(fun, x0, args=(), ...)``, whose
+    # positional spelling callers already know.
+    def __init__(  # pep3102: ignore
         self,
         fun,
         x0,

@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 class CustomHandler(logging.Handler):
@@ -11,7 +11,8 @@ class CustomHandler(logging.Handler):
     otherwise formats the message as usual.
     """
 
-    def __init__(self, stream=None, filename=None):
+    @warning_for_keywords(from_version="1.13.0")
+    def __init__(self, *, stream=None, filename=None):
         super().__init__()  # call with no arguments
         if filename is not None:
             self._should_close = True

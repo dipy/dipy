@@ -110,7 +110,8 @@ class clear_and_catch_warnings(warnings.catch_warnings):
 
     class_modules = ()
 
-    def __init__(self, record=True, modules=()):
+    @warning_for_keywords(from_version="1.13.0")
+    def __init__(self, *, record=True, modules=()):
         self.modules = set(modules).union(self.class_modules)
         self._warnreg_copies = {}
         super().__init__(record=record)

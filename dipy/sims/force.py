@@ -44,6 +44,7 @@ DEFAULT_ODI_RANGE = (0.01, 0.3)
 DEFAULT_NUM_ODI_VALUES = 10
 
 
+@warning_for_keywords(from_version="1.13.0")
 def resolve_num_odi_values(odi_range, *, num_odi_values=None):
     """Resolve the number of ODI grid points, autoscaling when unset.
 

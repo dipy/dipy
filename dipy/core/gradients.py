@@ -299,7 +299,8 @@ class GradientTable:
 
     @property
     def info(self):
-        print(self.__str__())
+        """Print a summary of the gradient table on stdout."""
+        print(self)
 
     def __str__(self):
         msg = f"B-values shape {self.bvals.shape}\n"

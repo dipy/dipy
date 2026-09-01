@@ -274,7 +274,7 @@ class Model(Module):
         The scale of the model.
     """
 
-    def __init__(self, model_scale=16):
+    def __init__(self, *, model_scale=16):
         super().__init__()
 
         # Block structure
@@ -484,7 +484,7 @@ class EVACPlus:
         Model
             Initialized EVAC+ model.
         """
-        return Model(model_scale)
+        return Model(model_scale=model_scale)
 
     def fetch_default_weights(self):
         """Load the model pre-training weights to use for the fitting.

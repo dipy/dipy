@@ -64,6 +64,7 @@ class Conv3dELU(Module):
         in_channels,
         out_channels,
         kernel_size,
+        *,
         padding=0,
         stride=1,
         dilation=1,

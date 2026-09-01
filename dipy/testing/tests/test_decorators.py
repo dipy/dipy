@@ -13,6 +13,7 @@ from dipy.testing.decorators import (
     set_random_number_generator,
     warning_for_keywords,
 )
+from dipy.utils import deprecator
 
 
 def test_skipper():
@@ -62,15 +63,16 @@ def test_skipper():
     assert_raises(NameError, doctest_skip_parser, f)
 
 
-def test_warning_for_keywords():
-    original_version = dipy.__version__
+def test_warning_for_keywords(monkeypatch):
+    # ``monkeypatch`` restores ``dipy.__version__`` even when the test fails
+    # part way: a leaked version silently reshapes every later deprecation.
 
     @warning_for_keywords(from_version="1.0.0", until_version="10.0.0")
     def func_with_kwonly_args(a, b, *, c=3):
         return a + b + c
 
     # Case 1: Version is 0.9.0, no warnings expected
-    dipy.__version__ = "0.9.0"
+    monkeypatch.setattr(dipy, "__version__", "0.9.0")
     assert func_with_kwonly_args(1, 2, c=3) == 6
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
@@ -79,7 +81,7 @@ def test_warning_for_keywords():
         assert len(w) == 0, "Expected no warnings for version 0.9.0"
 
     # Case 2: Version is 1.10.0, warnings expected
-    dipy.__version__ = "1.10.0"
+    monkeypatch.setattr(dipy, "__version__", "1.10.0")
     assert func_with_kwonly_args(1, 2, c=3) == 6
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
@@ -92,7 +94,7 @@ def test_warning_for_keywords():
         )
 
     # Case 3: Version is 1.15.0, warnings expected
-    dipy.__version__ = "1.15.0"
+    monkeypatch.setattr(dipy, "__version__", "1.15.0")
     assert func_with_kwonly_args(1, 2, c=3) == 6
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
@@ -106,7 +108,7 @@ def test_warning_for_keywords():
 
     # Case 4: Version is 10.1.0, arguments should pass as they are,
     # expecting TypeError from system
-    dipy.__version__ = "10.1.0"
+    monkeypatch.setattr(dipy, "__version__", "10.1.0")
     assert func_with_kwonly_args(1, 2, c=3) == 6
     try:
         result = func_with_kwonly_args(1, 2, 3)
@@ -114,7 +116,7 @@ def test_warning_for_keywords():
         pass
 
     # Case 5: Version is a pre-release like '2.0.0rc1', warnings expected
-    dipy.__version__ = "2.0.0rc1"
+    monkeypatch.setattr(dipy, "__version__", "2.0.0rc1")
     assert func_with_kwonly_args(1, 2, c=3) == 6
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
@@ -127,7 +129,7 @@ def test_warning_for_keywords():
         )
 
     # Case 6: Version is a dev release like '1.10.0.dev1', warnings expected
-    dipy.__version__ = "1.10.0.dev1"
+    monkeypatch.setattr(dipy, "__version__", "1.10.0.dev1")
     assert func_with_kwonly_args(1, 2, c=3) == 6
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
@@ -139,8 +141,132 @@ def test_warning_for_keywords():
             "positional arguments will result in an error" in str(w[-1].message)
         )
 
-    # Restore the original version
-    dipy.__version__ = original_version
+
+def test_warning_for_keywords_leaves_varargs_alone():
+    """``*args`` absorbs surplus positional arguments, so nothing is moved.
+
+    Converting them would rename a genuine variadic argument after the first
+    keyword-only parameter and silently drop the model's ``*args``. The call
+    still has to be reported: a keyword-only parameter that quietly keeps its
+    default is a wrong result, not an error the caller can see.
+    """
+
+    @warning_for_keywords(from_version="1.0.0", until_version="10.0.0")
+    def func_with_varargs(a, *args, b=1, **kwargs):
+        return a, args, b, kwargs
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        assert_equal(func_with_varargs(1, 2, 3), (1, (2, 3), 1, {}))
+        assert_equal(len(w), 1)
+        assert_true("absorbed by '*args'" in str(w[-1].message))
+        assert_true("['b']" in str(w[-1].message))
+
+    # Nothing surplus, nothing to report.
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        assert_equal(func_with_varargs(1, b=5), (1, (), 5, {}))
+        assert_equal(len(w), 0)
+
+    # An explicit keyword does not stop the surplus from being reported: it is
+    # still forwarded rather than bound to a parameter.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        assert_equal(func_with_varargs(1, 2, b=5), (1, (2,), 5, {}))
+
+
+def test_warning_for_keywords_varargs_report_expires(monkeypatch):
+    """Past ``until_version`` the variadic call runs without a word."""
+
+    @warning_for_keywords(from_version="1.0.0", until_version="10.0.0")
+    def func_with_varargs(a, *args, b=1):
+        return a, args, b
+
+    monkeypatch.setattr(dipy, "__version__", "10.1.0")
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        assert_equal(func_with_varargs(1, 2), (1, (2,), 1))
+        assert_equal(len(w), 0)
+
+
+def test_warning_for_keywords_varargs_without_keyword_only_is_silent():
+    """No keyword-only parameter to miss, so a variadic call is ordinary."""
+
+    @warning_for_keywords(from_version="1.0.0", until_version="10.0.0")
+    def func_with_varargs(a, *args):
+        return a, args
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        assert_equal(func_with_varargs(1, 2, 3), (1, (2, 3)))
+        assert_equal(len(w), 0)
+
+
+def test_warning_for_keywords_does_not_drop_surplus_arguments():
+    """More positional arguments than keyword-only parameters is a ``TypeError``.
+
+    Truncating them instead would swallow the extra argument without a word.
+    """
+
+    @warning_for_keywords(from_version="1.0.0", until_version="10.0.0")
+    def func_with_kwonly_args(a, *, b=2):
+        return a + b
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        assert_raises(TypeError, func_with_kwonly_args, 1, 2, 3)
+
+
+def test_warning_for_keywords_positional_versions():
+    """``from_version``/``until_version`` used to be positional-or-keyword."""
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+
+        @warning_for_keywords("1.0.0", "10.0.0")
+        def func_with_kwonly_args(a, *, b=2):
+            return a + b
+
+        assert_equal(len(w), 1)
+        assert_true("Pass ['from_version', 'until_version']" in str(w[-1].message))
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        assert_equal(func_with_kwonly_args(1, 5), 6)
+        assert_equal(len(w), 1)
+        assert_true("From version 10.0.0" in str(w[-1].message))
+
+    assert_raises(TypeError, warning_for_keywords, "1.0.0", "10.0.0", "2.0.0")
+
+
+def test_warning_for_keywords_does_not_shadow_an_explicit_keyword():
+    """A name passed both ways must not lose the value the caller named.
+
+    Overwriting it with the positional one would hand the function a different
+    argument than the caller wrote, without a word.
+    """
+
+    @warning_for_keywords(from_version="1.0.0", until_version="10.0.0")
+    def func_with_kwonly_args(a, *, b=2):
+        return a + b
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        assert_raises(TypeError, func_with_kwonly_args, 1, 5, b=7)
+
+
+def test_warning_for_keywords_positional_versions_expire(monkeypatch):
+    """Past the announced version, positional versions stop being accepted."""
+    monkeypatch.setattr(dipy, "__version__", deprecator._POSITIONAL_VERSIONS_REMOVED)
+    assert_raises(TypeError, warning_for_keywords, "1.0.0", "10.0.0")
+
+
+def test_warning_for_keywords_rejects_bare_use():
+    """``@warning_for_keywords`` without parentheses is a silent no-op trap."""
+
+    def func_with_kwonly_args(a, *, b=2):
+        return a + b
+
+    assert_raises(TypeError, warning_for_keywords, func_with_kwonly_args)
 
 
 @set_random_number_generator(1234)

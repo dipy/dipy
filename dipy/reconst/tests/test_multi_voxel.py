@@ -15,6 +15,7 @@ from dipy.reconst.dki import DiffusionKurtosisModel
 import dipy.reconst.multi_voxel as mv
 from dipy.reconst.multi_voxel import (
     ORCHESTRATION_KWARGS,
+    _PARAMAP_KWARGS,
     CallableArray,
     _squash,
     multi_voxel_fit,
@@ -445,6 +446,10 @@ def test_multi_voxel_fit_orchestration_reaches_paramap(monkeypatch):
     """Orchestration kwargs are forwarded to ``paramap`` while the per-chunk
     kwargs are stripped. ``paramap`` is replaced by an in-process spy so the
     routing is checked deterministically without spawning workers.
+
+    ``vox_per_chunk`` is the exception: it is consumed here to size the chunks
+    and must not reach ``paramap``, whose ``**kwargs`` the joblib and dask
+    engines hand straight to their backend.
     """
 
     captured = {}
@@ -452,6 +457,7 @@ def test_multi_voxel_fit_orchestration_reaches_paramap(monkeypatch):
     def spy(func, in_list, *, func_args=None, func_kwargs=None, **kwargs):
         captured["parallel_kwargs"] = kwargs
         captured["per_chunk_kwargs"] = func_kwargs
+        captured["chunk_sizes"] = [len(chunk) for chunk in in_list]
         func_args = func_args or []
         if isinstance(func_kwargs, (list, tuple)):
             return [func(x, *func_args, **fk) for x, fk in zip(in_list, func_kwargs)]
@@ -471,10 +477,19 @@ def test_multi_voxel_fit_orchestration_reaches_paramap(monkeypatch):
         inflight_cap=4,
     )
 
-    # Every orchestration kwarg was handed to paramap / the engine:
-    for key in ORCHESTRATION_KWARGS:
+    # ``paramap`` must not declare ``vox_per_chunk``; if it ever does, the
+    # exclusion below silently stops excluding anything.
+    assert "vox_per_chunk" not in _PARAMAP_KWARGS
+    # Every orchestration kwarg paramap declares was handed to it:
+    for key in _PARAMAP_KWARGS:
         assert key in captured["parallel_kwargs"], f"{key} did not reach paramap"
-    # ... but none of them leaked into the per-chunk (per-voxel) kwargs:
+    # ... and nothing paramap does not declare, which would end up in its
+    # **kwargs and reach joblib.Parallel / dask.compute verbatim:
+    for key in set(ORCHESTRATION_KWARGS) - set(_PARAMAP_KWARGS):
+        assert key not in captured["parallel_kwargs"], f"{key} leaked to paramap"
+    # ``vox_per_chunk`` was consumed rather than dropped: 6 voxels, 2 chunks.
+    npt.assert_equal(captured["chunk_sizes"], [3, 3])
+    # None of the orchestration keys leaked into the per-chunk (per-voxel) kwargs:
     for chunk_kwargs in captured["per_chunk_kwargs"]:
         for key in ORCHESTRATION_KWARGS:
             assert key not in chunk_kwargs
