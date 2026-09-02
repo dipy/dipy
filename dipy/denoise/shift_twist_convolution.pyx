@@ -2,7 +2,6 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 
-cimport safe_openmp as openmp
 from cython.parallel import prange
 
 from dipy.reconst.shm import sh_to_sf, sf_to_sh
