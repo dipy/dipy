@@ -77,8 +77,7 @@ def quick_squash(obj_arr, mask=None, fill=0):
     # Find first valid value
     for i in range(N):
         e = flat_obj[i]
-        if ((have_mask and flat_mask[i] == 0) or
-            (not have_mask and e is None)):
+        if ((have_mask and flat_mask[i] == 0) or (not have_mask and e is None)):
             continue
         t = type(e)
         if issubclass(t, np.generic) or t in SCALAR_TYPES:
@@ -101,8 +100,7 @@ def quick_squash(obj_arr, mask=None, fill=0):
     dtypes_i = 1
     for j in range(i+1, N):
         e = flat_obj[j]
-        if ((have_mask and flat_mask[j] == 0) or
-            (not have_mask and e is None)):
+        if ((have_mask and flat_mask[j] == 0) or (not have_mask and e is None)):
             continue
         t = type(e)
         if search_for == SCALAR:
@@ -127,8 +125,7 @@ def quick_squash(obj_arr, mask=None, fill=0):
     result = np.empty((N,) + common_shape, dtype=dtype)
     for i in range(N):
         e = flat_obj[i]
-        if ((have_mask and flat_mask[i] == 0) or
-            (not have_mask and e is None)):
+        if ((have_mask and flat_mask[i] == 0) or (not have_mask and e is None)):
             result[i] = fill
         else:
             result[i] = e

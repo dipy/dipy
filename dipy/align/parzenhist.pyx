@@ -519,8 +519,11 @@ class ParzenJointHistogram:
             raise ValueError("Dimensions of gradients and points are different")
 
         nsamples = sval.shape[0]
-        if ((mgradient.shape[0] != nsamples) or (mval.shape[0] != nsamples)
-            or sample_points.shape[0] != nsamples):
+        if (
+            mgradient.shape[0] != nsamples
+            or mval.shape[0] != nsamples
+            or sample_points.shape[0] != nsamples
+        ):
             raise ValueError("Number of points and gradients are different.")
 
         if mgradient.dtype not in [np.float32, np.float64]:

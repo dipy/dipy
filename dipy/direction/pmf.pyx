@@ -229,9 +229,11 @@ cdef class SimplePeakGen(PmfGen):
                 "peak_indices and peak_values must be 4D arrays"
             )
 
-        if (indices_arr.shape[0] != values_arr.shape[0] or
+        if (
+            indices_arr.shape[0] != values_arr.shape[0] or
             indices_arr.shape[1] != values_arr.shape[1] or
-            indices_arr.shape[2] != values_arr.shape[2]):
+            indices_arr.shape[2] != values_arr.shape[2]
+        ):
             raise ValueError(
                 "peak_indices and peak_values must have matching spatial dimensions"
             )
@@ -465,9 +467,11 @@ cdef class SimplePeakGen(PmfGen):
             for i in range(3):
                 xyz[i] = index[m * 3 + i]
 
-            if (xyz[0] < 0 or xyz[0] >= self.peak_shape[0] or
-                xyz[1] < 0 or xyz[1] >= self.peak_shape[1] or
-                xyz[2] < 0 or xyz[2] >= self.peak_shape[2]):
+            if (
+                xyz[0] < 0 or xyz[0] >= self.peak_shape[0]
+                or xyz[1] < 0 or xyz[1] >= self.peak_shape[1]
+                or xyz[2] < 0 or xyz[2] >= self.peak_shape[2]
+            ):
                 continue
 
             out_valid[m] = 1

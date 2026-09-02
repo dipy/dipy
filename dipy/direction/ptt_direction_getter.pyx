@@ -188,8 +188,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         """
         cdef double tmp_arclength
 
-        if (fabs(self.k1) < self.k_small
-            and fabs(self.k2) < self.k_small):
+        if fabs(self.k1) < self.k_small and fabs(self.k2) < self.k_small:
             self.propagator[0] = arclength
             self.propagator[1] = 0
             self.propagator[2] = 0
