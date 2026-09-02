@@ -33,6 +33,7 @@ cdef class Feature:
         """ Is this feature invariant to the sequence's ordering """
         def __get__(Feature self):
             return bool(self.is_order_invariant)
+
         def __set__(self, int value):
             self.is_order_invariant = bool(value)
 

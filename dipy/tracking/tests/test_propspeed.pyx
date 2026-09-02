@@ -31,6 +31,7 @@ def test_tracker_deterministic():
     cdef RNGState rng
 
     seed_rng(&rng, 12345)
+
     class SillyModel(SphHarmModel):
         sh_order_max = 4
 
