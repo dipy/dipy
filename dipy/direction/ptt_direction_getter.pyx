@@ -448,7 +448,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                     continue
                 elif (stream_status == ENDPOINT or
                     stream_status == INVALIDPOINT or
-                    stream_status == OUTSIDEIMAGE):
+                    stream_status == OUTSIDEIMAGE
+                ):
                     break
             else:
                 # maximum length has been reached, return everything

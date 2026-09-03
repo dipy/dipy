@@ -21,7 +21,8 @@ def generate_tracking_parameters(algo_name, *,
     double probe_length=0.5, double probe_radius=0, int probe_quality=3,
     int probe_count=1, double data_support_exponent=1, int random_seed=0,
     double peak_values_threshold=0.0239, double angle_threshold=60,
-    double min_total_weight=0.5):
+    double min_total_weight=0.5,
+):
 
     cdef TrackerParameters params
 
