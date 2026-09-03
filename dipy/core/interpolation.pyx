@@ -252,14 +252,30 @@ cdef void _trilinear_interpolation_iso(double *X,
     # indices
     # the indices give you the indices of the neighboring voxels (the corners
     # of the box) e.g. the qa coordinates
-    IN[0] =<cnp.npy_intp>Xf[0];   IN[1] =<cnp.npy_intp>Xf[1];    IN[2] =<cnp.npy_intp>Xf[2]
-    IN[3] =<cnp.npy_intp>Xf[0]+1; IN[4] =<cnp.npy_intp>Xf[1];    IN[5] =<cnp.npy_intp>Xf[2]
-    IN[6] =<cnp.npy_intp>Xf[0];   IN[7] =<cnp.npy_intp>Xf[1]+1;  IN[8] =<cnp.npy_intp>Xf[2]
-    IN[9] =<cnp.npy_intp>Xf[0];   IN[10]=<cnp.npy_intp>Xf[1];    IN[11]=<cnp.npy_intp>Xf[2]+1
-    IN[12]=<cnp.npy_intp>Xf[0]+1; IN[13]=<cnp.npy_intp>Xf[1]+1;  IN[14]=<cnp.npy_intp>Xf[2]
-    IN[15]=<cnp.npy_intp>Xf[0];   IN[16]=<cnp.npy_intp>Xf[1]+1;  IN[17]=<cnp.npy_intp>Xf[2]+1
-    IN[18]=<cnp.npy_intp>Xf[0]+1; IN[19]=<cnp.npy_intp>Xf[1];    IN[20]=<cnp.npy_intp>Xf[2]+1
-    IN[21]=<cnp.npy_intp>Xf[0]+1; IN[22]=<cnp.npy_intp>Xf[1]+1;  IN[23]=<cnp.npy_intp>Xf[2]+1
+    IN[0] =<cnp.npy_intp>Xf[0]
+    IN[1] =<cnp.npy_intp>Xf[1]
+    IN[2] =<cnp.npy_intp>Xf[2]
+    IN[3] =<cnp.npy_intp>Xf[0]+1
+    IN[4] =<cnp.npy_intp>Xf[1]
+    IN[5] =<cnp.npy_intp>Xf[2]
+    IN[6] =<cnp.npy_intp>Xf[0]
+    IN[7] =<cnp.npy_intp>Xf[1]+1
+    IN[8] =<cnp.npy_intp>Xf[2]
+    IN[9] =<cnp.npy_intp>Xf[0]
+    IN[10]=<cnp.npy_intp>Xf[1]
+    IN[11]=<cnp.npy_intp>Xf[2]+1
+    IN[12]=<cnp.npy_intp>Xf[0]+1
+    IN[13]=<cnp.npy_intp>Xf[1]+1
+    IN[14]=<cnp.npy_intp>Xf[2]
+    IN[15]=<cnp.npy_intp>Xf[0]
+    IN[16]=<cnp.npy_intp>Xf[1]+1
+    IN[17]=<cnp.npy_intp>Xf[2]+1
+    IN[18]=<cnp.npy_intp>Xf[0]+1
+    IN[19]=<cnp.npy_intp>Xf[1]
+    IN[20]=<cnp.npy_intp>Xf[2]+1
+    IN[21]=<cnp.npy_intp>Xf[0]+1
+    IN[22]=<cnp.npy_intp>Xf[1]+1
+    IN[23]=<cnp.npy_intp>Xf[2]+1
     return
 
 
