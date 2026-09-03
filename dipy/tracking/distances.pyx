@@ -1487,7 +1487,7 @@ cdef void track_direct_flip_dist(float *a, float *b, long rows, float *out) noex
 
 
 @cython.cdivision(True)
-cdef inline void track_direct_flip_3dist(float *a1, float *b1, float  *c1, float *a2, float *b2, float *c2, float *out) noexcept nogil:
+cdef inline void track_direct_flip_3dist(float *a1, float *b1, float *c1, float *a2, float *b2, float *c2, float *out) noexcept nogil:
     """ Calculate the euclidean distance between two 3pt tracks
     both direct and flip are given as output
 
@@ -1816,7 +1816,7 @@ def local_skeleton_clustering_3pts(tracks, d_thr=10):
     return C
 
 
-cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1, float  *c1, float *a2, float *b2, float *c2, float *out):
+cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1, float *c1, float *a2, float *b2, float *c2, float *out):
     """ Calculate the average squared euclidean distance between two 3pt tracks
     both direct and flip are given as output
 
