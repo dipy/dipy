@@ -4,7 +4,8 @@ import warnings
 
 import numpy as np
 
-from dipy.testing.decorators import is_macOS, warning_for_keywords
+from dipy.testing.decorators import is_macOS
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.tab import (
     HorizonTab,

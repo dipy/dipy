@@ -17,8 +17,7 @@ from dipy.reconst.dti import TensorModel, fractional_anisotropy, mean_diffusivit
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.utils import _mask_from_roi, _roi_in_volume
 from dipy.sims.voxel import single_tensor
-from dipy.testing.decorators import warning_for_keywords
-from dipy.utils.deprecator import deprecated_params
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")

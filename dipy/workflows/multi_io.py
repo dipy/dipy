@@ -8,7 +8,7 @@ import re
 import numpy as np
 
 from dipy.io.utils import split_filename_extension
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.workflows.base import get_args_default
 
 

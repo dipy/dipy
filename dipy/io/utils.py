@@ -11,7 +11,7 @@ import numpy as np
 from trx import trx_file_memmap
 
 import dipy
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 

@@ -32,7 +32,7 @@ from dipy.sims._force_core import (
     DEFAULT_TWO_FIBER_MIN_ANGLE,
 )
 from dipy.sims.voxel import all_tensor_evecs
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.multiproc import determine_num_processes
 
@@ -153,9 +153,10 @@ def init_worker(*, base_seed=None):
     """Initialize a ProcessPoolExecutor worker with a unique RNG state.
 
     With ``base_seed=None``, seed = PID + high-resolution time so every
-    worker has a different stream. With ``initargs=(base_seed,)`` for
-    reproducibility, seed = base_seed + PID so workers differ but the run
-    is reproducible for a fixed worker count.
+    worker has a different stream. With an explicit ``base_seed`` -- passed
+    through ``initializer=partial(init_worker, base_seed=...)``, since the
+    parameter is keyword-only -- seed = base_seed + PID, so workers differ
+    but the run is reproducible for a fixed worker count.
 
     Parameters
     ----------

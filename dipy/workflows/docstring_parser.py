@@ -32,7 +32,7 @@ import re
 import textwrap
 from warnings import warn
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 class Reader:

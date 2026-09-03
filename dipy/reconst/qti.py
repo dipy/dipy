@@ -19,7 +19,7 @@ from dipy.reconst.dti import (
 from dipy.reconst.weights_method import (
     weights_method_wls_m_est,
 )
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cp, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")

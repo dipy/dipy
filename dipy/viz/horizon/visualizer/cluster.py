@@ -1,8 +1,8 @@
 import numpy as np
 
 from dipy.segment.clustering import qbx_and_merge
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import length
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 

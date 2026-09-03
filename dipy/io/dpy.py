@@ -12,7 +12,7 @@ import h5py
 from nibabel.streamlines import ArraySequence as Streamlines
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 # Make sure not to carry across setup module from * import
 __all__ = ["Dpy"]

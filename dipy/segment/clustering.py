@@ -10,8 +10,8 @@ from dipy.segment.metricspeed import (
     Metric,
     MinimumAverageDirectFlipMetric,
 )
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import nbytes, set_number_of_points
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 

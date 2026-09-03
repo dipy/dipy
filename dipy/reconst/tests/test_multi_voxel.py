@@ -22,7 +22,8 @@ from dipy.reconst.multi_voxel import (
 )
 from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.sims.voxel import multi_tensor_dki, single_tensor
-from dipy.testing.decorators import set_random_number_generator, warning_for_keywords
+from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 joblib, has_joblib, _ = optional_package("joblib")
@@ -477,19 +478,13 @@ def test_multi_voxel_fit_orchestration_reaches_paramap(monkeypatch):
         inflight_cap=4,
     )
 
-    # ``paramap`` must not declare ``vox_per_chunk``; if it ever does, the
-    # exclusion below silently stops excluding anything.
     assert "vox_per_chunk" not in _PARAMAP_KWARGS
-    # Every orchestration kwarg paramap declares was handed to it:
     for key in _PARAMAP_KWARGS:
         assert key in captured["parallel_kwargs"], f"{key} did not reach paramap"
-    # ... and nothing paramap does not declare, which would end up in its
-    # **kwargs and reach joblib.Parallel / dask.compute verbatim:
     for key in set(ORCHESTRATION_KWARGS) - set(_PARAMAP_KWARGS):
         assert key not in captured["parallel_kwargs"], f"{key} leaked to paramap"
-    # ``vox_per_chunk`` was consumed rather than dropped: 6 voxels, 2 chunks.
+
     npt.assert_equal(captured["chunk_sizes"], [3, 3])
-    # None of the orchestration keys leaked into the per-chunk (per-voxel) kwargs:
     for chunk_kwargs in captured["per_chunk_kwargs"]:
         for key in ORCHESTRATION_KWARGS:
             assert key not in chunk_kwargs

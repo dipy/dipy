@@ -42,7 +42,7 @@ from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.reconst.weights_method import (
     weights_method_wls_m_est,
 )
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()

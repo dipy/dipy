@@ -26,9 +26,8 @@ from dipy.reconst.shm import (
 )
 from dipy.reconst.utils import _mask_from_roi, _roi_in_volume
 from dipy.sims.voxel import single_tensor
-from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.compatibility import check_max_version
-from dipy.utils.deprecator import deprecated_params
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 
 
 class AxSymShResponse:

@@ -4,7 +4,7 @@ import multiprocessing as mp
 import numpy as np
 import scipy.fft
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.multiproc import determine_num_processes
 
 _fft = scipy.fft

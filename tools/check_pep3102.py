@@ -17,7 +17,7 @@ optimizer callbacks). Those are exempt:
 - ``lambda`` expressions are not inspected, as they carry no place to
   document an exemption;
 - anything else can opt out with a ``# pep3102: ignore`` comment placed
-  anywhere between the first decorator and the last line of the signature.
+  anywhere between the first decorator and the ``:`` closing the signature.
 
 Only Python is covered. ``ast`` cannot parse Cython, so the ``.pyx`` sources
 are outside the reach of this check and their optional arguments stay
@@ -27,6 +27,7 @@ positional; that gap is permanent, not a backlog item.
 import argparse
 import ast
 import io
+from operator import itemgetter
 from pathlib import Path
 import sys
 import tokenize
@@ -84,12 +85,15 @@ def _defaulted_args(args):
     return args.args[len(args.args) - n_defaults :]
 
 
-def _marker_lines(source):
-    """Return the line numbers carrying the opt-out marker as a real comment.
+def _scan_source(source):
+    """Return the marker lines and the last line of every signature.
 
-    Reading comment tokens rather than raw text keeps a default value that
-    merely contains the marker -- a string literal, say -- from opting its
-    function out.
+    Both come from a single pass over the token stream. Reading comment tokens
+    rather than raw text keeps a default value that merely contains the marker
+    -- a string literal, say -- from opting its function out. Locating the
+    ``:`` that closes each ``def`` keeps a comment sitting *inside* the body
+    from doing so either: a bare ``# pep3102: ignore`` on the line above the
+    first statement is body, not signature.
 
     Parameters
     ----------
@@ -98,54 +102,67 @@ def _marker_lines(source):
 
     Returns
     -------
-    set of int
+    marked : set of int
         1-based line numbers of the comments carrying the marker.
+    signature_end : dict
+        Maps the 1-based line of each ``def`` to the line of the ``:`` that
+        closes its signature.
     """
     marked = set()
+    signature_end = {}
+    def_line = None
+    depth = 0
     try:
         for token in tokenize.generate_tokens(io.StringIO(source).readline):
-            if token.type == tokenize.COMMENT and IGNORE in token.string:
-                marked.add(token.start[0])
+            if token.type == tokenize.COMMENT:
+                if IGNORE in token.string:
+                    marked.add(token.start[0])
+            elif def_line is None:
+                if token.type == tokenize.NAME and token.string == "def":
+                    def_line = token.start[0]
+                    depth = 0
+            elif token.type == tokenize.OP:
+                if token.string in "([{":
+                    depth += 1
+                elif token.string in ")]}":
+                    depth -= 1
+                elif token.string == ":" and depth == 0:
+                    signature_end[def_line] = token.start[0]
+                    def_line = None
     except (tokenize.TokenError, IndentationError):
-        # ``ast`` parsed the file already, so this is not expected. Dropping the
-        # opt-out is the safe direction: the check reports rather than skips.
+        # Unreachable in principle -- ``ast`` parsed the file already. Losing
+        # the opt-out is the safe direction: report rather than skip.
         pass
-    return marked
+    return marked, signature_end
 
 
-def _is_ignored(node, lines, marked):
+def _is_ignored(node, signature_end, marked):
     """Return True if the signature of ``node`` carries the opt-out comment.
 
-    The comment is honored anywhere between the first decorator and the last
-    line of the signature, so a signature wrapped over several lines can carry
+    The comment is honored anywhere between the first decorator and the ``:``
+    closing the signature, so a signature wrapped over several lines can carry
     it on its closing ``):`` line, and a stack of decorators can carry it next
-    to the one that explains why the exemption is needed.
+    to the one that explains why the exemption is needed. Anything below that
+    ``:`` is the body and does not exempt the function.
 
     Parameters
     ----------
     node : ast.FunctionDef or ast.AsyncFunctionDef
         Function definition to inspect.
-    lines : list of str
-        Source lines of the file.
+    signature_end : dict
+        Signature end lines keyed by ``def`` line, from :func:`_scan_source`.
     marked : set of int
-        Line numbers carrying the marker, from :func:`_marker_lines`.
+        Line numbers carrying the marker, from :func:`_scan_source`.
 
     Returns
     -------
     bool
         True when the function opts out of the check.
     """
-    # ``node.body`` is never empty. Its first statement either opens on the
-    # closing line of the signature (``): pass``), in which case that line is
-    # still part of the signature and may carry the marker, or it owns its
-    # line, in which case the signature stops one line earlier.
-    first = node.body[0]
-    head = lines[first.lineno - 1][: first.col_offset]
-    last = first.lineno if head.rstrip().endswith(":") else first.lineno - 1
-    # Decorators sit above the ``def`` line and are part of the declaration.
     start = node.decorator_list[0].lineno if node.decorator_list else node.lineno
-    end = max(node.lineno, last)
-    # ``marked`` holds a handful of lines at most, a declaration can span dozens.
+    # ``node.lineno`` is the ``def`` line even for a decorated function; the
+    # fallback only fires if tokenizing bailed out, and keeps the range empty.
+    end = signature_end.get(node.lineno, node.lineno)
     return any(start <= line <= end for line in marked)
 
 
@@ -165,7 +182,8 @@ def find_violations(tree, source):
         ``(lineno, function_name, offending_parameters)`` triples, sorted by
         line number.
     """
-    lines = marked = None
+    marked = None
+    signature_end = {}
     violations = []
     for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -177,16 +195,16 @@ def find_violations(tree, source):
             continue
         if _is_exempt_dunder(node.name):
             continue
-        # Scanning the source is only worth it once a candidate shows up, and
-        # tokenizing it only when the marker appears somewhere in the file.
         if marked is None:
-            marked = _marker_lines(source) if IGNORE in source else frozenset()
-            lines = source.splitlines() if marked else ()
-        if marked and _is_ignored(node, lines, marked):
+            if IGNORE in source:
+                marked, signature_end = _scan_source(source)
+            else:
+                marked = frozenset()
+        if marked and _is_ignored(node, signature_end, marked):
             continue
         violations.append((node.lineno, node.name, [a.arg for a in defaulted]))
 
-    violations.sort()
+    violations.sort(key=itemgetter(0))
     return violations
 
 
@@ -204,7 +222,9 @@ def check_file(path):
         Human-readable violation messages.
     """
     try:
-        source = Path(path).read_text(encoding="utf-8")
+        # ``utf-8-sig`` strips a leading BOM, which ``ast`` rejects outright:
+        # a BOM-prefixed file is valid Python, not a parse error to report.
+        source = Path(path).read_text(encoding="utf-8-sig")
     except UnicodeDecodeError as err:
         return [f"{path}: could not decode as UTF-8: {err.reason}"]
     except OSError as err:

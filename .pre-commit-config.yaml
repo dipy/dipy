@@ -37,9 +37,11 @@ repos:
         types: [python]
         # ``dipy/workflows/`` is exempt by design; the other exemptions are a
         # backlog, not a policy: run ``python tools/check_pep3102.py`` on them
-        # to see what is left (~310 in tests/, ~75 in workflows/, 13 in doc/ and
-        # 7 in the two legacy scripts below, as of 1.13.0). Cython is out of
-        # reach entirely -- ``ast`` cannot parse ``.pyx``.
+        # to see what is left (~310 in dipy/**/tests/, ~75 in workflows/, 13 in
+        # doc/ and 7 in the two legacy scripts below, as of 1.13.0). Cython is
+        # out of reach entirely -- ``ast`` cannot parse ``.pyx``.
+        # ``tools/tests/`` is deliberately not exempt: the checker's own tests
+        # are new code and have no backlog to carry.
         exclude: |
           (?x)^(
             doc/|
@@ -48,7 +50,7 @@ repos:
             # workflows expose ``run`` parameters as a CLI through
             # IntrospectiveArgumentParser, which needs them positional-or-keyword
             dipy/workflows/|
-            (.*/)?tests/
+            dipy/(.*/)?tests/
           )
       - id: generate_requirements.py
         name: generate_requirements.py

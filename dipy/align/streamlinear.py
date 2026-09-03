@@ -12,7 +12,6 @@ from dipy.align.bundlemin import (
 from dipy.core.geometry import compose_matrix, compose_transformations, decompose_matrix
 from dipy.core.optimize import Optimizer
 from dipy.segment.clustering import qbx_and_merge
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import (
     Streamlines,
     center_streamlines,
@@ -22,6 +21,7 @@ from dipy.tracking.streamline import (
     transform_streamlines,
     unlist_streamlines,
 )
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 DEFAULT_BOUNDS = [

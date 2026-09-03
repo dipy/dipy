@@ -6,7 +6,7 @@ from scipy.linalg import eigh
 from scipy.linalg.lapack import dgesvd as real_svd, zgesvd as complex_svd
 
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 def dimensionality_problem_message(arr, num_samples, spr):

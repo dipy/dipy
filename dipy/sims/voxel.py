@@ -4,7 +4,7 @@ from scipy.special import jn
 
 from dipy.core.geometry import sphere2cart, vec2vec_rotmat
 from dipy.reconst.utils import dki_design_matrix
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 # Diffusion coefficients for white matter tracts, in mm^2/s
 #

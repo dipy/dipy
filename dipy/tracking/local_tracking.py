@@ -4,7 +4,6 @@ from warnings import warn
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking import utils
 from dipy.tracking.localtrack import local_tracker, pft_tracker
 from dipy.tracking.stopping_criterion import (
@@ -12,7 +11,7 @@ from dipy.tracking.stopping_criterion import (
     StreamlineStatus,
 )
 from dipy.utils import fast_numpy
-from dipy.utils.deprecator import deprecate_with_version
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
 
 
 @deprecate_with_version(

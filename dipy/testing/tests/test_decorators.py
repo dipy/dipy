@@ -8,12 +8,9 @@ from numpy.testing import assert_equal, assert_raises
 
 import dipy
 from dipy.testing import assert_true
-from dipy.testing.decorators import (
-    doctest_skip_parser,
-    set_random_number_generator,
-    warning_for_keywords,
-)
+from dipy.testing.decorators import doctest_skip_parser, set_random_number_generator
 from dipy.utils import deprecator
+from dipy.utils.deprecator import warning_for_keywords
 
 
 def test_skipper():
@@ -64,9 +61,6 @@ def test_skipper():
 
 
 def test_warning_for_keywords(monkeypatch):
-    # ``monkeypatch`` restores ``dipy.__version__`` even when the test fails
-    # part way: a leaked version silently reshapes every later deprecation.
-
     @warning_for_keywords(from_version="1.0.0", until_version="10.0.0")
     def func_with_kwonly_args(a, b, *, c=3):
         return a + b + c
@@ -110,10 +104,7 @@ def test_warning_for_keywords(monkeypatch):
     # expecting TypeError from system
     monkeypatch.setattr(dipy, "__version__", "10.1.0")
     assert func_with_kwonly_args(1, 2, c=3) == 6
-    try:
-        result = func_with_kwonly_args(1, 2, 3)
-    except TypeError:
-        pass
+    assert_raises(TypeError, func_with_kwonly_args, 1, 2, 3)
 
     # Case 5: Version is a pre-release like '2.0.0rc1', warnings expected
     monkeypatch.setattr(dipy, "__version__", "2.0.0rc1")
@@ -146,9 +137,10 @@ def test_warning_for_keywords_leaves_varargs_alone():
     """``*args`` absorbs surplus positional arguments, so nothing is moved.
 
     Converting them would rename a genuine variadic argument after the first
-    keyword-only parameter and silently drop the model's ``*args``. The call
-    still has to be reported: a keyword-only parameter that quietly keeps its
-    default is a wrong result, not an error the caller can see.
+    keyword-only parameter and silently drop the model's ``*args``. A call
+    that leaves such a parameter at its default still has to be reported: a
+    keyword-only parameter that quietly keeps its default is a wrong result,
+    not an error the caller can see.
     """
 
     @warning_for_keywords(from_version="1.0.0", until_version="10.0.0")
@@ -162,17 +154,48 @@ def test_warning_for_keywords_leaves_varargs_alone():
         assert_true("absorbed by '*args'" in str(w[-1].message))
         assert_true("['b']" in str(w[-1].message))
 
-    # Nothing surplus, nothing to report.
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         assert_equal(func_with_varargs(1, b=5), (1, (), 5, {}))
         assert_equal(len(w), 0)
 
-    # An explicit keyword does not stop the surplus from being reported: it is
-    # still forwarded rather than bound to a parameter.
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         assert_equal(func_with_varargs(1, 2, b=5), (1, (2,), 5, {}))
+        assert_equal(len(w), 0)
+
+
+def test_warning_for_keywords_varargs_reports_only_shadowed_parameters():
+    """Only the parameters the surplus could have bound to are named.
+
+    ``KurtosisMicrostructureModel`` forwards ``(gtab, *args)`` to
+    ``DiffusionKurtosisModel.__init__`` with ``fit_method`` already named:
+    reporting ``return_S0_hat`` there would blame a parameter no positional
+    argument ever reached, on a call the user did not write.
+    """
+
+    @warning_for_keywords(from_version="1.0.0", until_version="10.0.0")
+    def func_with_varargs(a, *args, b=1, c=2):
+        return a, args, b, c
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        assert_equal(func_with_varargs(1, 2), (1, (2,), 1, 2))
+        assert_equal(len(w), 1)
+        assert_true("['b']" in str(w[-1].message))
+        assert_true("c" not in str(w[-1].message))
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        assert_equal(func_with_varargs(1, 2, 3), (1, (2, 3), 1, 2))
+        assert_equal(len(w), 1)
+        assert_true("['b', 'c']" in str(w[-1].message))
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        assert_equal(func_with_varargs(1, 2, 3, b=9), (1, (2, 3), 9, 2))
+        assert_equal(len(w), 1)
+        assert_true("['c']" in str(w[-1].message))
 
 
 def test_warning_for_keywords_varargs_report_expires(monkeypatch):
@@ -217,8 +240,11 @@ def test_warning_for_keywords_does_not_drop_surplus_arguments():
         assert_raises(TypeError, func_with_kwonly_args, 1, 2, 3)
 
 
-def test_warning_for_keywords_positional_versions():
+def test_warning_for_keywords_positional_versions(monkeypatch):
     """``from_version``/``until_version`` used to be positional-or-keyword."""
+    # Pinned below ``_POSITIONAL_VERSIONS_REMOVED``, where the factory raises
+    # instead of warning; otherwise this test expires with the spelling.
+    monkeypatch.setattr(dipy, "__version__", "1.13.0")
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
 
@@ -297,3 +323,35 @@ def test_set_random_number_generator_hides_rng_from_signature():
     parameters = inspect.signature(func).parameters
     assert_true("tmp_path" in parameters)
     assert_true("rng" not in parameters)
+
+
+def test_warning_for_keywords_old_import_path_is_deprecated():
+    """``dipy.testing.decorators`` re-exports it, but using it warns."""
+    import dipy.testing.decorators as decorators
+
+    aliased = decorators.warning_for_keywords
+    assert_true(aliased is not warning_for_keywords)
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+
+        @aliased(from_version="1.0.0", until_version="10.0.0")
+        def func_with_kwonly_args(a, *, b=2):
+            return a + b
+
+        assert_equal(len(w), 1)
+        assert_true(issubclass(w[-1].category, DeprecationWarning))
+        assert_true("dipy.utils.deprecator" in str(w[-1].message))
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        assert_equal(func_with_kwonly_args(1, 5), 6)
+        assert_equal(len(w), 1)
+        assert_true("Pass ['b'] as keyword args" in str(w[-1].message))
+
+
+def test_decorators_module_rejects_unknown_attributes():
+    """The ``__getattr__`` shim must not swallow genuine typos."""
+    import dipy.testing.decorators as decorators
+
+    assert_raises(AttributeError, getattr, decorators, "no_such_decorator")

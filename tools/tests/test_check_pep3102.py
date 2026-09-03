@@ -104,6 +104,31 @@ def test_ignore_comment_below_the_signature_is_not_honored():
     assert violations(source) == [("f", ["b"])]
 
 
+@pytest.mark.parametrize(
+    "body",
+    [
+        f"    {check_pep3102.IGNORE}\n    pass\n",
+        f"\n    {check_pep3102.IGNORE}\n    pass\n",
+        f"    @deco  {check_pep3102.IGNORE}\n    def inner(): pass\n",
+    ],
+)
+def test_ignore_comment_inside_the_body_is_not_honored(body):
+    assert violations(f"def outer(a=1):\n{body}") == [("outer", ["a"])]
+
+
+@pytest.mark.parametrize(
+    "signature",
+    [
+        "def f(\n    a: int,\n    b: dict = {1: 2},\n    c=x[1:2],\n) -> int:",
+        "def f(\n    a,\n    b=lambda v: v,\n):",
+    ],
+)
+def test_ignore_comment_on_closing_line_of_an_annotated_signature(signature):
+    source = f"{signature}  {check_pep3102.IGNORE}\n    pass\n"
+    assert violations(source) == []
+    assert violations(f"{signature}\n    pass\n") != []
+
+
 def test_ignore_comment_on_a_decorator_line():
     """The decorator is often what forces the exemption, so it may carry it."""
     source = f"@d  {check_pep3102.IGNORE}\ndef f(a, b=1): pass\n"
@@ -120,9 +145,16 @@ def test_ignore_comment_above_the_first_decorator_is_not_honored():
     assert violations(source) == [("f", ["b"])]
 
 
-def test_marker_lines_reports_only_comment_tokens():
+def test_scan_source_reports_only_comment_tokens():
     source = f'x = "{check_pep3102.IGNORE}"  {check_pep3102.IGNORE}\n'
-    assert check_pep3102._marker_lines(source) == {1}
+    marked, _ = check_pep3102._scan_source(source)
+    assert marked == {1}
+
+
+def test_scan_source_locates_the_end_of_each_signature():
+    source = "def f(\n    a=1,\n):\n    def g(b={1: 2}): pass\n"
+    _, signature_end = check_pep3102._scan_source(source)
+    assert signature_end == {1: 3, 4: 4}
 
 
 def test_violations_are_sorted_by_line_number():
@@ -157,6 +189,14 @@ def test_check_file_reports_files_with_null_bytes(tmp_path):
     binary.write_bytes(b"def f(a=1):\x00 pass\n")
     (message,) = check_pep3102.check_file(str(binary))
     assert message.startswith(f"{binary}:1: could not parse:")
+
+
+def test_check_file_reads_a_file_with_a_bom(tmp_path):
+    """A BOM-prefixed file is valid Python, not a parse error to report."""
+    with_bom = tmp_path / "bom.py"
+    with_bom.write_text("def f(a, b=1): pass\n", encoding="utf-8-sig")
+    (message,) = check_pep3102.check_file(str(with_bom))
+    assert message.startswith(f"{with_bom}:1: f() takes defaulted argument(s) b")
 
 
 def test_check_file_message_points_at_the_definition(tmp_path):

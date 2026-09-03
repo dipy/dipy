@@ -3,7 +3,7 @@ from numbers import Number
 import numpy as np
 
 from dipy.denoise.denspeed import nlmeans_3d
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()

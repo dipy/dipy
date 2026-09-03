@@ -7,7 +7,7 @@ import numpy as np
 import scipy.optimize as opt
 from scipy.optimize import minimize
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -15,9 +15,8 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
 
 
 class Optimizer:
+    # ``args`` mirrors ``scipy.optimize.minimize(fun, x0, args=(), ...)``.
     @warning_for_keywords()
-    # ``args`` mirrors ``scipy.optimize.minimize(fun, x0, args=(), ...)``, whose
-    # positional spelling callers already know.
     def __init__(  # pep3102: ignore
         self,
         fun,

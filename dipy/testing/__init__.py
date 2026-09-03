@@ -9,7 +9,7 @@ import numpy as np
 import numpy.testing as npt
 from numpy.testing import assert_array_equal
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 # set path to example data
 IO_DATA_PATH = Path(__file__).resolve().parent / ".." / "io" / "tests" / "data"

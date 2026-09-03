@@ -10,8 +10,7 @@ except Exception:
 
 from dipy.reconst.dti import color_fa, fractional_anisotropy
 from dipy.segment.utils import remove_holes_and_islands
-from dipy.testing.decorators import warning_for_keywords
-from dipy.utils.deprecator import deprecated_params
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 
 
 def multi_median(data, median_radius, numpass):

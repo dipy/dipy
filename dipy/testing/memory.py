@@ -1,7 +1,7 @@
 from collections import defaultdict
 import gc
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords(from_version="1.13.0")

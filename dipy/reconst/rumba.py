@@ -15,7 +15,7 @@ from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.reconst.shm import lazy_index, normalize_data
 from dipy.segment.mask import bounding_box, crop
 from dipy.sims.voxel import all_tensor_evecs, single_tensor
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 # Machine precision for numerical stability in division

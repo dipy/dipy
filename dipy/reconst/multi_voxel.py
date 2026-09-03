@@ -155,7 +155,6 @@ def _parallel_fit_worker(vox_data, fit_func, **kwargs):
     return [fit_func(data, **kwargs) for data in vox_data]
 
 
-# Applied bare as @multi_voxel_fit, so _func stays positional.
 def multi_voxel_fit(  # pep3102: ignore
     _func=None,
     *,

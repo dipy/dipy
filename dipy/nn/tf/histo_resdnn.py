@@ -8,8 +8,8 @@ from dipy.core.sphere import HemiSphere
 from dipy.data import get_fnames, get_sphere
 from dipy.nn.utils import set_logger_level
 from dipy.reconst.shm import sf_to_sh, sh_to_sf, sph_harm_ind_list
-from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
-from dipy.utils.deprecator import deprecated_params
+from dipy.testing.decorators import doctest_skip_parser
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 

@@ -6,7 +6,7 @@ from warnings import warn
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
