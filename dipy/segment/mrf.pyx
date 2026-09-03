@@ -143,11 +143,11 @@ class ConstantObservationModel:
         nloglike : ndarray
             4D negloglikelihood for each class in each volume
         """
-        cdef int l
+        cdef int idx
         nloglike = np.zeros(image.shape + (nclasses,), dtype=np.float64)
 
-        for l in range(nclasses):
-            _negloglikelihood(image, mu, sigmasq, l, nloglike)
+        for idx in range(nclasses):
+            _negloglikelihood(image, mu, sigmasq, idx, nloglike)
 
         return nloglike
 
@@ -175,18 +175,18 @@ class ConstantObservationModel:
         P_L_Y : ndarray
             4D probability of the label given the input image
         """
-        cdef int l
+        cdef int idx
         P_L_Y = np.zeros_like(P_L_N)
         P_L_Y_norm = np.zeros_like(img)
 
         g = np.empty_like(img)
 
-        for l in range(nclasses):
-            _prob_image(img, g, mu, sigmasq, l, P_L_N, P_L_Y)
-            P_L_Y_norm[:, :, :] += P_L_Y[:, :, :, l]
+        for idx in range(nclasses):
+            _prob_image(img, g, mu, sigmasq, idx, P_L_N, P_L_Y)
+            P_L_Y_norm[:, :, :] += P_L_Y[:, :, :, idx]
 
-        for l in range(nclasses):
-            P_L_Y[:, :, :, l] = P_L_Y[:, :, :, l] / P_L_Y_norm
+        for idx in range(nclasses):
+            P_L_Y[:, :, :, idx] = P_L_Y[:, :, :, idx] / P_L_Y_norm
 
         return P_L_Y
 
@@ -215,18 +215,18 @@ class ConstantObservationModel:
         var_upd : ndarray
                 1 x nclasses, updated variance of each tissue class
         """
-        cdef int l
+        cdef int idx
         mu_upd = np.zeros(nclasses, dtype=np.float64)
         var_upd = np.zeros(nclasses, dtype=np.float64)
         mu_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
         var_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
 
-        for l in range(nclasses):
-            mu_num[..., l] = P_L_Y[..., l] * image
-            var_num[..., l] = P_L_Y[..., l] * ((image - mu[l]) ** 2)
+        for idx in range(nclasses):
+            mu_num[..., idx] = P_L_Y[..., idx] * image
+            var_num[..., idx] = P_L_Y[..., idx] * ((image - mu[idx]) ** 2)
 
-            mu_upd[l] = np.sum(mu_num[..., l]) / np.sum(P_L_Y[..., l])
-            var_upd[l] = np.sum(var_num[..., l]) / np.sum(P_L_Y[..., l])
+            mu_upd[idx] = np.sum(mu_num[..., idx]) / np.sum(P_L_Y[..., idx])
+            var_upd[idx] = np.sum(var_num[..., idx]) / np.sum(P_L_Y[..., idx])
 
         return mu_upd, var_upd
 
@@ -306,7 +306,7 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
         cnp.npy_intp nx = image.shape[0]
         cnp.npy_intp ny = image.shape[1]
         cnp.npy_intp nz = image.shape[2]
-        cnp.npy_intp l = classid
+        cnp.npy_intp cls_idx = classid
         cnp.npy_intp x, y, z
         double eps = 1e-8      # We assume images normalized to 0-1
         double eps_sq = 1e-16  # Maximum precision for double.
@@ -315,19 +315,19 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
         for y in range(ny):
             for z in range(nz):
 
-                if sigmasq[l] < eps_sq:
+                if sigmasq[cls_idx] < eps_sq:
 
-                    if fabs(image[x, y, z] - mu[l]) < eps:
-                        neglogl[x, y, z, l] = 1 + log(sqrt(2.0 * NPY_PI *
-                                                           sigmasq[l]))
+                    if fabs(image[x, y, z] - mu[cls_idx]) < eps:
+                        neglogl[x, y, z, cls_idx] = 1 + log(sqrt(2.0 * NPY_PI *
+                                                           sigmasq[cls_idx]))
                     else:
-                        neglogl[x, y, z, l] = NPY_INFINITY
+                        neglogl[x, y, z, cls_idx] = NPY_INFINITY
 
                 else:
-                    neglogl[x, y, z, l] = (((image[x, y, z] - mu[l])**2.0) /
-                                           (2.0 * sigmasq[l]))
-                    neglogl[x, y, z, l] += log(sqrt(2.0 * NPY_PI *
-                                                    sigmasq[l]))
+                    neglogl[x, y, z, cls_idx] = (((image[x, y, z] - mu[cls_idx])**2.0) /
+                                           (2.0 * sigmasq[cls_idx]))
+                    neglogl[x, y, z, cls_idx] += log(sqrt(2.0 * NPY_PI *
+                                                    sigmasq[cls_idx]))
 
 
 cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
@@ -365,7 +365,7 @@ cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
         cnp.npy_intp nx = image.shape[0]
         cnp.npy_intp ny = image.shape[1]
         cnp.npy_intp nz = image.shape[2]
-        cnp.npy_intp l = classid
+        cnp.npy_intp cls_idx = classid
         cnp.npy_intp x, y, z
 
         double eps = 1e-8
@@ -375,17 +375,17 @@ cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
         for y in range(ny):
             for z in range(nz):
 
-                if sigmasq[l] < eps_sq:
-                    if fabs(image[x, y, z] - mu[l]) < eps:
+                if sigmasq[cls_idx] < eps_sq:
+                    if fabs(image[x, y, z] - mu[cls_idx]) < eps:
                         gaussian[x, y, z] = 1
                     else:
                         gaussian[x, y, z] = 0
                 else:
                     gaussian[x, y, z] = (
-                        (exp(-((image[x, y, z] - mu[l]) ** 2) /
-                        (2 * sigmasq[l]))) / (sqrt(2 * NPY_PI * sigmasq[l])))
+                        (exp(-((image[x, y, z] - mu[cls_idx]) ** 2) /
+                        (2 * sigmasq[cls_idx]))) / (sqrt(2 * NPY_PI * sigmasq[cls_idx])))
 
-                P_L_Y[x, y, z, l] = gaussian[x, y, z] * P_L_N[x, y, z, l]
+                P_L_Y[x, y, z, cls_idx] = gaussian[x, y, z] * P_L_N[x, y, z, cls_idx]
 
 
 class IteratedConditionalModes:
@@ -491,8 +491,8 @@ class IteratedConditionalModes:
             PLN[:, :, :, classid] = np.exp(- PLN[:, :, :, classid])
             PLN_norm += PLN[:, :, :, classid]
 
-        for l in range(nclasses):
-            PLN[:, :, :, l] = PLN[:, :, :, l] / PLN_norm
+        for cls_idx in range(nclasses):
+            PLN[:, :, :, cls_idx] = PLN[:, :, :, cls_idx] / PLN_norm
 
         return PLN
 
@@ -653,7 +653,7 @@ cdef void _prob_class_given_neighb(cnp.npy_short[:, :, :] seg, double beta,
         cnp.npy_intp ny = seg.shape[1]
         cnp.npy_intp nz = seg.shape[2]
         cnp.npy_intp nneigh = 6
-        cnp.npy_intp l = classid
+        cnp.npy_intp cls_idx = classid
         cnp.npy_intp x, y, z, xx, yy, zz
         double vox_prob
         cnp.npy_intp* dX = [-1, 0, 0, 0,  0, 1]
@@ -677,7 +677,7 @@ cdef void _prob_class_given_neighb(cnp.npy_short[:, :, :] seg, double beta,
                     if zz < 0 or zz >= nz:
                         continue
 
-                    if seg[xx, yy, zz] == l:
+                    if seg[xx, yy, zz] == cls_idx:
                         vox_prob -= beta
                     else:
                         vox_prob += beta

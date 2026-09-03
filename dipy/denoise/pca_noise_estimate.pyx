@@ -105,7 +105,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
         cnp.npy_intp prz = patch_radius if n2 > 1 else 0
         cnp.npy_intp norm = (2 * prx + 1) * (2 * pry + 1) * (2 * prz + 1)
         double sum_reg, temp1
-        double[:, :, :] I = np.zeros((n0, n1, n2))
+        double[:, :, :] eig_img = np.zeros((n0, n1, n2))
 
     # check dimensions of data
     if (dsm != 1) and (dsm < 2 * patch_radius + 1):
@@ -131,14 +131,14 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
 
         # ref [1]_ method is ambiguous on how to use image-shaped eigvec
         # since eigvec is normalized, used eigval=variance for scale
-        I = V * S[idx]
+        eig_img = V * S[idx]
     else:
         # Project into the data space
         V = X.dot(W)
 
         # Grab the column corresponding to the smallest eigen-vector/-value:
         # #vox(samples) >> #img(features), last eigenvector is meaningful
-        I = V[:, -1].reshape(n0, n1, n2)
+        eig_img = V[:, -1].reshape(n0, n1, n2)
 
     del V, W, X, U, S, Vt
 
@@ -157,7 +157,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
                     for i0 in range(-prx, prx + 1):
                         for j0 in range(-pry, pry + 1):
                             for k0 in range(-prz, prz + 1):
-                                sum_reg += I[i + i0, j + j0, k + k0] / norm
+                                sum_reg += eig_img[i + i0, j + j0, k + k0] / norm
                                 for l0 in range(n3):
                                     temp1 += (data0temp[i + i0, j + j0, k + k0, l0])\
                                              / (norm * n3)
@@ -166,7 +166,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
                         for j0 in range(-pry, pry + 1):
                             for k0 in range(-prz, prz + 1):
                                 sigma_sq[i + i0, j + j0, k + k0] += (
-                                    I[i + i0, j + j0, k + k0] - sum_reg) ** 2
+                                    eig_img[i + i0, j + j0, k + k0] - sum_reg) ** 2
                                 mean[i + i0, j + j0, k + k0] += temp1
                                 count[i + i0, j + j0, k + k0] += 1
 

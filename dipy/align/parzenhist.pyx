@@ -1402,10 +1402,12 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                     if constant_jacobian == 0:
                         constant_jacobian = transform._jacobian(theta, x, J)
 
-                    for l in range(n):
-                        prod[l] = (J[0, l] * mgradient[k, i, j, 0] +
-                                   J[1, l] * mgradient[k, i, j, 1] +
-                                   J[2, l] * mgradient[k, i, j, 2])
+                    for param_idx in range(n):
+                        prod[param_idx] = (
+                            J[0, param_idx] * mgradient[k, i, j, 0]
+                            + J[1, param_idx] * mgradient[k, i, j, 1]
+                            + J[2, param_idx] * mgradient[k, i, j, 2]
+                        )
 
                     rn = _bin_normalize(static[k, i, j], smin, sdelta)
                     r = _bin_index(rn, nbins, padding)
@@ -1415,8 +1417,8 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
 
                     for offset in range(1 - padding, padding + 1):
                         val = _cubic_spline_derivative(spline_arg)
-                        for l in range(n):
-                            grad_pdf[r, c + offset, l] -= val * prod[l]
+                        for param_idx in range(n):
+                            grad_pdf[r, c + offset, param_idx] -= val * prod[param_idx]
                         spline_arg += 1.0
 
         norm_factor = <double>valid_points * mdelta
