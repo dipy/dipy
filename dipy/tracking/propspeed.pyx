@@ -561,8 +561,10 @@ cdef void prepare_ptt_propagator(TrackerParameters params,
     cdef double tmp_arclength
     stream_data[10] = arclength  # propagator[0]
 
-    if (fabs(stream_data[24]) < params.ptt.k_small
-        and fabs(stream_data[25]) < params.ptt.k_small):
+    if (
+        fabs(stream_data[24]) < params.ptt.k_small
+        and fabs(stream_data[25]) < params.ptt.k_small
+    ):
         stream_data[11] = 0
         stream_data[12] = 0
         stream_data[13] = 1
@@ -751,9 +753,11 @@ cdef TrackerStatus deterministic_propagator(double* point,
 
     newdir = &pmf_gen.vertices[max_idx][0]
     # Update direction
-    if (direction[0] * newdir[0]
+    if (
+        direction[0] * newdir[0]
         + direction[1] * newdir[1]
-        + direction[2] * newdir[2] > 0):
+        + direction[2] * newdir[2] > 0
+    ):
         copy_point(newdir, direction)
     else:
         copy_point(newdir, direction)
@@ -828,9 +832,11 @@ cdef TrackerStatus probabilistic_propagator(double* point,
     idx = where_to_insert(pmf, random_float(rng) * last_cdf, len_pmf)
     newdir = &pmf_gen.vertices[idx][0]
     # Update direction
-    if (direction[0] * newdir[0]
+    if (
+        direction[0] * newdir[0]
         + direction[1] * newdir[1]
-        + direction[2] * newdir[2] > 0):
+        + direction[2] * newdir[2] > 0
+    ):
         copy_point(newdir, direction)
     else:
         copy_point(newdir, direction)

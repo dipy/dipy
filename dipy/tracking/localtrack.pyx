@@ -279,8 +279,7 @@ cdef _pft_tracker(DirectionGetter dg,
             # or an invalid point (PYERROR)
             break
 
-    if ((stream_status[0] == OUTSIDEIMAGE or stream_status[0] == PYERROR)
-        and i > 1):
+    if ((stream_status[0] == OUTSIDEIMAGE or stream_status[0] == PYERROR) and i > 1):
         i -= 1
     return i
 

@@ -675,8 +675,12 @@ cdef void _process_block_complete(double[:, :, :] image,
                     mean_ratio = current_mean / neighbor_mean
                     variance_ratio = current_variance / neighbor_variance
 
-                    if (mean_ratio < mean_ratio_threshold or mean_ratio > (1.0 / mean_ratio_threshold) or
-                        variance_ratio < variance_ratio_min or variance_ratio > variance_ratio_max):
+                    if (
+                        mean_ratio < mean_ratio_threshold
+                        or mean_ratio > (1.0 / mean_ratio_threshold)
+                        or variance_ratio < variance_ratio_min
+                        or variance_ratio > variance_ratio_max
+                    ):
                         continue
 
                     # Compute patch distance

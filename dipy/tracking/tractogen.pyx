@@ -261,9 +261,11 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         fast_numpy.copy_point(point, &stream[(params.max_nbr_pts + i)* 3])
 
         status_forward = sc.check_point_c(point, &rng)
-        if (status_forward == ENDPOINT or
-            status_forward == INVALIDPOINT or
-            status_forward == OUTSIDEIMAGE):
+        if (
+            status_forward == ENDPOINT
+            or status_forward == INVALIDPOINT
+            or status_forward == OUTSIDEIMAGE
+        ):
             break
     stream_idx[1] = params.max_nbr_pts + i - 1
     free(stream_data)
@@ -295,16 +297,20 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         fast_numpy.copy_point(point, &stream[(params.max_nbr_pts - i)* 3])
 
         status_backward = sc.check_point_c(point, &rng)
-        if (status_backward == ENDPOINT or
-            status_backward == INVALIDPOINT or
-            status_backward == OUTSIDEIMAGE):
+        if (
+            status_backward == ENDPOINT
+            or status_backward == INVALIDPOINT
+            or status_backward == OUTSIDEIMAGE
+        ):
             break
     stream_idx[0] = params.max_nbr_pts - i + 1
     free(stream_data)
 
     # check for valid streamline ending status
-    if ((status_backward == ENDPOINT or status_backward == OUTSIDEIMAGE)
-        and (status_forward == ENDPOINT or status_forward == OUTSIDEIMAGE)):
+    if (
+        (status_backward == ENDPOINT or status_backward == OUTSIDEIMAGE)
+        and (status_forward == ENDPOINT or status_forward == OUTSIDEIMAGE)
+    ):
         return VALIDSTREAMLIME
     return INVALIDSTREAMLIME
 
