@@ -12,7 +12,8 @@ cdef void take(
     double* odf,
     cnp.npy_intp* indices,
     cnp.npy_intp n_indices,
-    double* values_out) noexcept nogil:
+    double* values_out,
+) noexcept nogil:
     """
     Mimic np.take(odf, indices) in Cython using pointers.
 

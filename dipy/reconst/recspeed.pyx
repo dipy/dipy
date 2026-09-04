@@ -479,7 +479,8 @@ def le_to_odf(cnp.ndarray[double, ndim=1] odf,
 @cython.wraparound(False)
 def sum_on_blocks_1d(cnp.ndarray[double, ndim=1] arr,
     cnp.ndarray[long, ndim=1] blocks,
-    cnp.ndarray[double, ndim=1] out, int outn):
+    cnp.ndarray[double, ndim=1] out, int outn,
+):
     """Summations on blocks of 1d array
     """
     cdef:
