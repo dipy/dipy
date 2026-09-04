@@ -11,8 +11,7 @@ from dipy.reconst.csdeconv import csdeconv
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.reconst.shm import real_sh_descoteaux_from_index
-from dipy.testing.decorators import warning_for_keywords
-from dipy.utils.deprecator import deprecated_params
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")

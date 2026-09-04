@@ -7,7 +7,7 @@ from scipy.spatial import Delaunay
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 from dipy.core.onetime import auto_attr
 from dipy.reconst.recspeed import remove_similar_vertices
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 __all__ = ["Sphere", "HemiSphere", "faces_from_sphere_vertices", "unique_edges"]
 

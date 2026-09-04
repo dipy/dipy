@@ -13,6 +13,7 @@ from dipy.io.utils import (
     is_header_compatible,
     is_reference_info_valid,
 )
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 px, have_polyxios, setup_module = optional_package("polyxios", min_version="0.2.0")
@@ -21,7 +22,8 @@ logger = logging.getLogger("StatefulSurface")
 logger.setLevel(level=logging.INFO)
 
 
-def convert_to_polydata(vertices, triangles, data_per_point=None):
+@warning_for_keywords(from_version="1.13.0")
+def convert_to_polydata(vertices, triangles, *, data_per_point=None):
     """Convert vertices and triangles to a polyxios PolyData.
 
     Parameters
@@ -415,7 +417,9 @@ class StatefulSurface:
 
     def get_polydata(self):
         """Build a polyxios PolyData from the surface."""
-        return convert_to_polydata(self._vertices, self._faces, self._data_per_vertex)
+        return convert_to_polydata(
+            self._vertices, self._faces, data_per_point=self._data_per_vertex
+        )
 
     @vertices.setter
     def vertices(self, data):

@@ -1,7 +1,7 @@
 import inspect
 from pathlib import Path
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.workflows.multi_io import _io_iterator
 

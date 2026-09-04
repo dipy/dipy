@@ -6,8 +6,8 @@ from packaging.version import Version
 from dipy import __version__ as horizon_version
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import Streamlines
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon

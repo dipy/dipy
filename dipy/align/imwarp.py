@@ -10,8 +10,8 @@ import numpy.linalg as npl
 from dipy.align import vector_fields as vfu
 from dipy.align.scalespace import ScaleSpace
 from dipy.align.utils import RegistrationStages
-from dipy.testing.decorators import warning_for_keywords
 from dipy.utils import VerbosityLevels
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 

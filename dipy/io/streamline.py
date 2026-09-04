@@ -17,8 +17,8 @@ from dipy.io.utils import (
     is_header_compatible,
     split_filename_extension,
 )
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -478,7 +478,8 @@ def save_generator(ttype):
         Function (save_tractogram) that handle only one file format
     """
 
-    def f_gen(sft, filename, bbox_valid_check=True):
+    @warning_for_keywords(from_version="1.13.0")
+    def f_gen(sft, filename, *, bbox_valid_check=True):
         _, extension = split_filename_extension(filename)
         if not extension == ttype:
             msg = f"This function can only save {ttype} file, "

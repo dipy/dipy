@@ -852,8 +852,8 @@ def test_bootstrap_peak_tracker():
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]]),
     ]
-    voxel1 = single_tensor(gtab, 1, evals=mevals[0], evecs=mevecs[0], snr=None)
-    voxel2 = single_tensor(gtab, 1, evals=mevals[0], evecs=mevecs[1], snr=None)
+    voxel1 = single_tensor(gtab, S0=1, evals=mevals[0], evecs=mevecs[0], snr=None)
+    voxel2 = single_tensor(gtab, S0=1, evals=mevals[0], evecs=mevecs[1], snr=None)
     voxel3, _ = multi_tensor(gtab, mevals, fractions=fracs, angles=angles, snr=None)
     data = np.tile(voxel3, [5, 6, 1, 1])
     data[simple_image == 1] = voxel1

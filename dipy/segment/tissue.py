@@ -2,7 +2,7 @@ import numpy as np
 
 from dipy.segment.mrf import ConstantObservationModel, IteratedConditionalModes
 from dipy.sims.voxel import add_noise
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 

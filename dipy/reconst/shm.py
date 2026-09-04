@@ -29,9 +29,12 @@ from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 from dipy.reconst.odf import OdfFit, OdfModel
-from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.compatibility import check_max_version
-from dipy.utils.deprecator import deprecate_with_version, deprecated_params
+from dipy.utils.deprecator import (
+    deprecate_with_version,
+    deprecated_params,
+    warning_for_keywords,
+)
 
 descoteaux07_legacy_msg = (
     "The legacy descoteaux07 SH basis uses absolute values for negative "

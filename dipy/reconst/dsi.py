@@ -5,7 +5,7 @@ from scipy.ndimage import map_coordinates
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfFit, OdfModel
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 class DiffusionSpectrumModel(OdfModel, Cache):

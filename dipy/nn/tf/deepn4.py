@@ -6,7 +6,8 @@ from scipy.ndimage import gaussian_filter
 
 from dipy.data import get_fnames
 from dipy.nn.utils import normalize, recover_img, set_logger_level, transform_img
-from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
+from dipy.testing.decorators import doctest_skip_parser
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 

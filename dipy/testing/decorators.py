@@ -3,17 +3,62 @@ Decorators for dipy tests
 """
 
 from functools import wraps
+import importlib
 import inspect
-from inspect import Parameter, signature
 import os
 import platform
 import re
-import warnings
 
 import numpy as np
-from packaging import version
 
-import dipy
+from dipy.utils.deprecator import deprecate_with_version
+
+_NEW_LOCATIONS = {"warning_for_keywords": "dipy.utils.deprecator"}
+
+__all__ = [
+    "doctest_skip_parser",
+    "is_linux",
+    "is_macOS",
+    "is_windows",
+    "set_random_number_generator",
+    "use_xvfb",
+    "xvfb_it",
+] + list(_NEW_LOCATIONS)
+
+
+def __getattr__(name):
+    """Resolve a deprecated re-export from its new location.
+
+    Parameters
+    ----------
+    name : str
+        Name of the attribute being looked up on this module.
+
+    Returns
+    -------
+    callable
+        The re-exported callable, wrapped so that calling it warns.
+
+    Raises
+    ------
+    AttributeError
+        If `name` is not one of the deprecated re-exports.
+    """
+    if name not in _NEW_LOCATIONS:
+        raise AttributeError(
+            f"module 'dipy.testing.decorators' has no attribute {name!r}"
+        )
+
+    module = _NEW_LOCATIONS[name]
+    resolved = deprecate_with_version(
+        f"Using '{name}' from dipy.testing.decorators is deprecated. "
+        f"Import it from {module} instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )(getattr(importlib.import_module(module), name))
+    globals()[name] = resolved
+    return resolved
+
 
 SKIP_RE = re.compile(r"(\s*>>>.*?)(\s*)#\s*skip\s+if\s+(.*)$")
 
@@ -86,7 +131,7 @@ def xvfb_it(my_test):
     return test_with_xvfb if not is_windows else my_test
 
 
-def set_random_number_generator(seed_v=1234):
+def set_random_number_generator(seed_v=1234):  # pep3102: ignore
     """Decorator to use a fixed value for the random generator seed.
 
     This will make the tests that use random functions reproducible.
@@ -99,12 +144,6 @@ def set_random_number_generator(seed_v=1234):
             kwargs["rng"] = np.random.default_rng(seed_v)
             return func(*args, **kwargs)
 
-        # `pytest` builds a test's fixture request from the signature it can
-        # see, so the wrapper must advertise the parameters the test owns
-        # (`tmp_path`, `pytestconfig`, ...) while hiding `rng`, which this
-        # decorator supplies. Leaving `rng` visible makes `pytest` look for a
-        # fixture of that name and fail at setup with `fixture 'rng' not
-        # found`, unless the test happens to give `rng` a default value.
         sig = inspect.signature(func)
         _set_random_number_generator_wrapper.__signature__ = sig.replace(
             parameters=[p for name, p in sig.parameters.items() if name != "rng"]
@@ -112,118 +151,3 @@ def set_random_number_generator(seed_v=1234):
         return _set_random_number_generator_wrapper
 
     return _set_random_number_generator
-
-
-def warning_for_keywords(from_version="1.10.0", until_version="2.0.0"):
-    """
-    Decorator to warn about keyword arguments passed as positional arguments
-    and handle version-based deprecation of functions.
-
-    Parameters
-    ----------
-    from_version : str, optional
-        The version from which the warning should start.
-    until_version : str, optional
-        The version until which the warning is applicable.
-
-    Returns
-    -------
-    function
-        The wrapped function that will issue a warning based
-        on the version.
-    """
-
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            current_version = dipy.__version__
-
-            parsed_version = version.parse(current_version)
-            current_version = parsed_version.base_version
-
-            def convert_positional_to_keyword(func, args, kwargs):
-                """
-                Converts excess positional arguments to keyword arguments.
-
-                Parameters
-                ----------
-                func : function
-                    The original function to be called.
-                args : tuple
-                    The positional arguments passed to the function.
-                kwargs : dict
-                    The keyword arguments passed to the function.
-
-                Returns
-                -------
-                result
-                    The result of the function call with corrected arguments.
-                """
-                sig = signature(func)
-                params = sig.parameters
-                max_positional_args = sum(
-                    1
-                    for param in params.values()
-                    if param.kind
-                    in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD)
-                )
-
-                if len(args) > max_positional_args:
-                    # Split positional arguments into valid positional and
-                    # those needing conversion
-                    positional_args = list(args[:max_positional_args])
-                    corrected_kwargs = dict(kwargs)
-                    positionally_passed_kwonly_args = []
-                    for param, arg in zip(
-                        list(params.values())[max_positional_args:],
-                        args[max_positional_args:],
-                    ):
-                        corrected_kwargs[param.name] = arg
-                        positionally_passed_kwonly_args.append(param.name)
-
-                    if positionally_passed_kwonly_args and version.parse(
-                        from_version
-                    ) <= version.parse(current_version) <= version.parse(until_version):
-                        warnings.warn(
-                            f"Pass {positionally_passed_kwonly_args} as keyword args. "
-                            f"From version {until_version} passing these as positional "
-                            f"arguments will result in an error. ",
-                            UserWarning,
-                            stacklevel=3,
-                        )
-
-                    return func(*positional_args, **corrected_kwargs)
-
-                return func(*args, **kwargs)
-
-            # Check if the current version is within the warning range
-            if (
-                version.parse(from_version)
-                <= version.parse(current_version)
-                <= version.parse(until_version)
-            ):
-                # Convert positional to keyword arguments and issue a warning
-                return convert_positional_to_keyword(func, args, kwargs)
-
-            # If the version is greater than the until_version,
-            # pass the arguments as they are
-            elif version.parse(current_version) > version.parse(until_version):
-                return func(*args, **kwargs)
-
-            # Convert positional to keyword arguments if
-            # current version is less than from_version without warning
-            elif version.parse(current_version) < version.parse(from_version):
-                return convert_positional_to_keyword(func, args, kwargs)
-
-            # Default case: call the function with the original arguments
-            return func(*args, **kwargs)
-
-        # Explicitly preserve the original function's signature and wrapped attribute
-        # This is crucial for compatibility with libraries like Keras 3.x that use
-        # inspect.signature() and getfullargspec() for introspection
-        wrapper.__wrapped__ = func
-        wrapper.__signature__ = signature(func)
-
-        return wrapper
-
-    return decorator

@@ -13,6 +13,7 @@ from dipy.nn.utils import (
 )
 from dipy.segment.utils import remove_holes_and_islands
 from dipy.testing.decorators import doctest_skip_parser
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -274,7 +275,8 @@ class Model(Module):
         The scale of the model.
     """
 
-    def __init__(self, model_scale=16):
+    @warning_for_keywords(from_version="1.13.0")
+    def __init__(self, *, model_scale=16):
         super().__init__()
 
         # Block structure
@@ -470,7 +472,8 @@ class EVACPlus:
         self.model = self.model.to(self.device)
         self.fetch_default_weights()
 
-    def init_model(self, model_scale=16):
+    @warning_for_keywords(from_version="1.13.0")
+    def init_model(self, *, model_scale=16):
         """Initialize the EVAC+ model.
 
         Parameters
@@ -483,7 +486,7 @@ class EVACPlus:
         Model
             Initialized EVAC+ model.
         """
-        return Model(model_scale)
+        return Model(model_scale=model_scale)
 
     def fetch_default_weights(self):
         """Load the model pre-training weights to use for the fitting.

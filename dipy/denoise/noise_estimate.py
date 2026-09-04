@@ -2,7 +2,7 @@ import numpy as np
 from scipy.ndimage import convolve
 from scipy.special import gammainccinv
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 def _inv_nchi_cdf(N, K, alpha):

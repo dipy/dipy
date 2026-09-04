@@ -3,7 +3,7 @@ import warnings
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -235,7 +235,10 @@ class PeakActor(Actor):
         )
 
     @calldata_type(VTK_OBJECT)
-    def __display_peaks_vtk_callback(self, caller, event, calldata=None):
+    # VTK invokes observers positionally.
+    def __display_peaks_vtk_callback(
+        self, caller, event, calldata=None
+    ):  # pep3102: ignore
         if calldata is not None:
             calldata.SetUniformi("isRange", self.__is_range)
             calldata.SetUniform3f("highRanges", self.__high_ranges)

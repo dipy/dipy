@@ -7,7 +7,8 @@ import numpy as np
 
 from dipy.data import get_fnames
 from dipy.nn.utils import normalize, set_logger_level, unnormalize
-from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
+from dipy.testing.decorators import doctest_skip_parser
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 

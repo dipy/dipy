@@ -19,7 +19,7 @@ from dipy.io.utils import (
     is_header_compatible,
     is_reference_info_valid,
 )
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 

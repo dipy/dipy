@@ -8,7 +8,6 @@ from scipy.spatial.distance import mahalanobis
 from dipy.io.utils import save_buan_profiles_hdf5
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import (
     Streamlines,
     orient_by_streamline,
@@ -16,6 +15,7 @@ from dipy.tracking.streamline import (
     transform_streamlines,
     values_from_volume,
 )
+from dipy.utils.deprecator import warning_for_keywords
 
 
 def peak_values(bundle, peaks, dt, pname, bname, subject, group_id, ind, dir_name):

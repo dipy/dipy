@@ -42,7 +42,7 @@ from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.reconst.weights_method import (
     weights_method_wls_m_est,
 )
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()
@@ -1592,7 +1592,8 @@ def radial_tensor_kurtosis(dki_params, *, min_kurtosis=-3.0 / 7, max_kurtosis=10
     return RTK.reshape(outshape)
 
 
-def kurtosis_fractional_anisotropy(dki_params, fast=True):
+@warning_for_keywords(from_version="1.13.0")
+def kurtosis_fractional_anisotropy(dki_params, *, fast=True):
     r"""Compute the anisotropy of the kurtosis tensor (KFA).
 
     See :footcite:p:`Glenn2015` and :footcite:p:`NetoHenriques2021a` for further

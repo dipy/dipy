@@ -889,7 +889,9 @@ class FORCEModel(ReconstModel):
         # Resolve the ODI grid that will actually be used, so both the cache
         # key and the generated library agree on it.
         resolved_odi_range = (float(odi_range[0]), float(odi_range[1]))
-        resolved_num_odi = resolve_num_odi_values(resolved_odi_range, num_odi_values)
+        resolved_num_odi = resolve_num_odi_values(
+            resolved_odi_range, num_odi_values=num_odi_values
+        )
         min_crossing_angles = (float(two_fiber_min_angle), float(three_fiber_min_angle))
 
         # --- Cache logic when no explicit output_path is given ----------

@@ -6,7 +6,7 @@ import math
 import numpy as np
 import numpy.linalg as npl
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 # epsilon for testing whether a number is close to zero
 _EPS = np.finfo(float).eps * 4.0

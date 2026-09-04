@@ -9,11 +9,14 @@ import numpy as np
 import numpy.testing as npt
 from numpy.testing import assert_array_equal
 
+from dipy.utils.deprecator import warning_for_keywords
+
 # set path to example data
 IO_DATA_PATH = Path(__file__).resolve().parent / ".." / "io" / "tests" / "data"
 
 
-def assert_operator(value1, value2, msg="", op=operator.eq):
+@warning_for_keywords(from_version="1.13.0")
+def assert_operator(value1, value2, *, msg="", op=operator.eq):
     """Check Boolean statement."""
     try:
         if op == operator.is_:
@@ -41,7 +44,8 @@ def assert_arrays_equal(arrays1, arrays2):
         assert_array_equal(arr1, arr2)
 
 
-def assert_percent_almost_equal(a, b, decimal=7, percent=0.99):
+@warning_for_keywords(from_version="1.13.0")
+def assert_percent_almost_equal(a, b, *, decimal=7, percent=0.99):
     a = np.asarray(a)
     b = np.asarray(b)
     tol = 1.5 * 10 ** (-decimal)
@@ -106,7 +110,8 @@ class clear_and_catch_warnings(warnings.catch_warnings):
 
     class_modules = ()
 
-    def __init__(self, record=True, modules=()):
+    @warning_for_keywords(from_version="1.13.0")
+    def __init__(self, *, record=True, modules=()):
         self.modules = set(modules).union(self.class_modules)
         self._warnreg_copies = {}
         super().__init__(record=record)

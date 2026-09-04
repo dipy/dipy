@@ -5,6 +5,49 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.13.0 changes
+-------------------
+
+**General**
+
+- Every parameter carrying a default value is now keyword-only (PEP 3102), and a
+  pre-commit hook (``tools/check_pep3102.py``) keeps it that way. Calls that passed
+  such an argument positionally keep working and warn until 2.0.0; pass the argument
+  by name to silence the warning. ``dipy/workflows/`` is exempt: its ``run``
+  parameters are turned into a CLI by ``IntrospectiveArgumentParser``, which needs
+  them positional-or-keyword.
+
+- ``warning_for_keywords`` now lives in ``dipy.utils.deprecator`` rather than
+  ``dipy.testing.decorators``, so library code no longer imports from a testing
+  module. ``dipy.testing.decorators.warning_for_keywords`` still resolves, but
+  using it raises a ``DeprecationWarning`` and it is removed in 2.0.0::
+
+      from dipy.testing.decorators import warning_for_keywords  # deprecated
+
+  becomes::
+
+      from dipy.utils.deprecator import warning_for_keywords
+
+**Reconstruction**
+
+- Models whose options moved after ``*args`` in 1.12.0 now report the old positional
+  spelling instead of silently ignoring it. ``TensorModel(gtab, "OLS")`` has selected
+  no fit method since 1.12.0 -- ``"OLS"`` lands in ``*args`` and ``fit_method`` keeps
+  its default -- and ``*args`` makes the two spellings impossible to tell apart, so
+  the call cannot be repaired automatically. Pass the option by name::
+
+      TensorModel(gtab, fit_method="OLS")
+
+  This covers ``TensorModel``, ``FreeWaterTensorModel``, ``DiffusionKurtosisModel``,
+  ``KurtosisMicrostructureModel``, ``CorrelationTensorModel``,
+  ``MeanDiffusionKurtosisModel`` and the fit methods wrapped by ``iter_fit_tensor``.
+
+**Core**
+
+- The ``use_logging`` parameter of ``dipy.core.gradients.GradientTable.info`` was
+  removed. ``info`` is a property, so the parameter was never reachable and the
+  summary was always printed to stdout; the behaviour is unchanged.
+
 DIPY 1.12.0 changes
 -------------------
 

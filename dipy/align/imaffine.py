@@ -56,8 +56,8 @@ from dipy.align.parzenhist import (
 from dipy.align.scalespace import IsotropicScaleSpace
 from dipy.core.interpolation import interpolate_scalar_2d, interpolate_scalar_3d
 from dipy.core.optimize import Optimizer
-from dipy.testing.decorators import warning_for_keywords
 from dipy.utils import VerbosityLevels
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 _interp_options = ["nearest", "linear"]

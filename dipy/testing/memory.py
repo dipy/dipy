@@ -1,8 +1,11 @@
 from collections import defaultdict
 import gc
 
+from dipy.utils.deprecator import warning_for_keywords
 
-def get_type_refcount(pattern=None):
+
+@warning_for_keywords(from_version="1.13.0")
+def get_type_refcount(*, pattern=None):
     """
     Retrieves refcount of types for which their name matches `pattern`.
 

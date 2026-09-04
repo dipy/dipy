@@ -13,7 +13,7 @@ from dipy.align import (
     sumsqdiff as ssd,
     vector_fields as vfu,
 )
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 class SimilarityMetric:

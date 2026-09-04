@@ -457,8 +457,8 @@ def make_fake_signal():
     evecs1 = evecs0
     a = evecs0[0]
     b = evecs1[1]
-    S1 = single_tensor(gtab, 0.55, evals=evals[0], evecs=evecs0)
-    S2 = single_tensor(gtab, 0.45, evals=evals[1], evecs=evecs1)
+    S1 = single_tensor(gtab, S0=0.55, evals=evals[0], evecs=evecs0)
+    S2 = single_tensor(gtab, S0=0.45, evals=evals[1], evecs=evecs1)
     return S1 + S2, gtab, np.vstack([a, b])
 
 
