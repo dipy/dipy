@@ -1380,7 +1380,7 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
         cnp.npy_intp n = theta.shape[0]
         cnp.npy_intp offset, valid_points
         int constant_jacobian = 0
-        cnp.npy_intp l, k, i, j, r, c
+        cnp.npy_intp i, j, k, param_idx, r, c
         double rn, cn
         double val, spline_arg, norm_factor
         double[:, :] J = np.empty(shape=(3, n), dtype=np.float64)
