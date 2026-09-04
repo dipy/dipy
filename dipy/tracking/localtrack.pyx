@@ -370,8 +370,9 @@ cdef _pft(cnp.float_t[:, :] streamline,
                                   &particle_paths[1, pp, ss, 0])
                         copy_point(&particle_dirs[0, pp, ss, 0],
                                   &particle_dirs[1, pp, ss, 0])
-                    particle_stream_statuses[1, pp] = \
+                    particle_stream_statuses[1, pp] = (
                             particle_stream_statuses[0, pp]
+                    )
                     particle_steps[1, pp] = particle_steps[0, pp]
 
                 # sample N new particle
@@ -388,8 +389,9 @@ cdef _pft(cnp.float_t[:, :] streamline,
                                   &particle_paths[0, pp, ss, 0])
                         copy_point(&particle_dirs[1, p_source, ss, 0],
                                   &particle_dirs[0, pp, ss, 0])
-                    particle_stream_statuses[0, pp] = \
+                    particle_stream_statuses[0, pp] = (
                             particle_stream_statuses[1, p_source]
+                    )
                     particle_steps[0, pp] = particle_steps[1, p_source]
                 for pp in range(particle_count):
                     particle_weights[pp] = 1. / particle_count

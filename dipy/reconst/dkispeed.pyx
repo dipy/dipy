@@ -63,8 +63,9 @@ cdef inline int get_kt_index(int key) noexcept nogil:
         return 0
 
 
-cdef inline bint positive_evals_single(double L1, double L2, double L3,
-                                        double er=2e-7) noexcept nogil:
+cdef inline bint positive_evals_single(
+    double L1, double L2, double L3, double er=2e-7
+) noexcept nogil:
     """Check if all eigenvalues are significantly larger than zero.
 
     Parameters
@@ -86,8 +87,9 @@ cdef inline bint positive_evals_single(double L1, double L2, double L3,
     return L1 > er and L2 > er and L3 > er
 
 
-cdef double carlson_rf_single(double x, double y, double z,
-                               double errtol=3e-4) noexcept nogil:
+cdef double carlson_rf_single(
+    double x, double y, double z, double errtol=3e-4
+) noexcept nogil:
     """Compute Carlson's incomplete elliptic integral of the first kind
     for a single set of values.
 
@@ -145,8 +147,9 @@ cdef double carlson_rf_single(double x, double y, double z,
     return RF
 
 
-cdef double carlson_rd_single(double x, double y, double z,
-                               double errtol=1e-4) noexcept nogil:
+cdef double carlson_rd_single(
+    double x, double y, double z, double errtol=1e-4
+) noexcept nogil:
     """Compute Carlson's incomplete elliptic integral of the second kind
     for a single set of values.
 
@@ -425,9 +428,9 @@ cdef double G2m_single(double a, double b, double c, double er=2.5e-2) noexcept 
     return G2
 
 
-cdef double Wrotate_element_single(double[:] kt, int indi, int indj,
-                                    int indk, int indl,
-                                    double[:, :] B) noexcept nogil:
+cdef double Wrotate_element_single(
+    double[:] kt, int indi, int indj, int indk, int indl, double[:, :] B
+) noexcept nogil:
     """Compute a single rotated kurtosis tensor element.
 
     Parameters
@@ -462,9 +465,11 @@ cdef double Wrotate_element_single(double[:] kt, int indi, int indj,
     return Wre
 
 
-def mean_kurtosis_analytical(double[:, :] dki_params_flat,
-                              double min_kurtosis=-3.0/7.0,
-                              double max_kurtosis=3.0):
+def mean_kurtosis_analytical(
+    double[:, :] dki_params_flat,
+    double min_kurtosis=-3.0/7.0,
+    double max_kurtosis=3.0
+):
     """Compute mean kurtosis using the analytical solution.
 
     This is the Cython-optimized version of the analytical mean kurtosis
@@ -548,9 +553,11 @@ def mean_kurtosis_analytical(double[:, :] dki_params_flat,
     return np.asarray(MK)
 
 
-def axial_kurtosis_analytical(double[:, :] dki_params_flat,
-                               double min_kurtosis=-3.0/7.0,
-                               double max_kurtosis=10.0):
+def axial_kurtosis_analytical(
+    double[:, :] dki_params_flat,
+    double min_kurtosis=-3.0/7.0,
+    double max_kurtosis=10.0
+):
     """Compute axial kurtosis using the analytical solution.
 
     Parameters
@@ -608,9 +615,11 @@ def axial_kurtosis_analytical(double[:, :] dki_params_flat,
     return np.asarray(AK)
 
 
-def radial_kurtosis_analytical(double[:, :] dki_params_flat,
-                                double min_kurtosis=-3.0/7.0,
-                                double max_kurtosis=10.0):
+def radial_kurtosis_analytical(
+    double[:, :] dki_params_flat,
+    double min_kurtosis=-3.0/7.0,
+    double max_kurtosis=10.0
+):
     """Compute radial kurtosis using the analytical solution.
 
     Parameters
@@ -714,8 +723,14 @@ def kurtosis_fractional_anisotropy_c(double[:, :] dki_params_flat):
             Wxyyz = dki_params_flat[v, 25]
             Wxyzz = dki_params_flat[v, 26]
 
-            W = (1.0 / 5.0) * (Wxxxx + Wyyyy + Wzzzz +
-                                2.0 * Wxxyy + 2.0 * Wxxzz + 2.0 * Wyyzz)
+            W = (1.0 / 5.0) * (
+                Wxxxx
+                + Wyyyy
+                + Wzzzz
+                + 2.0 * Wxxyy
+                + 2.0 * Wxxzz
+                + 2.0 * Wyyzz
+            )
 
             A = ((Wxxxx - W) * (Wxxxx - W) +
                  (Wyyyy - W) * (Wyyyy - W) +

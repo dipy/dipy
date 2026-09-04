@@ -219,8 +219,9 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
     return np.asarray(out), np.asarray(levels), np.asarray(hist)
 
 
-def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
-                                     int num_labels, int[:, :] labels):
+def compute_masked_class_stats_2d(
+    int[:, :] mask, floating[:, :] v, int num_labels, int[:, :] labels
+):
     r"""Computes the mean and std. for each quantization level.
 
     Computes the mean and standard deviation of the intensities in 'v' for
@@ -286,8 +287,9 @@ def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
     return np.asarray(means), np.asarray(variances)
 
 
-def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
-                                      int num_labels, int[:, :, :] labels):
+def compute_masked_class_stats_3d(
+    int[:, :, :] mask, floating[:, :, :] v, int num_labels, int[:, :, :] labels
+):
     r"""Computes the mean and std. for each quantization level.
 
     Computes the mean and standard deviation of the intensities in 'v' for

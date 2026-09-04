@@ -180,10 +180,12 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
                         # loop over kernel x,y,z,orient --> x and r
                         for x in range(int_max(cx - hn, 0),
                                        int_min(cx + hn + 1, ny - 1)):
-                            for y in range(int_max(cy - hn, 0),
-                                            int_min(cy + hn + 1, ny - 1)):
-                                for z in range(int_max(cz - hn, 0),
-                                                int_min(cz + hn + 1, nz - 1)):
+                            for y in range(
+                                int_max(cy - hn, 0), int_min(cy + hn + 1, ny - 1)
+                            ):
+                                for z in range(
+                                    int_max(cz - hn, 0), int_min(cz + hn + 1, nz - 1)
+                                ):
                                     voxcount[corient, cx, cy, cz] += 1.0
                                     for orient in range(0, OR2):
                                         totalval[corient, cx, cy, cz] += \
