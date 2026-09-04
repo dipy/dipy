@@ -88,15 +88,15 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
     """
 
     cdef:
-        cnp.npy_intp i, j, k, I, J, K
+        cnp.npy_intp i, j, k, dim_i, dim_j, dim_k
         double[:, :, ::1] out = np.zeros_like(arr)
         cnp.npy_intp P = patch_radius
         cnp.npy_intp B = block_radius
         int threads_to_use = -1
 
-    I = arr.shape[0]
-    J = arr.shape[1]
-    K = arr.shape[2]
+    dim_i = arr.shape[0]
+    dim_j = arr.shape[1]
+    dim_k = arr.shape[2]
 
     threads_to_use = determine_num_threads(num_threads)
     set_num_threads(threads_to_use)
@@ -104,9 +104,9 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
     # move the block
     with nogil, parallel():
 
-        for i in prange(B, I - B, schedule="dynamic"):
-            for j in range(B, J - B):
-                for k in range(B, K - B):
+        for i in prange(B, dim_i - B, schedule="dynamic"):
+            for j in range(B, dim_j - B):
+                for k in range(B, dim_k - B):
 
                     if mask[i, j, k] == 0:
                         continue

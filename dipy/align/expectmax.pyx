@@ -55,7 +55,7 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
         cnp.npy_intp nrows = v.shape[0]
         cnp.npy_intp ncols = v.shape[1]
         cnp.npy_intp npix = nrows * ncols
-        cnp.npy_intp i, j, l
+        cnp.npy_intp i, j, bin_idx
         double epsilon, delta
         double min_val = -1
         double max_val = -1
@@ -107,9 +107,9 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
         for i in range(nrows):
             for j in range(ncols):
                 if v[i, j] > 0:
-                    l = ifloor((v[i, j] - min_val) / delta)
-                    out[i, j] = l + 1
-                    hist[l + 1] += 1
+                    bin_idx = ifloor((v[i, j] - min_val) / delta)
+                    out[i, j] = bin_idx + 1
+                    hist[bin_idx + 1] += 1
                 else:
                     out[i, j] = 0
                     hist[0] += 1
@@ -157,7 +157,7 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
         cnp.npy_intp nrows = v.shape[1]
         cnp.npy_intp ncols = v.shape[2]
         cnp.npy_intp nvox = nrows * ncols * nslices
-        cnp.npy_intp i, j, k, l
+        cnp.npy_intp i, j, k, bin_idx
         double epsilon, delta
         double min_val = -1
         double max_val = -1
@@ -210,9 +210,9 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
             for i in range(nrows):
                 for j in range(ncols):
                     if v[k, i, j] > 0:
-                        l = ifloor((v[k, i, j] - min_val) / delta)
-                        out[k, i, j] = l + 1
-                        hist[l + 1] += 1
+                        bin_idx = ifloor((v[k, i, j] - min_val) / delta)
+                        out[k, i, j] = bin_idx + 1
+                        hist[bin_idx + 1] += 1
                     else:
                         out[k, i, j] = 0
                         hist[0] += 1
