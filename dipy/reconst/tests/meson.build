@@ -22,6 +22,7 @@ python_sources = [
   'test_msdki.py',
   'test_multi_voxel.py',
   'test_odf.py',
+  'test_odffp.py',
   'test_peak_finding.py',
   'test_qtdmri.py',
   'test_qti.py',
