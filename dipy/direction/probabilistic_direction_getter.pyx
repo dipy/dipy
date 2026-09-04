@@ -12,8 +12,7 @@ from random import random
 cimport numpy as cnp
 
 from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
-from dipy.utils.fast_numpy cimport (copy_point, cumsum, norm, normalize,
-                                     where_to_insert)
+from dipy.utils.fast_numpy cimport copy_point, cumsum, norm, normalize, where_to_insert
 
 
 cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):

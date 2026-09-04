@@ -847,12 +847,14 @@ cdef TrackerStatus probabilistic_propagator(double* point,
     return TrackerStatus.SUCCESS
 
 
-cdef TrackerStatus eudx_propagator(double* point,
-                                    double* direction,
-                                    TrackerParameters params,
-                                    double* stream_data,
-                                    PmfGen pmf_gen,
-                                    RNGState* rng) noexcept nogil:
+cdef TrackerStatus eudx_propagator(
+    double* point,
+    double* direction,
+    TrackerParameters params,
+    double* stream_data,
+    PmfGen pmf_gen,
+    RNGState* rng,
+) noexcept nogil:
     """EUDX propagator using trilinear interpolation of peak directions.
 
     Parameters

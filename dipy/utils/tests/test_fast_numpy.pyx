@@ -3,8 +3,13 @@ import timeit
 
 cimport numpy as cnp
 import numpy as np
-from numpy.testing import (assert_, assert_almost_equal, assert_raises,
-                            assert_array_equal, assert_array_almost_equal)
+from numpy.testing import (
+    assert_,
+    assert_almost_equal,
+    assert_raises,
+    assert_array_equal,
+    assert_array_almost_equal,
+)
 from dipy.utils.fast_numpy import random, seed
 from dipy.utils.fast_numpy cimport (
     cross,

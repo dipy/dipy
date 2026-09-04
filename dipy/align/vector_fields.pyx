@@ -1897,8 +1897,9 @@ def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
         cnp.npy_intp ncols = ref_shape[2]
         double dkk, dii, djj
         cnp.npy_intp k, i, j
-        number[:, :, :] out = np.zeros((nslices, nrows, ncols),
-                                        dtype=np.asarray(volume).dtype)
+        number[:, :, :] out = np.zeros(
+            (nslices, nrows, ncols), dtype=np.asarray(volume).dtype
+        )
 
     if not is_valid_affine(affine, 3):
         raise ValueError("Invalid affine transform matrix")

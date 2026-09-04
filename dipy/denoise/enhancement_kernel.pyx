@@ -86,9 +86,11 @@ cdef class EnhancementKernel:
             self.sphere = None
 
         # file location of the lut table for saving/loading
-        kernellutpath = os.path.join(gettempdir(),
-                                     "kernel_d33@%4.2f_d44@%4.2f_t@%4.2f_numverts%d.npy"
-                                       % (D33, D44, t, len(self.orientations_list)))
+        kernellutpath = os.path.join(
+            gettempdir(),
+            "kernel_d33@%4.2f_d44@%4.2f_t@%4.2f_numverts%d.npy"
+            % (D33, D44, t, len(self.orientations_list))
+        )
 
         # if LUT exists, load
         if not force_recompute and os.path.isfile(kernellutpath):
@@ -335,15 +337,20 @@ cdef class EnhancementKernel:
             sg = sin(gamma)
             cotq2 = 1.0 / tan(q/2)
 
-            c[0] = -0.5*z*beta*cg + \
-                    x*(1 - (beta*beta*cg*cg * (1 - 0.5*q*cotq2)) / (q*q)) - \
-                    (y*beta*beta*cg*sg * (1 - 0.5*q*cotq2)) / (q*q)
-            c[1] = -0.5*z*beta*sg - \
-                    (x*beta*beta*cg*sg * (1 - 0.5*q*cotq2)) / (q*q) + \
-                    y * (1 - (beta*beta*sg*sg * (1 - 0.5*q*cotq2)) / (q*q))
-            c[2] = 0.5*x*beta*cg + 0.5*y*beta*sg + \
-                   z * (1 + ((1 - 0.5*q*cotq2) * (-beta*beta*cg*cg -
-                        beta*beta*sg*sg)) / (q*q))
+            c[0] = (
+                -0.5*z*beta*cg
+                + x*(1 - (beta*beta*cg*cg * (1 - 0.5*q*cotq2)) / (q*q))
+                - (y*beta*beta*cg*sg * (1 - 0.5*q*cotq2)) / (q*q)
+            )
+            c[1] = (
+                -0.5*z*beta*sg
+                - (x*beta*beta*cg*sg * (1 - 0.5*q*cotq2)) / (q*q)
+                + y * (1 - (beta*beta*sg*sg * (1 - 0.5*q*cotq2)) / (q*q))
+            )
+            c[2] = (
+                0.5*x*beta*cg + 0.5*y*beta*sg
+                + z * (1 + ((1 - 0.5*q*cotq2) * (-beta*beta*cg*cg - beta*beta*sg*sg)) / (q*q))
+            )
             c[3] = beta * (-sg)
             c[4] = beta * cg
             c[5] = 0

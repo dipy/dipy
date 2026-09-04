@@ -306,8 +306,9 @@ def cut_plane(tracks, ref):
                     if beta !=0:
                         # alpha = np.inner((p-q),normal)/np.inner((r-q),normal)
                         csub_3vecs(this_ref_p, this_trk_p, pMq)
-                        alpha = (cinner_3vecs(pMq, normal) /
-                                  cinner_3vecs(rMq, normal))
+                        alpha = (
+                            cinner_3vecs(pMq, normal) / cinner_3vecs(rMq, normal)
+                        )
                         if alpha < 1:
                             # hit = q+alpha*(r-q)
                             hit[0] = this_trk_p[0]+alpha*rMq[0]
