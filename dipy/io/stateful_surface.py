@@ -307,7 +307,6 @@ class StatefulSurface:
     def __add__(self, other_sfs):
         """Addition of two sfs with attributes consistency checks"""
         # TODO
-        pass
 
     def __iadd__(self, other):
         # TODO

@@ -16,14 +16,17 @@ def get_level(lvl):
 
     Parameters
     ----------
-    lvl : str
-        Level name, e.g. ``"DEBUG"``. Unknown names fall back to ``INFO``.
+    lvl : str or int
+        Level name, e.g. ``"DEBUG"``, or an integer logging level.
+        Unknown names fall back to ``INFO``.
 
     Returns
     -------
     int
         The numeric logging level.
     """
+    if isinstance(lvl, int):
+        return lvl
     if not isinstance(lvl, str):
         return logging.INFO
     return logging.getLevelNamesMapping().get(lvl.upper(), logging.INFO)

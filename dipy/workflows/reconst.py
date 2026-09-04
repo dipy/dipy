@@ -62,6 +62,7 @@ from dipy.reconst.shm import (
     QballModel,
     anisotropic_power,
     normalize_data,
+    order_from_ncoef,
     smooth_pinv,
     sph_harm_lookup,
 )
@@ -1206,11 +1207,29 @@ class ReconstCSDFlow(Workflow):
 
             n_params = ((sh_order_max + 1) * (sh_order_max + 2)) / 2
             if data.shape[-1] < n_params:
-                raise ValueError(
-                    f"You need at least {n_params} unique DWI volumes to "
-                    f"compute fiber odfs. You currently have: {data.shape[-1]}"
-                    " DWI volumes."
+                logger.warning(
+                    f"sh_order_max={sh_order_max} requires at least "
+                    f"{int(n_params)} DWI volumes, but only "
+                    f"{data.shape[-1]} are available. Searching for the best "
+                    "sh_order_max that can be used with the current data..."
                 )
+                best_order = order_from_ncoef(data.shape[-1])
+                if best_order % 2 != 0:
+                    best_order -= 1
+                while (
+                    best_order >= 2
+                    and ((best_order + 1) * (best_order + 2)) / 2 > data.shape[-1]
+                ):
+                    best_order -= 2
+                if best_order < 2:
+                    logger.error(
+                        f"Not enough DWI volumes ({data.shape[-1]}) to compute "
+                        "fiber ODFs. A minimum of 6 unique DWI volumes "
+                        "(sh_order_max=2) is required."
+                    )
+                    return sys.exit(1)
+                sh_order_max = best_order
+                logger.warning(f"sh_order_max automatically set to {sh_order_max}.")
 
             model_args = {"gtab": gtab, "sh_order_max": sh_order_max}
             if not use_msmt:
@@ -3493,7 +3512,7 @@ class ReconstForceFlow(Workflow):
         out_kfa="kfa.nii.gz",
         out_entropy="entropy.nii.gz",
         out_predicted_signal="predicted_signal.nii.gz",
-        out_peaks="peaks.pam5",
+        out_pam="peaks.pam5",
         out_micro_uncertainty_dir="microstructure_uncertainty",
         out_micro_ambiguity_dir="microstructure_ambiguity",
     ):
@@ -3618,7 +3637,7 @@ class ReconstForceFlow(Workflow):
             Name of the entropy volume to be saved (requires use_posterior).
         out_predicted_signal : string, optional
             Name of the predicted signal volume to be saved.
-        out_peaks : string, optional
+        out_pam : string, optional
             Name of the peaks file to be saved (in .pam5 format).
         out_micro_uncertainty_dir : string, optional
             Name of the subdirectory for per-microstructure uncertainty maps

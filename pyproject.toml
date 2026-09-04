@@ -50,6 +50,7 @@ dependencies = [
 dipy_align_syn = "dipy.workflows.cli:run"
 dipy_align_affine = "dipy.workflows.cli:run"
 dipy_apply_transform = "dipy.workflows.cli:run"
+dipy_auto = "dipy.workflows.cli:run"
 dipy_brain_mask = "dipy.workflows.cli:run"
 dipy_buan_shapes = "dipy.workflows.cli:run"
 dipy_buan_profiles = "dipy.workflows.cli:run"
@@ -87,6 +88,7 @@ dipy_math = "dipy.workflows.cli:run"
 dipy_mask = "dipy.workflows.cli:run"
 dipy_gibbs_ringing = "dipy.workflows.cli:run"
 dipy_horizon = "dipy.workflows.cli:run"
+dipy_skyline = "dipy.workflows.cli:run"
 dipy_info = "dipy.workflows.cli:run"
 dipy_extract_b0 = "dipy.workflows.cli:run"
 dipy_extract_shell = "dipy.workflows.cli:run"
@@ -139,8 +141,9 @@ dev = [
     "coverage",
     "coveralls",
     "codecov",
-    "asv",
+    "asv"
 ]
+
 doc = [
     "numpydoc",
     "sphinx>=7.2.6",
@@ -158,7 +161,7 @@ benchmark = [
 ]
 
 [project.optional-dependencies]
-viz = ["fury>=0.12.0", "matplotlib"]
+viz = ["fury>=2.0.0", "imgui_bundle>=1.92.600,<=1.92.801", "matplotlib"]
 ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
 optional = [
     "dipy[viz, ml]",
