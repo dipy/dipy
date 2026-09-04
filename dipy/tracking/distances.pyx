@@ -1283,8 +1283,10 @@ cdef float cintersect_segment_cylinder(float *sa, float *sb, float *p, float *q,
     dd=cinner_3vecs(d, d)
 
     # test if segment fully outside either endcap of cylinder
-    if md < 0. and md + nd < 0.:  return 0  # segment outside p side
-    if md > dd and md + nd > dd:  return 0  # segment outside q side
+    if md < 0. and md + nd < 0.:
+        return 0  # segment outside p side
+    if md > dd and md + nd > dd:
+        return 0  # segment outside q side
 
     nn=cinner_3vecs(n, n)
     mn=cinner_3vecs(m, n)
@@ -1294,7 +1296,8 @@ cdef float cintersect_segment_cylinder(float *sa, float *sb, float *p, float *q,
 
     if fabs(a) < epsilon_float:
         # segment runs parallel to cylinder axis
-        if c>0.:  return 0.  # segment lies outside cylinder
+        if c>0.:
+            return 0.  # segment lies outside cylinder
         if md < 0.:
             t[0]=-mn/nn  # intersect against p endcap
         elif md > dd :
@@ -1305,15 +1308,18 @@ cdef float cintersect_segment_cylinder(float *sa, float *sb, float *p, float *q,
 
     b=dd*mn -nd*md
     discr=b*b-a*c
-    if discr < 0.: return 0.  # no real roots ; no intersection
+    if discr < 0.:
+        return 0.  # no real roots ; no intersection
 
     t[0]=(-b-sqrt(discr))/a
     t[1]=(-b+sqrt(discr))/a
-    if t[0]<0. or t[0] > 1. : return 0.  # intersection lies outside segment
+    if t[0]<0. or t[0] > 1. :
+        return 0.  # intersection lies outside segment
 
     if md + t[0]* nd < 0.:
         # intersection outside cylinder on 'p' side
-        if nd <= 0. : return 0.  # segment pointing away from endcap
+        if nd <= 0. :
+            return 0.  # segment pointing away from endcap
         t[0]=-md/nd
         # keep intersection if Dot(S(t)-p,S(t)-p) <= r^2
         if k+2*t[0]*(mn+t[0]*nn) <=0.:
@@ -1321,7 +1327,8 @@ cdef float cintersect_segment_cylinder(float *sa, float *sb, float *p, float *q,
 
     elif md+t[0]*nd > dd :
         # intersection outside cylinder on 'q' side
-        if nd >= 0.: return 0.  # segment pointing away from endcap
+        if nd >= 0.:
+            return 0.  # segment pointing away from endcap
         t[0]= (dd-md)/nd
         # keep intersection if Dot(S(t)-q,S(t)-q) <= r^2
         if k+dd-2*md+t[0]*(2*(mn-nd)+t[0]*nn) <= 0.:
@@ -1800,7 +1807,9 @@ def local_skeleton_clustering_3pts(tracks, d_thr=10):
         i_k=np.argmin(alld)
         if m_k<d_thr:
             if flip[i_k]==1:
-                ts[0]=track[-1]; ts[1]=track[1]; ts[-1]=track[0]
+                ts[0]=track[-1]
+                ts[1]=track[1]
+                ts[-1]=track[0]
                 C[i_k]["hidden"] = C[i_k]["hidden"] + ts
             else:
                 # print(track.shape)
@@ -1930,13 +1939,16 @@ def larch_3split(tracks, indices=None, thr=10.):
             track_direct_flip_3dist(asfp(track[0]), asfp(track[1]), asfp(track[2]),
                                     asfp(h[0]), asfp(h[1]), asfp(h[2]), d)
             if d[1]<d[0]:
-                d[0]=d[1]; flip[k]=1
+                d[0]=d[1]
+                flip[k]=1
             alld[k]=d[0]
         m_k=np.min(alld)
         i_k=np.argmin(alld)
         if m_k<thr:
             if flip[i_k]==1:
-                ts[0]=track[-1]; ts[1]=track[1]; ts[-1]=track[0]
+                ts[0]=track[-1]
+                ts[1]=track[1]
+                ts[-1]=track[0]
                 C[i_k]["rep3"]+=ts
             else:
                 C[i_k]["rep3"]+=track
@@ -2004,7 +2016,9 @@ def larch_3merge(C, thr=10.):
         i_k=np.argmin(alld)
         if m_k<thr:
             if flip[i_k]==1:
-                ts[0]=ch[-1]; ts[1]=ch[1]; ts[-1]=ch[0]
+                ts[0]=ch[-1]
+                ts[1]=ch[1]
+                ts[-1]=ch[0]
                 C2[i_k+c]["rep3"]+=ts
             else:
                 C2[i_k+c]["rep3"]+=ch
