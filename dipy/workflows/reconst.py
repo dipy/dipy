@@ -66,6 +66,7 @@ from dipy.reconst.shm import (
     sph_harm_lookup,
 )
 from dipy.segment.tissue import TissueClassifierHMRF
+from dipy.sims.force import DEFAULT_FORCE_SEED
 from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
@@ -3469,6 +3470,7 @@ class ReconstForceFlow(Workflow):
         gm_d_iso_range=None,
         csf_d=None,
         num_cpus=-1,
+        seed=DEFAULT_FORCE_SEED,
         use_cache=True,
         compute_kurtosis=False,
         engine="serial",
@@ -3566,6 +3568,9 @@ class ReconstForceFlow(Workflow):
         num_cpus : int, optional
             Number of CPU cores for simulation generation. Use -1 to use
             all available cores.
+        seed : int, optional
+            Random seed for reproducible simulation-library generation.
+            Identical seeds yield identical libraries for any ``num_cpus``.
         use_cache : bool, optional
             Load cached simulations if available.
         compute_kurtosis : bool, optional
@@ -3747,6 +3752,7 @@ class ReconstForceFlow(Workflow):
             model.generate(
                 num_simulations=num_simulations,
                 num_cpus=num_cpus,
+                seed=seed,
                 use_cache=use_cache,
                 compute_dki=compute_kurtosis,
                 wm_threshold=wm_threshold,

@@ -4,14 +4,30 @@ import numpy as np
 import pytest
 
 from dipy.sims.force import (
+    DEFAULT_FORCE_SEED,
     DEFAULT_NUM_ODI_VALUES,
     DEFAULT_ODI_RANGE,
     dispersion_lut,
     get_default_diffusivity_config,
+    init_worker,
     resolve_num_odi_values,
     smallest_shell_bval,
     validate_diffusivity_config,
 )
+
+
+def test_init_worker_base_seed_deprecated():
+    """The removed base_seed argument remains available during deprecation."""
+    import random
+
+    numpy_state = np.random.get_state()
+    random_state = random.getstate()
+    try:
+        with pytest.warns(DeprecationWarning, match='"base_seed" was deprecated'):
+            init_worker(base_seed=42)
+    finally:
+        np.random.set_state(numpy_state)
+        random.setstate(random_state)
 
 
 def test_dispersion_lut_structure():
@@ -306,13 +322,10 @@ def _library_crossing_angles(sims, num_fibers):
     return np.asarray(angles)
 
 
-def test_generate_force_simulations_default_min_crossing_angles(monkeypatch):
+def test_generate_force_simulations_default_min_crossing_angles():
     """By default the library holds no crossing below 30 (two) or 60 (three) degrees."""
     from dipy.sims.force import generate_force_simulations
 
-    monkeypatch.setattr(
-        "dipy.sims.force.init_worker", lambda *a, **k: np.random.seed(0)
-    )
     gtab = _make_gtab([1000, 2000])
     sims = generate_force_simulations(
         gtab, num_simulations=300, batch_size=100, num_cpus=1, verbose=False
@@ -325,13 +338,10 @@ def test_generate_force_simulations_default_min_crossing_angles(monkeypatch):
     assert three.min() >= 60.0
 
 
-def test_generate_force_simulations_relaxed_min_crossing_angles(monkeypatch):
+def test_generate_force_simulations_relaxed_min_crossing_angles():
     """Lowering the limits lets shallow crossings into the library."""
     from dipy.sims.force import generate_force_simulations
 
-    monkeypatch.setattr(
-        "dipy.sims.force.init_worker", lambda *a, **k: np.random.seed(0)
-    )
     gtab = _make_gtab([1000, 2000])
     sims = generate_force_simulations(
         gtab,
@@ -348,6 +358,127 @@ def test_generate_force_simulations_relaxed_min_crossing_angles(monkeypatch):
     assert two.size and three.size
     assert two.min() < 30.0
     assert three.min() < 60.0
+
+
+def test_generate_force_simulations_seed_reproducible():
+    """Identical seeds reproduce the library; different seeds do not."""
+    from dipy.sims.force import generate_force_simulations
+
+    gtab = _make_gtab([1000])
+    kwargs = {
+        "num_simulations": 40,
+        "batch_size": 10,
+        "num_cpus": 1,
+        "compute_dti": False,
+        "verbose": False,
+    }
+
+    sims_a = generate_force_simulations(gtab, seed=42, **kwargs)
+    sims_b = generate_force_simulations(gtab, seed=42, **kwargs)
+    for key in ("signals", "labels", "num_fibers", "wm_fraction", "nd"):
+        np.testing.assert_array_equal(sims_a[key], sims_b[key])
+
+    # The default seed is applied when none is given, so two default runs
+    # are also identical.
+    sims_c = generate_force_simulations(gtab, **kwargs)
+    sims_d = generate_force_simulations(gtab, **kwargs)
+    np.testing.assert_array_equal(sims_c["signals"], sims_d["signals"])
+
+    # A different seed yields a different library.
+    sims_e = generate_force_simulations(gtab, seed=43, **kwargs)
+    assert not np.array_equal(sims_a["signals"], sims_e["signals"])
+
+    # seed=None draws fresh entropy on every run.
+    sims_f = generate_force_simulations(gtab, seed=None, **kwargs)
+    sims_g = generate_force_simulations(gtab, seed=None, **kwargs)
+    assert not np.array_equal(sims_f["signals"], sims_g["signals"])
+
+
+@pytest.mark.parametrize("seed", [DEFAULT_FORCE_SEED, None])
+def test_generate_force_simulations_preserves_numpy_rng_state(seed):
+    """Serial generation does not alter the caller's global NumPy RNG."""
+    from dipy.sims.force import generate_force_simulations
+
+    state = np.random.get_state()
+    try:
+        np.random.seed(1234)
+        expected = np.random.random(5)
+        np.random.seed(1234)
+
+        generate_force_simulations(
+            _make_gtab([1000]),
+            num_simulations=10,
+            batch_size=10,
+            num_cpus=1,
+            seed=seed,
+            compute_dti=False,
+            verbose=False,
+        )
+
+        np.testing.assert_array_equal(np.random.random(5), expected)
+    finally:
+        np.random.set_state(state)
+
+
+def test_seeded_serial_generation_skips_worker_initialization(monkeypatch):
+    """A deterministic batch seed makes worker initialization unnecessary."""
+    from dipy.sims.force import generate_force_simulations
+
+    def fail_if_called():
+        pytest.fail("init_worker should not run for seeded serial generation")
+
+    monkeypatch.setattr("dipy.sims.force.init_worker", fail_if_called)
+    generate_force_simulations(
+        _make_gtab([1000]),
+        num_simulations=10,
+        batch_size=10,
+        num_cpus=1,
+        seed=42,
+        compute_dti=False,
+        verbose=False,
+    )
+
+
+def test_generate_force_simulations_seed_independent_of_num_cpus():
+    """The same seed gives the same library for any worker count."""
+    from dipy.sims.force import generate_force_simulations
+
+    gtab = _make_gtab([1000])
+    kwargs = {
+        "num_simulations": 40,
+        "batch_size": 10,
+        "seed": 42,
+        "compute_dti": False,
+        "verbose": False,
+    }
+
+    serial = generate_force_simulations(gtab, num_cpus=1, **kwargs)
+    parallel = generate_force_simulations(gtab, num_cpus=2, **kwargs)
+    for key in ("signals", "labels", "num_fibers", "wm_fraction", "nd"):
+        np.testing.assert_array_equal(serial[key], parallel[key])
+
+
+def test_generate_force_simulations_batches_draw_distinct_streams():
+    """Each batch draws from its own stream, so batches are not clones."""
+    from dipy.sims.force import generate_force_simulations
+
+    gtab = _make_gtab([1000])
+    sims = generate_force_simulations(
+        gtab,
+        num_simulations=40,
+        batch_size=10,
+        num_cpus=1,
+        compute_dti=False,
+        verbose=False,
+    )
+
+    batches = sims["signals"].reshape(4, 10, -1)
+    for i in range(len(batches)):
+        for j in range(i + 1, len(batches)):
+            assert not np.array_equal(batches[i], batches[j]), (
+                f"Batches {i} and {j} are identical – the same seed was "
+                "propagated to every batch"
+            )
 
 
 @pytest.mark.parametrize(

@@ -18,6 +18,7 @@ from dipy.sims._force_core import (
     DEFAULT_TWO_FIBER_MIN_ANGLE,
 )
 from dipy.sims.force import (
+    DEFAULT_FORCE_SEED,
     DEFAULT_NUM_ODI_VALUES,
     DEFAULT_ODI_RANGE,
     generate_force_simulations,
@@ -216,6 +217,19 @@ def _min_angles_match(entry, min_crossing_angles):
     )
 
 
+def _seed_matches(entry, seed):
+    """Check whether a registry *entry*'s generation seed matches the request.
+
+    Entries written before the seed became part of the cache key carry no
+    ``seed`` field; like entries generated with ``seed=None``, they only
+    match requests with ``seed=None``.
+    """
+    entry_seed = entry.get("seed")
+    if entry_seed is None or seed is None:
+        return entry_seed is None and seed is None
+    return int(entry_seed) == int(seed)
+
+
 def _find_cached_simulation(
     cache_dir,
     gtab,
@@ -224,6 +238,7 @@ def _find_cached_simulation(
     odi_range,
     num_odi_values,
     min_crossing_angles,
+    seed,
 ):
     """Search the registry for a simulation matching the given parameters.
 
@@ -243,6 +258,8 @@ def _find_cached_simulation(
         Resolved number of ODI grid points.
     min_crossing_angles : tuple
         ``(two_fiber_min_angle, three_fiber_min_angle)`` in degrees.
+    seed : int or None
+        Generation seed requested for the library.
 
     Returns
     -------
@@ -250,6 +267,7 @@ def _find_cached_simulation(
         Path to the cached ``.npz`` file, or None if no match found.
     """
     registry = _load_cache_registry(cache_dir)
+    legacy_seed_cache_reported = False
     for entry in registry:
         if entry["num_simulations"] != num_simulations:
             continue
@@ -260,6 +278,17 @@ def _find_cached_simulation(
         if not _odi_grid_matches(entry, odi_range, num_odi_values):
             continue
         if not _min_angles_match(entry, min_crossing_angles):
+            continue
+        if "seed" not in entry and seed is not None:
+            candidate = cache_dir / entry["filename"]
+            if candidate.exists() and not legacy_seed_cache_reported:
+                logger.info(
+                    f"Cached FORCE simulations at {candidate} predate seed "
+                    "tracking and cannot guarantee reproducibility. A new "
+                    "seeded library will be generated."
+                )
+                legacy_seed_cache_reported = True
+        if not _seed_matches(entry, seed):
             continue
         candidate = cache_dir / entry["filename"]
         if candidate.exists():
@@ -276,6 +305,7 @@ def _register_cached_simulation(
     odi_range,
     num_odi_values,
     min_crossing_angles,
+    seed,
 ):
     """Add a new entry to the cache registry.
 
@@ -297,6 +327,8 @@ def _register_cached_simulation(
         Resolved number of ODI grid points.
     min_crossing_angles : tuple
         ``(two_fiber_min_angle, three_fiber_min_angle)`` in degrees.
+    seed : int or None
+        Generation seed used for the library.
     """
 
     # Convert numpy types to plain Python for JSON serialisation
@@ -322,6 +354,7 @@ def _register_cached_simulation(
         "num_odi_values": int(num_odi_values),
         "two_fiber_min_angle": float(min_crossing_angles[0]),
         "three_fiber_min_angle": float(min_crossing_angles[1]),
+        "seed": None if seed is None else int(seed),
         "filename": filename,
     }
 
@@ -788,6 +821,7 @@ class FORCEModel(ReconstModel):
         num_simulations=500000,
         output_path=None,
         num_cpus=1,
+        seed=DEFAULT_FORCE_SEED,
         wm_threshold=0.5,
         tortuosity=False,
         odi_range=DEFAULT_ODI_RANGE,
@@ -806,8 +840,8 @@ class FORCEModel(ReconstModel):
         simulations are cached in ``~/.dipy/force_simulations/`` (or
         ``$DIPY_HOME``). A registry file (``cache_registry.json``) keeps
         track of the bvals, bvecs, diffusivity configuration, ODI grid,
-        minimum crossing angles and number of simulations for each cached
-        file. If a cached simulation that matches
+        minimum crossing angles, seed and number of simulations for each
+        cached file. If a cached simulation that matches
         the current gradient table (within tolerance) and diffusivity
         configuration already exists, it is loaded from disk and generation
         is skipped.
@@ -824,6 +858,12 @@ class FORCEModel(ReconstModel):
             ``~/.dipy/force_simulations/`` and uses caching.
         num_cpus : int, optional
             Number of CPU cores for parallel processing.
+        seed : int or None, optional
+            Seed for reproducible library generation (see
+            :func:`~dipy.sims.force.generate_force_simulations`). Identical
+            seeds yield identical libraries for any ``num_cpus``. The seed
+            is part of the cache key. When None, each newly generated library
+            uses fresh entropy; a matching cached library may still be reused.
         wm_threshold : float, optional
             Minimum WM fraction to include fiber labels.
         tortuosity : bool, optional
@@ -891,6 +931,7 @@ class FORCEModel(ReconstModel):
         resolved_odi_range = (float(odi_range[0]), float(odi_range[1]))
         resolved_num_odi = resolve_num_odi_values(resolved_odi_range, num_odi_values)
         min_crossing_angles = (float(two_fiber_min_angle), float(three_fiber_min_angle))
+        resolved_seed = None if seed is None else int(seed)
 
         # --- Cache logic when no explicit output_path is given ----------
         if output_path is None and use_cache:
@@ -903,6 +944,7 @@ class FORCEModel(ReconstModel):
                 resolved_odi_range,
                 resolved_num_odi,
                 min_crossing_angles,
+                resolved_seed,
             )
             if cached is not None:
                 if verbose:
@@ -916,6 +958,7 @@ class FORCEModel(ReconstModel):
             self.gtab,
             num_simulations=num_simulations,
             num_cpus=num_cpus,
+            seed=resolved_seed,
             wm_threshold=wm_threshold,
             tortuosity=tortuosity,
             odi_range=resolved_odi_range,
@@ -955,6 +998,7 @@ class FORCEModel(ReconstModel):
                 resolved_odi_range,
                 resolved_num_odi,
                 min_crossing_angles,
+                resolved_seed,
             )
             if verbose:
                 print(f"[FORCE] Cached simulations to {cache_dir / filename}")
