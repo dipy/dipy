@@ -505,8 +505,8 @@ def _make_fetcher(
         A message to print to screen when fetching takes place. Default (None)
         is to print nothing
     unzip : bool, optional
-        Whether to unzip the file(s) after downloading them. Supports zip, gz,
-        and tar.gz files.
+        Whether to unzip the file(s) after downloading them. Supports zip,
+        tar.gz, and tar.bz2 files.
     use_headers : bool, optional
         Whether to use headers when downloading files.
 
@@ -537,16 +537,14 @@ def _make_fetcher(
                 p = Path(f)
                 if p.suffix in (".gz", ".bz2"):
                     if p.with_suffix("").suffix == ".tar":
-                        ar = tarfile.open(Path(folder) / f)
-                        ar.extractall(path=folder)
-                        ar.close()
+                        with tarfile.open(Path(folder) / f) as ar:
+                            ar.extractall(path=folder, filter="data")
                     else:
                         raise ValueError("File extension is not recognized")
                 elif p.suffix == ".zip":
-                    z = zipfile.ZipFile(Path(folder) / f, "r")
-                    files[str(f)] += (tuple(z.namelist()),)
-                    z.extractall(folder)
-                    z.close()
+                    with zipfile.ZipFile(Path(folder) / f, "r") as z:
+                        files[str(f)] += (tuple(z.namelist()),)
+                        z.extractall(folder)
                 else:
                     raise ValueError("File extension is not recognized")
 
