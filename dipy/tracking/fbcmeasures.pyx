@@ -57,12 +57,14 @@ cdef class FBCMeasures:
         ----------
         .. footbibliography::
         """
-        self.compute(streamlines,
-                 kernel,
-                 min_fiberlength=min_fiberlength,
-                 max_windowsize=max_windowsize,
-                 num_threads=num_threads,
-                 verbose=verbose)
+        self.compute(
+            streamlines,
+            kernel,
+            min_fiberlength=min_fiberlength,
+            max_windowsize=max_windowsize,
+            num_threads=num_threads,
+            verbose=verbose,
+        )
 
     def get_points_rfbc_thresholded(self, threshold, emphasis=.5, verbose=False):
         """ Set a threshold on the RFBC to remove spurious fibers.

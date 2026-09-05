@@ -47,8 +47,7 @@ def test_dot():
     for _ in range(10):
         vec_view1 = vec1 = np.random.random(3)
         vec_view2 = vec2 = np.random.random(3)
-        assert_almost_equal(dot(&vec_view1[0], &vec_view2[0]),
-            np.dot(vec1, vec2))
+        assert_almost_equal(dot(&vec_view1[0], &vec_view2[0]), np.dot(vec1, vec2))
 
     vec_view1 = vec1 = np.random.random(3)
     vec_view2 = vec2 = np.random.random(3)

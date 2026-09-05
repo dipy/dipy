@@ -123,8 +123,14 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.rejection_sampling_max_try = 100
         self.rejection_sampling_nbr_sample = 10  # Adaptively set in Trekker.
 
-        ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                       pmf_threshold=pmf_threshold, **kwargs)
+        ProbabilisticDirectionGetter.__init__(
+            self,
+            pmf_gen,
+            max_angle,
+            sphere,
+            pmf_threshold=pmf_threshold,
+            **kwargs,
+        )
 
     cdef void initialize_candidate(self, double[:] init_dir):
         """"Initialize the parallel transport frame.
@@ -272,9 +278,11 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 self.last_val_cand = 0
                 if q == self.probe_quality-1:
                     for i in range(3):
-                        binormal[i] = (self.propagator[6] * frame[0][i]
-                                      + self.propagator[7] * frame[1][i]
-                                      + self.propagator[8] * frame[2][i])
+                        binormal[i] = (
+                            self.propagator[6] * frame[0][i]
+                            + self.propagator[7] * frame[1][i]
+                            + self.propagator[8] * frame[2][i]
+                        )
                     cross(&normal[0], &binormal[0], &tangent[0])
 
                 for c in range(self.probe_count):
@@ -362,11 +370,12 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.prepare_propagator(self.step_size)
 
         for i in range(3):
-            self.position[i] = \
-                (self.propagator[0] * self.frame[0][i] * self.inv_voxel_size[i]
+            self.position[i] = (
+                self.propagator[0] * self.frame[0][i] * self.inv_voxel_size[i]
                 + self.propagator[1] * self.frame[1][i] * self.inv_voxel_size[i]
                 + self.propagator[2] * self.frame[2][i] * self.inv_voxel_size[i]
-                + self.position[i])
+                + self.position[i]
+            )
             tangent[i] = (self.propagator[3] * self.frame[0][i]
                           + self.propagator[4] * self.frame[1][i]
                           + self.propagator[5] * self.frame[2][i])
@@ -445,9 +454,10 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                     .check_point_c(<double * > &self.position[0])
                 if stream_status == TRACKPOINT:
                     continue
-                elif (stream_status == ENDPOINT or
-                    stream_status == INVALIDPOINT or
-                    stream_status == OUTSIDEIMAGE
+                elif (
+                    stream_status == ENDPOINT
+                    or stream_status == INVALIDPOINT
+                    or stream_status == OUTSIDEIMAGE
                 ):
                     break
             else:
