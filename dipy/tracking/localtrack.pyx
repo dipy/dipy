@@ -366,10 +366,14 @@ cdef _pft(cnp.float_t[:, :] streamline,
                 # copy data in the temp arrays
                 for pp in range(particle_count):
                     for ss in range(pft_nbr_steps):
-                        copy_point(&particle_paths[0, pp, ss, 0],
-                                  &particle_paths[1, pp, ss, 0])
-                        copy_point(&particle_dirs[0, pp, ss, 0],
-                                  &particle_dirs[1, pp, ss, 0])
+                        copy_point(
+                            &particle_paths[0, pp, ss, 0],
+                            &particle_paths[1, pp, ss, 0],
+                        )
+                        copy_point(
+                            &particle_dirs[0, pp, ss, 0],
+                            &particle_dirs[1, pp, ss, 0],
+                        )
                     particle_stream_statuses[1, pp] = (
                             particle_stream_statuses[0, pp]
                     )
@@ -385,10 +389,14 @@ cdef _pft(cnp.float_t[:, :] streamline,
                                                rdm_sample,
                                                particle_count)
                     for ss in range(pft_nbr_steps):
-                        copy_point(&particle_paths[1, p_source, ss, 0],
-                                  &particle_paths[0, pp, ss, 0])
-                        copy_point(&particle_dirs[1, p_source, ss, 0],
-                                  &particle_dirs[0, pp, ss, 0])
+                        copy_point(
+                            &particle_paths[1, p_source, ss, 0],
+                            &particle_paths[0, pp, ss, 0],
+                        )
+                        copy_point(
+                            &particle_dirs[1, p_source, ss, 0],
+                            &particle_dirs[0, pp, ss, 0],
+                        )
                     particle_stream_statuses[0, pp] = (
                             particle_stream_statuses[1, p_source]
                     )

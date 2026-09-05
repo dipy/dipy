@@ -483,8 +483,12 @@ cdef double c_segment_length(Streamline streamline,
     return sqrt(segment_length)
 
 
-cdef cnp.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
-                                       double tol_error, double max_segment_length) noexcept nogil:
+cdef cnp.npy_intp c_compress_streamline(
+    Streamline streamline,
+    Streamline out,
+    double tol_error,
+    double max_segment_length,
+) noexcept nogil:
     """ Compresses a streamline (see function `compress_streamlines`)."""
     cdef:
         cnp.npy_intp N = streamline.shape[0]

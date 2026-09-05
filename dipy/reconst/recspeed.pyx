@@ -264,8 +264,12 @@ def search_descending(cython.floating[::1] a, double relative_threshold):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef long local_maxima_c(double[:] odf, cnp.uint16_t[:, :] edges, double[::1] out_values,
-        cnp.npy_intp[::1] out_indices) noexcept nogil:
+cdef long local_maxima_c(
+    double[:] odf,
+    cnp.uint16_t[:, :] edges,
+    double[::1] out_values,
+    cnp.npy_intp[::1] out_indices,
+) noexcept nogil:
     cdef:
         long count
         cnp.npy_intp* wpeak = <cnp.npy_intp*>malloc(odf.shape[0] * sizeof(cnp.npy_intp))
@@ -479,9 +483,11 @@ def le_to_odf(
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def sum_on_blocks_1d(cnp.ndarray[double, ndim=1] arr,
+def sum_on_blocks_1d(
+    cnp.ndarray[double, ndim=1] arr,
     cnp.ndarray[long, ndim=1] blocks,
-    cnp.ndarray[double, ndim=1] out, int outn,
+    cnp.ndarray[double, ndim=1] out,
+    int outn,
 ):
     """Summations on blocks of 1d array
     """

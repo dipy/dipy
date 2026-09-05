@@ -376,10 +376,14 @@ cdef class EnhancementKernel:
         cdef double output = 1 / (8*sqrt(2))
         output *= sqrt(PI)*self.t*sqrt(self.t*self.D33)*sqrt(self.D33*self.D44)
         output *= 1 / (16*PI*PI*self.D33*self.D33*self.D44*self.D44*self.t*self.t*self.t*self.t)
-        output *= exp(-sqrt((c[0]*c[0] + c[1]*c[1]) / (self.D33*self.D44) +
-                   (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) *
-                   (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) +
-                    c[5]*c[5]/self.D44) / (4*self.t))
+        output *= exp(
+            -sqrt(
+                (c[0] * c[0] + c[1] * c[1]) / (self.D33 * self.D44)
+                + (c[2] * c[2] / self.D33 + (c[3] * c[3] + c[4] * c[4]) / self.D44)
+                * (c[2] * c[2] / self.D33 + (c[3] * c[3] + c[4] * c[4]) / self.D44)
+                + c[5] * c[5] / self.D44
+            ) / (4 * self.t)
+        )
         return output
 
 cdef double PI = 3.1415926535897932

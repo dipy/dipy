@@ -525,15 +525,17 @@ cdef void initialize_ptt_candidate(TrackerParameters params,
     else:
         for count in range(params.ptt.probe_count):
             for i in range(3):
-                position[i] = (stream_data[19 + i]
-                              + stream_data[4 + i]
-                              * params.ptt.probe_radius
-                              * cos(count * params.ptt.angular_separation)
-                              * params.inv_voxel_size[i]
-                              + stream_data[7 + i]
-                              * params.ptt.probe_radius
-                              * sin(count * params.ptt.angular_separation)
-                              * params.inv_voxel_size[i])
+                position[i] = (
+                    stream_data[19 + i]
+                    + stream_data[4 + i]
+                    * params.ptt.probe_radius
+                    * cos(count * params.ptt.angular_separation)
+                    * params.inv_voxel_size[i]
+                    + stream_data[7 + i]
+                    * params.ptt.probe_radius
+                    * sin(count * params.ptt.angular_separation)
+                    * params.inv_voxel_size[i]
+                )
 
             fod_amp = pmf_gen.get_pmf_value_c(position,
                                               &stream_data[1])
@@ -584,17 +586,19 @@ cdef void prepare_ptt_propagator(TrackerParameters params,
         # stream_data[10:18] -> propagator
         stream_data[11] = stream_data[24] * tmp_arclength
         stream_data[12] = stream_data[25] * tmp_arclength
-        stream_data[13] = (1 - stream_data[25]
-                          * stream_data[25] * tmp_arclength
-                          - stream_data[24] * stream_data[24]
-                          * tmp_arclength)
+        stream_data[13] = (
+            1 - stream_data[25] * stream_data[25] * tmp_arclength
+            - stream_data[24] * stream_data[24] * tmp_arclength
+        )
         stream_data[14] = stream_data[24] * arclength
         stream_data[15] = stream_data[25] * arclength
         stream_data[16] = -stream_data[25] * arclength
-        stream_data[17] = (-stream_data[24] * stream_data[25]
-                          * tmp_arclength)
-        stream_data[18] = (1 - stream_data[25] * stream_data[25]
-                          * tmp_arclength)
+        stream_data[17] = (
+            -stream_data[24] * stream_data[25] * tmp_arclength
+        )
+        stream_data[18] = (
+            1 - stream_data[25] * stream_data[25] * tmp_arclength
+        )
 
 
 cdef double calculate_ptt_data_support(TrackerParameters params,
@@ -633,21 +637,26 @@ cdef double calculate_ptt_data_support(TrackerParameters params,
     for q in range(1, params.ptt.probe_quality):
         for i in range(3):
             # stream_data[10:18] : propagator
-            position[i] = \
-                (stream_data[10] * frame[0][i] * params.voxel_size[i]
+            position[i] = (
+                stream_data[10] * frame[0][i] * params.voxel_size[i]
                 + stream_data[11] * frame[1][i] * params.voxel_size[i]
                 + stream_data[12] * frame[2][i] * params.voxel_size[i]
-                + position[i])
-            tangent[i] = (stream_data[13] * frame[0][i]
-                         + stream_data[14] * frame[1][i]
-                         + stream_data[15] * frame[2][i])
+                + position[i]
+            )
+            tangent[i] = (
+                stream_data[13] * frame[0][i]
+                + stream_data[14] * frame[1][i]
+                + stream_data[15] * frame[2][i]
+            )
         normalize(&tangent[0])
 
         if q < (params.ptt.probe_quality - 1):
             for i in range(3):
-                binormal[i] = (stream_data[16] * frame[0][i]
-                              + stream_data[17] * frame[1][i]
-                              + stream_data[18] * frame[2][i])
+                binormal[i] = (
+                    stream_data[16] * frame[0][i]
+                    + stream_data[17] * frame[1][i]
+                    + stream_data[18] * frame[2][i]
+                )
             cross(&normal[0], &binormal[0], &tangent[0])
 
             copy_point(&tangent[0], &frame[0][0])
@@ -662,20 +671,26 @@ cdef double calculate_ptt_data_support(TrackerParameters params,
             stream_data[23] = 0  # last_val_cand
             if q == params.ptt.probe_quality - 1:
                 for i in range(3):
-                    binormal[i] = (stream_data[16] * frame[0][i]
-                                  + stream_data[17] * frame[1][i]
-                                  + stream_data[18] * frame[2][i])
+                    binormal[i] = (
+                        stream_data[16] * frame[0][i]
+                        + stream_data[17] * frame[1][i]
+                        + stream_data[18] * frame[2][i]
+                    )
                 cross(&normal[0], &binormal[0], &tangent[0])
 
             for c in range(params.ptt.probe_count):
                 for i in range(3):
-                    new_position[i] = (position[i]
-                                      + normal[i] * params.ptt.probe_radius
-                                      * cos(c * params.ptt.angular_separation)
-                                      * params.inv_voxel_size[i]
-                                      + binormal[i] * params.ptt.probe_radius
-                                      * sin(c * params.ptt.angular_separation)
-                                      * params.inv_voxel_size[i])
+                    new_position[i] = (
+                        position[i]
+                        + normal[i]
+                        * params.ptt.probe_radius
+                        * cos(c * params.ptt.angular_separation)
+                        * params.inv_voxel_size[i]
+                        + binormal[i]
+                        * params.ptt.probe_radius
+                        * sin(c * params.ptt.angular_separation)
+                        * params.inv_voxel_size[i]
+                    )
                 fod_amp = pmf_gen.get_pmf_value_c(new_position, tangent)
                 fod_amp = fod_amp if fod_amp > params.sh.pmf_threshold else 0
                 stream_data[23] += fod_amp  # last_val_cand
@@ -951,12 +966,14 @@ cdef TrackerStatus eudx_propagator(
     return TrackerStatus.SUCCESS
 
 
-cdef TrackerStatus parallel_transport_propagator(double* point,
-                                              double* direction,
-                                              TrackerParameters params,
-                                              double* stream_data,
-                                              PmfGen pmf_gen,
-                                              RNGState* rng) noexcept nogil:
+cdef TrackerStatus parallel_transport_propagator(
+    double* point,
+    double* direction,
+    TrackerParameters params,
+    double* stream_data,
+    PmfGen pmf_gen,
+    RNGState* rng,
+) noexcept nogil:
     """
     Propagates the position by step_size amount. The propagation is using
     the parameters of the last candidate curve. Then, randomly generate
@@ -1010,20 +1027,22 @@ cdef TrackerStatus parallel_transport_propagator(double* point,
 
     for i in range(3):
         #  position
-        stream_data[19 + i] = (stream_data[10] * stream_data[1 + i]
-                               * params.inv_voxel_size[i]
-                               + stream_data[11] * stream_data[4 + i]
-                               * params.inv_voxel_size[i]
-                               + stream_data[12] * stream_data[7 + i]
-                               * params.inv_voxel_size[i]
-                               + stream_data[19 + i])
-        tangent[i] = (stream_data[13] * stream_data[1 + i]
-                      + stream_data[14] * stream_data[4 + i]
-                      + stream_data[15] * stream_data[7 + i])
-        stream_data[7 + i] = \
-            (stream_data[16] * stream_data[1 + i]
+        stream_data[19 + i] = (
+            stream_data[10] * stream_data[1 + i] * params.inv_voxel_size[i]
+            + stream_data[11] * stream_data[4 + i] * params.inv_voxel_size[i]
+            + stream_data[12] * stream_data[7 + i] * params.inv_voxel_size[i]
+            + stream_data[19 + i]
+        )
+        tangent[i] = (
+            stream_data[13] * stream_data[1 + i]
+            + stream_data[14] * stream_data[4 + i]
+            + stream_data[15] * stream_data[7 + i]
+        )
+        stream_data[7 + i] = (
+            stream_data[16] * stream_data[1 + i]
             + stream_data[17] * stream_data[4 + i]
-            + stream_data[18] * stream_data[7 + i])
+            + stream_data[18] * stream_data[7 + i]
+        )
     normalize(&tangent[0])
     cross(&stream_data[4], &stream_data[7], &tangent[0])  # frame1, frame2
     normalize(&stream_data[4])  # frame1

@@ -534,18 +534,24 @@ def compute_em_demons_step_3d(floating[:, :, :] delta_field,
                                 out[k, i, j, 1] = 0
                                 out[k, i, j, 2] = 0
                             else:
-                                out[k, i, j, 0] = (delta *
-                                    gradient_moving[k, i, j, 0] / nrm2)
-                                out[k, i, j, 1] = (delta *
-                                    gradient_moving[k, i, j, 1] / nrm2)
-                                out[k, i, j, 2] = (delta *
-                                    gradient_moving[k, i, j, 2] / nrm2)
+                                out[k, i, j, 0] = (
+                                    delta * gradient_moving[k, i, j, 0] / nrm2
+                                )
+                                out[k, i, j, 1] = (
+                                    delta * gradient_moving[k, i, j, 1] / nrm2
+                                )
+                                out[k, i, j, 2] = (
+                                    delta * gradient_moving[k, i, j, 2] / nrm2
+                                )
                         else:
                             den = (sigma_sq_x * nrm2 + sigma_sq_i)
-                            out[k, i, j, 0] = (sigma_sq_x * delta *
-                                gradient_moving[k, i, j, 0] / den)
-                            out[k, i, j, 1] = (sigma_sq_x * delta *
-                                gradient_moving[k, i, j, 1] / den)
-                            out[k, i, j, 2] = (sigma_sq_x * delta *
-                                gradient_moving[k, i, j, 2] / den)
+                            out[k, i, j, 0] = (
+                                sigma_sq_x * delta * gradient_moving[k, i, j, 0] / den
+                            )
+                            out[k, i, j, 1] = (
+                                sigma_sq_x * delta * gradient_moving[k, i, j, 1] / den
+                            )
+                            out[k, i, j, 2] = (
+                                sigma_sq_x * delta * gradient_moving[k, i, j, 2] / den
+                            )
     return np.asarray(out), energy

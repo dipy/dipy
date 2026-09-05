@@ -2894,8 +2894,9 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
                         q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
                                                    img_world2grid)
                         # Interpolate img at q
-                        in_flag = _interpolate_scalar_3d[floating](img, q[0],
-                            q[1], q[2], &out[k, i, j, p])
+                        in_flag = _interpolate_scalar_3d[floating](
+                            img, q[0], q[1], q[2], &out[k, i, j, p]
+                        )
                         if in_flag == 0:
                             out[k, i, j, p] = 0
                             inside[k, i, j] = 0
@@ -2910,8 +2911,9 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
                         q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
                                                    img_world2grid)
                         # Interpolate img at q
-                        in_flag = _interpolate_scalar_3d[floating](img, q[0],
-                                                q[1], q[2], &out[k, i, j, p])
+                        in_flag = _interpolate_scalar_3d[floating](
+                            img, q[0], q[1], q[2], &out[k, i, j, p]
+                        )
                         if in_flag == 0:
                             out[k, i, j, p] = 0
                             inside[k, i, j] = 0
@@ -2996,8 +2998,9 @@ def _sparse_gradient_3d(floating[:, :, :] img,
                 q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
                                            img_world2grid)
                 # Interpolate img at q
-                in_flag = _interpolate_scalar_3d[floating](img,
-                                                q[0], q[1], q[2], &out[i, p])
+                in_flag = _interpolate_scalar_3d[floating](
+                    img, q[0], q[1], q[2], &out[i, p]
+                )
                 if in_flag == 0:
                     out[i, p] = 0
                     inside[i] = 0
@@ -3067,8 +3070,9 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                     q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_world2grid)
                     q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
                     # Interpolate img at q
-                    in_flag = _interpolate_scalar_2d[floating](img, q[0],
-                                                    q[1], &out[i, j, p])
+                    in_flag = _interpolate_scalar_2d[floating](
+                        img, q[0], q[1], &out[i, j, p]
+                    )
                     if in_flag == 0:
                         out[i, j, p] = 0
                         inside[i, j] = 0
@@ -3079,8 +3083,9 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                     q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_world2grid)
                     q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
                     # Interpolate img at q
-                    in_flag = _interpolate_scalar_2d[floating](img, q[0],
-                                                    q[1], &out[i, j, p])
+                    in_flag = _interpolate_scalar_2d[floating](
+                        img, q[0], q[1], &out[i, j, p]
+                    )
                     if in_flag == 0:
                         out[i, j, p] = 0
                         inside[i, j] = 0

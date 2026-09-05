@@ -22,8 +22,15 @@ from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
 
 
-def nlmeans_3d_classic(arr, mask=None, sigma=None, patch_radius=1,
-               block_radius=5, rician=True, num_threads=None):
+def nlmeans_3d_classic(
+    arr,
+    mask=None,
+    sigma=None,
+    patch_radius=1,
+    block_radius=5,
+    rician=True,
+    num_threads=None,
+):
     """ Non-local means for denoising 3D images
 
     Parameters
@@ -518,10 +525,16 @@ cdef void _value_block(double[:, :, :] denoised_estimate, double[:, :, :] weight
                     weight_count[voxel_y, voxel_x, voxel_z] = current_count + 1.0
 
 
-cdef double _patch_distance(double[:, :, :] image,
-                           int patch1_center_y, int patch1_center_x, int patch1_center_z,
-                           int patch2_center_y, int patch2_center_x, int patch2_center_z,
-                           int patch_radius) nogil:
+cdef double _patch_distance(
+    double[:, :, :] image,
+    int patch1_center_y,
+    int patch1_center_x,
+    int patch1_center_z,
+    int patch2_center_y,
+    int patch2_center_x,
+    int patch2_center_z,
+    int patch_radius,
+) nogil:
     """
     Computes the squared distance between two cubic patches in the image.
 
@@ -608,20 +621,29 @@ cdef double _patch_distance(double[:, :, :] image,
     return squared_distance_sum / voxel_count
 
 
-cdef void _process_block_complete(double[:, :, :] image,
-                                double[:, :, :] mask,
-                                double[:, :, :] local_means,
-                                double[:, :, :] local_variances,
-                                double[:, :, :] accumulated_estimates,
-                                double[:, :, :] weight_counts,
-                                double[:, :, :] workspace,
-                                int center_y, int center_x, int center_z,
-                                int patch_radius, int block_radius,
-                                double filtering_strength,
-                                double noise_variance_doubled, int is_rician,
-                                double epsilon, double mean_ratio_threshold,
-                                double variance_ratio_min,
-                                int img_height, int img_width, int img_depth) noexcept nogil:
+cdef void _process_block_complete(
+    double[:, :, :] image,
+    double[:, :, :] mask,
+    double[:, :, :] local_means,
+    double[:, :, :] local_variances,
+    double[:, :, :] accumulated_estimates,
+    double[:, :, :] weight_counts,
+    double[:, :, :] workspace,
+    int center_y,
+    int center_x,
+    int center_z,
+    int patch_radius,
+    int block_radius,
+    double filtering_strength,
+    double noise_variance_doubled,
+    int is_rician,
+    double epsilon,
+    double mean_ratio_threshold,
+    double variance_ratio_min,
+    int img_height,
+    int img_width,
+    int img_depth,
+) noexcept nogil:
     """
     Process a complete block including weight computation and final application.
 
@@ -684,10 +706,16 @@ cdef void _process_block_complete(double[:, :, :] image,
                         continue
 
                     # Compute patch distance
-                    patch_distance = _patch_distance(image,
-                                                    center_y, center_x, center_z,
-                                                    neighbor_y, neighbor_x, neighbor_z,
-                                                    block_radius)
+                    patch_distance = _patch_distance(
+                        image,
+                        center_y,
+                        center_x,
+                        center_z,
+                        neighbor_y,
+                        neighbor_x,
+                        neighbor_z,
+                        block_radius,
+                    )
 
                     # Compute similarity weight using original nlmeans formula
                     # Original: w = exp(-d / (h * h)) where h is the noise sigma
@@ -702,9 +730,17 @@ cdef void _process_block_complete(double[:, :, :] image,
 
     # Apply accumulated weighted averages to final estimate
     if accumulator_weight > 0.0:
-        _value_block(accumulated_estimates, weight_counts,
-                   center_y, center_x, center_z, workspace,
-                   accumulator_weight, noise_variance_doubled, is_rician)
+        _value_block(
+            accumulated_estimates,
+            weight_counts,
+            center_y,
+            center_x,
+            center_z,
+            workspace,
+            accumulator_weight,
+            noise_variance_doubled,
+            is_rician,
+        )
 
 
 cdef inline void _clear_workspace(double[:, :, :] workspace) noexcept nogil:
@@ -784,8 +820,14 @@ cdef double _local_mean(double[:, :, :] image, int center_y, int center_x, int c
     return intensity_sum / voxel_count
 
 
-cdef double _local_variance(double[:, :, :] image, double mean_intensity,
-                           int center_y, int center_x, int center_z, int patch_radius) nogil:
+cdef double _local_variance(
+    double[:, :, :] image,
+    double mean_intensity,
+    int center_y,
+    int center_x,
+    int center_z,
+    int patch_radius,
+) nogil:
     """
     Computes the local variance of a cubic patch centered at (center_y, center_x, center_z).
 
@@ -994,14 +1036,29 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
                         local_noise_variance_doubled = 2.0 * current_sigma_sq
                         local_filtering_strength = current_sigma_sq
 
-                        _process_block_complete(image, mask, local_means, local_variances,
-                                              accumulated_estimates, weight_counts,
-                                              thread_workspaces[thread_id],
-                                              center_y, center_x, center_z,
-                                              patch_radius, block_radius, local_filtering_strength,
-                                              local_noise_variance_doubled, is_rician,
-                                              epsilon, mean_ratio_threshold, variance_ratio_min,
-                                              img_height, img_width, img_depth)
+                        _process_block_complete(
+                            image,
+                            mask,
+                            local_means,
+                            local_variances,
+                            accumulated_estimates,
+                            weight_counts,
+                            thread_workspaces[thread_id],
+                            center_y,
+                            center_x,
+                            center_z,
+                            patch_radius,
+                            block_radius,
+                            local_filtering_strength,
+                            local_noise_variance_doubled,
+                            is_rician,
+                            epsilon,
+                            mean_ratio_threshold,
+                            variance_ratio_min,
+                            img_height,
+                            img_width,
+                            img_depth,
+                        )
     else:
         with nogil, parallel():
             for center_z in prange(0, img_depth, 2, schedule="dynamic"):
@@ -1016,14 +1073,29 @@ def nlmeans_3d_blockwise(double[:, :, :] image, double[:, :, :] mask, int patch_
 
                         _clear_workspace(thread_workspaces[thread_id])
 
-                        _process_block_complete(image, mask, local_means, local_variances,
-                                              accumulated_estimates, weight_counts,
-                                              thread_workspaces[thread_id],
-                                              center_y, center_x, center_z,
-                                              patch_radius, block_radius, fixed_filtering_strength,
-                                              fixed_noise_variance_doubled, is_rician,
-                                              epsilon, mean_ratio_threshold, variance_ratio_min,
-                                              img_height, img_width, img_depth)
+                        _process_block_complete(
+                            image,
+                            mask,
+                            local_means,
+                            local_variances,
+                            accumulated_estimates,
+                            weight_counts,
+                            thread_workspaces[thread_id],
+                            center_y,
+                            center_x,
+                            center_z,
+                            patch_radius,
+                            block_radius,
+                            fixed_filtering_strength,
+                            fixed_noise_variance_doubled,
+                            is_rician,
+                            epsilon,
+                            mean_ratio_threshold,
+                            variance_ratio_min,
+                            img_height,
+                            img_width,
+                            img_depth,
+                        )
 
     # Phase 3: Finalize denoised estimates
     with nogil, parallel():

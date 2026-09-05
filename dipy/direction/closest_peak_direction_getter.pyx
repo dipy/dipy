@@ -166,9 +166,17 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
         return cls(pmf_gen, max_angle, sphere, pmf_threshold=pmf_threshold, **kwargs)
 
     @classmethod
-    def from_shcoeff(cls, shcoeff, max_angle, sphere=default_sphere,
-                    pmf_threshold=0.1, basis_type=None, legacy=True,
-                     sh_to_pmf=False, **kwargs):
+    def from_shcoeff(
+        cls,
+        shcoeff,
+        max_angle,
+        sphere=default_sphere,
+        pmf_threshold=0.1,
+        basis_type=None,
+        legacy=True,
+        sh_to_pmf=False,
+        **kwargs,
+    ):
         """Probabilistic direction getter from a distribution of directions
         on the sphere
 
