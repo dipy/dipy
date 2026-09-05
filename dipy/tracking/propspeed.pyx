@@ -458,7 +458,9 @@ cdef int initialize_ptt(TrackerParameters params,
     # within the trial limit
     for _ in range(params.ptt.rejection_sampling_max_try):
         initialize_ptt_candidate(params, stream_data, pmf_gen, seed_direction, rng)
-        if (random_float(rng) * max_posterior <= calculate_ptt_data_support(params, stream_data, pmf_gen)):
+        if random_float(rng) * max_posterior <= calculate_ptt_data_support(
+            params, stream_data, pmf_gen
+        ):
             stream_data[22] = stream_data[23]  # last_val = last_val_cand
             return 0
     return 1
@@ -1066,7 +1068,9 @@ cdef TrackerStatus parallel_transport_propagator(
         # k1, k2
         stream_data[24], stream_data[25] = \
             random_point_within_circle(params.max_curvature, rng)
-        if random_float(rng) * max_posterior < calculate_ptt_data_support(params, stream_data, pmf_gen):
+        if random_float(rng) * max_posterior < calculate_ptt_data_support(
+            params, stream_data, pmf_gen
+        ):
             stream_data[22] = stream_data[23]  # last_val = last_val_cand
             # Propagation is successful if a suitable candidate can be sampled
             # within the trial limit

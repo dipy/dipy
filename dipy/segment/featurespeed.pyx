@@ -81,7 +81,9 @@ cdef class Feature:
         int, 1-tuple or 2-tuple
             Shape of the features.
         """
-        raise NotImplementedError("Feature's subclasses must implement method `infer_shape(self, datum)`!")
+        raise NotImplementedError(
+            "Feature's subclasses must implement method `infer_shape(self, datum)`!"
+        )
 
     cpdef extract(Feature self, datum):
         """ Extracts features from a sequential datum.
@@ -96,7 +98,9 @@ cdef class Feature:
         2D array
             Features extracted from `datum`.
         """
-        raise NotImplementedError("Feature's subclasses must implement method `extract(self, datum)`!")
+        raise NotImplementedError(
+            "Feature's subclasses must implement method `extract(self, datum)`!"
+        )
 
 
 cdef class CythonFeature(Feature):
@@ -204,7 +208,9 @@ cdef class ResampleFeature(CythonFeature):
         self.nb_points = nb_points
 
         if nb_points <= 0:
-            raise ValueError("ResampleFeature: `nb_points` must be strictly positive: {0}".format(nb_points))
+            raise ValueError(
+                f"ResampleFeature: `nb_points` must be strictly positive: {nb_points}"
+            )
 
     cdef Shape c_infer_shape(ResampleFeature self, Data2D datum) noexcept nogil:
         cdef Shape shape = shape_from_memview(datum)
@@ -235,7 +241,9 @@ cdef class CenterOfMassFeature(CythonFeature):
         shape.size = datum.shape[1]
         return shape
 
-    cdef void c_extract(CenterOfMassFeature self, Data2D datum, Data2D out) noexcept nogil:
+    cdef void c_extract(
+        CenterOfMassFeature self, Data2D datum, Data2D out
+    ) noexcept nogil:
         cdef cnp.npy_intp N = datum.shape[0], D = datum.shape[1]
         cdef cnp.npy_intp i, d
 
@@ -318,7 +326,9 @@ cdef class VectorOfEndpointsFeature(CythonFeature):
     def __init__(VectorOfEndpointsFeature self):
         super(VectorOfEndpointsFeature, self).__init__(is_order_invariant=False)
 
-    cdef Shape c_infer_shape(VectorOfEndpointsFeature self, Data2D datum) noexcept nogil:
+    cdef Shape c_infer_shape(
+        VectorOfEndpointsFeature self, Data2D datum
+    ) noexcept nogil:
         cdef Shape shape = shape_from_memview(datum)
         shape.ndim = 2
         shape.dims[0] = 1
@@ -326,7 +336,9 @@ cdef class VectorOfEndpointsFeature(CythonFeature):
         shape.size = datum.shape[1]
         return shape
 
-    cdef void c_extract(VectorOfEndpointsFeature self, Data2D datum, Data2D out) noexcept nogil:
+    cdef void c_extract(
+        VectorOfEndpointsFeature self, Data2D datum, Data2D out
+    ) noexcept nogil:
         cdef:
             int N = datum.shape[0], D = datum.shape[1]
             int d

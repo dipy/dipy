@@ -20,7 +20,8 @@ def rbf_interpolation(data, sphere_origin, sphere_target, *,
     Parameters
     ----------
     data : (..., N) ndarray
-        Values of the spherical function evaluated at the N positions specified by `sphere_origin`.
+        Values of the spherical function evaluated at the N positions
+        specified by `sphere_origin`.
     sphere_origin : Sphere
         N positions on the unit sphere where the spherical function is evaluated.
     sphere_target : Sphere
@@ -32,17 +33,19 @@ def rbf_interpolation(data, sphere_origin, sphere_target, *,
         'multiquadric', 'inverse_multiquadric', 'inverse_quadratic', 'gaussian'}.
     epsilon : float, optional
         Radial basis function spread parameter.
-        Defaults to 1 when `function` is 'linear', 'thin_plate_spline', 'cubic', or 'quintic'.
-        Otherwise, `epsilon` must be specified.
+        Defaults to 1 when `function` is 'linear', 'thin_plate_spline',
+        'cubic', or 'quintic'. Otherwise, `epsilon` must be specified.
     smoothing : float, optional
-        Smoothing parameter. When `smoothing` is 0, the interpolation is exact.
-        As `smoothing` increases, the interpolation approaches a least-squares fit of `data`
-        using the supplied radial basis function. Default: 0.
+        Smoothing parameter. When `smoothing` is 0, the interpolation
+        is exact. As `smoothing` increases, the interpolation
+        approaches a least-squares fit of `data` using the supplied
+        radial basis function. Default: 0.
 
     Returns
     -------
     v : (..., M) ndarray
-        Interpolated values of the spherical function at M positions specified by `sphere_target`.
+        Interpolated values of the spherical function at M positions
+        specified by `sphere_target`.
 
     See Also
     --------
@@ -88,7 +91,9 @@ cdef cnp.npy_intp offset(cnp.npy_intp *indices,
     return summ
 
 
-cdef void splitoffset(float *offset, cnp.npy_intp *index, cnp.npy_intp shape) noexcept nogil:
+cdef void splitoffset(
+    float *offset, cnp.npy_intp *index, cnp.npy_intp shape
+) noexcept nogil:
     """Splits a global offset into an integer index and a relative offset"""
     offset[0] -= .5
     if offset[0] <= 0:

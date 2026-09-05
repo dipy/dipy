@@ -328,14 +328,20 @@ def set_number_of_points(streamlines, nb_points=3):
 
         if dtype == np.float32:
             c_set_number_of_points_from_arraysequence[float2d](
-                as_native_array(streamlines._data), streamlines._offsets.astype(np.intp),
-                streamlines._lengths.astype(np.intp), nb_points,
-                new_streamlines._data)
+                as_native_array(streamlines._data),
+                streamlines._offsets.astype(np.intp),
+                streamlines._lengths.astype(np.intp),
+                nb_points,
+                new_streamlines._data,
+            )
         else:
             c_set_number_of_points_from_arraysequence[double2d](
-                as_native_array(streamlines._data), streamlines._offsets.astype(np.intp),
-                streamlines._lengths.astype(np.intp), nb_points,
-                new_streamlines._data)
+                as_native_array(streamlines._data),
+                streamlines._offsets.astype(np.intp),
+                streamlines._lengths.astype(np.intp),
+                nb_points,
+                new_streamlines._data,
+            )
 
         return new_streamlines
 
@@ -623,7 +629,9 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
         shape = streamline.shape
 
         if dtype != np.float32 and dtype != np.float64:
-            dtype = np.float64 if dtype == np.int64 or dtype == np.uint64 else np.float32
+            dtype = (
+                np.float64 if dtype == np.int64 or dtype == np.uint64 else np.float32
+            )
             streamline = streamline.astype(dtype)
 
         if shape[0] <= 2:
@@ -633,11 +641,13 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
         compressed_streamline = np.empty(shape, dtype)
 
         if dtype == np.float32:
-            nb_points = c_compress_streamline[float2d](streamline, compressed_streamline,
-                                                       tol_error, max_segment_length)
+            nb_points = c_compress_streamline[float2d](
+                streamline, compressed_streamline, tol_error, max_segment_length
+            )
         else:
-            nb_points = c_compress_streamline[double2d](streamline, compressed_streamline,
-                                                        tol_error, max_segment_length)
+            nb_points = c_compress_streamline[double2d](
+                streamline, compressed_streamline, tol_error, max_segment_length
+            )
 
         # HACK: To avoid memleaks we have to recast with astype(dtype).
         compressed_streamlines.append(compressed_streamline[:nb_points].astype(dtype))

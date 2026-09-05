@@ -52,7 +52,9 @@ def normalized_3vec(vec):
     """
     cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_in = as_float_3vec(vec)
     cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)
-    cnormalized_3vec(<float *> cnp.PyArray_DATA(vec_in), <float*> cnp.PyArray_DATA(vec_out))
+    cnormalized_3vec(
+        <float *> cnp.PyArray_DATA(vec_in), <float*> cnp.PyArray_DATA(vec_out)
+    )
     return vec_out
 
 
@@ -112,7 +114,9 @@ cdef inline void cnormalized_3vec(float *vec_in, float *vec_out):
 def inner_3vecs(vec1, vec2):
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1 = as_float_3vec(vec1)
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec2 = as_float_3vec(vec2)
-    return cinner_3vecs(<float *> cnp.PyArray_DATA(fvec1), <float*> cnp.PyArray_DATA(fvec2))
+    return cinner_3vecs(
+        <float *> cnp.PyArray_DATA(fvec1), <float*> cnp.PyArray_DATA(fvec2)
+    )
 
 
 cdef inline float cinner_3vecs(float *vec1, float *vec2) noexcept nogil:
@@ -427,7 +431,9 @@ def most_similar_track_mam(tracks, metric="avg"):
     track2others = np.zeros((lent,), dtype=np.double)
     # use this buffer also for working space containing summed distances
     # of candidate track to all other tracks
-    cdef cnp.double_t *sum_track2others = <cnp.double_t *> cnp.PyArray_DATA(track2others)
+    cdef cnp.double_t *sum_track2others = (
+        <cnp.double_t *> cnp.PyArray_DATA(track2others)
+    )
     # preallocate buffer array for track distance calculations
     cdef:
         cnp.ndarray [cnp.float32_t, ndim=1] distances_buffer
@@ -468,7 +474,9 @@ def most_similar_track_mam(tracks, metric="avg"):
         t2 = tracks32[j]
         t2_len = cnp.PyArray_DIM(t2, 0)
         t2_ptr = <cnp.float32_t *> cnp.PyArray_DATA(t2)
-        track2others[j] = czhang(t1_len, t1_ptr, t2_len, t2_ptr, min_buffer, metric_type)
+        track2others[j] = czhang(
+            t1_len, t1_ptr, t2_len, t2_ptr, min_buffer, metric_type
+        )
     return si, track2others
 
 
@@ -832,8 +840,10 @@ def minimum_closest_distance(xyz1, xyz2):
 
     Let's say we have curves A and B
 
-    for every point in A calculate the minimum distance from every point in B stored in minAB
-    for every point in B calculate the minimum distance from every point in A stored in minBA
+    for every point in A calculate the minimum distance from every
+    point in B stored in minAB
+    for every point in B calculate the minimum distance from every
+    point in A stored in minBA
     find min of minAB stored in min_minAB
     find min of minBA stored in min_minBA
 
@@ -873,7 +883,8 @@ def minimum_closest_distance(xyz1, xyz2):
 
 
 def lee_perpendicular_distance(start0, end0, start1, end1):
-    """ Calculates perpendicular distance metric for the distance between two line segments
+    """ Calculates perpendicular distance metric for the distance
+    between two line segments
 
     Based on Lee , Han & Whang SIGMOD07.
 
@@ -932,7 +943,9 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
                                        <float *> cnp.PyArray_DATA(fvec4))
 
 
-cdef float clee_perpendicular_distance(float *start0, float *end0, float *start1, float *end1):
+cdef float clee_perpendicular_distance(
+    float *start0, float *end0, float *start1, float *end1
+):
     """ This function assumes that norm(end0-start0)>norm(end1-start1)
     """
 
@@ -1119,7 +1132,9 @@ def approx_polygon_track(xyz, alpha=0.392):
         fvec0 = asfp(track[mid_index-1])
         fvec1 = asfp(track[mid_index])
         fvec2 = asfp(track[mid_index+1])
-        # csub_3vecs(<float *> cnp.PyArray_DATA(fvec1),<float *> cnp.PyArray_DATA(fvec0),vec0)
+        # csub_3vecs(
+        #    <float *> cnp.PyArray_DATA(fvec1),<float *> cnp.PyArray_DATA(fvec0),vec0
+        # )
         csub_3vecs(fvec1, fvec0, vec0)
         csub_3vecs(fvec2, fvec1, vec1)
         denom = cnorm_3vec(vec0)*cnorm_3vec(vec1)
@@ -1189,14 +1204,22 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
             # print i
             fvec3 = as_float_3vec(track[i])
             fvec4 = as_float_3vec(track[i+1])
-            cost_par += dpy_log2(clee_perpendicular_distance(<float *> cnp.PyArray_DATA(fvec3),
-                                                             <float *> cnp.PyArray_DATA(fvec4),
-                                                             <float *> cnp.PyArray_DATA(fvec1),
-                                                             <float *> cnp.PyArray_DATA(fvec2)))
-            cost_par += dpy_log2(clee_angle_distance(<float *> cnp.PyArray_DATA(fvec3),
-                                                     <float *> cnp.PyArray_DATA(fvec4),
-                                                     <float *> cnp.PyArray_DATA(fvec1),
-                                                     <float *> cnp.PyArray_DATA(fvec2)))
+            cost_par += dpy_log2(
+                clee_perpendicular_distance(
+                    <float *> cnp.PyArray_DATA(fvec3),
+                    <float *> cnp.PyArray_DATA(fvec4),
+                    <float *> cnp.PyArray_DATA(fvec1),
+                    <float *> cnp.PyArray_DATA(fvec2),
+                )
+            )
+            cost_par += dpy_log2(
+                clee_angle_distance(
+                    <float *> cnp.PyArray_DATA(fvec3),
+                    <float *> cnp.PyArray_DATA(fvec4),
+                    <float *> cnp.PyArray_DATA(fvec1),
+                    <float *> cnp.PyArray_DATA(fvec2),
+                )
+            )
             csub_3vecs(<float *> cnp.PyArray_DATA(fvec4),
                        <float *> cnp.PyArray_DATA(fvec3), tmp)
             cost_nopar += dpy_log2(cinner_3vecs(tmp, tmp))
@@ -1213,7 +1236,8 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
 
 
 def intersect_segment_cylinder(sa, sb, p, q, r):
-    """ Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p,q and r
+    """ Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against
+    cylinder specified by p,q and r
 
     See p.197 from Real Time Collision Detection by C. Ericson
 
@@ -1256,8 +1280,11 @@ def intersect_segment_cylinder(sa, sb, p, q, r):
     return tmp, ct[0], ct[1]
 
 
-cdef float cintersect_segment_cylinder(float *sa, float *sb, float *p, float *q, float r, float *t):
-    """ Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p, q and r
+cdef float cintersect_segment_cylinder(
+    float *sa, float *sb, float *p, float *q, float r, float *t
+):
+    """ Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against
+    cylinder specified by p, q and r
 
     Look p.197 from Real Time Collision Detection C. Ericson
 
@@ -1368,7 +1395,9 @@ def point_segment_sq_distance(a, b, c):
 
 
 @cython.cdivision(True)
-cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c) noexcept nogil:
+cdef inline float cpoint_segment_sq_dist(
+    float * a, float * b, float * c
+) noexcept nogil:
     """ Calculate the squared distance from a point c to a line segment ab.
 
     """
@@ -1436,7 +1465,9 @@ def track_dist_3pts(tracka, trackb):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void track_direct_flip_dist(float *a, float *b, long rows, float *out) noexcept nogil:
+cdef void track_direct_flip_dist(
+    float *a, float *b, long rows, float *out
+) noexcept nogil:
     r""" Direct and flip average distance between two tracks
 
     Parameters
@@ -1495,7 +1526,9 @@ cdef void track_direct_flip_dist(float *a, float *b, long rows, float *out) noex
 
 
 @cython.cdivision(True)
-cdef inline void track_direct_flip_3dist(float *a1, float *b1, float *c1, float *a2, float *b2, float *c2, float *out) noexcept nogil:
+cdef inline void track_direct_flip_3dist(
+    float *a1, float *b1, float *c1, float *a2, float *b2, float *c2, float *out
+) noexcept nogil:
     """ Calculate the euclidean distance between two 3pt tracks
     both direct and flip are given as output
 
@@ -1506,7 +1539,8 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1, float *c1, float 
 
     Returns
     -------
-    out : a float[2] array having the euclidean distance and the flipped euclidean distance
+    out : float[2] array
+        Euclidean distance and the flipped Euclidean distance
 
     """
 
@@ -1679,7 +1713,9 @@ def local_skeleton_clustering(tracks, d_thr=10):
                         for j from 0<=j<3:
                             cluster[i_k].hidden[i*3+j]+=ptr[i*3+j]
                 cluster[i_k].N+=1
-                cluster[i_k].indices=<long *>realloc(cluster[i_k].indices, cluster[i_k].N*sizeof(long))
+                cluster[i_k].indices=<long *>realloc(
+                    cluster[i_k].indices, cluster[i_k].N*sizeof(long)
+                )
                 cluster[i_k].indices[cluster[i_k].N-1]=cit
 
             else:  # New cluster added
@@ -1826,7 +1862,9 @@ def local_skeleton_clustering_3pts(tracks, d_thr=10):
     return C
 
 
-cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1, float *c1, float *a2, float *b2, float *c2, float *out):
+cdef inline void track_direct_flip_3sq_dist(
+    float *a1, float *b1, float *c1, float *a2, float *b2, float *c2, float *out
+):
     """ Calculate the average squared euclidean distance between two 3pt tracks
     both direct and flip are given as output
 
@@ -2090,14 +2128,19 @@ def point_track_sq_distance_check(cnp.ndarray[float, ndim=2] track,
         return False
 
 
-def track_roi_intersection_check(cnp.ndarray[float, ndim=2] track, cnp.ndarray[float, ndim=2] roi, double sq_dist_thr):
+def track_roi_intersection_check(
+    cnp.ndarray[float, ndim=2] track,
+    cnp.ndarray[float, ndim=2] roi,
+    double sq_dist_thr,
+ ):
     """ Check if a track is intersecting a region of interest
 
     Parameters
     ----------
     track: array,float32, shape (N,3)
     roi: array,float32, shape (M,3)
-    sq_dist_thr: double, threshold, check squared euclidean distance from every roi point
+    sq_dist_thr: double
+        threshold, check squared euclidean distance from every roi point
 
     Returns
     -------

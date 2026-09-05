@@ -1506,9 +1506,15 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                     if mmask is not None and mmask[k, i, j] == 0:
                         continue
                     valid_points += 1
-                    x[0] = _apply_affine_3d_x0(<double>k, <double>i, <double>j, 1, grid2world)
-                    x[1] = _apply_affine_3d_x1(<double>k, <double>i, <double>j, 1, grid2world)
-                    x[2] = _apply_affine_3d_x2(<double>k, <double>i, <double>j, 1, grid2world)
+                    x[0] = _apply_affine_3d_x0(
+                        <double>k, <double>i, <double>j, 1, grid2world
+                    )
+                    x[1] = _apply_affine_3d_x1(
+                        <double>k, <double>i, <double>j, 1, grid2world
+                    )
+                    x[2] = _apply_affine_3d_x2(
+                        <double>k, <double>i, <double>j, 1, grid2world
+                    )
 
                     if constant_jacobian == 0:
                         constant_jacobian = transform._jacobian(theta, x, J)

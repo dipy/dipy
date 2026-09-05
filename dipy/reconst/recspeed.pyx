@@ -51,7 +51,8 @@ cdef void remove_similar_vertices_c(
     cnp.uint16_t* n_unique
 ) noexcept nogil:
     """
-    Optimized Cython version to remove vertices that are less than `theta` degrees from any other.
+    Optimized Cython version to remove vertices that are less than
+    `theta` degrees from any other.
     """
     cdef:
         int n = vertices.shape[0]
@@ -176,7 +177,9 @@ def remove_similar_vertices(
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef cnp.npy_intp search_descending_c(cython.floating* arr, cnp.npy_intp size, double relative_threshold) noexcept nogil:
+cdef cnp.npy_intp search_descending_c(
+    cython.floating* arr, cnp.npy_intp size, double relative_threshold
+) noexcept nogil:
     """
     Optimized Cython version of the search_descending function.
 
@@ -192,7 +195,8 @@ cdef cnp.npy_intp search_descending_c(cython.floating* arr, cnp.npy_intp size, d
     Returns
     -------
     cnp.npy_intp
-        Largest index `i` such that all(arr[:i] >= T), where T = arr[0] * relative_threshold.
+        Largest index `i` such that all(arr[:i] >= T), where
+        T = arr[0] * relative_threshold.
     """
     cdef:
         cnp.npy_intp left = 0

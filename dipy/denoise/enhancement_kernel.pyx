@@ -184,11 +184,14 @@ cdef class EnhancementKernel:
                                 x[1] = <double>yp
                                 x[2] = <double>zp
 
-                                lookuptablelocal[angv,
-                                                 angr,
-                                                 xp + hn,
-                                                 yp + hn,
-                                                 zp + hn] = self.k2(x, y, orientations[angr, :], orientations[angv, :])
+                                lookuptablelocal[
+                                    angv, angr, xp + hn, yp + hn, zp + hn
+                                ] = self.k2(
+                                    x,
+                                    y,
+                                    orientations[angr, :],
+                                    orientations[angv, :]
+                                )
 
         # save to class member
         self.lookuptable = lookuptablelocal
@@ -348,8 +351,17 @@ cdef class EnhancementKernel:
                 + y * (1 - (beta*beta*sg*sg * (1 - 0.5*q*cotq2)) / (q*q))
             )
             c[2] = (
-                0.5*x*beta*cg + 0.5*y*beta*sg
-                + z * (1 + ((1 - 0.5*q*cotq2) * (-beta*beta*cg*cg - beta*beta*sg*sg)) / (q*q))
+                0.5 * x * beta * cg
+                + 0.5 * y * beta * sg
+                + z
+                * (
+                    1
+                    + (
+                        (1 - 0.5 * q * cotq2)
+                        * (-beta * beta * cg * cg - beta * beta * sg * sg)
+                    )
+                    / (q * q)
+                )
             )
             c[3] = beta * (-sg)
             c[4] = beta * cg
@@ -375,7 +387,19 @@ cdef class EnhancementKernel:
         """
         cdef double output = 1 / (8*sqrt(2))
         output *= sqrt(PI)*self.t*sqrt(self.t*self.D33)*sqrt(self.D33*self.D44)
-        output *= 1 / (16*PI*PI*self.D33*self.D33*self.D44*self.D44*self.t*self.t*self.t*self.t)
+        output *= 1 / (
+            16
+            * PI
+            * PI
+            * self.D33
+            * self.D33
+            * self.D44
+            * self.D44
+            * self.t
+            * self.t
+            * self.t
+            * self.t
+        )
         output *= exp(
             -sqrt(
                 (c[0] * c[0] + c[1] * c[1]) / (self.D33 * self.D44)

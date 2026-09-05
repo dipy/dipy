@@ -66,7 +66,10 @@ def set_diffusivity_ranges(
         return lo, hi
 
     WM_D_PAR_MIN, WM_D_PAR_MAX = _validate_val_or_pair("wm_d_par_range", wm_d_par_range)
-    WM_D_PERP_MIN, WM_D_PERP_MAX = _validate_val_or_pair("wm_d_perp_range", wm_d_perp_range)
+    (
+        WM_D_PERP_MIN,
+        WM_D_PERP_MAX,
+    ) = _validate_val_or_pair("wm_d_perp_range", wm_d_perp_range)
     GM_D_MIN, GM_D_MAX = _validate_val_or_pair("gm_d_iso_range", gm_d_iso_range)
     CSF_D = float(csf_d)
 
@@ -90,7 +93,9 @@ cdef inline double get_dperp_extra(double d_par, double f_intra) noexcept:
     return d_par * (1.0 - f_intra) / (1.0 + f_intra)
 
 
-cdef inline double fa_stick_zeppelin(double d_par, double d_perp, double f_intra) noexcept:
+cdef inline double fa_stick_zeppelin(
+    double d_par, double d_perp, double f_intra
+) noexcept:
     """
     Compute microFA for stick-zeppelin model.
 
@@ -854,7 +859,14 @@ cpdef tuple create_mixed_signal(
     csf_signal = csf_result[0]
     csf_d_par = csf_result[7]
 
-    odi = wm_fraction * float(wm_disp) + gm_fraction * float(gm_disp) + csf_fraction * 1.0
+    odi = (
+        wm_fraction
+        * float(wm_disp)
+        + gm_fraction
+        * float(gm_disp)
+        + csf_fraction
+        * 1.0
+    )
     nd = wm_fraction * float(wm_nd) + gm_fraction * float(gm_nd)
 
     combined_signal = (

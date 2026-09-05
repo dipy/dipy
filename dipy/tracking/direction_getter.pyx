@@ -64,7 +64,9 @@ cdef void _step_to_boundary(
     for i in range(3):
         point[i] += smallest_step * direction[i]
 
-cdef void _fixed_step(double * point, double * direction, double step_size) noexcept nogil:
+cdef void _fixed_step(
+    double * point, double * direction, double step_size
+) noexcept nogil:
     """Updates point by stepping in direction.
 
     Parameters

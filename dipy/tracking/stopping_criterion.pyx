@@ -18,7 +18,9 @@ cdef class StoppingCriterion:
 
         return self.check_point_c(&point[0])
 
-    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
+    cdef StreamlineStatus check_point_c(
+        self, double* point, RNGState* rng=NULL
+    ) noexcept nogil:
         pass
 
 
@@ -31,7 +33,9 @@ cdef class BinaryStoppingCriterion(StoppingCriterion):
     def __cinit__(self, mask):
         self.mask = (mask > 0).astype("uint8")
 
-    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
+    cdef StreamlineStatus check_point_c(
+        self, double* point, RNGState* rng=NULL
+    ) noexcept nogil:
         cdef:
             unsigned char result
             int voxel[3]
@@ -59,7 +63,9 @@ cdef class ThresholdStoppingCriterion(StoppingCriterion):
         self.metric_map = np.asarray(metric_map, "float64")
         self.threshold = threshold
 
-    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
+    cdef StreamlineStatus check_point_c(
+        self, double* point, RNGState* rng=NULL
+    ) noexcept nogil:
         cdef:
             double result
             int err
@@ -178,7 +184,9 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
         self.include_map = np.asarray(include_map, "float64")
         self.exclude_map = np.asarray(exclude_map, "float64")
 
-    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
+    cdef StreamlineStatus check_point_c(
+        self, double* point, RNGState* rng=NULL
+    ) noexcept nogil:
         cdef:
             double include_result, exclude_result
             int include_err, exclude_err
@@ -236,7 +244,9 @@ cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
         self.average_voxel_size = average_voxel_size
         self.correction_factor = step_size / average_voxel_size
 
-    cdef StreamlineStatus check_point_c(self, double* point, RNGState* rng=NULL) noexcept nogil:
+    cdef StreamlineStatus check_point_c(
+        self, double* point, RNGState* rng=NULL
+    ) noexcept nogil:
         cdef:
             double include_result, exclude_result
             int include_err, exclude_err

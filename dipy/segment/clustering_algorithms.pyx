@@ -46,7 +46,9 @@ def clusters_centroid2clustermap_centroid(ClustersCentroid clusters_list):
         features = <float[:shape.dims[0], :shape.dims[1]]> \
             &clusters_list.centroids[i].features[0][0, 0]
         centroid = np.asarray(features)
-        indices = np.asarray(<int[:clusters_list.clusters_size[i]]> clusters_list.clusters_indices[i]).tolist()
+        indices = np.asarray(
+            <int[:clusters_list.clusters_size[i]]> clusters_list.clusters_indices[i]
+        ).tolist()
         clusters.add_cluster(ClusterCentroid(id=i, centroid=centroid, indices=indices))
 
     return clusters
@@ -101,8 +103,12 @@ def quickbundles(streamlines, Metric metric, double threshold,
     if first_idx is None or len(streamlines) == 0:
         return ClusterMapCentroid()
 
-    features_shape = shape2tuple(metric.feature.c_infer_shape(streamlines[first_idx].astype(np.float32)))
-    cdef QuickBundles qb = QuickBundles(features_shape, metric, threshold, max_nb_clusters)
+    features_shape = shape2tuple(
+        metric.feature.c_infer_shape(streamlines[first_idx].astype(np.float32))
+    )
+    cdef QuickBundles qb = QuickBundles(
+        features_shape, metric, threshold, max_nb_clusters
+    )
     cdef int idx
     for idx in ordering:
         streamline = streamlines[idx]
@@ -153,7 +159,9 @@ def quickbundlesx(streamlines, Metric metric, thresholds, ordering=None):
     if first_idx is None or len(streamlines) == 0:
         return ClusterMapCentroid()
 
-    features_shape = shape2tuple(metric.feature.c_infer_shape(streamlines[first_idx].astype(np.float32)))
+    features_shape = shape2tuple(
+        metric.feature.c_infer_shape(streamlines[first_idx].astype(np.float32))
+    )
     cdef QuickBundlesX qbx = QuickBundlesX(features_shape, thresholds, metric)
     cdef int idx
 

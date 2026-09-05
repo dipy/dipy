@@ -12,7 +12,9 @@ from dipy.utils.deprecator import deprecated_params
 
 
 @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
-def convolve(odfs_sh, kernel, sh_order_max, test_mode=False, num_threads=None, normalize=True):
+def convolve(
+    odfs_sh, kernel, sh_order_max, test_mode=False, num_threads=None, normalize=True
+):
     """Perform the shift-twist convolution with the ODF data and
     the lookup-table of the kernel.
 
@@ -188,12 +190,22 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
                                 ):
                                     voxcount[corient, cx, cy, cz] += 1.0
                                     for orient in range(0, OR2):
-                                        totalval[corient, cx, cy, cz] += \
-                                            odfs[x, y, z, orient] * \
-                                            lut[corient, orient, x - (cx - hn), y - (cy - hn), z - (cz - hn)]
+                                        totalval[corient, cx, cy, cz] += (
+                                            odfs[x, y, z, orient]
+                                            * lut[
+                                                corient,
+                                                orient,
+                                                x - (cx - hn),
+                                                y - (cy - hn),
+                                                z - (cz - hn),
+                                            ]
+                                        )
                         if edgeNormalization:
-                            output[cx, cy, cz, corient] = \
-                                totalval[corient, cx, cy, cz] * expectedvox/voxcount[corient, cx, cy, cz]
+                            output[cx, cy, cz, corient] = (
+                                totalval[corient, cx, cy, cz]
+                                * expectedvox
+                                / voxcount[corient, cx, cy, cz]
+                            )
                         else:
                             output[cx, cy, cz, corient] = \
                                 totalval[corient, cx, cy, cz]
