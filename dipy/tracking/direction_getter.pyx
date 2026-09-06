@@ -30,8 +30,9 @@ cdef inline double _stepsize(double point, double increment) noexcept nogil:
     else:
         return dist / increment
 
-cdef void _step_to_boundary(double * point, double * direction,
-                           double overstep) noexcept nogil:
+cdef void _step_to_boundary(
+    double * point, double * direction, double overstep
+) noexcept nogil:
     """Takes a step from point in along direction just past a voxel boundary.
 
     Parameters
@@ -125,9 +126,11 @@ cdef class DirectionGetter:
             stream_status = stopping_criterion.check_point_c(point)
             if stream_status == TRACKPOINT:
                 continue
-            elif (stream_status == ENDPOINT or
-                 stream_status == INVALIDPOINT or
-                 stream_status == OUTSIDEIMAGE):
+            elif (
+                stream_status == ENDPOINT
+                or stream_status == INVALIDPOINT
+                or stream_status == OUTSIDEIMAGE
+            ):
                 break
         else:
             # maximum length of streamline has been reached, return everything

@@ -359,29 +359,79 @@ class ParzenJointHistogram:
             self.joint_grad = np.zeros((nbins, nbins, n))
         if dim == 2:
             if mgradient.dtype == np.float64:
-                _joint_pdf_gradient_dense_2d[cython.double](theta, transform,
-                    static, moving, grid2world, mgradient, smask, mmask,
-                    self.smin, self.sdelta, self.mmin, self.mdelta,
-                    self.nbins, self.padding, self.joint_grad)
+                _joint_pdf_gradient_dense_2d[cython.double](
+                    theta,
+                    transform,
+                    static,
+                    moving,
+                    grid2world,
+                    mgradient,
+                    smask, mmask,
+                    self.smin,
+                    self.sdelta,
+                    self.mmin,
+                    self.mdelta,
+                    self.nbins,
+                    self.padding,
+                    self.joint_grad,
+                )
             elif mgradient.dtype == np.float32:
-                _joint_pdf_gradient_dense_2d[cython.float](theta, transform,
-                    static, moving, grid2world, mgradient, smask, mmask,
-                    self.smin, self.sdelta, self.mmin, self.mdelta,
-                    self.nbins, self.padding, self.joint_grad)
+                _joint_pdf_gradient_dense_2d[cython.float](
+                    theta,
+                    transform,
+                    static,
+                    moving,
+                    grid2world,
+                    mgradient,
+                    smask,
+                    mmask,
+                    self.smin,
+                    self.sdelta,
+                    self.mmin,
+                    self.mdelta,
+                    self.nbins,
+                    self.padding,
+                    self.joint_grad,
+                )
             else:
                 raise ValueError("Grad. field dtype must be floating point")
 
         elif dim == 3:
             if mgradient.dtype == np.float64:
-                _joint_pdf_gradient_dense_3d[cython.double](theta, transform,
-                    static, moving, grid2world, mgradient, smask, mmask,
-                    self.smin, self.sdelta, self.mmin, self.mdelta,
-                    self.nbins, self.padding, self.joint_grad)
+                _joint_pdf_gradient_dense_3d[cython.double](
+                    theta,
+                    transform,
+                    static,
+                    moving,
+                    grid2world,
+                    mgradient,
+                    smask,
+                    mmask,
+                    self.smin,
+                    self.sdelta,
+                    self.mmin,
+                    self.mdelta,
+                    self.nbins,
+                    self.padding,
+                    self.joint_grad,
+                )
             elif mgradient.dtype == np.float32:
-                _joint_pdf_gradient_dense_3d[cython.float](theta, transform,
-                    static, moving, grid2world, mgradient, smask, mmask,
-                    self.smin, self.sdelta, self.mmin, self.mdelta,
-                    self.nbins, self.padding, self.joint_grad)
+                _joint_pdf_gradient_dense_3d[cython.float](
+                    theta, transform,
+                    static,
+                    moving,
+                    grid2world,
+                    mgradient,
+                    smask,
+                    mmask,
+                    self.smin,
+                    self.sdelta,
+                    self.mmin,
+                    self.mdelta,
+                    self.nbins,
+                    self.padding,
+                    self.joint_grad,
+                )
             else:
                 raise ValueError("Grad. field dtype must be floating point")
 
@@ -475,11 +525,25 @@ class ParzenJointHistogram:
             compute_update = _compute_dense_mi_update_3d
 
         self.metric_val = compute_update(
-            static, moving, mgradient, smask, mmask,
-            self.smin, self.sdelta, self.mmin, self.mdelta,
-            self.nbins, self.padding, self.joint, self.smarginal,
-            self.mmarginal, self.local_derivative_by_parzen_bin,
-            self.joint_pdf_index, self.mi_weights, update_field)
+            static,
+            moving,
+            mgradient,
+            smask,
+            mmask,
+            self.smin,
+            self.sdelta,
+            self.mmin,
+            self.mdelta,
+            self.nbins,
+            self.padding,
+            self.joint,
+            self.smarginal,
+            self.mmarginal,
+            self.local_derivative_by_parzen_bin,
+            self.joint_pdf_index,
+            self.mi_weights,
+            update_field,
+        )
 
     def update_gradient_sparse(self, theta, transform, sval, mval,
                                sample_points, mgradient):
@@ -537,29 +601,73 @@ class ParzenJointHistogram:
 
         if dim == 2:
             if mgradient.dtype == np.float64:
-                _joint_pdf_gradient_sparse_2d[cython.double](theta, transform,
-                    sval, mval, sample_points, mgradient, self.smin,
-                    self.sdelta, self.mmin, self.mdelta, self.nbins,
-                    self.padding, self.joint_grad)
+                _joint_pdf_gradient_sparse_2d[cython.double](
+                    theta,
+                    transform,
+                    sval,
+                    mval,
+                    sample_points,
+                    mgradient,
+                    self.smin,
+                    self.sdelta,
+                    self.mmin,
+                    self.mdelta,
+                    self.nbins,
+                    self.padding,
+                    self.joint_grad,
+                )
             elif mgradient.dtype == np.float32:
-                _joint_pdf_gradient_sparse_2d[cython.float](theta, transform,
-                    sval, mval, sample_points, mgradient, self.smin,
-                    self.sdelta, self.mmin, self.mdelta, self.nbins,
-                    self.padding, self.joint_grad)
+                _joint_pdf_gradient_sparse_2d[cython.float](
+                    theta,
+                    transform,
+                    sval,
+                    mval,
+                    sample_points,
+                    mgradient,
+                    self.smin,
+                    self.sdelta,
+                    self.mmin,
+                    self.mdelta,
+                    self.nbins,
+                    self.padding,
+                    self.joint_grad,
+                )
             else:
                 raise ValueError("Gradients dtype must be floating point")
 
         elif dim == 3:
             if mgradient.dtype == np.float64:
-                _joint_pdf_gradient_sparse_3d[cython.double](theta, transform,
-                    sval, mval, sample_points, mgradient, self.smin,
-                    self.sdelta, self.mmin, self.mdelta, self.nbins,
-                    self.padding, self.joint_grad)
+                _joint_pdf_gradient_sparse_3d[cython.double](
+                    theta,
+                    transform,
+                    sval,
+                    mval,
+                    sample_points,
+                    mgradient,
+                    self.smin,
+                    self.sdelta,
+                    self.mmin,
+                    self.mdelta,
+                    self.nbins,
+                    self.padding,
+                    self.joint_grad,
+                )
             elif mgradient.dtype == np.float32:
-                _joint_pdf_gradient_sparse_3d[cython.float](theta, transform,
-                    sval, mval, sample_points, mgradient, self.smin,
-                    self.sdelta, self.mmin, self.mdelta, self.nbins,
-                    self.padding, self.joint_grad)
+                _joint_pdf_gradient_sparse_3d[cython.float](
+                    theta,
+                    transform,
+                    sval,
+                    mval,
+                    sample_points,
+                    mgradient,
+                    self.smin,
+                    self.sdelta,
+                    self.mmin,
+                    self.mdelta,
+                    self.nbins,
+                    self.padding,
+                    self.joint_grad,
+                )
             else:
                 raise ValueError("Gradients dtype must be floating point")
         else:

@@ -15,12 +15,24 @@ import numpy as np
 cimport numpy as cnp
 
 
-def generate_tracking_parameters(algo_name, *,
-    int max_len=500, int min_len=2, double step_size=0.2, double[:] voxel_size,
-    double max_angle=20, bint return_all=True, double pmf_threshold=0.1,
-    double probe_length=0.5, double probe_radius=0, int probe_quality=3,
-    int probe_count=1, double data_support_exponent=1, int random_seed=0,
-    double peak_values_threshold=0.0239, double angle_threshold=60,
+def generate_tracking_parameters(
+    algo_name,
+    *,
+    int max_len=500,
+    int min_len=2,
+    double step_size=0.2,
+    double[:] voxel_size,
+    double max_angle=20,
+    bint return_all=True,
+    double pmf_threshold=0.1,
+    double probe_length=0.5,
+    double probe_radius=0,
+    int probe_quality=3,
+    int probe_count=1,
+    double data_support_exponent=1,
+    int random_seed=0,
+    double peak_values_threshold=0.0239,
+    double angle_threshold=60,
     double min_total_weight=0.5,
 ):
 
@@ -140,8 +152,14 @@ cdef class ShTrackerParameters:
 
 cdef class ParallelTransportTrackerParameters:
 
-    def __init__(self, double probe_length, double probe_radius,
-                int probe_quality, int probe_count, double data_support_exponent):
+    def __init__(
+        self,
+        double probe_length,
+        double probe_radius,
+        int probe_quality,
+        int probe_count,
+        double data_support_exponent,
+    ):
         self.probe_length = probe_length
         self.probe_radius = probe_radius
         self.probe_quality = probe_quality

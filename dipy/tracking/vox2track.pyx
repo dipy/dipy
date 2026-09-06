@@ -283,9 +283,11 @@ cdef cnp.npy_intp _streamline_in_mask(
             for dim_idx in range(3):
                 if direction[dim_idx] != 0:
                     length_ratio = fmin(
-                        fabs((current_edge[dim_idx] - current_pt[dim_idx])
-                            / direction[dim_idx]),
-                        length_ratio)
+                        fabs(
+                            (current_edge[dim_idx] - current_pt[dim_idx]) / direction[dim_idx]
+                        ),
+                        length_ratio,
+                    )
 
             # Check if last point is already on an edge
             remaining_distance -= length_ratio * direction_norm

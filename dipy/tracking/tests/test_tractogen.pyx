@@ -146,12 +146,14 @@ def test_tracking_max_angle():
     ]:
         for max_angle in [20, 45]:
 
-            params = generate_tracking_parameters("det",
-                                                max_len=500,
-                                                step_size=1,
-                                                voxel_size=np.ones(3),
-                                                max_angle=max_angle,
-                                                random_seed=0)
+            params = generate_tracking_parameters(
+                "det",
+                max_len=500,
+                step_size=1,
+                voxel_size=np.ones(3),
+                max_angle=max_angle,
+                random_seed=0,
+            )
 
             streamlines = generate_disco_streamlines(params, nbr_seeds=100, sphere=sph)
             min_cos_sim = get_min_cos_similarity(streamlines)

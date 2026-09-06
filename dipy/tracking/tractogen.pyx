@@ -123,15 +123,17 @@ def generate_tractogram(double[:, ::1] seed_positions,
             seed_end = _len
 
 
-cdef void generate_tractogram_c(double[:, ::1] seed_positions,
-                                double[:, ::1] seed_directions,
-                               int nbr_threads,
-                               StoppingCriterion sc,
-                               TrackerParameters params,
-                               PmfGen pmf_gen,
-                               double** streamlines,
-                               int* lengths,
-                               StreamlineStatus* status):
+cdef void generate_tractogram_c(
+    double[:, ::1] seed_positions,
+    double[:, ::1] seed_directions,
+    int nbr_threads,
+    StoppingCriterion sc,
+    TrackerParameters params,
+    PmfGen pmf_gen,
+    double** streamlines,
+    int* lengths,
+    StreamlineStatus* status,
+):
     """Generate a tractogram from a set of seed points and directions.
 
     This is the C implementation of the generate_tractogram function.

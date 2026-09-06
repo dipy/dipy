@@ -318,16 +318,19 @@ cdef void _negloglikelihood(double[:, :, :] image, double[:] mu,
                 if sigmasq[cls_idx] < eps_sq:
 
                     if fabs(image[x, y, z] - mu[cls_idx]) < eps:
-                        neglogl[x, y, z, cls_idx] = 1 + log(sqrt(2.0 * NPY_PI *
-                                                           sigmasq[cls_idx]))
+                        neglogl[x, y, z, cls_idx] = 1 + log(
+                            sqrt(2.0 * NPY_PI * sigmasq[cls_idx])
+                        )
                     else:
                         neglogl[x, y, z, cls_idx] = NPY_INFINITY
 
                 else:
-                    neglogl[x, y, z, cls_idx] = (((image[x, y, z] - mu[cls_idx])**2.0) /
-                                           (2.0 * sigmasq[cls_idx]))
-                    neglogl[x, y, z, cls_idx] += log(sqrt(2.0 * NPY_PI *
-                                                    sigmasq[cls_idx]))
+                    neglogl[x, y, z, cls_idx] = (
+                        ((image[x, y, z] - mu[cls_idx])**2.0) / (2.0 * sigmasq[cls_idx])
+                    )
+                    neglogl[x, y, z, cls_idx] += log(
+                        sqrt(2.0 * NPY_PI * sigmasq[cls_idx])
+                    )
 
 
 cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
@@ -382,9 +385,8 @@ cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
                         gaussian[x, y, z] = 0
                 else:
                     gaussian[x, y, z] = (
-                        (exp(-((image[x, y, z] - mu[cls_idx]) ** 2) /
-                        (2 * sigmasq[cls_idx]))) / (sqrt(2 * NPY_PI * sigmasq[cls_idx])))
-
+                        exp(-((image[x, y, z] - mu[cls_idx]) ** 2) / (2 * sigmasq[cls_idx]))
+                    ) / (sqrt(2 * NPY_PI * sigmasq[cls_idx]))
                 P_L_Y[x, y, z, cls_idx] = gaussian[x, y, z] * P_L_N[x, y, z, cls_idx]
 
 

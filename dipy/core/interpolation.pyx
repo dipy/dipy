@@ -415,8 +415,9 @@ def interpolate_vector_2d(floating[:, :, :] field, double[:, :] locations):
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
-            inside[i] = _interpolate_vector_2d[floating](field,
-                locations[i, 0], locations[i, 1], &out[i, 0])
+            inside[i] = _interpolate_vector_2d[floating](
+                field, locations[i, 0], locations[i, 1], &out[i, 0]
+            )
     return np.asarray(out), np.asarray(inside)
 
 
@@ -525,8 +526,9 @@ def interpolate_scalar_2d(floating[:, :] image, double[:, :] locations):
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
-            inside[i] = _interpolate_scalar_2d[floating](image,
-                locations[i, 0], locations[i, 1], &out[i])
+            inside[i] = _interpolate_scalar_2d[floating](
+                image, locations[i, 0], locations[i, 1], &out[i]
+            )
     return np.asarray(out), np.asarray(inside)
 
 
@@ -629,8 +631,9 @@ def interpolate_scalar_nn_2d(number[:, :] image, double[:, :] locations):
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
-            inside[i] = _interpolate_scalar_nn_2d[number](image,
-                locations[i, 0], locations[i, 1], &out[i])
+            inside[i] = _interpolate_scalar_nn_2d[number](
+                image, locations[i, 0], locations[i, 1], &out[i]
+            )
     return np.asarray(out), np.asarray(inside)
 
 
@@ -722,14 +725,15 @@ def interpolate_scalar_nn_3d(number[:, :, :] image, double[:, :] locations):
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
-            inside[i] = _interpolate_scalar_nn_3d[number](image,
-                locations[i, 0], locations[i, 1], locations[i, 2], &out[i])
+            inside[i] = _interpolate_scalar_nn_3d[number](
+                image, locations[i, 0], locations[i, 1], locations[i, 2], &out[i]
+            )
     return np.asarray(out), np.asarray(inside)
 
 
-cdef inline int _interpolate_scalar_nn_3d(number[:, :, :] volume, double dkk,
-                                         double dii, double djj,
-                                         number *out) noexcept nogil:
+cdef inline int _interpolate_scalar_nn_3d(
+    number[:, :, :] volume, double dkk, double dii, double djj, number *out
+) noexcept nogil:
     r"""Nearest-neighbor interpolation of a 3D scalar image
 
     Interpolates the 3D image at (dkk, dii, djj) using nearest neighbor
@@ -825,8 +829,9 @@ def interpolate_scalar_3d(floating[:, :, :] image, locations):
         double[:, :] _locations = np.array(locations, dtype=np.float64)
     with nogil:
         for i in range(n):
-            inside[i] = _interpolate_scalar_3d[floating](image,
-                _locations[i, 0], _locations[i, 1], _locations[i, 2], &out[i])
+            inside[i] = _interpolate_scalar_3d[floating](
+                image, _locations[i, 0], _locations[i, 1], _locations[i, 2], &out[i]
+            )
     return np.asarray(out), np.asarray(inside)
 
 
@@ -958,8 +963,9 @@ def interpolate_vector_3d(floating[:, :, :, :] field, double[:, :] locations):
         int[:] inside = np.empty(shape=(n,), dtype=np.int32)
     with nogil:
         for i in range(n):
-            inside[i] = _interpolate_vector_3d[floating](field,
-                locations[i, 0], locations[i, 1], locations[i, 2], &out[i, 0])
+            inside[i] = _interpolate_vector_3d[floating](
+                field, locations[i, 0], locations[i, 1], locations[i, 2], &out[i, 0]
+            )
     return np.asarray(out), np.asarray(inside)
 
 
