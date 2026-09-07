@@ -616,9 +616,14 @@ def compute_atlas_bundle(
                     aligned = Streamlines(aligned)
 
                 elif reg_method == "bundlewarp":
-                    static, aligned, _, _, _ = bundlewarp(
+                    # bundlewarp returns (deformed_bundle, moving_aligned, ...).
+                    # deformed_bundle is the warped MOVING bundle, so static must
+                    # be kept as it was rather than overwritten with it.
+                    deformed_bundle, _, _, _, _ = bundlewarp(
                         Streamlines(static), Streamlines(moving), alpha=alpha
                     )
+                    static = Streamlines(static)
+                    aligned = Streamlines(deformed_bundle)
 
                 # Randomly skip steps if specified to get sharper results
                 if skip_pairs and np.random.choice([True, False], 1)[0]:
