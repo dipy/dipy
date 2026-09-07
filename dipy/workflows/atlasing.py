@@ -55,8 +55,8 @@ class BundleAtlasFlow(Workflow):
             If a string, it is interpreted as the path to a tsv file with the
             names of the bundles to be processed. If a list of strings, it is
             interpreted as the names of the bundles to be processed. If None,
-            all trk files of the first subject will be considered as bundle
-            names.
+            all .trk and .trx files of the first subject will be considered as
+            bundle names.
         out_dir : str, optional
             Output directory. If None, the current working directory is used.
         merge_out : boolean, optional

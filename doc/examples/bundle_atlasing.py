@@ -16,7 +16,8 @@ which iteratively combines the input bundles in pairs using a tree structure.
 ###############################################################################
 # The input bundles are expected to be stored in a BIDS-like structure where the
 # segmented bundles of each subject are stored in a different subfolder. Note that
-# the naming of the bundles must be the same for all subjects::
+# the naming of the bundles must be the same for all subjects. Bundles may be
+# stored as ``.trk`` or ``.trx``; the atlases are always written as ``.trk``::
 #
 #     in_dir/
 #     ├── sub_1/
