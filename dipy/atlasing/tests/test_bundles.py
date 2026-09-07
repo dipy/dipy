@@ -3,11 +3,13 @@ import tempfile
 import zipfile
 
 import numpy as np
-from numpy.testing import assert_equal, assert_raises
+from numpy.testing import assert_array_almost_equal, assert_equal, assert_raises
 import pytest
 
 from dipy.align.bundlemin import distance_matrix_mdf
+from dipy.align.streamwarp import bundlewarp
 from dipy.atlasing.bundles import (
+    _load_bundle,
     combine_bundles,
     compute_atlas_bundle,
     get_pairwise_tree,
@@ -20,6 +22,7 @@ from dipy.io.streamline import (
     create_tractogram_header,
     load_tractogram,
     save_trk,
+    save_trx,
 )
 from dipy.tracking.streamline import (
     Streamlines,
@@ -324,3 +327,80 @@ def test_compute_atlas_bundle():
                 n_stream_max=10,
                 reg_method="bundlewarp",
             )
+
+
+def test_load_bundle():
+    example_tracts = get_fnames(name="minimal_bundles")
+
+    with tempfile.TemporaryDirectory() as in_dir:
+        with zipfile.ZipFile(example_tracts, "r") as zip_ref:
+            zip_ref.extractall(in_dir)
+
+        trk_file = os.path.join(in_dir, "sub_1", "AF_L.trk")
+        bundle, header = _load_bundle(trk_file, return_header=True)
+
+        # always a Streamlines, always float64, whatever the file held
+        assert isinstance(bundle, Streamlines)
+        assert_equal(bundle[0].dtype, np.float64)
+        assert len(bundle) > 0
+
+        # the same bundle stored as TRX must load to the same streamlines
+        sft = load_tractogram(trk_file, reference="same", bbox_valid_check=False)
+        trx_file = os.path.join(in_dir, "AF_L.trx")
+        save_trx(sft, trx_file, bbox_valid_check=False)
+
+        bundle_trx, header_trx = _load_bundle(trx_file, return_header=True)
+        assert isinstance(bundle_trx, Streamlines)
+        assert_equal(bundle_trx[0].dtype, np.float64)
+        assert_equal(len(bundle_trx), len(bundle))
+        assert_array_almost_equal(bundle_trx[0], bundle[0], decimal=3)
+
+        # a TRX input still yields a TRK header, since atlases are saved as TRK
+        assert_equal(sorted(dict(header_trx)), sorted(dict(header)))
+
+
+def test_load_bundle_empty():
+    example_tracts = get_fnames(name="minimal_bundles")
+
+    with tempfile.TemporaryDirectory() as in_dir:
+        with zipfile.ZipFile(example_tracts, "r") as zip_ref:
+            zip_ref.extractall(in_dir)
+
+        trk_file = os.path.join(in_dir, "sub_1", "AF_L.trk")
+        header = create_tractogram_header(
+            trk_file,
+            *load_tractogram(
+                trk_file, reference="same", bbox_valid_check=False
+            ).space_attributes,
+        )
+        empty_file = os.path.join(in_dir, "empty.trk")
+        save_trk(
+            StatefulTractogram(Streamlines([]), reference=header, space=Space.RASMM),
+            empty_file,
+            bbox_valid_check=False,
+        )
+
+        bundle = _load_bundle(empty_file)
+        assert isinstance(bundle, Streamlines)
+        assert_equal(len(bundle), 0)
+
+
+def test_bundlewarp_return_order():
+    # compute_atlas_bundle relies on bundlewarp returning the warped MOVING
+    # bundle first. Different sizes make the two arguments distinguishable, so
+    # this fails if the order is ever swapped.
+    example_tracts = get_fnames(name="minimal_bundles")
+
+    with tempfile.TemporaryDirectory() as in_dir:
+        with zipfile.ZipFile(example_tracts, "r") as zip_ref:
+            zip_ref.extractall(in_dir)
+
+        static = _load_bundle(os.path.join(in_dir, "sub_1", "AF_L.trk"))
+        moving = _load_bundle(os.path.join(in_dir, "sub_2", "AF_L.trk"))
+        static = Streamlines(static[:12])
+        moving = Streamlines(moving[:7])
+
+        deformed, moving_aligned, _, _, _ = bundlewarp(static, moving, alpha=0.5)
+
+        assert_equal(len(deformed), len(moving))
+        assert_equal(len(moving_aligned), len(moving))
