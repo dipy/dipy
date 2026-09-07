@@ -24,7 +24,7 @@ from dipy.align.imaffine import (
     transform_centers_of_mass,
 )
 from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
-from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
+from dipy.align.metrics import CCMetric, EMMetric, MIMetric, SSDMetric
 from dipy.align.streamlinear import StreamlineLinearRegistration
 from dipy.align.transforms import (
     AffineTransform3D,
@@ -63,7 +63,7 @@ __all__ = [
 ]
 
 # Global dicts for choosing metrics for registration:
-syn_metric_dict = {"CC": CCMetric, "EM": EMMetric, "SSD": SSDMetric}
+syn_metric_dict = {"CC": CCMetric, "EM": EMMetric, "MI": MIMetric, "SSD": SSDMetric}
 
 affine_metric_dict = {
     "CC": CrossCorrelationMetric,
@@ -125,7 +125,7 @@ def syn_registration(
         that is stored in the `data` input. Default: use the affine stored
         in `data`.
     metric : string, optional
-        The metric to be optimized. One of `CC`, `EM`, `SSD`,
+        The metric to be optimized. One of `CC`, `EM`, `MI`, `SSD`
         Default: 'CC' => CCMetric.
     dim: int (either 2 or 3), optional
        The dimensions of the image domain. Default: 3
@@ -706,6 +706,8 @@ def register_series(
     static_mask=None,
     level_iters=None,
     optimizer_options=None,
+    metric="MI",
+    **metric_kwargs,
 ):
     """Register a series to a reference image.
 
@@ -741,6 +743,13 @@ def register_series(
     optimizer_options : dict, optional
         Options to be passed to the optimizer. See `scipy.optimize.minimize`
         documentation for details.
+
+    metric : string, optional
+        The metric to be optimized. One of `CC`, `MI`.
+
+    metric_kwargs : dict, optional
+        Metric initialization arguments forwarded to ``affine_registration``:
+        ``nbins`` and ``sampling_proportion`` for MI, or ``radius`` for CC.
 
     Returns
     -------
@@ -786,6 +795,8 @@ def register_series(
                 static_mask=static_mask,
                 level_iters=level_iters,
                 optimizer_options=optimizer_options,
+                metric=metric,
+                **metric_kwargs,
             )
             xformed[..., ii] = transformed
             affines[..., ii] = reg_affine
@@ -804,6 +815,8 @@ def register_dwi_series(
     static_mask=None,
     level_iters=None,
     optimizer_options=None,
+    metric="MI",
+    **metric_kwargs,
 ):
     """Register a DWI series to the mean of the B0 images in that series.
 
@@ -834,7 +847,8 @@ def register_dwi_series(
 
     static_mask : array, shape (S, R, C) or (R, C), optional
         static image mask that defines which pixels in the static image
-        are used to calculate the mutual information.
+        are used to calculate the mutual information. Not supported when
+        ``metric="CC"``.
 
     level_iters : list of int, optional
         The number of iterations at each level of the Gaussian pyramid.
@@ -844,6 +858,14 @@ def register_dwi_series(
     optimizer_options : dict, optional
         Options to be passed to the optimizer. See `scipy.optimize.minimize`
         documentation for details.
+
+    metric : string, optional
+        The metric to be optimized. One of `CC`, `MI`.
+        CC does not support ``static_mask``.
+
+    metric_kwargs : dict, optional
+        Metric initialization arguments forwarded to ``affine_registration``:
+        ``nbins`` and ``sampling_proportion`` for MI, or ``radius`` for CC.
 
     Returns
     -------
@@ -880,6 +902,8 @@ def register_dwi_series(
             static_mask=static_mask,
             level_iters=level_iters,
             optimizer_options=optimizer_options,
+            metric=metric,
+            **metric_kwargs,
         )
         ref_data = np.mean(trans_b0, -1, keepdims=True)
     else:
@@ -899,6 +923,8 @@ def register_dwi_series(
         static_mask=static_mask,
         level_iters=level_iters,
         optimizer_options=optimizer_options,
+        metric=metric,
+        **metric_kwargs,
     )
     # Cut out the part pertaining to that first volume:
     affines = affines[..., 1:]
