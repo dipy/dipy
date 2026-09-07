@@ -88,7 +88,7 @@ paths to the static image file, and to the moving image file, followed by
 optional arguments. In this case, we will be specifying the metric (``metric``),
 the output directory (``out_dir``) and the file name of the output warped image
 (``out_warped``). You can use cc (cross correlation), ssd (sum squared
-differences) or em (expectation-maximization) as metrics.
+differences), em (expectation-maximization), or mi (mutual information) as metrics.
 
 The symmetric diffeomorphic registration method in DIPY is run through the
 ``dipy_align_syn`` command, e.g.::

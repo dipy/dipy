@@ -47,6 +47,11 @@ and write the artefact-free result to the ``motion_output`` directory.
 In case no output directory is specified, the corrected output volume
 is saved to the current directory by default.
 
+Motion correction supports mutual information (MI), the default metric, and
+local cross-correlation (CC). MI is configured with ``nbins`` and
+``sampling_proportion``, while CC is configured with ``radius``. CC does not
+support static masks.
+
 ----------
 References
 ----------
