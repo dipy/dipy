@@ -327,10 +327,8 @@ def _load_bundle(file, return_header=False):
 
     Returns
     -------
-    bundle : Streamlines or StatefulTractogram
-        The loaded streamlines. If the file contains streamlines, returns them
-        as a Streamlines object after unlisting and relisting. If empty, returns
-        the original StatefulTractogram object.
+    bundle : Streamlines
+        The loaded streamlines. Empty bundles give an empty Streamlines.
     header : TrkFile
         Only returned if return_header is True. Contains the tractogram header
         information including space attributes.
@@ -342,10 +340,7 @@ def _load_bundle(file, return_header=False):
     """
     bundle_obj = load_trk(file, reference="same", bbox_valid_check=False)
 
-    if len(bundle_obj.streamlines) > 0:
-        bundle = list(bundle_obj.streamlines)
-    else:
-        bundle = bundle_obj
+    bundle = Streamlines(bundle_obj.streamlines)
 
     if return_header:
         header = create_tractogram_header(file, *bundle_obj.space_attributes)
