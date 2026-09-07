@@ -14,7 +14,7 @@ Available functions:
 from datetime import datetime
 import logging
 from os import getcwd, listdir, makedirs, mkdir
-from os.path import isdir, join, splitext
+from os.path import exists, isdir, join, splitext
 from shutil import copyfile, rmtree
 
 import numpy as np
@@ -27,7 +27,7 @@ from dipy.io.streamline import (
     Space,
     StatefulTractogram,
     create_tractogram_header,
-    load_trk,
+    load_tractogram,
     save_trk,
 )
 from dipy.segment.clustering import QuickBundles, qbx_and_merge
@@ -42,6 +42,11 @@ from dipy.viz.streamline import show_bundles
 
 pd, has_pd, _ = optional_package("pandas")
 _, has_fury, _ = optional_package("fury")
+
+# Tractogram formats readable with reference="same". Other formats supported by
+# load_tractogram need an explicit reference image, which the atlasing entry
+# points do not take.
+BUNDLE_EXTENSIONS = (".trk", ".trx")
 
 
 logger = logging.getLogger(__name__)
@@ -320,7 +325,7 @@ def _load_bundle(file, return_header=False):
     Parameters
     ----------
     file : str
-        Path to the .trk file containing the bundle.
+        Path to the .trk or .trx file containing the bundle.
     return_header : bool, optional
         If True, returns both the bundle and header information.
         Default is False.
@@ -338,12 +343,20 @@ def _load_bundle(file, return_header=False):
     This is a private function used internally by the atlasing module to load
     and process bundle files consistently.
     """
-    bundle_obj = load_trk(file, reference="same", bbox_valid_check=False)
+    bundle_obj = load_tractogram(file, reference="same", bbox_valid_check=False)
 
-    bundle = Streamlines(bundle_obj.streamlines)
+    # normalise the dtype so that the atlas does not depend on how the input
+    # happened to be stored: TRK is float32, TRX may be either
+    bundle = Streamlines(
+        [np.asarray(s, dtype=np.float64) for s in bundle_obj.streamlines]
+    )
 
     if return_header:
-        header = create_tractogram_header(file, *bundle_obj.space_attributes)
+        # atlases are always written as .trk, so the header is a TRK header
+        # whatever the input format was
+        header = create_tractogram_header(
+            f"{splitext(file)[0]}.trk", *bundle_obj.space_attributes
+        )
         return bundle, header
 
     return bundle
@@ -490,7 +503,7 @@ def compute_atlas_bundle(
             raise ValueError(f"Path to subject bundles {bundle_dir} does not exist")
 
         files = listdir(bundle_dir)
-        trk_files = [file for file in files if file.endswith(".trk")]
+        trk_files = [file for file in files if file.endswith(BUNDLE_EXTENSIONS)]
         bundle_names = [splitext(file)[0] for file in trk_files]
     elif not isinstance(bundle_names, list):
         df = pd.read_csv(bundle_names, delimiter="\t", dtype="object")
@@ -505,7 +518,11 @@ def compute_atlas_bundle(
     bundle_files = {}
     for sub in subjects:
         for bundle in bundle_names:
-            file = join(in_dir, sub, mid_path, bundle + ".trk")
+            base = join(in_dir, sub, mid_path, bundle)
+            file = next(
+                (base + ext for ext in BUNDLE_EXTENSIONS if exists(base + ext)),
+                base + BUNDLE_EXTENSIONS[0],
+            )
             bundle_files[(sub, bundle)] = file
 
     # Atlas building starts
