@@ -33,7 +33,7 @@ def test_tracker_deterministic():
     seed_rng(&rng, 12345)
 
     class SillyModel(SphHarmModel):
-        sh_order_max = 4
+        sh_order_max = 4  # no-cython-lint: read by SphHarmModel.sampling_matrix
 
         def fit(self, data, mask=None):
             coeff = np.zeros(data.shape[:-1] + (15,))
@@ -105,7 +105,7 @@ def test_tracker_probabilistic():
     seed_rng(&rng, 12345)
 
     class SillyModel(SphHarmModel):
-        sh_order_max = 4
+        sh_order_max = 4  # no-cython-lint: read by SphHarmModel.sampling_matrix
 
         def fit(self, data, mask=None):
             coeff = np.zeros(data.shape[:-1] + (15,))
@@ -177,7 +177,7 @@ def test_tracker_ptt():
     seed_rng(&rng, 12345)
 
     class SillyModel(SphHarmModel):
-        sh_order_max = 4
+        sh_order_max = 4  # no-cython-lint: read by SphHarmModel.sampling_matrix
 
         def fit(self, data, mask=None):
             coeff = np.zeros(data.shape[:-1] + (15,))
