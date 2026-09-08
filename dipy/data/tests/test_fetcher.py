@@ -1,11 +1,14 @@
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import importlib
+import io
 import logging
 import os
 from pathlib import Path
 import shutil
+import tarfile
 import tempfile
 from threading import Thread
+import zipfile
 
 import pytest
 
@@ -139,6 +142,76 @@ def test_make_fetcher_http(tmp_path):
     finally:
         server.shutdown()
         os.chdir(original_cwd)
+
+
+def test_make_fetcher_tar_member_cannot_escape_folder(tmp_path):
+    """A tar member with a parent-directory path is not extracted outside `folder`.
+
+    Regression test for CVE-2007-4559: extractall() without a filter honours
+    "../" in member names and writes outside the destination.
+    """
+    served = tmp_path / "served"
+    served.mkdir()
+    archive = served / "payload.tar.gz"
+    with tarfile.open(archive, "w:gz") as tar:
+        benign = tarfile.TarInfo("good.txt")
+        benign.size = 3
+        tar.addfile(benign, io.BytesIO(b"ok\n"))
+        escaping = tarfile.TarInfo("../escaped.txt")
+        escaping.size = 4
+        tar.addfile(escaping, io.BytesIO(b"bad\n"))
+
+    dest = tmp_path / "dest"
+    server, base_url, original_cwd = _free_port_server(str(served))
+    try:
+        fetch = _make_fetcher(
+            "escaping_fetcher",
+            str(dest),
+            base_url,
+            [archive.name],
+            [archive.name],
+            md5_list=[_get_file_md5(archive)],
+            unzip=True,
+        )
+        with pytest.raises(tarfile.OutsideDestinationError):
+            fetch()
+    finally:
+        server.shutdown()
+        os.chdir(original_cwd)
+
+    assert not (tmp_path / "escaped.txt").exists()
+
+
+def test_make_fetcher_zip_member_cannot_escape_folder(tmp_path):
+    """zipfile drops the parent-directory prefix, so the member stays inside."""
+    served = tmp_path / "served"
+    served.mkdir()
+    archive = served / "payload.zip"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("good.txt", "ok\n")
+        zf.writestr("../escaped.txt", "bad\n")
+
+    dest = tmp_path / "dest"
+    server, base_url, original_cwd = _free_port_server(str(served))
+    try:
+        fetch = _make_fetcher(
+            "zip_fetcher",
+            str(dest),
+            base_url,
+            [archive.name],
+            [archive.name],
+            md5_list=[_get_file_md5(archive)],
+            unzip=True,
+        )
+        files, _ = fetch()
+    finally:
+        server.shutdown()
+        os.chdir(original_cwd)
+
+    assert not (tmp_path / "escaped.txt").exists()
+    assert (dest / "good.txt").is_file()
+    assert (dest / "escaped.txt").is_file()
+    assert files[archive.name][-1] == ("good.txt", "../escaped.txt")
 
 
 def test_fetch_data_http(tmp_path):
