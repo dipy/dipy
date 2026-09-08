@@ -10,7 +10,7 @@ from scipy.linalg import solve
 from tqdm import tqdm
 
 from dipy.stats.sketching import count_sketch
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -434,7 +434,7 @@ def patch2self(
             b0_denoising,
             clip_negative_vals,
             shift_intensity,
-            gram,
+            gram=gram,
         )
     return _patch2self_version3(
         data,
@@ -544,6 +544,7 @@ def _patch2self_version1(
     b0_denoising,
     clip_negative_vals,
     shift_intensity,
+    *,
     gram=True,
 ):
     """Patch2Self Denoiser.

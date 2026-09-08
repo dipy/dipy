@@ -12,7 +12,6 @@ from dipy.align.bundlemin import (
 from dipy.core.geometry import compose_matrix, compose_transformations, decompose_matrix
 from dipy.core.optimize import Optimizer
 from dipy.segment.clustering import qbx_and_merge
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import (
     Streamlines,
     center_streamlines,
@@ -22,6 +21,7 @@ from dipy.tracking.streamline import (
     transform_streamlines,
     unlist_streamlines,
 )
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 DEFAULT_BOUNDS = [
@@ -876,7 +876,8 @@ def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
     return _bundle_minimum_distance_asymmetric(static, moving, rows, cols, block_size)
 
 
-def remove_clusters_by_size(clusters, min_size=0):
+@warning_for_keywords(from_version="1.13.0")
+def remove_clusters_by_size(clusters, *, min_size=0):
     ob = filter(lambda c: len(c) >= min_size, clusters)
 
     centroids = Streamlines()
@@ -1110,7 +1111,7 @@ def slr_with_qbx(
         logger.info(f"Static streamlines size {len(static)}")
         logger.info(f"Moving streamlines size {len(moving)}")
 
-    def check_range(streamline, gt=greater_than, lt=less_than):
+    def check_range(streamline, *, gt=greater_than, lt=less_than):
         if (length(streamline) > gt) & (length(streamline) < lt):
             return True
         else:
@@ -1153,7 +1154,7 @@ def slr_with_qbx(
     rstreamlines1._data.astype("f4")
 
     cluster_map1 = qbx_and_merge(rstreamlines1, thresholds=qbx_thr, rng=rng)
-    qb_centroids1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
+    qb_centroids1 = remove_clusters_by_size(cluster_map1, min_size=rm_small_clusters)
 
     if select_random is not None:
         rstreamlines2 = select_random_set_of_streamlines(
@@ -1167,7 +1168,7 @@ def slr_with_qbx(
 
     cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr, rng=rng)
 
-    qb_centroids2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
+    qb_centroids2 = remove_clusters_by_size(cluster_map2, min_size=rm_small_clusters)
 
     if verbose:
         t = time()
@@ -1331,7 +1332,7 @@ def groupwise_slr(
 
         if qbx_thr is not None:
             cluster_map = qbx_and_merge(bundle, thresholds=qbx_thr, rng=rng)
-            bundle = remove_clusters_by_size(cluster_map, 1)
+            bundle = remove_clusters_by_size(cluster_map, min_size=1)
 
         centroids.append(bundle)
 

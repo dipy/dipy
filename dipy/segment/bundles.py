@@ -11,7 +11,6 @@ from dipy.align.streamlinear import (
     StreamlineLinearRegistration,
 )
 from dipy.segment.clustering import qbx_and_merge
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.distances import bundles_distances_mam, bundles_distances_mdf
 from dipy.tracking.streamline import (
     Streamlines,
@@ -20,6 +19,7 @@ from dipy.tracking.streamline import (
     select_random_set_of_streamlines,
     set_number_of_points,
 )
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 
@@ -265,7 +265,7 @@ class RecoBundles:
         """
         map_ind = np.zeros(len(streamlines))
         for i in range(len(streamlines)):
-            map_ind[i] = check_range(streamlines[i], greater_than, less_than)
+            map_ind[i] = check_range(streamlines[i], gt=greater_than, lt=less_than)
         map_ind = map_ind.astype(bool)
 
         self.orig_indices = np.array(list(range(0, len(streamlines))))

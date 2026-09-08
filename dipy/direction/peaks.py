@@ -20,8 +20,7 @@ from dipy.reconst.recspeed import (
     search_descending,
 )
 from dipy.reconst.shm import sh_to_sf_matrix
-from dipy.testing.decorators import warning_for_keywords
-from dipy.utils.deprecator import deprecated_params
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 from dipy.utils.multiproc import determine_num_processes
 
 

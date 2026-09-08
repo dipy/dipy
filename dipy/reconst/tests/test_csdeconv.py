@@ -59,7 +59,7 @@ def get_test_data():
         np.array([3.0e-3, 3.0e-3, 3.0e-3]),
     ]
     s0 = [0.8, 1, 4]
-    signals = [single_tensor(gtab, x[0], evals=x[1]) for x in zip(s0, evals_list)]
+    signals = [single_tensor(gtab, S0=x[0], evals=x[1]) for x in zip(s0, evals_list)]
     tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]
     data = [signals[tissue] for tissue in tissues]
     data = np.asarray(data).reshape((3, 3, 1, len(signals[0])))
@@ -96,7 +96,7 @@ def test_recursive_response_calibration():
         gtab, mevals, S0=S0, angles=angles, fractions=[50, 50], snr=SNR
     )
 
-    S_single = single_tensor(gtab, S0, evals=evals, evecs=evecs, snr=SNR)
+    S_single = single_tensor(gtab, S0=S0, evals=evals, evecs=evecs, snr=SNR)
 
     data = np.concatenate((np.tile(S_cross, (8, 1)), np.tile(S_single, (2, 1))), axis=0)
 
@@ -311,7 +311,7 @@ def test_csdeconv():
     for s in sticks:
         mevecs += [all_tensor_evecs(s).T]
 
-    S2 = single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
+    S2 = single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None)
     big_S = np.zeros((10, 10, 10, len(S2)))
     big_S[:] = S2
 

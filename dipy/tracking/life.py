@@ -14,10 +14,10 @@ import scipy.sparse as sps
 import dipy.core.optimize as opt
 import dipy.data as dpd
 from dipy.reconst.base import ReconstFit, ReconstModel
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import transform_streamlines
 from dipy.tracking.utils import unique_rows
 from dipy.tracking.vox2track import _voxel2streamline
+from dipy.utils.deprecator import warning_for_keywords
 
 
 def gradient(f):

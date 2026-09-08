@@ -9,16 +9,229 @@ the Nibabel package for the copyright and license terms.
 """
 
 import functools
-from inspect import signature
+from inspect import Parameter, signature
 import re
 import warnings
 
 from packaging.version import parse as version_cmp
 
+import dipy
 from dipy import __version__
-from dipy.testing.decorators import warning_for_keywords
 
 _LEADING_WHITE = re.compile(r"^(\s*)")
+
+#: Version in which the positional spelling of ``warning_for_keywords``'s own
+#: ``from_version``/``until_version`` stops being accepted.
+_POSITIONAL_VERSIONS_REMOVED = "2.0.0"
+
+
+@functools.cache
+def _parse_base_version(raw_version):
+    """Parse ``raw_version``, dropping any pre/post/dev suffix.
+
+    Memoized: :func:`warning_for_keywords` reads ``dipy.__version__`` on every
+    converted call, and ``packaging`` parsing is comparatively expensive.
+
+    Parameters
+    ----------
+    raw_version : str
+        Version string, e.g. ``"1.13.0.dev0"``.
+
+    Returns
+    -------
+    packaging.version.Version
+        The parsed base version, e.g. ``1.13.0``.
+    """
+    return version_cmp(version_cmp(raw_version).base_version)
+
+
+def warning_for_keywords(*args, from_version="1.10.0", until_version="2.0.0"):
+    """Warn about keyword-only arguments passed as positional arguments.
+
+    Parameters
+    ----------
+    *args : str
+        Deprecated positional spelling of ``from_version`` and
+        ``until_version``. Passing them positionally warns until
+        :data:`_POSITIONAL_VERSIONS_REMOVED`, then raises ``TypeError``.
+        The decorator factory runs when the module defining the decorated
+        function is imported, so past that version the ``TypeError`` surfaces
+        at import time rather than at the call site.
+    from_version : str, optional
+        The version from which the warning should start.
+    until_version : str, optional
+        The version until which the warning is applicable.
+
+    Returns
+    -------
+    function
+        The wrapped function that will issue a warning based
+        on the version.
+
+    Notes
+    -----
+    A decorated function that declares ``*args`` is reported but never
+    rewritten: its surplus positional arguments are genuinely variadic, so
+    moving them would rename a real variadic argument. The report is raised
+    only for the keyword-only parameters such a call actually leaves at their
+    default, so forwarding ``*args`` alongside explicit keywords stays silent.
+
+    ``until_version`` is the last version still fixed up, so the window closes
+    just after it; :data:`_POSITIONAL_VERSIONS_REMOVED` is the version in which
+    the spelling is already gone, so it closes at it. Hence the ``>`` on one
+    and the ``>=`` on the other.
+    """
+    if args:
+        if callable(args[0]):
+            raise TypeError(
+                "warning_for_keywords() is a decorator factory: write "
+                "@warning_for_keywords() rather than @warning_for_keywords."
+            )
+        if len(args) > 2:
+            raise TypeError(
+                "warning_for_keywords() takes at most 2 positional arguments "
+                f"but {len(args)} were given"
+            )
+        message = (
+            "Pass ['from_version', 'until_version'] as keyword args. From version "
+            f"{_POSITIONAL_VERSIONS_REMOVED} passing these as positional arguments "
+            "will result in an error. "
+        )
+        if _parse_base_version(dipy.__version__) >= version_cmp(
+            _POSITIONAL_VERSIONS_REMOVED
+        ):
+            raise TypeError(message)
+        warnings.warn(message, UserWarning, stacklevel=2)
+        from_version = args[0]
+        if len(args) > 1:
+            until_version = args[1]
+
+    parsed_from = version_cmp(from_version)
+    parsed_until = version_cmp(until_version)
+
+    def decorator(func):
+        sig = signature(func)
+        max_positional_args = 0
+        vararg_name = None
+        keyword_only = []
+        for param in sig.parameters.values():
+            if param.kind in (
+                Parameter.POSITIONAL_ONLY,
+                Parameter.POSITIONAL_OR_KEYWORD,
+            ):
+                max_positional_args += 1
+            elif param.kind is Parameter.VAR_POSITIONAL:
+                vararg_name = param.name
+            elif param.kind is Parameter.KEYWORD_ONLY:
+                keyword_only.append(param.name)
+
+        keyword_only = tuple(keyword_only)
+        # ``*args`` absorbs the surplus, so a misplaced keyword-only argument
+        # cannot be told apart from a genuine variadic one. Never rewrite those.
+        convertible = () if vararg_name is not None else keyword_only
+
+        def _shadowed_by_vararg(args, kwargs):
+            """Return the keyword-only names a variadic call leaves at default.
+
+            Only the parameters the surplus *would* have bound to without the
+            ``*args`` are at stake, and only while the caller has not named
+            them: ``DiffusionKurtosisModel(gtab, "OLS")`` silently keeps
+            ``fit_method="WLS"``, but ``KurtosisMicrostructureModel`` forwarding
+            ``(gtab, 1e-3)`` alongside ``fit_method=...`` is an ordinary
+            variadic call with nothing left to report.
+
+            Parameters
+            ----------
+            args : tuple
+                The positional arguments passed to the function.
+            kwargs : dict
+                The keyword arguments passed to the function.
+
+            Returns
+            -------
+            list of str
+                Names left at their default by the surplus, in declaration
+                order. Empty when the call is unambiguously variadic.
+            """
+            n_surplus = len(args) - max_positional_args
+            return [name for name in keyword_only[:n_surplus] if name not in kwargs]
+
+        def convert_positional_to_keyword(args, kwargs, *, warn):
+            """Move surplus positional arguments to keyword arguments.
+
+            Parameters
+            ----------
+            args : tuple
+                The positional arguments passed to the function.
+            kwargs : dict
+                The keyword arguments passed to the function.
+            warn : bool
+                Whether to report the arguments that had to be converted.
+
+            Returns
+            -------
+            result
+                The result of the function call with corrected arguments.
+            """
+            surplus = args[max_positional_args:]
+            if len(surplus) > len(convertible):
+                return func(*args, **kwargs)
+
+            names = convertible[: len(surplus)]
+            if not kwargs.keys().isdisjoint(names):
+                return func(*args, **kwargs)
+
+            corrected_kwargs = dict(kwargs)
+            corrected_kwargs.update(zip(names, surplus))
+
+            if warn:
+                warnings.warn(
+                    f"Pass {list(names)} as keyword args. "
+                    f"From version {until_version} passing these as positional "
+                    f"arguments will result in an error. ",
+                    UserWarning,
+                    stacklevel=3,
+                )
+
+            return func(*args[:max_positional_args], **corrected_kwargs)
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            if not keyword_only or len(args) <= max_positional_args:
+                return func(*args, **kwargs)
+
+            current_version = _parse_base_version(dipy.__version__)
+
+            if current_version > parsed_until:
+                return func(*args, **kwargs)
+
+            if not convertible:
+                shadowed = (
+                    _shadowed_by_vararg(args, kwargs)
+                    if current_version >= parsed_from
+                    else ()
+                )
+                if shadowed:
+                    warnings.warn(
+                        "Extra positional arguments are absorbed by "
+                        f"'*{vararg_name}' and forwarded as they are, so "
+                        f"{shadowed} keep their defaults. Pass {shadowed} as "
+                        "keyword args if you meant to set them.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                return func(*args, **kwargs)
+
+            return convert_positional_to_keyword(
+                args, kwargs, warn=current_version >= parsed_from
+            )
+
+        wrapper.__wrapped__ = func
+        wrapper.__signature__ = sig
+
+        return wrapper
+
+    return decorator
 
 
 class ExpiredDeprecationError(RuntimeError):

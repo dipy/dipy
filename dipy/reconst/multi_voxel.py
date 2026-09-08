@@ -20,13 +20,30 @@ Keyword arguments that configure parallelization/orchestration for the ``multi_v
 and :func:`dipy.utils.parallel.paramap`.
 """
 
+_PARAMAP_KWARGS = tuple(
+    name
+    for name in ORCHESTRATION_KWARGS
+    if name in inspect.signature(paramap).parameters
+)
+"""
+The subset of :data:`ORCHESTRATION_KWARGS` that :func:`dipy.utils.parallel.paramap`
+actually declares, resolved once at import. Private: ``doc/tools/apigen.py``
+documents any public module-level name bound to a call as a function, and then
+Sphinx fails the build asking a tuple for its signature.
+
+``vox_per_chunk`` is *not* one of them: ``multi_voxel_fit`` consumes it itself to
+size the chunks it hands to ``paramap``. Forwarding it anyway would land it in
+``paramap``'s ``**kwargs``, which the joblib and dask engines pass verbatim to
+``joblib.Parallel`` and ``dask.compute`` -- both of which reject it.
+"""
+
 
 def _accepts_kwarg(func, name):
     """Return True iff ``func`` declares ``name`` as an explicit parameter.
 
     A parameter absorbed only by ``**kwargs`` does not count, so a reserved
     orchestration key is forwarded solely to fits that name it explicitly
-    (e.g. ``MCSD.fit(self, data, verbose=True, **kwargs)``).
+    (e.g. ``MCSD.fit(self, data, *, verbose=True, **kwargs)``).
     """
     try:
         param = inspect.signature(func).parameters.get(name)
@@ -138,7 +155,7 @@ def _parallel_fit_worker(vox_data, fit_func, **kwargs):
     return [fit_func(data, **kwargs) for data in vox_data]
 
 
-def multi_voxel_fit(
+def multi_voxel_fit(  # pep3102: ignore
     _func=None,
     *,
     batched=False,
@@ -368,16 +385,9 @@ def multi_voxel_fit(
                             kw["weights"] = weights_to_fit[ii : ii + vox_per_chunk]
                         kwargs_chunks.append(kw)
 
-                    parallel_kwargs = {}
-                    for kk in [
-                        "n_jobs",
-                        "vox_per_chunk",
-                        "engine",
-                        "verbose",
-                        "inflight_cap",
-                    ]:
-                        if kk in kwargs:
-                            parallel_kwargs[kk] = kwargs[kk]
+                    parallel_kwargs = {
+                        kk: kwargs[kk] for kk in _PARAMAP_KWARGS if kk in kwargs
+                    }
                     if shared_objects is not None:
                         parallel_kwargs["shared_objects"] = shared_objects
 

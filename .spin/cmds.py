@@ -15,7 +15,7 @@ from spin.cmds import meson
 
 
 # From scipy: benchmarks/benchmarks/common.py
-def _set_mem_rlimit(max_mem=None):
+def _set_mem_rlimit(*, max_mem=None):
     """Set address space rlimit."""
     import resource
 

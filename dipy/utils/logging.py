@@ -3,13 +3,16 @@ import logging
 import os
 import sys
 
+from dipy.utils.deprecator import warning_for_keywords
+
 
 class CustomHandler(logging.Handler):
     """Custom logging handler that writes an empty line for empty log messages,
     otherwise formats the message as usual.
     """
 
-    def __init__(self, stream=None, filename=None):
+    @warning_for_keywords(from_version="1.13.0")
+    def __init__(self, *, stream=None, filename=None):
         super().__init__()  # call with no arguments
         if filename is not None:
             self._should_close = True
@@ -43,7 +46,8 @@ class CustomHandler(logging.Handler):
         super().close()
 
 
-def get_logger(name="dipy", filename=None, force=False):
+@warning_for_keywords(from_version="1.13.0")
+def get_logger(*, name="dipy", filename=None, force=False):
     """Return a logger instance configured for DIPY.
 
     Parameters
@@ -85,7 +89,9 @@ def get_logger(name="dipy", filename=None, force=False):
     return _logger
 
 
+@warning_for_keywords(from_version="1.13.0")
 def configure_logger(
+    *,
     level=logging.INFO,
     fmt="[%(asctime)s][%(name)s] %(levelname)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",

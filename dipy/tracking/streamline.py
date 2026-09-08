@@ -9,10 +9,10 @@ from scipy.spatial.distance import cdist
 
 from dipy.core.geometry import dist_to_corner
 from dipy.core.interpolation import interpolate_scalar_3d, interpolate_vector_3d
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.distances import bundles_distances_mdf
 from dipy.tracking.streamlinespeed import length, set_number_of_points
 import dipy.tracking.utils as ut
+from dipy.utils.deprecator import warning_for_keywords
 
 
 def unlist_streamlines(streamlines):

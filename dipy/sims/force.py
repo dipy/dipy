@@ -32,6 +32,7 @@ from dipy.sims._force_core import (
     DEFAULT_TWO_FIBER_MIN_ANGLE,
 )
 from dipy.sims.voxel import all_tensor_evecs
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.multiproc import determine_num_processes
 
@@ -43,7 +44,8 @@ DEFAULT_ODI_RANGE = (0.01, 0.3)
 DEFAULT_NUM_ODI_VALUES = 10
 
 
-def resolve_num_odi_values(odi_range, num_odi_values=None):
+@warning_for_keywords(from_version="1.13.0")
+def resolve_num_odi_values(odi_range, *, num_odi_values=None):
     """Resolve the number of ODI grid points, autoscaling when unset.
 
     Parameters
@@ -146,13 +148,15 @@ def smallest_shell_bval(bvals, *, b0_threshold=50, shell_tolerance=50, n=1):
     return min_shells, shell_mask
 
 
-def init_worker(base_seed=None):
+@warning_for_keywords(from_version="1.13.0")
+def init_worker(*, base_seed=None):
     """Initialize a ProcessPoolExecutor worker with a unique RNG state.
 
     With ``base_seed=None``, seed = PID + high-resolution time so every
-    worker has a different stream. With ``initargs=(base_seed,)`` for
-    reproducibility, seed = base_seed + PID so workers differ but the run
-    is reproducible for a fixed worker count.
+    worker has a different stream. With an explicit ``base_seed`` -- passed
+    through ``initializer=partial(init_worker, base_seed=...)``, since the
+    parameter is keyword-only -- seed = base_seed + PID, so workers differ
+    but the run is reproducible for a fixed worker count.
 
     Parameters
     ----------
@@ -544,7 +548,7 @@ def generate_force_simulations(
         [all_tensor_evecs(tuple(point)) for point in target_sphere],
         dtype=np.float64,
     )
-    num_odi_values = resolve_num_odi_values(odi_range, num_odi_values)
+    num_odi_values = resolve_num_odi_values(odi_range, num_odi_values=num_odi_values)
     odi_list = np.linspace(odi_range[0], odi_range[1], num_odi_values).astype(
         np.float64
     )

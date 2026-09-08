@@ -197,8 +197,8 @@ def test_quickbundles_memory_leaks():
     qb = QuickBundles(threshold=2 * threshold)
 
     type_name_pattern = "memoryview"
-    initial_types_refcount = get_type_refcount(type_name_pattern)
+    initial_types_refcount = get_type_refcount(pattern=type_name_pattern)
 
     qb.cluster(data)
     # At this point, all memoryviews created during clustering should be freed.
-    assert_equal(get_type_refcount(type_name_pattern), initial_types_refcount)
+    assert_equal(get_type_refcount(pattern=type_name_pattern), initial_types_refcount)

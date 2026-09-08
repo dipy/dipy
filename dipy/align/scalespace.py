@@ -2,7 +2,7 @@ import numpy as np
 import numpy.linalg as npl
 from scipy.ndimage import gaussian_filter
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 

@@ -15,13 +15,15 @@ from dipy.reconst.dki import DiffusionKurtosisModel
 import dipy.reconst.multi_voxel as mv
 from dipy.reconst.multi_voxel import (
     ORCHESTRATION_KWARGS,
+    _PARAMAP_KWARGS,
     CallableArray,
     _squash,
     multi_voxel_fit,
 )
 from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.sims.voxel import multi_tensor_dki, single_tensor
-from dipy.testing.decorators import set_random_number_generator, warning_for_keywords
+from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 joblib, has_joblib, _ = optional_package("joblib")
@@ -445,6 +447,10 @@ def test_multi_voxel_fit_orchestration_reaches_paramap(monkeypatch):
     """Orchestration kwargs are forwarded to ``paramap`` while the per-chunk
     kwargs are stripped. ``paramap`` is replaced by an in-process spy so the
     routing is checked deterministically without spawning workers.
+
+    ``vox_per_chunk`` is the exception: it is consumed here to size the chunks
+    and must not reach ``paramap``, whose ``**kwargs`` the joblib and dask
+    engines hand straight to their backend.
     """
 
     captured = {}
@@ -452,6 +458,7 @@ def test_multi_voxel_fit_orchestration_reaches_paramap(monkeypatch):
     def spy(func, in_list, *, func_args=None, func_kwargs=None, **kwargs):
         captured["parallel_kwargs"] = kwargs
         captured["per_chunk_kwargs"] = func_kwargs
+        captured["chunk_sizes"] = [len(chunk) for chunk in in_list]
         func_args = func_args or []
         if isinstance(func_kwargs, (list, tuple)):
             return [func(x, *func_args, **fk) for x, fk in zip(in_list, func_kwargs)]
@@ -471,10 +478,13 @@ def test_multi_voxel_fit_orchestration_reaches_paramap(monkeypatch):
         inflight_cap=4,
     )
 
-    # Every orchestration kwarg was handed to paramap / the engine:
-    for key in ORCHESTRATION_KWARGS:
+    assert "vox_per_chunk" not in _PARAMAP_KWARGS
+    for key in _PARAMAP_KWARGS:
         assert key in captured["parallel_kwargs"], f"{key} did not reach paramap"
-    # ... but none of them leaked into the per-chunk (per-voxel) kwargs:
+    for key in set(ORCHESTRATION_KWARGS) - set(_PARAMAP_KWARGS):
+        assert key not in captured["parallel_kwargs"], f"{key} leaked to paramap"
+
+    npt.assert_equal(captured["chunk_sizes"], [3, 3])
     for chunk_kwargs in captured["per_chunk_kwargs"]:
         for key in ORCHESTRATION_KWARGS:
             assert key not in chunk_kwargs
@@ -518,7 +528,7 @@ def setup_module():
     response = (np.array([0.0015, 0.0003, 0.0003]), 100.0)
     csd_signal = single_tensor(
         gtab_1s,
-        100.0,
+        S0=100.0,
         evals=np.array([0.0015, 0.0003, 0.0003]),
         evecs=np.eye(3),
         snr=None,

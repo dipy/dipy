@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 from scipy.ndimage import affine_transform
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.multiproc import determine_num_processes
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 
 from dipy.denoise import denspeed
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 """
  Functions for Wavelet Transforms in 3D domain

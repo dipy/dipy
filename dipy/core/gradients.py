@@ -9,7 +9,7 @@ from dipy.core.geometry import vec2vec_rotmat, vector_norm
 from dipy.core.onetime import auto_attr
 from dipy.core.sphere import HemiSphere, disperse_charges
 from dipy.io import gradients as io
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
@@ -298,9 +298,9 @@ class GradientTable:
         # of GradientTable.
 
     @property
-    def info(self, use_logging=False):
-        show = logger.info if use_logging else print
-        show(self.__str__())
+    def info(self):
+        """Print a summary of the gradient table on stdout."""
+        print(self)
 
     def __str__(self):
         msg = f"B-values shape {self.bvals.shape}\n"

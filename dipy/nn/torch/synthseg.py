@@ -33,6 +33,7 @@ from dipy.nn.utils import (
 )
 from dipy.segment.utils import remove_holes_and_islands
 from dipy.testing.decorators import doctest_skip_parser
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -59,11 +60,13 @@ class Conv3dELU(Module):
     Mimics TensorFlow Conv3D + ELU fused behavior.
     """
 
+    @warning_for_keywords(from_version="1.13.0")
     def __init__(
         self,
         in_channels,
         out_channels,
         kernel_size,
+        *,
         padding=0,
         stride=1,
         dilation=1,
@@ -468,7 +471,8 @@ class SynthSeg:
             60: "right ventral DC",
         }
 
-    def init_model(self, model_scale=24, n_levels=5, output_channels=33):
+    @warning_for_keywords(from_version="1.13.0")
+    def init_model(self, *, model_scale=24, n_levels=5, output_channels=33):
         """Initialize the SynthSeg model.
 
         Parameters

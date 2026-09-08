@@ -27,7 +27,7 @@ from dipy.reconst.dti import (
     trace,
 )
 from dipy.reconst.vec_val_sum import vec_val_vect
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()
@@ -330,6 +330,7 @@ def _compartments_eigenvalues(cdt):
 class KurtosisMicrostructureModel(DiffusionKurtosisModel):
     """Class for the Diffusion Kurtosis Microstructural Model"""
 
+    @warning_for_keywords(from_version="1.12.0")
     def __init__(self, gtab, *args, fit_method="WLS", **kwargs):
         """Initialize a KurtosisMicrostrutureModel class instance.
 

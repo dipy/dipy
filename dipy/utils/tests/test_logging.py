@@ -5,7 +5,7 @@ from dipy.utils.logging import CustomHandler, get_logger
 
 
 def test_logger_stdout(caplog):
-    logger = get_logger("dipy_test_stdout")
+    logger = get_logger(name="dipy_test_stdout")
     with caplog.at_level(logging.INFO):
         logger.info("A message for stdout")
         logger.info("")
@@ -23,7 +23,7 @@ def test_logger_stdout(caplog):
 
 def test_logger_file(tmp_path):
     filename = tmp_path / "log.txt"
-    logger = get_logger("dipy_test_file", filename=filename, force=True)
+    logger = get_logger(name="dipy_test_file", filename=filename, force=True)
     logger.info("A message for file")
     logger.info("")
     logger.warning("A warning for file")

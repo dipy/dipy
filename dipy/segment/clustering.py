@@ -10,8 +10,8 @@ from dipy.segment.metricspeed import (
     Metric,
     MinimumAverageDirectFlipMetric,
 )
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import nbytes, set_number_of_points
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 
@@ -686,13 +686,13 @@ class TreeClusterMap(ClusterMap):
     def get_clusters(self, wanted_level):
         clusters = ClusterMapCentroid()
 
-        def _traverse(node, level=0):
+        def _traverse(node, *, level=0):
             if level == wanted_level:
                 clusters.add_cluster(node)
                 return
 
             for child in node.children:
-                _traverse(child, level + 1)
+                _traverse(child, level=level + 1)
 
         _traverse(self.root)
         return clusters

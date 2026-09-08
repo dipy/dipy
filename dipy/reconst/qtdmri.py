@@ -20,7 +20,7 @@ from scipy.optimize import fmin_l_bfgs_b
 
 import dipy.reconst.dti as dti
 from dipy.reconst.shm import real_sh_descoteaux_from_index
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")

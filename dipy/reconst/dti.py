@@ -19,7 +19,7 @@ from dipy.reconst.weights_method import (
     weights_method_nlls_m_est,
     weights_method_wls_m_est,
 )
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.parallel import paramap
 
 MIN_POSITIVE_SIGNAL = 0.0001
@@ -698,6 +698,7 @@ def tensor_prediction(dti_params, gtab, S0):
 class TensorModel(ReconstModel):
     """Diffusion Tensor"""
 
+    @warning_for_keywords(from_version="1.12.0")
     def __init__(self, gtab, *args, fit_method="WLS", return_S0_hat=False, **kwargs):
         """A Diffusion Tensor Model.
 
@@ -1297,6 +1298,9 @@ def iter_fit_tensor(*, step=1e4):
         """
 
         @functools.wraps(fit_tensor)
+        # Innermost: functools.wraps swaps in fit_tensor's signature, which has
+        # no keyword-only parameter, making the decorator above it a no-op.
+        @warning_for_keywords(from_version="1.12.0")
         def wrapped_fit_tensor(
             design_matrix, data, *args, return_S0_hat=False, step=step, **kwargs
         ):
@@ -1628,7 +1632,8 @@ def _ols_fit_matrix(design_matrix):
 class _NllsHelper:
     r"""Class with member functions to return nlls error and derivative."""
 
-    def err_func(self, tensor, design_matrix, data, weights=None):
+    # scipy.optimize.leastsq calls this with args=(design_matrix, data, weights)
+    def err_func(self, tensor, design_matrix, data, weights=None):  # pep3102: ignore
         r"""
         Error function for the non-linear least-squares fit of the tensor.
 
@@ -1671,7 +1676,10 @@ class _NllsHelper:
                     self.sqrt_w = self.sqrt_w[:, None]
                 return ans
 
-    def jacobian_func(self, tensor, design_matrix, data, weights=None):
+    # scipy.optimize.leastsq calls this with args=(design_matrix, data, weights)
+    def jacobian_func(
+        self, tensor, design_matrix, data, weights=None
+    ):  # pep3102: ignore
         r"""The Jacobian is the first derivative of the error function.
 
         Parameters

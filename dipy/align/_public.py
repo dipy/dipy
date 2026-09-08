@@ -38,9 +38,9 @@ import dipy.data as dpd
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.streamline import load_tractogram
 from dipy.io.utils import read_img_arr_or_path
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points
 from dipy.tracking.utils import transform_tracking_output
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 __all__ = [

@@ -66,8 +66,7 @@ from dipy.reconst.shm import (
     sph_harm_lookup,
 )
 from dipy.segment.tissue import TissueClassifierHMRF
-from dipy.testing.decorators import warning_for_keywords
-from dipy.utils.deprecator import deprecated_params
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.workflows.workflow import Workflow
 

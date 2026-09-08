@@ -3,7 +3,7 @@ import math
 import numpy as np
 from scipy.ndimage import affine_transform, map_coordinates
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()

@@ -1,7 +1,7 @@
 import numpy as np
 
 from dipy.core.geometry import cart_distance
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 def find_qspace_neighbors(gtab):

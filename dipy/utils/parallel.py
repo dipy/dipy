@@ -7,7 +7,7 @@ import tempfile
 import numpy as np
 from tqdm.auto import tqdm
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.multiproc import determine_num_processes
 from dipy.utils.optpkg import optional_package
 

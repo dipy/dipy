@@ -5,7 +5,7 @@ Cross-validation analysis of diffusion models.
 import numpy as np
 
 import dipy.core.gradients as gt
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()

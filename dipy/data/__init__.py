@@ -80,9 +80,9 @@ from dipy.data.fetcher import (
     read_tissue_data,
 )
 from dipy.io.image import load_nifti
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import relist_streamlines
 from dipy.utils.arrfuncs import as_native_array
+from dipy.utils.deprecator import warning_for_keywords
 
 __all__ = [
     "fetch_30_bundle_atlas_hcp842",

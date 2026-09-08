@@ -53,7 +53,7 @@ def get_test_data(rng):
         np.array([3.0e-3, 3.0e-3, 3.0e-3]),
     ]
     s0 = [0.8, 1, 4]
-    signals = [single_tensor(gtab, x[0], evals=x[1]) for x in zip(s0, evals_list)]
+    signals = [single_tensor(gtab, S0=x[0], evals=x[1]) for x in zip(s0, evals_list)]
     tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]  # wm=0, gm=1, csf=2
     data = [add_noise(signals[tissue], 80, s0[0], rng=rng) for tissue in tissues]
     data = np.asarray(data).reshape((3, 3, 1, len(signals[0])))
