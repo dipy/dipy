@@ -85,7 +85,8 @@ cdef class Metric:
             whether or not shapes are compatible
         """
         raise NotImplementedError(
-            "Metric's subclasses must implement method `are_compatible(self, shape1, shape2)`!"
+            "Metric's subclasses must implement method "
+            "`are_compatible(self, shape1, shape2)`!"
         )
 
     cpdef double dist(Metric self, features1, features2) except -1:
@@ -104,7 +105,8 @@ cdef class Metric:
             Distance between two data points.
         """
         raise NotImplementedError(
-            "Metric's subclasses must implement method `dist(self, features1, features2)`!"
+            "Metric's subclasses must implement method "
+            "`dist(self, features1, features2)`!"
         )
 
 

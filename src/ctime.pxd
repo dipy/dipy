@@ -64,12 +64,14 @@ cdef extern from *:
     ctypedef int64_t PyTime_t "__Pyx_PyTime_t"
 
     ctypedef PyTime_t _PyTime_t "__Pyx_PyTime_t"  # legacy, use "PyTime_t" instead
-    PyTime_t PyTime_TimeUnchecked "__Pyx_PyTime_TimeRaw" () noexcept nogil  # legacy, use "PyTime_TimeRaw" instead
+    # legacy, use "PyTime_TimeRaw" instead
+    PyTime_t PyTime_TimeUnchecked "__Pyx_PyTime_TimeRaw" () noexcept nogil
 
     PyTime_t PyTime_TimeRaw "__Pyx_PyTime_TimeRaw" () noexcept nogil
     PyTime_t PyTime_MonotonicRaw "__Pyx_PyTime_MonotonicRaw" () noexcept nogil
     PyTime_t PyTime_PerfCounterRaw "__Pyx_PyTime_PerfCounterRaw" () noexcept nogil
-    double PyTime_AsSecondsDouble "__Pyx_PyTime_AsSecondsDouble" (PyTime_t t) noexcept nogil
+    double PyTime_AsSecondsDouble "__Pyx_PyTime_AsSecondsDouble" (
+        PyTime_t t) noexcept nogil
 
 
 from libc.time cimport (
@@ -124,7 +126,8 @@ cdef inline tm localtime() except * nogil:
     if result is NULL:
         _raise_from_errno()
     # Fix 0-based date values (and the 1900-based year).
-    # See tmtotuple() in https://github.com/python/cpython/blob/master/Modules/timemodule.c
+    # See tmtotuple() in
+    # https://github.com/python/cpython/blob/master/Modules/timemodule.c
     result.tm_year += 1900
     result.tm_mon += 1
     result.tm_wday = <int> ((result.tm_wday + 6) % 7)
