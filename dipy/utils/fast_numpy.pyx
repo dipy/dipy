@@ -174,7 +174,9 @@ cdef void random_vector(double * out, RNGState* rng=NULL) noexcept nogil:
     normalize(out)
 
 
-cdef void random_perpendicular_vector(double * out, double * v, RNGState* rng=NULL) noexcept nogil:
+cdef void random_perpendicular_vector(
+    double * out, double * v, RNGState* rng=NULL
+) noexcept nogil:
     """Generate a random perpendicular vector
 
     Parameters
@@ -196,7 +198,9 @@ cdef void random_perpendicular_vector(double * out, double * v, RNGState* rng=NU
     normalize(out)
 
 
-cdef (double, double) random_point_within_circle(double r, RNGState* rng=NULL) noexcept nogil:
+cdef (double, double) random_point_within_circle(
+    double r, RNGState* rng=NULL
+) noexcept nogil:
     """Generate a random point within a circle
 
     Parameters

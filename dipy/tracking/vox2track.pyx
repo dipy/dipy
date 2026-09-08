@@ -284,7 +284,8 @@ cdef cnp.npy_intp _streamline_in_mask(
                 if direction[dim_idx] != 0:
                     length_ratio = fmin(
                         fabs(
-                            (current_edge[dim_idx] - current_pt[dim_idx]) / direction[dim_idx]
+                            (current_edge[dim_idx] - current_pt[dim_idx])
+                            / direction[dim_idx]
                         ),
                         length_ratio,
                     )
@@ -300,7 +301,11 @@ cdef cnp.npy_intp _streamline_in_mask(
             x = <cnp.npy_intp>floor(current_pt[0] + half_ratio * direction[0])
             y = <cnp.npy_intp>floor(current_pt[1] + half_ratio * direction[1])
             z = <cnp.npy_intp>floor(current_pt[2] + half_ratio * direction[2])
-            if 0 <= x < mask.shape[0] and 0 <= y < mask.shape[1] and 0 <= z < mask.shape[2]:
+            if (
+                0 <= x < mask.shape[0]
+                and 0 <= y < mask.shape[1]
+                and 0 <= z < mask.shape[2]
+            ):
                 if mask[x, y, z]:
                     return 1
 

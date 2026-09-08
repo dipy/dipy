@@ -1,6 +1,7 @@
 cdef extern from *:
     """
-    #define __Pyx_BIGGEST_DOUBLE 1.7976931348623157e+308  /* np.finfo('f8').max */
+    /* np.finfo('f8').max */
+    #define __Pyx_BIGGEST_DOUBLE 1.7976931348623157e+308
     #define __Pyx_BIGGEST_FLOAT 3.402823e+38f  /* < FLT_MAX (3.4028235e+38); avoids double-to-float overflow */
     #define __Pyx_SMALLEST_FLOAT (-3.402823e+38f)  /* > -FLT_MAX; avoids double-to-float overflow */
     """

@@ -63,11 +63,18 @@ cdef inline int _wrap(int x, int m) noexcept nogil:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef inline void _update_factors(double[:, :, :, :] factors,
-                                 floating[:, :, :] moving,
-                                 floating[:, :, :] static,
-                                 cnp.npy_intp ss, cnp.npy_intp rr, cnp.npy_intp cc,
-                                 cnp.npy_intp s, cnp.npy_intp r, cnp.npy_intp c, int operation)noexcept nogil:
+cdef inline void _update_factors(
+    double[:, :, :, :] factors,
+    floating[:, :, :] moving,
+    floating[:, :, :] static,
+    cnp.npy_intp ss,
+    cnp.npy_intp rr,
+    cnp.npy_intp cc,
+    cnp.npy_intp s,
+    cnp.npy_intp r,
+    cnp.npy_intp c,
+    int operation,
+) noexcept nogil:
     r"""Updates the precomputed CC factors of a rectangular window
 
     Updates the precomputed CC factors of the rectangular window centered

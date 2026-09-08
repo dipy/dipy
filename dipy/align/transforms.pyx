@@ -876,10 +876,18 @@ cdef class RigidIsoScalingTransform3D(Transform):
             double dz = theta[5]
             double sxyz = theta[6]
 
-        R[0, 0], R[0, 1], R[0, 2] = (cc*cb-sc*sa*sb)*sxyz, -sc*ca*sxyz, (cc*sb+sc*sa*cb)*sxyz
-        R[1, 0], R[1, 1], R[1, 2] = (sc*cb+cc*sa*sb)*sxyz, cc*ca*sxyz, (sc*sb-cc*sa*cb)*sxyz
-        R[2, 0], R[2, 1], R[2, 2] = -ca*sb*sxyz, sa*sxyz, ca*cb*sxyz
-        R[3, 0], R[3, 1], R[3, 2] = 0, 0, 0
+        R[0, 0] = (cc*cb-sc*sa*sb)*sxyz
+        R[0, 1] = -sc*ca*sxyz
+        R[0, 2] = (cc*sb+sc*sa*cb)*sxyz
+        R[1, 0] = (sc*cb+cc*sa*sb)*sxyz
+        R[1, 1] = cc*ca*sxyz
+        R[1, 2] = (sc*sb-cc*sa*cb)*sxyz
+        R[2, 0] = -ca*sb*sxyz
+        R[2, 1] = sa*sxyz
+        R[2, 2] = ca*cb*sxyz
+        R[3, 0] = 0
+        R[3, 1] = 0
+        R[3, 2] = 0
         R[0, 3] = dx
         R[1, 3] = dy
         R[2, 3] = dz

@@ -385,7 +385,10 @@ cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
                         gaussian[x, y, z] = 0
                 else:
                     gaussian[x, y, z] = (
-                        exp(-((image[x, y, z] - mu[cls_idx]) ** 2) / (2 * sigmasq[cls_idx]))
+                        exp(
+                            -((image[x, y, z] - mu[cls_idx]) ** 2)
+                            / (2 * sigmasq[cls_idx])
+                        )
                     ) / (sqrt(2 * NPY_PI * sigmasq[cls_idx]))
                 P_L_Y[x, y, z, cls_idx] = gaussian[x, y, z] * P_L_N[x, y, z, cls_idx]
 

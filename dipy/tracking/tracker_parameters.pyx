@@ -129,8 +129,20 @@ cdef class TrackerParameters:
         if pmf_threshold is not None:
             self.sh = ShTrackerParameters(pmf_threshold)
 
-        if probe_length is not None and probe_radius is not None and probe_quality is not None and probe_count is not None and data_support_exponent is not None:
-            self.ptt = ParallelTransportTrackerParameters(probe_length, probe_radius, probe_quality, probe_count, data_support_exponent)
+        if (
+            probe_length is not None
+            and probe_radius is not None
+            and probe_quality is not None
+            and probe_count is not None
+            and data_support_exponent is not None
+        ):
+            self.ptt = ParallelTransportTrackerParameters(
+                probe_length,
+                probe_radius,
+                probe_quality,
+                probe_count,
+                data_support_exponent,
+            )
 
         if (
             peak_values_threshold is not None
