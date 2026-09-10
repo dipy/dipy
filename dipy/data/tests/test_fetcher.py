@@ -317,6 +317,14 @@ def test_fetch_data_raise_on_error_false_cleans_partial(tmp_path, sphere_server)
     assert not (tmp_path / "p.gz").exists()
 
 
+def test_fetch_data_raise_on_error_true_cleans_partial(tmp_path, sphere_server):
+    # The default raise_on_error=True must clean up before it propagates.
+    base_url, name, _ = sphere_server
+    with pytest.raises(FetcherError):
+        fetch_data({"p.gz": (base_url + name, _BAD_MD5)}, tmp_path)
+    assert not (tmp_path / "p.gz").exists()
+
+
 def test_fetch_data_data_size_logged(
     tmp_path, sphere_server, caplog, dipy_log_propagate
 ):
