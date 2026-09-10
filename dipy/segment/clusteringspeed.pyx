@@ -631,14 +631,16 @@ cdef class QuickBundles:
         if not same_shape(features_shape, self.features_shape):
             with gil:
                 raise ValueError(
-                    "All features do not have the same shape! QuickBundles requires this to compute centroids!"
+                    "All features do not have the same shape! QuickBundles "
+                    "requires this to compute centroids!"
                 )
 
         # Check if datum is compatible with the metric
         if not self.metric.c_are_compatible(features_shape, self.features_shape):
             with gil:
                 raise ValueError(
-                    "Data features' shapes must be compatible according to the metric used!"
+                    "Data features' shapes must be compatible according to "
+                    "the metric used!"
                 )
 
         # Find nearest cluster to datum

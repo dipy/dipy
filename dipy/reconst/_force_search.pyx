@@ -255,7 +255,8 @@ def search_inner_product(
 
     if queries.shape[1] != database.shape[1]:
         raise ValueError(
-            f"Dimension mismatch: queries {queries.shape[1]} != database {database.shape[1]}"
+            f"Dimension mismatch: queries {queries.shape[1]} != "
+            f"database {database.shape[1]}"
         )
 
     if k <= 0:
