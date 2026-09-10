@@ -7,12 +7,16 @@ from scipy import ndimage
 from dipy.core.gradients import extract_b0, gradient_table
 from dipy.denoise.bias_correction import (
     _bending_penalty,
+    _bspline_axis_basis,
     _build_bspline_design_matrix,
+    _eval_bspline_field,
     _get_mask,
     _get_mean_b0,
     _gradient_weights,
     _legendre_basis,
     _normalize_coords,
+    _plan_pyramid,
+    _pyramid_fit,
     _sharpen_log_intensities,
     _tukey_weights,
     bias_field_correction,
@@ -950,3 +954,58 @@ def test_shrink_factor_one_matches_shape():
     assert corrected.shape == data.shape
     assert bias_field.shape == data.shape[:3]
     assert np.all(np.isfinite(bias_field))
+
+
+def test_bspline_axis_basis_partition_of_unity():
+    """Interior rows of the 1-D basis sum to one, boundary rows are trimmed."""
+    basis = _bspline_axis_basis(n_vox=40, n_ctrl=7)
+    assert basis.shape == (40, 7)
+    assert np.all(basis >= 0)
+    # Voxels with 1 <= t <= n_ctrl - 2 see all four supports of the spline
+    t = np.arange(40) * 6 / 39
+    interior = basis[(t >= 1) & (t <= 5)].sum(axis=1)
+    np.testing.assert_allclose(interior, 1.0, atol=1e-12)
+    assert basis[0].sum() < 1.0
+    assert basis[-1].sum() < 1.0
+
+    degenerate = _bspline_axis_basis(n_vox=1, n_ctrl=5)
+    np.testing.assert_array_equal(degenerate, [[1, 0, 0, 0, 0]])
+
+
+def test_eval_bspline_field_matches_design_matrix():
+    """Separable evaluation agrees with the sparse design matrix everywhere."""
+    shape = (12, 10, 9)
+    n_control = (5, 4, 3)
+    rng = np.random.default_rng(3)
+    coeffs = rng.normal(size=int(np.prod(n_control)))
+    mask = np.ones(shape, dtype=bool)
+    X = _build_bspline_design_matrix(
+        log_b0_shape=shape, n_control=n_control, mask_flat=mask.ravel()
+    )
+    expected = (X @ coeffs).reshape(shape)
+    field = _eval_bspline_field(coeffs=coeffs, n_control=n_control, out_shape=shape)
+    np.testing.assert_allclose(field, expected, atol=1e-12)
+
+
+def test_plan_pyramid_is_reused_across_iterations():
+    """Sharpening with a cached plan gives the same field as rebuilding it."""
+    data, _, _, mask = _make_tissue_phantom()
+    mean_b0 = data[..., :2].mean(axis=-1).astype(np.float64)
+    log_b0 = np.log(np.clip(mean_b0, 1e-10, None))
+    levels = _plan_pyramid(
+        shape=log_b0.shape,
+        mask=mask,
+        method="bspline",
+        pyramid_levels=(2, 1),
+        order=3,
+        n_control_points=(4, 4, 3),
+        lambda_reg=1e-3,
+        smoothness=10.0,
+        edge_weights=None,
+    )
+    first = _pyramid_fit(image=log_b0, mask=mask, levels=levels, n_iter=1, robust=False)
+    second = _pyramid_fit(
+        image=log_b0, mask=mask, levels=levels, n_iter=1, robust=False
+    )
+    np.testing.assert_array_equal(first, second)
+    assert abs(first[mask].mean()) < 1e-10
