@@ -3,7 +3,7 @@
 Reconstruction with FORCE (FORward matching for Complex microstructure Estimation)
 ==================================================================================
 
-FORCE :footcite:p:`Shah2025` is a forward-modeling paradigm that reframes how
+FORCE :footcite:p:`Shah2026` is a forward-modeling paradigm that reframes how
 diffusion MRI data are analyzed. Instead of inverting the measured signal,
 FORCE simulates a large library of biologically plausible intra-voxel fiber
 configurations and tissue compositions. It then identifies the best-matching

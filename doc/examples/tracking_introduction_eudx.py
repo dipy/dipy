@@ -77,7 +77,7 @@ white_matter = (labels == 1) | (labels == 2)
 #
 # The first thing we need to begin fiber tracking is a way of getting
 # directions from this diffusion data set. Here, we use the FORCE model
-# :footcite:p:`Shah2025` to estimate fiber orientations. FORCE is a
+# :footcite:p:`Shah2026` to estimate fiber orientations. FORCE is a
 # forward-modeling approach that simulates a library of biologically
 # plausible fiber configurations and matches each voxel's signal to its
 # nearest library entry. We then extract discrete peaks from the FORCE fit
