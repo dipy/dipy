@@ -23,7 +23,7 @@ except ImportError:
     _HAVE_CYTHON = False
 
 from dipy.core.gradients import extract_b0
-from dipy.segment.mask import applymask, median_otsu
+from dipy.segment.mask import median_otsu
 from dipy.utils.logging import logger
 
 try:
@@ -72,6 +72,75 @@ def _get_mask(mean_b0, mask):
     else:
         mask = np.asarray(mask, dtype=bool)
     return mask
+
+
+def _extrapolate_outside_mask(*, log_bias, mask, sigma=2.0):
+    """Extend the log-domain bias field beyond the brain mask.
+
+    Regression is only constrained inside the mask, so the raw field can
+    diverge by orders of magnitude outside it. Each background voxel takes the
+    value of its nearest in-mask voxel, and the result is Gaussian-smoothed
+    so the field stays continuous across the mask boundary.
+
+    Parameters
+    ----------
+    log_bias : ndarray
+        3D log-domain bias field.
+    mask : ndarray
+        3D boolean brain mask.
+    sigma : float, optional
+        Gaussian smoothing sigma (voxels) applied to the extrapolated region.
+
+    Returns
+    -------
+    log_bias : ndarray
+        Log-domain bias field, unchanged inside the mask and extrapolated
+        outside.
+    """
+    if mask.all():
+        return log_bias
+    _, nearest = ndimage.distance_transform_edt(~mask, return_indices=True)
+    filled = log_bias[tuple(nearest)]
+    smoothed = ndimage.gaussian_filter(filled, sigma=sigma)
+    out = log_bias.copy()
+    out[~mask] = smoothed[~mask]
+    return out
+
+
+def _apply_bias_field(*, data, log_bias, mask, zero_background):
+    """Turn a log-domain field into a multiplicative field and apply it.
+
+    Parameters
+    ----------
+    data : ndarray
+        4D DWI data (X, Y, Z, N).
+    log_bias : ndarray
+        3D log-domain bias field, centered within the mask.
+    mask : ndarray
+        3D boolean brain mask used for the regression.
+    zero_background : bool
+        If True, the field is 1.0 outside the mask. If False, the in-mask
+        field is extrapolated to the background.
+
+    Returns
+    -------
+    corrected : ndarray
+        Bias-corrected DWI, same dtype as ``data``. Integer dtypes are clipped
+        to their representable range instead of wrapping.
+    bias_field : ndarray
+        3D multiplicative bias field.
+    """
+    if zero_background:
+        log_bias = log_bias.copy()
+        log_bias[~mask] = 0.0
+    else:
+        log_bias = _extrapolate_outside_mask(log_bias=log_bias, mask=mask)
+    bias_field = np.exp(log_bias)
+    corrected = data.astype(np.float64) / bias_field[..., None]
+    if np.issubdtype(data.dtype, np.integer):
+        info = np.iinfo(data.dtype)
+        corrected = np.clip(corrected, info.min, info.max)
+    return corrected.astype(data.dtype), bias_field
 
 
 def _gradient_weights(*, log_b0, alpha=1.0):
@@ -420,9 +489,11 @@ def polynomial_bias_field_dwi(
         Apply gradient-based edge suppression.
     zero_background : bool, optional
         If True, set the bias field to 1.0 (no correction) outside the brain
-        mask. If False, the raw extrapolated field values are preserved in
-        the returned bias_field array. Has no effect on the corrected DWI
-        data (background voxels are always zeroed by the brain mask).
+        mask, leaving background voxels untouched. If False, the field
+        estimated inside the mask is extrapolated to the background (nearest
+        in-mask value, smoothed) so the whole volume is corrected with a
+        continuous field. The mask only restricts the regression; no voxel
+        is ever zeroed in the corrected data.
 
     Returns
     -------
@@ -431,7 +502,6 @@ def polynomial_bias_field_dwi(
     bias_field : ndarray
         Estimated 3D multiplicative bias field.
     """
-    orig_dtype = data.dtype
     mean_b0 = _get_mean_b0(data, gtab)
     mask = _get_mask(mean_b0, mask)
     log_b0 = np.log(np.clip(mean_b0, 1e-10, None))
@@ -447,13 +517,9 @@ def polynomial_bias_field_dwi(
         gradient_weighting=gradient_weighting,
     )
 
-    if zero_background:
-        log_bias[~mask] = 0.0
-    bias_field = np.exp(log_bias)
-    corrected = applymask(data.astype(np.float64) / bias_field[..., None], mask).astype(
-        orig_dtype
+    return _apply_bias_field(
+        data=data, log_bias=log_bias, mask=mask, zero_background=zero_background
     )
-    return corrected, bias_field
 
 
 def _build_bspline_design_matrix_py(*, log_b0_shape, n_control, mask_flat):
@@ -1022,9 +1088,11 @@ def bias_field_correction(
         If True, return the bias field alongside the corrected data.
     zero_background : bool, optional
         If True, set the bias field to 1.0 (no correction) outside the brain
-        mask. If False, the raw extrapolated field values are preserved in
-        the returned bias_field array. Has no effect on the corrected DWI
-        data (background voxels are always zeroed by the brain mask).
+        mask, leaving background voxels untouched. If False, the field
+        estimated inside the mask is extrapolated to the background (nearest
+        in-mask value, smoothed) so the whole volume is corrected with a
+        continuous field. The mask only restricts the regression; no voxel
+        is ever zeroed in the corrected data.
 
     Returns
     -------
@@ -1034,7 +1102,6 @@ def bias_field_correction(
         3D multiplicative bias field (only returned if
         return_bias_field=True).
     """
-    orig_dtype = data.dtype
     mean_b0 = _get_mean_b0(data, gtab)
     mask = _get_mask(mean_b0, mask)
     log_b0 = np.log(np.clip(mean_b0.astype(np.float64), 1e-10, None))
@@ -1077,11 +1144,8 @@ def bias_field_correction(
     else:
         raise ValueError(f"method must be 'poly', 'bspline', or 'auto', got '{method}'")
 
-    if zero_background:
-        log_bias[~mask] = 0.0
-    bias_field = np.exp(log_bias)
-    corrected = applymask(data.astype(np.float64) / bias_field[..., None], mask).astype(
-        orig_dtype
+    corrected, bias_field = _apply_bias_field(
+        data=data, log_bias=log_bias, mask=mask, zero_background=zero_background
     )
 
     if return_bias_field:
