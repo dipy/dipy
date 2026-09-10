@@ -154,9 +154,10 @@ class BiasFieldCorrectionFlow(Workflow):
         gradient_weighting : bool, optional
             Apply gradient-based edge suppression (poly/bspline methods).
         zero_background : bool, optional
-            If True, set the saved bias field to 1.0 outside the brain mask,
-            suppressing extrapolation artifacts in the background
-            (poly/bspline methods).
+            If True, set the bias field to 1.0 outside the brain mask so
+            background voxels are left untouched. If False, the in-mask
+            field is extrapolated to the background and the whole volume is
+            corrected (poly/bspline methods).
         out_dir : string or Path, optional
             Output directory.
         out_corrected : string, optional

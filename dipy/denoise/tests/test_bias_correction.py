@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+from scipy import ndimage
 
 from dipy.core.gradients import extract_b0, gradient_table
 from dipy.denoise.bias_correction import (
@@ -617,18 +618,22 @@ def test_provided_mask_is_respected():
     upper_mask = full_mask.copy()
     upper_mask[data.shape[0] // 2 :] = False
 
-    corrected, _ = bias_field_correction(
-        data,
-        gtab,
-        mask=upper_mask,
-        method="poly",
-        pyramid_levels=(2, 1),
-        n_iter=1,
-        robust=False,
-        gradient_weighting=False,
-        return_bias_field=True,
-    )
-    np.testing.assert_array_equal(corrected[~upper_mask], 0)
+    kwargs = {
+        "method": "poly",
+        "pyramid_levels": (2, 1),
+        "n_iter": 1,
+        "robust": False,
+        "gradient_weighting": False,
+        "return_bias_field": True,
+    }
+    corrected, bias_upper = bias_field_correction(data, gtab, mask=upper_mask, **kwargs)
+    _, bias_full = bias_field_correction(data, gtab, mask=full_mask, **kwargs)
+
+    # The field is centered on, and estimated from, the provided mask only
+    np.testing.assert_allclose(np.log(bias_upper[upper_mask]).mean(), 0.0, atol=1e-8)
+    assert not np.allclose(bias_upper[full_mask], bias_full[full_mask])
+    # Voxels outside the mask are corrected, never discarded
+    assert np.all(corrected[~upper_mask] > 0)
 
 
 def test_single_pyramid_level():
@@ -699,3 +704,90 @@ def test_dtype_preservation():
             gradient_weighting=False,
         )
         assert corrected.dtype == dtype, f"Expected {dtype}, got {corrected.dtype}"
+
+
+def test_background_not_zeroed():
+    """Corrected data keeps background voxels and the field stays bounded."""
+    data, gtab, _, mask = _make_synthetic_dwi()
+    corrected, bias_field = bias_field_correction(
+        data,
+        gtab,
+        mask=mask,
+        method="poly",
+        pyramid_levels=(2, 1),
+        n_iter=1,
+        robust=False,
+        gradient_weighting=False,
+        return_bias_field=True,
+    )
+    assert np.all(np.isfinite(bias_field))
+    assert np.all(corrected[~mask] > 0)
+    assert bias_field[~mask].min() >= bias_field[mask].min() - 1e-6
+    assert bias_field[~mask].max() <= bias_field[mask].max() + 1e-6
+
+    # Field must be continuous across the mask boundary
+    boundary = mask & ~ndimage.binary_erosion(mask)
+    outside_ring = ndimage.binary_dilation(mask) & ~mask
+    assert (
+        abs(
+            np.log(bias_field[boundary]).mean()
+            - np.log(bias_field[outside_ring]).mean()
+        )
+        < 0.1
+    )
+
+
+def test_zero_background_leaves_data_untouched():
+    """zero_background=True gives unit field and identity outside the mask."""
+    data, gtab, _, mask = _make_synthetic_dwi()
+    corrected, bias_field = bias_field_correction(
+        data,
+        gtab,
+        mask=mask,
+        method="bspline",
+        n_control_points=(4, 4, 3),
+        pyramid_levels=(2, 1),
+        n_iter=1,
+        robust=False,
+        gradient_weighting=False,
+        return_bias_field=True,
+        zero_background=True,
+    )
+    np.testing.assert_array_equal(bias_field[~mask], 1.0)
+    np.testing.assert_allclose(corrected[~mask], data[~mask], rtol=1e-6)
+
+
+def test_integer_dtype_clipped_not_wrapped():
+    """Integer input is clipped to the dtype range instead of overflowing."""
+    data, gtab, _, mask = _make_synthetic_dwi()
+    data_u8 = np.clip(data / data.max() * 250.0, 0, 255).astype(np.uint8)
+    corrected = bias_field_correction(
+        data_u8,
+        gtab,
+        mask=mask,
+        method="poly",
+        pyramid_levels=(2, 1),
+        n_iter=1,
+        robust=False,
+        gradient_weighting=False,
+    )
+    assert corrected.dtype == np.uint8
+    expected = (
+        data_u8.astype(np.float64)
+        / np.exp(
+            np.log(
+                bias_field_correction(
+                    data_u8,
+                    gtab,
+                    mask=mask,
+                    method="poly",
+                    pyramid_levels=(2, 1),
+                    n_iter=1,
+                    robust=False,
+                    gradient_weighting=False,
+                    return_bias_field=True,
+                )[1]
+            )
+        )[..., None]
+    )
+    assert np.all(corrected[expected >= 255] == 255)
