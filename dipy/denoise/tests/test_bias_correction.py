@@ -6,12 +6,14 @@ from scipy import ndimage
 
 from dipy.core.gradients import extract_b0, gradient_table
 from dipy.denoise.bias_correction import (
+    _bending_penalty,
     _build_bspline_design_matrix,
     _get_mask,
     _get_mean_b0,
     _gradient_weights,
     _legendre_basis,
     _normalize_coords,
+    _sharpen_log_intensities,
     _tukey_weights,
     bias_field_correction,
     polynomial_bias_field_dwi,
@@ -791,3 +793,160 @@ def test_integer_dtype_clipped_not_wrapped():
         )[..., None]
     )
     assert np.all(corrected[expected >= 255] == 255)
+
+
+def _make_tissue_phantom(*, shape=(32, 32, 24), n_vols=6, rng=None):
+    """Piecewise-constant two-tissue phantom with a smooth multiplicative bias.
+
+    Parameters
+    ----------
+    shape : tuple of int, optional
+        Spatial dimensions.
+    n_vols : int, optional
+        Number of volumes; the first two are b0.
+    rng : numpy.random.Generator, optional
+        Random number generator.
+
+    Returns
+    -------
+    data : ndarray
+        4D float32 data.
+    gtab : GradientTable
+        Gradient table.
+    bias : ndarray
+        Ground-truth multiplicative bias field.
+    mask : ndarray
+        Boolean brain mask.
+    """
+    if rng is None:
+        rng = np.random.default_rng(0)
+    bvals = np.zeros(n_vols)
+    bvals[2:] = 1000
+    bvecs = np.zeros((n_vols, 3))
+    bvecs[2:, 0] = 1.0
+    gtab = gradient_table(bvals, bvecs=bvecs)
+
+    xx, yy, zz = np.mgrid[: shape[0], : shape[1], : shape[2]]
+    cx, cy, cz = (n // 2 for n in shape)
+    r2 = ((xx - cx) / cx) ** 2 + ((yy - cy) / cy) ** 2 + ((zz - cz) / cz) ** 2
+    mask = r2 < 1.0
+    # Bright "cortex" shell around a darker "white matter" core
+    signal = np.where(r2 < 0.45, 400.0, 600.0)
+
+    xn = 2.0 * xx / (shape[0] - 1) - 1.0
+    yn = 2.0 * yy / (shape[1] - 1) - 1.0
+    bias = np.exp(0.35 * xn - 0.25 * yn)
+
+    data = np.zeros((*shape, n_vols), dtype=np.float32)
+    for i in range(n_vols):
+        data[..., i] = (signal * bias + rng.normal(0, 5, shape)).clip(1)
+    return data, gtab, bias, mask
+
+
+def test_sharpen_log_intensities_pulls_toward_class_means():
+    """Sharpening moves a bimodal sample toward its two modes."""
+    rng = np.random.default_rng(1)
+    modes = np.array([5.0, 6.0])
+    labels = rng.integers(0, 2, size=20000)
+    values = modes[labels] + rng.normal(0, 0.05, size=labels.size)
+    expected = _sharpen_log_intensities(values=values)
+    assert expected.shape == values.shape
+    before = np.abs(values - modes[labels]).mean()
+    after = np.abs(expected - modes[labels]).mean()
+    assert after < before
+
+
+def test_sharpen_log_intensities_constant_input():
+    """A constant sample is returned unchanged."""
+    values = np.full(100, 3.0)
+    np.testing.assert_array_equal(_sharpen_log_intensities(values=values), values)
+
+
+def test_bending_penalty_properties():
+    """Bending penalty is symmetric PSD and vanishes on affine lattices."""
+    n_control = (4, 5, 3)
+    penalty = _bending_penalty(n_control=n_control)
+    K = int(np.prod(n_control))
+    assert penalty.shape == (K, K)
+    np.testing.assert_allclose(penalty, penalty.T)
+    assert np.linalg.eigvalsh(penalty).min() > -1e-10
+    ii, jj, kk = np.mgrid[: n_control[0], : n_control[1], : n_control[2]]
+    affine = (2.0 * ii - 0.5 * jj + 3.0 * kk + 1.0).ravel()
+    np.testing.assert_allclose(affine @ penalty @ affine, 0.0, atol=1e-10)
+    curved = (ii**2).astype(float).ravel()
+    assert curved @ penalty @ curved > 0
+
+    # Axes with fewer than 3 control points contribute nothing
+    assert np.all(_bending_penalty(n_control=(2, 2, 2)) == 0)
+
+
+def test_sharpening_separates_tissue_from_bias():
+    """With tissue contrast present, sharpening recovers the bias better."""
+    data, gtab, true_bias, mask = _make_tissue_phantom()
+    kwargs = {
+        "mask": mask,
+        "method": "poly",
+        "order": 2,
+        "pyramid_levels": (2, 1),
+        "n_iter": 1,
+        "robust": False,
+        "gradient_weighting": False,
+        "return_bias_field": True,
+    }
+    _, bf_direct = bias_field_correction(data, gtab, sharpen=False, **kwargs)
+    _, bf_sharp = bias_field_correction(data, gtab, sharpen=True, **kwargs)
+
+    def _rmse(bf):
+        est = np.log(bf[mask])
+        est -= est.mean()
+        ref = np.log(true_bias[mask])
+        ref -= ref.mean()
+        return np.sqrt(np.mean((est - ref) ** 2))
+
+    assert _rmse(bf_sharp) < _rmse(bf_direct)
+    assert _rmse(bf_sharp) < 0.05
+
+
+def test_bspline_smoothness_reduces_field_roughness():
+    """A bending penalty yields a smoother B-spline field."""
+    data, gtab, _, mask = _make_tissue_phantom()
+    kwargs = {
+        "mask": mask,
+        "method": "bspline",
+        "n_control_points": (6, 6, 5),
+        "pyramid_levels": (2, 1),
+        "n_iter": 1,
+        "robust": False,
+        "gradient_weighting": False,
+        "sharpen": False,
+        "return_bias_field": True,
+    }
+    _, bf_rough = bias_field_correction(data, gtab, smoothness=0.0, **kwargs)
+    _, bf_smooth = bias_field_correction(data, gtab, smoothness=100.0, **kwargs)
+
+    def _roughness(bf):
+        lap = ndimage.laplace(np.log(bf))
+        return np.abs(lap[mask]).mean()
+
+    assert _roughness(bf_smooth) < _roughness(bf_rough)
+
+
+def test_shrink_factor_one_matches_shape():
+    """shrink_factor=1 runs sharpening at full resolution."""
+    data, gtab, _, mask = _make_synthetic_dwi()
+    corrected, bias_field = bias_field_correction(
+        data,
+        gtab,
+        mask=mask,
+        method="poly",
+        pyramid_levels=(2, 1),
+        n_iter=1,
+        robust=False,
+        gradient_weighting=False,
+        shrink_factor=1,
+        max_iter=5,
+        return_bias_field=True,
+    )
+    assert corrected.shape == data.shape
+    assert bias_field.shape == data.shape[:3]
+    assert np.all(np.isfinite(bias_field))
