@@ -291,17 +291,25 @@ def test_single_transforms():
         npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
 
 
-def test_register_series():
+@pytest.mark.parametrize("metric, metric_kwargs", [("MI", {}), ("CC", {"radius": 1})])
+def test_register_series(metric, metric_kwargs):
     fdata, fbval, fbvec = dpd.get_fnames(name="small_64D")
     img = nib.load(fdata)
     gtab = dpg.gradient_table(fbval, bvecs=fbvec)
     ref_idx = np.where(gtab.b0s_mask)[0][0]
-    xformed, affines = register_series(img, ref_idx)
+    xformed, affines = register_series(
+        img,
+        ref_idx,
+        level_iters=[500, 100],
+        metric=metric,
+        **metric_kwargs,
+    )
     npt.assert_(np.all(affines[..., ref_idx] == np.eye(4)))
     npt.assert_(np.all(xformed[..., ref_idx] == img.get_fdata()[..., ref_idx]))
 
 
-def test_register_dwi_series_and_motion_correction(tmp_path):
+@pytest.mark.parametrize("metric, metric_kwargs", [("MI", {}), ("CC", {"radius": 1})])
+def test_register_dwi_series_and_motion_correction(tmp_path, metric, metric_kwargs):
     fdata, fbval, fbvec = dpd.get_fnames(name="small_64D")
 
     # Use an abbreviated data-set:
@@ -314,8 +322,22 @@ def test_register_dwi_series_and_motion_correction(tmp_path):
     np.savetxt(tmp_path / "bvals.txt", bvals[:10])
     np.savetxt(tmp_path / "bvecs.txt", bvecs[:10])
     gtab = dpg.gradient_table(tmp_path / "bvals.txt", bvecs=tmp_path / "bvecs.txt")
-    reg_img, reg_affines = register_dwi_series(data, gtab, affine=img.affine)
-    reg_img_2, reg_affines_2 = motion_correction(data, gtab, affine=img.affine)
+    reg_img, reg_affines = register_dwi_series(
+        data,
+        gtab,
+        affine=img.affine,
+        level_iters=[500, 100],
+        metric=metric,
+        **metric_kwargs,
+    )
+    reg_img_2, reg_affines_2 = motion_correction(
+        data,
+        gtab,
+        affine=img.affine,
+        level_iters=[500, 100],
+        metric=metric,
+        **metric_kwargs,
+    )
     npt.assert_(isinstance(reg_img, nib.Nifti1Image))
 
     npt.assert_array_equal(reg_img.get_fdata(), reg_img_2.get_fdata())
