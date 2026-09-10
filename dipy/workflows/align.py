@@ -7,7 +7,7 @@ import numpy as np
 from dipy.align import affine_registration, motion_correction
 from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
-from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
+from dipy.align.metrics import CCMetric, EMMetric, MIMetric, SSDMetric
 from dipy.align.reslice import reslice
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.align.streamwarp import bundlewarp
@@ -452,9 +452,10 @@ class ImageRegistrationFlow(Workflow):
         nbins : int, optional
             Number of bins to discretize the joint and marginal PDF
             for the mutual information metric.
-        sampling_prop : int, optional
-            Number ([0-100]) of voxels for calculating the PDF for the
-            mutual information metric. None implies all voxels.
+        sampling_prop : float, optional
+            Proportion of voxels used to calculate the PDF for the mutual
+            information metric. Must be in the interval (0, 1]. None uses all
+            voxels.
         metric : string, optional
             Similarity metric. Supported values are ``'mi'`` for mutual
             information and ``'cc'`` for local cross-correlation.
@@ -753,6 +754,7 @@ class SynRegistrationFlow(Workflow):
         mopt_q_levels=256,
         mopt_double_gradient=True,
         mopt_step_type="",
+        mopt_nbins=32,
         step_length=0.25,
         ss_sigma_factor=0.2,
         opt_tol=1e-5,
@@ -779,7 +781,7 @@ class SynRegistrationFlow(Workflow):
         metric : string, optional
             The metric to be used.
             metric available: cc (Cross Correlation), ssd (Sum Squared
-            Difference), em (Expectation-Maximization).
+            Difference), em (Expectation-Maximization), mi (Mutual Information).
         mopt_sigma_diff : float, optional
             Metric option applied on Cross correlation (CC).
             The standard deviation of the Gaussian smoothing kernel to be
@@ -789,10 +791,11 @@ class SynRegistrationFlow(Workflow):
             the radius of the squared (cubic) neighborhood at each voxel to
             be considered to compute the cross correlation.
         mopt_smooth : float, optional
-            Metric option applied on Sum Squared Difference (SSD) and
-            Expectation Maximization (EM). Smoothness parameter, the
-            larger the value the smoother the deformation field.
-            (default 1.0 for EM, 4.0 for SSD)
+            Smoothness parameter for Sum Squared Difference (SSD),
+            Expectation Maximization (EM), and Mutual Information (MI).
+            Controls deformation-field smoothness for SSD and EM, and the
+            Gaussian standard deviation for update-field smoothing for MI.
+            Larger values produce smoother fields.
         mopt_inner_iter : int, optional
             Metric option applied on Sum Squared Difference (SSD) and
             Expectation Maximization (EM). This is number of iterations to be
@@ -816,6 +819,8 @@ class SynRegistrationFlow(Workflow):
             (not used if Demons Step is selected). Possible value:
             ('gauss_newton', 'demons'). default: 'gauss_newton' for EM,
             'demons' for SSD.
+        mopt_nbins : int, optional
+            Number of histogram bins for Mutual Information (MI).
         step_length : float, optional
             the length of the maximum displacement vector of the update
             displacement field at each iteration.
@@ -845,10 +850,10 @@ class SynRegistrationFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         metric = metric.lower()
-        if metric not in ["ssd", "cc", "em"]:
+        if metric not in ["ssd", "cc", "em", "mi"]:
             raise ValueError(
                 "Invalid similarity metric: Please"
-                " provide a valid metric like 'ssd', 'cc', 'em'"
+                " provide a valid metric like 'ssd', 'cc', 'em', 'mi'"
             )
 
         logger.info("Starting Diffeomorphic Registration")
@@ -866,6 +871,7 @@ class SynRegistrationFlow(Workflow):
                 "mopt_inner_iter": 5,
                 "mopt_step_type": "gauss_newton",
             },
+            "mi": {"mopt_smooth": 0.0},
         }
 
         mopt_smooth = (
@@ -875,15 +881,15 @@ class SynRegistrationFlow(Workflow):
         )
         mopt_inner_iter = (
             mopt_inner_iter
-            if mopt_inner_iter or metric == "cc"
+            if mopt_inner_iter or metric in ["cc", "mi"]
             else init_param[metric]["mopt_inner_iter"]
         )
 
-        # If using the 'cc' metric, force the `mopt_step_type` parameter to an
-        # empty value since the 'cc' metric does not use it; for the rest of
-        # the metrics, the `step_type` parameter will be initialized to their
-        # corresponding default values in `init_param`.
-        if metric == "cc":
+        # If using the 'cc' or 'mi' metric, force the `mopt_step_type`
+        # parameter to an empty value since neither metric uses it; for the
+        # rest of the metrics, `step_type` will be initialized to its
+        # corresponding default value in `init_param`.
+        if metric in ["cc", "mi"]:
             mopt_step_type = ""
 
         for (
@@ -931,6 +937,7 @@ class SynRegistrationFlow(Workflow):
                     q_levels=mopt_q_levels,
                     double_gradient=mopt_double_gradient,
                 ),
+                "mi": MIMetric(static_image.ndim, nbins=mopt_nbins, smooth=mopt_smooth),
             }
 
             current_metric = l_metric.get(metric.lower())
@@ -983,6 +990,10 @@ class MotionCorrectionFlow(Workflow):
         b0_threshold=50,
         bvecs_tol=0.01,
         level_iters=(1000, 500, 100),
+        metric="mi",
+        nbins=32,
+        sampling_prop=None,
+        radius=4,
         out_dir="",
         out_moved="moved.nii.gz",
         out_affine="affine.txt",
@@ -1006,6 +1017,18 @@ class MotionCorrectionFlow(Workflow):
             b-vectors are unit vectors
         level_iters : variable int, optional
             The number of iterations at each level of the Gaussian pyramid.
+        metric : string, optional
+            Similarity metric. Supported values are ``'mi'`` for mutual
+            information and ``'cc'`` for local cross-correlation.
+        nbins : int, optional
+            Number of bins to discretize the joint and marginal PDF
+            for the mutual information metric.
+        sampling_prop : float, optional
+            Proportion of voxels used to calculate the PDF for the mutual
+            information metric. Must be in the interval (0, 1]. None uses all
+            voxels.
+        radius : int, optional
+            Neighborhood radius for local cross-correlation.
         out_dir : string or Path, optional
             Directory to save the transformed image and the affine matrix.
         out_moved : string, optional
@@ -1021,6 +1044,14 @@ class MotionCorrectionFlow(Workflow):
                 "setting level_iters=[10000, 1000, 100]."
             )
 
+        metric = metric.upper()
+        if metric not in {"MI", "CC"}:
+            raise ValueError(f"Unsupported affine metric {metric!r}. Use MI or CC.")
+        metric_kwargs = (
+            {"nbins": nbins, "sampling_proportion": sampling_prop}
+            if metric == "MI"
+            else {"radius": radius}
+        )
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, omoved, oafffine in io_it:
@@ -1044,7 +1075,12 @@ class MotionCorrectionFlow(Workflow):
             )
 
             reg_img, reg_affines = motion_correction(
-                data=data, gtab=gtab, affine=affine, level_iters=level_iters
+                data=data,
+                gtab=gtab,
+                affine=affine,
+                level_iters=level_iters,
+                metric=metric,
+                **metric_kwargs,
             )
 
             # Saving the corrected image file

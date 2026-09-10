@@ -789,7 +789,8 @@ def test_apply_affine_transform(tmp_path):
     assert Path(tmp_path / "transformed_nearest.nii.gz").exists()
 
 
-def test_motion_correction(tmp_path):
+@pytest.mark.parametrize("metric, metric_kwargs", [("mi", {}), ("cc", {"radius": 1})])
+def test_motion_correction(tmp_path, metric, metric_kwargs):
     data_path, fbvals_path, fbvecs_path = get_fnames(name="small_64D")
 
     # Use an abbreviated data-set:
@@ -809,7 +810,10 @@ def test_motion_correction(tmp_path):
         str(tmp_path / "data.nii.gz"),
         str(tmp_path / "bvals.txt"),
         str(tmp_path / "bvecs.txt"),
+        level_iters=[500, 100],
+        metric=metric,
         out_dir=tmp_path,
+        **metric_kwargs,
     )
     out_path = motion_correction_flow.last_generated_outputs["out_moved"]
     corrected = load_nifti_data(out_path)
@@ -843,6 +847,29 @@ def test_syn_registration_flow(tmp_path):
         "metric": "cc",
         "mopt_sigma_diff": 2.0,
         "mopt_radius": 4,
+    }
+    optimizer_optional_args = {
+        "level_iters": [10, 10, 5],
+        "step_length": 0.25,
+        "opt_tol": 1e-5,
+        "inv_iter": 20,
+        "inv_tol": 1e-3,
+        "ss_sigma_factor": 0.2,
+    }
+
+    all_args = dict(metric_optional_args, **optimizer_optional_args)
+    syn_flow.run(*positional_args, out_dir=tmp_path, **all_args)
+
+    warped_path = syn_flow.last_generated_outputs["out_warped"]
+    npt.assert_equal(Path(warped_path).is_file(), True)
+    warped_map_path = syn_flow.last_generated_outputs["out_field"]
+    npt.assert_equal(Path(warped_map_path).is_file(), True)
+
+    # Test the mi metric
+    metric_optional_args = {
+        "metric": "mi",
+        "mopt_nbins": 16,
+        "mopt_smooth": 0.0,
     }
     optimizer_optional_args = {
         "level_iters": [10, 10, 5],
