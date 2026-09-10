@@ -149,6 +149,17 @@ print(f"Brain mask    : {mask.sum()} / {mask.size} voxels ({100 * mask.mean():.0
 # and other outlier voxels do not distort the fit.  ``gradient_weighting=True``
 # further down-weights voxels near tissue boundaries where the intensity
 # gradient would otherwise pull the smooth field towards sharp edges.
+#
+# A direct regression of the log b0 cannot tell tissue contrast from the
+# bias field: white matter is darker than cortex and CSF, so a smooth fit
+# happily explains that anatomy as a field that is low in the centre and high
+# at the periphery.  ``sharpen=True`` (the default) wraps the regression in
+# the histogram-sharpening iterations of N4 :footcite:p:`Tustison2010`.  At
+# every iteration the intensity histogram inside the mask is deconvolved,
+# each voxel is pulled toward its tissue-class mean, and only the residual is
+# smoothed.  The field therefore converges to the slowly varying component
+# alone, and tissue contrast is preserved.  ``max_iter``,
+# ``convergence_threshold`` and ``shrink_factor`` control that loop.
 
 print("\nRunning poly...")
 t0 = time.perf_counter()
@@ -328,6 +339,13 @@ print(
 #   surface arrays, parallel imaging, or 7T data.  Increase
 #   ``n_control_points`` (try ``(12, 12, 12)``) if the field still looks
 #   under-corrected.
+# * **Keep ``sharpen=True``** unless the image has no tissue contrast at all
+#   (e.g. a phantom).  ``smoothness`` (bspline only) is a bending-energy
+#   penalty on the control lattice; raise it if the field follows anatomy,
+#   lower it if the field looks under-fitted.
+# * **Do not tune by CoV alone**: a field that flattens grey/white matter
+#   contrast lowers the CoV but is wrong.  Check that tissue contrast
+#   survives in the corrected b0.
 # * **``pyramid_levels=(4, 2, 1)``** (default) works well for most data.  For
 #   very small volumes (< 64 voxels/axis) use ``(2, 1)`` instead.
 # * **Pass ``mask=`` explicitly** when processing multiple subjects: compute
@@ -598,8 +616,8 @@ if _HAVE_SITK:
 #   DWI analysis.
 # * **DIPY estimates the field from b0 volumes only** (via
 #   :func:`~dipy.core.gradients.extract_b0`), fitting a smooth spatial basis
-#   in log space via robust ridge regression — a design choice that is
-#   mathematically well-matched to the DWI acquisition model.
+#   in log space inside the N4 histogram-sharpening loop, so tissue contrast
+#   stays in the image and only the smooth field is removed.
 # * **``poly``** (20 parameters) is extremely fast and sufficient for most 3T
 #   acquisitions.  **``bspline``** (512 parameters by default) adapts to more
 #   complex patterns.  **``auto``** picks the better of the two for your data.
@@ -607,7 +625,12 @@ if _HAVE_SITK:
 #   trained to reproduce N4 output and best suited to structural images or
 #   when maximum accuracy is required.
 # * **Compared with classical N4**: DIPY regression fields correlate at
-#   0.90–0.97 with N4 on DWI data, achieve comparable CoV reductions, and
-#   are 10–50× faster.  Use classical N4 or DeepN4 when correcting T1/T2
-#   structural images, or when dealing with extreme inhomogeneity from
-#   surface-array coils at 7T.
+#   0.90–0.97 with N4 on DWI data and preserve the same grey/white matter
+#   contrast, without any extra dependency.  Use classical N4 or DeepN4 when
+#   correcting T1/T2 structural images, or when dealing with extreme
+#   inhomogeneity from surface-array coils at 7T.
+#
+# References
+# ----------
+#
+# .. footbibliography::
