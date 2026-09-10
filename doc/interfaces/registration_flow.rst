@@ -91,9 +91,11 @@ the output directory (``out_dir``) and the file name of the output warped image
 differences), em (expectation-maximization), or mi (mutual information) as metrics.
 
 The symmetric diffeomorphic registration method in DIPY is run through the
-``dipy_align_syn`` command, e.g.::
+``dipy_align_syn`` command. The following examples show how to select
+cross-correlation or mutual information and configure their metric parameters::
 
-    dipy_align_syn <path_to_static_file> <path_to_moving_file> --metric "cc" --out_dir "syn_reg_output" --out_warped "syn_reg_warped.nii.gz"
+    dipy_align_syn <path_to_static_file> <path_to_moving_file> --metric "cc" --mopt_sigma_diff 2.0 --mopt_radius 4 --out_dir "syn_reg_output" --out_warped "syn_reg_warped.nii.gz"
+    dipy_align_syn <path_to_static_file> <path_to_moving_file> --metric "mi" --mopt_nbins 32 --mopt_smooth 0.5 --out_dir "syn_reg_output" --out_warped "syn_reg_warped.nii.gz"
 
 In case you did not specify the output directory, the transformed files would
 be saved in the current directory by default. If you did not specify the file
