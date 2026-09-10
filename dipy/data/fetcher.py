@@ -435,16 +435,15 @@ def fetch_data(
             successful_downloads += 1
         except Exception as e:
             failed_files.append((f, url, str(e)))
+            # Clean up partial download
+            if fullpath.exists():
+                try:
+                    os.remove(fullpath)
+                except OSError:
+                    pass
             if raise_on_error:
                 raise
-            else:
-                logger.warning(f"Failed to download {f}: {e}")
-                # Clean up partial download
-                if fullpath.exists():
-                    try:
-                        os.remove(fullpath)
-                    except OSError:
-                        pass
+            logger.warning(f"Failed to download {f}: {e}")
 
     if all_skip:
         _already_there_msg(folder)
