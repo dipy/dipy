@@ -11,7 +11,7 @@ from real diffusion MRI data.
 
 References
 ----------
-:footcite:p:`Shah2025`
+:footcite:p:`Shah2026`
 """
 
 import ast
