@@ -91,7 +91,7 @@ class BiasFieldCorrectionFlow(Workflow):
         bval=None,
         bvec=None,
         mask=None,
-        method="auto",
+        method="bspline",
         threshold=0.5,
         use_cuda=False,
         verbose=False,
@@ -132,8 +132,9 @@ class BiasFieldCorrectionFlow(Workflow):
                   See :footcite:p:`Kanakaraj2024` for more details.
                 - 'poly': Legendre polynomial regression bias correction.
                 - 'bspline': Cubic B-spline regression bias correction.
-                - 'auto': Run both poly and bspline, return the one with
-                  lower Coefficient of Variation within the brain mask.
+                - 'auto': Deprecated since 1.13.0. Run both poly and bspline,
+                  return the one with lower Coefficient of Variation within
+                  the brain mask.
 
             'n4' method is recommended for T1-weighted images. 'poly' and 'bspline'
             methods are recommended for diffusion-weighted images.

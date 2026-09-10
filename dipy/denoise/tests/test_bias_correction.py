@@ -330,19 +330,20 @@ def test_bias_field_correction_auto_method():
     """Test method='auto' returns valid output with CoV no worse than original."""
     data, gtab, _, mask = _make_synthetic_dwi()
 
-    corrected_auto, bias_auto = bias_field_correction(
-        data,
-        gtab,
-        mask=mask,
-        method="auto",
-        order=3,
-        n_control_points=(4, 4, 3),
-        pyramid_levels=(2, 1),
-        n_iter=2,
-        robust=False,
-        gradient_weighting=False,
-        return_bias_field=True,
-    )
+    with pytest.warns(DeprecationWarning, match="method='auto' is deprecated"):
+        corrected_auto, bias_auto = bias_field_correction(
+            data,
+            gtab,
+            mask=mask,
+            method="auto",
+            order=3,
+            n_control_points=(4, 4, 3),
+            pyramid_levels=(2, 1),
+            n_iter=2,
+            robust=False,
+            gradient_weighting=False,
+            return_bias_field=True,
+        )
 
     assert corrected_auto.shape == data.shape
     assert bias_auto.shape == data.shape[:3]
@@ -372,7 +373,8 @@ def test_bias_field_correction_auto_selects_best():
 
     corrected_poly = bias_field_correction(data, gtab, method="poly", **kwargs)
     corrected_bspline = bias_field_correction(data, gtab, method="bspline", **kwargs)
-    corrected_auto = bias_field_correction(data, gtab, method="auto", **kwargs)
+    with pytest.warns(DeprecationWarning):
+        corrected_auto = bias_field_correction(data, gtab, method="auto", **kwargs)
 
     def _cov(img):
         vals = img[..., gtab.b0s_mask].mean(-1).astype(float)[mask]

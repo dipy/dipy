@@ -10,6 +10,8 @@ regression is wrapped in the iterative histogram-sharpening scheme of N4
 varying field.
 """
 
+from warnings import warn
+
 import numpy as np
 from scipy import linalg as scipy_linalg, ndimage, sparse
 
@@ -1075,6 +1077,9 @@ def _estimate_log_bias(
 def _auto_select_fit(*, mean_b0, mask, **fit_kwargs):
     """Run poly and bspline fits, return the log-bias with lower CoV.
 
+    Deprecated: the CoV of the corrected b0 decreases when tissue contrast is
+    absorbed into the field, so it cannot rank two valid fields.
+
     Parameters
     ----------
     mean_b0 : ndarray
@@ -1269,9 +1274,10 @@ def bias_field_correction(
 
         - ``"poly"``: Legendre polynomial regression — fast, low-parameter.
         - ``"bspline"``: Cubic B-spline regression — more flexible.
-        - ``"auto"``: Run both methods and return the one with lower
-          Coefficient of Variation within the brain mask. The chosen method
-          is logged at INFO level.
+        - ``"auto"``: Deprecated since 1.13.0, removed after 1.15.0. Runs
+          both methods and returns the one with lower Coefficient of
+          Variation within the brain mask. The CoV rewards fields that
+          flatten tissue contrast, so the choice is not meaningful.
     order : int, optional
         Maximum Legendre polynomial degree (used only for method="poly").
     n_control_points : tuple of int, optional
@@ -1354,6 +1360,13 @@ def bias_field_correction(
         "shrink_factor": shrink_factor,
     }
     if method == "auto":
+        warn(
+            "method='auto' is deprecated since DIPY 1.13.0 and will be removed "
+            "after 1.15.0. Its CoV criterion rewards fields that flatten tissue "
+            "contrast. Use method='bspline' (default) or method='poly'.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         log_bias = _auto_select_fit(mean_b0=mean_b0, mask=mask, **fit_kwargs)
     else:
         log_bias = _estimate_log_bias(mask=mask, method=method, **fit_kwargs)
