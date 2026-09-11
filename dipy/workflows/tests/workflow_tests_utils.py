@@ -1,5 +1,4 @@
-from dipy.workflows.combined_workflow import CombinedWorkflow
-from dipy.workflows.workflow import Workflow
+from dipy.workflows.workflow import CombinedWorkflow, Workflow
 
 
 class DummyWorkflow1(Workflow):
@@ -171,11 +170,7 @@ class DummyVariableTypeWorkflow(Workflow):
         out_dir : string or Path
             fake output directory
         """
-        result = []
-        io_it = self.get_io_iterator()
-
-        for variable1 in io_it:
-            result.append(variable1)
+        result = list(self.get_io_iterator())
         return result, positional_variable_str, positional_int
 
 

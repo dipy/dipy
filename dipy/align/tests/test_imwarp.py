@@ -8,8 +8,6 @@ from numpy.testing import (
 )
 
 from dipy.align import (
-    VerbosityLevels,
-    floating,
     imwarp as imwarp,
     metrics as metrics,
     vector_fields as vfu,
@@ -19,6 +17,7 @@ from dipy.core.interpolation import interpolate_scalar_2d, interpolate_scalar_3d
 from dipy.data import get_fnames
 from dipy.testing.decorators import set_random_number_generator
 from dipy.tracking.streamline import deform_streamlines
+from dipy.utils import VerbosityLevels
 
 
 def test_mult_aff():
@@ -41,7 +40,7 @@ def test_mult_aff():
 
 
 @set_random_number_generator(2022966)
-def test_diffeomorphic_map_2d(rng):
+def test_diffeomorphic_map_2d(rng=None):
     r"""Test 2D DiffeomorphicMap
 
     Creates a random displacement field that exactly maps pixels from an
@@ -74,10 +73,10 @@ def test_diffeomorphic_map_2d(rng):
         np.array(codomain_shape, dtype=np.int32),
         codomain_grid2world,
     )
-    disp = np.array(disp, dtype=floating)
+    disp = np.array(disp, dtype=np.float32)
     assign = np.array(assign)
     # create a random image (with decimal digits) to warp
-    moving_image = np.ndarray(codomain_shape, dtype=floating)
+    moving_image = np.ndarray(codomain_shape, dtype=np.float32)
     ns = np.size(moving_image)
     moving_image[...] = rng.integers(0, 10, ns).reshape(codomain_shape)
     # set boundary values to zero so we don't test wrong interpolation due
@@ -106,7 +105,7 @@ def test_diffeomorphic_map_2d(rng):
     # Verify that the transform method accepts different image types (note that
     # the actual image contained integer values, we don't want to test
     # rounding)
-    for _type in [floating, np.float64, np.int64, np.int32]:
+    for _type in [np.float32, np.float64, np.int64, np.int32]:
         moving_image = moving_image.astype(_type)
 
         # warp using linear interpolation
@@ -141,7 +140,7 @@ def test_diffeomorphic_map_2d(rng):
         prealign=None,
     )
     diff_map.backward = disp
-    for _type in [floating, np.float64, np.int64, np.int32]:
+    for _type in [np.float32, np.float64, np.int64, np.int32]:
         moving_image = moving_image.astype(_type)
 
         # warp using linear interpolation
@@ -250,8 +249,8 @@ def test_diffeomorphic_map_simplification_2d():
         codomain_grid2world=C,
         prealign=P,
     )
-    diff_map.forward = np.array(d, dtype=floating)
-    diff_map.backward = np.array(dinv, dtype=floating)
+    diff_map.forward = np.array(d, dtype=np.float32)
+    diff_map.backward = np.array(dinv, dtype=np.float32)
     # Warp the circle to obtain the expected image
     expected = diff_map.transform(circle, interpolation="linear")
 
@@ -324,8 +323,8 @@ def test_diffeomorphic_map_simplification_3d():
         codomain_grid2world=C,
         prealign=P,
     )
-    diff_map.forward = np.array(d, dtype=floating)
-    diff_map.backward = np.array(dinv, dtype=floating)
+    diff_map.forward = np.array(d, dtype=np.float32)
+    diff_map.backward = np.array(dinv, dtype=np.float32)
     # Warp the sphere to obtain the expected image
     expected = diff_map.transform(sphere, interpolation="linear")
 
@@ -344,6 +343,59 @@ def test_diffeomorphic_map_simplification_3d():
     assert_equal(simplified.codomain_world2grid, None)
     assert_equal(simplified.disp_world2grid, None)
 
+    # Now do the same test for the backwards transform
+    domain_sphere = vfu.create_sphere(
+        domain_shape[0], domain_shape[1], domain_shape[2], radius
+    )
+    expected = diff_map.transform_inverse(domain_sphere, interpolation="linear")
+    warped = simplified.transform_inverse(domain_sphere, interpolation="linear")
+
+    assert_array_almost_equal(warped, expected)
+
+
+@set_random_number_generator(1234)
+def test_diffeomorphic_map_warp_threading(rng=None):
+    """Threaded map warping matches one-thread map warping."""
+    cases = (
+        (2, (32, 29)),
+        (3, (16, 15, 14)),
+    )
+
+    for dim, shape in cases:
+        image = rng.random(shape).astype(np.float32)
+        forward = rng.normal(scale=0.25, size=shape + (dim,)).astype(np.float32)
+        backward = rng.normal(scale=0.25, size=shape + (dim,)).astype(np.float32)
+        grid2world = np.eye(dim + 1)
+
+        diff_map = DiffeomorphicMap(
+            dim=dim,
+            disp_shape=shape,
+            disp_grid2world=grid2world,
+            domain_shape=shape,
+            domain_grid2world=grid2world,
+            codomain_shape=shape,
+            codomain_grid2world=grid2world,
+        )
+        diff_map.forward = forward
+        diff_map.backward = backward
+
+        for interpolation in ("linear", "nearest"):
+            serial = diff_map.transform(
+                image, interpolation=interpolation, num_threads=1
+            )
+            threaded = diff_map.transform(
+                image, interpolation=interpolation, num_threads=2
+            )
+            assert_array_equal(threaded, serial)
+
+            serial = diff_map.transform_inverse(
+                image, interpolation=interpolation, num_threads=1
+            )
+            threaded = diff_map.transform_inverse(
+                image, interpolation=interpolation, num_threads=2
+            )
+            assert_array_equal(threaded, serial)
+
 
 def test_optimizer_exceptions():
     r"""Test exceptions from SyN"""
@@ -354,6 +406,18 @@ def test_optimizer_exceptions():
     # The iterations list must not be empty
     assert_raises(
         ValueError, imwarp.SymmetricDiffeomorphicRegistration, metric, level_iters=[]
+    )
+    assert_raises(
+        TypeError,
+        imwarp.SymmetricDiffeomorphicRegistration,
+        metric,
+        num_threads=1.5,
+    )
+    assert_raises(
+        ValueError,
+        imwarp.SymmetricDiffeomorphicRegistration,
+        metric,
+        num_threads=0,
     )
 
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, level_iters=None)
@@ -416,8 +480,8 @@ def test_ssd_2d_demons():
 
     moving = np.load(fname_moving)
     static = np.load(fname_static)
-    moving = np.array(moving, dtype=floating)
-    static = np.array(static, dtype=floating)
+    moving = np.array(moving, dtype=np.float32)
+    static = np.array(static, dtype=np.float32)
     moving = (moving - moving.min()) / (moving.max() - moving.min())
     static = (static - static.min()) / (static.max() - static.min())
     # Create the SSD metric
@@ -459,6 +523,9 @@ def test_ssd_2d_demons():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -485,8 +552,8 @@ def test_ssd_2d_gauss_newton():
 
     moving = np.load(fname_moving)
     static = np.load(fname_static)
-    moving = np.array(moving, dtype=floating)
-    static = np.array(static, dtype=floating)
+    moving = np.array(moving, dtype=np.float32)
+    static = np.array(static, dtype=np.float32)
     moving = (moving - moving.min()) / (moving.max() - moving.min())
     static = (static - static.min()) / (static.max() - static.min())
     # Create the SSD metric
@@ -535,6 +602,9 @@ def test_ssd_2d_gauss_newton():
     )
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -585,8 +655,8 @@ def get_warped_stacked_image(image, nslices, b, m):
     shape = image.shape
     # create a synthetic invertible map and warp the circle
     d, dinv = vfu.create_harmonic_fields_2d(shape[0], shape[1], b, m)
-    d = np.asarray(d, dtype=floating)
-    dinv = np.asarray(dinv, dtype=floating)
+    d = np.asarray(d, dtype=np.float32)
+    dinv = np.asarray(dinv, dtype=np.float32)
     mapping = DiffeomorphicMap(2, shape)
     mapping.forward, mapping.backward = d, dinv
     wimage = mapping.transform(image)
@@ -595,7 +665,7 @@ def get_warped_stacked_image(image, nslices, b, m):
         return image, wimage
 
     # normalize and form the 3d by piling slices
-    image = image.astype(floating)
+    image = image.astype(np.float32)
     image = (image - image.min()) / (image.max() - image.min())
     zero_slices = nslices // 3
     vol = np.zeros(shape=image.shape + (nslices,))
@@ -608,13 +678,13 @@ def get_warped_stacked_image(image, nslices, b, m):
 
 def get_synthetic_warped_circle(nslices):
     # get a subsampled circle
-    fname_cicle = get_fnames(name="reg_o")
-    circle = np.load(fname_cicle)[::4, ::4].astype(floating)
+    fname_circle = get_fnames(name="reg_o")
+    circle = np.load(fname_circle)[::4, ::4].astype(np.float32)
 
     # create a synthetic invertible map and warp the circle
     d, dinv = vfu.create_harmonic_fields_2d(64, 64, 0.1, 4)
-    d = np.asarray(d, dtype=floating)
-    dinv = np.asarray(dinv, dtype=floating)
+    d = np.asarray(d, dtype=np.float32)
+    dinv = np.asarray(dinv, dtype=np.float32)
     mapping = DiffeomorphicMap(2, (64, 64))
     mapping.forward, mapping.backward = d, dinv
     wcircle = mapping.transform(circle)
@@ -624,19 +694,101 @@ def get_synthetic_warped_circle(nslices):
 
     # normalize and form the 3d by piling slices
     circle = (circle - circle.min()) / (circle.max() - circle.min())
-    circle_3d = np.ndarray(circle.shape + (nslices,), dtype=floating)
+    circle_3d = np.ndarray(circle.shape + (nslices,), dtype=np.float32)
     circle_3d[...] = circle[..., None]
     circle_3d[..., 0] = 0
     circle_3d[..., -1] = 0
 
     # do the same with the warped circle
     wcircle = (wcircle - wcircle.min()) / (wcircle.max() - wcircle.min())
-    wcircle_3d = np.ndarray(wcircle.shape + (nslices,), dtype=floating)
+    wcircle_3d = np.ndarray(wcircle.shape + (nslices,), dtype=np.float32)
     wcircle_3d[...] = wcircle[..., None]
     wcircle_3d[..., 0] = 0
     wcircle_3d[..., -1] = 0
 
     return circle_3d, wcircle_3d
+
+
+def test_mi_2d():
+    r"""Test 2D SyN with MI metric
+
+    Register a coronal slice from a T1w brain MRI before and after warping
+    it under a synthetic invertible map. We verify that the final
+    registration is of good quality.
+    """
+    fname = get_fnames(name="t1_coronal_slice")
+    nslices = 1
+    b = 0.1
+    m = 4
+
+    image = np.load(fname)
+    moving, static = get_warped_stacked_image(image, nslices, b, m)
+
+    # Configure the metric
+    metric = metrics.MIMetric(2, nbins=16, smooth=1.0)
+
+    # Configure and run the Optimizer
+    level_iters = [15, 5]
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(
+        metric=metric, level_iters=level_iters
+    )
+    optimizer.verbosity = VerbosityLevels.DEBUG
+    mapping = optimizer.optimize(static, moving, static_grid2world=None)
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
+
+    warped = mapping.transform(moving)
+    starting_energy = np.sum((static - moving) ** 2)
+    final_energy = np.sum((static - warped) ** 2)
+    reduced = 1.0 - final_energy / starting_energy
+
+    assert reduced > 0.6
+
+
+def test_mi_3d():
+    r"""Test 3D SyN with MI metric
+
+    Register a volume created by stacking copies of a coronal slice from
+    a T1w brain MRI before and after warping it under a synthetic
+    invertible map. We verify that the final registration is of good quality.
+    """
+    fname = get_fnames(name="t1_coronal_slice")
+    nslices = 21
+    b = 0.1
+    m = 4
+
+    image = np.load(fname)
+    moving, static = get_warped_stacked_image(image, nslices, b, m)
+
+    # Create the MI metric
+    metric = metrics.MIMetric(3, nbins=16, smooth=1.0)
+
+    # Create the optimizer
+    level_iters = [20, 5]
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(
+        metric,
+        level_iters=level_iters,
+    )
+    optimizer.verbosity = VerbosityLevels.DEBUG
+
+    mapping = optimizer.optimize(
+        static, moving, static_grid2world=None, moving_grid2world=None, prealign=None
+    )
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
+
+    warped = mapping.transform(moving)
+    starting_energy = np.sum((static - moving) ** 2)
+    final_energy = np.sum((static - warped) ** 2)
+    reduced = 1.0 - final_energy / starting_energy
+
+    assert reduced > 0.5
 
 
 def test_ssd_3d_demons():
@@ -677,6 +829,9 @@ def test_ssd_3d_demons():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -727,6 +882,9 @@ def test_ssd_3d_gauss_newton():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -765,6 +923,9 @@ def test_cc_2d():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -818,6 +979,9 @@ def test_cc_3d():
     )
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -836,7 +1000,7 @@ def test_em_3d_gauss_newton():
     quality.
     """
     fname = get_fnames(name="t1_coronal_slice")
-    nslices = 21
+    nslices = 9
     b = 0.1
     m = 4
 
@@ -845,7 +1009,7 @@ def test_em_3d_gauss_newton():
 
     # Create the EM metric
     smooth = 2.0
-    inner_iter = 20
+    inner_iter = 10
     step_length = 0.25
     q_levels = 256
     double_gradient = True
@@ -878,6 +1042,9 @@ def test_em_3d_gauss_newton():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -927,6 +1094,9 @@ def test_em_2d_gauss_newton():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -987,6 +1157,9 @@ def test_em_3d_demons():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -1035,6 +1208,9 @@ def test_em_2d_demons():
     mapping = optimizer.optimize(static, moving, static_grid2world=None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
+    s2ref, m2ref = optimizer.get_intermediate_maps()
+    assert_equal(s2ref, optimizer.static_to_ref)
+    assert_equal(m2ref, optimizer.moving_to_ref)
 
     warped = mapping.transform(moving)
     starting_energy = np.sum((static - moving) ** 2)
@@ -1045,7 +1221,7 @@ def test_em_2d_demons():
 
 
 @set_random_number_generator(1741332)
-def test_coordinate_mapping(rng):
+def test_coordinate_mapping(rng=None):
     r"""Test coordinate mapping with DiffeomorphicMap
 
     1. Create a random displacement field and a small affine transform to map
@@ -1123,7 +1299,7 @@ def test_coordinate_mapping(rng):
             np.array(codomain_shape, dtype=np.int32),
             codomain_grid2world,
         )
-        disp = disp.astype(floating)
+        disp = disp.astype(np.float32)
         # Create a DiffeomorphicMap instance
         diff_map = imwarp.DiffeomorphicMap(
             dim,

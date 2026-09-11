@@ -1,13 +1,13 @@
 from pathlib import Path
-import sys
 from warnings import warn
 
+import nibabel as nib
 import numpy as np
 
 from dipy.align import affine_registration, motion_correction
 from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import DiffeomorphicMap, SymmetricDiffeomorphicRegistration
-from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
+from dipy.align.metrics import CCMetric, EMMetric, MIMetric, SSDMetric
 from dipy.align.reslice import reslice
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.align.streamwarp import bundlewarp
@@ -61,61 +61,134 @@ class ResliceFlow(Workflow):
     def run(
         self,
         input_files,
-        new_vox_size,
+        new_vox_size=None,
         order=1,
         mode="constant",
         cval=0,
         num_processes=1,
+        vox_factor=0.14,
         out_dir="",
         out_resliced="resliced.nii.gz",
     ):
-        """Reslice data with new voxel resolution defined by ``new_vox_sz``
+        """Reslice data to a new voxel resolution with automatic or manual sizing.
+
+        This workflow resamples volumetric data to a specified voxel size or
+        automatically determines an optimal isotropic resolution. When automatic
+        calculation is used, the new voxel size balances data quality with
+        computational efficiency by interpolating between the original voxel
+        dimensions.
 
         Parameters
         ----------
         input_files : string or Path
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        new_vox_size : variable float
-            new voxel size.
-        order : int, optional
-            order of interpolation, from 0 to 5, for resampling/reslicing,
-            0 nearest interpolation, 1 trilinear etc.. if you don't want any
-            smoothing 0 is the option you need.
+        new_vox_size : variable float, optional
+            New voxel size as (x, y, z) in mm. If None, it will be
+            automatically calculated using the formula:
+            new_vox = voxel_sorted[1] + (voxel_sorted[2] - voxel_sorted[1]) * vox_factor
+            where voxel_sorted are the original voxel dimensions sorted in
+            ascending order. The calculated value is applied isotropically
+            to all three dimensions. If the auto-calculated value is strictly
+            greater than 2.0mm, it is halved repeatedly until it falls below
+            2.0mm (e.g. 2.5 → 1.25mm, 5.0 → 1.25mm).
+        order : str, optional
+            Interpolation order. Integer values 0–5 select spline order via
+            scipy (0 nearest, 1 trilinear, …). String values ``'lanczos'`` or
+            ``'lanczos2'`` select a 2-lobe Lanczos kernel; ``'lanczos3'``
+            selects a 3-lobe Lanczos kernel. Use 0 to avoid smoothing.
         mode : string, optional
             Points outside the boundaries of the input are filled according
             to the given mode 'constant', 'nearest', 'reflect' or 'wrap'.
         cval : float, optional
-            Value used for points outside the boundaries of the input if
+            Fill value for points outside the input boundaries when
             mode='constant'.
         num_processes : int, optional
             Split the calculation to a pool of children processes. This only
             applies to 4D `data` arrays. Default is 1. If < 0 the maximal
             number of cores minus ``num_processes + 1`` is used (enter -1 to
             use as many cores as possible). 0 raises an error.
+        vox_factor : float, optional
+            Interpolation factor for automatic voxel size calculation,
+            ranging from 0.0 to 1.0. Controls the trade-off between the
+            second-largest and largest original voxel dimensions. 0.0: uses
+            second-largest voxel size (finer resolution). 1.0: uses largest voxel
+            size (coarser resolution). 0.14: recommended value for balanced resolution.
+            Only used when new_vox_size is None.
         out_dir : string, optional
-            Output directory.
+            Output directory for saving results.
         out_resliced : string, optional
-            Name of the resliced dataset to be saved.
+            Filename for the resliced output volume.
+
         """
 
-        io_it = self.get_io_iterator()
+        if isinstance(order, str) and order.lstrip("-").isdigit():
+            order = int(order)
 
-        for inputfile, outpfile in io_it:
-            data, affine, vox_sz = load_nifti(inputfile, return_voxsize=True)
+        io_it = self.get_io_iterator()
+        corrected_outputs = list(self.flat_outputs)
+
+        for i, (inputfile, outpfile) in enumerate(io_it):
+            img = nib.load(inputfile)
+            zooms = img.header.get_zooms()[:3]
             logger.info(f"Processing {inputfile}")
-            new_data, new_affine = reslice(
-                data,
-                affine,
-                vox_sz,
-                new_vox_size,
-                order=order,
-                mode=mode,
-                cval=cval,
-                num_processes=num_processes,
-            )
-            save_nifti(outpfile, new_data, new_affine)
-            logger.info(f"Resliced file save in {outpfile}")
+
+            if new_vox_size is None:
+                voxsize_sorted = sorted(zooms)
+                max_vox_size = voxsize_sorted[-1]
+                smax_vox_size = voxsize_sorted[-2]
+                calculated_vox_size = (
+                    smax_vox_size + (max_vox_size - smax_vox_size) * vox_factor
+                )
+                if calculated_vox_size > 2.0:
+                    divisor = 2
+                    while calculated_vox_size / divisor >= 2.0:
+                        divisor *= 2
+                    calculated_vox_size /= divisor
+                    logger.warning(
+                        f"Auto-calculated voxel size > 2.0mm. "
+                        f"Divided by {divisor} → {calculated_vox_size:.4f}mm."
+                    )
+                new_vox_size_to_use = [calculated_vox_size] * 3
+                logger.warning(
+                    f"new_vox_size not provided. Automatically calculated as "
+                    f"{new_vox_size_to_use} based on original voxel size "
+                    f"{tuple(zooms)} using vox_factor={vox_factor}"
+                )
+            else:
+                new_vox_size_to_use = new_vox_size
+
+            new_vox_size_to_use = np.asarray(new_vox_size_to_use)
+            zooms_spatial = np.asarray(zooms[:3])
+
+            if np.allclose(zooms_spatial, new_vox_size_to_use, rtol=1e-3, atol=1e-3):
+                logger.info(
+                    f"Voxel size {tuple(zooms)} already matches target "
+                    f"{tuple(new_vox_size_to_use)}. Skipping reslicing, "
+                    f"returning original path."
+                )
+                corrected_outputs[i] = Path(inputfile)
+                img.uncache()
+                continue
+            else:
+                data = np.asanyarray(img.dataobj)
+                affine = img.affine
+                img.uncache()
+                new_data, new_affine = reslice(
+                    data,
+                    affine,
+                    zooms,
+                    new_vox_size_to_use,
+                    order=order,
+                    mode=mode,
+                    cval=cval,
+                    num_processes=num_processes,
+                )
+                save_nifti(outpfile, new_data, new_affine)
+                logger.info(f"Resliced file save in {outpfile}")
+
+        if corrected_outputs != self.flat_outputs:
+            self.update_flat_outputs(corrected_outputs, io_it)
 
 
 class SlrWithQbxFlow(Workflow):
@@ -136,6 +209,7 @@ class SlrWithQbxFlow(Workflow):
         nb_pts=20,
         progressive=True,
         bbox_valid_check=True,
+        remove_invalid_streamlines=False,
         out_dir="",
         out_moved="moved.trx",
         out_affine="affine.txt",
@@ -183,6 +257,10 @@ class SlrWithQbxFlow(Workflow):
         bbox_valid_check : boolean, optional
             Verification for negative voxel coordinates or values above the volume
             dimensions.
+        remove_invalid_streamlines : bool, optional
+            If True, streamlines outside the volume bounding box are removed
+            before saving. When enabled, ``bbox_valid_check`` is automatically
+            set to False.
         out_dir : string, optional
             Output directory.
         out_moved : string, optional
@@ -234,23 +312,30 @@ class SlrWithQbxFlow(Workflow):
 
             if not len(static_obj.streamlines):
                 logger.error(f"Static file {static_file} is empty")
-                sys.exit(1)
+                continue
             if not len(moving_obj.streamlines):
                 logger.error(f"Moving file {moving_file} is empty")
-                sys.exit(1)
+                continue
 
-            moved, affine, centroids_static, centroids_moving = slr_with_qbx(
-                static_obj.streamlines,
-                moving_obj.streamlines,
-                x0=x0,
-                rm_small_clusters=rm_small_clusters,
-                greater_than=greater_than,
-                less_than=less_than,
-                qbx_thr=qbx_thr,
-                progressive=progressive,
-                nb_pts=nb_pts,
-                num_threads=num_threads,
-            )
+            try:
+                moved, affine, centroids_static, centroids_moving = slr_with_qbx(
+                    static_obj.streamlines,
+                    moving_obj.streamlines,
+                    x0=x0,
+                    rm_small_clusters=rm_small_clusters,
+                    greater_than=greater_than,
+                    less_than=less_than,
+                    qbx_thr=qbx_thr,
+                    progressive=progressive,
+                    nb_pts=nb_pts,
+                    num_threads=num_threads,
+                )
+            except Exception as e:
+                logger.error(f"SLR with QBX failed: {e}")
+                logger.warning(
+                    "Skipping this pair of tractograms, continuing with next pair."
+                )
+                continue
 
             logger.info(f"Saving output file {out_moved_file}")
 
@@ -259,8 +344,12 @@ class SlrWithQbxFlow(Workflow):
                 moving_obj,
                 moving_obj.space,
             )
+            if remove_invalid_streamlines:
+                new_tractogram.remove_invalid_streamlines()
             save_tractogram(
-                new_tractogram, str(out_moved_file), bbox_valid_check=bbox_valid_check
+                new_tractogram,
+                str(out_moved_file),
+                bbox_valid_check=bbox_valid_check and not remove_invalid_streamlines,
             )
 
             logger.info(f"Saving output file {out_affine_file}")
@@ -272,10 +361,12 @@ class SlrWithQbxFlow(Workflow):
                 moving_obj,
                 moving_obj.space,
             )
+            if remove_invalid_streamlines:
+                new_tractogram.remove_invalid_streamlines()
             save_tractogram(
                 new_tractogram,
                 str(static_centroids_file),
-                bbox_valid_check=bbox_valid_check,
+                bbox_valid_check=bbox_valid_check and not remove_invalid_streamlines,
             )
 
             logger.info(f"Saving output file {moving_centroids_file}")
@@ -284,10 +375,12 @@ class SlrWithQbxFlow(Workflow):
                 moving_obj,
                 moving_obj.space,
             )
+            if remove_invalid_streamlines:
+                new_tractogram.remove_invalid_streamlines()
             save_tractogram(
                 new_tractogram,
                 str(moving_centroids_file),
-                bbox_valid_check=bbox_valid_check,
+                bbox_valid_check=bbox_valid_check and not remove_invalid_streamlines,
             )
 
             centroids_moved = transform_streamlines(centroids_moving, affine)
@@ -299,10 +392,12 @@ class SlrWithQbxFlow(Workflow):
                 moving_obj,
                 moving_obj.space,
             )
+            if remove_invalid_streamlines:
+                new_tractogram.remove_invalid_streamlines()
             save_tractogram(
                 new_tractogram,
                 str(moved_centroids_file),
-                bbox_valid_check=bbox_valid_check,
+                bbox_valid_check=bbox_valid_check and not remove_invalid_streamlines,
             )
 
 
@@ -329,7 +424,8 @@ class ImageRegistrationFlow(Workflow):
         nbins=32,
         sampling_prop=None,
         metric="mi",
-        level_iters=(10000, 1000, 100),
+        radius=4,
+        level_iters=(1000, 500, 100),
         sigmas=(3.0, 1.0, 0.0),
         factors=(4, 2, 1),
         progressive=True,
@@ -354,12 +450,18 @@ class ImageRegistrationFlow(Workflow):
             ``'rigid_scaling'``: rigid body + scaling; ``'affine'``: full affine
             including translation, rotation, shearing and scaling.
         nbins : int, optional
-            Number of bins to discretize the joint and marginal PDF.
-        sampling_prop : int, optional
-            Number ([0-100]) of voxels for calculating the PDF. None implies all
+            Number of bins to discretize the joint and marginal PDF
+            for the mutual information metric.
+        sampling_prop : float, optional
+            Proportion of voxels used to calculate the PDF for the mutual
+            information metric. Must be in the interval (0, 1]. None uses all
             voxels.
         metric : string, optional
-            Similarity metric for gathering mutual information.
+            Similarity metric. Supported values are ``'mi'`` for mutual
+            information and ``'cc'`` for local cross-correlation.
+        radius : int, optional
+            Radius of the square (2D) or cubic (3D) neighborhood used by the
+            local cross-correlation metric.
         level_iters : variable int, optional
             The number of iterations at each scale of the scale space.
             `level_iters[0]` corresponds to the coarsest scale,
@@ -394,12 +496,32 @@ class ImageRegistrationFlow(Workflow):
         out_quality : string, optional
             Name of the file containing the saved quality metric.
         """
+        if tuple(level_iters) == (1000, 500, 100):
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
 
         io_it = self.get_io_iterator()
         transform = transform.lower()
         metric = metric.upper()
-        if metric != "MI":
-            raise ValueError("Invalid similarity metric: Please provide avalid metric.")
+        supported_metrics = {"CC", "MI"}
+        if metric not in supported_metrics:
+            supported = ", ".join(sorted(supported_metrics))
+            raise ValueError(
+                f"Unsupported affine metric {metric!r}. Supported metrics are: "
+                f"{supported}."
+            )
+
+        if metric == "MI":
+            metric_kwargs = {
+                "nbins": nbins,
+                "sampling_proportion": sampling_prop,
+            }
+        else:
+            metric_kwargs = {"radius": radius}
 
         if progressive:
             pipeline_opt = {
@@ -465,8 +587,7 @@ class ImageRegistrationFlow(Workflow):
                     level_iters=level_iters,
                     sigmas=sigmas,
                     factors=factors,
-                    nbins=nbins,
-                    sampling_proportion=sampling_prop,
+                    **metric_kwargs,
                 )
             else:
                 moved_image, affine_matrix, xopt, fopt = affine_registration(
@@ -481,15 +602,14 @@ class ImageRegistrationFlow(Workflow):
                     sigmas=sigmas,
                     factors=factors,
                     ret_metric=True,
-                    nbins=nbins,
-                    sampling_proportion=sampling_prop,
+                    **metric_kwargs,
                 )
 
                 """
                 Saving the moved image file and the affine matrix.
                 """
-                logger.info(f"Optimal parameters: {str(xopt)}")
-                logger.info(f"Similarity metric: {str(fopt)}")
+                logger.info(f"Optimal parameters: {xopt}")
+                logger.info(f"Similarity metric: {fopt}")
 
                 if save_metric:
                     save_qa_metric(qual_val_file, xopt, fopt)
@@ -634,6 +754,7 @@ class SynRegistrationFlow(Workflow):
         mopt_q_levels=256,
         mopt_double_gradient=True,
         mopt_step_type="",
+        mopt_nbins=32,
         step_length=0.25,
         ss_sigma_factor=0.2,
         opt_tol=1e-5,
@@ -660,7 +781,7 @@ class SynRegistrationFlow(Workflow):
         metric : string, optional
             The metric to be used.
             metric available: cc (Cross Correlation), ssd (Sum Squared
-            Difference), em (Expectation-Maximization).
+            Difference), em (Expectation-Maximization), mi (Mutual Information).
         mopt_sigma_diff : float, optional
             Metric option applied on Cross correlation (CC).
             The standard deviation of the Gaussian smoothing kernel to be
@@ -670,10 +791,11 @@ class SynRegistrationFlow(Workflow):
             the radius of the squared (cubic) neighborhood at each voxel to
             be considered to compute the cross correlation.
         mopt_smooth : float, optional
-            Metric option applied on Sum Squared Difference (SSD) and
-            Expectation Maximization (EM). Smoothness parameter, the
-            larger the value the smoother the deformation field.
-            (default 1.0 for EM, 4.0 for SSD)
+            Smoothness parameter for Sum Squared Difference (SSD),
+            Expectation Maximization (EM), and Mutual Information (MI).
+            Controls deformation-field smoothness for SSD and EM, and the
+            Gaussian standard deviation for update-field smoothing for MI.
+            Larger values produce smoother fields.
         mopt_inner_iter : int, optional
             Metric option applied on Sum Squared Difference (SSD) and
             Expectation Maximization (EM). This is number of iterations to be
@@ -697,6 +819,8 @@ class SynRegistrationFlow(Workflow):
             (not used if Demons Step is selected). Possible value:
             ('gauss_newton', 'demons'). default: 'gauss_newton' for EM,
             'demons' for SSD.
+        mopt_nbins : int, optional
+            Number of histogram bins for Mutual Information (MI).
         step_length : float, optional
             the length of the maximum displacement vector of the update
             displacement field at each iteration.
@@ -726,10 +850,10 @@ class SynRegistrationFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         metric = metric.lower()
-        if metric not in ["ssd", "cc", "em"]:
+        if metric not in ["ssd", "cc", "em", "mi"]:
             raise ValueError(
                 "Invalid similarity metric: Please"
-                " provide a valid metric like 'ssd', 'cc', 'em'"
+                " provide a valid metric like 'ssd', 'cc', 'em', 'mi'"
             )
 
         logger.info("Starting Diffeomorphic Registration")
@@ -747,6 +871,7 @@ class SynRegistrationFlow(Workflow):
                 "mopt_inner_iter": 5,
                 "mopt_step_type": "gauss_newton",
             },
+            "mi": {"mopt_smooth": 0.0},
         }
 
         mopt_smooth = (
@@ -756,15 +881,15 @@ class SynRegistrationFlow(Workflow):
         )
         mopt_inner_iter = (
             mopt_inner_iter
-            if mopt_inner_iter or metric == "cc"
+            if mopt_inner_iter or metric in ["cc", "mi"]
             else init_param[metric]["mopt_inner_iter"]
         )
 
-        # If using the 'cc' metric, force the `mopt_step_type` parameter to an
-        # empty value since the 'cc' metric does not use it; for the rest of
-        # the metrics, the `step_type` parameter will be initialized to their
-        # corresponding default values in `init_param`.
-        if metric == "cc":
+        # If using the 'cc' or 'mi' metric, force the `mopt_step_type`
+        # parameter to an empty value since neither metric uses it; for the
+        # rest of the metrics, `step_type` will be initialized to its
+        # corresponding default value in `init_param`.
+        if metric in ["cc", "mi"]:
             mopt_step_type = ""
 
         for (
@@ -812,6 +937,7 @@ class SynRegistrationFlow(Workflow):
                     q_levels=mopt_q_levels,
                     double_gradient=mopt_double_gradient,
                 ),
+                "mi": MIMetric(static_image.ndim, nbins=mopt_nbins, smooth=mopt_smooth),
             }
 
             current_metric = l_metric.get(metric.lower())
@@ -842,9 +968,11 @@ class SynRegistrationFlow(Workflow):
             # Saving
             logger.info(f"Saving warped {owarped_file}")
             save_nifti(owarped_file, warped_moving, static_grid2world)
-            logger.info(f"Saving inverse transformes static {oinv_static_file}")
+            logger.info(
+                f"Saving inverse static (backward warp applied to static) {oinv_static_file}"
+            )
             save_nifti(oinv_static_file, inv_static, static_grid2world)
-            logger.info(f"Saving Diffeomorphic map {omap_file}")
+            logger.info(f"Saving diffeomorphic map {omap_file}")
             save_nifti(omap_file, mapping_data, mapping.codomain_world2grid)
 
 
@@ -861,6 +989,11 @@ class MotionCorrectionFlow(Workflow):
         bvectors_files,
         b0_threshold=50,
         bvecs_tol=0.01,
+        level_iters=(1000, 500, 100),
+        metric="mi",
+        nbins=32,
+        sampling_prop=None,
+        radius=4,
         out_dir="",
         out_moved="moved.nii.gz",
         out_affine="affine.txt",
@@ -882,6 +1015,20 @@ class MotionCorrectionFlow(Workflow):
         bvecs_tol : float, optional
             Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
             b-vectors are unit vectors
+        level_iters : variable int, optional
+            The number of iterations at each level of the Gaussian pyramid.
+        metric : string, optional
+            Similarity metric. Supported values are ``'mi'`` for mutual
+            information and ``'cc'`` for local cross-correlation.
+        nbins : int, optional
+            Number of bins to discretize the joint and marginal PDF
+            for the mutual information metric.
+        sampling_prop : float, optional
+            Proportion of voxels used to calculate the PDF for the mutual
+            information metric. Must be in the interval (0, 1]. None uses all
+            voxels.
+        radius : int, optional
+            Neighborhood radius for local cross-correlation.
         out_dir : string or Path, optional
             Directory to save the transformed image and the affine matrix.
         out_moved : string, optional
@@ -889,7 +1036,22 @@ class MotionCorrectionFlow(Workflow):
         out_affine : string, optional
             Name for the saved affine matrix.
         """
+        if tuple(level_iters) == (1000, 500, 100):
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
 
+        metric = metric.upper()
+        if metric not in {"MI", "CC"}:
+            raise ValueError(f"Unsupported affine metric {metric!r}. Use MI or CC.")
+        metric_kwargs = (
+            {"nbins": nbins, "sampling_proportion": sampling_prop}
+            if metric == "MI"
+            else {"radius": radius}
+        )
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, omoved, oafffine in io_it:
@@ -913,7 +1075,12 @@ class MotionCorrectionFlow(Workflow):
             )
 
             reg_img, reg_affines = motion_correction(
-                data=data, gtab=gtab, affine=affine
+                data=data,
+                gtab=gtab,
+                affine=affine,
+                level_iters=level_iters,
+                metric=metric,
+                **metric_kwargs,
             )
 
             # Saving the corrected image file

@@ -1,7 +1,7 @@
 #!python
-#cython: boundscheck=False
-#cython: wraparound=False
-#cython: cdivision=True
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 import numpy as np
 cimport numpy as cnp
@@ -65,12 +65,12 @@ cdef class Transform:
         """
         n = theta.shape[0]
         if n != self.number_of_parameters:
-            raise ValueError("Invalid number of parameters: %d"%(n,))
+            raise ValueError("Invalid number of parameters: %d" % (n,))
         m = x.shape[0]
         if m < self.dim:
-            raise ValueError("Invalid point dimension: %d"%(m,))
+            raise ValueError("Invalid point dimension: %d" % (m,))
         J = np.zeros((self.dim, n))
-        ret = self._jacobian(theta, x, J)
+        self._jacobian(theta, x, J)
         return np.asarray(J)
 
     def get_identity_parameters(self):
@@ -102,7 +102,7 @@ cdef class Transform:
         """
         n = len(theta)
         if n != self.number_of_parameters:
-            raise ValueError("Invalid number of parameters: %d"%(n,))
+            raise ValueError("Invalid number of parameters: %d" % (n,))
         T = np.eye(self.dim + 1)
         self._param_to_matrix(theta, T)
         return np.asarray(T)
@@ -419,10 +419,10 @@ cdef class RotationTransform3D(Transform):
             double sc = sin(theta[2])
             double cc = cos(theta[2])
 
-        R[0,0], R[0,1], R[0,2] = cc*cb-sc*sa*sb, -sc*ca, cc*sb+sc*sa*cb
-        R[1,0], R[1,1], R[1,2] = sc*cb+cc*sa*sb, cc*ca, sc*sb-cc*sa*cb
-        R[2,0], R[2,1], R[2,2] = -ca*sb, sa, ca*cb
-        R[3,0], R[3,1], R[3,2] = 0, 0, 0
+        R[0, 0], R[0, 1], R[0, 2] = cc*cb-sc*sa*sb, -sc*ca, cc*sb+sc*sa*cb
+        R[1, 0], R[1, 1], R[1, 2] = sc*cb+cc*sa*sb, cc*ca, sc*sb-cc*sa*cb
+        R[2, 0], R[2, 1], R[2, 2] = -ca*sb, sa, ca*cb
+        R[3, 0], R[3, 1], R[3, 2] = 0, 0, 0
         R[0, 3] = 0
         R[1, 3] = 0
         R[2, 3] = 0
@@ -632,14 +632,14 @@ cdef class RigidTransform3D(Transform):
             double dy = theta[4]
             double dz = theta[5]
 
-        R[0,0], R[0,1], R[0,2] = cc*cb-sc*sa*sb, -sc*ca, cc*sb+sc*sa*cb
-        R[1,0], R[1,1], R[1,2] = sc*cb+cc*sa*sb, cc*ca, sc*sb-cc*sa*cb
-        R[2,0], R[2,1], R[2,2] = -ca*sb, sa, ca*cb
-        R[3,0], R[3,1], R[3,2] = 0, 0, 0
-        R[0,3] = dx
-        R[1,3] = dy
-        R[2,3] = dz
-        R[3,3] = 1
+        R[0, 0], R[0, 1], R[0, 2] = cc*cb-sc*sa*sb, -sc*ca, cc*sb+sc*sa*cb
+        R[1, 0], R[1, 1], R[1, 2] = sc*cb+cc*sa*sb, cc*ca, sc*sb-cc*sa*cb
+        R[2, 0], R[2, 1], R[2, 2] = -ca*sb, sa, ca*cb
+        R[3, 0], R[3, 1], R[3, 2] = 0, 0, 0
+        R[0, 3] = dx
+        R[1, 3] = dy
+        R[2, 3] = dz
+        R[3, 3] = 1
 
 
 cdef class RigidIsoScalingTransform2D(Transform):
@@ -797,7 +797,7 @@ cdef class RigidIsoScalingTransform3D(Transform):
         J[0, 0] = (-sc * ca * sb) * px * scale + (sc * sa) * py * scale + \
                   (sc * ca * cb) * pz * scale
         J[1, 0] = (cc * ca * sb) * px * scale + (-cc * sa) * py * scale + \
-                  (-cc * ca * cb) * pz  * scale
+                  (-cc * ca * cb) * pz * scale
         J[2, 0] = (sa * sb) * px * scale + ca * py * scale + \
                   (-sa * cb) * pz * scale
 
@@ -808,7 +808,7 @@ cdef class RigidIsoScalingTransform3D(Transform):
         J[2, 1] = (-ca * cb) * px * scale + (-ca * sb) * pz * scale
 
         J[0, 2] = (-sc * cb - cc * sa * sb) * px * scale + \
-                  (-cc * ca) * py  * scale + \
+                  (-cc * ca) * py * scale + \
                   (-sc * sb + cc * sa * cb) * pz * scale
         J[1, 2] = (cc * cb - sc * sa * sb) * px * scale + \
                   (-sc * ca) * py * scale + \
@@ -876,14 +876,22 @@ cdef class RigidIsoScalingTransform3D(Transform):
             double dz = theta[5]
             double sxyz = theta[6]
 
-        R[0,0], R[0,1], R[0,2] = (cc*cb-sc*sa*sb)*sxyz, -sc*ca*sxyz, (cc*sb+sc*sa*cb)*sxyz
-        R[1,0], R[1,1], R[1,2] = (sc*cb+cc*sa*sb)*sxyz, cc*ca*sxyz, (sc*sb-cc*sa*cb)*sxyz
-        R[2,0], R[2,1], R[2,2] = -ca*sb*sxyz, sa*sxyz, ca*cb*sxyz
-        R[3,0], R[3,1], R[3,2] = 0, 0, 0
-        R[0,3] = dx
-        R[1,3] = dy
-        R[2,3] = dz
-        R[3,3] = 1
+        R[0, 0] = (cc*cb-sc*sa*sb)*sxyz
+        R[0, 1] = -sc*ca*sxyz
+        R[0, 2] = (cc*sb+sc*sa*cb)*sxyz
+        R[1, 0] = (sc*cb+cc*sa*sb)*sxyz
+        R[1, 1] = cc*ca*sxyz
+        R[1, 2] = (sc*sb-cc*sa*cb)*sxyz
+        R[2, 0] = -ca*sb*sxyz
+        R[2, 1] = sa*sxyz
+        R[2, 2] = ca*cb*sxyz
+        R[3, 0] = 0
+        R[3, 1] = 0
+        R[3, 2] = 0
+        R[0, 3] = dx
+        R[1, 3] = dy
+        R[2, 3] = dz
+        R[3, 3] = 1
 
 
 cdef class RigidScalingTransform2D(Transform):
@@ -1134,14 +1142,14 @@ cdef class RigidScalingTransform3D(Transform):
             double fy = theta[7]
             double fz = theta[8]
 
-        R[0,0], R[0,1], R[0,2] = (cc*cb-sc*sa*sb)*fx, -sc*ca*fx, (cc*sb+sc*sa*cb)*fx
-        R[1,0], R[1,1], R[1,2] = (sc*cb+cc*sa*sb)*fy, cc*ca*fy, (sc*sb-cc*sa*cb)*fy
-        R[2,0], R[2,1], R[2,2] = -ca*sb*fz, sa*fz, ca*cb*fz
-        R[3,0], R[3,1], R[3,2] = 0, 0, 0
-        R[0,3] = dx
-        R[1,3] = dy
-        R[2,3] = dz
-        R[3,3] = 1
+        R[0, 0], R[0, 1], R[0, 2] = (cc*cb-sc*sa*sb)*fx, -sc*ca*fx, (cc*sb+sc*sa*cb)*fx
+        R[1, 0], R[1, 1], R[1, 2] = (sc*cb+cc*sa*sb)*fy, cc*ca*fy, (sc*sb-cc*sa*cb)*fy
+        R[2, 0], R[2, 1], R[2, 2] = -ca*sb*fz, sa*fz, ca*cb*fz
+        R[3, 0], R[3, 1], R[3, 2] = 0, 0, 0
+        R[0, 3] = dx
+        R[1, 3] = dy
+        R[2, 3] = dz
+        R[3, 3] = 1
 
 
 cdef class ScalingTransform2D(Transform):
@@ -1464,17 +1472,17 @@ cdef class AffineTransform3D(Transform):
 
 
 regtransforms = dict()
-regtransforms [('TRANSLATION', 2)] = TranslationTransform2D()
-regtransforms [('TRANSLATION', 3)] = TranslationTransform3D()
-regtransforms [('ROTATION', 2)] = RotationTransform2D()
-regtransforms [('ROTATION', 3)] = RotationTransform3D()
-regtransforms [('RIGID', 2)] = RigidTransform2D()
-regtransforms [('RIGID', 3)] = RigidTransform3D()
-regtransforms [('SCALING', 2)] = ScalingTransform2D()
-regtransforms [('SCALING', 3)] = ScalingTransform3D()
-regtransforms [('AFFINE', 2)] = AffineTransform2D()
-regtransforms [('AFFINE', 3)] = AffineTransform3D()
-regtransforms [('RIGIDSCALING', 2)] = RigidScalingTransform2D()
-regtransforms [('RIGIDSCALING', 3)] = RigidScalingTransform3D()
-regtransforms [('RIGIDISOSCALING', 2)] = RigidIsoScalingTransform2D()
-regtransforms [('RIGIDISOSCALING', 3)] = RigidIsoScalingTransform3D()
+regtransforms [("TRANSLATION", 2)] = TranslationTransform2D()
+regtransforms [("TRANSLATION", 3)] = TranslationTransform3D()
+regtransforms [("ROTATION", 2)] = RotationTransform2D()
+regtransforms [("ROTATION", 3)] = RotationTransform3D()
+regtransforms [("RIGID", 2)] = RigidTransform2D()
+regtransforms [("RIGID", 3)] = RigidTransform3D()
+regtransforms [("SCALING", 2)] = ScalingTransform2D()
+regtransforms [("SCALING", 3)] = ScalingTransform3D()
+regtransforms [("AFFINE", 2)] = AffineTransform2D()
+regtransforms [("AFFINE", 3)] = AffineTransform3D()
+regtransforms [("RIGIDSCALING", 2)] = RigidScalingTransform2D()
+regtransforms [("RIGIDSCALING", 3)] = RigidScalingTransform3D()
+regtransforms [("RIGIDISOSCALING", 2)] = RigidIsoScalingTransform2D()
+regtransforms [("RIGIDISOSCALING", 3)] = RigidIsoScalingTransform3D()

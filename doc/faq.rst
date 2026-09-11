@@ -59,7 +59,7 @@ Theoretical
 
 5. **What is the difference between Image coordinates and World coordinates?**
 
-  Image coordinates have positive integer values and represent the centres
+  Image coordinates have positive integer values and represent the centers
   $(i, j, k)$ of the voxels. There is an affine transform (stored in the
   nifti file) that takes the image coordinates and transforms them into
   millimeter (mm) in real world space. World coordinates have floating point
@@ -87,7 +87,7 @@ Practical
 
 1. **Why Python and not MATLAB or some other language?**
 
-  Python is free, batteries included, very well-designed, painless to read
+  Python is free, batteries-included, very well-designed, painless to read
   and easy to use.
   There is nothing else like it. Give it a go.
   Once with Python, always with Python.
@@ -121,13 +121,13 @@ Practical
   by nibabel and pydicom.
 
   You can also read/save in Matlab version v4 (Level 1.0), v6 and v7 to 7.2,
-  using `scipy.io.loadmat`. For higher versions >= 7.3, you can use pytables_
+  using ``scipy.io.loadmat``. For higher versions >= 7.3, you can use pytables_
   or any other python-to-hdf5 library e.g. h5py.
 
   For object serialization, you can use ``dipy.io.pickles`` functions
   ``load_pickle``, ``save_pickle``.
 
-5. **What is dpy**?
+5. **What is the .dpy format**?
 
   ``dpy`` is an ``hdf5`` file format that we use in DIPY to store
   tractography and other information. This allows us to store huge

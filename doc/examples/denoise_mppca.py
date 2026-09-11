@@ -25,7 +25,7 @@ estimate the noise standard deviation using the PCA algorithm based
 on the Marcenko-Pastur distribution :footcite:p:`Veraart2016b`
 
 Let's load the necessary modules
-"""  # noqa: E501
+"""
 
 # load general modules
 from time import time
@@ -139,9 +139,7 @@ save_nifti("denoised_mppca.nii.gz", denoised_arr, affine)
 
 dkimodel = dki.DiffusionKurtosisModel(gtab)
 
-maskdata, mask = median_otsu(
-    data, vol_idx=[0, 1], median_radius=4, numpass=2, autocrop=False, dilate=1
-)
+maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2, dilate=1)
 
 dki_orig = dkimodel.fit(data, mask=mask)
 dki_den = dkimodel.fit(denoised_arr, mask=mask)

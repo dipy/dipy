@@ -3,10 +3,7 @@
 # cython: wraparound=False
 # cython: Nonecheck=False
 
-from libc.stdio cimport printf
-
 cimport ctime
-cimport cython
 from cython.parallel import prange
 import numpy as np
 cimport numpy as cnp
@@ -24,19 +21,15 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                VALIDSTREAMLIME,
                                                INVALIDSTREAMLIME)
 from dipy.tracking.tracker_parameters cimport (TrackerParameters,
-                                               TrackerStatus,
-                                               func_ptr)
-
-from nibabel.streamlines import ArraySequence as Streamlines
+                                               TrackerStatus)
 
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy, memset
 from libc.math cimport ceil
-from libc.stdio cimport printf
 
 
-def generate_tractogram(double[:,::1] seed_positions,
-                        double[:,::1] seed_directions,
+def generate_tractogram(double[:, ::1] seed_positions,
+                        double[:, ::1] seed_directions,
                         StoppingCriterion sc,
                         TrackerParameters params,
                         PmfGen pmf_gen,
@@ -69,7 +62,7 @@ def generate_tractogram(double[:,::1] seed_positions,
 
     Yields
     ------
-    streamlines : Streamlines
+    streamlines : nibabel.streamlines.ArraySequence
         Streamlines generated from the seed points.
     seeds : ndarray, optional
         seed points associated with the generated streamlines.
@@ -113,9 +106,12 @@ def generate_tractogram(double[:,::1] seed_positions,
                 and (length_arr[i] >= params.min_nbr_pts
                      and length_arr[i] <= params.max_nbr_pts)):
                 s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
-                track = s.copy().reshape((-1,3))
+                track = s.copy().reshape((-1, 3))
                 if save_seeds:
-                    yield np.dot(track, lin_T) + offset, np.dot(seed_positions[seed_start + i], lin_T) + offset
+                    yield (
+                        np.dot(track, lin_T) + offset,
+                        np.dot(seed_positions[seed_start + i], lin_T) + offset,
+                    )
                 else:
                     yield np.dot(track, lin_T) + offset
             free(streamlines_arr[i])
@@ -130,15 +126,17 @@ def generate_tractogram(double[:,::1] seed_positions,
             seed_end = _len
 
 
-cdef void generate_tractogram_c(double[:,::1] seed_positions,
-                                double[:,::1] seed_directions,
-                               int nbr_threads,
-                               StoppingCriterion sc,
-                               TrackerParameters params,
-                               PmfGen pmf_gen,
-                               double** streamlines,
-                               int* lengths,
-                               StreamlineStatus* status):
+cdef void generate_tractogram_c(
+    double[:, ::1] seed_positions,
+    double[:, ::1] seed_directions,
+    int nbr_threads,
+    StoppingCriterion sc,
+    TrackerParameters params,
+    PmfGen pmf_gen,
+    double** streamlines,
+    int* lengths,
+    StreamlineStatus* status,
+):
     """Generate a tractogram from a set of seed points and directions.
 
     This is the C implementation of the generate_tractogram function.
@@ -168,12 +166,18 @@ cdef void generate_tractogram_c(double[:,::1] seed_positions,
     cdef:
         cnp.npy_intp _len=seed_positions.shape[0]
         cnp.npy_intp i
+        double* stream
+        int* stream_idx
 
-    if nbr_threads<= 0:
+    if nbr_threads <= 0:
         nbr_threads = 0
-    for i in prange(_len, nogil=True, num_threads=nbr_threads):
+
+    for i in prange(
+        _len, nogil=True, num_threads=nbr_threads, schedule="dynamic", chunksize=64
+    ):
         stream = <double*> malloc((params.max_nbr_pts * 3 * 2 + 1) * sizeof(double))
         stream_idx = <int*> malloc(2 * sizeof(int))
+
         status[i] = generate_local_streamline(&seed_positions[i][0],
                                               &seed_directions[i][0],
                                               stream,
@@ -182,10 +186,16 @@ cdef void generate_tractogram_c(double[:,::1] seed_positions,
                                               params,
                                               pmf_gen)
 
-        # copy the streamlines points from the buffer to a 1d vector of the streamline length
+        # copy the streamlines points from the buffer to a 1d vector of
+        # the streamline length
         lengths[i] = stream_idx[1] - stream_idx[0] + 1
         streamlines[i] = <double*> malloc(lengths[i] * 3 * sizeof(double))
-        memcpy(&streamlines[i][0], &stream[stream_idx[0] * 3], lengths[i] * 3 * sizeof(double))
+        memcpy(
+            &streamlines[i][0],
+            &stream[stream_idx[0] * 3],
+            lengths[i] * 3 * sizeof(double),
+        )
+
         free(stream)
         free(stream_idx)
 
@@ -255,17 +265,22 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     memset(stream_data, 0, 100 * sizeof(double))
     status_forward = TRACKPOINT
     for i in range(1, params.max_nbr_pts):
-        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng) == TrackerStatus.FAIL:
+        if (
+            params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng)
+            == TrackerStatus.FAIL
+        ):
             break
         # update position
         for j in range(3):
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
-        fast_numpy.copy_point(point, &stream[(params.max_nbr_pts + i )* 3])
+        fast_numpy.copy_point(point, &stream[(params.max_nbr_pts + i)* 3])
 
         status_forward = sc.check_point_c(point, &rng)
-        if (status_forward == ENDPOINT or
-            status_forward == INVALIDPOINT or
-            status_forward == OUTSIDEIMAGE):
+        if (
+            status_forward == ENDPOINT
+            or status_forward == INVALIDPOINT
+            or status_forward == OUTSIDEIMAGE
+        ):
             break
     stream_idx[1] = params.max_nbr_pts + i - 1
     free(stream_data)
@@ -289,24 +304,31 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
 
     status_backward = TRACKPOINT
     for i in range(1, params.max_nbr_pts):
-        if params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng) == TrackerStatus.FAIL:
+        if (
+            params.tracker(&point[0], &voxdir[0], params, stream_data, pmf_gen, &rng)
+            == TrackerStatus.FAIL
+        ):
             break
         # update position
         for j in range(3):
             point[j] += voxdir[j] * params.inv_voxel_size[j] * params.step_size
-        fast_numpy.copy_point(point, &stream[(params.max_nbr_pts - i )* 3])
+        fast_numpy.copy_point(point, &stream[(params.max_nbr_pts - i)* 3])
 
         status_backward = sc.check_point_c(point, &rng)
-        if (status_backward == ENDPOINT or
-            status_backward == INVALIDPOINT or
-            status_backward == OUTSIDEIMAGE):
+        if (
+            status_backward == ENDPOINT
+            or status_backward == INVALIDPOINT
+            or status_backward == OUTSIDEIMAGE
+        ):
             break
     stream_idx[0] = params.max_nbr_pts - i + 1
     free(stream_data)
 
     # check for valid streamline ending status
-    if ((status_backward == ENDPOINT or status_backward == OUTSIDEIMAGE)
-        and (status_forward == ENDPOINT or status_forward == OUTSIDEIMAGE)):
+    if (
+        (status_backward == ENDPOINT or status_backward == OUTSIDEIMAGE)
+        and (status_forward == ENDPOINT or status_forward == OUTSIDEIMAGE)
+    ):
         return VALIDSTREAMLIME
     return INVALIDSTREAMLIME
 

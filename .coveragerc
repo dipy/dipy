@@ -3,7 +3,6 @@ branch = True
 source = dipy
 include = */dipy/*
 omit =
-    */setup.py
     */benchmarks/*
     */tests/*
 disable_warnings = include-ignored

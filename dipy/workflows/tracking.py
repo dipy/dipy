@@ -42,7 +42,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         step_size=0.5,
         tracking_method="deterministic",
         pmf_threshold=0.1,
-        max_angle=30.0,
+        max_angle=None,
         sphere_name=None,
         save_seeds=False,
         nbr_threads=0,
@@ -98,6 +98,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
             Threshold for ODF functions.
         max_angle : float, optional
             Maximum angle between streamline segments (range [0, 90]).
+            Default is 30 degrees for most methods, 10 degrees for PTT.
         sphere_name : string, optional
             The sphere used for tracking. If None, the sphere saved in the
             pam_files is used. For faster tracking, use a smaller
@@ -154,6 +155,10 @@ class LocalFiberTrackingPAMFlow(Workflow):
             seeds = utils.seeds_from_mask(
                 seed_mask, affine, density=[seed_density, seed_density, seed_density]
             )
+
+            if max_angle is None:
+                max_angle = 10.0 if tracking_method in ["ptt"] else 30.0
+                logger.info(f"max_angle not set by user, defaulting to {max_angle}")
 
             logger.info("Starting to track")
             if tracking_method in ["closestpeaks", "cp"]:

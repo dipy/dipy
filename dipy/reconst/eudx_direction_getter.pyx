@@ -27,7 +27,7 @@ cdef class EuDXDirectionGetter(DirectionGetter):
         int initialized
 
     def __cinit__(self):
-        initialized = False
+        self.initialized = False
         self.qa_thr = 0.0239
         self.ang_thr = 60
         self.total_weight = .5
@@ -51,13 +51,14 @@ cdef class EuDXDirectionGetter(DirectionGetter):
         self._qa = np.ascontiguousarray(self.peak_values, dtype=np.double)
         self._ind = np.ascontiguousarray(self.peak_indices, dtype=np.double)
         self._odf_vertices = np.asarray(
-            self.sphere.vertices, dtype=np.double, order='C'
+            self.sphere.vertices, dtype=np.double, order="C"
         )
 
         self.initialized = True
 
-    cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(self,
-                                                           double[::1] point):
+    cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(
+        self, double[::1] point
+    ):
         """The best starting directions for fiber tracking from point
 
         All the valid peaks in the voxel closest to point are returned as
@@ -93,7 +94,6 @@ cdef class EuDXDirectionGetter(DirectionGetter):
             res[i, :] = self._odf_vertices[<cnp.npy_intp> peak_index, :]
 
         return res
-
 
     @cython.initializedcheck(False)
     @cython.boundscheck(False)

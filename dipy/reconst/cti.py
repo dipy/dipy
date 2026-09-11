@@ -16,7 +16,7 @@ from dipy.reconst.dti import (
 )
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.utils import cti_design_matrix as design_matrix
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 def from_qte_to_cti(C):
@@ -200,6 +200,7 @@ def cti_prediction(cti_params, gtab1, gtab2, *, S0=1):
 class CorrelationTensorModel(ReconstModel):
     """Class for the Correlation Tensor Model"""
 
+    @warning_for_keywords(from_version="1.12.0")
     def __init__(self, gtab1, gtab2, *args, fit_method="WLS", **kwargs):
         """Correlation Tensor Imaging Model.
 

@@ -1,6 +1,4 @@
 import itertools
-from os.path import join as pjoin
-from tempfile import TemporaryDirectory
 from urllib.error import HTTPError, URLError
 
 import numpy as np
@@ -11,9 +9,11 @@ from dipy.data import get_fnames
 from dipy.io.stateful_surface import StatefulSurface
 from dipy.io.surface import load_surface, save_surface
 from dipy.io.utils import Origin, Space, recursive_compare
+from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
+_, have_polyxios, _ = optional_package("polyxios", min_version="0.2.0")
+
 SPACES = [Space.LPSMM, Space.RASMM, Space.VOXMM, Space.VOX]
 ORIGINS = [Origin.NIFTI, Origin.TRACKVIS]
 
@@ -215,7 +215,8 @@ def test_equality():
     npt.assert_(sfs_1 == sfs_2)
 
 
-def test_random_space_transformations():
+@set_random_number_generator(0)
+def test_random_space_transformations(rng=None):
     sfs = load_surface(
         FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
     )
@@ -227,19 +228,19 @@ def test_random_space_transformations():
 
     # Apply 100 random transformations
     for _ in range(100):
-        space = np.random.choice(SPACES, 1, replace=False)
-        origin = np.random.choice(ORIGINS, 1, replace=False)
+        space = rng.choice(SPACES)
+        origin = rng.choice(ORIGINS)
         sfs.to_space(space)
         sfs.to_origin(origin)
 
     # Return to initial space and compare
     sfs.to_rasmm()
     sfs.to_center()
-    npt.assert_almost_equal(initial_vertices, sfs.vertices, decimal=5)
+    npt.assert_array_almost_equal(initial_vertices, sfs.vertices, decimal=5)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
-@pytest.mark.parametrize("space, origin", itertools.product(SPACES, ORIGINS))
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
+@pytest.mark.parametrize("space, origin", list(itertools.product(SPACES, ORIGINS)))
 def test_space_origin_gold_standard(space, origin):
     fname = FILEPATH_DIX[f"gs_mesh_{space.value.lower()}_{origin.value.lower()}.ply"]
     sfs = load_surface(
@@ -279,7 +280,7 @@ def test_equivalent_gii():
     npt.assert_allclose(vertices, sfs.vertices, atol=1e-3, rtol=1e-6)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_create_from_sfs():
     sfs_1 = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -306,7 +307,7 @@ def test_create_from_sfs():
         )
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_init_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -323,7 +324,7 @@ def test_init_dtype_dict_attributes():
         npt.assert_(False, msg=e)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_set_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -344,7 +345,7 @@ def test_set_dtype_dict_attributes():
         npt.assert_(False, msg="dtype_dict should be identical after set.")
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_set_partial_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -367,12 +368,11 @@ def test_set_partial_dtype_dict_attributes():
     except ValueError:
         npt.assert_(
             False,
-            msg="Partial use of dtype_dict should apply only to the "
-            "relevant portions.",
+            msg="Partial use of dtype_dict should apply only to the relevant portions.",
         )
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_non_existing_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -394,7 +394,7 @@ def test_non_existing_dtype_dict_attributes():
         npt.assert_(True)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_from_sfs_dtype_dict_attributes():
     sfs = load_surface(
         FILEPATH_DIX["gs_mesh_rasmm_center.ply"], FILEPATH_DIX["gs_volume.nii"]
@@ -421,23 +421,22 @@ def test_from_sfs_dtype_dict_attributes():
         npt.assert_(False, msg="from_sfs() should not modify the dtype_dict.")
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 @pytest.mark.parametrize("extension", ["vtk", "gii", "pial"])
-def test_save_load_many_times(extension):
+def test_save_load_many_times(tmp_path, extension):
     # Load initial surface
     sfs = load_surface(
         FILEPATH_DIX["naf_lh.pial"], FILEPATH_DIX["naf_mni_masked.nii.gz"]
     )
     ref_vertices = sfs.vertices.copy()
 
-    with TemporaryDirectory() as tmpdir:
-        # Save and load 10 times
-        for i in range(10):
-            save_surface(sfs, pjoin(tmpdir, f"test_{i}.{extension}"))
-            sfs = load_surface(
-                pjoin(tmpdir, f"test_{i}.{extension}"),
-                FILEPATH_DIX["naf_mni_masked.nii.gz"],
-            )
+    # Save and load 10 times
+    for i in range(10):
+        save_surface(sfs, tmp_path / f"test_{i}.{extension}")
+        sfs = load_surface(
+            tmp_path / f"test_{i}.{extension}",
+            FILEPATH_DIX["naf_mni_masked.nii.gz"],
+        )
 
-        # Final vertices should match original
-        npt.assert_almost_equal(ref_vertices, sfs.vertices, decimal=5)
+    # Final vertices should match original
+    npt.assert_almost_equal(ref_vertices, sfs.vertices, decimal=5)

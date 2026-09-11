@@ -265,7 +265,7 @@ def test_save_seeds():
 
 
 @set_random_number_generator(0)
-def test_tracking_max_angle(rng):
+def test_tracking_max_angle(rng=None):
     """This tests that the angle between streamline points is always smaller
     then the input `max_angle` parameter.
     """
@@ -421,7 +421,7 @@ def test_probabilistic_odf_weighted_tracker():
 
 
 @set_random_number_generator(0)
-def test_particle_filtering_tractography(rng):
+def test_particle_filtering_tractography(rng=None):
     """This tests that the ParticleFilteringTracking produces
     more streamlines connecting the gray matter than LocalTracking.
     """
@@ -821,7 +821,7 @@ def test_maximum_deterministic_tracker():
         npt.assert_(np.allclose(sl, expected[2]))
 
 
-def test_bootstap_peak_tracker():
+def test_bootstrap_peak_tracker():
     """This tests that the Bootstrap Peak Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
@@ -852,8 +852,8 @@ def test_bootstap_peak_tracker():
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]]),
     ]
-    voxel1 = single_tensor(gtab, 1, evals=mevals[0], evecs=mevecs[0], snr=None)
-    voxel2 = single_tensor(gtab, 1, evals=mevals[0], evecs=mevecs[1], snr=None)
+    voxel1 = single_tensor(gtab, S0=1, evals=mevals[0], evecs=mevecs[0], snr=None)
+    voxel2 = single_tensor(gtab, S0=1, evals=mevals[0], evecs=mevecs[1], snr=None)
     voxel3, _ = multi_tensor(gtab, mevals, fractions=fracs, angles=angles, snr=None)
     data = np.tile(voxel3, [5, 6, 1, 1])
     data[simple_image == 1] = voxel1
@@ -1011,7 +1011,9 @@ def test_eudx_tracker():
         np.array([4.0, 4.0, 1.0]),
     ]
 
-    streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.0)
+    streamlines = assert_warns(
+        DeprecationWarning, LocalTracking, dg, sc, seeds, np.eye(4), 1.0
+    )
 
     expected = [
         np.array(
@@ -1145,9 +1147,9 @@ def test_affine_transformations():
         affine_inv = np.linalg.inv(affine)
         lin = affine_inv[:3, :3]
         offset = affine_inv[:3, 3]
-        streamlines_inv = []
-        for line in streamlines:
-            streamlines_inv.append([np.dot(pts, lin) + offset for pts in line])
+        streamlines_inv = [
+            [np.dot(pts, lin) + offset for pts in line] for line in streamlines
+        ]
 
         npt.assert_equal(len(streamlines_inv[0]), len(expected[0]))
         npt.assert_(np.allclose(streamlines_inv[0], expected[0], atol=0.3))
@@ -1156,7 +1158,7 @@ def test_affine_transformations():
 
 
 @set_random_number_generator()
-def test_random_seed_initialization(rng):
+def test_random_seed_initialization(rng=None):
     """Test that the random generator can be initialized correctly with the
     tracking seeds.
     """

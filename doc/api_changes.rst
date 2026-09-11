@@ -5,13 +5,123 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.13.0 changes
+-------------------
+
+**General**
+
+- Every parameter carrying a default value is now keyword-only (PEP 3102), and a
+  pre-commit hook (``tools/check_pep3102.py``) keeps it that way. Calls that passed
+  such an argument positionally keep working and warn until 2.0.0; pass the argument
+  by name to silence the warning. ``dipy/workflows/`` is exempt: its ``run``
+  parameters are turned into a CLI by ``IntrospectiveArgumentParser``, which needs
+  them positional-or-keyword.
+
+- ``warning_for_keywords`` now lives in ``dipy.utils.deprecator`` rather than
+  ``dipy.testing.decorators``, so library code no longer imports from a testing
+  module. ``dipy.testing.decorators.warning_for_keywords`` still resolves, but
+  using it raises a ``DeprecationWarning`` and it is removed in 2.0.0::
+
+      from dipy.testing.decorators import warning_for_keywords  # deprecated
+
+  becomes::
+
+      from dipy.utils.deprecator import warning_for_keywords
+
+**Reconstruction**
+
+- Models whose options moved after ``*args`` in 1.12.0 now report the old positional
+  spelling instead of silently ignoring it. ``TensorModel(gtab, "OLS")`` has selected
+  no fit method since 1.12.0 -- ``"OLS"`` lands in ``*args`` and ``fit_method`` keeps
+  its default -- and ``*args`` makes the two spellings impossible to tell apart, so
+  the call cannot be repaired automatically. Pass the option by name::
+
+      TensorModel(gtab, fit_method="OLS")
+
+  This covers ``TensorModel``, ``FreeWaterTensorModel``, ``DiffusionKurtosisModel``,
+  ``KurtosisMicrostructureModel``, ``CorrelationTensorModel``,
+  ``MeanDiffusionKurtosisModel`` and the fit methods wrapped by ``iter_fit_tensor``.
+
+**Core**
+
+- The ``use_logging`` parameter of ``dipy.core.gradients.GradientTable.info`` was
+  removed. ``info`` is a property, so the parameter was never reachable and the
+  summary was always printed to stdout; the behaviour is unchanged.
+
 DIPY 1.12.0 changes
 -------------------
 
+**General**
+
+- Dropped support for Python 3.10. Python 3.11 is now the minimum supported version.
+- Added Python 3.14 nightly wheel support.
+
 **IO**
 
-- The `utils` function `split_name_with_gz` was removed in PR https://github.com/dipy/dipy/pull/3593
-  as DIPY transitioned to using `pathlib` for path manipulation.
+- ``dipy.io.utils.split_name_with_gz`` was removed. Use ``pathlib.Path(fname).suffix``
+  / ``pathlib.Path(fname).stem`` or ``dipy.io.utils.split_filename_extension`` instead.
+
+- ``dipy.io.peaks.load_peaks`` and ``dipy.io.peaks.save_peaks`` have been fully removed
+  (deprecated since 1.10.0). Use ``dipy.io.peaks.load_pam`` and
+  ``dipy.io.peaks.save_pam`` instead.
+
+**Segment**
+
+- The ``autocrop`` parameter of ``dipy.segment.mask.median_otsu`` is deprecated since
+  1.11.0 and will be removed in 1.13.0. Remove ``autocrop=True`` from your calls; if
+  you need cropping, call ``bounding_box()`` and ``crop()`` manually afterwards.
+
+**Denoising**
+
+- ``dipy.denoise.nlmeans.nlmeans`` gained a new keyword-only ``method`` parameter
+  (``"blockwise"`` or ``"classic"``). **The default changed to** ``"blockwise"``,
+  which uses an improved algorithm with better memory efficiency and statistical
+  pre-filtering. Results may differ from prior releases. To restore the previous
+  behaviour pass ``method="classic"``. The ``block_radius`` default also changed:
+  it is now ``2`` for ``"blockwise"`` and ``5`` for ``"classic"`` (previously always
+  ``5``).
+
+**Align**
+
+- ``dipy.align.reslice.reslice`` gained a new optional keyword-only ``new_shape``
+  parameter. When ``None`` (default) the output shape is computed as before.
+
+**Tracking**
+
+- Using ``EuDXDirectionGetter``-based objects (e.g., ``PeaksAndMetrics``) as the
+  ``direction_getter`` argument of ``LocalTracking`` is deprecated since 1.12.0 and
+  will be removed in 2.0.0. Use ``dipy.tracking.tracker.eudx_tracking`` instead::
+
+      # old
+      LocalTracking(pam, stopping_criterion, seeds, affine, step_size)
+
+      # new
+      from dipy.tracking.tracker import eudx_tracking
+      eudx_tracking(seeds, stopping_criterion, affine, pam=pam, step_size=step_size)
+
+- New high-level tracking functions are available in ``dipy.tracking.tracker``:
+  ``eudx_tracking``, ``deterministic_tracking``, ``probabilistic_tracking``,
+  ``closestpeak_tracking``, ``pft_tracking``, ``ptt_tracking``. They accept
+  ``min_len`` / ``max_len`` in **mm** (not number of points) and support a
+  ``nbr_threads`` keyword for parallelism.
+
+**Workflows / CLI**
+
+- The default output tractogram format changed from ``.trk`` to ``.trx`` across all
+  tracking and segmentation workflows (``dipy_track``, ``dipy_track_pft``,
+  ``dipy_slr``, ``dipy_recobundles``, etc.). Pass an explicit
+  ``--out_tractogram`` argument ending in ``.trk`` to keep the old format.
+
+- ``dipy_sh_convert_mrtrix`` is deprecated since 1.11.0. Use ``dipy_convert_sh``
+  instead.
+
+- New CLI commands: ``dipy_fit_msmtcsd``, ``dipy_brain_mask``,
+  ``dipy_cluster_streamlines``, ``dipy_fit_powermap``, ``dipy_fit_fwdti``.
+
+**Utils**
+
+- ``dipy.utils.optpkg.optional_package`` gained a new keyword-only ``max_version``
+  parameter to enforce an upper version bound on optional dependencies.
 
 
 DIPY 1.10.0 changes
@@ -32,8 +142,8 @@ DIPY 1.10.0 changes
 
 **Align**
 
-- The `alpha` parameter in the BundleWarp method has been updated to provide better
-  result for the bundle warping. The default value of `alpha` has been changed
+- The ``alpha`` parameter in the BundleWarp method has been updated to provide better
+  result for the bundle warping. The default value of ``alpha`` has been changed
   from 0.3 to 0.5.
 
 **IO**
@@ -43,23 +153,23 @@ DIPY 1.10.0 changes
 
 **Reconstruction**
 
-- Applied the change of the default `cvxpy` solver from `ECOS` to `CLARABEL`.
+- Applied the change of the default ``cvxpy`` solver from ``ECOS`` to ``CLARABEL``.
   Starting in CXVPY 1.6.0, ECOS will no longer be installed by default with
   CVXPY. Since we do not want to add an explicit dependency on ECOS, we
   switched to the new default solver, Clarabel.
 
 **Workflows**
 
-- The `vol_idx` parameter datatype from ``dipy_median_otsu`` has been changed from `variable int` to `str`.
-  this change allows user to provide a range of values for the `vol_idx` parameter. e.g: `--vol_idx 0,1,2` or `--vol_idx 4,5,12-20,22`.
+- The ``vol_idx`` parameter datatype from ``dipy_median_otsu`` has been changed from ``variable int`` to ``str``.
+  this change allows user to provide a range of values for the ``vol_idx`` parameter. e.g: ``--vol_idx 0,1,2`` or ``--vol_idx 4,5,12-20,22``.
 
-- The `odf_to_sh_order` parameter has been removed from multiple workflows. The parameter
-  was not being used and was causing confusion with the `sh_order_order` parameter.
+- The ``odf_to_sh_order`` parameter has been removed from multiple workflows. The parameter
+  was not being used and was causing confusion with the ``sh_order_order`` parameter.
 
 **NN**
 
 - A new backend has been added: PyTorch. This backend is becoming the default backend
-  for the `NN` module. Tensorflow backend is still available but deprecated.
+  for the ``NN`` module. Tensorflow backend is still available but deprecated.
 
 
 DIPY 1.9.0 changes
@@ -159,8 +269,8 @@ DIPY 1.3.0 changes
 
 **Registration**
 
-- The argument `interp` of the method `dipy.align.imaffine.AffineMap.transform`  has been renamed `interpolation`.
-- The argument `interp` of the method `dipy.align.imaffine.AffineMap.transform_inverse`  has been renamed `interpolation`.
+- The argument ``interp`` of the method ``dipy.align.imaffine.AffineMap.transform``  has been renamed ``interpolation``.
+- The argument ``interp`` of the method ``dipy.align.imaffine.AffineMap.transform_inverse``  has been renamed ``interpolation``.
 
 **Segmentation**
 
@@ -248,7 +358,7 @@ more evenly distributed.
 **Segmentation**
 
 The API of ``dipy.segment.mask.median_otsu`` has changed in the following ways:
-if you are providing a 4D volume, `vol_idx` is now a required argument.
+if you are providing a 4D volume, ``vol_idx`` is now a required argument.
 The order of parameters has also changed.
 
 **Tractogram loading and saving**
@@ -288,11 +398,11 @@ affine parameter and uniform docstring. ``voxel2streamline``,
 
 **Interpolation**
 
-All interpolation functions have been moved to a new module name `dipy.core.interpolation`
+All interpolation functions have been moved to a new module name ``dipy.core.interpolation``
 
 **Tracking**
 
-The `voxel_size` parameter has been removed from the following function:
+The ``voxel_size`` parameter has been removed from the following function:
 
 - ``dipy.tracking.utils.connectivity_matrix``
 - ``dipy.tracking.utils.density_map``
@@ -302,27 +412,27 @@ The `voxel_size` parameter has been removed from the following function:
 The ``dipy.reconst.peak_direction_getter.PeaksAndMetricsDirectionGetter`` has
 been renamed ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
 
-The `LocalTracking` and `ParticleFilteringTracking` functions were moved from
+The ``LocalTracking`` and ``ParticleFilteringTracking`` functions were moved from
 ``dipy.tracking.local.localtracking`` to ``dipy.tracking.local_tracking``.
 They now need to be imported from ``dipy.tracking.local_tracking``.
 
-- functions argument `tissue_classifier` were renamed `stopping_criterion`
+- functions argument ``tissue_classifier`` were renamed ``stopping_criterion``
 
-The `TissueClassifier` were renamed `StoppingCriterion` and moved from
+The ``TissueClassifier`` were renamed ``StoppingCriterion`` and moved from
 ``dipy.tracking.local.tissue_classifier`` to ``dipy.tracking.stopping_criterion``.
 They now need to be imported from ``dipy.tracking.stopping_criterion``.
 
-- `TissueClassifier` -> `StoppingCriterion`
-- `BinaryTissueClassifier` -> `BinaryStoppingCriterion`
-- `ThresholdTissueClassifier` -> `ThresholdStoppingCriterion`
-- `ConstrainedTissueClassifier` -> `AnatomicalStoppingCriterion`
-- `ActTissueClassifier` -> `ActStoppingCriterion`
-- `CmcTissueClassifier` -> `CmcStoppingCriterion`
+- ``TissueClassifier`` -> ``StoppingCriterion``
+- ``BinaryTissueClassifier`` -> ``BinaryStoppingCriterion``
+- ``ThresholdTissueClassifier`` -> ``ThresholdStoppingCriterion``
+- ``ConstrainedTissueClassifier`` -> ``AnatomicalStoppingCriterion``
+- ``ActTissueClassifier`` -> ``ActStoppingCriterion``
+- ``CmcTissueClassifier`` -> ``CmcStoppingCriterion``
 
 The ``dipy.tracking.local.tissue_classifier.TissueClass`` was renamed
 ``dipy.tracking.stopping_criterion.StreamlineStatus``.
 
-The `EuDX` tracking function has been removed. EuDX tractography can be
+The ``EuDX`` tracking function has been removed. EuDX tractography can be
 performed using ``dipy.tracking.local_tracking`` using
 ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
 
@@ -364,7 +474,7 @@ DIPY 0.15 Changes
 
 **Gradient Table**
 
-The default value of ``b0_thresold`` has been changed(from 0 to 50). This change can impact your algorithm.
+The default value of ``b0_threshold`` has been changed(from 0 to 50). This change can impact your algorithm.
 If you want to assure that your code runs in exactly the same manner as before, please initialize your gradient table with the keyword argument ``b0_threshold`` set to 0.
 
 **Visualization**
@@ -452,10 +562,10 @@ more powerful and supports RGB images too. See tutorial ``viz_slice.py`` for
 more information.
 
 **Interpolation**
-The default behavior of the function `core.sphere.interp_rbf` has changed.
+The default behavior of the function ``core.sphere.interp_rbf`` has changed.
 The default smoothing parameter is now set to 0.1 (previously 0). In addition,
-the default norm is now `angle` (was previously `euclidean_norm`). Note that
-the use of `euclidean_norm` is discouraged, and this norm will be deprecated
+the default norm is now ``angle`` (was previously ``euclidean_norm``). Note that
+the use of ``euclidean_norm`` is discouraged, and this norm will be deprecated
 in the 0.11 release cycle.
 
 **Registration**

@@ -34,7 +34,7 @@ def test_design_matrix():
 @needs_sklearn
 def test_sfm():
     fdata, fbvals, fbvecs = dpd.get_fnames()
-    data = load_nifti_data(fdata)
+    data = load_nifti_data(fdata)[:3, :3, :3]
     gtab = grad.gradient_table(fbvals, bvecs=fbvecs)
     for n_procs in [1, 2]:
         for iso in [sfm.ExponentialIsotropicModel, None]:

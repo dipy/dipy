@@ -5,7 +5,7 @@ Reconstruct with Generalized Q-Sampling Imaging
 
 We show how to apply Generalized Q-Sampling Imaging :footcite:p:`Yeh2010`
 to diffusion MRI datasets. You can think of GQI as an analytical version of
-DSI orientation distribution function (ODF) (Garyfallidis, PhD thesis, 2012).
+DSI orientation distribution function (ODF) :footcite:p:`Garyfallidis2012b`.
 
 First import the necessary modules:
 """

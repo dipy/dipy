@@ -8,7 +8,6 @@ Run scripts and check outputs
 import glob
 import os
 import shutil
-from tempfile import TemporaryDirectory
 
 from os.path import (dirname, join as pjoin, abspath)
 
@@ -65,86 +64,99 @@ def assert_image_shape_affine(filename, shape, affine):
     nt.assert_array_almost_equal(image.affine, affine)
 
 
-def test_dipy_fit_tensor_again():
-    with TemporaryDirectory():
-        dwi, bval, bvec = get_fnames(name="small_25")
-        # Copy data to tmp directory
-        shutil.copyfile(dwi, "small_25.nii.gz")
-        shutil.copyfile(bval, "small_25.bval")
-        shutil.copyfile(bvec, "small_25.bvec")
-        # Call script
-        cmd = ["dipy_fit_tensor", "--mask=none", "small_25.nii.gz"]
-        out = run_command(cmd)
-        npt.assert_equal(out[0], 0)
-        # Get expected values
-        img = nib.load("small_25.nii.gz")
-        affine = img.affine
-        shape = img.shape[:-1]
-        # Check expected outputs
-        assert_image_shape_affine("small_25_fa.nii.gz", shape, affine)
-        assert_image_shape_affine("small_25_t2di.nii.gz", shape, affine)
-        assert_image_shape_affine("small_25_dirFA.nii.gz", shape, affine)
-        assert_image_shape_affine("small_25_ad.nii.gz", shape, affine)
-        assert_image_shape_affine("small_25_md.nii.gz", shape, affine)
-        assert_image_shape_affine("small_25_rd.nii.gz", shape, affine)
+def test_dipy_fit_tensor_again(tmp_path, monkeypatch):
 
-    with TemporaryDirectory():
-        dwi, bval, bvec = get_fnames(name="small_25")
-        # Copy data to tmp directory
-        shutil.copyfile(dwi, "small_25.nii.gz")
-        shutil.copyfile(bval, "small_25.bval")
-        shutil.copyfile(bvec, "small_25.bvec")
-        # Call script
-        cmd = ["dipy_fit_tensor", "--save-tensor",
-               "--mask=none", "small_25.nii.gz"]
-        out = run_command(cmd)
-        npt.assert_equal(out[0], 0)
-        # Get expected values
-        img = nib.load("small_25.nii.gz")
-        affine = img.affine
-        shape = img.shape[:-1]
-        # Check expected outputs
-        assert_image_shape_affine("small_25_fa.nii.gz", shape, affine)
-        assert_image_shape_affine("small_25_t2di.nii.gz", shape, affine)
-        assert_image_shape_affine("small_25_dirFA.nii.gz", shape, affine)
-        assert_image_shape_affine("small_25_ad.nii.gz", shape, affine)
-        assert_image_shape_affine("small_25_md.nii.gz", shape, affine)
-        assert_image_shape_affine("small_25_rd.nii.gz", shape, affine)
-        # small_25_tensor saves the tensor as a symmetric matrix following
-        # the nifti standard.
-        ten_shape = shape + (1, 6)
-        assert_image_shape_affine("small_25_tensor.nii.gz", ten_shape,
-                                  affine)
+    tmp_path1 = tmp_path / "no_tensor"
+    os.mkdir(tmp_path1)
+
+    monkeypatch.chdir(tmp_path1)
+
+    dwi, bval, bvec = get_fnames(name="small_25")
+    # Copy data to tmp directory
+    shutil.copyfile(dwi, tmp_path1 / "small_25.nii.gz")
+    shutil.copyfile(bval, tmp_path1 / "small_25.bval")
+    shutil.copyfile(bvec, tmp_path1 / "small_25.bvec")
+    # Call script
+    cmd = ["dipy_fit_tensor", "--mask=none", "small_25.nii.gz"]
+    out = run_command(cmd)
+    npt.assert_equal(out[0], 0)
+    # Get expected values
+    img = nib.load("small_25.nii.gz")
+    affine = img.affine
+    shape = img.shape[:-1]
+    # Check expected outputs
+    assert_image_shape_affine(tmp_path1 / "small_25_fa.nii.gz", shape, affine)
+    assert_image_shape_affine(tmp_path1 / "small_25_t2di.nii.gz", shape, affine)
+    assert_image_shape_affine(tmp_path1 / "small_25_dirFA.nii.gz", shape, affine)
+    assert_image_shape_affine(tmp_path1 / "small_25_ad.nii.gz", shape, affine)
+    assert_image_shape_affine(tmp_path1 / "small_25_md.nii.gz", shape, affine)
+    assert_image_shape_affine(tmp_path1 / "small_25_rd.nii.gz", shape, affine)
+
+    tmp_path2 = tmp_path / "tensor"
+    os.mkdir(tmp_path2)
+
+    monkeypatch.chdir(tmp_path2)
+
+    # Copy data to tmp directory
+    shutil.copyfile(dwi, tmp_path2 / "small_25.nii.gz")
+    shutil.copyfile(bval, tmp_path2 / "small_25.bval")
+    shutil.copyfile(bvec, tmp_path2 / "small_25.bvec")
+    # Call script
+    cmd = ["dipy_fit_tensor", "--save-tensor", "--mask=none", "small_25.nii.gz"]
+    out = run_command(cmd)
+    npt.assert_equal(out[0], 0)
+    # Get expected values
+    img = nib.load("small_25.nii.gz")
+    affine = img.affine
+    shape = img.shape[:-1]
+    # Check expected outputs
+    assert_image_shape_affine(tmp_path2 / "small_25_fa.nii.gz", shape, affine)
+    assert_image_shape_affine(tmp_path2 / "small_25_t2di.nii.gz", shape, affine)
+    assert_image_shape_affine(tmp_path2 / "small_25_dirFA.nii.gz", shape, affine)
+    assert_image_shape_affine(tmp_path2 / "small_25_ad.nii.gz", shape, affine)
+    assert_image_shape_affine(tmp_path2 / "small_25_md.nii.gz", shape, affine)
+    assert_image_shape_affine(tmp_path2 / "small_25_rd.nii.gz", shape, affine)
+    # small_25_tensor saves the tensor as a symmetric matrix following
+    # the nifti standard.
+    ten_shape = shape + (1, 6)
+    assert_image_shape_affine(tmp_path2 / "small_25_tensor.nii.gz", ten_shape, affine)
+
+
+@pytest.mark.skipif(no_mpl)
+def test_qb_commandline(tmp_path, monkeypatch):
+
+    monkeypatch.chdir(tmp_path)
+
+    tracks_file = get_fnames(name='fornix')
+    cmd = ["dipy_quickbundles", tracks_file, '--pkl_file', 'mypickle.pkl',
+           '--out_file', 'tracks300.trk']
+    out = run_command(cmd)
+    npt.assert_equal(tmp_path / out[0], 0)
 
 
 @pytest.mark.skipif(no_mpl)
-def test_qb_commandline():
-    with TemporaryDirectory():
-        tracks_file = get_fnames(name='fornix')
-        cmd = ["dipy_quickbundles", tracks_file, '--pkl_file', 'mypickle.pkl',
-               '--out_file', 'tracks300.trk']
-        out = run_command(cmd)
-        npt.assert_equal(out[0], 0)
+def test_qb_commandline_output_path_handling(tmp_path, monkeypatch):
 
-@pytest.mark.skipif(no_mpl)
-def test_qb_commandline_output_path_handling():
-    with TemporaryDirectory():
-        # Create temporary subdirectory for input and for output
-        os.mkdir('work')
-        os.mkdir('output')
+    # Create temporary subdirectory for input and for output
+    work_dir = tmp_path / "work"
+    output_dir = tmp_path / "output"
 
-        os.chdir('work')
-        tracks_file = get_fnames(name='fornix')
+    os.mkdir(work_dir)
+    os.mkdir(output_dir)
 
-        # Need to specify an output directory with a "../" style path
-        # to trigger old bug.
-        cmd = ["dipy_quickbundles", tracks_file, '--pkl_file', 'mypickle.pkl',
-               '--out_file', os.path.join('..', 'output', 'tracks300.trk')]
-        out = run_command(cmd)
-        npt.assert_equal(out[0], 0)
+    monkeypatch.chdir(work_dir)
 
-        # Make sure the files were created in the output directory
-        os.chdir('../')
-        output_files_list = glob.glob('output/tracks300_*.trk')
-        assert_true(output_files_list)
+    tracks_file = get_fnames(name='fornix')
+
+    # Need to specify an output directory with a "../" style path
+    # to trigger old bug.
+    cmd = ["dipy_quickbundles", tracks_file, '--pkl_file', 'mypickle.pkl',
+           '--out_file', os.path.join('..', 'output', 'tracks300.trk')]
+    out = run_command(cmd)
+    npt.assert_equal(out[0], 0)
+
+    # Make sure the files were created in the output directory
+    os.chdir('../')
+    output_files_list = glob.glob('output/tracks300_*.trk')
+    assert_true(output_files_list)
 """

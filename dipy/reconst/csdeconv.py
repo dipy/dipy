@@ -26,9 +26,8 @@ from dipy.reconst.shm import (
 )
 from dipy.reconst.utils import _mask_from_roi, _roi_in_volume
 from dipy.sims.voxel import single_tensor
-from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.compatibility import check_max_version
-from dipy.utils.deprecator import deprecated_params
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 
 
 class AxSymShResponse:
@@ -188,7 +187,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self.tau = tau
         self.convergence = convergence
         self._X = X = self.R.diagonal() * self.B_dwi
-        self._P = np.dot(X.T, X)
+        self._P, self._P_chol = _regularized_cholesky(np.dot(X.T, X))
 
     @multi_voxel_fit
     def fit(self, data, **kwargs):
@@ -200,6 +199,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             tau=self.tau,
             convergence=self.convergence,
             P=self._P,
+            P_chol=self._P_chol,
         )
         return SphHarmFit(self, shm_coeff, None)
 
@@ -249,6 +249,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
 
 class ConstrainedSDTModel(SphHarmModel):
+    """Constrained Spherical Deconvolution Transform (SDT) model."""
+
     @deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
     @warning_for_keywords()
     def __init__(
@@ -372,7 +374,7 @@ def estimate_response(gtab, evals, S0):
     """
     evecs = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
 
-    return single_tensor(gtab, S0, evals=evals, evecs=evecs, snr=None)
+    return single_tensor(gtab, S0=S0, evals=evals, evecs=evecs, snr=None)
 
 
 @deprecated_params("n", new_name="l_values", since="1.9", until="2.0")
@@ -423,17 +425,20 @@ def forward_sdt_deconv_mat(ratio, l_values, *, r2_term=False):
     for j in np.arange(0, n_orders * 2, 2):
         if r2_term:
             sharp = quad(
-                lambda z, j=j: lpn(j, z)[0][-1]
-                * sps.gamma(1.5)
-                * np.sqrt(ratio / (4 * np.pi**3))
-                / np.power((1 - (1 - ratio) * z**2), 1.5),
+                lambda z, j=j: (
+                    lpn(j, z)[0][-1]
+                    * sps.gamma(1.5)
+                    * np.sqrt(ratio / (4 * np.pi**3))
+                    / np.power((1 - (1 - ratio) * z**2), 1.5)
+                ),
                 -1.0,
                 1.0,
             )
         else:
             sharp = quad(
-                lambda z, j=j: lpn(j, z)[0][-1]
-                * np.sqrt(1 / (1 - (1 - ratio) * z * z)),
+                lambda z, j=j: (
+                    lpn(j, z)[0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z))
+                ),
                 -1.0,
                 1.0,
             )
@@ -450,7 +455,24 @@ def forward_sdt_deconv_mat(ratio, l_values, *, r2_term=False):
 potrf, potrs = ll.get_lapack_funcs(("potrf", "potrs"))
 
 
-def _solve_cholesky(Q, z):
+def _cholesky_factor(Q):
+    """Compute the upper-triangular Cholesky factor of a symmetric matrix.
+
+    Parameters
+    ----------
+    Q : ndarray
+        Symmetric positive-definite matrix to factorize.
+
+    Returns
+    -------
+    L : ndarray
+        Upper-triangular Cholesky factor such that ``L.T @ L == Q``.
+
+    Raises
+    ------
+    LinAlgError
+        If `Q` is not positive definite.
+    """
     L, info = potrf(Q, lower=False, overwrite_a=False, clean=False)
     if info > 0:
         msg = f"{info}-th leading minor not positive definite"
@@ -458,6 +480,25 @@ def _solve_cholesky(Q, z):
     if info < 0:
         msg = f"illegal value in {-info}-th argument of internal potrf"
         raise ValueError(msg)
+    return L
+
+
+def _solve_from_cholesky(L, z):
+    """Solve a linear system given a precomputed Cholesky factor.
+
+    Parameters
+    ----------
+    L : ndarray
+        Upper-triangular Cholesky factor of the system matrix, as returned by
+        `_cholesky_factor`.
+    z : ndarray
+        Right-hand side of the linear system.
+
+    Returns
+    -------
+    f : ndarray
+        Solution of the linear system.
+    """
     f, info = potrs(L, z, lower=False, overwrite_b=False)
     if info != 0:
         msg = f"illegal value in {-info}-th argument of internal potrs"
@@ -465,8 +506,58 @@ def _solve_cholesky(Q, z):
     return f
 
 
+def _solve_cholesky(Q, z):
+    """Solve a linear system via Cholesky factorization.
+
+    Parameters
+    ----------
+    Q : ndarray
+        Symmetric positive-definite system matrix.
+    z : ndarray
+        Right-hand side of the linear system.
+
+    Returns
+    -------
+    f : ndarray
+        Solution of the linear system.
+    """
+    L = _cholesky_factor(Q)
+    return _solve_from_cholesky(L, z)
+
+
+def _regularized_cholesky(P, *, mu=1e-5):
+    """Cholesky-factorize `P`, falling back to a regularized matrix.
+
+    If `P` is not positive definite, ``mu * I`` is added to `P` before
+    retrying the factorization.
+
+    Parameters
+    ----------
+    P : ndarray
+        Symmetric matrix to factorize.
+    mu : float, optional
+        Regularization weight added to the diagonal of `P` if the initial
+        factorization fails.
+
+    Returns
+    -------
+    P : ndarray
+        The matrix that was actually factorized, i.e. either the input `P`
+        or ``P + mu * I``.
+    L : ndarray
+        Upper-triangular Cholesky factor of the returned `P`.
+    """
+    try:
+        L = _cholesky_factor(P)
+        return P, L
+    except la.LinAlgError:
+        P = P + mu * np.eye(P.shape[0])
+        L = _cholesky_factor(P)
+        return P, L
+
+
 @warning_for_keywords()
-def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None):
+def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None, P_chol=None):
     r"""Constrained-regularized spherical deconvolution (CSD).
 
     Deconvolves the axially symmetric single fiber response function `r_rh` in
@@ -498,6 +589,10 @@ def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None):
         This is an optimization to avoid computing ``dot(X.T, X)`` many times.
         If the same ``X`` is used many times, ``P`` can be precomputed and
         passed to this function.
+    P_chol : ndarray, optional
+        Cholesky factor (upper-triangular) of ``P``. If provided, this is
+        reused for the initial unconstrained solve and avoids refactorizing
+        ``P`` for every voxel.
 
     Returns
     -------
@@ -577,16 +672,13 @@ def csdeconv(dwsignal, X, B_reg, *, tau=0.1, convergence=50, P=None):
     .. footbibliography::
 
     """
-    mu = 1e-5
     if P is None:
         P = np.dot(X.T, X)
-    z = np.dot(X.T, dwsignal)
+    if P_chol is None:
+        P, P_chol = _regularized_cholesky(P)
 
-    try:
-        fodf_sh = _solve_cholesky(P, z)
-    except la.LinAlgError:
-        P = P + mu * np.eye(P.shape[0])
-        fodf_sh = _solve_cholesky(P, z)
+    z = np.dot(X.T, dwsignal)
+    fodf_sh = _solve_from_cholesky(P_chol, z)
     # For the first iteration we use a smooth FOD that only uses SH orders up
     # to 4 (the first 15 coefficients).
     fodf = np.dot(B_reg[:, :15], fodf_sh[:15])
@@ -1094,7 +1186,7 @@ def recursive_response(
     .. footbibliography::
     """
     S0 = 1.0
-    evals = fa_trace_to_lambdas(init_fa, init_trace)
+    evals = fa_trace_to_lambdas(fa=init_fa, trace=init_trace)
     res_obj = (evals, S0)
 
     if mask is None:
@@ -1151,7 +1243,8 @@ def recursive_response(
     return res_obj
 
 
-def fa_trace_to_lambdas(fa=0.08, trace=0.0021):
+@warning_for_keywords(from_version="1.13.0")
+def fa_trace_to_lambdas(*, fa=0.08, trace=0.0021):
     lambda1 = (trace / 3.0) * (1 + 2 * fa / (3 - 2 * fa**2) ** (1 / 2.0))
     lambda2 = (trace / 3.0) * (1 - fa / (3 - 2 * fa**2) ** (1 / 2.0))
     evals = np.array([lambda1, lambda2, lambda2])

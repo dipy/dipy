@@ -30,7 +30,7 @@ bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs=bvecs)
 
 maskdata, mask = median_otsu(
-    data, vol_idx=range(10, 50), median_radius=3, numpass=1, autocrop=False, dilate=2
+    data, vol_idx=range(10, 50), median_radius=3, numpass=1, dilate=2
 )
 
 response, ratio = auto_response_ssst(gtab, maskdata, roi_radii=10, fa_thr=0.7)

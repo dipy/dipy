@@ -53,16 +53,17 @@ from itertools import combinations
 from warnings import warn
 
 from nibabel.affines import apply_affine
+from nibabel.streamlines import ArraySequence as Streamlines
 import numpy as np
 from scipy.spatial.distance import cdist
 
 from dipy.core.geometry import dist_to_corner
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking import metrics
 
 # Import helper functions shared with vox2track
 from dipy.tracking._utils import _mapping_to_voxel, _to_voxel_coordinates
 from dipy.tracking.vox2track import _streamlines_in_mask
+from dipy.utils.deprecator import warning_for_keywords
 
 
 def density_map(streamlines, affine, vol_dims):
@@ -116,6 +117,8 @@ def connectivity_matrix(
     *,
     inclusive=False,
     symmetric=True,
+    weights=None,
+    discard_stream_size=0,
     return_mapping=False,
     mapping_as_streamlines=False,
 ):
@@ -133,14 +136,22 @@ def connectivity_matrix(
         volume map to anatomical structures.
     inclusive: bool
         Whether to analyze the entire streamline, as opposed to just the
-        endpoints. False by default.
-    symmetric : bool, True by default
+        endpoints.
+    symmetric : bool, optional
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
-    return_mapping : bool, False by default
+    weights : ndarray, optional
+        A 1D array of size n, containing the weights of each of the n
+        streamlines.
+    discard_stream_size : int, optional
+        If the length of a streamline is less than or equal to this value, it
+        will not be included in the connectivity matrix. When 0, no filtering
+        is applied. This is useful for ignoring very short streamlines that
+        are likely to be noise.
+    return_mapping : bool, optional
         If True, a mapping is returned which maps matrix indices to
         streamlines.
-    mapping_as_streamlines : bool, False by default
+    mapping_as_streamlines : bool, optional
         If True voxel indices map to lists of streamline objects. Otherwise
         voxel indices map to lists of integers.
 
@@ -165,12 +176,24 @@ def connectivity_matrix(
             "label_volume must be a 3d integer array with non-negative label values"
         )
 
-    matrix = np.zeros(
-        (np.max(label_volume) + 1, np.max(label_volume) + 1), dtype=np.int64
-    )
-
     mapping = defaultdict(list)
     lin_T, offset = _mapping_to_voxel(affine)
+
+    if type(streamlines).__name__ == "generator":
+        streamlines = Streamlines(streamlines)
+
+    if weights is None:
+        weights = np.ones(len(streamlines))
+        matrix = np.zeros(
+            (np.max(label_volume) + 1, np.max(label_volume) + 1), dtype=np.int64
+        )
+    else:
+        matrix = np.zeros((np.max(label_volume) + 1, np.max(label_volume) + 1))
+
+    if discard_stream_size > 0:
+        (keep_idx,) = np.where(streamlines._lengths > discard_stream_size)
+        streamlines = streamlines[keep_idx]
+        weights = weights[keep_idx]
 
     if inclusive:
         for i, sl in enumerate(streamlines):
@@ -183,7 +206,7 @@ def connectivity_matrix(
                 crossed_labels = crossed_labels[0][np.argsort(crossed_labels[1])]
 
             for comb in combinations(crossed_labels, 2):
-                matrix[comb] += 1
+                matrix[comb] += weights[i]
 
                 if return_mapping:
                     if mapping_as_streamlines:
@@ -192,14 +215,14 @@ def connectivity_matrix(
                         mapping[comb].append(i)
 
     else:
-        streamlines_end = np.array([sl[0 :: len(sl) - 1] for sl in streamlines])
+        streamlines_end = np.array([sl[[0, -1]] for sl in streamlines])
         streamlines_end = _to_voxel_coordinates(streamlines_end, lin_T, offset)
         x, y, z = streamlines_end.T
         if symmetric:
             end_labels = np.sort(label_volume[x, y, z], axis=0)
         else:
             end_labels = label_volume[x, y, z]
-        np.add.at(matrix, (end_labels[0].T, end_labels[1].T), 1)
+        np.add.at(matrix, (end_labels[0].T, end_labels[1].T), weights)
 
         if return_mapping:
             if mapping_as_streamlines:
@@ -224,12 +247,20 @@ def ndbincount(x, *, weights=None, shape=None):
 
     Parameters
     ----------
-    x : array_like (N, M)
+    x : array-like (N, M)
         M indices to a an Nd-array
-    weights : array_like (M,), optional
+    weights : array-like (M,), optional
         Weights associated with indices
-    shape : optional
-        the shape of the output
+    shape : tuple, optional
+        The shape of the output array. If not provided,
+        the shape is inferred from the maximum indices.
+
+    Returns
+    -------
+    out : ndarray
+        An Nd-array of counts (or weighted counts) where
+        each element represents the number of occurrences
+        of the corresponding index combination.
     """
     x = np.asarray(x)
     if shape is None:
@@ -237,7 +268,7 @@ def ndbincount(x, *, weights=None, shape=None):
 
     x = np.ravel_multi_index(x, shape)
     out = np.bincount(x, weights, minlength=np.prod(shape))
-    out.shape = shape
+    out = out.reshape(shape)
 
     return out
 
@@ -245,6 +276,22 @@ def ndbincount(x, *, weights=None, shape=None):
 def reduce_labels(label_volume):
     """Reduce an array of labels to the integers from 0 to n with smallest
     possible n.
+
+    Parameters
+    ----------
+    label_volume : ndarray
+        An array of labels represented as integers. The labels do not
+        need to be contiguous or start from zero.
+
+    Returns
+    -------
+    new_labels : ndarray
+        An array of the same shape as `label_volume` where each label
+        has been replaced by its index in the sorted unique labels array,
+        giving contiguous integers starting from 0.
+    lookup : ndarray, shape (n,)
+        A 1D array of the unique labels in sorted order. The original
+        labels can be recovered using ``lookup[new_labels]``.
 
     Examples
     --------
@@ -966,6 +1013,27 @@ def reduce_rois(rois, include):
 
 
 def _min_at(a, index, value):
+    """Set minimum values at given indices of an array.
+
+    A fallback implementation of ``np.minimum.at`` for environments
+    where it is not available.
+
+    Parameters
+    ----------
+    a : ndarray
+        The array to update in place with minimum values.
+    index : sequence of array-like
+        Indices into `a` where the minimum operation is applied.
+        Each element corresponds to one dimension of `a`.
+    value : ndarray
+        Values to compare against the current values in `a`.
+        The minimum of the existing and new values is stored.
+
+    Returns
+    -------
+    None
+        The array `a` is modified in place.
+    """
     index = np.asarray(index)
     sort_keys = [value] + list(index)
     order = np.lexsort(sort_keys)
@@ -996,11 +1064,11 @@ def path_length(streamlines, affine, aoi, *, fill_value=-1):
     streamlines : seq of (N, 3) arrays
         A sequence of streamlines, path length is given in mm along the curve
         of the streamline.
-    aoi : array, 3d
-        A mask (binary array) of voxels from which to start computing distance.
     affine : array (4, 4)
         The mapping between voxel indices and the point space for seeds.
         The voxel_to_rasmm matrix, typically from a NIFTI file.
+    aoi : array, 3d
+        A mask (binary array) of voxels from which to start computing distance.
     fill_value : float
         The value of voxel in the path length map that are not connected to the
         aoi.
@@ -1041,6 +1109,27 @@ def path_length(streamlines, affine, aoi, *, fill_value=-1):
 
 
 def _part_segments(streamline, break_points):
+    """Generate segments of a streamline based on break points.
+
+    Splits a streamline at the given break points and yields each
+    segment that has more than one point, skipping the first segment
+    (all points before the first break point).
+
+    Parameters
+    ----------
+    streamline : ndarray, shape (N, 3)
+        A single streamline represented as an array of N points
+        in 3D space.
+    break_points : ndarray, shape (N,)
+        A boolean or integer array indicating where to split the
+        streamline. Non-zero values mark the break positions.
+
+    Yields
+    ------
+    segment : ndarray, shape (M, 3)
+        Each segment of the streamline with more than one point.
+    """
+
     segments = np.split(streamline, break_points.nonzero()[0])
     # Skip first segment, all points before first break
     # first segment is empty when break_points[0] == 0
@@ -1051,6 +1140,26 @@ def _part_segments(streamline, break_points):
 
 
 def _as_segments(streamline, break_points):
+    """Generate all segments of a streamline in both directions.
+
+    Yields segments from the streamline in forward direction followed
+    by segments from the streamline in reverse direction.
+
+    Parameters
+    ----------
+    streamline : ndarray, shape (N, 3)
+        A single streamline represented as an array of N points
+        in 3D space.
+    break_points : ndarray, shape (N,)
+        A boolean or integer array indicating where to split the
+        streamline. Non-zero values mark the break positions.
+
+    Yields
+    ------
+    segment : ndarray, shape (M, 3)
+        Each segment of the streamline with more than one point,
+        yielded in forward then reverse direction.
+    """
     for seg in _part_segments(streamline, break_points):
         yield seg
     for seg in _part_segments(streamline[::-1], break_points[::-1]):
@@ -1122,7 +1231,7 @@ def min_radius_curvature_from_angle(max_angle, step_size):
     return min_radius_curvature
 
 
-def seeds_directions_pairs(positions, peaks, *, max_cross=-1):
+def seeds_directions_pairs(positions, peaks, *, max_cross=-1, peak_values=None):
     """
     Pair each seed to the corresponding peaks. If multiple peaks are available
     the seed is repeated for each.
@@ -1136,6 +1245,10 @@ def seeds_directions_pairs(positions, peaks, *, max_cross=-1):
     max_cross : int, optional
         The maximum number of direction to track from each seed in crossing
         voxels. By default all voxel peaks are used.
+    peak_values : array (N, M), optional
+        Peak values (e.g., QA values) at each position. If provided, peaks
+        with value <= 0 are considered invalid. If not provided, peaks with
+        zero direction norm are considered invalid.
 
     Returns
     -------
@@ -1156,17 +1269,36 @@ def seeds_directions_pairs(positions, peaks, *, max_cross=-1):
             " be (N,3) and (N,M,3), respectively."
         )
 
-    seeds = []
-    directions = []
+    peaks_norm = np.linalg.norm(peaks, axis=2)
 
-    for i, s in enumerate(positions):
-        voxel_dirs_norm = np.linalg.norm(peaks[i, :, :], axis=1)
-        voxel_dirs = (
-            peaks[i, voxel_dirs_norm > 0, :]
-            / voxel_dirs_norm[voxel_dirs_norm > 0, np.newaxis]
-        )
-        for d in voxel_dirs[:max_cross, :]:
-            seeds.append(s)
-            directions.append(d)
+    # Use peak_values for validity if provided, otherwise use direction norm
+    if peak_values is not None:
+        valid_mask = peak_values > 0
+    else:
+        valid_mask = peaks_norm > 0
 
-    return np.array(seeds), np.array(directions)
+    peaks_normalized = np.zeros_like(peaks, dtype=float)
+    peaks_normalized[valid_mask] = (
+        peaks[valid_mask] / peaks_norm[valid_mask, np.newaxis]
+    )
+
+    if max_cross is not None and max_cross > 0:
+        cumsum_valid = np.cumsum(valid_mask, axis=1)
+        valid_mask &= cumsum_valid <= max_cross
+
+    n_valid = valid_mask.sum(axis=1)
+    total_pairs = n_valid.sum()
+
+    seeds = np.empty((total_pairs, 3), dtype=positions.dtype)
+    directions = np.empty((total_pairs, 3), dtype=float)
+
+    idx = 0
+    for i in range(positions.shape[0]):
+        n = n_valid[i]
+        if n > 0:
+            valid_dirs = peaks_normalized[i, valid_mask[i]]
+            seeds[idx : idx + n] = positions[i]
+            directions[idx : idx + n] = valid_dirs
+            idx += n
+
+    return seeds, directions

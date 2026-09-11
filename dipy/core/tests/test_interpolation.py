@@ -1,15 +1,11 @@
-import warnings
-
 import numpy as np
 import numpy.testing as npt
 from scipy.ndimage import map_coordinates
 
-from dipy.align import floating
 from dipy.core.interpolation import (
     NearestNeighborInterpolator,
     OutsideImage,
     TriLinearInterpolator,
-    interp_rbf,
     interpolate_scalar_2d,
     interpolate_scalar_3d,
     interpolate_scalar_nn_2d,
@@ -25,7 +21,7 @@ from dipy.testing.decorators import set_random_number_generator
 
 
 @set_random_number_generator()
-def test_trilinear_interpolate(rng):
+def test_trilinear_interpolate(rng=None):
     """This tests that the trilinear interpolation returns the correct values."""
     a, b, c = rng.random(3)
 
@@ -70,13 +66,13 @@ def test_trilinear_interpolate(rng):
 
 
 @set_random_number_generator(5324989)
-def test_interpolate_scalar_2d(rng):
+def test_interpolate_scalar_2d(rng=None):
     sz = 64
     target_shape = (sz, sz)
-    image = np.empty(target_shape, dtype=floating)
+    image = np.empty(target_shape, dtype=np.float32)
     image[...] = rng.integers(0, 10, np.size(image)).reshape(target_shape)
 
-    extended_image = np.zeros((sz + 2, sz + 2), dtype=floating)
+    extended_image = np.zeros((sz + 2, sz + 2), dtype=np.float32)
     extended_image[1 : sz + 1, 1 : sz + 1] = image[...]
 
     # Select some coordinates inside the image to interpolate at
@@ -112,10 +108,10 @@ def test_interpolate_scalar_2d(rng):
 
 
 @set_random_number_generator(1924781)
-def test_interpolate_scalar_nn_2d(rng):
+def test_interpolate_scalar_nn_2d(rng=None):
     sz = 64
     target_shape = (sz, sz)
-    image = np.empty(target_shape, dtype=floating)
+    image = np.empty(target_shape, dtype=np.float32)
     image[...] = rng.integers(0, 10, np.size(image)).reshape(target_shape)
     # Select some coordinates to interpolate at
     nsamples = 200
@@ -140,10 +136,10 @@ def test_interpolate_scalar_nn_2d(rng):
 
 
 @set_random_number_generator(3121121)
-def test_interpolate_scalar_nn_3d(rng):
+def test_interpolate_scalar_nn_3d(rng=None):
     sz = 64
     target_shape = (sz, sz, sz)
-    image = np.empty(target_shape, dtype=floating)
+    image = np.empty(target_shape, dtype=np.float32)
     image[...] = rng.integers(0, 10, np.size(image)).reshape(target_shape)
     # Select some coordinates to interpolate at
     nsamples = 200
@@ -168,13 +164,13 @@ def test_interpolate_scalar_nn_3d(rng):
 
 
 @set_random_number_generator(9216326)
-def test_interpolate_scalar_3d(rng):
+def test_interpolate_scalar_3d(rng=None):
     sz = 64
     target_shape = (sz, sz, sz)
-    image = np.empty(target_shape, dtype=floating)
+    image = np.empty(target_shape, dtype=np.float32)
     image[...] = rng.integers(0, 10, np.size(image)).reshape(target_shape)
 
-    extended_image = np.zeros((sz + 2, sz + 2, sz + 2), dtype=floating)
+    extended_image = np.zeros((sz + 2, sz + 2, sz + 2), dtype=np.float32)
     extended_image[1 : sz + 1, 1 : sz + 1, 1 : sz + 1] = image[...]
 
     # Select some coordinates inside the image to interpolate at
@@ -212,13 +208,13 @@ def test_interpolate_scalar_3d(rng):
 
 
 @set_random_number_generator(7711219)
-def test_interpolate_vector_3d(rng):
+def test_interpolate_vector_3d(rng=None):
     sz = 64
     target_shape = (sz, sz, sz)
-    field = np.empty(target_shape + (3,), dtype=floating)
+    field = np.empty(target_shape + (3,), dtype=np.float32)
     field[...] = rng.integers(0, 10, np.size(field)).reshape(target_shape + (3,))
 
-    extended_field = np.zeros((sz + 2, sz + 2, sz + 2, 3), dtype=floating)
+    extended_field = np.zeros((sz + 2, sz + 2, sz + 2, 3), dtype=np.float32)
     extended_field[1 : sz + 1, 1 : sz + 1, 1 : sz + 1] = field
     # Select some coordinates to interpolate at
     nsamples = 800
@@ -262,12 +258,12 @@ def test_interpolate_vector_3d(rng):
 
 
 @set_random_number_generator(1271244)
-def test_interpolate_vector_2d(rng):
+def test_interpolate_vector_2d(rng=None):
     sz = 64
     target_shape = (sz, sz)
-    field = np.empty(target_shape + (2,), dtype=floating)
+    field = np.empty(target_shape + (2,), dtype=np.float32)
     field[...] = rng.integers(0, 10, np.size(field)).reshape(target_shape + (2,))
-    extended_field = np.zeros((sz + 2, sz + 2, 2), dtype=floating)
+    extended_field = np.zeros((sz + 2, sz + 2, 2), dtype=np.float32)
     extended_field[1 : sz + 1, 1 : sz + 1] = field
     # Select some coordinates to interpolate at
     nsamples = 200
@@ -394,38 +390,6 @@ def test_trilinear_interp_cubic_voxels():
     npt.assert_raises(
         ValueError, map_coordinates_trilinear_iso, A, points, strides, 3, stepped_1d(B)
     )
-
-
-def test_interp_rbf():
-    def data_func(s, a, b):
-        return a * np.cos(s.theta) + b * np.sin(s.phi)
-
-    s0 = create_unit_sphere(recursion_level=3)
-    s1 = create_unit_sphere(recursion_level=4)
-
-    for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
-        data = data_func(s0, a, b)
-        expected = data_func(s1, a, b)
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            interp_data_a = interp_rbf(data, s0, s1, norm="angle")
-            npt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
-            npt.assert_(len(w) == 1)
-            npt.assert_(issubclass(w[0].category, DeprecationWarning))
-            npt.assert_("deprecated" in str(w[0].message))
-
-    # Test that using the euclidean norm raises a warning
-    # (following
-    # https://docs.python.org/2/library/warnings.html#testing-warnings)
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        interp_rbf(data, s0, s1, norm="euclidean_norm")
-        npt.assert_(len(w) == 2)
-        npt.assert_(issubclass(w[0].category, DeprecationWarning))
-        npt.assert_("deprecated" in str(w[0].message))
-        npt.assert_(issubclass(w[1].category, PendingDeprecationWarning))
-        npt.assert_("deprecated" in str(w[1].message))
 
 
 def test_rbf_interpolation():

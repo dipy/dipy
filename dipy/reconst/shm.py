@@ -29,9 +29,12 @@ from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 from dipy.reconst.odf import OdfFit, OdfModel
-from dipy.testing.decorators import warning_for_keywords
 from dipy.utils.compatibility import check_max_version
-from dipy.utils.deprecator import deprecate_with_version, deprecated_params
+from dipy.utils.deprecator import (
+    deprecate_with_version,
+    deprecated_params,
+    warning_for_keywords,
+)
 
 descoteaux07_legacy_msg = (
     "The legacy descoteaux07 SH basis uses absolute values for negative "
@@ -1217,7 +1220,7 @@ class ResidualBootstrapWrapper:
 
     @warning_for_keywords()
     def __init__(self, signal_object, B, where_dwi, *, min_signal=1e-5):
-        """Builds a ResidualBootstrapWapper
+        """Builds a ResidualBootstrapWrapper
 
         Given some linear model described by B, the design matrix, and a
         signal_object, returns an object which can sample the residual
@@ -1582,13 +1585,8 @@ def anisotropic_power(sh_coeffs, *, norm_factor=0.00001, power=2, non_negative=T
 
     # Deal with residual negative values:
     if non_negative:
-        if isinstance(log_ap, np.ndarray):
-            # zero all values < 0
-            log_ap[log_ap < 0] = 0
-        else:
-            # assume this is a singleton float (input was 1D):
-            if log_ap < 0:
-                return 0
+        log_ap = np.maximum(log_ap, 0)
+
     return log_ap
 
 
@@ -1747,7 +1745,7 @@ def convert_sh_descoteaux_tournier(sh_coeffs):
     .. footbibliography::
     .. [mrtrixbasis] https://mrtrix.readthedocs.io/en/latest/concepts/spherical_harmonics.html
     .. [mrtrixdipybases] https://github.com/dipy/dipy/discussions/2959#discussioncomment-7481675
-    """  # noqa: E501
+    """
 
     sh_order_max = calculate_max_order(sh_coeffs.shape[-1])
     m_values, l_values = sph_harm_ind_list(sh_order_max)

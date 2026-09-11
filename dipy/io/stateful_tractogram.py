@@ -19,7 +19,7 @@ from dipy.io.utils import (
     is_header_compatible,
     is_reference_info_valid,
 )
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 
@@ -272,10 +272,7 @@ class StatefulTractogram:
             dps_equal = dps_equal and np.allclose(
                 self.data_per_streamline[key], other.data_per_streamline[key], rtol=1e-3
             )
-        if not dps_equal:
-            return False
-
-        return True
+        return dps_equal
 
     def __ne__(self, other):
         """Robust StatefulTractogram equality test (NOT)"""
@@ -620,7 +617,6 @@ class StatefulTractogram:
         ----------
         epsilon : float, optional
             Epsilon value for the bounding box verification.
-            Default is 1e-6.
 
         Returns
         -------
@@ -642,13 +638,12 @@ class StatefulTractogram:
         )
         ic_offsets_indices = np.where(np.logical_or(min_condition, max_condition))[0]
 
-        indices_to_remove = []
-        for i in ic_offsets_indices:
-            indices_to_remove.append(
+        indices_to_remove = sorted(
+            {
                 bisect(self._tractogram.streamlines._offsets, i) - 1
-            )
-
-        indices_to_remove = sorted(set(indices_to_remove))
+                for i in ic_offsets_indices
+            }
+        )
 
         indices_to_keep = list(
             np.setdiff1d(

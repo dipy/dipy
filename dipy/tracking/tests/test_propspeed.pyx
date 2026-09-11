@@ -31,8 +31,9 @@ def test_tracker_deterministic():
     cdef RNGState rng
 
     seed_rng(&rng, 12345)
+
     class SillyModel(SphHarmModel):
-        sh_order_max = 4
+        sh_order_max = 4  # no-cython-lint: read by SphHarmModel.sampling_matrix
 
         def fit(self, data, mask=None):
             coeff = np.zeros(data.shape[:-1] + (15,))
@@ -57,7 +58,7 @@ def test_tracker_deterministic():
                 category=PendingDeprecationWarning,
             )
             fit = model.fit(data.astype(dtype))
-            sh_pmf_gen = SHCoeffPmfGen(fit.shm_coeff, sphere, 'descoteaux07')
+            sh_pmf_gen = SHCoeffPmfGen(fit.shm_coeff, sphere, "descoteaux07")
             sf_pmf_gen = SimplePmfGen(fit.odf(sphere), sphere)
 
         point = np.zeros(3)
@@ -104,7 +105,7 @@ def test_tracker_probabilistic():
     seed_rng(&rng, 12345)
 
     class SillyModel(SphHarmModel):
-        sh_order_max = 4
+        sh_order_max = 4  # no-cython-lint: read by SphHarmModel.sampling_matrix
 
         def fit(self, data, mask=None):
             coeff = np.zeros(data.shape[:-1] + (15,))
@@ -129,7 +130,7 @@ def test_tracker_probabilistic():
                 category=PendingDeprecationWarning,
             )
             fit = model.fit(data.astype(dtype))
-            sh_pmf_gen = SHCoeffPmfGen(fit.shm_coeff, sphere, 'descoteaux07')
+            sh_pmf_gen = SHCoeffPmfGen(fit.shm_coeff, sphere, "descoteaux07")
             sf_pmf_gen = SimplePmfGen(fit.odf(sphere), sphere)
 
         point = np.zeros(3)
@@ -176,7 +177,7 @@ def test_tracker_ptt():
     seed_rng(&rng, 12345)
 
     class SillyModel(SphHarmModel):
-        sh_order_max = 4
+        sh_order_max = 4  # no-cython-lint: read by SphHarmModel.sampling_matrix
 
         def fit(self, data, mask=None):
             coeff = np.zeros(data.shape[:-1] + (15,))
@@ -202,7 +203,7 @@ def test_tracker_ptt():
                 category=PendingDeprecationWarning,
             )
             fit = model.fit(data.astype(dtype))
-            sh_pmf_gen = SHCoeffPmfGen(fit.shm_coeff, sphere, 'descoteaux07')
+            sh_pmf_gen = SHCoeffPmfGen(fit.shm_coeff, sphere, "descoteaux07")
             sf_pmf_gen = SimplePmfGen(fit.odf(sphere), sphere)
 
         point = np.zeros(3)
@@ -258,8 +259,12 @@ def test_offset():
         npt.assert_equal(A.ravel()[4], A[1, 1])
         # Index and strides arrays must be C-continuous. Test this is enforced
         # by using non-contiguous versions of the input arrays.
-        npt.assert_raises(ValueError, ndarray_offset, stepped_1d(index), strides, 2, i_size)
-        npt.assert_raises(ValueError, ndarray_offset, index, stepped_1d(strides), 2, i_size)
+        npt.assert_raises(
+            ValueError, ndarray_offset, stepped_1d(index), strides, 2, i_size
+        )
+        npt.assert_raises(
+            ValueError, ndarray_offset, index, stepped_1d(strides), 2, i_size
+        )
 
 
 def test_eudx_both_directions_errors():

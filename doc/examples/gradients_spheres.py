@@ -18,8 +18,8 @@ acquisition with 2-shells, one at b=1000 $s/mm^2$ and one at b=2500 $s/mm^2$.
 For both shells let's say that we want a specific number of gradients (64) and
 we want to have the points on the sphere evenly distributed.
 
-This is possible using the ``disperse_charges`` which is an implementation of
-electrostatic repulsion :footcite:t:`Jones1999` .
+This is possible using the :func:`dipy.core.sphere.disperse_charges` which is
+an implementation of electrostatic repulsion :footcite:t:`Jones1999` .
 
 Let's start by importing the necessary modules.
 """
@@ -41,8 +41,9 @@ phi = 2 * np.pi * rng.random(n_pts)
 hsph_initial = HemiSphere(theta=theta, phi=phi)
 
 ###############################################################################
-# Next, we call ``disperse_charges`` which will iteratively move the points so
-# that the electrostatic potential energy is minimized.
+# Next, we call :func:`dipy.core.sphere.disperse_charges` which will
+# iteratively move the points so that the electrostatic potential energy is
+# minimized.
 
 hsph_updated, potential = disperse_charges(hsph_initial, 5000)
 

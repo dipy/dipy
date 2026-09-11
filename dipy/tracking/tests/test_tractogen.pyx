@@ -7,7 +7,7 @@ from scipy.stats import pearsonr
 from dipy.core.sphere import HemiSphere
 from dipy.data import get_fnames, get_sphere
 from dipy.direction.peaks import peaks_from_positions
-from dipy.direction.pmf import SimplePmfGen, SHCoeffPmfGen
+from dipy.direction.pmf import SimplePmfGen
 from dipy.reconst.shm import sh_to_sf
 from dipy.tracking.tractogen import generate_tractogram
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
@@ -15,7 +15,6 @@ from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.utils import (connectivity_matrix, random_seeds_from_mask,
                                  seeds_from_mask, seeds_directions_pairs)
-
 
 
 def get_fast_tracking_performances(params, *, nbr_seeds=1000, nbr_threads=0):
@@ -39,7 +38,7 @@ def generate_disco_streamlines(params, *, nbr_seeds=1000, nbr_threads=0, sphere=
         sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
     sh = nib.load(fnames[20]).get_fdata()
     fODFs = sh_to_sf(
-        sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False
+        sh, sphere, sh_order_max=12, basis_type="tournier07", legacy=False
         )
     fODFs[fODFs<0] = 0
     pmf_gen = SimplePmfGen(np.asarray(fODFs, dtype=float), sphere)
@@ -79,7 +78,7 @@ def get_disco_performances(streamlines):
     labels_img = nib.load(fnames[23])
     affine = labels_img.affine
     labels = np.round(labels_img.get_fdata()).astype(int)
-    connectome = connectivity_matrix(streamlines, affine, labels)[1:,1:]
+    connectome = connectivity_matrix(streamlines, affine, labels)[1:, 1:]
 
     r, _ = pearsonr(GT_connectome[connectome_mask].flatten(),
                     connectome[connectome_mask].flatten())
@@ -145,14 +144,16 @@ def test_tracking_max_angle():
         get_sphere(name="repulsion100"),
         HemiSphere.from_sphere(get_sphere(name="repulsion100")),
     ]:
-        for max_angle in [20,45]:
+        for max_angle in [20, 45]:
 
-            params = generate_tracking_parameters("det",
-                                                max_len=500,
-                                                step_size=1,
-                                                voxel_size=np.ones(3),
-                                                max_angle=max_angle,
-                                                random_seed=0)
+            params = generate_tracking_parameters(
+                "det",
+                max_len=500,
+                step_size=1,
+                voxel_size=np.ones(3),
+                max_angle=max_angle,
+                random_seed=0,
+            )
 
             streamlines = generate_disco_streamlines(params, nbr_seeds=100, sphere=sph)
             min_cos_sim = get_min_cos_similarity(streamlines)
@@ -169,7 +170,6 @@ def test_tracking_step_size():
         for sl in streamlines:
             dists.extend(np.linalg.norm(sl[0:-1] - sl[1:], axis=1))
         return dists
-
 
     for step_size in [0.02, 0.5, 1]:
         params = generate_tracking_parameters("det",
@@ -190,11 +190,10 @@ def test_return_all():
     when return_all=True.
     """
 
-
     fnames = get_fnames(name="disco1", include_optional=True)
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
     sh = nib.load(fnames[20]).get_fdata()
-    fODFs = sh_to_sf(sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False)
+    fODFs = sh_to_sf(sh, sphere, sh_order_max=12, basis_type="tournier07", legacy=False)
     fODFs[fODFs<0] = 0
     pmf_gen = SimplePmfGen(np.asarray(fODFs, dtype=float), sphere)
 
@@ -252,7 +251,7 @@ def test_max_min_length():
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
     sh = nib.load(fnames[20]).get_fdata()
     fODFs = sh_to_sf(
-        sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False
+        sh, sphere, sh_order_max=12, basis_type="tournier07", legacy=False
         )
     fODFs[fODFs<0] = 0
     pmf_gen = SimplePmfGen(np.asarray(fODFs, dtype=float), sphere)
@@ -297,7 +296,7 @@ def test_buffer_frac():
     sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
     sh = nib.load(fnames[20]).get_fdata()
     fODFs = sh_to_sf(
-        sh, sphere, sh_order_max=12, basis_type='tournier07', legacy=False
+        sh, sphere, sh_order_max=12, basis_type="tournier07", legacy=False
         )
     fODFs[fODFs<0] = 0
     pmf_gen = SimplePmfGen(np.asarray(fODFs, dtype=float), sphere)
@@ -330,7 +329,7 @@ def test_buffer_frac():
                                               buffer_frac=1.0))
 
     # test the results are identical with various buffer fractions
-    for frac in [0.01,0.1,0.5]:
+    for frac in [0.01, 0.1, 0.5]:
         frac_streams = Streamlines(generate_tractogram(seeds,
                                                        directions,
                                                        sc,

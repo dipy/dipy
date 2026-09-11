@@ -110,7 +110,7 @@ def test_sticks_and_ball():
     )
     assert_array_equal(sticks, [[0, 0, 1]])
     S_st = single_tensor(
-        gtab, 1, evals=[d, 0, 0], evecs=[[0, 0, 0], [0, 0, 0], [1, 0, 0]]
+        gtab, S0=1, evals=[d, 0, 0], evecs=[[0, 0, 0], [0, 0, 0], [1, 0, 0]]
     )
     assert_array_almost_equal(S, S_st)
 
@@ -118,7 +118,7 @@ def test_sticks_and_ball():
 def test_single_tensor():
     evals = np.array([1.4, 0.35, 0.35]) * 10 ** (-3)
     evecs = np.eye(3)
-    S = single_tensor(gtab, 100, evals=evals, evecs=evecs, snr=None)
+    S = single_tensor(gtab, S0=100, evals=evals, evecs=evecs, snr=None)
     assert_array_almost_equal(S[gtab.b0s_mask], 100)
     assert_(np.mean(S[~gtab.b0s_mask]) < 100)
 
@@ -143,8 +143,8 @@ def test_multi_tensor():
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs=bvecs)
 
-    s1 = single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
-    s2 = single_tensor(gtab, 100, evals=mevals[1], evecs=mevecs[1], snr=None)
+    s1 = single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None)
+    s2 = single_tensor(gtab, S0=100, evals=mevals[1], evecs=mevecs[1], snr=None)
 
     Ssingle = 0.5 * s1 + 0.5 * s2
 
@@ -394,15 +394,15 @@ def test_single_tensor_btens():
     # previous simulations not specifying b-tensor
     evecs = np.eye(3)
     evals = np.array([1.4, 0.35, 0.35]) * 10 ** (-3)
-    S_ref = single_tensor(gtab, 100, evals=evals, evecs=evecs, snr=None)
-    S_btens = single_tensor(gtab_lte, 100, evals=evals, evecs=evecs, snr=None)
+    S_ref = single_tensor(gtab, S0=100, evals=evals, evecs=evecs, snr=None)
+    S_btens = single_tensor(gtab_lte, S0=100, evals=evals, evecs=evecs, snr=None)
     assert_array_almost_equal(S_ref, S_btens)
 
     # Check if signals produced with STE btensor gives signals that matches
     # the signal decay for mean diffusivity
     md = np.sum(evals) / 3
     S_ref = 100 * np.exp(-gtab.bvals * md)
-    S_btens = single_tensor(gtab_ste, 100, evals=evals, evecs=evecs, snr=None)
+    S_btens = single_tensor(gtab_ste, S0=100, evals=evals, evecs=evecs, snr=None)
     assert_array_almost_equal(S_ref, S_btens)
 
 
@@ -415,8 +415,8 @@ def test_multi_tensor_btens():
 
     gtab_ste = gradient_table(gtab.bvals, bvecs=gtab.bvecs, btens="STE")
 
-    s1 = single_tensor(gtab_ste, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
-    s2 = single_tensor(gtab_ste, 100, evals=mevals[1], evecs=mevecs[1], snr=None)
+    s1 = single_tensor(gtab_ste, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None)
+    s2 = single_tensor(gtab_ste, S0=100, evals=mevals[1], evecs=mevecs[1], snr=None)
 
     Ssingle = 0.5 * s1 + 0.5 * s2
 

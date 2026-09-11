@@ -50,7 +50,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
             ".eddy_rotated_bvecs",
             "",
         ]:
-            with open(this_fname, "r") as f:
+            with open(this_fname) as f:
                 content = f.read()
 
             munged_content = io.StringIO(re.sub(r"(\t|,)", " ", content))

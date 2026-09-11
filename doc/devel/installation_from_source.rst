@@ -7,7 +7,7 @@ Installing from source
 Getting the source
 ==================
 
-More likely you will want to get the source repository to be able to follow the
+You will most likely want to get the source repository to be able to follow the
 latest changes.  In that case, you can use::
 
     git clone https://github.com/dipy/dipy.git
@@ -35,7 +35,7 @@ This command will delete all files not present in your github repository.
 
 Then, complete your installation by using this command::
 
-    pip install -r requirements/build.txt
+    pip install --group build
     pip install --no-build-isolation -e .
 
 This command will do the following :
@@ -53,7 +53,7 @@ Change directory into the *DIPY source root directory*.
 
 First, install some python build packages::
 
-    pip install -r requirements/build.txt
+    pip install --group build
 
 Then, to install for the system::
 
@@ -63,7 +63,7 @@ Or, to build DIPY in the source tree (locally) so you can run the code in the so
 
     pip install --no-build-isolation -e .
 
-add the *DIPY source root directory* into your ``PYTHONPATH`` environment variable. Search google for ``PYTHONPATH`` for details or see `python module path`_ for an introduction.
+add the *DIPY source root directory* into your ``PYTHONPATH`` environment variable. Search Google for ``PYTHONPATH`` for details or see `python module path`_ for an introduction.
 
 When adding dipy_ to the ``PYTHONPATH``, we usually add the ``PYTHONPATH`` at
 the end of ``~/.bashrc`` or (macOS) ``~/.bash_profile`` so we don't need to
@@ -146,7 +146,7 @@ change directory into the *DIPY source root directory*.
 
 Start to install the build tools::
 
-    pip install -r requirements/build.txt
+    pip install --group build
 
 Then to install into your system::
 
@@ -168,6 +168,8 @@ macOS
 Make sure you have Xcode_ and Anaconda_ installed.
 
 From here follow the :ref:`install-source-nix` instructions.
+
+.. _openmp-macos:
 
 OpenMP with macOS
 -----------------
@@ -201,7 +203,7 @@ you will need to use the llvm compiler with OMP. Run::
     brew install libomp
     export CC="/opt/homebrew/opt/llvm/bin/clang"
 
-In case the compiler or OpenMP are not detected , you can specify some environment
+In case the compiler or OpenMP are not detected, you can specify some environment
 variables. For example, you can add the following lines to your ``~/.bash_profile``::
 
     export CC="/opt/homebrew/opt/llvm/bin/clang"
@@ -215,6 +217,38 @@ Building and installing
 Whether you are using Anaconda_ or Homebrew/python.org Python, you will need to then
 run ``pip install dipy``. When you do that, it should now
 compile the code with this OpenMP-enabled compiler, and things should go faster!
+
+Troubleshooting: ImportError on macOS with PyPI wheels
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you installed DIPY via PyPI (``pip install dipy``) on macOS and encounter
+an ``ImportError`` like this::
+
+    ImportError: dlopen(.../bundlemin.cpython-312-darwin.so, 0x0002):
+    symbol not found in flat namespace '___kmpc_barrier'
+
+This is a known OpenMP linking issue with pre-built PyPI wheels on macOS
+(see `GitHub issue #3637 <https://github.com/dipy/dipy/issues/3637>`__).
+macOS does not include OpenMP support by default, causing dynamic linking
+failures for modules that use multithreading (e.g., ``dipy.align``).
+
+**Solution**: Install DIPY from source with OpenMP enabled, following the
+instructions above in the :ref:`openmp-macos` section.
+Building from source compiles DIPY against your local OpenMP installation,
+ensuring symbols like ``___kmpc_barrier`` are correctly linked.
+
+Setting up pre-commit (optional but recommended)
+=================================================
+
+If you plan to contribute code to DIPY, it's recommended to set up pre-commit
+hooks to automatically check your code style before committing. This helps catch
+issues early and ensures consistency::
+
+    pip install -e . --group style
+    pre-commit install
+
+After this, pre-commit will run automatically on every ``git commit``. For more
+details, see :ref:`coding_style_guideline`.
 
 Testing
 ========
@@ -238,8 +272,8 @@ To build the documentation in HTML in your computer you will need to do::
 
 You will also need to install the requirements for the documentation::
 
-    pip install -r requirements/doc.txt
-    pip install -r requirements/optional.txt
+    pip install --group doc
+    pip install .[optional]
 
 Then change directory to ``<dipy root>`` and::
 

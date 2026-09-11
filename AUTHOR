@@ -1,152 +1,186 @@
-Eleftherios Garyfallidis
-Ariel Rokem
-Serge Koudoro
-Matthew Brett
-Rafael Neto Henriques
-Bago Amirbekian
-Gabriel Girard
-Omar Ocegueda
-Bramsh Qamar
-Jon Haitz Legarreta Gorroño
-Francois Rheault
-Samuel St-Jean
-Shreyas Fadnavis
-Marc-Alexandre Côté
-Philippe Karan
-Javier Guaje
-Rutger Fick
-Shahnawaz Ahmed
-Ian Nimmo-Smith
-Mauro Zucchelli
-Matthieu Dumont
-Kesshi Jordan
-Stefan van der Walt
-Ranveer Aggarwal
-Maxime Descoteaux
-Kenji Marshall
-Jong Sung Park
-Riddhish Bhalodia
-Shilpi Prasad
-Tom Dela Haije
-Parichit Sharma
-Bishakh Ghosh
-Christopher Nguyen
-Ricci Woo
-Maharshi Gor
-Stephan Meesters
-Leevi Kerkela
-Eric Peterson
-David Romero-Bascones
-Etienne St-Onge
-Julio Villalon
-Jean-Christophe Houde
-Manu Tej Sharma
-Sourav Singh
-Nasim Anousheh
-Charles Poirier
-Dimitri Papadopoulos
-Paul Camacho
-Kumar Ashutosh
-David Reagan
-Guillaume Theaud
-Shubham Shaswat
-Aman Arya
-Deneb Boito
-Dimitris Rozakis
-Fabio Nery
-Rahul Ubale
-kunal mehta
-Gregory R. Lee
-Areesha Tariq
-Saber Sheybani
-Sam Coveney
-Chantal Tax
-Gregory Lee
-Nil Goyette
-Eric Larson
-Rohan Prinja
-Yaroslav Halchenko
-Antonio Ossa
-Jaewon Chung
-Vara Lakshmi Bayanagari
-Demian Wassermann
-John Kruper
-Michael Paquette
-Shrishti Hore
-Tingyi Wanyan
-Jiri Borovec
-Siddharth Kapoor
-Leon Weninger
-Malinda Dilhara
-Conor Corbin
-Dan Bullock
-Derek Pisner
-Martijn Nagtegaal
-ArjitJ
-Enes Albay
-Kimberly Chan
-Erik Ziegler
-Jacob Roberts
-Takis Panagopoulos
-Antoine Theberge
-Baran Aydogan
-Ross Lawrence
-Scott Trinkle
-David Qixiang Chen
-Kevin Sitek
-Pradeep Reddy Raamana
 Adam Richie-Halford
-Alexandre Gauvin
-Basile Pinsard
-David Hunt
-Emanuele Olivetti
-Emmanuelle Renauld
-Nicolas Delinte
-Sarath Chandra
-Clint Greene
-Giulia Bertò
-Lucas Da Costa
-Matthias Ekman
-Mitesh Gulecha
-Yash Sherry
-dependabot[bot]
-endolith
-Andrew Lawrence
-Bennet Fauber
-Emmanuel Caruyer
-Felix Liu
-Matt Cieslak
-Oscar Esteban
-Tashrif Billah
-Tom Wright
-svabhishek29
-ujjwal-shekhar
 Adam Rybinski
+Alberto Di Biase
+Alex Rockhill
+Alexandre Gauvin
+Aman Arya
+Aman Srivastava
+Andrew Lawrence
+Ankur Sinha (Ankur Sinha Gmail)
+Antoine Theberge
+Antonio Ossa
+Areesha Tariq
+Ariel Rokem
+ArjitJ
 Aryansh Omray
+Asa Gilmore
+Atharva Shah
+Bago Amirbekian
+Baran Aydogan
+Basile Pinsard
+Bennet Fauber
+Bishakh Ghosh
+Bramsh Qamar
 Chandan Gangwar
+Chantal Tax
+Charles Poirier
+Chris Filo Gorgolewski
+Christopher Nguyen
+Clint Greene
 Clément Zotti
+Conor Corbin
+Copilot
+Dan Bullock
+Daniel Enrico Cahall
+Daniel McCloy
+David Hunt
+David Qixiang Chen
+David Reagan
+David Romero-Bascones
+Demian Wassermann
+Deneb Boito
+Derek Pisner
+Dimitri Papadopoulos
+Dimitris Rozakis
+Ebrahim Ebrahim
+Eleftherios Garyfallidis
+Emanuele Olivetti
+Emmanuel Caruyer
+Emmanuelle Renauld
+Enes Albay
+Eric Larson
+Eric Peterson
+Erik Ziegler
+Etienne St-Onge
+Fabio Nery
+Felix Liu
+Florent Wijanto
+Francis Jerome
+Francois Rheault
+Gabriel Girard
+Giulia Bertò
+Gnaneswar Lopinti
 Gonzalo Sanguinetti
+Gregory Lee
+Gregory R. Lee
+Guillaume Theaud
+Himanshu Mishra
+Ian Nimmo-Smith
+Inigo Tellaetxe
+Jacob Roberts
+Jaewon Chung
+Jakob Wasserthal
+Javier Guaje
+Jean-Christophe Houde
+Jirka Borovec
+John Kruper
+John Shen
+Jon Haitz Legarreta Gorroño
+Jon Mendoza
+Jong Sung Park
 Joshua Newton
+Julio Villalon
+Kaibo Tang
+Karan
+Katrin Leinweber
+Kaustav Deka
+Kenji Marshall
+Kesshi Jordan
+Kevin Sitek
+Kimberly Chan
+Kumar Ashutosh
+Leevi Kerkela
+Leon Weninger
+Liberty
+Lucas Da Costa
+Maharshi Gor
+Malinda Dilhara
+Manu Tej Sharma
+Marc-Alexandre Côté
+Maria Luisa Mandelli
+Martijn Nagtegaal
+Martin Kozár
+Martino Pilia
+Matt Cieslak
+Matthew Brett
+Matthew Feickert
+Matthias Ekman
+Matthieu Dumont
+Mauro Zucchelli
+Maxime Descoteaux
+Michael Paquette
+Michael R. Crusoe
+Mitesh Gulecha
+Mohamed Abouagour
+Mrinal Chaturvedi
+Nasim Anousheh
 Naveen Kumarmarri
+Nicolas Delinte
+Nil Goyette
+Nishant Singh
+Omar Ocegueda
+Oscar Esteban
+Parichit Sharma
+Paul Camacho
+Philippe Karan
+Pradeep Reddy Raamana
+Praitayini Kanakaraj
+Prajwal Reddy
+Qiyuan Tian
+Rafael Neto Henriques
+Rahul Ubale
+Ranveer Aggarwal
+Ricci Woo
+Riddhish Bhalodia
+Rohan Prinja
+Ross Lawrence
+Rutger Fick
+Saber Sheybani
+Sagun Pai
+Sam Coveney
+Samuel St-Jean
+Sandro Turriate
+Santiago Vila
+Sarath Chandra
+Scott Trinkle
+Serge Koudoro
+Shahnawaz Ahmed
+Shilpi Prasad
+Shreyas Fadnavis
+Shrishti Hore
+Shubham Shaswat
+Siddharth Kapoor
+Siddhesh Thakur
+Sourav Singh
+Sreekar Chigurupati
+Stefan van der Walt
+Stephan Meesters
+Sven Dorkenwald
 Sylvain Merlet
+Takis Panagopoulos
+Tashrif Billah
+Theodore Ni
+Tingyi Wanyan
+Tom Dela Haije
+Tom Wright
+Umesh Gupta
+Vara Lakshmi Bayanagari
 Vatsala Swaroop
 Vibhatha Abeykoon
-Étienne Mollier
-Atharva Shah
-Chris Filo Gorgolewski
-Daniel Enrico Cahall
-Dogu Baran Aydogan
-Francis Jerome
-Himanshu Mishra
-Jakob Wasserthal
-Jirka Borovec
-Jon Mendoza
-Katrin Leinweber
-Maria Luisa Mandelli
-Martino Pilia
-Michael R. Crusoe
-Qiyuan Tian
-Sagun Pai
-Sven Dorkenwald
-Theodore Ni
+Yaroslav Halchenko
+Yash Sherry
 Yijun Liu
+aziza
+endolith
+kunal mehta
+lb-97
+prathameshfuke
+pre-commit-ci[bot]
+rishav
+root
+samarmaharaj
+satyam kumar
+shadow1409
+svabhishek29
+ujjwal-shekhar
+Étienne Mollier

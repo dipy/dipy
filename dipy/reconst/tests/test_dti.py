@@ -60,7 +60,7 @@ def test_roll_evals():
 
 
 @set_random_number_generator()
-def test_tensor_algebra(rng):
+def test_tensor_algebra(rng=None):
     # Test that the computation of tensor determinant and norm is correct
     test_arr = rng.random((10, 3, 3))
     t_det = dti.determinant(test_arr)
@@ -169,7 +169,7 @@ def test_tensor_model():
     # Signals
     Y = np.exp(np.dot(X, D))
     npt.assert_almost_equal(Y[0], b0)
-    Y.shape = (-1,) + Y.shape
+    Y = Y.reshape((-1,) + Y.shape)
 
     # Test fitting with different methods:
     for fit_method in ["OLS", "WLS", "NLLS"]:
@@ -184,7 +184,7 @@ def test_tensor_model():
         for i in range(3):
             # Eigenvectors have intrinsic sign ambiguity
             # (see
-            # http://prod.sandia.gov/techlib/access-control.cgi/2007/076422.pdf)
+            # https://prod.sandia.gov/techlib/access-control.cgi/2007/076422.pdf)
             # so we need to allow for sign flips. One of the following should
             # always be true:
             npt.assert_(
@@ -291,7 +291,7 @@ def test_diffusivities():
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
     ]
-    S = single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
+    S = single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None)
 
     dm = dti.TensorModel(gtab, fit_method="LS")
     dmfit = dm.fit(S)
@@ -388,7 +388,7 @@ def test_wls_and_ls_fit():
     # Signals
     Y = np.exp(np.dot(X, D))
     npt.assert_almost_equal(Y[0], b0)
-    Y.shape = (-1,) + Y.shape
+    Y = Y.reshape((-1,) + Y.shape)
 
     # Testing WLS Fit on single voxel
     # If you do something wonky (passing min_signal<0), you should get an
@@ -507,7 +507,7 @@ def test_rwls_rnlls_irls_fit():
     # Signals
     Y = np.exp(np.dot(X, D))
     npt.assert_almost_equal(Y[0], b0)
-    Y.shape = (-1,) + Y.shape
+    Y = Y.reshape((-1,) + Y.shape)
 
     noise = 1 * np.random.normal(size=Y.shape)
     YN = Y + noise  # error, or weights irrelevant
@@ -725,7 +725,7 @@ def test_mask():
 
 
 @set_random_number_generator()
-def test_nnls_jacobian_func(rng):
+def test_nnls_jacobian_func(rng=None):
     b0 = 1000.0
     bval, bvecs = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     gtab = grad.gradient_table(bval, bvecs=bvecs)
@@ -803,7 +803,7 @@ def test_nlls_fit_tensor():
 
     # Signals
     Y = np.exp(np.dot(X, D))
-    Y.shape = (-1,) + Y.shape
+    Y = Y.reshape((-1,) + Y.shape)
 
     # Estimate tensor from test signals and compare against expected result
     # using non-linear least squares:
@@ -972,7 +972,7 @@ def test_predict():
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
         np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]]),
     ]
-    S = single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None)
+    S = single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None)
 
     dm = dti.TensorModel(gtab, fit_method="LS", return_S0_hat=True)
     dmfit = dm.fit(S)
@@ -1038,8 +1038,8 @@ def test_eig_from_lo_tri():
     S = np.array(
         [
             [
-                single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None),
-                single_tensor(gtab, 100, evals=mevals[0], evecs=mevecs[0], snr=None),
+                single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None),
+                single_tensor(gtab, S0=100, evals=mevals[0], evecs=mevecs[0], snr=None),
             ]
         ]
     )

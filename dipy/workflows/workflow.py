@@ -1,7 +1,7 @@
 import inspect
 from pathlib import Path
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.workflows.multi_io import _io_iterator
 
@@ -96,10 +96,7 @@ class Workflow:
         output independently of the outcome to tell the user something
         happened.
         """
-        duplicates = []
-        for output in self.flat_outputs:
-            if Path(output).is_file():
-                duplicates.append(output)
+        duplicates = [output for output in self.flat_outputs if Path(output).is_file()]
 
         if len(duplicates) > 0:
             if self._force_overwrite:
@@ -149,3 +146,60 @@ class Workflow:
 
         """
         return cls.__name__
+
+
+class CombinedWorkflow(Workflow):
+    @warning_for_keywords()
+    def __init__(
+        self, *, output_strategy="append", mix_names=False, force=False, skip=False
+    ):
+        """Workflow that combines multiple workflows.
+        The workflow combined together are referred as sub flows in this class.
+        """
+
+        self._optionals = {}
+        super().__init__(
+            output_strategy=output_strategy, mix_names=mix_names, force=force, skip=skip
+        )
+
+    def get_sub_runs(self):
+        """Returns a list of tuples
+        (sub flow name, sub flow run method, sub flow short name)
+        to be used in the sub flow parameters extraction.
+        """
+        return [
+            (flow.__name__, flow.run, flow.get_short_name())
+            for flow in self._get_sub_flows()
+        ]
+
+    def _get_sub_flows(self):
+        """Returns a list of sub flows used in the combined_workflow. Needs to
+        be implemented in every new combined_workflow.
+        """
+        raise AttributeError(
+            f"Error: _get_sub_flows() has to be defined for {self.__class__}"
+        )
+
+    def set_sub_flows_optionals(self, opts):
+        """Sets the self._optionals variable with all sub flow arguments
+        that were passed in the commandline.
+        """
+        self._optionals = {}
+        for key, sub_dict in opts.items():
+            self._optionals[key] = {k: v for k, v in sub_dict.items() if v is not None}
+
+    def get_optionals(self, flow, **kwargs):
+        """Returns the sub flow's optional arguments merged with those passed
+        as params in kwargs.
+        """
+        opts = self._optionals[flow.__name__]
+        opts.update(kwargs)
+
+        return opts
+
+    def run_sub_flow(self, flow, *args, **kwargs):
+        """Runs the sub flow with the optional parameters passed via the
+        command line. This is a convenience method to make sub flow running
+        more intuitive on the concrete CombinedWorkflow side.
+        """
+        return flow.run(*args, **self.get_optionals(type(flow), **kwargs))

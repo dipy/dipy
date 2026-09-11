@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.interpolate import splev, splprep
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 def winding(xyz):

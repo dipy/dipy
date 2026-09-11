@@ -6,8 +6,8 @@ from scipy.spatial import cKDTree
 
 from dipy.io.stateful_tractogram import StatefulTractogram
 from dipy.segment.metric import mean_euclidean_distance
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking.streamline import set_number_of_points
+from dipy.utils.deprecator import warning_for_keywords
 
 
 class FastStreamlineSearch:

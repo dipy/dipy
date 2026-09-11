@@ -347,7 +347,7 @@ def test_set_number_of_points():
 
 
 @set_random_number_generator(1234)
-def test_set_number_of_points_memory_leaks(rng):
+def test_set_number_of_points_memory_leaks(rng=None):
     # Test some dtypes
     dtypes = [np.float32, np.float64, np.int32, np.int64]
     for dtype in dtypes:
@@ -362,9 +362,7 @@ def test_set_number_of_points_memory_leaks(rng):
 
         rstreamlines = set_number_of_points(streamlines, nb_points=2)
         list_refcount_after = get_type_refcount()["list"]
-        del (
-            rstreamlines
-        )  # Delete `rstreamlines` because it holds a reference to `list  # noqa: F841
+        del rstreamlines  # Delete `rstreamlines` because it holds a reference to `list
 
         # Calling `set_number_of_points` should increase the refcount of `list`
         #  by one since we kept the returned value.
@@ -499,7 +497,7 @@ def test_length():
 
 
 @set_random_number_generator(1234)
-def test_length_memory_leaks(rng):
+def test_length_memory_leaks(rng=None):
     # Test some dtypes
     dtypes = [np.float32, np.float64, np.int32, np.int64]
     for dtype in dtypes:
@@ -539,7 +537,7 @@ def test_length_memory_leaks(rng):
 
 
 @set_random_number_generator()
-def test_unlist_relist_streamlines(rng):
+def test_unlist_relist_streamlines(rng=None):
     streamlines = [rng.random((10, 3)), rng.random((20, 3)), rng.random((5, 3))]
     points, offsets = unlist_streamlines(streamlines)
     assert_equal(offsets.dtype, np.dtype("i8"))
@@ -585,7 +583,7 @@ def test_transform_empty_streamlines():
 
 
 @set_random_number_generator()
-def test_deform_streamlines(rng):
+def test_deform_streamlines(rng=None):
     # Create Random deformation field
     deformation_field = rng.standard_normal((200, 200, 200, 3))
     stream2grid = np.array(
@@ -648,7 +646,7 @@ def test_center_and_transform():
 
 
 @set_random_number_generator()
-def test_select_random_streamlines(rng):
+def test_select_random_streamlines(rng=None):
     streamlines = [rng.random((10, 3)), rng.random((20, 3)), rng.random((5, 3))]
     new_streamlines = select_random_set_of_streamlines(streamlines, 2)
     assert_equal(len(new_streamlines), 2)
@@ -833,7 +831,7 @@ def test_compress_streamlines_identical_points():
 
 
 @set_random_number_generator(1234)
-def test_compress_streamlines_memory_leaks(rng):
+def test_compress_streamlines_memory_leaks(rng=None):
     # Test some dtypes
     dtypes = [np.float32, np.float64, np.int32, np.int64]
     for dtype in dtypes:
@@ -848,9 +846,7 @@ def test_compress_streamlines_memory_leaks(rng):
 
         cstreamlines = compress_streamlines(streamlines)
         list_refcount_after = get_type_refcount()["list"]
-        del (
-            cstreamlines
-        )  # Delete `cstreamlines` because it holds a reference to `list`   # noqa: F841
+        del cstreamlines  # Delete `cstreamlines` because it holds a reference to `list`
 
         # Calling `compress_streamlines` should increase the refcount of `list` by
         # one since we kept the returned value.
@@ -887,8 +883,7 @@ def generate_sl(streamlines):
     -------
     generator
     """
-    for sl in streamlines:
-        yield sl
+    yield from streamlines
 
 
 def test_select_by_rois():

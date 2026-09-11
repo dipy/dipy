@@ -1,6 +1,9 @@
+from enum import IntEnum
 import logging
 import os
 import sys
+
+from dipy.utils.deprecator import warning_for_keywords
 
 
 class CustomHandler(logging.Handler):
@@ -8,7 +11,8 @@ class CustomHandler(logging.Handler):
     otherwise formats the message as usual.
     """
 
-    def __init__(self, stream=None, filename=None):
+    @warning_for_keywords(from_version="1.13.0")
+    def __init__(self, *, stream=None, filename=None):
         super().__init__()  # call with no arguments
         if filename is not None:
             self._should_close = True
@@ -42,7 +46,8 @@ class CustomHandler(logging.Handler):
         super().close()
 
 
-def get_logger(name="dipy", filename=None, force=False):
+@warning_for_keywords(from_version="1.13.0")
+def get_logger(*, name="dipy", filename=None, force=False):
     """Return a logger instance configured for DIPY.
 
     Parameters
@@ -84,7 +89,9 @@ def get_logger(name="dipy", filename=None, force=False):
     return _logger
 
 
+@warning_for_keywords(from_version="1.13.0")
 def configure_logger(
+    *,
     level=logging.INFO,
     fmt="[%(asctime)s][%(name)s] %(levelname)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
@@ -119,6 +126,58 @@ def configure_logger(
     logging.root.addHandler(handler)
     logging.root.setLevel(level)
 
+    dipy_logger = logging.getLogger("dipy")
+    if dipy_logger.hasHandlers():
+        dipy_logger.setLevel(level)
+        for h in dipy_logger.handlers:
+            h.setLevel(level)
+
+
+def add_file_handler(
+    filename,
+    *,
+    level=None,
+    fmt="[%(asctime)s][%(name)s] %(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+):
+    """Add a file handler to the DIPY logger without removing existing handlers.
+
+    Parameters
+    ----------
+    filename : str or Path
+        Path to the log file. The file is opened in append mode.
+    level : int, optional
+        Logging level for the file handler. If None, uses the current logger
+        level.
+    fmt : str, optional
+        Log message format.
+    datefmt : str, optional
+        Date format for log messages.
+    """
+    _logger = logging.getLogger("dipy")
+    if level is None:
+        level = _logger.getEffectiveLevel()
+    handler = CustomHandler(filename=str(filename))
+    handler.setLevel(level)
+    handler.setFormatter(logging.Formatter(fmt, datefmt=datefmt))
+    _logger.addHandler(handler)
+
 
 # Provide a default logger for convenience
 logger = get_logger()
+
+
+class VerbosityLevels(IntEnum):
+    """Verbosity levels for dipy algorithms.
+
+    NONE : do not print anything
+    STATUS : print information about the current status of the algorithm
+    DIAGNOSE : print high level information of the components involved in the
+        registration that can be used to detect a failing component
+    DEBUG : print as much information as possible to isolate the cause of a bug
+    """
+
+    NONE = 0
+    STATUS = 1
+    DIAGNOSE = 2
+    DEBUG = 3

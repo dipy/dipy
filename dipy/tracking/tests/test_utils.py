@@ -223,12 +223,95 @@ def test_connectivity_matrix():
     assert_true(mapping[4, 3][0] is streamlines[2])
     assert_true(mapping[5, 4][0] is streamlines[0])
 
+    # Test weighted streamline analysis
+    weights = np.array([1.5, 0, 3])
+
+    # Check weighted non-inclusive case
+    expected = np.zeros((6, 6))
+    expected[3, 4] = 1.5
+    expected[4, 3] = 3
+    matrix = connectivity_matrix(
+        streamlines, np.eye(4), label_volume, symmetric=False, weights=weights
+    )
+    npt.assert_array_equal(matrix, expected)
+
+    # Check weighted inclusive case
+    expected = np.zeros((6, 6))
+    expected[3, 4] = 1.5
+    expected[4, 3] = 3
+    expected[3, 5] = 1.5
+    expected[5, 4] = 1.5
+    expected[0, 3] = 3
+    expected[4, 0] = 3
+
+    matrix = connectivity_matrix(
+        streamlines,
+        np.eye(4),
+        label_volume,
+        symmetric=False,
+        inclusive=True,
+        weights=weights,
+    )
+    npt.assert_array_equal(matrix, expected)
+
     # Test passing affine to connectivity_matrix
     affine = np.diag([-1, -1, -1, 1.0])
     streamlines = [-i for i in streamlines]
     matrix = connectivity_matrix(streamlines, affine, label_volume)
     # In the symmetrical case, the matrix should be, well, symmetric:
     npt.assert_equal(matrix[4, 3], matrix[4, 3])
+
+
+def test_connectivity_matrix_with_generator():
+    """Test connectivity_matrix works with generator inputs."""
+    label_volume = np.array([[[3, 0, 0], [0, 0, 5], [0, 0, 4]]])
+    streamlines = [
+        np.array([[0, 0, 0], [0, 1, 2], [0, 2, 2]], "float"),
+        np.array([[0, 0, 0], [0, 1, 1], [0, 2, 2]], "float"),
+        np.array([[0, 2, 2], [0, 1, 1], [0, 0, 0]], "float"),
+    ]
+
+    # Create a generator version of streamlines
+    def streamline_generator():
+        yield from streamlines
+
+    # Test that generator input works
+    matrix = connectivity_matrix(
+        streamline_generator(), np.eye(4), label_volume, symmetric=False
+    )
+    expected = np.zeros((6, 6), "int")
+    expected[3, 4] = 2
+    expected[4, 3] = 1
+    npt.assert_array_equal(matrix, expected)
+
+    # Test with discard_stream_size parameter
+    matrix = connectivity_matrix(
+        streamline_generator(),
+        np.eye(4),
+        label_volume,
+        symmetric=False,
+        discard_stream_size=1,
+    )
+    npt.assert_array_equal(matrix, expected)
+
+    # Test inclusive mode with generator
+    expected_inclusive = np.zeros((6, 6), "int")
+    expected_inclusive[3, 4] = 2
+    expected_inclusive[4, 3] = 1
+    expected_inclusive[3, 5] = 1
+    expected_inclusive[5, 4] = 1
+    expected_inclusive[0, 3:5] = 1
+    expected_inclusive[3:5, 0] = 1
+
+    matrix = connectivity_matrix(
+        streamline_generator(),
+        np.eye(4),
+        label_volume,
+        symmetric=False,
+        inclusive=True,
+        discard_stream_size=1,
+    )
+    npt.assert_array_equal(matrix, expected_inclusive)
 
 
 def test_ndbincount():
@@ -514,8 +597,7 @@ def test_near_roi():
 
     # Test with a generator input:
     def generate_sl(streamlines):
-        for sl in streamlines:
-            yield sl
+        yield from streamlines
 
     npt.assert_array_equal(
         near_roi(generate_sl(streamlines), np.eye(4), mask, mode="both_end"),
@@ -558,7 +640,7 @@ def test_streamline_mapping():
 
 
 @set_random_number_generator()
-def test_length(rng):
+def test_length(rng=None):
     # Generate a simulated bundle of fibers:
     n_streamlines = 50
     n_pts = 100
@@ -582,7 +664,7 @@ def test_length(rng):
 
 
 @set_random_number_generator()
-def test_seeds_from_mask(rng):
+def test_seeds_from_mask(rng=None):
     mask = rng.integers(0, 1, size=(10, 10, 10))
     seeds = seeds_from_mask(mask, np.eye(4), density=1)
     npt.assert_equal(mask.sum(), len(seeds))
@@ -605,7 +687,7 @@ def test_seeds_from_mask(rng):
 
 
 @set_random_number_generator()
-def test_random_seeds_from_mask(rng):
+def test_random_seeds_from_mask(rng=None):
     mask = rng.integers(0, 1, size=(4, 6, 3))
     seeds = random_seeds_from_mask(
         mask, np.eye(4), seeds_count=24, seed_count_per_voxel=True
@@ -721,7 +803,7 @@ def test_reduce_rois():
 
 
 @set_random_number_generator()
-def test_path_length(rng):
+def test_path_length(rng=None):
     aoi = np.zeros((20, 20, 20), dtype=bool)
     aoi[0, 0, 0] = 1
 
@@ -800,7 +882,7 @@ def test_curvature_angle():
 
 
 @set_random_number_generator()
-def test_seeds_directions_pairs(rng):
+def test_seeds_directions_pairs(rng=None):
     positions = rng.random(size=(10, 3))
     peaks = rng.random(size=(10, 5, 3))
 

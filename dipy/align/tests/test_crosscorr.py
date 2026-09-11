@@ -1,7 +1,8 @@
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 
-from dipy.align import crosscorr as cc, floating
+from dipy.align import crosscorr as cc
+from dipy.align.transforms import regtransforms
 from dipy.testing.decorators import set_random_number_generator
 
 
@@ -11,8 +12,8 @@ def test_cc_factors_2d():
     correlation factors against a direct (not optimized, but less error prone)
     implementation.
     """
-    a = np.array(range(20 * 20), dtype=floating).reshape(20, 20)
-    b = np.array(range(20 * 20)[::-1], dtype=floating).reshape(20, 20)
+    a = np.array(range(20 * 20), dtype=np.float32).reshape(20, 20)
+    b = np.array(range(20 * 20)[::-1], dtype=np.float32).reshape(20, 20)
     a /= a.max()
     b /= b.max()
     for radius in [0, 1, 3, 6]:
@@ -27,8 +28,8 @@ def test_cc_factors_3d():
     correlation factors against a direct (not optimized, but less error prone)
     implementation.
     """
-    a = np.array(range(20 * 20 * 20), dtype=floating).reshape(20, 20, 20)
-    b = np.array(range(20 * 20 * 20)[::-1], dtype=floating).reshape(20, 20, 20)
+    a = np.array(range(20 * 20 * 20), dtype=np.float32).reshape(20, 20, 20)
+    b = np.array(range(20 * 20 * 20)[::-1], dtype=np.float32).reshape(20, 20, 20)
     a /= a.max()
     b /= b.max()
     for radius in [0, 1, 3, 6]:
@@ -38,7 +39,88 @@ def test_cc_factors_3d():
 
 
 @set_random_number_generator(1147572)
-def test_compute_cc_steps_2d(rng):
+def test_compute_cc_affine_2d(rng=None):
+    """Compare affine CC with the existing dense backward step in 2D."""
+    sh = (32, 32)
+    radius = 2
+    static = rng.random(sh)
+    moving = rng.random(sh)
+    grad_moving = np.stack(np.gradient(moving), axis=-1)
+    factors = cc.precompute_cc_factors_2d(static, moving, radius)
+
+    update, expected_energy = cc.compute_cc_step_2d(
+        grad_moving, factors, radius, forward_step=False
+    )
+    for (_, dim), transform in sorted(regtransforms.items()):
+        if dim != 2:
+            continue
+        theta = transform.get_identity_parameters()
+        actual_gradient = np.empty(transform.get_number_of_parameters())
+        actual_energy = cc.compute_cc_affine_2d(
+            factors,
+            radius,
+            grad_moving,
+            theta,
+            transform,
+            np.eye(3),
+            actual_gradient,
+        )
+
+        expected_gradient = np.zeros_like(actual_gradient)
+        for r in range(radius, sh[0] - radius):
+            for c in range(radius, sh[1] - radius):
+                jacobian = transform.jacobian(
+                    theta, np.asarray([r, c], dtype=np.float64)
+                )
+                expected_gradient += jacobian.T.dot(update[r, c])
+
+        assert_array_almost_equal(actual_energy, expected_energy)
+        assert_array_almost_equal(actual_gradient, expected_gradient)
+
+
+@set_random_number_generator(1147572)
+def test_compute_cc_affine_3d(rng=None):
+    """Compare affine CC with the existing dense backward step in 3D."""
+    sh = (32, 32, 32)
+    radius = 2
+    static = rng.random(sh)
+    moving = rng.random(sh)
+    grad_moving = np.stack(np.gradient(moving), axis=-1)
+    factors = cc.precompute_cc_factors_3d(static, moving, radius)
+
+    update, expected_energy = cc.compute_cc_step_3d(
+        grad_moving, factors, radius, forward_step=False
+    )
+    for (_, dim), transform in sorted(regtransforms.items()):
+        if dim != 3:
+            continue
+        theta = transform.get_identity_parameters()
+        actual_gradient = np.empty(transform.get_number_of_parameters())
+        actual_energy = cc.compute_cc_affine_3d(
+            factors,
+            radius,
+            grad_moving,
+            theta,
+            transform,
+            np.eye(4),
+            actual_gradient,
+        )
+
+        expected_gradient = np.zeros_like(actual_gradient)
+        for s in range(radius, sh[0] - radius):
+            for r in range(radius, sh[1] - radius):
+                for c in range(radius, sh[2] - radius):
+                    jacobian = transform.jacobian(
+                        theta, np.asarray([s, r, c], dtype=np.float64)
+                    )
+                    expected_gradient += jacobian.T.dot(update[s, r, c])
+
+        assert_array_almost_equal(actual_energy, expected_energy)
+        assert_array_almost_equal(actual_gradient, expected_gradient)
+
+
+@set_random_number_generator(1147572)
+def test_compute_cc_steps_2d(rng=None):
     # Select arbitrary images' shape (same shape for both images)
     sh = (32, 32)
     radius = 2
@@ -56,35 +138,35 @@ def test_compute_cc_steps_2d(rng):
     X[..., 1] = x_1[None, :] * _O
 
     # Compute the gradient fields of F and G
-    gradF = np.array(X - c_f, dtype=floating)
-    gradG = np.array(X - c_g, dtype=floating)
+    gradF = np.array(X - c_f, dtype=np.float32)
+    gradG = np.array(X - c_g, dtype=np.float32)
 
     sz = np.size(gradF)
     Fnoise = rng.random(sz).reshape(gradF.shape) * gradF.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     gradF += Fnoise
 
     sz = np.size(gradG)
     Gnoise = rng.random(sz).reshape(gradG.shape) * gradG.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     gradG += Gnoise
 
     sq_norm_grad_G = np.sum(gradG**2, -1)
 
-    F = np.array(0.5 * np.sum(gradF**2, -1), dtype=floating)
-    G = np.array(0.5 * sq_norm_grad_G, dtype=floating)
+    F = np.array(0.5 * np.sum(gradF**2, -1), dtype=np.float32)
+    G = np.array(0.5 * sq_norm_grad_G, dtype=np.float32)
 
     Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     F += Fnoise
 
     Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     G += Gnoise
 
     # precompute the cross correlation factors
     factors = cc.precompute_cc_factors_2d_test(F, G, radius)
-    factors = np.array(factors, dtype=floating)
+    factors = np.array(factors, dtype=np.float32)
 
     # test the forward step against the exact expression
     _I = factors[..., 0]
@@ -92,19 +174,21 @@ def test_compute_cc_steps_2d(rng):
     sfm = factors[..., 2]
     sff = factors[..., 3]
     smm = factors[..., 4]
-    expected = np.ndarray(shape=sh + (2,), dtype=floating)
+    expected = np.ndarray(shape=sh + (2,), dtype=np.float32)
     factor = (-2.0 * sfm / (sff * smm)) * (_J - (sfm / sff) * _I)
     expected[..., 0] = factor * gradF[..., 0]
     factor = (-2.0 * sfm / (sff * smm)) * (_J - (sfm / sff) * _I)
     expected[..., 1] = factor * gradF[..., 1]
-    actual, energy = cc.compute_cc_forward_step_2d(gradF, factors, 0)
+    actual, energy = cc.compute_cc_step_2d(gradF, factors, 0, forward_step=True)
     assert_array_almost_equal(actual, expected)
     for radius in range(1, 5):
         expected[:radius, ...] = 0
         expected[:, :radius, ...] = 0
         expected[-radius::, ...] = 0
         expected[:, -radius::, ...] = 0
-        actual, energy = cc.compute_cc_forward_step_2d(gradF, factors, radius)
+        actual, energy = cc.compute_cc_step_2d(
+            gradF, factors, radius, forward_step=True
+        )
         assert_array_almost_equal(actual, expected)
 
     # test the backward step against the exact expression
@@ -112,19 +196,21 @@ def test_compute_cc_steps_2d(rng):
     expected[..., 0] = factor * gradG[..., 0]
     factor = (-2.0 * sfm / (sff * smm)) * (_I - (sfm / smm) * _J)
     expected[..., 1] = factor * gradG[..., 1]
-    actual, energy = cc.compute_cc_backward_step_2d(gradG, factors, 0)
+    actual, energy = cc.compute_cc_step_2d(gradG, factors, 0, forward_step=False)
     assert_array_almost_equal(actual, expected)
     for radius in range(1, 5):
         expected[:radius, ...] = 0
         expected[:, :radius, ...] = 0
         expected[-radius::, ...] = 0
         expected[:, -radius::, ...] = 0
-        actual, energy = cc.compute_cc_backward_step_2d(gradG, factors, radius)
+        actual, energy = cc.compute_cc_step_2d(
+            gradG, factors, radius, forward_step=False
+        )
         assert_array_almost_equal(actual, expected)
 
 
 @set_random_number_generator(12465825)
-def test_compute_cc_steps_3d(rng):
+def test_compute_cc_steps_3d(rng=None):
     sh = (32, 32, 32)
     radius = 2
 
@@ -143,35 +229,35 @@ def test_compute_cc_steps_3d(rng):
     X[..., 2] = x_2[None, None, :] * _O
 
     # Compute the gradient fields of F and G
-    gradF = np.array(X - c_f, dtype=floating)
-    gradG = np.array(X - c_g, dtype=floating)
+    gradF = np.array(X - c_f, dtype=np.float32)
+    gradG = np.array(X - c_g, dtype=np.float32)
 
     sz = np.size(gradF)
     Fnoise = rng.random(sz).reshape(gradF.shape) * gradF.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     gradF += Fnoise
 
     sz = np.size(gradG)
     Gnoise = rng.random(sz).reshape(gradG.shape) * gradG.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     gradG += Gnoise
 
     sq_norm_grad_G = np.sum(gradG**2, -1)
 
-    F = np.array(0.5 * np.sum(gradF**2, -1), dtype=floating)
-    G = np.array(0.5 * sq_norm_grad_G, dtype=floating)
+    F = np.array(0.5 * np.sum(gradF**2, -1), dtype=np.float32)
+    G = np.array(0.5 * sq_norm_grad_G, dtype=np.float32)
 
     Fnoise = rng.random(np.size(F)).reshape(F.shape) * F.max() * 0.1
-    Fnoise = Fnoise.astype(floating)
+    Fnoise = Fnoise.astype(np.float32)
     F += Fnoise
 
     Gnoise = rng.random(np.size(G)).reshape(G.shape) * G.max() * 0.1
-    Gnoise = Gnoise.astype(floating)
+    Gnoise = Gnoise.astype(np.float32)
     G += Gnoise
 
     # precompute the cross correlation factors
     factors = cc.precompute_cc_factors_3d_test(F, G, radius)
-    factors = np.array(factors, dtype=floating)
+    factors = np.array(factors, dtype=np.float32)
 
     # test the forward step against the exact expression
     _I = factors[..., 0]
@@ -179,12 +265,12 @@ def test_compute_cc_steps_3d(rng):
     sfm = factors[..., 2]
     sff = factors[..., 3]
     smm = factors[..., 4]
-    expected = np.ndarray(shape=sh + (3,), dtype=floating)
+    expected = np.ndarray(shape=sh + (3,), dtype=np.float32)
     factor = (-2.0 * sfm / (sff * smm)) * (_J - (sfm / sff) * _I)
     expected[..., 0] = factor * gradF[..., 0]
     expected[..., 1] = factor * gradF[..., 1]
     expected[..., 2] = factor * gradF[..., 2]
-    actual, energy = cc.compute_cc_forward_step_3d(gradF, factors, 0)
+    actual, energy = cc.compute_cc_step_3d(gradF, factors, 0, forward_step=True)
     assert_array_almost_equal(actual, expected)
     for radius in range(1, 5):
         expected[:radius, ...] = 0
@@ -193,7 +279,9 @@ def test_compute_cc_steps_3d(rng):
         expected[-radius::, ...] = 0
         expected[:, -radius::, ...] = 0
         expected[:, :, -radius::, ...] = 0
-        actual, energy = cc.compute_cc_forward_step_3d(gradF, factors, radius)
+        actual, energy = cc.compute_cc_step_3d(
+            gradF, factors, radius, forward_step=True
+        )
         assert_array_almost_equal(actual, expected)
 
     # test the backward step against the exact expression
@@ -201,7 +289,7 @@ def test_compute_cc_steps_3d(rng):
     expected[..., 0] = factor * gradG[..., 0]
     expected[..., 1] = factor * gradG[..., 1]
     expected[..., 2] = factor * gradG[..., 2]
-    actual, energy = cc.compute_cc_backward_step_3d(gradG, factors, 0)
+    actual, energy = cc.compute_cc_step_3d(gradG, factors, 0, forward_step=False)
     assert_array_almost_equal(actual, expected)
     for radius in range(1, 5):
         expected[:radius, ...] = 0
@@ -210,5 +298,7 @@ def test_compute_cc_steps_3d(rng):
         expected[-radius::, ...] = 0
         expected[:, -radius::, ...] = 0
         expected[:, :, -radius::, ...] = 0
-        actual, energy = cc.compute_cc_backward_step_3d(gradG, factors, radius)
+        actual, energy = cc.compute_cc_step_3d(
+            gradG, factors, radius, forward_step=False
+        )
         assert_array_almost_equal(actual, expected)

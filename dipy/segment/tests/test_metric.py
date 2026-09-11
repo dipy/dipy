@@ -50,7 +50,7 @@ def test_metric_minimum_average_direct_flip():
 
     class MinimumAverageDirectFlipMetric(dipysmetric.Metric):
         def __init__(self, feature):
-            super(MinimumAverageDirectFlipMetric, self).__init__(feature=feature)
+            super().__init__(feature=feature)
 
         @property
         def is_order_invariant(self):
@@ -150,7 +150,7 @@ def test_metric_cosine():
 
     class CosineMetric(dipysmetric.Metric):
         def __init__(self, feature):
-            super(CosineMetric, self).__init__(feature=feature)
+            super().__init__(feature=feature)
 
         def are_compatible(self, shape1, shape2):
             # Cosine metric works on vectors.
@@ -238,7 +238,7 @@ def test_subclassing_metric():
 
 
 @set_random_number_generator()
-def test_distance_matrix(rng):
+def test_distance_matrix(rng=None):
     metric = dipysmetric.SumPointwiseEuclideanMetric()
 
     for dtype in [np.int32, np.int64, np.float32, np.float64]:
@@ -269,7 +269,7 @@ def test_distance_matrix(rng):
 
 
 @set_random_number_generator()
-def test_mean_distances(rng):
+def test_mean_distances(rng=None):
     nb_slines = 10
     nb_pts = 22
     dim = 3

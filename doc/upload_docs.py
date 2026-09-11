@@ -49,7 +49,7 @@ if __name__ == '__main__':
     print(f"Moved to {os.getcwd()}")
     try:
         sh("git checkout gh-pages")
-    except:
+    except Exception:
         while 1:
             print("\nLooks like gh-pages branch does not exist!")
             print("Do you want to create a new one? (y/n)")
@@ -81,7 +81,7 @@ if __name__ == '__main__':
         # remove old html and doctree files
         try:
             sh("rm -rf _build/json _build/doctrees")
-        except:
+        except Exception:
             pass
         # generate new doc and copy to docs_repo
         sh("make api")
@@ -92,7 +92,7 @@ if __name__ == '__main__':
         if dev:
             try:
                 sh(f"rm -r {source_version}")
-            except:
+            except Exception:
                 pass
         sh(f"mv json {source_version}")
         sh("git add .")

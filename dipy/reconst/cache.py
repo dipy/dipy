@@ -1,5 +1,5 @@
 from dipy.core.onetime import auto_attr
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 class Cache:

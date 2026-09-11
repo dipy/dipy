@@ -3,7 +3,7 @@ cimport numpy as cnp
 cimport cython
 
 from safe_openmp cimport have_openmp
-from cython.parallel import parallel, prange, threadid
+from cython.parallel import prange
 
 from scipy.spatial import KDTree
 from scipy.interpolate import interp1d
@@ -57,12 +57,14 @@ cdef class FBCMeasures:
         ----------
         .. footbibliography::
         """
-        self.compute(streamlines,
-                 kernel,
-                 min_fiberlength=min_fiberlength,
-                 max_windowsize=max_windowsize,
-                 num_threads=num_threads,
-                 verbose=verbose)
+        self.compute(
+            streamlines,
+            kernel,
+            min_fiberlength=min_fiberlength,
+            max_windowsize=max_windowsize,
+            num_threads=num_threads,
+            verbose=verbose,
+        )
 
     def get_points_rfbc_thresholded(self, threshold, emphasis=.5, verbose=False):
         """ Set a threshold on the RFBC to remove spurious fibers.
@@ -170,7 +172,6 @@ cdef class FBCMeasures:
             cnp.npy_intp num_fibers, max_length, dim
             double [:, :, :] streamlines
             int [:] streamlines_length
-            double [:, :, :] streamlines_tangent
             int [:, :] streamlines_nearestp
             double [:, :] streamline_scores
             cnp.npy_intp line_id = 0
@@ -178,10 +179,9 @@ cdef class FBCMeasures:
             cnp.npy_intp line_id2 = 0
             cnp.npy_intp point_id2 = 0
             cnp.npy_intp dims
-            double score
             double [:] score_mp
             int [:] xd_mp, yd_mp, zd_mp
-            cnp.npy_intp xd, yd, zd, N, hn
+            cnp.npy_intp N, hn
             double [:, :, :, :, ::1] lut
             cnp.npy_intp threads_to_use = -1
 
@@ -214,8 +214,6 @@ cdef class FBCMeasures:
         # prepare numpy arrays for speed
         streamlines = np.zeros((num_fibers, max_length, dim),
                                dtype=np.float64) * np.nan
-        streamlines_tangents = np.zeros((num_fibers, max_length, dim),
-                                        dtype=np.float64)
         streamlines_nearestp = np.zeros((num_fibers, max_length),
                                         dtype=np.int32)
         streamline_scores = np.zeros((num_fibers, max_length),
@@ -228,15 +226,6 @@ cdef class FBCMeasures:
                     streamlines[line_id, point_id, dims] = \
                         py_streamlines[line_id][point_id][dims]
         self.streamline_points = streamlines
-
-        # compute tangents
-        for line_id in range(num_fibers):
-            for point_id in range(streamlines_length[line_id] - 1):
-                tangent = np.subtract(streamlines[line_id, point_id + 1],
-                                      streamlines[line_id, point_id])
-                streamlines_tangents[line_id, point_id] = \
-                    np.divide(tangent,
-                              np.sqrt(np.dot(tangent, tangent)))
 
         # estimate which kernel LUT index corresponds to angles
         tree = KDTree(kernel.get_orientations())
@@ -260,7 +249,7 @@ cdef class FBCMeasures:
         # compute fiber LFBC measures
         with nogil:
 
-            for line_id in prange(num_fibers, schedule='guided'):
+            for line_id in prange(num_fibers, schedule="guided"):
                 for point_id in range(streamlines_length[line_id] - 1):
                     score_mp[line_id] = 0.0
                     for line_id2 in range(num_fibers):

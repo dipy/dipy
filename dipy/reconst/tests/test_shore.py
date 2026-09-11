@@ -9,7 +9,7 @@ from scipy.special import gamma, genlaguerre
 
 from dipy.data import get_gtab_taiwan_dsi
 from dipy.reconst.shm import descoteaux07_legacy_msg
-from dipy.reconst.shore import ShoreModel
+from dipy.reconst.shore import ShoreModel, shore_indices
 from dipy.sims.voxel import multi_tensor
 from dipy.utils.optpkg import optional_package
 
@@ -107,6 +107,14 @@ def test_shore_fitting_constrain_e0():
         )
         asmfit = asm.fit(data.S)
     npt.assert_almost_equal(compute_e0(asmfit), 1)
+
+
+def test_shore_indices_returns_int():
+    # n_c should be computed as int, not numpy.float64
+    n, ell, m = shore_indices(4, 0)
+    assert isinstance(n, int)
+    assert isinstance(ell, int)
+    assert isinstance(m, int)
 
 
 def compute_e0(shorefit):

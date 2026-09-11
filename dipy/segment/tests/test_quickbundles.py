@@ -65,7 +65,7 @@ def test_quickbundles_shape_incompatibility():
 
 
 @set_random_number_generator(7)
-def test_quickbundles_2D(rng):
+def test_quickbundles_2D(rng=None):
     # Test quickbundles clustering using 2D points and the Eulidean metric.
     data = []
     data += [rng.standard_normal((1, 2)) + np.array([0, 0]) for _ in range(1)]
@@ -197,8 +197,8 @@ def test_quickbundles_memory_leaks():
     qb = QuickBundles(threshold=2 * threshold)
 
     type_name_pattern = "memoryview"
-    initial_types_refcount = get_type_refcount(type_name_pattern)
+    initial_types_refcount = get_type_refcount(pattern=type_name_pattern)
 
     qb.cluster(data)
     # At this point, all memoryviews created during clustering should be freed.
-    assert_equal(get_type_refcount(type_name_pattern), initial_types_refcount)
+    assert_equal(get_type_refcount(pattern=type_name_pattern), initial_types_refcount)

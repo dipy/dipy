@@ -47,6 +47,15 @@ and write the artefact-free result to the ``motion_output`` directory.
 In case no output directory is specified, the corrected output volume
 is saved to the current directory by default.
 
+Motion correction supports mutual information (MI), the default metric, and
+local cross-correlation (CC). MI is configured with ``nbins`` and
+``sampling_prop``, while CC is configured with ``radius``.
+
+For example, the metrics can be selected and configured as follows::
+
+    dipy_correct_motion <path_to_dwi> <path_to_bval> <path_to_bvec> --metric "cc" --radius 4
+    dipy_correct_motion <path_to_dwi> <path_to_bval> <path_to_bvec> --metric "mi" --nbins 32
+
 ----------
 References
 ----------

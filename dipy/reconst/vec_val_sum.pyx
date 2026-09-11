@@ -19,7 +19,7 @@ def vec_val_vect(vecs, vals):
     Returns
     -------
     res : shape (..., M, M) array
-        For all the dimensions ellided by ``...``, loops to get (M, N) ``vec``
+        For all the dimensions elided by ``...``, loops to get (M, N) ``vec``
         matrix, and (N,) ``vals`` vector, and calculates
         ``vec.dot(np.diag(val).dot(vec.T)``.
 
@@ -65,13 +65,13 @@ def vec_val_vect(vecs, vals):
     common_shape = vecs.shape[:(ndim-2)]
     rows, cols = vecs.shape[ndim-2], vecs.shape[ndim-1]
     if vals.shape != common_shape + (cols,):
-        raise ValueError('dimensions do not match')
+        raise ValueError("dimensions do not match")
     N = np.prod(common_shape, dtype=np.int64)
     vecr = np.array(vecs.reshape((N, rows, cols)), dtype=float)
     valr = np.array(vals.reshape((N, cols)), dtype=float)
     out = np.zeros((N, rows, rows))
     with nogil:
-        for t in range(N): # loop over the early dimensions
+        for t in range(N):  # loop over the early dimensions
             vec = vecr[t]
             val = valr[t]
             out_vec = out[t]

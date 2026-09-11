@@ -24,6 +24,9 @@ MutualInformationMetric: computes the value and gradient of the mutual
     evaluated at the given parameters, and evaluate the value and
     gradient of the histogram's mutual information.
 
+CrossCorrelationMetric: computes the value and gradient of the local normalized
+    cross-correlation metric the way `Optimizer` needs them.
+
 AffineRegistration: it runs the multi-resolution registration, putting
     all the pieces together. It needs to create the scale space of the
     images and run the multi-resolution registration by using the Metric
@@ -43,7 +46,7 @@ import numpy as np
 import numpy.linalg as npl
 import scipy.ndimage as ndimage
 
-from dipy.align import VerbosityLevels, vector_fields as vf
+from dipy.align import crosscorr as cc, vector_fields as vf
 from dipy.align.imwarp import ScaleSpace, get_direction_and_spacings
 from dipy.align.parzenhist import (
     ParzenJointHistogram,
@@ -53,7 +56,8 @@ from dipy.align.parzenhist import (
 from dipy.align.scalespace import IsotropicScaleSpace
 from dipy.core.interpolation import interpolate_scalar_2d, interpolate_scalar_3d
 from dipy.core.optimize import Optimizer
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils import VerbosityLevels
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 
 _interp_options = ["nearest", "linear"]
@@ -683,24 +687,31 @@ class MutualInformationMetric:
 
         Returns
         -------
-        static_values: array, shape(n,) if sparse sampling is being used,
-                       array, shape(S, R, C) or (R, C) if dense sampling
+        static_values : array, shape (n,) if sparse sampling is being used,
+                        array, shape (S, R, C) or (R, C) if dense sampling
             the intensity values corresponding to the static image used to
             update the histogram. If sparse sampling is being used, then
             it is simply a sequence of scalars, obtained by sampling the static
             image at the `n` sampling points. If dense sampling is being used,
             then the intensities are given directly by the static image,
             whose shape is (S, R, C) in the 3D case or (R, C) in the 2D case.
-        moving_values: array, shape(n,) if sparse sampling is being used,
-                       array, shape(S, R, C) or (R, C) if dense sampling
+        moving_values : array, shape (n,) if sparse sampling is being used,
+                        array, shape (S, R, C) or (R, C) if dense sampling
             the intensity values corresponding to the moving image used to
             update the histogram. If sparse sampling is being used, then
             it is simply a sequence of scalars, obtained by sampling the moving
             image at the `n` sampling points (mapped to the moving space by the
             current affine transform). If dense sampling is being used,
-            then the intensities are given by the moving imaged linearly
+            then the intensities are given by the moving image linearly
             transformed towards the static image by the current affine, which
             results in an image of the same shape as the static image.
+        static_mask_values : array, shape (S, R, C) or (R, C), or None
+            the static mask used to update the histogram for dense sampling,
+            or None if no static mask is provided or sparse sampling is used.
+        moving_mask_values : array, shape (S, R, C) or (R, C), or None
+            the moving mask transformed towards the static image for dense
+            sampling, or None if no moving mask is provided or sparse sampling
+            is used.
 
         """
         static_mask_values, moving_mask_values = None, None
@@ -830,7 +841,7 @@ class MutualInformationMetric:
 
         Returns
         -------
-        neg_mi : float
+        float
             the negative mutual information of the input images after
             transforming the moving image by the currently set transform
             with `params` parameters
@@ -854,7 +865,7 @@ class MutualInformationMetric:
 
         Returns
         -------
-        grad : array, shape (n,)
+        array, shape (n,)
             the gradient of the negative Mutual Information
 
         """
@@ -876,11 +887,11 @@ class MutualInformationMetric:
 
         Returns
         -------
-        neg_mi : float
+        float
             the negative mutual information of the input images after
             transforming the moving image by the currently set transform
             with `params` parameters
-        neg_mi_grad : array, shape (n,)
+        array, shape (n,)
             the gradient of the negative Mutual Information
 
         """
@@ -889,6 +900,297 @@ class MutualInformationMetric:
         except (AffineInversionError, AffineInvalidValuesError):
             return np.inf, 0 * self.metric_grad
         return -1 * self.metric_val, -1 * self.metric_grad
+
+
+class CrossCorrelationMetric:
+    def __init__(self, *, radius=4):
+        r"""Initialize an instance of the Cross Correlation metric.
+
+        This class implements the methods required by Optimizer to drive the
+        registration process.
+
+        Parameters
+        ----------
+        radius : int, optional
+            the radius of the square (2D) or cubic (3D) neighborhood used to
+            compute the local normalized cross-correlation.
+
+        Notes
+        -----
+        The backend cross-correlation implementation returns the negative sum
+        of squared local normalized cross-correlations, so it can be directly
+        minimized by the optimizers used by :class:`AffineRegistration`.
+
+        """
+        if radius != int(radius) or radius < 0:
+            raise ValueError("radius must be a non-negative integer")
+        self.radius = int(radius)
+        self.metric_val = None
+        self.metric_grad = None
+
+    def _connect_functions(self):
+        r"""Connect the dimension-specific cross-correlation functions."""
+        if self.dim == 2:
+            self.precompute_factors = cc.precompute_cc_factors_2d
+            self.compute_affine = cc.compute_cc_affine_2d
+        elif self.dim == 3:
+            self.precompute_factors = cc.precompute_cc_factors_3d
+            self.compute_affine = cc.compute_cc_affine_3d
+        else:
+            raise ValueError(
+                f"Cross-correlation is not defined for dimension {self.dim}"
+            )
+
+    def setup(
+        self,
+        transform,
+        static,
+        moving,
+        *,
+        static_grid2world=None,
+        moving_grid2world=None,
+        starting_affine=None,
+        static_mask=None,
+        moving_mask=None,
+    ):
+        r"""Prepare the metric to compute local cross-correlation and gradients.
+
+        Parameters
+        ----------
+        transform: instance of Transform
+            the transformation with respect to whose parameters the gradient
+            must be computed
+        static : array, shape (S, R, C) or (R, C)
+            static image
+        moving : array, shape (S', R', C') or (R', C')
+            moving image. The dimensions of the static (S, R, C) and moving
+            (S', R', C') images do not need to be the same.
+        static_grid2world : array (dim+1, dim+1), optional
+            the grid-to-space transform of the static image. The default is
+            None, implying the transform is the identity.
+        moving_grid2world : array (dim+1, dim+1)
+            the grid-to-space transform of the moving image. The default is
+            None, implying the spacing along all axes is 1.
+        starting_affine : array, shape (dim+1, dim+1), optional
+            the pre-aligning matrix (an affine transform) that roughly aligns
+            the moving image towards the static image. If None, no
+            pre-alignment is performed. If a pre-alignment matrix is available,
+            it is recommended to provide this matrix as `starting_affine`
+            instead of manually transforming the moving image to reduce
+            interpolation artifacts. The default is None, implying no
+            pre-alignment is performed.
+        static_mask : array, shape (S, R, C) or (R, C), optional
+            static image mask. Not currently supported by this metric.
+        moving_mask : array, shape (S', R', C') or (R', C'), optional
+            moving image mask. Not currently supported by this metric.
+
+        """
+        if static_mask is not None or moving_mask is not None:
+            raise NotImplementedError(
+                "Masks are not currently supported by CrossCorrelationMetric"
+            )
+
+        n = transform.get_number_of_parameters()
+        self.metric_grad = np.zeros(n, dtype=np.float64)
+        self.dim = len(static.shape)
+
+        if len(moving.shape) != self.dim:
+            raise ValueError("Static and moving images must have the same dimension")
+
+        self._connect_functions()
+
+        min_size = 2 * self.radius + 1
+        if any(size < min_size for size in static.shape):
+            raise ValueError(
+                "Each static image dimension must be at least "
+                f"2 * radius + 1 ({min_size}); got shape {static.shape}"
+            )
+
+        if moving_grid2world is None:
+            moving_grid2world = np.eye(self.dim + 1)
+        if static_grid2world is None:
+            static_grid2world = np.eye(self.dim + 1)
+
+        self.transform = transform
+        self.static = np.array(static).astype(np.float64)
+        self.moving = np.array(moving).astype(np.float64)
+        self.static_grid2world = static_grid2world
+        self.moving_grid2world = moving_grid2world
+        self.moving_world2grid = npl.inv(moving_grid2world)
+        self.moving_direction, self.moving_spacing = get_direction_and_spacings(
+            moving_grid2world, self.dim
+        )
+        self.starting_affine = starting_affine
+
+        P = np.eye(self.dim + 1)
+        if self.starting_affine is not None:
+            P = self.starting_affine
+
+        self.affine_map = AffineMap(
+            P,
+            domain_grid_shape=static.shape,
+            domain_grid2world=static_grid2world,
+            codomain_grid_shape=moving.shape,
+            codomain_grid2world=moving_grid2world,
+        )
+
+    def _update_factors(self):
+        r"""Update the local cross-correlation factors.
+
+        The current affine transform is given by `self.affine_map`, which
+        must be set before calling this method.
+
+        Returns
+        -------
+        factors : array, shape(S, R, C, 5) or (R, C, 5)
+            the local cross-correlation terms computed from the static image
+            and the moving image transformed towards the static image by the
+            current affine transform.
+
+        """
+        warped_moving = self.affine_map.transform(self.moving)
+        warped_moving = np.asarray(warped_moving, dtype=np.float64)
+        factors = self.precompute_factors(self.static, warped_moving, self.radius)
+        factors = np.asarray(factors)
+        return factors
+
+    def _update_cross_correlation(self, params, *, update_gradient=True):
+        r"""Update local cross-correlation and its affine gradient.
+
+        The cross-correlation is updated according to the static and
+        transformed images. The transformed image is precisely the moving image
+        after transforming it by the transform defined by the `params`
+        parameters.
+
+        The gradient of the metric is computed only if update_gradient is
+        True.
+
+        Parameters
+        ----------
+        params : array, shape (n,)
+            the parameter vector of the transform currently used by the metric
+            (the transform name is provided when self.setup is called), n is
+            the number of parameters of the transform
+        update_gradient : Boolean, optional
+            if True, the gradient of the metric will also be computed,
+            otherwise, only the metric value will be computed. The default is
+            True.
+
+        """
+        # Get the matrix associated with the `params` parameter vector
+        current_affine = self.transform.param_to_matrix(params)
+        # Get the static-to-prealigned matrix (only needed for the gradient)
+        static2prealigned = self.static_grid2world
+        if self.starting_affine is not None:
+            current_affine = current_affine.dot(self.starting_affine)
+            static2prealigned = self.starting_affine.dot(static2prealigned)
+        self.affine_map.set_affine(current_affine)
+
+        # Update the local CC factors with the current joint intensities
+        factors = self._update_factors()
+
+        if update_gradient:
+            # Compute the gradient of moving img. at physical points
+            # associated with the >>static image's grid<< cells
+            # The image gradient must be eval. at current moved points
+            grid_to_world = current_affine.dot(self.static_grid2world)
+            moving_gradient, inside = vf.gradient(
+                self.moving,
+                self.moving_world2grid,
+                self.moving_spacing,
+                self.static.shape,
+                grid_to_world,
+            )
+            moving_gradient = np.asarray(moving_gradient, dtype=np.float64)
+
+            # The Jacobian must be evaluated at the pre-aligned points
+            self.metric_val = self.compute_affine(
+                factors,
+                self.radius,
+                moving_gradient,
+                params,
+                self.transform,
+                static2prealigned,
+                self.metric_grad,
+            )
+        else:
+            self.metric_val = self.compute_affine(factors, self.radius)
+
+    def distance(self, params):
+        r"""Numeric value of the local cross-correlation energy.
+
+        Parameters
+        ----------
+        params : array, shape (n,)
+            the parameter vector of the transform currently used by the metric
+            (the transform name is provided when self.setup is called), n is
+            the number of parameters of the transform
+
+        Returns
+        -------
+        float
+            the local cross-correlation energy of the input images after
+            transforming the moving image by the currently set transform
+            with `params` parameters. The returned value is already the
+            negative local cross-correlation energy and can be minimized
+            directly.
+
+        """
+        try:
+            self._update_cross_correlation(params, update_gradient=False)
+        except (AffineInversionError, AffineInvalidValuesError):
+            return np.inf
+        return self.metric_val
+
+    def gradient(self, params):
+        r"""Numeric value of the metric's gradient at the given parameters.
+
+        Parameters
+        ----------
+        params : array, shape (n,)
+            the parameter vector of the transform currently used by the metric
+            (the transform name is provided when self.setup is called), n is
+            the number of parameters of the transform
+
+        Returns
+        -------
+        array, shape (n,)
+            the gradient of the local cross-correlation energy
+
+        """
+        try:
+            self._update_cross_correlation(params, update_gradient=True)
+        except (AffineInversionError, AffineInvalidValuesError):
+            return 0 * self.metric_grad
+        return self.metric_grad.copy()
+
+    def distance_and_gradient(self, params):
+        r"""Numeric value of the metric and its gradient at given parameters.
+
+        Parameters
+        ----------
+        params : array, shape (n,)
+            the parameter vector of the transform currently used by the metric
+            (the transform name is provided when self.setup is called), n is
+            the number of parameters of the transform
+
+        Returns
+        -------
+        float
+            the local cross-correlation energy of the input images after
+            transforming the moving image by the currently set transform
+            with `params` parameters. The returned value is already the
+            negative local cross-correlation energy and can be minimized
+            directly.
+        array, shape (n,)
+            the gradient of the local cross-correlation energy
+
+        """
+        try:
+            self._update_cross_correlation(params, update_gradient=True)
+        except (AffineInversionError, AffineInvalidValuesError):
+            return np.inf, 0 * self.metric_grad
+        return self.metric_val, self.metric_grad.copy()
 
 
 class AffineRegistration:
@@ -917,7 +1219,7 @@ class AffineRegistration:
             `level_iters[0]` corresponds to the coarsest scale,
             `level_iters[-1]` the finest, where n is the length of the
             sequence. By default, a 3-level scale space with iterations
-            sequence equal to [10000, 1000, 100] will be used.
+            sequence equal to [1000, 500, 100] will be used.
         sigmas : sequence of floats, optional
             custom smoothing parameter to build the scale space (one parameter
             for each scale). By default, the sequence of sigmas will be
@@ -953,7 +1255,13 @@ class AffineRegistration:
             self.metric = MutualInformationMetric()
 
         if level_iters is None:
-            level_iters = [10000, 1000, 100]
+            level_iters = [1000, 500, 100]
+            logger.info(
+                "Default level_iters have been updated to [1000, 500, 100] for "
+                "performance improvement. Identical results are expected. In case "
+                "of any discrepancy, you can revert to the previous default by "
+                "setting level_iters=[10000, 1000, 100]."
+            )
         self.level_iters = level_iters
         self.levels = len(level_iters)
         if self.levels == 0:
@@ -977,8 +1285,7 @@ class AffineRegistration:
 
     # Separately add a string that tells about the verbosity kwarg. This needs
     # to be separate, because it is set as a module-wide option in __init__:
-    docstring_addendum = (
-        """verbosity : int (one of {0, 1, 2, 3}), optional
+    docstring_addendum = f"""verbosity : int (one of {{0, 1, 2, 3}}), optional
             Set the verbosity level of the algorithm:
 
             - 0 : do not print anything
@@ -988,10 +1295,8 @@ class AffineRegistration:
             - 3 : print as much information as possible to isolate the cause of
               a bug.
 
-            Default: % s
+            Default: {VerbosityLevels.STATUS: }
     """
-        % VerbosityLevels.STATUS
-    )
 
     __init__.__doc__ = __init__.__doc__ + docstring_addendum
 
@@ -1314,6 +1619,7 @@ class AffineRegistration:
 
             # Optimize this level
             if self.options is None:
+                # With L-BFGS-B, ftol value is 2.220446049250313e-09
                 self.options = {"gtol": 1e-4}
 
             if self.method == "L-BFGS-B":

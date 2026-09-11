@@ -1,0 +1,631 @@
+"""NIfTI-backed volume slicers with linked UI controls for Skyline."""
+
+import numpy as np
+
+from dipy.utils.optpkg import optional_package
+from dipy.viz.skyline.UI.elements import (
+    dropdown,
+    render_group,
+    segmented_switch,
+    thin_slider,
+    toggle_button,
+    two_disk_slider,
+)
+from dipy.viz.skyline.UI.theme import THEME
+from dipy.viz.skyline.render.renderer import (
+    Visualization,
+    slice_slider_bounds,
+    slice_slider_values_from_state,
+    slice_state_from_slider_values,
+)
+
+fury_trip_msg = (
+    "Skyline requires Fury version 2.0.0 or higher."
+    " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
+)
+fury, has_fury_v2, _ = optional_package(
+    "fury",
+    min_version="2.0.0",
+    trip_msg=fury_trip_msg,
+)
+if has_fury_v2:
+    from fury.actor import (
+        set_group_opacity,
+        set_group_visibility,
+        show_slices,
+        volume_slicer,
+    )
+    from fury.colormap import distinguishable_colormap
+    from fury.lib import gfx
+
+imgui_bundle, has_imgui, _ = optional_package(
+    "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
+)
+if has_imgui:
+    imgui = imgui_bundle.imgui
+
+
+def create_image_visualization(
+    input,
+    idx,
+    *,
+    interpolation="linear",
+    render_callback=None,
+    opacity=100,
+    rgb=False,
+    value_percentiles=(2, 98),
+    colormap="Gray",
+    sync_callabck=None,
+):
+    """Create image visualization from input
+
+    Parameters
+    ----------
+    input : tuple
+        Tuple of the (data, affine, filename) or (data, affine)
+    idx : int
+        Index of the image for naming purposes when filename is not provided.
+    interpolation : str, optional
+        Interpolation method for volume rendering. Options are "linear" or "nearest".
+    render_callback : callable, optional
+        Callback function to be called after rendering.
+    opacity : int, optional
+        Opacity of the volume rendering.
+    rgb : bool, optional
+        Whether the image is RGB
+    value_percentiles : tuple, optional
+        Percentiles for intensity value range. For example, (2, 98) will set the
+        intensity range to be between the 2nd and 98th percentiles of the image
+        intensities.
+    colormap : str, optional
+        The colormap to use for rendering. Options include "Gray", "Inferno", "Magma",
+        "Plasma", and "Viridis". This parameter is ignored if rgb=True.
+    sync_callabck : callable, optional
+        Callback function to synchronize slice positions across visualizations.
+
+    Returns
+    -------
+    Image3D
+        The created Image3D object.
+
+    Raises
+    ------
+    ValueError
+        If the input is not a tuple of length 2 or 3, or if rgb=True and the last
+        dimension of the volume is not 3 or 4.
+    """
+    if not isinstance(input, tuple) or len(input) not in (2, 3):
+        raise ValueError(
+            "Input must be a tuple containing (data, affine, filename) or "
+            "(data, affine) for image visualization."
+        )
+
+    if len(input) == 2:
+        data, affine = input
+        filename = f"Image_{idx}"
+    else:
+        data, affine, filename = input
+
+    return Image3D(
+        filename,
+        data,
+        affine=affine,
+        interpolation=interpolation,
+        render_callback=render_callback,
+        opacity=opacity,
+        rgb=rgb,
+        value_percentiles=value_percentiles,
+        colormap=colormap,
+        sync_callabck=sync_callabck,
+    )
+
+
+class Image3D(Visualization):
+    """Represent ``Image3D`` in Skyline.
+
+    Parameters
+    ----------
+    name : str
+        Display name used in the Skyline UI.
+    volume : np.ndarray
+        Input image volume with shape ``(X, Y, Z)`` or ``(X, Y, Z, N)``.
+    affine : np.ndarray
+        Voxel-to-world affine used to position slices in world coordinates.
+    interpolation : str
+        Slice interpolation mode (``"linear"`` or ``"nearest"``).
+    render_callback : callable
+        Callback used to request a render/update.
+    opacity : int
+        Slice opacity in percent, expected in ``[0, 100]``.
+    rgb : bool
+        Interpret a 4D volume as RGB/RGBA channels when True.
+        Colormap and directional-volume controls are ignored in this mode.
+    value_percentiles : tuple
+        Low/high percentiles used to compute scalar intensity limits.
+    colormap : str
+        Colormap used for scalar volumes; ignored when ``rgb`` is True.
+    sync_callabck : callable
+        Callback used to synchronize state across views.
+    """
+
+    def __init__(
+        self,
+        name,
+        volume,
+        *,
+        affine=None,
+        interpolation="linear",
+        render_callback=None,
+        opacity=100,
+        rgb=False,
+        value_percentiles=(2, 98),
+        colormap="Gray",
+        sync_callabck=None,
+    ):
+        """Represent ``Image3D`` in Skyline.
+
+        Parameters
+        ----------
+        name : str
+            Display name used in the Skyline UI.
+        volume : ndarray
+            Input image volume with shape ``(X, Y, Z)`` or ``(X, Y, Z, N)``.
+        affine : ndarray, optional
+            Voxel-to-world affine used to position slices in world coordinates.
+        interpolation : str, optional
+            Slice interpolation mode (``"linear"`` or ``"nearest"``).
+        render_callback : callable, optional
+            Callback used to request a render/update.
+        opacity : int, optional
+            Slice opacity in percent, expected in ``[0, 100]``.
+        rgb : bool, optional
+            Interpret a 4D volume as RGB/RGBA channels when True.
+            Colormap and directional-volume controls are ignored in this mode.
+        value_percentiles : tuple(float, float), optional
+            Low/high percentiles used to compute scalar intensity limits.
+        colormap : str, optional
+            Colormap used for scalar volumes; ignored when ``rgb`` is True.
+        sync_callabck : callable, optional
+            Callback used to synchronize state across views.
+        """
+        self.dwi = volume
+        self.affine = affine
+
+        if (
+            rgb
+            and self.dwi.ndim == 4
+            and (self.dwi.shape[3] != 3 and self.dwi.shape[3] != 4)
+        ):
+            raise ValueError(
+                "When specifying rgb=True, the last dimension of the volume "
+                "must be 3 (RGB) or 4 (RGBA)."
+            )
+        self.rgb = rgb
+
+        self._has_directions = self.dwi.ndim == 4 and not rgb
+
+        self._volume_idx = 0
+        self.interpolation = interpolation or "linear"
+        self._value_percentiles = value_percentiles
+        self._colormap_options = (
+            "Gray",
+            "Inferno",
+            "Magma",
+            "Plasma",
+            "Viridis",
+            "Cool",
+            "Hot",
+            "Bone",
+            "Copper",
+            "Pink",
+            "Spring",
+            "Summer",
+            "Autumn",
+            "Winter",
+            "Jet",
+            "Cividis",
+            "Distinct",
+            "Divergent",
+        )
+        self.colormap = colormap
+        self._picked_voxel = None
+        self._picked_intensity = None
+        self._slice_visibility = [True, True, True]
+        self._synchronize = True
+        self._sync_callabck = sync_callabck
+        super().__init__(name, render_callback)
+
+        self._create_slicer_actor()
+        self.opacity = opacity
+
+    def _pick_voxel(self, event):
+        """Handle  pick voxel for ``Image3D``.
+
+        Parameters
+        ----------
+        event : Event
+            Interaction event from the renderer callback.
+        """
+        info = event.pick_info
+        voxel = info["index"]
+        self._picked_voxel = voxel
+        self._picked_intensity = self.active_volume[voxel]
+
+    def _create_slicer_actor(self):
+        """Handle  create slicer actor for ``Image3D``."""
+        volume = self.active_volume
+        self._slicer = volume_slicer(
+            volume,
+            affine=self.affine,
+            interpolation=self.interpolation,
+            alpha_mode="bayer",
+            depth_write=True,
+        )
+
+        self._apply_colormap(self.colormap)
+        self.bounds = self._slicer.get_bounding_box()
+        self.state = np.mean(self.bounds, axis=0)
+        self._slicer.add_event_handler(self._pick_voxel, "pointer_down")
+        show_slices(self._slicer, self.state)
+        self.render()
+
+    def _is_divergent_colormap(self):
+        """Handle  whether active colormap is divergent for ``Image3D``.
+
+        Returns
+        -------
+        bool
+            True when the active colormap is divergent.
+        """
+        return self.colormap.lower() == "divergent"
+
+    def _is_distinct_colormap(self):
+        """Handle  whether active colormap is distinct for ``Image3D``.
+
+        Returns
+        -------
+        bool
+            True when the active colormap is distinct.
+        """
+        return self.colormap.lower() == "distinct"
+
+    def _value_range_from_percentile(self, volume):
+        """Handle  value range from percentile for ``Image3D``.
+
+        Parameters
+        ----------
+        volume : ndarray
+            Input image volume with shape ``(X, Y, Z)`` or ``(X, Y, Z, N)``.
+
+        Returns
+        -------
+        tuple(float, float)
+            The value range of the image visualization.
+        """
+        p_low, p_high = self._value_percentiles
+        vmin, vmax = np.percentile(volume, (p_low, p_high))
+        return vmin, vmax
+
+    def _apply_colormap(self, colormap):
+        """Handle  apply colormap for ``Image3D``.
+
+        Parameters
+        ----------
+        colormap : str, optional
+            Colormap used for scalar volumes; ignored when ``rgb`` is True.
+        """
+        self.colormap = colormap
+        self.value_range = self._value_range_from_percentile(self.active_volume)
+        if self.colormap.lower() == "gray":
+            for actor in self._slicer.children:
+                actor.material.map = None
+                actor.material.clim = self.value_range
+        elif self.colormap.lower() == "divergent":
+            map_colors = np.array([[0, 0, 1], [1, 0, 0]], dtype=np.float32)
+            map = gfx.cm.create_colormap(map_colors, n=2)
+            max_abs = np.max(np.abs(self.active_volume))
+            if max_abs == 0:
+                max_abs = 1.0
+            for actor in self._slicer.children:
+                actor.material.map = map
+                actor.material.clim = (-float(max_abs), float(max_abs))
+                self.interpolation = "nearest"
+                actor.material.interpolation = "nearest"
+        elif self.colormap.lower() == "distinct":
+            map_colors = np.asarray(
+                distinguishable_colormap(nb_colors=256), dtype=np.float32
+            )
+            map = gfx.cm.create_colormap(map_colors, n=256)
+            for actor in self._slicer.children:
+                actor.material.map = map
+                actor.material.interpolation = "nearest"
+                self.interpolation = "nearest"
+                actor.material.clim = self.value_range
+        else:
+            for actor in self._slicer.children:
+                actor.material.map = getattr(gfx.cm, self.colormap.lower())
+                actor.material.clim = self.value_range
+
+    @property
+    def actor(self):
+        """Handle actor for ``Image3D``.
+
+        Returns
+        -------
+        VolumeSlicer
+            The actor of the image visualization.
+        """
+        return self._slicer
+
+    @property
+    def active_volume(self):
+        """Handle active volume for ``Image3D``.
+
+        Returns
+        -------
+        np.ndarray
+            The active volume of the image visualization.
+        """
+        return self.dwi[..., self._volume_idx] if self._has_directions else self.dwi
+
+    def _populate_info(self):
+        """Handle  populate info for ``Image3D``.
+
+        Returns
+        -------
+        str
+            The information of the image visualization.
+        """
+        np.set_printoptions(suppress=True, precision=2)
+        info = f"Dimensions: {self.dwi.shape[:3]}"
+        if self._has_directions:
+            info += f"\nDirections: {self.dwi.shape[3]}"
+        info += f"\nData Type: {self.dwi.dtype}"
+        if self.affine is not None:
+            voxel_sizes = np.sqrt(np.sum(self.affine[:3, :3] ** 2, axis=0))
+            info += f"\nVoxel Sizes: {np.round(voxel_sizes, 1)}"
+            voxel_order = "LAS" if self.affine[0, 0] < 0 else "RAS"
+            info += f"\nVoxel Order: {voxel_order}"
+            affine_str = np.array2string(
+                np.round(self.affine, 2), separator=" ", prefix=""
+            )
+            info += f"\nAffine:\n{affine_str}"
+
+        np.set_printoptions()
+        return info
+
+    def update_state(self, new_state):
+        """Handle update state for ``Image3D``.
+
+        Parameters
+        ----------
+        new_state : array-like
+            New synchronized state for this visualization.
+        """
+        if self._synchronize:
+            self.state = new_state[:3]
+            self.apply_scene_op(show_slices, self._slicer, self.state)
+            if (
+                len(new_state) == 4
+                and self._has_directions
+                and self.dwi.shape[-1] > new_state[3]
+            ):
+                new_volume_idx = int(new_state[3])
+                if new_volume_idx != self._volume_idx:
+                    self._volume_idx = new_volume_idx
+                    self.apply_scene_op(self._create_slicer_actor)
+
+    def _set_opacity(self, opacity):
+        """Handle  set opacity for ``Image3D``.
+
+        Parameters
+        ----------
+        opacity : int, optional
+            Slice opacity in percent, expected in ``[0, 100]``.
+        """
+        set_group_opacity(self._slicer, opacity / 100.0)
+        if opacity < 100:
+            for actor in self._slicer.children:
+                actor.material.depth_write = False
+                actor.material.alpha_mode = "blend"
+        else:
+            for actor in self._slicer.children:
+                actor.material.depth_write = True
+                actor.material.alpha_mode = "bayer"
+
+    def _set_slice_state(self, visibility, state):
+        """Handle  set slice state for ``Image3D``.
+
+        Parameters
+        ----------
+        visibility : tuple(bool, bool, bool)
+            Per-axis visibility flags for X/Y/Z slices.
+        state : array-like
+            Current slice state for X/Y/Z.
+        """
+        if self._slicer is None:
+            return
+        set_group_visibility(self._slicer, visibility)
+        show_slices(self._slicer, state)
+
+    def _set_clim(self, value_range):
+        """Handle  set clim for ``Image3D``.
+
+        Parameters
+        ----------
+        value_range : tuple(float, float)
+            Scalar range used for display intensity limits.
+        """
+        if self._slicer is None:
+            return
+        for actor in self._slicer.children:
+            actor.material.clim = value_range
+
+    def _set_interpolation(self, interpolation):
+        """Handle  set interpolation for ``Image3D``.
+
+        Parameters
+        ----------
+        interpolation : str, optional
+            Slice interpolation mode (``"linear"`` or ``"nearest"``).
+        """
+
+        if self._slicer is None:
+            return
+        for actor in self._slicer.children:
+            actor.material.interpolation = interpolation
+        self.interpolation = interpolation
+
+    def render_widgets(self):
+        """Handle render widgets for ``Image3D``."""
+        changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
+        if changed:
+            self._synchronize = new
+
+        if self.dwi.ndim == 4 and self.dwi.shape[-1] in (3, 4):
+            imgui.same_line()
+            changed, new = toggle_button(self.rgb, label="RGB")
+            if changed:
+                self.rgb = new
+                self._has_directions = not new
+                self.apply_scene_op(self._create_slicer_actor)
+
+        changed, new = thin_slider(
+            "Opacity",
+            self.opacity,
+            0,
+            100,
+            value_type="int",
+            text_format=".0f",
+            value_unit="%",
+            step=1,
+        )
+        if changed:
+            self.opacity = new
+            self.apply_scene_op(self._set_opacity, self.opacity)
+
+        imgui.spacing()
+
+        axis_labels = ("X", "Y", "Z")
+        slider_bounds = slice_slider_bounds(self.dwi.shape[:3], affine=self.affine)
+        slider_state = slice_slider_values_from_state(self.state, affine=self.affine)
+        slicers = []
+        for axis, label in enumerate(axis_labels):
+            min_bound, max_bound = slider_bounds[axis]
+            slicers.append(
+                (
+                    thin_slider,
+                    (label, slider_state[axis], min_bound, max_bound),
+                    {
+                        "value_type": "float",
+                        "text_format": ".0f",
+                        "step": 1,
+                        "show_toggle": True,
+                        "toggle": self._slice_visibility[axis],
+                    },
+                )
+            )
+        render_data = render_group("Slice", slicers)
+        for idx, (changed, new, toggle) in enumerate(render_data):
+            if changed:
+                slider_state[idx] = int(round(new))
+                self.state = slice_state_from_slider_values(
+                    slider_state, affine=self.affine
+                )
+                if self._synchronize and self._sync_callabck is not None:
+                    self._sync_callabck(
+                        self,
+                        np.asarray([*self.state, self._volume_idx])
+                        if self._has_directions
+                        else self.state,
+                    )
+            self._slice_visibility[idx] = toggle
+        self.apply_scene_op(
+            self._set_slice_state,
+            tuple(self._slice_visibility),
+            np.asarray(self.state),
+        )
+
+        imgui.spacing()
+        volume_for_range = (
+            self.dwi[..., self._volume_idx] if self._has_directions else self.dwi
+        )
+        if not self._is_divergent_colormap():
+            intensity_changed, new_percentiles = two_disk_slider(
+                "Intensities",
+                self._value_percentiles,
+                0,
+                100,
+                text_format=".1f",
+                step=1,
+                min_gap=0.1,
+                display_values=self.value_range,
+            )
+            if intensity_changed:
+                self._value_percentiles = new_percentiles
+                self.value_range = self._value_range_from_percentile(volume_for_range)
+                self.apply_scene_op(self._set_clim, self.value_range)
+
+        if self._has_directions and not self.rgb:
+            imgui.spacing()
+            volume_changed, new_idx = thin_slider(
+                "Directions",
+                self._volume_idx,
+                0,
+                self.dwi.shape[3] - 1,
+                value_type="int",
+                text_format=".0f",
+                step=1,
+            )
+            if volume_changed:
+                self._volume_idx = int(new_idx)
+                if self._synchronize and self._sync_callabck is not None:
+                    self._sync_callabck(
+                        self, np.asarray([*self.state, self._volume_idx])
+                    )
+                self.apply_scene_op(self._create_slicer_actor)
+
+        imgui.spacing()
+        colormap_changed, new_cmap = dropdown(
+            "Colormap", self._colormap_options, self.colormap, height=26
+        )
+        if colormap_changed:
+            self.apply_scene_op(self._apply_colormap, new_cmap)
+
+        imgui.spacing()
+
+        voxel = str(self._picked_voxel) if self._picked_voxel is not None else ""
+        intensity = (
+            np.array2string(self._picked_intensity, precision=2, separator=", ")
+            if self._picked_intensity is not None
+            else ""
+        )
+        value_color = THEME["primary"]
+        label_color = THEME["text"]
+        intesity_pos_x = imgui.get_content_region_avail().x * 0.5
+        imgui.push_id("voxel_info")
+        imgui.text_colored(label_color, "Voxel ")
+        imgui.same_line()
+        imgui.text_colored(value_color, voxel)
+        imgui.same_line()
+        imgui.set_cursor_pos_x(intesity_pos_x)
+        imgui.text_colored(label_color, "Intensity ")
+        imgui.same_line()
+        imgui.text_colored(value_color, intensity)
+        imgui.pop_id()
+
+        imgui.spacing()
+        imgui.spacing()
+        changed, new = segmented_switch(
+            "Interpolation",
+            ["Linear", "Nearest"],
+            self.interpolation.title(),
+        )
+        if changed:
+            self.apply_scene_op(self._set_interpolation, new.lower())
+
+        imgui.spacing()
+
+
+if not has_fury_v2:
+    create_image_visualization = Image3D = fury

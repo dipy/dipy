@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()

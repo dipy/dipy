@@ -1,7 +1,17 @@
 """ Utility functions used by the Cross Correlation (CC) metric """
 
 import numpy as np
+from dipy.utils.deprecator import deprecate_with_version
+
 from dipy.align.fused_types cimport floating
+from dipy.align.transforms cimport Transform
+from dipy.align.vector_fields cimport (
+    _apply_affine_2d_x0,
+    _apply_affine_2d_x1,
+    _apply_affine_3d_x0,
+    _apply_affine_3d_x1,
+    _apply_affine_3d_x2,
+)
 cimport cython
 cimport numpy as cnp
 
@@ -53,11 +63,18 @@ cdef inline int _wrap(int x, int m) noexcept nogil:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef inline void _update_factors(double[:, :, :, :] factors,
-                                 floating[:, :, :] moving,
-                                 floating[:, :, :] static,
-                                 cnp.npy_intp ss, cnp.npy_intp rr, cnp.npy_intp cc,
-                                 cnp.npy_intp s, cnp.npy_intp r, cnp.npy_intp c, int operation)noexcept nogil:
+cdef inline void _update_factors(
+    double[:, :, :, :] factors,
+    floating[:, :, :] moving,
+    floating[:, :, :] static,
+    cnp.npy_intp ss,
+    cnp.npy_intp rr,
+    cnp.npy_intp cc,
+    cnp.npy_intp s,
+    cnp.npy_intp r,
+    cnp.npy_intp c,
+    int operation,
+) noexcept nogil:
     r"""Updates the precomputed CC factors of a rectangular window
 
     Updates the precomputed CC factors of the rectangular window centered
@@ -172,7 +189,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static,
         cnp.npy_intp firstc, lastc, firstr, lastr, firsts, lasts
         cnp.npy_intp s, r, c, it, sides, sider, sidec
         double cnt
-        cnp.npy_intp ssss, sss, ss, rr, cc, prev_ss, prev_rr, prev_cc
+        cnp.npy_intp sss, ss, rr, cc, prev_ss, prev_rr, prev_cc
         double Imean, Jmean, IJprods, Isq, Jsq
         double[:, :, :, :] temp = np.zeros((2, nr, nc, 5), dtype=np.float64)
         floating[:, :, :, :] factors = np.zeros((ns, nr, nc, 5),
@@ -260,7 +277,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static,
                         firstc = _int_max(0, cc - radius)
                         lastc = _int_min(nc - 1, cc + radius)
                         sidec = (lastc - firstc + 1)
-                        cnt = sides*sider*sidec
+                        cnt = <double>sides * <double>sider * <double>sidec
                         Imean = temp[sss, rr, cc, SI] / cnt
                         Jmean = temp[sss, rr, cc, SJ] / cnt
                         IJprods = (temp[sss, rr, cc, SIJ] -
@@ -345,118 +362,221 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
-                               floating[:, :, :, :] factors,
-                               cnp.npy_intp radius):
-    """Gradient of the CC Metric w.r.t. the forward transformation.
+cdef double _compute_cc_2d(
+        floating[:, :, :] gradient,
+        floating[:, :, :] factors,
+        cnp.npy_intp radius,
+        bint forward_step,
+        floating[:, :, :] displacement=None,
+        double[:] metric_gradient=None,
+        double[:] theta=None,
+        Transform transform=None,
+        double[:, :] grid2world=None):
+    """Compute 2D CC energy and write the requested gradient output.
 
-    Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) :footcite:p:`Avants2008` w.r.t. the displacement
-    associated to the moving volume ('forward' step) as in
-    :footcite:t:`Avants2009`.
+    This helper contains the common computation used by SyN and affine
+    registration. If ``displacement`` is provided, it writes the dense SyN
+    update. If ``metric_gradient`` is provided, it accumulates the affine
+    parameter gradient instead. If neither is provided, it computes only the
+    CC energy. The two output buffers are not intended to be used together.
 
     Parameters
     ----------
-    grad_static : array, shape (S, R, C, 3)
-        the gradient of the static volume
-    factors : array, shape (S, R, C, 5)
+    gradient : array, shape (R, C, 2), optional
+        the gradient of the static image for a forward step, or the gradient
+        of the moving image for a backward step. May be None when only the CC
+        energy is requested.
+    factors : array, shape (R, C, 5)
         the precomputed cross correlation terms obtained via
-        precompute_cc_factors_3d
+        precompute_cc_factors_2d.
     radius : int
         the radius of the neighborhood used for the CC metric when
-        computing the factors. The returned vector field will be
-        zero along a boundary of width radius voxels.
+        computing the factors. The energy and gradient are computed
+        only over the valid image region, excluding a boundary of
+        width radius pixels.
+    forward_step : bool
+        if True, compute the forward step. Otherwise, compute the backward
+        step. This choice is only required by SyN.
+    displacement : array, shape (R, C, 2), optional
+        buffer in which to write the dense displacement gradient for SyN. If
+        None, the dense displacement gradient is not computed.
+    metric_gradient : array, shape (n,), optional
+        array to write the affine registration gradient of the cross
+        correlation energy with respect to ``theta``. If None, the affine
+        parameter gradient is not computed.
+    theta : array, shape (n,), optional
+        current parameter vector of the affine transform. Used only for affine
+        registration and required when ``metric_gradient`` is not None.
+    transform : instance of Transform, optional
+        transform with respect to whose parameters the gradient must be
+        computed. Used only for affine registration and required when
+        ``metric_gradient`` is not None.
+    grid2world : array, shape (3, 3), optional
+        transform from static grid coordinates to the physical coordinates
+        where the affine transform Jacobian must be evaluated. Used only for
+        affine registration and required when ``metric_gradient`` is not None.
 
     Returns
     -------
-    out : array, shape (S, R, C, 3)
-        the gradient of the cross correlation metric with respect to the
-        displacement associated to the moving volume
-    energy : the cross correlation energy (data term) at this iteration
+    energy : float
+        the cross correlation energy (data term).
 
-    References
-    ----------
-    .. footbibliography::
     """
     cdef:
-        cnp.npy_intp ns = grad_static.shape[0]
-        cnp.npy_intp nr = grad_static.shape[1]
-        cnp.npy_intp nc = grad_static.shape[2]
+        cnp.npy_intp nr = factors.shape[0]
+        cnp.npy_intp nc = factors.shape[1]
+        cnp.npy_intp n = 0
+        cnp.npy_intp r, c, k
+        int constant_jacobian = 0
         double energy = 0
-        cnp.npy_intp s, r, c
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
-        floating[:, :, :, :] out =\
-            np.zeros((ns, nr, nc, 3), dtype=np.asarray(grad_static).dtype)
+        double spatial_derivative
+        double[:, :] J
+        double[:] x
+
+    if metric_gradient is not None:
+        n = metric_gradient.shape[0]
+        J = np.empty((2, n), dtype=np.float64)
+        x = np.empty((2,), dtype=np.float64)
+
     with nogil:
-        for s in range(radius, ns-radius):
-            for r in range(radius, nr-radius):
-                for c in range(radius, nc-radius):
-                    Ii = factors[s, r, c, 0]
-                    Ji = factors[s, r, c, 1]
-                    sfm = factors[s, r, c, 2]
-                    sff = factors[s, r, c, 3]
-                    smm = factors[s, r, c, 4]
-                    if sff == 0.0 or smm == 0.0:
-                        continue
-                    localCorrelation = 0
-                    if sff * smm > 1e-5:
-                        localCorrelation = sfm * sfm / (sff * smm)
-                    if localCorrelation < 1:  # avoid bad values...
-                        energy -= localCorrelation
-                    temp = 2.0 * sfm / (sff * smm) * (Ji - sfm / sff * Ii)
-                    out[s, r, c, 0] -= temp * grad_static[s, r, c, 0]
-                    out[s, r, c, 1] -= temp * grad_static[s, r, c, 1]
-                    out[s, r, c, 2] -= temp * grad_static[s, r, c, 2]
-    return np.asarray(out), energy
+        if metric_gradient is not None:
+            metric_gradient[:] = 0
+
+        for r in range(radius, nr-radius):
+            for c in range(radius, nc-radius):
+                Ii = factors[r, c, 0]
+                Ji = factors[r, c, 1]
+                sfm = factors[r, c, 2]
+                sff = factors[r, c, 3]
+                smm = factors[r, c, 4]
+                if sff == 0.0 or smm == 0.0:
+                    continue
+                localCorrelation = 0
+                if sff * smm > 1e-5:
+                    localCorrelation = sfm * sfm / (sff * smm)
+                if localCorrelation < 1:  # avoid bad values...
+                    energy -= localCorrelation
+
+                if displacement is not None or metric_gradient is not None:
+                    # The affine path always uses the backward update.
+                    if displacement is not None and forward_step:
+                        temp = 2.0 * sfm / (sff * smm) * (
+                            Ji - sfm / sff * Ii
+                        )
+                    else:
+                        temp = 2.0 * sfm / (sff * smm) * (
+                            Ii - sfm / smm * Ji
+                        )
+
+                    if displacement is not None:
+                        displacement[r, c, 0] -= temp * gradient[r, c, 0]
+                        displacement[r, c, 1] -= temp * gradient[r, c, 1]
+                    else:
+                        x[0] = _apply_affine_2d_x0(
+                            <double>r, <double>c, 1.0, grid2world
+                        )
+                        x[1] = _apply_affine_2d_x1(
+                            <double>r, <double>c, 1.0, grid2world
+                        )
+
+                        if constant_jacobian == 0:
+                            constant_jacobian = transform._jacobian(theta, x, J)
+
+                        for k in range(n):
+                            spatial_derivative = (
+                                J[0, k] * gradient[r, c, 0]
+                                + J[1, k] * gradient[r, c, 1]
+                            )
+                            metric_gradient[k] -= temp * spatial_derivative
+
+    return energy
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
-                                floating[:, :, :, :] factors,
-                                cnp.npy_intp radius):
-    """Gradient of the CC Metric w.r.t. the backward transformation.
+cdef double _compute_cc_3d(
+        floating[:, :, :, :] gradient,
+        floating[:, :, :, :] factors,
+        cnp.npy_intp radius,
+        bint forward_step,
+        floating[:, :, :, :] displacement=None,
+        double[:] metric_gradient=None,
+        double[:] theta=None,
+        Transform transform=None,
+        double[:, :] grid2world=None):
+    """Compute 3D CC energy and write the requested gradient output.
 
-    Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) :footcite:p:`Avants2008`. w.r.t. the displacement
-    associated to the static volume ('backward' step) as in
-    :footcite:t:`Avants2009`.
+    This helper contains the common computation used by SyN and affine
+    registration. If ``displacement`` is provided, it writes the dense SyN
+    update. If ``metric_gradient`` is provided, it accumulates the affine
+    parameter gradient instead. If neither is provided, it computes only the
+    CC energy. The two output buffers are not intended to be used together.
 
     Parameters
     ----------
-    grad_moving : array, shape (S, R, C, 3)
-        the gradient of the moving volume
+    gradient : array, shape (S, R, C, 3), optional
+        the gradient of the static volume for a forward step, or the gradient
+        of the moving volume for a backward step. May be None when only the
+        CC energy is requested.
     factors : array, shape (S, R, C, 5)
         the precomputed cross correlation terms obtained via
-        precompute_cc_factors_3d
+        precompute_cc_factors_3d.
     radius : int
         the radius of the neighborhood used for the CC metric when
-        computing the factors. The returned vector field will be
-        zero along a boundary of width radius voxels.
+        computing the factors. The energy and gradient are computed
+        only over the valid image region, excluding a boundary of
+        width radius voxels.
+    forward_step : bool
+        if True, compute the forward step. Otherwise, compute the backward
+        step. This choice is only required by SyN.
+    displacement : array, shape (S, R, C, 3), optional
+        buffer in which to write the dense displacement gradient for SyN. If
+        None, the dense displacement gradient is not computed.
+    metric_gradient : array, shape (n,), optional
+        array to write the affine registration gradient of the cross
+        correlation energy with respect to ``theta``. If None, the affine
+        parameter gradient is not computed.
+    theta : array, shape (n,), optional
+        current parameter vector of the affine transform. Used only for affine
+        registration and required when ``metric_gradient`` is not None.
+    transform : instance of Transform, optional
+        transform with respect to whose parameters the gradient must be
+        computed. Used only for affine registration and required when
+        ``metric_gradient`` is not None.
+    grid2world : array, shape (4, 4), optional
+        transform from static grid coordinates to the physical coordinates
+        where the affine transform Jacobian must be evaluated. Used only for
+        affine registration and required when ``metric_gradient`` is not None.
 
     Returns
     -------
-    out : array, shape (S, R, C, 3)
-        the gradient of the cross correlation metric with respect to the
-        displacement associated to the static volume
-    energy : the cross correlation energy (data term) at this iteration
+    energy : float
+        the cross correlation energy (data term).
 
-    References
-    ----------
-    .. footbibliography::
     """
-    ftype = np.asarray(grad_moving).dtype
     cdef:
-        cnp.npy_intp ns = grad_moving.shape[0]
-        cnp.npy_intp nr = grad_moving.shape[1]
-        cnp.npy_intp nc = grad_moving.shape[2]
-        cnp.npy_intp s, r, c
+        cnp.npy_intp ns = factors.shape[0]
+        cnp.npy_intp nr = factors.shape[1]
+        cnp.npy_intp nc = factors.shape[2]
+        cnp.npy_intp n = 0
+        cnp.npy_intp s, r, c, k
+        int constant_jacobian = 0
         double energy = 0
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
-        floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), dtype=ftype)
+        double spatial_derivative
+        double[:, :] J
+        double[:] x
+
+    if metric_gradient is not None:
+        n = metric_gradient.shape[0]
+        J = np.empty((3, n), dtype=np.float64)
+        x = np.empty((3,), dtype=np.float64)
 
     with nogil:
+        if metric_gradient is not None:
+            metric_gradient[:] = 0
 
         for s in range(radius, ns-radius):
             for r in range(radius, nr-radius):
@@ -473,11 +593,140 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
                         localCorrelation = sfm * sfm / (sff * smm)
                     if localCorrelation < 1:  # avoid bad values...
                         energy -= localCorrelation
-                    temp = 2.0 * sfm / (sff * smm) * (Ii - sfm / smm * Ji)
-                    out[s, r, c, 0] -= temp * grad_moving[s, r, c, 0]
-                    out[s, r, c, 1] -= temp * grad_moving[s, r, c, 1]
-                    out[s, r, c, 2] -= temp * grad_moving[s, r, c, 2]
+
+                    if displacement is not None or metric_gradient is not None:
+                        # The affine path always uses the backward update.
+                        if displacement is not None and forward_step:
+                            temp = 2.0 * sfm / (sff * smm) * (
+                                Ji - sfm / sff * Ii
+                            )
+                        else:
+                            temp = 2.0 * sfm / (sff * smm) * (
+                                Ii - sfm / smm * Ji
+                            )
+
+                        if displacement is not None:
+                            displacement[s, r, c, 0] -= (
+                                temp * gradient[s, r, c, 0]
+                            )
+                            displacement[s, r, c, 1] -= (
+                                temp * gradient[s, r, c, 1]
+                            )
+                            displacement[s, r, c, 2] -= (
+                                temp * gradient[s, r, c, 2]
+                            )
+                        else:
+                            x[0] = _apply_affine_3d_x0(
+                                <double>s, <double>r, <double>c, 1.0,
+                                grid2world
+                            )
+                            x[1] = _apply_affine_3d_x1(
+                                <double>s, <double>r, <double>c, 1.0,
+                                grid2world
+                            )
+                            x[2] = _apply_affine_3d_x2(
+                                <double>s, <double>r, <double>c, 1.0,
+                                grid2world
+                            )
+
+                            if constant_jacobian == 0:
+                                constant_jacobian = transform._jacobian(theta, x, J)
+
+                            for k in range(n):
+                                spatial_derivative = (
+                                    J[0, k] * gradient[s, r, c, 0]
+                                    + J[1, k] * gradient[s, r, c, 1]
+                                    + J[2, k] * gradient[s, r, c, 2]
+                                )
+                                metric_gradient[k] -= (
+                                    temp * spatial_derivative
+                                )
+
+    return energy
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def compute_cc_step_3d(floating[:, :, :, :] gradient,
+                       floating[:, :, :, :] factors,
+                       cnp.npy_intp radius,
+                       bint forward_step):
+    """Gradient of the 3D CC metric for one SyN step.
+
+    Computes either the forward or backward gradient of the Cross Correlation
+    metric for symmetric registration (SyN) :footcite:p:`Avants2008`, as in
+    :footcite:t:`Avants2009`.
+
+    Parameters
+    ----------
+    gradient : array, shape (S, R, C, 3)
+        the gradient of the static volume for a forward step, or the gradient
+        of the moving volume for a backward step
+    factors : array, shape (S, R, C, 5)
+        the precomputed cross correlation terms obtained via
+        precompute_cc_factors_3d
+    radius : int
+        the radius of the neighborhood used for the CC metric when
+        computing the factors. The returned vector field will be
+        zero along a boundary of width radius voxels.
+    forward_step : bool
+        if True, compute the forward step. Otherwise, compute the backward
+        step.
+
+    Returns
+    -------
+    out : array, shape (S, R, C, 3)
+        the gradient of the cross correlation metric with respect to the
+        selected displacement
+    energy : the cross correlation energy (data term) at this iteration
+
+    References
+    ----------
+    .. footbibliography::
+    """
+    cdef:
+        cnp.npy_intp ns = gradient.shape[0]
+        cnp.npy_intp nr = gradient.shape[1]
+        cnp.npy_intp nc = gradient.shape[2]
+        floating[:, :, :, :] out =\
+            np.zeros((ns, nr, nc, 3), dtype=np.asarray(gradient).dtype)
+        double energy
+
+    energy = _compute_cc_3d(
+        gradient,
+        factors,
+        radius,
+        forward_step,
+        out,
+    )
     return np.asarray(out), energy
+
+
+@deprecate_with_version(
+    "compute_cc_forward_step_3d is deprecated. "
+    "Use compute_cc_step_3d with forward_step=True instead.",
+    since="1.13",
+    until="2.0",
+)
+def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
+                               floating[:, :, :, :] factors,
+                               cnp.npy_intp radius):
+    """Deprecated. Use :func:`compute_cc_step_3d` with ``forward_step=True``."""
+    return compute_cc_step_3d(grad_static, factors, radius, True)
+
+
+@deprecate_with_version(
+    "compute_cc_backward_step_3d is deprecated. "
+    "Use compute_cc_step_3d with forward_step=False instead.",
+    since="1.13",
+    until="2.0",
+)
+def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
+                                floating[:, :, :, :] factors,
+                                cnp.npy_intp radius):
+    """Deprecated. Use :func:`compute_cc_step_3d` with ``forward_step=False``."""
+    return compute_cc_step_3d(grad_moving, factors, radius, False)
 
 
 @cython.boundscheck(False)
@@ -652,130 +901,245 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
-                               floating[:, :, :] factors,
-                               cnp.npy_intp radius):
-    """Gradient of the CC Metric w.r.t. the forward transformation.
+def compute_cc_step_2d(floating[:, :, :] gradient,
+                       floating[:, :, :] factors,
+                       cnp.npy_intp radius,
+                       bint forward_step):
+    """Gradient of the 2D CC metric for one SyN step.
 
-    Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) :footcite:p:`Avants2008` w.r.t. the displacement
-    associated to the moving image ('backward' step) as in
+    Computes either the forward or backward gradient of the Cross Correlation
+    metric for symmetric registration (SyN) :footcite:p:`Avants2008`, as in
     :footcite:t:`Avants2009`.
 
     Parameters
     ----------
-    grad_static : array, shape (R, C, 2)
-        the gradient of the static image
+    gradient : array, shape (R, C, 2)
+        the gradient of the static image for a forward step, or the gradient
+        of the moving image for a backward step
     factors : array, shape (R, C, 5)
         the precomputed cross correlation terms obtained via
         precompute_cc_factors_2d
+    radius : int
+        the radius of the neighborhood used for the CC metric when
+        computing the factors. The returned vector field will be
+        zero along a boundary of width radius pixels.
+    forward_step : bool
+        if True, compute the forward step. Otherwise, compute the backward
+        step.
 
     Returns
     -------
     out : array, shape (R, C, 2)
         the gradient of the cross correlation metric with respect to the
-        displacement associated to the moving image
+        selected displacement
     energy : the cross correlation energy (data term) at this iteration
-
-    Notes
-    -----
-    Currently, the gradient of the static image is not being used, but some
-    authors suggest that symmetrizing the gradient by including both, the
-    moving and static gradients may improve the registration quality. We are
-    leaving this parameter as a placeholder for future investigation
 
     References
     ----------
     .. footbibliography::
     """
     cdef:
-        cnp.npy_intp nr = grad_static.shape[0]
-        cnp.npy_intp nc = grad_static.shape[1]
-        double energy = 0
-        cnp.npy_intp r, c
-        double Ii, Ji, sfm, sff, smm, localCorrelation, temp
+        cnp.npy_intp nr = gradient.shape[0]
+        cnp.npy_intp nc = gradient.shape[1]
         floating[:, :, :] out = np.zeros((nr, nc, 2),
-                                         dtype=np.asarray(grad_static).dtype)
-    with nogil:
+                                         dtype=np.asarray(gradient).dtype)
+        double energy
 
-        for r in range(radius, nr-radius):
-            for c in range(radius, nc-radius):
-                Ii = factors[r, c, 0]
-                Ji = factors[r, c, 1]
-                sfm = factors[r, c, 2]
-                sff = factors[r, c, 3]
-                smm = factors[r, c, 4]
-                if sff == 0.0 or smm == 0.0:
-                    continue
-                localCorrelation = 0
-                if sff * smm > 1e-5:
-                    localCorrelation = sfm * sfm / (sff * smm)
-                if localCorrelation < 1:  # avoid bad values...
-                    energy -= localCorrelation
-                temp = 2.0 * sfm / (sff * smm) * (Ji - sfm / sff * Ii)
-                out[r, c, 0] -= temp * grad_static[r, c, 0]
-                out[r, c, 1] -= temp * grad_static[r, c, 1]
+    energy = _compute_cc_2d(
+        gradient,
+        factors,
+        radius,
+        forward_step,
+        out,
+    )
     return np.asarray(out), energy
+
+
+@deprecate_with_version(
+    "compute_cc_forward_step_2d is deprecated. "
+    "Use compute_cc_step_2d with forward_step=True instead.",
+    since="1.13",
+    until="2.0",
+)
+def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
+                               floating[:, :, :] factors,
+                               cnp.npy_intp radius):
+    """Deprecated. Use :func:`compute_cc_step_2d` with ``forward_step=True``."""
+    return compute_cc_step_2d(grad_static, factors, radius, True)
+
+
+@deprecate_with_version(
+    "compute_cc_backward_step_2d is deprecated. "
+    "Use compute_cc_step_2d with forward_step=False instead.",
+    since="1.13",
+    until="2.0",
+)
+def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
+                                floating[:, :, :] factors,
+                                cnp.npy_intp radius):
+    """Deprecated. Use :func:`compute_cc_step_2d` with ``forward_step=False``."""
+    return compute_cc_step_2d(grad_moving, factors, radius, False)
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
-                                floating[:, :, :] factors,
-                                cnp.npy_intp radius):
-    """Gradient of the CC Metric w.r.t. the backward transformation.
+def compute_cc_affine_2d(
+        floating[:, :, :] factors,
+        cnp.npy_intp radius,
+        floating[:, :, :] grad_moving=None,
+        double[:] theta=None,
+        Transform transform=None,
+        double[:, :] grid2world=None,
+        double[:] metric_gradient=None):
+    """Compute 2D CC energy and, if requested, its parameter gradient.
 
-    Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) :footcite:p:`Avants2008` w.r.t. the displacement
-    associated to the static image ('forward' step) as in
-    :footcite:t:`Avants2009`.
+    Computes the local normalized cross-correlation energy and, when
+    ``metric_gradient`` is not None, its gradient with respect to the
+    parameters of an affine transform.
+
+    The returned value is the negative sum of squared local
+    normalized cross-correlations over the valid image region. Therefore, this
+    value can be directly minimized by an optimizer.
+
+    The gradient is computed using the same local CC scalar factor used by
+    `compute_cc_backward_step_2d`. Instead of returning a dense displacement
+    field, this function projects that image-space gradient onto the affine
+    transform parameters using the transform Jacobian.
 
     Parameters
     ----------
-    grad_moving : array, shape (R, C, 2)
-        the gradient of the moving image
     factors : array, shape (R, C, 5)
         the precomputed cross correlation terms obtained via
         precompute_cc_factors_2d
+    radius : int
+        the radius of the neighborhood used for the CC metric when computing
+        the factors. The metric is computed only over the valid image region,
+        excluding a boundary of width radius pixels.
+    grad_moving : array, shape (R, C, 2), optional
+        the gradient of the moving image. Required when ``metric_gradient``
+        is not None.
+    theta : array, shape (n,), optional
+        current parameter vector of the affine transform. Required when
+        ``metric_gradient`` is not None.
+    transform : instance of Transform, optional
+        transform with respect to whose parameters the gradient must be
+        computed. Required when ``metric_gradient`` is not None.
+    grid2world : array, shape (3, 3), optional
+        transform from static grid coordinates to the physical coordinates
+        where the affine transform Jacobian must be evaluated. Required when
+        ``metric_gradient`` is not None.
+    metric_gradient : array, shape (n,), optional
+        array to write the gradient of the cross correlation energy with
+        respect to ``theta``. If None, the gradient is not computed.
 
     Returns
     -------
-    out : array, shape (R, C, 2)
-        the gradient of the cross correlation metric with respect to the
-        displacement associated to the static image
-    energy : the cross correlation energy (data term) at this iteration
+    energy : float
+        the cross correlation energy (data term)
 
-    References
-    ----------
-    .. footbibliography::
     """
-    ftype = np.asarray(grad_moving).dtype
-    cdef:
-        cnp.npy_intp nr = grad_moving.shape[0]
-        cnp.npy_intp nc = grad_moving.shape[1]
-        cnp.npy_intp r, c
-        double energy = 0
-        double Ii, Ji, sfm, sff, smm, localCorrelation, temp
-        floating[:, :, :] out = np.zeros((nr, nc, 2), dtype=ftype)
+    if metric_gradient is not None and (
+        grad_moving is None
+        or theta is None
+        or transform is None
+        or grid2world is None
+    ):
+        raise ValueError(
+            "grad_moving, theta, transform and grid2world are required "
+            "when metric_gradient is provided"
+        )
 
-    with nogil:
+    return _compute_cc_2d[floating](
+        grad_moving,
+        factors,
+        radius,
+        False,
+        None,
+        metric_gradient,
+        theta,
+        transform,
+        grid2world,
+    )
 
-        for r in range(radius, nr-radius):
-            for c in range(radius, nc-radius):
-                Ii = factors[r, c, 0]
-                Ji = factors[r, c, 1]
-                sfm = factors[r, c, 2]
-                sff = factors[r, c, 3]
-                smm = factors[r, c, 4]
-                if sff == 0.0 or smm == 0.0:
-                    continue
-                localCorrelation = 0
-                if sff * smm > 1e-5:
-                    localCorrelation = sfm * sfm / (sff * smm)
-                if localCorrelation < 1:  # avoid bad values...
-                    energy -= localCorrelation
-                temp = 2.0 * sfm / (sff * smm) * (Ii - sfm / smm * Ji)
-                out[r, c, 0] -= temp * grad_moving[r, c, 0]
-                out[r, c, 1] -= temp * grad_moving[r, c, 1]
-    return np.asarray(out), energy
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def compute_cc_affine_3d(
+        floating[:, :, :, :] factors,
+        cnp.npy_intp radius,
+        floating[:, :, :, :] grad_moving=None,
+        double[:] theta=None,
+        Transform transform=None,
+        double[:, :] grid2world=None,
+        double[:] metric_gradient=None):
+    """Compute 3D CC energy and, if requested, its parameter gradient.
+
+    Computes the local normalized cross-correlation energy and, when
+    ``metric_gradient`` is not None, its gradient with respect to the
+    parameters of an affine transform.
+
+    The returned value is the negative sum of squared local
+    normalized cross-correlations over the valid image region. Therefore, this
+    value can be directly minimized by an optimizer.
+
+    The gradient is computed using the same local CC scalar factor used by
+    `compute_cc_backward_step_3d`. Instead of returning a dense displacement
+    field, this function projects that image-space gradient onto the affine
+    transform parameters using the transform Jacobian.
+
+    Parameters
+    ----------
+    factors : array, shape (S, R, C, 5)
+        the precomputed cross correlation terms obtained via
+        precompute_cc_factors_3d
+    radius : int
+        the radius of the neighborhood used for the CC metric when computing
+        the factors. The metric is computed only over the valid image region,
+        excluding a boundary of width radius voxels.
+    grad_moving : array, shape (S, R, C, 3), optional
+        the gradient of the moving image. Required when ``metric_gradient``
+        is not None.
+    theta : array, shape (n,), optional
+        current parameter vector of the affine transform. Required when
+        ``metric_gradient`` is not None.
+    transform : instance of Transform, optional
+        transform with respect to whose parameters the gradient must be
+        computed. Required when ``metric_gradient`` is not None.
+    grid2world : array, shape (4, 4), optional
+        transform from static grid coordinates to the physical coordinates
+        where the affine transform Jacobian must be evaluated. Required when
+        ``metric_gradient`` is not None.
+    metric_gradient : array, shape (n,), optional
+        array to write the gradient of the cross correlation energy with
+        respect to ``theta``. If None, the gradient is not computed.
+
+    Returns
+    -------
+    energy : float
+        the cross correlation energy (data term)
+
+    """
+    if metric_gradient is not None and (
+        grad_moving is None
+        or theta is None
+        or transform is None
+        or grid2world is None
+    ):
+        raise ValueError(
+            "grad_moving, theta, transform and grid2world are required "
+            "when metric_gradient is provided"
+        )
+
+    return _compute_cc_3d[floating](
+        grad_moving,
+        factors,
+        radius,
+        False,
+        None,
+        metric_gradient,
+        theta,
+        transform,
+        grid2world,
+    )

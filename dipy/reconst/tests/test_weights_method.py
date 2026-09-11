@@ -23,7 +23,7 @@ MIN_POSITIVE_SIGNAL = 0.0001
 
 
 @set_random_number_generator()
-def test_outlier_funcs(rng):
+def test_outlier_funcs(rng=None):
     """Test functions that define outliers."""
 
     # true signal
@@ -66,7 +66,7 @@ def test_outlier_funcs(rng):
 
 
 @set_random_number_generator()
-def test_weights_funcs(rng):
+def test_weights_funcs(rng=None):
     """Test functions that define weights."""
 
     # true signal

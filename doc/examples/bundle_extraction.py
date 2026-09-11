@@ -204,7 +204,6 @@ if interactive:
 #
 # Save the bundle as a trx file. Let's save the recognized bundle in the
 # common space (atlas space), in this case, MNI space.
-
 reco_af_l = StatefulTractogram(recognized_af_l, atlas_header, Space.RASMM)
 save_tractogram(reco_af_l, "AF_L_rec_1.trx", bbox_valid_check=False)
 

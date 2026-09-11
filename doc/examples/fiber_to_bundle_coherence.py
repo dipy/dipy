@@ -164,10 +164,7 @@ mask_lgn[35 - rad : 35 + rad, 42 - rad : 42 + rad, 28 - rad : 28 + rad] = True
 # Select all the fibers that enter the LGN and discard all others
 filtered_fibers2 = utils.near_roi(streamlines, affine, mask_lgn, tol=1.8)
 
-sfil = []
-for i in range(len(streamlines)):
-    if filtered_fibers2[i]:
-        sfil.append(streamlines[i])
+sfil = [s for i, s in enumerate(streamlines) if filtered_fibers2[i]]
 streamlines = Streamlines(sfil)
 
 ###############################################################################
