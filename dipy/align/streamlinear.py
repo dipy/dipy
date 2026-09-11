@@ -948,7 +948,11 @@ def progressive_slr(
         if verbose:
             logger.info(" Translation  (3 parameters)...")
         slr_t = StreamlineLinearRegistration(
-            metric=metric, x0="translation", bounds=bounds[:3], method=method, num_threads=num_threads
+            metric=metric,
+            x0="translation",
+            bounds=bounds[:3],
+            method=method,
+            num_threads=num_threads,
         )
 
         slm_t = slr_t.optimize(static, moving)
@@ -960,7 +964,11 @@ def progressive_slr(
         if verbose:
             logger.info(" Rigid  (6 parameters) ...")
         slr_r = StreamlineLinearRegistration(
-            metric=metric, x0=x, bounds=bounds[:6], method=method, num_threads=num_threads
+            metric=metric,
+            x0=x,
+            bounds=bounds[:6],
+            method=method,
+            num_threads=num_threads,
         )
         slm_r = slr_r.optimize(static, moving)
 
@@ -972,7 +980,11 @@ def progressive_slr(
         if verbose:
             logger.info(" Similarity (7 parameters) ...")
         slr_s = StreamlineLinearRegistration(
-            metric=metric, x0=x, bounds=bounds[:7], method=method, num_threads=num_threads
+            metric=metric,
+            x0=x,
+            bounds=bounds[:7],
+            method=method,
+            num_threads=num_threads,
         )
         slm_s = slr_s.optimize(static, moving)
 
@@ -985,7 +997,11 @@ def progressive_slr(
             logger.info(" Scaling (9 parameters) ...")
 
         slr_c = StreamlineLinearRegistration(
-            metric=metric, x0=x, bounds=bounds[:9], method=method, num_threads=num_threads
+            metric=metric,
+            x0=x,
+            bounds=bounds[:9],
+            method=method,
+            num_threads=num_threads,
         )
         slm_c = slr_c.optimize(static, moving)
 
@@ -998,7 +1014,11 @@ def progressive_slr(
             logger.info(" Affine (12 parameters) ...")
 
         slr_a = StreamlineLinearRegistration(
-            metric=metric, x0=x, bounds=bounds[:12], method=method, num_threads=num_threads
+            metric=metric,
+            x0=x,
+            bounds=bounds[:12],
+            method=method,
+            num_threads=num_threads,
         )
         slm_a = slr_a.optimize(static, moving)
 
