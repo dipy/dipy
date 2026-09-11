@@ -14,7 +14,6 @@ from dipy.viz.skyline.render.renderer import (
     slice_slider_bounds,
     slice_slider_values_from_state,
     slice_state_from_slider_values,
-    voxel_values_from_slice_state,
 )
 from dipy.viz.skyline.render.sh_billboard import sph_glyph_billboard_sliced
 
@@ -491,10 +490,16 @@ class SHGlyph3D(Visualization):
 
     def set_slices(self):
         """Handle set slices for ``SHGlyph3D``."""
-        voxel_state = voxel_values_from_slice_state(self.state, affine=self.affine)
-        voxel_state = np.clip(voxel_state, 0, np.array(self.shape, dtype=float) - 1)
+        if self.affine is not None:
+            slice_state = np.asarray(self.state[:3], dtype=float)
+        else:
+            slice_state = np.clip(
+                np.asarray(self.state[:3], dtype=float),
+                0,
+                np.array(self.shape, dtype=float) - 1,
+            )
         for i, axis in enumerate(("x", "y", "z")):
-            self._slicer.set_slice(axis, float(voxel_state[i]))
+            self._slicer.set_slice(axis, float(slice_state[i]))
             self._last_state[i] = self.state[i]
 
     def update_state(self, new_state):
