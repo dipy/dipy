@@ -27,7 +27,7 @@ from dipy.viz import actor, window
 # Fetch and load a surface
 
 brain_lh = get_fnames(name="fury_surface")
-polydata = load_polydata(brain_lh)
+polydata = load_polydata(str(brain_lh))
 
 ###############################################################################
 # Extract the triangles and vertices

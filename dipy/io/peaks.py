@@ -7,8 +7,6 @@ from dipy.core.sphere import Sphere
 from dipy.direction.peaks import PeaksAndMetrics, reshape_peaks_for_visualization
 from dipy.io.image import save_nifti
 from dipy.reconst.dti import quantize_evecs
-from dipy.testing.decorators import warning_for_keywords
-from dipy.utils.deprecator import deprecate_with_version
 from dipy.utils.logging import logger
 
 
@@ -29,30 +27,6 @@ def _safe_save(group, array, name):
         ds[:] = array
 
 
-@deprecate_with_version(
-    "dipy.io.peaks.load_peaks is deprecated, Please usedipy.io.peaks.load_pam instead",
-    since="1.10",
-    until="1.12",
-)
-@warning_for_keywords()
-def load_peaks(fname, *, verbose=False):
-    """Load a PeaksAndMetrics HDF5 file (PAM5).
-
-    Parameters
-    ----------
-    fname : string
-        Filename of PAM5 file.
-    verbose : bool
-        Print summary information about the loaded file.
-
-    Returns
-    -------
-    pam : PeaksAndMetrics object
-
-    """
-    return load_pam(fname=fname, verbose=verbose)
-
-
 def load_pam(fname, *, verbose=False):
     """Load a PeaksAndMetrics HDF5 file (PAM5).
 
@@ -70,7 +44,7 @@ def load_pam(fname, *, verbose=False):
 
     """
     if Path(fname).suffix.lower() != ".pam5":
-        raise IOError("This function supports only PAM5 (HDF5) files")
+        raise OSError("This function supports only PAM5 (HDF5) files")
 
     f = h5py.File(fname, "r")
 
@@ -131,32 +105,6 @@ def load_pam(fname, *, verbose=False):
     return pam
 
 
-@deprecate_with_version(
-    "dipy.io.peaks.save_peaks is deprecated, Please use dipy.io.peaks.save_pam instead",
-    since="1.10.0",
-    until="1.12.0",
-)
-@warning_for_keywords()
-def save_peaks(fname, pam, *, affine=None, verbose=False):
-    """Save PeaksAndMetrics object attributes in a PAM5 file (HDF5).
-
-    Parameters
-    ----------
-    fname : string
-        Filename of PAM5 file.
-    pam : PeaksAndMetrics
-        Object holding peak_dirs, shm_coeffs and other attributes.
-    affine : array
-        The 4x4 matrix transforming the date from native to world coordinates.
-        PeaksAndMetrics should have that attribute but if not it can be
-        provided here. Default None.
-    verbose : bool
-        Print summary information about the saved file.
-
-    """
-    return save_pam(fname=fname, pam=pam, affine=affine, verbose=verbose)
-
-
 def save_pam(fname, pam, *, affine=None, verbose=False):
     """Save all important attributes of object PeaksAndMetrics in a PAM5 file (HDF5).
 
@@ -175,7 +123,7 @@ def save_pam(fname, pam, *, affine=None, verbose=False):
 
     """
     if Path(fname).suffix.lower() != ".pam5":
-        raise IOError("This function saves only PAM5 (HDF5) files")
+        raise OSError("This function saves only PAM5 (HDF5) files")
 
     if not (
         hasattr(pam, "peak_dirs")
@@ -249,54 +197,6 @@ def save_pam(fname, pam, *, affine=None, verbose=False):
         logger.info(pam.sphere.vertices.shape)
 
     return pam
-
-
-@deprecate_with_version(
-    "dipy.io.peaks.peaks_to_niftis is deprecated, Please"
-    " use dipy.io.peaks.pam_to_niftis instead",
-    since="1.10.0",
-    until="1.12.0",
-)
-@warning_for_keywords()
-def peaks_to_niftis(
-    pam,
-    fname_shm,
-    fname_dirs,
-    fname_values,
-    fname_indices,
-    *,
-    fname_gfa=None,
-    reshape_dirs=False,
-):
-    """Save SH, directions, indices and values of peaks to Nifti.
-
-    Parameters
-    ----------
-    pam : PeaksAndMetrics
-        Object holding peaks information and metrics.
-    fname_shm : str
-        Spherical Harmonics coefficients filename.
-    fname_dirs : str
-        Peaks direction filename.
-    fname_values : str
-        Peaks values filename.
-    fname_indices : str
-        Peaks indices filename.
-    fname_gfa : str, optional
-        Generalized FA filename.
-    reshape_dirs : bool, optional
-        If True, reshape peaks for visualization.
-
-    """
-    return pam_to_niftis(
-        pam=pam,
-        fname_peaks_dir=fname_dirs,
-        fname_peaks_values=fname_values,
-        fname_peaks_indices=fname_indices,
-        fname_gfa=fname_gfa,
-        fname_shm=fname_shm,
-        reshape_dirs=reshape_dirs,
-    )
 
 
 def pam_to_niftis(
@@ -492,12 +392,12 @@ def tensor_to_pam(
     pam : PeaksAndMetrics
         Object holding peaks information and metrics.
     """
-    npeaks = 1 if npeaks < 1 else npeaks
+    npeaks = max(npeaks, 1)
     npeaks = min(npeaks, evals.shape[-1])
     shape = evals.shape[:3]
-    peaks_dirs = np.zeros((shape + (npeaks, 3)))
+    peaks_dirs = np.zeros(shape + (npeaks, 3))
     peaks_dirs[..., :npeaks, :] = evecs[..., :npeaks, :]
-    peaks_values = np.zeros((shape + (npeaks,)))
+    peaks_values = np.zeros(shape + (npeaks,))
     peaks_values[..., :npeaks] = evals[..., :npeaks]
 
     if generate_peaks_indices:

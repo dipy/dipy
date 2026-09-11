@@ -4,7 +4,6 @@ from warnings import warn
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
 from dipy.tracking import utils
 from dipy.tracking.localtrack import local_tracker, pft_tracker
 from dipy.tracking.stopping_criterion import (
@@ -12,9 +11,51 @@ from dipy.tracking.stopping_criterion import (
     StreamlineStatus,
 )
 from dipy.utils import fast_numpy
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
+
+
+@deprecate_with_version(
+    "Using EuDXDirectionGetter-based objects (e.g., PeaksAndMetrics) as "
+    "direction_getter in LocalTracking is deprecated. "
+    "Please use dipy.tracking.tracker.eudx_tracking instead.",
+    since="1.12",
+    until="2.0",
+)
+def _warn_old_eudx_localtracking_api():
+    """Warn users about the deprecated EuDX local tracking API.
+
+    This function serves as a placeholder for backwards compatibility
+    and does not perform any operation.
+    """
+    pass
+
+
+def _is_eudx_direction_getter(direction_getter):
+    """Check if a direction getter is an EuDX direction getter.
+
+    Parameters
+    ----------
+    direction_getter : object
+        The direction getter object to check. This can be any object
+        that has a class hierarchy accessible via ``__mro__``.
+
+    Returns
+    -------
+    bool
+        True if the direction getter is an instance of
+        ``EuDXDirectionGetter`` from
+        ``dipy.reconst.eudx_direction_getter``, False otherwise.
+    """
+    return any(
+        cls.__name__ == "EuDXDirectionGetter"
+        and cls.__module__ == "dipy.reconst.eudx_direction_getter"
+        for cls in type(direction_getter).__mro__
+    )
 
 
 class LocalTracking:
+    """Local tractography class."""
+
     @staticmethod
     def _get_voxel_size(affine):
         """Computes the voxel sizes of an image from the affine.
@@ -114,6 +155,9 @@ class LocalTracking:
         self.randomize_forward_direction = randomize_forward_direction
         self.initial_directions = initial_directions
 
+        if _is_eudx_direction_getter(direction_getter):
+            _warn_old_eudx_localtracking_api()
+
         if affine.shape != (4, 4):
             raise ValueError("affine should be a (4, 4) array.")
         if step_size <= 0:
@@ -138,12 +182,12 @@ class LocalTracking:
         ):
             warn(
                 "Unidirectional tractography will be performed "
-                + "without providing initial directions nor "
-                + "randomizing extracted initial forward "
-                + "directions. This may introduce directional "
-                + "biases in the reconstructed streamlines. "
-                + "See ``initial_directions`` and "
-                + "``randomize_forward_direction`` parameters.",
+                "without providing initial directions nor "
+                "randomizing extracted initial forward "
+                "directions. This may introduce directional "
+                "biases in the reconstructed streamlines. "
+                "See ``initial_directions`` and "
+                "``randomize_forward_direction`` parameters.",
                 stacklevel=2,
             )
 
@@ -161,6 +205,24 @@ class LocalTracking:
         self.save_seeds = save_seeds
 
     def _tracker(self, seed, first_step, streamline):
+        """Track a streamline from a seed point using local tracking.
+
+        Parameters
+        ----------
+        seed : ndarray, shape (3,)
+            The seed point in voxel coordinates where tracking starts.
+        first_step : ndarray, shape (3,)
+            The initial direction of the first tracking step.
+        streamline : ndarray
+            An array to store the streamline points generated
+            during tracking.
+
+        Returns
+        -------
+        end : int
+            An integer indicating the stopping criterion that ended
+            the streamline tracking.
+        """
         return local_tracker(
             self.direction_getter,
             self.stopping_criterion,
@@ -173,6 +235,17 @@ class LocalTracking:
         )
 
     def __iter__(self):
+        """Iterate over tractogram streamlines.
+
+        Generates streamlines from seeds, transforms them to point
+        space and returns them.
+
+        Yields
+        ------
+        streamline : ndarray, shape (N, 3)
+            A single streamline in world coordinates. If `save_seeds`
+            is True, yields a tuple of (streamline, seed).
+        """
         # Make tracks, move them to point space and return
         track = self._generate_tractogram()
 
@@ -181,7 +254,18 @@ class LocalTracking:
         )
 
     def _generate_tractogram(self):
-        """A streamline generator"""
+        """Generate a tractogram by tracking streamlines from seeds.
+
+        Tracks streamlines in both forward and backward directions
+        from each seed point using the direction getter and stopping
+        criterion. Applies random seeding if specified.
+
+        Yields
+        ------
+        streamline : ndarray, shape (N, 3)
+            A single streamline in voxel coordinates. If `save_seeds`
+            is True, yields a tuple of (streamline, seed).
+        """
 
         # Get inverse transform (lin/offset) for seeds
         inv_A = np.linalg.inv(self.affine)
@@ -408,7 +492,7 @@ class ParticleFilteringTracking(LocalTracking):
         self.particle_stream_statuses = np.empty(
             (2, self.particle_count), dtype=np.intp
         )
-        super(ParticleFilteringTracking, self).__init__(
+        super().__init__(
             direction_getter=direction_getter,
             stopping_criterion=stopping_criterion,
             seeds=seeds,
@@ -427,6 +511,24 @@ class ParticleFilteringTracking(LocalTracking):
         )
 
     def _tracker(self, seed, first_step, streamline):
+        """Track a streamline using particle filtering tractography.
+
+        Parameters
+        ----------
+        seed : ndarray, shape (3,)
+            The seed point in voxel coordinates where tracking starts.
+        first_step : ndarray, shape (3,)
+            The initial direction of the first tracking step.
+        streamline : ndarray
+            An array to store the streamline points generated
+            during tracking.
+
+        Returns
+        -------
+        end : int
+            An integer indicating the stopping criterion that ended
+            the streamline tracking.
+        """
         return pft_tracker(
             self.direction_getter,
             self.stopping_criterion,

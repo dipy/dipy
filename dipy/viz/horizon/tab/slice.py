@@ -4,7 +4,8 @@ import warnings
 
 import numpy as np
 
-from dipy.testing.decorators import is_macOS, warning_for_keywords
+from dipy.testing.decorators import is_macOS
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.tab import (
     HorizonTab,
@@ -14,7 +15,9 @@ from dipy.viz.horizon.tab import (
     build_switcher,
 )
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, has_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 
 if has_fury:
     from fury import colormap
@@ -286,7 +289,7 @@ class SlicesTab(HorizonTab):
         selected_slice.obj.set_visibility(visibility)
         self._visualizer.slice_actors[actor_idx].SetVisibility(visibility)
 
-    def _change_volume(self, slider, sync_vol=False):
+    def _change_volume(self, slider, *, sync_vol=False):
         value = int(np.rint(slider.value))
         if value != self._volume.selected_value:
             if not sync_vol:

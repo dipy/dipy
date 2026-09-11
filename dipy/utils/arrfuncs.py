@@ -3,7 +3,7 @@
 from nibabel.volumeutils import endian_codes, native_code
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 def as_native_array(arr):

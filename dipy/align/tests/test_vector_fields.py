@@ -1,6 +1,7 @@
 from nibabel.affines import apply_affine, from_matvec
 import numpy as np
 from numpy.testing import (
+    assert_allclose,
     assert_almost_equal,
     assert_array_almost_equal,
     assert_array_equal,
@@ -9,7 +10,7 @@ from numpy.testing import (
 )
 from scipy.ndimage import map_coordinates
 
-from dipy.align import floating, imwarp, vector_fields as vfu
+from dipy.align import imwarp, vector_fields as vfu
 from dipy.align.parzenhist import sample_domain_regular
 from dipy.align.transforms import regtransforms
 from dipy.core import geometry
@@ -17,7 +18,7 @@ from dipy.testing.decorators import set_random_number_generator
 
 
 @set_random_number_generator(3921116)
-def test_random_displacement_field_2d(rng):
+def test_random_displacement_field_2d(rng=None):
     from_shape = (25, 32)
     to_shape = (33, 29)
 
@@ -58,7 +59,7 @@ def test_random_displacement_field_2d(rng):
                 to_grid2world,
                 rng=rng,
             )
-            field = np.array(field, dtype=floating)
+            field = np.array(field, dtype=np.float32)
             assignment = np.array(assignment)
             # Verify the assignments are inside the requested region
             assert_equal(0, (assignment < 0).sum())
@@ -102,7 +103,7 @@ def test_random_displacement_field_2d(rng):
 
 
 @set_random_number_generator(7127562)
-def test_random_displacement_field_3d(rng):
+def test_random_displacement_field_3d(rng=None):
     from_shape = (25, 32, 31)
     to_shape = (33, 29, 35)
 
@@ -154,7 +155,7 @@ def test_random_displacement_field_3d(rng):
                 to_grid2world,
                 rng=rng,
             )
-            field = np.array(field, dtype=floating)
+            field = np.array(field, dtype=np.float32)
             assignment = np.array(assignment)
             # Verify the assignments are inside the requested region
             assert_equal(0, (assignment < 0).sum())
@@ -309,11 +310,11 @@ def test_warping_2d():
     # Create an image of a circle
     radius = 24
     circle = vfu.create_circle(nr, nc, radius)
-    circle = np.array(circle, dtype=floating)
+    circle = np.array(circle, dtype=np.float32)
 
     # Create a displacement field for warping
     d, dinv = vfu.create_harmonic_fields_2d(nr, nc, 0.2, 8)
-    d = np.asarray(d).astype(floating)
+    d = np.asarray(d).astype(np.float32)
 
     # Create grid coordinates
     x_0 = np.asarray(range(sh[0]))
@@ -356,7 +357,7 @@ def test_warping_2d():
             # transform
             dcopy = np.copy(d)
             vfu.reorient_vector_field_2d(dcopy, field_grid2world)
-            extended_dcopy = np.zeros((nr + 2, nc + 2, 2), dtype=floating)
+            extended_dcopy = np.zeros((nr + 2, nc + 2, 2), dtype=np.float32)
             extended_dcopy[1 : nr + 1, 1 : nc + 1, :] = dcopy
 
             # Compute the warping coordinates (see warp_2d documentation)
@@ -473,11 +474,11 @@ def test_warping_3d():
     # Create an image of a sphere
     radius = 24
     sphere = vfu.create_sphere(ns, nr, nc, radius)
-    sphere = np.array(sphere, dtype=floating)
+    sphere = np.array(sphere, dtype=np.float32)
 
     # Create a displacement field for warping
     d, dinv = vfu.create_harmonic_fields_3d(ns, nr, nc, 0.2, 8)
-    d = np.asarray(d).astype(floating)
+    d = np.asarray(d).astype(np.float32)
 
     # Create grid coordinates
     x_0 = np.asarray(range(sh[0]))
@@ -528,7 +529,7 @@ def test_warping_3d():
             dcopy = np.copy(d)
             vfu.reorient_vector_field_3d(dcopy, field_grid2world)
 
-            extended_dcopy = np.zeros((ns + 2, nr + 2, nc + 2, 3), dtype=floating)
+            extended_dcopy = np.zeros((ns + 2, nr + 2, nc + 2, 3), dtype=np.float32)
             extended_dcopy[1 : ns + 1, 1 : nr + 1, 1 : nc + 1, :] = dcopy
 
             # Compute the warping coordinates (see warp_2d documentation)
@@ -634,6 +635,42 @@ def test_warping_3d():
     )
 
 
+@set_random_number_generator(1234)
+def test_warping_threading(rng=None):
+    """Threaded warping matches one-thread warping."""
+    cases = (
+        (vfu.warp_2d, vfu.warp_2d_nn, (32, 29), 2),
+        (vfu.warp_3d, vfu.warp_3d_nn, (16, 15, 14), 3),
+    )
+
+    for warp, warp_nn, shape, dim in cases:
+        affine = np.eye(dim + 1)
+        out_shape = np.asarray(shape, dtype=np.int32)
+
+        for dtype in (np.float32, np.float64):
+            image = rng.random(shape).astype(dtype)
+            displacement = rng.normal(scale=0.25, size=shape + (dim,)).astype(dtype)
+
+            serial = warp(
+                image, displacement, affine, affine, affine, out_shape, num_threads=1
+            )
+            threaded = warp(
+                image, displacement, affine, affine, affine, out_shape, num_threads=2
+            )
+
+            assert_array_equal(threaded, serial)
+
+            labels = rng.integers(0, 8, size=shape, dtype=np.int32)
+            serial = warp_nn(
+                labels, displacement, affine, affine, affine, out_shape, num_threads=1
+            )
+            threaded = warp_nn(
+                labels, displacement, affine, affine, affine, out_shape, num_threads=2
+            )
+
+            assert_array_equal(threaded, serial)
+
+
 def test_affine_transforms_2d():
     r"""
     Tests 2D affine transform functions against scipy implementation
@@ -647,7 +684,7 @@ def test_affine_transforms_2d():
     # Create an image of a circle
     radius = 16
     circle = vfu.create_circle(codomain_shape[0], codomain_shape[1], radius)
-    circle = np.array(circle, dtype=floating)
+    circle = np.array(circle, dtype=np.float32)
 
     # Create grid coordinates
     x_0 = np.asarray(range(d_shape[0]))
@@ -733,7 +770,7 @@ def test_affine_transforms_3d():
     sphere = vfu.create_sphere(
         codomain_shape[0], codomain_shape[1], codomain_shape[2], radius
     )
-    sphere = np.array(sphere, dtype=floating)
+    sphere = np.array(sphere, dtype=np.float32)
 
     # Create grid coordinates
     x_0 = np.asarray(range(d_shape[0]))
@@ -811,7 +848,7 @@ def test_affine_transforms_3d():
 
 
 @set_random_number_generator(8315759)
-def test_compose_vector_fields_2d(rng):
+def test_compose_vector_fields_2d(rng=None):
     r"""
     Creates two random displacement field that exactly map pixels from an input
     image to an output image. The resulting displacements and their
@@ -841,7 +878,7 @@ def test_compose_vector_fields_2d(rng):
         target_grid2world,
         rng=rng,
     )
-    disp1 = np.array(disp1, dtype=floating)
+    disp1 = np.array(disp1, dtype=np.float32)
     assign1 = np.array(assign1)
 
     disp2, assign2 = vfu.create_random_displacement_2d(
@@ -851,11 +888,11 @@ def test_compose_vector_fields_2d(rng):
         target_grid2world,
         rng=rng,
     )
-    disp2 = np.array(disp2, dtype=floating)
+    disp2 = np.array(disp2, dtype=np.float32)
     assign2 = np.array(assign2)
 
     # create a random image (with decimal digits) to warp
-    moving_image = np.empty(tgt_sh, dtype=floating)
+    moving_image = np.empty(tgt_sh, dtype=np.float32)
     moving_image[...] = rng.integers(0, 10, np.size(moving_image)).reshape(
         tuple(tgt_sh)
     )
@@ -948,7 +985,7 @@ def test_compose_vector_fields_2d(rng):
     random_labels = rng.integers(0, 2, input_shape[0] * input_shape[1] * 2)
     random_labels = random_labels.reshape(input_shape + (2,))
     values = np.array([-1, tgt_sh[0]])
-    disp1 = (values[random_labels] - X).astype(floating)
+    disp1 = (values[random_labels] - X).astype(np.float32)
     composition, stats = vfu.compose_vector_fields_2d(
         disp1, disp2, None, None, 1.0, None
     )
@@ -985,7 +1022,7 @@ def test_compose_vector_fields_2d(rng):
 
 
 @set_random_number_generator(8315759)
-def test_compose_vector_fields_3d(rng):
+def test_compose_vector_fields_3d(rng=None):
     r"""
     Creates two random displacement field that exactly map pixels from an input
     image to an output image. The resulting displacements and their
@@ -1020,7 +1057,7 @@ def test_compose_vector_fields_3d(rng):
         target_grid2world,
         rng=rng,
     )
-    disp1 = np.array(disp1, dtype=floating)
+    disp1 = np.array(disp1, dtype=np.float32)
     assign1 = np.array(assign1)
 
     disp2, assign2 = vfu.create_random_displacement_3d(
@@ -1030,11 +1067,11 @@ def test_compose_vector_fields_3d(rng):
         target_grid2world,
         rng=rng,
     )
-    disp2 = np.array(disp2, dtype=floating)
+    disp2 = np.array(disp2, dtype=np.float32)
     assign2 = np.array(assign2)
 
     # create a random image (with decimal digits) to warp
-    moving_image = np.empty(tgt_sh, dtype=floating)
+    moving_image = np.empty(tgt_sh, dtype=np.float32)
     moving_image[...] = rng.integers(0, 10, np.size(moving_image)).reshape(
         tuple(tgt_sh)
     )
@@ -1133,7 +1170,7 @@ def test_compose_vector_fields_3d(rng):
     random_labels = rng.integers(0, 2, sz)
     random_labels = random_labels.reshape(input_shape + (3,))
     values = np.array([-1, tgt_sh[0]])
-    disp1 = (values[random_labels] - X).astype(floating)
+    disp1 = (values[random_labels] - X).astype(np.float32)
     composition, stats = vfu.compose_vector_fields_3d(
         disp1, disp2, None, None, 1.0, None
     )
@@ -1183,7 +1220,7 @@ def test_invert_vector_field_2d():
     trans_inv = np.linalg.inv(trans)
 
     d, _ = vfu.create_harmonic_fields_2d(nr, nc, 0.2, 8)
-    d = np.asarray(d).astype(floating)
+    d = np.asarray(d).astype(np.float32)
 
     for theta in [-1 * np.pi / 5.0, 0.0, np.pi / 5.0]:  # rotation angle
         for s in [0.5, 1.0, 2.0]:  # scale
@@ -1248,7 +1285,7 @@ def test_invert_vector_field_3d():
     trans_inv = np.linalg.inv(trans)
 
     d, _ = vfu.create_harmonic_fields_3d(ns, nr, nc, 0.2, 8)
-    d = np.asarray(d).astype(floating)
+    d = np.asarray(d).astype(np.float32)
 
     for theta in [-1 * np.pi / 5.0, 0.0, np.pi / 5.0]:  # rotation angle
         for s in [0.5, 1.0, 2.0]:  # scale
@@ -1308,7 +1345,7 @@ def test_resample_vector_field_2d():
     reduced_shape = np.array((32, 32), dtype=np.int32)
     factors = np.array([0.5, 0.5])
     d, dinv = vfu.create_harmonic_fields_2d(reduced_shape[0], reduced_shape[1], 0.3, 6)
-    d = np.array(d, dtype=floating)
+    d = np.array(d, dtype=np.float32)
 
     expanded = vfu.resample_displacement_field_2d(d, factors, domain_shape)
     subsampled = expanded[::2, ::2, :]
@@ -1327,7 +1364,7 @@ def test_resample_vector_field_3d():
     d, dinv = vfu.create_harmonic_fields_3d(
         reduced_shape[0], reduced_shape[1], reduced_shape[2], 0.3, 6
     )
-    d = np.array(d, dtype=floating)
+    d = np.array(d, dtype=np.float32)
 
     expanded = vfu.resample_displacement_field_3d(d, factors, domain_shape)
     subsampled = expanded[::2, ::2, ::2, :]
@@ -1336,14 +1373,14 @@ def test_resample_vector_field_3d():
 
 
 @set_random_number_generator(8315759)
-def test_downsample_scalar_field_2d(rng):
+def test_downsample_scalar_field_2d(rng=None):
     size = 32
     sh = (size, size)
     for reduce_r in [True, False]:
         nr = size - 1 if reduce_r else size
         for reduce_c in [True, False]:
             nc = size - 1 if reduce_c else size
-            image = np.empty((size, size), dtype=floating)
+            image = np.empty((size, size), dtype=np.float32)
             image[...] = rng.integers(0, 10, np.size(image)).reshape(sh)
 
             if reduce_r:
@@ -1368,14 +1405,14 @@ def test_downsample_scalar_field_2d(rng):
 
 
 @set_random_number_generator(2115556)
-def test_downsample_displacement_field_2d(rng):
+def test_downsample_displacement_field_2d(rng=None):
     size = 32
     sh = (size, size, 2)
     for reduce_r in [True, False]:
         nr = size - 1 if reduce_r else size
         for reduce_c in [True, False]:
             nc = size - 1 if reduce_c else size
-            field = np.empty((size, size, 2), dtype=floating)
+            field = np.empty((size, size, 2), dtype=np.float32)
             field[...] = rng.integers(0, 10, np.size(field)).reshape(sh)
 
             if reduce_r:
@@ -1400,7 +1437,7 @@ def test_downsample_displacement_field_2d(rng):
 
 
 @set_random_number_generator(8315759)
-def test_downsample_scalar_field_3d(rng):
+def test_downsample_scalar_field_3d(rng=None):
     size = 32
     sh = (size, size, size)
     for reduce_s in [True, False]:
@@ -1409,7 +1446,7 @@ def test_downsample_scalar_field_3d(rng):
             nr = size - 1 if reduce_r else size
             for reduce_c in [True, False]:
                 nc = size - 1 if reduce_c else size
-                image = np.empty((size, size, size), dtype=floating)
+                image = np.empty((size, size, size), dtype=np.float32)
                 image[...] = rng.integers(0, 10, np.size(image)).reshape(sh)
 
                 if reduce_s:
@@ -1442,7 +1479,7 @@ def test_downsample_scalar_field_3d(rng):
 
 
 @set_random_number_generator(8315759)
-def test_downsample_displacement_field_3d(rng):
+def test_downsample_displacement_field_3d(rng=None):
     size = 32
     sh = (size, size, size, 3)
     for reduce_s in [True, False]:
@@ -1451,7 +1488,7 @@ def test_downsample_displacement_field_3d(rng):
             nr = size - 1 if reduce_r else size
             for reduce_c in [True, False]:
                 nc = size - 1 if reduce_c else size
-                field = np.empty((size, size, size, 3), dtype=floating)
+                field = np.empty((size, size, size, 3), dtype=np.float32)
                 field[...] = rng.integers(0, 10, np.size(field)).reshape(sh)
 
                 if reduce_s:
@@ -1486,10 +1523,10 @@ def test_downsample_displacement_field_3d(rng):
 def test_reorient_vector_field_2d():
     shape = (16, 16)
     d, dinv = vfu.create_harmonic_fields_2d(shape[0], shape[1], 0.2, 4)
-    d = np.array(d, dtype=floating)
+    d = np.array(d, dtype=np.float32)
 
     # the vector field rotated 90 degrees
-    expected = np.empty(shape=shape + (2,), dtype=floating)
+    expected = np.empty(shape=shape + (2,), dtype=np.float32)
     expected[..., 0] = -1 * d[..., 1]
     expected[..., 1] = d[..., 0]
 
@@ -1510,11 +1547,11 @@ def test_reorient_vector_field_2d():
 def test_reorient_vector_field_3d():
     sh = (16, 16, 16)
     d, dinv = vfu.create_harmonic_fields_3d(sh[0], sh[1], sh[2], 0.2, 4)
-    d = np.array(d, dtype=floating)
-    dinv = np.array(dinv, dtype=floating)
+    d = np.array(d, dtype=np.float32)
+    dinv = np.array(dinv, dtype=np.float32)
 
     # the vector field rotated 90 degrees around the last axis
-    expected = np.empty(shape=sh + (3,), dtype=floating)
+    expected = np.empty(shape=sh + (3,), dtype=np.float32)
     expected[..., 0] = -1 * d[..., 1]
     expected[..., 1] = d[..., 0]
     expected[..., 2] = d[..., 2]
@@ -1547,7 +1584,7 @@ def test_reorient_vector_field_3d():
 
 
 @set_random_number_generator(1134781)
-def test_reorient_random_vector_fields(rng):
+def test_reorient_random_vector_fields(rng=None):
     # Test reorienting vector field
     for n_dims, func in (
         (2, vfu.reorient_vector_field_2d),
@@ -1555,14 +1592,14 @@ def test_reorient_random_vector_fields(rng):
     ):
         size = [20, 30, 40][:n_dims] + [n_dims]
         arr = rng.normal(size=size)
-        arr_32 = arr.astype(floating)
+        arr_32 = arr.astype(np.float32)
         affine = from_matvec(rng.normal(size=(n_dims, n_dims)), np.zeros(n_dims))
         func(arr_32, affine)
         assert_almost_equal(arr_32, apply_affine(affine, arr), 6)
         # Reorient reorients without translation
         trans = np.arange(n_dims) + 2
         affine[:-1, -1] = trans
-        arr_32 = arr.astype(floating)
+        arr_32 = arr.astype(np.float32)
         func(arr_32, affine)
         assert_almost_equal(arr_32, apply_affine(affine, arr) - trans, 6)
 
@@ -1572,7 +1609,7 @@ def test_reorient_random_vector_fields(rng):
 
 
 @set_random_number_generator(3921116)
-def test_gradient_2d(rng):
+def test_gradient_2d(rng=None):
     sh = (25, 32)
     # Create grid coordinates
     x_0 = np.asarray(range(sh[0]))
@@ -1595,14 +1632,14 @@ def test_gradient_2d(rng):
     b = 5e-3
     c = 7e-3
     img = a * TX[..., 0] ** 2 + b * TX[..., 0] * TX[..., 1] + c * TX[..., 1] ** 2
-    img = img.astype(floating)
+    img = img.astype(np.float32)
     # img is an image sampled at X with grid-to-space transform T
 
     # Test sparse gradient: choose some sample points (in space)
     sample = sample_domain_regular(20, np.array(sh, dtype=np.int32), T, rng=rng)
     sample = np.array(sample)
     # Compute the analytical gradient at all points
-    expected = np.empty((sample.shape[0], 2), dtype=floating)
+    expected = np.empty((sample.shape[0], 2), dtype=np.float32)
     expected[..., 0] = 2 * a * sample[:, 0] + b * sample[:, 1]
     expected[..., 1] = 2 * c * sample[:, 1] + b * sample[:, 0]
     # Get the numerical gradient with the implementation under test
@@ -1624,7 +1661,7 @@ def test_gradient_2d(rng):
 
     # Test dense gradient
     # Compute the analytical gradient at all points
-    expected = np.empty(sh + (2,), dtype=floating)
+    expected = np.empty(sh + (2,), dtype=np.float32)
     expected[..., 0] = 2 * a * TX[..., 0] + b * TX[..., 1]
     expected[..., 1] = 2 * c * TX[..., 1] + b * TX[..., 0]
     # Get the numerical gradient with the implementation under test
@@ -1644,7 +1681,7 @@ def test_gradient_2d(rng):
 
 
 @set_random_number_generator(3921116)
-def test_gradient_3d(rng):
+def test_gradient_3d(rng=None):
     shape = (25, 32, 15)
     # Create grid coordinates
     x_0 = np.asarray(range(shape[0]))
@@ -1678,12 +1715,12 @@ def test_gradient_3d(rng):
         + f * TX[..., 1] * TX[..., 2]
     )
 
-    img = img.astype(floating)
+    img = img.astype(np.float32)
     # Test sparse gradient: choose some sample points (in space)
     sample = sample_domain_regular(100, np.array(shape, dtype=np.int32), T, rng=rng)
     sample = np.array(sample)
     # Compute the analytical gradient at all points
-    expected = np.empty((sample.shape[0], 3), dtype=floating)
+    expected = np.empty((sample.shape[0], 3), dtype=np.float32)
     expected[..., 0] = 2 * a * sample[:, 0] + d * sample[:, 1] + e * sample[:, 2]
     expected[..., 1] = 2 * b * sample[:, 1] + d * sample[:, 0] + f * sample[:, 2]
     expected[..., 2] = 2 * c * sample[:, 2] + e * sample[:, 0] + f * sample[:, 1]
@@ -1707,7 +1744,7 @@ def test_gradient_3d(rng):
 
     # Test dense gradient
     # Compute the analytical gradient at all points
-    expected = np.empty(shape + (3,), dtype=floating)
+    expected = np.empty(shape + (3,), dtype=np.float32)
     expected[..., 0] = 2 * a * TX[..., 0] + d * TX[..., 1] + e * TX[..., 2]
     expected[..., 1] = 2 * b * TX[..., 1] + d * TX[..., 0] + f * TX[..., 2]
     expected[..., 2] = 2 * c * TX[..., 2] + e * TX[..., 0] + f * TX[..., 1]
@@ -1725,3 +1762,25 @@ def test_gradient_3d(rng):
         ValueError, vfu.gradient, img, sp_to_grid, img_spacing, shape, invalid_affine
     )
     assert_raises(ValueError, vfu.gradient, img, sp_to_grid, invalid_spacings, shape, T)
+
+
+@set_random_number_generator(1234)
+def test_compose_vector_fields_threading(rng=None):
+    """Threaded composition matches one-thread composition and statistics."""
+    cases = (
+        (vfu.compose_vector_fields_2d, (32, 29, 2)),
+        (vfu.compose_vector_fields_3d, (16, 15, 14, 3)),
+    )
+
+    for compose, shape in cases:
+        for dtype in (np.float32, np.float64):
+            d1 = rng.normal(scale=0.25, size=shape).astype(dtype)
+            d2 = rng.normal(scale=0.25, size=shape).astype(dtype)
+
+            serial, serial_stats = compose(d1, d2, None, None, 1.0, None, num_threads=1)
+            threaded, threaded_stats = compose(
+                d1, d2, None, None, 1.0, None, num_threads=2
+            )
+
+            assert_array_equal(threaded, serial)
+            assert_allclose(threaded_stats, serial_stats, rtol=1e-12, atol=1e-12)

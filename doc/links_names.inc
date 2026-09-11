@@ -22,7 +22,6 @@
 .. _nibabel: https://nipy.org/nibabel
 .. _nibabel pypi: https://pypi.python.org/pypi/nibabel
 .. _nipy development guidelines: https://nipy.org/nipy/devel/guidelines/index.html
-.. _`dipy gitter`: https://gitter.im/dipy/dipy
 .. _neurostars: https://neurostars.org/
 .. _h5py: https://www.h5py.org/
 .. _cvxpy: https://www.cvxpy.org/

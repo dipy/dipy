@@ -3,11 +3,13 @@ import warnings
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, has_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 
 if has_fury:
     from fury import actor
@@ -58,7 +60,7 @@ class SlicesVisualizer:
             if self._data_ndim == 4 and rgb and self._data_shape[-1] != 3:
                 warnings.warn(
                     "The rgb flag is enabled but the color "
-                    + "channel information is not provided",
+                    "channel information is not provided",
                     stacklevel=2,
                 )
             vol_data = self._volume_calculations(self._percentiles)

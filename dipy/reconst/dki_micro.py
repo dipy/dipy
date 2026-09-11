@@ -27,7 +27,7 @@ from dipy.reconst.dti import (
     trace,
 )
 from dipy.reconst.vec_val_sum import vec_val_vect
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()
@@ -330,6 +330,7 @@ def _compartments_eigenvalues(cdt):
 class KurtosisMicrostructureModel(DiffusionKurtosisModel):
     """Class for the Diffusion Kurtosis Microstructural Model"""
 
+    @warning_for_keywords(from_version="1.12.0")
     def __init__(self, gtab, *args, fit_method="WLS", **kwargs):
         """Initialize a KurtosisMicrostrutureModel class instance.
 
@@ -388,7 +389,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
             termination. If gtol is None, fiber direction is directly taken
             from the initial sampled directions of the given sphere object
 
-        awf_only : bool, optiomal
+        awf_only : bool, optional
             If set to true only the axonal volume fraction is computed from
             the kurtosis tensor. Default = False
         """

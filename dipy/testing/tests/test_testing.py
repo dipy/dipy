@@ -7,9 +7,11 @@ import numpy as np
 import numpy.testing as npt
 
 import dipy.testing as dt
+from dipy.testing.decorators import set_random_number_generator
 
 
-def test_assert():
+@set_random_number_generator()
+def test_assert(rng=None):
     npt.assert_raises(AssertionError, dt.assert_false, True)
     npt.assert_raises(AssertionError, dt.assert_true, False)
     npt.assert_raises(AssertionError, dt.assert_less, 2, 1)
@@ -22,6 +24,19 @@ def test_assert():
     arr = [np.arange(k) for k in range(2, 12, 3)]
     arr2 = [np.arange(k) for k in range(2, 12, 4)]
     npt.assert_raises(AssertionError, dt.assert_arrays_equal, arr, arr2)
+
+    arr = rng.random((100,))
+    arr2 = arr.copy()
+    arr2[0] += 1e-4
+    npt.assert_raises(
+        AssertionError,
+        dt.assert_percent_almost_equal,
+        arr,
+        arr2,
+        decimal=5,
+        percent=1.0,
+    )
+    dt.assert_percent_almost_equal(arr, arr2, decimal=5, percent=0.99)
 
 
 def assert_warn_len_equal(mod, n_in_context):

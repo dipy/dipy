@@ -15,6 +15,28 @@ import re
 import sys
 import time
 
+from docutils.parsers.rst import Directive, directives
+
+
+class _LegacyDirective(Directive):
+    """No-op stub for scipy's ``.. legacy::`` directive.
+
+    scipy uses this directive in its own Sphinx build (via a custom
+    extension).  When autodoc pulls scipy docstrings into DIPY's docs the
+    directive is unknown, causing a hard ERROR.  Registering a silent stub
+    here prevents that error.
+    """
+
+    required_arguments = 1
+    optional_arguments = 0
+    has_content = True
+
+    def run(self):
+        return []
+
+
+directives.register_directive("legacy", _LegacyDirective)
+
 # Doc generation depends on being able to import dipy
 try:
     import dipy
@@ -59,6 +81,12 @@ autodoc_skip_members = [
     "docstring_addendum",
 ]
 
+# Suppress cross-reference warnings originating from third-party docstrings
+# (e.g. scipy labels like 'dev-arrayapi' that exist only in scipy's own docs).
+nitpick_ignore_regex = [
+    ("ref.ref", "dev-arrayapi"),
+]
+
 # Sphinx extension for BibTeX style citations.
 # https://github.com/mcmtroffaes/sphinxcontrib-bibtex
 bibtex_bibfiles = ["references.bib"]
@@ -81,7 +109,7 @@ master_doc = "index"
 
 build_date = datetime.datetime.fromtimestamp(
     int(os.environ.get("SOURCE_DATE_EPOCH", time.time())),
-    tz=datetime.timezone.utc,
+    tz=datetime.UTC,
 )
 
 # General information about the project.
@@ -212,18 +240,38 @@ html_theme_options = {
             "name": "Workshops",
             "sections": [
                 {
-                    "name": "Latest",
+                    "name": "Upcoming",
                     "children": [
                         {
-                            "name": "DIPY Workshop 2024",
-                            "url": "https://dipy.org/workshops/dipy-workshop-2024",
+                            "name": "DIPY Workshop 2026",
+                            "url": "https://workshop.dipy.org",
                             "link_type": "external",
                         }
                     ],
                 },
+                # {
+                #     "name": "Latest",
+                #     "children": [
+                #         {
+                #             "name": "DIPY Workshop 2025",
+                #             "url": "https://dipy.org/workshops/dipy-workshop-2025",
+                #             "link_type": "external",
+                #         }
+                #     ],
+                # },
                 {
                     "name": "Past",
                     "children": [
+                        {
+                            "name": "DIPY Workshop 2025",
+                            "url": "https://workshop.dipy.org/2025",
+                            "link_type": "external",
+                        },
+                        {
+                            "name": "DIPY Workshop 2024",
+                            "url": "https://workshop.dipy.org/2024",
+                            "link_type": "external",
+                        },
                         {
                             "name": "DIPY Workshop 2023",
                             "url": "https://dipy.org/workshops/dipy-workshop-2023",
@@ -284,11 +332,6 @@ html_theme_options = {
                 {
                     "name": "Help",
                     "children": [
-                        {
-                            "name": "Live Chat (Gitter)",
-                            "url": "https://app.gitter.im/#/room/%23dipy_dipy:gitter.im",
-                            "link_type": "external",
-                        },
                         {
                             "name": "Github Discussions",
                             "url": "https://github.com/dipy/dipy/discussions",
@@ -389,13 +432,13 @@ html_theme_options = {
             "links": [
                 {
                     "name": "Nipy Projects",
-                    "link": "http://nipy.org/",
+                    "link": "https://nipy.org/",
                     "link_type": "external",
                 },
-                {"name": "FURY", "link": "http://fury.gl/", "link_type": "external"},
+                {"name": "FURY", "link": "https://fury.gl/", "link_type": "external"},
                 {
                     "name": "Nibabel",
-                    "link": "http://nipy.org/nibabel",
+                    "link": "https://nipy.org/nibabel",
                     "link_type": "external",
                 },
                 {
@@ -409,22 +452,22 @@ html_theme_options = {
             "title": "Support",
             "links": [
                 {
-                    "name": "The department of Intelligent Systems Engineering of Indiana University",  # noqa: E501
+                    "name": "The department of Intelligent Systems Engineering of Indiana University",
                     "link": "https://engineering.indiana.edu/",
                     "link_type": "external",
                 },
                 {
-                    "name": "The National Institute of Biomedical Imaging and Bioengineering, NIH",  # noqa: E501
+                    "name": "The National Institute of Biomedical Imaging and Bioengineering, NIH",
                     "link": "https://www.nibib.nih.gov/",
                     "link_type": "external",
                 },
                 {
-                    "name": "The Gordon and Betty Moore Foundation and the Alfred P. Sloan Foundation, through the University of Washington eScience Institute Data Science Environment",  # noqa: E501
+                    "name": "The Gordon and Betty Moore Foundation and the Alfred P. Sloan Foundation, through the University of Washington eScience Institute Data Science Environment",
                     "link": "https://escience.washington.edu",
                     "link_type": "external",
                 },
                 {
-                    "name": "Google supported DIPY through the Google Summer of Code Program (2015-2024)",  # noqa: E501
+                    "name": "Google supported DIPY through the Google Summer of Code Program (2015-2024)",
                     "link": "https://summerofcode.withgoogle.com/",
                     "link_type": "external",
                 },

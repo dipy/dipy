@@ -14,7 +14,7 @@ from dipy.tracking.stopping_criterion import (
 
 
 @set_random_number_generator()
-def test_binary_stopping_criterion(rng):
+def test_binary_stopping_criterion(rng=None):
     """This tests that the binary stopping criterion returns expected
     streamline statuses.
     """
@@ -68,7 +68,7 @@ def test_binary_stopping_criterion(rng):
 
 
 @set_random_number_generator()
-def test_threshold_stopping_criterion(rng):
+def test_threshold_stopping_criterion(rng=None):
     """This tests that the threshold stopping criterion returns expected
     streamline statuses.
     """
@@ -127,7 +127,7 @@ def test_threshold_stopping_criterion(rng):
 
 
 @set_random_number_generator()
-def test_act_stopping_criterion(rng):
+def test_act_stopping_criterion(rng=None):
     """This tests that the act stopping criterion returns expected
     streamline statuses.
     """

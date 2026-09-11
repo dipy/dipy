@@ -10,7 +10,7 @@ from dipy.core.ndindex import ndindex
 from dipy.core.onetime import auto_attr
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import MIN_POSITIVE_SIGNAL
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()
@@ -276,6 +276,7 @@ def msdki_prediction(msdki_params, gtab, *, S0=1.0):
 class MeanDiffusionKurtosisModel(ReconstModel):
     """Mean signal Diffusion Kurtosis Model"""
 
+    @warning_for_keywords(from_version="1.12.0")
     def __init__(self, gtab, *args, bmag=None, return_S0_hat=False, **kwargs):
         """Mean Signal Diffusion Kurtosis Model.
 

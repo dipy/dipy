@@ -18,6 +18,33 @@ The full VCS changelog is available here:
 
 Releases
 ~~~~~~~~
+* 1.12.0 (Friday, March 13, 2026)
+
+- NF: FORCE recon model - new signal matching reconstruction model added.
+- NF: Parallel EuDX tractography added.
+- NF: MSMT-CSD CLI (dipy_fit_msmtcsd) added.
+- NF: New CLIs added: dipy_cluster_streamlines, dipy_brain_mask, dipy_fit_powermap.
+- NF: Free-Water DTI (FWDTI) Workflow added.
+- NF: Intermediate displacement map for symmetric diffeomorphic registration added.
+- NF: StatefulSurface class to handle surfaces added.
+- NF: SynthSeg PyTorch model integration added.
+- NF: BUAN Bundle Profiles Lite Version added.
+- NF: Streamline clipping utility function added.
+- NF: Broadcasting support in dipy_math CLI added.
+- RF: Adopt pathlib for path handling in workflows.
+- RF: Unified logger across the codebase.
+- RF: TRX set as the default file format for tractography.
+- RF: NLMeans refactored to support classic and blockwise variants.
+- RF: autocrop deprecated in median_otsu.
+- RF: Replace old LocalTracking by the new tracking interface.
+- ENH: Kurtosis metrics (AK, RK, KFA) Cythonized for performance.
+- ENH: Parallel quantize_evecs.
+- ENH: aarch64 native builds and Python 3.14 nightly wheels added.
+- BF: Multiple bug fixes (empty tractograms, CVXPY, FWDTI, Bingham, rumba, surfaces, stopping criterion reproducibility).
+- CI: Multiple CI improvements (caching, least-privilege permissions, dependabot pip tracking, cron schedule fixes).
+- Documentation: Extensive documentation improvements across modules and tutorials.
+- Closed 324 issues and merged 173 pull requests.
+
 
 Dipy
 ++++

@@ -98,7 +98,7 @@ def test_rb_disable_slr():
 
 
 @set_random_number_generator(42)
-def test_rb_slr_threads(rng):
+def test_rb_slr_threads(rng=None):
     rb_multi = RecoBundles(f, greater_than=0, clust_thr=10, rng=rng)
     rec_trans_multi_threads, _ = rb_multi.recognize(
         model_bundle=f2,

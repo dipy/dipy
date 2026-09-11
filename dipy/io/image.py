@@ -2,7 +2,7 @@ import nibabel as nib
 import numpy as np
 from packaging.version import Version
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 @warning_for_keywords()

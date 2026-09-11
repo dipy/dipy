@@ -328,7 +328,7 @@ fig.savefig("spatial_errors.png")
 # streamlines generated in
 # :ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py`, see
 # `this IPython notebook
-# <http://nbviewer.ipython.org/gist/arokem/bc29f34ebc97510d9def>`_.
+# <https://nbviewer.ipython.org/gist/arokem/bc29f34ebc97510d9def>`_.
 #
 # For the Matlab implementation of LiFE, head over to `Franco Pestilli's github
 # webpage <https://francopestilli.github.io/life/>`_.

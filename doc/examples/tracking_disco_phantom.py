@@ -13,8 +13,6 @@ See
 for detailed examples of those algorithms.
 """
 
-import os
-
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import binary_erosion
@@ -45,7 +43,7 @@ print("Downloading data...")
 # Prepare the synthetic DiSCo data for tractography. The ground-truth
 # connectome will be use to evaluate tractography performances.
 fnames = get_fnames(name="disco1")
-disco1_fnames = [os.path.basename(f) for f in fnames]
+disco1_fnames = [f.name for f in fnames]
 
 GT_connectome_fname = fnames[
     disco1_fnames.index("DiSCo1_Connectivity_Matrix_Cross-Sectional_Area.txt")
@@ -70,10 +68,11 @@ if has_fury:
     if interactive:
         window.show(scene)
 
-plt.imshow(GT_connectome, origin="lower", cmap="viridis", interpolation="nearest")
-plt.axis("off")
-plt.savefig("connectome_ground_truth.png")
-plt.close()
+fig, ax = plt.subplots()
+ax.imshow(GT_connectome, origin="lower", cmap="viridis", interpolation="nearest")
+ax.axis("off")
+fig.savefig("connectome_ground_truth.png")
+plt.close(fig)
 
 ###############################################################################
 #
@@ -94,16 +93,18 @@ seed_mask = load_nifti_data(seed_fname)
 seed_mask = binary_erosion(seed_mask * mask, iterations=1)
 seeds = seeds_from_mask(seed_mask, affine, density=2)
 
-plt.imshow(seed_mask[:, :, 17], origin="lower", cmap="gray", interpolation="nearest")
-plt.axis("off")
-plt.title("Seeding Mask")
-plt.savefig("seeding_mask.png")
-plt.close()
-plt.imshow(mask[:, :, 17], origin="lower", cmap="gray", interpolation="nearest")
-plt.axis("off")
-plt.title("Tracking Mask")
-plt.savefig("tracking_mask.png")
-plt.close()
+fig, ax = plt.subplots()
+ax.imshow(seed_mask[:, :, 17], origin="lower", cmap="gray", interpolation="nearest")
+ax.axis("off")
+ax.set_title("Seeding Mask")
+fig.savefig("seeding_mask.png")
+plt.close(fig)
+fig, ax = plt.subplots()
+ax.imshow(mask[:, :, 17], origin="lower", cmap="gray", interpolation="nearest")
+ax.axis("off")
+ax.set_title("Tracking Mask")
+fig.savefig("tracking_mask.png")
+plt.close(fig)
 
 ###############################################################################
 #
@@ -174,10 +175,11 @@ r, _ = pearsonr(
 )
 print("DiSCo ground-truth correlation (deterministic tractography): ", r)
 
-plt.imshow(connectome, origin="lower", cmap="viridis", interpolation="nearest")
-plt.axis("off")
-plt.savefig("connectome_deterministic.png")
-plt.close()
+fig, ax = plt.subplots()
+ax.imshow(connectome, origin="lower", cmap="viridis", interpolation="nearest")
+ax.axis("off")
+fig.savefig("connectome_deterministic.png")
+plt.close(fig)
 
 ###############################################################################
 #
@@ -212,10 +214,11 @@ r, _ = pearsonr(
 )
 print("DiSCo ground-truth correlation (probabilistic tractography): ", r)
 
-plt.imshow(connectome, origin="lower", cmap="viridis", interpolation="nearest")
-plt.axis("off")
-plt.savefig("connectome_probabilistic.png")
-plt.close()
+fig, ax = plt.subplots()
+ax.imshow(connectome, origin="lower", cmap="viridis", interpolation="nearest")
+ax.axis("off")
+fig.savefig("connectome_probabilistic.png")
+plt.close(fig)
 
 ###############################################################################
 #
@@ -254,10 +257,11 @@ r, _ = pearsonr(
     GT_connectome[connectome_mask].flatten(), connectome[connectome_mask].flatten()
 )
 print("DiSCo ground-truth correlation (PTT tractography): ", r)
-plt.imshow(connectome, origin="lower", cmap="viridis", interpolation="nearest")
-plt.axis("off")
-plt.savefig("connectome_ptt.png")
-plt.close()
+fig, ax = plt.subplots()
+ax.imshow(connectome, origin="lower", cmap="viridis", interpolation="nearest")
+ax.axis("off")
+fig.savefig("connectome_ptt.png")
+plt.close(fig)
 
 ###############################################################################
 #

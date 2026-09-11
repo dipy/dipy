@@ -5,10 +5,12 @@ from scipy.ndimage import map_coordinates
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfFit, OdfModel
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 
 
 class DiffusionSpectrumModel(OdfModel, Cache):
+    """Diffusion Spectrum Imaging (DSI) model."""
+
     @warning_for_keywords()
     def __init__(
         self,
@@ -101,7 +103,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         --------
         dipy.reconst.gqi.GeneralizedQSampling
 
-        """  # noqa: E501
+        """
 
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
@@ -130,6 +132,8 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
 
 class DiffusionSpectrumFit(OdfFit):
+    """Fit object for Diffusion Spectrum Imaging (DSI)."""
+
     def __init__(self, model, data):
         """Calculates PDF and ODF and other properties for a single voxel
 
@@ -259,7 +263,7 @@ class DiffusionSpectrumFit(OdfFit):
         ----------
         .. footbibliography::
 
-        """  # noqa: E501
+        """
 
         Pr = self.pdf(normalized=normalized)
 
@@ -272,7 +276,7 @@ class DiffusionSpectrumFit(OdfFit):
         z = np.tile(a.reshape(gridsize, 1, 1), (1, gridsize, gridsize))
         r2 = x**2 + y**2 + z**2
 
-        msd = np.sum(Pr * r2) / float((gridsize**3))
+        msd = np.sum(Pr * r2) / float(gridsize**3)
         return msd
 
     def odf(self, sphere):
@@ -492,6 +496,8 @@ def project_hemisph_bvecs(gtab):
 
 
 class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
+    """Diffusion Spectrum Deconvolution (DSI Deconv) model."""
+
     @warning_for_keywords()
     def __init__(
         self,
@@ -548,7 +554,7 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
         ----------
         .. footbibliography::
 
-        """  # noqa: E501
+        """
         DiffusionSpectrumModel.__init__(
             self,
             gtab,
@@ -566,6 +572,8 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
 
 
 class DiffusionSpectrumDeconvFit(DiffusionSpectrumFit):
+    """Fit object for Diffusion Spectrum Deconvolution."""
+
     def pdf(self):
         """Applies the 3D FFT in the q-space grid to generate
         the DSI diffusion propagator, remove the background noise with a

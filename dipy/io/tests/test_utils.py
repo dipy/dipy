@@ -25,8 +25,7 @@ from dipy.io.utils import (
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
-
+_, have_polyxios, _ = optional_package("polyxios", min_version="0.2.0")
 
 FILEPATH_DIX = None
 
@@ -47,7 +46,7 @@ def teardown_module():
     FILEPATH_DIX = (None,)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_equivalence_lpsmm_sft_sfs():
     sft = load_tractogram(
         FILEPATH_DIX["gs_streamlines.vtk"],
@@ -238,7 +237,7 @@ def test_all_zeros_affine():
 
 
 @set_random_number_generator()
-def test_read_img_arr_or_path(rng):
+def test_read_img_arr_or_path(rng=None):
     data = rng.random((4, 4, 4, 3))
     aff = np.eye(4)
     aff[:3, :] = rng.standard_normal((3, 4))

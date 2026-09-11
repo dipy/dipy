@@ -75,8 +75,8 @@ sphere = get_sphere(name="symmetric362")
 rumba = RumbaSDModel(gtab)
 print(
     f"wm_response: {rumba.wm_response}, "
-    + f"csf_response: {rumba.csf_response}, "
-    + f"gm_response: {rumba.gm_response}"
+    f"csf_response: {rumba.csf_response}, "
+    f"gm_response: {rumba.gm_response}"
 )
 
 ###############################################################################
@@ -409,8 +409,8 @@ scene.rm(fodf_spheres)
 
 shape = odf.shape[:3]
 npeaks = 5  # maximum number of peaks returned for a given voxel
-peak_dirs = np.zeros((shape + (npeaks, 3)))
-peak_values = np.zeros((shape + (npeaks,)))
+peak_dirs = np.zeros(shape + (npeaks, 3))
+peak_values = np.zeros(shape + (npeaks,))
 
 for idx in np.ndindex(shape):  # iterate through each voxel
     # Get peaks of odf

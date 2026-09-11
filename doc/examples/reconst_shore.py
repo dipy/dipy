@@ -22,7 +22,7 @@ from dipy.viz import actor, window
 # Download and read the data for this tutorial.
 
 # ``fetch_isbi2013_2shell()`` provides data from the `ISBI HARDI contest 2013
-# <http://hardi.epfl.ch/static/events/2013_ISBI/>`_ acquired for two shells at
+# <https://hardi.epfl.ch/static/events/2013_ISBI/>`_ acquired for two shells at
 # b-values 1500 $s/mm^2$ and 2500 $s/mm^2$.
 
 # The six parameters of these two functions define the ROI where to reconstruct

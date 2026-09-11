@@ -14,7 +14,7 @@ else:
 from dipy.utils.tripwire import TripWire
 
 
-def optional_package(name, *, trip_msg=None, min_version=None):
+def optional_package(name, *, trip_msg=None, min_version=None, max_version=None):
     """Return package-like thing and module setup for package `name`
 
     Parameters
@@ -27,6 +27,10 @@ def optional_package(name, *, trip_msg=None, min_version=None):
         Default message if None.
     min_version : None or str
         If not None, require that the imported package be at least this
+        version.  If the package has no ``__version__`` attribute, or if the
+        version is not parseable, raise an error.
+    max_version : None or str
+        If not None, require that the imported package be at most this
         version.  If the package has no ``__version__`` attribute, or if the
         version is not parseable, raise an error.
 
@@ -80,21 +84,46 @@ def optional_package(name, *, trip_msg=None, min_version=None):
         pass
     else:  # import worked
         # top level module
-        if not min_version:
-            return pkg, True, lambda: None
-
         current_version = getattr(pkg, "__version__", "0.0.0")
-        if Version(current_version) >= Version(min_version):
+        if not min_version and not max_version:
             return pkg, True, lambda: None
+        elif (
+            not min_version
+            and max_version
+            and Version(current_version) <= Version(max_version)
+        ):
+            return pkg, True, lambda: None
+        elif (
+            not max_version
+            and min_version
+            and Version(current_version) >= Version(min_version)
+        ):
+            return pkg, True, lambda: None
+        elif (
+            max_version
+            and min_version
+            and Version(min_version) <= Version(current_version) <= Version(max_version)
+        ):
+            return pkg, True, lambda: None
+        elif (
+            max_version and min_version and Version(min_version) > Version(max_version)
+        ):
+            trip_msg = (
+                f"Invalid version requirements for package {name}: "
+                f"min_version {min_version} > max_version {max_version}"
+            )
 
         if trip_msg is None:
             trip_msg = (
-                f"We need at least version {min_version} of "
-                f"package {name}, but ``import {name}`` "
-                f"found version {current_version}."
+                f"We need package {name} version"
+                f"{' >= ' + min_version if min_version else ''}"
+                f"{' and' if min_version and max_version else ''}"
+                f"{' <= ' + max_version if max_version else ''}"
+                f" for these functions, but you have version "
+                f"{current_version} installed."
             )
             if current_version == "0.0.0":
-                trip_msg += "Your installation might be incomplete or corrupted."
+                trip_msg += " Your installation might be incomplete or corrupted."
 
     if trip_msg is None:
         trip_msg = (

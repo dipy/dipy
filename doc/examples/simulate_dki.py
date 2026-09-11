@@ -109,11 +109,12 @@ signal_dti = single_tensor(gtab, S0=200, evals=dt_evals, evecs=dt_evecs, snr=Non
 # Finally, we can visualize the values of the different version of simulated
 # signals for all assumed gradient directions and bvalues.
 
-plt.plot(signal_dti, label="noiseless dti")
-plt.plot(signal_dki, label="noiseless dki")
-plt.plot(signal_noisy, label="with noise")
-plt.legend()
-plt.savefig("simulated_dki_signal.png", bbox_inches="tight")
+fig, ax = plt.subplots()
+ax.plot(signal_dti, label="noiseless dti")
+ax.plot(signal_dki, label="noiseless dki")
+ax.plot(signal_noisy, label="with noise")
+ax.legend()
+fig.savefig("simulated_dki_signal.png", bbox_inches="tight")
 
 
 ###############################################################################

@@ -129,7 +129,6 @@ endif
 inc_np = include_directories(incdir_numpy)
 np_dep = declare_dependency(include_directories: inc_np)
 
-
 # npymath_path = _incdir_numpy_abs / '..' / 'lib'
 # npyrandom_path = _incdir_numpy_abs / '..' / '..' / 'random' / 'lib'
 # npymath_lib = cc.find_library('npymath', dirs: npymath_path)
@@ -161,11 +160,10 @@ if not omp.found() and meson.get_compiler('c').get_id() == 'clang'
   if not omp.found()
     brew = find_program('brew', required : false)
     if brew.found()
-      output = run_command(brew, 'list', 'libomp', check: false)
-      if output.returncode() == 0
-        output_str = output.stdout().strip()
-        if output_str.contains('/libomp/')
-          omp_prefix = fs.parent(output_str.split('\n')[0])
+      prefix_result = run_command(brew, '--prefix', 'libomp', check: false)
+      if prefix_result.returncode() == 0
+        omp_prefix = prefix_result.stdout().strip()
+        if fs.exists(omp_prefix / 'lib' / 'libomp.dylib')
           message('OpenMP Found: YES (Homebrew) - ', omp_prefix)
           omp = declare_dependency(
             compile_args : ['-Xpreprocessor', '-fopenmp'],
@@ -175,6 +173,22 @@ if not omp.found() and meson.get_compiler('c').get_id() == 'clang'
         endif
       endif
     endif
+  endif
+
+  # Final fallback: check standard system paths (e.g. pre-built tarballs from
+  # https://mac.r-project.org/openmp/ install libomp.dylib to /usr/local/lib)
+  if not omp.found()
+    foreach omp_prefix : ['/usr/local', '/opt/local']
+      if fs.exists(omp_prefix / 'lib' / 'libomp.dylib')
+        message('OpenMP Found: YES (system path) - ', omp_prefix)
+        omp = declare_dependency(
+          compile_args : ['-Xpreprocessor', '-fopenmp'],
+          link_args : ['-L' + omp_prefix + '/lib', '-lomp'],
+          include_directories : include_directories(omp_prefix / 'include')
+        )
+        break
+      endif
+    endforeach
   endif
 endif
 
@@ -220,9 +234,9 @@ if host_cpu_family in ['x86', 'x86_64']
   x86_intrinsics = []
   if cc.get_id() == 'msvc'
     x86_intrinsics = [
-      [ 'AVX', 'immintrin.h', '__m256', '_mm256_setzero_ps()', ['/ARCH:AVX'] ],
-      [ 'AVX2', 'immintrin.h', '__m256i', '_mm256_setzero_si256()', ['/ARCH:AVX2'] ],
-      [ 'AVX512', 'immintrin.h', '__m512', '_mm512_setzero_si512()', ['/ARCH:AVX512'] ],
+      [ 'AVX', 'immintrin.h', '__m256', '_mm256_setzero_ps()', ['/arch:AVX'] ],
+      [ 'AVX2', 'immintrin.h', '__m256i', '_mm256_setzero_si256()', ['/arch:AVX2'] ],
+      [ 'AVX512', 'immintrin.h', '__m512', '_mm512_setzero_si512()', ['/arch:AVX512'] ],
     ]
   else
     x86_intrinsics = [
@@ -293,6 +307,29 @@ if cc.compiles(neon_prog, args: test_neon_cflags, name: 'ARM NEON intrinsics')
   neon_cflags = test_neon_cflags
   cython_c_args += neon_cflags
   cython_cpp_args = cython_c_args
+endif
+
+# Treat compiler warnings as errors for Cython-generated C/C++ code.
+if cc.get_id() == 'msvc'
+  cython_c_args += ['/WX']
+else
+  cython_c_args += cc.get_supported_arguments('-Werror')
+endif
+cython_cpp_args = cython_c_args
+
+# MSVC's C++ front-end raises C4551 on Cython's own
+# `(void)some_utility_func;` unused-function-silencing boilerplate
+# (its C front-end does not). Not fixable in dipy sources.
+if cpp.get_id() == 'msvc'
+  cython_cpp_args += ['/wd4551']
+endif
+
+# GCC raises -Wmaybe-uninitialized on __pyx_clineno in Cython-generated code.
+# This is a well-known false positive: Cython always initializes the variable
+# before use, but GCC's flow analysis cannot prove it. Not fixable in sources.
+if cc.get_id() == 'gcc'
+  cython_c_args += cc.get_supported_arguments('-Wno-maybe-uninitialized')
+  cython_cpp_args += cpp.get_supported_arguments('-Wno-maybe-uninitialized')
 endif
 
 

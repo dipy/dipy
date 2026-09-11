@@ -2,7 +2,6 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 
-cimport safe_openmp as openmp
 from cython.parallel import prange
 
 from dipy.reconst.shm import sh_to_sf, sf_to_sh
@@ -12,8 +11,10 @@ from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 from dipy.utils.deprecator import deprecated_params
 
 
-@deprecated_params('sh_order', new_name='sh_order_max', since='1.9', until='2.0')
-def convolve(odfs_sh, kernel, sh_order_max, test_mode=False, num_threads=None, normalize=True):
+@deprecated_params("sh_order", new_name="sh_order_max", since="1.9", until="2.0")
+def convolve(
+    odfs_sh, kernel, sh_order_max, test_mode=False, num_threads=None, normalize=True
+):
     """Perform the shift-twist convolution with the ODF data and
     the lookup-table of the kernel.
 
@@ -70,6 +71,7 @@ def convolve(odfs_sh, kernel, sh_order_max, test_mode=False, num_threads=None, n
 
     return output_sh
 
+
 def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, normalize=True):
     """Perform the shift-twist convolution with the ODF data and
     the lookup-table of the kernel.
@@ -108,6 +110,7 @@ def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, normalize=Tr
         output = np.multiply(output, np.amax(odfs_sf)/np.amax(output))
 
     return output
+
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
@@ -153,7 +156,6 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
         cnp.npy_intp ny = odfs.shape[1]
         cnp.npy_intp nz = odfs.shape[2]
         cnp.npy_intp threads_to_use = -1
-        cnp.npy_intp all_cores = openmp.omp_get_num_procs()
         cnp.npy_intp corient, orient, cx, cy, cz, x, y, z
         cnp.npy_intp expectedvox
         cnp.npy_intp edgeNormalization = True
@@ -173,25 +175,37 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
     with nogil:
 
         # loop over ODFs cx,cy,cz,orient --> y and v
-        for corient in prange(OR1, schedule='guided'):
+        for corient in prange(OR1, schedule="guided"):
             for cx in range(nx):
                 for cy in range(ny):
                     for cz in range(nz):
                         # loop over kernel x,y,z,orient --> x and r
                         for x in range(int_max(cx - hn, 0),
                                        int_min(cx + hn + 1, ny - 1)):
-                             for y in range(int_max(cy - hn, 0),
-                                            int_min(cy + hn + 1, ny - 1)):
-                                 for z in range(int_max(cz - hn, 0),
-                                                int_min(cz + hn + 1, nz - 1)):
+                            for y in range(
+                                int_max(cy - hn, 0), int_min(cy + hn + 1, ny - 1)
+                            ):
+                                for z in range(
+                                    int_max(cz - hn, 0), int_min(cz + hn + 1, nz - 1)
+                                ):
                                     voxcount[corient, cx, cy, cz] += 1.0
                                     for orient in range(0, OR2):
-                                        totalval[corient, cx, cy, cz] += \
-                                            odfs[x, y, z, orient] * \
-                                            lut[corient, orient, x - (cx - hn), y - (cy - hn), z - (cz - hn)]
+                                        totalval[corient, cx, cy, cz] += (
+                                            odfs[x, y, z, orient]
+                                            * lut[
+                                                corient,
+                                                orient,
+                                                x - (cx - hn),
+                                                y - (cy - hn),
+                                                z - (cz - hn),
+                                            ]
+                                        )
                         if edgeNormalization:
-                            output[cx, cy, cz, corient] = \
-                                totalval[corient, cx, cy, cz] * expectedvox/voxcount[corient, cx, cy, cz]
+                            output[cx, cy, cz, corient] = (
+                                totalval[corient, cx, cy, cz]
+                                * expectedvox
+                                / voxcount[corient, cx, cy, cz]
+                            )
                         else:
                             output[cx, cy, cz, corient] = \
                                 totalval[corient, cx, cy, cz]

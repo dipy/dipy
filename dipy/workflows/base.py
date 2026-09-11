@@ -1,8 +1,100 @@
 import argparse
 import inspect
+import re
+import shutil
+import textwrap
 
 from dipy.utils.logging import logger
 from dipy.workflows.docstring_parser import NumpyDocString
+
+_LATEX_SYMBOLS = {
+    r"\pm": "±",
+    r"\mu": "μ",
+}
+
+
+def _strip_rst_markup(text):
+    """Convert RST and LaTeX inline markup to plain text for CLI display.
+
+    Workflow docstrings are written in reStructuredText with embedded LaTeX
+    so they render correctly in Sphinx HTML. When those docstrings are
+    surfaced in argparse ``--help`` output, the raw markup is unreadable.
+    This helper applies three substitutions, in order:
+
+    1. Strip RST inline roles, keeping the content
+       (e.g. ``:math:`x = 1``` → ``x = 1``).
+    2. Strip LaTeX commands that wrap content in braces, keeping the content
+       (e.g. ``\\text{bvec}`` → ``bvec``).
+    3. Replace known standalone LaTeX symbols with their Unicode equivalents
+       (see ``_LATEX_SYMBOLS``).
+
+    Only the returned string is modified; the original docstring on the
+    function is untouched, so Sphinx HTML rendering is unaffected.
+
+    Parameters
+    ----------
+    text : str
+        Docstring fragment that may contain RST roles or LaTeX commands.
+
+    Returns
+    -------
+    str
+        Plain-text version safe to display in a terminal.
+    """
+    text = re.sub(r":[a-z]+:`([^`]*)`", r"\1", text)
+    text = re.sub(r"\\[a-z]+\{([^}]*)\}", r"\1", text)
+    for cmd, sym in _LATEX_SYMBOLS.items():
+        text = text.replace(cmd, sym)
+    return text
+
+
+def format_key_value_table(data, key_header="Key", value_header="Value", *, sort=True):
+    """Format key-value pairs as a simple ASCII table.
+
+    Parameters
+    ----------
+    data : dict
+        Key-value pairs to display in the table.
+    key_header : str, optional
+        Header title for the key column.
+    value_header : str, optional
+        Header title for the value column.
+    sort : bool, optional
+        Whether to sort data alphabetically by key.
+
+    Returns
+    -------
+    str
+        Key-value pairs formatted as an ASCII table.
+    """
+    items = sorted(data.items()) if sort else list(data.items())
+    key_width = max([len(key_header), *[len(key) for key, _ in items]])
+    terminal_width = shutil.get_terminal_size(fallback=(120, 20)).columns
+    value_width = max(len(value_header), min(120, terminal_width - key_width - 7))
+    separator = f"+-{'-' * key_width}-+-{'-' * value_width}-+"
+    rows = [
+        separator,
+        f"| {key_header:<{key_width}} | {value_header:<{value_width}} |",
+        separator,
+    ]
+
+    for key, value in items:
+        wrapped_value = []
+        for line in value.split("\n"):
+            stripped = line.lstrip()
+            indent = line[: len(line) - len(stripped)]
+            available = max(value_width - len(indent), 10)
+            wrapped_value.extend(
+                indent + w for w in (textwrap.wrap(stripped, width=available) or [""])
+            )
+        wrapped_value = wrapped_value or [""]
+        rows.append(f"| {key:<{key_width}} | {wrapped_value[0]:<{value_width}} |")
+        rows.extend(
+            f"| {'':<{key_width}} | {extra_line:<{value_width}} |"
+            for extra_line in wrapped_value[1:]
+        )
+    rows.append(separator)
+    return "\n".join(rows)
 
 
 def add_default_args_to_docstring(npds, func):
@@ -145,9 +237,9 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         npds = NumpyDocString(doc)
         add_default_args_to_docstring(npds, workflow.run)
         self.doc = npds["Parameters"]
-        self.description = (
-            f"{' '.join(npds['Summary'])}\n\n{' '.join(npds['Extended Summary'])}"
-        )
+        summary = " ".join(npds["Summary"])
+        extended = "\n".join(npds["Extended Summary"])
+        self.description = f"{summary}\n\n{extended}"
 
         if npds["References"]:
             ref_text = [text or "\n" for text in npds["References"]]
@@ -178,10 +270,22 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
         if len_args != len(self.doc):
             raise ValueError(
-                self.prog + ": Number of parameters in the "
-                "doc string and run method does not match. "
-                "Please ensure that the number of parameters "
-                "in the run method is same as the doc string."
+                f"{self.prog}: the docstring documents {len(self.doc)} parameters "
+                f"but there are {len_args} command line arguments. Every argument "
+                "must be documented."
+            )
+
+        documented_args = [param[0] for param in self.doc]
+        if documented_args != args:
+            mismatches = "\n".join(
+                f"  argument {i}: {arg!r} is documented as {documented!r}"
+                for i, (arg, documented) in enumerate(zip(args, documented_args))
+                if arg != documented
+            )
+            raise ValueError(
+                f"{self.prog}: docstring parameters are matched to command line "
+                "arguments by position, so both must list the same names in the "
+                f"same order.\n{mismatches}"
             )
 
         for i, arg in enumerate(args):
@@ -192,7 +296,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
             typestr = self.doc[i][1]
             dtype, isnarg = self._select_dtype(typestr)
-            help_msg = " ".join(self.doc[i][2])
+            help_msg = _strip_rst_markup("\n".join(self.doc[i][2]))
 
             _args = [f"{prefix}{arg}"]
             _kwargs = {"help": help_msg, "type": dtype, "action": "store"}
@@ -269,8 +373,8 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             flow_args = self.add_argument_group(f"{name} arguments(optional)")
 
             for i, arg_name in enumerate(args):
-                is_not_optionnal = i < len_args - len_defaults
-                if "out_" in arg_name or is_not_optionnal:
+                is_not_optional = i < len_args - len_defaults
+                if "out_" in arg_name or is_not_optional:
                     continue
 
                 arg_name = f"{short_name}.{arg_name}"
@@ -278,7 +382,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 prefix = "--"
                 typestr = _doc[i][1]
                 dtype, isnarg = self._select_dtype(typestr)
-                help_msg = "".join(_doc[i][2])
+                help_msg = _strip_rst_markup("\n".join(_doc[i][2]))
 
                 _args = [f"{prefix}{arg_name}"]
                 _kwargs = {
@@ -354,6 +458,42 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         res = {k: v for k, v in dct.items() if v is not None}
         res.update({k: None for k, v in res.items() if v == "None"})
         return res
+
+    def format_help(self):
+        """Generate help message with table-formatted argument sections."""
+        parts = [self.format_usage()]
+
+        if self.description:
+            parts.append(self.description)
+
+        for action_group in self._action_groups:
+            visible = [
+                a for a in action_group._group_actions if a.help != argparse.SUPPRESS
+            ]
+            if not visible:
+                continue
+
+            table_data = {}
+            for action in visible:
+                if action.option_strings:
+                    arg_name = ", ".join(action.option_strings)
+                    if action.metavar:
+                        arg_name += f" <{action.metavar}>"
+                else:
+                    arg_name = action.dest
+                table_data[arg_name] = action.help or ""
+
+            parts.append(f"{action_group.title}:")
+            parts.append(
+                format_key_value_table(
+                    table_data, "Argument", "Description", sort=False
+                )
+            )
+
+        if self.epilog:
+            parts.append(self.epilog)
+
+        return "\n\n".join(parts) + "\n"
 
     def update_argument(self, *args, **kargs):
         self.add_argument(*args, **kargs)

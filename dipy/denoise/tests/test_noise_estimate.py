@@ -36,7 +36,7 @@ def test_inv_nchi():
 
 
 @set_random_number_generator()
-def test_piesno(rng):
+def test_piesno(rng=None):
     # Values taken from hispeed.OptimalPIESNO with the test data
     # in the package computed in matlab
     test_piesno_data = load_nifti_data(dpd.get_fnames(name="test_piesno"))
@@ -189,7 +189,7 @@ def test_estimate_sigma():
 
 
 @set_random_number_generator(1984)
-def test_pca_noise_estimate(rng):
+def test_pca_noise_estimate(rng=None):
     # MUBE:
     bvals1 = np.concatenate([np.zeros(17), np.ones(3) * 1000])
     bvecs1 = np.concatenate([np.zeros((17, 3)), np.eye(3)])

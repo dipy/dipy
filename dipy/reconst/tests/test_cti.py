@@ -195,9 +195,9 @@ def test_cti_prediction():
         cti_params = construct_cti_params(evals, evecs, K, ccti)
         cti_pred_signals = ctiM.predict(cti_params, S0=S0)
         qti_pred_signals = qti.qti_signal(gtab, D, C, S0=S0)[np.newaxis, :]
-        assert np.allclose(
-            cti_pred_signals, qti_pred_signals
-        ), "CTI and QTI signals do not match!"
+        assert np.allclose(cti_pred_signals, qti_pred_signals), (
+            "CTI and QTI signals do not match!"
+        )
 
         # check the function predict of the CorrelationTensorFit object
         ctiF = ctiM.fit(cti_pred_signals)
@@ -393,9 +393,9 @@ def test_cti_fits():
         # checking microscopic source of kurtosis
         ground_truth_K_micro = 0
         K_micro = ctiF.K_micro
-        assert np.allclose(
-            K_micro, ground_truth_K_micro
-        ), "K_micro values don't match ground truth values"
+        assert np.allclose(K_micro, ground_truth_K_micro), (
+            "K_micro values don't match ground truth values"
+        )
 
 
 def test_cti_errors():
@@ -410,6 +410,6 @@ def test_cti_design_matrix():
     A1 = design_matrix(gtab1, gtab2)
     A2 = design_matrix(gtab2, gtab1)
     # Check if the two matrices are the same
-    assert np.allclose(
-        A1, A2
-    ), "The design matrices are not symmetric for different gradientdirections order."
+    assert np.allclose(A1, A2), (
+        "The design matrices are not symmetric for different gradientdirections order."
+    )

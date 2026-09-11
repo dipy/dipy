@@ -10,8 +10,7 @@ except Exception:
 
 from dipy.reconst.dti import color_fa, fractional_anisotropy
 from dipy.segment.utils import remove_holes_and_islands
-from dipy.testing.decorators import warning_for_keywords
-from dipy.utils.deprecator import deprecated_params
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 
 
 def multi_median(data, median_radius, numpass):
@@ -127,7 +126,7 @@ def crop(vol, mins, maxs):
     return vol[tuple(slice(i, j) for i, j in zip(mins, maxs))]
 
 
-@deprecated_params("autocrop", since="1.11.0", until="1.13.0")
+@deprecated_params("autocrop", since="1.11", until="1.13")
 @warning_for_keywords()
 def median_otsu(
     input_volume,

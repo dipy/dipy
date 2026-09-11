@@ -3,11 +3,13 @@ import warnings
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.9.0")
+fury, has_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 if has_fury:
     from fury.colormap import colormap_lookup_table
     from fury.lib import (
@@ -77,7 +79,7 @@ class PeakActor(Actor):
         If True, peaks are drawn for both peaks_dirs and -peaks_dirs. Else,
         peaks are only drawn for directions given by peaks_dirs.
 
-    """  # noqa: E501
+    """
 
     @warning_for_keywords()
     def __init__(
@@ -233,7 +235,10 @@ class PeakActor(Actor):
         )
 
     @calldata_type(VTK_OBJECT)
-    def __display_peaks_vtk_callback(self, caller, event, calldata=None):
+    # VTK invokes observers positionally.
+    def __display_peaks_vtk_callback(
+        self, caller, event, calldata=None
+    ):  # pep3102: ignore
         if calldata is not None:
             calldata.SetUniformi("isRange", self.__is_range)
             calldata.SetUniform3f("highRanges", self.__high_ranges)

@@ -73,7 +73,7 @@ cdef class EnhancementKernel:
                 theta = np.pi * rng.random(n_pts)
                 phi = 2 * np.pi * rng.random(n_pts)
                 hsph_initial = HemiSphere(theta=theta, phi=phi)
-                sphere, potential = disperse_charges(hsph_initial, 5000)
+                sphere, _ = disperse_charges(hsph_initial, 5000)
         else:
             # use default
             sphere = get_sphere(name="repulsion100")
@@ -82,13 +82,15 @@ cdef class EnhancementKernel:
             self.orientations_list = sphere.vertices
             self.sphere = sphere
         else:
-            self.orientations_list = np.zeros((0,0))
+            self.orientations_list = np.zeros((0, 0))
             self.sphere = None
 
         # file location of the lut table for saving/loading
-        kernellutpath = os.path.join(gettempdir(),
-                                     "kernel_d33@%4.2f_d44@%4.2f_t@%4.2f_numverts%d.npy" \
-                                       % (D33, D44, t, len(self.orientations_list)))
+        kernellutpath = os.path.join(
+            gettempdir(),
+            "kernel_d33@%4.2f_d44@%4.2f_t@%4.2f_numverts%d.npy"
+            % (D33, D44, t, len(self.orientations_list))
+        )
 
         # if LUT exists, load
         if not force_recompute and os.path.isfile(kernellutpath):
@@ -165,13 +167,10 @@ cdef class EnhancementKernel:
             double [:] x
             double [:] y
             cdef double [:, :, :, :, :] lookuptablelocal
-            double kmax = self.kernelmax
-            double l1norm
-            double kernelval
 
         lookuptablelocal = np.zeros((OR1, OR2, N, N, N))
         x = np.zeros(3)
-        y = np.zeros(3) # constant at (0,0,0)
+        y = np.zeros(3)  # constant at (0,0,0)
 
         with nogil:
 
@@ -181,15 +180,18 @@ cdef class EnhancementKernel:
                         for yp in range(-hn, hn + 1):
                             for zp in range(-hn, hn + 1):
 
-                                x[0] = xp
-                                x[1] = yp
-                                x[2] = zp
+                                x[0] = <double>xp
+                                x[1] = <double>yp
+                                x[2] = <double>zp
 
-                                lookuptablelocal[angv,
-                                                 angr,
-                                                 xp + hn,
-                                                 yp + hn,
-                                                 zp + hn] = self.k2(x, y, orientations[angr,:], orientations[angv,:])
+                                lookuptablelocal[
+                                    angv, angr, xp + hn, yp + hn, zp + hn
+                                ] = self.k2(
+                                    x,
+                                    y,
+                                    orientations[angr, :],
+                                    orientations[angv, :]
+                                )
 
         # save to class member
         self.lookuptable = lookuptablelocal
@@ -268,7 +270,7 @@ cdef class EnhancementKernel:
         """
         cdef:
             double [:] a
-            double [:,:] transm
+            double [:, :] transm
             double [:] arg1
             double [:] arg2p
             double [:] arg2
@@ -338,15 +340,29 @@ cdef class EnhancementKernel:
             sg = sin(gamma)
             cotq2 = 1.0 / tan(q/2)
 
-            c[0] = -0.5*z*beta*cg + \
-                    x*(1 - (beta*beta*cg*cg * (1 - 0.5*q*cotq2)) / (q*q)) - \
-                    (y*beta*beta*cg*sg * (1 - 0.5*q*cotq2)) / (q*q)
-            c[1] = -0.5*z*beta*sg - \
-                    (x*beta*beta*cg*sg * (1 - 0.5*q*cotq2)) / (q*q) + \
-                    y * (1 - (beta*beta*sg*sg * (1 - 0.5*q*cotq2)) / (q*q))
-            c[2] = 0.5*x*beta*cg + 0.5*y*beta*sg + \
-                   z * (1 + ((1 - 0.5*q*cotq2) * (-beta*beta*cg*cg - \
-                        beta*beta*sg*sg)) / (q*q))
+            c[0] = (
+                -0.5*z*beta*cg
+                + x*(1 - (beta*beta*cg*cg * (1 - 0.5*q*cotq2)) / (q*q))
+                - (y*beta*beta*cg*sg * (1 - 0.5*q*cotq2)) / (q*q)
+            )
+            c[1] = (
+                -0.5*z*beta*sg
+                - (x*beta*beta*cg*sg * (1 - 0.5*q*cotq2)) / (q*q)
+                + y * (1 - (beta*beta*sg*sg * (1 - 0.5*q*cotq2)) / (q*q))
+            )
+            c[2] = (
+                0.5 * x * beta * cg
+                + 0.5 * y * beta * sg
+                + z
+                * (
+                    1
+                    + (
+                        (1 - 0.5 * q * cotq2)
+                        * (-beta * beta * cg * cg - beta * beta * sg * sg)
+                    )
+                    / (q * q)
+                )
+            )
             c[3] = beta * (-sg)
             c[4] = beta * cg
             c[5] = 0
@@ -371,14 +387,31 @@ cdef class EnhancementKernel:
         """
         cdef double output = 1 / (8*sqrt(2))
         output *= sqrt(PI)*self.t*sqrt(self.t*self.D33)*sqrt(self.D33*self.D44)
-        output *= 1 / (16*PI*PI*self.D33*self.D33*self.D44*self.D44*self.t*self.t*self.t*self.t)
-        output *= exp(-sqrt((c[0]*c[0] + c[1]*c[1]) / (self.D33*self.D44) + \
-                   (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) * \
-                   (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) + \
-                    c[5]*c[5]/self.D44) / (4*self.t))
+        output *= 1 / (
+            16
+            * PI
+            * PI
+            * self.D33
+            * self.D33
+            * self.D44
+            * self.D44
+            * self.t
+            * self.t
+            * self.t
+            * self.t
+        )
+        output *= exp(
+            -sqrt(
+                (c[0] * c[0] + c[1] * c[1]) / (self.D33 * self.D44)
+                + (c[2] * c[2] / self.D33 + (c[3] * c[3] + c[4] * c[4]) / self.D44)
+                * (c[2] * c[2] / self.D33 + (c[3] * c[3] + c[4] * c[4]) / self.D44)
+                + c[5] * c[5] / self.D44
+            ) / (4 * self.t)
+        )
         return output
 
 cdef double PI = 3.1415926535897932
+
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
@@ -425,9 +458,10 @@ cdef double [:] euler_angles(double [:] inp) noexcept nogil:
 
     return output
 
+
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef double [:,:] R(double [:] inp) noexcept nogil:
+cdef double [:, :] R(double [:] inp) noexcept nogil:
     """ Compute the Rotation matrix for a given input vector
 
     Parameters
@@ -472,4 +506,4 @@ cdef double [:,:] R(double [:] inp) noexcept nogil:
 
     with gil:
 
-        return np.reshape(output, (3,3))
+        return np.reshape(output, (3, 3))

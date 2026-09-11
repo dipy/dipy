@@ -7,7 +7,7 @@ Introduction to command line interfaces
 This tutorial provides a basic introduction to DIPY's :footcite:p:`Garyfallidis2014a`
 command line interfaces.
 
-Using a terminal, let's download a dataset. This is multi-shell dataset, which was
+Using a terminal, let's download a dataset. This is a multi-shell dataset, which was
 kindly provided by Hansen and Jespersen (more details about the data are
 provided in their paper :footcite:p:`Hansen2016a`). For this tutorial we will use
 a Linux terminal, please adapt accordingly if you are using Mac or Windows.
@@ -178,7 +178,7 @@ Visualize the mask using ``dipy_horizon``::
 
     Visualization of a slice from the generated brain mask
 
-Perform DTI using ``dipy_fit_dti``. The input of this function is the DWI data, b-values and b-vector files and the
+Perform DTI using ``dipy_fit_dti``. The inputs of this function are the DWI data, b-values and b-vector files and the
 brain mask that we calculated in the previous step::
 
     dipy_fit_dti dwi.nii dwi.bval dwi.bvec out_work/brain_mask.nii.gz --out_dir out_work/
@@ -242,7 +242,7 @@ should provide the available options ::
 
 Otherwise please see :ref:`workflows_reference`.
 
-The commands shown in this tutorial are not by any stretch of imagination what we
+The commands shown in this tutorial are not by any stretch of the imagination what we
 propose as a complete solution to tracking but a mere introduction to DIPY's command interfaces.
 Medical imaging requires a number of steps that depend on the goal of the analysis strategy.
 

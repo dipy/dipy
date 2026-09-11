@@ -63,7 +63,7 @@ interactive = False
 #
 # .. math::
 #
-#     \sum_{i=1}^{n}{(y_i - \hat{y}_i)^2} + \alpha (\lambda \sum_{j=1}^{m}{w_j}+(1-\lambda) \sum_{j=1}^{m}{w^2_j}  # noqa: E501
+#     \sum_{i=1}^{n}{(y_i - \hat{y}_i)^2} + \alpha (\lambda \sum_{j=1}^{m}{w_j}+(1-\lambda) \sum_{j=1}^{m}{w^2_j}
 #
 # where $\hat{y}$ is the signal predicted for a particular setting of $\beta$,
 # such that the left part of this expression is the squared loss function;

@@ -12,10 +12,13 @@ cimport numpy as cnp
 import cython
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
-from libc.math cimport cos, M_PI, INFINITY
 
 from dipy.core.math cimport f_max, f_array_min
-from dipy.reconst.recspeed cimport local_maxima_c, search_descending_c, remove_similar_vertices_c
+from dipy.reconst.recspeed cimport (
+    local_maxima_c,
+    search_descending_c,
+    remove_similar_vertices_c,
+)
 
 
 cdef cnp.uint16_t peak_directions_c(
@@ -32,7 +35,7 @@ cdef cnp.uint16_t peak_directions_c(
     cnp.uint16_t[:] mapping,
     cnp.uint16_t[:] index
 ) noexcept nogil:
-    """Get the directions of odf peaks.
+    r"""Get the directions of odf peaks.
 
     Peaks are defined as points on the odf that are greater than at least one
     neighbor and greater than or equal to all neighbors. Peaks are sorted in
@@ -114,7 +117,9 @@ cdef cnp.uint16_t peak_directions_c(
         tmp_buffer[i] -= odf_min
 
     # Remove small peaks
-    n = search_descending_c[cython.double](tmp_buffer, <cnp.npy_intp>count, relative_peak_threshold)
+    n = search_descending_c[cython.double](
+        tmp_buffer, <cnp.npy_intp>count, relative_peak_threshold
+    )
 
     for i in range(n):
         idx = out_indices[i]
@@ -199,13 +204,25 @@ def peak_directions(
     cdef double[:, ::1] directions_out = np.zeros((num_vertices, 3), dtype=np.float64)
     cdef double[::1] values_out = np.zeros(num_vertices, dtype=np.float64)
     cdef cnp.npy_intp[::1] indices_out = np.zeros(num_vertices, dtype=np.intp)
-    cdef cnp.float64_t[:, ::1] unique_vertices = np.empty((num_vertices, 3), dtype=np.float64)
+    cdef cnp.float64_t[:, ::1] unique_vertices = (
+        np.empty((num_vertices, 3), dtype=np.float64)
+    )
     cdef cnp.uint16_t[::1] mapping = None
     cdef cnp.uint16_t[::1] index = np.empty(num_vertices, dtype=np.uint16)
 
     n_unique = peak_directions_c(
-        odf, vertices, edges, relative_peak_threshold, min_separation_angle, is_symmetric,
-        directions_out, values_out, indices_out, unique_vertices, mapping, index
+        odf,
+        vertices,
+        edges,
+        relative_peak_threshold,
+        min_separation_angle,
+        is_symmetric,
+        directions_out,
+        values_out,
+        indices_out,
+        unique_vertices,
+        mapping,
+        index,
     )
 
     if n_unique == 0:

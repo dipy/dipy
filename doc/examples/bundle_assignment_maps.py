@@ -61,14 +61,12 @@ if interactive:
 rng = np.random.default_rng()
 
 n = 100
-indx = assignment_map(model_af_l, model_af_l, n)
+_, indx = assignment_map(model_af_l, model_af_l, n)
 indx = np.array(indx)
 
 colors = [rng.random(3) for si in range(n)]
 
-disks_color = []
-for i in range(len(indx)):
-    disks_color.append(tuple(colors[indx[i]]))
+disks_color = [tuple(colors[i]) for i in indx]
 
 ###############################################################################
 # let's visualize Arcuate Fasiculus Left (AF_L) bundle after assignment maps

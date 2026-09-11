@@ -5,12 +5,14 @@ import warnings
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.util import show_ellipsis
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, has_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 
 if has_fury:
     from fury import ui
@@ -184,7 +186,7 @@ class TabManager:
         if not self._synchronize_slices and slices_tabs:
             msg = (
                 "Images are of different dimensions, "
-                + "synchronization of slices will not work"
+                "synchronization of slices will not work"
             )
             logger.warning(msg)
 
@@ -267,8 +269,7 @@ class TabManager:
         for element in args:
             if element.__class__.__name__ == "HorizonUIElement":
                 if isinstance(element.obj, list):
-                    for obj in element.obj:
-                        elements.append(obj)
+                    elements.extend(obj for obj in element.obj)
                 else:
                     elements.append(element.obj)
             else:
@@ -324,7 +325,9 @@ class TabManager:
         if not self._synchronize_slices and not self._synchronize_peaks:
             return
 
-        for tab in self._get_non_active_tabs(active_tab_id, ["SlicesTab", "PeaksTab"]):
+        for tab in self._get_non_active_tabs(
+            active_tab_id, types=["SlicesTab", "PeaksTab"]
+        ):
             tab.update_slices(x_value, y_value, z_value)
 
     def synchronize_volumes(self, active_tab_id, value):
@@ -345,7 +348,7 @@ class TabManager:
         for slices_tab in self._get_non_active_tabs(active_tab_id):
             slices_tab.update_volume(value)
 
-    def _get_non_active_tabs(self, active_tab_id, types=("SlicesTab",)):
+    def _get_non_active_tabs(self, active_tab_id, *, types=("SlicesTab",)):
         """Get tabs which are not active and slice tabs.
 
         Parameters
@@ -359,8 +362,9 @@ class TabManager:
         """
         return list(
             filter(
-                lambda x: x.__class__.__name__ in types
-                and not x.tab_id == active_tab_id,
+                lambda x: (
+                    x.__class__.__name__ in types and not x.tab_id == active_tab_id
+                ),
                 self._tabs,
             )
         )

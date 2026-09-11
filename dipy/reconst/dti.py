@@ -19,7 +19,7 @@ from dipy.reconst.weights_method import (
     weights_method_nlls_m_est,
     weights_method_wls_m_est,
 )
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.parallel import paramap
 
 
@@ -724,6 +724,7 @@ def tensor_prediction(dti_params, gtab, S0):
 class TensorModel(ReconstModel):
     """Diffusion Tensor"""
 
+    @warning_for_keywords(from_version="1.12.0")
     def __init__(self, gtab, *args, fit_method="WLS", return_S0_hat=False, **kwargs):
         """A Diffusion Tensor Model.
 
@@ -895,6 +896,8 @@ class TensorModel(ReconstModel):
 
 
 class TensorFit:
+    """Stores the fit result of the Diffusion Tensor model."""
+
     @warning_for_keywords()
     def __init__(self, model, model_params, *, model_S0=None):
         """Initialize a TensorFit class instance."""
@@ -1165,7 +1168,7 @@ class TensorFit:
         .. footbibliography::
 
         """
-        odf = np.zeros((self.evals.shape[:-1] + (sphere.vertices.shape[0],)))
+        odf = np.zeros(self.evals.shape[:-1] + (sphere.vertices.shape[0],))
         if len(self.evals.shape) > 1:
             mask = np.where(
                 (self.evals[..., 0] > 0)
@@ -1321,6 +1324,9 @@ def iter_fit_tensor(*, step=1e4):
         """
 
         @functools.wraps(fit_tensor)
+        # Innermost: functools.wraps swaps in fit_tensor's signature, which has
+        # no keyword-only parameter, making the decorator above it a no-op.
+        @warning_for_keywords(from_version="1.12.0")
         def wrapped_fit_tensor(
             design_matrix, data, *args, return_S0_hat=False, step=step, **kwargs
         ):
@@ -1363,6 +1369,8 @@ def iter_fit_tensor(*, step=1e4):
                 weights = weights.reshape(-1, weights.shape[-1])
             if design_matrix.shape[-1] == 22:  # DKI
                 sz = 22
+            elif design_matrix.shape[-1] == 28:  # QTI
+                sz = 28
             else:  # DTI
                 sz = 7 if kwargs.get("return_lower_triangular", False) else 12
             dtiparams = np.empty((size, sz), dtype=np.float64)
@@ -1700,7 +1708,10 @@ class _NllsHelper:
                     self.sqrt_w = self.sqrt_w[:, None]
                 return ans
 
-    def jacobian_func(self, tensor, design_matrix, data, weights=None):
+    # scipy.optimize.leastsq calls this with args=(design_matrix, data, weights)
+    def jacobian_func(
+        self, tensor, design_matrix, data, weights=None
+    ):  # pep3102: ignore
         r"""The Jacobian is the first derivative of the error function.
 
         Parameters
@@ -1987,9 +1998,9 @@ def nlls_fit_tensor(
     if return_lower_triangular:
         return flat_params, leverages
 
-    params.shape = data.shape[:-1] + (npa,)
+    params = params.reshape(data.shape[:-1] + (npa,))
     if return_S0_hat:
-        model_S0.shape = data.shape[:-1] + (1,)
+        model_S0 = model_S0.reshape(data.shape[:-1] + (1,))
         return [params, model_S0], None
     else:
         return params, None
@@ -2191,10 +2202,10 @@ def restore_fit_tensor(
     if resort_to_OLS:
         warnings.warn(ols_resort_msg, UserWarning, stacklevel=2)
 
-    params.shape = data.shape[:-1] + (npa,)
+    params = params.reshape(data.shape[:-1] + (npa,))
     extra = {"robust": robust}
     if return_S0_hat:
-        model_S0.shape = data.shape[:-1] + (1,)
+        model_S0 = model_S0.reshape(data.shape[:-1] + (1,))
         return [params, model_S0], extra
     else:
         return params, extra
@@ -2261,6 +2272,7 @@ def iterative_fit_tensor(
     # Detect if number of parameters corresponds to dti
     npa = p + 5
     dti = npa == 12
+    qti = p == 28
 
     w, robust = None, None  # w = None means wls_fit_tensor uses WLS weights
     D, extra, leverages = None, None, None  # initialize, for clarity
@@ -2296,11 +2308,15 @@ def iterative_fit_tensor(
             if rdx == 1:  # for NLLS, leverages from OLS, so they never change
                 leverages = extra["leverages"]
 
+    if qti:
+        extra = {"robust": robust}
+        return D, extra
+
     # Convert diffusion tensor parameters to the evals and the evecs:
     evals, evecs = decompose_tensor(
         from_lower_triangular(D[:, :6]), min_diffusivity=tol / -design_matrix.min()
     )
-    params = np.empty((data.shape[0:-1] + (npa,)))
+    params = np.empty(data.shape[0:-1] + (npa,))
     params[:, :3] = evals
     params[:, 3:12] = evecs.reshape(params.shape[0:-1] + (-1,))
 
@@ -2312,7 +2328,7 @@ def iterative_fit_tensor(
 
     extra = {"robust": robust}
     if return_S0_hat:
-        model_S0.shape = data.shape[:-1] + (1,)
+        model_S0 = model_S0.reshape(data.shape[:-1] + (1,))
         return [params, model_S0], extra
     else:
         return params, extra
