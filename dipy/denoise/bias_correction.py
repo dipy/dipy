@@ -4,8 +4,13 @@ Provides classical regression-based bias field correction via Legendre
 polynomial regression and cubic B-spline regression.
 
 The bias field is estimated exclusively from the mean b0 volume in the
-log domain and applied uniformly to all DWI volumes.
+log domain and applied uniformly to all DWI volumes. By default the
+regression is wrapped in the iterative histogram-sharpening scheme of N4
+:footcite:p:`Tustison2010`, which separates tissue contrast from the slowly
+varying field.
 """
+
+from warnings import warn
 
 import numpy as np
 from scipy import linalg as scipy_linalg, ndimage, sparse
@@ -23,7 +28,7 @@ except ImportError:
     _HAVE_CYTHON = False
 
 from dipy.core.gradients import extract_b0
-from dipy.segment.mask import applymask, median_otsu
+from dipy.segment.mask import median_otsu
 from dipy.utils.logging import logger
 
 try:
@@ -72,6 +77,230 @@ def _get_mask(mean_b0, mask):
     else:
         mask = np.asarray(mask, dtype=bool)
     return mask
+
+
+def _extrapolate_outside_mask(*, log_bias, mask, sigma=2.0):
+    """Extend the log-domain bias field beyond the brain mask.
+
+    Regression is only constrained inside the mask, so the raw field can
+    diverge by orders of magnitude outside it. Each background voxel takes the
+    value of its nearest in-mask voxel, and the result is Gaussian-smoothed
+    so the field stays continuous across the mask boundary.
+
+    Parameters
+    ----------
+    log_bias : ndarray
+        3D log-domain bias field.
+    mask : ndarray
+        3D boolean brain mask.
+    sigma : float, optional
+        Gaussian smoothing sigma (voxels) applied to the extrapolated region.
+
+    Returns
+    -------
+    log_bias : ndarray
+        Log-domain bias field, unchanged inside the mask and extrapolated
+        outside.
+    """
+    if mask.all():
+        return log_bias
+    _, nearest = ndimage.distance_transform_edt(~mask, return_indices=True)
+    filled = log_bias[tuple(nearest)]
+    smoothed = ndimage.gaussian_filter(filled, sigma=sigma)
+    out = log_bias.copy()
+    out[~mask] = smoothed[~mask]
+    return out
+
+
+def _apply_bias_field(*, data, log_bias, mask, zero_background):
+    """Turn a log-domain field into a multiplicative field and apply it.
+
+    Parameters
+    ----------
+    data : ndarray
+        4D DWI data (X, Y, Z, N).
+    log_bias : ndarray
+        3D log-domain bias field, centered within the mask.
+    mask : ndarray
+        3D boolean brain mask used for the regression.
+    zero_background : bool
+        If True, the field is 1.0 outside the mask. If False, the in-mask
+        field is extrapolated to the background.
+
+    Returns
+    -------
+    corrected : ndarray
+        Bias-corrected DWI, same dtype as ``data``. Integer dtypes are clipped
+        to their representable range instead of wrapping.
+    bias_field : ndarray
+        3D multiplicative bias field.
+    """
+    if zero_background:
+        log_bias = log_bias.copy()
+        log_bias[~mask] = 0.0
+    else:
+        log_bias = _extrapolate_outside_mask(log_bias=log_bias, mask=mask)
+    bias_field = np.exp(log_bias)
+    corrected = data.astype(np.float64) / bias_field[..., None]
+    if np.issubdtype(data.dtype, np.integer):
+        info = np.iinfo(data.dtype)
+        corrected = np.clip(corrected, info.min, info.max)
+    return corrected.astype(data.dtype), bias_field
+
+
+def _sharpen_log_intensities(*, values, n_bins=200, fwhm=0.15, wiener_noise=0.01):
+    """Map log intensities to their expected tissue value (N4 sharpening).
+
+    The histogram of ``values`` is deconvolved with a Gaussian via a Wiener
+    filter, giving an estimate of the underlying tissue-class distribution.
+    Each observed value is then replaced by the expectation of the true value
+    given the observation, which pulls voxels toward their class mean and
+    leaves the bias in the residual.
+
+    Parameters
+    ----------
+    values : ndarray
+        1D log-domain intensities inside the mask.
+    n_bins : int, optional
+        Histogram resolution.
+    fwhm : float, optional
+        Full width at half maximum of the deconvolution kernel, in log units.
+    wiener_noise : float, optional
+        Wiener filter noise term.
+
+    Returns
+    -------
+    expected : ndarray
+        Expected log intensity for each entry of ``values``.
+    """
+    lo, hi = values.min(), values.max()
+    if hi - lo < 1e-12:
+        return values.copy()
+    width = (hi - lo) / (n_bins - 1)
+    pos = (values - lo) / width
+    idx = np.clip(np.floor(pos).astype(np.int64), 0, n_bins - 2)
+    frac = pos - idx
+    hist = np.bincount(idx, weights=1.0 - frac, minlength=n_bins) + np.bincount(
+        idx + 1, weights=frac, minlength=n_bins
+    )
+
+    pad = 1 << (int(np.ceil(np.log2(n_bins))) + 1)
+    v = np.zeros(pad)
+    v[:n_bins] = hist
+    scaled_fwhm = fwhm / width
+    exp_factor = 4.0 * np.log(2.0) / scaled_fwhm**2
+    scale = 2.0 * np.sqrt(np.log(2.0) / np.pi) / scaled_fwhm
+    n = np.arange(pad)
+    n = np.minimum(n, pad - n).astype(np.float64)
+    kernel_f = np.fft.fft(scale * np.exp(-exp_factor * n**2))
+
+    wiener_f = np.conj(kernel_f) / (np.abs(kernel_f) ** 2 + wiener_noise)
+    sharpened = np.clip(np.real(np.fft.ifft(np.fft.fft(v) * wiener_f)), 0.0, None)
+
+    centers = lo + np.arange(pad) * width
+    num = np.real(np.fft.ifft(np.fft.fft(sharpened * centers) * kernel_f))
+    den = np.real(np.fft.ifft(np.fft.fft(sharpened) * kernel_f))
+    expected = np.divide(num, den, out=np.zeros_like(num), where=den != 0)[:n_bins]
+    return (1.0 - frac) * expected[idx] + frac * expected[idx + 1]
+
+
+def _shrink_volume(*, volume, mask, factor):
+    """Decimate a volume and its mask by an integer factor.
+
+    Plain strided decimation is used on purpose: smoothing before
+    downsampling blurs tissue boundaries and fills the intensity histogram
+    with partial-volume values, which defeats histogram sharpening.
+
+    Parameters
+    ----------
+    volume : ndarray
+        3D float volume.
+    mask : ndarray
+        3D boolean mask.
+    factor : int
+        Decimation factor. 1 returns the inputs unchanged.
+
+    Returns
+    -------
+    small_volume : ndarray
+        Decimated volume.
+    small_mask : ndarray
+        Decimated boolean mask.
+    """
+    if factor <= 1:
+        return volume, mask
+    strides = (slice(None, None, factor),) * 3
+    return volume[strides], mask[strides]
+
+
+def _sharpened_fit(*, log_b0, mask, smoother, max_iter, convergence_threshold):
+    """Iterate sharpening and smoothing until the field stops changing.
+
+    This is the outer loop of N4 :footcite:p:`Tustison2010`: at each
+    iteration the current corrected image is sharpened, the residual between
+    image and sharpened image is smoothed by ``smoother`` and added to the
+    running field estimate.
+
+    Parameters
+    ----------
+    log_b0 : ndarray
+        3D log-domain b0 image.
+    mask : ndarray
+        3D boolean brain mask.
+    smoother : callable
+        ``smoother(image)`` returning a smooth log-domain field of the same
+        shape as ``image``, centered inside ``mask``.
+    max_iter : int
+        Maximum number of sharpening iterations.
+    convergence_threshold : float
+        Stop when the coefficient of variation of the multiplicative update
+        inside the mask falls below this value.
+
+    Returns
+    -------
+    log_bias : ndarray
+        Estimated log-domain bias field, same shape as log_b0.
+    """
+    log_field = np.zeros_like(log_b0)
+    current = log_b0.copy()
+    residual = np.zeros_like(log_b0)
+    for _ in range(max_iter):
+        residual[mask] = current[mask] - _sharpen_log_intensities(values=current[mask])
+        update = smoother(residual)
+        log_field += update
+        current = log_b0 - log_field
+        ratio = np.exp(update[mask])
+        if ratio.std() / ratio.mean() < convergence_threshold:
+            break
+    return log_field
+
+
+def _bending_penalty(*, n_control):
+    """Second-difference (bending energy) penalty on a control lattice.
+
+    Parameters
+    ----------
+    n_control : tuple of int
+        Control grid dimensions (ns, nr, nc).
+
+    Returns
+    -------
+    penalty : ndarray
+        Dense positive semi-definite matrix of shape (K, K), K the number of
+        control points, such that ``beta @ penalty @ beta`` sums the squared
+        second differences of the lattice along every axis.
+    """
+    K = int(np.prod(n_control))
+    penalty = np.zeros((K, K), dtype=np.float64)
+    eyes = [sparse.identity(n, format="csr") for n in n_control]
+    for axis, n in enumerate(n_control):
+        if n < 3:
+            continue
+        diff = sparse.diags([1.0, -2.0, 1.0], [0, 1, 2], shape=(n - 2, n))
+        factors = [diff if i == axis else eyes[i] for i in range(3)]
+        full = sparse.kron(sparse.kron(factors[0], factors[1]), factors[2])
+        penalty += (full.T @ full).toarray()
+    return penalty
 
 
 def _gradient_weights(*, log_b0, alpha=1.0):
@@ -170,36 +399,6 @@ def _legendre_basis(*, coords_flat, order):
     return X
 
 
-def _weighted_ridge_solve(*, X, y, weights, lambda_reg):
-    """Solve weighted ridge regression min ||W^(1/2)(y - Xβ)||² + λ||β||².
-
-    Parameters
-    ----------
-    X : ndarray
-        Design matrix, shape (N, K).
-    y : ndarray
-        Target values, shape (N,).
-    weights : ndarray
-        Non-negative regression weights, shape (N,).
-    lambda_reg : float
-        Ridge regularization strength.
-
-    Returns
-    -------
-    beta : ndarray
-        Coefficient vector, shape (K,).
-    """
-    K = X.shape[1]
-    WX = weights[:, None] * X
-    A = X.T @ WX + lambda_reg * np.eye(K)
-    b = X.T @ (weights * y)
-    try:
-        beta = np.linalg.solve(A, b)
-    except np.linalg.LinAlgError:
-        beta, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
-    return beta
-
-
 def _tukey_weights_py(*, residuals, c):
     """Compute Tukey biweight weights (pure Python/NumPy).
 
@@ -243,217 +442,6 @@ def _tukey_weights(*, residuals, c=4.685):
         compute_tukey_weights(np.ascontiguousarray(residuals, dtype=np.float64), w, c=c)
         return w
     return _tukey_weights_py(residuals=residuals, c=c)
-
-
-def _polynomial_pyramid_fit(
-    *,
-    log_b0,
-    mask,
-    order,
-    pyramid_levels,
-    n_iter,
-    lambda_reg,
-    robust,
-    gradient_weighting,
-    sigma_factor=0.2,
-):
-    """Coarse-to-fine polynomial bias field regression.
-
-    Parameters
-    ----------
-    log_b0 : ndarray
-        3D log-domain b0 image, shape (S, R, C).
-    mask : ndarray
-        3D boolean brain mask.
-    order : int
-        Maximum Legendre polynomial order.
-    pyramid_levels : tuple of int
-        Downsampling factors, ordered coarse-first (e.g. (4, 2, 1)).
-    n_iter : int
-        Reweighting iterations per pyramid level.
-    lambda_reg : float
-        Ridge regularization strength.
-    robust : bool
-        Apply Tukey biweight robust reweighting.
-    gradient_weighting : bool
-        Apply gradient-based edge suppression weights.
-    sigma_factor : float, optional
-        Sigma = factor * sigma_factor for Gaussian smoothing.
-
-    Returns
-    -------
-    log_bias : ndarray
-        Estimated log-domain bias field, same shape as log_b0.
-    """
-    full_shape = log_b0.shape
-
-    if gradient_weighting:
-        grad_w_full = _gradient_weights(log_b0=log_b0)
-
-    ii, jj, kk = np.meshgrid(
-        np.arange(full_shape[0]),
-        np.arange(full_shape[1]),
-        np.arange(full_shape[2]),
-        indexing="ij",
-    )
-    full_vox_coords = np.column_stack([ii.ravel(), jj.ravel(), kk.ravel()])
-    full_coords_norm = _normalize_coords(shape=full_shape, coords=full_vox_coords)
-    X_full = _legendre_basis(coords_flat=full_coords_norm, order=order)
-
-    # Center log_b0 so the polynomial fits only spatial variation, not the
-    # DC offset (overall intensity level).
-    log_b0_dc = log_b0[mask].mean()
-    residual = log_b0 - log_b0_dc
-
-    log_bias = np.zeros(full_shape, dtype=np.float64)
-
-    for factor in pyramid_levels:
-        if factor == 1:
-            level_residual = residual
-            level_mask = mask
-        else:
-            sigma = factor * sigma_factor
-            smoothed = ndimage.gaussian_filter(residual, sigma=sigma)
-            level_residual = ndimage.zoom(smoothed, zoom=1.0 / factor, order=1)
-            level_mask = (
-                ndimage.zoom(mask.astype(np.float64), zoom=1.0 / factor, order=0) > 0.5
-            )
-
-        level_shape = level_residual.shape
-        mask_flat = level_mask.ravel()
-        n_masked = mask_flat.sum()
-
-        # Need at least as many data points as parameters
-        n_params = sum(
-            1
-            for i in range(order + 1)
-            for j in range(order + 1 - i)
-            for _ in range(order + 1 - i - j)
-        )
-        if n_masked < n_params:
-            continue
-
-        y = level_residual.ravel()[mask_flat]
-
-        ii_l, jj_l, kk_l = np.meshgrid(
-            np.arange(level_shape[0]),
-            np.arange(level_shape[1]),
-            np.arange(level_shape[2]),
-            indexing="ij",
-        )
-        level_coords = np.column_stack(
-            [
-                ii_l.ravel()[mask_flat],
-                jj_l.ravel()[mask_flat],
-                kk_l.ravel()[mask_flat],
-            ]
-        )
-        coords_norm = _normalize_coords(shape=level_shape, coords=level_coords)
-        X = _legendre_basis(coords_flat=coords_norm, order=order)
-
-        w = np.ones(n_masked, dtype=np.float64)
-        if gradient_weighting:
-            if factor == 1:
-                gw = grad_w_full.ravel()[mask_flat]
-            else:
-                gw_down = ndimage.zoom(grad_w_full, zoom=1.0 / factor, order=1)
-                gw = gw_down.ravel()[mask_flat]
-            w = w * gw
-
-        beta = None
-        for _ in range(n_iter):
-            beta = _weighted_ridge_solve(X=X, y=y, weights=w, lambda_reg=lambda_reg)
-            residuals_iter = y - X @ beta
-            if robust:
-                w = w * _tukey_weights(residuals=residuals_iter)
-
-        if beta is None:
-            beta = _weighted_ridge_solve(X=X, y=y, weights=w, lambda_reg=lambda_reg)
-
-        level_bias = (X_full @ beta).reshape(full_shape)
-        log_bias += level_bias
-        residual = residual - level_bias
-
-    # Center: ensure bias_field has unit mean within mask
-    log_bias -= log_bias[mask].mean()
-    return log_bias
-
-
-def polynomial_bias_field_dwi(
-    data,
-    gtab,
-    *,
-    mask=None,
-    order=3,
-    pyramid_levels=(4, 2, 1),
-    n_iter=4,
-    lambda_reg=1e-3,
-    robust=True,
-    gradient_weighting=True,
-    zero_background=False,
-):
-    """DWI bias field correction via multi-resolution Legendre polynomial regression.
-
-    Estimates the bias field from the mean b0 volume in log space using
-    coarse-to-fine Legendre polynomial regression, then applies the estimated
-    field to all DWI volumes.
-
-    Parameters
-    ----------
-    data : ndarray
-        4D DWI data (X, Y, Z, N).
-    gtab : GradientTable
-        Gradient table.
-    mask : ndarray, optional
-        3D binary brain mask. Auto-computed via median_otsu if None.
-    order : int, optional
-        Maximum Legendre polynomial order (terms where i+j+k <= order).
-    pyramid_levels : tuple of int, optional
-        Downsampling factors for coarse-to-fine pyramid (descending order).
-    n_iter : int, optional
-        Reweighting iterations per pyramid level.
-    lambda_reg : float, optional
-        Ridge regularization strength.
-    robust : bool, optional
-        Apply Tukey biweight robust reweighting.
-    gradient_weighting : bool, optional
-        Apply gradient-based edge suppression.
-    zero_background : bool, optional
-        If True, set the bias field to 1.0 (no correction) outside the brain
-        mask. If False, the raw extrapolated field values are preserved in
-        the returned bias_field array. Has no effect on the corrected DWI
-        data (background voxels are always zeroed by the brain mask).
-
-    Returns
-    -------
-    corrected : ndarray
-        Bias-corrected 4D DWI data, same dtype as input.
-    bias_field : ndarray
-        Estimated 3D multiplicative bias field.
-    """
-    orig_dtype = data.dtype
-    mean_b0 = _get_mean_b0(data, gtab)
-    mask = _get_mask(mean_b0, mask)
-    log_b0 = np.log(np.clip(mean_b0, 1e-10, None))
-
-    log_bias = _polynomial_pyramid_fit(
-        log_b0=log_b0,
-        mask=mask,
-        order=order,
-        pyramid_levels=pyramid_levels,
-        n_iter=n_iter,
-        lambda_reg=lambda_reg,
-        robust=robust,
-        gradient_weighting=gradient_weighting,
-    )
-
-    if zero_background:
-        log_bias[~mask] = 0.0
-    bias_field = np.exp(log_bias)
-    corrected = applymask(data.astype(np.float64) / bias_field[..., None], mask).astype(
-        orig_dtype
-    )
-    return corrected, bias_field
 
 
 def _build_bspline_design_matrix_py(*, log_b0_shape, n_control, mask_flat):
@@ -619,109 +607,62 @@ def _build_bspline_design_matrix(*, log_b0_shape, n_control, mask_flat):
     )
 
 
-def _sparse_weighted_ridge_solve(*, X_sparse, y, weights, lambda_reg):
-    """Solve sparse weighted ridge regression.
+def _bspline_axis_basis(*, n_vox, n_ctrl):
+    """Dense 1-D cubic B-spline basis matrix for one axis.
 
-    The Gram matrix A = X^T W X is computed via chunked dense BLAS DGEMM,
-    which is substantially faster than scipy sparse×sparse multiplication
-    when the result is nearly dense (K < 1000).
-
-    Parameters
-    ----------
-    X_sparse : scipy.sparse.csr_matrix
-        Design matrix, shape (N, K).
-    y : ndarray
-        Target values, shape (N,).
-    weights : ndarray
-        Non-negative regression weights, shape (N,).
-    lambda_reg : float
-        Ridge regularization strength.
-
-    Returns
-    -------
-    beta : ndarray
-        Coefficient vector, shape (K,).
-    """
-    K = X_sparse.shape[1]
-    N = X_sparse.shape[0]
-
-    if _HAVE_CYTHON:
-        # Fast path: Cython direct CSR accumulation
-        A = np.zeros((K, K), dtype=np.float64)
-        b_vec = np.zeros(K, dtype=np.float64)
-        gram_matrix_csr(
-            np.asarray(X_sparse.data, dtype=np.float64),
-            np.asarray(X_sparse.indices, dtype=np.int32),
-            np.asarray(X_sparse.indptr, dtype=np.int32),
-            np.ascontiguousarray(weights, dtype=np.float64),
-            np.ascontiguousarray(y, dtype=np.float64),
-            A,
-            b_vec,
-        )
-    else:
-        # Chunked BLAS DGEMM: avoids sparse×sparse which is slow for dense-ish
-        # results (K×K), converting sparse rows to dense in blocks and using
-        # BLAS for the accumulation.
-        chunk = min(4096, N)
-        A = np.zeros((K, K), dtype=np.float64)
-        b_vec = np.zeros(K, dtype=np.float64)
-        for i in range(0, N, chunk):
-            Xc = X_sparse[i : i + chunk].toarray()  # (chunk, K)
-            wc = weights[i : i + chunk]
-            A += Xc.T @ (wc[:, np.newaxis] * Xc)  # BLAS DGEMM
-            b_vec += Xc.T.dot(wc * y[i : i + chunk])
-
-    A += lambda_reg * np.eye(K)
-    try:
-        beta = scipy_linalg.solve(A, b_vec, assume_a="pos")
-    except scipy_linalg.LinAlgError:
-        beta, _, _, _ = np.linalg.lstsq(A, b_vec, rcond=None)
-    return beta
-
-
-def _refine_control_coeffs(*, coeffs, n_ctrl_coarse, n_ctrl_fine):
-    """Trilinear interpolation of control grid coefficients.
+    Uses the same parameterisation and clamping as
+    :func:`_build_bspline_design_matrix`, so evaluating a field with the
+    tensor product of these matrices agrees exactly with the design matrix
+    used for fitting.
 
     Parameters
     ----------
-    coeffs : ndarray
-        Flattened control point coefficients at coarse resolution.
-    n_ctrl_coarse : tuple of int
-        Coarse control grid dimensions.
-    n_ctrl_fine : tuple of int
-        Fine control grid dimensions.
+    n_vox : int
+        Number of voxels along the axis.
+    n_ctrl : int
+        Number of control points along the axis.
 
     Returns
     -------
-    fine_coeffs : ndarray
-        Flattened coefficients at fine resolution.
+    basis : ndarray
+        Matrix of shape (n_vox, n_ctrl).
     """
-    coarse_grid = coeffs.reshape(n_ctrl_coarse)
-    zoom_factors = tuple(f / c for f, c in zip(n_ctrl_fine, n_ctrl_coarse))
-    fine_grid = ndimage.zoom(coarse_grid, zoom=zoom_factors, order=1)
-    # Trim or pad to exactly match target shape
-    slices = tuple(slice(0, n) for n in n_ctrl_fine)
-    fine_grid = fine_grid[slices]
-    if fine_grid.shape != tuple(n_ctrl_fine):
-        padded = np.zeros(n_ctrl_fine, dtype=np.float64)
-        src_slices = tuple(slice(0, s) for s in fine_grid.shape)
-        padded[src_slices] = fine_grid
-        fine_grid = padded
-    return fine_grid.ravel()
+    basis = np.zeros((n_vox, n_ctrl), dtype=np.float64)
+    if n_vox <= 1 or n_ctrl <= 1:
+        basis[:, 0] = 1.0
+        return basis
+    t = np.arange(n_vox, dtype=np.float64) * (n_ctrl - 1) / (n_vox - 1)
+    t = np.clip(t, 0.0, n_ctrl - 1 - 1e-10)
+    k = np.minimum(np.floor(t).astype(np.int64), n_ctrl - 2)
+    u = t - k
+    u2 = u * u
+    u3 = u2 * u
+    values = np.stack(
+        [
+            (1.0 - u) ** 3 / 6.0,
+            (3.0 * u3 - 6.0 * u2 + 4.0) / 6.0,
+            (-3.0 * u3 + 3.0 * u2 + 3.0 * u + 1.0) / 6.0,
+            u3 / 6.0,
+        ],
+        axis=-1,
+    )
+    rows = np.repeat(np.arange(n_vox), 4)
+    cols = (k[:, None] + np.arange(-1, 3)[None, :]).ravel()
+    valid = (cols >= 0) & (cols < n_ctrl)
+    basis[rows[valid], cols[valid]] = values.ravel()[valid]
+    return basis
 
 
 def _eval_bspline_field(*, coeffs, n_control, out_shape):
-    """Evaluate B-spline field at all voxel positions.
+    """Evaluate a B-spline field on the full voxel grid.
 
-    Uses ``scipy.ndimage.map_coordinates`` with ``prefilter=False`` so that
-    ``coeffs`` are treated directly as B-spline weights (not as values to
-    interpolate through).  This avoids building a full-resolution sparse
-    design matrix and is O(N) in C rather than O(N × 64) in Python.
+    The tensor-product structure makes this three small matrix products
+    instead of a per-voxel interpolation.
 
     Parameters
     ----------
     coeffs : ndarray
-        Flattened control point coefficients (B-spline weights).
+        Flattened control point coefficients.
     n_control : tuple of int
         Control grid dimensions (ns, nr, nc).
     out_shape : tuple of int
@@ -732,154 +673,308 @@ def _eval_bspline_field(*, coeffs, n_control, out_shape):
     field : ndarray
         Evaluated field, shape out_shape.
     """
-    S, R, C = out_shape
-    ns, nr, nc = n_control
-
-    coeff_grid = np.ascontiguousarray(coeffs.reshape(n_control), dtype=np.float64)
-
-    iz = np.linspace(0, ns - 1, S) if ns > 1 else np.zeros(S)
-    iy = np.linspace(0, nr - 1, R) if nr > 1 else np.zeros(R)
-    ix_ = np.linspace(0, nc - 1, C) if nc > 1 else np.zeros(C)
-
-    II, JJ, KK = np.meshgrid(iz, iy, ix_, indexing="ij")
-    coords = np.vstack([II.ravel(), JJ.ravel(), KK.ravel()])
-
-    field = ndimage.map_coordinates(
-        coeff_grid, coords, order=3, mode="nearest", prefilter=False
-    )
-    return field.reshape(out_shape)
+    grid = coeffs.reshape(n_control)
+    bases = [
+        _bspline_axis_basis(n_vox=n, n_ctrl=k) for n, k in zip(out_shape, n_control)
+    ]
+    field = np.tensordot(bases[0], grid, axes=(1, 0))
+    field = np.tensordot(bases[1], field, axes=(1, 1)).transpose(1, 0, 2)
+    return np.tensordot(field, bases[2], axes=(2, 1))
 
 
-def _bspline_pyramid_fit(
-    *,
-    log_b0,
-    mask,
-    n_control_points,
-    pyramid_levels,
-    n_iter,
-    lambda_reg,
-    robust,
-    gradient_weighting,
-    sigma_factor=0.2,
-):
-    """Coarse-to-fine B-spline bias field regression.
+def _gram_matrix(*, X, weights):
+    """Compute the weighted Gram matrix X^T W X.
 
     Parameters
     ----------
-    log_b0 : ndarray
-        3D log-domain b0 image, shape (S, R, C).
-    mask : ndarray
-        3D boolean brain mask.
-    n_control_points : tuple of int
-        Control grid dimensions at finest level.
-    pyramid_levels : tuple of int
-        Downsampling factors, ordered coarse-first (e.g. (4, 2, 1)).
-    n_iter : int
-        Reweighting iterations per pyramid level.
+    X : ndarray or scipy.sparse.csr_matrix
+        Design matrix, shape (N, K).
+    weights : ndarray
+        Non-negative regression weights, shape (N,).
+
+    Returns
+    -------
+    A : ndarray
+        Dense matrix of shape (K, K).
+    """
+    K = X.shape[1]
+    if not sparse.issparse(X):
+        return X.T @ (weights[:, None] * X)
+    A = np.zeros((K, K), dtype=np.float64)
+    if _HAVE_CYTHON:
+        gram_matrix_csr(
+            np.asarray(X.data, dtype=np.float64),
+            np.asarray(X.indices, dtype=np.int32),
+            np.asarray(X.indptr, dtype=np.int32),
+            np.ascontiguousarray(weights, dtype=np.float64),
+            np.zeros(X.shape[0], dtype=np.float64),
+            A,
+            np.zeros(K, dtype=np.float64),
+        )
+        return A
+    # Chunked dense products: sparse x sparse is slow when the result is dense
+    chunk = min(4096, X.shape[0])
+    for i in range(0, X.shape[0], chunk):
+        Xc = X[i : i + chunk].toarray()
+        A += Xc.T @ (weights[i : i + chunk, None] * Xc)
+    return A
+
+
+def _regularize(*, A, lambda_reg, penalty, smoothness):
+    """Add ridge and bending penalties to a Gram matrix.
+
+    Parameters
+    ----------
+    A : ndarray
+        Gram matrix, shape (K, K).
     lambda_reg : float
         Ridge regularization strength.
-    robust : bool
-        Apply Tukey biweight robust reweighting.
-    gradient_weighting : bool
-        Apply gradient-based edge suppression weights.
+    penalty : ndarray or None
+        Quadratic penalty matrix of shape (K, K).
+    smoothness : float
+        Weight of ``penalty`` relative to the data term. The penalty is
+        scaled so that ``smoothness=1`` gives it the same trace as ``A``,
+        which makes the value independent of the number of voxels.
+
+    Returns
+    -------
+    A_reg : ndarray
+        Regularized system matrix.
+    """
+    A_reg = A.copy()
+    if penalty is not None and smoothness > 0:
+        trace_penalty = np.trace(penalty)
+        if trace_penalty > 0:
+            A_reg += smoothness * (np.trace(A) / trace_penalty) * penalty
+    A_reg += lambda_reg * np.eye(A.shape[0])
+    return A_reg
+
+
+def _solve_normal_equations(*, A, b):
+    """Solve A beta = b for a symmetric positive definite A.
+
+    Parameters
+    ----------
+    A : ndarray
+        System matrix, shape (K, K).
+    b : ndarray
+        Right-hand side, shape (K,).
+
+    Returns
+    -------
+    beta : ndarray
+        Solution, shape (K,).
+    """
+    try:
+        return scipy_linalg.solve(A, b, assume_a="pos")
+    except (scipy_linalg.LinAlgError, ValueError):
+        return np.linalg.lstsq(A, b, rcond=None)[0]
+
+
+def _downsample(*, volume, factor, sigma_factor=0.2):
+    """Gaussian-smooth and downsample a volume for one pyramid level.
+
+    Parameters
+    ----------
+    volume : ndarray
+        3D float volume.
+    factor : int
+        Downsampling factor. 1 returns the input unchanged.
     sigma_factor : float, optional
-        Sigma = factor * sigma_factor for Gaussian smoothing.
+        Sigma = factor * sigma_factor for the Gaussian smoothing.
+
+    Returns
+    -------
+    small : ndarray
+        Downsampled volume.
+    """
+    if factor == 1:
+        return volume
+    smoothed = ndimage.gaussian_filter(volume, sigma=factor * sigma_factor)
+    return ndimage.zoom(smoothed, zoom=1.0 / factor, order=1)
+
+
+def _plan_pyramid(
+    *,
+    shape,
+    mask,
+    method,
+    pyramid_levels,
+    order,
+    n_control_points,
+    lambda_reg,
+    smoothness,
+    edge_weights,
+):
+    """Precompute everything about the regression that does not depend on the image.
+
+    Design matrices, Gram matrices, penalties and evaluation operators are
+    functions of the mask and volume shape only. Building them once lets the
+    sharpening loop solve dozens of systems at the cost of a right-hand side
+    each.
+
+    Parameters
+    ----------
+    shape : tuple of int
+        Full volume shape (S, R, C).
+    mask : ndarray
+        3D boolean brain mask.
+    method : str
+        ``"poly"`` or ``"bspline"``.
+    pyramid_levels : tuple of int
+        Downsampling factors, coarse first.
+    order : int
+        Legendre polynomial order (poly).
+    n_control_points : tuple of int
+        Control grid dimensions at the finest level (bspline).
+    lambda_reg : float
+        Ridge regularization strength.
+    smoothness : float
+        Bending energy penalty weight (bspline).
+    edge_weights : ndarray or None
+        Edge suppression weights at full resolution.
+
+    Returns
+    -------
+    levels : list of dict
+        One entry per usable pyramid level with keys ``factor``,
+        ``mask_flat``, ``weights``, ``X``, ``gram``, ``regularize`` and
+        ``evaluate``.
+    """
+    if method == "poly":
+        ii, jj, kk = np.meshgrid(*(np.arange(n) for n in shape), indexing="ij")
+        coords = np.column_stack([ii.ravel(), jj.ravel(), kk.ravel()])
+        X_full = _legendre_basis(
+            coords_flat=_normalize_coords(shape=shape, coords=coords), order=order
+        )
+
+    levels = []
+    for factor in pyramid_levels:
+        if factor == 1:
+            level_mask = mask
+        else:
+            level_mask = (
+                ndimage.zoom(mask.astype(np.float64), zoom=1.0 / factor, order=0) > 0.5
+            )
+        level_shape = level_mask.shape
+        mask_flat = level_mask.ravel()
+        n_masked = int(mask_flat.sum())
+
+        if method == "poly":
+            n_params = X_full.shape[1]
+            penalty = None
+        else:
+            n_ctrl = tuple(max(2, int(np.round(n / factor))) for n in n_control_points)
+            n_params = int(np.prod(n_ctrl))
+            penalty = _bending_penalty(n_control=n_ctrl) if smoothness > 0 else None
+        if n_masked < n_params:
+            continue
+
+        if method == "poly":
+            ii, jj, kk = np.meshgrid(
+                *(np.arange(n) for n in level_shape), indexing="ij"
+            )
+            coords = np.column_stack(
+                [ii.ravel()[mask_flat], jj.ravel()[mask_flat], kk.ravel()[mask_flat]]
+            )
+            X = _legendre_basis(
+                coords_flat=_normalize_coords(shape=level_shape, coords=coords),
+                order=order,
+            )
+
+            def evaluate(beta, *, X_full=X_full):
+                return (X_full @ beta).reshape(shape)
+
+        else:
+            X = _build_bspline_design_matrix(
+                log_b0_shape=level_shape, n_control=n_ctrl, mask_flat=mask_flat
+            )
+
+            def evaluate(beta, *, n_ctrl=n_ctrl):
+                return _eval_bspline_field(
+                    coeffs=beta, n_control=n_ctrl, out_shape=shape
+                )
+
+        weights = np.ones(n_masked, dtype=np.float64)
+        if edge_weights is not None:
+            level_edge = (
+                edge_weights
+                if factor == 1
+                else ndimage.zoom(edge_weights, zoom=1.0 / factor, order=1)
+            )
+            weights = weights * level_edge.ravel()[mask_flat]
+
+        def regularize(A, *, penalty=penalty):
+            return _regularize(
+                A=A, lambda_reg=lambda_reg, penalty=penalty, smoothness=smoothness
+            )
+
+        levels.append(
+            {
+                "factor": factor,
+                "mask_flat": mask_flat,
+                "weights": weights,
+                "X": X,
+                "gram": regularize(_gram_matrix(X=X, weights=weights)),
+                "regularize": regularize,
+                "evaluate": evaluate,
+            }
+        )
+    return levels
+
+
+def _pyramid_fit(*, image, mask, levels, n_iter, robust):
+    """Coarse-to-fine regression of a smooth field to ``image``.
+
+    Parameters
+    ----------
+    image : ndarray
+        3D log-domain image to smooth.
+    mask : ndarray
+        3D boolean brain mask.
+    levels : list of dict
+        Output of :func:`_plan_pyramid` for the same shape and mask.
+    n_iter : int
+        Reweighting iterations per level. Only the last solve is kept.
+    robust : bool
+        Multiply the weights by Tukey biweights of the residuals between
+        iterations.
 
     Returns
     -------
     log_bias : ndarray
-        Estimated log-domain bias field, same shape as log_b0.
+        Smooth field, same shape as image, with zero mean inside the mask.
     """
-    full_shape = log_b0.shape
+    # Remove the DC level so the basis only explains spatial variation
+    residual = image - image[mask].mean()
+    log_bias = np.zeros(image.shape, dtype=np.float64)
 
-    if gradient_weighting:
-        grad_w_full = _gradient_weights(log_b0=log_b0)
+    for level in levels:
+        X = level["X"]
+        y = _downsample(volume=residual, factor=level["factor"]).ravel()[
+            level["mask_flat"]
+        ]
+        weights = level["weights"]
+        A = level["gram"]
+        beta = None
+        for it in range(max(n_iter, 1)):
+            beta = _solve_normal_equations(A=A, b=X.T @ (weights * y))
+            if robust and it < n_iter - 1:
+                weights = weights * _tukey_weights(residuals=y - X @ beta)
+                A = level["regularize"](_gram_matrix(X=X, weights=weights))
+        field = level["evaluate"](beta)
+        log_bias += field
+        residual = residual - field
 
-    # Center log_b0 so the B-spline fits only spatial variation, not the
-    # DC offset (overall intensity level).
-    log_b0_dc = log_b0[mask].mean()
-    residual = log_b0 - log_b0_dc
-
-    log_bias = np.zeros(full_shape, dtype=np.float64)
-    prev_coeffs = None
-    prev_n_ctrl = None
-
-    for factor in pyramid_levels:
-        n_ctrl = tuple(max(2, int(np.round(n / factor))) for n in n_control_points)
-
-        if factor == 1:
-            level_residual = residual
-            level_mask = mask
-        else:
-            sigma = factor * sigma_factor
-            smoothed = ndimage.gaussian_filter(residual, sigma=sigma)
-            level_residual = ndimage.zoom(smoothed, zoom=1.0 / factor, order=1)
-            level_mask = (
-                ndimage.zoom(mask.astype(np.float64), zoom=1.0 / factor, order=0) > 0.5
-            )
-
-        level_shape = level_residual.shape
-        mask_flat_level = level_mask.ravel()
-        n_masked = mask_flat_level.sum()
-        K = n_ctrl[0] * n_ctrl[1] * n_ctrl[2]
-
-        if n_masked < K:
-            continue
-
-        y = level_residual.ravel()[mask_flat_level]
-
-        X = _build_bspline_design_matrix(
-            log_b0_shape=level_shape,
-            n_control=n_ctrl,
-            mask_flat=mask_flat_level,
-        )
-
-        # Warm-start: refine coefficients from previous coarser level
-        if prev_coeffs is not None and prev_n_ctrl is not None:
-            coeffs = _refine_control_coeffs(
-                coeffs=prev_coeffs,
-                n_ctrl_coarse=prev_n_ctrl,
-                n_ctrl_fine=n_ctrl,
-            )
-        else:
-            coeffs = np.zeros(K, dtype=np.float64)
-
-        w = np.ones(n_masked, dtype=np.float64)
-        if gradient_weighting:
-            if factor == 1:
-                gw = grad_w_full.ravel()[mask_flat_level]
-            else:
-                gw_down = ndimage.zoom(grad_w_full, zoom=1.0 / factor, order=1)
-                gw = gw_down.ravel()[mask_flat_level]
-            w = w * gw
-
-        for _ in range(n_iter):
-            coeffs = _sparse_weighted_ridge_solve(
-                X_sparse=X, y=y, weights=w, lambda_reg=lambda_reg
-            )
-            residuals_iter = y - X @ coeffs
-            if robust:
-                w = w * _tukey_weights(residuals=residuals_iter)
-
-        prev_coeffs = coeffs
-        prev_n_ctrl = n_ctrl
-
-        level_bias = _eval_bspline_field(
-            coeffs=coeffs, n_control=n_ctrl, out_shape=full_shape
-        )
-        log_bias += level_bias
-        residual = residual - level_bias
-
-    # Center: ensure bias_field has unit mean within mask
     log_bias -= log_bias[mask].mean()
     return log_bias
 
 
-def _auto_select_fit(
+def _estimate_log_bias(
     *,
     log_b0,
-    mean_b0,
     mask,
+    method,
     order,
     n_control_points,
     pyramid_levels,
@@ -887,57 +982,121 @@ def _auto_select_fit(
     lambda_reg,
     robust,
     gradient_weighting,
+    smoothness,
+    sharpen,
+    max_iter,
+    convergence_threshold,
+    shrink_factor,
 ):
-    """Run poly and bspline fits, return the log-bias with lower CoV.
+    """Estimate the log-domain bias field with one regression method.
 
     Parameters
     ----------
     log_b0 : ndarray
-        Log-domain mean b0, shape (X, Y, Z), float64.
+        3D log-domain mean b0.
+    mask : ndarray
+        3D boolean brain mask.
+    method : str
+        ``"poly"`` or ``"bspline"``.
+    order : int
+        Legendre polynomial order (poly).
+    n_control_points : tuple of int
+        Control grid dimensions at the finest level (bspline).
+    pyramid_levels : tuple of int
+        Downsampling factors for the coarse-to-fine pyramid.
+    n_iter : int
+        Reweighting iterations per pyramid level (direct fit only).
+    lambda_reg : float
+        Ridge regularization strength.
+    robust : bool
+        Apply Tukey biweight robust reweighting (direct fit only).
+    gradient_weighting : bool
+        Apply gradient-based edge suppression.
+    smoothness : float
+        Bending energy penalty weight (bspline).
+    sharpen : bool
+        Wrap the regression in the N4 histogram-sharpening loop.
+    max_iter : int
+        Maximum sharpening iterations.
+    convergence_threshold : float
+        Sharpening convergence threshold.
+    shrink_factor : int
+        Decimation factor for the sharpening iterations.
+
+    Returns
+    -------
+    log_bias : ndarray
+        Log-domain bias field, same shape as log_b0.
+    """
+    if sharpen:
+        image, image_mask = _shrink_volume(
+            volume=log_b0, mask=mask, factor=shrink_factor
+        )
+        # Histogram sharpening needs a populated histogram
+        if image_mask.sum() < 1000:
+            image, image_mask = log_b0, mask
+    else:
+        image, image_mask = log_b0, mask
+
+    levels = _plan_pyramid(
+        shape=image.shape,
+        mask=image_mask,
+        method=method,
+        pyramid_levels=pyramid_levels,
+        order=order,
+        n_control_points=n_control_points,
+        lambda_reg=lambda_reg,
+        smoothness=smoothness,
+        edge_weights=_gradient_weights(log_b0=image) if gradient_weighting else None,
+    )
+
+    if not sharpen:
+        return _pyramid_fit(
+            image=image, mask=image_mask, levels=levels, n_iter=n_iter, robust=robust
+        )
+
+    def smoother(residual):
+        return _pyramid_fit(
+            image=residual, mask=image_mask, levels=levels, n_iter=1, robust=False
+        )
+
+    log_bias = _sharpened_fit(
+        log_b0=image,
+        mask=image_mask,
+        smoother=smoother,
+        max_iter=max_iter,
+        convergence_threshold=convergence_threshold,
+    )
+    if log_bias.shape != log_b0.shape:
+        zoom = np.array(log_b0.shape) / np.array(log_bias.shape)
+        log_bias = ndimage.zoom(log_bias, zoom=zoom, order=3)
+        log_bias -= log_bias[mask].mean()
+    return log_bias
+
+
+def _auto_select_fit(*, mean_b0, mask, **fit_kwargs):
+    """Run poly and bspline fits, return the log-bias with lower CoV.
+
+    Deprecated: the CoV of the corrected b0 decreases when tissue contrast is
+    absorbed into the field, so it cannot rank two valid fields.
+
+    Parameters
+    ----------
     mean_b0 : ndarray
         Mean b0 in signal domain, shape (X, Y, Z), float64.
     mask : ndarray
         3D boolean brain mask.
-    order : int
-        Legendre polynomial order for poly fit.
-    n_control_points : tuple of int
-        B-spline control grid dimensions for bspline fit.
-    pyramid_levels : tuple of int
-        Downsampling factors for coarse-to-fine pyramid.
-    n_iter : int
-        Reweighting iterations per pyramid level.
-    lambda_reg : float
-        Ridge regularization strength.
-    robust : bool
-        Apply Tukey biweight robust reweighting.
-    gradient_weighting : bool
-        Apply gradient-based edge suppression.
+    fit_kwargs : dict
+        Keyword arguments forwarded to :func:`_estimate_log_bias`, except
+        ``method``.
 
     Returns
     -------
     log_bias : ndarray
         Log-domain bias field from the winning method.
     """
-    log_bias_poly = _polynomial_pyramid_fit(
-        log_b0=log_b0,
-        mask=mask,
-        order=order,
-        pyramid_levels=pyramid_levels,
-        n_iter=n_iter,
-        lambda_reg=lambda_reg,
-        robust=robust,
-        gradient_weighting=gradient_weighting,
-    )
-    log_bias_bspline = _bspline_pyramid_fit(
-        log_b0=log_b0,
-        mask=mask,
-        n_control_points=n_control_points,
-        pyramid_levels=pyramid_levels,
-        n_iter=n_iter,
-        lambda_reg=lambda_reg,
-        robust=robust,
-        gradient_weighting=gradient_weighting,
-    )
+    log_bias_poly = _estimate_log_bias(mask=mask, method="poly", **fit_kwargs)
+    log_bias_bspline = _estimate_log_bias(mask=mask, method="bspline", **fit_kwargs)
 
     def _cov(log_bf):
         """CoV of mean b0 corrected by the given log bias field."""
@@ -964,6 +1123,109 @@ def _auto_select_fit(
     return log_bias_bspline
 
 
+def polynomial_bias_field_dwi(
+    data,
+    gtab,
+    *,
+    mask=None,
+    order=3,
+    pyramid_levels=(4, 2, 1),
+    n_iter=4,
+    lambda_reg=1e-3,
+    robust=True,
+    gradient_weighting=True,
+    sharpen=True,
+    max_iter=50,
+    convergence_threshold=1e-3,
+    shrink_factor=2,
+    zero_background=False,
+):
+    """DWI bias field correction via multi-resolution Legendre polynomial regression.
+
+    Estimates the bias field from the mean b0 volume in log space using
+    coarse-to-fine Legendre polynomial regression, then applies the estimated
+    field to all DWI volumes. See :func:`bias_field_correction` for the
+    meaning of the parameters.
+
+    Parameters
+    ----------
+    data : ndarray
+        4D DWI data (X, Y, Z, N).
+    gtab : GradientTable
+        Gradient table.
+    mask : ndarray, optional
+        3D binary brain mask. Auto-computed via median_otsu if None.
+    order : int, optional
+        Maximum Legendre polynomial order (terms where i+j+k <= order).
+    pyramid_levels : tuple of int, optional
+        Downsampling factors for coarse-to-fine pyramid (descending order).
+    n_iter : int, optional
+        Reweighting iterations per pyramid level. Only used when
+        ``sharpen=False``; the sharpening loop solves each level once per
+        iteration.
+    lambda_reg : float, optional
+        Ridge regularization strength.
+    robust : bool, optional
+        Apply Tukey biweight robust reweighting. Only used when
+        ``sharpen=False``; inside the sharpening loop the histogram model
+        already accounts for tissue outliers and reweighting the small
+        residuals degrades the fit.
+    gradient_weighting : bool, optional
+        Apply gradient-based edge suppression.
+    sharpen : bool, optional
+        Iterate the regression inside the N4 histogram-sharpening loop.
+    max_iter : int, optional
+        Maximum number of sharpening iterations.
+    convergence_threshold : float, optional
+        Sharpening stops when the coefficient of variation of the field
+        update inside the mask falls below this value.
+    shrink_factor : int, optional
+        Downsampling factor used during the sharpening iterations.
+    zero_background : bool, optional
+        If True, set the bias field to 1.0 (no correction) outside the brain
+        mask, leaving background voxels untouched. If False, the field
+        estimated inside the mask is extrapolated to the background (nearest
+        in-mask value, smoothed) so the whole volume is corrected with a
+        continuous field. The mask only restricts the regression; no voxel
+        is ever zeroed in the corrected data.
+
+    Returns
+    -------
+    corrected : ndarray
+        Bias-corrected 4D DWI data, same dtype as input.
+    bias_field : ndarray
+        Estimated 3D multiplicative bias field.
+
+    References
+    ----------
+    .. footbibliography::
+    """
+    mean_b0 = _get_mean_b0(data, gtab)
+    mask = _get_mask(mean_b0, mask)
+    log_b0 = np.log(np.clip(mean_b0, 1e-10, None))
+
+    log_bias = _estimate_log_bias(
+        log_b0=log_b0,
+        mask=mask,
+        method="poly",
+        order=order,
+        n_control_points=None,
+        pyramid_levels=pyramid_levels,
+        n_iter=n_iter,
+        lambda_reg=lambda_reg,
+        robust=robust,
+        gradient_weighting=gradient_weighting,
+        smoothness=0.0,
+        sharpen=sharpen,
+        max_iter=max_iter,
+        convergence_threshold=convergence_threshold,
+        shrink_factor=shrink_factor,
+    )
+    return _apply_bias_field(
+        data=data, log_bias=log_bias, mask=mask, zero_background=zero_background
+    )
+
+
 def bias_field_correction(
     data,
     gtab,
@@ -977,6 +1239,11 @@ def bias_field_correction(
     lambda_reg=1e-3,
     robust=True,
     gradient_weighting=True,
+    smoothness=10.0,
+    sharpen=True,
+    max_iter=50,
+    convergence_threshold=1e-3,
+    shrink_factor=2,
     return_bias_field=False,
     zero_background=False,
 ):
@@ -985,6 +1252,14 @@ def bias_field_correction(
     Estimates a smooth multiplicative bias field from the mean b0 volume
     using polynomial or B-spline regression in log space, then applies the
     correction uniformly to all DWI volumes.
+
+    A direct regression of the log b0 cannot tell tissue contrast from the
+    bias field: white matter is darker than cortex on a b0 image, so the
+    fit tilts the field toward the periphery. With ``sharpen=True`` the
+    regression is wrapped in the iterative histogram-sharpening scheme of N4
+    :footcite:p:`Tustison2010`. At each iteration the log intensities are
+    pulled toward their tissue-class mean and only the residual is smoothed,
+    so the field converges to the slowly varying component alone.
 
     Parameters
     ----------
@@ -999,9 +1274,10 @@ def bias_field_correction(
 
         - ``"poly"``: Legendre polynomial regression — fast, low-parameter.
         - ``"bspline"``: Cubic B-spline regression — more flexible.
-        - ``"auto"``: Run both methods and return the one with lower
-          Coefficient of Variation within the brain mask. The chosen method
-          is logged at INFO level.
+        - ``"auto"``: Deprecated since 1.13.0, removed after 1.15.0. Runs
+          both methods and returns the one with lower Coefficient of
+          Variation within the brain mask. The CoV rewards fields that
+          flatten tissue contrast, so the choice is not meaningful.
     order : int, optional
         Maximum Legendre polynomial degree (used only for method="poly").
     n_control_points : tuple of int, optional
@@ -1010,21 +1286,44 @@ def bias_field_correction(
     pyramid_levels : tuple of int, optional
         Downsampling factors for coarse-to-fine pyramid (descending order).
     n_iter : int, optional
-        Reweighting iterations per pyramid level.
+        Reweighting iterations per pyramid level. Only used when
+        ``sharpen=False``; the sharpening loop solves each level once per
+        iteration.
     lambda_reg : float, optional
         Ridge regularization strength.
     robust : bool, optional
-        Apply Tukey biweight robust reweighting at each level.
+        Apply Tukey biweight robust reweighting at each level. Only used
+        when ``sharpen=False``; inside the sharpening loop the histogram
+        model already accounts for tissue outliers and reweighting the
+        small residuals degrades the fit.
     gradient_weighting : bool, optional
         Weight regression by edge-suppression map derived from the
         image gradient.
+    smoothness : float, optional
+        Bending energy penalty on the B-spline control lattice, relative to
+        the data term (used only for method="bspline"). 0 disables it.
+    sharpen : bool, optional
+        Iterate the regression inside the N4 histogram-sharpening loop.
+        If False, a single direct regression of the log b0 is used.
+    max_iter : int, optional
+        Maximum number of sharpening iterations.
+    convergence_threshold : float, optional
+        Sharpening stops when the coefficient of variation of the field
+        update inside the mask falls below this value.
+    shrink_factor : int, optional
+        Decimation factor applied to the b0 during the sharpening
+        iterations. The final field is interpolated back to full
+        resolution. Full resolution is used when the decimated mask would
+        hold fewer than 1000 voxels.
     return_bias_field : bool, optional
         If True, return the bias field alongside the corrected data.
     zero_background : bool, optional
         If True, set the bias field to 1.0 (no correction) outside the brain
-        mask. If False, the raw extrapolated field values are preserved in
-        the returned bias_field array. Has no effect on the corrected DWI
-        data (background voxels are always zeroed by the brain mask).
+        mask, leaving background voxels untouched. If False, the field
+        estimated inside the mask is extrapolated to the background (nearest
+        in-mask value, smoothed) so the whole volume is corrected with a
+        continuous field. The mask only restricts the regression; no voxel
+        is ever zeroed in the corrected data.
 
     Returns
     -------
@@ -1033,55 +1332,47 @@ def bias_field_correction(
     bias_field : ndarray
         3D multiplicative bias field (only returned if
         return_bias_field=True).
+
+    References
+    ----------
+    .. footbibliography::
     """
-    orig_dtype = data.dtype
+    if method not in ("poly", "bspline", "auto"):
+        raise ValueError(f"method must be 'poly', 'bspline', or 'auto', got '{method}'")
+
     mean_b0 = _get_mean_b0(data, gtab)
     mask = _get_mask(mean_b0, mask)
     log_b0 = np.log(np.clip(mean_b0.astype(np.float64), 1e-10, None))
 
-    if method == "poly":
-        log_bias = _polynomial_pyramid_fit(
-            log_b0=log_b0,
-            mask=mask,
-            order=order,
-            pyramid_levels=pyramid_levels,
-            n_iter=n_iter,
-            lambda_reg=lambda_reg,
-            robust=robust,
-            gradient_weighting=gradient_weighting,
+    fit_kwargs = {
+        "log_b0": log_b0,
+        "order": order,
+        "n_control_points": n_control_points,
+        "pyramid_levels": pyramid_levels,
+        "n_iter": n_iter,
+        "lambda_reg": lambda_reg,
+        "robust": robust,
+        "gradient_weighting": gradient_weighting,
+        "smoothness": smoothness,
+        "sharpen": sharpen,
+        "max_iter": max_iter,
+        "convergence_threshold": convergence_threshold,
+        "shrink_factor": shrink_factor,
+    }
+    if method == "auto":
+        warn(
+            "method='auto' is deprecated since DIPY 1.13.0 and will be removed "
+            "after 1.15.0. Its CoV criterion rewards fields that flatten tissue "
+            "contrast. Use method='bspline' (default) or method='poly'.",
+            DeprecationWarning,
+            stacklevel=2,
         )
-    elif method == "bspline":
-        log_bias = _bspline_pyramid_fit(
-            log_b0=log_b0,
-            mask=mask,
-            n_control_points=n_control_points,
-            pyramid_levels=pyramid_levels,
-            n_iter=n_iter,
-            lambda_reg=lambda_reg,
-            robust=robust,
-            gradient_weighting=gradient_weighting,
-        )
-    elif method == "auto":
-        log_bias = _auto_select_fit(
-            log_b0=log_b0,
-            mean_b0=mean_b0,
-            mask=mask,
-            order=order,
-            n_control_points=n_control_points,
-            pyramid_levels=pyramid_levels,
-            n_iter=n_iter,
-            lambda_reg=lambda_reg,
-            robust=robust,
-            gradient_weighting=gradient_weighting,
-        )
+        log_bias = _auto_select_fit(mean_b0=mean_b0, mask=mask, **fit_kwargs)
     else:
-        raise ValueError(f"method must be 'poly', 'bspline', or 'auto', got '{method}'")
+        log_bias = _estimate_log_bias(mask=mask, method=method, **fit_kwargs)
 
-    if zero_background:
-        log_bias[~mask] = 0.0
-    bias_field = np.exp(log_bias)
-    corrected = applymask(data.astype(np.float64) / bias_field[..., None], mask).astype(
-        orig_dtype
+    corrected, bias_field = _apply_bias_field(
+        data=data, log_bias=log_bias, mask=mask, zero_background=zero_background
     )
 
     if return_bias_field:

@@ -65,7 +65,7 @@ def test_correct_biasfield_flow(tmp_path):
     corrected_name = bias_flow.last_generated_outputs["out_corrected"]
 
     corrected_data = load_nifti_data(tmp_path / corrected_name)
-    npt.assert_almost_equal(corrected_data.mean(), 44.00769230769231, decimal=0)
+    npt.assert_almost_equal(corrected_data.mean(), 77.25384615384615, decimal=0)
 
     args = {
         "input_files": fdata,

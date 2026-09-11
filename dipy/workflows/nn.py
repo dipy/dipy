@@ -91,7 +91,7 @@ class BiasFieldCorrectionFlow(Workflow):
         bval=None,
         bvec=None,
         mask=None,
-        method="auto",
+        method="bspline",
         threshold=0.5,
         use_cuda=False,
         verbose=False,
@@ -102,6 +102,11 @@ class BiasFieldCorrectionFlow(Workflow):
         lambda_reg=1e-3,
         robust=True,
         gradient_weighting=True,
+        smoothness=10.0,
+        sharpen=True,
+        max_iter=50,
+        convergence_threshold=1e-3,
+        shrink_factor=2,
         zero_background=False,
         out_dir="",
         out_corrected="biasfield_corrected.nii.gz",
@@ -127,8 +132,9 @@ class BiasFieldCorrectionFlow(Workflow):
                   See :footcite:p:`Kanakaraj2024` for more details.
                 - 'poly': Legendre polynomial regression bias correction.
                 - 'bspline': Cubic B-spline regression bias correction.
-                - 'auto': Run both poly and bspline, return the one with
-                  lower Coefficient of Variation within the brain mask.
+                - 'auto': Deprecated since 1.13.0. Run both poly and bspline,
+                  return the one with lower Coefficient of Variation within
+                  the brain mask.
 
             'n4' method is recommended for T1-weighted images. 'poly' and 'bspline'
             methods are recommended for diffusion-weighted images.
@@ -153,10 +159,28 @@ class BiasFieldCorrectionFlow(Workflow):
             Apply Tukey biweight robust reweighting (poly/bspline methods).
         gradient_weighting : bool, optional
             Apply gradient-based edge suppression (poly/bspline methods).
-        zero_background : bool, optional
-            If True, set the saved bias field to 1.0 outside the brain mask,
-            suppressing extrapolation artifacts in the background
+        smoothness : float, optional
+            Bending energy penalty on the B-spline control lattice, relative
+            to the data term. 0 disables it (bspline method).
+        sharpen : bool, optional
+            Iterate the regression inside the N4 histogram-sharpening loop
+            so tissue contrast is not absorbed into the field. If False, a
+            single direct regression of the log b0 is used (poly/bspline
+            methods).
+        max_iter : int, optional
+            Maximum number of sharpening iterations (poly/bspline methods).
+        convergence_threshold : float, optional
+            Sharpening stops when the coefficient of variation of the field
+            update inside the mask falls below this value (poly/bspline
+            methods).
+        shrink_factor : int, optional
+            Downsampling factor used during the sharpening iterations
             (poly/bspline methods).
+        zero_background : bool, optional
+            If True, set the bias field to 1.0 outside the brain mask so
+            background voxels are left untouched. If False, the in-mask
+            field is extrapolated to the background and the whole volume is
+            corrected (poly/bspline methods).
         out_dir : string or Path, optional
             Output directory.
         out_corrected : string, optional
@@ -224,6 +248,11 @@ class BiasFieldCorrectionFlow(Workflow):
                     lambda_reg=float(lambda_reg),
                     robust=bool(robust),
                     gradient_weighting=bool(gradient_weighting),
+                    smoothness=float(smoothness),
+                    sharpen=bool(sharpen),
+                    max_iter=int(max_iter),
+                    convergence_threshold=float(convergence_threshold),
+                    shrink_factor=int(shrink_factor),
                     return_bias_field=True,
                     zero_background=bool(zero_background),
                 )
