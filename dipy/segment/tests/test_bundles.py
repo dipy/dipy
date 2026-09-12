@@ -1,4 +1,5 @@
 import warnings
+from unittest.mock import patch
 
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal
@@ -124,6 +125,34 @@ def test_rb_slr_threads(rng=None):
     # multi-threading prevent an exact match
     for row in D:
         assert_almost_equal(row.min(), 0, decimal=4)
+
+
+def test_rb_refine_slr_threads():
+    rb = RecoBundles(f, greater_than=0, clust_thr=10)
+
+    rec_trans, _ = rb.recognize(
+        model_bundle=f2,
+        model_clust_thr=5.0,
+        reduction_thr=10,
+        slr=False,
+        num_threads=1,
+    )
+
+    with patch.object(
+        rb,
+        "_register_neighb_to_model",
+        wraps=rb._register_neighb_to_model,
+    ) as mock_register:
+        rb.refine(
+            model_bundle=f2,
+            pruned_streamlines=rec_trans,
+            model_clust_thr=5.0,
+            reduction_thr=10,
+            slr=True,
+            num_threads=2,
+        )
+
+    assert_equal(mock_register.call_args.kwargs["num_threads"], 2)
 
 
 def test_rb_no_verbose_and_mam():
