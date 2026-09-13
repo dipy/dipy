@@ -1,10 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Jul  9 11:54:49 2026
-
-@author: marianaventura
-"""
+"""Testing CTI."""
 
 import math
 
