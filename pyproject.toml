@@ -163,6 +163,22 @@ benchmark = [
 [project.optional-dependencies]
 viz = ["fury>=2.0.0", "imgui_bundle>=1.92.600,<=1.92.801", "matplotlib"]
 ml = ["scikit_learn", "pandas", "statsmodels>=0.14.0", "tables", "torch"]
+cu13 = [
+    "nvidia-cuda-runtime",
+    "nvidia-curand-cu12",
+    "cuda-python<14",
+    "cuda-core[cu13]",
+    "cuda-cccl[cu13]",
+]
+cu12 = [
+    "nvidia-cuda-runtime-cu12",
+    "nvidia-curand-cu12",
+    "cuda-python<13",
+    "cuda-core[cu12]",
+    "cuda-cccl[cu12]",
+]
+metal = ["pyobjc-framework-Metal; sys_platform == 'darwin'"]
+webgpu = ["wgpu>=0.18"]
 optional = [
     "dipy[viz, ml]",
     "cvxpy",

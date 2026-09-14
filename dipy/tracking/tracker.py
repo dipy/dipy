@@ -10,11 +10,9 @@ from dipy.direction import (
 from dipy.direction.peaks import peaks_from_positions
 from dipy.direction.pmf import SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
 from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
-
-# from dipy.utils.optpkg import optional_package
 from dipy.tracking.simpletracker import (
-    cython_simple_sl_generator,
     prepare_simple_tracker_data,
+    simple_sl_generator,
 )
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tractogen import generate_tractogram
@@ -217,7 +215,9 @@ def probabilistic_tracking(
     return_all=True,
     save_seeds=False,
     use_simple=False,
+    simple_backend="cython",
     simple_chunk_size=25000,
+    simple_precision="float32",
 ):
     """Probabilistic tracking algorithm.
 
@@ -284,9 +284,19 @@ def probabilistic_tracking(
         (5) generic probabilistic direction getting.
         Simplified trackers are implemented in CUDA, WebGPU, Metal, and
         Cython and tend to be faster.
+    simple_backend : str, optional
+        Backend for the simplified implementation: "cython" (CPU, OpenMP),
+        "cuda" (requires ``dipy[cu12]`` or ``dipy[cu13]``), "metal" (Apple
+        Silicon, requires ``dipy[metal]``), "webgpu" (requires
+        ``dipy[webgpu]``), or "auto" to pick the first available of metal,
+        cuda, webgpu, cython.
     simple_chunk_size : int, optional
         Number of seeds to process in each chunk when using the simplified implementation.
         A smaller chunk size will reduce memory usage but may increase processing time.
+    simple_precision: str, optional
+        Precision for the simplified implementation. Can be "float32" or "float64".
+        "float64" is only supported for the Cython backend.
+        Default: "float32"
 
     Returns
     -------
@@ -306,8 +316,6 @@ def probabilistic_tracking(
         random_seed=random_seed,
         return_all=return_all,
     )
-
-    # _, have_numba, _ = optional_package("numba")
 
     if use_simple:
         pmf_gen, selected_pmf, _, _ = _init_pmf(
@@ -350,11 +358,13 @@ def probabilistic_tracking(
             pmf_threshold=pmf_threshold,
             random_seed=random_seed,
             chunk_size=simple_chunk_size,
+            precision=simple_precision,
         )
 
-        sl_generator = cython_simple_sl_generator(
+        sl_generator = simple_sl_generator(
             tracker_data,
             seed_positions,
+            simple_backend=simple_backend,
             seed_directions=seed_directions,
             nbr_threads=nbr_threads,
         )

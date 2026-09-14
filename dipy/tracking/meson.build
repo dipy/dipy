@@ -40,10 +40,13 @@ endforeach
 
 python_sources = ['__init__.py',
   '_utils.py',
+  'cudasimplet.py',
   'learning.py',
   'life.py',
   'local_tracking.py',
+  'metalsimplet.py',
   'simpletracker.py',
+  'webgpusimplet.py',
   'mesh.py',
   'metrics.py',
   'streamline.py',
@@ -53,6 +56,13 @@ python_sources = ['__init__.py',
 
 py3.install_sources(
   python_sources,
+  pure: false,
+  subdir: 'dipy/tracking'
+)
+
+# GPU kernel sources for the simple tracker, compiled at runtime
+py3.install_sources(
+  ['simplet.cu', 'simplet.metal', 'simplet.wgsl'],
   pure: false,
   subdir: 'dipy/tracking'
 )
