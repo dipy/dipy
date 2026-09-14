@@ -9,6 +9,7 @@ cython_sources = [
   'streamlinespeed',
   'tracker_parameters',
   'vox2track',
+  'simplet',
   ]
 
 cython_headers = [
@@ -18,7 +19,8 @@ cython_headers = [
   'propspeed.pxd',
   'stopping_criterion.pxd',
   'streamlinespeed.pxd',
-  'tracker_parameters.pxd'
+  'tracker_parameters.pxd',
+  'simplet.pxd',
 ]
 
 foreach ext: cython_sources
@@ -41,7 +43,7 @@ python_sources = ['__init__.py',
   'learning.py',
   'life.py',
   'local_tracking.py',
-  'generic_jit_tracker.py',
+  'simpletracker.py',
   'mesh.py',
   'metrics.py',
   'streamline.py',
@@ -54,7 +56,5 @@ py3.install_sources(
   pure: false,
   subdir: 'dipy/tracking'
 )
-
-subdir('numba')
 
 subdir('tests')
