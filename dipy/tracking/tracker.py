@@ -9,15 +9,20 @@ from dipy.direction import (
 )
 from dipy.direction.peaks import peaks_from_positions
 from dipy.direction.pmf import SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
-from dipy.tracking.generic_jit_tracker import prepare_jit_tracker_data
 from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
+
+# from dipy.utils.optpkg import optional_package
+from dipy.tracking.simpletracker import (
+    cython_simple_sl_generator,
+    prepare_simple_tracker_data,
+)
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tractogen import generate_tractogram
 from dipy.tracking.utils import seeds_directions_pairs
-from dipy.utils.optpkg import optional_package
 
 
 def _init_pmf(
+    *,
     sh=None,
     pam=None,
     sf=None,
@@ -211,8 +216,8 @@ def probabilistic_tracking(
     seed_buffer_fraction=1.0,
     return_all=True,
     save_seeds=False,
-    use_jit=False,
-    jit_chunk_size=25000,
+    use_simple=False,
+    simple_chunk_size=25000,
 ):
     """Probabilistic tracking algorithm.
 
@@ -269,10 +274,18 @@ def probabilistic_tracking(
         reached the stopping criterion.
     save_seeds: bool, optional
         True to return the seeds with the associated streamline.
-    use_jit : bool, optional
-        Use the Numba JIT implementation of the probabilistic tracking.
-    jit_chunk_size : int, optional
-        Number of seeds to process in each chunk when using the JIT implementation.
+    use_simple : bool, optional
+        Use the simplified implementation of the probabilistic tracking. Simple trackers
+        assume:
+        (1) the entire SF can be loaded into memory (not SH);
+        (2) isotropic voxels;
+        (3) simplified stopping criteria (ie, threshold on a scalar map);
+        (4) fixed (large) max SL length (500 steps by default);
+        (5) generic probabilistic direction getting.
+        Simplified trackers are implemented in CUDA, WebGPU, Metal, and
+        Cython and tend to be faster.
+    simple_chunk_size : int, optional
+        Number of seeds to process in each chunk when using the simplified implementation.
         A smaller chunk size will reduce memory usage but may increase processing time.
 
     Returns
@@ -294,17 +307,9 @@ def probabilistic_tracking(
         return_all=return_all,
     )
 
-    _, have_numba, _ = optional_package("numba")
+    # _, have_numba, _ = optional_package("numba")
 
-    if use_jit:
-        if not have_numba:
-            raise ImportError(
-                "Numba is not installed. Please install numba to use the JIT "
-                "probabilistic tracker."
-            )
-        else:
-            from dipy.tracking.numba import numba_sl_generator
-
+    if use_simple:
         pmf_gen, selected_pmf, _, _ = _init_pmf(
             sh=sh,
             pam=pam,
@@ -333,7 +338,7 @@ def probabilistic_tracking(
             seed_positions = np.dot(seed_positions, inv_affine[:3, :3].T)
             seed_positions += inv_affine[:3, 3]
 
-        tracker_data = prepare_jit_tracker_data(
+        tracker_data = prepare_simple_tracker_data(
             pmf=pmf_field,
             stop_map=stop_map,
             stop_threshold=0,
@@ -343,11 +348,11 @@ def probabilistic_tracking(
             min_steps=params.min_nbr_pts,
             max_steps=params.max_nbr_pts,
             pmf_threshold=pmf_threshold,
-            rng_seed=random_seed,
-            chunk_size=jit_chunk_size,
+            random_seed=random_seed,
+            chunk_size=simple_chunk_size,
         )
 
-        sl_generator = numba_sl_generator(
+        sl_generator = cython_simple_sl_generator(
             tracker_data,
             seed_positions,
             seed_directions=seed_directions,

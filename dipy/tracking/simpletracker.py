@@ -7,12 +7,13 @@ from trx.trx_file_memmap import TrxFile
 
 from dipy.core.sphere import HemiSphere
 from dipy.data import default_sphere
+from dipy.tracking.simplet import gen_streamlines_prob, get_num_streamlines_prob
 
-logger = logging.getLogger("GPUStreamlines")
+logger = logging.getLogger("dipy")
 
 
 @dataclass(frozen=True)
-class JITTrackerData:
+class _SimpleTrackerData:
     dataf: np.ndarray
     metric_map: np.ndarray
     sphere_vertices: np.ndarray
@@ -32,6 +33,7 @@ class JITTrackerData:
     min_steps: int
     max_steps: int
     max_sline_len: int
+    random_seed: int
     chunk_size: int
     n_procs: int
     real_dtype: type
@@ -39,6 +41,12 @@ class JITTrackerData:
 
 @dataclass(frozen=True)
 class StreamlineChunk:
+    """
+    A chunk of streamlines and useful information
+    about their size and ordering within the wider
+    tractogram.
+    """
+
     n_slines: int
     slines: np.ndarray
     sline_lens: np.ndarray
@@ -48,11 +56,12 @@ class StreamlineChunk:
     real_dtype: type
 
 
-def prepare_jit_tracker_data(
+def prepare_simple_tracker_data(
     pmf,
     stop_map,
     stop_threshold,
     sphere,
+    *,
     max_angle=1.0472,  # 60 degrees in radians
     step_size=0.5,
     min_steps=0,
@@ -60,13 +69,20 @@ def prepare_jit_tracker_data(
     relative_peak_thresh=0.25,
     min_separation_angle=0.785398,  # 45 degrees in radians
     pmf_threshold=0.1,
-    rng_seed=0,
+    random_seed=0,
     chunk_size=25000,
     precision="float64",
     n_procs=1,
 ):
     """
-    Prepare a generic JIT tracker.
+    Prepare a simple tracker. Simple trackers assume:
+        the entire SF can be loaded into memory (not SH)
+        isotropic voxels
+        simplified stopping criteria (ie, threshold on a scalar map)
+        fixed (large) max SL length (500 steps by default)
+        generic probabilistic direction getting
+    Simplified trackers are implemented in CUDA, WebGPU, Metal and
+    Cython and tend to be faster.
 
     Parameters
     ----------
@@ -93,7 +109,7 @@ def prepare_jit_tracker_data(
         Minimum separation angle (radians) between peaks.
     pmf_threshold : float
         Minimum PMF value (relative to max) to consider a valid direction.
-    rng_seed : int, optional
+    random_seed : int, optional
         Seed for random number generator
     chunk_size : int
         Seeds per propagate() call in generate_sft()
@@ -131,10 +147,7 @@ def prepare_jit_tracker_data(
     nedges = int(sphere_edges.shape[0])
     max_sline_len = int(max_steps)
 
-    if rng_seed != 0:
-        np.random.seed(rng_seed)
-
-    return JITTrackerData(
+    return _SimpleTrackerData(
         dataf=dataf,
         metric_map=metric_map,
         sphere_vertices=sphere_vertices,
@@ -154,18 +167,35 @@ def prepare_jit_tracker_data(
         min_steps=min_steps,
         max_steps=max_steps,
         max_sline_len=max_sline_len,
+        random_seed=random_seed,
         chunk_size=int(chunk_size),
         n_procs=int(n_procs),
         real_dtype=real_dtype,
     )
 
 
-def streamline_generator(propagate, chunk_size, n_procs, seeds, close):
-    global_chunk_sz = chunk_size * n_procs
-    nchunks = (seeds.shape[0] + global_chunk_sz - 1) // global_chunk_sz
+def streamline_generator(propagate, chunk_size, seeds, *, close=None):
+    """
+    Generate streamlines in chunks from a propagate function and
+    seeds.
+
+    Parameters
+    ----------
+    propagate : function
+        A function that takes a chunk of seeds and returns a StreamlineChunk.
+    chunk_size : int
+        Number of seeds to process in each chunk.
+    seeds : np.ndarray
+        Array of seed points to generate streamlines from.
+    close : function, optional
+        A function to call when the generator is closed, for cleanup.
+        Default: None
+    """
+
+    nchunks = (seeds.shape[0] + chunk_size - 1) // chunk_size
     try:
         for idx in range(nchunks):
-            chunk = seeds[idx * global_chunk_sz : (idx + 1) * global_chunk_sz]
+            chunk = seeds[idx * chunk_size : (idx + 1) * chunk_size]
             result = propagate(chunk)
             slines = result.slines
             sline_lens = result.sline_lens
@@ -179,17 +209,45 @@ def streamline_generator(propagate, chunk_size, n_procs, seeds, close):
                 )
 
     finally:
-        close()
+        if close is not None:
+            close()
 
 
 def generate_trx(
     sl_generator,
     ref_img,
+    *,
     nb_streamlines_estimate=None,
     nb_vertices_estimate=None,
     offset_dtype=np.uint64,
     data_dtype=np.float16,
 ):
+    """
+    Generate a TRX file from a streamline generator.
+
+    Parameters
+    ----------
+    sl_generator : generator
+        A generator that yields streamlines (numpy arrays of shape (N, 3)).
+    ref_img : nibabel.Nifti1Image
+        Reference image for the TRX file.
+    nb_streamlines_estimate : int, optional
+        Estimated total number of streamlines, useful
+        for preallocating the TRX file on disk.
+        If None, defaults to 1e6.
+        Default: None
+    nb_vertices_estimate : int, optional
+        Estimated total number of vertices, useful
+        for preallocating the TRX file on disk.
+        If None, defaults to nb_streamlines_estimate * 100.
+        Default: None
+    offset_dtype : data-type, optional
+        Data type for the offsets array in the TRX file.
+        Default: np.uint64
+    data_dtype : data-type, optional
+        Data type for the data array in the TRX file.
+        Default: np.float16
+    """
     if nb_streamlines_estimate is None:
         nb_streamlines_estimate = int(1e6)
     if nb_vertices_estimate is None:
@@ -243,3 +301,109 @@ def generate_trx(
     ):
         trx_file.resize()
     return trx_file
+
+
+def cython_simple_sl_generator(
+    simple_tracker_data, seeds, *, seed_directions=None, nbr_threads=0
+):
+    """
+    Cython-based streamline generator for simple tracker data.
+    """
+
+    if simple_tracker_data.n_procs != 1:
+        raise ValueError(
+            "Cython simple tracker does not support multiprocessing, "
+            "only multithreading. Set n_procs=1 when preparing the tracker data."
+        )
+
+    params = {
+        "dimx": simple_tracker_data.dimx,
+        "dimy": simple_tracker_data.dimy,
+        "dimz": simple_tracker_data.dimz,
+        "dimt": simple_tracker_data.dimt,
+        "nedges": simple_tracker_data.nedges,
+        "sphere_symm": simple_tracker_data.sphere_symm,
+        "relative_peak_thresh": float(simple_tracker_data.relative_peak_thresh),
+        "min_separation_angle": float(simple_tracker_data.min_separation_angle),
+        "step_size": float(simple_tracker_data.step_size),
+        "max_angle": float(simple_tracker_data.max_angle),
+        "tc_threshold": float(simple_tracker_data.stop_threshold),
+        "pmf_threshold": float(simple_tracker_data.pmf_threshold),
+        "max_sline_len": simple_tracker_data.max_sline_len,
+    }
+
+    chunk_offset = 0
+
+    def propagate(seeds):
+        nonlocal chunk_offset
+        seeds = np.ascontiguousarray(seeds, dtype=simple_tracker_data.real_dtype)
+        nseed = len(seeds)
+
+        peak_dirs = np.zeros(
+            (nseed, simple_tracker_data.dimt, 3), dtype=simple_tracker_data.real_dtype
+        )
+        sline_offsets = np.zeros(nseed + 1, dtype=np.int32)
+
+        if seed_directions is not None:
+            start = chunk_offset
+            chunk_dirs = np.ascontiguousarray(
+                seed_directions[start : start + nseed],
+                dtype=simple_tracker_data.real_dtype,
+            )
+            peak_dirs[:, 0, :] = chunk_dirs
+            sline_offsets[:nseed] = 1
+            chunk_offset += nseed
+        else:
+            get_num_streamlines_prob(
+                seeds,
+                simple_tracker_data.dataf,
+                simple_tracker_data.sphere_vertices,
+                simple_tracker_data.sphere_edges,
+                peak_dirs.reshape(-1, 3),
+                sline_offsets,
+                params,
+                nbr_threads,
+            )
+
+        counts = sline_offsets[:nseed].copy()
+        sline_offsets[0] = 0
+        np.cumsum(counts, out=sline_offsets[1:])
+
+        nSlines = int(sline_offsets[-1])
+        slineSeed = np.full(nSlines, -1, dtype=np.int32)
+        sline_len = np.zeros(nSlines, dtype=np.int32)
+        sline = np.zeros(
+            (nSlines * simple_tracker_data.max_sline_len * 2, 3),
+            dtype=simple_tracker_data.real_dtype,
+        )
+
+        gen_streamlines_prob(
+            seeds,
+            simple_tracker_data.dataf,
+            simple_tracker_data.metric_map,
+            simple_tracker_data.sphere_vertices,
+            sline_offsets,
+            peak_dirs.reshape(-1, 3),
+            slineSeed,
+            sline_len,
+            sline,
+            params,
+            simple_tracker_data.random_seed,
+            nbr_threads,
+        )
+
+        return StreamlineChunk(
+            n_slines=nSlines,
+            slines=sline,
+            sline_lens=sline_len,
+            step=simple_tracker_data.max_sline_len * 2,
+            min_steps=simple_tracker_data.min_steps,
+            max_steps=simple_tracker_data.max_steps,
+            real_dtype=simple_tracker_data.real_dtype,
+        )
+
+    return streamline_generator(
+        propagate=propagate,
+        chunk_size=simple_tracker_data.chunk_size,
+        seeds=seeds,
+    )
