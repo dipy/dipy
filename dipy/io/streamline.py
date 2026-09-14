@@ -6,6 +6,7 @@ import nibabel as nib
 from nibabel.streamlines import detect_format
 from nibabel.streamlines.tractogram import Tractogram
 import numpy as np
+from tqdm import tqdm
 import trx.trx_file_memmap as tmm
 
 from dipy.io.dpy import Dpy
@@ -163,6 +164,96 @@ def load_vtk_streamlines(filename, *, to_lps=True):
         return transform_streamlines(lines, to_lps)
 
     return lines
+
+
+def save_trx_from_generator(
+    sl_generator,
+    ref_img,
+    *,
+    nb_streamlines_estimate=None,
+    nb_vertices_estimate=None,
+    offset_dtype=np.uint64,
+    data_dtype=np.float16,
+):
+    """
+    Generate a TRX file from a streamline generator.
+
+    Parameters
+    ----------
+    sl_generator : generator
+        A generator that yields streamlines (numpy arrays of shape (N, 3)).
+    ref_img : nibabel.Nifti1Image
+        Reference image for the TRX file.
+    nb_streamlines_estimate : int, optional
+        Estimated total number of streamlines, useful
+        for preallocating the TRX file on disk.
+        If None, defaults to 1e6.
+        Default: None
+    nb_vertices_estimate : int, optional
+        Estimated total number of vertices, useful
+        for preallocating the TRX file on disk.
+        If None, defaults to nb_streamlines_estimate * 100.
+        Default: None
+    offset_dtype : data-type, optional
+        Data type for the offsets array in the TRX file.
+        Default: np.uint64
+    data_dtype : data-type, optional
+        Data type for the data array in the TRX file.
+        Default: np.float16
+    """
+    if nb_streamlines_estimate is None:
+        nb_streamlines_estimate = int(1e6)
+    if nb_vertices_estimate is None:
+        nb_vertices_estimate = nb_streamlines_estimate * 100
+
+    trx_reference = tmm.TrxFile(reference=ref_img)
+    trx_reference.streamlines._data = trx_reference.streamlines._data.astype(data_dtype)
+    trx_reference.streamlines._offsets = trx_reference.streamlines._offsets.astype(
+        offset_dtype
+    )
+
+    trx_file = tmm.TrxFile(
+        nb_streamlines=nb_streamlines_estimate,
+        nb_vertices=nb_vertices_estimate,
+        init_as=trx_reference,
+    )
+
+    affine = ref_img.affine
+    aff_A = affine[:3, :3].T
+    aff_b = affine[:3, 3]
+
+    sl_idx = 0
+    data_idx = 0
+
+    with tqdm(total=nb_streamlines_estimate) as pbar:
+        for sl in sl_generator:
+            n = sl.shape[0]
+            new_data_idx = data_idx + n
+
+            if (
+                sl_idx + 1 > trx_file.header["NB_STREAMLINES"]
+                or new_data_idx > trx_file.header["NB_VERTICES"]
+            ):
+                logger.info("TRX resizing...")
+                trx_file.resize(
+                    nb_streamlines=(sl_idx + 1) * 2,
+                    nb_vertices=new_data_idx * 2,
+                )
+
+            trx_file.streamlines._data[data_idx:new_data_idx] = sl.dot(aff_A) + aff_b
+            trx_file.streamlines._offsets[sl_idx] = data_idx
+            trx_file.streamlines._lengths[sl_idx] = n
+
+            sl_idx += 1
+            data_idx = new_data_idx
+            pbar.update(1)
+
+    if (
+        sl_idx < trx_file.header["NB_STREAMLINES"]
+        or data_idx < trx_file.header["NB_VERTICES"]
+    ):
+        trx_file.resize()
+    return trx_file
 
 
 @warning_for_keywords()
