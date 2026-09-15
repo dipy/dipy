@@ -9,7 +9,6 @@ cython_sources = [
   'streamlinespeed',
   'tracker_parameters',
   'vox2track',
-  'simplet',
   ]
 
 cython_headers = [
@@ -20,7 +19,6 @@ cython_headers = [
   'stopping_criterion.pxd',
   'streamlinespeed.pxd',
   'tracker_parameters.pxd',
-  'simplet.pxd',
 ]
 
 foreach ext: cython_sources

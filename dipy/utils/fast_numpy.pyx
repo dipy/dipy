@@ -34,15 +34,14 @@ cdef void take(
 
 
 cdef int where_to_insert(cnp.float_t* arr, cnp.float_t number, int size) noexcept nogil:
-    cdef:
-        int idx
-        cnp.float_t current
-    for idx in range(size - 1, -1, -1):
-        current = arr[idx]
-        if number >= current:
-            return idx + 1
-
-    return 0
+    cdef int lo = 0, hi = size, mid
+    while lo < hi:
+        mid = (lo + hi) >> 1
+        if number >= arr[mid]:
+            lo = mid + 1
+        else:
+            hi = mid
+    return lo
 
 
 cdef void cumsum(cnp.float_t* arr_in, cnp.float_t* arr_out, int N) noexcept nogil:
