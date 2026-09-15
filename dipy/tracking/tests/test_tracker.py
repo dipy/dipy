@@ -41,7 +41,7 @@ def track(method, **kwargs):
     directions = np.array([v / np.linalg.norm(v) for v in directions])
 
     use_simple = kwargs.get("use_simple", False)
-    simple_backend = kwargs.get("simple_backend", "cython")
+    simple_backend = kwargs.get("simple_backend", "auto")
     use_sf = kwargs.get("use_sf", False)
     use_directions = kwargs.get("use_dirs", False)
 
