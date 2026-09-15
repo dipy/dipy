@@ -16,7 +16,7 @@ from dipy.reconst.odffp import (
     odffp_peaks,
     resample_odf,
 )
-from dipy.reconst.shm import sh_to_sf
+from dipy.reconst.shm import convert_sh_from_legacy, sh_to_sf
 from dipy.sims.voxel import multi_tensor
 
 
@@ -158,7 +158,7 @@ def test_dictionary_save_load(tmp_path):
     gtab = get_gtab_taiwan_dsi()
     odf_dict = _make_dictionary(gtab, dict_size=400)
     fname = str(tmp_path / "odf_dict.npz")
-    odf_dict.save(fname)
+    odf_dict.save(dict_file=fname)
 
     loaded = OdffpDictionary(gtab, dict_file=fname)
     npt.assert_array_equal(loaded.odf, odf_dict.odf)
@@ -209,7 +209,9 @@ def test_odffp_peaks_stores_odf_and_roundtrips(tmp_path):
     main_idx = peaks.peak_indices[..., 0]
     main_amplitude = np.take_along_axis(aniso, main_idx[..., None], axis=-1)[..., 0]
     expected = aniso / main_amplitude.max()
-    recon = sh_to_sf(peaks.shm_coeff, peaks.sphere, sh_order_max=8, legacy=False)
+    # odffp_peaks stores legacy descoteaux07 SH; convert back to evaluate.
+    sh = convert_sh_from_legacy(peaks.shm_coeff, "descoteaux07")
+    recon = sh_to_sf(sh, peaks.sphere, sh_order_max=8, legacy=False)
     npt.assert_allclose(recon, expected, atol=1e-5)
     npt.assert_allclose(
         peaks.peak_values[..., 0],
@@ -229,7 +231,8 @@ def test_odffp_peaks_stores_odf_and_roundtrips(tmp_path):
     save_pam(fname, peaks, affine=np.eye(4))
     loaded = load_pam(fname)
     npt.assert_array_almost_equal(loaded.affine, np.eye(4))
-    recon2 = sh_to_sf(loaded.shm_coeff, loaded.sphere, sh_order_max=8, legacy=False)
+    sh = convert_sh_from_legacy(loaded.shm_coeff, "descoteaux07")
+    recon2 = sh_to_sf(sh, loaded.sphere, sh_order_max=8, legacy=False)
     npt.assert_allclose(recon2, expected, atol=1e-5)
     npt.assert_array_equal(loaded.gfa, peaks.gfa)
     npt.assert_array_equal(loaded.qa, peaks.qa)

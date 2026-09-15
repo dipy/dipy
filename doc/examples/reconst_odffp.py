@@ -82,15 +82,6 @@ model = OdffpModel(gtab, odf_dict)
 fit = model.fit(dataslice, mask=mask)
 
 ###############################################################################
-# Compute the matched ODFs on the reconstruction sphere. Each matched
-# fingerprint is rescaled to the norm of the measured ODF, so the values are in
-# the units of the GQI ODF and differ between tissues, as with the other DIPY
-# reconstruction models.
-
-odfs = fit.odf(sphere)
-print(f"ODF map shape: {odfs.shape}")
-
-###############################################################################
 # As with FORCE, the peaks are obtained by passing the fit to ``odffp_peaks``,
 # which returns a ``PeaksAndMetrics`` object holding the peak directions,
 # values and indices, the GFA and QA maps, with the matched ODFs stored as SH
@@ -104,45 +95,45 @@ from dipy.io.peaks import save_pam
 peaks = odffp_peaks(fit)
 save_pam("odffp_peaks.pam5", peaks, affine=affine)
 
+print(f"SH coefficients shape: {peaks.shm_coeff.shape}")
+
 ###############################################################################
-# Visualize the ODFs of the slice. ``odf_slicer`` normalizes each glyph for
-# display; the amplitude information is kept in ``odfs`` and in the peaks.
+# The matched ODFs can be rendered directly from these SH coefficients with the
+# Skyline viewer. The same ``odffp_peaks.pam5`` can also be opened
+# interactively with ``dipy_skyline odffp_peaks.pam5``.
 
-from dipy.viz import actor, window
+from dipy.viz.skyline.app import skyline
 
-scene = window.Scene()
-scene.add(actor.odf_slicer(odfs, sphere=sphere, scale=0.5, colormap="plasma"))
-window.record(scene=scene, out_path="odffp_odfs.png", size=(700, 700))
+skyline(
+    visualizer_type="stealth",
+    sh_coeffs=[(peaks.shm_coeff, affine, "odf")],
+    out_stealth_png="odffp_odfs.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# ODF-FP orientation distribution functions for an axial slice of the Stanford
-# HARDI dataset.
-#
-# Each voxel also inherits the microstructure of its matched fingerprint. For
-# instance, the number of fibers and the free-water fraction follow directly
-# from the matched dictionary entry, while the quantitative anisotropy of the
-# main peak reflects the amplitude of the matched ODF above its isotropic
-# floor.
+# ODF-FP matched ODFs of the axial slice, rendered from the SH coefficients of
+# the peaks object.
 
-dict_idx = np.asarray(fit.dict_idx).astype(int)
-num_fibers = np.where(mask, odf_dict.peaks_per_voxel[dict_idx], 0)
+###############################################################################
+# Each voxel also inherits the microstructure of its matched fingerprint. For
+# instance, the free-water fraction follows directly from the matched
+# dictionary entry, while the quantitative anisotropy of the main peak reflects
+# the amplitude of the matched ODF above its isotropic floor.
+
 free_water = np.zeros(mask.shape)
 free_water[mask] = fit.compartment_volume[mask][:, 0]
 
 import matplotlib.pyplot as plt
 
-fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-im0 = axes[0].imshow(np.rot90(num_fibers[:, :, 0]), cmap="viridis", vmin=0, vmax=3)
-axes[0].set_title("Number of fibers")
+fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+im0 = axes[0].imshow(np.rot90(free_water[:, :, 0]), cmap="gray", vmin=0, vmax=1)
+axes[0].set_title("Free-water fraction")
 plt.colorbar(im0, ax=axes[0], fraction=0.046)
-im1 = axes[1].imshow(np.rot90(free_water[:, :, 0]), cmap="gray", vmin=0, vmax=1)
-axes[1].set_title("Free-water fraction")
+im1 = axes[1].imshow(np.rot90(peaks.qa[:, :, 0, 0]), cmap="gray", vmin=0)
+axes[1].set_title("QA of the main peak")
 plt.colorbar(im1, ax=axes[1], fraction=0.046)
-im2 = axes[2].imshow(np.rot90(peaks.qa[:, :, 0, 0]), cmap="gray", vmin=0)
-axes[2].set_title("QA of the main peak")
-plt.colorbar(im2, ax=axes[2], fraction=0.046)
 for ax in axes:
     ax.axis("off")
 plt.tight_layout()
@@ -151,9 +142,8 @@ plt.savefig("odffp_microstructure.png", dpi=150, bbox_inches="tight")
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# ODF-FP microstructure maps read off the matched fingerprints: the number of
-# fibers (left), the free-water fraction (middle) and the quantitative
-# anisotropy of the main peak (right).
+# ODF-FP microstructure maps read off the matched fingerprints: the free-water
+# fraction (left) and the quantitative anisotropy of the main peak (right).
 #
 # References
 # ----------

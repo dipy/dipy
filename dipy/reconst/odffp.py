@@ -30,6 +30,7 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import gfa
 from dipy.reconst.odffp_matching import accumulate_block, finalize_match
 from dipy.reconst.shm import (
+    convert_sh_to_legacy,
     real_sh_descoteaux,
     sf_to_sh,
     sh_to_sf,
@@ -567,7 +568,7 @@ class OdffpDictionary:
                 peak_dirs_idx[:, recompute_filter],
             )
 
-    def save(self, dict_file="odf_dict.npz"):
+    def save(self, *, dict_file="odf_dict.npz"):
         """Save the dictionary to a NumPy archive.
 
         Parameters
@@ -1003,7 +1004,7 @@ class OdffpFit(ReconstFit):
         self.model = model
         self._params = params
 
-    def odf(self, sphere=None):
+    def odf(self, *, sphere=None):
         """Return the matched fingerprint ODF in the voxel frame.
 
         The matched fingerprint is rescaled to the norm of the measured ODF,
@@ -1095,8 +1096,10 @@ def odffp_peaks(fit, *, sh_order_max=8, normalize_peaks=False):
     holds the same values, while ``gfa`` is the generalized fractional
     anisotropy of the ODFs before the floor is removed. The size of an ODF
     thus reflects its anisotropy rather than its isotropic signal: free water
-    vanishes and white matter stands out. The result can be written to disk
-    with :func:`~dipy.io.peaks.save_pam`.
+    vanishes and white matter stands out. The SH coefficients use the legacy
+    ``descoteaux07`` basis, like the other DIPY reconstructions, so the result
+    can be written to disk with :func:`~dipy.io.peaks.save_pam` and used
+    directly for tracking and visualization.
 
     Works for a single :class:`OdffpFit` and for the
     :class:`~dipy.reconst.multi_voxel.MultiVoxelFit` returned for a volume.
@@ -1162,8 +1165,16 @@ def odffp_peaks(fit, *, sh_order_max=8, normalize_peaks=False):
         aniso /= global_max
         values /= global_max
 
-    shm_coeff = sf_to_sh(
-        aniso.reshape(odf.shape), half_sphere, sh_order_max=sh_order_max, legacy=False
+    # Stored in the legacy descoteaux07 basis, the convention of every other
+    # PAM5 producer and of the consumers that read it (tracking, Skyline).
+    shm_coeff = convert_sh_to_legacy(
+        sf_to_sh(
+            aniso.reshape(odf.shape),
+            half_sphere,
+            sh_order_max=sh_order_max,
+            legacy=False,
+        ),
+        "descoteaux07",
     ).astype(np.float32)
 
     qa = values.copy()
