@@ -7,6 +7,7 @@ from dipy.data import get_gtab_taiwan_dsi
 from dipy.direction import peak_directions
 from dipy.io.peaks import load_pam, save_pam
 from dipy.reconst.multi_voxel import MultiVoxelFit
+from dipy.reconst.odf import gfa
 from dipy.reconst.odffp import (
     OdffpDictionary,
     OdffpFit,
@@ -199,16 +200,39 @@ def test_odffp_peaks_stores_odf_and_roundtrips(tmp_path):
     npt.assert_equal(peaks.sphere.vertices.shape[0], half)
     npt.assert_equal(peaks.peak_dirs.shape[:3], (2, 1, 1))
 
+    # QA convention: the stored ODF is the fit ODF minus its isotropic floor,
+    # scaled so that the largest peak amplitude in the volume is 1; the peak
+    # values and qa are that ODF at the peak vertices, gfa comes from the
+    # unmodified ODF.
     odf_map = np.asarray(mfit.odf())
+    aniso = odf_map - odf_map.min(axis=-1, keepdims=True)
+    main_idx = peaks.peak_indices[..., 0]
+    main_amplitude = np.take_along_axis(aniso, main_idx[..., None], axis=-1)[..., 0]
+    expected = aniso / main_amplitude.max()
     recon = sh_to_sf(peaks.shm_coeff, peaks.sphere, sh_order_max=8, legacy=False)
-    npt.assert_allclose(recon, odf_map, atol=1e-5)
+    npt.assert_allclose(recon, expected, atol=1e-5)
+    npt.assert_allclose(
+        peaks.peak_values[..., 0],
+        np.take_along_axis(expected, main_idx[..., None], axis=-1)[..., 0],
+        rtol=1e-6,
+    )
+    npt.assert_allclose(peaks.peak_values[..., 0].max(), 1.0, rtol=1e-6)
+    npt.assert_array_equal(peaks.qa, peaks.peak_values)
+    npt.assert_equal(peaks.gfa.shape, (2, 1, 1))
+    npt.assert_allclose(peaks.gfa.ravel(), np.ravel(gfa(odf_map)), rtol=1e-6)
+
+    normalized = odffp_peaks(mfit, normalize_peaks=True)
+    npt.assert_allclose(normalized.peak_values[..., 0], 1.0)
+    npt.assert_array_equal(normalized.shm_coeff, peaks.shm_coeff)
 
     fname = str(tmp_path / "odffp.pam5")
     save_pam(fname, peaks, affine=np.eye(4))
     loaded = load_pam(fname)
     npt.assert_array_almost_equal(loaded.affine, np.eye(4))
     recon2 = sh_to_sf(loaded.shm_coeff, loaded.sphere, sh_order_max=8, legacy=False)
-    npt.assert_allclose(recon2, odf_map, atol=1e-5)
+    npt.assert_allclose(recon2, expected, atol=1e-5)
+    npt.assert_array_equal(loaded.gfa, peaks.gfa)
+    npt.assert_array_equal(loaded.qa, peaks.qa)
 
     # Single voxel: same SH width, valid peak directions.
     single = odffp_peaks(model.fit(data[0, 0, 0]))

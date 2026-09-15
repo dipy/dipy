@@ -27,6 +27,7 @@ from dipy.direction.peaks import PeaksAndMetrics
 from dipy.reconst.base import ReconstFit, ReconstModel
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.odf import gfa
 from dipy.reconst.odffp_matching import accumulate_block, finalize_match
 from dipy.reconst.shm import (
     real_sh_descoteaux,
@@ -689,7 +690,7 @@ class OdffpModel(ReconstModel):
             legacy=False,
         )[0]
         self._query_proj = np.linalg.pinv(sh_basis).T  # (half, n_sh)
-        dict_trace, _ = self._normalize_odf(dictionary.odf)  # (half, n_dict)
+        dict_trace, self._dict_norm = self._normalize_odf(dictionary.odf)
         self._dict_trace = np.ascontiguousarray(
             (sh_basis.T @ dict_trace).T, dtype=self._match_dtype
         )  # (n_dict, n_sh)
@@ -913,8 +914,11 @@ class OdffpModel(ReconstModel):
         matched = self._match(query)
 
         if self._output_dict_odf:
-            # Rotate the matched dictionary ODFs back to the voxel frame.
-            scaled = norm[:, np.newaxis] * self.dictionary.odf[:, matched].T
+            # Rotate the matched dictionary ODFs back to the voxel frame, each
+            # rescaled to the norm of the measured ODF so that the output is in
+            # the units of the reconstructed (GQI) ODF.
+            scale = norm / self._dict_norm[matched]
+            scaled = scale[:, np.newaxis] * self.dictionary.odf[:, matched].T
             full = np.concatenate((scaled, scaled), axis=1)
             out_coeffs = np.einsum("vp,vkp->vk", full, inv_basis)
             output_odf = (out_coeffs @ self._sh_to_sf)[:, :half]
@@ -1000,7 +1004,12 @@ class OdffpFit(ReconstFit):
         self._params = params
 
     def odf(self, sphere=None):
-        """Return the matched fingerprint ODF normalized to a unit maximum.
+        """Return the matched fingerprint ODF in the voxel frame.
+
+        The matched fingerprint is rescaled to the norm of the measured ODF,
+        so the values are in the units of the reconstructed (GQI) ODF and
+        comparable across voxels, as with any other DIPY ``OdfFit``. Nothing
+        is normalized here.
 
         Parameters
         ----------
@@ -1011,7 +1020,7 @@ class OdffpFit(ReconstFit):
         Returns
         -------
         odf : ndarray
-            Normalized ODF samples.
+            ODF samples.
         """
         odf = self._params["odf"]
         if (
@@ -1022,7 +1031,7 @@ class OdffpFit(ReconstFit):
             odf = resample_odf(
                 odf, self.model.sphere, sphere, sh_order_max=self.model.sh_order_max
             )
-        return odf / np.maximum(1e-8, np.max(odf))
+        return odf
 
     def predict(self, gtab, *, S0=1.0):
         """Predict the diffusion signal of the matched fingerprint.
@@ -1075,14 +1084,18 @@ class OdffpFit(ReconstFit):
 OdffpModel._fit_class = OdffpFit
 
 
-def odffp_peaks(fit, *, sh_order_max=8):
+def odffp_peaks(fit, *, sh_order_max=8, normalize_peaks=False):
     """Create a :class:`~dipy.direction.peaks.PeaksAndMetrics` from an ODF-FP fit.
 
-    Mirrors :func:`dipy.reconst.force.force_peaks`: it takes the fit object and
-    returns a ``PeaksAndMetrics`` holding the peak directions, indices and
-    amplitudes, with the matched ODFs stored as SH coefficients on
-    ``shm_coeff`` (reconstruct them with
-    :func:`~dipy.reconst.shm.sh_to_sf`). The result can be written to disk
+    The peaks follow the quantitative anisotropy (QA) convention of
+    :footcite:p:`Yeh2010`: the ODF of every voxel is stored as SH coefficients
+    on ``shm_coeff`` with its isotropic floor removed, i.e. minus its minimum,
+    and the volume is scaled so that the largest peak amplitude is 1. The peak
+    values are the amplitudes of these ODFs at the peak directions and ``qa``
+    holds the same values, while ``gfa`` is the generalized fractional
+    anisotropy of the ODFs before the floor is removed. The size of an ODF
+    thus reflects its anisotropy rather than its isotropic signal: free water
+    vanishes and white matter stands out. The result can be written to disk
     with :func:`~dipy.io.peaks.save_pam`.
 
     Works for a single :class:`OdffpFit` and for the
@@ -1094,10 +1107,17 @@ def odffp_peaks(fit, *, sh_order_max=8):
         The result of :meth:`OdffpModel.fit`.
     sh_order_max : int, optional
         Maximum SH order used to represent the stored ODFs.
+    normalize_peaks : bool, optional
+        If True, divide the peak values of each voxel by its main-peak value,
+        so that the main peak is 1 everywhere.
 
     Returns
     -------
     peaks : PeaksAndMetrics
+
+    References
+    ----------
+    .. footbibliography::
     """
     sphere = fit.model.sphere
     half = len(sphere.vertices) // 2
@@ -1109,14 +1129,20 @@ def odffp_peaks(fit, *, sh_order_max=8):
     lead = peak_dirs.shape[:-2]  # () for a single voxel, (X, Y, Z) for a volume
     n_vox = int(np.prod(lead)) if lead else 1
 
-    # Matched ODFs stored as SH coefficients, like FORCE.
-    shm_coeff = sf_to_sh(
-        odf, half_sphere, sh_order_max=sh_order_max, legacy=False
-    ).astype(np.float32)
-
-    # Main-peak vertex on the hemisphere and its ODF amplitude.
-    dirs = peak_dirs.reshape(n_vox, n_peaks, 3)
     odf_flat = odf.reshape(n_vox, half)
+    fitted = np.any(odf_flat != 0, axis=1)
+
+    # GFA of the ODFs, before their isotropic floor is removed.
+    gfa_array = np.zeros(n_vox)
+    if fitted.any():
+        gfa_array[fitted] = gfa(odf_flat[fitted])
+
+    # Remove the isotropic floor of each ODF.
+    floor = np.where(fitted, odf_flat.min(axis=1), 0.0)
+    aniso = odf_flat - floor[:, np.newaxis]
+
+    # Main-peak vertex on the hemisphere and the amplitude there.
+    dirs = peak_dirs.reshape(n_vox, n_peaks, 3)
     valid = np.any(dirs != 0, axis=-1)  # (n_vox, n_peaks)
     flat_valid = valid.reshape(-1)
     flat_idx = np.zeros(n_vox * n_peaks, dtype=np.intp)
@@ -1125,15 +1151,32 @@ def odffp_peaks(fit, *, sh_order_max=8):
         np.argmax(flat_dirs[flat_valid] @ sphere.vertices.T, axis=1) % half
     )
     idx = flat_idx.reshape(n_vox, n_peaks)
-    values = np.take_along_axis(odf_flat, idx, axis=1)
+    values = np.take_along_axis(aniso, idx, axis=1)
     values[~valid] = 0.0
     indices = idx.astype(np.int32)
     indices[~valid] = -1
+
+    # Scale the volume so that the largest peak amplitude is 1.
+    global_max = values[:, 0].max() if valid.any() else 0.0
+    if global_max > 0:
+        aniso /= global_max
+        values /= global_max
+
+    shm_coeff = sf_to_sh(
+        aniso.reshape(odf.shape), half_sphere, sh_order_max=sh_order_max, legacy=False
+    ).astype(np.float32)
+
+    qa = values.copy()
+    if normalize_peaks:
+        main = values[:, :1]
+        values = np.divide(values, main, out=np.zeros_like(values), where=main != 0)
 
     peaks = PeaksAndMetrics()
     peaks.peak_dirs = peak_dirs.astype(np.float32)
     peaks.peak_values = values.reshape(lead + (n_peaks,)).astype(np.float32)
     peaks.peak_indices = indices.reshape(lead + (n_peaks,))
+    peaks.gfa = gfa_array.reshape(lead).astype(np.float32)
+    peaks.qa = qa.reshape(lead + (n_peaks,)).astype(np.float32)
     peaks.shm_coeff = shm_coeff
     peaks.sphere = half_sphere
     return peaks
