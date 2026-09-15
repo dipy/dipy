@@ -117,6 +117,7 @@ def generic_tracking(
     max_cross=None,
     nbr_threads=0,
     chunk_size=25000,
+    chunked=False,
     save_seeds=False,
 ):
     affine = affine if affine is not None else np.eye(4)
@@ -186,6 +187,7 @@ def generic_tracking(
         chunk_size=chunk_size,
         save_seeds=save_seeds,
         max_cross=1 if max_cross is None else max_cross,
+        chunked=chunked,
     )
 
 
@@ -210,11 +212,12 @@ def probabilistic_tracking(
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
+    chunked=False,
     return_all=True,
     save_seeds=False,
+    max_cross=None,
     use_simple=False,
-    simple_backend="cython",
-    simple_chunk_size=25000,
+    simple_backend="auto",
     is_symmetric=True,
 ):
     """Probabilistic tracking algorithm.
@@ -265,24 +268,29 @@ def probabilistic_tracking(
         coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
+    chunked: bool, optional
+        Yield ``(points, lengths)`` per chunk (``(points, lengths, seeds)``
+        with ``save_seeds``) instead of single streamlines; see
+        :func:`dipy.tracking.tractogen.generate_tractogram`.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
     save_seeds: bool, optional
         True to return the seeds with the associated streamline.
+    max_cross : int or None, optional
+        Maximum number of peaks tracked from each seed when
+        ``seed_directions`` is None. None tracks the largest peak only; a
+        value <= 0 tracks every peak.
     use_simple : bool, optional
-        Track from every peak of the pmf at each seed (instead of the largest
-        one) and allow the GPU backends. GPU backends assume:
+        Use a GPU "simple" tracker (see :mod:`dipy.tracking.simpletracker`).
+        It tracks every peak at each seed and assumes:
         (1) the entire SF fits in memory (sf, sh or a pam with odf);
         (2) isotropic voxels;
         (3) a Threshold or Binary stopping criterion.
     simple_backend : str, optional
-        "cython" (CPU, OpenMP; the regular tracker), "cuda" (requires
-        ``dipy[cu12]`` or ``dipy[cu13]``), "metal" (Apple Silicon, requires
-        ``dipy[metal]``), "webgpu" (requires ``dipy[webgpu]``), or "auto" to
-        pick the first available of metal, cuda, webgpu, cython.
-    simple_chunk_size : int, optional
-        ``chunk_size`` used when ``use_simple`` is True.
+        "cuda" (requires ``dipy[cu12]`` or ``dipy[cu13]``), "metal" (Apple
+        Silicon, requires ``dipy[metal]``), "webgpu" (requires
+        ``dipy[webgpu]``), or "auto" to pick the first available.
     is_symmetric : bool, optional
         If False, the pmf is treated as an asymmetric spherical function
         (no antipodal folding when selecting directions).
@@ -307,7 +315,7 @@ def probabilistic_tracking(
         is_symmetric=is_symmetric,
     )
 
-    if use_simple and simple_backend != "cython":
+    if use_simple:
         sphere = sphere if sphere is not None else default_sphere
         if sf is not None:
             pmf_field = sf
@@ -341,7 +349,7 @@ def probabilistic_tracking(
             max_steps=params.max_nbr_pts,
             pmf_threshold=pmf_threshold,
             random_seed=random_seed,
-            chunk_size=simple_chunk_size,
+            chunk_size=chunk_size,
             relative_peak_thresh=0.5,
             min_separation_angle=np.deg2rad(25),
         )
@@ -353,6 +361,7 @@ def probabilistic_tracking(
             nbr_threads=nbr_threads,
             save_seeds=save_seeds,
             affine=affine,
+            chunked=chunked,
         )
 
     return generic_tracking(
@@ -368,9 +377,10 @@ def probabilistic_tracking(
         basis_type=basis_type,
         legacy=legacy,
         nbr_threads=nbr_threads,
-        chunk_size=simple_chunk_size if use_simple else chunk_size,
+        chunk_size=chunk_size,
         save_seeds=save_seeds,
-        max_cross=-1 if use_simple else None,
+        max_cross=max_cross,
+        chunked=chunked,
     )
 
 
@@ -395,6 +405,7 @@ def deterministic_tracking(
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
+    chunked=False,
     return_all=True,
     save_seeds=False,
 ):
@@ -446,6 +457,10 @@ def deterministic_tracking(
         coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
+    chunked: bool, optional
+        Yield ``(points, lengths)`` per chunk (``(points, lengths, seeds)``
+        with ``save_seeds``) instead of single streamlines; see
+        :func:`dipy.tracking.tractogen.generate_tractogram`.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -484,6 +499,7 @@ def deterministic_tracking(
         legacy=legacy,
         nbr_threads=nbr_threads,
         chunk_size=chunk_size,
+        chunked=chunked,
         save_seeds=save_seeds,
     )
 
@@ -514,6 +530,7 @@ def ptt_tracking(
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
+    chunked=False,
     return_all=True,
     save_seeds=False,
 ):
@@ -575,6 +592,10 @@ def ptt_tracking(
         coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
+    chunked: bool, optional
+        Yield ``(points, lengths)`` per chunk (``(points, lengths, seeds)``
+        with ``save_seeds``) instead of single streamlines; see
+        :func:`dipy.tracking.tractogen.generate_tractogram`.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -617,6 +638,7 @@ def ptt_tracking(
         legacy=legacy,
         nbr_threads=nbr_threads,
         chunk_size=chunk_size,
+        chunked=chunked,
         save_seeds=save_seeds,
     )
 
@@ -873,6 +895,7 @@ def eudx_tracking(
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
+    chunked=False,
     return_all=True,
     save_seeds=False,
 ):
@@ -925,6 +948,10 @@ def eudx_tracking(
         coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
+    chunked: bool, optional
+        Yield ``(points, lengths)`` per chunk (``(points, lengths, seeds)``
+        with ``save_seeds``) instead of single streamlines; see
+        :func:`dipy.tracking.tractogen.generate_tractogram`.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -970,6 +997,7 @@ def eudx_tracking(
         max_cross=max_cross,
         nbr_threads=nbr_threads,
         chunk_size=chunk_size,
+        chunked=chunked,
         save_seeds=save_seeds,
     )
 

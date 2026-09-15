@@ -10,6 +10,7 @@ cimport numpy as cnp
 
 from dipy.direction.pmf cimport PmfGen
 from dipy.reconst.dirspeed cimport peak_directions_c
+from dipy.tracking._utils import _gather_chunk, _iter_chunk
 from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils cimport fast_numpy
 from dipy.utils.omp import determine_num_threads
@@ -40,7 +41,8 @@ def generate_tractogram(double[:, ::1] seed_positions,
                         bint save_seeds=0,
                         int max_cross=-1,
                         double relative_peak_threshold=0.5,
-                        double min_separation_angle=25):
+                        double min_separation_angle=25,
+                        bint chunked=0):
     """Generate a tractogram from a set of seed points and directions.
 
     Parameters
@@ -70,19 +72,24 @@ def generate_tractogram(double[:, ::1] seed_positions,
     relative_peak_threshold, min_separation_angle : float, optional
         Peak selection parameters when ``seed_directions`` is None (see
         :func:`dipy.direction.peak_directions`).
+    chunked : bool, optional
+        If True, yield one ``(points, lengths)`` tuple per chunk of seeds
+        (``(points, lengths, seeds)`` with ``save_seeds``), where ``points``
+        is the concatenation of the chunk's streamlines. Much cheaper to
+        consume than one streamline at a time, e.g. with
+        :func:`dipy.io.streamline.save_trx_from_generator`.
 
     Yields
     ------
-    streamlines : nibabel.streamlines.ArraySequence
-        Streamlines generated from the seed points.
-    seeds : ndarray, optional
-        seed points associated with the generated streamlines.
+    streamline : ndarray, shape (N, 3)
+        Streamline in world space, or ``(streamline, seed)`` with
+        ``save_seeds``, or chunk tuples with ``chunked`` (see above).
 
     """
     cdef:
         cnp.npy_intp nseed = seed_positions.shape[0]
         cnp.npy_intp step = 2 * params.max_nbr_pts
-        cnp.npy_intp start, n, nsl, i, i0, i1
+        cnp.npy_intp start, n, nsl
         double[:, ::1] seeds, dirs, sline
         cnp.npy_intp[::1] offsets, sl_seed
         int[:, ::1] stream_idx
@@ -121,16 +128,26 @@ def generate_tractogram(double[:, ::1] seed_positions,
         generate_tractogram_c(seeds, dirs, sl_seed, nbr_threads, sc, params,
                               pmf_gen, sline, stream_idx, status)
 
-        for i in range(nsl):
-            i0 = i * step + stream_idx[i, 0]
-            i1 = i * step + stream_idx[i, 1] + 1
-            if ((status[i] == VALIDSTREAMLINE or params.return_all)
-                    and params.min_nbr_pts <= i1 - i0 <= params.max_nbr_pts):
-                track = np.dot(np.asarray(sline[i0:i1]), lin_T) + offset
-                if save_seeds:
-                    yield track, np.dot(seeds[sl_seed[i]], lin_T) + offset
-                else:
-                    yield track
+        idx = np.asarray(stream_idx)
+        lengths = idx[:, 1] - idx[:, 0] + 1
+        keep = np.flatnonzero(
+            ((np.asarray(status) == <int>VALIDSTREAMLINE) | params.return_all)
+            & (lengths >= params.min_nbr_pts) & (lengths <= params.max_nbr_pts))
+        lengths = lengths[keep]
+        points = _gather_chunk(sline, keep * step + idx[keep, 0], lengths,
+                               lin_T, offset)
+        seeds_out = None
+        if save_seeds:
+            seeds_out = np.dot(
+                np.asarray(seeds)[
+                    np.asarray(sl_seed)[keep]], lin_T) + offset
+        if chunked:
+            if seeds_out is None:
+                yield (points, lengths)
+            else:
+                yield (points, lengths, seeds_out)
+        else:
+            yield from _iter_chunk(points, lengths, seeds_out)
 
 
 def seed_peaks(double[:, ::1] seeds,
