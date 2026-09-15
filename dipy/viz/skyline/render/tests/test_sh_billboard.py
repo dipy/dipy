@@ -273,3 +273,11 @@ def test_sph_glyph_billboard_sliced_single_glyph():
 
     assert actor is not None
     npt.assert_array_equal(voxel_coords.shape, (1, 3))
+
+
+def test_sph_glyph_billboard_sliced_has_no_slice_indices_buffer():
+    coeffs, centers, voxel_coords = _glyph_inputs()
+
+    actor = sph_glyph_billboard_sliced(coeffs, centers, voxel_coords)
+
+    assert not hasattr(actor, "slice_indices_buffer")

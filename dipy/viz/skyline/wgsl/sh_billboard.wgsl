@@ -1705,7 +1705,7 @@ fn surface_difference_fast(
     var raw_radius = 0.0;
 
     if (dist < 1e-5) {
-        let fallback_dir = normalize(ray_dir);
+        let fallback_dir = normalize((u_wobject.world_transform_inv * vec4<f32>(normalize(ray_dir), 0.0)).xyz);
         if (USE_HERMITE_INTERP && MAPPING_MODE == 5) {
             raw_radius = sample_hermite_cube(glyph_id, fallback_dir);
         } else {
@@ -1755,7 +1755,8 @@ fn surface_difference(
     let offset = position - center;
     let dist = length(offset);
     if (dist < 1e-5) {
-        let raw_radius = get_radius_optimized(glyph_id, coeff_offset, normalize(ray_dir), coeff_limit);
+        let fallback_local = normalize((u_wobject.world_transform_inv * vec4<f32>(normalize(ray_dir), 0.0)).xyz);
+        let raw_radius = get_radius_optimized(glyph_id, coeff_offset, fallback_local, coeff_limit);
         return -clamp_radius(raw_radius);
     }
     let direction = offset / dist;
@@ -1794,10 +1795,11 @@ fn evaluate_surface_analytic(
         result.omega = omega;
         result.rho = rho;
 
+        let local_omega = normalize((u_wobject.world_transform_inv * vec4<f32>(omega, 0.0)).xyz);
         if (USE_HERMITE_INTERP && MAPPING_MODE == 5) {
-            result.r = sample_hermite_cube(glyph_id, omega);
+            result.r = sample_hermite_cube(glyph_id, local_omega);
         } else {
-            result.r = get_radius_optimized(glyph_id, coeff_offset, omega, coeff_limit);
+            result.r = get_radius_optimized(glyph_id, coeff_offset, local_omega, coeff_limit);
         }
         result.grad_s2 = vec3<f32>(0.0);
 
@@ -1811,10 +1813,11 @@ fn evaluate_surface_analytic(
     result.omega = omega;
     result.rho = rho;
 
+    let local_omega = normalize((u_wobject.world_transform_inv * vec4<f32>(omega, 0.0)).xyz);
     if (USE_HERMITE_INTERP && MAPPING_MODE == 5) {
-        result.r = sample_hermite_cube(glyph_id, omega);
+        result.r = sample_hermite_cube(glyph_id, local_omega);
     } else {
-        result.r = get_radius_optimized(glyph_id, coeff_offset, omega, coeff_limit);
+        result.r = get_radius_optimized(glyph_id, coeff_offset, local_omega, coeff_limit);
     }
     result.grad_s2 = vec3<f32>(0.0);
 
@@ -1838,12 +1841,14 @@ fn evaluate_implicit(
     let dist = length(offset);
     if (dist < 1e-5) {
         let fallback_dir = normalize(vec3<f32>(0.577, 0.577, 0.577));
-        let raw_radius = get_radius_optimized(glyph_id, coeff_offset, fallback_dir, coeff_limit);
+        let local_fallback = normalize((u_wobject.world_transform_inv * vec4<f32>(fallback_dir, 0.0)).xyz);
+        let raw_radius = get_radius_optimized(glyph_id, coeff_offset, local_fallback, coeff_limit);
         let radius = clamp_radius(raw_radius);
         return dist - radius;
     }
     let direction = offset / dist;
-    let raw_radius = get_radius_optimized(glyph_id, coeff_offset, direction, coeff_limit);
+    let local_dir = normalize((u_wobject.world_transform_inv * vec4<f32>(direction, 0.0)).xyz);
+    let raw_radius = get_radius_optimized(glyph_id, coeff_offset, local_dir, coeff_limit);
     let radius = clamp_radius(raw_radius);
     return dist - radius;
 }
@@ -2089,10 +2094,11 @@ fn find_surface_intersection(
 
     let position = ray_origin + ray_dir * t;
     let direction = normalize(position - center);
+    let local_dir = normalize((u_wobject.world_transform_inv * vec4<f32>(direction, 0.0)).xyz);
     result.hit = true;
     result.position = position;
     result.direction = direction;
-    result.raw_radius = get_radius_optimized(glyph_id, coeff_offset, direction, coeff_limit);
+    result.raw_radius = get_radius_optimized(glyph_id, coeff_offset, local_dir, coeff_limit);
     return result;
 }
 
@@ -2106,33 +2112,25 @@ fn vs_main(in: VertexInput) -> Varyings {
     // --- Slice-based visibility: discard glyphs not on active slice ---
     {$ if use_slicing == 'true' $}
     {
-        let active_slice = vec3<i32>(
-            i32(round(u_material.active_slice_x)),
-            i32(round(u_material.active_slice_y)),
-            i32(round(u_material.active_slice_z)),
+        let slice_pos = vec3<f32>(
+            u_material.active_slice_x,
+            u_material.active_slice_y,
+            u_material.active_slice_z,
         );
         let visibility = vec3<i32>(u_material.vis_x, u_material.vis_y, u_material.vis_z);
-        let slice_index_offset = u32(billboard_index) * 3u;
-        let voxel_index = vec3<i32>(
-            s_slice_indices[slice_index_offset],
-            s_slice_indices[slice_index_offset + 1u],
-            s_slice_indices[slice_index_offset + 2u],
-        );
+        let w_slice_center = (u_wobject.world_transform * vec4<f32>(raw_center, 1.0)).xyz;
         var is_visible = false;
 
         if (!all(visibility == vec3<i32>(-1))) {
-            if (voxel_index.x == active_slice.x && visibility.x != 0) {
-                raw_center.x = u_material.active_slice_x;
+            if (abs(w_slice_center.x - slice_pos.x) <= abs(u_wobject.world_transform[0][0]) * 0.5 && visibility.x != 0) {
                 is_visible = true;
             }
 
-            if (voxel_index.y == active_slice.y && visibility.y != 0) {
-                raw_center.y = u_material.active_slice_y;
+            if (abs(w_slice_center.y - slice_pos.y) <= abs(u_wobject.world_transform[1][1]) * 0.5 && visibility.y != 0) {
                 is_visible = true;
             }
 
-            if (voxel_index.z == active_slice.z && visibility.z != 0) {
-                raw_center.z = u_material.active_slice_z;
+            if (abs(w_slice_center.z - slice_pos.z) <= abs(u_wobject.world_transform[2][2]) * 0.5 && visibility.z != 0) {
                 is_visible = true;
             }
         } else {
@@ -2312,6 +2310,8 @@ fn fs_main(varyings: Varyings) -> FragmentOutput {
         view_dir = normalize(-ray_dir);
     }
 
+    let local_color_dir = normalize((u_wobject.world_transform_inv * vec4<f32>(direction, 0.0)).xyz);
+
     var glyph_color = vec3<f32>(1.0);
     if (COLOR_TYPE == 0) {
         if (raw_radius < 0.0) {
@@ -2320,12 +2320,12 @@ fn fs_main(varyings: Varyings) -> FragmentOutput {
             glyph_color = vec3<f32>(1.0, 0.0, 0.0);
         }
     } else {
-        glyph_color = abs(normalize(direction));
+        glyph_color = abs(normalize(local_color_dir));
     }
 
     if (DEBUG_MODE > 0) {
-        let theta = acos(clamp(direction.z, -1.0, 1.0));
-        let phi = atan2(direction.y, direction.x);
+        let theta = acos(clamp(local_color_dir.z, -1.0, 1.0));
+        let phi = atan2(local_color_dir.y, local_color_dir.x);
 
         if (DEBUG_MODE == 1) {
             let norm_radius = clamp(abs(raw_radius) / max(surface_radius, 0.01), 0.0, 2.0) * 0.5;
@@ -2348,12 +2348,12 @@ fn fs_main(varyings: Varyings) -> FragmentOutput {
                 glyph_color = vec3<f32>(1.0, 0.0, 1.0);
             }
         } else if (DEBUG_MODE == 6) {
-            let oct_uv = direction_to_octahedral(direction);
+            let oct_uv = direction_to_octahedral(local_color_dir);
             let u = (oct_uv.x + 1.0) * 0.5;
             let v = (oct_uv.y + 1.0) * 0.5;
             glyph_color = vec3<f32>(u, v, 0.5);
         } else if (DEBUG_MODE == 7) {
-            let oct_uv = direction_to_octahedral(direction);
+            let oct_uv = direction_to_octahedral(local_color_dir);
             let l1 = abs(oct_uv.x) + abs(oct_uv.y);
             if (abs(l1 - 1.0) < 0.05) {
                 glyph_color = vec3<f32>(1.0, 0.0, 0.0);
@@ -2377,7 +2377,7 @@ fn fs_main(varyings: Varyings) -> FragmentOutput {
             }
         } else if (DEBUG_MODE == 10) {
             let normal_analytic = estimate_surface_normal_analytic(
-                direction,
+                local_color_dir,
                 dist_to_center,
                 intersection.grad_s2,
                 raw_radius,

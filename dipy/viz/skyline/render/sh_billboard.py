@@ -589,16 +589,6 @@ class BillboardSphGlyphShader(MeshShader):
             )
         }
 
-        # Per-glyph slice indices (for sliced rendering)
-        slice_buf = getattr(wobject, "slice_indices_buffer", None)
-        if slice_buf is not None:
-            coeff_bindings[1] = Binding(
-                "s_slice_indices",
-                "buffer/read_only_storage",
-                slice_buf,
-                "VERTEX",
-            )
-
         self.define_bindings(2, coeff_bindings)
         bindings[2] = coeff_bindings
 
@@ -1420,7 +1410,6 @@ def sph_glyph_billboard_sliced(
     obj._sh_mapping_mode = mapping_mode
     obj._sh_requested_lut_res = lut_res
 
-    obj.slice_indices_buffer = Buffer(voxel_coords.ravel().astype(np.int32))
     obj.material.n_coeffs = material_n_coeffs
 
     enable_octahedral_lut(

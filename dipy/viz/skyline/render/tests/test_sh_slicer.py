@@ -128,7 +128,7 @@ def test_sh_glyph_actor_is_the_slicer_group():
     assert glyph._slicer._glyph_actor is not None
 
 
-def test_sh_glyph_set_slices_maps_world_state_to_voxel_uniforms():
+def test_sh_glyph_set_slices_passes_world_positions_with_diagonal_affine():
     affine = np.diag([2.0, 2.0, 2.0, 1.0])
     glyph = _glyph(affine=affine)
 
@@ -136,13 +136,33 @@ def test_sh_glyph_set_slices_maps_world_state_to_voxel_uniforms():
     glyph.set_slices()
 
     material = _material(glyph)
-    assert material.active_slice_x == 2.0
-    assert material.active_slice_y == 3.0
-    assert material.active_slice_z == 1.0
+    assert material.active_slice_x == 4.0
+    assert material.active_slice_y == 6.0
+    assert material.active_slice_z == 2.0
     npt.assert_allclose(glyph._last_state, (4.0, 6.0, 2.0))
 
 
-def test_sh_glyph_set_slices_clips_to_the_volume():
+def test_sh_glyph_set_slices_passes_world_positions_with_rotated_affine():
+    affine = np.array(
+        [
+            [-2.5, 0.08, 0.07, 113.64],
+            [0.07, 2.45, -0.49, -104.41],
+            [0.08, 0.49, 2.45, -31.5],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+    glyph = _glyph(affine=affine)
+
+    glyph.state = np.array([50.0, -20.0, 10.0])
+    glyph.set_slices()
+
+    material = _material(glyph)
+    assert material.active_slice_x == 50.0
+    assert material.active_slice_y == -20.0
+    assert material.active_slice_z == 10.0
+
+
+def test_sh_glyph_set_slices_does_not_clip_with_affine():
     affine = np.diag([2.0, 2.0, 2.0, 1.0])
     glyph = _glyph(affine=affine)
 
@@ -150,9 +170,22 @@ def test_sh_glyph_set_slices_clips_to_the_volume():
     glyph.set_slices()
 
     material = _material(glyph)
-    assert material.active_slice_x == 0.0
-    assert material.active_slice_z == float(SHAPE[2] - 1)
+    assert material.active_slice_x == -40.0
+    assert material.active_slice_y == 6.0
+    assert material.active_slice_z == 1000.0
     npt.assert_allclose(glyph._last_state, (-40.0, 6.0, 1000.0))
+
+
+def test_sh_glyph_set_slices_clips_to_volume_without_affine():
+    glyph = SHGlyph3D("test", _coeffs(), affine=None, basis_type="descoteaux07")
+
+    glyph.state = np.array([-5.0, 2.0, 100.0])
+    glyph.set_slices()
+
+    material = _material(glyph)
+    assert material.active_slice_x == 0.0
+    assert material.active_slice_y == 2.0
+    assert material.active_slice_z == float(SHAPE[2] - 1)
 
 
 def test_sh_glyph_update_state_moves_the_slices():
