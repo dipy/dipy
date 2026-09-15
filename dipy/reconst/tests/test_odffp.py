@@ -197,7 +197,7 @@ def test_dictionary_save_load(tmp_path):
     gtab = get_gtab_taiwan_dsi()
     odf_dict = _make_dictionary(gtab, dict_size=400)
     fname = str(tmp_path / "odf_dict.npz")
-    odf_dict.save(fname)
+    odf_dict.save(dict_file=fname)
 
     loaded = OdffpDictionary(gtab, dict_file=fname)
     npt.assert_array_equal(loaded.odf, odf_dict.odf)

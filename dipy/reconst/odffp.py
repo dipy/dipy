@@ -567,7 +567,7 @@ class OdffpDictionary:
                 peak_dirs_idx[:, recompute_filter],
             )
 
-    def save(self, dict_file="odf_dict.npz"):
+    def save(self, *, dict_file="odf_dict.npz"):
         """Save the dictionary to a NumPy archive.
 
         Parameters
@@ -1003,7 +1003,7 @@ class OdffpFit(ReconstFit):
         self.model = model
         self._params = params
 
-    def odf(self, sphere=None):
+    def odf(self, *, sphere=None):
         """Return the matched fingerprint ODF in the voxel frame.
 
         The matched fingerprint is rescaled to the norm of the measured ODF,

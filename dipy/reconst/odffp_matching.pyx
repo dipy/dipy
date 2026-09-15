@@ -24,7 +24,6 @@ following the matching strategy of DIPY's FORCE reconstruction.
 
 import numpy as np
 cimport numpy as cnp
-cimport cython
 from libc.math cimport log, INFINITY
 from cython.parallel import parallel, prange
 
@@ -72,7 +71,7 @@ def accumulate_block(floating[:, ::1] sim, cnp.npy_intp[::1] group,
     set_num_threads(threads_to_use)
 
     with nogil, parallel():
-        for v in prange(n_vox, schedule='static'):
+        for v in prange(n_vox, schedule="static"):
             for j in range(b):
                 g = group[j]
                 if g < 0:
@@ -122,7 +121,7 @@ def finalize_match(double[:, ::1] group_best, cnp.npy_intp[:, ::1] group_idx,
     set_num_threads(threads_to_use)
 
     with nogil, parallel():
-        for v in prange(n_vox, schedule='static'):
+        for v in prange(n_vox, schedule="static"):
             best_score = -INFINITY
             best_j = -1
             best_similarity = -INFINITY

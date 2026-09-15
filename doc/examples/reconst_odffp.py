@@ -87,7 +87,7 @@ fit = model.fit(dataslice, mask=mask)
 # the units of the GQI ODF and differ between tissues, as with the other DIPY
 # reconstruction models.
 
-odfs = fit.odf(sphere)
+odfs = fit.odf(sphere=sphere)
 print(f"ODF map shape: {odfs.shape}")
 
 ###############################################################################
@@ -105,20 +105,8 @@ peaks = odffp_peaks(fit)
 save_pam("odffp_peaks.pam5", peaks, affine=affine)
 
 ###############################################################################
-# Visualize the ODFs of the slice. ``odf_slicer`` normalizes each glyph for
-# display; the amplitude information is kept in ``odfs`` and in the peaks.
-
-from dipy.viz import actor, window
-
-scene = window.Scene()
-scene.add(actor.odf_slicer(odfs, sphere=sphere, scale=0.5, colormap="plasma"))
-window.record(scene=scene, out_path="odffp_odfs.png", size=(700, 700))
-
-###############################################################################
-# .. rst-class:: centered small fst-italic fw-semibold
-#
-# ODF-FP orientation distribution functions for an axial slice of the Stanford
-# HARDI dataset.
+# The matched ODFs and the peaks can be inspected interactively with the
+# Skyline viewer, ``dipy_skyline odffp_peaks.pam5``.
 #
 # Each voxel also inherits the microstructure of its matched fingerprint. For
 # instance, the number of fibers and the free-water fraction follow directly
