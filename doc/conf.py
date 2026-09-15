@@ -87,6 +87,13 @@ nitpick_ignore_regex = [
     ("ref.ref", "dev-arrayapi"),
 ]
 
+# numpydoc >= 1.11 links auto-listed class attributes with a leading-dot
+# (class-relative) target. For inherited properties that the subclass does not
+# document itself, Sphinx falls back to a fuzzy suffix match, which is ambiguous
+# whenever another class defines a property of the same name (e.g. ``kfa`` on
+# ``DiffusionKurtosisFit`` and ``FORCEFit``). Silence only that warning class.
+suppress_warnings = ["ref.python"]
+
 # Sphinx extension for BibTeX style citations.
 # https://github.com/mcmtroffaes/sphinxcontrib-bibtex
 bibtex_bibfiles = ["references.bib"]
