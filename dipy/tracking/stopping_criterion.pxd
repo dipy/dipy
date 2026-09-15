@@ -6,8 +6,8 @@ cpdef enum StreamlineStatus:
     INVALIDPOINT = 0
     TRACKPOINT = 1
     ENDPOINT = 2
-    VALIDSTREAMLIME = 100
-    INVALIDSTREAMLIME = -100
+    VALIDSTREAMLINE = 100
+    INVALIDSTREAMLINE = -100
 
 
 cdef class StoppingCriterion:
