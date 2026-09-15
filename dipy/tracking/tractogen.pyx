@@ -10,7 +10,7 @@ cimport numpy as cnp
 
 from dipy.direction.pmf cimport PmfGen
 from dipy.reconst.dirspeed cimport peak_directions_c
-from dipy.tracking._utils import _gather_chunk, _iter_chunk
+from dipy.tracking._utils import _iter_chunk
 from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils cimport fast_numpy
 from dipy.utils.omp import determine_num_threads
@@ -91,7 +91,8 @@ def generate_tractogram(double[:, ::1] seed_positions,
         cnp.npy_intp step = 2 * params.max_nbr_pts
         cnp.npy_intp start, n, nsl
         double[:, ::1] seeds, dirs, sline
-        cnp.npy_intp[::1] offsets, sl_seed
+        double* buf
+        cnp.npy_intp[::1] offsets, sl_seed, out_offsets
         int[:, ::1] stream_idx
         int[::1] status
 
@@ -100,8 +101,8 @@ def generate_tractogram(double[:, ::1] seed_positions,
     if nbr_threads <= 0:
         nbr_threads = determine_num_threads(None)
 
-    lin_T = affine[:3, :3].T.copy()
-    offset = affine[:3, 3].copy()
+    cdef double[:, ::1] lin_T = np.ascontiguousarray(affine[:3, :3].T)
+    cdef double[::1] offset = np.ascontiguousarray(affine[:3, 3])
 
     inv_affine = np.linalg.inv(affine)
     seed_positions = np.dot(seed_positions, inv_affine[:3, :3].T.copy())
@@ -121,7 +122,10 @@ def generate_tractogram(double[:, ::1] seed_positions,
             dirs = seed_directions[start:start + n]
         nsl = offsets[n]
         sl_seed = np.repeat(np.arange(n), np.diff(offsets))
-        sline = np.empty((nsl * step, 3))
+        buf = <double*> malloc(max(1, nsl * step * 3) * sizeof(double))
+        if buf == NULL:
+            raise MemoryError("Memory allocation failed")
+        sline = <double[:nsl * step, :3]> buf
         stream_idx = np.empty((nsl, 2), dtype=np.intc)
         status = np.empty(nsl, dtype=np.intc)
 
@@ -134,13 +138,17 @@ def generate_tractogram(double[:, ::1] seed_positions,
             ((np.asarray(status) == <int>VALIDSTREAMLINE) | params.return_all)
             & (lengths >= params.min_nbr_pts) & (lengths <= params.max_nbr_pts))
         lengths = lengths[keep]
-        points = _gather_chunk(sline, keep * step + idx[keep, 0], lengths,
-                               lin_T, offset)
+        out_offsets = np.zeros(len(keep) + 1, dtype=np.intp)
+        np.cumsum(lengths, out=np.asarray(out_offsets)[1:])
+        points = np.empty((out_offsets[len(keep)], 3))
+        compact_chunk(sline, keep * step + idx[keep, 0], out_offsets, points,
+                      lin_T, offset, nbr_threads)
+        free(buf)
         seeds_out = None
         if save_seeds:
-            seeds_out = np.dot(
-                np.asarray(seeds)[
-                    np.asarray(sl_seed)[keep]], lin_T) + offset
+            seeds_out = (
+                np.dot(np.asarray(seeds)[np.asarray(sl_seed)[keep]],
+                       np.asarray(lin_T)) + np.asarray(offset))
         if chunked:
             if seeds_out is None:
                 yield (points, lengths)
@@ -148,6 +156,33 @@ def generate_tractogram(double[:, ::1] seed_positions,
                 yield (points, lengths, seeds_out)
         else:
             yield from _iter_chunk(points, lengths, seeds_out)
+
+
+cdef void compact_chunk(double[:, ::1] sline,
+                        cnp.npy_intp[::1] starts,
+                        cnp.npy_intp[::1] out_offsets,
+                        double[:, ::1] out,
+                        double[:, ::1] lin_T,
+                        double[::1] offset,
+                        int nbr_threads):
+    """Copy the kept streamlines out of the chunk buffer, applying the affine.
+
+    ``starts[i]`` is the first row of streamline ``i`` in ``sline``; its points
+    land at ``out[out_offsets[i]:out_offsets[i + 1]]``.
+    """
+    cdef cnp.npy_intp n = starts.shape[0], i, j, k, src, dst
+    cdef double x, y, z
+
+    for i in prange(n, nogil=True, num_threads=nbr_threads, schedule="static"):
+        src = starts[i]
+        dst = out_offsets[i]
+        for j in range(out_offsets[i + 1] - dst):
+            x = sline[src + j, 0]
+            y = sline[src + j, 1]
+            z = sline[src + j, 2]
+            for k in range(3):
+                out[dst + j, k] = (x * lin_T[0, k] + y * lin_T[1, k]
+                                   + z * lin_T[2, k] + offset[k])
 
 
 def seed_peaks(double[:, ::1] seeds,

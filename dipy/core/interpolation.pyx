@@ -286,6 +286,37 @@ cdef void _trilinear_interpolation_iso(double *X,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+cdef int trilinear_interpolate3d_c(double[:, :, :] data,
+                                   double* point,
+                                   double* result) noexcept nogil:
+    """Tri-linear interpolation of a 3d array. See trilinear_interpolate4d_c."""
+    cdef:
+        cnp.npy_intp flr, i, j, k
+        double rem
+        cnp.npy_intp index[3][2]
+        double weight[3][2]
+
+    for i in range(3):
+        if point[i] < -.5 or point[i] >= (data.shape[i] - .5):
+            return -1
+        flr = <cnp.npy_intp> floor(point[i])
+        rem = point[i] - flr
+        index[i][0] = flr + (flr == -1)
+        index[i][1] = flr + (flr != (data.shape[i] - 1))
+        weight[i][0] = 1 - rem
+        weight[i][1] = rem
+
+    result[0] = 0
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                result[0] += (weight[0][i] * weight[1][j] * weight[2][k]
+                              * data[index[0][i], index[1][j], index[2][k]])
+    return 0
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cdef int trilinear_interpolate4d_c(floating[:, :, :, :] data,
                                    floating* point,
                                    floating* result) noexcept nogil:
