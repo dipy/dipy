@@ -7,9 +7,9 @@ import numpy as np
 from dipy.core.sphere import HemiSphere
 from dipy.data import default_sphere
 from dipy.direction.pmf import SimplePmfGen
-from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
+from dipy.tracking._utils import _gather_chunk, _iter_chunk
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
-from dipy.tracking.tractogen import generate_tractogram, seed_peaks
+from dipy.tracking.tractogen import seed_peaks
 
 logger = logging.getLogger("dipy")
 
@@ -43,15 +43,15 @@ class _SimpleTrackerData:
 class _SimpleBackendSpec:
     module: str
     factory: str
-    probe: str | None
+    probe: str
     multi_device: bool
 
 
 SIMPLE_BACKENDS = {
-    "cython": _SimpleBackendSpec(
-        module="dipy.tracking.simpletracker",
-        factory=None,
-        probe=None,
+    "metal": _SimpleBackendSpec(
+        module="dipy.tracking.metalsimplet",
+        factory="metal_gen_streamlines_prob",
+        probe="metal_available",
         multi_device=False,
     ),
     "cuda": _SimpleBackendSpec(
@@ -59,12 +59,6 @@ SIMPLE_BACKENDS = {
         factory="cuda_gen_streamlines_prob",
         probe="cuda_available",
         multi_device=True,
-    ),
-    "metal": _SimpleBackendSpec(
-        module="dipy.tracking.metalsimplet",
-        factory="metal_gen_streamlines_prob",
-        probe="metal_available",
-        multi_device=False,
     ),
     "webgpu": _SimpleBackendSpec(
         module="dipy.tracking.webgpusimplet",
@@ -99,8 +93,8 @@ def prepare_simple_tracker_data(
         simplified stopping criteria (ie, threshold on a scalar map)
         fixed (large) max SL length (500 steps by default)
         generic probabilistic direction getting
-    Simplified trackers are implemented in CUDA, WebGPU and Metal; the
-    "cython" backend is :func:`dipy.tracking.tractogen.generate_tractogram`.
+    Simplified trackers are implemented in CUDA, WebGPU and Metal. On the
+    CPU, use :func:`dipy.tracking.tracker.probabilistic_tracking`.
 
     Parameters
     ----------
@@ -132,7 +126,7 @@ def prepare_simple_tracker_data(
     chunk_size : int
         Seeds per chunk in simple_sl_generator()
     n_procs : int
-        Number of devices to use. Must be 1 for the Cython, Metal and WebGPU
+        Number of devices to use. Must be 1 for the Metal and WebGPU
         backends; for CUDA this is the number of GPUs each chunk is split
         across.
     """
@@ -178,9 +172,8 @@ def prepare_simple_tracker_data(
 
 
 def _tracking_objects(std):
-    """PmfGen, StoppingCriterion and TrackerParameters matching ``std``."""
+    """PmfGen and TrackerParameters matching ``std`` (for seed peaks)."""
     pmf_gen = SimplePmfGen(std.dataf, std.sphere)
-    sc = ThresholdStoppingCriterion(std.metric_map, std.stop_threshold)
     params = generate_tracking_parameters(
         "prob",
         max_len=std.max_steps * std.step_size,
@@ -192,7 +185,7 @@ def _tracking_objects(std):
         random_seed=std.random_seed,
         is_symmetric=std.sphere_symm,
     )
-    return pmf_gen, sc, params
+    return pmf_gen, params
 
 
 def _prob_seed_directions(std, seeds, pmf_gen, params, *, nbr_threads=0):
@@ -233,11 +226,9 @@ def simple_backend_available(simple_backend):
     Parameters
     ----------
     simple_backend : str
-        One of "cython", "cuda", "metal", "webgpu".
+        One of "cuda", "metal", "webgpu".
     """
     spec = _get_simple_backend_spec(simple_backend)
-    if spec.probe is None:
-        return True
     return getattr(importlib.import_module(spec.module), spec.probe)()
 
 
@@ -250,6 +241,7 @@ def simple_sl_generator(
     nbr_threads=0,
     save_seeds=False,
     affine=None,
+    chunked=False,
 ):
     """
     Generate streamlines in chunks from simple tracker data and seeds.
@@ -264,7 +256,7 @@ def simple_sl_generator(
         One of "metal" (Apple Silicon, requires
         ``dipy[metal]``), "cuda" (requires
         ``dipy[cu12]`` or ``dipy[cu13]``),
-        "webgpu" (requires ``dipy[webgpu]``), or "cython" (CPU, OpenMP).
+        or "webgpu" (requires ``dipy[webgpu]``).
         "auto" will select the first available backend in that order.
         Default: "auto".
     seed_directions : ndarray, shape (N, 3), optional
@@ -276,6 +268,9 @@ def simple_sl_generator(
         True to yield ``(streamline, seed)`` pairs.
     affine : ndarray, shape (4, 4), optional
         Voxel-to-world affine of the seeds and of the output streamlines.
+    chunked : bool, optional
+        Yield ``(points, lengths[, seeds])`` per chunk instead of single
+        streamlines (see :func:`dipy.tracking.tractogen.generate_tractogram`).
 
     Yields
     ------
@@ -283,12 +278,15 @@ def simple_sl_generator(
     """
     std = simple_tracker_data
     if simple_backend == "auto":
-        for name in ("metal", "cuda", "webgpu"):
+        for name in SIMPLE_BACKENDS:
             if simple_backend_available(name):
                 simple_backend = name
                 break
         else:
-            simple_backend = "cython"
+            raise RuntimeError(
+                "No simple tracker backend available "
+                f"({', '.join(SIMPLE_BACKENDS)}); use probabilistic_tracking()."
+            )
 
     spec = _get_simple_backend_spec(simple_backend)
     if not spec.multi_device and std.n_procs != 1:
@@ -298,22 +296,7 @@ def simple_sl_generator(
         )
 
     affine = np.eye(4) if affine is None else affine
-    pmf_gen, sc, params = _tracking_objects(std)
-    if simple_backend == "cython":
-        return generate_tractogram(
-            np.asarray(seeds, dtype=float),
-            seed_directions,
-            sc,
-            params,
-            pmf_gen,
-            affine,
-            nbr_threads=nbr_threads,
-            chunk_size=std.chunk_size,
-            save_seeds=save_seeds,
-            relative_peak_threshold=std.relative_peak_thresh,
-            min_separation_angle=np.rad2deg(std.min_separation_angle),
-        )
-
+    pmf_gen, params = _tracking_objects(std)
     # GPU kernels are float32
     std = replace(
         std,
@@ -335,6 +318,7 @@ def simple_sl_generator(
         seed_directions=seed_directions,
         nbr_threads=nbr_threads,
         save_seeds=save_seeds,
+        chunked=chunked,
     )
 
 
@@ -350,6 +334,7 @@ def _sl_generator(
     nbr_threads=0,
     close=None,
     save_seeds=False,
+    chunked=False,
 ):
     """
     Yield streamlines chunk by chunk from a GPU backend function. ``seeds``
@@ -387,15 +372,23 @@ def _sl_generator(
                 chunk, sline_offsets, peak_dirs
             )
             sl_seed = np.repeat(np.arange(len(chunk)), np.diff(sline_offsets))
-
-            for ii in range(n_slines):
-                npts = int(sline_len[ii])
-                if std.min_steps <= npts <= std.max_steps:
-                    sl = np.dot(sline[ii * step : ii * step + npts], lin_T) + offset
-                    if save_seeds:
-                        yield sl, np.dot(chunk[sl_seed[ii]], lin_T) + offset
-                    else:
-                        yield sl
+            lengths = np.asarray(sline_len[:n_slines])
+            keep = np.flatnonzero(
+                (lengths >= std.min_steps) & (lengths <= std.max_steps)
+            )
+            lengths = lengths[keep]
+            points = _gather_chunk(sline, keep * step, lengths, lin_T, offset)
+            seeds_out = None
+            if save_seeds:
+                seeds_out = np.dot(chunk[sl_seed[keep]], lin_T) + offset
+            if chunked:
+                yield (
+                    (points, lengths)
+                    if seeds_out is None
+                    else (points, lengths, seeds_out)
+                )
+            else:
+                yield from _iter_chunk(points, lengths, seeds_out)
     finally:
         if close is not None:
             close()

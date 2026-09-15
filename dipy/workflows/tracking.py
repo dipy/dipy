@@ -5,7 +5,7 @@ from dipy.data import SPHERE_FILES, get_sphere
 from dipy.io.image import load_nifti
 from dipy.io.peaks import load_pam
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_tractogram
+from dipy.io.streamline import save_tractogram, save_trx_from_generator
 from dipy.tracking import utils
 from dipy.tracking.stopping_criterion import (
     BinaryStoppingCriterion,
@@ -22,6 +22,23 @@ from dipy.tracking.tracker import (
 )
 from dipy.utils.logging import logger
 from dipy.workflows.workflow import Workflow
+
+
+def _save_tracking_result(tracking_result, reference, out_tract, save_seeds):
+    if str(out_tract).endswith(".trx"):
+        save_trx_from_generator(tracking_result, reference, filename=out_tract)
+    else:
+        if save_seeds:
+            streamlines, seeds = zip(*tracking_result)
+            seeds = {"seeds": seeds}
+        else:
+            streamlines = list(tracking_result)
+            seeds = {}
+        sft = StatefulTractogram(
+            streamlines, reference, Space.RASMM, data_per_streamline=seeds
+        )
+        save_tractogram(sft, out_tract, bbox_valid_check=False)
+    logger.info(f"Saved {out_tract}")
 
 
 class LocalFiberTrackingPAMFlow(Workflow):
@@ -154,6 +171,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                 seed_mask, affine, density=[seed_density, seed_density, seed_density]
             )
 
+            chunked = str(out_tract).endswith(".trx")
             if max_angle is None:
                 max_angle = 10.0 if tracking_method in ["ptt"] else 30.0
                 logger.info(f"max_angle not set by user, defaulting to {max_angle}")
@@ -183,6 +201,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                     seeds,
                     stopping_criterion,
                     affine,
+                    chunked=chunked,
                     sh=pam.shm_coeff,
                     pam=pam,
                     random_seed=random_seed,
@@ -201,6 +220,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                     seeds,
                     stopping_criterion,
                     affine,
+                    chunked=chunked,
                     sh=pam.shm_coeff,
                     random_seed=random_seed,
                     sphere=sphere,
@@ -218,6 +238,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                     seeds,
                     stopping_criterion,
                     affine,
+                    chunked=chunked,
                     sh=pam.shm_coeff,
                     random_seed=random_seed,
                     sphere=sphere,
@@ -235,6 +256,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                     seeds,
                     stopping_criterion,
                     affine,
+                    chunked=chunked,
                     sh=pam.shm_coeff,
                     random_seed=random_seed,
                     sphere=sphere,
@@ -254,18 +276,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                     f"'eudx', 'deterministic', 'probabilistic', 'closestpeaks', 'ptt'"
                 )
                 sys.exit(1)
-            if save_seeds:
-                streamlines, seeds = zip(*tracking_result)
-                seeds = {"seeds": seeds}
-            else:
-                streamlines = list(tracking_result)
-                seeds = {}
-
-            sft = StatefulTractogram(
-                streamlines, seeding_path, Space.RASMM, data_per_streamline=seeds
-            )
-            save_tractogram(sft, out_tract, bbox_valid_check=False)
-            logger.info(f"Saved {out_tract}")
+            _save_tracking_result(tracking_result, seeding_path, out_tract, save_seeds)
 
 
 class PFTrackingPAMFlow(Workflow):
@@ -420,15 +431,4 @@ class PFTrackingPAMFlow(Workflow):
                 chunk_size=chunk_size,
             )
 
-            if save_seeds:
-                streamlines, seeds = zip(*tracking_result)
-                seeds = {"seeds": seeds}
-            else:
-                streamlines = list(tracking_result)
-                seeds = {}
-
-            sft = StatefulTractogram(
-                streamlines, seeding_path, Space.RASMM, data_per_streamline=seeds
-            )
-            save_tractogram(sft, out_tract, bbox_valid_check=False)
-            logger.info(f"Saved {out_tract}")
+            _save_tracking_result(tracking_result, seeding_path, out_tract, save_seeds)
