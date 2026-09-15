@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.testing as npt
 
-from dipy.core.geometry import vec2vec_rotmat
+from dipy.core.geometry import cart2sphere, sphere2cart, vec2vec_rotmat
 from dipy.core.sphere import Sphere
 from dipy.data import get_gtab_taiwan_dsi
 from dipy.direction import peak_directions
@@ -11,6 +11,7 @@ from dipy.reconst.odffp import (
     OdffpDictionary,
     OdffpFit,
     OdffpModel,
+    fingerprint_signal,
     odffp_peaks,
     resample_odf,
 )
@@ -257,3 +258,100 @@ def test_antipodal_peak_rotation_maps_to_pole():
     direction = -pole
     rotation = vec2vec_rotmat(direction, pole)
     npt.assert_allclose(rotation @ direction, pole, atol=1e-10)
+
+
+def test_odffp_predict_is_the_dictionary_signal():
+    # predict() must return the signal of the matched dictionary entry, with
+    # its fibers in the voxel frame. With the fiber along the dictionary's
+    # reference vertex the alignment is the identity, so the prediction must
+    # equal the entry's own simulated signal (S0 = 1000 in the dictionary).
+    gtab = get_gtab_taiwan_dsi()
+    odf_dict = _make_dictionary(gtab, dict_size=1500)
+    sphere = odf_dict.sphere
+    model = OdffpModel(gtab, odf_dict, penalty=1e-4)
+
+    ref = sphere.vertices[0]
+    _, theta, phi = cart2sphere(*ref)
+    data = multi_tensor(
+        gtab,
+        np.array([[0.0015, 0.0003, 0.0003]]),
+        angles=[(np.degrees(theta), np.degrees(phi))],
+        fractions=[100],
+        snr=None,
+    )[0]
+    fit = model.fit(data)
+    npt.assert_(np.abs(fit.peak_dirs[0] @ ref) > 0.99)
+
+    k = int(fit.dict_idx)
+    n_fib = odf_dict.peaks_per_voxel[k]
+    angles = odf_dict.peak_dirs[:, :n_fib, k]
+    canonical = np.array(sphere2cart(1, np.pi / 2 + angles[1], angles[0])).T
+    expected = 1e3 * fingerprint_signal(
+        gtab, odf_dict.ratio[:, k], odf_dict.micro[:, :, k], canonical
+    )
+    predicted = fit.predict(gtab, S0=1000.0)
+    npt.assert_equal(predicted.shape, (len(gtab.bvals),))
+    npt.assert_allclose(predicted, np.squeeze(expected), rtol=1e-6)
+
+    # It is a prediction of the data: b0 equals S0 and the attenuation is
+    # strongest along the fiber.
+    npt.assert_allclose(predicted[gtab.b0s_mask], 1000.0, rtol=1e-6)
+    dwi = np.where(gtab.b0s_mask, np.inf, predicted)
+    npt.assert_(np.abs(gtab.bvecs[np.argmin(dwi)] @ ref) > 0.9)
+
+
+def test_odffp_predict_multi_voxel():
+    gtab = get_gtab_taiwan_dsi()
+    odf_dict = _make_dictionary(gtab, dict_size=1500)
+    model = OdffpModel(gtab, odf_dict, penalty=1e-4)
+    mevals = np.array([[0.0015, 0.0003, 0.0003]] * 2)
+    data = np.stack(
+        [
+            multi_tensor(gtab, mevals[:1], angles=[(90, 0)], fractions=[100], snr=None)[
+                0
+            ],
+            multi_tensor(
+                gtab,
+                mevals,
+                angles=[(20, 0), (90, 0)],
+                fractions=[50, 50],
+                snr=None,
+            )[0],
+            multi_tensor(
+                gtab,
+                np.array([[0.003, 0.003, 0.003]]),
+                angles=[(0, 0)],
+                fractions=[100],
+                snr=None,
+            )[0],
+        ]
+    ).reshape(3, 1, 1, -1)
+    mask = np.array([True, True, False]).reshape(3, 1, 1)
+
+    mfit = model.fit(data, mask=mask)
+    S0 = np.array([100.0, 200.0, 300.0]).reshape(3, 1, 1)
+    predicted = mfit.predict(gtab, S0=S0)
+    npt.assert_equal(predicted.shape, data.shape)
+    for i in range(2):
+        npt.assert_allclose(
+            predicted[i, 0, 0],
+            mfit.fit_array[i, 0, 0].predict(gtab, S0=S0[i, 0, 0]),
+        )
+    npt.assert_array_equal(predicted[2, 0, 0], 0)
+
+    # A free-water voxel predicts a monoexponential isotropic decay.
+    single = model.fit(data[2, 0, 0])
+    npt.assert_equal(odf_dict.peaks_per_voxel[single.dict_idx], 0)
+    iso = single.predict(gtab)
+    d_iso = single.microstructure[OdffpDictionary.MICRO_DE, 0]
+    npt.assert_allclose(iso, np.exp(-1e-3 * gtab.bvals * d_iso), rtol=1e-6)
+
+    # The vectorized model-level prediction matches the per-voxel one, for a
+    # volume and for a single voxel.
+    npt.assert_allclose(model.predict(mfit, S0=S0), predicted, rtol=1e-12)
+    npt.assert_allclose(
+        model.predict(single, S0=1000.0), single.predict(gtab, S0=1000.0), rtol=1e-12
+    )
+    npt.assert_allclose(
+        model.predict(mfit, gtab=gtab), mfit.predict(gtab, S0=1.0), rtol=1e-12
+    )

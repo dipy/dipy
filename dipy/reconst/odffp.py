@@ -92,6 +92,64 @@ def resample_odf(odf, in_sphere, out_sphere, *, sh_order_max=8):
     return np.squeeze(resampled[:, :sphere_half_size])
 
 
+def fingerprint_signal(gtab, ratio, micro, directions):
+    """Diffusion signal of the multi-compartment model of a fingerprint.
+
+    The signal is the sum of a free-water compartment and, for each fiber, of
+    an intra-axonal (stick) and an extra-axonal (zeppelin) compartment, for a
+    non-diffusion-weighted signal of 1. It is the forward model used to
+    simulate the dictionary and to predict the signal of a fit.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+        Gradient table of the signal.
+    ratio : ndarray, shape (n_fibers + 1, ...)
+        Compartment volume fractions, free water first.
+    micro : ndarray, shape (4, n_fibers + 1, ...)
+        Microstructure parameters (D_a, D_e, D_r, f_in) of each compartment,
+        with diffusivities in um^2/ms.
+    directions : sequence of ndarray, shape (..., 3)
+        Cartesian direction of each fiber.
+
+    Returns
+    -------
+    signal : ndarray, shape (..., n_gradients)
+        Signal, with gradients on the last axis. NaN parameters count as 0.
+    """
+    ratio = np.nan_to_num(ratio)
+    micro = np.nan_to_num(micro)
+    d_a, d_e, d_r, f_in = (
+        OdffpDictionary.MICRO_DA,
+        OdffpDictionary.MICRO_DE,
+        OdffpDictionary.MICRO_DR,
+        OdffpDictionary.MICRO_FIN,
+    )
+
+    # Convert the b-values from s/mm^2 to ms/um^2.
+    bvals = np.vstack(1e-3 * gtab.bvals)
+
+    # Diffusion signal of free water.
+    dwi = ratio[0] * np.exp(-bvals * micro[d_e, 0])
+
+    # Add the diffusion signal of each fiber.
+    for j, fiber_dirs in enumerate(directions):
+        dir_prod_sqr = np.dot(gtab.bvecs, np.atleast_2d(fiber_dirs).T) ** 2
+        dwi_intra = np.exp(-bvals * micro[d_a, j + 1] * dir_prod_sqr)
+        dwi_extra = np.exp(
+            -bvals
+            * (
+                micro[d_e, j + 1] * dir_prod_sqr
+                + micro[d_r, j + 1] * (1 - dir_prod_sqr)
+            )
+        )
+        dwi += ratio[j + 1] * (
+            micro[f_in, j + 1] * dwi_intra + (1 - micro[f_in, j + 1]) * dwi_extra
+        )
+
+    return dwi.T
+
+
 class OdffpDictionary:
     """Dictionary of ODF fingerprints and their microstructure parameters.
 
@@ -275,34 +333,8 @@ class OdffpDictionary:
         dwi : ndarray
             Simulated signal or signals, with gradients on the last axis.
         """
-        ratio = np.nan_to_num(ratio)
-        micro = np.nan_to_num(micro)
-
-        # Convert the b-values from s/mm^2 to ms/um^2.
-        bvals = np.vstack(1e-3 * self.gtab.bvals)
-
-        # Diffusion signal of free water.
-        dwi = ratio[0] * np.exp(-bvals * micro[self.MICRO_DE, 0])
-
-        # Add the diffusion signal of each fiber.
-        for j in range(len(peak_dirs_idx)):
-            dir_prod_sqr = (
-                np.dot(self.gtab.bvecs, self.sphere.vertices[peak_dirs_idx[j]].T) ** 2
-            )
-            dwi_intra = np.exp(-bvals * micro[self.MICRO_DA, j + 1] * dir_prod_sqr)
-            dwi_extra = np.exp(
-                -bvals
-                * (
-                    micro[self.MICRO_DE, j + 1] * dir_prod_sqr
-                    + micro[self.MICRO_DR, j + 1] * (1 - dir_prod_sqr)
-                )
-            )
-            dwi += ratio[j + 1] * (
-                micro[self.MICRO_FIN, j + 1] * dwi_intra
-                + (1 - micro[self.MICRO_FIN, j + 1]) * dwi_extra
-            )
-
-        return 1e3 * dwi.T
+        directions = [self.sphere.vertices[idx] for idx in peak_dirs_idx]
+        return 1e3 * fingerprint_signal(self.gtab, ratio, micro, directions)
 
     def _compute_odf_trace(self, odf_recon_model, ratio, micro, peak_dirs_idx):
         """Simulate signals and reconstruct their half-sphere ODF traces.
@@ -913,6 +945,42 @@ class OdffpModel(ReconstModel):
             fits[i] = OdffpFit(self, {k: v[i] for k, v in params.items()})
         return fits[0] if single else fits
 
+    def predict(self, fit, *, gtab=None, S0=1.0):
+        """Predict the diffusion signal of every voxel of a fit at once.
+
+        Vectorized counterpart of :meth:`OdffpFit.predict` for the
+        :class:`~dipy.reconst.multi_voxel.MultiVoxelFit` of a volume; a single
+        :class:`OdffpFit` works as well.
+
+        Parameters
+        ----------
+        fit : OdffpFit or MultiVoxelFit
+            The result of :meth:`fit`.
+        gtab : GradientTable, optional
+            Gradient table of the predicted signal. By default, the model's.
+        S0 : float or ndarray, optional
+            Non-diffusion-weighted signal, a scalar or one value per voxel.
+
+        Returns
+        -------
+        signal : ndarray, shape (..., n_gradients)
+            Predicted signal, zero outside the mask of the fit.
+        """
+        if gtab is None:
+            gtab = self.gtab
+        ratio = np.asarray(fit.compartment_volume)  # (..., n_fibers + 1)
+        micro = np.asarray(fit.microstructure)  # (..., 4, n_fibers + 1)
+        dirs = np.nan_to_num(np.asarray(fit.peak_dirs), nan=0.0)  # (..., n_fibers, 3)
+        lead = dirs.shape[:-2]
+        n_vox = int(np.prod(lead)) if lead else 1
+        ratio = ratio.reshape(n_vox, -1).T
+        micro = np.moveaxis(micro.reshape((n_vox,) + micro.shape[-2:]), 0, -1)
+        dirs = dirs.reshape(n_vox, -1, 3)
+        directions = [dirs[:, j, :] for j in range(dirs.shape[1])]
+        signal = fingerprint_signal(gtab, ratio, micro, directions)
+        signal = signal.reshape(lead + (len(gtab.bvals),))
+        return np.asarray(S0, dtype=np.float64)[..., np.newaxis] * signal
+
 
 class OdffpFit(ReconstFit):
     """Result of an :class:`OdffpModel` fit for a single voxel.
@@ -955,6 +1023,33 @@ class OdffpFit(ReconstFit):
                 odf, self.model.sphere, sphere, sh_order_max=self.model.sh_order_max
             )
         return odf / np.maximum(1e-8, np.max(odf))
+
+    def predict(self, gtab, *, S0=1.0):
+        """Predict the diffusion signal of the matched fingerprint.
+
+        The prediction is the signal of the dictionary entry :attr:`dict_idx`:
+        its free-water and fiber compartments (:attr:`compartment_volume`,
+        :attr:`microstructure`) with the fibers oriented as :attr:`peak_dirs`,
+        that is, rotated into the voxel frame. See :func:`fingerprint_signal`
+        for the forward model.
+
+        Parameters
+        ----------
+        gtab : GradientTable
+            Gradient table of the predicted signal.
+        S0 : float or ndarray, optional
+            Non-diffusion-weighted signal.
+
+        Returns
+        -------
+        signal : ndarray, shape (n_gradients,)
+            Predicted signal.
+        """
+        directions = np.nan_to_num(np.asarray(self.peak_dirs), nan=0.0)
+        signal = fingerprint_signal(
+            gtab, self.compartment_volume, self.microstructure, directions
+        )
+        return S0 * np.squeeze(signal, axis=0)
 
     @property
     def peak_dirs(self):
