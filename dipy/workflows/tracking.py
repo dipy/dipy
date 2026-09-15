@@ -47,7 +47,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         save_seeds=False,
         nbr_threads=0,
         random_seed=1,
-        seed_buffer_fraction=1.0,
+        chunk_size=25000,
         out_dir="",
         out_tractogram="out_tractogram.trx",
     ):
@@ -115,10 +115,8 @@ class LocalFiberTrackingPAMFlow(Workflow):
             than 0 will all produce the same streamline trajectory for a given seed
             coordinate. A value of 0 may produces various streamline tracjectories
             for a given seed coordinate.
-        seed_buffer_fraction : float, optional
-            Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-            buffer. A value of 0.5 will use half of the seed buffer then the other half.
-            a way to reduce memory usage.
+        chunk_size : int, optional
+            Number of seeds tracked at once. Lower it to reduce memory usage.
         out_dir : string or Path, optional
            Output directory.
         out_tractogram : string, optional
@@ -176,7 +174,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                     pmf_threshold=pmf_threshold,
                     save_seeds=save_seeds,
                     nbr_threads=nbr_threads,
-                    seed_buffer_fraction=seed_buffer_fraction,
+                    chunk_size=chunk_size,
                 )
             elif tracking_method in [
                 "eudx",
@@ -196,7 +194,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                     pmf_threshold=pmf_threshold,
                     save_seeds=save_seeds,
                     nbr_threads=nbr_threads,
-                    seed_buffer_fraction=seed_buffer_fraction,
+                    chunk_size=chunk_size,
                 )
             elif tracking_method in ["deterministic", "det"]:
                 tracking_result = deterministic_tracking(
@@ -213,7 +211,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                     pmf_threshold=pmf_threshold,
                     save_seeds=save_seeds,
                     nbr_threads=nbr_threads,
-                    seed_buffer_fraction=seed_buffer_fraction,
+                    chunk_size=chunk_size,
                 )
             elif tracking_method in ["probabilistic", "prob"]:
                 tracking_result = probabilistic_tracking(
@@ -230,7 +228,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                     pmf_threshold=pmf_threshold,
                     save_seeds=save_seeds,
                     nbr_threads=nbr_threads,
-                    seed_buffer_fraction=seed_buffer_fraction,
+                    chunk_size=chunk_size,
                 )
             elif tracking_method in ["ptt"]:
                 tracking_result = ptt_tracking(
@@ -247,7 +245,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                     pmf_threshold=pmf_threshold,
                     save_seeds=save_seeds,
                     nbr_threads=nbr_threads,
-                    seed_buffer_fraction=seed_buffer_fraction,
+                    chunk_size=chunk_size,
                 )
             else:
                 logger.error(
@@ -295,7 +293,7 @@ class PFTrackingPAMFlow(Workflow):
         min_wm_pve_before_stopping=0,
         nbr_threads=0,
         random_seed=1,
-        seed_buffer_fraction=1.0,
+        chunk_size=25000,
         out_dir="",
         out_tractogram="tractogram.trx",
     ):
@@ -364,10 +362,8 @@ class PFTrackingPAMFlow(Workflow):
             than 0 will all produce the same streamline trajectory for a given seed
             coordinate. A value of 0 may produces various streamline tracjectories
             for a given seed coordinate.
-        seed_buffer_fraction : float, optional
-            Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-            buffer. A value of 0.5 will use half of the seed buffer then the other half.
-            a way to reduce memory usage.
+        chunk_size : int, optional
+            Number of seeds tracked at once. Lower it to reduce memory usage.
         out_dir : string or Path, optional
            Output directory.
         out_tractogram : string, optional
@@ -421,7 +417,7 @@ class PFTrackingPAMFlow(Workflow):
                 max_angle=max_angle,
                 pmf_threshold=pmf_threshold,
                 nbr_threads=nbr_threads,
-                seed_buffer_fraction=seed_buffer_fraction,
+                chunk_size=chunk_size,
             )
 
             if save_seeds:

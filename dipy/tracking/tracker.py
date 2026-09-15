@@ -7,12 +7,16 @@ from dipy.direction import (
     ClosestPeakDirectionGetter,
     ProbabilisticDirectionGetter,
 )
-from dipy.direction.peaks import peaks_from_positions
 from dipy.direction.pmf import SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
+from dipy.reconst.shm import order_from_ncoef, sh_to_sf
 from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
 from dipy.tracking.simpletracker import (
     prepare_simple_tracker_data,
     simple_sl_generator,
+)
+from dipy.tracking.stopping_criterion import (
+    BinaryStoppingCriterion,
+    ThresholdStoppingCriterion,
 )
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tractogen import generate_tractogram
@@ -112,7 +116,7 @@ def generic_tracking(
     legacy=True,
     max_cross=None,
     nbr_threads=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
     save_seeds=False,
 ):
     affine = affine if affine is not None else np.eye(4)
@@ -170,13 +174,6 @@ def generic_tracking(
                 max_cross=max_cross,
                 peak_values=seed_peak_values,
             )
-        else:
-            peaks_obj = peaks_from_positions(
-                seed_positions, None, None, npeaks=1, affine=affine, pmf_gen=pmf_gen
-            )
-            seed_positions, seed_directions = seeds_directions_pairs(
-                seed_positions, peaks_obj, max_cross=max_cross
-            )
 
     return generate_tractogram(
         seed_positions,
@@ -186,8 +183,9 @@ def generic_tracking(
         pmf_gen,
         affine=affine,
         nbr_threads=nbr_threads,
-        buffer_frac=seed_buffer_fraction,
+        chunk_size=chunk_size,
         save_seeds=save_seeds,
+        max_cross=1 if max_cross is None else max_cross,
     )
 
 
@@ -211,13 +209,13 @@ def probabilistic_tracking(
     legacy=True,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
     return_all=True,
     save_seeds=False,
     use_simple=False,
     simple_backend="cython",
     simple_chunk_size=25000,
-    simple_precision="float32",
+    is_symmetric=True,
 ):
     """Probabilistic tracking algorithm.
 
@@ -265,38 +263,29 @@ def probabilistic_tracking(
         will all produce the same streamline trajectory for a given seed coordinate.
         A value of 0 may produces various streamline tracjectories for a given seed
         coordinate.
-    seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
     save_seeds: bool, optional
         True to return the seeds with the associated streamline.
     use_simple : bool, optional
-        Use the simplified implementation of the probabilistic tracking. Simple trackers
-        assume:
-        (1) the entire SF can be loaded into memory (not SH);
+        Track from every peak of the pmf at each seed (instead of the largest
+        one) and allow the GPU backends. GPU backends assume:
+        (1) the entire SF fits in memory (sf, sh or a pam with odf);
         (2) isotropic voxels;
-        (3) simplified stopping criteria (ie, threshold on a scalar map);
-        (4) fixed (large) max SL length (500 steps by default);
-        (5) generic probabilistic direction getting.
-        Simplified trackers are implemented in CUDA, WebGPU, Metal, and
-        Cython and tend to be faster.
+        (3) a Threshold or Binary stopping criterion.
     simple_backend : str, optional
-        Backend for the simplified implementation: "cython" (CPU, OpenMP),
-        "cuda" (requires ``dipy[cu12]`` or ``dipy[cu13]``), "metal" (Apple
-        Silicon, requires ``dipy[metal]``), "webgpu" (requires
-        ``dipy[webgpu]``), or "auto" to pick the first available of metal,
-        cuda, webgpu, cython.
+        "cython" (CPU, OpenMP; the regular tracker), "cuda" (requires
+        ``dipy[cu12]`` or ``dipy[cu13]``), "metal" (Apple Silicon, requires
+        ``dipy[metal]``), "webgpu" (requires ``dipy[webgpu]``), or "auto" to
+        pick the first available of metal, cuda, webgpu, cython.
     simple_chunk_size : int, optional
-        Number of seeds to process in each chunk when using the simplified implementation.
-        A smaller chunk size will reduce memory usage but may increase processing time.
-    simple_precision: str, optional
-        Precision for the simplified implementation. Can be "float32" or "float64".
-        "float64" is only supported for the Cython backend.
-        Default: "float32"
+        ``chunk_size`` used when ``use_simple`` is True.
+    is_symmetric : bool, optional
+        If False, the pmf is treated as an asymmetric spherical function
+        (no antipodal folding when selecting directions).
 
     Returns
     -------
@@ -315,41 +304,36 @@ def probabilistic_tracking(
         pmf_threshold=pmf_threshold,
         random_seed=random_seed,
         return_all=return_all,
+        is_symmetric=is_symmetric,
     )
 
-    if use_simple:
-        pmf_gen, selected_pmf, _, _ = _init_pmf(
-            sh=sh,
-            pam=pam,
-            sf=sf,
-            sphere=sphere,
-            basis_type=basis_type,
-            legacy=legacy,
-        )
-
-        # Precalculate the pmf field for all voxels and directions
-        # as well as the stop map for all voxels
-        pmf_field = np.zeros(
-            (*selected_pmf["value"].shape[:3], len(sphere.vertices)), dtype=np.float64
-        )
-        stop_map = np.zeros(selected_pmf["value"].shape[:3], dtype=np.float64)
-        for ii in range(selected_pmf["value"].shape[0]):
-            for jj in range(selected_pmf["value"].shape[1]):
-                for kk in range(selected_pmf["value"].shape[2]):
-                    idx_ = np.array([ii, jj, kk], dtype="float64")
-                    pmf_field[ii, jj, kk] = pmf_gen.get_pmf(idx_)
-                    stop_map[ii, jj, kk] = sc.check_point(idx_)
-
-        # move seed_positions to voxel space
-        if affine is not None:
-            inv_affine = np.linalg.inv(affine)
-            seed_positions = np.dot(seed_positions, inv_affine[:3, :3].T)
-            seed_positions += inv_affine[:3, 3]
+    if use_simple and simple_backend != "cython":
+        sphere = sphere if sphere is not None else default_sphere
+        if sf is not None:
+            pmf_field = sf
+        elif sh is not None:
+            pmf_field = sh_to_sf(
+                sh,
+                sphere,
+                sh_order_max=order_from_ncoef(sh.shape[-1]),
+                basis_type=basis_type,
+                legacy=legacy,
+            )
+        elif pam is not None and pam.odf is not None:
+            pmf_field = pam.odf
+        else:
+            raise ValueError("GPU simple backends need sf, sh or a pam with odf.")
+        if isinstance(sc, ThresholdStoppingCriterion):
+            stop_map, stop_threshold = np.asarray(sc.metric_map), sc.threshold
+        elif isinstance(sc, BinaryStoppingCriterion):
+            stop_map, stop_threshold = np.asarray(sc.mask), 0.5
+        else:
+            raise ValueError("GPU simple backends need a Threshold or Binary sc.")
 
         tracker_data = prepare_simple_tracker_data(
             pmf=pmf_field,
             stop_map=stop_map,
-            stop_threshold=0,
+            stop_threshold=stop_threshold,
             sphere=sphere,
             max_angle=params.max_angle,
             step_size=params.step_size,
@@ -358,38 +342,36 @@ def probabilistic_tracking(
             pmf_threshold=pmf_threshold,
             random_seed=random_seed,
             chunk_size=simple_chunk_size,
-            precision=simple_precision,
+            relative_peak_thresh=0.5,
+            min_separation_angle=np.deg2rad(25),
         )
-
-        sl_generator = simple_sl_generator(
+        return simple_sl_generator(
             tracker_data,
             seed_positions,
             simple_backend=simple_backend,
             seed_directions=seed_directions,
             nbr_threads=nbr_threads,
+            save_seeds=save_seeds,
+            affine=affine,
         )
 
-        if save_seeds:
-            return sl_generator, seed_positions
-        else:
-            return sl_generator
-    else:
-        return generic_tracking(
-            seed_positions,
-            seed_directions,
-            sc,
-            params,
-            affine=affine,
-            sh=sh,
-            pam=pam,
-            sf=sf,
-            sphere=sphere,
-            basis_type=basis_type,
-            legacy=legacy,
-            nbr_threads=nbr_threads,
-            seed_buffer_fraction=seed_buffer_fraction,
-            save_seeds=save_seeds,
-        )
+    return generic_tracking(
+        seed_positions,
+        seed_directions,
+        sc,
+        params,
+        affine=affine,
+        sh=sh,
+        pam=pam,
+        sf=sf,
+        sphere=sphere,
+        basis_type=basis_type,
+        legacy=legacy,
+        nbr_threads=nbr_threads,
+        chunk_size=simple_chunk_size if use_simple else chunk_size,
+        save_seeds=save_seeds,
+        max_cross=-1 if use_simple else None,
+    )
 
 
 def deterministic_tracking(
@@ -412,7 +394,7 @@ def deterministic_tracking(
     legacy=True,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
     return_all=True,
     save_seeds=False,
 ):
@@ -462,10 +444,8 @@ def deterministic_tracking(
         will all produce the same streamline trajectory for a given seed coordinate.
         A value of 0 may produces various streamline tracjectories for a given seed
         coordinate.
-    seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -503,7 +483,7 @@ def deterministic_tracking(
         basis_type=basis_type,
         legacy=legacy,
         nbr_threads=nbr_threads,
-        seed_buffer_fraction=seed_buffer_fraction,
+        chunk_size=chunk_size,
         save_seeds=save_seeds,
     )
 
@@ -533,7 +513,7 @@ def ptt_tracking(
     legacy=True,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
     return_all=True,
     save_seeds=False,
 ):
@@ -593,10 +573,8 @@ def ptt_tracking(
         will all produce the same streamline trajectory for a given seed coordinate.
         A value of 0 may produces various streamline tracjectories for a given seed
         coordinate.
-    seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -638,7 +616,7 @@ def ptt_tracking(
         basis_type=basis_type,
         legacy=legacy,
         nbr_threads=nbr_threads,
-        seed_buffer_fraction=seed_buffer_fraction,
+        chunk_size=chunk_size,
         save_seeds=save_seeds,
     )
 
@@ -662,7 +640,7 @@ def closestpeak_tracking(
     legacy=True,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
     return_all=True,
     save_seeds=False,
 ):
@@ -710,10 +688,8 @@ def closestpeak_tracking(
         will all produce the same streamline trajectory for a given seed coordinate.
         A value of 0 may produces various streamline tracjectories for a given seed
         coordinate.
-    seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -783,7 +759,7 @@ def bootstrap_tracking(
     legacy=True,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
     return_all=True,
     save_seeds=False,
 ):
@@ -833,10 +809,8 @@ def bootstrap_tracking(
         will all produce the same streamline trajectory for a given seed coordinate.
         A value of 0 may produces various streamline tracjectories for a given seed
         coordinate.
-    seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -898,7 +872,7 @@ def eudx_tracking(
     legacy=True,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
     return_all=True,
     save_seeds=False,
 ):
@@ -949,10 +923,8 @@ def eudx_tracking(
         will all produce the same streamline trajectory for a given seed coordinate.
         A value of 0 may produces various streamline tracjectories for a given seed
         coordinate.
-    seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -997,7 +969,7 @@ def eudx_tracking(
         legacy=legacy,
         max_cross=max_cross,
         nbr_threads=nbr_threads,
-        seed_buffer_fraction=seed_buffer_fraction,
+        chunk_size=chunk_size,
         save_seeds=save_seeds,
     )
 
@@ -1023,7 +995,7 @@ def pft_tracking(
     legacy=True,
     nbr_threads=0,
     random_seed=0,
-    seed_buffer_fraction=1.0,
+    chunk_size=25000,
     return_all=True,
     pft_back_tracking_dist=2,
     pft_front_tracking_dist=1,
@@ -1080,10 +1052,8 @@ def pft_tracking(
         will all produce the same streamline trajectory for a given seed coordinate.
         A value of 0 may produces various streamline tracjectories for a given seed
         coordinate.
-    seed_buffer_fraction: float, optional
-        Fraction of the seed buffer to use. A value of 1.0 will use the entire seed
-        buffer. A value of 0.5 will use half of the seed buffer then the other half.
-        a way to reduce memory usage.
+    chunk_size: int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.

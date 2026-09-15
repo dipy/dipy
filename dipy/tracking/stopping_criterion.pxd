@@ -19,13 +19,13 @@ cdef class StoppingCriterion:
 
 
 cdef class BinaryStoppingCriterion(StoppingCriterion):
-    cdef:
+    cdef readonly:
         unsigned char [:, :, :] mask
     pass
 
 
 cdef class ThresholdStoppingCriterion(StoppingCriterion):
-    cdef:
+    cdef readonly:
         double threshold
         double[:, :, :] metric_map
     pass
