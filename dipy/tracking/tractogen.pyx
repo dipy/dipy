@@ -20,8 +20,8 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                ENDPOINT,
                                                OUTSIDEIMAGE,
                                                INVALIDPOINT,
-                                               VALIDSTREAMLIME,
-                                               INVALIDSTREAMLIME)
+                                               VALIDSTREAMLINE,
+                                               INVALIDSTREAMLINE)
 from dipy.tracking.tracker_parameters cimport (TrackerParameters,
                                                TrackerStatus)
 
@@ -124,7 +124,7 @@ def generate_tractogram(double[:, ::1] seed_positions,
         for i in range(nsl):
             i0 = i * step + stream_idx[i, 0]
             i1 = i * step + stream_idx[i, 1] + 1
-            if ((status[i] == VALIDSTREAMLIME or params.return_all)
+            if ((status[i] == VALIDSTREAMLINE or params.return_all)
                     and params.min_nbr_pts <= i1 - i0 <= params.max_nbr_pts):
                 track = np.dot(np.asarray(sline[i0:i1]), lin_T) + offset
                 if save_seeds:
@@ -337,7 +337,7 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     # the input direction is invalid
     voxdir_norm = fast_numpy.norm(voxdir)
     if voxdir_norm < 0.99 or voxdir_norm > 1.01:
-        return INVALIDSTREAMLIME
+        return INVALIDSTREAMLINE
 
     # forward tracking. stream_data also serves as pmf scratch (>= len_pmf)
     stream_data = <double*> malloc(n_data * sizeof(double))
@@ -406,8 +406,8 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         (status_backward == ENDPOINT or status_backward == OUTSIDEIMAGE)
         and (status_forward == ENDPOINT or status_forward == OUTSIDEIMAGE)
     ):
-        return VALIDSTREAMLIME
-    return INVALIDSTREAMLIME
+        return VALIDSTREAMLINE
+    return INVALIDSTREAMLINE
 
 
 cdef void prepare_pmf(double* pmf,
