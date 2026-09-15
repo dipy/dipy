@@ -6,15 +6,16 @@ from dipy.tracking.tracker_parameters cimport TrackerParameters
 
 
 cdef void generate_tractogram_c(
-    double[:, ::1] seed_positions,
-    double[:, ::1] seed_directions,
+    double[:, ::1] seeds,
+    double[:, ::1] directions,
+    cnp.npy_intp[::1] sl_seed,
     int nbr_threads,
     StoppingCriterion sc,
     TrackerParameters params,
     PmfGen pmf_gen,
-    double** streamlines,
-    int* length,
-    StreamlineStatus* status,
+    double[:, ::1] sline,
+    int[:, ::1] stream_idx,
+    int[::1] status,
 )
 
 
@@ -31,4 +32,9 @@ cdef StreamlineStatus generate_local_streamline(
 
 cdef void prepare_pmf(
     double* pmf, double* point, PmfGen pmf_gen, double pmf_threshold, int pmf_len
+) noexcept nogil
+
+
+cdef void threshold_pmf(
+    double* pmf, int pmf_len, double pmf_threshold
 ) noexcept nogil

@@ -312,10 +312,12 @@ cdef int trilinear_interpolate4d_c(floating[:, :, :, :] data,
 
     """
     cdef:
-        cnp.npy_intp flr, N
-        double w, rem
+        cnp.npy_intp flr, N, L, s, i, j, k
+        double rem
         cnp.npy_intp index[3][2]
         double weight[3][2]
+        double w[8]
+        const floating* c[8]
 
     for i in range(3):
         if point[i] < -.5 or point[i] >= (data.shape[i] - .5):
@@ -329,17 +331,20 @@ cdef int trilinear_interpolate4d_c(floating[:, :, :, :] data,
         weight[i][0] = 1 - rem
         weight[i][1] = rem
 
-    N = data.shape[3]
-    for i in range(N):
-        result[i] = 0
-
     for i in range(2):
         for j in range(2):
             for k in range(2):
-                w = weight[0][i] * weight[1][j] * weight[2][k]
-                for L in range(N):
-                    result[L] += w * data[index[0][i], index[1][j],
-                                          index[2][k], L]
+                w[4 * i + 2 * j + k] = weight[0][i] * weight[1][j] * weight[2][k]
+                c[4 * i + 2 * j + k] = &data[index[0][i], index[1][j],
+                                             index[2][k], 0]
+
+    N = data.shape[3]
+    s = data.strides[3] // sizeof(floating)
+    for L in range(N):
+        result[L] = (w[0] * c[0][L * s] + w[1] * c[1][L * s]
+                     + w[2] * c[2][L * s] + w[3] * c[3][L * s]
+                     + w[4] * c[4][L * s] + w[5] * c[5][L * s]
+                     + w[6] * c[6][L * s] + w[7] * c[7][L * s])
     return 0
 
 
