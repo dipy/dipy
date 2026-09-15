@@ -274,16 +274,12 @@ class CorrelationTensorModel(ReconstModel):
         data_thres = np.maximum(data, self.min_signal)
 
         if self.fit_method is nlls_fit_tensor:
-            result = self.fit_method(
+            params, _ = self.fit_method(
                 self.design_matrix,
                 data_thres,
                 *self.args,
                 **self.kwargs,
             )
-            if isinstance(result, tuple):
-                params = result[0]
-            else: 
-                params = result
         else:
             params = self.fit_method(
                 self.design_matrix,
