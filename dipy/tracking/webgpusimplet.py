@@ -40,7 +40,7 @@ def _div_up(a, b):
 
 def _data_buffer(device, arr, *, label=""):
     return device.create_buffer_with_data(
-        data=np.ascontiguousarray(arr).tobytes(),
+        data=np.asarray(arr, order="C").tobytes(),
         usage="STORAGE | COPY_SRC",
         label=label,
     )

@@ -7,8 +7,9 @@ import numpy as np
 from dipy.core.sphere import HemiSphere
 from dipy.data import default_sphere
 from dipy.direction.pmf import SimplePmfGen
-from dipy.tracking._utils import _gather_chunk, _iter_chunk
-from dipy.tracking.tractogen import seed_peaks
+from dipy.tracking._utils import _iter_chunk
+from dipy.tracking.tractogen import compact_chunk, seed_peaks
+from dipy.utils.omp import determine_num_threads
 
 logger = logging.getLogger("dipy")
 
@@ -86,6 +87,7 @@ def prepare_simple_tracker_data(
     random_seed=0,
     chunk_size=25000,
     n_procs=1,
+    is_symmetric=None,
 ):
     """
     Prepare a simple tracker. Simple trackers assume:
@@ -132,12 +134,18 @@ def prepare_simple_tracker_data(
         Number of devices to use. Must be 1 for the Metal and WebGPU
         backends; for CUDA this is the number of GPUs each chunk is split
         across.
+    is_symmetric : bool, optional
+        Whether the PMF is a symmetric spherical function (antipodal
+        directions folded together when selecting directions). If None,
+        the PMF is treated as symmetric when ``sphere`` is a HemiSphere.
     """
     if sphere is None:
         sphere = default_sphere
+    if is_symmetric is None:
+        is_symmetric = isinstance(sphere, HemiSphere)
 
-    dataf = np.ascontiguousarray(pmf, dtype=float)
-    sphere_vertices = np.ascontiguousarray(sphere.vertices, dtype=float)
+    dataf = np.asarray(pmf, dtype=float, order="C")
+    sphere_vertices = np.asarray(sphere.vertices, dtype=float, order="C")
 
     if sphere_vertices.shape[0] != dataf.shape[3]:
         raise ValueError(
@@ -149,12 +157,10 @@ def prepare_simple_tracker_data(
 
     return _SimpleTrackerData(
         dataf=dataf,
-        metric_map=np.ascontiguousarray(stop_map, dtype=float),
+        metric_map=np.asarray(stop_map, dtype=float, order="C"),
         sphere=sphere,
         sphere_vertices=sphere_vertices,
-        # This assumes that if you pass a sphere which is not
-        # a HemiSphere, then it should be treated as asymmetric.
-        sphere_symm=isinstance(sphere, HemiSphere),
+        sphere_symm=bool(is_symmetric),
         dimx=dimx,
         dimy=dimy,
         dimz=dimz,
@@ -271,7 +277,10 @@ def simple_sl_generator(
         sphere_vertices=std.sphere_vertices.astype(np.float32),
     )
     factory = getattr(importlib.import_module(spec.module), spec.factory)
-    gen_streamlines, close = factory(std)
+    if spec.multi_device:
+        gen_streamlines, close = factory(std, ngpus=std.n_procs)
+    else:
+        gen_streamlines, close = factory(std)
     inv_affine = np.linalg.inv(affine)
     return _sl_generator(
         std,
@@ -311,14 +320,16 @@ def _sl_generator(
     """
     step = std.max_sline_len * 2
     nchunks = (seeds.shape[0] + std.chunk_size - 1) // std.chunk_size
-    lin_T = affine[:3, :3].T.copy()
-    offset = affine[:3, 3].copy()
+    lin_T = np.asarray(affine[:3, :3].T, dtype=float, order="C")
+    offset = np.asarray(affine[:3, 3], dtype=float, order="C")
+    if nbr_threads <= 0:
+        nbr_threads = determine_num_threads(None)
 
     try:
         for idx in range(nchunks):
             lo = idx * std.chunk_size
-            chunk = np.ascontiguousarray(
-                seeds[lo : lo + std.chunk_size], dtype=np.float32
+            chunk = np.asarray(
+                seeds[lo : lo + std.chunk_size], dtype=np.float32, order="C"
             )
             if seed_directions is not None:
                 sline_offsets = np.arange(len(chunk) + 1, dtype=np.int32)
@@ -335,7 +346,7 @@ def _sl_generator(
                 )
                 sline_offsets = sline_offsets.astype(np.int32)
             sline, sline_len, n_slines = gen_streamlines(
-                chunk, sline_offsets, np.ascontiguousarray(dirs, dtype=np.float32)
+                chunk, sline_offsets, np.asarray(dirs, dtype=np.float32, order="C")
             )
             sl_seed = np.repeat(np.arange(len(chunk)), np.diff(sline_offsets))
             lengths = np.asarray(sline_len[:n_slines])
@@ -343,7 +354,18 @@ def _sl_generator(
                 (lengths >= std.min_steps) & (lengths <= std.max_steps)
             )
             lengths = lengths[keep]
-            points = _gather_chunk(sline, keep * step, lengths, lin_T, offset)
+            out_offsets = np.zeros(len(keep) + 1, dtype=np.intp)
+            np.cumsum(lengths, out=out_offsets[1:])
+            points = np.empty((out_offsets[-1], 3))
+            compact_chunk(
+                sline,
+                (keep * step).astype(np.intp),
+                out_offsets,
+                points,
+                lin_T,
+                offset,
+                nbr_threads,
+            )
             seeds_out = None
             if save_seeds:
                 seeds_out = np.dot(chunk[sl_seed[keep]], lin_T) + offset

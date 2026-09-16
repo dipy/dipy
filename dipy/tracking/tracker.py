@@ -20,17 +20,26 @@ from dipy.tracking.tractogen import generate_tractogram
 from dipy.tracking.utils import seeds_directions_pairs
 
 
-def _init_pmf(
+def generic_tracking(
+    seed_positions,
+    seed_directions,
+    sc,
+    params,
     *,
+    affine=None,
     sh=None,
     pam=None,
     sf=None,
     sphere=None,
     basis_type=None,
     legacy=True,
+    max_cross=None,
+    nbr_threads=0,
+    chunk_size=25000,
+    chunked=False,
+    save_seeds=False,
 ):
-    peak_data = None
-    odf_vertices = None
+    affine = affine if affine is not None else np.eye(4)
 
     pmf_type = [
         {"name": "sh", "value": sh, "cls": SHCoeffPmfGen},
@@ -94,38 +103,6 @@ def _init_pmf(
         pmf_gen = selected_pmf["cls"](
             np.asarray(selected_pmf["value"], dtype=float), sphere
         )
-
-    return pmf_gen, selected_pmf, peak_data, odf_vertices
-
-
-def generic_tracking(
-    seed_positions,
-    seed_directions,
-    sc,
-    params,
-    *,
-    affine=None,
-    sh=None,
-    pam=None,
-    sf=None,
-    sphere=None,
-    basis_type=None,
-    legacy=True,
-    max_cross=None,
-    nbr_threads=0,
-    chunk_size=25000,
-    chunked=False,
-    save_seeds=False,
-):
-    affine = affine if affine is not None else np.eye(4)
-    pmf_gen, selected_pmf, peak_data, odf_vertices = _init_pmf(
-        sh=sh,
-        pam=pam,
-        sf=sf,
-        sphere=sphere,
-        basis_type=basis_type,
-        legacy=legacy,
-    )
 
     if seed_directions is not None:
         if not isinstance(seed_directions, (np.ndarray, list)):
@@ -347,6 +324,7 @@ def probabilistic_tracking(
             relative_peak_thresh=0.5,
             min_separation_angle=np.deg2rad(25),
             max_cross=1 if max_cross is None else max_cross,
+            is_symmetric=params.is_symmetric,
         )
         return simple_sl_generator(
             tracker_data,

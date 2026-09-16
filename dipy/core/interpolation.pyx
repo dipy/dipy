@@ -405,7 +405,7 @@ def trilinear_interpolate4d(floating[:, :, :, :] data,
         msg = "out array must have same size as the last dimension of data."
         raise ValueError(msg)
 
-    cdef floating[:, :, :, ::1] cdata = np.ascontiguousarray(data)
+    cdef floating[:, :, :, ::1] cdata = np.asarray(data, order="C")
     err = trilinear_interpolate4d_c(cdata, &point[0], &out[0])
 
     if err == 0:
