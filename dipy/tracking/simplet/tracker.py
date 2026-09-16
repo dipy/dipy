@@ -87,11 +87,13 @@ def prepare_simple_tracker_data(
 ):
     """
     Prepare a simple tracker. Simple trackers assume:
-        the entire SF can be loaded into memory (not SH)
-        isotropic voxels
-        simplified stopping criteria (ie, threshold on a scalar map)
-        fixed (large) max SL length
-        generic probabilistic direction getting
+
+    - the entire SF can be loaded into memory (not SH)
+    - isotropic voxels
+    - simplified stopping criteria (ie, threshold on a scalar map)
+    - fixed (large) max SL length
+    - generic probabilistic direction getting
+
     Simplified trackers are implemented in CUDA, WebGPU and Metal. On the
     CPU, use :func:`dipy.tracking.tracker.probabilistic_tracking`.
 

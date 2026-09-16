@@ -31,7 +31,6 @@ def track(method, **kwargs):
 
     # seeds position and initial directions
     mask = nib.load(fnames[25]).get_fdata()
-    sc = BinaryStoppingCriterion(mask)
     affine = nib.load(fnames[25]).affine
     seed_mask = np.ones(mask.shape)
     seeds = random_seeds_from_mask(
@@ -43,6 +42,11 @@ def track(method, **kwargs):
     backend = kwargs.get("backend", "cpu")
     use_sf = kwargs.get("use_sf", False)
     use_directions = kwargs.get("use_dirs", False)
+
+    if backend == "cpu":
+        sc = BinaryStoppingCriterion(mask)
+    else:
+        sc = ThresholdStoppingCriterion(mask, 0.5)
 
     # test return_all=True
     params = {
