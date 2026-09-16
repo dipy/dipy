@@ -122,8 +122,9 @@ def generate_tractogram(double[:, ::1] seed_positions,
         n = min(chunk_size, nseed - start)
         seeds = seed_positions[start:start + n]
         if seed_directions is None:
-            offsets, dirs = seed_peaks(seeds, pmf_gen, params, nbr_threads,
-                                       max_cross, relative_peak_threshold,
+            offsets, dirs = seed_peaks(seeds, pmf_gen, params.is_symmetric,
+                                       nbr_threads, max_cross,
+                                       relative_peak_threshold,
                                        min_separation_angle)
         else:
             offsets = np.arange(n + 1)
@@ -192,7 +193,7 @@ cdef void compact_chunk(double[:, ::1] sline,
 
 def seed_peaks(double[:, ::1] seeds,
                PmfGen pmf_gen,
-               TrackerParameters params,
+               bint is_symmetric,
                int nbr_threads=0,
                int max_cross=-1,
                double relative_peak_threshold=0.5,
@@ -233,7 +234,7 @@ def seed_peaks(double[:, ::1] seeds,
     for i in prange(n, nogil=True, num_threads=nbr_threads, schedule="dynamic",
                     chunksize=64):
         t = threadid()
-        counts[i] = _peaks_at(&seeds[i, 0], pmf_gen, verts, edges, params,
+        counts[i] = _peaks_at(&seeds[i, 0], pmf_gen, verts, edges, is_symmetric,
                               relative_peak_threshold, min_separation_angle,
                               cap, pmf[t], out_dirs[t], values[t], indices[t],
                               uniq[t], mapping[t], index[t])
@@ -244,7 +245,7 @@ def seed_peaks(double[:, ::1] seeds,
     for i in prange(n, nogil=True, num_threads=nbr_threads, schedule="dynamic",
                     chunksize=64):
         t = threadid()
-        k = _peaks_at(&seeds[i, 0], pmf_gen, verts, edges, params,
+        k = _peaks_at(&seeds[i, 0], pmf_gen, verts, edges, is_symmetric,
                       relative_peak_threshold, min_separation_angle, cap,
                       pmf[t], out_dirs[t], values[t], indices[t], uniq[t],
                       mapping[t], index[t])
@@ -259,7 +260,7 @@ cdef cnp.npy_intp _peaks_at(double* seed,
                             PmfGen pmf_gen,
                             double[:, ::1] verts,
                             cnp.uint16_t[:, ::1] edges,
-                            TrackerParameters params,
+                            bint is_symmetric,
                             double relative_peak_threshold,
                             double min_separation_angle,
                             cnp.npy_intp cap,
@@ -273,7 +274,7 @@ cdef cnp.npy_intp _peaks_at(double* seed,
     cdef cnp.npy_intp k
     pmf_gen.get_pmf_c(seed, &pmf[0])
     k = peak_directions_c(pmf, verts, edges, relative_peak_threshold,
-                          min_separation_angle, params.is_symmetric, out_dirs,
+                          min_separation_angle, is_symmetric, out_dirs,
                           values, indices, uniq, mapping, index)
     return k if k < cap else cap
 
