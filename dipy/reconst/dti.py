@@ -24,8 +24,7 @@ from dipy.utils.parallel import paramap
 
 
 def lower_triangular_to_cholesky(tensor_elements):
-    """Performs Cholesky decomposition of the diffusion tensor
-    """
+    """Performs Cholesky decomposition of the diffusion tensor"""
     R0 = np.sqrt(tensor_elements[0])
     R3 = tensor_elements[1] / R0
     R1 = np.sqrt(tensor_elements[2] - R3**2)
@@ -37,8 +36,7 @@ def lower_triangular_to_cholesky(tensor_elements):
 
 
 def cholesky_to_lower_triangular(R):
-    """Convert Cholesky decomposition elements to the diffusion tensor elements
-    """
+    """Convert Cholesky decomposition elements to the diffusion tensor elements"""
     Dxx = R[0] ** 2
     Dxy = R[0] * R[3]
     Dyy = R[1] ** 2 + R[3] ** 2
@@ -1809,7 +1807,7 @@ def nlls_fit_tensor(
     return_lower_triangular=False,
     return_leverages=False,
     init_params=None,
-    cholesky=False
+    cholesky=False,
 ):
     r"""
     Fit the cumulant expansion params (e.g. DTI, DKI) using non-linear
@@ -1923,7 +1921,6 @@ def nlls_fit_tensor(
 
     # Start processing voxels
     for vox in range(flat_data.shape[0]):
-
         # Check if voxel only contains zeros
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")

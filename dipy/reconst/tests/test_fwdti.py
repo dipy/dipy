@@ -8,20 +8,18 @@ from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import (
+    cholesky_to_lower_triangular,
     decompose_tensor,
     fractional_anisotropy,
     from_lower_triangular,
     lower_triangular_to_cholesky,
-    cholesky_to_lower_triangular
 )
-
 import dipy.reconst.fwdti as fwdti
 from dipy.reconst.fwdti import (
     fwdti_prediction,
     nls_fit_tensor,
     wls_fit_tensor,
 )
-
 from dipy.sims.voxel import (
     all_tensor_evecs,
     multi_tensor,
