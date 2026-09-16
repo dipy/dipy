@@ -77,14 +77,6 @@ def _to_voxel_coordinates(streamline, lin_T, offset):
     return inds.astype(np.intp)
 
 
-def _gather_chunk(buffer, starts, lengths, lin_T, offset):
-    """Concatenate streamlines stored at ``buffer[starts[i]:starts[i]+lengths[i]]``
-    into one ``(sum(lengths), 3)`` array, mapped through ``lin_T``/``offset``."""
-    offsets = np.cumsum(lengths) - lengths
-    rows = np.arange(int(lengths.sum())) + np.repeat(starts - offsets, lengths)
-    return np.dot(np.asarray(buffer)[rows], lin_T) + offset
-
-
 def _iter_chunk(points, lengths, seeds):
     """Yield the streamlines (and seeds) of a chunk one at a time."""
     ends = np.cumsum(lengths)
