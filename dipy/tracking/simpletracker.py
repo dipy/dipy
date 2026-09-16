@@ -8,7 +8,6 @@ from dipy.core.sphere import HemiSphere
 from dipy.data import default_sphere
 from dipy.direction.pmf import SimplePmfGen
 from dipy.tracking._utils import _gather_chunk, _iter_chunk
-from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tractogen import seed_peaks
 
 logger = logging.getLogger("dipy")
@@ -30,6 +29,7 @@ class _SimpleTrackerData:
     step_size: float
     relative_peak_thresh: float
     min_separation_angle: float
+    max_cross: int
     pmf_threshold: float
     min_steps: int
     max_steps: int
@@ -81,6 +81,7 @@ def prepare_simple_tracker_data(
     max_steps=500,
     relative_peak_thresh=0.25,
     min_separation_angle=0.785398,  # 45 degrees in radians
+    max_cross=1,
     pmf_threshold=0.1,
     random_seed=0,
     chunk_size=25000,
@@ -119,6 +120,8 @@ def prepare_simple_tracker_data(
         Relative peak threshold for direction selection.
     min_separation_angle : float
         Minimum separation angle (radians) between peaks.
+    max_cross : int
+        Maximum number of peaks tracked per seed (all peaks if <= 0).
     pmf_threshold : float
         Minimum PMF value (relative to max) to consider a valid direction.
     random_seed : int, optional
@@ -161,6 +164,7 @@ def prepare_simple_tracker_data(
         step_size=float(step_size),
         relative_peak_thresh=float(relative_peak_thresh),
         min_separation_angle=float(min_separation_angle),
+        max_cross=int(max_cross),
         pmf_threshold=float(pmf_threshold),
         min_steps=min_steps,
         max_steps=max_steps,
@@ -169,44 +173,6 @@ def prepare_simple_tracker_data(
         chunk_size=int(chunk_size),
         n_procs=int(n_procs),
     )
-
-
-def _tracking_objects(std):
-    """PmfGen and TrackerParameters matching ``std`` (for seed peaks)."""
-    pmf_gen = SimplePmfGen(std.dataf, std.sphere)
-    params = generate_tracking_parameters(
-        "prob",
-        max_len=std.max_steps * std.step_size,
-        min_len=std.min_steps * std.step_size,
-        step_size=std.step_size,
-        voxel_size=np.ones(3),
-        max_angle=np.rad2deg(std.max_angle),
-        pmf_threshold=std.pmf_threshold,
-        random_seed=std.random_seed,
-        is_symmetric=std.sphere_symm,
-    )
-    return pmf_gen, params
-
-
-def _prob_seed_directions(std, seeds, pmf_gen, params, *, nbr_threads=0):
-    """
-    Initial tracking directions of a chunk of seeds, in the layout expected
-    by the GPU kernels: ``dimt`` direction slots per seed.
-    """
-    offsets, dirs = seed_peaks(
-        seeds,
-        pmf_gen,
-        params,
-        nbr_threads,
-        -1,
-        std.relative_peak_thresh,
-        np.rad2deg(std.min_separation_angle),
-    )
-    nseed = len(seeds)
-    peak_dirs = np.zeros((nseed * std.dimt, 3), dtype=np.float32)
-    seed_idx = np.repeat(np.arange(nseed), np.diff(offsets))
-    peak_dirs[seed_idx * std.dimt + np.arange(len(dirs)) - offsets[seed_idx]] = dirs
-    return peak_dirs, offsets.astype(np.int32)
 
 
 def _get_simple_backend_spec(simple_backend):
@@ -296,7 +262,7 @@ def simple_sl_generator(
         )
 
     affine = np.eye(4) if affine is None else affine
-    pmf_gen, params = _tracking_objects(std)
+    pmf_gen = SimplePmfGen(std.dataf, std.sphere)
     # GPU kernels are float32
     std = replace(
         std,
@@ -312,7 +278,6 @@ def simple_sl_generator(
         np.dot(seeds, inv_affine[:3, :3].T) + inv_affine[:3, 3],
         gen_streamlines,
         pmf_gen,
-        params,
         affine,
         close=close,
         seed_directions=seed_directions,
@@ -327,7 +292,6 @@ def _sl_generator(
     seeds,
     gen_streamlines,
     pmf_gen,
-    params,
     affine,
     *,
     seed_directions=None,
@@ -340,9 +304,10 @@ def _sl_generator(
     Yield streamlines chunk by chunk from a GPU backend function. ``seeds``
     are in voxel space; output is mapped through ``affine``.
 
-    ``gen_streamlines(seeds, sline_offsets, peak_dirs)`` must return
-    ``(sline, sline_len, n_slines)``; ``close``, if given, is called when
-    the generator is exhausted or closed.
+    ``gen_streamlines(seeds, sline_offsets, dirs)`` must return
+    ``(sline, sline_len, n_slines)``, where ``dirs[sline_offsets[i]:
+    sline_offsets[i + 1]]`` are the initial directions of seed ``i``;
+    ``close``, if given, is called when the generator is exhausted or closed.
     """
     step = std.max_sline_len * 2
     nchunks = (seeds.shape[0] + std.chunk_size - 1) // std.chunk_size
@@ -356,20 +321,21 @@ def _sl_generator(
                 seeds[lo : lo + std.chunk_size], dtype=np.float32
             )
             if seed_directions is not None:
-                nseed = len(chunk)
-                peak_dirs = np.zeros((nseed * std.dimt, 3), dtype=np.float32)
-                peak_dirs[:: std.dimt] = seed_directions[lo : lo + nseed]
-                sline_offsets = np.arange(nseed + 1, dtype=np.int32)
+                sline_offsets = np.arange(len(chunk) + 1, dtype=np.int32)
+                dirs = seed_directions[lo : lo + len(chunk)]
             else:
-                peak_dirs, sline_offsets = _prob_seed_directions(
-                    std,
+                sline_offsets, dirs = seed_peaks(
                     np.asarray(chunk, dtype=float),
                     pmf_gen,
-                    params,
-                    nbr_threads=nbr_threads,
+                    std.sphere_symm,
+                    nbr_threads,
+                    std.max_cross,
+                    std.relative_peak_thresh,
+                    np.rad2deg(std.min_separation_angle),
                 )
+                sline_offsets = sline_offsets.astype(np.int32)
             sline, sline_len, n_slines = gen_streamlines(
-                chunk, sline_offsets, peak_dirs
+                chunk, sline_offsets, np.ascontiguousarray(dirs, dtype=np.float32)
             )
             sl_seed = np.repeat(np.arange(len(chunk)), np.diff(sline_offsets))
             lengths = np.asarray(sline_len[:n_slines])

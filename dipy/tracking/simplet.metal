@@ -388,7 +388,7 @@ inline int tracker_prob(thread PhiloxState& st,
 //
 // slineOutOff : (nseed+1,) exclusive prefix sum of the number of
 //               directions per seed (from get_num_streamlines_prob)
-// shDir0      : (nseed*dimt,) initial directions, dimt per seed
+// shDir0      : (sum(ndir),) initial direction of each streamline
 // sline       : (sum(ndir) * max_sline_len * 2,) output points
 
 kernel void genStreamlinesProb_k(
@@ -424,7 +424,7 @@ kernel void genStreamlinesProb_k(
     int slineOff = slineOutOff[slid];
 
     for (int i = 0; i < ndir; i++) {
-        const float3 first_step = load_f3(shDir0, slid * uint(params.dimt) + uint(i));
+        const float3 first_step = load_f3(shDir0, uint(slineOff));
         device packed_float3* currSline = sline + slineOff * params.max_sline_len * 2;
 
         if (tidx == 0) {

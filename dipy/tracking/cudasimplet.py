@@ -282,7 +282,7 @@ def cuda_gen_streamlines_prob(simple_tracker_data, *, ngpus=1):
                 (dataf_d, tex, verts_d),
                 seeds[a:b],
                 offs,
-                peak_dirs[a * std.dimt : b * std.dimt],
+                peak_dirs[sl_a:sl_b],
                 sline_len[sl_a:sl_b],
                 sline[sl_a * step : sl_b * step],
             )

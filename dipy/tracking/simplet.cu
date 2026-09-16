@@ -309,7 +309,7 @@ __device__ int tracker_d(curandStatePhilox4_32_10_t *st,
 //
 // slineOutOff : (nseed+1,) exclusive prefix sum of the number of
 //               directions per seed (from get_num_streamlines_prob)
-// shDir0      : (nseed*DIMT,) initial directions, DIMT per seed
+// shDir0      : (sum(ndir),) initial direction of each streamline
 // sline       : (sum(ndir) * MAX_SLINE_LEN * 2,) output points
 
 template<int BDIM_X, int BDIM_Y>
@@ -342,7 +342,7 @@ __global__ void genStreamlinesProb_k(const int nseed,
         int slineOff = slineOutOff[slid];
 
         for(int i = 0; i < ndir; i++) {
-                const REAL3 first_step = shDir0[slid*DIMT + i];
+                const REAL3 first_step = shDir0[slineOff];
                 REAL3 *__restrict__ currSline = sline + slineOff*MAX_SLINE_LEN*2;
 
                 if (tidx == 0) {
