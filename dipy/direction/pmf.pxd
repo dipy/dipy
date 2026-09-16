@@ -27,8 +27,8 @@ cdef class SimplePmfGen(PmfGen):
 
 cdef class SHCoeffPmfGen(PmfGen):
     cdef:
-        double[:, :] B
-        double[:] coeff
+        double[:, ::1] B
+        int nb_coeff
     pass
 
 

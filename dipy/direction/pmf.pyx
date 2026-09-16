@@ -15,9 +15,16 @@ from dipy.core.interpolation cimport (
     trilinear_interpolate4d_c,
 )
 from libc.stdlib cimport malloc, free
+from scipy.linalg.cython_blas cimport dgemv
 
 cdef extern from "stdlib.h" nogil:
     void *memset(void *ptr, int value, size_t num)
+
+# SH coefficient vectors up to this size are interpolated
+# on the stack instead of malloc
+# using cdef to make this compile-time constant
+cdef enum:
+    _SH_STACK_COEFF = 256
 
 
 cdef class PmfGen:
@@ -175,31 +182,37 @@ cdef class SHCoeffPmfGen(PmfGen):
             basis = shm.sph_harm_lookup[basis_type]
         except KeyError:
             raise ValueError(f"{basis_type} is not a known basis type.")
-        self.B, _, _ = basis(sh_order, sphere.theta, sphere.phi,
-                             full_basis=full_basis, legacy=legacy)
-        if self.B.shape[1] != shcoeff_array.shape[3]:
+        B, _, _ = basis(sh_order, sphere.theta, sphere.phi,
+                        full_basis=full_basis, legacy=legacy)
+        if B.shape[1] != shcoeff_array.shape[3]:
             raise ValueError(
-                f"SH basis has {self.B.shape[1]} functions but "
+                f"SH basis has {B.shape[1]} functions but "
                 f"{shcoeff_array.shape[3]} coefficients were given."
             )
+        # C-contiguous so get_pmf_c can hand it to BLAS
+        self.B = np.asarray(B, dtype=float, order="C")
+        self.nb_coeff = self.B.shape[1]
 
     cdef double* get_pmf_c(self, double* point, double* out) noexcept nogil:
         cdef:
-            cnp.npy_intp i, j
-            cnp.npy_intp len_pmf = self.pmf.shape[0]
-            cnp.npy_intp len_B = self.B.shape[1]
-            double _sum
-            double *coeff = <double*> malloc(len_B * sizeof(double))
+            int m = self.nb_coeff, n = self.pmf.shape[0], one = 1
+            double alpha = 1.0, beta = 0.0
+            double stack_buf[_SH_STACK_COEFF]
+            double* coeff = stack_buf
+
+        if m > _SH_STACK_COEFF:
+            coeff = <double*> malloc(m * sizeof(double))
 
         if trilinear_interpolate4d_c(self.data, point, coeff) != 0:
-            memset(out, 0, len_pmf * sizeof(double))
+            memset(out, 0, n * sizeof(double))
         else:
-            for i in range(len_pmf):
-                _sum = 0
-                for j in range(len_B):
-                    _sum = _sum + (self.B[i, j] * coeff[j])
-                out[i] = _sum
-        free(coeff)
+            # B is C-order (n, m); in BLAS' column-major view that is an
+            # (m, n) matrix with leading dimension m, so transpose it.
+            dgemv("T", &m, &n, &alpha, &self.B[0, 0], &m, coeff, &one,
+                  &beta, out, &one)
+
+        if coeff != stack_buf:
+            free(coeff)
         return out
 
     cdef double get_pmf_value_c(self,
@@ -212,15 +225,21 @@ cdef class SHCoeffPmfGen(PmfGen):
         cdef:
             int idx = self.find_closest(xyz)
             cnp.npy_intp j
-            cnp.npy_intp len_B = self.B.shape[1]
-            double *coeff = <double*> malloc(len_B * sizeof(double))
+            int m = self.nb_coeff
+            double stack_buf[_SH_STACK_COEFF]
+            double* coeff = stack_buf
+            const double* brow = &self.B[idx, 0]
             double pmf_value = 0
 
-        if trilinear_interpolate4d_c(self.data, point, coeff) == 0:
-            for j in range(len_B):
-                pmf_value = pmf_value + (self.B[idx, j] * coeff[j])
+        if m > _SH_STACK_COEFF:
+            coeff = <double*> malloc(m * sizeof(double))
 
-        free(coeff)
+        if trilinear_interpolate4d_c(self.data, point, coeff) == 0:
+            for j in range(m):
+                pmf_value = pmf_value + brow[j] * coeff[j]
+
+        if coeff != stack_buf:
+            free(coeff)
         return pmf_value
 
 
