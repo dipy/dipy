@@ -2931,24 +2931,34 @@ cdef void _gradient_3d_slice(floating[:, :, :] img,
         for j in range(ncols):
             inside[k, i, j] = 1
             # Compute coordinates of index (k, i, j) in physical space
-            x[0] = _apply_affine_3d_x0(<double>k, <double>i, <double>j, 1, out_grid2world)
-            x[1] = _apply_affine_3d_x1(<double>k, <double>i, <double>j, 1, out_grid2world)
-            x[2] = _apply_affine_3d_x2(<double>k, <double>i, <double>j, 1, out_grid2world)
+            x[0] = _apply_affine_3d_x0(
+                <double>k, <double>i, <double>j, 1, out_grid2world
+            )
+            x[1] = _apply_affine_3d_x1(
+                <double>k, <double>i, <double>j, 1, out_grid2world
+            )
+            x[2] = _apply_affine_3d_x2(
+                <double>k, <double>i, <double>j, 1, out_grid2world
+            )
             dx[0] = x[0]
             dx[1] = x[1]
             dx[2] = x[2]
             for p in range(3):
                 # Compute coordinates of point dx on img's grid
                 dx[p] = x[p] - h[p]
-                q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
-                                            img_world2grid)
-                q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
-                                            img_world2grid)
-                q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
-                                            img_world2grid)
+                q[0] = _apply_affine_3d_x0(
+                    dx[0], dx[1], dx[2], 1, img_world2grid
+                )
+                q[1] = _apply_affine_3d_x1(
+                    dx[0], dx[1], dx[2], 1, img_world2grid
+                )
+                q[2] = _apply_affine_3d_x2(
+                    dx[0], dx[1], dx[2], 1, img_world2grid
+                )
                 # Interpolate img at q
-                in_flag = _interpolate_scalar_3d[floating](img, q[0],
-                    q[1], q[2], &out[k, i, j, p])
+                in_flag = _interpolate_scalar_3d[floating](
+                    img, q[0], q[1], q[2], &out[k, i, j, p]
+                )
                 if in_flag == 0:
                     out[k, i, j, p] = 0
                     inside[k, i, j] = 0
@@ -2956,21 +2966,26 @@ cdef void _gradient_3d_slice(floating[:, :, :] img,
                 tmp = out[k, i, j, p]
                 # Compute coordinates of point dx on img's grid
                 dx[p] = x[p] + h[p]
-                q[0] = _apply_affine_3d_x0(dx[0], dx[1], dx[2], 1,
-                                            img_world2grid)
-                q[1] = _apply_affine_3d_x1(dx[0], dx[1], dx[2], 1,
-                                            img_world2grid)
-                q[2] = _apply_affine_3d_x2(dx[0], dx[1], dx[2], 1,
-                                            img_world2grid)
+                q[0] = _apply_affine_3d_x0(
+                    dx[0], dx[1], dx[2], 1, img_world2grid
+                )
+                q[1] = _apply_affine_3d_x1(
+                    dx[0], dx[1], dx[2], 1, img_world2grid
+                )
+                q[2] = _apply_affine_3d_x2(
+                    dx[0], dx[1], dx[2], 1, img_world2grid
+                )
                 # Interpolate img at q
-                in_flag = _interpolate_scalar_3d[floating](img, q[0],
-                                        q[1], q[2], &out[k, i, j, p])
+                in_flag = _interpolate_scalar_3d[floating](
+                    img, q[0], q[1], q[2], &out[k, i, j, p]
+                )
                 if in_flag == 0:
                     out[k, i, j, p] = 0
                     inside[k, i, j] = 0
                     continue
-                out[k, i, j, p] = ((out[k, i, j, p] - tmp) /
-                                    img_spacing[p])
+                out[k, i, j, p] = (
+                    (out[k, i, j, p] - tmp) / img_spacing[p]
+                )
                 dx[p] = x[p]
 
 
@@ -3184,8 +3199,9 @@ cdef void _gradient_2d_row(floating[:, :] img,
             q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_world2grid)
             q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
             # Interpolate img at q
-            in_flag = _interpolate_scalar_2d[floating](img, q[0],
-                                            q[1], &out[i, j, p])
+            in_flag = _interpolate_scalar_2d[floating](
+                img, q[0], q[1], &out[i, j, p]
+            )
             if in_flag == 0:
                 out[i, j, p] = 0
                 inside[i, j] = 0
@@ -3196,8 +3212,9 @@ cdef void _gradient_2d_row(floating[:, :] img,
             q[0] = _apply_affine_2d_x0(dx[0], dx[1], 1, img_world2grid)
             q[1] = _apply_affine_2d_x1(dx[0], dx[1], 1, img_world2grid)
             # Interpolate img at q
-            in_flag = _interpolate_scalar_2d[floating](img, q[0],
-                                            q[1], &out[i, j, p])
+            in_flag = _interpolate_scalar_2d[floating](
+                img, q[0], q[1], &out[i, j, p]
+            )
             if in_flag == 0:
                 out[i, j, p] = 0
                 inside[i, j] = 0
