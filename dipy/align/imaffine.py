@@ -508,7 +508,7 @@ class AffineMap:
 
 class MutualInformationMetric:
     @warning_for_keywords()
-    def __init__(self, *, nbins=32, sampling_proportion=None):
+    def __init__(self, *, nbins=32, sampling_proportion=None, num_threads=None):
         r"""Initialize an instance of the Mutual Information metric.
 
         This class implements the methods required by Optimizer to drive the
@@ -528,6 +528,10 @@ class MutualInformationMetric:
             then sparse sampling is used, where `sampling_proportion`
             specifies the proportion of voxels to be used. The default is
             None.
+        num_threads : int or None, optional
+            Number of OpenMP threads to use for dense image gradient
+            computation. If None, use DIPY's default thread count. Ignored
+            when sparse sampling is used.
 
         Notes
         -----
@@ -542,6 +546,7 @@ class MutualInformationMetric:
         """
         self.histogram = ParzenJointHistogram(nbins)
         self.sampling_proportion = sampling_proportion
+        self.num_threads = num_threads
         self.metric_val = None
         self.metric_grad = None
 
@@ -796,6 +801,7 @@ class MutualInformationMetric:
                     self.moving_spacing,
                     self.static.shape,
                     grid_to_world,
+                    num_threads=self.num_threads,
                 )
                 # The Jacobian must be evaluated at the pre-aligned points
                 H.update_gradient_dense(
@@ -903,7 +909,7 @@ class MutualInformationMetric:
 
 
 class CrossCorrelationMetric:
-    def __init__(self, *, radius=4):
+    def __init__(self, *, radius=4, num_threads=None):
         r"""Initialize an instance of the Cross Correlation metric.
 
         This class implements the methods required by Optimizer to drive the
@@ -914,6 +920,9 @@ class CrossCorrelationMetric:
         radius : int, optional
             the radius of the square (2D) or cubic (3D) neighborhood used to
             compute the local normalized cross-correlation.
+        num_threads : int or None, optional
+            Number of OpenMP threads to use for dense image gradient
+            computation. If None, use DIPY's default thread count.
 
         Notes
         -----
@@ -925,6 +934,7 @@ class CrossCorrelationMetric:
         if radius != int(radius) or radius < 0:
             raise ValueError("radius must be a non-negative integer")
         self.radius = int(radius)
+        self.num_threads = num_threads
         self.metric_val = None
         self.metric_grad = None
 
@@ -1100,6 +1110,7 @@ class CrossCorrelationMetric:
                 self.moving_spacing,
                 self.static.shape,
                 grid_to_world,
+                num_threads=self.num_threads,
             )
             moving_gradient = np.asarray(moving_gradient, dtype=np.float64)
 
