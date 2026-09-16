@@ -166,7 +166,9 @@ __device__ int trilinear_interp_d(const REAL *__restrict__ dataf,
 
 __device__ int check_point_d(const REAL3 point,
                              const cudaTextureObject_t *__restrict__ metric_map) {
-        float val = tex3D<float>(*metric_map, (float) point.z, (float) point.y, (float) point.x);
+        // linear-filtered textures put texel i at coordinate i + 0.5
+        float val = tex3D<float>(*metric_map, (float) point.z + 0.5f,
+                                 (float) point.y + 0.5f, (float) point.x + 0.5f);
         if (val == -1.0f) {
                 return OUTSIDEIMAGE;
         }
