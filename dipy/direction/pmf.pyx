@@ -109,24 +109,79 @@ cdef class SimplePmfGen(PmfGen):
         return pmf_value
 
 
+def _sh_order_from_ncoef(ncoef, full_basis=None):
+    """Infer ``(sh_order_max, full_basis)`` from a number of SH coefficients.
+
+    A symmetric basis (even ``l`` only) has ``(l + 1)(l + 2) / 2``
+    coefficients, a full basis has ``(l + 1)**2``.
+    """
+    if full_basis is None:
+        sym_order = (-3.0 + np.sqrt(1.0 + 8.0 * ncoef)) / 2.0
+        if sym_order.is_integer() and int(sym_order) % 2 == 0:
+            return int(sym_order), False
+        full_order = np.sqrt(ncoef) - 1.0
+        if full_order.is_integer():
+            return int(full_order), True
+        raise ValueError(
+            f"{ncoef} coefficients do not match a symmetric or a full SH basis."
+        )
+    sh_order = shm.order_from_ncoef(ncoef, full_basis=full_basis)
+    if full_basis:
+        expected = (sh_order + 1) ** 2
+    else:
+        expected = (sh_order + 1) * (sh_order + 2) // 2
+    if expected != ncoef or (not full_basis and sh_order % 2 != 0):
+        kind = "full" if full_basis else "symmetric"
+        raise ValueError(
+            f"{ncoef} coefficients do not match a {kind} SH basis "
+            f"(order {sh_order} has {expected})."
+        )
+    return sh_order, bool(full_basis)
+
+
 cdef class SHCoeffPmfGen(PmfGen):
 
     def __init__(self,
                  double[:, :, :, :] shcoeff_array,
                  object sphere,
                  object basis_type,
-                 legacy=True):
+                 legacy=True,
+                 full_basis=None):
+        """
+        Parameters
+        ----------
+        shcoeff_array : ndarray, shape (x, y, z, ncoef)
+            Spherical harmonic coefficients.
+        sphere : Sphere
+            Sphere on which the pmf is evaluated.
+        basis_type : str or None
+            One of ``dipy.reconst.shm.sph_harm_lookup``.
+        legacy : bool, optional
+            Use the legacy basis definition.
+        full_basis : bool or None, optional
+            True if ``shcoeff_array`` uses a full (odd and even order) SH
+            basis, as produced by asymmetric ODF models. If None, it is
+            inferred from the number of coefficients.
+        """
         cdef:
             int sh_order
 
         PmfGen.__init__(self, shcoeff_array, sphere)
 
-        sh_order = shm.order_from_ncoef(shcoeff_array.shape[3])
+        sh_order, full_basis = _sh_order_from_ncoef(
+            shcoeff_array.shape[3], full_basis
+        )
         try:
             basis = shm.sph_harm_lookup[basis_type]
         except KeyError:
             raise ValueError(f"{basis_type} is not a known basis type.")
-        self.B, _, _ = basis(sh_order, sphere.theta, sphere.phi, legacy=legacy)
+        self.B, _, _ = basis(sh_order, sphere.theta, sphere.phi,
+                             full_basis=full_basis, legacy=legacy)
+        if self.B.shape[1] != shcoeff_array.shape[3]:
+            raise ValueError(
+                f"SH basis has {self.B.shape[1]} functions but "
+                f"{shcoeff_array.shape[3]} coefficients were given."
+            )
 
     cdef double* get_pmf_c(self, double* point, double* out) noexcept nogil:
         cdef:
