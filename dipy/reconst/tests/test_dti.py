@@ -17,6 +17,7 @@ from dipy.reconst.dti import (
     TensorModel,
     _decompose_tensor_nan,
     axial_diffusivity,
+    cholesky_to_lower_triangular,
     color_fa,
     decompose_tensor,
     fractional_anisotropy,
@@ -24,6 +25,7 @@ from dipy.reconst.dti import (
     geodesic_anisotropy,
     linearity,
     lower_triangular,
+    lower_triangular_to_cholesky,
     mean_diffusivity,
     mode,
     ols_fit_tensor,
@@ -1224,3 +1226,61 @@ def test_quantize_evecs_parallel_engines():
         except Exception as e:
             # If an engine fails, that's okay - just skip it
             print(f"Warning: Could not test engine {engine}: {e}")
+
+
+def test_cholesky_transformations():
+    """Test Cholesky decomposition and its inverse for DTI."""
+    dt_gt = np.array([0.0017, 0, 0.0003, 0, 0, 0.0003])
+    r_elements = lower_triangular_to_cholesky(dt_gt)
+    dt_recovered = cholesky_to_lower_triangular(r_elements)
+    npt.assert_array_almost_equal(dt_gt, dt_recovered)
+
+
+def test_dti_nlls_cholesky_accuracy():
+    """Test if NLLS with Cholesky retrieves correct ground truth parameters
+    in non-problematic voxels."""
+    evals_gt = np.array([0.0017, 0.0003, 0.0003])
+    evecs_gt = np.eye(3)
+
+    _, fbvals, fbvecs = get_fnames(name="small_25")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
+
+    predicted_signal = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
+
+    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True)
+    dtif = dtim.fit(predicted_signal)
+
+    npt.assert_array_almost_equal(dtif.evals, evals_gt)
+
+
+def test_dti_nlls_cholesky_positivity():
+    """Test if Cholesky enforces positivity even with negative
+    ground truth eigenvalues."""
+    evals_gt = np.array([0.0017, 0.0003, -0.0001])
+    evecs_gt = np.eye(3)
+
+    _, fbvals, fbvecs = get_fnames(name="small_25")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
+
+    Spred_corrupted = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
+
+    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True)
+    dtif = dtim.fit(Spred_corrupted)
+
+    npt.assert_(np.all(dtif.evals >= -1e-8))
+    npt.assert_(np.all((dtif.fa >= 0) & (dtif.fa <= 1)))
+
+
+def test_cholesky_jac_warning():
+    """Test that a warning is raised when jac=True is combined with
+    cholesky=True, since the analytical Jacobian is not implemented
+    for the Cholesky parameterization."""
+    _, fbvals, fbvecs = get_fnames(name="small_25")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
+
+    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True, jac=True)
+    data = np.ones(bvals.shape[0]) * 100
+    assert_warns(UserWarning, dtim.fit, data)
