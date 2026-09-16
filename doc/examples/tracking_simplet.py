@@ -3,10 +3,11 @@
 Metal and GPU probabilistic tracking (simple tracker)
 =====================================================
 
-DIPY's "simple" tracker is a stripped-down probabilistic tracker that runs on
-the GPU through one of three backends: CUDA (NVIDIA), Metal (Apple Silicon)
-or WebGPU (any GPU with subgroup support). It generates tens of millions of
-streamlines in minutes, at the price of a few restrictions compared with
+DIPY's "simple" tracker :footcite:p:`Kruper2025` is a stripped-down
+probabilistic tracker that runs on the GPU through one of three backends:
+CUDA (NVIDIA), Metal (Apple Silicon) or WebGPU (any GPU with subgroup
+support). It generates tens of millions of streamlines in minutes, at the
+price of a few restrictions compared with
 :func:`dipy.tracking.tracker.probabilistic_tracking` on the CPU:
 
 - the whole PMF (spherical function) must fit in memory, so the ODF is
@@ -23,7 +24,7 @@ The GPU dependencies are optional. Install the one matching your hardware::
     pip install "dipy[webgpu]"   # cross-platform, needs a wgpu adapter
 
 This example follows :ref:`sphx_glr_examples_built_fiber_tracking_tracking_probabilistic.py`
-and only changes the tracking call. We start by fitting a CSD model.
+and only changes the tracking call and number of seeds. We start by fitting a CSD model.
 """
 
 import numpy as np
@@ -157,3 +158,11 @@ print(f"Saved {trx.header['NB_STREAMLINES']} streamlines")
 ###############################################################################
 # The ``dipy_track`` command line tool uses the same chunked writer whenever
 # the output tractogram is a ``.trx`` file.
+#
+#
+#
+# References
+# ----------
+#
+# .. footbibliography::
+#
