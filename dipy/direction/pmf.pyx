@@ -25,8 +25,8 @@ cdef class PmfGen:
     def __init__(self,
                  double[:, :, :, :] data,
                  object sphere):
-        self.data = np.ascontiguousarray(data, dtype=float)
-        self.vertices = np.ascontiguousarray(sphere.vertices, dtype=float)
+        self.data = np.asarray(data, dtype=float, order="C")
+        self.vertices = np.asarray(sphere.vertices, dtype=float, order="C")
         self.pmf = np.zeros(self.vertices.shape[0])
         self.sphere = sphere
 

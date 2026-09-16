@@ -43,7 +43,7 @@ cdef class BootDirectionGetter(DirectionGetter):
             raise ValueError("b_tol must be greater than 0.")
 
         self._pf_kwargs = kwargs
-        self.data = np.ascontiguousarray(data, dtype=float)
+        self.data = np.asarray(data, dtype=float, order="C")
         self.model = model
         self.cos_similarity = np.cos(np.deg2rad(max_angle))
         self.sphere = sphere

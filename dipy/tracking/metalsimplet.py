@@ -36,7 +36,7 @@ def _div_up(a, b):
 
 
 def _shared_buffer(device, arr):
-    arr = np.ascontiguousarray(arr)
+    arr = np.asarray(arr, order="C")
     return device.newBufferWithBytes_length_options_(
         arr.tobytes(), arr.nbytes, Metal.MTLResourceStorageModeShared
     )

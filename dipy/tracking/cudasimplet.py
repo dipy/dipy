@@ -67,7 +67,7 @@ def _div_up(a, b):
 
 
 def _to_device(host):
-    host = np.ascontiguousarray(host)
+    host = np.asarray(host, order="C")
     dev = _check(runtime.cudaMalloc(host.nbytes))
     _check(
         runtime.cudaMemcpy(
@@ -273,7 +273,7 @@ def cuda_gen_streamlines_prob(simple_tracker_data, *, ngpus=1):
             if b <= a:
                 continue
             _check(runtime.cudaSetDevice(ii))
-            offs = np.ascontiguousarray(sline_offsets[a : b + 1] - sline_offsets[a])
+            offs = np.asarray(sline_offsets[a : b + 1] - sline_offsets[a], order="C")
             sl_a = int(sline_offsets[a])
             sl_b = int(sline_offsets[b])
             _launch(

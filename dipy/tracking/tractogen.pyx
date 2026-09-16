@@ -7,6 +7,7 @@ from cython.parallel import prange, threadid
 import numpy as np
 cimport numpy as cnp
 
+from dipy.align.fused_types cimport floating
 from dipy.direction.pmf cimport PmfGen
 from dipy.reconst.dirspeed cimport peak_directions_c
 from dipy.tracking._utils import _iter_chunk
@@ -109,14 +110,14 @@ def generate_tractogram(double[:, ::1] seed_positions,
     # per-thread scratch: pmf and propagator state (>= 100 doubles for PTT)
     scratch = np.empty((nbr_threads, max(100, pmf_gen.pmf.shape[0])))
 
-    cdef double[:, ::1] lin_T = np.ascontiguousarray(affine[:3, :3].T)
-    cdef double[::1] offset = np.ascontiguousarray(affine[:3, 3])
+    cdef double[:, ::1] lin_T = np.asarray(affine[:3, :3].T, order="C")
+    cdef double[::1] offset = np.asarray(affine[:3, 3], order="C")
 
     inv_affine = np.linalg.inv(affine)
     seed_positions = np.dot(seed_positions, inv_affine[:3, :3].T.copy())
     seed_positions += inv_affine[:3, 3]
     if seed_directions is not None:
-        seed_directions = np.ascontiguousarray(seed_directions, dtype=float)
+        seed_directions = np.asarray(seed_directions, dtype=float, order="C")
 
     for start in range(0, nseed, chunk_size):
         n = min(chunk_size, nseed - start)
@@ -164,17 +165,18 @@ def generate_tractogram(double[:, ::1] seed_positions,
             yield from _iter_chunk(points, lengths, seeds_out)
 
 
-cdef void compact_chunk(double[:, ::1] sline,
-                        cnp.npy_intp[::1] starts,
-                        cnp.npy_intp[::1] out_offsets,
-                        double[:, ::1] out,
-                        double[:, ::1] lin_T,
-                        double[::1] offset,
-                        int nbr_threads):
+def compact_chunk(const floating[:, ::1] sline,
+                  cnp.npy_intp[::1] starts,
+                  cnp.npy_intp[::1] out_offsets,
+                  double[:, ::1] out,
+                  double[:, ::1] lin_T,
+                  double[::1] offset,
+                  int nbr_threads):
     """Copy the kept streamlines out of the chunk buffer, applying the affine.
 
     ``starts[i]`` is the first row of streamline ``i`` in ``sline``; its points
-    land at ``out[out_offsets[i]:out_offsets[i + 1]]``.
+    land at ``out[out_offsets[i]:out_offsets[i + 1]]``. ``sline`` may be
+    float32 (GPU backends) or float64.
     """
     cdef cnp.npy_intp n = starts.shape[0], i, j, k, src, dst
     cdef double x, y, z
@@ -212,8 +214,8 @@ def seed_peaks(double[:, ::1] seeds,
         cnp.npy_intp cap = dimt if max_cross <= 0 else max_cross
         cnp.npy_intp i, j, k, t
         double[:, ::1] verts = pmf_gen.vertices
-        cnp.uint16_t[:, ::1] edges = np.ascontiguousarray(
-            pmf_gen.sphere.edges, dtype=np.uint16)
+        cnp.uint16_t[:, ::1] edges = np.asarray(
+            pmf_gen.sphere.edges, dtype=np.uint16, order="C")
         cnp.npy_intp[::1] counts, offsets
         double[:, ::1] dirs
 
