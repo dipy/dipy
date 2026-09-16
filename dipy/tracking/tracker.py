@@ -14,10 +14,7 @@ from dipy.tracking.simpletracker import (
     prepare_simple_tracker_data,
     simple_sl_generator,
 )
-from dipy.tracking.stopping_criterion import (
-    BinaryStoppingCriterion,
-    ThresholdStoppingCriterion,
-)
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tractogen import generate_tractogram
 from dipy.tracking.utils import seeds_directions_pairs
@@ -286,10 +283,10 @@ def probabilistic_tracking(
         ``dipy[webgpu]``), or "auto" to pick the first available.
         Non-cpu use a "simple" tracker
         (see :mod:`dipy.tracking.simpletracker`).
-        It tracks every peak at each seed and assumes:
+        It assumes:
         (1) the entire SF fits in memory (sf, sh or a pam with odf);
         (2) isotropic voxels;
-        (3) a Threshold or Binary stopping criterion.
+        (3) a ThresholdStoppingCriterion.
     is_symmetric : bool, optional
         If False, the pmf is treated as an asymmetric spherical function
         (no antipodal folding when selecting directions).
@@ -329,21 +326,19 @@ def probabilistic_tracking(
         elif pam is not None and pam.odf is not None:
             pmf_field = pam.odf
         else:
-            raise ValueError("GPU simple backends need sf, sh or a pam with odf.")
-        if isinstance(sc, ThresholdStoppingCriterion):
-            stop_map, stop_threshold = np.asarray(sc.metric_map), sc.threshold
-        elif isinstance(sc, BinaryStoppingCriterion):
-            stop_map, stop_threshold = np.asarray(sc.mask), 0.5
-        else:
-            raise ValueError("GPU simple backends need a Threshold or Binary sc.")
+            raise ValueError("Simple backends need sf, sh or a pam with odf.")
+        if not isinstance(sc, ThresholdStoppingCriterion):
+            raise ValueError("Simple backends need a ThresholdStoppingCriterion.")
 
+        if not np.allclose(voxel_size, voxel_size[0]):
+            raise ValueError("Simple backends need isotropic voxels.")
         tracker_data = prepare_simple_tracker_data(
             pmf=pmf_field,
-            stop_map=stop_map,
-            stop_threshold=stop_threshold,
+            stop_map=np.asarray(sc.metric_map),
+            stop_threshold=sc.threshold,
             sphere=sphere,
             max_angle=params.max_angle,
-            step_size=params.step_size,
+            step_size=params.step_size / voxel_size[0],
             min_steps=params.min_nbr_pts,
             max_steps=params.max_nbr_pts,
             pmf_threshold=pmf_threshold,
