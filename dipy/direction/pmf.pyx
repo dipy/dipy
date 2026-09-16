@@ -11,6 +11,7 @@ from dipy.reconst import shm
 from dipy.core.interpolation cimport (
     _trilinear_interpolation_iso,
     offset,
+    trilinear_interpolate3d_c,
     trilinear_interpolate4d_c,
 )
 from libc.stdlib cimport malloc, free
@@ -24,8 +25,8 @@ cdef class PmfGen:
     def __init__(self,
                  double[:, :, :, :] data,
                  object sphere):
-        self.data = np.asarray(data, dtype=float, order="C")
-        self.vertices = np.asarray(sphere.vertices, dtype=float)
+        self.data = np.ascontiguousarray(data, dtype=float)
+        self.vertices = np.ascontiguousarray(sphere.vertices, dtype=float)
         self.pmf = np.zeros(self.vertices.shape[0])
         self.sphere = sphere
 
@@ -104,9 +105,7 @@ cdef class SimplePmfGen(PmfGen):
             double pmf_value = 0
 
         idx = self.find_closest(xyz)
-        trilinear_interpolate4d_c(self.data[:, :, :, idx:idx+1],
-                                  point,
-                                  &pmf_value)
+        trilinear_interpolate3d_c(self.data[:, :, :, idx], point, &pmf_value)
         return pmf_value
 
 
