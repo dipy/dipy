@@ -446,7 +446,7 @@ fn tracker_prob_fn(st: PhiloxState, seed: vec3<f32>, first_step: vec3<f32>,
 //
 // slineOutOff : (nseed+1,) exclusive prefix sum of the number of
 //               directions per seed (from get_num_streamlines_prob)
-// shDir0      : (nseed*dimt, 3) initial directions, dimt per seed
+// shDir0      : (sum(ndir), 3) initial direction of each streamline
 // sline       : (sum(ndir) * max_sline_len * 2, 3) output points
 
 @compute @workgroup_size(32, 2, 1)
@@ -470,7 +470,7 @@ fn genStreamlinesProb_k(
     var sline_off = slineOutOff[slid];
 
     for (var i = 0; i < ndir; i++) {
-        let first_step = load_shDir0_f3(slid * u32(params.dimt) + u32(i));
+        let first_step = load_shDir0_f3(u32(sline_off));
         let sline_base = u32(sline_off) * u32(params.max_sline_len) * 2u;
 
         if (tidx == 0u) {

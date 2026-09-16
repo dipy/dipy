@@ -351,6 +351,7 @@ def probabilistic_tracking(
             chunk_size=chunk_size,
             relative_peak_thresh=0.5,
             min_separation_angle=np.deg2rad(25),
+            max_cross=1 if max_cross is None else max_cross,
         )
         return simple_sl_generator(
             tracker_data,
