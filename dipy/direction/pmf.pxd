@@ -4,8 +4,8 @@ cimport numpy as cnp
 cdef class PmfGen:
     cdef:
         double[:] pmf
-        double[:, :, :, :] data
-        double[:, :] vertices
+        double[:, :, :, ::1] data
+        double[:, ::1] vertices
         object sphere
 
     cdef double* get_pmf_c(self, double* point, double* out) noexcept nogil

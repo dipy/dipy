@@ -7,7 +7,7 @@ cdef int trilinear_interpolate3d_c(double[:, :, :] data,
                                    double* point,
                                    double* result) noexcept nogil
 
-cdef int trilinear_interpolate4d_c(floating[:, :, :, :] data,
+cdef int trilinear_interpolate4d_c(floating[:, :, :, ::1] data,
                                    floating* point,
                                    floating* result) noexcept nogil
 

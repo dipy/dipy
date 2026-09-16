@@ -317,7 +317,7 @@ cdef int trilinear_interpolate3d_c(double[:, :, :] data,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef int trilinear_interpolate4d_c(floating[:, :, :, :] data,
+cdef int trilinear_interpolate4d_c(floating[:, :, :, ::1] data,
                                    floating* point,
                                    floating* result) noexcept nogil:
     """Tri-linear interpolation along the last dimension of a 4d array
@@ -343,7 +343,7 @@ cdef int trilinear_interpolate4d_c(floating[:, :, :, :] data,
 
     """
     cdef:
-        cnp.npy_intp flr, N, L, s, i, j, k
+        cnp.npy_intp flr, N, L, i, j, k
         double rem
         cnp.npy_intp index[3][2]
         double weight[3][2]
@@ -370,12 +370,10 @@ cdef int trilinear_interpolate4d_c(floating[:, :, :, :] data,
                                              index[2][k], 0]
 
     N = data.shape[3]
-    s = data.strides[3] // sizeof(floating)
     for L in range(N):
-        result[L] = (w[0] * c[0][L * s] + w[1] * c[1][L * s]
-                     + w[2] * c[2][L * s] + w[3] * c[3][L * s]
-                     + w[4] * c[4][L * s] + w[5] * c[5][L * s]
-                     + w[6] * c[6][L * s] + w[7] * c[7][L * s])
+        result[L] = (w[0] * c[0][L] + w[1] * c[1][L] + w[2] * c[2][L]
+                     + w[3] * c[3][L] + w[4] * c[4][L] + w[5] * c[5][L]
+                     + w[6] * c[6][L] + w[7] * c[7][L])
     return 0
 
 
@@ -407,7 +405,8 @@ def trilinear_interpolate4d(floating[:, :, :, :] data,
         msg = "out array must have same size as the last dimension of data."
         raise ValueError(msg)
 
-    err = trilinear_interpolate4d_c(data, &point[0], &out[0])
+    cdef floating[:, :, :, ::1] cdata = np.ascontiguousarray(data)
+    err = trilinear_interpolate4d_c(cdata, &point[0], &out[0])
 
     if err == 0:
         return out

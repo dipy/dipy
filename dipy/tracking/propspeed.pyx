@@ -745,7 +745,7 @@ cdef TrackerStatus deterministic_propagator(double* point,
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
         bint is_symmetric=params.is_symmetric
         double cos_similarity=params.cos_similarity
-        double[:, :] vertices=pmf_gen.vertices
+        double[:, ::1] vertices=pmf_gen.vertices
 
     if norm(direction) == 0:
         return TrackerStatus.FAIL
@@ -833,7 +833,7 @@ cdef TrackerStatus probabilistic_propagator(double* point,
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
         bint is_symmetric=params.is_symmetric
         double cos_similarity=params.cos_similarity
-        double[:, :] vertices=pmf_gen.vertices
+        double[:, ::1] vertices=pmf_gen.vertices
 
     if norm(direction) == 0:
         return TrackerStatus.FAIL
