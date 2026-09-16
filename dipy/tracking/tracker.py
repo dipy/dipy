@@ -216,8 +216,7 @@ def probabilistic_tracking(
     return_all=True,
     save_seeds=False,
     max_cross=None,
-    use_simple=False,
-    simple_backend="auto",
+    backend="cpu",
     is_symmetric=True,
 ):
     """Probabilistic tracking algorithm.
@@ -281,16 +280,16 @@ def probabilistic_tracking(
         Maximum number of peaks tracked from each seed when
         ``seed_directions`` is None. None tracks the largest peak only; a
         value <= 0 tracks every peak.
-    use_simple : bool, optional
-        Use a GPU "simple" tracker (see :mod:`dipy.tracking.simpletracker`).
+    backend : str, optional
+        "cuda" (requires ``dipy[cu12]`` or ``dipy[cu13]``), "metal" (Apple
+        Silicon, requires ``dipy[metal]``), "webgpu" (requires
+        ``dipy[webgpu]``), or "auto" to pick the first available.
+        Non-cpu use a "simple" tracker
+        (see :mod:`dipy.tracking.simpletracker`).
         It tracks every peak at each seed and assumes:
         (1) the entire SF fits in memory (sf, sh or a pam with odf);
         (2) isotropic voxels;
         (3) a Threshold or Binary stopping criterion.
-    simple_backend : str, optional
-        "cuda" (requires ``dipy[cu12]`` or ``dipy[cu13]``), "metal" (Apple
-        Silicon, requires ``dipy[metal]``), "webgpu" (requires
-        ``dipy[webgpu]``), or "auto" to pick the first available.
     is_symmetric : bool, optional
         If False, the pmf is treated as an asymmetric spherical function
         (no antipodal folding when selecting directions).
@@ -315,7 +314,7 @@ def probabilistic_tracking(
         is_symmetric=is_symmetric,
     )
 
-    if use_simple:
+    if backend != "cpu":
         sphere = sphere if sphere is not None else default_sphere
         if sf is not None:
             pmf_field = sf
@@ -356,7 +355,7 @@ def probabilistic_tracking(
         return simple_sl_generator(
             tracker_data,
             seed_positions,
-            simple_backend=simple_backend,
+            simple_backend=backend,
             seed_directions=seed_directions,
             nbr_threads=nbr_threads,
             save_seeds=save_seeds,
