@@ -100,8 +100,7 @@ def generate_tractogram(double[:, ::1] seed_positions,
     if nbr_threads <= 0:
         nbr_threads = determine_num_threads(None)
 
-    # each streamline seeds its own rng from (rng_seed, seed position,
-    # streamline index) so the result does not depend on thread scheduling
+    # per-streamline rng seed, independent of thread scheduling
     if params.random_seed > 0:
         rng_seed = params.random_seed
     else:
@@ -400,8 +399,7 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         StreamlineStatus status_forward, status_backward
         fast_numpy.RNGState rng
 
-    # hash the seed position into the rng seed so that two streamlines
-    # starting from the same voxel with the same index never share a stream
+    # mix in the seed position so equal indices from different seeds differ
     for j in range(3):
         rng_seed = splitmix64(rng_seed ^ (<cnp.npy_uint64*> seed)[j])
     fast_numpy.seed_rng(&rng, splitmix64(rng_seed))
