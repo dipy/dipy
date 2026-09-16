@@ -40,8 +40,7 @@ def track(method, **kwargs):
     directions = np.random.random(seeds.shape)
     directions = np.array([v / np.linalg.norm(v) for v in directions])
 
-    use_simple = kwargs.get("use_simple", False)
-    simple_backend = kwargs.get("simple_backend", "auto")
+    backend = kwargs.get("backend", "cpu")
     use_sf = kwargs.get("use_sf", False)
     use_directions = kwargs.get("use_dirs", False)
 
@@ -59,9 +58,8 @@ def track(method, **kwargs):
         "seed_directions": directions if use_directions else None,
         "sphere": sphere,
     }
-    if "use_simple" in kwargs:
-        params["use_simple"] = use_simple
-        params["simple_backend"] = simple_backend
+    if "backend" in kwargs:
+        params["backend"] = backend
     stream_gen = method(seeds, sc, affine, **params)
 
     streamlines = Streamlines(stream_gen)
@@ -84,9 +82,8 @@ def track(method, **kwargs):
         "seed_directions": directions if use_directions else None,
         "sphere": sphere,
     }
-    if "use_simple" in kwargs:
-        params["use_simple"] = use_simple
-        params["simple_backend"] = simple_backend
+    if "backend" in kwargs:
+        params["backend"] = backend
 
     stream_gen = method(seeds, sc, affine, **params)
 
@@ -112,10 +109,8 @@ def test_probabilistic_tracking():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        track(tracker.probabilistic_tracking, use_dirs=True, use_simple=False)
-        track(
-            tracker.probabilistic_tracking, use_sf=True, use_dirs=True, use_simple=False
-        )
+        track(tracker.probabilistic_tracking, use_dirs=True, backend="cpu")
+        track(tracker.probabilistic_tracking, use_sf=True, use_dirs=True, backend="cpu")
 
 
 @pytest.mark.parametrize("simple_backend", list(SIMPLE_BACKENDS))
@@ -128,10 +123,9 @@ def test_simple_probabilistic_tracking(simple_backend):
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        kwargs = {"use_simple": True, "simple_backend": simple_backend}
-        track(tracker.probabilistic_tracking, **kwargs)
-        track(tracker.probabilistic_tracking, use_dirs=True, **kwargs)
-        track(tracker.probabilistic_tracking, use_sf=True, **kwargs)
+        track(tracker.probabilistic_tracking, backend=simple_backend)
+        track(tracker.probabilistic_tracking, use_dirs=True, backend=simple_backend)
+        track(tracker.probabilistic_tracking, use_sf=True, backend=simple_backend)
 
 
 def test_ptt_tracking():
