@@ -50,19 +50,19 @@ class _SimpleBackendSpec:
 
 SIMPLE_BACKENDS = {
     "metal": _SimpleBackendSpec(
-        module="dipy.tracking.metalsimplet",
+        module="dipy.tracking.simplet.metal",
         factory="metal_gen_streamlines_prob",
         probe="metal_available",
         multi_device=False,
     ),
     "cuda": _SimpleBackendSpec(
-        module="dipy.tracking.cudasimplet",
+        module="dipy.tracking.simplet.cuda",
         factory="cuda_gen_streamlines_prob",
         probe="cuda_available",
         multi_device=True,
     ),
     "webgpu": _SimpleBackendSpec(
-        module="dipy.tracking.webgpusimplet",
+        module="dipy.tracking.simplet.webgpu",
         factory="webgpu_gen_streamlines_prob",
         probe="webgpu_available",
         multi_device=False,

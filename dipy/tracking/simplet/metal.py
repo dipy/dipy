@@ -1,5 +1,5 @@
 """
-Metal (Apple Silicon) backend for :mod:`dipy.tracking.simpletracker`.
+Metal (Apple Silicon) backend for :mod:`dipy.tracking.simplet.tracker`.
 """
 
 from importlib.resources import files
@@ -58,7 +58,7 @@ def _compile(device, std):
     start = time()
     logger.info("Compiling Metal simple tracker kernel...")
     n32dimt = _div_up(std.dimt, 32) * 32
-    source = files("dipy.tracking").joinpath("simplet.metal").read_text()
+    source = files("dipy.tracking.simplet").joinpath("kernel.metal").read_text()
     source = (
         f"#define SPHERE_SYMM {1 if std.sphere_symm else 0}\n"
         f"#define N32DIMT {n32dimt}\n" + source
@@ -79,7 +79,7 @@ def _compile(device, std):
 
 
 def _params_bytes(std, nseed):
-    # Must match ProbTrackingParams in simplet.metal: 4 floats, 8 ints.
+    # Must match ProbTrackingParams in kernel.metal: 4 floats, 8 ints.
     seed = int(std.random_seed)
     return struct.pack(
         "4f8i",
