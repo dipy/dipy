@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import sys
 
 from dipy.data import SPHERE_FILES, get_sphere
@@ -26,6 +27,8 @@ from dipy.workflows.workflow import Workflow
 
 def _save_tracking_result(tracking_result, reference, out_tract, save_seeds):
     if str(out_tract).endswith(".trx"):
+        if isinstance(reference, os.PathLike):
+            reference = str(reference)
         save_trx_from_generator(tracking_result, reference, filename=out_tract)
     else:
         if save_seeds:
