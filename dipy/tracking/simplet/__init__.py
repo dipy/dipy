@@ -1,6 +1,6 @@
-"""Simplified ("simplet") GPU/CPU probabilistic tracking backends.
+"""Simplified ("simplet") probabilistic tracking backends.
 
-Ported from GPUStreamlines. See :func:`dipy.tracking.simplet.tracker.\
+See :func:`dipy.tracking.simplet.tracker.\
 prepare_simple_tracker_data` for the assumptions these trackers make.
 """
 
