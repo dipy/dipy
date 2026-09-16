@@ -557,9 +557,8 @@ def random_seeds_from_mask(
     if nb_seeds <= 0:
         return np.empty((0, 3), dtype=float)
 
-    # Seeds are laid out pass by pass over the (shuffled) voxels, so the
-    # first ``k`` seeds are identical whatever ``seeds_count`` is, for a
-    # given ``random_seed``.
+    # one pass over the shuffled voxels per seed, so the first seeds do not
+    # depend on seeds_count
     voxel = indices[np.arange(nb_seeds) % num_voxels]
     seeds = np.column_stack(np.unravel_index(voxel, shape)).astype(float)
     seeds += rng.random((nb_seeds, 3))

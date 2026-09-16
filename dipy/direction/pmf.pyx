@@ -20,9 +20,8 @@ from scipy.linalg.cython_blas cimport dgemv
 cdef extern from "stdlib.h" nogil:
     void *memset(void *ptr, int value, size_t num)
 
-# SH coefficient vectors up to this size are interpolated
-# on the stack instead of malloc
-# using cdef to make this compile-time constant
+# stack buffer size for interpolated SH coefficients
+# if larger than this, switch to malloc
 cdef enum:
     _SH_STACK_COEFF = 256
 
@@ -206,8 +205,7 @@ cdef class SHCoeffPmfGen(PmfGen):
         if trilinear_interpolate4d_c(self.data, point, coeff) != 0:
             memset(out, 0, n * sizeof(double))
         else:
-            # B is C-order (n, m); in BLAS' column-major view that is an
-            # (m, n) matrix with leading dimension m, so transpose it.
+            # C-order (n, m) B is column-major (m, n) to BLAS, hence "T"
             dgemv("T", &m, &n, &alpha, &self.B[0, 0], &m, coeff, &one,
                   &beta, out, &one)
 

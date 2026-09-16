@@ -25,13 +25,13 @@ pathfinder, _, _ = optional_package("cuda.pathfinder", trip_msg=_TRIP_MSG)
 
 have_cuda = have_driver and have_runtime and have_core and have_cccl
 
-REAL_DTYPE = np.float32
-REAL_SIZE = 4
-INT_SIZE = 4
-THR_X_SL = 32  # threads per streamline
-THR_X_BL = 64  # threads per block
-BLOCK_Y = THR_X_BL // THR_X_SL
-KERNEL_NAME = f"genStreamlinesProb_k<{THR_X_SL},{BLOCK_Y}>"
+KERNEL_DTYPE = np.float32
+INT32_NBYTES = np.dtype(np.int32).itemsize
+THREADS_PER_STREAMLINE = 32
+THREADS_PER_BLOCK = 64
+STREAMLINES_PER_BLOCK = THREADS_PER_BLOCK // THREADS_PER_STREAMLINE
+# symbol name in kernel.cu
+KERNEL_NAME = f"genStreamlinesProb_k<{THREADS_PER_STREAMLINE},{STREAMLINES_PER_BLOCK}>"
 
 
 def cuda_available():
@@ -62,7 +62,7 @@ def _check(result, *, hard_error=True):
     return result[1:]
 
 
-def _div_up(a, b):
+def _ceil_div(a, b):
     return (a + b - 1) // b
 
 
@@ -121,23 +121,25 @@ def _allocate_texture_border(data):
     return tex_obj, array
 
 
-def _compile(std):
+def _compile(tracker_data):
     start = time()
     logger.info("Compiling CUDA simple tracker kernel...")
+    dim_x, dim_y, dim_z, dim_t = tracker_data.shape
+    # keys are the macro names used by kernel.cu
     macros = {
-        "DIMX": int(std.dimx),
-        "DIMY": int(std.dimy),
-        "DIMZ": int(std.dimz),
-        "DIMT": int(std.dimt),
-        "STEP_SIZE": float(std.step_size),
-        "MAX_ANGLE": float(std.max_angle),
-        "TC_THRESHOLD": float(std.stop_threshold),
-        "PMF_THRESHOLD_P": float(std.pmf_threshold),
-        "MAX_SLINE_LEN": int(std.max_sline_len),
-        "RNG_SEED": int(std.random_seed),
-        "SPHERE_SYMM": 1 if std.sphere_symm else 0,
-        "THR_X_SL": THR_X_SL,
-        "THR_X_BL": THR_X_BL,
+        "DIMX": dim_x,
+        "DIMY": dim_y,
+        "DIMZ": dim_z,
+        "DIMT": dim_t,
+        "STEP_SIZE": tracker_data.step_size,
+        "MAX_ANGLE": tracker_data.max_angle,
+        "TC_THRESHOLD": tracker_data.stop_threshold,
+        "PMF_THRESHOLD_P": tracker_data.pmf_threshold,
+        "MAX_SLINE_LEN": tracker_data.max_steps,
+        "RNG_SEED": tracker_data.random_seed,
+        "SPHERE_SYMM": 1 if tracker_data.is_symmetric else 0,
+        "THR_X_SL": THREADS_PER_STREAMLINE,
+        "THR_X_BL": THREADS_PER_BLOCK,
     }
     options = core.ProgramOptions(
         name="dipy_simplet",
@@ -162,62 +164,78 @@ def _compile(std):
 
 
 def _launch(
-    kernel, stream, static, seeds, sline_offsets, peak_dirs, sline_len_host, sline_host
+    kernel,
+    stream,
+    device_data,
+    seeds,
+    streamline_offsets,
+    peak_dirs,
+    streamline_lengths_host,
+    streamline_buffer_host,
 ):
-    dataf_d, metric_map_tex, sphere_vertices_d = static
-    nseed = len(seeds)
-    n_slines = int(sline_offsets[-1])
-    if nseed == 0 or n_slines == 0:
+    pmf_d, stop_map_tex, sphere_vertices_d = device_data
+    n_seeds = len(seeds)
+    n_streamlines = int(streamline_offsets[-1])
+    if n_seeds == 0 or n_streamlines == 0:
         return
 
     seeds_d = _to_device(seeds)
-    offsets_d = _to_device(sline_offsets)
+    offsets_d = _to_device(streamline_offsets)
     dirs_d = _to_device(peak_dirs)
-    sline_seed_d = _check(runtime.cudaMalloc(INT_SIZE * n_slines))
-    sline_len_d = _check(runtime.cudaMalloc(INT_SIZE * n_slines))
-    sline_d = _check(runtime.cudaMalloc(sline_host.nbytes))
+    seed_of_streamline_d = _check(runtime.cudaMalloc(INT32_NBYTES * n_streamlines))
+    streamline_lengths_d = _check(runtime.cudaMalloc(INT32_NBYTES * n_streamlines))
+    streamline_buffer_d = _check(runtime.cudaMalloc(streamline_buffer_host.nbytes))
 
     config = core.LaunchConfig(
-        block=(THR_X_SL, BLOCK_Y, 1), grid=(_div_up(nseed, BLOCK_Y), 1, 1), shmem_size=0
+        block=(THREADS_PER_STREAMLINE, STREAMLINES_PER_BLOCK, 1),
+        grid=(_ceil_div(n_seeds, STREAMLINES_PER_BLOCK), 1, 1),
+        shmem_size=0,
     )
     core.launch(
         stream,
         config,
         kernel,
-        nseed,
+        n_seeds,
         seeds_d,
-        dataf_d,
-        metric_map_tex.getPtr(),
+        pmf_d,
+        stop_map_tex.getPtr(),
         sphere_vertices_d,
         offsets_d,
         dirs_d,
-        sline_seed_d,
-        sline_len_d,
-        sline_d,
+        seed_of_streamline_d,
+        streamline_lengths_d,
+        streamline_buffer_d,
     )
     _check(runtime.cudaStreamSynchronize(stream))
 
     _check(
         runtime.cudaMemcpy(
-            sline_host.ctypes.data,
-            sline_d,
-            sline_host.nbytes,
+            streamline_buffer_host.ctypes.data,
+            streamline_buffer_d,
+            streamline_buffer_host.nbytes,
             runtime.cudaMemcpyKind.cudaMemcpyDeviceToHost,
         )
     )
     _check(
         runtime.cudaMemcpy(
-            sline_len_host.ctypes.data,
-            sline_len_d,
-            sline_len_host.nbytes,
+            streamline_lengths_host.ctypes.data,
+            streamline_lengths_d,
+            streamline_lengths_host.nbytes,
             runtime.cudaMemcpyKind.cudaMemcpyDeviceToHost,
         )
     )
-    for ptr in (seeds_d, offsets_d, dirs_d, sline_seed_d, sline_len_d, sline_d):
+    for ptr in (
+        seeds_d,
+        offsets_d,
+        dirs_d,
+        seed_of_streamline_d,
+        streamline_lengths_d,
+        streamline_buffer_d,
+    ):
         _check(runtime.cudaFree(ptr))
 
 
-def cuda_gen_streamlines_prob(simple_tracker_data, *, ngpus=1):
+def cuda_streamline_generator(simple_tracker_data, *, n_gpus=1):
     """
     Set up the CUDA probabilistic streamline generation kernel.
 
@@ -228,75 +246,85 @@ def cuda_gen_streamlines_prob(simple_tracker_data, *, ngpus=1):
     ----------
     simple_tracker_data : _SimpleTrackerData
         Output of :func:`dipy.tracking.simplet.tracker.prepare_simple_tracker_data`
-    ngpus : int, optional
+    n_gpus : int, optional
         Number of GPUs to split each chunk of seeds across.
     """
-    std = simple_tracker_data
-    ngpus = int(ngpus)
+    tracker_data = simple_tracker_data
+    n_gpus = int(n_gpus)
 
     _check(driver.cuInit(0))
-    avail = _check(runtime.cudaGetDeviceCount())
-    if ngpus > avail:
-        raise RuntimeError(f"Requested {ngpus} GPUs but only {avail} available")
-    for ii in range(ngpus):
-        device = _check(driver.cuDeviceGet(ii))
+    n_available = _check(runtime.cudaGetDeviceCount())
+    if n_gpus > n_available:
+        raise RuntimeError(f"Requested {n_gpus} GPUs but only {n_available} available")
+    for device_id in range(n_gpus):
+        device = _check(driver.cuDeviceGet(device_id))
         try:
             ctx_params = driver.CUctxCreateParams()
             _check(driver.cuCtxCreate(ctx_params, 0, device))
         except TypeError:
             _check(driver.cuCtxCreate(0, device))
 
-    kernel = _compile(std)
+    kernel = _compile(tracker_data)
 
     gpus = []
-    for ii in range(ngpus):
-        _check(runtime.cudaSetDevice(ii))
+    for device_id in range(n_gpus):
+        _check(runtime.cudaSetDevice(device_id))
         stream = _check(
             runtime.cudaStreamCreateWithFlags(runtime.cudaStreamNonBlocking)
         )
-        tex, arr = _allocate_texture_border(std.metric_map)
+        tex, arr = _allocate_texture_border(tracker_data.stop_map)
         gpus.append(
-            (stream, _to_device(std.dataf), tex, arr, _to_device(std.sphere_vertices))
+            (
+                stream,
+                _to_device(tracker_data.pmf),
+                tex,
+                arr,
+                _to_device(tracker_data.sphere_vertices),
+            )
         )
 
-    def gen_streamlines(seeds, sline_offsets, peak_dirs):
-        nseed = len(seeds)
-        step = std.max_sline_len * 2
-        n_slines = int(sline_offsets[-1])
-        sline = np.empty((n_slines * step, 3), dtype=REAL_DTYPE)
-        sline_len = np.zeros(n_slines, dtype=np.int32)
+    def generate_streamlines(seeds, streamline_offsets, peak_dirs):
+        n_seeds = len(seeds)
+        step = tracker_data.max_steps * 2
+        n_streamlines = int(streamline_offsets[-1])
+        streamline_buffer = np.empty((n_streamlines * step, 3), dtype=KERNEL_DTYPE)
+        streamline_lengths = np.zeros(n_streamlines, dtype=np.int32)
 
-        per_gpu = _div_up(nseed, ngpus)
-        for ii, (stream, dataf_d, tex, _, verts_d) in enumerate(gpus):
-            a = ii * per_gpu
-            b = min(nseed, a + per_gpu)
-            if b <= a:
+        seeds_per_gpu = _ceil_div(n_seeds, n_gpus)
+        for device_id, (stream, pmf_d, tex, _, vertices_d) in enumerate(gpus):
+            seed_start = device_id * seeds_per_gpu
+            seed_stop = min(n_seeds, seed_start + seeds_per_gpu)
+            if seed_stop <= seed_start:
                 continue
-            _check(runtime.cudaSetDevice(ii))
-            offs = np.asarray(sline_offsets[a : b + 1] - sline_offsets[a], order="C")
-            sl_a = int(sline_offsets[a])
-            sl_b = int(sline_offsets[b])
+            _check(runtime.cudaSetDevice(device_id))
+            offsets = np.asarray(
+                streamline_offsets[seed_start : seed_stop + 1]
+                - streamline_offsets[seed_start],
+                order="C",
+            )
+            sl_start = int(streamline_offsets[seed_start])
+            sl_stop = int(streamline_offsets[seed_stop])
             _launch(
                 kernel,
                 stream,
-                (dataf_d, tex, verts_d),
-                seeds[a:b],
-                offs,
-                peak_dirs[sl_a:sl_b],
-                sline_len[sl_a:sl_b],
-                sline[sl_a * step : sl_b * step],
+                (pmf_d, tex, vertices_d),
+                seeds[seed_start:seed_stop],
+                offsets,
+                peak_dirs[sl_start:sl_stop],
+                streamline_lengths[sl_start:sl_stop],
+                streamline_buffer[sl_start * step : sl_stop * step],
             )
-        return sline, sline_len, n_slines
+        return streamline_buffer, streamline_lengths, n_streamlines
 
     def close():
         while gpus:
-            stream, dataf_d, tex, arr, verts_d = gpus.pop()
-            ii = len(gpus)
-            _check(runtime.cudaSetDevice(ii), hard_error=False)
-            _check(runtime.cudaFree(dataf_d), hard_error=False)
+            stream, pmf_d, tex, arr, vertices_d = gpus.pop()
+            device_id = len(gpus)
+            _check(runtime.cudaSetDevice(device_id), hard_error=False)
+            _check(runtime.cudaFree(pmf_d), hard_error=False)
             _check(runtime.cudaDestroyTextureObject(tex), hard_error=False)
             _check(runtime.cudaFreeArray(arr), hard_error=False)
-            _check(runtime.cudaFree(verts_d), hard_error=False)
+            _check(runtime.cudaFree(vertices_d), hard_error=False)
             _check(runtime.cudaStreamDestroy(stream), hard_error=False)
 
-    return gen_streamlines, close
+    return generate_streamlines, close

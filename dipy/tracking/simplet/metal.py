@@ -21,9 +21,10 @@ Metal, have_metal, _ = optional_package(
     ),
 )
 
-REAL_DTYPE = np.float32
-THR_X_SL = 32
-BLOCK_Y = 2
+KERNEL_DTYPE = np.float32
+THREADS_PER_STREAMLINE = 32
+STREAMLINES_PER_BLOCK = 2
+# symbol name in kernel.metal
 KERNEL_NAME = "genStreamlinesProb_k"
 
 
@@ -31,7 +32,7 @@ def metal_available():
     return have_metal and Metal.MTLCreateSystemDefaultDevice() is not None
 
 
-def _div_up(a, b):
+def _ceil_div(a, b):
     return (a + b - 1) // b
 
 
@@ -54,14 +55,15 @@ def _buffer_as_array(buf, dtype, shape):
     return np.frombuffer(memview, dtype=dtype, count=count).reshape(shape)
 
 
-def _compile(device, std):
+def _compile(device, tracker_data):
     start = time()
     logger.info("Compiling Metal simple tracker kernel...")
-    n32dimt = _div_up(std.dimt, 32) * 32
+    dim_t = tracker_data.shape[3]
+    n32_dim_t = _ceil_div(dim_t, 32) * 32
     source = files("dipy.tracking.simplet").joinpath("kernel.metal").read_text()
     source = (
-        f"#define SPHERE_SYMM {1 if std.sphere_symm else 0}\n"
-        f"#define N32DIMT {n32dimt}\n" + source
+        f"#define SPHERE_SYMM {1 if tracker_data.is_symmetric else 0}\n"
+        f"#define N32DIMT {n32_dim_t}\n" + source
     )
     options = Metal.MTLCompileOptions.new()
     options.setFastMathEnabled_(True)
@@ -78,32 +80,29 @@ def _compile(device, std):
     return pipeline
 
 
-def _params_bytes(std, nseed):
+def _params_bytes(tracker_data, n_seeds):
     # Must match ProbTrackingParams in kernel.metal: 4 floats, 8 ints.
-    seed = int(std.random_seed)
+    seed = tracker_data.random_seed
     return struct.pack(
         "4f8i",
-        float(std.max_angle),
-        float(std.stop_threshold),
-        float(std.step_size),
-        float(std.pmf_threshold),
+        tracker_data.max_angle,
+        tracker_data.stop_threshold,
+        tracker_data.step_size,
+        tracker_data.pmf_threshold,
         seed & 0xFFFFFFFF,
         (seed >> 32) & 0xFFFFFFFF,
-        int(nseed),
-        int(std.dimx),
-        int(std.dimy),
-        int(std.dimz),
-        int(std.dimt),
-        int(std.max_sline_len),
+        int(n_seeds),
+        *tracker_data.shape,
+        tracker_data.max_steps,
     )
 
 
-def metal_gen_streamlines_prob(simple_tracker_data):
+def metal_streamline_generator(simple_tracker_data):
     """
     Set up the Metal probabilistic streamline generation kernel on the
     default Metal device.
     """
-    std = simple_tracker_data
+    tracker_data = simple_tracker_data
 
     device = Metal.MTLCreateSystemDefaultDevice()
     if device is None:
@@ -111,54 +110,54 @@ def metal_gen_streamlines_prob(simple_tracker_data):
     command_queue = device.newCommandQueue()
     logger.info("Metal simple tracker on %s", device.name())
 
-    if std.dataf.nbytes > device.maxBufferLength():
+    if tracker_data.pmf.nbytes > device.maxBufferLength():
         raise RuntimeError(
-            f"PMF ({std.dataf.nbytes / 1e9:.1f} GB) exceeds the Metal buffer "
-            f"limit ({device.maxBufferLength() / 1e9:.1f} GB). "
+            f"PMF ({tracker_data.pmf.nbytes / 1e9:.1f} GB) exceeds the Metal "
+            f"buffer limit ({device.maxBufferLength() / 1e9:.1f} GB). "
             "Use a smaller volume or fewer sphere directions."
         )
 
-    pipeline = _compile(device, std)
-    static = [
-        _shared_buffer(device, std.dataf),
-        _shared_buffer(device, std.metric_map),
-        _shared_buffer(device, std.sphere_vertices),
+    pipeline = _compile(device, tracker_data)
+    static_buffers = [
+        _shared_buffer(device, tracker_data.pmf),
+        _shared_buffer(device, tracker_data.stop_map),
+        _shared_buffer(device, tracker_data.sphere_vertices),
     ]
 
-    def gen_streamlines(seeds, sline_offsets, peak_dirs):
-        nseed = len(seeds)
-        step = std.max_sline_len * 2
-        n_slines = int(sline_offsets[-1])
-        if nseed == 0 or n_slines == 0:
-            return np.empty((0, 3), dtype=REAL_DTYPE), np.zeros(0, dtype=np.int32), 0
+    def generate_streamlines(seeds, streamline_offsets, peak_dirs):
+        n_seeds = len(seeds)
+        step = tracker_data.max_steps * 2
+        n_streamlines = int(streamline_offsets[-1])
+        if n_seeds == 0 or n_streamlines == 0:
+            return np.empty((0, 3), dtype=KERNEL_DTYPE), np.zeros(0, dtype=np.int32), 0
 
         seeds_buf = _shared_buffer(device, seeds)
-        offsets_buf = _shared_buffer(device, sline_offsets)
+        offsets_buf = _shared_buffer(device, streamline_offsets)
         dirs_buf = _shared_buffer(device, peak_dirs)
-        sline_seed_buf = _empty_buffer(device, 4 * n_slines)
-        sline_len_buf = _empty_buffer(device, 4 * n_slines)
-        sline_buf = _empty_buffer(device, 4 * 3 * step * n_slines)
-        _buffer_as_array(sline_len_buf, np.int32, (n_slines,))[:] = 0
+        seed_of_streamline_buf = _empty_buffer(device, 4 * n_streamlines)
+        streamline_lengths_buf = _empty_buffer(device, 4 * n_streamlines)
+        streamline_buf = _empty_buffer(device, 4 * 3 * step * n_streamlines)
+        _buffer_as_array(streamline_lengths_buf, np.int32, (n_streamlines,))[:] = 0
 
-        params = _params_bytes(std, nseed)
+        params = _params_bytes(tracker_data, n_seeds)
         cmd_buf = command_queue.commandBuffer()
         enc = cmd_buf.computeCommandEncoder()
         enc.setComputePipelineState_(pipeline)
         enc.setBytes_length_atIndex_(params, len(params), 0)
         bufs = [
             seeds_buf,
-            *static,
+            *static_buffers,
             offsets_buf,
             dirs_buf,
-            sline_seed_buf,
-            sline_len_buf,
-            sline_buf,
+            seed_of_streamline_buf,
+            streamline_lengths_buf,
+            streamline_buf,
         ]
         for idx, buf in enumerate(bufs, start=1):
             enc.setBuffer_offset_atIndex_(buf, 0, idx)
         enc.dispatchThreadgroups_threadsPerThreadgroup_(
-            Metal.MTLSize(_div_up(nseed, BLOCK_Y), 1, 1),
-            Metal.MTLSize(THR_X_SL, BLOCK_Y, 1),
+            Metal.MTLSize(_ceil_div(n_seeds, STREAMLINES_PER_BLOCK), 1, 1),
+            Metal.MTLSize(THREADS_PER_STREAMLINE, STREAMLINES_PER_BLOCK, 1),
         )
         enc.endEncoding()
         cmd_buf.commit()
@@ -166,12 +165,16 @@ def metal_gen_streamlines_prob(simple_tracker_data):
         if cmd_buf.status() == Metal.MTLCommandBufferStatusError:
             raise RuntimeError(f"Metal command buffer error: {cmd_buf.error()}")
 
-        sline = _buffer_as_array(sline_buf, REAL_DTYPE, (n_slines * step, 3)).copy()
-        sline_len = _buffer_as_array(sline_len_buf, np.int32, (n_slines,)).copy()
-        return sline, sline_len, n_slines
+        streamline_buffer = _buffer_as_array(
+            streamline_buf, KERNEL_DTYPE, (n_streamlines * step, 3)
+        ).copy()
+        streamline_lengths = _buffer_as_array(
+            streamline_lengths_buf, np.int32, (n_streamlines,)
+        ).copy()
+        return streamline_buffer, streamline_lengths, n_streamlines
 
     def close():
         # Metal buffers are reference counted; dropping references frees them.
-        static.clear()
+        static_buffers.clear()
 
-    return gen_streamlines, close
+    return generate_streamlines, close

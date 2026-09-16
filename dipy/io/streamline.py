@@ -194,21 +194,15 @@ def save_trx_from_generator(
     filename : str or Path, optional
         If given, write the ``.trx`` file there.
     nb_streamlines_estimate : int, optional
-        Estimated total number of streamlines, useful
-        for preallocating the TRX file on disk.
-        If None, defaults to 1e6.
-        Default: None
+        Estimated total number of streamlines, used to preallocate the TRX
+        file on disk.
     nb_vertices_estimate : int, optional
-        Estimated total number of vertices, useful
-        for preallocating the TRX file on disk.
-        If None, defaults to nb_streamlines_estimate * 100.
-        Default: None
+        Estimated total number of vertices, used to preallocate the TRX
+        file on disk. If None, ``nb_streamlines_estimate * 100`` is used.
     offset_dtype : data-type, optional
         Data type for the offsets array in the TRX file.
-        Default: np.uint64
     data_dtype : data-type, optional
         Data type for the data array in the TRX file.
-        Default: np.float16
     batch_size : int, optional
         Number of single streamlines to buffer before writing them.
 

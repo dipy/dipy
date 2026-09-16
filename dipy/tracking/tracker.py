@@ -267,12 +267,11 @@ def probabilistic_tracking(
         ``seed_directions`` is None. None tracks the largest peak only; a
         value <= 0 tracks every peak.
     backend : str, optional
-        "cuda" (requires ``dipy[cu12]`` or ``dipy[cu13]``), "metal" (Apple
-        Silicon, requires ``dipy[metal]``), "webgpu" (requires
-        ``dipy[webgpu]``), or "auto" to pick the first available.
-        Non-cpu use a "simple" tracker
-        (see :mod:`dipy.tracking.simplet.tracker`).
-        It assumes:
+        "cpu", "cuda" (requires ``dipy[cu12]`` or ``dipy[cu13]``), "metal"
+        (Apple Silicon, requires ``dipy[metal]``), "webgpu" (requires
+        ``dipy[webgpu]``), or "auto" to pick the first available GPU
+        backend. GPU backends use a "simple" tracker
+        (see :mod:`dipy.tracking.simplet.tracker`) which assumes:
         (1) the entire SF fits in memory (sf, sh or a pam with odf);
         (2) isotropic voxels;
         (3) a ThresholdStoppingCriterion.

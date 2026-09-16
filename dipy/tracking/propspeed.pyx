@@ -754,8 +754,7 @@ cdef TrackerStatus deterministic_propagator(double* point,
     pmf = stream_data
     pmf_gen.get_pmf_c(point, pmf)
 
-    # see probabilistic_propagator: the threshold and the angle mask are fused
-    # into one pass over the direction axis
+    # single pass: pmf threshold and angle mask
     max_pmf = 0
     for i in range(len_pmf):
         if pmf[i] > max_pmf:
@@ -842,8 +841,7 @@ cdef TrackerStatus probabilistic_propagator(double* point,
     pmf = stream_data
     pmf_gen.get_pmf_c(point, pmf)
 
-    # single fused pass over the sphere: pmf threshold, angle mask and cdf.
-    # four separate traversals of the direction axis dominate a tracking step
+    # single pass: pmf threshold, angle mask and cdf
     max_pmf = 0
     for i in range(len_pmf):
         if pmf[i] > max_pmf:
