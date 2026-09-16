@@ -7,8 +7,13 @@ from dipy.direction import (
     ClosestPeakDirectionGetter,
     ProbabilisticDirectionGetter,
 )
-from dipy.direction.pmf import SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
-from dipy.reconst.shm import order_from_ncoef, sh_to_sf
+from dipy.direction.pmf import (
+    SHCoeffPmfGen,
+    SimplePeakGen,
+    SimplePmfGen,
+    _sh_order_from_ncoef,
+)
+from dipy.reconst.shm import sh_to_sf
 from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
 from dipy.tracking.simplet import (
     prepare_simple_tracker_data,
@@ -33,6 +38,7 @@ def generic_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    full_basis=None,
     max_cross=None,
     nbr_threads=0,
     chunk_size=25000,
@@ -98,6 +104,7 @@ def generic_tracking(
             sphere,
             basis_type=basis_type,
             legacy=legacy,
+            full_basis=full_basis,
         )
     else:
         pmf_gen = selected_pmf["cls"](
@@ -183,6 +190,7 @@ def probabilistic_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    full_basis=None,
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
@@ -231,6 +239,10 @@ def probabilistic_tracking(
     legacy: bool, optional
         True to use a legacy basis definition for backward compatibility
         with previous ``tournier07`` and ``descoteaux07`` implementations.
+    full_basis: bool or None, optional
+        True if ``sh`` uses a full (odd and even order) SH basis, e.g. from
+        an asymmetric ODF model. If None, it is inferred from the number of
+        coefficients.
     nbr_threads: int, optional
         Number of threads to use for the processing. By default, all available threads
         will be used.
@@ -293,11 +305,13 @@ def probabilistic_tracking(
         if sf is not None:
             pmf_field = sf
         elif sh is not None:
+            sh_order_max, full_basis = _sh_order_from_ncoef(sh.shape[-1], full_basis)
             pmf_field = sh_to_sf(
                 sh,
                 sphere,
-                sh_order_max=order_from_ncoef(sh.shape[-1]),
+                sh_order_max=sh_order_max,
                 basis_type=basis_type,
+                full_basis=full_basis,
                 legacy=legacy,
             )
         elif pam is not None and pam.odf is not None:
@@ -349,6 +363,7 @@ def probabilistic_tracking(
         sphere=sphere,
         basis_type=basis_type,
         legacy=legacy,
+        full_basis=full_basis,
         nbr_threads=nbr_threads,
         chunk_size=chunk_size,
         save_seeds=save_seeds,
@@ -375,6 +390,7 @@ def deterministic_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    full_basis=None,
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
@@ -420,6 +436,10 @@ def deterministic_tracking(
     legacy: bool, optional
         True to use a legacy basis definition for backward compatibility
         with previous ``tournier07`` and ``descoteaux07`` implementations.
+    full_basis: bool or None, optional
+        True if ``sh`` uses a full (odd and even order) SH basis, e.g. from
+        an asymmetric ODF model. If None, it is inferred from the number of
+        coefficients.
     nbr_threads: int, optional
         Number of threads to use for the processing. By default, all available threads
         will be used.
@@ -470,6 +490,7 @@ def deterministic_tracking(
         sphere=sphere,
         basis_type=basis_type,
         legacy=legacy,
+        full_basis=full_basis,
         nbr_threads=nbr_threads,
         chunk_size=chunk_size,
         chunked=chunked,
@@ -500,6 +521,7 @@ def ptt_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    full_basis=None,
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
@@ -555,6 +577,10 @@ def ptt_tracking(
     legacy: bool, optional
         True to use a legacy basis definition for backward compatibility
         with previous ``tournier07`` and ``descoteaux07`` implementations.
+    full_basis: bool or None, optional
+        True if ``sh`` uses a full (odd and even order) SH basis, e.g. from
+        an asymmetric ODF model. If None, it is inferred from the number of
+        coefficients.
     nbr_threads: int, optional
         Number of threads to use for the processing. By default, all available threads
         will be used.
@@ -609,6 +635,7 @@ def ptt_tracking(
         sphere=sphere,
         basis_type=basis_type,
         legacy=legacy,
+        full_basis=full_basis,
         nbr_threads=nbr_threads,
         chunk_size=chunk_size,
         chunked=chunked,
@@ -865,6 +892,7 @@ def eudx_tracking(
     sphere=None,
     basis_type=None,
     legacy=True,
+    full_basis=None,
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
@@ -911,6 +939,10 @@ def eudx_tracking(
     legacy: bool, optional
         True to use a legacy basis definition for backward compatibility
         with previous ``tournier07`` and ``descoteaux07`` implementations.
+    full_basis: bool or None, optional
+        True if ``sh`` uses a full (odd and even order) SH basis, e.g. from
+        an asymmetric ODF model. If None, it is inferred from the number of
+        coefficients.
     nbr_threads: int, optional
         Number of threads to use for parallel processing. Default is 0, which
         uses all available cores.
@@ -967,6 +999,7 @@ def eudx_tracking(
         sphere=sphere,
         basis_type=basis_type,
         legacy=legacy,
+        full_basis=full_basis,
         max_cross=max_cross,
         nbr_threads=nbr_threads,
         chunk_size=chunk_size,
