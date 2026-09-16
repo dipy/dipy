@@ -10,7 +10,7 @@ from dipy.direction import (
 from dipy.direction.pmf import SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
 from dipy.reconst.shm import order_from_ncoef, sh_to_sf
 from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
-from dipy.tracking.simpletracker import (
+from dipy.tracking.simplet import (
     prepare_simple_tracker_data,
     simple_sl_generator,
 )
@@ -259,7 +259,7 @@ def probabilistic_tracking(
         Silicon, requires ``dipy[metal]``), "webgpu" (requires
         ``dipy[webgpu]``), or "auto" to pick the first available.
         Non-cpu use a "simple" tracker
-        (see :mod:`dipy.tracking.simpletracker`).
+        (see :mod:`dipy.tracking.simplet.tracker`).
         It assumes:
         (1) the entire SF fits in memory (sf, sh or a pam with odf);
         (2) isotropic voxels;

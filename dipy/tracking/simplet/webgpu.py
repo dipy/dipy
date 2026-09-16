@@ -1,5 +1,5 @@
 """
-WebGPU backend for :mod:`dipy.tracking.simpletracker`.
+WebGPU backend for :mod:`dipy.tracking.simplet.tracker`.
 """
 
 from importlib.resources import files
@@ -91,7 +91,7 @@ def _compile(device, std):
     start = time()
     logger.info("Compiling WebGPU simple tracker kernel...")
     n32dimt = _div_up(std.dimt, 32) * 32
-    source = files("dipy.tracking").joinpath("simplet.wgsl").read_text()
+    source = files("dipy.tracking.simplet").joinpath("kernel.wgsl").read_text()
     source = (
         f"const SPHERE_SYMM: u32 = {1 if std.sphere_symm else 0}u;\n"
         f"const N32DIMT: u32 = {n32dimt}u;\n" + source
@@ -105,7 +105,7 @@ def _compile(device, std):
 
 
 def _params(std, nseed):
-    # Must match ProbTrackingParams in simplet.wgsl: 4 f32, 8 i32.
+    # Must match ProbTrackingParams in kernel.wgsl: 4 f32, 8 i32.
     seed = int(std.random_seed)
     params = np.zeros(12, dtype=np.uint32)
     params[:4] = np.array(
@@ -130,7 +130,7 @@ def webgpu_gen_streamlines_prob(simple_tracker_data):
     Set up the WebGPU probabilistic streamline generation kernel on the
     default WebGPU adapter.
 
-    See :func:`dipy.tracking.cudasimplet.cuda_gen_streamlines_prob` for the
+    See :func:`dipy.tracking.simplet.cuda.cuda_gen_streamlines_prob` for the
     returned ``(gen_streamlines, close)`` contract.
     """
     std = simple_tracker_data

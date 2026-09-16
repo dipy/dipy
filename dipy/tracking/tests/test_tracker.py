@@ -10,7 +10,7 @@ from dipy.data import get_fnames, get_sphere
 from dipy.direction.peaks import PeaksAndMetrics
 from dipy.reconst.shm import descoteaux07_legacy_msg, sh_to_sf
 from dipy.tracking import tracker
-from dipy.tracking.simpletracker import SIMPLE_BACKENDS, simple_backend_available
+from dipy.tracking.simplet import SIMPLE_BACKENDS, simple_backend_available
 from dipy.tracking.stopping_criterion import (
     BinaryStoppingCriterion,
     ThresholdStoppingCriterion,

@@ -1,5 +1,5 @@
 """
-CUDA backend for :mod:`dipy.tracking.simpletracker`.
+CUDA backend for :mod:`dipy.tracking.simplet.tracker`.
 """
 
 from importlib.resources import files
@@ -154,7 +154,7 @@ def _compile(std):
     # Compile once on the current device; all GPUs are assumed identical.
     dev = core.Device()
     dev.set_current()
-    source = files("dipy.tracking").joinpath("simplet.cu").read_text()
+    source = files("dipy.tracking.simplet").joinpath("kernel.cu").read_text()
     prog = core.Program(source, code_type="c++", options=options)
     module = prog.compile("cubin", name_expressions=(KERNEL_NAME,))
     logger.info("CUDA simple tracker kernel compiled in %.2f s", time() - start)
@@ -227,7 +227,7 @@ def cuda_gen_streamlines_prob(simple_tracker_data, *, ngpus=1):
     Parameters
     ----------
     simple_tracker_data : _SimpleTrackerData
-        Output of :func:`dipy.tracking.simpletracker.prepare_simple_tracker_data`
+        Output of :func:`dipy.tracking.simplet.tracker.prepare_simple_tracker_data`
     ngpus : int, optional
         Number of GPUs to split each chunk of seeds across.
     """
