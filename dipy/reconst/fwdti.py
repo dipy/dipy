@@ -14,16 +14,17 @@ from dipy.reconst.dki import _positive_evals
 from dipy.reconst.dti import (
     TensorFit,
     _decompose_tensor_nan,
+    cholesky_to_lower_triangular,
     decompose_tensor,
     design_matrix,
     from_lower_triangular,
     lower_triangular,
-    cholesky_to_lower_triangular,
     lower_triangular_to_cholesky,
 )
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.utils.deprecator import warning_for_keywords
+
 
 @warning_for_keywords()
 def fwdti_prediction(params, gtab, *, S0=1, Diso=3.0e-3):
