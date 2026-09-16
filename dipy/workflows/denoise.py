@@ -438,4 +438,4 @@ class GibbsRingingFlow(Workflow):
             )
 
             save_nifti(ounring, unring_data, affine, hdr=image.header)
-            logger.info("Denoised volume saved as %s", ounring)
+            logger.info("Unringed volume saved as %s", ounring)
