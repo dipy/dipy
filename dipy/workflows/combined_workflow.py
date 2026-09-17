@@ -1602,50 +1602,6 @@ def _validate_mask_file(mask_file):
     logger.info(f"✓ Mask validated: binary, {coverage:.1%} coverage — {mask_file}")
 
 
-def _serve_html_report(report_path):
-    """Serve an HTML pipeline report via a local HTTP server and open it.
-
-    Starts a ``http.server`` rooted at the report's directory, opens the
-    default browser, and blocks until the user presses Ctrl+C.
-
-    Parameters
-    ----------
-    report_path : str or Path
-        Path to the HTML report file (e.g., ``pipeline_report.html``).
-    """
-    import functools
-    import http.server
-    import socket
-    import socketserver
-    import webbrowser
-
-    report_path = Path(report_path).resolve()
-    report_dir = str(report_path.parent)
-    report_name = report_path.name
-
-    port = 8000
-    while True:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            try:
-                s.bind(("", port))
-                break
-            except OSError:
-                port += 1
-
-    handler = functools.partial(
-        http.server.SimpleHTTPRequestHandler, directory=report_dir
-    )
-    url = f"http://localhost:{port}/{report_name}"
-    logger.info(f"Serving report at: {url}")
-    logger.info("Press Ctrl+C to stop the server.")
-    webbrowser.open(url)
-    with socketserver.TCPServer(("", port), handler) as httpd:
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            logger.info("Server stopped.")
-
-
 # =============================================================================
 # AutoFlow Workflow
 # =============================================================================
