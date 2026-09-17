@@ -9,6 +9,7 @@ import tarfile
 import tempfile
 import time
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 import zipfile
 
@@ -264,8 +265,10 @@ def _get_file_data(
     if github_url not in candidates:
         candidates.append(github_url)
 
-    is_figshare = "figshare.com" in url
-    is_zenodo = "zenodo.org" in url
+    parsed_url = urlparse(url)
+    hostname = (parsed_url.hostname or "").lower()
+    is_figshare = hostname == "figshare.com" or hostname.endswith(".figshare.com")
+    is_zenodo = hostname == "zenodo.org" or hostname.endswith(".zenodo.org")
 
     if is_figshare or is_zenodo:
         use_headers = True
