@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -129,11 +131,113 @@ def test_image3d_rgb_volume_is_not_directional():
 
 
 @pytest.mark.parametrize("n_channels", [2, 5])
-def test_image3d_rgb_requires_three_or_four_channels(n_channels):
+def test_image3d_rgb_logs_error_for_invalid_channel_count(n_channels, caplog):
     data = _volume((4, 4, 4, n_channels))
 
-    with pytest.raises(ValueError, match="must be 3 \\(RGB\\) or 4 \\(RGBA\\)"):
-        Image3D("rgb.nii.gz", data, affine=AFFINE, rgb=True)
+    with caplog.at_level(logging.ERROR):
+        image = Image3D("rgb.nii.gz", data, affine=AFFINE, rgb=True)
+
+    assert "is 3 (RGB) or 4 (RGBA)" in caplog.text
+    assert image.rgb is False
+
+
+def test_image3d_structured_rgb_auto_detected():
+    dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    data = np.zeros((6, 7, 8), dtype=dtype)
+    image = Image3D("rgb.nii.gz", data, affine=AFFINE)
+
+    assert image.rgb is True
+    assert image._has_directions is False
+    assert image.dwi.dtype == np.uint8
+    assert image.dwi.shape == (6, 7, 8, 3)
+    assert image.active_volume is image.dwi
+
+
+def test_image3d_structured_rgba_auto_detected():
+    dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1"), ("A", "u1")])
+    data = np.zeros((6, 7, 8), dtype=dtype)
+    image = Image3D("rgba.nii.gz", data, affine=AFFINE)
+
+    assert image.rgb is True
+    assert image.dwi.shape == (6, 7, 8, 4)
+
+
+def test_image3d_structured_rgb_preserves_channel_values():
+    dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    data = np.zeros((2, 2, 2), dtype=dtype)
+    data[0, 0, 0]["R"] = 10
+    data[0, 0, 0]["G"] = 20
+    data[0, 0, 0]["B"] = 30
+    image = Image3D("rgb.nii.gz", data, affine=AFFINE)
+
+    npt.assert_array_equal(image.dwi[0, 0, 0], [10, 20, 30])
+
+
+def test_image3d_explicit_rgb_true_overrides_detection():
+    data = np.full((6, 7, 8, 3), 0.5, dtype=np.float32)
+    image = Image3D("dir.nii.gz", data, affine=AFFINE, rgb=True)
+
+    assert image.rgb is True
+    assert image._has_directions is False
+
+
+def test_image3d_rgb_none_plain_uint8_shows_toggle_not_auto_rgb():
+    data = np.zeros((6, 7, 8, 3), dtype=np.uint8)
+    image = Image3D("rgb.nii.gz", data, affine=AFFINE)
+
+    assert image.rgb is False
+    assert image._rgb_capable is True
+    assert image._has_directions is True
+
+
+def test_image3d_rgb_false_suppresses_structured_detection():
+    dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    data = np.zeros((6, 7, 8), dtype=dtype)
+    image = Image3D("rgb.nii.gz", data, affine=AFFINE, rgb=False)
+
+    assert image.rgb is False
+    assert image._has_directions is True
+
+
+def test_image3d_rgb_false_preserves_explicit_rgb_false():
+    """rgb=False must stay locked off; render_widgets gates its toggle on
+    ``_rgb_user is not False``, so this state must never flip back to True.
+    """
+    data = np.full((6, 7, 8, 3), 0.5, dtype=np.float32)
+    image = Image3D("rgb.nii.gz", data, affine=AFFINE, rgb=False)
+
+    assert image._rgb_user is False
+    assert image._rgb_capable is True
+    assert image.rgb is False
+
+
+def test_image3d_rgb_true_on_3d_scalar_logs_error(caplog):
+    data = _volume((6, 7, 8))
+
+    with caplog.at_level(logging.ERROR):
+        image = Image3D("vol.nii.gz", data, affine=AFFINE, rgb=True)
+
+    assert "is 3 (RGB) or 4 (RGBA)" in caplog.text
+    assert image.rgb is False
+
+
+def test_image3d_dwi_range_volume_not_rgb_capable():
+    data = np.full((6, 7, 8, 3), 1000, dtype=np.int16)
+    image = Image3D("dwi.nii.gz", data, affine=AFFINE)
+
+    assert image.rgb is False
+    assert image._rgb_capable is False
+    assert image._has_directions is True
+
+
+def test_image3d_rgb_true_on_incompatible_values_logs_error(caplog):
+    data = np.full((6, 7, 8, 3), 1000, dtype=np.int16)
+
+    with caplog.at_level(logging.ERROR):
+        image = Image3D("dwi.nii.gz", data, affine=AFFINE, rgb=True)
+
+    assert "is 3 (RGB) or 4 (RGBA)" in caplog.text
+    assert image.rgb is False
 
 
 def test_image3d_value_range_follows_the_percentiles():
