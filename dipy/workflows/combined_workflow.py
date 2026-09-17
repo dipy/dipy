@@ -1680,11 +1680,12 @@ def _serve_html_report(report_path):
     report_dir = str(report_path.parent)
     report_name = report_path.name
 
+    host = "127.0.0.1"
     port = 8000
     while True:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
-                s.bind(("", port))
+                s.bind((host, port))
                 break
             except OSError:
                 port += 1
@@ -1696,7 +1697,7 @@ def _serve_html_report(report_path):
     logger.info(f"Serving report at: {url}")
     logger.info("Press Ctrl+C to stop the server.")
     webbrowser.open(url)
-    with socketserver.TCPServer(("", port), handler) as httpd:
+    with socketserver.TCPServer((host, port), handler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
