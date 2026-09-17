@@ -63,9 +63,6 @@ Available methods
 | ``bspline``| Cubic B-spline on a regular grid  | moderate | moderately       |
 |            | (default 8×8×8 control points)    |          | complex bias     |
 +------------+-----------------------------------+----------+------------------+
-| ``auto``   | Runs both, returns the one with   | moderate | when unsure      |
-|            | lower CoV — decision is logged    |          | which to use     |
-+------------+-----------------------------------+----------+------------------+
 
 This tutorial is split into two parts:
 
@@ -149,6 +146,17 @@ print(f"Brain mask    : {mask.sum()} / {mask.size} voxels ({100 * mask.mean():.0
 # and other outlier voxels do not distort the fit.  ``gradient_weighting=True``
 # further down-weights voxels near tissue boundaries where the intensity
 # gradient would otherwise pull the smooth field towards sharp edges.
+#
+# A direct regression of the log b0 cannot tell tissue contrast from the
+# bias field: white matter is darker than cortex and CSF, so a smooth fit
+# happily explains that anatomy as a field that is low in the centre and high
+# at the periphery.  ``sharpen=True`` (the default) wraps the regression in
+# the histogram-sharpening iterations of N4 :footcite:p:`Tustison2010`.  At
+# every iteration the intensity histogram inside the mask is deconvolved,
+# each voxel is pulled toward its tissue-class mean, and only the residual is
+# smoothed.  The field therefore converges to the slowly varying component
+# alone, and tissue contrast is preserved.  ``max_iter``,
+# ``convergence_threshold`` and ``shrink_factor`` control that loop.
 
 print("\nRunning poly...")
 t0 = time.perf_counter()
@@ -200,35 +208,6 @@ b0_bspline = extract_b0(corrected_bspline, gtab.b0s_mask, strategy="mean")
 print(f"  done in {t_bspline:.1f} s")
 
 ###############################################################################
-# Not sure which to choose? Use ``auto``
-# ----------------------------------------
-# When you are unsure whether the bias in your data is smooth enough for
-# ``poly`` or whether you need the extra flexibility of ``bspline``, use
-# ``method="auto"``.  It runs both fits (reusing the same pre-computed
-# ``log_b0`` and ``mask``) and returns whichever achieves the lower
-# Coefficient of Variation (CoV) within the brain mask.  The winning method
-# is written to the logger at INFO level so you can audit the choice.
-
-print("Running auto...")
-t0 = time.perf_counter()
-corrected_auto, bias_auto = bias_field_correction(
-    data,
-    gtab,
-    mask=mask,
-    method="auto",
-    order=3,
-    n_control_points=(8, 8, 8),
-    pyramid_levels=(4, 2, 1),
-    n_iter=4,
-    robust=True,
-    gradient_weighting=True,
-    return_bias_field=True,
-)
-t_auto = time.perf_counter() - t0
-b0_auto = extract_b0(corrected_auto, gtab.b0s_mask, strategy="mean")
-print(f"  done in {t_auto:.1f} s (both methods + selection)")
-
-###############################################################################
 # Visualise corrected mean b0 and estimated bias fields
 # ------------------------------------------------------
 # The top row shows the mean b0 before and after correction.
@@ -240,14 +219,13 @@ vmin = b0_mean[:, :, mid_slice].min()
 vmax = b0_mean[:, :, mid_slice].max()
 bfmin, bfmax = 0.8, 1.2
 
-fig, axes = plt.subplots(2, 4, figsize=(18, 8))
+fig, axes = plt.subplots(2, 3, figsize=(14, 8))
 fig.suptitle("Bias Field Correction — Mean b0 and Estimated Field", fontsize=13)
 
 panels = [
     ("Original", b0_mean, None),
     ("poly", b0_poly, bias_poly),
     ("bspline", b0_bspline, bias_bspline),
-    ("auto", b0_auto, bias_auto),
 ]
 
 for col, (title, img, bf) in enumerate(panels):
@@ -299,7 +277,6 @@ def _cov(img, *, mask):
 cov_orig = _cov(b0_mean, mask=mask)
 cov_poly = _cov(b0_poly, mask=mask)
 cov_bspline = _cov(b0_bspline, mask=mask)
-cov_auto = _cov(b0_auto, mask=mask)
 
 print("\nCoefficient of Variation (lower = more uniform)")
 print(f"  Original : {cov_orig:.4f}")
@@ -307,19 +284,15 @@ print(f"  poly     : {cov_poly:.4f}   ({100 * (cov_orig - cov_poly) / cov_orig:+
 print(
     f"  bspline  : {cov_bspline:.4f}   ({100 * (cov_orig - cov_bspline) / cov_orig:+.1f}%)"
 )
-print(f"  auto     : {cov_auto:.4f}   ({100 * (cov_orig - cov_auto) / cov_orig:+.1f}%)")
-print(
-    f"\nTiming  —  poly: {t_poly:.1f} s   bspline: {t_bspline:.1f} s   "
-    f"auto: {t_auto:.1f} s"
-)
+print(f"\nTiming  —  poly: {t_poly:.1f} s   bspline: {t_bspline:.1f} s")
 
 ###############################################################################
 # Choosing the right parameters
 # ------------------------------
 # A few practical rules of thumb:
 #
-# * **Start with ``method="auto"``**: it runs both methods and picks the best
-#   for your data without any manual tuning.
+# * **Start with ``method="bspline"``** (the default).  It follows N4 most
+#   closely and the bending-energy penalty keeps it from over-fitting.
 # * **Use ``method="poly"`` for large cohorts** where speed matters more than
 #   capturing fine spatial detail (e.g. multi-site studies, batch processing
 #   of hundreds of subjects).  The 20-parameter model is more than sufficient
@@ -328,6 +301,13 @@ print(
 #   surface arrays, parallel imaging, or 7T data.  Increase
 #   ``n_control_points`` (try ``(12, 12, 12)``) if the field still looks
 #   under-corrected.
+# * **Keep ``sharpen=True``** unless the image has no tissue contrast at all
+#   (e.g. a phantom).  ``smoothness`` (bspline only) is a bending-energy
+#   penalty on the control lattice; raise it if the field follows anatomy,
+#   lower it if the field looks under-fitted.
+# * **Do not tune by CoV alone**: a field that flattens grey/white matter
+#   contrast lowers the CoV but is wrong.  Check that tissue contrast
+#   survives in the corrected b0.
 # * **``pyramid_levels=(4, 2, 1)``** (default) works well for most data.  For
 #   very small volumes (< 64 voxels/axis) use ``(2, 1)`` instead.
 # * **Pass ``mask=`` explicitly** when processing multiple subjects: compute
@@ -342,7 +322,7 @@ print(
 # DIPY actually ships **two** families of bias correction, each suited to a
 # different scenario.
 #
-# The regression methods (``poly``, ``bspline``, ``auto``) covered in Part 1
+# The regression methods (``poly`` and ``bspline``) covered in Part 1
 # are fully self-contained and require no deep-learning framework.  DIPY also
 # provides **DeepN4** (:footcite:p:`Kanakaraj2024`), a convolutional neural
 # network trained to mimic the N4 algorithm output — available through the same
@@ -436,7 +416,6 @@ entries = [
     ("Original", b0_mean, None, None),
     ("poly", b0_poly, bias_poly, t_poly),
     ("bspline", b0_bspline, bias_bspline, t_bspline),
-    ("auto", b0_auto, bias_auto, t_auto),
 ]
 if _HAVE_SITK:
     entries.insert(1, ("N4", b0_n4, bias_n4, t_n4))
@@ -557,26 +536,23 @@ if _HAVE_SITK:
 #      - Recommended method
 #      - Reason
 #    * - Standard 3T DWI, batch processing
-#      - ``poly`` or ``auto``
-#      - 10–50× faster than N4; fully adequate for smooth bias
+#      - ``bspline`` or ``poly``
+#      - Same runtime as N4, no extra dependency; ``poly`` is the fastest
 #    * - 7T, surface coils, strong inhomogeneity
 #      - ``bspline`` or DeepN4/N4
 #      - B-spline flexibility handles complex patterns; N4 excels at very
 #        large fields
 #    * - Low-SNR acquisitions (neonates, animals)
-#      - ``poly`` or ``bspline``
-#      - N4 histogram peaks are unreliable at low SNR; regression is more
-#        robust
+#      - ``poly`` with ``sharpen=False, robust=True``
+#      - Histogram sharpening needs distinct tissue peaks; the direct robust
+#        regression does not
 #    * - T1-weighted structural MRI
 #      - DeepN4 (DIPY) or classical N4
 #      - Histogram sharpening is ideal for tissue-segmentation pipelines;
 #        DeepN4 delivers N4-quality in milliseconds per slice
 #    * - Need b0-only fitting (clinical protocol)
-#      - ``poly``, ``bspline``, or ``auto``
+#      - ``poly`` or ``bspline``
 #      - Only DIPY regression methods natively exploit the b0/DW split
-#    * - Unsure which regression model fits my data
-#      - ``auto``
-#      - Runs both poly and bspline, returns the better result automatically
 #
 # The key insight is that DIPY regression methods are **not a compromise**:
 # they are designed specifically for diffusion MRI and exploit information
@@ -598,16 +574,21 @@ if _HAVE_SITK:
 #   DWI analysis.
 # * **DIPY estimates the field from b0 volumes only** (via
 #   :func:`~dipy.core.gradients.extract_b0`), fitting a smooth spatial basis
-#   in log space via robust ridge regression — a design choice that is
-#   mathematically well-matched to the DWI acquisition model.
-# * **``poly``** (20 parameters) is extremely fast and sufficient for most 3T
-#   acquisitions.  **``bspline``** (512 parameters by default) adapts to more
-#   complex patterns.  **``auto``** picks the better of the two for your data.
+#   in log space inside the N4 histogram-sharpening loop, so tissue contrast
+#   stays in the image and only the smooth field is removed.
+# * **``bspline``** (512 parameters by default, the default method) adapts
+#   to complex patterns and matches N4 most closely.  **``poly``** (20
+#   parameters) is the fastest and sufficient for smooth 3T fields.
 # * **DeepN4** (``--method n4``) is DIPY's neural-network bias corrector,
 #   trained to reproduce N4 output and best suited to structural images or
 #   when maximum accuracy is required.
 # * **Compared with classical N4**: DIPY regression fields correlate at
-#   0.90–0.97 with N4 on DWI data, achieve comparable CoV reductions, and
-#   are 10–50× faster.  Use classical N4 or DeepN4 when correcting T1/T2
-#   structural images, or when dealing with extreme inhomogeneity from
-#   surface-array coils at 7T.
+#   0.90–0.97 with N4 on DWI data and preserve the same grey/white matter
+#   contrast, without any extra dependency.  Use classical N4 or DeepN4 when
+#   correcting T1/T2 structural images, or when dealing with extreme
+#   inhomogeneity from surface-array coils at 7T.
+#
+# References
+# ----------
+#
+# .. footbibliography::

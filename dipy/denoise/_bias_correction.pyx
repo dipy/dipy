@@ -189,16 +189,13 @@ def gram_matrix_csr(
     int[::1] indices,
     int[::1] indptr,
     double[::1] weights,
-    double[::1] y,
     double[:, ::1] A,
-    double[::1] b_vec,
 ):
-    """Accumulate weighted Gram matrix and right-hand side from a CSR matrix.
+    """Accumulate the weighted Gram matrix of a CSR matrix.
 
     Computes in-place::
 
-        A[j, k]   += sum_i  w_i * X[i,j] * X[i,k]
-        b_vec[k]  += sum_i  w_i * y_i    * X[i,k]
+        A[j, k] += sum_i  w_i * X[i,j] * X[i,k]
 
     Rows with ``weights[i] == 0`` are skipped.
 
@@ -212,32 +209,26 @@ def gram_matrix_csr(
         CSR row pointers, shape (N+1,), dtype int32.
     weights : ndarray
         Per-row regression weights, shape (N,), dtype float64.
-    y : ndarray
-        Target values, shape (N,), dtype float64.
     A : ndarray
         K x K Gram matrix, pre-allocated zeros, shape (K, K), dtype
-        float64.  Updated in-place.
-    b_vec : ndarray
-        Right-hand side vector, pre-allocated zeros, shape (K,), dtype
         float64.  Updated in-place.
 
     Returns
     -------
     None
-        ``A`` and ``b_vec`` are modified in-place; nothing is returned.
+        ``A`` is modified in-place; nothing is returned.
     """
     cdef:
         long N = weights.shape[0]
         long i
         int p, q, jp, jq, start, end, nnz_i
-        double w_i, wy_i, dp, dq
+        double w_i, dp, dq
 
     with nogil:
         for i in range(N):
             w_i = weights[i]
             if w_i == 0.0:
                 continue
-            wy_i = w_i * y[i]
             start = indptr[i]
             end = indptr[i + 1]
             nnz_i = end - start
@@ -245,7 +236,6 @@ def gram_matrix_csr(
             for p in range(nnz_i):
                 jp = indices[start + p]
                 dp = data[start + p]
-                b_vec[jp] += wy_i * dp
 
                 for q in range(nnz_i):
                     jq = indices[start + q]
