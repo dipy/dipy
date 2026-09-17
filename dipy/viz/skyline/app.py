@@ -81,9 +81,10 @@ class Skyline:
         Value for ``cluster length thr``.
     buan_pvals : str, optional
         Value for ``buan pvals``.
-    rgb : bool, optional
-        Interpret a 4D volume as RGB/RGBA channels when True.
-        Colormap and directional-volume controls are ignored in this mode.
+    rgb : bool or None, optional
+        ``None``: auto-detect from structured NIfTI ``DT_RGB24``
+        dtype; show toggle for other 4D volumes with 3 or 4 channels.
+        ``True``: force RGB mode.  ``False``: never treat as RGB.
     initial_filenames : list, optional
         Value for ``initial filenames``.
     initial_rois : list, optional
@@ -115,7 +116,7 @@ class Skyline:
         cluster_size_thr=None,
         cluster_length_thr=None,
         buan_pvals=None,
-        rgb=False,
+        rgb=None,
         initial_filenames=None,
         initial_rois=None,
         initial_shm_coeffs=None,
@@ -158,9 +159,10 @@ class Skyline:
             Value for ``cluster length thr``.
         buan_pvals : str, optional
             Value for ``buan pvals``.
-        rgb : bool, optional
-            Interpret a 4D volume as RGB/RGBA channels when True.
-            Colormap and directional-volume controls are ignored in this mode.
+        rgb : bool or None, optional
+            ``None``: auto-detect from structured NIfTI ``DT_RGB24``
+            dtype; show toggle for other 4D volumes with 3 or 4 channels.
+            ``True``: force RGB mode.  ``False``: never treat as RGB.
         initial_filenames : list, optional
             Value for ``initial filenames``.
         initial_rois : list, optional
@@ -1120,7 +1122,7 @@ def skyline_from_files(
     cluster_length_thr=None,
     buan_pvals=None,
     stealth=False,
-    rgb=False,
+    rgb=None,
     out_dir=None,
     out_stealth_png=None,
 ):
@@ -1178,8 +1180,10 @@ def skyline_from_files(
         File path for BUAN p-values to be used for BUAN-based coloring of tractograms.
     stealth : bool, optional
         Do not use interactive mode just save figure.
-    rgb : bool, optional
-        Enable the colors in the image if 4D data with RGB/RGBA channels.
+    rgb : bool or None, optional
+        ``None``: auto-detect from structured NIfTI ``DT_RGB24``
+        dtype; show toggle for other 4D volumes with 3 or 4 channels.
+        ``True``: force RGB mode.  ``False``: never treat as RGB.
     out_dir : str or Path, optional
         Output directory to save the figure if stealth mode is enabled.
     out_stealth_png : str, optional
@@ -1230,7 +1234,7 @@ def skyline(
     cluster_size_thr=None,
     cluster_length_thr=None,
     buan_pvals=None,
-    rgb=False,
+    rgb=None,
     initial_filenames=None,
     initial_rois=None,
     initial_shm_coeffs=None,
@@ -1289,8 +1293,10 @@ def skyline(
         Clusters with average length less than ``cluster_length_thr`` in mm will be
         hidden. If None, it will show all cluster above the 25th percentile of the
         cluster length distribution.
-    rgb : bool, optional
-        Enable the colors in the image if 4D data with RGB/RGBA channels.
+    rgb : bool or None, optional
+        ``None``: auto-detect from structured NIfTI ``DT_RGB24``
+        dtype; show toggle for other 4D volumes with 3 or 4 channels.
+        ``True``: force RGB mode.  ``False``: never treat as RGB.
     buan_pvals : str, optional
         File path for BUAN p-values to be used for BUAN-based coloring of tractograms.
     initial_filenames : list, optional

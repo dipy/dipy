@@ -359,3 +359,49 @@ def test_workflow_docstring_matches_signature():
         err_msg="Docstring parameters do not match the command line "
         "arguments:\n" + "\n".join(mismatched),
     )
+
+
+def test_boolean_optional_action_tri_state():
+    """BooleanOptionalAction: bool or None param yields --tristate/--no-tristate/absent."""
+    from dipy.workflows.workflow import Workflow
+
+    class TriStateFlow(Workflow):
+        def run(self, input_file, *, tristate=None, flag=False):
+            """Test tri-state bool and normal store_true flag.
+
+            Parameters
+            ----------
+            input_file : str
+                Input file.
+            tristate : bool or None, optional
+                Tri-state bool param.
+            flag : bool, optional
+                Normal bool flag.
+            """
+            return tristate, flag
+
+    # absent: tristate filtered (None), flag present as False
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(TriStateFlow())
+    parsed = parser.get_flow_args(["dummy.txt"])
+    assert "tristate" not in parsed, "absent tristate must be filtered (None)"
+    assert parsed.get("flag", False) is False
+
+    # --tristate: True present in result
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(TriStateFlow())
+    parsed = parser.get_flow_args(["dummy.txt", "--tristate"])
+    assert parsed["tristate"] is True
+
+    # --no-tristate: False must remain present (not filtered)
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(TriStateFlow())
+    parsed = parser.get_flow_args(["dummy.txt", "--no-tristate"])
+    assert "tristate" in parsed, "--no-tristate result must not be filtered"
+    assert parsed["tristate"] is False
+
+    # --flag: ordinary store_true still works
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(TriStateFlow())
+    parsed = parser.get_flow_args(["dummy.txt", "--flag"])
+    assert parsed["flag"] is True
