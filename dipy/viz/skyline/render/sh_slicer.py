@@ -11,6 +11,7 @@ docstrings for coordinate-space and slicing details.
 
 import numpy as np
 
+from dipy.reconst.shm import calculate_max_order
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import (
     create_numeric_input,
@@ -180,8 +181,10 @@ class SHSlicer:
     scale : float, optional
         Uniform billboard size multiplier relative to estimated SH radii.
     l_max : int, optional
-        Maximum SH order to shade; must not exceed the order implied by
-        ``coeffs_4d``'s last axis.
+        Maximum SH order to shade.  For ``descoteaux``/``descoteaux07``
+        input, capped to the order implied by ``coeffs_4d``'s last axis
+        when that is lower; for ``standard`` input it must not exceed that
+        order (raises ``ValueError`` downstream otherwise).
     lut_res : int, optional
         Cube-map Hermite LUT resolution per face edge.
     mask : ndarray of bool, shape (X, Y, Z), optional
@@ -205,6 +208,8 @@ class SHSlicer:
         color_type="orientation",
     ):
         if basis_type in ("descoteaux", "descoteaux07"):
+            data_sh_order = calculate_max_order(coeffs_4d.shape[-1])
+            l_max = min(l_max, data_sh_order)
             coeffs_4d = _descoteaux_to_fury_standard(coeffs_4d, l_max)
             basis_type = "standard"
 

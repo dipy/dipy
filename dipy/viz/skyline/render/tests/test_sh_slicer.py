@@ -99,6 +99,40 @@ def test_descoteaux_to_fury_standard_leaves_odd_orders_empty():
     assert np.count_nonzero(converted) == N_DESCOTEAUX
 
 
+def test_sh_slicer_caps_l_max_to_a_lower_order_present_in_descoteaux_coeffs():
+    """A default/too-large l_max must never crash on a lower-order file."""
+    order4_ncoeffs = sum(2 * ell + 1 for ell in range(0, 4 + 1, 2))  # 15
+    coeffs = np.zeros((2, 2, 2, order4_ncoeffs), dtype=np.float32)
+    coeffs[..., 0] = 1.0
+
+    slicer = SHSlicer(coeffs, basis_type="descoteaux07")  # default l_max=8
+
+    assert slicer.l_max == 4
+    assert slicer.n_coeffs == (4 + 1) ** 2
+
+
+def test_sh_slicer_truncates_higher_order_descoteaux_coeffs_to_l_max():
+    """A file with more detail than requested is still capped at l_max."""
+    order10_ncoeffs = sum(2 * ell + 1 for ell in range(0, 10 + 1, 2))  # 66
+    coeffs = np.zeros((2, 2, 2, order10_ncoeffs), dtype=np.float32)
+    coeffs[..., 0] = 1.0
+
+    slicer = SHSlicer(coeffs, l_max=8, basis_type="descoteaux07")
+
+    assert slicer.l_max == 8
+    assert slicer.n_coeffs == (8 + 1) ** 2
+
+
+def test_sh_slicer_rejects_invalid_descoteaux_coefficient_count():
+    """A coefficient count that isn't a valid even-order SH basis size
+    must raise, not silently misinterpret or IndexError deep inside the
+    conversion loop."""
+    coeffs = np.zeros((2, 2, 2, 20), dtype=np.float32)
+
+    with pytest.raises(ValueError):
+        SHSlicer(coeffs, basis_type="descoteaux07")
+
+
 def test_sh_glyph_starts_at_the_volume_center():
     glyph = _glyph()
 
