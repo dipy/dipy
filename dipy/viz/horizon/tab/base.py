@@ -5,7 +5,7 @@ import warnings
 
 import numpy as np
 
-from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.util import show_ellipsis
@@ -33,10 +33,22 @@ class HorizonUIElement:
 class HorizonTab(ABC):
     """Base for different tabs available in horizon."""
 
+    @deprecate_with_version(
+        "horizon.tab.HorizonTab is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def __init__(self):
         self._elements = []
 
     @abstractmethod
+    @deprecate_with_version(
+        "horizon.tab.HorizonTab.build is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def build(self, tab_id):
         """Build all the elements under the tab.
 
@@ -69,6 +81,12 @@ class HorizonTab(ABC):
         else:
             self.hide(*self.actors)
 
+    @deprecate_with_version(
+        "horizon.tab.HorizonTab.on_tab_selected is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def on_tab_selected(self):
         """Implement if require to update something while the tab becomes
         active.
@@ -76,11 +94,22 @@ class HorizonTab(ABC):
         if hasattr(self, "_actor_toggle"):
             self._toggle_actors(self._actor_toggle.obj)
 
-    def on_slice_change(self, _x_value, _y_value, _z_value):  # noqa: B027
+    @deprecate_with_version(  # noqa: B027
+        "horizon.tab.HorizonTab.on_slice_change is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
+    def on_slice_change(self, _x_value, _y_value, _z_value):
         """Assign in TabManager if require to update something while the slice
         changes."""
-        pass
 
+    @deprecate_with_version(
+        "horizon.tab.HorizonTab.show is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def show(*args):
         """Show elements in the scene.
 
@@ -91,6 +120,12 @@ class HorizonTab(ABC):
         """
         raise NotImplementedError("This method should be implemented in TabManager.")
 
+    @deprecate_with_version(
+        "horizon.tab.HorizonTab.hide is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def hide(*args):
         """Hide elements from the scene.
 
@@ -103,15 +138,33 @@ class HorizonTab(ABC):
 
     @property
     @abstractmethod
+    @deprecate_with_version(
+        "horizon.tab.HorizonTab.name is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def name(self):
         """Name of the tab."""
 
     @property
     @abstractmethod
+    @deprecate_with_version(
+        "horizon.tab.HorizonTab.actors is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def actors(self):
         """List of actors associated with the tab."""
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.HorizonTab.tab_id is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def tab_id(self):
         """Id of the tab. Reference for Tab Manager to identify the tab.
 
@@ -122,6 +175,12 @@ class HorizonTab(ABC):
         return self._tab_id
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.HorizonTab.elements is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def elements(self):
         """list of underlying FURY ui elements in the tab."""
         return self._elements
@@ -138,6 +197,12 @@ class TabManager:
         Underlying FURY TabUI object.
     """
 
+    @deprecate_with_version(
+        "horizon.tab.TabManager is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     @warning_for_keywords()
     def __init__(
         self,
@@ -201,6 +266,12 @@ class TabManager:
                 tab.on_slice_change = self.synchronize_slices
             self._render_tab_elements(tab.tab_id, tab.elements)
 
+    @deprecate_with_version(
+        "horizon.tab.TabManager.handle_text_overflows is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def handle_text_overflows(self):
         for tab_id, tab in enumerate(self._tabs):
             self._handle_title_overflow(tab.name, self._tab_ui.tabs[tab_id].text_block)
@@ -293,6 +364,12 @@ class TabManager:
         self.tab_changed(current_tab.actors)
         current_tab.on_tab_selected()
 
+    @deprecate_with_version(
+        "horizon.tab.TabManager.reposition is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def reposition(self, win_size):
         """
         Reposition the tabs panel.
@@ -306,6 +383,12 @@ class TabManager:
         x_pad = np.rint((win_width - self._tab_size[0]) / 2)
         self._tab_ui.position = (x_pad, 5)
 
+    @deprecate_with_version(
+        "horizon.tab.TabManager.synchronize_slices is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def synchronize_slices(self, active_tab_id, x_value, y_value, z_value):
         """
         Synchronize slicers for all the images and peaks.
@@ -330,6 +413,12 @@ class TabManager:
         ):
             tab.update_slices(x_value, y_value, z_value)
 
+    @deprecate_with_version(
+        "horizon.tab.TabManager.synchronize_volumes is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def synchronize_volumes(self, active_tab_id, value):
         """Synchronize volumes for all the images with volumes.
 
@@ -370,11 +459,23 @@ class TabManager:
         )
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.TabManager.tab_ui is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def tab_ui(self):
         """FURY TabUI object."""
         return self._tab_ui
 
 
+@deprecate_with_version(
+    "horizon.tab.build_label is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 @warning_for_keywords()
 def build_label(text, *, font_size=16, bold=False):
     """Simple utility function to build labels.
@@ -405,6 +506,12 @@ def build_label(text, *, font_size=16, bold=False):
     return HorizonUIElement(True, text, label)
 
 
+@deprecate_with_version(
+    "horizon.tab.build_slider is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 @warning_for_keywords()
 def build_slider(
     initial_value,
@@ -522,6 +629,12 @@ def build_slider(
     return slider_label, HorizonUIElement(True, initial_value, slider)
 
 
+@deprecate_with_version(
+    "horizon.tab.build_checkbox is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 @warning_for_keywords()
 def build_checkbox(
     *,
@@ -572,6 +685,12 @@ def build_checkbox(
     return HorizonUIElement(True, checked_labels, checkboxes)
 
 
+@deprecate_with_version(
+    "horizon.tab.build_radio_button is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 @warning_for_keywords()
 def build_radio_button(
     *,
@@ -622,6 +741,12 @@ def build_radio_button(
     return HorizonUIElement(True, checked_labels, radio)
 
 
+@deprecate_with_version(
+    "horizon.tab.build_switcher is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 @warning_for_keywords()
 def build_switcher(
     *,

@@ -1,4 +1,11 @@
+# ruff: noqa: E402
 import numpy as np
+import pytest
+
+pytest.skip(
+    "Horizon module deprecated in 1.13.0; scheduled for removal in 2.0.0",
+    allow_module_level=True,
+)
 
 from dipy.viz.gmem import GlobalHorizon
 

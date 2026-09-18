@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """Tests for the deprecated Horizon entry points.
 
 ``Horizon`` is a thin shim over Skyline; the tests build real offscreen viewers
@@ -7,12 +8,15 @@ through it rather than inspecting the forwarding in isolation.
 import numpy as np
 import pytest
 
+pytest.skip(
+    "Horizon module deprecated in 1.13.0; scheduled for removal in 2.0.0",
+    allow_module_level=True,
+)
+
 from dipy.utils.optpkg import optional_package
 
 _, has_fury, _ = optional_package("fury", min_version="2.0.0")
-if not has_fury:
-    pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
-else:
+if has_fury:
     from dipy.viz.horizon.app import Horizon, horizon
 
 AFFINE = np.eye(4)

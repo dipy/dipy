@@ -151,6 +151,12 @@ class Horizon:
             "interactive": interactive,
         }
 
+    @deprecate_with_version(
+        "horizon.app.Horizon.build_show is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def build_show(self):
         skyline_window = skyline(
             visualizer_type="stealth"

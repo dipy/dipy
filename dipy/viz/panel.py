@@ -3,7 +3,7 @@ import warnings
 
 import numpy as np
 
-from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
@@ -16,6 +16,12 @@ if have_fury:
     from dipy.viz import actor, colormap, ui
 
 
+@deprecate_with_version(
+    "panel.build_label is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 @warning_for_keywords()
 def build_label(text, *, font_size=18, bold=False):
     """Simple utility function to build labels
@@ -61,6 +67,12 @@ def _color_dslider(slider):
     slider.handles[1].color = (1, 0.5, 0)
 
 
+@deprecate_with_version(
+    "panel.slicer_panel is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 @warning_for_keywords()
 def slicer_panel(
     scene,

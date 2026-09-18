@@ -1,9 +1,15 @@
 import numpy as np
 
-from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
 from dipy.utils.logging import logger
 
 
+@deprecate_with_version(
+    "horizon.util.check_img_shapes is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 def check_img_shapes(images):
     """Check if the images have same shapes. It also provides details about the
     volumes are same or not. If the shapes are not equal it will return False
@@ -36,6 +42,12 @@ def check_img_shapes(images):
     return (True, len(set(volumed_data_shapes)) == 1)
 
 
+@deprecate_with_version(
+    "horizon.util.check_img_dtype is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 def check_img_dtype(images):
     """Check supplied image dtype.
 
@@ -76,6 +88,12 @@ def check_img_dtype(images):
     return valid_images
 
 
+@deprecate_with_version(
+    "horizon.util.show_ellipsis is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 def show_ellipsis(text, text_size, available_size):
     """Apply ellipsis to the text.
 
@@ -101,6 +119,12 @@ def show_ellipsis(text, text_size, available_size):
     return text
 
 
+@deprecate_with_version(
+    "horizon.util.unpack_surface is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 def unpack_surface(surface):
     """Unpack surface data.
 
@@ -124,6 +148,12 @@ def unpack_surface(surface):
     return data
 
 
+@deprecate_with_version(
+    "horizon.util.unpack_data is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 def unpack_data(data, *, return_size=3):
     if not isinstance(data, tuple):
         data = (data, None)
@@ -135,6 +165,12 @@ def unpack_data(data, *, return_size=3):
     return data
 
 
+@deprecate_with_version(
+    "horizon.util.check_peak_size is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 @warning_for_keywords()
 def check_peak_size(pams, *, ref_img_shape=None, sync_imgs=False):
     """Check shape of peaks.
