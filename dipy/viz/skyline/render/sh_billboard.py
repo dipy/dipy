@@ -1,4 +1,13 @@
-"""GPU billboard pipeline for dense spherical-harmonic glyphs in Skyline."""
+"""GPU billboard pipeline for spherical-harmonic ODF glyphs.
+
+Each ODF glyph is a camera-facing quad; the fragment shader ray-marches
+it to find where the view ray meets the SH surface r(omega) =
+sum(c_lm * Y_lm(omega)).  Because evaluating that sum per pixel is
+expensive, :func:`bake_hermite_lut` pre-bakes it into a cube-map Hermite
+LUT that the shader samples instead, falling back to direct evaluation
+when no LUT is baked.  See individual function/class docstrings for
+details (LUT layout and chunking, shader bindings, etc.).
+"""
 
 from math import ceil
 from typing import ClassVar
@@ -210,24 +219,12 @@ class SphGlyphBillboard(Billboard):
 
     @property
     def l_max(self):
-        """Handle l max for ``SphGlyphBillboard``.
-
-        Returns
-        -------
-        int
-            The value of the l max.
-        """
+        """int: Maximum SH order currently shaded (-1 if never set)."""
         return getattr(self, "_l_max", -1)
 
     @l_max.setter
     def l_max(self, value):
-        """Handle l max for ``SphGlyphBillboard``.
-
-        Parameters
-        ----------
-        value : int
-            Value for ``value``.
-        """
+        """Truncate shading to ``value``; raises if it exceeds the coefficients."""
         if not isinstance(value, int) or value < 0:
             raise ValueError("The attribute 'l_max' must be a non-negative integer.")
         max_supported = get_lmax(
@@ -245,7 +242,12 @@ class SphGlyphBillboard(Billboard):
 
 
 class BillboardSphGlyphShader(MeshShader):
-    """Represent ``BillboardSphGlyphShader`` in Skyline.
+    """pygfx shader: template variables and bindings for the ODF billboard pipeline.
+
+    Reads flags/dimensions off ``wobject`` (the :class:`SphGlyphBillboard`
+    actor) at construction time and exposes them as WGSL template variables
+    (``{{ n_coeffs }}``, ``{{ use_hermite_lut }}``, etc.) consumed by
+    ``sh_billboard.wgsl``.
 
     Parameters
     ----------
@@ -254,13 +256,6 @@ class BillboardSphGlyphShader(MeshShader):
     """
 
     def __init__(self, wobject):
-        """Represent ``BillboardSphGlyphShader`` in Skyline.
-
-        Parameters
-        ----------
-        wobject : SphGlyphBillboard
-            Billboard object rendered by this shader.
-        """
         super().__init__(wobject)
         self._wobject = wobject
         self["billboard_count"] = getattr(wobject, "billboard_count", 1)
@@ -283,19 +278,16 @@ class BillboardSphGlyphShader(MeshShader):
         self["use_slicing"] = "true" if use_slicing else "false"
 
     def get_render_info(self, wobject, shared):
-        """Handle get render info for ``BillboardSphGlyphShader``.
+        """Instance/vertex counts pygfx needs to issue the draw call.
 
-        Parameters
-        ----------
-        wobject : SphGlyphBillboard
-            Billboard object rendered by this shader.
-        shared : dict
-            Value for ``shared``.
+        Falls back to computing them from the geometry's vertex buffer
+        when the base ``MeshShader`` doesn't already provide indices
+        (e.g. before the geometry has been fully wired up).
 
         Returns
         -------
         dict
-            The render info of the billboard shader.
+            ``{"indices": (vertex_count, instance_count, 0, 0)}``.
         """
         render_info = super().get_render_info(wobject, shared)
         if not render_info or render_info.get("indices") is None:
@@ -311,21 +303,19 @@ class BillboardSphGlyphShader(MeshShader):
         return render_info
 
     def get_bindings(self, wobject, shared, scene=None):  # pep3102: ignore
-        """Handle get bindings for ``BillboardSphGlyphShader``.
+        """Wire the SH-coefficient and Hermite-LUT storage buffers.
 
-        Parameters
-        ----------
-        wobject : SphGlyphBillboard
-            Billboard object rendered by this shader.
-        shared : dict
-            Value for ``shared``.
-        scene : Scene, optional
-            Active rendering scene passed by the renderer.
+        Group 2 binding 0 is the flat SH coefficient buffer; group 3
+        bindings 0-7 are the (up to 8) Hermite LUT chunk buffers, padded
+        out with a shared dummy ``vec4<f32>`` buffer when ``wobject``
+        has fewer chunks than that (or hasn't baked a LUT at all), since
+        WGSL bindings must all be declared even when unused.
 
         Returns
         -------
         dict
-            The bindings of the billboard shader.
+            Bindings dict with groups 2 and 3 populated, merged onto
+            whatever the base ``MeshShader`` already provided.
         """
         try:
             bindings = super().get_bindings(wobject, shared, scene)
@@ -382,13 +372,7 @@ class BillboardSphGlyphShader(MeshShader):
         return bindings
 
     def get_code(self):
-        """Handle get code for ``BillboardSphGlyphShader``.
-
-        Returns
-        -------
-        str
-            The code of the billboard shader.
-        """
+        """Return the (still-templated) WGSL source for this shader."""
         return load_dipy_wgsl("sh_billboard.wgsl")
 
 
@@ -402,6 +386,13 @@ def _create_billboard_actor(
     material_cls,
     material_kwargs=None,
 ):
+    """Build a per-glyph 6-vertex-quad ``SphGlyphBillboard`` geometry + material.
+
+    Broadcasts ``colors``/``sizes`` to match ``centers`` when given as a
+    single value, repeats each glyph's data across its 6 quad vertices,
+    and stores ``billboard_count``/``billboard_centers``/``billboard_sizes``
+    on the returned actor for later use (LUT baking, picking, resizing).
+    """
     centers = np.asarray(centers, dtype=np.float32)
     if centers.ndim == 1:
         centers = centers.reshape(1, 3)
@@ -461,6 +452,13 @@ def _create_billboard_actor(
 def _populate_hermite_lut_cube_cpu_chunked(
     actor, lut_res, glyph_count, n_coeffs, chunk_info, *, use_float16=False
 ):
+    """CPU (NumPy) fallback for ``bake_hermite_lut`` when GPU compute is unavailable.
+
+    Evaluates the SH basis on a padded per-face grid, takes a 4th-order
+    finite-difference of the raw values to get (value, du, dv, d2uv),
+    and writes the result into ``actor``'s already-allocated Hermite LUT
+    chunk buffers.
+    """
     N = lut_res
     g = 1
     size = N + 2 * g

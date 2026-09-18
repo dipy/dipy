@@ -6,6 +6,49 @@ enable f16;
 {$ include 'pygfx.light_phong.wgsl' $}
 {$ include 'fury.utils.wgsl' $}
 
+// ============================================================================
+// SH Billboard Shader -- per-pixel ODF surface rendering
+//
+// VERTEX STAGE (vs_main)
+//   Reads the glyph's center from the position buffer (raw voxel-index
+//   coordinates) and applies the world transform.  When slicing is
+//   active, tests the transformed center against the active per-axis
+//   slice plane using fury's own is_point_on_plane_equation() (shared
+//   with the peaks and image slicers), discards off-slice glyphs, and
+//   snaps on-slice glyphs' matching axis exactly onto the plane -- like
+//   fury's vector-field shader -- so the visible slice is crisp instead
+//   of smeared across the tolerance band.  Expands a camera-facing quad
+//   around the (possibly snapped) center.
+//
+// FRAGMENT STAGE (fs_main)
+//   For each pixel on the quad:
+//
+//   1. RAY SETUP -- construct a ray from camera through the pixel.
+//
+//   2. RADIUS EVALUATION -- get_radius(direction):
+//      - With LUT: sample_hermite_cube() reads 4 neighboring texels
+//        from the cube-map Hermite LUT, does bicubic interpolation.
+//        The cube map has 6 faces; cube_face_uv() selects the face
+//        and computes (u,v) coordinates within it.
+//      - Without LUT: evaluate_radius_direct() computes
+//        r(omega) = sum(c_lm * Y_lm(omega)) directly -- unrolled for
+//        l<=4, generic Legendre recurrence for higher orders.
+//
+//   3. RAY-SURFACE INTERSECTION -- find_surface_intersection():
+//      Bracket-then-refine search for the ray parameter t where
+//      distance_from_center(t) = r(direction(t)):
+//        a. Linear bracketing sweep to find sign change
+//        b. Bisection refinement (10 steps)
+//        c. Newton refinement (6 steps) using evaluate_surface_analytic()
+//
+//   4. NORMAL -- with Hermite LUT: sample_hermite_cube_with_gradient()
+//      returns dr/du, dr/dv -> analytic normal via chain rule.
+//      Without: finite-difference of the implicit function.
+//
+//   5. LIGHTING -- Blinn-Phong with ambient + punctual lights.
+//      Color: orientation-mapped (|direction|) or sign-mapped (+/-r).
+// ============================================================================
+
 const NUM_COEFFS = i32({{ n_coeffs }});
 const L_MAX = i32({{ l_max }});
 const COLOR_TYPE = i32({{ color_type }});
@@ -36,33 +79,18 @@ fn read_hermite_value(glyph_id: u32, local_offset: u32) -> vec4<f32> {
     let local_glyph = chunk_info.y;
     let actual_offset = local_glyph * LUT_STRIDE + local_offset;
 
-    {$ if use_float16 == 'true' $}
-        if (LUT_N_CHUNKS <= 1u) {
-            return vec4<f32>(s_sh_hermite_lut_0[actual_offset]);
-        }
+    if (LUT_N_CHUNKS <= 1u) {
+        return vec4<f32>(s_sh_hermite_lut_0[actual_offset]);
+    }
 
-        if (chunk_idx == 0u) { return vec4<f32>(s_sh_hermite_lut_0[actual_offset]); }
-        else if (chunk_idx == 1u) { return vec4<f32>(s_sh_hermite_lut_1[actual_offset]); }
-        else if (chunk_idx == 2u) { return vec4<f32>(s_sh_hermite_lut_2[actual_offset]); }
-        else if (chunk_idx == 3u) { return vec4<f32>(s_sh_hermite_lut_3[actual_offset]); }
-        else if (chunk_idx == 4u) { return vec4<f32>(s_sh_hermite_lut_4[actual_offset]); }
-        else if (chunk_idx == 5u) { return vec4<f32>(s_sh_hermite_lut_5[actual_offset]); }
-        else if (chunk_idx == 6u) { return vec4<f32>(s_sh_hermite_lut_6[actual_offset]); }
-        else { return vec4<f32>(s_sh_hermite_lut_7[actual_offset]); }
-    {$ else $}
-        if (LUT_N_CHUNKS <= 1u) {
-            return vec4<f32>(s_sh_hermite_lut_0[actual_offset]);
-        }
-
-        if (chunk_idx == 0u) { return vec4<f32>(s_sh_hermite_lut_0[actual_offset]); }
-        else if (chunk_idx == 1u) { return vec4<f32>(s_sh_hermite_lut_1[actual_offset]); }
-        else if (chunk_idx == 2u) { return vec4<f32>(s_sh_hermite_lut_2[actual_offset]); }
-        else if (chunk_idx == 3u) { return vec4<f32>(s_sh_hermite_lut_3[actual_offset]); }
-        else if (chunk_idx == 4u) { return vec4<f32>(s_sh_hermite_lut_4[actual_offset]); }
-        else if (chunk_idx == 5u) { return vec4<f32>(s_sh_hermite_lut_5[actual_offset]); }
-        else if (chunk_idx == 6u) { return vec4<f32>(s_sh_hermite_lut_6[actual_offset]); }
-        else { return vec4<f32>(s_sh_hermite_lut_7[actual_offset]); }
-    {$ endif $}
+    if (chunk_idx == 0u) { return vec4<f32>(s_sh_hermite_lut_0[actual_offset]); }
+    else if (chunk_idx == 1u) { return vec4<f32>(s_sh_hermite_lut_1[actual_offset]); }
+    else if (chunk_idx == 2u) { return vec4<f32>(s_sh_hermite_lut_2[actual_offset]); }
+    else if (chunk_idx == 3u) { return vec4<f32>(s_sh_hermite_lut_3[actual_offset]); }
+    else if (chunk_idx == 4u) { return vec4<f32>(s_sh_hermite_lut_4[actual_offset]); }
+    else if (chunk_idx == 5u) { return vec4<f32>(s_sh_hermite_lut_5[actual_offset]); }
+    else if (chunk_idx == 6u) { return vec4<f32>(s_sh_hermite_lut_6[actual_offset]); }
+    else { return vec4<f32>(s_sh_hermite_lut_7[actual_offset]); }
 }
 
 struct VertexInput {
@@ -106,6 +134,7 @@ fn clamp_radius(value: f32) -> f32 {
     return abs(value) * u_material.scale;
 }
 
+// ── Hermite interpolation ──
 fn hermite_basis(t: f32) -> vec4<f32> {
     let t2 = t * t;
     let t3 = t2 * t;
@@ -129,30 +158,43 @@ fn hermite_basis_deriv(t: f32) -> vec4<f32> {
     );
 }
 
+// ── Cube-map LUT sampling ──
+struct CubeFaceUV {
+    face_idx: u32,
+    u_norm: f32,
+    v_norm: f32,
+    sc: f32,
+    tc: f32,
+    ma: f32,
+}
+
+fn cube_face_uv(direction: vec3<f32>) -> CubeFaceUV {
+    var result: CubeFaceUV;
+    let abs_dir = abs(direction);
+    if (abs_dir.x >= abs_dir.y && abs_dir.x >= abs_dir.z) {
+        if (direction.x > 0.0) { result.face_idx = 0u; result.sc = -direction.z; result.tc = -direction.y; result.ma = abs_dir.x; }
+        else { result.face_idx = 1u; result.sc = direction.z; result.tc = -direction.y; result.ma = abs_dir.x; }
+    } else if (abs_dir.y >= abs_dir.z) {
+        if (direction.y > 0.0) { result.face_idx = 2u; result.sc = direction.x; result.tc = direction.z; result.ma = abs_dir.y; }
+        else { result.face_idx = 3u; result.sc = direction.x; result.tc = -direction.z; result.ma = abs_dir.y; }
+    } else {
+        if (direction.z > 0.0) { result.face_idx = 4u; result.sc = direction.x; result.tc = -direction.y; result.ma = abs_dir.z; }
+        else { result.face_idx = 5u; result.sc = -direction.x; result.tc = -direction.y; result.ma = abs_dir.z; }
+    }
+    result.u_norm = (result.sc / result.ma + 1.0) * 0.5;
+    result.v_norm = (result.tc / result.ma + 1.0) * 0.5;
+    return result;
+}
+
 fn sample_hermite_cube(glyph_id: u32, direction: vec3<f32>) -> f32 {
     if (LUT_PHI_RES == 0u || LUT_STRIDE == 0u) {
         return 0.0;
     }
 
-    let abs_dir = abs(direction);
-    var face_idx = 0u;
-    var sc = 0.0;
-    var tc = 0.0;
-    var ma = 0.0;
-
-    if (abs_dir.x >= abs_dir.y && abs_dir.x >= abs_dir.z) {
-        if (direction.x > 0.0) { face_idx = 0u; sc = -direction.z; tc = -direction.y; ma = abs_dir.x; }
-        else { face_idx = 1u; sc = direction.z; tc = -direction.y; ma = abs_dir.x; }
-    } else if (abs_dir.y >= abs_dir.z) {
-        if (direction.y > 0.0) { face_idx = 2u; sc = direction.x; tc = direction.z; ma = abs_dir.y; }
-        else { face_idx = 3u; sc = direction.x; tc = -direction.z; ma = abs_dir.y; }
-    } else {
-        if (direction.z > 0.0) { face_idx = 4u; sc = direction.x; tc = -direction.y; ma = abs_dir.z; }
-        else { face_idx = 5u; sc = -direction.x; tc = -direction.y; ma = abs_dir.z; }
-    }
-
-    let u_norm = (sc / ma + 1.0) * 0.5;
-    let v_norm = (tc / ma + 1.0) * 0.5;
+    let face = cube_face_uv(direction);
+    let face_idx = face.face_idx;
+    let u_norm = face.u_norm;
+    let v_norm = face.v_norm;
 
     let lut_res = LUT_PHI_RES;
 
@@ -197,25 +239,13 @@ fn sample_hermite_cube_with_gradient(glyph_id: u32, direction: vec3<f32>) -> Her
         return result;
     }
 
-    let abs_dir = abs(direction);
-    var face_idx = 0u;
-    var sc = 0.0;
-    var tc = 0.0;
-    var ma = 0.0;
-
-    if (abs_dir.x >= abs_dir.y && abs_dir.x >= abs_dir.z) {
-        if (direction.x > 0.0) { face_idx = 0u; sc = -direction.z; tc = -direction.y; ma = abs_dir.x; }
-        else { face_idx = 1u; sc = direction.z; tc = -direction.y; ma = abs_dir.x; }
-    } else if (abs_dir.y >= abs_dir.z) {
-        if (direction.y > 0.0) { face_idx = 2u; sc = direction.x; tc = direction.z; ma = abs_dir.y; }
-        else { face_idx = 3u; sc = direction.x; tc = -direction.z; ma = abs_dir.y; }
-    } else {
-        if (direction.z > 0.0) { face_idx = 4u; sc = direction.x; tc = -direction.y; ma = abs_dir.z; }
-        else { face_idx = 5u; sc = -direction.x; tc = -direction.y; ma = abs_dir.z; }
-    }
-
-    let u_norm = (sc / ma + 1.0) * 0.5;
-    let v_norm = (tc / ma + 1.0) * 0.5;
+    let face = cube_face_uv(direction);
+    let face_idx = face.face_idx;
+    let sc = face.sc;
+    let tc = face.tc;
+    let ma = face.ma;
+    let u_norm = face.u_norm;
+    let v_norm = face.v_norm;
 
     let lut_res = LUT_PHI_RES;
     let s = 1.0 + u_norm * (f32(lut_res) - 3.0);
@@ -315,6 +345,7 @@ fn get_radius(glyph_id: u32, coeff_offset: i32, direction: vec3<f32>, coeff_limi
     return evaluate_radius_direct(coeff_offset, direction, coeff_limit);
 }
 
+// ── Direct SH evaluation ──
 fn evaluate_radius_direct(coeff_offset: i32, direction: vec3<f32>, coeff_limit: i32) -> f32 {
     if (coeff_limit <= 0) {
         return 0.0;
@@ -621,6 +652,7 @@ struct IntersectionResult {
     grad_s2: vec3<f32>,
 };
 
+// ── Ray-surface intersection ──
 fn surface_difference(
     coeff_offset: i32,
     center: vec3<f32>,
@@ -732,6 +764,7 @@ fn evaluate_implicit(
     return dist - radius;
 }
 
+// ── Normal estimation ──
 fn estimate_surface_normal_analytic(
     omega: vec3<f32>,
     _rho: f32,
@@ -918,6 +951,7 @@ fn find_surface_intersection(
     return result;
 }
 
+// ── Vertex shader ──
 @vertex
 fn vs_main(in: VertexInput) -> Varyings {
     let billboard_index = i32(in.index) / 6;
@@ -1061,6 +1095,7 @@ struct ReflectedLight {
     indirect_specular: vec3<f32>,
 };
 
+// ── Fragment shader ──
 @fragment
 fn fs_main(varyings: Varyings) -> FragmentOutput {
     {$ include 'pygfx.clipping_planes.wgsl' $}

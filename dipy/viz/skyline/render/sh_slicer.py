@@ -1,4 +1,13 @@
-"""SH Glyph Slicer for Skyline."""
+"""SH glyph slicer for Skyline -- the entry point for ODF visualization.
+
+Builds a GPU-accelerated 3-D visualization of orientation distribution
+functions (ODFs) from a 4-D array of spherical-harmonic coefficients and a
+voxel-to-world affine.  ``create_shm_visualization`` unpacks the input
+tuple into a :class:`SHGlyph3D`, which owns a :class:`SHSlicer` that builds
+the billboard actor (:func:`~dipy.viz.skyline.render.sh_billboard.sph_glyph_billboard_sliced`)
+and drives its per-axis slice uniforms.  See individual class/method
+docstrings for coordinate-space and slicing details.
+"""
 
 import numpy as np
 
@@ -156,24 +165,32 @@ def _descoteaux_to_fury_standard(coeffs_4d, sh_order):
 
 
 class SHSlicer:
-    """Represent ``SHSlicer`` in Skyline.
+    """Build and drive the single billboard actor backing an ODF visualization.
+
+    Owns the flattened, non-zero-only glyph data (coefficients, model-space
+    centers, voxel indices) passed to :func:`sph_glyph_billboard_sliced`,
+    and forwards per-axis slice/visibility/scale/opacity changes to that
+    actor's material without ever rebuilding the geometry.
 
     Parameters
     ----------
-    coeffs_4d : ndarray
-        Value for ``coeffs 4d``.
+    coeffs_4d : ndarray, shape (X, Y, Z, C)
+        SH coefficients per voxel.  Converted from ``descoteaux07`` to
+        Fury's standard basis on construction if needed.
     scale : float, optional
-        Value for ``scale``.
+        Uniform billboard size multiplier relative to estimated SH radii.
     l_max : int, optional
-        Value for ``l max``.
+        Maximum SH order to shade; must not exceed the order implied by
+        ``coeffs_4d``'s last axis.
     lut_res : int, optional
-        Value for ``lut res``.
-    mask : ndarray, optional
-        Value for ``mask``.
-    basis_type : str, optional
-        Value for ``basis type``.
-    color_type : str, optional
-        Value for ``color type``.
+        Cube-map Hermite LUT resolution per face edge.
+    mask : ndarray of bool, shape (X, Y, Z), optional
+        When given, voxels outside the mask are excluded even if their
+        coefficients are non-zero.
+    basis_type : {"standard", "descoteaux", "descoteaux07"}, optional
+        SH basis convention of ``coeffs_4d``.
+    color_type : {"orientation", "sign"}, optional
+        Glyph coloring: direction-mapped hue, or a two-color sign split.
     """
 
     def __init__(
@@ -187,25 +204,6 @@ class SHSlicer:
         basis_type="standard",
         color_type="orientation",
     ):
-        """Represent ``SHSlicer`` in Skyline.
-
-        Parameters
-        ----------
-        coeffs_4d : ndarray
-            Value for ``coeffs 4d``.
-        scale : float, optional
-            Value for ``scale``.
-        l_max : int, optional
-            Value for ``l max``.
-        lut_res : int, optional
-            Value for ``lut res``.
-        mask : ndarray, optional
-            Value for ``mask``.
-        basis_type : str, optional
-            Value for ``basis type``.
-        color_type : str, optional
-            Value for ``color type``.
-        """
         if basis_type in ("descoteaux", "descoteaux07"):
             coeffs_4d = _descoteaux_to_fury_standard(coeffs_4d, l_max)
             basis_type = "standard"
@@ -226,14 +224,35 @@ class SHSlicer:
         self._glyph_actor = None
 
     def build(self):
-        """Handle build for ``SHSlicer``."""
+        """Build the billboard actor and add it to :attr:`actor`.
+
+        Safe to call when every voxel is zero (or masked out): the group
+        is then left empty and :attr:`_glyph_actor` stays ``None``.
+
+        Returns
+        -------
+        Group
+            The (possibly empty) parent group holding the billboard actor.
+        """
         self._glyph_actor = self._build_volume_actor()
         if self._glyph_actor is not None:
             self.actor.add(self._glyph_actor)
         return self.actor
 
     def _build_volume_actor(self):
-        """Handle build volume actor for ``SHSlicer``."""
+        """Flatten non-zero voxels and build the billboard actor for them.
+
+        Model-space glyph centers are the raw integer voxel indices
+        ``(ix, iy, iz)``; the caller (:class:`SHGlyph3D`) applies the full
+        voxel-to-world affine once, as a group transform, on top of this.
+
+        Returns
+        -------
+        SphGlyphBillboard or None
+            ``None`` when no voxel has non-zero coefficients (after
+            masking), otherwise the actor from
+            :func:`sph_glyph_billboard_sliced`.
+        """
         X, Y, Z = self.shape
 
         flat_coeffs = self.coeffs_4d.reshape(-1, self.n_coeffs)
@@ -269,7 +288,19 @@ class SHSlicer:
         return glyph
 
     def set_slice(self, axis, idx):
-        """Show slice *idx* on *axis* via uniform update."""
+        """Move the active slice plane on one axis to a world-space position.
+
+        A no-op when ``idx`` matches the axis's current position, so
+        repeated calls from a UI slider don't trigger redundant GPU
+        uniform uploads.
+
+        Parameters
+        ----------
+        axis : {"x", "y", "z"}
+            Which per-axis slice-position uniform to update.
+        idx : float
+            World-space coordinate of the new slice plane along ``axis``.
+        """
         if idx == self._cur[axis]:
             return
         if self._glyph_actor is not None:
@@ -310,30 +341,36 @@ class SHSlicer:
 
 
 class SHGlyph3D(Visualization):
-    """Represent ``SHGlyph3D`` in Skyline.
+    """High-level ODF visualization: UI widgets, sync, and slice state.
+
+    Wraps a single :class:`SHSlicer` and converts the shared, world-space
+    ``state`` vector (synchronized across every Skyline visualization) into
+    the per-axis slice positions the billboard shader expects.
 
     Parameters
     ----------
     name : str
         Display name used in the Skyline UI.
-    coeffs : ndarray
-        Value for ``coeffs``.
+    coeffs : ndarray, shape (X, Y, Z, C)
+        SH coefficients per voxel.
     affine : ndarray, optional
         Voxel-to-world affine used to position slices in world coordinates.
+        When ``None``, ``state``/slice positions are voxel indices instead.
     render_callback : callable, optional
         Callback used to request a render/update.
     scale : float, optional
-        Value for ``scale``.
+        Per-glyph scale used only when ``affine`` is ``None``; otherwise
+        the scale is derived from the affine's voxel sizes.
     l_max : int, optional
-        Value for ``l max``.
+        Maximum SH order to shade.
     lut_res : int, optional
-        Value for ``lut res``.
-    basis_type : str, optional
-        Value for ``basis type``.
-    color_type : str, optional
-        Value for ``color type``.
-    mask : ndarray, optional
-        Value for ``mask``.
+        Cube-map Hermite LUT resolution per face edge.
+    basis_type : {"standard", "descoteaux", "descoteaux07"}, optional
+        SH basis convention of ``coeffs``.
+    color_type : {"orientation", "sign"}, optional
+        Glyph coloring: direction-mapped hue, or a two-color sign split.
+    mask : ndarray of bool, optional
+        Boolean mask of valid voxels.
     sync_callback : callable, optional
         Callback used to synchronize state across views.
     """
@@ -353,33 +390,6 @@ class SHGlyph3D(Visualization):
         mask=None,
         sync_callback=None,
     ):
-        """Represent ``SHGlyph3D`` in Skyline.
-
-        Parameters
-        ----------
-        name : str
-            Display name used in the Skyline UI.
-        coeffs : ndarray
-            Value for ``coeffs``.
-        affine : ndarray, optional
-            Voxel-to-world affine used to position slices in world coordinates.
-        render_callback : callable, optional
-            Callback used to request a render/update.
-        scale : float, optional
-            Value for ``scale``.
-        l_max : int, optional
-            Value for ``l max``.
-        lut_res : int, optional
-            Value for ``lut res``.
-        basis_type : str, optional
-            Value for ``basis type``.
-        color_type : str, optional
-            Value for ``color type``.
-        mask : ndarray, optional
-            Value for ``mask``.
-        sync_callback : callable, optional
-            Callback used to synchronize state across views.
-        """
         self.affine = affine
         if self.affine is not None:
             default_scale = float(np.mean(affine_voxel_sizes(self.affine)))
@@ -425,22 +435,22 @@ class SHGlyph3D(Visualization):
 
     @property
     def actor(self):
-        """Handle actor for ``SHGlyph3D``.
+        """Group actor to add to the scene; delegates to the slicer.
 
         Returns
         -------
         Group
-            The actor of the SHGlyph3D visualization.
+            Parent group containing the billboard actor.
         """
         return self._slicer.actor
 
     def _populate_info(self):
-        """Handle  populate info for ``SHGlyph3D``.
+        """Build the multi-line summary shown in the info panel.
 
         Returns
         -------
         str
-            The information of the SHGlyph3D visualization.
+            Dimensions, SH coefficient count, and SH order, one per line.
         """
         info = f"Dimensions: {self.shape}"
         info += f"\nSH Coefficients: {self._slicer.n_coeffs}"
@@ -470,7 +480,16 @@ class SHGlyph3D(Visualization):
         return np.clip(np.round(voxel).astype(int), 0, np.array(self.shape) - 1)
 
     def set_slices(self):
-        """Handle set slices for ``SHGlyph3D``."""
+        """Push the current ``state`` to the billboard material's slice uniforms.
+
+        Snaps ``state`` to the nearest voxel (:meth:`_voxel_from_world_state`),
+        then forward-transforms that voxel back to world space (when an
+        affine is present) before writing it to each axis's
+        ``active_slice_*`` uniform.  This mirrors how ``Peak3D`` derives its
+        cross section, and pairs with the vertex shader's own snap-onto-plane
+        logic to keep the rendered slice crisp for any affine, including
+        rotated or axis-swapped ones.
+        """
         voxel = self._voxel_from_world_state(self.state)
         if self.affine is not None:
             slice_state = apply_transformation(
@@ -483,19 +502,22 @@ class SHGlyph3D(Visualization):
             self._last_state[i] = self.state[i]
 
     def update_state(self, new_state):
-        """Handle update state for ``SHGlyph3D``.
+        """Apply a synchronized world-space state from another visualization.
+
+        Ignored when :attr:`_synchronize` is off (per-view slice sync toggle).
 
         Parameters
         ----------
         new_state : array-like
-            New synchronized state for this visualization.
+            New shared world-space (x, y, z) state; only the first 3
+            components are used.
         """
         if self._synchronize:
             self.state = new_state[:3]
             self.apply_scene_op(self.set_slices)
 
     def set_slice_visibility(self):
-        """Handle set slice visibility for ``SHGlyph3D``."""
+        """Show/hide each axis's slice per :attr:`_slice_visibility`."""
         for i, axis in enumerate(("x", "y", "z")):
             if self._slice_visibility[i]:
                 self._slicer.show_axis(axis)
@@ -505,7 +527,7 @@ class SHGlyph3D(Visualization):
                 self._last_state[i] = -1
 
     def render_widgets(self):
-        """Handle render widgets for ``SHGlyph3D``."""
+        """Draw the sync toggle, scale/opacity controls, and per-axis sliders."""
         changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
         if changed:
             self._synchronize = new

@@ -10,8 +10,10 @@ if not has_fury:
 else:
     from fury import window
 
+    from dipy.viz.skyline.render.renderer import affine_voxel_sizes
     from dipy.viz.skyline.render.sh_slicer import (
         SHGlyph3D,
+        SHSlicer,
         _descoteaux_to_fury_standard,
         create_shm_visualization,
     )
@@ -424,3 +426,49 @@ def test_sh_glyph_slice_plane_excludes_one_voxel_step_away_under_rotation():
         "Expected no glyph one grid step away along the mixed axis: "
         f"fg={fg_neighbor} vs baseline={baseline_fg}"
     )
+
+
+def test_sh_glyph_default_scale_uses_affine_voxel_sizes():
+    """Default glyph scale must derive from the affine's voxel sizes, not
+    a single diagonal entry, so it stays correct for rotated/axis-swapped
+    affines where the diagonal alone can be zero or misleading.
+    """
+    affine = np.array(
+        [
+            [0, 2, 0, 0],
+            [2, 0, 0, 0],
+            [0, 0, 2, 0],
+            [0, 0, 0, 1],
+        ],
+        dtype=float,
+    )
+    glyph = _glyph(affine=affine)
+
+    assert glyph._scale == pytest.approx(np.mean(affine_voxel_sizes(affine)))
+    assert glyph._scale == pytest.approx(2.0)
+
+
+def test_sh_glyph_default_scale_matches_diagonal_affine():
+    """For a uniform diagonal affine, the new voxel-size-based default
+    scale matches the old (diagonal-only) behavior exactly.
+    """
+    affine = np.diag([2.0, 2.0, 2.0, 1.0])
+    glyph = _glyph(affine=affine)
+
+    assert glyph._scale == pytest.approx(abs(affine[0, 0]))
+
+
+def test_sh_slicer_model_space_centers_are_raw_voxel_coords():
+    """SHSlicer places glyph centers at integer voxel coordinates, not
+    pre-scaled by any voxel size -- the affine is applied once, as a
+    group transform, by SHGlyph3D on top of these raw centers.
+    """
+    slicer = SHSlicer(
+        _coeffs(shape=(3, 3, 3)), l_max=SH_ORDER, basis_type="descoteaux07"
+    )
+    actor = slicer.build().children[0]
+
+    centers = actor.billboard_centers
+    npt.assert_array_equal(centers, np.round(centers))
+    assert centers.min() == 0
+    assert centers.max() == 2
