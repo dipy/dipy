@@ -25,6 +25,7 @@ from dipy.data.fetcher import (
     _get_mirror_url,
     _make_fetcher,
     check_md5,
+    copyfileobj_withprogress,
     fetch_data,
 )
 
@@ -65,6 +66,34 @@ def dipy_log_propagate():
     dipy_logger.propagate = True
     yield
     dipy_logger.propagate = old
+
+
+@pytest.mark.parametrize(
+    "size",
+    [0, 1, 16 * 1024 - 1, 16 * 1024, 16 * 1024 + 1, 3 * 1024 * 1024 + 7],
+)
+def test_copyfileobj_withprogress_copies_every_byte(size):
+    payload = b"z" * size
+    dst = io.BytesIO()
+    copyfileobj_withprogress(io.BytesIO(payload), dst, len(payload))
+    assert dst.getvalue() == payload
+
+
+def test_copyfileobj_withprogress_does_not_truncate_when_length_understated():
+    # A Content-Length smaller than the body must not silently cut the file
+    # short: the md5 check downstream would fail, or worse pass on a dataset
+    # that has no stored checksum.
+    payload = b"q" * 200_000
+    dst = io.BytesIO()
+    copyfileobj_withprogress(io.BytesIO(payload), dst, 1_000)
+    assert dst.getvalue() == payload
+
+
+def test_copyfileobj_withprogress_stops_at_end_when_length_overstated():
+    payload = b"q" * 50_000
+    dst = io.BytesIO()
+    copyfileobj_withprogress(io.BytesIO(payload), dst, 999_999)
+    assert dst.getvalue() == payload
 
 
 def test_check_md5_correct():
