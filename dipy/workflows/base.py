@@ -302,11 +302,17 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             _kwargs = {"help": help_msg, "type": dtype, "action": "store"}
 
             if is_optional:
+                default_idx = i - (len_args - len_defaults)
+                default_val = defaults[default_idx]
                 _kwargs["metavar"] = dtype.__name__
-                if dtype is bool:
+                if dtype is bool and default_val is None:
+                    _kwargs["action"] = argparse.BooleanOptionalAction
+                    _kwargs["default"] = None
+                    del _kwargs["type"]
+                    del _kwargs["metavar"]
+                elif dtype is bool:
                     _kwargs["action"] = "store_true"
-                    default_ = {arg: False}
-                    self.set_defaults(**default_)
+                    self.set_defaults(**{arg: False})
                     del _kwargs["type"]
                     del _kwargs["metavar"]
             elif dtype is bool:
@@ -326,7 +332,10 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             if "out_" in arg:
                 output_args.add_argument(*_args, **_kwargs)
             else:
-                if _kwargs["action"] != "store_true":
+                if _kwargs["action"] not in (
+                    "store_true",
+                    argparse.BooleanOptionalAction,
+                ):
                     _kwargs["type"] = none_or_dtype(_kwargs["type"])
                 self.add_argument(*_args, **_kwargs)
 
@@ -392,15 +401,18 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                     "metavar": dtype.__name__,
                 }
 
-                if dtype is bool:
-                    _kwargs["action"] = "store_true"
-                    default_ = {arg_name: False}
-                    self.set_defaults(**default_)
+                default_idx = i - (len_args - len_defaults)
+                default_val = defaults[default_idx]
+                if dtype is bool and default_val is None:
+                    _kwargs["action"] = argparse.BooleanOptionalAction
+                    _kwargs["default"] = None
                     del _kwargs["type"]
                     del _kwargs["metavar"]
                 elif dtype is bool:
-                    _kwargs["type"] = int
-                    _kwargs["choices"] = [0, 1]
+                    _kwargs["action"] = "store_true"
+                    self.set_defaults(**{arg_name: False})
+                    del _kwargs["type"]
+                    del _kwargs["metavar"]
 
                 if dtype is tuple:
                     _kwargs["type"] = str
@@ -408,7 +420,10 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 if isnarg:
                     _kwargs["nargs"] = "*"
 
-                if _kwargs["action"] != "store_true":
+                if _kwargs["action"] not in (
+                    "store_true",
+                    argparse.BooleanOptionalAction,
+                ):
                     _kwargs["type"] = none_or_dtype(_kwargs["type"])
                 flow_args.add_argument(*_args, **_kwargs)
 
