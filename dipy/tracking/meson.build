@@ -18,7 +18,7 @@ cython_headers = [
   'propspeed.pxd',
   'stopping_criterion.pxd',
   'streamlinespeed.pxd',
-  'tracker_parameters.pxd'
+  'tracker_parameters.pxd',
 ]
 
 foreach ext: cython_sources
@@ -54,5 +54,5 @@ py3.install_sources(
   subdir: 'dipy/tracking'
 )
 
-
+subdir('simplet')
 subdir('tests')

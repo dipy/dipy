@@ -6,8 +6,8 @@ cpdef enum StreamlineStatus:
     INVALIDPOINT = 0
     TRACKPOINT = 1
     ENDPOINT = 2
-    VALIDSTREAMLIME = 100
-    INVALIDSTREAMLIME = -100
+    VALIDSTREAMLINE = 100
+    INVALIDSTREAMLINE = -100
 
 
 cdef class StoppingCriterion:
@@ -19,13 +19,13 @@ cdef class StoppingCriterion:
 
 
 cdef class BinaryStoppingCriterion(StoppingCriterion):
-    cdef:
+    cdef readonly:
         unsigned char [:, :, :] mask
     pass
 
 
 cdef class ThresholdStoppingCriterion(StoppingCriterion):
-    cdef:
+    cdef readonly:
         double threshold
         double[:, :, :] metric_map
     pass
