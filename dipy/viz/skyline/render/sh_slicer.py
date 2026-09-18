@@ -45,8 +45,6 @@ def create_shm_visualization(
     scale=1.3,
     l_max=8,
     lut_res=8,
-    use_hermite=True,
-    mapping_mode="cube",
     basis_type="descoteaux07",
     color_type="orientation",
     mask=None,
@@ -71,10 +69,6 @@ def create_shm_visualization(
         Maximum SH order.
     lut_res : int, optional
         LUT resolution.
-    use_hermite : bool, optional
-        Whether to use Hermite analytic normals.
-    mapping_mode : str, optional
-        Billboard mapping mode.
     basis_type : str, optional
         SH basis convention. Ignored if provided in ``input`` as 4th element.
     color_type : str, optional
@@ -118,8 +112,6 @@ def create_shm_visualization(
         scale=scale,
         l_max=l_max,
         lut_res=lut_res,
-        use_hermite=use_hermite,
-        mapping_mode=mapping_mode,
         basis_type=input_basis_type,
         color_type=color_type,
         mask=mask,
@@ -177,10 +169,6 @@ class SHSlicer:
         Value for ``l max``.
     lut_res : int, optional
         Value for ``lut res``.
-    use_hermite : bool, optional
-        Value for ``use hermite``.
-    mapping_mode : str, optional
-        Value for ``mapping mode``.
     mask : ndarray, optional
         Value for ``mask``.
     basis_type : str, optional
@@ -197,8 +185,6 @@ class SHSlicer:
         scale=1.0,
         l_max=8,
         lut_res=32,
-        use_hermite=True,
-        mapping_mode="cube",
         mask=None,
         basis_type="standard",
         color_type="orientation",
@@ -217,10 +203,6 @@ class SHSlicer:
             Value for ``l max``.
         lut_res : int, optional
             Value for ``lut res``.
-        use_hermite : bool, optional
-            Value for ``use hermite``.
-        mapping_mode : str, optional
-            Value for ``mapping mode``.
         mask : ndarray, optional
             Value for ``mask``.
         basis_type : str, optional
@@ -239,8 +221,6 @@ class SHSlicer:
         self.scale = scale
         self.l_max = l_max
         self.lut_res = lut_res
-        self.use_hermite = use_hermite
-        self.mapping_mode = mapping_mode
         self.mask = mask
         self.basis_type = basis_type
         self.color_type = color_type
@@ -291,8 +271,6 @@ class SHSlicer:
             l_max=self.l_max,
             color_type=self.color_type,
             lut_res=self.lut_res,
-            use_hermite=self.use_hermite,
-            mapping_mode=self.mapping_mode,
         )
         return glyph
 
@@ -356,10 +334,6 @@ class SHGlyph3D(Visualization):
         Value for ``l max``.
     lut_res : int, optional
         Value for ``lut res``.
-    use_hermite : bool, optional
-        Value for ``use hermite``.
-    mapping_mode : str, optional
-        Value for ``mapping mode``.
     basis_type : str, optional
         Value for ``basis type``.
     color_type : str, optional
@@ -380,8 +354,6 @@ class SHGlyph3D(Visualization):
         scale=2.0,
         l_max=8,
         lut_res=8,
-        use_hermite=True,
-        mapping_mode="cube",
         basis_type="standard",
         color_type="orientation",
         mask=None,
@@ -405,10 +377,6 @@ class SHGlyph3D(Visualization):
             Value for ``l max``.
         lut_res : int, optional
             Value for ``lut res``.
-        use_hermite : bool, optional
-            Value for ``use hermite``.
-        mapping_mode : str, optional
-            Value for ``mapping mode``.
         basis_type : str, optional
             Value for ``basis type``.
         color_type : str, optional
@@ -430,8 +398,6 @@ class SHGlyph3D(Visualization):
             scale=default_scale,
             l_max=l_max,
             lut_res=lut_res,
-            use_hermite=use_hermite,
-            mapping_mode=mapping_mode,
             mask=mask,
             basis_type=basis_type,
             color_type=color_type,

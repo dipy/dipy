@@ -37,10 +37,7 @@ def test_gpu_max_buffer_size_is_positive_and_cached():
 
     assert first > 0
     assert first == second
-    assert (
-        sh_billboard._GPU_DEVICE_LIMITS_CACHE["max_storage_buffer_binding_size"]
-        == first
-    )
+    assert sh_billboard._gpu_cache["max_buffer_size"] == first
 
 
 def test_lut_chunking_fits_a_small_layout_in_one_chunk():
@@ -254,16 +251,6 @@ def test_sph_glyph_billboard_sliced_scale_and_opacity():
     )
 
     assert actor.material.opacity == pytest.approx(0.5)
-
-
-def test_sph_glyph_billboard_sliced_without_hermite_interpolation():
-    coeffs, centers, voxel_coords = _glyph_inputs()
-
-    actor = sph_glyph_billboard_sliced(
-        coeffs, centers, voxel_coords, use_hermite=False, lut_res=4
-    )
-
-    assert actor is not None
 
 
 def test_sph_glyph_billboard_sliced_single_glyph():

@@ -5,6 +5,7 @@ from typing import ClassVar
 
 import numpy as np
 
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.wgsl import load_dipy_wgsl
 
@@ -50,8 +51,7 @@ else:
         return decorator
 
 
-_GPU_DEVICE_LIMITS_CACHE: dict = {}
-_GPU_HERMITE_COMPUTE_CACHE: dict = {}
+_gpu_cache: dict = {}
 
 _MAX_LUT_CHUNKS = 8
 
@@ -64,19 +64,19 @@ def _get_gpu_max_buffer_size():
     int
         Device limit in bytes, falling back to 128 MiB if discovery fails.
     """
-    if "max_storage_buffer_binding_size" in _GPU_DEVICE_LIMITS_CACHE:
-        return _GPU_DEVICE_LIMITS_CACHE["max_storage_buffer_binding_size"]
+    if "max_buffer_size" in _gpu_cache:
+        return _gpu_cache["max_buffer_size"]
 
     try:
         adapter = wgpu.gpu.request_adapter_sync(power_preference="high-performance")
         device = adapter.request_device_sync()
         limits = device.limits
         max_size = limits.get("max-storage-buffer-binding-size", 128 * 1024 * 1024)
-        _GPU_DEVICE_LIMITS_CACHE["max_storage_buffer_binding_size"] = max_size
+        _gpu_cache["max_buffer_size"] = max_size
         return max_size
     except Exception:
         default = 128 * 1024 * 1024
-        _GPU_DEVICE_LIMITS_CACHE["max_storage_buffer_binding_size"] = default
+        _gpu_cache["max_buffer_size"] = default
         return default
 
 
@@ -473,52 +473,18 @@ class BillboardSphGlyphShader(MeshShader):
         self._wobject = wobject
         self["billboard_count"] = getattr(wobject, "billboard_count", 1)
         self["lighting"] = "phong"
-        original_lmax = getattr(wobject, "_l_max", 0)
         self["n_coeffs"] = getattr(wobject, "coeffs_per_glyph", 0)
-        self["l_max"] = original_lmax
+        self["l_max"] = getattr(wobject, "_l_max", 0)
         self["color_type"] = getattr(wobject, "color_type", 0)
-        self["use_precomputation"] = int(getattr(wobject, "_is_precomputed", False))
-        self["use_level_of_detail"] = int(
-            getattr(wobject, "_use_level_of_detail", True)
-        )
-        use_radius_lut = bool(getattr(wobject, "_sh_use_radius_lut", False))
-        self["use_precomputed_radius_lut"] = "true" if use_radius_lut else "false"
-
-        interp_mode = getattr(wobject, "_sh_interpolation_mode", None)
-        if interp_mode is None:
-            use_bicubic = bool(getattr(wobject, "_sh_use_bicubic", False))
-            interp_mode = 2 if use_bicubic else 1
-        self["interpolation_mode"] = int(interp_mode)
-
+        lut_ready = bool(getattr(wobject, "_sh_lut_ready", False))
+        self["use_hermite_lut"] = "true" if lut_ready else "false"
+        use_float16 = bool(getattr(wobject, "_sh_use_float16", False))
+        self["use_float16"] = "true" if use_float16 else "false"
         self["radius_lut_theta"] = getattr(wobject, "_sh_lut_theta_res", 0)
         self["radius_lut_phi"] = getattr(wobject, "_sh_lut_phi_res", 0)
         self["radius_lut_stride"] = getattr(wobject, "_sh_lut_stride", 0)
-        self["radius_theta_step"] = getattr(wobject, "_sh_theta_step", 0.0)
-        self["radius_phi_step"] = getattr(wobject, "_sh_phi_step", 0.0)
         self["lut_n_chunks"] = getattr(wobject, "_sh_lut_n_chunks", 1)
         self["lut_glyphs_per_chunk"] = getattr(wobject, "_sh_lut_glyphs_per_chunk", 0)
-        self["debug_mode"] = getattr(wobject, "_sh_debug_mode", 0)
-        force_direct = bool(getattr(wobject, "_sh_force_direct_eval", False))
-        self["force_direct_sh_eval"] = "true" if force_direct else "false"
-        use_octahedral = bool(getattr(wobject, "_sh_use_octahedral_lut", False))
-        self["use_octahedral_lut"] = "true" if use_octahedral else "false"
-        use_hermite = bool(getattr(wobject, "_sh_use_hermite_interp", False))
-        self["use_hermite_interp"] = "true" if use_hermite else "false"
-        force_fd = bool(getattr(wobject, "_sh_force_fd_normals", False))
-        self["force_fd_normals"] = "true" if force_fd else "false"
-        use_float16 = bool(getattr(wobject, "_sh_use_float16", False))
-        self["use_float16"] = "true" if use_float16 else "false"
-
-        mapping_mode_str = getattr(wobject, "_sh_mapping_mode", "octahedral")
-        mapping_mode_map = {
-            "octahedral": 0,
-            "dual_hemi": 1,
-            "dual_paraboloid": 2,
-            "latlong": 3,
-            "fibonacci": 4,
-            "cube": 5,
-        }
-        self["mapping_mode"] = mapping_mode_map.get(mapping_mode_str, 0)
 
         use_slicing = isinstance(
             getattr(wobject, "material", None), SlicedSphGlyphMaterial
@@ -592,68 +558,20 @@ class BillboardSphGlyphShader(MeshShader):
         self.define_bindings(2, coeff_bindings)
         bindings[2] = coeff_bindings
 
-        radius_buffers = getattr(wobject, "_sh_radius_lut_buffers", None)
-        normal_buffer = getattr(wobject, "_sh_normal_lut_buffer", None)
-
-        if normal_buffer is None:
-            normal_buffer = Buffer(np.zeros((1, 3), dtype=np.float32))
-
-        lut_bindings: dict = {}
-        dummy_buf = Buffer(np.array([0.0], dtype=np.float32))
-
-        if radius_buffers is not None and len(radius_buffers) > 0:
-            for i, buf in enumerate(radius_buffers):
-                lut_bindings[i] = Binding(
-                    f"s_sh_radius_lut_{i}",
-                    "buffer/read_only_storage",
-                    buf,
-                    "FRAGMENT",
-                )
-            for i in range(len(radius_buffers), 8):
-                lut_bindings[i] = Binding(
-                    f"s_sh_radius_lut_{i}",
-                    "buffer/read_only_storage",
-                    dummy_buf,
-                    "FRAGMENT",
-                )
-        else:
-            radius_buffer = getattr(wobject, "_sh_radius_lut_buffer", None)
-            if radius_buffer is None:
-                radius_buffer = Buffer(np.array([0.0], dtype=np.float32))
-            lut_bindings[0] = Binding(
-                "s_sh_radius_lut_0",
-                "buffer/read_only_storage",
-                radius_buffer,
-                "FRAGMENT",
-            )
-            for i in range(1, 8):
-                lut_bindings[i] = Binding(
-                    f"s_sh_radius_lut_{i}",
-                    "buffer/read_only_storage",
-                    dummy_buf,
-                    "FRAGMENT",
-                )
-
-        lut_bindings[8] = Binding(
-            "s_sh_normal_lut",
-            "buffer/read_only_storage",
-            normal_buffer,
-            "FRAGMENT",
-        )
-
         hermite_buffers = getattr(wobject, "_sh_hermite_lut_buffers", None)
         dummy_vec4 = Buffer(np.zeros((1, 4), dtype=np.float32))
 
+        lut_bindings: dict = {}
         if hermite_buffers is not None and len(hermite_buffers) > 0:
             for i, buf in enumerate(hermite_buffers):
-                lut_bindings[9 + i] = Binding(
+                lut_bindings[i] = Binding(
                     f"s_sh_hermite_lut_{i}",
                     "buffer/read_only_storage",
                     buf,
                     "FRAGMENT",
                 )
             for i in range(len(hermite_buffers), 8):
-                lut_bindings[9 + i] = Binding(
+                lut_bindings[i] = Binding(
                     f"s_sh_hermite_lut_{i}",
                     "buffer/read_only_storage",
                     dummy_vec4,
@@ -661,7 +579,7 @@ class BillboardSphGlyphShader(MeshShader):
                 )
         else:
             for i in range(8):
-                lut_bindings[9 + i] = Binding(
+                lut_bindings[i] = Binding(
                     f"s_sh_hermite_lut_{i}",
                     "buffer/read_only_storage",
                     dummy_vec4,
@@ -747,57 +665,6 @@ def _create_billboard_actor(
     obj.billboard_centers = centers.copy()
     obj.billboard_sizes = sizes.copy()
     return obj
-
-
-def _populate_radius_lut_cube_cpu_chunked(
-    actor, lut_res, glyph_count, n_coeffs, chunk_info
-):
-    padded_res = lut_res + 2
-    step = 2.0 / (lut_res - 1)
-    u = np.linspace(-1 - step, 1 + step, padded_res, dtype=np.float32)
-    v = np.linspace(-1 - step, 1 + step, padded_res, dtype=np.float32)
-    uu, vv = np.meshgrid(u, v)
-    uu = uu.flatten()
-    vv = vv.flatten()
-
-    ones = np.ones_like(uu)
-    d0 = np.stack([ones, -vv, -uu], axis=1)
-    d1 = np.stack([-ones, -vv, uu], axis=1)
-    d2 = np.stack([uu, ones, vv], axis=1)
-    d3 = np.stack([uu, -ones, -vv], axis=1)
-    d4 = np.stack([uu, -vv, ones], axis=1)
-    d5 = np.stack([-uu, -vv, -ones], axis=1)
-    dirs = np.concatenate([d0, d1, d2, d3, d4, d5], axis=0)
-    norms = np.linalg.norm(dirs, axis=1, keepdims=True)
-    dirs = dirs / norms
-
-    l_max = int(np.sqrt(n_coeffs) - 1)
-    basis_matrix = create_sh_basis_matrix(dirs, l_max)
-    if basis_matrix.shape[1] > n_coeffs:
-        basis_matrix = basis_matrix[:, :n_coeffs]
-
-    glyph_offset = 0
-    for chunk_idx, chunk_glyphs in enumerate(chunk_info["chunk_sizes"]):
-        radius_lut = actor._sh_radius_lut_buffers[chunk_idx].data
-        start_glyph = glyph_offset
-        end_glyph = glyph_offset + chunk_glyphs
-
-        coeffs_data = actor.sh_coeffs
-        if hasattr(coeffs_data, "data"):
-            coeffs_data = coeffs_data.data
-        if not isinstance(coeffs_data, np.ndarray):
-            coeffs_data = np.asarray(coeffs_data)
-        if coeffs_data.ndim == 1:
-            if coeffs_data.size % n_coeffs == 0:
-                coeffs_data = coeffs_data.reshape(-1, n_coeffs)
-
-        chunk_coeffs = coeffs_data[start_glyph:end_glyph]
-        radii = chunk_coeffs @ basis_matrix.T
-        radius_lut[:] = radii.flatten()
-        actor._sh_radius_lut_buffers[chunk_idx].update_full()
-        glyph_offset += chunk_glyphs
-
-    return True
 
 
 def _populate_hermite_lut_cube_cpu_chunked(
@@ -910,9 +777,6 @@ def _populate_hermite_lut_cube_gpu(
 
     Runs imperatively via ``wgpu`` — no pygfx render-function needed.
     """
-    import time as _time
-
-    _t0 = _time.perf_counter()
 
     N = lut_res
     g_int = 3
@@ -923,7 +787,7 @@ def _populate_hermite_lut_cube_gpu(
     l_max = int(getattr(actor, "_l_max", 4))
 
     # --- cached device + pipelines ----------------------------------------
-    cache = _GPU_HERMITE_COMPUTE_CACHE
+    cache = _gpu_cache
     if "device" not in cache:
         shader_src = load_dipy_wgsl("sh_cube_hermite_lut_compute.wgsl")
         adapter = wgpu.gpu.request_adapter_sync(power_preference="high-performance")
@@ -1135,37 +999,24 @@ def _populate_hermite_lut_cube_gpu(
 
         glyph_offset += chunk_glyphs
 
-    _elapsed = _time.perf_counter() - _t0
     return True
 
 
-def enable_octahedral_lut(
-    actor,
-    *,
-    lut_res=64,
-    use_hermite=False,
-    force_rebake=False,
-    mapping_mode="octahedral",
-    use_float16=False,
-):
-    """Bake radius or Hermite LUT chunks on ``actor`` if GPU memory allows.
+def bake_hermite_lut(actor, *, lut_res=8, force_rebake=False, use_float16=False):
+    """Bake a cube-mapped Hermite LUT on ``actor`` if GPU memory allows.
 
     Parameters
     ----------
     actor : SphGlyphBillboard
         Target billboard with populated ``billboard_count`` and coefficients.
     lut_res : int, optional
-        Base cube-map or octahedral resolution per face/hemisphere.
-    use_hermite : bool, optional
-        Allocate paired position/normal Hermite LUT texels.
+        Cube-map resolution per face edge.
     force_rebake : bool, optional
         Recompute even when flags indicate the LUT is ready.
-    mapping_mode : str, optional
-        One of ``"cube"``, ``"dual_hemi"``, ``"dual_paraboloid"``, or ``"fibonacci"``.
     use_float16 : bool, optional
-        Store Hermite LUTs with reduced precision when supported.
+        Store the Hermite LUT with reduced precision when supported.
     """
-    if getattr(actor, "_sh_use_octahedral_lut", False) and not force_rebake:
+    if getattr(actor, "_sh_lut_ready", False) and not force_rebake:
         return
 
     glyph_count = int(getattr(actor, "billboard_count", 0))
@@ -1173,25 +1024,21 @@ def enable_octahedral_lut(
     if glyph_count <= 0 or n_coeffs <= 0:
         return
 
-    if mapping_mode in ("dual_hemi", "dual_paraboloid"):
-        samples_per_glyph = 2 * lut_res * lut_res
-    elif mapping_mode == "fibonacci":
-        samples_per_glyph = lut_res * lut_res
-    elif mapping_mode == "cube":
-        padded_res = lut_res + 2
-        samples_per_glyph = 6 * padded_res * padded_res
-    else:
-        samples_per_glyph = lut_res * lut_res
-
-    bytes_per_sample = (8 if use_float16 else 16) if use_hermite else 4
+    padded_res = lut_res + 2
+    samples_per_glyph = 6 * padded_res * padded_res
+    bytes_per_sample = 8 if use_float16 else 16
     chunk_info = _calculate_lut_chunking(
         glyph_count, samples_per_glyph, bytes_per_sample=bytes_per_sample
     )
 
     if not chunk_info["feasible"]:
-        actor._sh_use_radius_lut = False
-        actor._sh_use_octahedral_lut = False
-        actor._sh_lut_ready = True
+        actor._sh_lut_ready = False
+        actor._sh_hermite_lut_buffers = None
+        actor._sh_hermite_lut_buffer = None
+        actor._sh_lut_n_chunks = 1
+        actor._sh_lut_glyphs_per_chunk = 0
+        actor._sh_lut_phi_res = 0
+        actor._sh_lut_stride = 0
         return
 
     n_chunks = chunk_info["n_chunks"]
@@ -1203,84 +1050,40 @@ def enable_octahedral_lut(
     actor._sh_lut_glyphs_per_chunk = chunk_info["glyphs_per_chunk"]
     actor._sh_lut_chunk_sizes = chunk_info["chunk_sizes"]
 
-    success = False
-    if use_hermite:
-        actor._sh_hermite_lut_buffers = []
-        actor._sh_radius_lut_buffers = None
-        dtype = np.float16 if use_float16 else np.float32
+    actor._sh_hermite_lut_buffers = []
+    dtype = np.float16 if use_float16 else np.float32
+    for chunk_glyphs in chunk_info["chunk_sizes"]:
+        chunk_samples = chunk_glyphs * samples_per_glyph
+        hermite_lut = np.zeros((chunk_samples, 4), dtype=dtype)
+        actor._sh_hermite_lut_buffers.append(Buffer(hermite_lut, usage=usage))
+    actor._sh_hermite_lut_buffer = actor._sh_hermite_lut_buffers[0]
 
-        for chunk_glyphs in chunk_info["chunk_sizes"]:
-            chunk_samples = chunk_glyphs * samples_per_glyph
-            hermite_lut = np.zeros((chunk_samples, 4), dtype=dtype)
-            actor._sh_hermite_lut_buffers.append(Buffer(hermite_lut, usage=usage))
+    try:
+        success = _populate_hermite_lut_cube_gpu(
+            actor,
+            lut_res,
+            glyph_count,
+            n_coeffs,
+            chunk_info,
+            use_float16=use_float16,
+        )
+    except Exception as exc:
+        logger.debug("GPU LUT bake failed, falling back to CPU: %s", exc)
+        success = _populate_hermite_lut_cube_cpu_chunked(
+            actor,
+            lut_res,
+            glyph_count,
+            n_coeffs,
+            chunk_info,
+            use_float16=use_float16,
+        )
 
-        actor._sh_hermite_lut_buffer = actor._sh_hermite_lut_buffers[0]
-        actor._sh_radius_lut_buffer = None
+    actor._sh_use_float16 = use_float16
+    actor._sh_lut_theta_res = padded_res
+    actor._sh_lut_phi_res = padded_res
+    actor._sh_lut_stride = samples_per_glyph
 
-        if mapping_mode == "cube":
-            try:
-                success = _populate_hermite_lut_cube_gpu(
-                    actor,
-                    lut_res,
-                    glyph_count,
-                    n_coeffs,
-                    chunk_info,
-                    use_float16=use_float16,
-                )
-            except Exception:
-                success = _populate_hermite_lut_cube_cpu_chunked(
-                    actor,
-                    lut_res,
-                    glyph_count,
-                    n_coeffs,
-                    chunk_info,
-                    use_float16=use_float16,
-                )
-        else:
-            success = False
-
-        actor._sh_use_hermite_interp = True
-        actor._sh_use_float16 = use_float16
-    else:
-        actor._sh_radius_lut_buffers = []
-        for chunk_glyphs in chunk_info["chunk_sizes"]:
-            chunk_samples = chunk_glyphs * samples_per_glyph
-            radius_lut = np.zeros(chunk_samples, dtype=np.float32)
-            actor._sh_radius_lut_buffers.append(Buffer(radius_lut, usage=usage))
-        actor._sh_radius_lut_buffer = actor._sh_radius_lut_buffers[0]
-
-        if mapping_mode == "cube":
-            success = _populate_radius_lut_cube_cpu_chunked(
-                actor, lut_res, glyph_count, n_coeffs, chunk_info
-            )
-        else:
-            success = False
-
-        actor._sh_use_hermite_interp = False
-
-    if mapping_mode == "cube":
-        actor._sh_lut_theta_res = lut_res + 2
-        actor._sh_lut_phi_res = lut_res + 2
-    else:
-        actor._sh_lut_theta_res = lut_res
-        actor._sh_lut_phi_res = lut_res
-
-    actor._sh_mapping_mode = mapping_mode
-
-    if mapping_mode in ("dual_hemi", "dual_paraboloid"):
-        actor._sh_lut_stride = 2 * lut_res * lut_res
-    elif mapping_mode == "fibonacci":
-        actor._sh_lut_stride = lut_res * lut_res
-    elif mapping_mode == "cube":
-        padded_res = lut_res + 2
-        actor._sh_lut_stride = 6 * padded_res * padded_res
-    else:
-        actor._sh_lut_stride = lut_res * lut_res
-
-    if success:
-        actor._sh_use_octahedral_lut = True
-        actor._sh_use_radius_lut = True
-        actor._sh_lut_ready = True
+    actor._sh_lut_ready = bool(success)
 
 
 def sph_glyph_billboard_sliced(
@@ -1295,8 +1098,6 @@ def sph_glyph_billboard_sliced(
     opacity=None,
     enable_picking=True,
     lut_res=8,
-    use_hermite=True,
-    mapping_mode="cube",
 ):
     """Create a *sliced* billboard SH glyph actor.
 
@@ -1331,10 +1132,6 @@ def sph_glyph_billboard_sliced(
         Whether picking handlers are installed on the billboard mesh.
     lut_res : int, optional
         Cube-map LUT resolution per face edge.
-    use_hermite : bool, optional
-        Use Hermite interpolation LUT.
-    mapping_mode : str, optional
-        LUT mapping mode.
 
     Returns
     -------
@@ -1389,7 +1186,6 @@ def sph_glyph_billboard_sliced(
     )
 
     obj.billboard_radii = max_radius * scale
-    obj.billboard_mode = "spherical_harmonic"
     obj.n_coeff = n_coeff
     obj.sh_coeffs = coeffs.reshape(-1).astype(np.float32)
     obj.sh_coeffs_buffer = Buffer(obj.sh_coeffs)
@@ -1397,27 +1193,10 @@ def sph_glyph_billboard_sliced(
     obj.color_type = 0 if color_type == "sign" else 1
     obj._basis_type = "standard"
     obj._l_max = inferred_l_max
-    obj._sh_debug_mode = 0
-    obj._sh_force_direct_eval = False
-    obj._sh_use_octahedral_lut = False
-    obj._sh_use_hermite_interp = False
-    obj._sh_force_fd_normals = False
-    obj._is_precomputed = True
-    obj._is_optimized = True
-    obj._use_level_of_detail = True
-    obj._use_early_discard = True
-    obj._sh_interpolation_mode = 0
-    obj._sh_mapping_mode = mapping_mode
-    obj._sh_requested_lut_res = lut_res
 
     obj.material.n_coeffs = material_n_coeffs
 
-    enable_octahedral_lut(
-        obj,
-        lut_res=lut_res,
-        use_hermite=use_hermite,
-        mapping_mode=mapping_mode,
-    )
+    bake_hermite_lut(obj, lut_res=lut_res)
 
     return obj
 
