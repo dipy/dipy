@@ -480,7 +480,6 @@ class BillboardSphGlyphShader(MeshShader):
         self["use_hermite_lut"] = "true" if lut_ready else "false"
         use_float16 = bool(getattr(wobject, "_sh_use_float16", False))
         self["use_float16"] = "true" if use_float16 else "false"
-        self["radius_lut_theta"] = getattr(wobject, "_sh_lut_theta_res", 0)
         self["radius_lut_phi"] = getattr(wobject, "_sh_lut_phi_res", 0)
         self["radius_lut_stride"] = getattr(wobject, "_sh_lut_stride", 0)
         self["lut_n_chunks"] = getattr(wobject, "_sh_lut_n_chunks", 1)
@@ -1079,7 +1078,6 @@ def bake_hermite_lut(actor, *, lut_res=8, force_rebake=False, use_float16=False)
         )
 
     actor._sh_use_float16 = use_float16
-    actor._sh_lut_theta_res = padded_res
     actor._sh_lut_phi_res = padded_res
     actor._sh_lut_stride = samples_per_glyph
 

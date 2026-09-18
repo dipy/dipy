@@ -13,7 +13,6 @@ const SH_STRIDE: u32 = u32(L_MAX + 1);
 const SH_TABLE_SIZE: u32 = SH_STRIDE * u32(L_MAX + 1);
 const SH_TRIG_SIZE: u32 = u32(L_MAX + 1);
 
-const LUT_THETA_RES = u32({{ radius_lut_theta }});
 const LUT_PHI_RES = u32({{ radius_lut_phi }});
 const LUT_STRIDE = u32({{ radius_lut_stride }});
 
