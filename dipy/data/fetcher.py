@@ -114,15 +114,25 @@ class FetcherError(Exception):
 
 @warning_for_keywords()
 def copyfileobj_withprogress(fsrc, fdst, total_length, *, length=16 * 1024):
-    for _ in tqdm(
-        range(0, int(total_length), length),
-        unit=" MB",
-        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt}{unit} [{elapsed}]",
-    ):
-        buf = fsrc.read(length)
-        if not buf:
-            break
-        fdst.write(buf)
+    # The bar counts bytes rather than iterations of a `range`. Counting the
+    # range meant each 16 KiB chunk was reported as one "MB", so a 221 MiB
+    # download rendered as "14159 MB" -- 64x its real size. It also bounded
+    # the copy by `total_length`, so a Content-Length smaller than the body
+    # truncated the file silently; reading until the source is exhausted is
+    # what `shutil.copyfileobj` does and what the caller's md5 check assumes.
+    with tqdm(
+        total=int(total_length),
+        unit="B",
+        unit_scale=True,
+        unit_divisor=1024,
+        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]",
+    ) as pbar:
+        while True:
+            buf = fsrc.read(length)
+            if not buf:
+                break
+            fdst.write(buf)
+            pbar.update(len(buf))
 
 
 def _already_there_msg(folder):
