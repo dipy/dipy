@@ -14,6 +14,7 @@ else:
         SphGlyphBillboard,
         _calculate_lut_chunking,
         _get_gpu_max_buffer_size,
+        bake_hermite_lut,
         sph_glyph_billboard_sliced,
     )
 
@@ -37,10 +38,7 @@ def test_gpu_max_buffer_size_is_positive_and_cached():
 
     assert first > 0
     assert first == second
-    assert (
-        sh_billboard._GPU_DEVICE_LIMITS_CACHE["max_storage_buffer_binding_size"]
-        == first
-    )
+    assert sh_billboard._gpu_cache["max_buffer_size"] == first
 
 
 def test_lut_chunking_fits_a_small_layout_in_one_chunk():
@@ -149,7 +147,6 @@ def test_sliced_material_writes_slices_into_the_uniform_buffer():
     material = SlicedSphGlyphMaterial()
 
     material.active_slice_x = 6.5
-
     assert float(material.uniform_buffer.data["active_slice_x"]) == 6.5
 
 
@@ -256,16 +253,6 @@ def test_sph_glyph_billboard_sliced_scale_and_opacity():
     assert actor.material.opacity == pytest.approx(0.5)
 
 
-def test_sph_glyph_billboard_sliced_without_hermite_interpolation():
-    coeffs, centers, voxel_coords = _glyph_inputs()
-
-    actor = sph_glyph_billboard_sliced(
-        coeffs, centers, voxel_coords, use_hermite=False, lut_res=4
-    )
-
-    assert actor is not None
-
-
 def test_sph_glyph_billboard_sliced_single_glyph():
     coeffs, centers, voxel_coords = _glyph_inputs(n_glyphs=1)
 
@@ -281,3 +268,46 @@ def test_sph_glyph_billboard_sliced_has_no_slice_indices_buffer():
     actor = sph_glyph_billboard_sliced(coeffs, centers, voxel_coords)
 
     assert not hasattr(actor, "slice_indices_buffer")
+
+
+def test_bake_hermite_lut_creates_buffers():
+    """bake_hermite_lut populates Hermite LUT chunk buffers on the actor."""
+    coeffs, centers, voxel_coords = _glyph_inputs()
+    actor = sph_glyph_billboard_sliced(coeffs, centers, voxel_coords, lut_res=4)
+
+    assert actor._sh_lut_ready is True
+    assert hasattr(actor, "_sh_hermite_lut_buffers")
+    assert len(actor._sh_hermite_lut_buffers) >= 1
+    # Each Hermite texel stores (value, du, dv, d2uv).
+    buf_data = actor._sh_hermite_lut_buffers[0].data
+    assert buf_data.shape[1] == 4
+    # Non-trivial SH coefficients should bake non-zero LUT values.
+    assert np.any(buf_data != 0)
+
+
+def test_bake_hermite_lut_marks_not_ready_when_infeasible():
+    """An infeasible chunking plan must not claim the LUT is ready.
+
+    Regression test: the shader derives ``USE_HERMITE_LUT`` solely from
+    ``actor._sh_lut_ready``.  If a bake that produced no buffers still set
+    ``_sh_lut_ready = True``, the shader would sample nonexistent/zero LUT
+    data instead of falling back to direct SH evaluation.
+    """
+    coeffs, centers, voxel_coords = _glyph_inputs()
+    actor = sph_glyph_billboard_sliced(coeffs, centers, voxel_coords, lut_res=4)
+    assert actor._sh_lut_ready is True
+
+    # Pick a resolution whose single-glyph Hermite LUT genuinely exceeds
+    # this machine's real GPU buffer limit, so chunking is infeasible
+    # without needing to allocate anything.
+    usable_bytes = _get_gpu_max_buffer_size() * 0.90
+    padded_res_needed = (usable_bytes / (6 * 16)) ** 0.5
+    lut_res = int(padded_res_needed) + 1000
+
+    padded_res = lut_res + 2
+    plan = _calculate_lut_chunking(1, 6 * padded_res * padded_res, bytes_per_sample=16)
+    assert plan["feasible"] is False
+
+    bake_hermite_lut(actor, lut_res=lut_res, force_rebake=True)
+
+    assert actor._sh_lut_ready is False
