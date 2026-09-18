@@ -924,6 +924,7 @@ fn vs_main(in: VertexInput) -> Varyings {
     let vertex_in_quad = i32(in.index) % 6;
 
     var raw_center = load_s_positions(billboard_index * 6);
+    var w_center = u_wobject.world_transform * vec4<f32>(raw_center.xyz, 1.0);
 
     // --- Slice-based visibility: discard glyphs not on active slice ---
     {$ if use_slicing == 'true' $}
@@ -934,19 +935,66 @@ fn vs_main(in: VertexInput) -> Varyings {
             u_material.active_slice_z,
         );
         let visibility = vec3<i32>(u_material.vis_x, u_material.vis_y, u_material.vis_z);
-        let w_slice_center = (u_wobject.world_transform * vec4<f32>(raw_center, 1.0)).xyz;
         var is_visible = false;
 
         if (!all(visibility == vec3<i32>(-1))) {
-            if (abs(w_slice_center.x - slice_pos.x) <= abs(u_wobject.world_transform[0][0]) * 0.5 && visibility.x != 0) {
-                is_visible = true;
+            // Reuse fury's own plane-membership test (see
+            // fury.utils.wgsl / vector_field_*.wgsl) so ODF slicing shares
+            // its math with the peaks and image slicers. The `scale`
+            // argument is the world-space spacing between adjacent slice
+            // layers along that axis: the largest magnitude any column of
+            // the transform's linear part contributes to that row, so it
+            // stays correct under rotation and axis swaps without also
+            // matching neighbouring layers.
+            let row_extent = vec3<f32>(
+                max(abs(u_wobject.world_transform[0][0]),
+                    max(abs(u_wobject.world_transform[1][0]),
+                        abs(u_wobject.world_transform[2][0]))),
+                max(abs(u_wobject.world_transform[0][1]),
+                    max(abs(u_wobject.world_transform[1][1]),
+                        abs(u_wobject.world_transform[2][1]))),
+                max(abs(u_wobject.world_transform[0][2]),
+                    max(abs(u_wobject.world_transform[1][2]),
+                        abs(u_wobject.world_transform[2][2]))),
+            );
+
+            let on_x_plane = is_point_on_plane_equation(
+                vec4<f32>(-1.0, 0.0, 0.0, slice_pos.x),
+                w_center.xyz,
+                row_extent.x,
+            );
+            let on_y_plane = is_point_on_plane_equation(
+                vec4<f32>(0.0, -1.0, 0.0, slice_pos.y),
+                w_center.xyz,
+                row_extent.y,
+            );
+            let on_z_plane = is_point_on_plane_equation(
+                vec4<f32>(0.0, 0.0, -1.0, slice_pos.z),
+                w_center.xyz,
+                row_extent.z,
+            );
+
+            // Like fury's vector-field shader: snap the glyph center onto
+            // each plane it is near, regardless of that axis's visibility
+            // flag, so on-slice glyphs sit exactly on the slice instead of
+            // being scattered across the tolerance band around it.
+            if (on_x_plane) {
+                w_center.x = slice_pos.x;
+            }
+            if (on_y_plane) {
+                w_center.y = slice_pos.y;
+            }
+            if (on_z_plane) {
+                w_center.z = slice_pos.z;
             }
 
-            if (abs(w_slice_center.y - slice_pos.y) <= abs(u_wobject.world_transform[1][1]) * 0.5 && visibility.y != 0) {
+            if (on_x_plane && visibility.x != 0) {
                 is_visible = true;
             }
-
-            if (abs(w_slice_center.z - slice_pos.z) <= abs(u_wobject.world_transform[2][2]) * 0.5 && visibility.z != 0) {
+            if (on_y_plane && visibility.y != 0) {
+                is_visible = true;
+            }
+            if (on_z_plane && visibility.z != 0) {
                 is_visible = true;
             }
         } else {
@@ -960,8 +1008,6 @@ fn vs_main(in: VertexInput) -> Varyings {
         }
     }
     {$ endif $}
-
-    var w_center = u_wobject.world_transform * vec4<f32>(raw_center.xyz, 1.0);
 
     var local_pos: vec2<f32>;
     switch vertex_in_quad {

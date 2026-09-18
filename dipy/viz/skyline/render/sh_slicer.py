@@ -11,6 +11,7 @@ from dipy.viz.skyline.UI.elements import (
 )
 from dipy.viz.skyline.render.renderer import (
     Visualization,
+    affine_voxel_sizes,
     slice_slider_bounds,
     slice_slider_values_from_state,
     slice_state_from_slider_values,
@@ -161,8 +162,6 @@ class SHSlicer:
     ----------
     coeffs_4d : ndarray
         Value for ``coeffs 4d``.
-    voxel_sizes : tuple(float, float, float), optional
-        Value for ``voxel sizes``.
     scale : float, optional
         Value for ``scale``.
     l_max : int, optional
@@ -181,7 +180,6 @@ class SHSlicer:
         self,
         coeffs_4d,
         *,
-        voxel_sizes=(1.0, 1.0, 1.0),
         scale=1.0,
         l_max=8,
         lut_res=32,
@@ -195,8 +193,6 @@ class SHSlicer:
         ----------
         coeffs_4d : ndarray
             Value for ``coeffs 4d``.
-        voxel_sizes : tuple(float, float, float), optional
-            Value for ``voxel sizes``.
         scale : float, optional
             Value for ``scale``.
         l_max : int, optional
@@ -217,7 +213,6 @@ class SHSlicer:
         self.coeffs_4d = coeffs_4d
         self.shape = coeffs_4d.shape[:3]
         self.n_coeffs = coeffs_4d.shape[-1]
-        self.voxel_sizes = np.array(voxel_sizes, dtype=float)
         self.scale = scale
         self.l_max = l_max
         self.lut_res = lut_res
@@ -239,7 +234,6 @@ class SHSlicer:
 
     def _build_volume_actor(self):
         """Handle build volume actor for ``SHSlicer``."""
-        vs = self.voxel_sizes
         X, Y, Z = self.shape
 
         flat_coeffs = self.coeffs_4d.reshape(-1, self.n_coeffs)
@@ -257,7 +251,7 @@ class SHSlicer:
         )
         voxel_coords = np.column_stack([ix.ravel(), iy.ravel(), iz.ravel()])
 
-        centers = voxel_coords.astype(np.float32) * vs[np.newaxis, :]
+        centers = voxel_coords.astype(np.float32)
 
         coeffs_valid = flat_coeffs[valid]
         centers_valid = centers[valid]
@@ -387,14 +381,15 @@ class SHGlyph3D(Visualization):
             Callback used to synchronize state across views.
         """
         self.affine = affine
-        default_scale = abs(self.affine[0, 0]) if self.affine is not None else scale
-        self._voxel_sizes = np.array([1.0, 1.0, 1.0])
+        if self.affine is not None:
+            default_scale = float(np.mean(affine_voxel_sizes(self.affine)))
+        else:
+            default_scale = float(scale)
 
         self.shape = coeffs.shape[:3]
 
         self._slicer = SHSlicer(
             coeffs,
-            voxel_sizes=self._voxel_sizes,
             scale=default_scale,
             l_max=l_max,
             lut_res=lut_res,
@@ -450,20 +445,39 @@ class SHGlyph3D(Visualization):
         info = f"Dimensions: {self.shape}"
         info += f"\nSH Coefficients: {self._slicer.n_coeffs}"
         info += f"\nSH Order: {self._slicer.l_max}"
-        if self.affine is not None:
-            info += f"\nVoxel Sizes: {self._voxel_sizes}"
         return info
+
+    def _voxel_from_world_state(self, world_state):
+        """Snap a world-space state vector to the nearest in-bounds voxel index.
+
+        Parameters
+        ----------
+        world_state : array-like
+            World-space state vector to map into voxel coordinates.
+
+        Returns
+        -------
+        np.ndarray
+            Integer voxel index, clipped to the volume bounds.
+        """
+        if self.affine is None:
+            return np.clip(
+                np.round(world_state).astype(int), 0, np.array(self.shape) - 1
+            )
+        voxel = apply_transformation(
+            np.array([world_state], dtype=np.float32), np.linalg.inv(self.affine)
+        )[0]
+        return np.clip(np.round(voxel).astype(int), 0, np.array(self.shape) - 1)
 
     def set_slices(self):
         """Handle set slices for ``SHGlyph3D``."""
+        voxel = self._voxel_from_world_state(self.state)
         if self.affine is not None:
-            slice_state = np.asarray(self.state[:3], dtype=float)
+            slice_state = apply_transformation(
+                np.array([voxel], dtype=np.float32), self.affine
+            )[0]
         else:
-            slice_state = np.clip(
-                np.asarray(self.state[:3], dtype=float),
-                0,
-                np.array(self.shape, dtype=float) - 1,
-            )
+            slice_state = voxel.astype(float)
         for i, axis in enumerate(("x", "y", "z")):
             self._slicer.set_slice(axis, float(slice_state[i]))
             self._last_state[i] = self.state[i]
