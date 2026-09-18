@@ -150,25 +150,7 @@ def _calculate_lut_chunking(
 
 
 class SlicedSphGlyphMaterial(SphGlyphMaterial):
-    """Represent ``SlicedSphGlyphMaterial`` in Skyline.
-
-    Parameters
-    ----------
-    active_slice_x : float, optional
-        Value for ``active slice x``.
-    active_slice_y : float, optional
-        Value for ``active slice y``.
-    active_slice_z : float, optional
-        Value for ``active slice z``.
-    vis_x : int, optional
-        Value for ``vis x``.
-    vis_y : int, optional
-        Value for ``vis y``.
-    vis_z : int, optional
-        Value for ``vis z``.
-    **kwargs : dict
-        Value for ``kwargs``.
-    """
+    """Material with world-space slice positions and integer visibility flags."""
 
     uniform_type = dict(
         SphGlyphMaterial.uniform_type,
@@ -183,33 +165,14 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
     def __init__(
         self,
         *,
-        active_slice_x=-1,
-        active_slice_y=-1,
-        active_slice_z=-1,
+        active_slice_x=-1.0,
+        active_slice_y=-1.0,
+        active_slice_z=-1.0,
         vis_x=1,
         vis_y=1,
         vis_z=1,
         **kwargs,
     ):
-        """Represent ``SlicedSphGlyphMaterial`` in Skyline.
-
-        Parameters
-        ----------
-        active_slice_x : float, optional
-            Value for ``active slice x``.
-        active_slice_y : float, optional
-            Value for ``active slice y``.
-        active_slice_z : float, optional
-            Value for ``active slice z``.
-        vis_x : int, optional
-            Value for ``vis x``.
-        vis_y : int, optional
-            Value for ``vis y``.
-        vis_z : int, optional
-            Value for ``vis z``.
-        **kwargs : dict
-            Value for ``kwargs``.
-        """
         super().__init__(**kwargs)
         self.active_slice_x = active_slice_x
         self.active_slice_y = active_slice_y
@@ -218,193 +181,22 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
         self.vis_y = vis_y
         self.vis_z = vis_z
 
-    def _set_i4(self, name, value):
-        """Handle  set i4 for ``SlicedSphGlyphMaterial``.
 
-        Parameters
-        ----------
-        name : str
-            Display name used in the Skyline UI.
-        value : int
-            Value for ``value``.
-        """
-        self.uniform_buffer.data[name] = int(value)
+def _make_uniform_property(name, cast):
+    def getter(self):
+        return cast(self.uniform_buffer.data[name])
+
+    def setter(self, value):
+        self.uniform_buffer.data[name] = cast(value)
         self.uniform_buffer.update_full()
 
-    def _set_f4(self, name, value):
-        """Handle set f4 for ``SlicedSphGlyphMaterial``.
+    return property(getter, setter)
 
-        Parameters
-        ----------
-        name : str
-            Uniform name.
-        value : float
-            Value for ``value``.
-        """
-        self.uniform_buffer.data[name] = float(value)
-        self.uniform_buffer.update_full()
 
-    def _get_i4(self, name):
-        """Handle  get i4 for ``SlicedSphGlyphMaterial``.
-
-        Parameters
-        ----------
-        name : str
-            Display name used in the Skyline UI.
-
-        Returns
-        -------
-        int
-            The value of the uniform buffer.
-        """
-        return int(self.uniform_buffer.data[name])
-
-    def _get_f4(self, name):
-        """Handle get f4 for ``SlicedSphGlyphMaterial``.
-
-        Parameters
-        ----------
-        name : str
-            Uniform name.
-
-        Returns
-        -------
-        float
-            The value of the uniform buffer.
-        """
-        return float(self.uniform_buffer.data[name])
-
-    @property
-    def active_slice_x(self):
-        """Handle active slice x for ``SlicedSphGlyphMaterial``.
-
-        Returns
-        -------
-        float
-            The value of the active slice x.
-        """
-        return self._get_f4("active_slice_x")
-
-    @active_slice_x.setter
-    def active_slice_x(self, v):
-        """Handle active slice x for ``SlicedSphGlyphMaterial``.
-
-        Parameters
-        ----------
-        v : float
-            Value for ``v``.
-        """
-        self._set_f4("active_slice_x", v)
-
-    @property
-    def active_slice_y(self):
-        """Handle active slice y for ``SlicedSphGlyphMaterial``.
-
-        Returns
-        -------
-        float
-            The value of the active slice y.
-        """
-        return self._get_f4("active_slice_y")
-
-    @active_slice_y.setter
-    def active_slice_y(self, v):
-        """Handle active slice y for ``SlicedSphGlyphMaterial``.
-
-        Parameters
-        ----------
-        v : float
-            Value for ``v``.
-        """
-        self._set_f4("active_slice_y", v)
-
-    @property
-    def active_slice_z(self):
-        """Handle active slice z for ``SlicedSphGlyphMaterial``.
-
-        Returns
-        -------
-        float
-            The value of the active slice z.
-        """
-        return self._get_f4("active_slice_z")
-
-    @active_slice_z.setter
-    def active_slice_z(self, v):
-        """Handle active slice z for ``SlicedSphGlyphMaterial``.
-
-        Parameters
-        ----------
-        v : float
-            Value for ``v``.
-        """
-        self._set_f4("active_slice_z", v)
-
-    @property
-    def vis_x(self):
-        """Handle vis x for ``SlicedSphGlyphMaterial``.
-
-        Returns
-        -------
-        int
-            The value of the vis x.
-        """
-        return self._get_i4("vis_x")
-
-    @vis_x.setter
-    def vis_x(self, v):
-        """Handle vis x for ``SlicedSphGlyphMaterial``.
-
-        Parameters
-        ----------
-        v : int
-            Value for ``v``.
-        """
-        self._set_i4("vis_x", v)
-
-    @property
-    def vis_y(self):
-        """Handle vis y for ``SlicedSphGlyphMaterial``.
-
-        Returns
-        -------
-        int
-            Returned value.
-        """
-        return self._get_i4("vis_y")
-
-    @vis_y.setter
-    def vis_y(self, v):
-        """Handle vis y for ``SlicedSphGlyphMaterial``.
-
-        Parameters
-        ----------
-        v : int
-            Value for ``v``.
-        """
-        self._set_i4("vis_y", v)
-
-    @property
-    def vis_z(self):
-        """Handle vis z for ``SlicedSphGlyphMaterial``.
-
-        Returns
-        -------
-        int
-            The value of the vis z.
-        """
-        return self._get_i4("vis_z")
-
-    @vis_z.setter
-    def vis_z(self, v):
-        """Handle vis z for ``SlicedSphGlyphMaterial``.
-
-        Parameters
-        ----------
-        v : int
-            Value for ``v``.
-        """
-        self._set_i4("vis_z", v)
+for _name in ("active_slice_x", "active_slice_y", "active_slice_z"):
+    setattr(SlicedSphGlyphMaterial, _name, _make_uniform_property(_name, float))
+for _name in ("vis_x", "vis_y", "vis_z"):
+    setattr(SlicedSphGlyphMaterial, _name, _make_uniform_property(_name, int))
 
 
 class Billboard(Mesh):
@@ -1134,7 +926,7 @@ def sph_glyph_billboard_sliced(
     Returns
     -------
     SphGlyphBillboard
-        Configured billboard with slice index buffer and baked LUTs.
+        Configured billboard with baked Hermite LUTs.
     """
     coeffs = np.asarray(coeffs, dtype=np.float32)
     centers = np.asarray(centers, dtype=np.float32)

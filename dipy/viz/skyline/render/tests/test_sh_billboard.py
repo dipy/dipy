@@ -146,7 +146,6 @@ def test_sliced_material_writes_slices_into_the_uniform_buffer():
     material = SlicedSphGlyphMaterial()
 
     material.active_slice_x = 6.5
-
     assert float(material.uniform_buffer.data["active_slice_x"]) == 6.5
 
 
