@@ -29,7 +29,7 @@ from dipy.io.peaks import (
     tensor_to_pam,
 )
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.io.utils import split_filename_extension
+from dipy.io.utils import has_rgb_dtype, split_filename_extension, unpack_rgb_array
 from dipy.reconst.shm import convert_sh_descoteaux_tournier, order_from_ncoef
 from dipy.reconst.utils import convert_tensors
 from dipy.tracking.streamlinespeed import length
@@ -66,6 +66,7 @@ class VolumetricPropertyName(enum.Enum):
     AFFINE = "Affine matrix"
     VOXEL_ORDER = "Voxel order"
     DATA_TYPE = "Data type"
+    COLOR_ENCODING = "Color encoding"
     DIMENSIONS = "Dimensions"
     VOXEL_SIZE = "Voxel size"
 
@@ -167,19 +168,13 @@ def _print_stats_information(data, alignment_space, tab):
     logger.info(f"{tab + 'std dev:':<{alignment_space}}{np.std(data)}")
 
 
-def _print_volumetric_information(data, affine, vox_sz, affcodes, alignment_space, tab):
+def _print_volumetric_information(img, alignment_space, tab):
     """Print volumetric information.
 
     Parameters
     ----------
-    data : ndarray
-        Data whose properties are to be printed.
-    affine : ndarray
-        Affine matrix.
-    vox_sz : tuple
-        Voxel size.
-    affcodes : tuple
-        Voxel order (anatomical coordinate system).
+    img : nibabel.spatialimages.SpatialImage
+        Image whose metadata and voxel statistics are to be printed.
     alignment_space : int
         Character width for the property, value pair alignment.
     tab : str
@@ -217,11 +212,22 @@ def _print_volumetric_information(data, affine, vox_sz, affcodes, alignment_spac
         )
 
     _print_property_information(
-        VolumetricPropertyName.DIMENSIONS.value, data.shape, alignment_space
+        VolumetricPropertyName.DIMENSIONS.value, img.shape, alignment_space
     )
     _print_property_information(
-        VolumetricPropertyName.DATA_TYPE.value, data.dtype, alignment_space
+        VolumetricPropertyName.DATA_TYPE.value, img.get_data_dtype(), alignment_space
     )
+    if has_rgb_dtype(img.dataobj):
+        color_encoding = (
+            "RGB (DT_RGB24)"
+            if len(img.get_data_dtype().names) == 3
+            else "RGBA (DT_RGBA32)"
+        )
+        _print_property_information(
+            VolumetricPropertyName.COLOR_ENCODING.value, color_encoding, alignment_space
+        )
+
+    data = unpack_rgb_array(np.asanyarray(img.dataobj))
 
     if data.ndim == 3:
         _print_voxel_information("Data", data, alignment_space, tab)
@@ -230,10 +236,11 @@ def _print_volumetric_information(data, affine, vox_sz, affcodes, alignment_spac
 
     _print_property_information(
         VolumetricPropertyName.VOXEL_ORDER.value,
-        "".join(affcodes),
+        "".join(nib.aff2axcodes(img.affine)),
         alignment_space,
     )
-    logger.info(f"Affine matrix:\n{affine}")
+    logger.info(f"Affine matrix:\n{img.affine}")
+    vox_sz = img.header.get_zooms()[:3]
     _print_property_information(
         VolumetricPropertyName.VOXEL_SIZE.value,
         tuple(map(float, vox_sz)),
@@ -668,9 +675,7 @@ class IoInfoFlow(Workflow):
             extension = extension.lower()
 
             if extension in [".nii", ".nii.gz"]:
-                data, affine, img, vox_sz, affcodes = load_nifti(
-                    input_path, return_img=True, return_voxsize=True, return_coords=True
-                )
+                _, _, img = load_nifti(input_path, return_img=True, as_ndarray=False)
                 apply_tab_offset = bool(
                     max(
                         range(3),
@@ -682,10 +687,7 @@ class IoInfoFlow(Workflow):
                     )
                 )
                 _print_volumetric_information(
-                    data,
-                    affine,
-                    vox_sz,
-                    affcodes,
+                    img,
                     max(
                         vol_property_length, stats_property_length, pctl_property_length
                     )

@@ -6,6 +6,7 @@ import shutil
 import sys
 from tempfile import mkstemp
 
+import nibabel as nib
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -148,6 +149,63 @@ def test_io_info_pam_missing_fields(tmp_path, caplog):
     ]:
         matching = [line for line in lines if label in line and "Not available" in line]
         npt.assert_equal(len(matching) > 0, True)
+
+
+@pytest.mark.parametrize("channels", ["RGB", "RGBA"])
+def test_io_info_rgb(tmp_path, caplog, channels):
+    red = np.arange(24, dtype=np.uint8).reshape(2, 3, 4)
+    rgb_data = np.empty((2, 3, 4, len(channels)), dtype=np.uint8)
+    rgb_data[..., 0] = red
+    rgb_data[..., 1] = 50
+    rgb_data[..., 2] = 100
+    fname = tmp_path / "color.nii.gz"
+    color_dtype = np.dtype([(name, "uint8") for name in channels])
+    if channels == "RGB":
+        save_nifti(fname, rgb_data, np.eye(4), as_decfa=True)
+    else:
+        rgb_data[..., 3] = 200
+        raw = np.empty(red.shape, dtype=color_dtype)
+        for index, name in enumerate(channels):
+            raw[name] = rgb_data[..., index]
+        nib.save(nib.Nifti1Image(raw, np.eye(4)), fname)
+
+    io_info_flow = IoInfoFlow()
+    with caplog.at_level(logging.INFO, logger="dipy"):
+        io_info_flow.run(fname)
+
+    properties = {}
+    for record in caplog.records:
+        label, separator, value = record.getMessage().partition(":")
+        if separator:
+            properties[label.strip()] = value.strip()
+    assert properties["Dimensions"] == "(2, 3, 4)"
+    assert properties["Data type"] == str(color_dtype)
+    encoding = "DT_RGB24" if channels == "RGB" else "DT_RGBA32"
+    assert properties["Color encoding"] == f"{channels} ({encoding})"
+    assert float(properties["min"]) == 0
+    assert float(properties["max"]) == 23
+    assert float(properties["mean"]) == 11.5
+    assert float(properties["median"]) == 11.5
+    assert float(properties["2nd percentile"]) == np.percentile(red, 2)
+    assert float(properties["98th percentile"]) == np.percentile(red, 98)
+
+
+@pytest.mark.parametrize("shape", [(2, 3, 4), (2, 3, 4, 3), (2, 3, 4, 4)])
+def test_io_info_numeric_has_no_color_encoding(tmp_path, caplog, shape):
+    data = np.arange(np.prod(shape), dtype=np.float32).reshape(shape)
+    fname = tmp_path / "numeric.nii.gz"
+    save_nifti(fname, data, np.eye(4))
+
+    with caplog.at_level(logging.INFO, logger="dipy"):
+        IoInfoFlow().run(fname)
+
+    assert "Color encoding:" not in caplog.text
+    dimensions = next(
+        record.getMessage().partition(":")[2].strip()
+        for record in caplog.records
+        if record.getMessage().startswith("Dimensions:")
+    )
+    assert dimensions == str(shape)
 
 
 def test_io_fetch(tmp_path):

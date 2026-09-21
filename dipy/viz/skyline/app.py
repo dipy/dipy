@@ -65,8 +65,8 @@ class Skyline:
 
         An unrecognized value logs an error and terminates the process.
     images : list of tuple, optional
-        Already-loaded image data to show at startup, as ``(data, affine)``
-        or ``(data, affine, filename)`` tuples.
+        ``(data, affine)`` or ``(data, affine, filename)`` tuples where
+        ``data`` is a nibabel image or ndarray and ``filename`` is a display label.
     peaks : list of tuple, optional
         (peak_dirs, affine, filename, peak_values) tuples; see
         `create_peak_visualization`.
@@ -192,8 +192,8 @@ class Skyline:
 
             An unrecognized value logs an error and terminates the process.
         images : list of tuple, optional
-            Already-loaded image data to show at startup, as ``(data, affine)``
-            or ``(data, affine, filename)`` tuples.
+            ``(data, affine)`` or ``(data, affine, filename)`` tuples where
+            ``data`` is a nibabel image or ndarray and ``filename`` a display label.
         peaks : list of tuple, optional
             (peak_dirs, affine, filename, peak_values) tuples; see
             `create_peak_visualization`.
@@ -898,8 +898,8 @@ class Skyline:
         Parameters
         ----------
         images : list of tuple, optional
-            Loaded image data, as ``(data, affine)`` or
-            ``(data, affine, filename)`` tuples.
+            ``(data, affine)`` or ``(data, affine, filename)`` tuples where
+            ``data`` is a nibabel image or ndarray and ``filename`` a display label.
         peaks : list of tuple, optional
             (peak_dirs, affine, filename, peak_values) tuples; see
             `create_peak_visualization`.
@@ -1524,8 +1524,8 @@ def skyline(
 
         An unrecognized value logs an error and terminates the process.
     images : list of tuple, optional
-        Already-loaded image data to show at startup, as ``(data, affine)``
-        or ``(data, affine, filename)`` tuples.
+        ``(data, affine)`` or ``(data, affine, filename)`` tuples where
+        ``data`` is a nibabel image or ndarray and ``filename`` is a display label.
     peaks : list of tuple, optional
         (peak_dirs, affine, filename, peak_values) tuples; see
         `create_peak_visualization`.

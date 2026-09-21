@@ -48,6 +48,26 @@ DIPY 1.13.0 changes
   removed. ``info`` is a property, so the parameter was never reachable and the
   summary was always printed to stdout; the behaviour is unchanged.
 
+**IO**
+
+- ``dipy.io.image.load_nifti`` and ``load_nifti_data`` now unpack structured
+  RGB/RGBA data into numeric channel arrays and emit a ``UserWarning``.
+  ``as_ndarray=False`` returns the raw proxy silently. Returned images remain
+  structured; use ``img.dataobj``, not ``img.get_fdata()``, for their data.
+
+- ``dipy.io.utils.decfa`` and ``dipy.io.image.save_nifti`` now ignore
+  ``scale=True`` for integer color data. Floating-point scaling is unchanged.
+
+**Workflows / CLI**
+
+- Color FA outputs from ``dipy_fit_dti``, ``dipy_fit_dki``, and ``dipy_fit_fwdti``
+  use 3D ``DT_RGB24`` on disk; both DIPY loaders return ``(X, Y, Z, 3)`` arrays
+  by default. ``dipy_info`` reports raw image metadata and labels RGB/RGBA data.
+
+- Skyline ``load_files()["images"]`` now returns ``(img, affine, filename)``
+  tuples with nibabel images, preserving metadata and RGB detection. Direct
+  viewer inputs still accept ndarrays.
+
 DIPY 1.12.0 changes
 -------------------
 
