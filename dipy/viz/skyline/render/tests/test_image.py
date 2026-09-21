@@ -1,15 +1,19 @@
 import logging
 
+import nibabel as nib
 import numpy as np
 import numpy.testing as npt
 import pytest
 
+from dipy.io.image import save_nifti
+from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
 _, has_fury, _ = optional_package("fury", min_version="2.0.0")
 if not has_fury:
     pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
 else:
+    from dipy.viz.skyline.io import load_files
     from dipy.viz.skyline.render.image import Image3D, create_image_visualization
     from dipy.viz.skyline.render.renderer import (
         slice_slider_bounds,
@@ -189,6 +193,68 @@ def test_image3d_rgb_logs_error_for_invalid_channel_count(n_channels, caplog):
 
     assert "is 3 (RGB) or 4 (RGBA)" in caplog.text
     assert image.rgb is False
+
+
+@pytest.mark.parametrize("channels", ["RGB", "RGBA"])
+@pytest.mark.parametrize("rgb", [None, False])
+@set_random_number_generator()
+def test_image3d_file_color_ingestion(tmp_path, channels, rgb, rng=None):
+    values = rng.integers(0, 256, size=(2, 3, 4, len(channels)), dtype=np.uint8)
+    raw = np.empty(values.shape[:3], dtype=[(name, "uint8") for name in channels])
+    for index, name in enumerate(channels):
+        raw[name] = values[..., index]
+    affine = np.diag([2.0, 3.0, 4.0, 1.0])
+    affine[:3, 3] = [5, 6, 7]
+    fname = tmp_path / "color.nii.gz"
+    nib.save(nib.Nifti1Image(raw, affine), fname)
+
+    loaded = load_files([str(fname)])
+    img, loaded_affine, _ = loaded["images"][0]
+    image = create_image_visualization((img, None, "color label"), 0, rgb=rgb)
+    npt.assert_array_equal(image.dwi, values)
+    npt.assert_array_equal(image.affine, loaded_affine)
+    assert image.dwi.dtype == np.uint8
+    assert image.rgb is (rgb is None)
+    assert image._has_directions is (rgb is False)
+    info = image._populate_info()
+    assert _info_line(info, "Dimensions:") == str(raw.shape)
+    assert _info_line(info, "Data Type:") == str(raw.dtype)
+    npt.assert_allclose(_voxel_sizes(info), [2, 3, 4])
+    if rgb is False:
+        npt.assert_array_equal(image.active_volume, values[..., 0])
+        assert _info_line(info, "Directions:") == str(len(channels))
+    else:
+        npt.assert_array_equal(image.active_volume, values)
+        assert "Directions:" not in info
+
+
+@pytest.mark.parametrize("n_volumes", [3, 4])
+@set_random_number_generator()
+def test_image3d_file_numeric_channels_are_directional(tmp_path, n_volumes, rng=None):
+    values = rng.integers(0, 256, size=(2, 3, 4, n_volumes), dtype=np.uint8)
+    fname = tmp_path / "numeric.nii.gz"
+    save_nifti(fname, values, AFFINE)
+    image = create_image_visualization(load_files([str(fname)])["images"][0], 0)
+
+    assert image.rgb is False
+    assert image._has_directions is True
+    npt.assert_array_equal(image.active_volume, values[..., 0])
+    image.update_state([*image.state, n_volumes - 1])
+    npt.assert_array_equal(image.active_volume, values[..., -1])
+
+
+def test_image3d_image_affine_override(tmp_path):
+    values = _volume((2, 3, 4))
+    image_affine = np.diag([2.0, 3.0, 4.0, 1.0])
+    fname = tmp_path / "scalar.nii.gz"
+    save_nifti(fname, values, image_affine)
+    img = load_files([str(fname)])["images"][0][0]
+    explicit_affine = np.diag([5.0, 6.0, 7.0, 1.0])
+    image = Image3D("nonexistent display label", img, affine=explicit_affine)
+
+    npt.assert_array_equal(image.affine, explicit_affine)
+    npt.assert_allclose(_voxel_sizes(image._populate_info()), [5, 6, 7])
+    npt.assert_array_equal(image.active_volume, values)
 
 
 def test_image3d_structured_rgb_auto_detected():

@@ -33,28 +33,6 @@ EMERGENCY_REF = create_nifti_header(
 SH_BASES = ("descoteaux07", "tournier07")
 
 
-def _reference_from_image(data, affine):
-    """Build a NIfTI header usable as a tractogram spatial reference.
-
-    Formats without an embedded header (``.tck``, ``.vtk``, ``.dpy``, ...) need
-    a full reference, not just an affine.
-
-    Parameters
-    ----------
-    data : ndarray
-        Volume the reference geometry is taken from.
-    affine : ndarray, shape (4, 4)
-        Voxel-to-world transform of ``data``.
-
-    Returns
-    -------
-    nibabel.nifti1.Nifti1Header
-        Header carrying the volume's affine, dimensions and voxel sizes.
-    """
-    vox_size = np.linalg.norm(affine[:3, :3], axis=0)
-    return create_nifti_header(affine, data.shape[:3], vox_size)
-
-
 def _peaks_from_nifti(fname):
     """Load peak directions from a NIfTI peaks volume.
 
@@ -159,7 +137,8 @@ def load_files(
         ``"surfaces"``, ``"tractograms"``, ``"shm_coeffs"``, each a list
         of tuples for the matching ``create_*_visualization`` function:
 
-        - images, rois : ``(data, affine, fname)``
+        - images : ``(img, affine, fname)`` with a nibabel image object
+        - rois : ``(data, affine, fname)`` with an ndarray
         - peaks : ``(pam, fname)``
         - surfaces : ``(vertices, faces, fname)``
         - tractograms : ``(sft, fname)``
@@ -205,8 +184,8 @@ def load_files(
         ext = ext.lower()
 
         if ext in [".nii.gz", ".nii"]:
-            data, affine = load_nifti(fname)
-            skyline_images.append((data, affine, fname))
+            _, affine, img = load_nifti(fname, return_img=True, as_ndarray=False)
+            skyline_images.append((img, affine, fname))
         elif ext == ".pam5":
             pam = load_pam(fname)
             skyline_peaks.append((pam.peak_dirs, pam.affine, fname, pam.peak_values))
@@ -232,7 +211,7 @@ def load_files(
             if skyline_images:
                 sft = load_tractogram(
                     fname,
-                    _reference_from_image(*skyline_images[0][:2]),
+                    skyline_images[0][0],
                     bbox_valid_check=False,
                 )
             else:

@@ -117,8 +117,12 @@ def test_load_files_reads_nifti_images(tmp_path, name):
     loaded = load_files([path])
 
     assert len(loaded["images"]) == 1
-    image_data, image_affine, image_path = loaded["images"][0]
-    npt.assert_allclose(image_data, data)
+    img, image_affine, image_path = loaded["images"][0]
+    assert isinstance(img, nib.spatialimages.SpatialImage)
+    assert img.shape == data.shape
+    assert img.get_data_dtype() == data.dtype
+    npt.assert_allclose(np.asanyarray(img.dataobj), data)
+    npt.assert_allclose(img.affine, AFFINE)
     npt.assert_allclose(image_affine, AFFINE)
     assert image_path == path
 
