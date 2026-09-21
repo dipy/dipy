@@ -37,7 +37,7 @@ class SkylineFlow(Workflow):
         cluster_length_thr=-1,
         buan_pvals=None,
         stealth=False,
-        rgb=False,
+        rgb=None,
         out_dir="",
         out_stealth_png="out_skyline.png",
     ):
@@ -97,8 +97,9 @@ class SkylineFlow(Workflow):
             tractograms.
         stealth : bool, optional
             Do not use interactive mode just save figure.
-        rgb : bool, optional
-            Enable the colors in the image if 4D data with RGB/RGBA channels.
+        rgb : bool or None, optional
+            ``None``: auto-detect from structured NIfTI ``DT_RGB24`` dtype;
+            ``--rgb`` forces RGB; ``--no-rgb`` disables it entirely.
         out_dir : str or Path, optional
             Output directory to save the figure if stealth mode is enabled.
         out_stealth_png : str, optional
@@ -156,7 +157,7 @@ class HorizonFlow(SkylineFlow):
         self,
         input_files,
         cluster=False,
-        rgb=False,
+        rgb=None,
         cluster_thr=15.0,
         random_colors=None,
         length_gt=0,
@@ -190,8 +191,9 @@ class HorizonFlow(SkylineFlow):
             Filenames.
         cluster : bool, optional
             Enable QuickBundlesX clustering.
-        rgb : bool, optional
-            Enable the color image (rgb only, alpha channel will be ignored).
+        rgb : bool or None, optional
+            ``None``: auto-detect from structured NIfTI ``DT_RGB24`` dtype;
+            ``--rgb`` forces RGB; ``--no-rgb`` disables it entirely.
         cluster_thr : float, optional
             Distance threshold used for clustering. Default value 15.0 for
             small animal brains you may need to use something smaller such

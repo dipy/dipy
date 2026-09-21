@@ -245,6 +245,15 @@ def test_rgb_volumes_are_loaded_as_color_images(make_skyline):
     assert len(viewer._image_visualizations) == 1
 
 
+def test_incompatible_rgb_falls_back_to_scalar_mode(make_skyline, caplog):
+    with caplog.at_level(logging.ERROR):
+        viewer = make_skyline(images=[_image_input()], rgb=True)
+
+    image = viewer._image_visualizations[0]
+    assert image.rgb is False
+    assert "Falling back to rgb=False" in caplog.text
+
+
 def test_clustered_tractograms_build_cluster_visualizations(make_skyline):
     viewer = make_skyline(
         tractograms=[_tractogram_input(n_lines=12)], is_cluster=True, cluster_thr=2.0

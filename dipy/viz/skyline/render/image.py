@@ -2,6 +2,8 @@
 
 import numpy as np
 
+from dipy.io.utils import has_rgb_dtype, is_rgb_compatible_data, unpack_rgb_array
+from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import (
     dropdown,
@@ -52,7 +54,7 @@ def create_image_visualization(
     interpolation="linear",
     render_callback=None,
     opacity=100,
-    rgb=False,
+    rgb=None,
     value_percentiles=(2, 98),
     colormap="Gray",
     sync_callabck=None,
@@ -71,8 +73,10 @@ def create_image_visualization(
         Callback function to be called after rendering.
     opacity : int, optional
         Opacity of the volume rendering.
-    rgb : bool, optional
-        Whether the image is RGB
+    rgb : bool or None, optional
+        ``None``: auto-detect from structured NIfTI ``DT_RGB24``
+        dtype; show toggle for other 4D volumes with 3 or 4 channels.
+        ``True``: force RGB mode.  ``False``: never treat as RGB.
     value_percentiles : tuple, optional
         Percentiles for intensity value range. For example, (2, 98) will set the
         intensity range to be between the 2nd and 98th percentiles of the image
@@ -91,8 +95,7 @@ def create_image_visualization(
     Raises
     ------
     ValueError
-        If the input is not a tuple of length 2 or 3, or if rgb=True and the last
-        dimension of the volume is not 3 or 4.
+        If the input is not a tuple of length 2 or 3.
     """
     if not isinstance(input, tuple) or len(input) not in (2, 3):
         raise ValueError(
@@ -137,9 +140,11 @@ class Image3D(Visualization):
         Callback used to request a render/update.
     opacity : int
         Slice opacity in percent, expected in ``[0, 100]``.
-    rgb : bool
-        Interpret a 4D volume as RGB/RGBA channels when True.
-        Colormap and directional-volume controls are ignored in this mode.
+    rgb : bool or None
+        ``None``: auto-detect from structured NIfTI ``DT_RGB24`` dtype;
+        show toggle for other 4D volumes with 3 or 4 channels.
+        ``True``: force RGB mode.  ``False``: never treat as RGB.
+        Colormap and directional-volume controls are ignored when RGB.
     value_percentiles : tuple
         Low/high percentiles used to compute scalar intensity limits.
     colormap : str
@@ -157,7 +162,7 @@ class Image3D(Visualization):
         interpolation="linear",
         render_callback=None,
         opacity=100,
-        rgb=False,
+        rgb=None,
         value_percentiles=(2, 98),
         colormap="Gray",
         sync_callabck=None,
@@ -178,9 +183,10 @@ class Image3D(Visualization):
             Callback used to request a render/update.
         opacity : int, optional
             Slice opacity in percent, expected in ``[0, 100]``.
-        rgb : bool, optional
-            Interpret a 4D volume as RGB/RGBA channels when True.
-            Colormap and directional-volume controls are ignored in this mode.
+        rgb : bool or None, optional
+            ``None``: auto-detect from structured NIfTI ``DT_RGB24``
+            dtype; show toggle for other 4D volumes with 3 or 4 channels.
+            ``True``: force RGB mode.  ``False``: never treat as RGB.
         value_percentiles : tuple(float, float), optional
             Low/high percentiles used to compute scalar intensity limits.
         colormap : str, optional
@@ -190,16 +196,18 @@ class Image3D(Visualization):
         """
         self.dwi = volume
         self.affine = affine
+        self._rgb_user = rgb
+        if rgb is None:
+            rgb = has_rgb_dtype(self.dwi)
+        self.dwi = unpack_rgb_array(self.dwi)
+        self._rgb_capable = is_rgb_compatible_data(self.dwi)
 
-        if (
-            rgb
-            and self.dwi.ndim == 4
-            and (self.dwi.shape[3] != 3 and self.dwi.shape[3] != 4)
-        ):
-            raise ValueError(
-                "When specifying rgb=True, the last dimension of the volume "
-                "must be 3 (RGB) or 4 (RGBA)."
+        if rgb and not self._rgb_capable:
+            logger.error(
+                "RGB mode requires a 4D volume whose last dimension "
+                "is 3 (RGB) or 4 (RGBA). Falling back to rgb=False."
             )
+            rgb = False
         self.rgb = rgb
 
         self._has_directions = self.dwi.ndim == 4 and not rgb
@@ -482,7 +490,7 @@ class Image3D(Visualization):
         if changed:
             self._synchronize = new
 
-        if self.dwi.ndim == 4 and self.dwi.shape[-1] in (3, 4):
+        if self._rgb_capable and self._rgb_user is not False:
             imgui.same_line()
             changed, new = toggle_button(self.rgb, label="RGB")
             if changed:
