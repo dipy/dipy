@@ -232,7 +232,7 @@ save it.
 
 FA = np.clip(FA, 0, 1)
 RGB = color_fa(FA, tenfit.evecs)
-save_nifti("tensor_rgb.nii.gz", np.array(255 * RGB, "uint8"), affine)
+save_nifti("tensor_rgb.nii.gz", RGB, affine, as_decfa=True)
 
 """
 Let's try to visualize the tensor ellipsoids of a small rectangular

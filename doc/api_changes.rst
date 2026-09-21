@@ -48,6 +48,17 @@ DIPY 1.13.0 changes
   removed. ``info`` is a property, so the parameter was never reachable and the
   summary was always printed to stdout; the behaviour is unchanged.
 
+**Workflows / CLI**
+
+- Color FA (``out_rgb``) files from ``dipy_fit_dti``, ``dipy_fit_dki``, and
+  ``dipy_fit_fwdti`` now use the NIfTI ``DT_RGB24`` format instead of a 4D
+  ``uint8`` array. When loaded with nibabel or ``dipy.io.image.load_nifti``,
+  the data is a 3D structured array with ``R``, ``G``, and ``B`` fields, not an
+  array shaped ``(X, Y, Z, 3)``; ``img.get_fdata()`` cannot read this dtype.
+  For code expecting a channel axis, use ``dipy.io.utils.unpack_rgb_array``
+  on the loaded data, or ``dipy.io.image.load_nifti_data`` (which unpacks it
+  automatically and emits a ``UserWarning``).
+
 DIPY 1.12.0 changes
 -------------------
 

@@ -2,12 +2,14 @@ import warnings
 
 import numpy as np
 from numpy.testing import assert_allclose, assert_equal
+import pytest
 
 from dipy.core.gradients import generate_bvecs
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.peaks import load_pam
+from dipy.io.utils import unpack_rgb_array
 from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.workflows.reconst import ReconstDkiFlow
 
@@ -45,7 +47,8 @@ def test_reconst_dki(tmp_path):
     assert_equal(ga_data.shape, volume.shape[:-1])
 
     rgb_path = dki_flow.last_generated_outputs["out_rgb"]
-    rgb_data = load_nifti_data(rgb_path)
+    with pytest.warns(UserWarning, match="structured RGB"):
+        rgb_data = unpack_rgb_array(load_nifti_data(rgb_path))
     assert_equal(rgb_data.shape[-1], 3)
     assert_equal(rgb_data.shape[:-1], volume.shape[:-1])
 

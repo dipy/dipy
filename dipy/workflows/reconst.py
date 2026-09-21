@@ -723,7 +723,7 @@ class ReconstDtiFlow(Workflow):
 
             if "rgb" in save_metrics:
                 RGB = color_fa(FA, tenfit.evecs)
-                save_nifti(orgb, np.array(255 * RGB, "uint8"), affine)
+                save_nifti(orgb, RGB, affine, as_decfa=True)
 
             if "md" in save_metrics:
                 MD = mean_diffusivity(tenfit.evals)
@@ -1841,7 +1841,7 @@ class ReconstDkiFlow(Workflow):
 
             if "rgb" in save_metrics:
                 RGB = color_fa(FA, dkfit.evecs)
-                save_nifti(orgb, np.array(255 * RGB, "uint8"), affine)
+                save_nifti(orgb, RGB, affine, as_decfa=True)
 
             if "md" in save_metrics:
                 MD = mean_diffusivity(dkfit.evals)
@@ -3407,7 +3407,7 @@ class ReconstFwdtiFlow(Workflow):
 
             if "rgb" in save_metrics:
                 RGB = color_fa(FA, fwdti_fit.evecs)
-                save_nifti(orgb, np.array(255 * RGB, "uint8"), affine)
+                save_nifti(orgb, RGB, affine, as_decfa=True)
 
             if "md" in save_metrics:
                 MD = mean_diffusivity(fwdti_fit.evals)
