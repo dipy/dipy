@@ -492,7 +492,7 @@ def vector_cosine(vecs1, vecs2):
     ----------
     vecs1 : (N, R) or (R,) array_like
        N vectors (as rows) or single vector.  Vectors have R elements.
-    vecs1 : (N, R) or (R,) array_like
+    vecs2 : (N, R) or (R,) array_like
        N vectors (as rows) or single vector.  Vectors have R elements.
        It should be possible to broadcast `vecs1` against `vecs2`
 
