@@ -990,16 +990,13 @@ class CrossCorrelationMetric:
             interpolation artifacts. The default is None, implying no
             pre-alignment is performed.
         static_mask : array, shape (S, R, C) or (R, C), optional
-            static image mask. Not currently supported by this metric.
+            static image mask that selects centers of local neighborhoods
+            used to calculate the cross-correlation.
         moving_mask : array, shape (S', R', C') or (R', C'), optional
-            moving image mask. Not currently supported by this metric.
+            moving image mask that selects centers of local neighborhoods
+            used to calculate the cross-correlation.
 
         """
-        if static_mask is not None or moving_mask is not None:
-            raise NotImplementedError(
-                "Masks are not currently supported by CrossCorrelationMetric"
-            )
-
         n = transform.get_number_of_parameters()
         self.metric_grad = np.zeros(n, dtype=np.float64)
         self.dim = len(static.shape)
@@ -1024,6 +1021,15 @@ class CrossCorrelationMetric:
         self.transform = transform
         self.static = np.array(static).astype(np.float64)
         self.moving = np.array(moving).astype(np.float64)
+        if static_mask is not None:
+            self.static_mask = static_mask.astype(np.int32)
+        else:
+            self.static_mask = None
+
+        if moving_mask is not None:
+            self.moving_mask = moving_mask.astype(np.int32)
+        else:
+            self.moving_mask = None
         self.static_grid2world = static_grid2world
         self.moving_grid2world = moving_grid2world
         self.moving_world2grid = npl.inv(moving_grid2world)
@@ -1061,8 +1067,7 @@ class CrossCorrelationMetric:
         warped_moving = self.affine_map.transform(self.moving)
         warped_moving = np.asarray(warped_moving, dtype=np.float64)
         factors = self.precompute_factors(self.static, warped_moving, self.radius)
-        factors = np.asarray(factors)
-        return factors
+        return np.asarray(factors)
 
     def _update_cross_correlation(self, params, *, update_gradient=True):
         r"""Update local cross-correlation and its affine gradient.
@@ -1098,6 +1103,15 @@ class CrossCorrelationMetric:
 
         # Update the local CC factors with the current joint intensities
         factors = self._update_factors()
+        mask = self.static_mask
+        if self.moving_mask is not None:
+            moving_mask = self.affine_map.transform(
+                self.moving_mask, interpolation="nearest"
+            ).astype(np.int32)
+            if mask is None:
+                mask = moving_mask
+            else:
+                mask = ((mask != 0) & (moving_mask != 0)).astype(np.int32)
 
         if update_gradient:
             # Compute the gradient of moving img. at physical points
@@ -1123,9 +1137,10 @@ class CrossCorrelationMetric:
                 self.transform,
                 static2prealigned,
                 self.metric_grad,
+                mask=mask,
             )
         else:
-            self.metric_val = self.compute_affine(factors, self.radius)
+            self.metric_val = self.compute_affine(factors, self.radius, mask=mask)
 
     def distance(self, params):
         r"""Numeric value of the local cross-correlation energy.
@@ -1358,10 +1373,10 @@ class AffineRegistration:
                 Start from identity
         static_mask : array, shape (S, R, C) or (R, C), optional
             static image mask that defines which pixels in the static image
-            are used to calculate the mutual information.
+            are used to calculate the similarity metric.
         moving_mask : array, shape (S', R', C') or (R', C'), optional
             moving image mask that defines which pixels in the moving image
-            are used to calculate the mutual information.
+            are used to calculate the similarity metric.
 
         """
         self.dim = len(static.shape)
@@ -1544,10 +1559,10 @@ class AffineRegistration:
             the distance between the images.
         static_mask : array, shape (S, R, C) or (R, C), optional
             static image mask that defines which pixels in the static image
-            are used to calculate the mutual information.
+            are used to calculate the similarity metric.
         moving_mask : array, shape (S', R', C') or (R', C'), optional
             moving image mask that defines which pixels in the moving image
-            are used to calculate the mutual information.
+            are used to calculate the similarity metric.
 
         Returns
         -------
