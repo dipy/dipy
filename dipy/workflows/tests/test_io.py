@@ -150,6 +150,18 @@ def test_io_info_pam_missing_fields(tmp_path, caplog):
         npt.assert_equal(len(matching) > 0, True)
 
 
+def test_io_info_rgb(tmp_path, caplog):
+    rgb_data = np.random.default_rng(42).random((3, 3, 3, 3))
+    save_nifti(str(tmp_path / "rgb_decfa.nii.gz"), rgb_data, np.eye(4), as_decfa=True)
+
+    io_info_flow = IoInfoFlow()
+    with caplog.at_level(logging.INFO, logger="dipy"):
+        io_info_flow.run(str(tmp_path / "rgb_decfa.nii.gz"))
+
+    assert "dimensions" in caplog.text.lower()
+    assert "min" in caplog.text.lower()
+
+
 def test_io_fetch(tmp_path):
     fetch_flow = FetchFlow()
     fetch_flow.run(["bundle_fa_hcp"])
