@@ -24,6 +24,7 @@ cli_flows = {
     "dipy_convert_tractogram": ("dipy.workflows.io", "ConvertTractogramFlow"),
     "dipy_convert_tensors": ("dipy.workflows.io", "ConvertTensorsFlow"),
     "dipy_convert_sh": ("dipy.workflows.io", "ConvertSHFlow"),
+    "dipy_denoise": ("dipy.workflows.denoise", "DenoiseFlow"),
     "dipy_denoise_nlmeans": ("dipy.workflows.denoise", "NLMeansFlow"),
     "dipy_denoise_lpca": ("dipy.workflows.denoise", "LPCAFlow"),
     "dipy_denoise_mppca": ("dipy.workflows.denoise", "MPPCAFlow"),
