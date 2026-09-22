@@ -1817,6 +1817,13 @@ def nlls_fit_tensor(
     -------
     nlls_params: the eigen-values and eigen-vectors of the tensor in each
         voxel.
+
+    Notes
+    -----
+    For DKI and CTI fits, if the squared mean diffusivity is zero, the
+    normalized kurtosis tensor elements are set to zero without a division
+    warning. This is a numerical convention, not a physically defined
+    kurtosis at zero diffusivity. The CTI covariance elements are retained.
     """
     tol = 1e-6
 
@@ -1918,7 +1925,18 @@ def nlls_fit_tensor(
             model_S0[vox] = np.exp(-this_param[-1])
         if not dti:
             md2 = evals.mean(0) ** 2
-            params[vox, 12:] = this_param[6:-1] / md2
+            if md2 > 0:
+                if npa == 27:  # DKI (12 DTI + 15 DKI)
+                    params[vox, 12:27] = this_param[6:21] / md2
+                elif npa == 48:  # CTI (12 DTI + 15 DKI + 21 CTI)
+                    params[vox, 12:27] = this_param[6:21] / md2
+                    params[vox, 27:48] = this_param[21:42]
+            else:
+                if npa == 27:
+                    params[vox, 12:27] = 0.0
+                elif npa == 48:
+                    params[vox, 12:27] = 0.0
+                    params[vox, 27:48] = this_param[21:42]
 
     if resort_to_OLS:
         warnings.warn(ols_resort_msg, UserWarning, stacklevel=2)
