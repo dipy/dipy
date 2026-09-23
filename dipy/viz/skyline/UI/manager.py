@@ -281,10 +281,10 @@ class UIWindow:
                 self._is_dialog_open = True
                 render_file_dialog(
                     title="Select Peak File(s)",
-                    name="Peak Files (*.pam5)",
-                    extensions="*.pam5",
+                    name="Peak Files (*.pam5 *.nii *.nii.gz)",
+                    extensions="*.pam5 *.nii *.gz",
                     callback=self._file_dialog_closed,
-                    type="viz",
+                    type="peak",
                 )
 
             if imgui.menu_item("ODFs", "", False)[0]:
@@ -292,8 +292,8 @@ class UIWindow:
                 self._is_dialog_open = True
                 render_file_dialog(
                     title="Select Spherical Harmonics ODFs File(s)",
-                    name="ODFs Files (*.pam5)",
-                    extensions="*.pam5",
+                    name="ODFs Files (*.pam5 *.nii *.nii.gz)",
+                    extensions="*.pam5 *.nii *.gz",
                     callback=self._file_dialog_closed,
                     type="shm_coeff",
                 )
@@ -468,7 +468,9 @@ class UIWindow:
         """Collapsed/open flags for each registered section id."""
         return self._section_open
 
-    def _file_dialog_closed(self, *, filenames=None, rois=None, shm_coeffs=None):
+    def _file_dialog_closed(
+        self, *, filenames=None, rois=None, peaks=None, shm_coeffs=None
+    ):
         """Forward dialog results to :attr:`file_dialog_callback` if present.
 
         Parameters
@@ -477,13 +479,15 @@ class UIWindow:
             Selected visualization paths.
         rois : list or None, optional
             Selected ROI paths.
+        peaks : list or None, optional
+            Selected peak paths.
         shm_coeffs : list or None, optional
             Selected SH coefficient paths.
         """
         self._is_dialog_open = False
         if self.file_dialog_callback is not None:
             self.file_dialog_callback(
-                filenames=filenames, rois=rois, shm_coeffs=shm_coeffs
+                filenames=filenames, rois=rois, peaks=peaks, shm_coeffs=shm_coeffs
             )
 
     def _update_bg_color(self, new_color):
