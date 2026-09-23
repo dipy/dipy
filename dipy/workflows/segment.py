@@ -175,6 +175,7 @@ class RecoBundlesFlow(Workflow):
         r_reduction_thr=12.0,
         r_pruning_thr=6.0,
         no_r_slr=False,
+        num_threads=None,
         out_dir="",
         out_recognized_transf="recognized.trx",
         out_recognized_labels="labels.npy",
@@ -226,6 +227,13 @@ class RecoBundlesFlow(Workflow):
         no_r_slr : bool, optional
             Don't enable Refine local Streamline-based Linear
             Registration.
+        num_threads : int, optional
+            Number of threads to be used for OpenMP parallelization. If None
+            the value of OMP_NUM_THREADS environment variable is used if it is
+            set, otherwise all available threads are used. If < 0 the maximal
+            number of threads minus $|num_threads + 1|$ is used (enter -1 to
+            use as many threads as possible). 0 raises an error. Only used
+            when ``slr_metric`` is ``"symmetric"``.
         out_dir : string or Path, optional
             Output directory.
         out_recognized_transf : string, optional
@@ -315,6 +323,7 @@ class RecoBundlesFlow(Workflow):
                 slr_bounds=bounds,
                 slr_select=slr_select,
                 slr_method="L-BFGS-B",
+                num_threads=num_threads,
             )
 
             if refine:
@@ -350,6 +359,7 @@ class RecoBundlesFlow(Workflow):
                         slr_bounds=affine_bounds,
                         slr_select=slr_select,
                         slr_method="L-BFGS-B",
+                        num_threads=num_threads,
                     )
 
             if len(labels) > 0:

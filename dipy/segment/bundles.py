@@ -369,10 +369,11 @@ class RecoBundles:
             (default True)
         num_threads : int, optional
             Number of threads to be used for OpenMP parallelization. If None
-            (default) the value of OMP_NUM_THREADS environment variable is used
-            if it is set, otherwise all available threads are used. If < 0 the
-            maximal number of threads minus $|num_threads + 1|$ is used (enter
-            -1 to use as many threads as possible). 0 raises an error.
+            the value of OMP_NUM_THREADS environment variable is used if it is
+            set, otherwise all available threads are used. If < 0 the maximal
+            number of threads minus $|num_threads + 1|$ is used (enter -1 to
+            use as many threads as possible). 0 raises an error. Only used
+            when ``slr_metric`` is None or ``"symmetric"``.
         slr_metric : BundleMinDistanceMetric
         slr_x0 : array or int or str, optional
             Transformation allowed. translation, rigid, similarity or scaling
@@ -492,6 +493,7 @@ class RecoBundles:
         slr_method="L-BFGS-B",
         pruning_thr=6,
         pruning_distance="mdf",
+        num_threads=None,
     ):
         """Refine and recognize the model_bundle in self.streamlines
         This method expects once pruned streamlines as input. It refines the
@@ -564,6 +566,13 @@ class RecoBundles:
             Pruning after reducing the search space.
         pruning_distance : string
             Pruning distance type can be mdf or mam.
+        num_threads : int, optional
+            Number of threads to be used for OpenMP parallelization. If None
+            the value of OMP_NUM_THREADS environment variable is used if it is
+            set, otherwise all available threads are used. If < 0 the maximal
+            number of threads minus $|num_threads + 1|$ is used (enter -1 to
+            use as many threads as possible). 0 raises an error. Only used
+            when ``slr_metric`` is None or ``"symmetric"``.
 
         Returns
         -------
@@ -610,7 +619,11 @@ class RecoBundles:
                 select_model=slr_select[0],
                 select_target=slr_select[1],
                 method=slr_method,
+                num_threads=num_threads,
             )
+        else:
+            transf_streamlines = neighb_streamlines
+
         if self.verbose:
             logger.info("pruning after 2nd local Slr")
 
