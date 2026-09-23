@@ -11,12 +11,12 @@ from dipy.segment.clustering import QuickBundles
 from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
 from dipy.tracking.streamline import (
     Streamlines,
+    length,
     orient_by_streamline,
     set_number_of_points,
     transform_streamlines,
     values_from_volume,
 )
-from dipy.tracking.utils import length
 from dipy.utils.deprecator import warning_for_keywords
 
 
@@ -265,8 +265,7 @@ def get_centroid(bundle, *, n_points=50, threshold=100.0):
     if len(centroids) == 0:
         raise ValueError("QuickBundles did not generate a centroid")
 
-    centroid_lengths = np.asarray(list(length(centroids)))
-    return np.asarray(centroids[np.argmax(centroid_lengths)])
+    return centroids[np.argmax(length(centroids))]
 
 
 def get_n_segment_by_length(bundle, *, segment_length=5.0):
@@ -288,7 +287,7 @@ def get_n_segment_by_length(bundle, *, segment_length=5.0):
     if segment_length <= 0:
         raise ValueError("segment_length must be greater than zero")
 
-    bundle_lengths = np.asarray(list(length(bundle)))
+    bundle_lengths = length(bundle)
     if bundle_lengths.size == 0:
         raise ValueError("Bundle contains no streamlines")
 
@@ -449,6 +448,12 @@ def create_radial_bins(
         threshold = np.median(nonzero) * merge_threshold
         remove_first = counts[0] < threshold
         remove_last = counts[-1] < threshold
+
+        if n_bins == 2 and remove_first and remove_last:
+            # Both bins are edge bins: merge only the sparser one, otherwise
+            # no bin would remain.
+            remove_last = counts[-1] < counts[0]
+            remove_first = not remove_last
 
         if remove_first:
             radial_index[radial_index == 0] = 1

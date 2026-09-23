@@ -18,10 +18,10 @@ See :footcite:p:`Feng2026SPECTRA` for further details about the method.
 """
 
 import matplotlib.pyplot as plt
-import nibabel as nib
 import numpy as np
 
 from dipy.data import get_fnames
+from dipy.io.image import load_nifti
 from dipy.io.streamline import load_tractogram
 from dipy.stats.analysis import spectra_assignment_map, spectra_profile
 
@@ -46,9 +46,7 @@ bundle = sft_mni.streamlines
 sft_model = load_tractogram(af_model_file, reference="same", bbox_valid_check=False)
 model_bundle = sft_model.streamlines
 
-fa_img = nib.load(fa_file)
-fa = fa_img.get_fdata()
-affine = fa_img.affine
+fa, affine = load_nifti(fa_file)
 
 
 ###############################################################################
@@ -106,7 +104,8 @@ ax.set_title("SPECTRA streamline point distribution")
 
 fig.colorbar(im, ax=ax, label="Number of points")
 
-plt.show()
+# plt.show()
+plt.savefig("spectra_point_distribution.png")
 
 
 ###############################################################################
@@ -163,7 +162,8 @@ ax.set_title("SPECTRA FA profile")
 
 fig.colorbar(im, ax=ax, label="Fractional anisotropy")
 
-plt.show()
+# plt.show()
+plt.savefig("spectra_fa_profile.png")
 
 
 ###############################################################################

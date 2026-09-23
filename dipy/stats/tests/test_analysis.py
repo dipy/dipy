@@ -1,6 +1,5 @@
 import numpy as np
 import numpy.testing as npt
-from numpy.testing import assert_allclose
 import pytest
 
 from dipy.stats.analysis import (
@@ -209,8 +208,8 @@ def test_compute_robust_centroid():
     centroid = compute_robust_centroid(bundle, n_segments=10)
 
     assert centroid.shape == (10, 3)
-    assert_allclose(centroid[:, 1], 0, atol=1e-6)
-    assert_allclose(centroid[:, 2], 0, atol=1e-6)
+    npt.assert_allclose(centroid[:, 1], 0, atol=1e-6)
+    npt.assert_allclose(centroid[:, 2], 0, atol=1e-6)
 
 
 def test_create_radial_bins():
@@ -246,7 +245,7 @@ def test_get_grid_from_atlas():
     assert s_len > 0
     assert r_len > 0
 
-    assert_allclose(np.linalg.norm(radial_vectors, axis=1), 1, atol=1e-6)
+    npt.assert_allclose(np.linalg.norm(radial_vectors, axis=1), 1, atol=1e-6)
 
 
 def test_parameterize_bundle():
@@ -377,7 +376,7 @@ def test_spectra_profile():
     valid = np.isfinite(profile)
 
     assert np.any(valid)
-    assert_allclose(profile[valid], 2.5)
+    npt.assert_allclose(profile[valid], 2.5)
 
 
 def _spectra_bundle(seed=0, n=60):
@@ -498,3 +497,32 @@ def test_spectra_grid_class():
     # functional wrapper gives identical results
     func = spectra_profile(lines, lines, lines, metric, np.eye(4))
     npt.assert_allclose(profile, func, equal_nan=True)
+
+
+def test_create_radial_bins_two_sparse_edge_bins():
+    # Both bins fall below the merge threshold: only one may be merged away
+    index, n_bins, edges = create_radial_bins(
+        [0, 0, 1, 10, 10, 9], radial_length=5, merge_threshold=5
+    )
+    assert n_bins == 1
+    npt.assert_array_equal(index, 0)
+    npt.assert_array_equal(edges, [5, 10])
+
+
+def test_parameterize_bundle_counts_are_raw_occupancy():
+    lines = _spectra_bundle()
+    atlas = Streamlines(lines)
+    _, _, centroid, rvec, edges, _, _ = get_grid_from_atlas(
+        atlas, n_segments=6, n_radial=4
+    )
+    edges = edges[1:-1]
+    s_idx, r_idx, _, valid, counts = parameterize_bundle(
+        atlas, centroid, rvec, edges, min_count=200, max_count=200
+    )
+    # some points are masked, but counts still hold every assigned point
+    assert not valid.all()
+    assert counts.sum() == len(s_idx)
+    expected = np.bincount(
+        s_idx * counts.shape[1] + r_idx, minlength=counts.size
+    ).reshape(counts.shape)
+    npt.assert_array_equal(counts, expected)
