@@ -1,7 +1,7 @@
 #!python
-#cython: boundscheck=False
-#cython: wraparound=False
-#cython: cdivision=True
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2,
                                        double h, double[:, :] aff) nogil:

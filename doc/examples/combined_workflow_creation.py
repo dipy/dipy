@@ -10,17 +10,14 @@ First create your ``CombinedWorkflow`` class. Your ``CombinedWorkflow`` class
 file is usually located in the ``dipy/workflows`` directory.
 """
 
-import os
-
-from dipy.workflows.combined_workflow import CombinedWorkflow
+from dipy.workflows.denoise import NLMeansFlow
+from dipy.workflows.segment import MedianOtsuFlow
+from dipy.workflows.workflow import CombinedWorkflow
 
 ###############################################################################
 # ``CombinedWorkflow`` is the base class that will be extended to create our
 # combined workflow.
-from dipy.workflows.denoise import NLMeansFlow
-from dipy.workflows.segment import MedianOtsuFlow
-
-###############################################################################
+#
 # ``MedianOtsuFlow`` and ``NLMeansFlow`` will be combined to create our
 # processing section.
 
@@ -82,9 +79,9 @@ class DenoiseAndSegment(CombinedWorkflow):
 
         for fnames in io_it:
             in_fname = fnames[0]
-            _out_denoised = os.path.basename(fnames[1])
-            _out_mask = os.path.basename(fnames[2])
-            _out_masked = os.path.basename(fnames[3])
+            _out_denoised = fnames[1].name
+            _out_mask = fnames[2].name
+            _out_masked = fnames[3].name
 
             nl_flow = NLMeansFlow()
             self.run_sub_flow(

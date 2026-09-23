@@ -9,7 +9,8 @@ import numpy as np
 import scipy.interpolate as interp
 
 import dipy.core.geometry as geo
-from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
+from dipy.testing.decorators import doctest_skip_parser
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 matplotlib, has_mpl, setup_module = optional_package("matplotlib")
@@ -65,7 +66,7 @@ def sph_project(
     >>> from dipy.data import default_sphere
     >>> verts = default_sphere.vertices
     >>> _ax = sph_project(verts.T, np.random.rand(len(verts.T))) # skip if not has_basemap
-    """  # noqa: E501
+    """
     if ax is None:
         fig, ax = plt.subplots(1)
     else:

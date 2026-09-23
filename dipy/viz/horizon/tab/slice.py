@@ -4,7 +4,8 @@ import warnings
 
 import numpy as np
 
-from dipy.testing.decorators import is_macOS, warning_for_keywords
+from dipy.testing.decorators import is_macOS
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.tab import (
     HorizonTab,
@@ -14,7 +15,9 @@ from dipy.viz.horizon.tab import (
     build_switcher,
 )
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, has_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 
 if has_fury:
     from fury import colormap
@@ -29,6 +32,12 @@ class SlicesTab(HorizonTab):
         Name of the tab.
     """
 
+    @deprecate_with_version(
+        "horizon.tab.SlicesTab is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     @warning_for_keywords()
     def __init__(
         self,
@@ -286,7 +295,7 @@ class SlicesTab(HorizonTab):
         selected_slice.obj.set_visibility(visibility)
         self._visualizer.slice_actors[actor_idx].SetVisibility(visibility)
 
-    def _change_volume(self, slider, sync_vol=False):
+    def _change_volume(self, slider, *, sync_vol=False):
         value = int(np.rint(slider.value))
         if value != self._volume.selected_value:
             if not sync_vol:
@@ -373,6 +382,12 @@ class SlicesTab(HorizonTab):
         for slice_actor in self._visualizer.slice_actors:
             slice_actor.GetProperty().SetOpacity(self._slice_opacity.selected_value)
 
+    @deprecate_with_version(
+        "horizon.tab.SlicesTab.on_tab_selected is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def on_tab_selected(self):
         """Trigger when tab becomes active."""
         super().on_tab_selected()
@@ -380,6 +395,12 @@ class SlicesTab(HorizonTab):
         self._slice_y.obj.set_visibility(self._slice_y.visibility)
         self._slice_z.obj.set_visibility(self._slice_z.visibility)
 
+    @deprecate_with_version(
+        "horizon.tab.SlicesTab.update_slices is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def update_slices(self, x_slice, y_slice, z_slice):
         """Updates slicer positions.
 
@@ -401,6 +422,12 @@ class SlicesTab(HorizonTab):
         if not self._slice_z.obj.value == z_slice:
             self._slice_z.obj.value = z_slice
 
+    @deprecate_with_version(
+        "horizon.tab.SlicesTab.update_volume is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def update_volume(self, volume):
         """Updates volume based on passed volume.
 
@@ -431,6 +458,12 @@ class SlicesTab(HorizonTab):
 
         super()._toggle_actors(checkbox)
 
+    @deprecate_with_version(
+        "horizon.tab.SlicesTab.build is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def build(self, tab_id):
         """Build all the elements under the tab.
 
@@ -493,16 +526,34 @@ class SlicesTab(HorizonTab):
                 self._volume.position = (x_pos, 0.15)
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.SlicesTab.name is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def name(self):
         """Name of the tab."""
         return self._name
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.SlicesTab.file_name is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def file_name(self):
         """Name of the file opened in the tab."""
         return self._file_name
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.SlicesTab.actors is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def actors(self):
         """visualization actors controlled by tab."""
         return self._visualizer.slice_actors

@@ -11,10 +11,8 @@ comment:
 
 ignore:
   - "*/benchmarks/*"
-  - "setup.py"
   - "conftest.py"
   - "*/conftest.py"
-  - "*/setup.py"
   - "*/tests/*"
 
 coverage:

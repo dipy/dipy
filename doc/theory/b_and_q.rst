@@ -142,4 +142,3 @@ $q$-space) is specified for other paradigms. We think that (a) it only
 matters up to a scale factor, and (b) we can loosely identify
 $\mathbf{q}$ with $b\mathbf{g}$, where $\mathbf{g}$ is the unit
 vector in the gradient direction.
-

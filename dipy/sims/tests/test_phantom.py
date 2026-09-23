@@ -57,7 +57,7 @@ def test_phantom():
 
 
 @set_random_number_generator(1980)
-def test_add_noise(rng):
+def test_add_noise(rng=None):
     N = 50
     S0 = 100
 

@@ -1,7 +1,14 @@
+from dipy.utils.deprecator import deprecate_with_version
 from dipy.viz.horizon.tab import HorizonTab, build_checkbox, build_slider
 
 
 class ROIsTab(HorizonTab):
+    @deprecate_with_version(
+        "horizon.tab.ROIsTab is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def __init__(self, contour_actors):
         """Initialize interaction tab for ROIs visualization.
 
@@ -61,6 +68,12 @@ class ROIsTab(HorizonTab):
 
         super()._toggle_actors(checkbox)
 
+    @deprecate_with_version(
+        "horizon.tab.ROIsTab.build is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def build(self, tab_id):
         """Position the elements in the tab.
 
@@ -78,6 +91,12 @@ class ROIsTab(HorizonTab):
         self._opacity_slider.position = (0.12, y_pos)
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.ROIsTab.name is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def name(self):
         """Title of the tab.
 
@@ -88,6 +107,12 @@ class ROIsTab(HorizonTab):
         return self._name
 
     @property
+    @deprecate_with_version(
+        "horizon.tab.ROIsTab.actors is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def actors(self):
         """Actors controlled by tab.
 

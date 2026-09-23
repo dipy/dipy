@@ -2,6 +2,7 @@ python_sources = [
   '__init__.py',
   'test_bingham.py',
   'test_cache.py',
+  'test_force.py',
   'test_cross_validation.py',
   'test_csdeconv.py',
   'test_cti.py',
@@ -22,6 +23,7 @@ python_sources = [
   'test_multi_voxel.py',
   'test_odf.py',
   'test_peak_finding.py',
+  'test_positional_defaults.py',
   'test_qtdmri.py',
   'test_qti.py',
   'test_reco_utils.py',
@@ -42,5 +44,3 @@ py3.install_sources(
   pure: false,
   subdir: 'dipy/reconst/tests'
 )
-
-

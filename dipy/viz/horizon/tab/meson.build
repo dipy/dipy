@@ -6,7 +6,7 @@ python_sources = [
   'roi.py',
   'slice.py',
   'surface.py',
-  ]
+]
 
 py3.install_sources(
   python_sources,

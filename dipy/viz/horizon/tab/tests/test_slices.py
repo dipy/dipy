@@ -1,7 +1,13 @@
+# ruff: noqa: E402
 from unittest.mock import patch
 
 import numpy as np
 import pytest
+
+pytest.skip(
+    "Horizon module deprecated in 1.13.0; scheduled for removal in 2.0.0",
+    allow_module_level=True,
+)
 
 from dipy.testing.decorators import set_random_number_generator, use_xvfb
 from dipy.utils.optpkg import optional_package
@@ -9,7 +15,9 @@ from dipy.viz.horizon.tab.base import HorizonTab
 from dipy.viz.horizon.tab.slice import SlicesTab
 from dipy.viz.horizon.visualizer.slice import SlicesVisualizer
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, has_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 skip_it = use_xvfb == "skip" or not has_fury
 
 

@@ -1146,3 +1146,56 @@ def test_kurtosis_fa():
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal)
     assert_almost_equal(dkiF.kfa, 0)
+
+
+def test_fast_vs_python_analytical():
+    """Verify that Cython (fast=True) and Python (fast=False) analytical
+    implementations produce identical results for MK, AK, RK, and KFA."""
+
+    # Use crossing fiber simulation from module setup
+    params = multi_params
+
+    # --- MK ---
+    mk_fast = mean_kurtosis(params, analytical=True, fast=True)
+    mk_slow = mean_kurtosis(params, analytical=True, fast=False)
+    assert_array_almost_equal(mk_fast, mk_slow)
+
+    # --- AK ---
+    ak_fast = axial_kurtosis(params, analytical=True, fast=True)
+    ak_slow = axial_kurtosis(params, analytical=True, fast=False)
+    assert_array_almost_equal(ak_fast, ak_slow)
+
+    # --- RK ---
+    rk_fast = radial_kurtosis(params, analytical=True, fast=True)
+    rk_slow = radial_kurtosis(params, analytical=True, fast=False)
+    assert_array_almost_equal(rk_fast, rk_slow)
+
+    # --- KFA ---
+    kfa_fast = kurtosis_fractional_anisotropy(params, fast=True)
+    kfa_slow = kurtosis_fractional_anisotropy(params, fast=False)
+    assert_array_almost_equal(kfa_fast, kfa_slow)
+
+    # Also test single-voxel (1D input)
+    single = crossing_ref
+    mk_fast_1d = mean_kurtosis(single, analytical=True, fast=True)
+    mk_slow_1d = mean_kurtosis(single, analytical=True, fast=False)
+    assert_almost_equal(mk_fast_1d, mk_slow_1d)
+
+    ak_fast_1d = axial_kurtosis(single, analytical=True, fast=True)
+    ak_slow_1d = axial_kurtosis(single, analytical=True, fast=False)
+    assert_almost_equal(ak_fast_1d, ak_slow_1d)
+
+    rk_fast_1d = radial_kurtosis(single, analytical=True, fast=True)
+    rk_slow_1d = radial_kurtosis(single, analytical=True, fast=False)
+    assert_almost_equal(rk_fast_1d, rk_slow_1d)
+
+    kfa_fast_1d = kurtosis_fractional_anisotropy(single, fast=True)
+    kfa_slow_1d = kurtosis_fractional_anisotropy(single, fast=False)
+    assert_almost_equal(kfa_fast_1d, kfa_slow_1d)
+
+    # Test via class methods
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
+    dkiF = dkiM.fit(DWI)
+    assert_array_almost_equal(dkiF.mk(fast=True), dkiF.mk(fast=False))
+    assert_array_almost_equal(dkiF.ak(fast=True), dkiF.ak(fast=False))
+    assert_array_almost_equal(dkiF.rk(fast=True), dkiF.rk(fast=False))

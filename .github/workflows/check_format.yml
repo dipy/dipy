@@ -6,10 +6,13 @@ on:
   pull_request:
     branches: [master]
 
+permissions:
+  contents: read
+
 jobs:
   pre-commit:
-
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -18,12 +21,41 @@ jobs:
 
     steps:
     - name: Check out repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v7
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Test the pre-commit helpers
+      run: |
+        python -m pip install --upgrade pip pytest
+        python -m pytest tools/tests -q
+
     - name: Install and run pre-commit hooks
       uses: pre-commit/action@v3.0.1
+
+  commit-messages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.12'
+
+    - name: Check commit messages
+      run: |
+        for sha in $(git log origin/${{ github.base_ref }}..HEAD --format=%H); do
+          git log -1 --format=%B "$sha" > /tmp/commit_msg
+          echo "Checking: $(git log -1 --format=%s $sha)"
+          python tools/hooks/commit-msg.py /tmp/commit_msg || exit 1
+        done

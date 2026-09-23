@@ -3,11 +3,13 @@ import warnings
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.9.0")
+fury, has_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 if has_fury:
     from fury.colormap import colormap_lookup_table
     from fury.lib import (
@@ -77,8 +79,14 @@ class PeakActor(Actor):
         If True, peaks are drawn for both peaks_dirs and -peaks_dirs. Else,
         peaks are only drawn for directions given by peaks_dirs.
 
-    """  # noqa: E501
+    """
 
+    @deprecate_with_version(
+        "horizon.visualizer.PeakActor is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     @warning_for_keywords()
     def __init__(
         self,
@@ -233,18 +241,31 @@ class PeakActor(Actor):
         )
 
     @calldata_type(VTK_OBJECT)
-    def __display_peaks_vtk_callback(self, caller, event, calldata=None):
+    # VTK invokes observers positionally.
+    def __display_peaks_vtk_callback(
+        self, caller, event, calldata=None
+    ):  # pep3102: ignore
         if calldata is not None:
             calldata.SetUniformi("isRange", self.__is_range)
             calldata.SetUniform3f("highRanges", self.__high_ranges)
             calldata.SetUniform3f("lowRanges", self.__low_ranges)
             calldata.SetUniform3f("crossSection", self.__cross_section)
 
+    @deprecate_with_version(
+        "horizon.visualizer.PeakActor.display_cross_section is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def display_cross_section(self, x, y, z):
         if self.__is_range:
             self.__is_range = False
         self.__cross_section = [x, y, z]
 
+    @deprecate_with_version(
+        "horizon.visualizer.PeakActor.display_extent is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def display_extent(self, x1, x2, y1, y2, z1, z2):
         if not self.__is_range:
             self.__is_range = True
@@ -252,48 +273,104 @@ class PeakActor(Actor):
         self.__high_ranges = [x2, y2, z2]
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.PeakActor.cross_section is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def cross_section(self):
         return self.__cross_section
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.PeakActor.global_opacity is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def global_opacity(self):
         return self.__global_opacity
 
     @global_opacity.setter
+    @deprecate_with_version(
+        "horizon.visualizer.PeakActor.global_opacity is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def global_opacity(self, opacity):
         self.__global_opacity = opacity
         self.GetProperty().SetOpacity(self.__global_opacity)
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.PeakActor.high_ranges is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def high_ranges(self):
         return self.__high_ranges
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.PeakActor.is_range is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def is_range(self):
         return self.__is_range
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.PeakActor.low_ranges is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def low_ranges(self):
         return self.__low_ranges
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.PeakActor.linewidth is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def linewidth(self):
         return self.__lw
 
     @linewidth.setter
+    @deprecate_with_version(
+        "horizon.visualizer.PeakActor.linewidth is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def linewidth(self, linewidth):
         self.__lw = linewidth
         self.GetProperty().SetLineWidth(self.__lw)
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.PeakActor.max_centers is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def max_centers(self):
         return self.__max_centers
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.PeakActor.min_centers is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def min_centers(self):
         return self.__min_centers
 
 
+@deprecate_with_version(
+    "horizon.visualizer.peak is deprecated and will be removed in a future version. "
+    "Use Skyline instead.",
+    since="1.13.0",
+    until="2.0.0",
+)
 @warning_for_keywords()
 def peak(
     peaks_dirs,
@@ -518,6 +595,12 @@ def _points_to_vtk_cells(points, *, points_per_line=2):
 
 
 class PeaksVisualizer:
+    @deprecate_with_version(
+        "horizon.visualizer.PeaksVisualizer is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def __init__(self, pam, world_coords, fname):
         self._peak_dirs, self._affine = pam
         if world_coords:
@@ -542,5 +625,10 @@ class PeaksVisualizer:
             self._peak_actor = peak(self._peak_dirs)
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.PeaksVisualizer.actors is deprecated and will be removed in a future version. Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def actors(self):
         return [self._peak_actor]

@@ -1,3 +1,9 @@
+"""Direction and ODF tools.
+
+Utilities for working with fiber directions, peaks, and orientation
+distribution functions (ODF).
+"""
+
 from .bootstrap_direction_getter import BootDirectionGetter
 from .closest_peak_direction_getter import ClosestPeakDirectionGetter
 from .peaks import (

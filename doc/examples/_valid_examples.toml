@@ -65,6 +65,7 @@ files = [
     "reslice_datasets.py",
     "snr_in_cc.py",
     "motion_correction.py",
+    "bias_correction_dwi.py",
 ]
 
 [reconstruction]
@@ -101,6 +102,7 @@ files = [
     "reconst_ivim.py",
     "reconst_mapmri.py",
     "reconst_msdki.py",
+    "reconst_robust_fitting.py",
     "reconst_qtdmri.py",
     "reconst_shore.py",
     "reconst_shore_metrics.py",
@@ -111,7 +113,8 @@ files = [
     "reconst_qti.py",
     "reconst_qtiplus.py",
     "histology_resdnn.py",
-    "reconst_bingham.py"
+    "reconst_bingham.py",
+    "reconst_force.py"
 ]
 
 [contextual_enhancement]
@@ -161,6 +164,7 @@ position = 17
 enable = true
 files = [
     "afq_tract_profiles.py",
+    "buan_bundle_profiles.py",
     "cluster_confidence.py",
     "path_length_map.py",
     "streamline_length.py",
@@ -204,6 +208,7 @@ files = [
     "segment_clustering_metrics.py",
     "segment_extending_clustering_framework.py",
     "segment_quickbundles.py",
+    "segment_clustering_saving_loading.py",
     "tissue_classification_dam.py",
     "tissue_classification.py",
     "brain_extraction_dwi.py",
@@ -248,6 +253,7 @@ position = 32
 enable = true
 files = [
     "streamline_formats.py",
+    "peaks_format.py",
 ]
 
 [visualization]
@@ -261,6 +267,7 @@ enable = true
 files = [
     "viz_advanced.py",
     "viz_bundles.py",
+    "viz_horizon.py",
     "viz_roi_contour.py",
     "viz_slice.py",
 ]

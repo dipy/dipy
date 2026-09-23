@@ -3,11 +3,13 @@ import warnings
 
 import numpy as np
 
-from dipy.testing.decorators import warning_for_keywords
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
-fury, has_fury, setup_module = optional_package("fury", min_version="0.10.0")
+fury, has_fury, setup_module = optional_package(
+    "fury", min_version="0.10.0", max_version="1.0.0"
+)
 
 if has_fury:
     from fury import actor
@@ -15,6 +17,12 @@ if has_fury:
 
 
 class SlicesVisualizer:
+    @deprecate_with_version(
+        "horizon.visualizer.SlicesVisualizer is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     @warning_for_keywords()
     def __init__(
         self,
@@ -58,7 +66,7 @@ class SlicesVisualizer:
             if self._data_ndim == 4 and rgb and self._data_shape[-1] != 3:
                 warnings.warn(
                     "The rgb flag is enabled but the color "
-                    + "channel information is not provided",
+                    "channel information is not provided",
                     stacklevel=2,
                 )
             vol_data = self._volume_calculations(self._percentiles)
@@ -205,6 +213,12 @@ class SlicesVisualizer:
 
         return (value_range, default_range)
 
+    @deprecate_with_version(
+        "horizon.visualizer.SlicesVisualizer.change_volume is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def change_volume(self, next_idx, intensity_ratios, visible_slices):
         vol_data = self._data[..., next_idx]
         value_range, default_range = self._adaptive_percentile(
@@ -226,34 +240,82 @@ class SlicesVisualizer:
 
         return True, default_range
 
+    @deprecate_with_version(
+        "horizon.visualizer.SlicesVisualizer.register_picker_callback is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def register_picker_callback(self, callback):
         self._picker_callback = callback
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.SlicesVisualizer.data_shape is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def data_shape(self):
         return self._data_shape
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.SlicesVisualizer.intensities_range is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def intensities_range(self):
         return self._int_range
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.SlicesVisualizer.selected_slices is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def selected_slices(self):
         return self._sel_slices
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.SlicesVisualizer.slice_actors is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def slice_actors(self):
         return self._slice_actors
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.SlicesVisualizer.volume_max is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def volume_max(self):
         return self._vol_max
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.SlicesVisualizer.volume_min is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def volume_min(self):
         return self._vol_min
 
     @property
+    @deprecate_with_version(
+        "horizon.visualizer.SlicesVisualizer.rgb is deprecated and will be removed in a future version. "
+        "Use Skyline instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def rgb(self):
         return self._rgb
 

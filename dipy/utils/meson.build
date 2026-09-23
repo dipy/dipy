@@ -4,6 +4,7 @@ cython_sources = [
   ]
 
 cython_headers = [
+  'constants.pxd',
   'fast_numpy.pxd',
   'omp.pxd',
   ]

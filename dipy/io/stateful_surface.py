@@ -13,13 +13,48 @@ from dipy.io.utils import (
     is_header_compatible,
     is_reference_info_valid,
 )
-from dipy.io.vtk import convert_to_polydata
+from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.8.0")
+px, have_polyxios, setup_module = optional_package("polyxios", min_version="0.2.0")
 
 logger = logging.getLogger("StatefulSurface")
 logger.setLevel(level=logging.INFO)
+
+
+@warning_for_keywords(from_version="1.13.0")
+def convert_to_polydata(vertices, triangles, *, data_per_point=None):
+    """Convert vertices and triangles to a polyxios PolyData.
+
+    Parameters
+    ----------
+    vertices : numpy.ndarray
+        An array of shape (n_vertices, 3) containing the vertex coordinates.
+    triangles : numpy.ndarray
+        An array of shape (n_triangles, 3) containing the vertex indices
+        of the triangles.
+    data_per_point : dict, optional
+        A dictionary where keys are array names and values are numpy arrays
+        of shape (n_vertices, ...) representing data associated with each
+        vertex.
+
+    Returns
+    -------
+    polydata : polyxios.PolyData
+    """
+    vertices = np.asarray(vertices, dtype=np.float64)
+    triangles = np.asarray(triangles, dtype=np.int32)
+
+    vertex_attrs = {}
+    if data_per_point is not None:
+        for name, array in data_per_point.items():
+            array = np.asarray(array)
+            if len(array) != len(vertices):
+                raise ValueError("Array length does not match number of points.")
+            vertex_attrs[name] = array
+
+    element_groups = [("triangle", triangles.reshape(-1, 3))] if triangles.size else []
+    return px.make_polydata(vertices, element_groups, vertex_attrs=vertex_attrs)
 
 
 def set_sfs_logger_level(log_level):
@@ -265,10 +300,7 @@ class StatefulSurface:
                 other.data_per_vertex[key].get_data(),
                 rtol=1e-3,
             )
-        if not dpp_equal:
-            return False
-
-        return True
+        return dpp_equal
 
     def __ne__(self, other):
         """Robust StatefulSurface equality test (NOT)"""
@@ -277,7 +309,6 @@ class StatefulSurface:
     def __add__(self, other_sfs):
         """Addition of two sfs with attributes consistency checks"""
         # TODO
-        pass
 
     def __iadd__(self, other):
         # TODO
@@ -384,7 +415,10 @@ class StatefulSurface:
         return self._vertices.copy()
 
     def get_polydata(self):
-        return convert_to_polydata(self._vertices, self._faces, self._data_per_vertex)
+        """Build a polyxios PolyData from the surface."""
+        return convert_to_polydata(
+            self._vertices, self._faces, data_per_point=self._data_per_vertex
+        )
 
     @vertices.setter
     def vertices(self, data):
@@ -467,8 +501,7 @@ class StatefulSurface:
             self.to_lpsmm()
         else:
             logger.error(
-                "Unsupported target space, please use Enum in "
-                "dipy.io.stateful_surface."
+                "Unsupported target space, please use Enum in dipy.io.stateful_surface."
             )
 
     def to_origin(self, target_origin):

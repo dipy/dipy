@@ -184,7 +184,7 @@ corresponding b-values file::
 This command will denoise the input image and save the result as
 ``dwi_patch2self.nii.gz`` inside the ``denoise_patch2self_output``
 directory. You can also specify different linear models for the denoising
-process, such as 'ridge' or 'lasso', using the ``--model`` flag. You can 
+process, such as 'ridge' or 'lasso', using the ``--model`` flag. You can
 also specify the version of the model to use with the ``--version`` flag.
 
 .. |image7| image:: https://raw.githubusercontent.com/dipy/dipy_data/c2babe937fa6b16f196c82a28741e2cb0870fe7b/P2S3.png

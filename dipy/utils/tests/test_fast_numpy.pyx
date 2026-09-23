@@ -3,8 +3,13 @@ import timeit
 
 cimport numpy as cnp
 import numpy as np
-from numpy.testing import (assert_, assert_almost_equal, assert_raises,
-                            assert_array_equal, assert_array_almost_equal)
+from numpy.testing import (
+    assert_,
+    assert_almost_equal,
+    assert_raises,
+    assert_array_equal,
+    assert_array_almost_equal,
+)
 from dipy.utils.fast_numpy import random, seed
 from dipy.utils.fast_numpy cimport (
     cross,
@@ -42,8 +47,7 @@ def test_dot():
     for _ in range(10):
         vec_view1 = vec1 = np.random.random(3)
         vec_view2 = vec2 = np.random.random(3)
-        assert_almost_equal(dot(&vec_view1[0], &vec_view2[0]),
-            np.dot(vec1, vec2))
+        assert_almost_equal(dot(&vec_view1[0], &vec_view2[0]), np.dot(vec1, vec2))
 
     vec_view1 = vec1 = np.random.random(3)
     vec_view2 = vec2 = np.random.random(3)
@@ -66,7 +70,7 @@ def test_cross():
     cdef double[:] vec2
     cdef double[:] out
     out = np.zeros(3, dtype=np.double)
-    for i in range(10):
+    for _ in range(10):
         vec1 = np.random.random(3).astype(np.double)
         vec2 = np.random.random(3).astype(np.double)
         out2 = np.cross(vec1, vec2).astype(np.double)

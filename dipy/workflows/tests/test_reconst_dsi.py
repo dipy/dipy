@@ -1,5 +1,3 @@
-from pathlib import Path
-from tempfile import TemporaryDirectory
 import warnings
 
 import numpy as np
@@ -11,66 +9,65 @@ from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.workflows.reconst import ReconstDsiFlow
 
 
-def test_reconst_dsi():
+def test_reconst_dsi(tmp_path):
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        reconst_flow_core(ReconstDsiFlow)
+        reconst_flow_core(tmp_path, ReconstDsiFlow)
 
 
-def test_reconst_dsid():
+def test_reconst_dsid(tmp_path):
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        reconst_flow_core(ReconstDsiFlow, remove_convolution=True)
+        reconst_flow_core(tmp_path, ReconstDsiFlow, remove_convolution=True)
 
 
-def reconst_flow_core(flow, **kwargs):
-    with TemporaryDirectory() as out_dir:
-        data_path, bval_path, bvec_path = get_fnames(name="small_64D")
-        volume, affine = load_nifti(data_path)
-        mask = np.ones_like(volume[:, :, :, 0])
-        mask_path = Path(out_dir) / "tmp_mask.nii.gz"
-        save_nifti(mask_path, mask.astype(np.uint8), affine)
+def reconst_flow_core(tmp_path, flow, **kwargs):
+    data_path, bval_path, bvec_path = get_fnames(name="small_64D")
+    volume, affine = load_nifti(data_path)
+    mask = np.ones_like(volume[:, :, :, 0])
+    mask_path = tmp_path / "tmp_mask.nii.gz"
+    save_nifti(mask_path, mask.astype(np.uint8), affine)
 
-        dsi_flow = ReconstDsiFlow()
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                message=descoteaux07_legacy_msg,
-                category=PendingDeprecationWarning,
-            )
-            dsi_flow.run(
-                data_path,
-                bval_path,
-                bvec_path,
-                mask_path,
-                out_dir=out_dir,
-                extract_pam_values=True,
-                **kwargs,
-            )
+    dsi_flow = ReconstDsiFlow()
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        dsi_flow.run(
+            data_path,
+            bval_path,
+            bvec_path,
+            mask_path,
+            out_dir=tmp_path,
+            extract_pam_values=True,
+            **kwargs,
+        )
 
-        peaks_dir_path = dsi_flow.last_generated_outputs["out_peaks_dir"]
-        peaks_dir_data = load_nifti_data(peaks_dir_path)
-        npt.assert_equal(peaks_dir_data.shape[-1], 15)
-        npt.assert_equal(peaks_dir_data.shape[:-1], volume.shape[:-1])
+    peaks_dir_path = dsi_flow.last_generated_outputs["out_peaks_dir"]
+    peaks_dir_data = load_nifti_data(peaks_dir_path)
+    npt.assert_equal(peaks_dir_data.shape[-1], 15)
+    npt.assert_equal(peaks_dir_data.shape[:-1], volume.shape[:-1])
 
-        peaks_idx_path = dsi_flow.last_generated_outputs["out_peaks_indices"]
-        peaks_idx_data = load_nifti_data(peaks_idx_path)
-        npt.assert_equal(peaks_idx_data.shape[-1], 5)
-        npt.assert_equal(peaks_idx_data.shape[:-1], volume.shape[:-1])
+    peaks_idx_path = dsi_flow.last_generated_outputs["out_peaks_indices"]
+    peaks_idx_data = load_nifti_data(peaks_idx_path)
+    npt.assert_equal(peaks_idx_data.shape[-1], 5)
+    npt.assert_equal(peaks_idx_data.shape[:-1], volume.shape[:-1])
 
-        peaks_vals_path = dsi_flow.last_generated_outputs["out_peaks_values"]
-        peaks_vals_data = load_nifti_data(peaks_vals_path)
-        npt.assert_equal(peaks_vals_data.shape[-1], 5)
-        npt.assert_equal(peaks_vals_data.shape[:-1], volume.shape[:-1])
+    peaks_vals_path = dsi_flow.last_generated_outputs["out_peaks_values"]
+    peaks_vals_data = load_nifti_data(peaks_vals_path)
+    npt.assert_equal(peaks_vals_data.shape[-1], 5)
+    npt.assert_equal(peaks_vals_data.shape[:-1], volume.shape[:-1])
 
-        gfa_path = dsi_flow.last_generated_outputs["out_gfa"]
-        gfa_data = load_nifti_data(gfa_path)
-        npt.assert_equal(gfa_data.shape, volume.shape[:-1])
+    gfa_path = dsi_flow.last_generated_outputs["out_gfa"]
+    gfa_data = load_nifti_data(gfa_path)
+    npt.assert_equal(gfa_data.shape, volume.shape[:-1])

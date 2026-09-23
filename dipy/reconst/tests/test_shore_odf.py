@@ -94,7 +94,7 @@ def test_shore_odf():
 
 
 @set_random_number_generator()
-def test_multivox_shore(rng):
+def test_multivox_shore(rng=None):
     gtab = get_3shell_gtab()
 
     data = rng.random([20, 30, 1, gtab.gradients.shape[0]])

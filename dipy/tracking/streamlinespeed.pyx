@@ -247,10 +247,9 @@ cdef void c_set_number_of_points_from_arraysequence(Streamline points,
                                                     long nb_points,
                                                     Streamline out) noexcept nogil:
     cdef:
-        cnp.npy_intp i, j, k
+        cnp.npy_intp i
         cnp.npy_intp offset, length
         cnp.npy_intp offset_out = 0
-        double dn, sum_dn_sqr
 
     for i in range(offsets.shape[0]):
         offset = offsets[i]
@@ -329,14 +328,20 @@ def set_number_of_points(streamlines, nb_points=3):
 
         if dtype == np.float32:
             c_set_number_of_points_from_arraysequence[float2d](
-                as_native_array(streamlines._data), streamlines._offsets.astype(np.intp),
-                streamlines._lengths.astype(np.intp), nb_points,
-                new_streamlines._data)
+                as_native_array(streamlines._data),
+                streamlines._offsets.astype(np.intp),
+                streamlines._lengths.astype(np.intp),
+                nb_points,
+                new_streamlines._data,
+            )
         else:
             c_set_number_of_points_from_arraysequence[double2d](
-                as_native_array(streamlines._data), streamlines._offsets.astype(np.intp),
-                streamlines._lengths.astype(np.intp), nb_points,
-                new_streamlines._data)
+                as_native_array(streamlines._data),
+                streamlines._offsets.astype(np.intp),
+                streamlines._lengths.astype(np.intp),
+                nb_points,
+                new_streamlines._data,
+            )
 
         return new_streamlines
 
@@ -484,15 +489,18 @@ cdef double c_segment_length(Streamline streamline,
     return sqrt(segment_length)
 
 
-cdef cnp.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
-                                       double tol_error, double max_segment_length) noexcept nogil:
+cdef cnp.npy_intp c_compress_streamline(
+    Streamline streamline,
+    Streamline out,
+    double tol_error,
+    double max_segment_length,
+) noexcept nogil:
     """ Compresses a streamline (see function `compress_streamlines`)."""
     cdef:
         cnp.npy_intp N = streamline.shape[0]
         cnp.npy_intp D = streamline.shape[1]
         cnp.npy_intp nb_points = 0
         cnp.npy_intp d, prev, next, curr
-        double segment_length
 
     # Copy first point since it is always kept.
     for d in range(D):
@@ -561,7 +569,7 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
         Array representing x,y,z of N points in a streamline.
     tol_error : float, optional
         Tolerance error in mm. A rule of thumb is to set it
-        to 0.01mm for deterministic streamlines and 0.1mm for probabilitic
+        to 0.01mm for deterministic streamlines and 0.1mm for probabilistic
         streamlines.
     max_segment_length : float, optional
         Maximum length in mm of any given segment produced by the compression.
@@ -621,7 +629,9 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
         shape = streamline.shape
 
         if dtype != np.float32 and dtype != np.float64:
-            dtype = np.float64 if dtype == np.int64 or dtype == np.uint64 else np.float32
+            dtype = (
+                np.float64 if dtype == np.int64 or dtype == np.uint64 else np.float32
+            )
             streamline = streamline.astype(dtype)
 
         if shape[0] <= 2:
@@ -631,15 +641,16 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
         compressed_streamline = np.empty(shape, dtype)
 
         if dtype == np.float32:
-            nb_points = c_compress_streamline[float2d](streamline, compressed_streamline,
-                                                       tol_error, max_segment_length)
+            nb_points = c_compress_streamline[float2d](
+                streamline, compressed_streamline, tol_error, max_segment_length
+            )
         else:
-            nb_points = c_compress_streamline[double2d](streamline, compressed_streamline,
-                                                        tol_error, max_segment_length)
+            nb_points = c_compress_streamline[double2d](
+                streamline, compressed_streamline, tol_error, max_segment_length
+            )
 
-        compressed_streamline.resize((nb_points, streamline.shape[1]))
         # HACK: To avoid memleaks we have to recast with astype(dtype).
-        compressed_streamlines.append(compressed_streamline.astype(dtype))
+        compressed_streamlines.append(compressed_streamline[:nb_points].astype(dtype))
 
     if only_one_streamlines:
         return compressed_streamlines[0]

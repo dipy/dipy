@@ -24,7 +24,7 @@ from numpy.testing import (
 import pytest
 
 from dipy.core.gradients import generate_bvecs, gradient_table
-from dipy.reconst.ivim import IvimModel, ivim_prediction
+from dipy.reconst.ivim import IvimModel, differential_evolution, ivim_prediction
 from dipy.sims.voxel import multi_tensor
 from dipy.testing import assert_greater_equal
 from dipy.utils.optpkg import optional_package
@@ -668,3 +668,22 @@ def test_D_vp():
     """
     ivim_fit_VP = ivim_model_VP.fit(data_single)
     assert_array_almost_equal(ivim_fit_VP.D, D_VP, decimal=4)
+
+
+@needs_cvxpy
+def test_fit_bounds_de(monkeypatch):
+    """Test that custom bounds_de is used by IvimModelVP.fit."""
+    captured = {}
+
+    def capturing_de(func, bounds, *args, **kwargs):
+        captured["bounds"] = np.asarray(bounds)
+        return differential_evolution(func, bounds, *args, **kwargs)
+
+    monkeypatch.setattr("dipy.reconst.ivim.differential_evolution", capturing_de)
+
+    ivim_model_VP.fit(data_single)
+    assert_array_equal(captured["bounds"], np.array([(0.005, 0.01), (10**-4, 0.001)]))
+
+    custom_bounds = np.array([(0.003, 0.02), (10**-5, 0.002)])
+    ivim_model_VP.fit(data_single, bounds_de=custom_bounds)
+    assert_array_equal(captured["bounds"], custom_bounds)

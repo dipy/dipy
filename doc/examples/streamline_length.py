@@ -63,7 +63,6 @@ ax.hist(lengths, color="burlywood")
 ax.set_xlabel("Length")
 ax.set_ylabel("Count")
 # plt.show()
-plt.legend()
 plt.savefig("length_histogram.png")
 
 ###############################################################################

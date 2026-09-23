@@ -59,7 +59,7 @@ def test_default_mnist_sequential():
 
     hist = model.fit(x_train, y_train, epochs=epochs)
     model.evaluate(x_test, y_test, verbose=2)
-    accuracy = hist.history["accuracy"][0]
+    accuracy = hist.history["accuracy"][-1]
     assert_(accuracy > 0.9)
 
 
@@ -76,7 +76,7 @@ def test_default_mnist_slp():
     slp.evaluate(x_test, y_test, verbose=2)
     x_test_prob = slp.predict(x_test)
 
-    accuracy = hist.history["accuracy"][0]
+    accuracy = hist.history["accuracy"][-1]
     assert_(slp.accuracy > 0.9)
     assert_(slp.loss < 0.4)
     assert_equal(slp.accuracy, accuracy)
@@ -96,7 +96,7 @@ def test_default_mnist_mlp():
     mlp.evaluate(x_test, y_test, verbose=2)
     x_test_prob = mlp.predict(x_test)
 
-    accuracy = hist.history["accuracy"][0]
+    accuracy = hist.history["accuracy"][-1]
     assert_(mlp.accuracy > 0.8)
     assert_(mlp.loss < 0.4)
     assert_equal(mlp.accuracy, accuracy)

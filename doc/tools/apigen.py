@@ -292,6 +292,9 @@ class ApiDocWriter:
             classes = []
             constants = []
             for obj_str in obj_strs:
+                # Apply object_skip_patterns (same as the .py AST path above)
+                if pat.search(obj_str):
+                    continue
                 # find the actual object from its string representation
                 if obj_str not in mod.__dict__:
                     continue
@@ -352,7 +355,14 @@ class ApiDocWriter:
         # get the names of all classes and functions
         functions, classes, constants = self._parse_module_with_import(uri)
         if not len(functions) and not len(classes) and DEBUG:
-            print("WARNING: Empty -", uri)  # dbg
+            # Only warn if module has no docstring either
+            try:
+                from importlib import import_module
+                mod = import_module(uri)
+                if not getattr(mod, "__doc__", None) or not mod.__doc__.strip():
+                    print("WARNING: Empty -", uri)  # dbg
+            except Exception:
+                print("WARNING: Empty -", uri)  # dbg
 
         # Make a shorter version of the uri that omits the package name for
         # titles
@@ -390,7 +400,7 @@ class ApiDocWriter:
             body += f"\n:class:`{c}`\n{self.rst_section_levels[3] * (len(c) + 9)}\n\n"
             body += "\n.. autoclass:: " + c + "\n"
             # must NOT exclude from index to keep cross-refs working
-            body += "  :members:\n" "  :undoc-members:\n" "  :show-inheritance:\n" "\n"
+            body += "  :members:\n" "  :show-inheritance:\n" "\n"
         head += ".. autosummary::\n\n"
         for f in constants + classes + functions:
             head += "   " + f + "\n"

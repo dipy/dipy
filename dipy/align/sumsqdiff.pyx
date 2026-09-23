@@ -101,7 +101,7 @@ cdef int _solve_3d_symmetric_positive_definite(double* g,
         1 if M is singular, otherwise 0
     """
     cdef:
-        double a,b,c,d,e,f, y0, y1, y2, sub_det
+        double a, b, c, d, e, f, y0, y1, y2, sub_det
     a = g[0] ** 2 + tau
     if a < 1e-9:
         return 1
@@ -198,7 +198,6 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
     ----------
     .. footbibliography::
     """
-    ftype = np.asarray(delta_field).dtype
     cdef:
         int NUM_NEIGHBORS = 4
         int* dRow = [-1, 0, 1,  0]
@@ -212,7 +211,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
         double* y = [0, 0]
         double* A = [0, 0, 0]
 
-        double xx, yy, opt, nrm2, delta, sigmasq, max_displacement, det
+        double xx, yy, opt, nrm2, sigmasq, max_displacement, det
 
     max_displacement = 0
 
@@ -220,7 +219,6 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
 
         for r in range(nrows):
             for c in range(ncols):
-                delta = delta_field[r, c]
                 sigmasq = sigmasq_field[r, c] if sigmasq_field is not None else 1
                 if target is None:
                     b[0] = delta_field[r, c] * grad[r, c, 0]
@@ -311,7 +309,7 @@ cpdef double compute_energy_ssd_2d(floating[:, :] delta_field):
     corresponding to this re-projection to the space of diffeomorphisms,
     a more precise energy computation including the regularization term
     is useless. Instead, convergence is checked considering the data-term
-    energy only and detecting oscilations in the energy profile.
+    energy only and detecting oscillations in the energy profile.
 
     """
     cdef:
@@ -368,7 +366,6 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
     ----------
     .. footbibliography::
     """
-    ftype = np.asarray(delta_field).dtype
     cdef:
         int NUM_NEIGHBORS = 6
         int* dSlice = [-1, 0, 0, 0,  0, 1]
@@ -382,8 +379,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
         double* b = [0, 0, 0]
         double* d = [0, 0, 0]
         double* y = [0, 0, 0]
-        double* A = [0, 0, 0, 0, 0, 0]
-        double xx, yy, zz, opt, nrm2, delta, sigmasq, max_displacement
+        double xx, yy, zz, opt, nrm2, sigmasq, max_displacement
         cnp.npy_intp dr, ds, dc, s, r, c
     max_displacement = 0
 
@@ -395,7 +391,6 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                     g[0] = grad[s, r, c, 0]
                     g[1] = grad[s, r, c, 1]
                     g[2] = grad[s, r, c, 2]
-                    delta = delta_field[s, r, c]
                     sigmasq = sigmasq_field[s, r, c] if sigmasq_field is not None else 1
                     if target is None:
                         b[0] = delta_field[s, r, c] * g[0]
@@ -437,15 +432,15 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                         if max_displacement < opt:
                             max_displacement = opt
                     elif sigmasq < 1e-9:
-                            nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
-                            if nrm2 < 1e-9:
-                                disp[s, r, c, 0] = 0
-                                disp[s, r, c, 1] = 0
-                                disp[s, r, c, 2] = 0
-                            else:
-                                disp[s, r, c, 0] = (b[0]) / nrm2
-                                disp[s, r, c, 1] = (b[1]) / nrm2
-                                disp[s, r, c, 2] = (b[2]) / nrm2
+                        nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
+                        if nrm2 < 1e-9:
+                            disp[s, r, c, 0] = 0
+                            disp[s, r, c, 1] = 0
+                            disp[s, r, c, 2] = 0
+                        else:
+                            disp[s, r, c, 0] = (b[0]) / nrm2
+                            disp[s, r, c, 1] = (b[1]) / nrm2
+                            disp[s, r, c, 2] = (b[2]) / nrm2
                     else:
                         tau = sigmasq * lambda_param * nn
                         y[0] = b[0] + sigmasq * lambda_param * y[0]
@@ -507,7 +502,7 @@ cpdef double compute_energy_ssd_3d(floating[:, :, :] delta_field):
     corresponding to this re-projection to the space of diffeomorphisms,
     a more precise energy computation including the regularization term
     is useless. Instead, convergence is checked considering the data-term
-    energy only and detecting oscilations in the energy profile.
+    energy only and detecting oscillations in the energy profile.
     """
     cdef:
         cnp.npy_intp nslices = delta_field.shape[0]
@@ -708,7 +703,6 @@ cpdef compute_residual_displacement_field_ssd_2d(
                     b[1] = target[r, c, 1]
                 y[0] = 0  # reset y
                 y[1] = 0
-                nn=0
                 for k in range(NUM_NEIGHBORS):
                     dr = r + dRow[k]
                     if dr < 0 or dr >= nrows:
@@ -737,10 +731,10 @@ cpdef compute_residual_displacement_field_ssd_2d(
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_ssd_demons_step_2d(floating[:,:] delta_field,
-                               floating[:,:,:] gradient_moving,
+def compute_ssd_demons_step_2d(floating[:, :] delta_field,
+                               floating[:, :, :] gradient_moving,
                                double sigma_sq_x,
-                               floating[:,:,:] out):
+                               floating[:, :, :] out):
     r"""Demons step for 2D SSD-driven registration
 
     Computes the demons step for SSD-driven registration
@@ -786,7 +780,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
         energy = 0
         for i in range(nr):
             for j in range(nc):
-                delta = delta_field[i,j]
+                delta = delta_field[i, j]
                 delta_2 = delta**2
                 energy += delta_2
                 nrm2 = gradient_moving[i, j, 0]**2 + gradient_moving[i, j, 1]**2
@@ -804,10 +798,10 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
-                               floating[:,:,:,:] gradient_moving,
+def compute_ssd_demons_step_3d(floating[:, :, :] delta_field,
+                               floating[:, :, :, :] gradient_moving,
                                double sigma_sq_x,
-                               floating[:,:,:,:] out):
+                               floating[:, :, :, :] out):
     r"""Demons step for 3D SSD-driven registration
 
     Computes the demons step for SSD-driven registration
@@ -855,7 +849,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
         for k in range(ns):
             for i in range(nr):
                 for j in range(nc):
-                    delta = delta_field[k,i,j]
+                    delta = delta_field[k, i, j]
                     delta_2 = delta**2
                     energy += delta_2
                     nrm2 = (gradient_moving[k, i, j, 0]**2 +

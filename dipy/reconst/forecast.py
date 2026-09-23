@@ -11,8 +11,7 @@ from dipy.reconst.csdeconv import csdeconv
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfFit, OdfModel
 from dipy.reconst.shm import real_sh_descoteaux_from_index
-from dipy.testing.decorators import warning_for_keywords
-from dipy.utils.deprecator import deprecated_params
+from dipy.utils.deprecator import deprecated_params, warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy", min_version="1.4.1")
@@ -133,7 +132,7 @@ class ForecastModel(OdfModel, Cache):
         ...         "ignore", message=descoteaux07_legacy_msg,
         ...         category=PendingDeprecationWarning)
         ...     fodf = f_fit.odf(default_sphere)
-        """  # noqa: E501
+        """
         OdfModel.__init__(self, gtab)
 
         # round the bvals in order to avoid numerical errors
@@ -273,6 +272,8 @@ class ForecastModel(OdfModel, Cache):
 
 
 class ForecastFit(OdfFit):
+    """Fit object for the FORECAST model."""
+
     def __init__(self, model, data, sh_coef, d_par, d_perp):
         """Calculates diffusion properties for a single voxel
 
@@ -435,6 +436,8 @@ def forecast_error_func(x, b_unique, E):
 
 
 def psi_l(ell, b):
+    """Helper function for calculating the FORECAST radial matrix."""
+
     n = ell // 2
     v = (-b) ** n
     v *= gamma(n + 1.0 / 2) / gamma(2 * n + 3.0 / 2)

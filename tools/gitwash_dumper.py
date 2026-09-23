@@ -138,7 +138,7 @@ def make_link_targets(proj_name,
     if url is not None:
         lines.append(f'.. _`{proj_name}`: {url}\n')
     if not have_gh_url:
-        gh_url = f'http://github.com/{user_name}/{repo_name}\n'
+        gh_url = f'https://github.com/{user_name}/{repo_name}\n'
         lines.append(f'.. _`{proj_name} github`: {gh_url}\n')
     if ml_url is not None:
         lines.append(f'.. _`{proj_name} mailing list`: {ml_url}\n')

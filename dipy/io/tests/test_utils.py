@@ -17,16 +17,18 @@ from dipy.io.utils import (
     decfa,
     decfa_to_float,
     get_reference_info,
+    has_rgb_dtype,
     is_header_compatible,
     is_reference_info_valid,
+    is_rgb_compatible_data,
     read_img_arr_or_path,
     split_filename_extension,
+    unpack_rgb_array,
 )
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package("fury", min_version="0.10.0")
-
+_, have_polyxios, _ = optional_package("polyxios", min_version="0.2.0")
 
 FILEPATH_DIX = None
 
@@ -47,7 +49,7 @@ def teardown_module():
     FILEPATH_DIX = (None,)
 
 
-@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
 def test_equivalence_lpsmm_sft_sfs():
     sft = load_tractogram(
         FILEPATH_DIX["gs_streamlines.vtk"],
@@ -238,7 +240,7 @@ def test_all_zeros_affine():
 
 
 @set_random_number_generator()
-def test_read_img_arr_or_path(rng):
+def test_read_img_arr_or_path(rng=None):
     data = rng.random((4, 4, 4, 3))
     aff = np.eye(4)
     aff[:3, :] = rng.standard_normal((3, 4))
@@ -293,3 +295,68 @@ def test_split_filename_extension(filename, expected_name, expected_extension):
 def test_split_filename_extension_warning(caplog, filename_to_test):
     split_filename_extension(filename_to_test)
     assert "Filename contains more than two instances" in caplog.text
+
+
+def test_has_rgb_dtype():
+    rgb_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    rgba_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1"), ("A", "u1")])
+    other_struct = np.dtype([("x", "f4"), ("y", "f4")])
+
+    assert has_rgb_dtype(np.zeros((3,), dtype=rgb_dtype))
+    assert has_rgb_dtype(np.zeros((3,), dtype=rgba_dtype))
+    assert not has_rgb_dtype(np.zeros((3,), dtype=other_struct))
+    assert not has_rgb_dtype(np.zeros((3,), dtype=np.float32))
+
+
+def test_is_rgb_compatible_data():
+    # Shape requirements: ndim == 4, last dim 3 or 4
+    assert not is_rgb_compatible_data(np.zeros((6, 7, 8), dtype=np.uint8))
+    assert not is_rgb_compatible_data(np.zeros((6, 7, 8, 5), dtype=np.uint8))
+    assert not is_rgb_compatible_data(np.zeros((0, 4, 4, 3), dtype=np.int16))
+    assert not is_rgb_compatible_data(np.zeros((2, 3, 4, 5, 3), dtype=np.uint8))
+
+    # uint8 with valid shape
+    assert is_rgb_compatible_data(np.zeros((6, 7, 8, 3), dtype=np.uint8))
+    assert is_rgb_compatible_data(np.zeros((6, 7, 8, 4), dtype=np.uint8))
+
+    # Integer in [0, 255]
+    assert is_rgb_compatible_data(np.full((6, 7, 8, 3), 200, dtype=np.int16))
+    assert not is_rgb_compatible_data(np.full((6, 7, 8, 3), 1000, dtype=np.int16))
+
+    # Float in [0, 1] with no NaN
+    assert is_rgb_compatible_data(np.full((6, 7, 8, 3), 0.5, dtype=np.float32))
+    nan_arr = np.full((6, 7, 8, 3), 0.5, dtype=np.float32)
+    nan_arr[0, 0, 0, 0] = np.nan
+    assert not is_rgb_compatible_data(nan_arr)
+    assert not is_rgb_compatible_data(np.full((6, 7, 8, 3), -0.5, dtype=np.float32))
+    assert not is_rgb_compatible_data(np.full((6, 7, 8, 3), 2.0, dtype=np.float32))
+
+    # Structured dtype arrays are not checked here
+    rgb_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    assert not is_rgb_compatible_data(np.zeros((6, 7, 8), dtype=rgb_dtype))
+
+
+def test_unpack_rgb_array():
+    rgb_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1")])
+    rgba_dtype = np.dtype([("R", "u1"), ("G", "u1"), ("B", "u1"), ("A", "u1")])
+    other_struct = np.dtype([("x", "f4"), ("y", "f4")])
+
+    # RGB structured (3,3,3) → (3,3,3,3) uint8
+    rgb_arr = np.zeros((3, 3, 3), dtype=rgb_dtype)
+    out = unpack_rgb_array(rgb_arr)
+    assert out.shape == (3, 3, 3, 3)
+    assert out.dtype == np.dtype("u1")
+
+    # RGBA structured (3,3,3) → (3,3,3,4) uint8
+    rgba_arr = np.zeros((3, 3, 3), dtype=rgba_dtype)
+    out = unpack_rgb_array(rgba_arr)
+    assert out.shape == (3, 3, 3, 4)
+    assert out.dtype == np.dtype("u1")
+
+    # Non-RGB structured → same object
+    other_arr = np.zeros((3,), dtype=other_struct)
+    assert unpack_rgb_array(other_arr) is other_arr
+
+    # Plain float → same object
+    plain = np.zeros((3, 3, 3), dtype=np.float32)
+    assert unpack_rgb_array(plain) is plain

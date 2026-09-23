@@ -21,7 +21,7 @@ cdef extern from "dpy_math.h" nogil:
     double fabs(double x)
     double cos(double x)
     double sin(double x)
-    float acos(float x )
+    float acos(float x)
     double sqrt(double x)
     double DPY_PI
 
@@ -29,7 +29,7 @@ cdef extern from "dpy_math.h" nogil:
 # initialize numpy runtime
 cnp.import_array()
 
-#numpy pointers
+# numpy pointers
 cdef inline float* asfp(cnp.ndarray pt):
     return <float *> cnp.PyArray_DATA(pt)
 
@@ -51,7 +51,8 @@ cdef void remove_similar_vertices_c(
     cnp.uint16_t* n_unique
 ) noexcept nogil:
     """
-    Optimized Cython version to remove vertices that are less than `theta` degrees from any other.
+    Optimized Cython version to remove vertices that are less than
+    `theta` degrees from any other.
     """
     cdef:
         int n = vertices.shape[0]
@@ -96,7 +97,7 @@ def remove_similar_vertices(
     bint return_index=False,
     bint remove_antipodal=True
 ):
-    """Remove vertices that are less than `theta` degrees from any other
+    r"""Remove vertices that are less than `theta` degrees from any other
 
     Returns vertices that are at least theta degrees from any other vertex.
     Vertex v and -v are considered the same so if v and -v are both in
@@ -138,9 +139,9 @@ def remove_similar_vertices(
 
     """
     if vertices.shape[1] != 3:
-        raise ValueError('Vertices should be 2D with second dim length 3')
+        raise ValueError("Vertices should be 2D with second dim length 3")
 
-    cdef int n = vertices.shape[0]
+    cdef cnp.npy_intp n = vertices.shape[0]
     if n >= 2**16:
         raise ValueError("Too many vertices")
 
@@ -176,7 +177,9 @@ def remove_similar_vertices(
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef cnp.npy_intp search_descending_c(cython.floating* arr, cnp.npy_intp size, double relative_threshold) noexcept nogil:
+cdef cnp.npy_intp search_descending_c(
+    cython.floating* arr, cnp.npy_intp size, double relative_threshold
+) noexcept nogil:
     """
     Optimized Cython version of the search_descending function.
 
@@ -192,7 +195,8 @@ cdef cnp.npy_intp search_descending_c(cython.floating* arr, cnp.npy_intp size, d
     Returns
     -------
     cnp.npy_intp
-        Largest index `i` such that all(arr[:i] >= T), where T = arr[0] * relative_threshold.
+        Largest index `i` such that all(arr[:i] >= T), where
+        T = arr[0] * relative_threshold.
     """
     cdef:
         cnp.npy_intp left = 0
@@ -215,6 +219,7 @@ cdef cnp.npy_intp search_descending_c(cython.floating* arr, cnp.npy_intp size, d
             right = mid
 
     return left
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -263,8 +268,12 @@ def search_descending(cython.floating[::1] a, double relative_threshold):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef long local_maxima_c(double[:] odf, cnp.uint16_t[:, :] edges, double[::1] out_values,
-        cnp.npy_intp[::1] out_indices) noexcept nogil:
+cdef long local_maxima_c(
+    double[:] odf,
+    cnp.uint16_t[:, :] edges,
+    double[::1] out_values,
+    cnp.npy_intp[::1] out_indices,
+) noexcept nogil:
     cdef:
         long count
         cnp.npy_intp* wpeak = <cnp.npy_intp*>malloc(odf.shape[0] * sizeof(cnp.npy_intp))
@@ -286,6 +295,7 @@ cdef long local_maxima_c(double[:] odf, cnp.uint16_t[:, :] edges, double[::1] ou
     free(wpeak)
 
     return count
+
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
@@ -324,7 +334,6 @@ def local_maxima(double[:] odf, cnp.uint16_t[:, :] edges):
 
     """
     cdef:
-        cnp.ndarray[cnp.npy_intp] wpeak
         double[::1] out_values
         cnp.npy_intp[::1] out_indices
 
@@ -455,12 +464,14 @@ cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def le_to_odf(cnp.ndarray[double, ndim=1] odf,
-                 cnp.ndarray[double, ndim=1] LEs,
-                 cnp.ndarray[double, ndim=1] radius,
-                 int odfn,
-                 int radiusn,
-                 int anglesn):
+def le_to_odf(
+    cnp.ndarray[double, ndim=1] odf,
+    cnp.ndarray[double, ndim=1] LEs,
+    cnp.ndarray[double, ndim=1] radius,
+    int odfn,
+    int radiusn,
+    int anglesn,
+):
     """odf for interpolated Laplacian normalized signal
     """
     cdef int m, i, j
@@ -476,20 +487,23 @@ def le_to_odf(cnp.ndarray[double, ndim=1] odf,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def sum_on_blocks_1d(cnp.ndarray[double, ndim=1] arr,
+def sum_on_blocks_1d(
+    cnp.ndarray[double, ndim=1] arr,
     cnp.ndarray[long, ndim=1] blocks,
-    cnp.ndarray[double, ndim=1] out,int outn):
+    cnp.ndarray[double, ndim=1] out,
+    int outn,
+):
     """Summations on blocks of 1d array
     """
     cdef:
-        int m,i,j
+        int m, i, j
         double blocksum
 
     with nogil:
         j=0
         for m in range(outn):
             blocksum=0
-            for i in range(j,j+blocks[m]):
+            for i in range(j, j+blocks[m]):
                 blocksum+=arr[i]
             out[m]=blocksum
             j+=blocks[m]
@@ -605,12 +619,12 @@ def argmax_from_countarrs(cnp.ndarray vals,
         cnp.uint32_t *vertinds_ptr
         cnp.uint32_t *counts_ptr
         cnp.uint32_t *adj_ptr
-        cnp.uint32_t vals_size, vert_size
+        cnp.uint32_t vals_size
     if not (cnp.PyArray_ISCONTIGUOUS(cvals) and
             cnp.PyArray_ISCONTIGUOUS(cvertinds) and
             cnp.PyArray_ISCONTIGUOUS(cadj_counts) and
             cnp.PyArray_ISCONTIGUOUS(cadj_inds)):
-        raise ValueError('Need contiguous arrays as input')
+        raise ValueError("Need contiguous arrays as input")
     vals_size = cnp.PyArray_DIM(cvals, 0)
     vals_ptr = <cnp.float64_t *> cnp.PyArray_DATA(cvals)
     vertinds_ptr = <cnp.uint32_t *> cnp.PyArray_DATA(cvertinds)
@@ -619,22 +633,22 @@ def argmax_from_countarrs(cnp.ndarray vals,
     V = cnp.PyArray_DIM(cadj_counts, 0)
     adj_size = cnp.PyArray_DIM(cadj_inds, 0)
     if cnp.PyArray_DIM(cvertinds, 0) < V:
-        raise ValueError('Too few indices for adj arrays')
+        raise ValueError("Too few indices for adj arrays")
     for i in range(V):
         vert_ind = vertinds_ptr[i]
         if vert_ind >= vals_size:
-            raise IndexError('Overshoot on vals')
+            raise IndexError("Overshoot on vals")
         val = vals_ptr[vert_ind]
         C = counts_ptr[i]
         # check for overshoot
         adj_pos += C
         if adj_pos > adj_size:
-            raise IndexError('Overshoot on adj_inds array')
+            raise IndexError("Overshoot on adj_inds array")
         is_max = 1
         for j in range(C):
             ind = adj_ptr[j]
             if ind >= vals_size:
-                raise IndexError('Overshoot on vals')
+                raise IndexError("Overshoot on vals")
             if val <= vals_ptr[ind]:
                 is_max = 0
                 break
