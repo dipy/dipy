@@ -49,7 +49,8 @@ def create_peak_visualization(
     Parameters
     ----------
     input : tuple
-        Tuple of the (pam, filename) or (pam,)
+        One of (peak_dirs, affine, filename, peak_values), (peak_dirs, affine,
+        filename) or (peak_dirs, affine). ``peak_values`` may be None.
     idx : int
         Index of the peak for naming purposes if filename is not provided.
     opacity : int, optional
@@ -64,27 +65,26 @@ def create_peak_visualization(
     Peak3D
         The created Peak3D object.
     """
-    if not isinstance(input, tuple) or len(input) not in (1, 2):
+    if not isinstance(input, tuple) or len(input) not in (2, 3, 4):
         raise ValueError(
-            "Input must be a tuple containing (pam, filename) or (pam,) "
+            "Input must be a tuple containing (peak_dirs, affine, filename, "
+            "peak_values), (peak_dirs, affine, filename), or (peak_dirs, affine) "
             "for peak visualization."
         )
 
-    if len(input) == 1:
-        pam = input[0]
-        filename = f"Peaks_{idx}"
-    else:
-        pam, filename = input
+    peak_dirs, affine = input[:2]
+    filename = input[2] if len(input) >= 3 else f"Peaks_{idx}"
+    raw_values = input[3] if len(input) == 4 else None
 
     peak_values = 1.0
-    if pam.peak_values is not None:
-        max = np.percentile(pam.peak_values, 99)
-        peak_values = np.clip(pam.peak_values, 0, max)
+    if raw_values is not None:
+        max = np.percentile(raw_values, 99)
+        peak_values = np.clip(raw_values, 0, max)
 
     return Peak3D(
         filename,
-        pam.peak_dirs,
-        affine=pam.affine,
+        peak_dirs,
+        affine=affine,
         peak_values=peak_values,
         opacity=opacity,
         render_callback=render_callback,

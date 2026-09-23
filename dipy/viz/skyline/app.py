@@ -11,7 +11,7 @@ from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO_SMALL
 from dipy.viz.skyline.compute import process_async_callbacks, run_async
-from dipy.viz.skyline.io import load_files
+from dipy.viz.skyline.io import SH_BASES, load_files
 
 fury_trip_msg = (
     "Skyline requires Fury version 2.0.0 or higher."
@@ -53,8 +53,9 @@ class Skyline:
         Value for ``visualizer type``.
     images : list, optional
         Value for ``images``.
-    peaks : ndarray
-        Value for ``peaks``.
+    peaks : list of tuple, optional
+        (peak_dirs, affine, filename, peak_values) tuples; see
+        `create_peak_visualization`.
     rois : list, optional
         Value for ``rois``.
     surfaces : list, optional
@@ -63,6 +64,9 @@ class Skyline:
         Value for ``tractograms``.
     sh_coeffs : list, optional
         Value for ``sh coeffs``.
+    sh_basis : str, optional
+        SH basis of NIfTI ODFs: ``"descoteaux07"`` (DIPY legacy) or
+        ``"tournier07"`` (MRtrix3).
     is_cluster : bool, optional
         Value for ``is cluster``.
     is_light_version : bool, optional
@@ -89,6 +93,9 @@ class Skyline:
         Value for ``initial filenames``.
     initial_rois : list, optional
         Value for ``initial rois``.
+    initial_peaks : list, optional
+        List of ``.pam5`` or NIfTI (.nii, .nii.gz) peak file paths to load
+        into the Skyline viewer on startup.
     initial_shm_coeffs : list, optional
         Value for ``initial shm coeffs``.
     out_dir : str or Path, optional
@@ -107,6 +114,7 @@ class Skyline:
         surfaces=None,
         tractograms=None,
         sh_coeffs=None,
+        sh_basis="descoteaux07",
         is_cluster=False,
         is_light_version=False,
         glass_brain=False,
@@ -119,6 +127,7 @@ class Skyline:
         rgb=None,
         initial_filenames=None,
         initial_rois=None,
+        initial_peaks=None,
         initial_shm_coeffs=None,
         out_dir=None,
         out_stealth_png=None,
@@ -131,8 +140,9 @@ class Skyline:
             Value for ``visualizer type``.
         images : list, optional
             Value for ``images``.
-        peaks : ndarray
-            Value for ``peaks``.
+        peaks : list of tuple, optional
+            (peak_dirs, affine, filename, peak_values) tuples; see
+            `create_peak_visualization`.
         rois : list, optional
             Value for ``rois``.
         surfaces : list, optional
@@ -141,6 +151,9 @@ class Skyline:
             Value for ``tractograms``.
         sh_coeffs : list, optional
             Value for ``sh coeffs``.
+        sh_basis : str, optional
+            SH basis of NIfTI ODFs: ``"descoteaux07"`` (DIPY legacy) or
+            ``"tournier07"`` (MRtrix3).
         is_cluster : bool, optional
             Value for ``is cluster``.
         is_light_version : bool, optional
@@ -167,6 +180,9 @@ class Skyline:
             Value for ``initial filenames``.
         initial_rois : list, optional
             Value for ``initial rois``.
+        initial_peaks : list, optional
+            List of ``.pam5`` or NIfTI (.nii, .nii.gz) peak file paths to load
+            into the Skyline viewer on startup.
         initial_shm_coeffs : list, optional
             Value for ``initial shm coeffs``.
         out_dir : str or Path, optional
@@ -174,6 +190,8 @@ class Skyline:
         out_stealth_png : str, optional
             Value for ``out stealth png``.
         """
+        if sh_basis not in SH_BASES:
+            raise ValueError(f"sh_basis must be one of {SH_BASES}, got {sh_basis!r}.")
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
         self._visualizer_type = visualizer_type
@@ -183,6 +201,7 @@ class Skyline:
         self._cluster_size_thr = cluster_size_thr
         self._cluster_length_thr = cluster_length_thr
         self._buan_pvals = buan_pvals
+        self._sh_basis = sh_basis
         if self._visualizer_type != "stealth":
             os.environ["FURY_OFFSCREEN"] = "0"
             self.window = create_window(
@@ -266,7 +285,9 @@ class Skyline:
             "shm_coeffs": sh_coeffs or [],
         }
         has_initial_visualizations = any(initial_loaded_files.values())
-        has_initial_files = any((initial_filenames, initial_rois, initial_shm_coeffs))
+        has_initial_files = any(
+            (initial_filenames, initial_rois, initial_peaks, initial_shm_coeffs)
+        )
 
         if has_initial_visualizations:
             self._queue_loaded_visualizations(initial_loaded_files)
@@ -275,6 +296,7 @@ class Skyline:
             self._append_visualization(
                 filenames=initial_filenames,
                 rois=initial_rois,
+                peaks=initial_peaks,
                 shm_coeffs=initial_shm_coeffs,
             )
         elif not has_initial_visualizations and self.UI_window is not None:
@@ -718,8 +740,9 @@ class Skyline:
         ----------
         images : list, optional
             Value for ``images``.
-        peaks : ndarray
-            Value for ``peaks``.
+        peaks : list of tuple, optional
+            (peak_dirs, affine, filename, peak_values) tuples; see
+            `create_peak_visualization`.
         rois : list, optional
             Value for ``rois``.
         surfaces : list, optional
@@ -834,7 +857,9 @@ class Skyline:
         if len(self.visualizations) == 0 and self.UI_window is not None:
             self.UI_window.request_file_dialog = True
 
-    def _append_visualization(self, *, filenames=None, rois=None, shm_coeffs=None):
+    def _append_visualization(
+        self, *, filenames=None, rois=None, peaks=None, shm_coeffs=None
+    ):
         """Handle  append visualization for ``Skyline``.
 
         Parameters
@@ -843,18 +868,31 @@ class Skyline:
             Value for ``filenames``.
         rois : list, optional
             Value for ``rois``.
+        peaks : list, optional
+            List of ``.pam5`` or NIfTI (.nii, .nii.gz) peak file paths.
         shm_coeffs : list, optional
             Value for ``shm coeffs``.
         """
-        total_files = len(filenames or []) + len(rois or []) + len(shm_coeffs or [])
+        total_files = (
+            len(filenames or [])
+            + len(rois or [])
+            + len(peaks or [])
+            + len(shm_coeffs or [])
+        )
         if total_files == 0:
             return
 
         self._loading_total = total_files
         self._loading_done = 0
 
-        def load_files_task(filenames, rois, shm_coeffs):
-            return load_files(filenames, rois=rois, shm_coeffs=shm_coeffs)
+        def load_files_task(filenames, rois, peaks, shm_coeffs):
+            return load_files(
+                filenames,
+                rois=rois,
+                peaks=peaks,
+                shm_coeffs=shm_coeffs,
+                sh_basis=self._sh_basis,
+            )
 
         def on_files_loaded(loaded_files, exception):
             self._loading_done += 1
@@ -868,6 +906,7 @@ class Skyline:
                 on_files_loaded,
                 filenames=[filename],
                 rois=[],
+                peaks=[],
                 shm_coeffs=[],
             )
         for roi in rois or []:
@@ -876,6 +915,16 @@ class Skyline:
                 on_files_loaded,
                 filenames=[],
                 rois=[roi],
+                peaks=[],
+                shm_coeffs=[],
+            )
+        for peak in peaks or []:
+            run_async(
+                load_files_task,
+                on_files_loaded,
+                filenames=[],
+                rois=[],
+                peaks=[peak],
                 shm_coeffs=[],
             )
         for shm in shm_coeffs or []:
@@ -884,6 +933,7 @@ class Skyline:
                 on_files_loaded,
                 filenames=[],
                 rois=[],
+                peaks=[],
                 shm_coeffs=[shm],
             )
 
@@ -1111,7 +1161,9 @@ def skyline_from_files(
     fnames,
     *,
     rois=None,
+    peaks=None,
     shm_coeffs=None,
+    sh_basis="descoteaux07",
     is_cluster=False,
     is_light_version=False,
     glass_brain=False,
@@ -1140,10 +1192,15 @@ def skyline_from_files(
     rois : list, optional
         List of file paths for ROIs to be loaded into the Skyline viewer.
         Supported file types include NIfTI images (.nii, .nii.gz).
+    peaks : list, optional
+        Tuple of path for each peaks file (.pam5, or NIfTI with shape
+        (X, Y, Z, 3*N) or (X, Y, Z, N, 3)) to be added to the Skyline viewer.
     shm_coeffs : list, optional
-        List of file paths for spherical harmonics coefficients to be loaded into the
-        Skyline viewer. Supported file types include .pam5 files containing SH
-        coefficients.
+        Tuple of path for each ODF file (.pam5, or 4D NIfTI of SH
+        coefficients) to be added to the Skyline viewer.
+    sh_basis : str, optional
+        SH basis of NIfTI ODFs: 'descoteaux07' (DIPY legacy) or 'tournier07'
+        (MRtrix3).
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
@@ -1200,7 +1257,9 @@ def skyline_from_files(
         visualizer_type=visualizer_type,
         initial_filenames=fnames,
         initial_rois=rois,
+        initial_peaks=peaks,
         initial_shm_coeffs=shm_coeffs,
+        sh_basis=sh_basis,
         is_cluster=is_cluster,
         is_light_version=is_light_version,
         glass_brain=glass_brain,
@@ -1225,6 +1284,7 @@ def skyline(
     surfaces=None,
     tractograms=None,
     sh_coeffs=None,
+    sh_basis="descoteaux07",
     is_cluster=False,
     is_light_version=False,
     glass_brain=False,
@@ -1237,6 +1297,7 @@ def skyline(
     rgb=None,
     initial_filenames=None,
     initial_rois=None,
+    initial_peaks=None,
     initial_shm_coeffs=None,
     out_dir=None,
     out_stealth_png=None,
@@ -1253,14 +1314,18 @@ def skyline(
         - "stealth": An offscreen visualizer without GUI.
     images : list, optional
         List of path for each image to be added to the Skyline viewer.
-    peaks : list, optional
-        List of path for each peak to be added to the Skyline viewer.
+    peaks : list of tuple, optional
+        (peak_dirs, affine, filename, peak_values) tuples; see
+        `create_peak_visualization`.
     rois : list, optional
         List of path for each ROI to be added to the Skyline viewer.
     surfaces : list, optional
         List of path for each surface to be added to the Skyline viewer.
     tractograms : list, optional
         List of path for each tractogram to be added to the Skyline viewer.
+    sh_basis : str, optional
+        SH basis of NIfTI ODFs: 'descoteaux07' (DIPY legacy) or 'tournier07'
+        (MRtrix3).
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
@@ -1303,6 +1368,9 @@ def skyline(
         List of file paths to be loaded into the Skyline viewer on startup.
     initial_rois : list, optional
         List of file paths for ROIs to be loaded into the Skyline viewer on startup.
+    initial_peaks : list, optional
+        List of ``.pam5`` or NIfTI (.nii, .nii.gz) peak file paths to load
+        into the Skyline viewer on startup.
     initial_shm_coeffs : list, optional
         List of file paths for spherical harmonics coefficients to be loaded into the
         Skyline viewer on startup.
@@ -1336,7 +1404,9 @@ def skyline(
         rgb=rgb,
         initial_filenames=initial_filenames,
         initial_rois=initial_rois,
+        initial_peaks=initial_peaks,
         initial_shm_coeffs=initial_shm_coeffs,
+        sh_basis=sh_basis,
         out_dir=out_dir,
         out_stealth_png=out_stealth_png,
     )

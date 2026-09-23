@@ -11,6 +11,7 @@ from dipy.io.peaks import load_pam
 from dipy.io.streamline import load_tractogram
 from dipy.io.surface import load_gifti, load_pial
 from dipy.io.utils import create_nifti_header, split_filename_extension
+from dipy.reconst.shm import calculate_max_order, convert_sh_descoteaux_tournier
 from dipy.utils.logging import logger
 
 mni_2009c = {
@@ -29,6 +30,7 @@ mni_2009c = {
 EMERGENCY_REF = create_nifti_header(
     mni_2009c["affine"], mni_2009c["dims"], mni_2009c["vox_size"]
 )
+SH_BASES = ("descoteaux07", "tournier07")
 
 
 def _reference_from_image(data, affine):
@@ -53,7 +55,77 @@ def _reference_from_image(data, affine):
     return create_nifti_header(affine, data.shape[:3], vox_size)
 
 
-def load_files(fnames, *, rois=None, shm_coeffs=None):
+def _peaks_from_nifti(fname):
+    """Load peak directions from a NIfTI peaks volume.
+
+    Accepts the two layouts Skyline recognizes: ``(X, Y, Z, N, 3)``, written
+    by ``pam_to_niftis(..., reshape_dirs=False)``, and ``(X, Y, Z, 3*N)``,
+    written by ``pam_to_niftis(..., reshape_dirs=True)`` and by MRtrix3
+    ``sh2peaks``.
+
+    Parameters
+    ----------
+    fname : str
+        Path of the NIfTI peaks file.
+
+    Returns
+    -------
+    tuple or None
+        ``(peak_dirs, affine)`` with ``peak_dirs`` of shape (X, Y, Z, N, 3),
+        or None if ``fname`` does not hold a recognized peaks layout.
+    """
+    data, affine = load_nifti(fname)
+    if data.ndim == 4 and data.shape[-1] % 3 == 0:
+        data = data.reshape(data.shape[:3] + (-1, 3))
+    elif data.ndim != 5 or data.shape[-1] != 3:
+        logger.error(
+            f"{fname} is not a peaks volume: expected shape (X, Y, Z, N, 3) or "
+            f"(X, Y, Z, 3*N), got {data.shape}."
+        )
+        return None
+    return np.nan_to_num(data.astype(np.float32), copy=False), affine
+
+
+def _shm_from_nifti(fname, sh_basis):
+    """Load SH coefficients from a 4D NIfTI ODF volume.
+
+    Parameters
+    ----------
+    fname : str
+        Path of the NIfTI SH coefficients file.
+    sh_basis : str
+        SH basis of ``fname``: ``"descoteaux07"`` or ``"tournier07"``. Any
+        value other than ``"tournier07"`` is treated as ``"descoteaux07"``.
+
+    Returns
+    -------
+    tuple or None
+        ``(coeffs, affine)`` with ``coeffs`` converted to legacy
+        descoteaux07, or None if ``fname`` does not hold a symmetric SH
+        coefficient volume.
+    """
+    data, affine = load_nifti(fname)
+    if data.ndim == 4:
+        try:
+            calculate_max_order(data.shape[-1])
+        except ValueError:
+            pass
+        else:
+            coeffs = data.astype(np.float32, copy=False)
+            if sh_basis == "tournier07":
+                coeffs = convert_sh_descoteaux_tournier(coeffs)
+            return coeffs, affine
+    logger.error(
+        f"{fname} does not contain SH coefficients: expected a 4D volume with "
+        f"a symmetric SH coefficient count (1, 6, 15, 28, 45, ...), got shape "
+        f"{data.shape}."
+    )
+    return None
+
+
+def load_files(
+    fnames, *, rois=None, peaks=None, shm_coeffs=None, sh_basis="descoteaux07"
+):
     """Load the provided list of files.
 
     Parameters
@@ -62,20 +134,43 @@ def load_files(fnames, *, rois=None, shm_coeffs=None):
         Path of the file.
     rois : list of str, optional
         Paths of the ROIs.
+    peaks : list of str, optional
+        Paths of the peak files.
     shm_coeffs : list of str, optional
         Paths of the SH coefficients files.
+    sh_basis : str, optional
+        SH basis of NIfTI ODFs in ``shm_coeffs``: ``"descoteaux07"`` or
+        ``"tournier07"``.
 
     Returns
     -------
     dict
         Dictionary containing the loaded images, peaks, ROIs, surfaces,
         tractograms, and spherical-harmonic coefficient data.
+
+    Notes
+    -----
+    NIfTI peak files (``.nii``, ``.nii.gz``) are accepted in two layouts:
+    ``(X, Y, Z, N, 3)``, as written by
+    ``dipy.io.peaks.pam_to_niftis(..., reshape_dirs=False)``, and
+    ``(X, Y, Z, 3*N)``, as written with ``reshape_dirs=True`` and by MRtrix3
+    ``sh2peaks``. Each ``"peaks"`` entry is a
+    ``(peak_dirs, affine, filename, peak_values)`` tuple; ``peak_values`` is
+    None for NIfTI peaks, since a NIfTI peaks file carries no magnitude
+    information.
+
+    NIfTI ODF files must be a 4D volume whose last dimension is a symmetric
+    SH coefficient count (1, 6, 15, 28, 45, ...). Coefficients in the
+    ``tournier07`` (MRtrix3) basis are converted to legacy ``descoteaux07``.
     """
     if fnames is None:
         fnames = []
 
     if rois is None:
         rois = []
+
+    if peaks is None:
+        peaks = []
 
     if shm_coeffs is None:
         shm_coeffs = []
@@ -97,7 +192,7 @@ def load_files(fnames, *, rois=None, shm_coeffs=None):
             skyline_images.append((data, affine, fname))
         elif ext == ".pam5":
             pam = load_pam(fname)
-            skyline_peaks.append((pam, fname))
+            skyline_peaks.append((pam.peak_dirs, pam.affine, fname, pam.peak_values))
         elif ext == ".pial":
             surface = load_pial(fname)
             if surface:
@@ -144,6 +239,22 @@ def load_files(fnames, *, rois=None, shm_coeffs=None):
                 f"File extension '{ext}' is not supported for ROIs in Skyline."
             )
 
+    for fname in peaks:
+        logger.info(f"Loading file ... \n{fname}\n")
+        _, ext = split_filename_extension(fname)
+        ext = ext.lower()
+        if ext == ".pam5":
+            pam = load_pam(fname)
+            skyline_peaks.append((pam.peak_dirs, pam.affine, fname, pam.peak_values))
+        elif ext in [".nii.gz", ".nii"]:
+            result = _peaks_from_nifti(fname)
+            if result is not None:
+                skyline_peaks.append((*result, fname, None))
+        else:
+            logger.error(
+                f"File extension '{ext}' is not supported for peaks in Skyline."
+            )
+
     for fname in shm_coeffs:
         logger.info(f"Loading file ... \n{fname}\n")
         _, ext = split_filename_extension(fname)
@@ -151,6 +262,14 @@ def load_files(fnames, *, rois=None, shm_coeffs=None):
         if ext == ".pam5":
             pam = load_pam(fname)
             skyline_shm_coeffs.append((pam.shm_coeff, pam.affine, fname, "descoteaux"))
+        elif ext in [".nii.gz", ".nii"]:
+            result = _shm_from_nifti(fname, sh_basis)
+            if result is not None:
+                skyline_shm_coeffs.append((*result, fname, "descoteaux"))
+        else:
+            logger.error(
+                f"File extension '{ext}' is not supported for ODFs in Skyline."
+            )
 
     return {
         "images": skyline_images,

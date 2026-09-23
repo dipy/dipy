@@ -12,8 +12,6 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from dipy.data import default_sphere
-from dipy.direction.peaks import PeaksAndMetrics
 from dipy.io.image import save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
@@ -79,19 +77,10 @@ def _tractogram_input(name="tracts.trk", n_lines=6):
     return (_sft(n_lines), name)
 
 
-def _pam():
-    pam = PeaksAndMetrics()
-    pam.affine = AFFINE
-    pam.peak_dirs = np.zeros((3, 3, 3, 5, 3), dtype=np.float32)
-    pam.peak_dirs[..., 0, 0] = 1.0
-    pam.peak_values = np.ones((3, 3, 3, 5), dtype=np.float32)
-    pam.peak_indices = np.zeros((3, 3, 3, 5), dtype=np.int32)
-    pam.sphere = default_sphere
-    return pam
-
-
 def _peak_input(name="peaks.pam5"):
-    return (_pam(), name)
+    dirs = np.zeros((3, 3, 3, 5, 3), dtype=np.float32)
+    dirs[..., 0, 0] = 1.0
+    return (dirs, AFFINE, name, np.ones((3, 3, 3, 5), dtype=np.float32))
 
 
 def _sh_coeffs(shape=(2, 2, 2), l_max=8):
@@ -904,3 +893,35 @@ def test_skyline_from_files_reports_unsupported_files(tmp_path, caplog):
 
     assert viewer.visualizations == []
     assert "is not supported in Skyline" in caplog.text
+
+
+def test_skyline_from_files_loads_nifti_peaks_and_odfs(tmp_path):
+    peaks_data = np.zeros((3, 3, 3, 6), dtype=np.float32)
+    peaks_data[..., ::3] = 1.0
+    peaks_path = tmp_path / "peaks.nii.gz"
+    save_nifti(str(peaks_path), peaks_data, AFFINE)
+
+    odf_path = tmp_path / "odf.nii.gz"
+    save_nifti(str(odf_path), _sh_coeffs(shape=(3, 3, 3)), AFFINE)
+
+    viewer = skyline_from_files(
+        [],
+        peaks=[str(peaks_path)],
+        shm_coeffs=[str(odf_path)],
+        sh_basis="tournier07",
+        stealth=True,
+        out_dir=str(tmp_path),
+        out_stealth_png="nifti.png",
+    )
+
+    assert (tmp_path / "nifti.png").is_file()
+    assert len(viewer._peak_visualizations) == 1
+    assert isinstance(viewer._peak_visualizations[0], Peak3D)
+    assert len(viewer._sh_glyph_visualizations) == 1
+    assert isinstance(viewer._sh_glyph_visualizations[0], SHGlyph3D)
+    assert viewer._image_visualizations == []
+
+
+def test_skyline_rejects_unknown_sh_basis(make_skyline):
+    with pytest.raises(ValueError, match="sh_basis must be one of"):
+        make_skyline(sh_basis="mrtrix")

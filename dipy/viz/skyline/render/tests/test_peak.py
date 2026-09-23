@@ -2,8 +2,6 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from dipy.data import default_sphere
-from dipy.direction.peaks import PeaksAndMetrics
 from dipy.utils.optpkg import optional_package
 
 _, has_fury, _ = optional_package("fury", min_version="2.0.0")
@@ -22,16 +20,6 @@ def _peak_dirs(shape=SHAPE, n_peaks=3):
     return dirs
 
 
-def _pam(shape=SHAPE, affine=None, n_peaks=3):
-    pam = PeaksAndMetrics()
-    pam.affine = np.eye(4) if affine is None else affine
-    pam.peak_dirs = _peak_dirs(shape, n_peaks)
-    pam.peak_values = np.ones((*shape, n_peaks), dtype=np.float32)
-    pam.peak_indices = np.zeros((*shape, n_peaks), dtype=np.int32)
-    pam.sphere = default_sphere
-    return pam
-
-
 def _peak(affine=None, shape=SHAPE):
     return Peak3D(
         "peaks.pam5",
@@ -40,14 +28,14 @@ def _peak(affine=None, shape=SHAPE):
     )
 
 
-@pytest.mark.parametrize("bad_input", ["not a tuple", (), (1, 2, 3)])
+@pytest.mark.parametrize("bad_input", ["not a tuple", (), (1,), (1, 2, 3, 4, 5)])
 def test_create_peak_visualization_rejects_invalid_input(bad_input):
     with pytest.raises(ValueError, match="Input must be a tuple"):
         create_peak_visualization(bad_input, 0)
 
 
 def test_create_peak_visualization_names_by_index():
-    viz = create_peak_visualization((_pam(),), 2)
+    viz = create_peak_visualization((_peak_dirs(), np.eye(4)), 2)
 
     assert viz.path == "Peaks_2"
     assert isinstance(viz, Peak3D)
@@ -55,23 +43,34 @@ def test_create_peak_visualization_names_by_index():
 
 
 def test_create_peak_visualization_uses_the_given_filename():
-    viz = create_peak_visualization((_pam(), "peaks.pam5"), 0)
+    viz = create_peak_visualization((_peak_dirs(), np.eye(4), "peaks.pam5"), 0)
 
     assert viz.path == "peaks.pam5"
 
 
-def test_create_peak_visualization_carries_the_pam_geometry():
+def test_create_peak_visualization_carries_the_geometry():
     affine = np.diag([2.0, 2.0, 2.0, 1.0])
-    viz = create_peak_visualization((_pam(affine=affine), "peaks.pam5"), 0)
+    viz = create_peak_visualization((_peak_dirs(), affine, "peaks.pam5"), 0)
 
     assert viz.peaks.shape == (*SHAPE, 3, 3)
     npt.assert_allclose(viz.affine, affine)
 
 
 def test_create_peak_visualization_forwards_the_opacity():
-    viz = create_peak_visualization((_pam(), "peaks.pam5"), 0, opacity=40)
+    viz = create_peak_visualization(
+        (_peak_dirs(), np.eye(4), "peaks.pam5"), 0, opacity=40
+    )
 
     assert viz.opacity == 40
+
+
+def test_create_peak_visualization_clips_peak_values_at_99th_percentile():
+    values = np.ones((*SHAPE, 3), dtype=np.float32)
+    values[0, 0, 0, 0] = 1000
+    viz = create_peak_visualization((_peak_dirs(), np.eye(4), "p", values), 0)
+
+    assert viz.peak_values.max() < 1000
+    assert viz.peak_values.min() == 1
 
 
 def test_peak3d_defaults():

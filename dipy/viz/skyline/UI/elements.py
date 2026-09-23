@@ -159,7 +159,8 @@ def render_file_dialog(
         Default file name for save dialogs.
     type : str, optional
         Callback convention: ``"viz"`` (``filenames=``), ``"roi"`` (``rois=``),
-        ``"shm_coeff"`` (``shm_coeffs=``), or ``"buan_pvals"`` (raw list/None).
+        ``"peak"`` (``peaks=``), ``"shm_coeff"`` (``shm_coeffs=``), or
+        ``"buan_pvals"`` (raw list/None).
     """
     dialog_dir = _ensure_last_dir()
     if dialog_type == "open":
@@ -182,6 +183,8 @@ def render_file_dialog(
                 callback(filenames=selected_files)
             elif type == "roi":
                 callback(rois=selected_files)
+            elif type == "peak":
+                callback(peaks=selected_files)
             elif type == "shm_coeff":
                 callback(shm_coeffs=selected_files)
             elif type == "buan_pvals":
