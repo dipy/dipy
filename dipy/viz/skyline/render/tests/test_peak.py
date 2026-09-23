@@ -91,13 +91,25 @@ def test_peak3d_info_lists_shape_dtype_and_affine():
 
     assert f"Peaks shape: {(*SHAPE, 3, 3)}" in info
     assert "Peaks dtype: float32" in info
+    assert "Voxel Sizes:" in info
+    assert "Voxel Order: RAS" in info
     assert "Affine:" in info
+
+
+def test_peak3d_info_reports_voxel_order():
+    affine = np.diag([-1.0, 1.0, 1.0, 1.0])
+    peak = _peak(affine=affine)
+
+    assert "Voxel Order: LAS" in peak._populate_info()
 
 
 def test_peak3d_info_without_an_affine():
     peak = Peak3D("peaks.pam5", _peak_dirs(), affine=None)
 
-    assert "Affine:" not in peak._populate_info()
+    info = peak._populate_info()
+    assert "Affine:" not in info
+    assert "Voxel Order:" not in info
+    assert "Voxel Sizes:" not in info
 
 
 def test_peak3d_bounds_follow_the_identity_affine():

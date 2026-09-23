@@ -155,7 +155,19 @@ def test_sh_glyph_info_lists_dimensions_and_order():
 def test_sh_glyph_info_without_an_affine():
     glyph = SHGlyph3D("odf.pam5", _coeffs(), affine=None, basis_type="descoteaux07")
 
-    assert f"Dimensions: {SHAPE}" in glyph._populate_info()
+    info = glyph._populate_info()
+    assert f"Dimensions: {SHAPE}" in info
+    assert "Voxel Order:" not in info
+    assert "Affine:" not in info
+
+
+def test_sh_glyph_info_reports_voxel_order_and_affine():
+    affine = np.diag([-1.0, 1.0, 1.0, 1.0])
+    glyph = SHGlyph3D("odf.pam5", _coeffs(), affine=affine, basis_type="descoteaux07")
+
+    info = glyph._populate_info()
+    assert "Voxel Order: LAS" in info
+    assert "Affine:" in info
 
 
 def test_sh_glyph_actor_is_the_slicer_group():

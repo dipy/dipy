@@ -361,6 +361,18 @@ def test_image3d_info_without_an_affine():
     assert "Voxel Order:" not in info
 
 
+def test_image3d_info_reports_orientation_for_a_permuted_affine():
+    """A permuted (non axis-aligned-sign) affine must resolve through
+    ``nib.aff2axcodes`` rather than the broken ``affine[0, 0] < 0`` heuristic,
+    which would misreport this affine as ``RAS``.
+    """
+    affine = np.eye(4)
+    affine[:3, :3] = [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
+    image = Image3D("vol.nii.gz", _volume(), affine=affine)
+
+    assert "Voxel Order: SRA" in image._populate_info()
+
+
 def test_image3d_update_state_moves_the_slices():
     image = _image()
     target = image.state + 1.0

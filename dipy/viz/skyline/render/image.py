@@ -16,6 +16,7 @@ from dipy.viz.skyline.UI.elements import (
 from dipy.viz.skyline.UI.theme import THEME
 from dipy.viz.skyline.render.renderer import (
     Visualization,
+    format_affine_info,
     slice_slider_bounds,
     slice_slider_values_from_state,
     slice_state_from_slider_values,
@@ -390,14 +391,7 @@ class Image3D(Visualization):
             info += f"\nDirections: {self.dwi.shape[3]}"
         info += f"\nData Type: {self.dwi.dtype}"
         if self.affine is not None:
-            voxel_sizes = np.sqrt(np.sum(self.affine[:3, :3] ** 2, axis=0))
-            info += f"\nVoxel Sizes: {np.round(voxel_sizes, 1)}"
-            voxel_order = "LAS" if self.affine[0, 0] < 0 else "RAS"
-            info += f"\nVoxel Order: {voxel_order}"
-            affine_str = np.array2string(
-                np.round(self.affine, 2), separator=" ", prefix=""
-            )
-            info += f"\nAffine:\n{affine_str}"
+            info += "\n" + format_affine_info(self.affine)
 
         np.set_printoptions()
         return info

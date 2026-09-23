@@ -101,13 +101,25 @@ def test_roi3d_reports_shape_dtype_and_voxel_count():
     assert f"ROI shape: {roi.shape}" in info
     assert "ROI dtype: uint8" in info
     assert f"Total voxels in ROI: {int(np.sum(roi > 0))}" in info
+    assert "Voxel Sizes:" in info
+    assert "Voxel Order: RAS" in info
     assert "Affine:" in info
+
+
+def test_roi3d_info_reports_voxel_order():
+    affine = np.diag([-1.0, 1.0, 1.0, 1.0])
+    viz = ROI3D("mask.nii.gz", _binary_roi(), affine=affine)
+
+    assert "Voxel Order: LAS" in viz._populate_info()
 
 
 def test_roi3d_info_without_an_affine():
     viz = ROI3D("mask.nii.gz", _binary_roi(), affine=None)
 
-    assert "Affine:" not in viz._populate_info()
+    info = viz._populate_info()
+    assert "Affine:" not in info
+    assert "Voxel Order:" not in info
+    assert "Voxel Sizes:" not in info
 
 
 def test_roi3d_default_opacity_is_opaque():

@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pytest
 
@@ -12,6 +14,7 @@ else:
         Visualization,
         affine_voxel_sizes,
         create_window,
+        format_affine_info,
         slice_slider_bounds,
         slice_slider_values_from_state,
         slice_state_from_slider_values,
@@ -35,6 +38,52 @@ def test_affine_voxel_sizes_use_affine_columns():
     voxel_sizes = affine_voxel_sizes(affine)
 
     assert np.allclose(voxel_sizes, (2.0, 3.0, 4.0))
+
+
+def test_format_affine_info_reports_voxel_sizes_order_and_matrix():
+    affine = np.diag([-2.0, 3.0, 4.0, 1.0])
+    affine[:3, 3] = [5.0, -6.0, 7.0]
+
+    info = format_affine_info(affine)
+
+    voxel_sizes_line = next(
+        line for line in info.splitlines() if line.startswith("Voxel Sizes:")
+    )
+    voxel_sizes = np.fromstring(
+        voxel_sizes_line.split(":", 1)[1].strip().strip("[]"), sep=" "
+    )
+    assert np.allclose(voxel_sizes, (2.0, 3.0, 4.0))
+    assert "Voxel Order: LAS" in info
+    assert "Affine:" in info
+    affine_block = info.split("Affine:\n", 1)[1]
+    parsed_affine = np.array(
+        [float(value) for value in re.findall(r"-?\d+\.?\d*", affine_block)]
+    ).reshape(4, 4)
+    assert np.allclose(parsed_affine, affine)
+
+
+def test_format_affine_info_resolves_a_permuted_affine():
+    """A permuted affine must resolve through ``nib.aff2axcodes`` rather than
+    a sign-only heuristic on a single matrix entry.
+    """
+    affine = np.eye(4)
+    affine[:3, :3] = [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
+
+    assert "Voxel Order: SRA" in format_affine_info(affine)
+
+
+def test_format_affine_info_accepts_a_plain_list_affine():
+    """Callers may still pass a nested-list affine, as ``ROI3D``/``Peak3D``
+    accept unvalidated affines through their public tuple-based factories.
+    """
+    affine = [
+        [1.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+    ]
+
+    assert "Voxel Order: RAS" in format_affine_info(affine)
 
 
 def test_slice_slider_bounds_use_original_shape_without_affine():
