@@ -129,10 +129,81 @@ def test_load_files_reads_pam5_peaks(tmp_path):
     loaded = load_files([path])
 
     assert len(loaded["peaks"]) == 1
-    pam, peak_path = loaded["peaks"][0]
+    peak_dirs, affine, peak_path, peak_values = loaded["peaks"][0]
     assert peak_path == path
-    assert pam.peak_dirs.shape == (2, 2, 2, 5, 3)
-    npt.assert_allclose(pam.affine, AFFINE)
+    assert peak_dirs.shape == (2, 2, 2, 5, 3)
+    assert peak_values.shape == (2, 2, 2, 5)
+    npt.assert_allclose(affine, AFFINE)
+
+
+@pytest.mark.parametrize("reshape", [False, True])
+def test_load_files_reads_nifti_peaks(tmp_path, reshape):
+    arr = np.zeros((2, 2, 2, 2, 3), dtype=np.float32)
+    arr[..., 0, :] = [3.0, 0.0, 0.0]
+    arr[..., 1, :] = [0.0, 1.0, 0.0]
+    arr[0, 0, 0, 1, :] = np.nan
+    saved = arr.reshape(2, 2, 2, 6) if reshape else arr
+    path = tmp_path / "peaks.nii.gz"
+    save_nifti(str(path), saved, AFFINE)
+
+    loaded = load_files([], peaks=[str(path)])
+
+    assert len(loaded["peaks"]) == 1
+    peak_dirs, affine, path_out, peak_values = loaded["peaks"][0]
+    assert peak_dirs.shape == (2, 2, 2, 2, 3)
+    npt.assert_allclose(peak_dirs, np.nan_to_num(arr))
+    assert peak_values is None
+    npt.assert_allclose(affine, AFFINE)
+    assert path_out == str(path)
+    assert loaded["images"] == []
+
+
+def test_load_files_reads_pam5_through_peaks_option(tmp_path):
+    path = _pam5(tmp_path)
+
+    loaded = load_files([], peaks=[path])
+
+    assert len(loaded["peaks"]) == 1
+    peak_dirs, _affine, path_out, peak_values = loaded["peaks"][0]
+    assert peak_dirs.shape == (2, 2, 2, 5, 3)
+    assert peak_values is not None
+    assert path_out == path
+
+
+def test_load_files_rejects_non_peak_inputs(tmp_path, caplog):
+    volume_path, _ = _volume(tmp_path, name="not_peaks.nii.gz")
+    trk_path = _tractogram(tmp_path, "tracts.trk")
+
+    with caplog.at_level(logging.ERROR):
+        loaded = load_files([], peaks=[volume_path])
+    assert loaded["peaks"] == []
+    assert "is not a peaks volume" in caplog.text
+
+    caplog.clear()
+    with caplog.at_level(logging.ERROR):
+        loaded = load_files([], peaks=[trk_path])
+    assert loaded["peaks"] == []
+    assert "is not supported for peaks in Skyline" in caplog.text
+
+
+@pytest.mark.parametrize("sh_basis", ["descoteaux07", "tournier07"])
+def test_load_files_reads_nifti_shm_coefficients(tmp_path, sh_basis):
+    data = np.zeros((2, 2, 2, 6), dtype=np.float32)
+    data[...] = np.arange(6, dtype=np.float32)
+    path = tmp_path / "odf.nii.gz"
+    save_nifti(str(path), data, AFFINE)
+
+    loaded = load_files([], shm_coeffs=[str(path)], sh_basis=sh_basis)
+
+    assert len(loaded["shm_coeffs"]) == 1
+    coeffs, affine, coeff_path, basis = loaded["shm_coeffs"][0]
+    if sh_basis == "tournier07":
+        npt.assert_allclose(coeffs[0, 0, 0], [0, 5, 4, 3, 2, 1])
+    else:
+        npt.assert_allclose(coeffs[0, 0, 0], np.arange(6))
+    assert basis == "descoteaux"
+    assert coeff_path == str(path)
+    npt.assert_allclose(affine, AFFINE)
 
 
 def test_load_files_reads_pial_surfaces(tmp_path):
@@ -280,12 +351,17 @@ def test_load_files_reads_shm_coefficients(tmp_path):
     assert basis == "descoteaux"
 
 
-def test_load_files_ignores_non_pam5_shm_inputs(tmp_path):
-    path, _ = _volume(tmp_path, name="not_shm.nii.gz")
+@pytest.mark.parametrize("shape", [(4, 5, 6), (2, 2, 2, 7)])
+def test_load_files_rejects_nifti_without_sh_coefficients(tmp_path, caplog, shape):
+    data = np.zeros(shape, dtype=np.float32)
+    path = tmp_path / "not_shm.nii.gz"
+    save_nifti(str(path), data, AFFINE)
 
-    loaded = load_files([], shm_coeffs=[path])
+    with caplog.at_level(logging.ERROR):
+        loaded = load_files([], shm_coeffs=[str(path)])
 
     assert loaded["shm_coeffs"] == []
+    assert "does not contain SH coefficients" in caplog.text
 
 
 def test_load_files_combines_every_supported_input(tmp_path):

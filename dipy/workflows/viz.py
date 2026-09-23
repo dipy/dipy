@@ -26,7 +26,9 @@ class SkylineFlow(Workflow):
         input_files,
         *,
         rois=None,
+        peaks=None,
         odfs=None,
+        sh_basis="descoteaux07",
         cluster=False,
         performance_version=False,
         glass_brain=False,
@@ -45,7 +47,8 @@ class SkylineFlow(Workflow):
 
         If you want to load only odfs or rois.
         use dipy_skyline run --odfs <Your ODF files> or
-        dipy_skyline run --rois <Your ROI files> respectively.
+        dipy_skyline run --rois <Your ROI files> respectively. You can also load
+        peaks with dipy_skyline run --peaks <Your peak files>.
 
         These options should be used in stealth mode. For GUI mode, the files can be
         loaded through the file dialog.
@@ -58,8 +61,15 @@ class SkylineFlow(Workflow):
             the Skyline viewer.
         rois : variable str, optional
             Tuple of path for each ROI to be added to the Skyline viewer.
+        peaks : variable str, optional
+            Tuple of path for each peaks file (.pam5, or NIfTI with shape
+            (X, Y, Z, 3*N) or (X, Y, Z, N, 3)) to be added to the Skyline viewer.
         odfs : variable str, optional
-            Tuple of path for each ODF to be added to the Skyline viewer.
+            Tuple of path for each ODF file (.pam5, or 4D NIfTI of SH
+            coefficients) to be added to the Skyline viewer.
+        sh_basis : str, optional
+            SH basis of NIfTI ODFs: 'descoteaux07' (DIPY legacy) or 'tournier07'
+            (MRtrix3).
         cluster : bool, optional
             Whether to cluster the tractograms.
         performance_version : bool, optional
@@ -131,7 +141,9 @@ class SkylineFlow(Workflow):
         skyline_from_files(
             skyline_input_files,
             rois=rois,
+            peaks=peaks,
             shm_coeffs=odfs,
+            sh_basis=sh_basis,
             is_cluster=cluster,
             is_light_version=not performance_version,
             glass_brain=glass_brain,
