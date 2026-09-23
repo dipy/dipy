@@ -1248,7 +1248,7 @@ def test_dti_nlls_cholesky_accuracy():
 
     predicted_signal = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
 
-    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True)
+    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True, jac=False)
     dtif = dtim.fit(predicted_signal)
 
     npt.assert_array_almost_equal(dtif.evals, evals_gt)
@@ -1266,7 +1266,7 @@ def test_dti_nlls_cholesky_positivity():
 
     Spred_corrupted = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
 
-    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True)
+    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True, jac=False)
     dtif = dtim.fit(Spred_corrupted)
 
     npt.assert_(np.all(dtif.evals >= -1e-8))

@@ -26,6 +26,7 @@ from dipy.sims.voxel import (
     multi_tensor_dki,
     single_tensor,
 )
+from dipy.testing import assert_warns
 
 
 def setup_module():
@@ -292,6 +293,15 @@ def test_fwdti_jac_multi_voxel():
     fwefit = fwdm.fit(DWI[0, :, :])
     Ffwe = fwefit.f
     assert_array_almost_equal(Ffwe, GTF[0, :])
+
+
+def test_fwdti_cholesky_jac_warning():
+    """Test that Cholesky disables the unavailable analytical Jacobian."""
+    fwdm = fwdti.FreeWaterTensorModel(
+        gtab_2s, fit_method="NLS", cholesky=True, jac=True
+    )
+
+    assert_warns(UserWarning, fwdm.fit, DWI)
 
 
 def test_standalone_functions():

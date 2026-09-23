@@ -1973,10 +1973,13 @@ def nlls_fit_tensor(
             resort_to_OLS = True
             this_param = start_params
 
-            flat_params[vox] = this_param  # NOTE: ignores fail_is_nan
+            if cholesky:
+                this_param = this_param.copy()
+                this_param[:6] = cholesky_to_lower_triangular(this_param[:6])
+
+            flat_params[vox] = this_param
 
             if not fail_is_nan:
-                # Convert diffusion tensor parameters to evals and evecs
                 evals, evecs = decompose_tensor(
                     from_lower_triangular(this_param[:6]),
                     min_diffusivity=tol / -design_matrix.min(),

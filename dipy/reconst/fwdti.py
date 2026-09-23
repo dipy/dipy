@@ -697,6 +697,15 @@ def nls_iter(
 
         # Use the Levenberg-Marquardt algorithm wrapped in opt.leastsq
         start_params = np.concatenate((dt, [-np.log(S0), f]), axis=0)
+        if cholesky and jac:
+            warnings.warn(
+                "The analytical Jacobian is not currently implemented"
+                " for Cholesky parameterization. Running with jac=False.",
+                UserWarning,
+                stacklevel=2,
+            )
+            jac = False
+
         if jac:
             this_tensor, status = opt.leastsq(
                 partial_err_func,
@@ -713,19 +722,26 @@ def nls_iter(
         if cholesky:
             this_tensor[:6] = cholesky_to_lower_triangular(this_tensor[:6])
 
+        start_tensor = start_params[:6]
+
+        if cholesky:
+            start_tensor = cholesky_to_lower_triangular(start_tensor)
+
         evals, evecs = _decompose_tensor_nan(
             from_lower_triangular(this_tensor[:6]),
-            from_lower_triangular(start_params[:6]),
+            from_lower_triangular(start_tensor),
         )
 
         # Process water volume fraction f
         f = this_tensor[7]
+
         if f_transform:
             f = 0.5 * (1 + np.sin(f - np.pi / 2))
 
         params = np.concatenate(
             (evals, evecs[0], evecs[1], evecs[2], np.array([f])), axis=0
         )
+
     return params
 
 
