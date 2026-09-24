@@ -889,3 +889,32 @@ def test_csd_convergence():
         )
 
     assert_equal(model_w_conv.fit(S).shm_coeff, model_wo_conv.fit(S).shm_coeff)
+
+
+def test_csd_afd():
+    _, fbvals, fbvecs = get_fnames(name="small_64D")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs=bvecs)
+    mevals = np.array([[0.0015, 0.0003, 0.0003]] * 2)
+    angles = [(0, 0), (90, 0)]
+    crossing, _ = multi_tensor(
+        gtab, mevals, S0=100, angles=angles, fractions=[60, 40], snr=None
+    )
+    single, _ = multi_tensor(
+        gtab, mevals, S0=100, angles=angles, fractions=[100, 0], snr=None
+    )
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        model = ConstrainedSphericalDeconvModel(gtab, (mevals[0], 100))
+        afd = model.fit(np.stack([crossing, single])).afd(npeaks=3)
+
+    assert_equal(afd.shape, (2, 3))
+    assert_array_equal(afd > 0, [[True, True, False], [True, False, False]])
+    npt.assert_allclose(afd[0, :2] / afd[0].sum(), [0.6, 0.4], atol=0.03)
+    # A voxel matching the response has an AFD close to one
+    npt.assert_allclose(afd[1, 0], 1, atol=0.1)
