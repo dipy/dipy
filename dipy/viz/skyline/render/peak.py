@@ -45,16 +45,17 @@ def create_peak_visualization(
     render_callback=None,
     sync_callabck=None,
 ):
-    """Create peak visualization from input
+    """Create a peak visualization from loaded PAM data.
 
     Parameters
     ----------
     input : tuple
-        Tuple of the (pam, filename) or (pam,)
+        Tuple of the form ``(pam, filename)`` or ``(pam,)``, where ``pam``
+        is a :class:`~dipy.direction.peaks.PeaksAndMetrics` instance.
     idx : int
         Index of the peak for naming purposes if filename is not provided.
     opacity : int, optional
-        Opacity of the peak rendering.
+        Initial opacity of the peak rendering, in percent ``[0, 100]``.
     render_callback : callable, optional
         Callback function to be called after rendering.
     sync_callabck : callable, optional
@@ -64,6 +65,11 @@ def create_peak_visualization(
     -------
     Peak3D
         The created Peak3D object.
+
+    Raises
+    ------
+    ValueError
+        If ``input`` is not a tuple of length 1 or 2.
     """
     if not isinstance(input, tuple) or len(input) not in (1, 2):
         raise ValueError(
@@ -94,20 +100,23 @@ def create_peak_visualization(
 
 
 class Peak3D(Visualization):
-    """Represent ``Peak3D`` in Skyline.
+    """Represent a peak-direction (PAM) vector-field slicer in Skyline.
 
     Parameters
     ----------
     name : str
         Display name used in the Skyline UI.
-    peaks : ndarray
-        Value for ``peaks``.
+    peaks : ndarray, shape (X, Y, Z, N, 3) or (X, Y, Z, 3)
+        Per-voxel peak directions rendered as a vector field.
     affine : ndarray, optional
         Voxel-to-world affine used to position slices in world coordinates.
     peak_values : ndarray or float, optional
-        Value for ``peak values``.
+        Per-peak magnitude scaling the rendered line length; a scalar
+        value is applied uniformly to every peak.
     opacity : int, optional
-        Slice opacity in percent, expected in ``[0, 100]``.
+        Initial value of the Opacity slider, in percent ``[0, 100]``. Stored
+        on ``self.opacity`` but not applied to the actor until the Opacity
+        slider is changed once in :meth:`render_widgets`.
     render_callback : callable, optional
         Callback used to request a render/update.
     sync_callabck : callable, optional
@@ -125,20 +134,23 @@ class Peak3D(Visualization):
         render_callback=None,
         sync_callabck=None,
     ):
-        """Represent ``Peak3D`` in Skyline.
+        """Initialize the peak-direction (PAM) vector-field slicer.
 
         Parameters
         ----------
         name : str
             Display name used in the Skyline UI.
-        peaks : ndarray
-            Value for ``peaks``.
+        peaks : ndarray, shape (X, Y, Z, N, 3) or (X, Y, Z, 3)
+            Per-voxel peak directions rendered as a vector field.
         affine : ndarray, optional
             Voxel-to-world affine used to position slices in world coordinates.
         peak_values : ndarray or float, optional
-            Value for ``peak values``.
+            Per-peak magnitude scaling the rendered line length; a scalar
+            value is applied uniformly to every peak.
         opacity : int, optional
-            Slice opacity in percent, expected in ``[0, 100]``.
+            Initial value of the Opacity slider, in percent ``[0, 100]``.
+            Stored on ``self.opacity`` but not applied to the actor until
+            the Opacity slider is changed once in :meth:`render_widgets`.
         render_callback : callable, optional
             Callback used to request a render/update.
         sync_callabck : callable, optional
@@ -156,8 +168,10 @@ class Peak3D(Visualization):
         super().__init__(name, render_callback)
 
     def _create_peak_actor(self):
-        """Handle  create peak actor for ``Peak3D``.
-        None
+        """Build the peaks-slicer actor and derive its cross-section state.
+
+        Called from :meth:`__init__` and again whenever the Scale slider
+        changes, since the slicer actor must be rebuilt for a new scale.
         """
         self._slicer = peaks_slicer(
             self.peaks,
@@ -179,12 +193,12 @@ class Peak3D(Visualization):
         self._apply_cross_section_from_state()
 
     def _populate_info(self):
-        """Handle  populate info for ``Peak3D``.
+        """Build the multi-line summary shown in the info panel.
 
         Returns
         -------
         str
-            The information of the peak visualization.
+            Peaks array shape and dtype, plus affine details when available.
         """
         info = f"Peaks shape: {self.peaks.shape}\n"
         info += f"Peaks dtype: {self.peaks.dtype}\n"
@@ -194,17 +208,18 @@ class Peak3D(Visualization):
 
     @property
     def actor(self):
-        """Handle actor for ``Peak3D``.
+        """Vector-field actor group backing this peak visualization.
 
         Returns
         -------
         Group
-            The actor of the peak visualization.
+            Parent group of chunked vector-field actors rendered as the
+            three orthogonal peak-direction slices.
         """
         return self._slicer
 
     def _get_cross_section(self):
-        """Handle  get cross section for ``Peak3D``.
+        """Read the shared cross-section position off the slicer's first chunk.
 
         ``peaks_slicer`` returns a ``Group`` of chunked ``VectorField`` actors and
         only the chunks carry the ``cross_section`` property, so read it off the
@@ -213,12 +228,13 @@ class Peak3D(Visualization):
         Returns
         -------
         np.ndarray
-            The cross section of the peak visualization.
+            Current cross-section position, in the same space (voxel or
+            world) the slicer actor was last set to.
         """
         return np.asarray(self._slicer.children[0].cross_section, dtype=np.float32)
 
     def _set_cross_section(self, cross_section):
-        """Handle  set cross section for ``Peak3D``.
+        """Propagate a cross-section position to every chunk of the slicer.
 
         Parameters
         ----------
@@ -229,12 +245,15 @@ class Peak3D(Visualization):
             chunk.cross_section = cross_section
 
     def _infer_cross_section_space(self):
-        """Handle  infer cross section space for ``Peak3D``.
+        """Determine whether the current cross section is voxel or world space.
 
         Returns
         -------
         str
-            The cross section space of the peak visualization.
+            ``"voxel"`` when no affine is set, or when the cross section
+            reported by ``peaks_slicer`` is closer to the voxel-space
+            volume center than to its world-space counterpart; otherwise
+            ``"world"``.
         """
         if self.affine is None:
             return "voxel"
@@ -250,7 +269,7 @@ class Peak3D(Visualization):
         return "world" if world_dist <= voxel_dist else "voxel"
 
     def _voxel_from_world_state(self, world_state):
-        """Handle  voxel from world state for ``Peak3D``.
+        """Map a world-space state vector to a clipped voxel index.
 
         Parameters
         ----------
@@ -260,7 +279,8 @@ class Peak3D(Visualization):
         Returns
         -------
         np.ndarray
-            The voxel state of the peak visualization.
+            Voxel index nearest to ``world_state``, clipped to the volume
+            bounds.
         """
         voxel_state = apply_transformation(
             np.array([world_state], dtype=np.float32), np.linalg.inv(self.affine)
@@ -270,8 +290,11 @@ class Peak3D(Visualization):
         return np.clip(voxel_state, 0, max_idx)
 
     def _apply_cross_section_from_state(self):
-        """Handle  apply cross section from state for ``Peak3D``.
-        None
+        """Push ``self.state`` to the slicer as a cross section.
+
+        Converts ``self.state`` to voxel or world coordinates to match
+        :attr:`_cross_section_space` before writing it to every chunk of
+        the slicer via :meth:`_set_cross_section`.
         """
         if self.affine is None:
             voxel_state = np.round(self.state).astype(np.int16)
@@ -291,7 +314,7 @@ class Peak3D(Visualization):
             self._set_cross_section(voxel_state)
 
     def update_state(self, new_state):
-        """Handle update state for ``Peak3D``.
+        """Apply a synchronized state from another visualization.
 
         Parameters
         ----------
@@ -303,7 +326,7 @@ class Peak3D(Visualization):
             self.apply_scene_op(self._apply_cross_section_from_state)
 
     def _set_opacity(self, opacity):
-        """Handle  set opacity for ``Peak3D``.
+        """Apply an opacity fraction to every chunk of the peaks-slicer actor.
 
         Parameters
         ----------
@@ -313,7 +336,7 @@ class Peak3D(Visualization):
         set_group_opacity(self._slicer, opacity)
 
     def _set_slice_visibility(self, visibility):
-        """Handle  set slice visibility for ``Peak3D``.
+        """Apply per-axis slice visibility to every chunk's material.
 
         ``peaks_slicer`` returns a ``Group`` whose ``material`` is ``None``; the
         per-axis visibility flags live on the material of each chunk.
@@ -327,7 +350,7 @@ class Peak3D(Visualization):
             chunk.material.visibility = visibility
 
     def render_widgets(self):
-        """Handle render widgets for ``Peak3D``."""
+        """Draw the sync toggle, scale, opacity, and per-axis slice controls."""
         changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
         if changed:
             self._synchronize = new

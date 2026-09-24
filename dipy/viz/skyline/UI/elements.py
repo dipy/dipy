@@ -288,7 +288,6 @@ def loading(title, message, show):
         Status line shown under the spinner.
     show : bool
         When False the modal is closed on the next draw.
-    None
     """
     text_width = imgui.calc_text_size(message).x
     spinner_radius = 16.0
@@ -334,7 +333,6 @@ def warning_message(message):
     ----------
     message : str
         Warning to display on the current ImGui line.
-    None
     """
     warning_icon = icons_fontawesome_6.ICON_FA_TRIANGLE_EXCLAMATION
     imgui.text_colored(THEME["primary"], warning_icon)
@@ -407,13 +405,13 @@ def downloader(label, callback, *, extension="*.*", type="viz", file_name="save.
         File extension for the saved file.
     type : str, optional
         Type of file being downloaded, used to determine callback behavior.
-         - "viz": Visualization files (default)
-         - "roi": Region of Interest files
-         - "shm_coeff": Spherical Harmonics Coefficients files
-         - "buan_colors": BUAN color mapping files
+
+        - "viz": Visualization files
+        - "roi": Region of Interest files
+        - "shm_coeff": Spherical Harmonics Coefficients files
+        - "buan_colors": BUAN color mapping files
     file_name : str, optional
-        Default file name suggested in the save dialog.
-    None
+        File name suggested in the save dialog.
     """
     download_icon = icons_fontawesome_6.ICON_FA_DOWNLOAD
     imgui.text_colored(THEME["text"], f"{download_icon} {label}")
@@ -453,15 +451,15 @@ def uploader(
         File extension filter for the file dialog.
     multiselect : bool, optional
         Whether to allow selecting multiple files.
-    selected : bool or string, optional
+    selected : bool or str, optional
         Whether the uploader is in a selected state, affecting its appearance.
     type : str, optional
         Type of file being uploaded, used to determine callback behavior.
-         - "viz": Visualization files (default)
-         - "roi": Region of Interest files
-         - "shm_coeff": Spherical Harmonics Coefficients files
-         - "buan_colors": BUAN color mapping files
-    None
+
+        - "viz": Visualization files
+        - "roi": Region of Interest files
+        - "shm_coeff": Spherical Harmonics Coefficients files
+        - "buan_colors": BUAN color mapping files
     """
 
     upload_icon = icons_fontawesome_6.ICON_FA_UPLOAD
@@ -551,9 +549,9 @@ def render_section_header(
         Additional info text shown in a tooltip when hovering the header. If not
         provided, no tooltip is shown.
     show_close : bool, optional
-        Whether to show the close/remove button. Default is True.
+        Whether to show the close/remove button.
     show_info : bool, optional
-        Whether to show the info button. Default is True.
+        Whether to show the info button.
 
     Returns
     -------

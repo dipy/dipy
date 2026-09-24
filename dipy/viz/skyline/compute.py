@@ -1,3 +1,5 @@
+"""Run callables in background threads with main-thread callback delivery."""
+
 import queue
 import threading
 
@@ -5,32 +7,28 @@ _callback_queue = queue.Queue()
 
 
 def run_async(func, callback, *args, **kwargs):
-    """
-    Execute a function asynchronously in a background thread.
-
-    This function runs the provided function in a daemon thread and
-    queues the callback to be executed on the main thread upon
-    completion.
+    """Execute ``func`` asynchronously in a background daemon thread.
 
     Parameters
     ----------
     func : callable
-        The function to execute in the background.
+        The function to execute in the background thread.
     callback : callable
-        Function to call when execution completes. Must have signature:
-        ``callback(result, exception)`` where result is the return value
-        of func and exception is any exception raised during execution.
-    *args : tuple
-        Positional arguments to pass to func.
-    **kwargs : dict
-        Keyword arguments to pass to func.
+        Function invoked as ``callback(result, exception)`` once ``func``
+        completes, where ``result`` is its return value and ``exception``
+        is any exception it raised, or None on success.
+    *args
+        Positional arguments passed to ``func``.
+    **kwargs
+        Keyword arguments passed to ``func``.
 
     Notes
     -----
-    The callback is not executed directly in the worker thread. Instead,
-    it is queued for execution on the main thread via the callback queue.
-    The worker thread is created as a daemon thread, so it will
-    terminate if the main application closes.
+    ``callback`` is never called from the worker thread. It is queued
+    together with the result and exception, and only runs when
+    :func:`process_async_callbacks` drains the queue on whichever thread
+    calls it (normally the main/UI thread). The worker thread is a daemon
+    thread, so it does not block interpreter shutdown.
     """
 
     def worker():

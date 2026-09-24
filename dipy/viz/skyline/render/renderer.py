@@ -186,7 +186,7 @@ def voxel_values_from_slice_state(state, *, affine=None):
 
 
 class Visualization:
-    """Represent ``Visualization`` in Skyline.
+    """Base class for a single visualization layer in the Skyline sidebar.
 
     Parameters
     ----------
@@ -197,7 +197,7 @@ class Visualization:
     """
 
     def __init__(self, path, render_callback):
-        """Represent ``Visualization`` in Skyline.
+        """Initialize the visualization layer.
 
         Parameters
         ----------
@@ -225,14 +225,25 @@ class Visualization:
             self._render_callback()
 
     def apply_scene_op(self, func, *args, **kwargs):
-        """Run ``func`` immediately or defer it via :attr:`_scene_op_callback`."""
+        """Run ``func`` immediately or defer it via :attr:`_scene_op_callback`.
+
+        Parameters
+        ----------
+        func : callable
+            Scene-mutating callable to run, either directly or through the
+            deferral callback.
+        *args
+            Positional arguments forwarded to ``func``.
+        **kwargs
+            Keyword arguments forwarded to ``func``.
+        """
         if self._scene_op_callback is not None:
             self._scene_op_callback(func, *args, **kwargs)
             return
         func(*args, **kwargs)
 
     def _set_actor_visible(self, visible):
-        """Handle  set actor visible for ``Visualization``.
+        """Show or hide the actor by setting its ``visible`` attribute.
 
         Parameters
         ----------
@@ -243,18 +254,31 @@ class Visualization:
 
     @property
     def actor(self):
-        """Handle actor for ``Visualization``.
+        """The FURY actor rendered for this visualization.
+
+        Returns
+        -------
+        object
+            The visualization's underlying FURY actor object.
 
         Raises
         ------
         NotImplementedError
-            if the method is not implemented in the subclass.
+            If the method is not implemented in the subclass.
         """
         raise NotImplementedError("Subclasses must implement the actor property.")
 
     @property
     def viz_type(self):
-        """Return the visualization type identifier string."""
+        """The visualization type identifier derived from the subclass name.
+
+        Returns
+        -------
+        str or None
+            One of ``"image"``, ``"surface"``, ``"peak"``, ``"roi"``,
+            ``"tractography"``, or ``"sh_glyph"`` depending on the concrete
+            subclass, or None if the subclass name is not recognized.
+        """
         name = self.__class__.__name__
         if name == "Image3D":
             return "image"
@@ -340,20 +364,20 @@ class Visualization:
         Raises
         ------
         NotImplementedError
-            if the method is not implemented in the subclass.
+            If the method is not implemented in the subclass.
         """
         raise NotImplementedError(
             "Subclasses must implement the render_widgets method."
         )
 
     def _populate_info(self):
-        """Handle  populate info for ``Visualization``.
-        None
+        """Build the info string shown in the sidebar for this visualization.
 
         Returns
         -------
-        object
-            Returned value.
+        str
+            The visualization's display name; subclasses override this to
+            include additional details such as affine and voxel information.
         """
         return self.name
 
@@ -372,14 +396,15 @@ def create_window(
 
     Parameters
     ----------
-    visualizer_type : str, optional
-        Type of visualizer to create. The options are:
-        - "standalone": A standalone window with full interactivity.
-        - "gui": A Qt-based GUI window.
-        - "jupyter": An inline Jupyter notebook visualizer.
-        - "stealth": An offscreen visualizer without GUI.
-    size : tuple, optional
-        Size of the window
+    visualizer_type : {"standalone", "gui", "jupyter", "stealth"}, optional
+        Type of visualizer to create:
+
+        - "standalone": a standalone window with full interactivity.
+        - "gui": a Qt-based GUI window.
+        - "jupyter": an inline Jupyter notebook visualizer.
+        - "stealth": an offscreen visualizer without GUI.
+    size : tuple of int, optional
+        Window size in pixels as ``(width, height)``.
     screen_config : list, optional
         Defines the screen layout. Can be a list of integers (vertical/horizontal
         sections) or a list of explicit bounding box tuples (x, y, w, h).
@@ -391,6 +416,12 @@ def create_window(
     ShowManager
         An instance of FURY's ShowManager configured according to the
         specified visualizer type.
+
+    Notes
+    -----
+    If ``visualizer_type`` is not one of the recognized values, the error is
+    logged and the process exits via ``sys.exit(1)`` instead of raising a
+    Python exception.
     """
     if visualizer_type == "standalone":
         window_type = "default"

@@ -32,10 +32,10 @@ _GROUP_LABELS = {
 
 
 class UIManager:
-    """Represent ``UIManager`` in Skyline."""
+    """Registry of named :class:`UIWindow` instances for the Skyline scene."""
 
     def __init__(self):
-        """Represent ``UIManager`` in Skyline."""
+        """Initialize the window registry with no windows."""
         self.windows = {}
 
     def add_window(self, window_name, window_instance):
@@ -52,28 +52,30 @@ class UIManager:
 
 
 class UIWindow:
-    """Represent ``UIWindow`` in Skyline.
+    """Sidebar window that groups visualization sections and file dialogs.
 
     Parameters
     ----------
     title : str
         Title text shown in the UI.
     default_open : bool, optional
-        Value for ``default open``.
+        Whether the window starts expanded.
     flags : int, optional
-        Value for ``flags``.
+        Extra ``imgui.WindowFlags_`` bitmask combined with the built-in flags.
     pos : tuple(int, int), optional
-        Value for ``pos``.
+        Window position in screen coordinates.
     size : tuple(int, int), optional
-        Value for ``size``.
-    logo_tex_ref : TextureId, optional, optional
-        Value for ``logo tex ref``.
+        Window size in pixels.
+    logo_tex_ref : TextureId, optional
+        Texture reference for the logo drawn in the title area.
     render_callback : callable, optional
         Callback used to request a render/update.
     file_dialog_callback : callable, optional
         Callback invoked after file selection.
     bg_color_callback : callable, optional
         Callback invoked when background color changes.
+    snapshot_callback : callable, optional
+        Callback invoked when a snapshot path is selected.
     """
 
     def __init__(
@@ -90,22 +92,22 @@ class UIWindow:
         bg_color_callback=None,
         snapshot_callback=None,
     ):
-        """Represent ``UIWindow`` in Skyline.
+        """Initialize the sidebar window.
 
         Parameters
         ----------
         title : str
             Title text shown in the UI.
         default_open : bool, optional
-            Value for ``default open``.
+            Whether the window starts expanded.
         flags : int, optional
-            Value for ``flags``.
+            Extra ``imgui.WindowFlags_`` bitmask combined with the built-in flags.
         pos : tuple(int, int), optional
-            Value for ``pos``.
+            Window position in screen coordinates.
         size : tuple(int, int), optional
-            Value for ``size``.
-        logo_tex_ref : TextureId, optional, optional
-            Value for ``logo tex ref``.
+            Window size in pixels.
+        logo_tex_ref : TextureId, optional
+            Texture reference for the logo drawn in the title area.
         render_callback : callable, optional
             Callback used to request a render/update.
         file_dialog_callback : callable, optional
@@ -460,12 +462,24 @@ class UIWindow:
 
     @property
     def sections(self):
-        """Map section id to ``(renderer_callable, viz_type)`` tuples."""
+        """Mapping of section id to ``(renderer_callable, viz_type)`` tuples.
+
+        Returns
+        -------
+        dict
+            Registered sections keyed by name.
+        """
         return self._sections
 
     @property
     def section_open_states(self):
-        """Collapsed/open flags for each registered section id."""
+        """Collapsed/open flags for each registered section id.
+
+        Returns
+        -------
+        dict
+            Mapping of section name to its collapsed/open ``bool`` state.
+        """
         return self._section_open
 
     def _file_dialog_closed(self, *, filenames=None, rois=None, shm_coeffs=None):

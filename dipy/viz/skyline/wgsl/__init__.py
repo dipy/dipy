@@ -3,8 +3,9 @@
 
 def _register_dipy_wgsl_loader():
     """Register this package with Fury's Jinja WGSL loader if dependencies exist.
-    None
-        Failures are swallowed so Skyline degrades gracefully without WGSL extras.
+
+    Any failure (missing ``jinja2``/``pygfx``, or a registration error) is
+    silently swallowed so Skyline degrades gracefully without WGSL extras.
     """
     try:
         import jinja2

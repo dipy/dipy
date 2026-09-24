@@ -159,7 +159,28 @@ def _calculate_lut_chunking(
 
 
 class SlicedSphGlyphMaterial(SphGlyphMaterial):
-    """Material with world-space slice positions and integer visibility flags."""
+    """SH glyph material with world-space slice positions and visibility flags.
+
+    Parameters
+    ----------
+    active_slice_x : float, optional
+        World-space X coordinate of the visible slice plane; a negative
+        value disables X-axis slicing.
+    active_slice_y : float, optional
+        World-space Y coordinate of the visible slice plane; a negative
+        value disables Y-axis slicing.
+    active_slice_z : float, optional
+        World-space Z coordinate of the visible slice plane; a negative
+        value disables Z-axis slicing.
+    vis_x : int, optional
+        Nonzero to enable X-axis slice visibility, zero to hide it.
+    vis_y : int, optional
+        Nonzero to enable Y-axis slice visibility, zero to hide it.
+    vis_z : int, optional
+        Nonzero to enable Z-axis slice visibility, zero to hide it.
+    **kwargs
+        Forwarded to :class:`fury.material.SphGlyphMaterial`.
+    """
 
     uniform_type = dict(
         SphGlyphMaterial.uniform_type,
@@ -182,6 +203,28 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
         vis_z=1,
         **kwargs,
     ):
+        """Initialize the sliced SH glyph material.
+
+        Parameters
+        ----------
+        active_slice_x : float, optional
+            World-space X coordinate of the visible slice plane; a negative
+            value disables X-axis slicing.
+        active_slice_y : float, optional
+            World-space Y coordinate of the visible slice plane; a negative
+            value disables Y-axis slicing.
+        active_slice_z : float, optional
+            World-space Z coordinate of the visible slice plane; a negative
+            value disables Z-axis slicing.
+        vis_x : int, optional
+            Nonzero to enable X-axis slice visibility, zero to hide it.
+        vis_y : int, optional
+            Nonzero to enable Y-axis slice visibility, zero to hide it.
+        vis_z : int, optional
+            Nonzero to enable Z-axis slice visibility, zero to hide it.
+        **kwargs
+            Forwarded to :class:`fury.material.SphGlyphMaterial`.
+        """
         super().__init__(**kwargs)
         self.active_slice_x = active_slice_x
         self.active_slice_y = active_slice_y
@@ -192,6 +235,23 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
 
 
 def _make_uniform_property(name, cast):
+    """Build a property that reads and writes one GPU uniform buffer field.
+
+    Parameters
+    ----------
+    name : str
+        Field name in the material's ``uniform_buffer``.
+    cast : callable
+        Applied to values on both read and write (e.g. ``float``, ``int``).
+
+    Returns
+    -------
+    property
+        Descriptor whose getter casts and returns the buffer field, and
+        whose setter casts the value, writes it back, and marks the
+        uniform buffer fully dirty via ``update_full``.
+    """
+
     def getter(self):
         return cast(self.uniform_buffer.data[name])
 
@@ -219,12 +279,31 @@ class SphGlyphBillboard(Billboard):
 
     @property
     def l_max(self):
-        """int: Maximum SH order currently shaded (-1 if never set)."""
+        """Maximum SH order currently shaded.
+
+        Returns
+        -------
+        int
+            Current SH truncation order, or -1 if never set.
+        """
         return getattr(self, "_l_max", -1)
 
     @l_max.setter
     def l_max(self, value):
-        """Truncate shading to ``value``; raises if it exceeds the coefficients."""
+        """Truncate shading to the given SH order.
+
+        Parameters
+        ----------
+        value : int
+            New SH truncation order; must be a non-negative integer that
+            does not exceed the order supported by the current coefficients.
+
+        Raises
+        ------
+        ValueError
+            If ``value`` is not a non-negative integer, or exceeds the SH
+            order supported by the number of coefficients on this billboard.
+        """
         if not isinstance(value, int) or value < 0:
             raise ValueError("The attribute 'l_max' must be a non-negative integer.")
         max_supported = get_lmax(
@@ -242,7 +321,7 @@ class SphGlyphBillboard(Billboard):
 
 
 class BillboardSphGlyphShader(MeshShader):
-    """pygfx shader: template variables and bindings for the ODF billboard pipeline.
+    """Pygfx shader: template variables and bindings for the ODF billboard pipeline.
 
     Reads flags/dimensions off ``wobject`` (the :class:`SphGlyphBillboard`
     actor) at construction time and exposes them as WGSL template variables
@@ -256,6 +335,13 @@ class BillboardSphGlyphShader(MeshShader):
     """
 
     def __init__(self, wobject):
+        """Initialize the shader from the billboard's current state.
+
+        Parameters
+        ----------
+        wobject : SphGlyphBillboard
+            Billboard object rendered by this shader.
+        """
         super().__init__(wobject)
         self._wobject = wobject
         self["billboard_count"] = getattr(wobject, "billboard_count", 1)
@@ -278,11 +364,18 @@ class BillboardSphGlyphShader(MeshShader):
         self["use_slicing"] = "true" if use_slicing else "false"
 
     def get_render_info(self, wobject, shared):
-        """Instance/vertex counts pygfx needs to issue the draw call.
+        """Compute the instance/vertex counts pygfx needs to issue the draw call.
 
         Falls back to computing them from the geometry's vertex buffer
         when the base ``MeshShader`` doesn't already provide indices
         (e.g. before the geometry has been fully wired up).
+
+        Parameters
+        ----------
+        wobject : SphGlyphBillboard
+            Billboard object being rendered.
+        shared : fury.lib.Shared
+            Pygfx object holding the shared device and pipeline caches.
 
         Returns
         -------
@@ -310,6 +403,16 @@ class BillboardSphGlyphShader(MeshShader):
         out with a shared dummy ``vec4<f32>`` buffer when ``wobject``
         has fewer chunks than that (or hasn't baked a LUT at all), since
         WGSL bindings must all be declared even when unused.
+
+        Parameters
+        ----------
+        wobject : SphGlyphBillboard
+            Billboard object being rendered.
+        shared : fury.lib.Shared
+            Pygfx object holding the shared device and pipeline caches.
+        scene : fury.lib.Scene or None, optional
+            Scene the billboard belongs to; forwarded to the base
+            ``MeshShader`` implementation when it accepts it.
 
         Returns
         -------
@@ -372,7 +475,14 @@ class BillboardSphGlyphShader(MeshShader):
         return bindings
 
     def get_code(self):
-        """Return the (still-templated) WGSL source for this shader."""
+        """Return the (still-templated) WGSL source for this shader.
+
+        Returns
+        -------
+        str
+            WGSL source of ``sh_billboard.wgsl``, with template variables
+            such as ``{{ n_coeffs }}`` not yet substituted.
+        """
         return load_dipy_wgsl("sh_billboard.wgsl")
 
 
@@ -392,6 +502,31 @@ def _create_billboard_actor(
     single value, repeats each glyph's data across its 6 quad vertices,
     and stores ``billboard_count``/``billboard_centers``/``billboard_sizes``
     on the returned actor for later use (LUT baking, picking, resizing).
+
+    Parameters
+    ----------
+    centers : ndarray (N, 3) or (3,)
+        World-space glyph centers.
+    colors : ndarray (N, 3) or (3,)
+        Per-glyph RGB color, broadcast to every glyph when a single color.
+    sizes : ndarray or scalar
+        Per-glyph 2D quad half-extents; a scalar or a length-2/length-N
+        array is broadcast to shape ``(N, 2)``.
+    opacity : float or None
+        Scalar opacity forwarded to :func:`fury.material.validate_opacity`.
+    enable_picking : bool
+        Whether the material is created with picking writes enabled.
+    material_cls : type
+        Fury material class used to construct the billboard's material.
+    material_kwargs : dict or None, optional
+        Extra keyword arguments forwarded to ``material_cls``.
+
+    Returns
+    -------
+    SphGlyphBillboard
+        Billboard actor with geometry, material, and billboard bookkeeping
+        attributes (``billboard_count``, ``billboard_centers``,
+        ``billboard_sizes``) set.
     """
     centers = np.asarray(centers, dtype=np.float32)
     if centers.ndim == 1:
@@ -458,6 +593,27 @@ def _populate_hermite_lut_cube_cpu_chunked(
     finite-difference of the raw values to get (value, du, dv, d2uv),
     and writes the result into ``actor``'s already-allocated Hermite LUT
     chunk buffers.
+
+    Parameters
+    ----------
+    actor : SphGlyphBillboard
+        Billboard with populated ``sh_coeffs`` and allocated
+        ``_sh_hermite_lut_buffers``.
+    lut_res : int
+        Cube-map resolution per face edge.
+    glyph_count : int
+        Total number of glyphs baked across all chunks.
+    n_coeffs : int
+        Number of SH coefficients per glyph.
+    chunk_info : dict
+        Chunking plan from :func:`_calculate_lut_chunking`.
+    use_float16 : bool, optional
+        Store the baked LUT values with reduced precision when True.
+
+    Returns
+    -------
+    bool
+        Always True, indicating the bake completed.
     """
     N = lut_res
     g = 1
@@ -565,6 +721,27 @@ def _populate_hermite_lut_cube_gpu(
     (value, du, dv, d²uv) into the output hermite LUT buffer.
 
     Runs imperatively via ``wgpu`` — no pygfx render-function needed.
+
+    Parameters
+    ----------
+    actor : SphGlyphBillboard
+        Billboard with populated ``sh_coeffs`` and allocated
+        ``_sh_hermite_lut_buffers``.
+    lut_res : int
+        Cube-map resolution per face edge.
+    glyph_count : int
+        Total number of glyphs baked across all chunks.
+    n_coeffs : int
+        Number of SH coefficients per glyph.
+    chunk_info : dict
+        Chunking plan from :func:`_calculate_lut_chunking`.
+    use_float16 : bool, optional
+        Store the baked LUT values with reduced precision when True.
+
+    Returns
+    -------
+    bool
+        Always True, indicating the bake completed.
     """
 
     N = lut_res
@@ -991,7 +1168,18 @@ def sph_glyph_billboard_sliced(
 
 @register_wgpu_render_function(SphGlyphBillboard, SlicedSphGlyphMaterial)
 def _register_sliced_sph_glyph_render(wobject):
-    """Return the shader pair used for sliced SH billboards."""
+    """Return the shader used for sliced SH billboard rendering.
+
+    Parameters
+    ----------
+    wobject : SphGlyphBillboard
+        Billboard object pygfx is about to render.
+
+    Returns
+    -------
+    tuple of BillboardSphGlyphShader
+        Single-element tuple containing the shader instance to use.
+    """
 
     return (BillboardSphGlyphShader(wobject),)
 
