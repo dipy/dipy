@@ -642,7 +642,7 @@ class Skyline:
         for func, args, kwargs in pending:
             try:
                 func(*args, **kwargs)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.exception(
                     "Failed to apply deferred scene operation %s: %s",
                     getattr(func, "__qualname__", repr(func)),
@@ -813,7 +813,7 @@ class Skyline:
 
         Raises
         ------
-        ValueError
+        TypeError
             If ``viz`` is not an instance of a supported visualization type.
         """
         viz_id = f"{viz.path}:{viz.name}"
@@ -835,7 +835,7 @@ class Skyline:
         elif isinstance(viz, SHGlyph3D):
             self._sh_glyph_visualizations.append(viz)
         else:
-            raise ValueError("Unsupported visualization type")
+            raise TypeError("Unsupported visualization type")
         viz._scene_op_callback = self.enqueue_scene_op
         if self.UI_window is not None:
             self.UI_window.add(viz_id, viz.renderer, viz_type=viz.viz_type)
@@ -1058,7 +1058,7 @@ class Skyline:
 
         Raises
         ------
-        ValueError
+        TypeError
             If ``viz`` is not an instance of a supported visualization type.
         """
         if isinstance(viz, Image3D):
@@ -1074,7 +1074,7 @@ class Skyline:
         elif isinstance(viz, SHGlyph3D):
             self._sh_glyph_visualizations.remove(viz)
         else:
-            raise ValueError("Unsupported visualization type")
+            raise TypeError("Unsupported visualization type")
 
         if viz is self._slice_focus_viz:
             self._slice_focus_viz = None

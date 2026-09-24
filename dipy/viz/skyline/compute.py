@@ -36,7 +36,7 @@ def run_async(func, callback, *args, **kwargs):
         exception = None
         try:
             result = func(*args, **kwargs)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             exception = e
         finally:
             # We do NOT execute the callback here!

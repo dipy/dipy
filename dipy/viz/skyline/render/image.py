@@ -576,7 +576,7 @@ class Image3D(Visualization):
         render_data = render_group("Slice", slicers)
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
-                slider_state[idx] = int(round(new))
+                slider_state[idx] = round(new)
                 self.state = slice_state_from_slider_values(
                     slider_state, affine=self.affine
                 )

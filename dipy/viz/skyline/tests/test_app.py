@@ -310,7 +310,7 @@ def test_load_visualizations_warns_on_empty_tractograms(image_skyline, caplog):
 
 
 def test_remove_visualization_rejects_unknown_types(image_skyline):
-    with pytest.raises(ValueError, match="Unsupported visualization type"):
+    with pytest.raises(TypeError, match="Unsupported visualization type"):
         image_skyline._remove_visualization(object())
 
 

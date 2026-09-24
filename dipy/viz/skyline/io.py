@@ -195,6 +195,6 @@ def load_npy(fname):
     try:
         data = np.load(fname)
         return data
-    except Exception as e:
+    except (OSError, ValueError, EOFError) as e:
         logger.error(f"Error loading numpy file '{fname}': {e}")
         return None

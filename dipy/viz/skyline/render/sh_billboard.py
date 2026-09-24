@@ -83,7 +83,7 @@ def _get_gpu_max_buffer_size():
         max_size = limits.get("max-storage-buffer-binding-size", 128 * 1024 * 1024)
         _gpu_cache["max_buffer_size"] = max_size
         return max_size
-    except Exception:
+    except Exception:  # noqa: BLE001
         default = 128 * 1024 * 1024
         _gpu_cache["max_buffer_size"] = default
         return default
@@ -182,7 +182,7 @@ class SlicedSphGlyphMaterial(SphGlyphMaterial):
         Forwarded to :class:`fury.material.SphGlyphMaterial`.
     """
 
-    uniform_type = dict(
+    uniform_type = dict(  # noqa: RUF012
         SphGlyphMaterial.uniform_type,
         active_slice_x="f4",
         active_slice_y="f4",
@@ -928,9 +928,9 @@ def _populate_hermite_lut_cube_gpu(
         # wg_y = ceil(total_wg / 65535), wg_x = min(total_wg, 65535)
         wg_size = 256
         total_p1 = int(chunk_glyphs) * items_per_glyph_p1
-        p1_total_wg = int(ceil(total_p1 / wg_size))
+        p1_total_wg = ceil(total_p1 / wg_size)
         p1_x = min(p1_total_wg, 65535)
-        p1_y = int(ceil(p1_total_wg / 65535))
+        p1_y = ceil(p1_total_wg / 65535)
 
         encoder = device.create_command_encoder()
         cpass = encoder.begin_compute_pass()
@@ -941,9 +941,9 @@ def _populate_hermite_lut_cube_gpu(
 
         # --- dispatch pass 2 (finite-difference hermite) ---
         total_p2 = int(chunk_glyphs) * items_per_glyph_p2
-        p2_total_wg = int(ceil(total_p2 / wg_size))
+        p2_total_wg = ceil(total_p2 / wg_size)
         p2_x = min(p2_total_wg, 65535)
-        p2_y = int(ceil(p2_total_wg / 65535))
+        p2_y = ceil(p2_total_wg / 65535)
 
         cpass2 = encoder.begin_compute_pass()
         cpass2.set_pipeline(pass2_pipeline)
@@ -1033,7 +1033,7 @@ def bake_hermite_lut(actor, *, lut_res=8, force_rebake=False, use_float16=False)
             chunk_info,
             use_float16=use_float16,
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.debug("GPU LUT bake failed, falling back to CPU: %s", exc)
         success = _populate_hermite_lut_cube_cpu_chunked(
             actor,

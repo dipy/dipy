@@ -187,12 +187,11 @@ def render_file_dialog(
             elif type == "buan_pvals":
                 callback(selected_files)
         _set_last_dir(selected_files[0])
-    if not dialog.result() and dialog.kill():
-        if callback is not None:
-            if type == "buan_pvals":
-                callback(None)
-            else:
-                callback(filenames=None, rois=None, shm_coeffs=None)
+    if not dialog.result() and dialog.kill() and callback is not None:
+        if type == "buan_pvals":
+            callback(None)
+        else:
+            callback(filenames=None, rois=None, shm_coeffs=None)
 
 
 def _calculate_hit_box(pos, size, *, padding=4):
@@ -858,20 +857,20 @@ def create_numeric_input(
                 "Value converted to int for integer input."
                 " Please provide value_type as 'float' if float is intended."
             )
-        current = int(round(value))
-        step_amount = max(1, int(round(step)))
+        current = round(value)
+        step_amount = max(1, round(step))
     else:
         current = float(value)
         step_amount = float(step) if step > 0 else 1.0
 
     def _coerce_numeric(val):
         if value_type == "int":
-            return int(round(val))
+            return round(val)
         return float(val)
 
     def _format_display(val):
         if value_type == "int":
-            return str(int(round(val)))
+            return str(round(val))
         try:
             if "%" in format:
                 return format % float(val)
@@ -1142,10 +1141,12 @@ def segmented_switch(label, options, value, *, width=0, height=28):
             imgui.Col_.text, selected_text if is_selected else inactive_text
         )
 
-        if imgui.button(options[idx], (button_width, button_height)):
-            if option != current_value:
-                changed = True
-                new_value = option
+        if (
+            imgui.button(options[idx], (button_width, button_height))
+            and option != current_value
+        ):
+            changed = True
+            new_value = option
 
         imgui.pop_style_color(1)
 
@@ -1402,7 +1403,7 @@ def thin_slider(
 
     def convert_value(val):
         if value_type == "int":
-            rounded = int(round(val))
+            rounded = round(val)
             lower = math.ceil(min_numeric)
             upper = math.floor(max_numeric)
             return max(int(lower), min(int(upper), rounded))
@@ -1580,7 +1581,7 @@ def two_disk_slider(
 
     def convert_value(val):
         if value_type == "int":
-            rounded = int(round(val))
+            rounded = round(val)
             lower = math.ceil(min_numeric)
             upper = math.floor(max_numeric)
             return max(int(lower), min(int(upper), rounded))
@@ -1671,7 +1672,7 @@ def two_disk_slider(
 
     thumb_color = imgui.get_color_u32(SLIDER_THEME["thumb_color"])
     shadow_color = imgui.get_color_u32(SLIDER_THEME["shadow_color"])
-    mouse_x, mouse_y = imgui.get_mouse_pos()
+    mouse_x, _ = imgui.get_mouse_pos()
     left_hovered = hovered and (abs(mouse_x - left_x) <= thumb_radius * 1.4)
     right_hovered = hovered and (abs(mouse_x - right_x) <= thumb_radius * 1.4)
 
