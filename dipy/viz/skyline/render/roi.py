@@ -5,7 +5,7 @@ import numpy as np
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import color_picker, colors_equal, thin_slider
-from dipy.viz.skyline.render.renderer import Visualization
+from dipy.viz.skyline.render.renderer import Visualization, format_affine_info
 
 fury_trip_msg = (
     "Skyline requires Fury version 2.0.0 or higher."
@@ -175,10 +175,7 @@ class ROI3D(Visualization):
         info = f"ROI shape: {self.roi.shape}\nROI dtype: {self.roi.dtype}\n"
         info += f"Total voxels in ROI: {np.sum(self.roi > 0)}\n"
         if self.affine is not None:
-            affine_str = np.array2string(
-                np.round(self.affine, 2), separator=" ", prefix=""
-            )
-            info += f"Affine:\n{affine_str}\n"
+            info += format_affine_info(self.affine) + "\n"
         return info
 
     @property

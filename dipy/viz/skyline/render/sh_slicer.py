@@ -22,6 +22,7 @@ from dipy.viz.skyline.UI.elements import (
 from dipy.viz.skyline.render.renderer import (
     Visualization,
     affine_voxel_sizes,
+    format_affine_info,
     slice_slider_bounds,
     slice_slider_values_from_state,
     slice_state_from_slider_values,
@@ -455,11 +456,15 @@ class SHGlyph3D(Visualization):
         Returns
         -------
         str
-            Dimensions, SH coefficient count, and SH order, one per line.
+            Dimensions, SH coefficient count and order, plus voxel sizes,
+            voxel order, and affine when an affine is available.
         """
         info = f"Dimensions: {self.shape}"
         info += f"\nSH Coefficients: {self._slicer.n_coeffs}"
         info += f"\nSH Order: {self._slicer.l_max}"
+        if self.affine is not None:
+            info += "\n" + format_affine_info(self.affine)
+
         return info
 
     def _voxel_from_world_state(self, world_state):

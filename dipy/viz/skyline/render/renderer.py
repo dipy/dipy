@@ -5,6 +5,7 @@ import sys
 
 import numpy as np
 
+from dipy.core.gradients import get_orientation_from_affine
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import render_section_header
@@ -50,6 +51,30 @@ def affine_voxel_sizes(affine):
         Per-axis voxel sizes from the affine columns.
     """
     return np.linalg.norm(np.asarray(affine)[:3, :3], axis=0)
+
+
+def format_affine_info(affine):
+    """Build the shared "voxel sizes + order + affine" block for info panels.
+
+    Parameters
+    ----------
+    affine : array_like
+        Voxel-to-world affine.
+
+    Returns
+    -------
+    str
+        "Voxel Sizes: <sizes>\\nVoxel Order: <code>\\nAffine:\\n<matrix>".
+    """
+    affine = np.asarray(affine)
+    voxel_sizes = affine_voxel_sizes(affine)
+    voxel_order = get_orientation_from_affine(affine)
+    affine_str = np.array2string(np.round(affine, 2), separator=" ", prefix="")
+    return (
+        f"Voxel Sizes: {np.round(voxel_sizes, 1)}\n"
+        f"Voxel Order: {voxel_order}\n"
+        f"Affine:\n{affine_str}"
+    )
 
 
 def slice_slider_bounds(shape, *, affine=None):

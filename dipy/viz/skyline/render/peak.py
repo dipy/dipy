@@ -11,6 +11,7 @@ from dipy.viz.skyline.UI.elements import (
 )
 from dipy.viz.skyline.render.renderer import (
     Visualization,
+    format_affine_info,
     slice_slider_bounds,
     slice_slider_values_from_state,
     slice_state_from_slider_values,
@@ -188,10 +189,7 @@ class Peak3D(Visualization):
         info = f"Peaks shape: {self.peaks.shape}\n"
         info += f"Peaks dtype: {self.peaks.dtype}\n"
         if self.affine is not None:
-            affine_str = np.array2string(
-                np.round(self.affine, 2), separator=" ", prefix=""
-            )
-            info += f"Affine:\n{affine_str}\n"
+            info += format_affine_info(self.affine) + "\n"
         return info
 
     @property
