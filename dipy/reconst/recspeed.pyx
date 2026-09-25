@@ -464,6 +464,187 @@ cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+cdef cnp.npy_intp _fmls_afd_voxel(
+    double[::1] odf,
+    cnp.npy_intp[::1] order,
+    double[::1] weights,
+    cnp.npy_intp[::1] adj_indptr,
+    cnp.npy_intp[::1] adj_indices,
+    double peak_threshold,
+    double integral_threshold,
+    cnp.npy_intp[::1] labels,
+    double[::1] peaks,
+    double[::1] integrals,
+    double[::1] afd,
+) noexcept nogil:
+    """Segment one FOD with FMLS and write the integral of each lobe.
+
+    Returns the number of lobes written to `afd`, or -1 if `order` holds an
+    index out of range.
+    """
+    cdef:
+        cnp.npy_intp n_dirs = odf.shape[0]
+        cnp.npy_intp n_lobes = 0
+        cnp.npy_intp n_out = 0
+        cnp.npy_intp i, j, idx, lobe, adj_lobe
+        bint shared
+        double value
+
+    if n_dirs == 0:
+        return 0
+    for i in range(n_dirs):
+        if order[i] < 0 or order[i] >= n_dirs:
+            return -1
+
+    # MRtrix3 discards the voxel when the amplitude of largest magnitude is
+    # not positive.
+    value = odf[order[0]]
+    if not value > 0 or -odf[order[n_dirs - 1]] > value:
+        return 0
+
+    for i in range(n_dirs):
+        labels[i] = -1
+
+    for i in range(n_dirs):
+        idx = order[i]
+        value = odf[idx]
+        if not value > 0:
+            break
+        lobe = -1
+        shared = False
+        for j in range(adj_indptr[idx], adj_indptr[idx + 1]):
+            adj_lobe = labels[adj_indices[j]]
+            if adj_lobe < 0 or adj_lobe == lobe:
+                continue
+            if lobe < 0:
+                lobe = adj_lobe
+            else:
+                shared = True
+                if adj_lobe < lobe:
+                    lobe = adj_lobe
+        if lobe < 0:
+            lobe = n_lobes
+            n_lobes += 1
+            peaks[lobe] = value
+            integrals[lobe] = 0
+            labels[idx] = lobe
+        elif not shared:
+            labels[idx] = lobe
+        integrals[lobe] += fabs(value * weights[idx])
+
+    # Lobes were created in descending order of peak amplitude.
+    for lobe in range(n_lobes):
+        if n_out == afd.shape[0]:
+            break
+        if integrals[lobe] >= integral_threshold and peaks[lobe] >= peak_threshold:
+            afd[n_out] = integrals[lobe]
+            n_out += 1
+    return n_out
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def fmls_afd(
+    double[:, ::1] odf,
+    cnp.npy_intp[:, ::1] order,
+    double[::1] weights,
+    cnp.npy_intp[::1] adj_indptr,
+    cnp.npy_intp[::1] adj_indices,
+    cnp.npy_intp npeaks,
+    double peak_threshold,
+    double integral_threshold,
+):
+    """Apparent fiber density of the FOD lobes found by FMLS segmentation.
+
+    Each FOD is segmented into lobes with the Fast Marching Level Set (FMLS)
+    algorithm :footcite:p:`Smith2013` as implemented in MRtrix3's
+    ``fod2fixel`` with its default settings, i.e. lobes are never merged. The
+    apparent fiber density (AFD) of a lobe is its integral
+    :footcite:p:`Raffelt2012`.
+
+    Parameters
+    ----------
+    odf : ndarray (N, M), dtype=double
+        FOD amplitudes of N voxels sampled on M directions.
+    order : ndarray (N, M), dtype=intp
+        Indices sorting each row of `odf` in descending order.
+    weights : ndarray (M,), dtype=double
+        Quadrature weights integrating a function sampled on the M directions.
+    adj_indptr : ndarray (M + 1,), dtype=intp
+        Offsets of each direction's neighbors in `adj_indices`.
+    adj_indices : ndarray, dtype=intp
+        Neighbor indices of every direction (see `adj_indptr`).
+    npeaks : int
+        Maximum number of lobes returned per voxel.
+    peak_threshold : double
+        Lobes whose maximum amplitude is below this value are discarded.
+    integral_threshold : double
+        Lobes whose integral is below this value are discarded.
+
+    Returns
+    -------
+    afd : ndarray (N, npeaks)
+        AFD of each lobe, sorted by descending peak amplitude. Missing lobes
+        are set to 0.
+
+    References
+    ----------
+    .. footbibliography::
+    """
+    cdef:
+        cnp.npy_intp n_vox = odf.shape[0]
+        cnp.npy_intp n_dirs = odf.shape[1]
+        cnp.npy_intp v
+        cnp.npy_intp n_out = 0
+        cnp.npy_intp[::1] labels
+        double[::1] peaks
+        double[::1] integrals
+        double[:, ::1] afd
+
+    if order.shape[0] != n_vox or order.shape[1] != n_dirs:
+        raise ValueError("order must have the same shape as odf")
+    if weights.shape[0] != n_dirs:
+        raise ValueError("weights must have one value per direction")
+    if adj_indptr.shape[0] != n_dirs + 1:
+        raise ValueError("adj_indptr must have one more entry than directions")
+    if npeaks < 0:
+        raise ValueError("npeaks must be non-negative")
+    adj_indptr_arr = np.asarray(adj_indptr)
+    adj_indices_arr = np.asarray(adj_indices)
+    if (
+        adj_indptr_arr[0] != 0
+        or adj_indptr_arr[n_dirs] != adj_indices.shape[0]
+        or np.any(np.diff(adj_indptr_arr) < 0)
+    ):
+        raise ValueError("adj_indptr must be non-decreasing from 0 to "
+                         "len(adj_indices)")
+    if adj_indices.shape[0] and (
+        adj_indices_arr.min() < 0 or adj_indices_arr.max() >= n_dirs
+    ):
+        raise IndexError("Values in adj_indices must be < number of directions")
+
+    labels = np.empty(n_dirs, dtype=np.intp)
+    peaks = np.empty(n_dirs, dtype=float)
+    integrals = np.empty(n_dirs, dtype=float)
+    afd = np.zeros((n_vox, npeaks), dtype=float)
+
+    with nogil:
+        for v in range(n_vox):
+            n_out = _fmls_afd_voxel(
+                odf[v], order[v], weights, adj_indptr, adj_indices,
+                peak_threshold, integral_threshold, labels, peaks, integrals,
+                afd[v]
+            )
+            if n_out < 0:
+                break
+
+    if n_out < 0:
+        raise IndexError("Values in order must be < number of directions")
+    return np.asarray(afd)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def le_to_odf(
     cnp.ndarray[double, ndim=1] odf,
     cnp.ndarray[double, ndim=1] LEs,

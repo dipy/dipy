@@ -293,6 +293,17 @@ if interactive:
 # CSD Peaks and ODFs.
 #
 #
+# The apparent fiber density (AFD) :footcite:p:`Raffelt2012` can be extracted
+# directly from the fit. As in MRtrix3's ``fod2fixel -afd``, each FOD is
+# segmented into lobes :footcite:p:`Smith2013` and the AFD of a lobe is the
+# integral of the FOD over that lobe. The lobes are sorted by descending peak
+# amplitude and missing lobes are set to zero.
+
+csd_afd = csd_fit.afd(npeaks=5)
+print("AFD of the lobes in the central voxel:", csd_afd[15, 15, 0])
+
+###############################################################################
+#
 # References
 # ----------
 #
