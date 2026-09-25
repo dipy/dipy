@@ -107,6 +107,29 @@ def test_image3d_state_starts_at_the_volume_center():
     assert len(image.actor.children) == 3
 
 
+def test_image3d_changing_direction_keeps_the_slice_position():
+    data = _volume((6, 7, 8, 5))
+    image = Image3D("dwi.nii.gz", data, affine=AFFINE)
+    moved = np.asarray(image.bounds[0], dtype=float) + 1
+
+    image.update_state(np.asarray([*moved, 3]))
+
+    assert image._volume_idx == 3
+    npt.assert_allclose(image.state, moved)
+
+
+def test_image3d_rebuilding_the_slicer_keeps_the_slice_position():
+    data = _volume((6, 7, 8, 5))
+    image = Image3D("dwi.nii.gz", data, affine=AFFINE)
+    moved = np.asarray(image.bounds[0], dtype=float) + 1
+    image.update_state(moved)
+
+    image._volume_idx = 2
+    image._create_slicer_actor()
+
+    npt.assert_allclose(image.state, moved)
+
+
 def test_image3d_active_volume_is_the_whole_volume_for_3d_data():
     image = _image()
 
