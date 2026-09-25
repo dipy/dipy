@@ -29,7 +29,7 @@ from dipy.io.peaks import (
     tensor_to_pam,
 )
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.io.utils import split_filename_extension
+from dipy.io.utils import has_rgb_dtype, split_filename_extension, unpack_rgb_array
 from dipy.reconst.shm import convert_sh_descoteaux_tournier, order_from_ncoef
 from dipy.reconst.utils import convert_tensors
 from dipy.tracking.streamlinespeed import length
@@ -222,6 +222,9 @@ def _print_volumetric_information(data, affine, vox_sz, affcodes, alignment_spac
     _print_property_information(
         VolumetricPropertyName.DATA_TYPE.value, data.dtype, alignment_space
     )
+
+    if has_rgb_dtype(data):
+        data = unpack_rgb_array(data)
 
     if data.ndim == 3:
         _print_voxel_information("Data", data, alignment_space, tab)
@@ -668,8 +671,8 @@ class IoInfoFlow(Workflow):
             extension = extension.lower()
 
             if extension in [".nii", ".nii.gz"]:
-                data, affine, img, vox_sz, affcodes = load_nifti(
-                    input_path, return_img=True, return_voxsize=True, return_coords=True
+                data, affine, vox_sz, affcodes = load_nifti(
+                    input_path, return_voxsize=True, return_coords=True
                 )
                 apply_tab_offset = bool(
                     max(
