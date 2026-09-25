@@ -884,6 +884,40 @@ def test_MK_singularities():
         assert_almost_equal(MK_an, MK_nm, decimal=3)
 
 
+def test_dki_nls_cholesky_with_noise():
+    """Test Cholesky NLS on a noisy DKI signal."""
+    if not have_cvxpy:
+        return
+
+    mevals = mevals_cross
+
+    signal_clean, dt_gt, kt_gt = multi_tensor_dki(
+        gtab_2s,
+        mevals,
+        S0=S0,
+        angles=angles_cross,
+        fractions=frac_cross,
+        snr=None,
+    )
+
+    rng = np.random.default_rng(20260923)
+    noisy_signal = np.maximum(
+        signal_clean + rng.normal(0.0, S0 / 50.0, signal_clean.shape),
+        MIN_POSITIVE_SIGNAL,
+    )
+
+    model = dki.DiffusionKurtosisModel(
+        gtab_2s, fit_method="NLS", cholesky=True, jac=False
+    )
+    fit = model.fit(noisy_signal)
+
+    evals_gt, _ = decompose_tensor(from_lower_triangular(dt_gt))
+
+    assert np.all(np.isfinite(fit.model_params))
+    assert np.all(fit.evals > 0)
+    assert np.linalg.norm(fit.evals - evals_gt) < 5e-4
+
+
 def test_dki_errors():
     # first error of DKI module is if a unknown fit method is given
     assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_2s, fit_method="JOANA")
