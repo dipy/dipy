@@ -34,12 +34,14 @@ def create_roi_visualization(
     color=(1, 0, 0),
     render_callback=None,
 ):
-    """Create ROI visualization from input
+    """Create an ROI3D visualization from already-loaded ROI data.
 
     Parameters
     ----------
     input : tuple
-        Tuple of the (roi, affine, filename) or (roi, affine)
+        Tuple of ``(roi, affine, filename)`` or ``(roi, affine)`` holding an
+        already-loaded binary ROI mask array and its affine, with an
+        optional filename.
     idx : int
         Index of the ROI for naming purposes if filename is not provided.
     opacity : int, optional
@@ -53,6 +55,11 @@ def create_roi_visualization(
     -------
     ROI3D
         The created ROI3D object.
+
+    Raises
+    ------
+    ValueError
+        If the input is not a tuple of length 2 or 3.
     """
     if not isinstance(input, tuple) or len(input) not in (2, 3):
         raise ValueError(
@@ -77,22 +84,30 @@ def create_roi_visualization(
 
 
 class ROI3D(Visualization):
-    """Represent ``ROI3D`` in Skyline.
+    """A binary ROI mask rendered as a translucent contour surface.
+
+    Only the first volume along the last axis is used when ``roi`` is 4D.
 
     Parameters
     ----------
     name : str
         Display name used in the Skyline UI.
     roi : ndarray
-        ROI mask array used to build a contour surface.
+        Binary ROI mask array used to build the contour surface.
     affine : ndarray, optional
-        Voxel-to-world affine used to position slices in world coordinates.
+        Voxel-to-world affine used to position the contour in world
+        coordinates.
     opacity : int, optional
-        Slice opacity in percent, expected in ``[0, 100]``.
+        Contour opacity in percent, expected in ``[0, 100]``.
     color : tuple(float, float, float), optional
-        Value for ``color``.
+        RGB color of the contour surface, in ``[0, 1]``.
     render_callback : callable, optional
         Callback used to request a render/update.
+
+    Raises
+    ------
+    ValueError
+        If ``roi`` is ``None`` or not an ``ndarray``.
     """
 
     def __init__(
@@ -105,22 +120,28 @@ class ROI3D(Visualization):
         color=(1, 0, 0),
         render_callback=None,
     ):
-        """Represent ``ROI3D`` in Skyline.
+        """Initialize the ROI contour visualization.
 
         Parameters
         ----------
         name : str
             Display name used in the Skyline UI.
         roi : ndarray
-            ROI mask array used to build a contour surface.
+            Binary ROI mask array used to build the contour surface.
         affine : ndarray, optional
-            Voxel-to-world affine used to position slices in world coordinates.
+            Voxel-to-world affine used to position the contour in world
+            coordinates.
         opacity : int, optional
-            Slice opacity in percent, expected in ``[0, 100]``.
+            Contour opacity in percent, expected in ``[0, 100]``.
         color : tuple(float, float, float), optional
-            Value for ``color``.
+            RGB color of the contour surface, in ``[0, 1]``.
         render_callback : callable, optional
             Callback used to request a render/update.
+
+        Raises
+        ------
+        ValueError
+            If ``roi`` is ``None`` or not an ``ndarray``.
         """
         self.roi = roi
         if self.roi is None:
@@ -143,7 +164,12 @@ class ROI3D(Visualization):
         super().__init__(name, render_callback)
 
     def _create_roi_actor(self):
-        """Handle  create roi actor for ``ROI3D``."""
+        """Create the translucent contour actor for the ROI mask.
+
+        Builds the contour with ``fury.actor.contour_from_roi``, sets the
+        alpha blend mode, and disables depth writing when opacity is below
+        100%.
+        """
         self._roi_surface = contour_from_roi(
             self.roi, affine=self.affine, color=self.color, opacity=self.opacity / 100.0
         )
@@ -153,24 +179,28 @@ class ROI3D(Visualization):
                 actor.material.depth_write = False
 
     def _set_opacity(self, opacity):
-        """Handle  set opacity for ``ROI3D``.
+        """Set the contour opacity and toggle depth writing.
+
+        Sets the group opacity to ``opacity / 100`` and disables depth
+        writing below 100% opacity.
 
         Parameters
         ----------
-        opacity : int, optional
-            Slice opacity in percent, expected in ``[0, 100]``.
+        opacity : int
+            Contour opacity in percent, expected in ``[0, 100]``.
         """
         set_group_opacity(self._roi_surface, opacity / 100.0)
         for actor in self._roi_surface.children:
             actor.material.depth_write = opacity >= 100
 
     def _populate_info(self):
-        """Handle  populate info for ``ROI3D``.
+        """Build the informational text describing the ROI mask.
 
         Returns
         -------
         str
-            The information of the ROI visualization.
+            Multi-line text with the ROI shape, dtype, voxel count, and
+            affine information (if available).
         """
         info = f"ROI shape: {self.roi.shape}\nROI dtype: {self.roi.dtype}\n"
         info += f"Total voxels in ROI: {np.sum(self.roi > 0)}\n"
@@ -180,7 +210,7 @@ class ROI3D(Visualization):
 
     @property
     def actor(self):
-        """Handle actor for ``ROI3D``.
+        """The contour actor rendering the ROI mask.
 
         Returns
         -------
@@ -190,7 +220,11 @@ class ROI3D(Visualization):
         return self._roi_surface
 
     def render_widgets(self):
-        """Handle render widgets for ``ROI3D``."""
+        """Draw the ImGui controls for contour opacity and color.
+
+        Renders an opacity slider and a color picker; committing a new
+        color rebuilds the contour actor via :meth:`_create_roi_actor`.
+        """
         changed, new = thin_slider(
             "Opacity",
             self.opacity,

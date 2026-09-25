@@ -187,12 +187,11 @@ def render_file_dialog(
             elif type == "buan_pvals":
                 callback(selected_files)
         _set_last_dir(selected_files[0])
-    if not dialog.result() and dialog.kill():
-        if callback is not None:
-            if type == "buan_pvals":
-                callback(None)
-            else:
-                callback(filenames=None, rois=None, shm_coeffs=None)
+    if not dialog.result() and dialog.kill() and callback is not None:
+        if type == "buan_pvals":
+            callback(None)
+        else:
+            callback(filenames=None, rois=None, shm_coeffs=None)
 
 
 def _calculate_hit_box(pos, size, *, padding=4):
@@ -288,7 +287,6 @@ def loading(title, message, show):
         Status line shown under the spinner.
     show : bool
         When False the modal is closed on the next draw.
-    None
     """
     text_width = imgui.calc_text_size(message).x
     spinner_radius = 16.0
@@ -334,7 +332,6 @@ def warning_message(message):
     ----------
     message : str
         Warning to display on the current ImGui line.
-    None
     """
     warning_icon = icons_fontawesome_6.ICON_FA_TRIANGLE_EXCLAMATION
     imgui.text_colored(THEME["primary"], warning_icon)
@@ -407,13 +404,13 @@ def downloader(label, callback, *, extension="*.*", type="viz", file_name="save.
         File extension for the saved file.
     type : str, optional
         Type of file being downloaded, used to determine callback behavior.
-         - "viz": Visualization files (default)
-         - "roi": Region of Interest files
-         - "shm_coeff": Spherical Harmonics Coefficients files
-         - "buan_colors": BUAN color mapping files
+
+        - "viz": Visualization files
+        - "roi": Region of Interest files
+        - "shm_coeff": Spherical Harmonics Coefficients files
+        - "buan_colors": BUAN color mapping files
     file_name : str, optional
-        Default file name suggested in the save dialog.
-    None
+        File name suggested in the save dialog.
     """
     download_icon = icons_fontawesome_6.ICON_FA_DOWNLOAD
     imgui.text_colored(THEME["text"], f"{download_icon} {label}")
@@ -453,15 +450,15 @@ def uploader(
         File extension filter for the file dialog.
     multiselect : bool, optional
         Whether to allow selecting multiple files.
-    selected : bool or string, optional
+    selected : bool or str, optional
         Whether the uploader is in a selected state, affecting its appearance.
     type : str, optional
         Type of file being uploaded, used to determine callback behavior.
-         - "viz": Visualization files (default)
-         - "roi": Region of Interest files
-         - "shm_coeff": Spherical Harmonics Coefficients files
-         - "buan_colors": BUAN color mapping files
-    None
+
+        - "viz": Visualization files
+        - "roi": Region of Interest files
+        - "shm_coeff": Spherical Harmonics Coefficients files
+        - "buan_colors": BUAN color mapping files
     """
 
     upload_icon = icons_fontawesome_6.ICON_FA_UPLOAD
@@ -551,9 +548,9 @@ def render_section_header(
         Additional info text shown in a tooltip when hovering the header. If not
         provided, no tooltip is shown.
     show_close : bool, optional
-        Whether to show the close/remove button. Default is True.
+        Whether to show the close/remove button.
     show_info : bool, optional
-        Whether to show the info button. Default is True.
+        Whether to show the info button.
 
     Returns
     -------
@@ -860,20 +857,20 @@ def create_numeric_input(
                 "Value converted to int for integer input."
                 " Please provide value_type as 'float' if float is intended."
             )
-        current = int(round(value))
-        step_amount = max(1, int(round(step)))
+        current = round(value)
+        step_amount = max(1, round(step))
     else:
         current = float(value)
         step_amount = float(step) if step > 0 else 1.0
 
     def _coerce_numeric(val):
         if value_type == "int":
-            return int(round(val))
+            return round(val)
         return float(val)
 
     def _format_display(val):
         if value_type == "int":
-            return str(int(round(val)))
+            return str(round(val))
         try:
             if "%" in format:
                 return format % float(val)
@@ -1144,10 +1141,12 @@ def segmented_switch(label, options, value, *, width=0, height=28):
             imgui.Col_.text, selected_text if is_selected else inactive_text
         )
 
-        if imgui.button(options[idx], (button_width, button_height)):
-            if option != current_value:
-                changed = True
-                new_value = option
+        if (
+            imgui.button(options[idx], (button_width, button_height))
+            and option != current_value
+        ):
+            changed = True
+            new_value = option
 
         imgui.pop_style_color(1)
 
@@ -1404,7 +1403,7 @@ def thin_slider(
 
     def convert_value(val):
         if value_type == "int":
-            rounded = int(round(val))
+            rounded = round(val)
             lower = math.ceil(min_numeric)
             upper = math.floor(max_numeric)
             return max(int(lower), min(int(upper), rounded))
@@ -1582,7 +1581,7 @@ def two_disk_slider(
 
     def convert_value(val):
         if value_type == "int":
-            rounded = int(round(val))
+            rounded = round(val)
             lower = math.ceil(min_numeric)
             upper = math.floor(max_numeric)
             return max(int(lower), min(int(upper), rounded))
@@ -1673,7 +1672,7 @@ def two_disk_slider(
 
     thumb_color = imgui.get_color_u32(SLIDER_THEME["thumb_color"])
     shadow_color = imgui.get_color_u32(SLIDER_THEME["shadow_color"])
-    mouse_x, mouse_y = imgui.get_mouse_pos()
+    mouse_x, _ = imgui.get_mouse_pos()
     left_hovered = hovered and (abs(mouse_x - left_x) <= thumb_radius * 1.4)
     right_hovered = hovered and (abs(mouse_x - right_x) <= thumb_radius * 1.4)
 

@@ -60,12 +60,13 @@ def create_image_visualization(
     colormap="Gray",
     sync_callabck=None,
 ):
-    """Create image visualization from input
+    """Create an Image3D visualization from already-loaded image data.
 
     Parameters
     ----------
     input : tuple
-        Tuple of the (data, affine, filename) or (data, affine)
+        Tuple of ``(data, affine, filename)`` or ``(data, affine)`` holding
+        an already-loaded image volume, its affine, and an optional filename.
     idx : int
         Index of the image for naming purposes when filename is not provided.
     interpolation : str, optional
@@ -125,32 +126,36 @@ def create_image_visualization(
 
 
 class Image3D(Visualization):
-    """Represent ``Image3D`` in Skyline.
+    """A NIfTI-backed volume slicer with linked opacity and colormap controls.
+
+    Renders orthogonal image slices with ``fury.actor.volume_slicer`` and
+    exposes opacity, slice position, intensity range, colormap, and (for
+    non-RGB 4D data) directional-volume controls through ``render_widgets``.
 
     Parameters
     ----------
     name : str
         Display name used in the Skyline UI.
-    volume : np.ndarray
+    volume : ndarray
         Input image volume with shape ``(X, Y, Z)`` or ``(X, Y, Z, N)``.
-    affine : np.ndarray
+    affine : ndarray, optional
         Voxel-to-world affine used to position slices in world coordinates.
-    interpolation : str
+    interpolation : str, optional
         Slice interpolation mode (``"linear"`` or ``"nearest"``).
-    render_callback : callable
+    render_callback : callable, optional
         Callback used to request a render/update.
-    opacity : int
+    opacity : int, optional
         Slice opacity in percent, expected in ``[0, 100]``.
-    rgb : bool or None
-        ``None``: auto-detect from structured NIfTI ``DT_RGB24`` dtype;
-        show toggle for other 4D volumes with 3 or 4 channels.
+    rgb : bool or None, optional
+        ``None``: auto-detect from structured NIfTI ``DT_RGB24``
+        dtype; show toggle for other 4D volumes with 3 or 4 channels.
         ``True``: force RGB mode.  ``False``: never treat as RGB.
         Colormap and directional-volume controls are ignored when RGB.
-    value_percentiles : tuple
+    value_percentiles : tuple(float, float), optional
         Low/high percentiles used to compute scalar intensity limits.
-    colormap : str
+    colormap : str, optional
         Colormap used for scalar volumes; ignored when ``rgb`` is True.
-    sync_callabck : callable
+    sync_callabck : callable, optional
         Callback used to synchronize state across views.
     """
 
@@ -168,7 +173,7 @@ class Image3D(Visualization):
         colormap="Gray",
         sync_callabck=None,
     ):
-        """Represent ``Image3D`` in Skyline.
+        """Initialize the volume slicer visualization.
 
         Parameters
         ----------
@@ -248,7 +253,7 @@ class Image3D(Visualization):
         self.opacity = opacity
 
     def _pick_voxel(self, event):
-        """Handle  pick voxel for ``Image3D``.
+        """Record the picked voxel index and intensity from a pointer event.
 
         Parameters
         ----------
@@ -261,7 +266,12 @@ class Image3D(Visualization):
         self._picked_intensity = self.active_volume[voxel]
 
     def _create_slicer_actor(self):
-        """Handle  create slicer actor for ``Image3D``."""
+        """Create the volume-slicer actor for the active volume.
+
+        Builds a new ``volume_slicer`` for :attr:`active_volume`, applies the
+        current colormap, recomputes the bounds and slice state, attaches the
+        voxel-pick handler, shows the initial slices, and requests a render.
+        """
         volume = self.active_volume
         self._slicer = volume_slicer(
             volume,
@@ -279,7 +289,7 @@ class Image3D(Visualization):
         self.render()
 
     def _is_divergent_colormap(self):
-        """Handle  whether active colormap is divergent for ``Image3D``.
+        """Return whether the active colormap is the divergent colormap.
 
         Returns
         -------
@@ -289,7 +299,7 @@ class Image3D(Visualization):
         return self.colormap.lower() == "divergent"
 
     def _is_distinct_colormap(self):
-        """Handle  whether active colormap is distinct for ``Image3D``.
+        """Return whether the active colormap is the distinct colormap.
 
         Returns
         -------
@@ -299,7 +309,7 @@ class Image3D(Visualization):
         return self.colormap.lower() == "distinct"
 
     def _value_range_from_percentile(self, volume):
-        """Handle  value range from percentile for ``Image3D``.
+        """Compute the scalar intensity range of ``volume`` from percentiles.
 
         Parameters
         ----------
@@ -308,20 +318,29 @@ class Image3D(Visualization):
 
         Returns
         -------
-        tuple(float, float)
-            The value range of the image visualization.
+        vmin : float
+            Intensity value at the lower percentile in :attr:`_value_percentiles`.
+        vmax : float
+            Intensity value at the upper percentile in :attr:`_value_percentiles`.
         """
         p_low, p_high = self._value_percentiles
         vmin, vmax = np.percentile(volume, (p_low, p_high))
         return vmin, vmax
 
     def _apply_colormap(self, colormap):
-        """Handle  apply colormap for ``Image3D``.
+        """Apply ``colormap`` to the slicer actor and update the intensity range.
+
+        Recomputes :attr:`value_range` from the active volume, then assigns
+        the colormap to every slice actor's material. ``"Gray"`` uses the raw
+        scalar clim; ``"Divergent"`` maps a signed range centered on zero and
+        switches interpolation to nearest-neighbor; ``"Distinct"`` assigns a
+        discrete per-label colormap and also switches interpolation to
+        nearest-neighbor; any other name is looked up on ``fury.lib.gfx.cm``.
 
         Parameters
         ----------
-        colormap : str, optional
-            Colormap used for scalar volumes; ignored when ``rgb`` is True.
+        colormap : str
+            Name of the colormap to apply.
         """
         self.colormap = colormap
         self.value_range = self._value_range_from_percentile(self.active_volume)
@@ -357,7 +376,7 @@ class Image3D(Visualization):
 
     @property
     def actor(self):
-        """Handle actor for ``Image3D``.
+        """The volume-slicer actor rendering the current slices.
 
         Returns
         -------
@@ -368,22 +387,24 @@ class Image3D(Visualization):
 
     @property
     def active_volume(self):
-        """Handle active volume for ``Image3D``.
+        """The 3D volume currently used for slicing and display.
 
         Returns
         -------
-        np.ndarray
-            The active volume of the image visualization.
+        ndarray
+            ``dwi[..., volume_idx]`` when the source data has a fourth
+            (directional) axis and RGB mode is disabled, otherwise ``dwi``.
         """
         return self.dwi[..., self._volume_idx] if self._has_directions else self.dwi
 
     def _populate_info(self):
-        """Handle  populate info for ``Image3D``.
+        """Build the informational text describing the loaded volume.
 
         Returns
         -------
         str
-            The information of the image visualization.
+            Multi-line text with volume dimensions, direction count (if
+            any), data type, and affine information (if available).
         """
         np.set_printoptions(suppress=True, precision=2)
         info = f"Dimensions: {self.dwi.shape[:3]}"
@@ -397,12 +418,18 @@ class Image3D(Visualization):
         return info
 
     def update_state(self, new_state):
-        """Handle update state for ``Image3D``.
+        """Synchronize slice positions and volume index from another view.
+
+        Only applies when :attr:`_synchronize` is enabled. Updates the
+        displayed slices to ``new_state[:3]``; if a fourth value is present
+        and the volume has that many directions, also switches the active
+        directional volume, rebuilding the slicer actor.
 
         Parameters
         ----------
         new_state : array-like
-            New synchronized state for this visualization.
+            New synchronized state as ``(x, y, z)`` or
+            ``(x, y, z, volume_idx)``.
         """
         if self._synchronize:
             self.state = new_state[:3]
@@ -418,11 +445,15 @@ class Image3D(Visualization):
                     self.apply_scene_op(self._create_slicer_actor)
 
     def _set_opacity(self, opacity):
-        """Handle  set opacity for ``Image3D``.
+        """Set the slice opacity and toggle depth-write and blend mode.
+
+        Below 100% opacity, depth writes are disabled and the alpha mode
+        switches to ``"blend"``; at 100% opacity, depth writes are
+        re-enabled and the mode switches back to ``"bayer"``.
 
         Parameters
         ----------
-        opacity : int, optional
+        opacity : int
             Slice opacity in percent, expected in ``[0, 100]``.
         """
         set_group_opacity(self._slicer, opacity / 100.0)
@@ -436,7 +467,9 @@ class Image3D(Visualization):
                 actor.material.alpha_mode = "bayer"
 
     def _set_slice_state(self, visibility, state):
-        """Handle  set slice state for ``Image3D``.
+        """Update per-axis slice visibility and slice positions.
+
+        No-op if the slicer actor has not been created yet.
 
         Parameters
         ----------
@@ -451,7 +484,9 @@ class Image3D(Visualization):
         show_slices(self._slicer, state)
 
     def _set_clim(self, value_range):
-        """Handle  set clim for ``Image3D``.
+        """Set the scalar display range on every slice actor's material.
+
+        No-op if the slicer actor has not been created yet.
 
         Parameters
         ----------
@@ -464,11 +499,13 @@ class Image3D(Visualization):
             actor.material.clim = value_range
 
     def _set_interpolation(self, interpolation):
-        """Handle  set interpolation for ``Image3D``.
+        """Set the slice interpolation mode on every slice actor's material.
+
+        No-op if the slicer actor has not been created yet.
 
         Parameters
         ----------
-        interpolation : str, optional
+        interpolation : str
             Slice interpolation mode (``"linear"`` or ``"nearest"``).
         """
 
@@ -479,7 +516,16 @@ class Image3D(Visualization):
         self.interpolation = interpolation
 
     def render_widgets(self):
-        """Handle render widgets for ``Image3D``."""
+        """Draw the ImGui controls for opacity, slices, colormap, and voxel info.
+
+        Renders toggles for slice synchronization and RGB mode, an opacity
+        slider, per-axis slice position sliders, an intensity percentile
+        slider, a directional-volume slider (for non-RGB 4D data), a
+        colormap dropdown, picked voxel/intensity text, and an interpolation
+        switch. Committed changes queue scene updates via
+        :meth:`apply_scene_op` and, when synchronization is enabled, forward
+        the new state through ``sync_callabck``.
+        """
         changed, new = toggle_button(self._synchronize, label="Synchronize Slices")
         if changed:
             self._synchronize = new
@@ -530,7 +576,7 @@ class Image3D(Visualization):
         render_data = render_group("Slice", slicers)
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
-                slider_state[idx] = int(round(new))
+                slider_state[idx] = round(new)
                 self.state = slice_state_from_slider_values(
                     slider_state, affine=self.affine
                 )

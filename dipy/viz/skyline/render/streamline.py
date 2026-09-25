@@ -195,12 +195,13 @@ def create_streamline_visualization(
     buan_pvals_file=None,
     async_clustering=True,
 ):
-    """Create streamline visualization from input
+    """Create a Streamline3D or ClusterStreamline3D from a loaded tractogram.
 
     Parameters
     ----------
     input : tuple
-        Tuple of the (sft, filename) or (sft,)
+        Tuple of ``(sft, filename)`` or ``(sft,)``, where ``sft`` is a
+        StatefulTractogram.
     idx : int
         Index of the tractogram for naming purposes.
     is_cluster : bool, optional
@@ -215,12 +216,10 @@ def create_streamline_visualization(
         Callback function to be called after rendering.
     colormap : colormap, optional
         Colormap for clustering.
-    tract_colors : variable float or str, optional
-        Define the colors of the tractograms. Colors can be defined with
-        3 values and should be between [0-1].
-        String options are 'random' for random colors for each tractogram,
-        'direction'  for directionally colored streamlines.
-        For example, a value of (1, 0, 0) would mean the red color.
+    tract_colors : str or tuple of float or None, optional
+        ``"random"`` picks the next color from ``colormap``; ``"direction"``
+        or a 3- or 4-value tuple in ``[0, 1]`` is used as-is; any other
+        string raises ``ValueError``. If None, ``color`` is used unchanged.
     switch_render_callback : callable, optional
         Callback function to switch rendering type, used for cluster visualization.
     loader : callable, optional
@@ -237,8 +236,16 @@ def create_streamline_visualization(
 
     Returns
     -------
-    Visualization
-        The created streamline visualization object.
+    Streamline3D or ClusterStreamline3D
+        The created streamline visualization; a ClusterStreamline3D when
+        ``is_cluster`` is True, otherwise a Streamline3D.
+
+    Raises
+    ------
+    ValueError
+        If ``input`` is not a 1- or 2-element tuple, or if ``tract_colors``
+        is a string other than ``"random"``/``"direction"`` and is not a
+        3- or 4-value tuple.
     """
     if not isinstance(input, tuple) or len(input) not in (1, 2):
         raise ValueError(
@@ -305,8 +312,10 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="Line", segments=4):
 
     Returns
     -------
-    Actor
-        Fury actor (line or tube container) ready to parent under a ``Group``.
+    Actor or None
+        Fury actor (line or tube container) ready to parent under a
+        ``Group``, or None when ``line_type`` is neither ``"Line"`` nor
+        ``"Tube"``.
     """
     if isinstance(color, str) and color == "direction" and lines:
         color = line_colors(lines)
@@ -345,26 +354,26 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="Line", segments=4):
 
 
 class Streamline3D(Visualization):
-    """Represent ``Streamline3D`` in Skyline.
+    """Non-clustered tractography layer rendered as a single line or tube actor.
 
     Parameters
     ----------
     name : str
         Display name used in the Skyline UI.
     sft : StatefulTractogram
-        Value for ``sft``.
+        Tractogram whose streamlines are rendered.
     line_type : str, optional
-        Value for ``line type``.
+        The type of line to render ("Line" or "Tube").
     color : tuple(float, float, float), optional
-        Value for ``color``.
+        RGB color of the streamlines in ``[0, 1]``.
     render_callback : callable, optional
         Callback used to request a render/update.
     switch_render_callback : callable, optional
-        Value for ``switch render callback``.
+        Callback invoked to switch to the clustered rendering mode.
     buan_pvals_file : str, optional
-        Value for ``buan pvals file``.
+        File path to BUAN p-values used to color the streamlines on creation.
     loader : callable, optional
-        Value for ``loader``.
+        Callback function to show/hide loader during asynchronous operations.
     """
 
     def __init__(
@@ -379,26 +388,26 @@ class Streamline3D(Visualization):
         buan_pvals_file=None,
         loader=None,
     ):
-        """Represent ``Streamline3D`` in Skyline.
+        """Initialize the non-clustered tractography layer.
 
         Parameters
         ----------
         name : str
             Display name used in the Skyline UI.
         sft : StatefulTractogram
-            Value for ``sft``.
+            Tractogram whose streamlines are rendered.
         line_type : str, optional
-            Value for ``line type``.
+            The type of line to render ("Line" or "Tube").
         color : tuple(float, float, float), optional
-            Value for ``color``.
+            RGB color of the streamlines in ``[0, 1]``.
         render_callback : callable, optional
             Callback used to request a render/update.
         switch_render_callback : callable, optional
-            Value for ``switch render callback``.
+            Callback invoked to switch to the clustered rendering mode.
         buan_pvals_file : str, optional
-            Value for ``buan pvals file``.
+            File path to BUAN p-values used to color the streamlines on creation.
         loader : callable, optional
-            Value for ``loader``.
+            Callback function to show/hide loader during asynchronous operations.
         """
         self.sft = sft
         self.color = color
@@ -427,7 +436,7 @@ class Streamline3D(Visualization):
             self.handle_color_change(buan_pvals_file)
 
     def _create_streamline_actor(self):
-        """Handle  create streamline actor for ``Streamline3D``."""
+        """Build and store the Fury line or tube actor for the streamlines."""
         self._actor = create_streamline(
             lines=self.sft.streamlines,
             color=self.color,
@@ -436,22 +445,22 @@ class Streamline3D(Visualization):
 
     @property
     def actor(self):
-        """Handle actor for ``Streamline3D``.
+        """Return the Fury line or tube actor rendering the streamlines.
 
         Returns
         -------
-        Line
-            Returned value.
+        Actor
+            The line or tube actor built by :func:`create_streamline`.
         """
         return self._actor
 
     def _populate_info(self):
-        """Handle  populate info for ``Streamline3D``.
+        """Build the streamline count and length summary shown in the UI.
 
         Returns
         -------
         str
-            The information of the Streamline3D visualization.
+            Multi-line text with the streamline count and min/max length.
         """
         np.set_printoptions(precision=2, suppress=True)
         info = f"Number of streamlines: {len(self.sft.streamlines)}\n"
@@ -461,12 +470,13 @@ class Streamline3D(Visualization):
         return info
 
     def handle_color_change(self, fname):
-        """Handle handle color change for ``Streamline3D``.
+        """Recolor the streamlines from a BUAN p-values file and re-render.
 
         Parameters
         ----------
-        fname : str
-            Value for ``fname``.
+        fname : list of str or None
+            Selected file path(s) from the uploader; only ``fname[0]`` is
+            used. If None, the color is left unchanged.
         """
         if fname is not None:
             self._buan_pvals_file = Path(fname[0]).name
@@ -482,7 +492,7 @@ class Streamline3D(Visualization):
             self.render()
 
     def _update_buan_colors_on_sliders(self):
-        """Handle  update buan colors on sliders for ``Streamline3D``."""
+        """Recompute BUAN colors from the current hue/saturation/value sliders."""
         self.color, self._buan_color_idx = apply_buan_colors(
             self.sft.streamlines,
             self._buan_pvals_data,
@@ -495,7 +505,7 @@ class Streamline3D(Visualization):
         self.render()
 
     def render_widgets(self):
-        """Handle render widgets for ``Streamline3D``."""
+        """Draw the line-type, color, and BUAN coloring controls for this layer."""
         if self._apply_line_change_next_frame:
             self._apply_line_change_next_frame = False
             self.apply_scene_op(self._create_streamline_actor)
@@ -633,30 +643,38 @@ class Streamline3D(Visualization):
 
 
 class ClusterStreamline3D(Visualization):
-    """Represent ``ClusterStreamline3D`` in Skyline.
+    """Clustered tractography layer that groups streamlines with QuickBundlesX.
+
+    Renders one centroid tube per cluster; clusters can be expanded to show
+    their member streamlines, selected, hidden, and filtered by size or
+    length. Clustering runs in a background thread unless
+    ``async_clustering`` is False.
 
     Parameters
     ----------
     name : str
         Display name used in the Skyline UI.
     sft : StatefulTractogram
-        Value for ``sft``.
-    thr : float, optional
-        Value for ``thr``.
+        Tractogram whose streamlines are clustered.
+    thr : float
+        Initial clustering distance threshold, in mm.
     line_type : str, optional
-        Value for ``line type``.
+        The type of line to render ("Line" or "Tube") for expanded clusters.
     render_callback : callable, optional
         Callback used to request a render/update.
     switch_render_callback : callable, optional
-        Value for ``switch render callback``.
+        Callback invoked to switch back to the non-clustered rendering mode.
     loader : callable, optional
-        Value for ``loader``.
+        Callback function to show/hide loader during asynchronous operations.
     size_threshold : int, optional
-        Value for ``size threshold``.
+        Minimum number of streamlines in a cluster to be visible. If None,
+        it is set to 10.
     length_threshold : float, optional
-        Value for ``length threshold``.
+        Minimum length of streamlines in a cluster to be visible. If None,
+        it is set to 20.0.
     async_clustering : bool, optional
-        Value for ``async clustering``.
+        Whether to perform clustering asynchronously. Set to False to block
+        until clustering completes (used in stealth mode).
     """
 
     def __init__(
@@ -673,30 +691,36 @@ class ClusterStreamline3D(Visualization):
         length_threshold=None,
         async_clustering=True,
     ):
-        """Represent ``ClusterStreamline3D`` in Skyline.
+        """Initialize the clustered tractography layer.
 
         Parameters
         ----------
         name : str
             Display name used in the Skyline UI.
         sft : StatefulTractogram
-            Value for ``sft``.
-        thr : float, optional
-            Value for ``thr``.
+            Tractogram whose streamlines are clustered.
+        thr : float
+            Initial clustering distance threshold, in mm.
         line_type : str, optional
-            Value for ``line type``.
+            The type of line to render ("Line" or "Tube") for expanded
+            clusters.
         render_callback : callable, optional
             Callback used to request a render/update.
         switch_render_callback : callable, optional
-            Value for ``switch render callback``.
+            Callback invoked to switch back to the non-clustered rendering
+            mode.
         loader : callable, optional
-            Value for ``loader``.
+            Callback function to show/hide loader during asynchronous
+            operations.
         size_threshold : int, optional
-            Value for ``size threshold``.
+            Minimum number of streamlines in a cluster to be visible. If
+            None, it is set to 10.
         length_threshold : float, optional
-            Value for ``length threshold``.
+            Minimum length of streamlines in a cluster to be visible. If
+            None, it is set to 20.0.
         async_clustering : bool, optional
-            Value for ``async clustering``.
+            Whether to perform clustering asynchronously. Set to False to
+            block until clustering completes (used in stealth mode).
         """
         self.sft = sft
         self.thr = thr
@@ -720,7 +744,12 @@ class ClusterStreamline3D(Visualization):
         self._perform_clustering()
 
     def _perform_clustering(self):
-        """Handle  perform clustering for ``ClusterStreamline3D``."""
+        """Recompute clusters for the current threshold, sync or async.
+
+        Coalesces overlapping requests: if clustering is already running,
+        the call is queued and re-run once the in-flight clustering
+        finishes.
+        """
         if self._is_clustering:
             self._queued_recluster = True
             return
@@ -742,17 +771,27 @@ class ClusterStreamline3D(Visualization):
         )
 
     def _compute_clustering_data(self, thr):
-        """Handle  compute clustering data for ``ClusterStreamline3D``.
+        """Cluster the streamlines with QuickBundlesX at the given threshold.
 
         Parameters
         ----------
-        thr : float, optional
-            Value for ``thr``.
+        thr : float
+            Final clustering distance threshold, in mm, passed to
+            :func:`~dipy.segment.clustering.qbx_and_merge` as the last of
+            the thresholds ``[40, 30, 25, 20, thr]``.
 
         Returns
         -------
-        tuple
-            Returned value.
+        clusters : ClusterMapCentroid
+            Cluster map returned by ``qbx_and_merge``.
+        lengths : ndarray
+            Centroid streamline length for each cluster.
+        sizes : ndarray
+            Number of streamlines in each cluster.
+        colormap : list
+            Per-cluster RGB color from ``distinguishable_colormap``.
+        line_widths : ndarray
+            Per-cluster centroid tube radius interpolated from ``sizes``.
         """
         clusters = qbx_and_merge(self.sft.streamlines, [40, 30, 25, 20, thr])
         lengths = np.asarray([streamline_length(c) for c in clusters.centroids])
@@ -765,14 +804,21 @@ class ClusterStreamline3D(Visualization):
         return clusters, lengths, sizes, colormap, line_widths
 
     def _apply_clustering_result(self, result, exception):
-        """Handle  apply clustering result for ``ClusterStreamline3D``.
+        """Rebuild cluster actors from ``_compute_clustering_data``'s result.
+
+        Follows the :func:`~dipy.viz.skyline.compute.run_async` callback
+        contract: called on the main thread with the return value of the
+        clustered function and any exception it raised.
 
         Parameters
         ----------
         result : tuple
-            Clustering outputs ``(clusters, lengths, sizes, colormap, line_widths)``.
+            Clustering outputs ``(clusters, lengths, sizes, colormap,
+            line_widths)`` from :meth:`_compute_clustering_data`.
         exception : Exception or None
-            Value for ``exception``.
+            Exception raised while clustering, if any. When set, the
+            previous cluster actors are left unchanged and the error is
+            logged.
         """
         self._is_clustering = False
 
@@ -822,9 +868,7 @@ class ClusterStreamline3D(Visualization):
             self._loader(False)
 
     def _refresh_cluster_visibility(self):
-        """Handle  refresh cluster visibility for ``ClusterStreamline3D``.
-        None
-        """
+        """Show or hide each cluster actor based on the size/length filters."""
         for centroid_rep, state in self._cluster_state.items():
             is_visible = state["size"] >= self.size and state["length"] >= self.length
             if state["expanded"] and state["cluster_actor"] is not None:
@@ -834,17 +878,19 @@ class ClusterStreamline3D(Visualization):
 
     # Interaction methods
     def _create_cluster_streamlines(self, centroid_rep):
-        """Handle  create cluster streamlines for ``ClusterStreamline3D``.
+        """Build the expanded line/tube actor for one cluster's streamlines.
 
         Parameters
         ----------
-        centroid_rep : str
-            Value for ``centroid rep``.
+        centroid_rep : Actor
+            Centroid tube actor keying the cluster in ``_cluster_state``.
 
         Returns
         -------
-        object
-            Returned value.
+        centroid_rep : Actor
+            The same centroid actor passed in.
+        streamline_actor : Actor
+            The line or tube actor for the cluster's member streamlines.
         """
         state = self._cluster_state[centroid_rep]
         cluster_idx = state["cluster"]
@@ -859,13 +905,12 @@ class ClusterStreamline3D(Visualization):
         return centroid_rep, streamline_actor
 
     def _selected_unexpanded_clusters(self):
-        """Handle  selected unexpanded clusters for ``ClusterStreamline3D``.
-        None
+        """Return the centroid actors that are selected but not expanded.
 
         Returns
         -------
-        object
-            Returned value.
+        list of Actor
+            Centroid actors satisfying both conditions.
         """
         return [
             centroid_rep
@@ -874,9 +919,7 @@ class ClusterStreamline3D(Visualization):
         ]
 
     def _expand_clusters(self):
-        """Handle  expand clusters for ``ClusterStreamline3D``.
-        None
-        """
+        """Replace each selected, unexpanded centroid with its streamlines."""
         selected_clusters = self._selected_unexpanded_clusters()
         if not selected_clusters:
             return
@@ -890,9 +933,7 @@ class ClusterStreamline3D(Visualization):
             state["expanded"] = True
 
     def _collapse_clusters(self):
-        """Handle  collapse clusters for ``ClusterStreamline3D``.
-        None
-        """
+        """Replace each selected, expanded cluster's streamlines with its centroid."""
         for centroid_rep, state in self._cluster_state.items():
             if state["selected"] and state["expanded"]:
                 self._actor.add(centroid_rep)
@@ -903,28 +944,24 @@ class ClusterStreamline3D(Visualization):
                 state["expanded"] = False
 
     def _select_all_clusters(self):
-        """Handle  select all clusters for ``ClusterStreamline3D``.
-        None
-        """
+        """Mark every cluster as selected."""
         for centroid_rep in self._cluster_state:
             self._update_cluster_state(centroid_rep, True)
 
     def _deselect_all_clusters(self):
-        """Handle  deselect all clusters for ``ClusterStreamline3D``.
-        None
-        """
+        """Mark every cluster as not selected."""
         for centroid_rep in self._cluster_state:
             self._update_cluster_state(centroid_rep, False)
 
     def _update_cluster_state(self, centroid_rep, selected):
-        """Handle  update cluster state for ``ClusterStreamline3D``.
+        """Set a cluster's selected flag and update its centroid opacity.
 
         Parameters
         ----------
-        centroid_rep : str
-            Value for ``centroid rep``.
+        centroid_rep : Actor
+            Centroid tube actor keying the cluster in ``_cluster_state``.
         selected : bool
-            Value for ``selected``.
+            Whether the cluster should be marked as selected.
         """
         state = self._cluster_state[centroid_rep]
         state["selected"] = selected
@@ -934,12 +971,12 @@ class ClusterStreamline3D(Visualization):
             centroid_rep.material.opacity = 0.5
 
     def _toggle_cluster_selection(self, cluster):
-        """Handle  toggle cluster selection for ``ClusterStreamline3D``.
+        """Flip a cluster's selected flag in response to a pointer-down event.
 
         Parameters
         ----------
-        cluster : ClusterCentroid
-            Value for ``cluster``.
+        cluster : Actor
+            Centroid tube actor that was clicked.
         """
         self.apply_scene_op(
             self._update_cluster_state,
@@ -948,29 +985,23 @@ class ClusterStreamline3D(Visualization):
         )
 
     def _hide_deselected_clusters(self):
-        """Handle  hide deselected clusters for ``ClusterStreamline3D``.
-        None
-        """
+        """Hide the centroid actor of every cluster that is not selected."""
         for centroid_rep, state in self._cluster_state.items():
             if not state["selected"]:
                 centroid_rep.visible = False
 
     def _show_all_clusters(self):
-        """Handle  show all clusters for ``ClusterStreamline3D``.
-        None
-        """
+        """Make every centroid actor visible, ignoring the size/length filters."""
         for centroid_rep in self._cluster_state:
             centroid_rep.visible = True
 
     def _show_all_clusters_and_refresh(self):
-        """Handle  show all clusters and refresh for ``ClusterStreamline3D``.
-        None
-        """
+        """Show every cluster, then reapply the size/length visibility filters."""
         self._show_all_clusters()
         self._refresh_cluster_visibility()
 
     def _apply_cluster_line_type_change(self):
-        """Handle  apply cluster line type change for ``ClusterStreamline3D``."""
+        """Rebuild every expanded cluster's actor with the current line type."""
         for centroid_rep, state in self._cluster_state.items():
             if state["expanded"]:
                 _, new_actor = self._create_cluster_streamlines(centroid_rep)
@@ -979,12 +1010,13 @@ class ClusterStreamline3D(Visualization):
                 state["cluster_actor"] = new_actor
 
     def _populate_info(self):
-        """Handle  populate info for ``ClusterStreamline3D``.
+        """Build the streamline/cluster count and size/length summary.
 
         Returns
         -------
         str
-            The information of the ClusterStreamline3D visualization.
+            Multi-line text with the streamline count, cluster count, and
+            min/max cluster size and length.
         """
         np.set_printoptions(precision=2, suppress=True)
         info = f"Total streamlines: {len(self.sft.streamlines)}\n"
@@ -1006,12 +1038,13 @@ class ClusterStreamline3D(Visualization):
         return info
 
     def compute_visible_tractogram(self):
-        """Handle compute visible tractogram for ``ClusterStreamline3D``.
+        """Build a tractogram containing the streamlines of selected clusters.
 
         Returns
         -------
         StatefulTractogram
-            The visible tractogram of the ClusterStreamline3D visualization.
+            Tractogram with the streamlines from every cluster whose
+            ``selected`` state is True, in the same space as ``sft``.
         """
         visible_streamlines = []
         for state in self._cluster_state.values():
@@ -1022,16 +1055,20 @@ class ClusterStreamline3D(Visualization):
         return StatefulTractogram.from_sft(visible_streamlines, self.sft)
 
     def save_tractogram(self, filenames, *, rois=None, shm_coeffs=None):
-        """Handle save tractogram for ``ClusterStreamline3D``.
+        """Save the selected clusters' streamlines to a file.
+
+        Matches the shared download-callback signature used across Skyline
+        visualizations; ``rois`` and ``shm_coeffs`` are accepted but unused.
 
         Parameters
         ----------
-        filenames : list, optional
-            Value for ``filenames``.
-        rois : list, optional
-            Value for ``rois``.
-        shm_coeffs : list, optional
-            Value for ``shm coeffs``.
+        filenames : list of str
+            Selected save path(s) from the file dialog; only the first
+            entry is used.
+        rois : list of str or None, optional
+            Unused by this visualization.
+        shm_coeffs : list of str or None, optional
+            Unused by this visualization.
         """
         if filenames:
             if isinstance(filenames, (list, tuple)):
@@ -1040,7 +1077,11 @@ class ClusterStreamline3D(Visualization):
             save_tractogram(visible_sft, filenames, bbox_valid_check=False)
 
     def handle_key_events(self, event):
-        """Handle handle key events for ``ClusterStreamline3D``.
+        """Expand, collapse, select, deselect, hide, or show clusters by key.
+
+        Recognizes ``"e"`` (expand), ``"c"`` (collapse), ``"a"`` (select
+        all), ``"d"`` (deselect all), ``"h"`` (hide deselected), and
+        ``"s"`` (show all) on ``event.key``.
 
         Parameters
         ----------
@@ -1062,17 +1103,18 @@ class ClusterStreamline3D(Visualization):
 
     @property
     def actor(self):
-        """Handle actor for ``ClusterStreamline3D``.
+        """Return the group containing every centroid and cluster actor.
 
         Returns
         -------
-        Group or Line
-            The actor of the ClusterStreamline3D visualization.
+        Group
+            Container actor holding one child per cluster (a centroid tube,
+            or its expanded streamline actor).
         """
         return self._actor
 
     def render_widgets(self):
-        """Handle render widgets for ``ClusterStreamline3D``."""
+        """Draw the line-type, threshold, size/length, and download controls."""
         changed, is_clustered = toggle_button(True, label="Cluster")
         if changed and self._switch_render_callback is not None:
             self._switch_render_callback(self, is_clustered)

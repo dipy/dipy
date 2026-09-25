@@ -1,4 +1,8 @@
-"""Application entry points and main ``Skyline`` viewer class."""
+"""Skyline viewer application entry points.
+
+Expose the ``Skyline`` class and the ``skyline``/``skyline_from_files``
+functions used to construct and launch the FURY-based multi-modal viewer.
+"""
 
 import os
 import time
@@ -45,56 +49,95 @@ else:
 
 
 class Skyline:
-    """Represent ``Skyline`` in Skyline.
+    """The Skyline viewer, hosting the FURY scene, UI, and visualizations.
 
     Parameters
     ----------
-    visualizer_type : str, optional
-        Value for ``visualizer type``.
-    images : list, optional
-        Value for ``images``.
-    peaks : ndarray
-        Value for ``peaks``.
-    rois : list, optional
-        Value for ``rois``.
-    surfaces : list, optional
-        Value for ``surfaces``.
-    tractograms : list, optional
-        Value for ``tractograms``.
-    sh_coeffs : list, optional
-        Value for ``sh coeffs``.
+    visualizer_type : {"standalone", "gui", "jupyter", "stealth"}, optional
+        Kind of window to create. The options map to FURY window types via
+        ``create_window``:
+
+        - "standalone": a default interactive window.
+        - "gui": a Qt-based window.
+        - "jupyter": an inline Jupyter notebook window.
+        - "stealth": an offscreen window with no GUI, used for scripted
+          snapshots.
+
+        An unrecognized value logs an error and terminates the process.
+    images : list of tuple, optional
+        Already-loaded image data to show at startup, as ``(data, affine)``
+        or ``(data, affine, filename)`` tuples.
+    peaks : list of tuple, optional
+        Already-loaded peak data to show at startup, as ``(pam,)`` or
+        ``(pam, filename)`` tuples, where ``pam`` is a ``PeaksAndMetrics``.
+    rois : list of tuple, optional
+        Already-loaded ROI data to show at startup, as ``(roi, affine)`` or
+        ``(roi, affine, filename)`` tuples.
+    surfaces : list of tuple, optional
+        Already-loaded surface data to show at startup, as
+        ``(vertices, faces)`` or ``(vertices, faces, filename)`` tuples.
+    tractograms : list of tuple, optional
+        Already-loaded tractogram data to show at startup, as ``(sft,)`` or
+        ``(sft, filename)`` tuples, where ``sft`` is a
+        ``StatefulTractogram``. Entries with no streamlines are skipped
+        with a warning.
+    sh_coeffs : list of tuple, optional
+        Already-loaded spherical harmonic coefficient data to show at
+        startup, as ``(coeffs, affine)``, ``(coeffs, affine, filename)`` or
+        ``(coeffs, affine, filename, basis_type)`` tuples. ``coeffs`` must
+        be a 4D ndarray, otherwise the entry is skipped with a warning.
     is_cluster : bool, optional
-        Value for ``is cluster``.
+        Whether to cluster the tractograms.
     is_light_version : bool, optional
-        Value for ``is light version``.
+        Whether to render tractograms as ``"Line"`` instead of ``"Tube"``,
+        which improves performance for large tractograms.
     glass_brain : bool, optional
-        Value for ``glass brain``.
-    bg_color : tuple(float, float, float), optional
-        Value for ``bg color``.
-    tract_colors : str or tuple, optional
-        Value for ``tract colors``.
+        Whether to render surfaces black with the ``"basic"`` material at
+        25% opacity and default the background to white.
+    bg_color : tuple of float, optional
+        Background color of the scene as an RGB tuple in ``[0, 1]``. If
+        None, it is white when ``glass_brain`` is True, otherwise dark
+        gray.
+    tract_colors : str or tuple of float or None, optional
+        Coloring scheme for the tractograms: ``"direction"`` for
+        directionally colored streamlines, ``"random"`` for the next color
+        from a distinguishable colormap per tractogram, an RGB(A) tuple in
+        ``[0, 1]``, or a string of three space-separated numbers parsed to
+        such a tuple. If None, ``"direction"`` is used.
     cluster_thr : float, optional
-        Value for ``cluster thr``.
+        Final distance threshold, in mm, used by ``qbx_and_merge`` when
+        clustering is enabled; small-animal data may need a smaller value
+        such as 2.0.
     cluster_size_thr : int, optional
-        Value for ``cluster size thr``.
+        Clusters with size less than ``cluster_size_thr`` are hidden. If
+        None, the 50th percentile of the cluster size distribution is
+        used.
     cluster_length_thr : float, optional
-        Value for ``cluster length thr``.
+        Clusters with average length less than ``cluster_length_thr`` mm
+        are hidden. If None, the 25th percentile of the cluster length
+        distribution is used.
     buan_pvals : str, optional
-        Value for ``buan pvals``.
+        File path for BUAN p-values used for BUAN-based coloring of
+        tractograms.
     rgb : bool or None, optional
         ``None``: auto-detect from structured NIfTI ``DT_RGB24``
         dtype; show toggle for other 4D volumes with 3 or 4 channels.
         ``True``: force RGB mode.  ``False``: never treat as RGB.
-    initial_filenames : list, optional
-        Value for ``initial filenames``.
-    initial_rois : list, optional
-        Value for ``initial rois``.
-    initial_shm_coeffs : list, optional
-        Value for ``initial shm coeffs``.
+    initial_filenames : list of str, optional
+        File paths loaded asynchronously into the viewer on startup. If
+        neither preloaded data nor initial files are given and a UI
+        exists, the file dialog opens on start.
+    initial_rois : list of str, optional
+        ROI file paths loaded asynchronously into the viewer on startup.
+    initial_shm_coeffs : list of str, optional
+        Spherical harmonic coefficient file paths loaded asynchronously
+        into the viewer on startup.
     out_dir : str or Path, optional
-        Value for ``out dir``.
+        Directory for the stealth-mode output image; created if missing.
+        Used only when ``visualizer_type`` is ``"stealth"``.
     out_stealth_png : str, optional
-        Value for ``out stealth png``.
+        Output image name, without extension, used as the stealth window
+        title. Used only when ``visualizer_type`` is ``"stealth"``.
     """
 
     def __init__(
@@ -123,56 +166,97 @@ class Skyline:
         out_dir=None,
         out_stealth_png=None,
     ):
-        """Represent ``Skyline`` in Skyline.
+        """Initialize the Skyline viewer.
+
+        Blocks in ``self.window.start()`` until the window is closed.
 
         Parameters
         ----------
-        visualizer_type : str, optional
-            Value for ``visualizer type``.
-        images : list, optional
-            Value for ``images``.
-        peaks : ndarray
-            Value for ``peaks``.
-        rois : list, optional
-            Value for ``rois``.
-        surfaces : list, optional
-            Value for ``surfaces``.
-        tractograms : list, optional
-            Value for ``tractograms``.
-        sh_coeffs : list, optional
-            Value for ``sh coeffs``.
+        visualizer_type : {"standalone", "gui", "jupyter", "stealth"}, optional
+            Kind of window to create. The options map to FURY window types via
+            ``create_window``:
+
+            - "standalone": a default interactive window.
+            - "gui": a Qt-based window.
+            - "jupyter": an inline Jupyter notebook window.
+            - "stealth": an offscreen window with no GUI, used for scripted
+              snapshots.
+
+            An unrecognized value logs an error and terminates the process.
+        images : list of tuple, optional
+            Already-loaded image data to show at startup, as ``(data, affine)``
+            or ``(data, affine, filename)`` tuples.
+        peaks : list of tuple, optional
+            Already-loaded peak data to show at startup, as ``(pam,)`` or
+            ``(pam, filename)`` tuples, where ``pam`` is a ``PeaksAndMetrics``.
+        rois : list of tuple, optional
+            Already-loaded ROI data to show at startup, as ``(roi, affine)`` or
+            ``(roi, affine, filename)`` tuples.
+        surfaces : list of tuple, optional
+            Already-loaded surface data to show at startup, as
+            ``(vertices, faces)`` or ``(vertices, faces, filename)`` tuples.
+        tractograms : list of tuple, optional
+            Already-loaded tractogram data to show at startup, as ``(sft,)`` or
+            ``(sft, filename)`` tuples, where ``sft`` is a
+            ``StatefulTractogram``. Entries with no streamlines are skipped
+            with a warning.
+        sh_coeffs : list of tuple, optional
+            Already-loaded spherical harmonic coefficient data to show at
+            startup, as ``(coeffs, affine)``, ``(coeffs, affine, filename)`` or
+            ``(coeffs, affine, filename, basis_type)`` tuples. ``coeffs`` must
+            be a 4D ndarray, otherwise the entry is skipped with a warning.
         is_cluster : bool, optional
-            Value for ``is cluster``.
+            Whether to cluster the tractograms.
         is_light_version : bool, optional
-            Value for ``is light version``.
+            Whether to render tractograms as ``"Line"`` instead of ``"Tube"``,
+            which improves performance for large tractograms.
         glass_brain : bool, optional
-            Value for ``glass brain``.
-        bg_color : tuple(float, float, float), optional
-            Value for ``bg color``.
-        tract_colors : str or tuple, optional
-            Value for ``tract colors``.
+            Whether to render surfaces black with the ``"basic"`` material at
+            25% opacity and default the background to white.
+        bg_color : tuple of float, optional
+            Background color of the scene as an RGB tuple in ``[0, 1]``. If
+            None, it is white when ``glass_brain`` is True, otherwise dark
+            gray.
+        tract_colors : str or tuple of float or None, optional
+            Coloring scheme for the tractograms: ``"direction"`` for
+            directionally colored streamlines, ``"random"`` for the next color
+            from a distinguishable colormap per tractogram, an RGB(A) tuple in
+            ``[0, 1]``, or a string of three space-separated numbers parsed to
+            such a tuple. If None, ``"direction"`` is used.
         cluster_thr : float, optional
-            Value for ``cluster thr``.
+            Final distance threshold, in mm, used by ``qbx_and_merge`` when
+            clustering is enabled; small-animal data may need a smaller value
+            such as 2.0.
         cluster_size_thr : int, optional
-            Value for ``cluster size thr``.
+            Clusters with size less than ``cluster_size_thr`` are hidden. If
+            None, the 50th percentile of the cluster size distribution is
+            used.
         cluster_length_thr : float, optional
-            Value for ``cluster length thr``.
+            Clusters with average length less than ``cluster_length_thr`` mm
+            are hidden. If None, the 25th percentile of the cluster length
+            distribution is used.
         buan_pvals : str, optional
-            Value for ``buan pvals``.
+            File path for BUAN p-values used for BUAN-based coloring of
+            tractograms.
         rgb : bool or None, optional
             ``None``: auto-detect from structured NIfTI ``DT_RGB24``
             dtype; show toggle for other 4D volumes with 3 or 4 channels.
             ``True``: force RGB mode.  ``False``: never treat as RGB.
-        initial_filenames : list, optional
-            Value for ``initial filenames``.
-        initial_rois : list, optional
-            Value for ``initial rois``.
-        initial_shm_coeffs : list, optional
-            Value for ``initial shm coeffs``.
+        initial_filenames : list of str, optional
+            File paths loaded asynchronously into the viewer on startup. If
+            neither preloaded data nor initial files are given and a UI
+            exists, the file dialog opens on start.
+        initial_rois : list of str, optional
+            ROI file paths loaded asynchronously into the viewer on startup.
+        initial_shm_coeffs : list of str, optional
+            Spherical harmonic coefficient file paths loaded asynchronously
+            into the viewer on startup.
         out_dir : str or Path, optional
-            Value for ``out dir``.
+            Directory for the stealth-mode output image; created if missing.
+            Used only when ``visualizer_type`` is ``"stealth"``.
         out_stealth_png : str, optional
-            Value for ``out stealth png``.
+            Output image name, without extension, used as the stealth window
+            title. Used only when ``visualizer_type`` is ``"stealth"``.
         """
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
@@ -288,8 +372,11 @@ class Skyline:
         self.window.start()
 
     def _wait_for_loading_in_stealth_mode(self):
-        """Handle  wait for loading in stealth mode for ``Skyline``.
-        None
+        """Block until all queued and pending visualizations finish loading.
+
+        Repeatedly runs the async callback queue and drains pending loaded
+        files so stealth-mode snapshots are not taken before every
+        requested visualization has been created.
         """
         while self._pending_loaded_files or (
             self._loading_total > 0 and self._loading_done < self._loading_total
@@ -299,8 +386,10 @@ class Skyline:
             time.sleep(0.01)
 
     def _refresh_actors(self):
-        """Handle  refresh actors for ``Skyline``.
-        None
+        """Sync the main scene's actors with the current visualizations.
+
+        Removes actors that no longer belong to any visualization and adds
+        actors for visualizations not yet present in the scene.
         """
         all_actors = [v.actor for v in self.visualizations]
 
@@ -314,8 +403,11 @@ class Skyline:
                 self.window.screens[0].scene.main_scene.add(a)
 
     def _refresh_ui(self):
-        """Handle  refresh ui for ``Skyline``.
-        None
+        """Drop tracked visualizations whose UI section was closed.
+
+        A visualization removed from the UI (for example via its close
+        button) no longer has a matching section id, so it is unregistered
+        from the viewer as well.
         """
         for viz in self.visualizations:
             viz_id = f"{viz.path}:{viz.name}"
@@ -323,8 +415,11 @@ class Skyline:
                 self._remove_visualization(viz)
 
     def _arrange_image_actors(self):
-        """Handle  arrange image actors for ``Skyline``.
-        None
+        """Stagger overlapping image slicer actors to avoid z-fighting.
+
+        Restores the previously active image to its base slice state, then
+        offsets the newly active image slightly further along its slice
+        axis for each additional loaded image.
         """
         for viz in self._image_visualizations:
             if viz.active:
@@ -339,12 +434,17 @@ class Skyline:
         )
 
     def _update_tractogram_helper(self, *, remove=False):
-        """Handle  update tractogram helper for ``Skyline``.
+        """Show or hide the cluster interaction help overlay.
+
+        The overlay is added when a ``ClusterStreamline3D`` visualization is
+        present and removed once none remain, or immediately when
+        ``remove`` is True.
 
         Parameters
         ----------
         remove : bool, optional
-            Value for ``remove``.
+            Whether to force-remove the overlay regardless of its current
+            visualizations.
         """
         if remove and self._tractogram_help:
             self.window.screens[0].scene.remove(self._tractogram_help)
@@ -372,8 +472,12 @@ class Skyline:
             self._tractogram_help = False
 
     def draw_ui(self):
-        """Handle draw ui for ``Skyline``.
-        None
+        """Draw the ImGui overlay for a single frame.
+
+        Invoked as the ImGui GUI callback. Renders the UI window, then
+        drains pending tractogram switches, visualizations, synchronization
+        requests, and scene operations queued while drawing, applying a
+        pending background color change and refreshing if required.
         """
         process_async_callbacks()
         self._is_drawing_ui = True
@@ -400,8 +504,10 @@ class Skyline:
             self.before_render()
 
     def request_refresh(self):
-        """Handle request refresh for ``Skyline``.
-        None
+        """Flag the viewer for a refresh on the next UI frame.
+
+        The actual actor sync and render happen later, either at the end of
+        the current ``draw_ui`` call or on the next ``before_render`` call.
         """
         self._refresh_requested = True
 
@@ -428,16 +534,21 @@ class Skyline:
         return None
 
     def enqueue_scene_op(self, func, *args, **kwargs):
-        """Handle enqueue scene op for ``Skyline``.
+        """Run or defer a scene-mutating callable.
+
+        Runs ``func`` immediately unless the UI is currently drawing, in
+        which case the call is queued for ``_flush_pending_scene_ops`` and
+        coalesced with any previously queued call sharing the same bound
+        method or function name.
 
         Parameters
         ----------
         func : callable
-            Value for ``func``.
+            Scene-mutating callable to run or defer.
         *args : tuple
-            Value for ``args``.
+            Positional arguments forwarded to ``func``.
         **kwargs : dict
-            Value for ``kwargs``.
+            Keyword arguments forwarded to ``func``.
         """
         if self._is_drawing_ui:
             op_key = self._scene_op_key(func)
@@ -455,8 +566,10 @@ class Skyline:
         self.request_refresh()
 
     def _perform_refresh(self):
-        """Handle  perform refresh for ``Skyline``.
-        None
+        """Update the cluster helper, UI bookkeeping, and scene actors.
+
+        Does not render; callers that need the change visible must follow
+        up with ``_render_window``.
         """
         if self._visualizer_type != "stealth":
             self._update_tractogram_helper()
@@ -464,28 +577,32 @@ class Skyline:
         self._refresh_actors()
 
     def _perform_refresh_and_render(self):
-        """Handle  perform refresh and render for ``Skyline``.
-        None
-        """
+        """Perform a refresh, clear the refresh flag, and render the window."""
         self._perform_refresh()
         self._refresh_requested = False
         self._render_window()
 
     def _render_window(self):
-        """Handle  render window for ``Skyline``.
-        None
+        """Render the window, unless the UI is currently being drawn.
+
+        Rendering while ``draw_ui`` is running is skipped because the
+        surrounding ImGui frame already triggers a render.
         """
         if self._is_drawing_ui:
             return
         self.window.render()
 
     def _queue_loaded_visualizations(self, loaded_files, *, message="Loading Files..."):
-        """Handle  queue loaded visualizations for ``Skyline``.
+        """Queue a batch of already-loaded visualization data for creation.
+
+        The batch is consumed later by ``_drain_pending_visualizations``.
 
         Parameters
         ----------
         loaded_files : dict
-            Value for ``loaded files``.
+            Mapping with the ``"images"``, ``"peaks"``, ``"rois"``,
+            ``"surfaces"``, ``"tractograms"``, and ``"shm_coeffs"`` keys,
+            each holding a list of loaded-data tuples.
         message : str, optional
             Message text shown to the user.
         """
@@ -495,8 +612,10 @@ class Skyline:
         self.loader(True, message=message)
 
     def _flush_pending_sync_requests(self):
-        """Handle  flush pending sync requests for ``Skyline``.
-        None
+        """Apply state-synchronization requests queued while drawing the UI.
+
+        Requests are re-checked at flush time in case the source
+        visualization had synchronization toggled off while queued.
         """
         if not self._pending_sync_requests:
             return
@@ -510,8 +629,11 @@ class Skyline:
         self._refresh_requested = True
 
     def _flush_pending_scene_ops(self):
-        """Handle  flush pending scene ops for ``Skyline``.
-        None
+        """Apply scene operations queued while drawing the UI.
+
+        Each queued callable is invoked with its stored arguments; failures
+        are logged rather than propagated so one broken operation does not
+        block the others.
         """
         if not self._pending_scene_ops:
             return
@@ -520,7 +642,7 @@ class Skyline:
         for func, args, kwargs in pending:
             try:
                 func(*args, **kwargs)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.exception(
                     "Failed to apply deferred scene operation %s: %s",
                     getattr(func, "__qualname__", repr(func)),
@@ -580,8 +702,12 @@ class Skyline:
             viz.update_state(reference_state)
 
     def _drain_pending_visualizations(self):
-        """Handle  drain pending visualizations for ``Skyline``.
-        None
+        """Consume one queued batch of loaded files into visualizations.
+
+        Pops the oldest pending batch, creates its visualizations while
+        preserving the current slice pose, refreshes the scene actors,
+        recenters the camera on the updated scene bounds, and hides the
+        loader once every queued batch has been consumed.
         """
         if self._pending_loaded_files:
             loaded_files = self._pending_loaded_files.pop(0)
@@ -630,8 +756,10 @@ class Skyline:
             self._loading_done = 0
 
     def before_render(self):
-        """Handle before render for ``Skyline``.
-        None
+        """Refresh and render, or defer to a request if mid-UI-draw.
+
+        Called after the constructor's initial load and whenever a change
+        needs to be shown outside of the ``draw_ui`` frame callback.
         """
         if self._is_drawing_ui:
             self.request_refresh()
@@ -639,12 +767,14 @@ class Skyline:
         self._perform_refresh_and_render()
 
     def handle_resize(self, size):
-        """Handle handle resize for ``Skyline``.
+        """Update cached layout state after the window is resized.
+
+        Registered as the window's resize callback.
 
         Parameters
         ----------
-        size : tuple(int, int), optional
-            Value for ``size``.
+        size : tuple of int
+            New window size, in pixels, as ``(width, height)``.
         """
         self.size = size
         self.ui_size = (400, self.size[1])
@@ -657,7 +787,9 @@ class Skyline:
         self._render_window()
 
     def handle_key_events(self, event):
-        """Handle handle key events for ``Skyline``.
+        """Forward a key event to clustered tractogram visualizations.
+
+        Registered as the renderer's ``"key_down"`` event handler.
 
         Parameters
         ----------
@@ -669,12 +801,20 @@ class Skyline:
                 viz.handle_key_events(event)
 
     def _add_visualization(self, viz):
-        """Handle  add visualization for ``Skyline``.
+        """Register a visualization in its per-type list and in the UI.
+
+        Skips registration and logs a warning if a visualization with the
+        same path/name id is already present.
 
         Parameters
         ----------
         viz : Visualization
-            Value for ``viz``.
+            Visualization instance to register.
+
+        Raises
+        ------
+        TypeError
+            If ``viz`` is not an instance of a supported visualization type.
         """
         viz_id = f"{viz.path}:{viz.name}"
         if self.UI_window is not None and viz_id in self.UI_window.sections:
@@ -695,7 +835,7 @@ class Skyline:
         elif isinstance(viz, SHGlyph3D):
             self._sh_glyph_visualizations.append(viz)
         else:
-            raise ValueError("Unsupported visualization type")
+            raise TypeError("Unsupported visualization type")
         viz._scene_op_callback = self.enqueue_scene_op
         if self.UI_window is not None:
             self.UI_window.add(viz_id, viz.renderer, viz_type=viz.viz_type)
@@ -712,26 +852,39 @@ class Skyline:
         is_cluster=None,
         async_clustering=None,
     ):
-        """Handle  load visualiations for ``Skyline``.
+        """Create and register visualizations from batches of loaded data.
+
+        Each argument is a list of loaded-data tuples in the shape produced
+        by ``io.load_files`` (see ``Skyline`` for the tuple forms). Sets the
+        last loaded image active and opens the file dialog if no
+        visualization ends up loaded.
 
         Parameters
         ----------
-        images : list, optional
-            Value for ``images``.
-        peaks : ndarray
-            Value for ``peaks``.
-        rois : list, optional
-            Value for ``rois``.
-        surfaces : list, optional
-            Value for ``surfaces``.
-        tractograms : list, optional
-            Value for ``tractograms``.
-        sh_coeffs : list, optional
-            Value for ``sh coeffs``.
+        images : list of tuple, optional
+            Loaded image data, as ``(data, affine)`` or
+            ``(data, affine, filename)`` tuples.
+        peaks : list of tuple, optional
+            Loaded peak data, as ``(pam,)`` or ``(pam, filename)`` tuples.
+        rois : list of tuple, optional
+            Loaded ROI data, as ``(roi, affine)`` or
+            ``(roi, affine, filename)`` tuples.
+        surfaces : list of tuple, optional
+            Loaded surface data, as ``(vertices, faces)`` or
+            ``(vertices, faces, filename)`` tuples.
+        tractograms : list of tuple, optional
+            Loaded tractogram data, as ``(sft,)`` or ``(sft, filename)``
+            tuples. Entries with no streamlines are skipped with a warning.
+        sh_coeffs : list of tuple, optional
+            Loaded spherical harmonic coefficient data, as
+            ``(coeffs, affine)``, ``(coeffs, affine, filename)`` or
+            ``(coeffs, affine, filename, basis_type)`` tuples. Entries whose
+            ``coeffs`` is not a 4D ndarray are skipped with a warning.
         is_cluster : bool, optional
-            Value for ``is cluster``.
+            Overrides ``self._is_cluster`` for the tractograms in this batch.
         async_clustering : bool, optional
-            Value for ``async clustering``.
+            Overrides the default async-clustering choice for the
+            tractograms in this batch.
         """
         for idx, input in enumerate(images or []):
             image3d = create_image_visualization(
@@ -835,16 +988,21 @@ class Skyline:
             self.UI_window.request_file_dialog = True
 
     def _append_visualization(self, *, filenames=None, rois=None, shm_coeffs=None):
-        """Handle  append visualization for ``Skyline``.
+        """Load files from disk asynchronously and queue them for display.
+
+        Each path is loaded in its own background task via
+        ``io.load_files``; each completed task's result is appended to
+        ``self._pending_loaded_files`` for ``_drain_pending_visualizations``
+        to consume on a later frame.
 
         Parameters
         ----------
-        filenames : list, optional
-            Value for ``filenames``.
-        rois : list, optional
-            Value for ``rois``.
-        shm_coeffs : list, optional
-            Value for ``shm coeffs``.
+        filenames : list of str, optional
+            Paths to images, peaks, surfaces, or tractograms to load.
+        rois : list of str, optional
+            Paths to ROI files to load.
+        shm_coeffs : list of str, optional
+            Paths to spherical harmonic coefficient files to load.
         """
         total_files = len(filenames or []) + len(rois or []) + len(shm_coeffs or [])
         if total_files == 0:
@@ -888,12 +1046,20 @@ class Skyline:
             )
 
     def _remove_visualization(self, viz):
-        """Handle  remove visualization for ``Skyline``.
+        """Unregister a visualization from its per-type tracking list.
+
+        Also clears ``self._slice_focus_viz`` if it pointed at ``viz`` and
+        opens the file dialog if no visualization remains.
 
         Parameters
         ----------
         viz : Visualization
-            Value for ``viz``.
+            Visualization instance to unregister.
+
+        Raises
+        ------
+        TypeError
+            If ``viz`` is not an instance of a supported visualization type.
         """
         if isinstance(viz, Image3D):
             self._image_visualizations.remove(viz)
@@ -908,7 +1074,7 @@ class Skyline:
         elif isinstance(viz, SHGlyph3D):
             self._sh_glyph_visualizations.remove(viz)
         else:
-            raise ValueError("Unsupported visualization type")
+            raise TypeError("Unsupported visualization type")
 
         if viz is self._slice_focus_viz:
             self._slice_focus_viz = None
@@ -918,7 +1084,7 @@ class Skyline:
 
     @staticmethod
     def _snapshot_state(new_state):
-        """Handle  snapshot state for ``Skyline``.
+        """Copy a slice state so later mutation cannot affect the snapshot.
 
         Parameters
         ----------
@@ -939,16 +1105,16 @@ class Skyline:
         return new_state
 
     def _synchronize_visualizations_from_source(self, source_viz, new_state):
-        # Source-side guard: only push if this view has sync enabled.
-        """Handle  synchronize visualizations from source for ``Skyline``.
+        """Push a new slice state from ``source_viz`` to other visualizations.
 
         Parameters
         ----------
         source_viz : Visualization
-            Value for ``source viz``.
+            Visualization whose state change is being propagated.
         new_state : array-like
             New synchronized state for this visualization.
         """
+        # Source-side guard: only push if this view has sync enabled.
         if not getattr(source_viz, "_synchronize", True):
             return
 
@@ -958,12 +1124,17 @@ class Skyline:
                 viz.update_state(new_state)
 
     def _synchronize_visualizations(self, source_viz, new_state):
-        """Handle  synchronize visualizations for ``Skyline``.
+        """Propagate a slice-state change reported by a visualization.
+
+        Called by visualizations as their state-change callback. Updates
+        the slice-focus visualization, then either queues the request for
+        ``_flush_pending_sync_requests`` when the UI is mid-draw, or
+        propagates it immediately otherwise.
 
         Parameters
         ----------
         source_viz : Visualization
-            Value for ``source viz``.
+            Visualization whose state change is being reported.
         new_state : array-like
             New synchronized state for this visualization.
         """
@@ -983,12 +1154,12 @@ class Skyline:
         self.active_image and self._arrange_image_actors()
 
     def _update_background_color(self, new_color):
-        """Handle  update background color for ``Skyline``.
+        """Apply or defer a background color change from the UI.
 
         Parameters
         ----------
-        new_color : tuple(float, float, float)
-            Value for ``new color``.
+        new_color : tuple of float
+            New scene background color as an RGB tuple in ``[0, 1]``.
         """
         if self._is_drawing_ui:
             self._pending_bg_color = new_color
@@ -999,7 +1170,12 @@ class Skyline:
         self._render_window()
 
     def _process_tractogram_switches(self):
-        """Handle  process tractogram switches for ``Skyline``."""
+        """Apply queued clustered/unclustered tractogram mode switches.
+
+        For each queued switch, removes the old visualization from the
+        scene and UI, then asynchronously re-creates it in the requested
+        mode via a deferred ``run_async`` call.
+        """
         if not self._pending_tractogram_switches:
             return
         pending = self._pending_tractogram_switches.copy()
@@ -1044,14 +1220,14 @@ class Skyline:
             run_async(_delay, _on_delay_done)
 
     def _update_tractogram_rendering(self, streamline_viz, is_clustered):
-        """Handle  update tractogram rendering for ``Skyline``.
+        """Queue a clustered/unclustered mode switch for a tractogram.
 
         Parameters
         ----------
         streamline_viz : Visualization
-            Value for ``streamline viz``.
+            Streamline visualization whose rendering mode changed.
         is_clustered : bool
-            Value for ``is clustered``.
+            Whether the visualization should switch to clustered mode.
         """
         for viz in self._tractogram_visualizations:
             if viz is streamline_viz and isinstance(
@@ -1061,7 +1237,7 @@ class Skyline:
                 break
 
     def loader(self, show, *, message=None):
-        """Handle loader for ``Skyline``.
+        """Show or hide the UI's loading indicator.
 
         Parameters
         ----------
@@ -1090,7 +1266,7 @@ class Skyline:
 
     @property
     def visualizations(self):
-        """Handle visualizations for ``Skyline``.
+        """Return every visualization currently tracked by the viewer.
 
         Returns
         -------
@@ -1126,73 +1302,86 @@ def skyline_from_files(
     out_dir=None,
     out_stealth_png=None,
 ):
-    """Launch Skyline GUI from files.
+    """Launch the Skyline GUI from file paths.
+
+    Loads every path in the background and constructs the corresponding
+    ``Skyline`` viewer, forwarding ``fnames``/``rois``/``shm_coeffs`` as
+    ``initial_filenames``/``initial_rois``/``initial_shm_coeffs``.
 
     Parameters
     ----------
-    fnames : list
-        List of file paths to be loaded into the Skyline viewer.
+    fnames : list of str
+        File paths to be loaded into the Skyline viewer.
+
         Supported file types include:
+
         - NIfTI images (.nii, .nii.gz)
         - Peaks (.pam5)
         - Surfaces (.pial, .gii, .gii.gz)
-        - Tractograms (.trx, .trk, .dpy, .tck, .vtk, .vtp, .fib)
-    rois : list, optional
-        List of file paths for ROIs to be loaded into the Skyline viewer.
-        Supported file types include NIfTI images (.nii, .nii.gz).
-    shm_coeffs : list, optional
-        List of file paths for spherical harmonics coefficients to be loaded into the
-        Skyline viewer. Supported file types include .pam5 files containing SH
-        coefficients.
+        - Tractograms (.trk, .trx, .dpy, .tck, .vtk, .vtp, .fib)
+
+        Unsupported extensions are logged and skipped; ``.npy`` entries are
+        ignored.
+    rois : list of str, optional
+        File paths for ROIs to be loaded into the Skyline viewer. Only
+        NIfTI images (.nii, .nii.gz) are supported; other extensions are
+        logged and skipped.
+    shm_coeffs : list of str, optional
+        File paths for spherical harmonics coefficients to be loaded into
+        the Skyline viewer. Only ``.pam5`` files are supported; other
+        extensions are silently skipped.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
-        Whether to use the light version of the tractogram rendering. This will render
-        tractograms as lines instead of tubes, which can improve performance for large
-        tractograms.
+        Whether to render tractograms as ``"Line"`` instead of ``"Tube"``,
+        which improves performance for large tractograms.
     glass_brain : bool, optional
-        Whether to use glass brain mode. This will overwrite the background color
-        to white if not explicitly set by the user.
-    bg_color : variable float, optional
-        Define the background color of the scene. Colors can be defined with
-        3 values and should be between [0-1].
-        For example, a value of (0, 0, 0) would mean the black color.
-    tract_colors : variable float or str, optional
-        Define the colors of the tractograms. Colors can be defined with
-        3 values and should be between [0-1].
-        String options are 'random' for random colors for each tractogram,
-        'direction'  for directionally colored streamlines.
-        For example, a value of (1, 0, 0) would mean the red color.
+        Whether to render surfaces black with the ``"basic"`` material at
+        25% opacity and default the background to white.
+    bg_color : tuple of float, optional
+        Background color of the scene as an RGB tuple in ``[0, 1]``. If
+        None, it is white when ``glass_brain`` is True, otherwise dark
+        gray.
+    tract_colors : str or tuple of float or None, optional
+        Coloring scheme for the tractograms: ``"direction"`` for
+        directionally colored streamlines, ``"random"`` for the next color
+        from a distinguishable colormap per tractogram, an RGB(A) tuple in
+        ``[0, 1]``, or a string of three space-separated numbers parsed to
+        such a tuple. If None, ``"direction"`` is used.
     cluster_thr : float, optional
-        Distance threshold used for clustering. Default value 15.0 for
-        small animal brains you may need to use something smaller such
-        as 2.0. The distance is in mm. For this parameter to be active
-        ``cluster`` should be enabled.
+        Final distance threshold, in mm, used by ``qbx_and_merge`` when
+        clustering is enabled; small-animal data may need a smaller value
+        such as 2.0.
     cluster_size_thr : int, optional
-        Clusters with size less than ``cluster_size_thr`` will be hidden.
-        If None, it will show all cluster above the 50th percentile of the cluster
-        size distribution.
+        Clusters with size less than ``cluster_size_thr`` are hidden. If
+        None, the 50th percentile of the cluster size distribution is
+        used.
     cluster_length_thr : float, optional
-        Clusters with average length less than ``cluster_length_thr`` in mm will be
-        hidden. If None, it will show all cluster above the 25th percentile of the
-        cluster length distribution.
+        Clusters with average length less than ``cluster_length_thr`` mm
+        are hidden. If None, the 25th percentile of the cluster length
+        distribution is used.
     buan_pvals : str, optional
-        File path for BUAN p-values to be used for BUAN-based coloring of tractograms.
+        File path for BUAN p-values used for BUAN-based coloring of
+        tractograms.
     stealth : bool, optional
-        Do not use interactive mode just save figure.
+        Whether to render offscreen and save a snapshot instead of opening
+        an interactive window; sets ``visualizer_type`` to ``"stealth"``.
     rgb : bool or None, optional
         ``None``: auto-detect from structured NIfTI ``DT_RGB24``
         dtype; show toggle for other 4D volumes with 3 or 4 channels.
         ``True``: force RGB mode.  ``False``: never treat as RGB.
     out_dir : str or Path, optional
-        Output directory to save the figure if stealth mode is enabled.
+        Directory for the stealth-mode output image; created if missing.
+        Used only when ``stealth`` is True.
     out_stealth_png : str, optional
-        Filename of saved picture if stealth mode is enabled.
+        Output image name, without extension, used as the stealth window
+        title. Used only when ``stealth`` is True.
 
     Returns
     -------
     Skyline
-        Constructed viewer instance (blocking for interactive modes).
+        The constructed viewer, returned once construction returns from
+        its blocking ``self.window.start()`` call.
     """
     visualizer_type = "stealth" if stealth else "standalone"
 
@@ -1241,80 +1430,103 @@ def skyline(
     out_dir=None,
     out_stealth_png=None,
 ):
-    """Launch Skyline GUI.
+    """Launch the Skyline GUI.
+
+    Constructs and returns a ``Skyline`` viewer with the given data.
 
     Parameters
     ----------
-    visualizer_type : str, optional
-        Type of visualizer to create. The options are:
-        - "standalone": A standalone window with full interactivity.
-        - "gui": A Qt-based GUI window.
-        - "jupyter": An inline Jupyter notebook visualizer.
-        - "stealth": An offscreen visualizer without GUI.
-    images : list, optional
-        List of path for each image to be added to the Skyline viewer.
-    peaks : list, optional
-        List of path for each peak to be added to the Skyline viewer.
-    rois : list, optional
-        List of path for each ROI to be added to the Skyline viewer.
-    surfaces : list, optional
-        List of path for each surface to be added to the Skyline viewer.
-    tractograms : list, optional
-        List of path for each tractogram to be added to the Skyline viewer.
+    visualizer_type : {"standalone", "gui", "jupyter", "stealth"}, optional
+        Kind of window to create. The options map to FURY window types via
+        ``create_window``:
+
+        - "standalone": a default interactive window.
+        - "gui": a Qt-based window.
+        - "jupyter": an inline Jupyter notebook window.
+        - "stealth": an offscreen window with no GUI, used for scripted
+          snapshots.
+
+        An unrecognized value logs an error and terminates the process.
+    images : list of tuple, optional
+        Already-loaded image data to show at startup, as ``(data, affine)``
+        or ``(data, affine, filename)`` tuples.
+    peaks : list of tuple, optional
+        Already-loaded peak data to show at startup, as ``(pam,)`` or
+        ``(pam, filename)`` tuples, where ``pam`` is a ``PeaksAndMetrics``.
+    rois : list of tuple, optional
+        Already-loaded ROI data to show at startup, as ``(roi, affine)`` or
+        ``(roi, affine, filename)`` tuples.
+    surfaces : list of tuple, optional
+        Already-loaded surface data to show at startup, as
+        ``(vertices, faces)`` or ``(vertices, faces, filename)`` tuples.
+    tractograms : list of tuple, optional
+        Already-loaded tractogram data to show at startup, as ``(sft,)`` or
+        ``(sft, filename)`` tuples, where ``sft`` is a
+        ``StatefulTractogram``. Entries with no streamlines are skipped
+        with a warning.
+    sh_coeffs : list of tuple, optional
+        Already-loaded spherical harmonic coefficient data to show at
+        startup, as ``(coeffs, affine)``, ``(coeffs, affine, filename)`` or
+        ``(coeffs, affine, filename, basis_type)`` tuples. ``coeffs`` must
+        be a 4D ndarray, otherwise the entry is skipped with a warning.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
-        Whether to use the light version of the tractogram rendering. This will render
-        tractograms as lines instead of tubes, which can improve performance for large
-        tractograms.
+        Whether to render tractograms as ``"Line"`` instead of ``"Tube"``,
+        which improves performance for large tractograms.
     glass_brain : bool, optional
-        Whether to use glass brain mode. This will overwrite the background color
-        to white if not explicitly set by the user.
-    bg_color : variable float, optional
-        Define the background color of the scene. Colors can be defined with
-        3 values and should be between [0-1].
-        For example, a value of (0, 0, 0) would mean the black color.
-    tract_colors : variable float or str, optional
-        Define the colors of the tractograms. Colors can be defined with
-        3 values and should be between [0-1].
-        String options are 'random' for random colors for each tractogram,
-        'direction'  for directionally colored streamlines.
-        For example, a value of (1, 0, 0) would mean the red color.
+        Whether to render surfaces black with the ``"basic"`` material at
+        25% opacity and default the background to white.
+    bg_color : tuple of float, optional
+        Background color of the scene as an RGB tuple in ``[0, 1]``. If
+        None, it is white when ``glass_brain`` is True, otherwise dark
+        gray.
+    tract_colors : str or tuple of float or None, optional
+        Coloring scheme for the tractograms: ``"direction"`` for
+        directionally colored streamlines, ``"random"`` for the next color
+        from a distinguishable colormap per tractogram, an RGB(A) tuple in
+        ``[0, 1]``, or a string of three space-separated numbers parsed to
+        such a tuple. If None, ``"direction"`` is used.
     cluster_thr : float, optional
-        Distance threshold used for clustering. Default value 15.0 for
-        small animal brains you may need to use something smaller such
-        as 2.0. The distance is in mm. For this parameter to be active
-        ``cluster`` should be enabled.
+        Final distance threshold, in mm, used by ``qbx_and_merge`` when
+        clustering is enabled; small-animal data may need a smaller value
+        such as 2.0.
     cluster_size_thr : int, optional
-        Clusters with size less than ``cluster_size_thr`` will be hidden.
-        If None, it will show all cluster above the 50th percentile of the cluster
-        size distribution.
+        Clusters with size less than ``cluster_size_thr`` are hidden. If
+        None, the 50th percentile of the cluster size distribution is
+        used.
     cluster_length_thr : float, optional
-        Clusters with average length less than ``cluster_length_thr`` in mm will be
-        hidden. If None, it will show all cluster above the 25th percentile of the
-        cluster length distribution.
+        Clusters with average length less than ``cluster_length_thr`` mm
+        are hidden. If None, the 25th percentile of the cluster length
+        distribution is used.
+    buan_pvals : str, optional
+        File path for BUAN p-values used for BUAN-based coloring of
+        tractograms.
     rgb : bool or None, optional
         ``None``: auto-detect from structured NIfTI ``DT_RGB24``
         dtype; show toggle for other 4D volumes with 3 or 4 channels.
         ``True``: force RGB mode.  ``False``: never treat as RGB.
-    buan_pvals : str, optional
-        File path for BUAN p-values to be used for BUAN-based coloring of tractograms.
-    initial_filenames : list, optional
-        List of file paths to be loaded into the Skyline viewer on startup.
-    initial_rois : list, optional
-        List of file paths for ROIs to be loaded into the Skyline viewer on startup.
-    initial_shm_coeffs : list, optional
-        List of file paths for spherical harmonics coefficients to be loaded into the
-        Skyline viewer on startup.
+    initial_filenames : list of str, optional
+        File paths loaded asynchronously into the viewer on startup. If
+        neither preloaded data nor initial files are given and a UI
+        exists, the file dialog opens on start.
+    initial_rois : list of str, optional
+        ROI file paths loaded asynchronously into the viewer on startup.
+    initial_shm_coeffs : list of str, optional
+        Spherical harmonic coefficient file paths loaded asynchronously
+        into the viewer on startup.
     out_dir : str or Path, optional
-        Output directory to save the figure if stealth mode is enabled.
+        Directory for the stealth-mode output image; created if missing.
+        Used only when ``visualizer_type`` is ``"stealth"``.
     out_stealth_png : str, optional
-        Filename of saved picture if stealth mode is enabled.
+        Output image name, without extension, used as the stealth window
+        title. Used only when ``visualizer_type`` is ``"stealth"``.
 
     Returns
     -------
     Skyline
-        Constructed viewer instance (blocking for interactive modes).
+        The constructed viewer, returned once construction returns from
+        its blocking ``self.window.start()`` call.
     """
     return Skyline(
         visualizer_type=visualizer_type,

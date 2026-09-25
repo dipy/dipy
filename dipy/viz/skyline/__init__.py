@@ -1,6 +1,4 @@
-"""
-Skyline: interactive 3D viewer for diffusion images, tractography, and related data.
-"""
+"""Skyline: interactive 3D viewer for diffusion images and tractography."""
 
 from dipy.utils.optpkg import optional_package
 

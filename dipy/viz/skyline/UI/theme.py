@@ -73,19 +73,19 @@ if not FONT_AWESOME.exists():
 
 
 def hex_to_rgba(hex_color, *, alpha=1.0):
-    """Convert hex colors to rgba
+    """Convert a hex color code to an RGBA tuple.
 
     Parameters
     ----------
     hex_color : str
-        Hexcode for the color.
+        Hex color code, with or without a leading ``#``.
     alpha : float, optional
-        Transparency of the color.
+        Alpha channel value as a fraction in ``[0, 1]``.
 
     Returns
     -------
-    tuple
-        RGBA color tuple.
+    tuple of float
+        ``(r, g, b, alpha)`` with each channel a fraction in ``[0, 1]``.
     """
 
     hex_color = hex_color.lstrip("#")

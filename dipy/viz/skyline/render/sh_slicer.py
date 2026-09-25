@@ -2,9 +2,10 @@
 
 Builds a GPU-accelerated 3-D visualization of orientation distribution
 functions (ODFs) from a 4-D array of spherical-harmonic coefficients and a
-voxel-to-world affine.  ``create_shm_visualization`` unpacks the input
-tuple into a :class:`SHGlyph3D`, which owns a :class:`SHSlicer` that builds
-the billboard actor (:func:`~dipy.viz.skyline.render.sh_billboard.sph_glyph_billboard_sliced`)
+voxel-to-world affine.  ``create_shm_visualization`` unpacks the input tuple
+into a :class:`SHGlyph3D`, which owns a :class:`SHSlicer` that builds the
+billboard actor via
+:func:`~dipy.viz.skyline.render.sh_billboard.sph_glyph_billboard_sliced`
 and drives its per-axis slice uniforms.  See individual class/method
 docstrings for coordinate-space and slicing details.
 """
@@ -68,9 +69,13 @@ def create_shm_visualization(
     ----------
     input : tuple
         Tuple of one of the following forms:
-        - (coeffs, affine, filename, basis_type)
-        - (coeffs, affine, filename)
-        - (coeffs, affine)
+
+        - ``(coeffs, affine, filename, basis_type)``
+        - ``(coeffs, affine, filename)``
+        - ``(coeffs, affine)``
+
+        A ``basis_type`` present as the 4th tuple element overrides the
+        ``basis_type`` keyword argument.
     idx : int
         Index used for naming when filename is not provided.
     render_callback : callable, optional
@@ -84,7 +89,7 @@ def create_shm_visualization(
     basis_type : str, optional
         SH basis convention. Ignored if provided in ``input`` as 4th element.
     color_type : str, optional
-        Colour mapping type.
+        Color mapping type.
     mask : ndarray, optional
         Boolean mask of valid voxels.
     sync_callback : callable, optional
@@ -208,6 +213,30 @@ class SHSlicer:
         basis_type="standard",
         color_type="orientation",
     ):
+        """Initialize the billboard actor driver.
+
+        Parameters
+        ----------
+        coeffs_4d : ndarray, shape (X, Y, Z, C)
+            SH coefficients per voxel.  Converted from ``descoteaux07`` to
+            Fury's standard basis on construction if needed.
+        scale : float, optional
+            Uniform billboard size multiplier relative to estimated SH radii.
+        l_max : int, optional
+            Maximum SH order to shade.  For ``descoteaux``/``descoteaux07``
+            input, capped to the order implied by ``coeffs_4d``'s last axis
+            when that is lower; for ``standard`` input it must not exceed
+            that order (raises ``ValueError`` downstream otherwise).
+        lut_res : int, optional
+            Cube-map Hermite LUT resolution per face edge.
+        mask : ndarray of bool, shape (X, Y, Z), optional
+            When given, voxels outside the mask are excluded even if their
+            coefficients are non-zero.
+        basis_type : {"standard", "descoteaux", "descoteaux07"}, optional
+            SH basis convention of ``coeffs_4d``.
+        color_type : {"orientation", "sign"}, optional
+            Glyph coloring: direction-mapped hue, or a two-color sign split.
+        """
         if basis_type in ("descoteaux", "descoteaux07"):
             data_sh_order = calculate_max_order(coeffs_4d.shape[-1])
             l_max = min(l_max, data_sh_order)
@@ -315,18 +344,36 @@ class SHSlicer:
         self._cur[axis] = idx
 
     def hide_axis(self, axis):
-        """Hide all slices for *axis*."""
+        """Hide all slices for *axis*.
+
+        Parameters
+        ----------
+        axis : {"x", "y", "z"}
+            Which axis's slice-visibility uniform to clear.
+        """
         if self._glyph_actor is not None:
             setattr(self._glyph_actor.material, f"vis_{axis}", 0)
         self._cur[axis] = -1
 
     def show_axis(self, axis):
-        """Enable axis visibility."""
+        """Enable axis visibility.
+
+        Parameters
+        ----------
+        axis : {"x", "y", "z"}
+            Which axis's slice-visibility uniform to set.
+        """
         if self._glyph_actor is not None:
             setattr(self._glyph_actor.material, f"vis_{axis}", 1)
 
     def set_scale(self, new_scale):
-        """Update scale on the actor."""
+        """Update scale on the actor.
+
+        Parameters
+        ----------
+        new_scale : float
+            New uniform billboard size multiplier.
+        """
         ratio = float(new_scale) / float(self.scale) if self.scale > 0 else 1.0
         if abs(ratio - 1.0) < 1e-6:
             return
@@ -338,7 +385,14 @@ class SHSlicer:
             a.geometry.normals.update_full()
 
     def set_opacity(self, opacity):
-        """Set opacity."""
+        """Set opacity.
+
+        Parameters
+        ----------
+        opacity : float
+            Glyph opacity as a fraction, expected in ``[0, 1]``. Below
+            ``1.0`` the material's ``alpha_mode`` switches to ``"blend"``.
+        """
         self._opacity = float(opacity)
         a = self._glyph_actor
         if a is not None:
@@ -396,6 +450,36 @@ class SHGlyph3D(Visualization):
         mask=None,
         sync_callback=None,
     ):
+        """Initialize the ODF visualization.
+
+        Parameters
+        ----------
+        name : str
+            Display name used in the Skyline UI.
+        coeffs : ndarray, shape (X, Y, Z, C)
+            SH coefficients per voxel.
+        affine : ndarray, optional
+            Voxel-to-world affine used to position slices in world
+            coordinates. When ``None``, ``state``/slice positions are
+            voxel indices instead.
+        render_callback : callable, optional
+            Callback used to request a render/update.
+        scale : float, optional
+            Per-glyph scale used only when ``affine`` is ``None``;
+            otherwise the scale is derived from the affine's voxel sizes.
+        l_max : int, optional
+            Maximum SH order to shade.
+        lut_res : int, optional
+            Cube-map Hermite LUT resolution per face edge.
+        basis_type : {"standard", "descoteaux", "descoteaux07"}, optional
+            SH basis convention of ``coeffs``.
+        color_type : {"orientation", "sign"}, optional
+            Glyph coloring: direction-mapped hue, or a two-color sign split.
+        mask : ndarray of bool, optional
+            Boolean mask of valid voxels.
+        sync_callback : callable, optional
+            Callback used to synchronize state across views.
+        """
         self.affine = affine
         if self.affine is not None:
             default_scale = float(np.mean(affine_voxel_sizes(self.affine)))
@@ -592,7 +676,7 @@ class SHGlyph3D(Visualization):
         render_data = render_group("Slice", slicers)
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
-                slider_state[idx] = int(round(new))
+                slider_state[idx] = round(new)
                 self.state = slice_state_from_slider_values(
                     slider_state, affine=self.affine
                 )

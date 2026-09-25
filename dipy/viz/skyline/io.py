@@ -54,22 +54,39 @@ def _reference_from_image(data, affine):
 
 
 def load_files(fnames, *, rois=None, shm_coeffs=None):
-    """Load the provided list of files.
+    """Load images, peaks, surfaces, and tractograms from ``fnames``.
+
+    Dispatches each path by extension to the matching DIPY loader and
+    collects the results into per-type lists. Extensions not recognized in
+    ``fnames`` are logged and skipped; ``.npy`` entries are recognized but
+    ignored (reserved for BUAN p-value files, not loaded here).
 
     Parameters
     ----------
-    fnames : list of str
-        Path of the file.
+    fnames : list of str or None
+        Paths to load. Supported extensions: images use ``.nii`` or
+        ``.nii.gz``; peaks use ``.pam5``; surfaces use ``.pial``, ``.gii``,
+        or ``.gii.gz``; tractograms use ``.trk``, ``.trx``, ``.dpy``,
+        ``.tck``, ``.vtk``, ``.vtp``, or ``.fib``.
     rois : list of str, optional
-        Paths of the ROIs.
+        Paths to ROI images (``.nii`` or ``.nii.gz``); other extensions
+        are logged and skipped.
     shm_coeffs : list of str, optional
-        Paths of the SH coefficients files.
+        Paths to spherical-harmonic coefficient files (``.pam5``); other
+        extensions are silently skipped.
 
     Returns
     -------
     dict
-        Dictionary containing the loaded images, peaks, ROIs, surfaces,
-        tractograms, and spherical-harmonic coefficient data.
+        Dictionary with keys ``"images"``, ``"peaks"``, ``"rois"``,
+        ``"surfaces"``, ``"tractograms"``, ``"shm_coeffs"``, each a list
+        of tuples for the matching ``create_*_visualization`` function:
+
+        - images, rois : ``(data, affine, fname)``
+        - peaks : ``(pam, fname)``
+        - surfaces : ``(vertices, faces, fname)``
+        - tractograms : ``(sft, fname)``
+        - shm_coeffs : ``(coeffs, affine, fname, "descoteaux")``
     """
     if fnames is None:
         fnames = []
@@ -172,12 +189,12 @@ def load_npy(fname):
 
     Returns
     -------
-    np.ndarray
-        The loaded numpy array.
+    ndarray or None
+        The loaded array, or None if the file could not be loaded.
     """
     try:
         data = np.load(fname)
         return data
-    except Exception as e:
+    except (OSError, ValueError, EOFError) as e:
         logger.error(f"Error loading numpy file '{fname}': {e}")
         return None

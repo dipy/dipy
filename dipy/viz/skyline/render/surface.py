@@ -35,12 +35,14 @@ def create_surface_visualization(
     material="phong",
     render_callback=None,
 ):
-    """Create surface visualization from input
+    """Create a Surface visualization from already-loaded mesh data.
 
     Parameters
     ----------
     input : tuple
-        Tuple of the (vertices, faces, filename) or (vertices, faces)
+        Tuple of ``(vertices, faces, filename)`` or ``(vertices, faces)``
+        holding already-loaded mesh vertices and faces, with an optional
+        filename.
     idx : int
         Index of the surface for naming purposes if filename is not provided.
     color : tuple, optional
@@ -58,6 +60,11 @@ def create_surface_visualization(
     -------
     Surface
         The created Surface object.
+
+    Raises
+    ------
+    ValueError
+        If the input is not a tuple of length 2 or 3.
     """
     if not isinstance(input, tuple) or len(input) not in (2, 3):
         raise ValueError(
@@ -84,26 +91,27 @@ def create_surface_visualization(
 
 
 class Surface(Visualization):
-    """Represent ``Surface`` in Skyline.
+    """A triangular mesh surface rendered with a Phong or basic material.
 
     Parameters
     ----------
     name : str
         Display name used in the Skyline UI.
     vertices : ndarray
-        Value for ``vertices``.
+        Vertex positions of the surface mesh, shape ``(N, 3)``.
     faces : ndarray
-        Value for ``faces``.
+        Triangle face indices into ``vertices``, shape ``(M, 3)``.
     affine : ndarray, optional
-        Voxel-to-world affine used to position slices in world coordinates.
+        Voxel-to-world affine; accepted but not currently used by this class.
     color : tuple(float, float, float), optional
-        Value for ``color``.
+        RGB color applied to the surface mesh, in ``[0, 1]``.
     opacity : int, optional
-        Slice opacity in percent, expected in ``[0, 100]``.
+        Surface opacity in percent, expected in ``[0, 100]``.
     texture : ndarray, optional
-        Value for ``texture``.
+        Texture image; accepted but not currently applied to the rendered
+        mesh.
     material : str, optional
-        Value for ``material``.
+        Material type for the mesh (``"phong"`` or ``"basic"``).
     render_callback : callable, optional
         Callback used to request a render/update.
     """
@@ -121,26 +129,28 @@ class Surface(Visualization):
         material="phong",
         render_callback=None,
     ):
-        """Represent ``Surface`` in Skyline.
+        """Initialize the mesh surface visualization.
 
         Parameters
         ----------
         name : str
             Display name used in the Skyline UI.
         vertices : ndarray
-            Value for ``vertices``.
+            Vertex positions of the surface mesh, shape ``(N, 3)``.
         faces : ndarray
-            Value for ``faces``.
+            Triangle face indices into ``vertices``, shape ``(M, 3)``.
         affine : ndarray, optional
-            Voxel-to-world affine used to position slices in world coordinates.
+            Voxel-to-world affine; accepted but not currently used by this
+            class.
         color : tuple(float, float, float), optional
-            Value for ``color``.
+            RGB color applied to the surface mesh, in ``[0, 1]``.
         opacity : int, optional
-            Slice opacity in percent, expected in ``[0, 100]``.
+            Surface opacity in percent, expected in ``[0, 100]``.
         texture : ndarray, optional
-            Value for ``texture``.
+            Texture image; accepted but not currently applied to the
+            rendered mesh.
         material : str, optional
-            Value for ``material``.
+            Material type for the mesh (``"phong"`` or ``"basic"``).
         render_callback : callable, optional
             Callback used to request a render/update.
         """
@@ -158,7 +168,13 @@ class Surface(Visualization):
         super().__init__(name, render_callback)
 
     def _create_surface_actor(self):
-        """Handle  create surface actor for ``Surface``."""
+        """Create the mesh actor for the surface geometry.
+
+        Builds the actor with ``fury.actor.surface`` using the vertices,
+        faces, color, material, and opacity state, sets the alpha blend
+        mode, and disables depth writing when opacity is below 100%. The
+        ``texture`` attribute is not passed to the underlying actor.
+        """
         self._surface_actor = surface(
             self.vertices,
             self.faces,
@@ -171,40 +187,49 @@ class Surface(Visualization):
             self._surface_actor.material.depth_write = False
 
     def _set_opacity(self, opacity):
-        """Handle  set opacity for ``Surface``.
+        """Set the surface opacity and toggle depth writing.
+
+        Sets the mesh material's opacity to ``opacity / 100`` and disables
+        depth writing below 100% opacity. Unlike :class:`Image3D` and
+        :class:`ROI3D`, the alpha blend mode stays ``"blend"`` regardless
+        of opacity.
 
         Parameters
         ----------
-        opacity : int, optional
-            Slice opacity in percent, expected in ``[0, 100]``.
+        opacity : int
+            Surface opacity in percent, expected in ``[0, 100]``.
         """
         self._surface_actor.material.opacity = opacity / 100.0
         self._surface_actor.material.depth_write = opacity >= 100
 
     def _populate_info(self):
-        """Handle  populate info for ``Surface``.
+        """Build the informational text describing the surface mesh.
 
         Returns
         -------
-        object
-            Returned value.
+        str
+            Text with the vertex and face counts.
         """
         info = f"No. of vertices: {len(self.vertices)}\nNo. of faces: {len(self.faces)}"
         return info
 
     @property
     def actor(self):
-        """Handle actor for ``Surface``.
+        """The mesh actor rendering the surface.
 
         Returns
         -------
-        object
-            Returned value.
+        Mesh
+            The actor of the surface visualization.
         """
         return self._surface_actor
 
     def render_widgets(self):
-        """Handle render widgets for ``Surface``."""
+        """Draw the ImGui controls for surface opacity and color.
+
+        Renders an opacity slider and a color picker; committing a new
+        color rebuilds the mesh actor via :meth:`_create_surface_actor`.
+        """
         changed, new = thin_slider(
             "Opacity",
             self.opacity,
