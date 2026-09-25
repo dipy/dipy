@@ -1,7 +1,19 @@
 import numpy as np
 import numpy.testing as npt
+import pytest
 
-from dipy.stats.analysis import afq_profile, buan_profile, gaussian_weights
+from dipy.stats.analysis import (
+    SpectraGrid,
+    afq_profile,
+    buan_profile,
+    compute_robust_centroid,
+    create_radial_bins,
+    gaussian_weights,
+    get_grid_from_atlas,
+    parameterize_bundle,
+    spectra_assignment_map,
+    spectra_profile,
+)
 from dipy.tracking.streamline import Streamlines
 
 
@@ -182,3 +194,335 @@ def test_buan_profile():
         affine,
         no_disks=10,
     )
+
+
+def test_compute_robust_centroid():
+    x = np.linspace(0, 20, 21)
+    bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.zeros_like(x)))
+            for y in [-2, -1, 0, 1, 2]
+        ]
+    )
+
+    centroid = compute_robust_centroid(bundle, n_segments=10)
+
+    assert centroid.shape == (10, 3)
+    npt.assert_allclose(centroid[:, 1], 0, atol=1e-6)
+    npt.assert_allclose(centroid[:, 2], 0, atol=1e-6)
+
+
+def test_create_radial_bins():
+    radial_distance = np.array([-2, -1, 0, 1, 2])
+
+    r_index, n_radial, r_edges = create_radial_bins(radial_distance, n_radial=3)
+
+    assert n_radial == 3
+    assert len(r_edges) == 4
+    assert np.all(r_index >= 0)
+    assert np.all(r_index < n_radial)
+
+
+def test_get_grid_from_atlas():
+    x = np.linspace(0, 20, 21)
+    bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.zeros_like(x)))
+            for y in [-2, -1, 0, 1, 2]
+        ]
+    )
+
+    result = get_grid_from_atlas(bundle, n_segments=10, n_radial=3)
+    s_index, r_index, centroid, radial_vectors, r_edges, s_len, r_len = result
+
+    assert centroid.shape == (10, 3)
+    assert radial_vectors.shape == (10, 3)
+    assert len(r_edges) == 4
+    assert np.all(s_index >= 0)
+    assert np.all(s_index < 10)
+    assert np.all(r_index >= 0)
+    assert np.all(r_index < 3)
+    assert s_len > 0
+    assert r_len > 0
+
+    npt.assert_allclose(np.linalg.norm(radial_vectors, axis=1), 1, atol=1e-6)
+
+
+def test_parameterize_bundle():
+    x = np.linspace(0, 20, 21)
+
+    model_bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.zeros_like(x)))
+            for y in [-2, -1, 0, 1, 2]
+        ]
+    )
+
+    target_bundle = Streamlines(
+        [np.column_stack((x, np.full_like(x, y), np.zeros_like(x))) for y in [-1, 0, 1]]
+    )
+
+    result = get_grid_from_atlas(model_bundle, n_segments=10, n_radial=3)
+    _, _, centroid, radial_vectors, r_edges, _, _ = result
+
+    s_index, r_index, dist, valid_mask, counts = parameterize_bundle(
+        target_bundle, centroid, radial_vectors, r_edges
+    )
+
+    n_points = sum(len(streamline) for streamline in target_bundle)
+
+    assert len(s_index) == n_points
+    assert len(r_index) == n_points
+    assert len(dist) == n_points
+    assert len(valid_mask) == n_points
+    assert counts.shape == (10, 3)
+
+    assert np.all(s_index >= 0)
+    assert np.all(s_index < 10)
+    assert np.all(r_index >= 0)
+    assert np.all(r_index < 3)
+    assert np.all(dist >= 0)
+
+
+def test_spectra_assignment_map():
+    x = np.linspace(0, 20, 21)
+
+    model_bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.zeros_like(x)))
+            for y in [-2, -1, 0, 1, 2]
+        ]
+    )
+
+    target_bundle = Streamlines(
+        [np.column_stack((x, np.full_like(x, y), np.zeros_like(x))) for y in [-1, 0, 1]]
+    )
+
+    s_index, r_index, dist, valid_mask, counts = spectra_assignment_map(
+        target_bundle, model_bundle, n_segments=10, n_radial=3
+    )
+
+    n_points = sum(len(streamline) for streamline in target_bundle)
+
+    assert len(s_index) == n_points
+    assert len(r_index) == n_points
+    assert len(dist) == n_points
+    assert len(valid_mask) == n_points
+    assert counts.shape == (10, 3)
+
+    assert np.all(s_index >= 0)
+    assert np.all(s_index < 10)
+    assert np.all(r_index >= 0)
+    assert np.all(r_index < 3)
+
+
+def test_spectra_radial_assignment():
+    x = np.linspace(0, 20, 21)
+
+    model_bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.zeros_like(x)))
+            for y in [-2, -1, 0, 1, 2]
+        ]
+    )
+
+    lower = np.column_stack((x, np.full_like(x, -1.5), np.zeros_like(x)))
+    upper = np.column_stack((x, np.full_like(x, 1.5), np.zeros_like(x)))
+
+    target_bundle = Streamlines([lower, upper])
+
+    _, r_index, _, _, _ = spectra_assignment_map(
+        target_bundle, model_bundle, n_segments=10, n_radial=3
+    )
+
+    n_points = len(x)
+    lower_index = r_index[:n_points]
+    upper_index = r_index[n_points:]
+
+    assert np.median(lower_index) != np.median(upper_index)
+
+
+def test_spectra_profile():
+    x = np.linspace(2, 22, 101)
+
+    model_bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.full_like(x, 10)))
+            for y in np.linspace(8, 12, 61)
+        ]
+    )
+
+    bundle = Streamlines(
+        [
+            np.column_stack((x, np.full_like(x, y), np.full_like(x, 10)))
+            for y in np.linspace(8.5, 11.5, 61)
+        ]
+    )
+
+    metric = np.full((30, 30, 30), 2.5)
+
+    profile = spectra_profile(
+        model_bundle,
+        bundle,
+        bundle,
+        metric,
+        np.eye(4),
+        n_segments=10,
+        n_radial=3,
+    )
+
+    assert profile.shape == (10, 3)
+
+    valid = np.isfinite(profile)
+
+    assert np.any(valid)
+    npt.assert_allclose(profile[valid], 2.5)
+
+
+def _spectra_bundle(seed=0, n=60):
+    rng = np.random.default_rng(seed)
+    lines = [
+        np.c_[
+            np.linspace(0, 50, 60),
+            rng.normal(0, 3, 60),
+            rng.normal(0, 3, 60),
+        ]
+        + 25
+        for _ in range(n)
+    ]
+    return lines
+
+
+def test_create_radial_bins_empty_bin_labels():
+    # An empty interior bin must not shift labels away from the edges
+    dist = np.concatenate([[-5] * 2, [-2] * 100, [2] * 100, [4] * 100, [5]]).astype(
+        float
+    )
+    index, n_bins, edges = create_radial_bins(dist, radial_length=2.0)
+    npt.assert_array_equal(edges, [-3, -1, 1, 3, 5])
+    assert n_bins == 4
+    expected = np.clip(np.digitize(dist, edges) - 1, 0, n_bins - 1)
+    npt.assert_array_equal(index, expected)
+    assert index[dist == 4][0] == 3
+
+
+def test_create_radial_bins_median_ignores_empty_bins():
+    # Most bins are empty: the median of all bins would be 0 and nothing
+    # would ever be merged. Non-empty median (100) merges the 2-point bin.
+    dist = np.concatenate([[0.0] * 2, [10.0] * 100, [20.0] * 100, [40.0] * 100])
+    _, n_bins, edges = create_radial_bins(dist, radial_length=5.0, merge_threshold=0.2)
+    assert edges[0] > dist.min()
+    # a threshold of 0 never merges
+    _, n_none, edges_none = create_radial_bins(
+        dist, radial_length=5.0, merge_threshold=0.0
+    )
+    assert n_none == n_bins + 1
+    assert edges_none[0] == dist.min()
+
+
+def test_create_radial_bins_n_radial_no_merge():
+    dist = np.concatenate([[0.0] * 2, [10.0] * 100, [20.0] * 100])
+    _, n_bins, edges = create_radial_bins(dist, n_radial=4)
+    assert n_bins == 4
+    assert len(edges) == 5
+
+
+def test_get_grid_from_atlas_threshold_and_1d_mode():
+    atlas = Streamlines(_spectra_bundle())
+    out = get_grid_from_atlas(atlas, n_segments=8, threshold=50.0)
+    centroid, edges = out[2], out[4]
+    assert len(centroid) == 8
+    # n_segments without n_radial gives a single radial bin
+    assert len(edges) - 1 == 1
+    # radial_length is honoured when n_segments is not set
+    out2 = get_grid_from_atlas(atlas, radial_length=2.0)
+    assert len(out2[4]) - 1 > 1
+
+
+def test_parameterize_bundle_count_limits():
+    atlas = Streamlines(_spectra_bundle())
+    _, _, centroid, rvec, edges, _, _ = get_grid_from_atlas(atlas, n_segments=6)
+    # huge min_count masks every cell
+    *_, valid, _ = parameterize_bundle(
+        atlas, centroid, rvec, edges, min_count=10**9, max_count=10**9
+    )
+    assert not valid.any()
+    # zero limits mask no cell; only points outside the radial edges (e.g.
+    # exactly on the last edge or in merged-away bins) remain invalid
+    *_, valid, _ = parameterize_bundle(
+        atlas, centroid, rvec, edges, mask_threshold=0.0, min_count=0, max_count=0
+    )
+    assert valid.mean() > 0.95
+
+
+def test_spectra_accepts_lists_and_ndarrays():
+    lines = _spectra_bundle()
+    metric = np.ones((90, 60, 60))
+    ref = spectra_profile(
+        Streamlines(lines), Streamlines(lines), Streamlines(lines), metric, np.eye(4)
+    )
+    from_lists = spectra_profile(lines, lines, lines, metric, np.eye(4))
+    npt.assert_allclose(ref, from_lists, equal_nan=True)
+    assign = spectra_assignment_map(lines, lines, n_segments=5)
+    assert len(assign[0]) == sum(len(x) for x in lines)
+
+
+def test_spectra_empty_bundle_raises():
+    lines = _spectra_bundle()
+    metric = np.ones((90, 60, 60))
+    with pytest.raises(ValueError):
+        spectra_profile([], lines, lines, metric, np.eye(4))
+    with pytest.raises(ValueError):
+        SpectraGrid(lines).profile([], lines, metric, np.eye(4))
+
+
+def test_spectra_grid_class():
+    lines = _spectra_bundle()
+    metric = np.ones((90, 60, 60))
+    grid = SpectraGrid(lines, segment_length=5.0, radial_length=5.0)
+    assert grid.centroid.shape == (grid.n_segments, 3)
+    assert grid.radial_vectors.shape == (grid.n_segments, 3)
+    assert len(grid.radial_edges) == grid.n_radial + 1
+    assert grid.segment_length_actual > 0
+    assert grid.radial_length_actual > 0
+
+    s_idx, r_idx, s_dist, valid, counts = grid.assign(lines)
+    assert counts.shape == (grid.n_segments, grid.n_radial)
+    assert len(s_idx) == len(r_idx) == len(s_dist) == len(valid)
+
+    profile = grid.profile(lines, lines, metric, np.eye(4))
+    assert profile.shape == (grid.n_segments, grid.n_radial)
+    npt.assert_allclose(profile[np.isfinite(profile)], 1.0)
+
+    # functional wrapper gives identical results
+    func = spectra_profile(lines, lines, lines, metric, np.eye(4))
+    npt.assert_allclose(profile, func, equal_nan=True)
+
+
+def test_create_radial_bins_two_sparse_edge_bins():
+    # Both bins fall below the merge threshold: only one may be merged away
+    index, n_bins, edges = create_radial_bins(
+        [0, 0, 1, 10, 10, 9], radial_length=5, merge_threshold=5
+    )
+    assert n_bins == 1
+    npt.assert_array_equal(index, 0)
+    npt.assert_array_equal(edges, [5, 10])
+
+
+def test_parameterize_bundle_counts_are_raw_occupancy():
+    lines = _spectra_bundle()
+    atlas = Streamlines(lines)
+    _, _, centroid, rvec, edges, _, _ = get_grid_from_atlas(
+        atlas, n_segments=6, n_radial=4
+    )
+    edges = edges[1:-1]
+    s_idx, r_idx, _, valid, counts = parameterize_bundle(
+        atlas, centroid, rvec, edges, min_count=200, max_count=200
+    )
+    # some points are masked, but counts still hold every assigned point
+    assert not valid.all()
+    assert counts.sum() == len(s_idx)
+    expected = np.bincount(
+        s_idx * counts.shape[1] + r_idx, minlength=counts.size
+    ).reshape(counts.shape)
+    npt.assert_array_equal(counts, expected)
