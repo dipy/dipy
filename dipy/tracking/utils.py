@@ -498,6 +498,8 @@ def random_seeds_from_mask(
         of seeds.
     random_seed : int
         The seed for the random seed generator (numpy.random.Generator).
+        For a given ``random_seed`` and ``mask``, the first ``k`` seeds are
+        the same whatever ``seeds_count`` is.
 
     See Also
     --------
@@ -514,22 +516,22 @@ def random_seeds_from_mask(
     >>> mask[0,0,0] = 1
     >>> random_seeds_from_mask(mask, np.eye(4), seeds_count=1,
     ... seed_count_per_voxel=True, random_seed=1)
-    array([[-0.23838787, -0.20150886,  0.31422574]])
+    array([[-0.19680517, -0.04650211, -0.3659583 ]])
     >>> random_seeds_from_mask(mask, np.eye(4), seeds_count=6,
     ... seed_count_per_voxel=True, random_seed=1)
-    array([[-0.23838787, -0.20150886,  0.31422574],
-           [-0.41435083, -0.26318949,  0.30127447],
-           [ 0.44305611,  0.01132755,  0.47624371],
-           [ 0.30500292,  0.30794079,  0.01532556],
-           [ 0.03816435, -0.15672913, -0.13093276],
-           [ 0.12509547,  0.3972138 ,  0.27568569]])
+    array([[-0.19680517, -0.04650211, -0.3659583 ],
+           [-0.09688701, -0.29654476, -0.23768666],
+           [ 0.25036467, -0.21959124, -0.01480903],
+           [ 0.4807372 ,  0.46165719,  0.22478994],
+           [ 0.04122686, -0.2231088 , -0.33934799],
+           [ 0.46992541,  0.01606859, -0.38413439]])
     >>> mask[0,1,2] = 1
     >>> random_seeds_from_mask(mask, np.eye(4),
     ... seeds_count=2, seed_count_per_voxel=True, random_seed=1)
-    array([[ 0.30500292,  1.30794079,  2.01532556],
-           [-0.23838787, -0.20150886,  0.31422574],
-           [ 0.3702492 ,  0.78681721,  2.10314815],
-           [-0.41435083, -0.26318949,  0.30127447]])
+    array([[-0.19680517,  0.95349789,  1.6340417 ],
+           [-0.09688701, -0.29654476, -0.23768666],
+           [ 0.25036467,  0.78040876,  1.98519097],
+           [ 0.4807372 ,  0.46165719,  0.22478994]])
 
     """
     mask = np.asarray(mask, dtype=bool)
@@ -538,45 +540,33 @@ def random_seeds_from_mask(
     if mask.ndim != 3:
         raise ValueError("mask cannot be more than 3d")
 
-    # Randomize the voxels
     rng = np.random.default_rng(random_seed)
     shape = mask.shape
-    mask = mask.flatten()
-    indices = np.arange(len(mask))
-    rng.shuffle(indices)
+    mask = mask.ravel()
 
-    where = [np.unravel_index(i, shape) for i in indices if mask[i] == 1]
-    num_voxels = len(where)
+    # Randomize the voxel order, then keep the voxels inside the mask
+    indices = rng.permutation(mask.size)
+    indices = indices[mask[indices]]
+    num_voxels = indices.shape[0]
 
-    if not seed_count_per_voxel:
-        # Generate enough seeds per voxel
-        seeds_per_voxel = seeds_count // num_voxels + 1
+    if seed_count_per_voxel:
+        nb_seeds = seeds_count * num_voxels
     else:
-        seeds_per_voxel = seeds_count
+        nb_seeds = seeds_count if num_voxels > 0 else 0
 
-    seeds = []
-    for i in range(1, seeds_per_voxel + 1):
-        for s in where:
-            # Set the random seed with the current seed, the current value of
-            # seeds per voxel and the global random seed.
-            if random_seed is not None:
-                s_random_seed = hash((np.sum(s) + 1) * i + random_seed) % (2**32 - 1)
-                rng = np.random.default_rng(s_random_seed)
-            # Generate random triplet
-            grid = rng.random(3)
-            seed = s + grid - 0.5
-            seeds.append(seed)
-    seeds = np.asarray(seeds)
+    if nb_seeds <= 0:
+        return np.empty((0, 3), dtype=float)
 
-    if not seed_count_per_voxel:
-        # Select the requested amount
-        seeds = seeds[:seeds_count]
+    # one pass over the shuffled voxels per seed, so the first seeds do not
+    # depend on seeds_count
+    voxel = indices[np.arange(nb_seeds) % num_voxels]
+    seeds = np.column_stack(np.unravel_index(voxel, shape)).astype(float)
+    seeds += rng.random((nb_seeds, 3))
+    seeds -= 0.5
 
-    # Apply the spatial transform
-    if seeds.any():
-        # Use affine to move seeds into real world coordinates
-        seeds = np.dot(seeds, affine[:3, :3].T)
-        seeds += affine[:3, 3]
+    # Use affine to move seeds into real world coordinates
+    seeds = np.dot(seeds, affine[:3, :3].T)
+    seeds += affine[:3, 3]
 
     return seeds
 

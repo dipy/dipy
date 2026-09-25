@@ -5,7 +5,12 @@ import numpy.testing as npt
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import default_sphere, get_sphere
-from dipy.direction.pmf import SHCoeffPmfGen, SimplePeakGen, SimplePmfGen
+from dipy.direction.pmf import (
+    SHCoeffPmfGen,
+    SimplePeakGen,
+    SimplePmfGen,
+    _sh_order_from_ncoef,
+)
 from dipy.reconst import shm
 from dipy.testing.decorators import set_random_number_generator
 
@@ -64,6 +69,55 @@ def test_pmf_from_sh():
         pmfgen.get_pmf(np.array([0, 0, 10], dtype="float")),
         np.zeros(len(sphere.vertices)),
     )
+
+
+def test_sh_order_from_ncoef():
+    # symmetric counts: (l + 1)(l + 2) / 2
+    npt.assert_equal(_sh_order_from_ncoef(15), (4, False))
+    npt.assert_equal(_sh_order_from_ncoef(45), (8, False))
+    # full-basis counts: (l + 1) ** 2
+    npt.assert_equal(_sh_order_from_ncoef(25), (4, True))
+    npt.assert_equal(_sh_order_from_ncoef(81), (8, True))
+    # symmetric basis needs an even order
+    npt.assert_equal(_sh_order_from_ncoef(36), (5, True))
+    npt.assert_equal(_sh_order_from_ncoef(36, full_basis=True), (5, True))
+    npt.assert_raises(ValueError, _sh_order_from_ncoef, 36, full_basis=False)
+    # explicit flag must match the count
+    npt.assert_raises(ValueError, _sh_order_from_ncoef, 81, full_basis=False)
+    npt.assert_raises(ValueError, _sh_order_from_ncoef, 45, full_basis=True)
+    npt.assert_raises(ValueError, _sh_order_from_ncoef, 17)
+
+
+@set_random_number_generator()
+def test_pmf_from_full_basis_sh(rng=None):
+    sphere = get_sphere(name="repulsion100")
+    sh_order_max = 4
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        # an asymmetric sf, projected on the full basis so that the odd
+        # orders carry the asymmetric part
+        sf = rng.random([2, 2, 2, len(sphere.vertices)])
+        sh_full = shm.sf_to_sh(sf, sphere, sh_order_max=sh_order_max, full_basis=True)
+        expected = shm.sh_to_sf(
+            sh_full, sphere, sh_order_max=sh_order_max, full_basis=True
+        )
+        npt.assert_equal(sh_full.shape[-1], (sh_order_max + 1) ** 2)
+
+        for full_basis in [None, True]:
+            pmfgen = SHCoeffPmfGen(sh_full, sphere, None, full_basis=full_basis)
+            for ijk in [(0, 0, 0), (1, 1, 1), (0, 1, 0)]:
+                pmf = pmfgen.get_pmf(np.array(ijk, dtype=float))
+                npt.assert_array_almost_equal(pmf, expected[ijk])
+
+        # the same count declared symmetric is rejected rather than read past
+        # the end of the coefficient vector
+        npt.assert_raises(
+            ValueError, SHCoeffPmfGen, sh_full, sphere, None, full_basis=False
+        )
 
 
 def test_pmf_from_array():
