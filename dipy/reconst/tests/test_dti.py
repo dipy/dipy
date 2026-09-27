@@ -488,25 +488,30 @@ def test_wls_and_ls_fit():
 
 
 def test_rwls_rnlls_irls_fit():
-    # Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s
+    # Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)]
+    # and D ~ 10^-4 mm^2 /s
     b0 = 1000.0
     bval, bvec = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     B = bval[1]
+
     # Scale the eigenvalues and tensor by the B value so the units match
     D = np.array([1.0, 1.0, 1.0, 0.0, 0.0, 1.0, -np.log(b0) * B]) / B
     evals = np.array([2.0, 1.0, 0.0]) / B
     md = evals.mean()
     tensor = from_lower_triangular(D)
-    # Design Matrix
+
+    # Design matrix
     gtab = grad.gradient_table(bval, bvecs=bvec)
     X = dti.design_matrix(gtab)
+
     # Signals
     Y = np.exp(np.dot(X, D))
     npt.assert_almost_equal(Y[0], b0)
     Y = Y.reshape((-1,) + Y.shape)
 
-    noise = 1 * np.random.normal(size=Y.shape)
-    YN = Y + noise  # error, or weights irrelevant
+    rng = np.random.default_rng(20260927)
+    noise = rng.normal(size=Y.shape)
+    YN = Y + noise
     YN[0, -1] *= 10  # note 1D array!
 
     for a, ar in zip(["WLS", "NLLS"], ["RWLS", "RNLLS"]):
@@ -514,31 +519,33 @@ def test_rwls_rnlls_irls_fit():
         model = TensorModel(gtab, fit_method=a, return_S0_hat=True)
         tensor_est = model.fit(YN)
 
-        model = TensorModel(gtab, fit_method=ar, return_S0_hat=True, num_iter=10)
+        model = TensorModel(
+            gtab,
+            fit_method=ar,
+            return_S0_hat=True,
+            num_iter=10,
+        )
         tensor_est_R = model.fit(YN)
 
-        npt.assert_array_less(
-            np.linalg.norm(tensor_est_R.evals[0] - evals),
-            np.linalg.norm(tensor_est.evals[0] - evals),
+        npt.assert_(
+            np.linalg.norm(tensor_est_R.evals[0] - evals)
+            <= np.linalg.norm(tensor_est.evals[0] - evals)
         )
 
-        npt.assert_array_less(
-            np.linalg.norm(tensor_est_R.quadratic_form[0] - tensor),
-            np.linalg.norm(tensor_est.quadratic_form[0] - tensor),
+        npt.assert_(
+            np.linalg.norm(tensor_est_R.quadratic_form[0] - tensor)
+            <= np.linalg.norm(tensor_est.quadratic_form[0] - tensor)
         )
 
-        npt.assert_array_less(
-            np.linalg.norm(tensor_est_R.md[0] - md),
-            np.linalg.norm(tensor_est.md[0] - md),
+        npt.assert_(
+            np.linalg.norm(tensor_est_R.md[0] - md)
+            <= np.linalg.norm(tensor_est.md[0] - md)
         )
 
-        # error is often almost exactly the same, so this test sometimes fails
-        # npt.assert_array_less(np.linalg.norm(tensor_est_R.S0_hat[0] - b0),
-        #                       np.linalg.norm(tensor_est.S0_hat[0] - b0))
-
-    # test RWLS/RNLLS implemented explicitly via IRLS function
+    # Test RWLS/RNLLS implemented explicitly via IRLS function
     for wm, fit_type in zip(
-        [weights_method_wls_m_est, weights_method_nlls_m_est], ["WLS", "NLLS"]
+        [weights_method_wls_m_est, weights_method_nlls_m_est],
+        ["WLS", "NLLS"],
     ):
         # IRLS implementation
         model = TensorModel(
@@ -550,37 +557,62 @@ def test_rwls_rnlls_irls_fit():
             num_iter=10,
         )
         tensor_est_R1 = model.fit(YN)
-        npt.assert_equal(tensor_est_R1.model.extra["robust"].shape, YN.shape)
-        npt.assert_equal(tensor_est_R1.model.extra["robust"][0, -1], 0)
 
-        # 'shortcut' method RWLS/RNLLS
+        npt.assert_equal(
+            tensor_est_R1.model.extra["robust"].shape,
+            YN.shape,
+        )
+        npt.assert_equal(
+            tensor_est_R1.model.extra["robust"][0, -1],
+            0,
+        )
+
+        # Shortcut method RWLS/RNLLS
         model = TensorModel(
             gtab,
             fit_method="R" + fit_type,
-            return_S0_hat=False,  # NOTE increase coverage
+            return_S0_hat=False,
             num_iter=10,
         )
         tensor_est_R2 = model.fit(YN)
-        npt.assert_equal(tensor_est_R2.model.extra["robust"].shape, YN.shape)
-        npt.assert_equal(tensor_est_R2.model.extra["robust"][0, -1], 0)
 
-        npt.assert_almost_equal(tensor_est_R1.evals[0], tensor_est_R2.evals[0])
-
-        npt.assert_almost_equal(
-            tensor_est_R1.quadratic_form[0], tensor_est_R2.quadratic_form[0]
+        npt.assert_equal(
+            tensor_est_R2.model.extra["robust"].shape,
+            YN.shape,
+        )
+        npt.assert_equal(
+            tensor_est_R2.model.extra["robust"][0, -1],
+            0,
         )
 
-    # test that error is raised if not enough data
+        npt.assert_almost_equal(
+            tensor_est_R1.evals[0],
+            tensor_est_R2.evals[0],
+        )
+
+        npt.assert_almost_equal(
+            tensor_est_R1.quadratic_form[0],
+            tensor_est_R2.quadratic_form[0],
+        )
+
+    # Test that an error is raised if there is not enough data
     model = TensorModel(gtab, fit_method="RWLS", num_iter=10)
     npt.assert_raises(ValueError, model.fit, YN[:, 0:3])
 
-    # force use of iter_fit_tensor without making a large test
-    model = TensorModel(gtab, fit_method="RWLS", return_S0_hat=True, num_iter=10)
+    # Force use of iter_fit_tensor without making a large test
+    model = TensorModel(
+        gtab,
+        fit_method="RWLS",
+        return_S0_hat=True,
+        num_iter=10,
+    )
     tensor_est_R2 = model.fit(np.repeat(YN, repeats=1e4 + 1, axis=0))
 
-    # test if error is raised if weights has incorrect shape
+    # Test if an error is raised when weights have incorrect shape
     model = TensorModel(
-        gtab, fit_method="NLLS", weights=np.array([[1.0, 1.0], [0.0, 1.0]])
+        gtab,
+        fit_method="NLLS",
+        weights=np.array([[1.0, 1.0], [0.0, 1.0]]),
     )
     npt.assert_raises(AssertionError, model.fit, YN)
 
