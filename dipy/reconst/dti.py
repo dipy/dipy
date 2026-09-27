@@ -377,7 +377,7 @@ def isotropic(q_form):
     :footcite:p:`Ennis2006`):
 
     .. math::
-        \bar{A} = \frac{1}{2} tr(A) I
+        \bar{A} = \frac{1}{3} tr(A) I
 
     References
     ----------
@@ -415,7 +415,7 @@ def deviatoric(q_form):
     .. math::
         \widetilde{A} = A - \bar{A}
 
-    Where $A$ is the tensor quadratic form and $\bar{A}$ is the anisotropic
+    Where $A$ is the tensor quadratic form and $\bar{A}$ is the isotropic
     part of the tensor.
 
     References
@@ -465,6 +465,9 @@ def mode(q_form):
 
     See :footcite:p:`Ennis2006` for further details about the method.
 
+    Mode is the third orthogonal moment of the eigenvalue distribution
+    :footcite:p:`Chad2021`.
+
     Parameters
     ----------
     q_form : ndarray
@@ -479,8 +482,11 @@ def mode(q_form):
     Notes
     -----
     Mode ranges between -1 (planar anisotropy) and +1 (linear anisotropy)
-    with 0 representing isotropy. Mode is calculated with the following
-    equation (equation 9 in :footcite:p:`Ennis2006`):
+    with 0 representing orthotropy. Mode is undefined for isotropic tensors:
+    0 is returned when the deviatoric part is exactly zero, but nearly
+    isotropic tensors can give unstable values anywhere in [-1, 1]. Mode is
+    calculated with the following equation (equation 9 in
+    :footcite:p:`Ennis2006`):
 
     .. math::
 
@@ -506,6 +512,51 @@ def mode(q_form):
     mode[nonzero] = mode_nonzero
 
     return mode
+
+
+def norm_anisotropy(q_form):
+    r"""
+    Norm of anisotropy (NA) of a diffusion tensor.
+
+    NA is the second orthogonal moment of the eigenvalue distribution. See
+    :footcite:p:`Ennis2006` and :footcite:p:`Chad2021` for further details.
+
+    Parameters
+    ----------
+    q_form : ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (x, y, z, 3, 3) or (n, 3, 3) or (3, 3).
+
+    Returns
+    -------
+    na : array
+        Calculated norm of anisotropy in each spatial coordinate.
+
+    Notes
+    -----
+    Quote from :footcite:t:`Chad2021`:
+    "... NA is a shape measure directly based on the variance of the
+    eigenvalues and thus irrespective of alteration in MD. Degeneration of
+    primarily single-tract regions would manifest as decreased NA, whereas
+    selective degeneration of secondary crossing tracts would manifest as
+    increased NA."
+
+    NA is computed as (equation 6 in :footcite:p:`Chad2021`):
+
+    .. math::
+
+        NA = \lVert \widetilde{D} \rVert
+            = \sqrt{(\lambda_1-MD)^2 + (\lambda_2-MD)^2 + (\lambda_3-MD)^2}
+
+    Where :math:`\widetilde{D}` is the deviatoric part of the tensor quadratic form.
+
+    References
+    ----------
+    .. footbibliography::
+    """
+
+    A_squiggle = deviatoric(q_form)
+    return norm(A_squiggle)
 
 
 @warning_for_keywords()
@@ -561,8 +612,8 @@ def planarity(evals, *, axis=-1):
 
     Returns
     -------
-    linearity : array
-        Calculated linearity of the diffusion tensor.
+    planarity : array
+        Calculated planarity of the diffusion tensor.
 
     Notes
     -----
@@ -608,7 +659,7 @@ def sphericity(evals, *, axis=-1):
 
     .. math::
 
-        Sphericity = \frac{3 \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+        Sphericity = \frac{3 \lambda_3}{\lambda_1+\lambda_2+\lambda_3}
 
     References
     ----------
@@ -952,9 +1003,19 @@ class TensorFit:
     @auto_attr
     def mode(self):
         """
-        Tensor mode calculated from cached eigenvalues.
+        Tensor mode calculated from the tensor quadratic form.
         """
         return mode(self.quadratic_form)
+
+    @auto_attr
+    def na(self):
+        """Norm of anisotropy (NA) of the tensor.
+
+        Computed from the cached eigenvalues, which is equivalent to
+        :func:`norm_anisotropy` applied to the quadratic form.
+        """
+        evals = self.evals
+        return np.sqrt(np.sum((evals - evals.mean(-1, keepdims=True)) ** 2, -1))
 
     @auto_attr
     def md(self):
@@ -1046,17 +1107,17 @@ class TensorFit:
         r"""
         Returns
         -------
-        sphericity : array
-            Calculated sphericity of the diffusion tensor
+        planarity : array
+            Calculated planarity of the diffusion tensor
             :footcite:p:`Westin1997`.
 
         Notes
         -----
-        Sphericity is calculated with the following equation:
+        Planarity is calculated with the following equation:
 
         .. math::
 
-            Sphericity =
+            Planarity =
             \frac{2 (\lambda_2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
         References
