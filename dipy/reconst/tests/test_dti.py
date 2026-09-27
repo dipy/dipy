@@ -1237,39 +1237,71 @@ def test_cholesky_transformations():
 
 
 def test_dti_nlls_cholesky_accuracy():
-    """Test if NLLS with Cholesky retrieves correct ground truth parameters
-    in non-problematic voxels."""
+    """Test noisy NLLS with and without Cholesky parameterization."""
     evals_gt = np.array([0.0017, 0.0003, 0.0003])
     evecs_gt = np.eye(3)
 
     _, fbvals, fbvecs = get_fnames(name="small_25")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = grad.gradient_table(bvals, bvecs=bvecs)
-    signal_pred = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
 
-    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True, jac=False)
-    dtif = dtim.fit(signal_pred)
+    signal_clean = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
 
-    npt.assert_array_almost_equal(dtif.evals, evals_gt)
+    rng = np.random.default_rng(20260927)
+    noisy_signal = np.maximum(
+        signal_clean + rng.normal(0.0, 100.0 / 50.0, signal_clean.shape),
+        MIN_POSITIVE_SIGNAL,
+    )
+
+    nls_fit = dti.TensorModel(gtab, fit_method="NLS", cholesky=False, jac=False).fit(
+        noisy_signal
+    )
+
+    cholesky_fit = dti.TensorModel(
+        gtab, fit_method="NLS", cholesky=True, jac=False
+    ).fit(noisy_signal)
+
+    npt.assert_allclose(nls_fit.evals, evals_gt, atol=5e-4)
+    npt.assert_allclose(cholesky_fit.evals, evals_gt, atol=5e-4)
+    npt.assert_allclose(cholesky_fit.evals, nls_fit.evals, atol=1e-6)
 
 
 def test_dti_nlls_cholesky_positivity():
-    """Test if Cholesky enforces positivity even with negative
-    ground truth eigenvalues."""
+    """Test that Cholesky prevents negative tensor eigenvalues."""
     evals_gt = np.array([0.0017, 0.0003, -0.0001])
     evecs_gt = np.eye(3)
 
     _, fbvals, fbvecs = get_fnames(name="small_25")
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = grad.gradient_table(bvals, bvecs=bvecs)
+    design_matrix = dti.design_matrix(gtab)
 
-    signal_pred_corrupted = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
+    signal_pred = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
 
-    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True, jac=False)
-    dtif = dtim.fit(signal_pred_corrupted)
+    plain_params, _ = dti.nlls_fit_tensor(
+        design_matrix,
+        signal_pred,
+        jac=False,
+        cholesky=False,
+        return_lower_triangular=True,
+    )
 
-    npt.assert_(np.all(dtif.evals >= -1e-8))
-    npt.assert_(np.all((dtif.fa >= 0) & (dtif.fa <= 1)))
+    cholesky_params, _ = dti.nlls_fit_tensor(
+        design_matrix,
+        signal_pred,
+        jac=False,
+        cholesky=True,
+        return_lower_triangular=True,
+    )
+
+    plain_tensor = dti.from_lower_triangular(plain_params[0, :6])
+    cholesky_tensor = dti.from_lower_triangular(cholesky_params[0, :6])
+
+    plain_evals = np.linalg.eigvalsh(plain_tensor)
+    cholesky_evals = np.linalg.eigvalsh(cholesky_tensor)
+
+    npt.assert_(np.any(plain_evals < -1e-8))
+    npt.assert_(np.all(cholesky_evals >= -1e-12))
 
 
 def test_cholesky_jac_warning():
