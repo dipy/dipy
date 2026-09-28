@@ -16,13 +16,27 @@ from packaging.version import Version
 from spin import util
 from spin.cmds import meson
 
+try:
+    import resource  # Unix-only
+except ImportError:
+    resource = None
+
+try:
+    import psutil  # optional extra
+except ImportError:
+    psutil = None
+
 
 # From scipy: benchmarks/benchmarks/common.py
 def _set_mem_rlimit(*, max_mem=None):
     """Set address space rlimit."""
-    import resource
-
-    import psutil
+    missing = [
+        name
+        for name, mod in (("resource", resource), ("psutil", psutil))
+        if mod is None
+    ]
+    if missing:
+        raise ImportError(f"{', '.join(missing)} required to cap memory usage.")
 
     mem = psutil.virtual_memory()
 
@@ -259,10 +273,17 @@ def clean():
 
 _PROFILE_DRIVER = """\
 import ast
+import cProfile
 import importlib
+import os
 import sys
 
-module_name, _, attr = sys.argv[1].partition(":")
+# sys.path[0] is the throwaway directory this driver was written to; point it at
+# the invocation directory so a stray file in /tmp cannot shadow a real module.
+sys.path[0] = os.getcwd()
+
+output, spec = sys.argv[1], sys.argv[2]
+module_name, _, attr = spec.partition(":")
 target = importlib.import_module(module_name)
 for part in attr.split("."):
     target = getattr(target, part)
@@ -275,12 +296,21 @@ def _coerce(raw):
         return raw
 
 
-target(*[_coerce(a) for a in sys.argv[2:]])
+call_args = [_coerce(a) for a in sys.argv[3:]]
+profiler = cProfile.Profile()
+try:
+    profiler.runcall(target, *call_args)
+finally:
+    profiler.dump_stats(output)
 """
 
 
 def _profile_command(*, target, args, output):
-    """Build the ``python -m cProfile`` invocation for a script or a callable.
+    """Build the profiling invocation for a script or a callable.
+
+    A script runs under ``python -m cProfile``. A callable runs under a
+    throwaway driver that imports the target first and only profiles the call
+    itself, so import machinery does not swamp the stats.
 
     Parameters
     ----------
@@ -290,7 +320,7 @@ def _profile_command(*, target, args, output):
         Extra arguments handed to the script (as ``sys.argv``) or to the
         callable (each parsed with ``ast.literal_eval`` when possible).
     output : str
-        Path of the ``.prof`` file cProfile writes.
+        Path of the ``.prof`` file the run writes.
 
     Returns
     -------
@@ -300,20 +330,21 @@ def _profile_command(*, target, args, output):
         Path of the temporary driver script for a callable target, to be
         removed once the run completes.
     """
-    base = [sys.executable, "-m", "cProfile", "-o", output]
-    if os.path.exists(target):
-        return base + [target, *args], None
-    if ":" not in target:
+    if os.path.isfile(target):
+        return [sys.executable, "-m", "cProfile", "-o", output, target, *args], None
+    module_name, sep, attr = target.partition(":")
+    if not (sep and module_name and attr):
         raise click.BadParameter(
             f"{target!r} is neither an existing script nor a 'module:callable'."
         )
     fd, driver = tempfile.mkstemp(prefix="spin_profile_", suffix=".py")
     with os.fdopen(fd, "w") as fh:
         fh.write(_PROFILE_DRIVER)
-    return base + [driver, target, *args], driver
+    return [sys.executable, driver, output, target, *args], driver
 
 
 @click.command(context_settings={"ignore_unknown_options": True})
+@meson.build_dir_option
 @click.argument("target")
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 @click.option(
@@ -346,13 +377,19 @@ def _profile_command(*, target, args, output):
     metavar="FILE.prof",
     help="Keep the raw cProfile stats at this path (for snakeviz, tuna, ...).",
 )
-def profile(*, target, args, limit, sort, pattern, output):
+@click.pass_context
+def profile(ctx, *, target, args, limit, sort, pattern, output, build_dir=None):
     """⏱ Profile a script or a callable with cProfile.
 
     TARGET is a path to a Python script, or ``module:callable``.
     Remaining ARGS go to the script as ``sys.argv`` or to the callable
-    as positional arguments (Python literals are parsed, anything else
-    stays a string).
+    as positional arguments. Callable arguments are parsed with
+    ``ast.literal_eval`` when possible, so ``1`` is an int and ``"1"`` (quoted
+    twice for the shell, e.g. ``"'1'"``) is a str. Keyword arguments are not
+    supported.
+
+    Options belonging to TARGET itself must follow ``--``, otherwise ``-n``,
+    ``-s``, ``-f``, ``-o``, ``-C`` and ``--help`` are claimed by this command.
 
     Cython code is only visible to the profiler when the extension was
     compiled with ``# cython: profile=True``.
@@ -362,25 +399,42 @@ def profile(*, target, args, limit, sort, pattern, output):
 
     \b
     $ spin profile my_script.py --some-flag
+    $ spin profile my_script.py -- -o script_output.json
     $ spin profile dipy.core.geometry:sphere2cart 1 0.5 0.3 -n 30
     $ spin profile numpy:sum "[1, 2, 3]" -s time
     $ spin profile my_script.py -f "reconst" -o run.prof
     """
     keep = output is not None
-    output = output or tempfile.mktemp(prefix="spin_profile_", suffix=".prof")
-    cmd, driver = _profile_command(target=target, args=args, output=output)
+    output = os.path.abspath(output) if keep else None
+    driver = None
+    returncode = 0
     try:
-        util.run(cmd)
-        stats = pstats.Stats(output).strip_dirs().sort_stats(sort)
-        restrictions = (pattern, limit) if pattern else (limit,)
-        stats.print_stats(*restrictions)
+        if output is None:
+            fd, output = tempfile.mkstemp(prefix="spin_profile_", suffix=".prof")
+            os.close(fd)
+        cmd, driver = _profile_command(target=target, args=args, output=output)
+
+        build_cmd = meson._get_configured_command("build")
+        if build_cmd:
+            ctx.invoke(build_cmd, build_dir=build_dir, quiet=True)
+        meson._set_pythonpath(build_dir, quiet=True)
+
+        # A target that raises still leaves usable stats behind, so report them
+        # instead of letting spin exit on the non-zero return code.
+        returncode = util.run(cmd, sys_exit=False).returncode
+        if os.path.getsize(output):
+            stats = pstats.Stats(output).strip_dirs().sort_stats(sort)
+            restrictions = (pattern, limit) if pattern else (limit,)
+            stats.print_stats(*restrictions)
     finally:
         if driver is not None:
             os.remove(driver)
-        if not keep and os.path.exists(output):
+        if not keep and output is not None and os.path.exists(output):
             os.remove(output)
     if keep:
         click.secho(f"Raw stats written to {output}", fg="bright_green")
+    if returncode:
+        raise SystemExit(returncode)
 
 
 # ---------------------------------------------------------------------------
@@ -1258,9 +1312,7 @@ def prepare_release(*, from_step, last_tag, new_version, maint_branch):
     # ── Auto-detect maintenance branch ────────────────────────────────────
     if maint_branch is None:
         try:
-            import subprocess as _sp
-
-            current = _sp.check_output(
+            current = subprocess.check_output(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"], text=True
             ).strip()
             if current.startswith("maint/"):

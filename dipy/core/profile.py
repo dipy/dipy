@@ -17,6 +17,7 @@ pstats, _, _ = optional_package(
     "part of the python-profiler package in "
     "Debian/Ubuntu",
 )
+pyximport, have_pyximport, _ = optional_package("pyximport")
 
 
 class Profiler:
@@ -68,9 +69,10 @@ class Profiler:
         until="2.0.0",
     )
     def __init__(self, *args, call=None):
-        # Delay import until use of class instance.  We were getting some very
-        # odd build-as-we-go errors running tests and documentation otherwise
-        import pyximport
+        if not have_pyximport:
+            raise ImportError(
+                "pyximport (Cython) is required by dipy.core.profile.Profiler."
+            )
 
         pyximport.install()
 
