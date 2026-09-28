@@ -48,6 +48,10 @@ DIPY 1.13.0 changes
   removed. ``info`` is a property, so the parameter was never reachable and the
   summary was always printed to stdout; the behaviour is unchanged.
 
+- ``dipy.core.graph`` is deprecated and is removed in 2.0.0. Nothing in DIPY uses
+  its ``Graph`` class; instantiating it now raises a ``DeprecationWarning``. Use
+  ``networkx`` for graph manipulation instead.
+
 DIPY 1.12.0 changes
 -------------------
 
