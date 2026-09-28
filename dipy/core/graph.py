@@ -32,8 +32,11 @@ class Graph:
 
         Examples
         --------
+        >>> import warnings
         >>> from dipy.core.graph import Graph
-        >>> g=Graph()
+        >>> with warnings.catch_warnings():
+        ...     warnings.simplefilter("ignore", category=DeprecationWarning)
+        ...     g = Graph()
         >>> g.add_node('a', attr=5)
         >>> g.add_node('b', attr=6)
         >>> g.add_node('c', attr=10)
