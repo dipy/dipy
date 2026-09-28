@@ -9,7 +9,7 @@ import dipy.segment.featurespeed as dipysfeature
 import dipy.segment.metricspeed as dipysmetric
 from dipy.testing import assert_arrays_equal
 from dipy.testing.decorators import set_random_number_generator
-from dipy.testing.memory import get_type_refcount
+from dipy.testing.memory import _get_type_refcount
 import dipy.tracking.streamline as streamline_utils
 
 dtype = "float32"
@@ -197,8 +197,8 @@ def test_quickbundles_memory_leaks():
     qb = QuickBundles(threshold=2 * threshold)
 
     type_name_pattern = "memoryview"
-    initial_types_refcount = get_type_refcount(pattern=type_name_pattern)
+    initial_types_refcount = _get_type_refcount(pattern=type_name_pattern)
 
     qb.cluster(data)
     # At this point, all memoryviews created during clustering should be freed.
-    assert_equal(get_type_refcount(pattern=type_name_pattern), initial_types_refcount)
+    assert_equal(_get_type_refcount(pattern=type_name_pattern), initial_types_refcount)
