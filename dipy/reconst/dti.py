@@ -1944,10 +1944,14 @@ def nlls_fit_tensor(
 
         try:
             # Do the optimization in this voxel:
+            fit_args = (design_matrix, flat_data[vox], weights_vox)
+            if cholesky:
+                fit_args += (True,)
+
             this_param, status = opt.leastsq(
                 err_func,
                 start_params,
-                args=(design_matrix, flat_data[vox], weights_vox, cholesky),
+                args=fit_args,
                 Dfun=jac_func,
             )
 
