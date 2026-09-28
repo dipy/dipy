@@ -5,6 +5,12 @@ from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.histeq import histeq
 
 
+def _uniformity_error(arr):
+    """Spread of the output histogram; smaller means better equalized."""
+    counts, _ = np.histogram(arr, bins=16, range=(0, 255))
+    return counts.std()
+
+
 @set_random_number_generator()
 def test_histeq(rng=None):
     img = rng.random((16, 24, 8)) ** 3
@@ -20,8 +26,12 @@ def test_histeq(rng=None):
     assert np.all(np.diff(flat_out[order]) >= 0)
 
 
-def test_histeq_num_bins():
-    img = np.linspace(0, 1, 100).reshape(10, 10)
+@set_random_number_generator()
+def test_histeq_num_bins(rng=None):
+    img = rng.random((16, 24, 8)) ** 3
+
     coarse = histeq(img, num_bins=4)
     fine = histeq(img, num_bins=256)
-    assert len(np.unique(coarse)) <= len(np.unique(fine))
+
+    assert not np.allclose(coarse, fine)
+    assert _uniformity_error(fine) < _uniformity_error(coarse)
