@@ -30,6 +30,7 @@ python_sources = [
   'compatibility.py',
   'convert.py',
   'deprecator.py',
+  'histeq.py',
   'logging.py',
   'multiproc.py',
   'optpkg.py',

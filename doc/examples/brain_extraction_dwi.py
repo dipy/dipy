@@ -12,10 +12,10 @@ First import the necessary modules:
 import matplotlib.pyplot as plt
 import numpy as np
 
-from dipy.core.histeq import histeq
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
 from dipy.segment.mask import bounding_box, crop, median_otsu
+from dipy.utils.histeq import histeq
 
 ###############################################################################
 # Download and read the data for this tutorial.

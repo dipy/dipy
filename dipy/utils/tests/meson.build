@@ -22,6 +22,7 @@ python_sources = [
   'test_compatibility.py',
   'test_convert.py',
   'test_deprecator.py',
+  'test_histeq.py',
   'test_logging.py',
   'test_multiproc.py',
   'test_omp.py',
