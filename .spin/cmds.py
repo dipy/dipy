@@ -3,9 +3,12 @@
 import datetime
 import json
 import os
+import pstats
 import re
 import shutil
 import subprocess
+import sys
+import tempfile
 import tomllib
 
 import click
@@ -252,6 +255,132 @@ def clean():
     print(f"Removing `{install_dir}`")
     if os.path.isdir(install_dir):
         shutil.rmtree(install_dir)
+
+
+_PROFILE_DRIVER = """\
+import ast
+import importlib
+import sys
+
+module_name, _, attr = sys.argv[1].partition(":")
+target = importlib.import_module(module_name)
+for part in attr.split("."):
+    target = getattr(target, part)
+
+
+def _coerce(raw):
+    try:
+        return ast.literal_eval(raw)
+    except (ValueError, SyntaxError):
+        return raw
+
+
+target(*[_coerce(a) for a in sys.argv[2:]])
+"""
+
+
+def _profile_command(*, target, args, output):
+    """Build the ``python -m cProfile`` invocation for a script or a callable.
+
+    Parameters
+    ----------
+    target : str
+        Path to a Python script, or ``module:callable`` dotted target.
+    args : tuple of str
+        Extra arguments handed to the script (as ``sys.argv``) or to the
+        callable (each parsed with ``ast.literal_eval`` when possible).
+    output : str
+        Path of the ``.prof`` file cProfile writes.
+
+    Returns
+    -------
+    cmd : list of str
+        Command to execute.
+    driver : str or None
+        Path of the temporary driver script for a callable target, to be
+        removed once the run completes.
+    """
+    base = [sys.executable, "-m", "cProfile", "-o", output]
+    if os.path.exists(target):
+        return base + [target, *args], None
+    if ":" not in target:
+        raise click.BadParameter(
+            f"{target!r} is neither an existing script nor a 'module:callable'."
+        )
+    fd, driver = tempfile.mkstemp(prefix="spin_profile_", suffix=".py")
+    with os.fdopen(fd, "w") as fh:
+        fh.write(_PROFILE_DRIVER)
+    return base + [driver, target, *args], driver
+
+
+@click.command(context_settings={"ignore_unknown_options": True})
+@click.argument("target")
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+@click.option(
+    "-n",
+    "--limit",
+    default=20,
+    show_default=True,
+    help="Number of entries to print.",
+)
+@click.option(
+    "-s",
+    "--sort",
+    default="cumulative",
+    show_default=True,
+    type=click.Choice(["cumulative", "time", "calls", "name", "nfl"]),
+    help="pstats sort key.",
+)
+@click.option(
+    "-f",
+    "--filter",
+    "pattern",
+    default=None,
+    metavar="REGEX",
+    help="Only print entries whose name matches this regular expression.",
+)
+@click.option(
+    "-o",
+    "--output",
+    default=None,
+    metavar="FILE.prof",
+    help="Keep the raw cProfile stats at this path (for snakeviz, tuna, ...).",
+)
+def profile(*, target, args, limit, sort, pattern, output):
+    """⏱ Profile a script or a callable with cProfile.
+
+    TARGET is a path to a Python script, or ``module:callable``.
+    Remaining ARGS go to the script as ``sys.argv`` or to the callable
+    as positional arguments (Python literals are parsed, anything else
+    stays a string).
+
+    Cython code is only visible to the profiler when the extension was
+    compiled with ``# cython: profile=True``.
+
+    \b
+    Examples:
+
+    \b
+    $ spin profile my_script.py --some-flag
+    $ spin profile dipy.core.geometry:sphere2cart 1 0.5 0.3 -n 30
+    $ spin profile numpy:sum "[1, 2, 3]" -s time
+    $ spin profile my_script.py -f "reconst" -o run.prof
+    """
+    keep = output is not None
+    output = output or tempfile.mktemp(prefix="spin_profile_", suffix=".prof")
+    cmd, driver = _profile_command(target=target, args=args, output=output)
+    try:
+        util.run(cmd)
+        stats = pstats.Stats(output).strip_dirs().sort_stats(sort)
+        restrictions = (pattern, limit) if pattern else (limit,)
+        stats.print_stats(*restrictions)
+    finally:
+        if driver is not None:
+            os.remove(driver)
+        if not keep and os.path.exists(output):
+            os.remove(output)
+    if keep:
+        click.secho(f"Raw stats written to {output}", fg="bright_green")
 
 
 # ---------------------------------------------------------------------------
