@@ -60,7 +60,7 @@ DIPY 1.13.0 changes
       spin profile dipy.core.geometry:sphere2cart 1 0.5 0.3 -n 30
 
 - ``histeq`` moved from ``dipy.core.histeq`` to ``dipy.utils.histeq``. The old
-  location still resolves but warns, and is removed in 2.0.0::
+  location still resolves, calling it warns, and it is removed in 2.0.0::
 
       from dipy.core.histeq import histeq  # deprecated
 

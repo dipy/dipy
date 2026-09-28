@@ -274,22 +274,20 @@ def clean():
 _PROFILE_DRIVER = """\
 import ast
 import cProfile
+import functools
 import importlib
 import os
 import sys
+import types
 
 # sys.path[0] is the throwaway directory this driver was written to. Drop it and
-# put the invocation directory last instead: a stray file in /tmp must not shadow
-# a real module, and neither must a source checkout shadow the built package spin
-# placed on PYTHONPATH.
+# put the script or invocation directory last instead: a stray file in /tmp must
+# not shadow a real module, and neither must a source checkout shadow the built
+# package spin placed on PYTHONPATH.
 del sys.path[0]
-sys.path.append(os.getcwd())
 
-output, spec = sys.argv[1], sys.argv[2]
-module_name, _, attr = spec.partition(":")
-target = importlib.import_module(module_name)
-for part in attr.split("."):
-    target = getattr(target, part)
+output, kind, spec = sys.argv[1:4]
+rest = sys.argv[4:]
 
 
 def _coerce(raw):
@@ -299,10 +297,26 @@ def _coerce(raw):
         return raw
 
 
-call_args = [_coerce(a) for a in sys.argv[3:]]
+if kind == "script":
+    sys.path.append(os.path.dirname(os.path.abspath(spec)))
+    sys.argv = [spec, *rest]
+    with open(spec, "rb") as fh:
+        code = compile(fh.read(), spec, "exec")
+    main = types.ModuleType("__main__")
+    main.__file__ = spec
+    sys.modules["__main__"] = main
+    run = functools.partial(exec, code, main.__dict__)
+else:
+    sys.path.append(os.getcwd())
+    module_name, _, attr = spec.partition(":")
+    target = importlib.import_module(module_name)
+    for part in attr.split("."):
+        target = getattr(target, part)
+    run = functools.partial(target, *[_coerce(a) for a in rest])
+
 profiler = cProfile.Profile()
 try:
-    profiler.runcall(target, *call_args)
+    profiler.runcall(run)
 finally:
     profiler.dump_stats(output)
 """
@@ -311,9 +325,10 @@ finally:
 def _profile_command(*, target, args, output):
     """Build the profiling invocation for a script or a callable.
 
-    A script runs under ``python -m cProfile``. A callable runs under a
-    throwaway driver that imports the target first and only profiles the call
-    itself, so import machinery does not swamp the stats.
+    Both run under a throwaway driver that keeps the built package ahead of
+    the source tree on ``sys.path`` and lets ``SystemExit`` reach the
+    interpreter. A callable target is imported first and only the call itself
+    is profiled, so import machinery does not swamp the stats.
 
     Parameters
     ----------
@@ -329,21 +344,23 @@ def _profile_command(*, target, args, output):
     -------
     cmd : list of str
         Command to execute.
-    driver : str or None
-        Path of the temporary driver script for a callable target, to be
-        removed once the run completes.
+    driver : str
+        Path of the temporary driver script, to be removed once the run
+        completes.
     """
     if os.path.isfile(target):
-        return [sys.executable, "-m", "cProfile", "-o", output, target, *args], None
-    module_name, sep, attr = target.partition(":")
-    if not (sep and module_name and attr):
-        raise click.BadParameter(
-            f"{target!r} is neither an existing script nor a 'module:callable'."
-        )
+        kind = "script"
+    else:
+        kind = "callable"
+        module_name, sep, attr = target.partition(":")
+        if not (sep and module_name and attr):
+            raise click.BadParameter(
+                f"{target!r} is neither an existing script nor a 'module:callable'."
+            )
     fd, driver = tempfile.mkstemp(prefix="spin_profile_", suffix=".py")
     with os.fdopen(fd, "w") as fh:
         fh.write(_PROFILE_DRIVER)
-    return [sys.executable, driver, output, target, *args], driver
+    return [sys.executable, driver, output, kind, target, *args], driver
 
 
 @click.command(context_settings={"ignore_unknown_options": True})
@@ -424,16 +441,16 @@ def profile(ctx, *, target, args, limit, sort, pattern, output, build_dir=None):
     $ spin profile numpy:sum "[1, 2, 3]" -s time
     $ spin profile my_script.py -f "reconst" -o run.prof
     """
-    keep = output is not None
-    output = os.path.abspath(output) if keep else None
     driver = None
+    scratch = None
     returncode = 0
     have_stats = False
     try:
-        if output is None:
-            fd, output = tempfile.mkstemp(prefix="spin_profile_", suffix=".prof")
-            os.close(fd)
-        cmd, driver = _profile_command(target=target, args=args, output=output)
+        # Always profile into a fresh file, so stats left at ``output`` by an
+        # earlier run are never mistaken for this one's.
+        fd, scratch = tempfile.mkstemp(prefix="spin_profile_", suffix=".prof")
+        os.close(fd)
+        cmd, driver = _profile_command(target=target, args=args, output=scratch)
 
         build_cmd = meson._get_configured_command("build")
         if build_cmd:
@@ -442,25 +459,27 @@ def profile(ctx, *, target, args, limit, sort, pattern, output, build_dir=None):
 
         # A target that raises still leaves usable stats behind, so report them
         # instead of letting spin exit on the non-zero return code. A target that
-        # dies before cProfile dumps anything leaves no file at all.
+        # dies before the profiler dumps anything leaves the file empty.
         returncode = util.run(cmd, sys_exit=False).returncode
-        if os.path.exists(output) and os.path.getsize(output):
+        if os.path.getsize(scratch):
             try:
-                stats = pstats.Stats(output).strip_dirs().sort_stats(sort)
+                stats = pstats.Stats(scratch).strip_dirs().sort_stats(sort)
             except (AttributeError, EOFError, OSError, TypeError, ValueError):
-                click.secho(f"{output} holds no readable stats.", fg="red")
+                click.secho("The run left no readable stats.", fg="red")
             else:
                 have_stats = True
                 restrictions = (pattern, limit) if pattern else (limit,)
                 stats.print_stats(*restrictions)
+                if output is not None:
+                    output = os.path.abspath(output)
+                    shutil.copyfile(scratch, output)
     finally:
-        if driver is not None:
-            os.remove(driver)
-        if not keep and output is not None and os.path.exists(output):
-            os.remove(output)
+        for path in (driver, scratch):
+            if path is not None and os.path.exists(path):
+                os.remove(path)
     if not have_stats:
         click.secho("The run collected no profile stats.", fg="yellow")
-    elif keep:
+    elif output is not None:
         click.secho(f"Raw stats written to {output}", fg="bright_green")
     if returncode:
         raise SystemExit(returncode)
