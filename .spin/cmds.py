@@ -278,9 +278,12 @@ import importlib
 import os
 import sys
 
-# sys.path[0] is the throwaway directory this driver was written to; point it at
-# the invocation directory so a stray file in /tmp cannot shadow a real module.
-sys.path[0] = os.getcwd()
+# sys.path[0] is the throwaway directory this driver was written to. Drop it and
+# put the invocation directory last instead: a stray file in /tmp must not shadow
+# a real module, and neither must a source checkout shadow the built package spin
+# placed on PYTHONPATH.
+del sys.path[0]
+sys.path.append(os.getcwd())
 
 output, spec = sys.argv[1], sys.argv[2]
 module_name, _, attr = spec.partition(":")
@@ -359,7 +362,24 @@ def _profile_command(*, target, args, output):
     "--sort",
     default="cumulative",
     show_default=True,
-    type=click.Choice(["cumulative", "time", "calls", "name", "nfl"]),
+    type=click.Choice(
+        [
+            "calls",
+            "cumtime",
+            "cumulative",
+            "file",
+            "filename",
+            "line",
+            "module",
+            "name",
+            "ncalls",
+            "nfl",
+            "pcalls",
+            "stdname",
+            "time",
+            "tottime",
+        ]
+    ),
     help="pstats sort key.",
 )
 @click.option(
@@ -408,6 +428,7 @@ def profile(ctx, *, target, args, limit, sort, pattern, output, build_dir=None):
     output = os.path.abspath(output) if keep else None
     driver = None
     returncode = 0
+    have_stats = False
     try:
         if output is None:
             fd, output = tempfile.mkstemp(prefix="spin_profile_", suffix=".prof")
@@ -420,18 +441,26 @@ def profile(ctx, *, target, args, limit, sort, pattern, output, build_dir=None):
         meson._set_pythonpath(build_dir, quiet=True)
 
         # A target that raises still leaves usable stats behind, so report them
-        # instead of letting spin exit on the non-zero return code.
+        # instead of letting spin exit on the non-zero return code. A target that
+        # dies before cProfile dumps anything leaves no file at all.
         returncode = util.run(cmd, sys_exit=False).returncode
-        if os.path.getsize(output):
-            stats = pstats.Stats(output).strip_dirs().sort_stats(sort)
-            restrictions = (pattern, limit) if pattern else (limit,)
-            stats.print_stats(*restrictions)
+        if os.path.exists(output) and os.path.getsize(output):
+            try:
+                stats = pstats.Stats(output).strip_dirs().sort_stats(sort)
+            except (AttributeError, EOFError, OSError, TypeError, ValueError):
+                click.secho(f"{output} holds no readable stats.", fg="red")
+            else:
+                have_stats = True
+                restrictions = (pattern, limit) if pattern else (limit,)
+                stats.print_stats(*restrictions)
     finally:
         if driver is not None:
             os.remove(driver)
         if not keep and output is not None and os.path.exists(output):
             os.remove(output)
-    if keep:
+    if not have_stats:
+        click.secho("The run collected no profile stats.", fg="yellow")
+    elif keep:
         click.secho(f"Raw stats written to {output}", fg="bright_green")
     if returncode:
         raise SystemExit(returncode)
