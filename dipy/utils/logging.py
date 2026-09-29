@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from enum import IntEnum
 import logging
 import os
@@ -153,6 +154,13 @@ def add_file_handler(
         Log message format.
     datefmt : str, optional
         Date format for log messages.
+
+    Returns
+    -------
+    handler : CustomHandler
+        The handler that was added, to be passed to
+        :func:`remove_file_handler` when the file should stop receiving
+        messages.
     """
     _logger = logging.getLogger("dipy")
     if level is None:
@@ -161,6 +169,45 @@ def add_file_handler(
     handler.setLevel(level)
     handler.setFormatter(logging.Formatter(fmt, datefmt=datefmt))
     _logger.addHandler(handler)
+    return handler
+
+
+def remove_file_handler(handler):
+    """Detach a handler previously added by :func:`add_file_handler`.
+
+    Parameters
+    ----------
+    handler : logging.Handler
+        The handler to remove. It is closed after removal. Removing a
+        handler that is not attached is a no-op.
+    """
+    _logger = logging.getLogger("dipy")
+    _logger.removeHandler(handler)
+    handler.close()
+
+
+@contextmanager
+def file_handler(filename, *, level=None):
+    """Send DIPY log messages to ``filename`` for the duration of the block.
+
+    Parameters
+    ----------
+    filename : str or Path
+        Path to the log file. The file is opened in append mode.
+    level : int, optional
+        Logging level for the file handler. If None, uses the current logger
+        level.
+
+    Yields
+    ------
+    handler : CustomHandler
+        The handler writing to ``filename``.
+    """
+    handler = add_file_handler(filename, level=level)
+    try:
+        yield handler
+    finally:
+        remove_file_handler(handler)
 
 
 # Provide a default logger for convenience

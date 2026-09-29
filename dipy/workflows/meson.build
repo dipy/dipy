@@ -12,6 +12,7 @@ python_sources = [
     'mask.py',
     'multi_io.py',
     'nn.py',
+    'qc.py',
     'reconst.py',
     'report.py',
     'segment.py',

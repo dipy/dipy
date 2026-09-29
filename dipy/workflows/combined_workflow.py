@@ -12,7 +12,10 @@ and automatic DAG-based wiring. The pipeline:
 from collections import defaultdict, deque
 from datetime import datetime
 import difflib
+from functools import partial
+import glob
 import hashlib
+import http.server
 import importlib
 import inspect
 import json
@@ -29,16 +32,23 @@ os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 from pathlib import Path
 import re
 import shutil
+import socket
+import socketserver
+import subprocess
 import sys
 import time
+import traceback
+import urllib.parse
+import webbrowser
 
 import numpy as np
 
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.utils.logging import add_file_handler, logger
 from dipy.utils.optpkg import optional_package
-from dipy.workflows import templates
+from dipy.workflows import report, templates
 from dipy.workflows.cli import cli_flows
+from dipy.workflows.qc import qc_result, run_stage_qc
 from dipy.workflows.workflow import Workflow
 
 try:  # standard module since Python 3.11
@@ -823,6 +833,122 @@ def _execute_stage_isolated(*, module_name, class_name, init_params, run_params)
     return queue.get_nowait()
 
 
+def _stage_run_params(resolved_config):
+    """Merge the ``inputs``, ``params`` and top-level keys of a stage config.
+
+    Parameters
+    ----------
+    resolved_config : dict
+        Stage configuration with variables resolved.
+
+    Returns
+    -------
+    dict
+        Workflow parameters, ``param -> value``.
+    """
+    return {
+        **resolved_config.get("inputs", {}),
+        **resolved_config.get("params", {}),
+        **{
+            key: value
+            for key, value in resolved_config.items()
+            if key not in ("name", "cli", "inputs", "params")
+        },
+    }
+
+
+def _open_command(path):
+    """Shell command that opens a file with the platform's default viewer.
+
+    Parameters
+    ----------
+    path : str
+        File to open.
+
+    Returns
+    -------
+    str
+        Command to paste in a terminal.
+    """
+    opener = {"darwin": "open", "win32": "start"}.get(sys.platform, "xdg-open")
+    return f'{opener} "{path}"'
+
+
+def _write_stage_qc(
+    *,
+    record,
+    stage_map,
+    resolved_outputs,
+    io_config,
+    stage_names,
+    pipeline_name,
+    error=None,
+):
+    """Run the QC of a stage and write its page, never raising.
+
+    Parameters
+    ----------
+    record : dict
+        Stage info (``name``, ``cli``, ``duration``, ``outputs``, ...).
+    stage_map : dict
+        Mapping of stage name -> stage configuration.
+    resolved_outputs : dict
+        Mapping of stage_name -> {output_param -> file_path}.
+    io_config : dict
+        IO configuration.
+    stage_names : list of str
+        All stage names in execution order.
+    pipeline_name : str
+        Pipeline name shown in the page header.
+    error : str, optional
+        Traceback of a failed stage; the page then reports a FAIL.
+    """
+    name = record["name"]
+    index = stage_names.index(name) + 1
+    reports_dir = os.path.join(io_config.get("out_dir", "."), "reports")
+    try:
+        previous = report.load_stage_record(
+            reports_dir=reports_dir, index=index, stage_name=name
+        )
+        if error is not None:
+            qc = qc_result(error=error, status="FAIL")
+        elif record.get("skipped") == "restart" and previous is not None:
+            qc = previous["qc"]
+        else:
+            try:
+                resolved = resolve_stage_parameters(
+                    stage_map[name], resolved_outputs, io_config
+                )
+            except ValueError:
+                resolved = stage_map[name]
+            inputs = _stage_run_params(resolved)
+            qc = run_stage_qc(
+                cli=record.get("cli"),
+                outputs=record.get("outputs", {}),
+                inputs=inputs,
+                io_config=io_config,
+            )
+        page = report.write_stage_report(
+            reports_dir=reports_dir,
+            stage_names=stage_names,
+            index=index,
+            record={**record, "qc": qc},
+            pipeline_name=pipeline_name,
+        )
+        report.write_index(
+            reports_dir=reports_dir,
+            stage_names=stage_names,
+            pipeline_name=pipeline_name,
+        )
+        logger.info(f"QC report [{qc['status']}]: {page}")
+        logger.info(f"  Open it now: {_open_command(page)}  (or double-click it)")
+    except Exception:
+        logger.warning(
+            f"Could not write the QC report of stage '{name}':\n"
+            f"{traceback.format_exc()}"
+        )
+
+
 def execute_pipeline_stage(
     *, stage_name, stage_config, resolved_outputs, io_config, force=False
 ):
@@ -852,24 +978,8 @@ def execute_pipeline_stage(
     if cli_name not in cli_flows:
         raise ValueError(f"Unknown CLI: {cli_name}")
 
-    resolved_config = resolve_stage_parameters(
-        stage_config, resolved_outputs, io_config
-    )
-
-    workflow_params = {}
-
-    if "inputs" in resolved_config:
-        workflow_params.update(resolved_config["inputs"])
-
-    if "params" in resolved_config:
-        workflow_params.update(resolved_config["params"])
-
-    workflow_params.update(
-        {
-            key: value
-            for key, value in resolved_config.items()
-            if key not in ("name", "cli", "inputs", "params")
-        }
+    workflow_params = _stage_run_params(
+        resolve_stage_parameters(stage_config, resolved_outputs, io_config)
     )
 
     module_name, class_name = cli_flows[cli_name]
@@ -987,14 +1097,15 @@ def discover_stage_outputs(*, stage_name, stage_config, io_config):
     dict
         Dictionary mapping output parameter names to file paths.
     """
-    import glob
-
     cli_name = stage_config.get("cli")
     if not cli_name or cli_name not in cli_flows:
         return {}
 
     outputs = introspect_workflow_outputs(cli_name)
-    out_dir = stage_config.get("out_dir") or io_config.get("out_dir", ".")
+    # The stage out_dir still carries its ${io.*} references at this point.
+    out_dir = resolve_stage_parameters(
+        stage_config.get("out_dir"), {}, io_config
+    ) or io_config.get("out_dir", ".")
     discovered = {}
 
     # Strategy 1: Check if output filenames are explicitly specified in config
@@ -1373,6 +1484,15 @@ def execute_semantic_pipeline(
         pipeline_stages=pipeline_stages, io_config=io_config
     )
     timing_cache = _load_timing_cache(out_dir=out_dir, fingerprint=fingerprint)
+    reports_dir = os.path.join(out_dir, "reports")
+    write_qc = partial(
+        _write_stage_qc,
+        stage_map=stage_map,
+        resolved_outputs=resolved_outputs,
+        io_config=io_config,
+        stage_names=full_execution_order,
+        pipeline_name=config.get("General", {}).get("name", "Pipeline"),
+    )
 
     if start:
         start_idx = execution_order.index(start)
@@ -1414,6 +1534,7 @@ def execute_semantic_pipeline(
                         "skipped": "restart",
                     }
                 )
+                write_qc(record=stages_info[-1])
 
         execution_order = execution_order[start_idx:]
         logger.info(f"Executing stages: {' → '.join(execution_order)}")
@@ -1473,6 +1594,7 @@ def execute_semantic_pipeline(
                     }
                 )
                 logger.info(f"Stage '{stage_name}' outputs already exist, skipping.")
+                write_qc(record=stages_info[-1])
                 continue
 
         if stage_name in user_mask_stages:
@@ -1486,6 +1608,7 @@ def execute_semantic_pipeline(
                     "skipped": "user_mask",
                 }
             )
+            write_qc(record=stages_info[-1])
             continue
 
         try:
@@ -1508,6 +1631,7 @@ def execute_semantic_pipeline(
                     "outputs": outputs,
                 }
             )
+            write_qc(record=stages_info[-1])
             timing_cache[stage_name] = stage_duration
             _save_timing_cache(
                 out_dir=out_dir, fingerprint=fingerprint, timing_data=timing_cache
@@ -1518,9 +1642,17 @@ def execute_semantic_pipeline(
 
         except Exception as e:
             logger.error(f"Pipeline failed at stage '{stage_name}': {str(e)}")
-            import traceback
-
             logger.error(traceback.format_exc())
+            write_qc(
+                record={
+                    "name": stage_name,
+                    "cli": stage_config.get("cli"),
+                    "duration": time.perf_counter() - stage_start,
+                    "success": False,
+                    "outputs": {},
+                },
+                error=traceback.format_exc(),
+            )
             sys.exit(1)
 
     total_time = sum(
@@ -1530,8 +1662,6 @@ def execute_semantic_pipeline(
     logger.info("=" * 60)
     logger.info("Pipeline Completed Successfully!")
     logger.info("=" * 60)
-
-    from dipy.workflows import report
 
     execution_info = {
         "stages": stages_info,
@@ -1547,18 +1677,17 @@ def execute_semantic_pipeline(
 
     try:
         report_path = report.generate_html_report(
-            config, config_file_path or "config.toml", execution_info, report_path
+            config=config,
+            config_file_path=config_file_path or "config.toml",
+            execution_info=execution_info,
+            output_path=report_path,
+            reports_dir=reports_dir,
         )
         logger.info(f"HTML report generated: {report_path}")
-        logger.info("")
-        logger.info("=" * 70)
-        logger.info("To visualize results with interactive 3D viewers, run:")
-        logger.info(f"  dipy_auto {report_path}")
-        logger.info("=" * 70)
+        logger.info(f"Per-stage QC reports: {os.path.join(reports_dir, 'index.html')}")
+        logger.info("Open them in a browser, or serve with: dipy_auto <report.html>")
     except Exception as e:
         logger.warning(f"Failed to generate HTML report: {e}")
-        import traceback
-
         logger.debug(traceback.format_exc())
 
 
@@ -1615,26 +1744,64 @@ def _validate_mask_file(mask_file):
 # - dipy cluster qbx
 
 
+class _ReportHandler(http.server.SimpleHTTPRequestHandler):
+    """Serve a report and launch Skyline on the files it lists.
+
+    The pages call ``/qc-open?path=...``; anything else is served statically.
+    Only files under the served directory can be opened, and the response
+    body is the message the page shows when the launch fails.
+    """
+
+    def do_GET(self):  # noqa: N802 — http.server API
+        if urllib.parse.urlparse(self.path).path != "/qc-open":
+            super().do_GET()
+            return
+
+        query = urllib.parse.urlparse(self.path).query
+        target = urllib.parse.parse_qs(query).get("path", [""])[0]
+        skyline = shutil.which("dipy_skyline")
+        root = Path(self.directory).resolve()
+        path = Path(target).resolve()
+
+        if skyline is None:
+            self._reply(
+                404,
+                "Skyline (dipy_skyline) was not found in this environment. "
+                "Install it, or run the command below yourself.",
+            )
+        elif not path.is_file() or root not in path.parents:
+            self._reply(403, f"'{target}' is not a file served by this report.")
+        else:
+            subprocess.Popen([skyline, str(path)])
+            self._reply(200, f"Skyline launched on {path.name}.")
+
+    def _reply(self, code, message):
+        body = message.encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
 def _serve_html_report(report_path):
     """Serve an HTML pipeline report via a local HTTP server and open it.
 
-    Starts a ``http.server`` rooted at the report's directory, opens the
-    default browser, and blocks until the user presses Ctrl+C.
+    The server is rooted at the pipeline output directory, so that a stage
+    page under ``reports/`` can still reach the outputs it links to. It opens
+    the default browser and blocks until the user presses Ctrl+C.
 
     Parameters
     ----------
     report_path : str or Path
         Path to the HTML report file (e.g., ``pipeline_report.html``).
     """
-    import functools
-    import http.server
-    import socket
-    import socketserver
-    import webbrowser
-
     report_path = Path(report_path).resolve()
-    report_dir = str(report_path.parent)
-    report_name = report_path.name
+    root = report_path.parent
+    if root.name == "reports":
+        root = root.parent
+    report_dir = str(root)
+    report_name = str(report_path.relative_to(root))
 
     host = "127.0.0.1"
     port = 8000
@@ -1646,9 +1813,7 @@ def _serve_html_report(report_path):
             except OSError:
                 port += 1
 
-    handler = functools.partial(
-        http.server.SimpleHTTPRequestHandler, directory=report_dir
-    )
+    handler = partial(_ReportHandler, directory=report_dir)
     url = f"http://localhost:{port}/{report_name}"
     logger.info(f"Serving report at: {url}")
     logger.info("Press Ctrl+C to stop the server.")
@@ -1889,8 +2054,6 @@ class AutoFlow(Workflow):
                         pipeline_type = selected_pipeline
                 except Exception as e:
                     logger.error(f"Error in interactive mode: {e}")
-                    import traceback
-
                     traceback.print_exc()
                     sys.exit(1)
 
