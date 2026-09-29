@@ -535,7 +535,7 @@ def _make_fetcher(
         if msg is not None:
             logger.info(msg)
         if unzip:
-            for f in local_fnames:
+            for f in files:
                 p = Path(f)
                 if p.suffix in (".gz", ".bz2"):
                     if p.with_suffix("").suffix == ".tar":

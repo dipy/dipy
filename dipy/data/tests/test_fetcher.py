@@ -144,6 +144,59 @@ def test_make_fetcher_http(tmp_path):
         os.chdir(original_cwd)
 
 
+@pytest.mark.parametrize("extension", [".zip", ".tar.gz", ".tar.bz2"])
+def test_make_fetcher_optional_archives(tmp_path, extension):
+    served = tmp_path / "served"
+    served.mkdir()
+    names = [f"required{extension}", f"optional{extension}"]
+    for name, member in zip(names, ["required.txt", "optional.txt"]):
+        archive = served / name
+        if extension == ".zip":
+            with zipfile.ZipFile(archive, "w") as z:
+                z.writestr(member, b"data")
+        else:
+            mode = "w:gz" if extension == ".tar.gz" else "w:bz2"
+            with tarfile.open(archive, mode) as tar:
+                info = tarfile.TarInfo(member)
+                info.size = 4
+                tar.addfile(info, io.BytesIO(b"data"))
+
+    dest = tmp_path / "dest"
+    server, base_url, original_cwd = _free_port_server(str(served))
+    try:
+        fetch = _make_fetcher(
+            "optional_archive_fetcher",
+            dest,
+            base_url,
+            names,
+            names,
+            md5_list=[_get_file_md5(served / name) for name in names],
+            optional_fnames=[names[1]],
+            unzip=True,
+        )
+        files, folder = fetch()
+        assert folder == dest
+        assert set(files) == {names[0]}
+        assert (dest / "required.txt").read_bytes() == b"data"
+        assert not (dest / names[1]).exists()
+        assert not (dest / "optional.txt").exists()
+
+        files, _ = fetch(include_optional=True)
+        assert set(files) == set(names)
+        assert (dest / "optional.txt").read_bytes() == b"data"
+        if extension == ".zip":
+            assert files[names[0]][2] == ("required.txt",)
+            assert files[names[1]][2] == ("optional.txt",)
+        (dest / "optional.txt").unlink()
+        files, _ = fetch()
+        assert set(files) == {names[0]}
+        assert not (dest / "optional.txt").exists()
+    finally:
+        server.shutdown()
+        server.server_close()
+        os.chdir(original_cwd)
+
+
 def test_make_fetcher_tar_member_cannot_escape_folder(tmp_path):
     """A tar member with a parent-directory path is not extracted outside `folder`.
 
