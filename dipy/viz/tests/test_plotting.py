@@ -1,3 +1,6 @@
+from contextlib import chdir
+import os
+
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -13,6 +16,9 @@ from dipy.sims.voxel import multi_tensor
 from dipy.utils.optpkg import optional_package
 
 _, have_matplotlib, _ = optional_package("matplotlib")
+_, has_fury_v2, _ = optional_package("fury", min_version="2.0.0")
+if has_fury_v2:
+    from fury import window
 
 if have_matplotlib:
     import matplotlib
@@ -165,6 +171,156 @@ def qti_fits():
 
 def _displayed(ax):
     return ax.get_images()[-1].get_array()
+
+
+def _dominant_pixels(pixels, channel):
+    other_channels = [index for index in range(3) if index != channel]
+    return np.count_nonzero(
+        (pixels[..., channel] > 0.6)
+        & (pixels[..., channel] > pixels[..., other_channels[0]] * 1.5)
+        & (pixels[..., channel] > pixels[..., other_channels[1]] * 1.5)
+    )
+
+
+def _gradient_plot_table():
+    return gradient_table(
+        [0.0, 1000.0, 1000.0, 2500.0],
+        bvecs=np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+            ]
+        ),
+    )
+
+
+@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2")
+@pytest.mark.parametrize("show", [False, True])
+def test_plot_gradient_sphere_draws_overlaid_spheres_and_saves(tmp_path, show):
+    red_sphere = HemiSphere(xyz=np.array([[1.0, 0.0, 0.0]]))
+    green_sphere = HemiSphere(xyz=np.array([[0.0, 1.0, 0.0]]))
+
+    previous_fury = os.environ.get("FURY_OFFSCREEN")
+    capture_directory = tmp_path / "captures"
+    capture_directory.mkdir()
+    output = tmp_path / "spheres.png"
+    with chdir(capture_directory):
+        try:
+            os.environ["FURY_OFFSCREEN"] = "1"
+            scene = plotting.plot_gradient_sphere(red_sphere, colors=(1.0, 0.0, 0.0))
+            returned_scene = plotting.plot_gradient_sphere(
+                green_sphere,
+                scene=scene,
+                colors=(0.0, 1.0, 0.0),
+                filename=output,
+                size=(480, 320),
+                show=show,
+            )
+        finally:
+            if previous_fury is None:
+                os.environ.pop("FURY_OFFSCREEN", None)
+            else:
+                os.environ["FURY_OFFSCREEN"] = previous_fury
+    pixels = plt.imread(output)[..., :3]
+
+    if show:
+        assert returned_scene is None
+    else:
+        assert returned_scene is scene
+    assert pixels.shape == (320, 480, 3)
+    assert output.is_file()
+    assert output.stat().st_size > 0
+    assert _dominant_pixels(pixels, 0) > 20
+    assert _dominant_pixels(pixels, 1) > 20
+    assert np.any(np.all(pixels < 0.6, axis=-1))
+
+
+@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2")
+def test_plot_gradient_sphere_preserves_framing_after_resize(tmp_path):
+    sphere = HemiSphere(xyz=np.eye(3))
+    scene = plotting.plot_gradient_sphere(
+        sphere, filename=tmp_path / "initial.png", size=(300, 300)
+    )
+    manager = window.ShowManager(
+        scene=scene,
+        window_type="offscreen",
+        size=(300, 300),
+        pixel_ratio=1.0,
+    )
+    output = tmp_path / "resized.png"
+    try:
+        manager.render()
+        manager.window.draw()
+        manager.window.set_logical_size(480, 320)
+        manager.window.draw()
+        manager.snapshot(fname=output)
+    finally:
+        manager.window.close()
+    pixels = plt.imread(output)[..., :3]
+    green_pixels = (
+        (pixels[..., 1] > 0.6) & (pixels[..., 0] < 0.3) & (pixels[..., 2] < 0.3)
+    )
+    rows, columns = np.nonzero(green_pixels)
+
+    assert pixels.shape == (320, 480, 3)
+    assert np.ptp(rows) > 100
+    assert np.ptp(columns) > 100
+
+
+@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2")
+def test_plot_gradient_sphere_renders_gradient_shells_from_bvalues(tmp_path):
+    output = tmp_path / "gradients.png"
+
+    plotting.plot_gradient_sphere(_gradient_plot_table(), filename=output)
+    pixels = plt.imread(output)[..., :3]
+
+    assert output.is_file()
+    assert np.count_nonzero(np.all(pixels < 0.2, axis=-1)) > 20
+    assert _dominant_pixels(pixels, 2) > 20
+    assert (
+        np.count_nonzero(
+            (pixels[..., 1] > 0.6) & (pixels[..., 2] > 0.6) & (pixels[..., 0] < 0.3)
+        )
+        > 20
+    )
+
+
+@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2")
+def test_create_shells_composes_single_shell_actor(tmp_path):
+    gtab = gradient_table(
+        [0.0, 1000.0, 1000.0],
+        bvecs=np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]),
+    )
+    scene = window.Scene(background=(1.0, 1.0, 1.0, 1.0))
+    scene.add(plotting.create_shells(gtab))
+    output = tmp_path / "single_shell.png"
+    window.snapshot(scene=scene, fname=output)
+    pixels = plt.imread(output)[..., :3]
+
+    assert np.count_nonzero(np.all(pixels < 0.2, axis=-1)) > 20
+    assert _dominant_pixels(pixels, 2) > 20
+    assert not np.any(
+        (pixels[..., 1] > 0.6) & (pixels[..., 2] > 0.6) & (pixels[..., 0] < 0.3)
+    )
+
+
+@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2")
+def test_plot_gradient_sphere_rejects_invalid_inputs_before_drawing(tmp_path):
+    all_b0 = gradient_table([0.0, 0.0], bvecs=np.zeros((2, 3)))
+    invalid_gtab = _gradient_plot_table()
+    invalid_gtab.bvals[1] = np.nan
+    output = tmp_path / "unwritten.png"
+
+    with pytest.raises(TypeError):
+        plotting.plot_gradient_sphere(object(), filename=output)
+    with pytest.raises(ValueError):
+        plotting.plot_gradient_sphere(all_b0, filename=output)
+    with pytest.raises(ValueError):
+        plotting.plot_gradient_sphere(invalid_gtab, filename=output)
+
+    assert not output.exists()
 
 
 def test_compare_maps_lays_fits_on_rows_and_maps_on_columns(dti_fit, dki_fit):
