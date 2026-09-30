@@ -17,7 +17,6 @@ from dipy.align import affine_registration
 from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import CCMetric
-from dipy.align.reslice import reslice
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
 from dipy.nn.utils import normalize
@@ -360,6 +359,9 @@ def synb0_syn(
         )
 
     # ── Step 1: Affine T1 → MNI T1 (sparse sampling for speed) ──────────
+    # Restricting the template to its brain mask only makes sense when the T1
+    # is skull-stripped too; with a whole-head T1 it pulls the scalp into the
+    # template brain and the affine collapses (tens of mm off).
     logger.info("Performing affine registration of T1 to MNI template...")
     T1_affine_to_template, t1_reg_affine = affine_registration(
         T1_for_reg,
@@ -372,7 +374,7 @@ def synb0_syn(
         level_iters=[100, 50, 25],
         sigmas=[4.0, 2.0, 1.0],
         factors=[8, 4, 2],
-        static_mask=mni_mask,
+        static_mask=mni_mask if T1_mask is not None else None,
         moving_mask=T1_mask.astype(bool) if T1_mask is not None else None,
     )
     _save_debug_volume(
@@ -404,21 +406,26 @@ def synb0_syn(
     dwi_norm = normalize(dwi_for_field, min_v=0, max_v=dwi_p99, new_min=0, new_max=100)
     t1_p99 = np.percentile(T1_for_reg, 99)
     t1_norm = normalize(T1_for_reg, min_v=0, max_v=t1_p99, new_min=0, new_max=100)
-    _, b0_to_t1_affine = affine_registration(
-        dwi_norm,
+    # The b0 is the static image: MI is sampled on the static grid, and a
+    # whole-head T1 grid extends far past a cropped EPI field of view.
+    _, t1_to_b0_affine = affine_registration(
         t1_norm,
-        moving_affine=dwi_affine,
-        static_affine=T1_affine,
+        dwi_norm,
+        moving_affine=T1_affine,
+        static_affine=dwi_affine,
         nbins=32,
         metric="MI",
         pipeline=["center_of_mass", "translation", "rigid"],
         level_iters=[100, 50, 25],
         sigmas=[4.0, 2.0, 1.0],
         factors=[8, 4, 2],
-        moving_mask=dwi_mask.astype(bool) if dwi_mask is not None else None,
-        static_mask=T1_mask.astype(bool) if T1_mask is not None else None,
+        moving_mask=T1_mask.astype(bool) if T1_mask is not None else None,
+        static_mask=dwi_mask.astype(bool) if dwi_mask is not None else None,
     )
-    dwi_reg_affine = t1_reg_affine @ b0_to_t1_affine
+    # t1_reg_affine maps MNI -> T1 world and b0_to_t1_affine maps T1 -> b0
+    # world, so MNI -> b0 applies t1_reg_affine first.
+    b0_to_t1_affine = np.linalg.inv(t1_to_b0_affine)
+    dwi_reg_affine = b0_to_t1_affine @ t1_reg_affine
 
     dwi_to_mni_map = AffineMap(
         dwi_reg_affine,
@@ -445,34 +452,24 @@ def synb0_syn(
         dwi_mask_f = None
         masked_dwi_reg_to_template = dwi_affine_to_template
 
-    # ── Step 3: Reslice to 2.5 mm for Synb0 ─────────────────────────────
-    synb0_shape = (77, 91, 77)
-    synb0_zooms = (2.5, 2.5, 2.5)
-    mni_t1_zooms = tuple(np.sqrt(np.sum(mni_t1_affine[:3, :3] ** 2, axis=0)))
-
+    # ── Step 3: Resample onto the 2.5 mm Synb0 atlas grid ────────────────
+    # Synb0 was trained on the 2.5 mm MNI atlas grid shipped with
+    # Synb0-DisCo; reslicing the 1 mm template instead shifts the origin.
+    mni_2_5_path, _, _ = get_fnames(name="mni_resized_templates")
+    mni_2_5, resized_affine = load_nifti(mni_2_5_path)
+    synb0_shape = mni_2_5.shape
+    to_synb0_grid = AffineMap(
+        np.eye(4),
+        domain_grid_shape=synb0_shape,
+        domain_grid2world=resized_affine,
+        codomain_grid_shape=mni_t1.shape,
+        codomain_grid2world=mni_t1_affine,
+    )
     masked_T1_reg_to_template = _normalize_t1_for_synb0(masked_T1_reg_to_template)
-
-    masked_T1_reg_resized, resized_affine = reslice(
-        masked_T1_reg_to_template,
-        mni_t1_affine,
-        mni_t1_zooms,
-        synb0_zooms,
-        new_shape=synb0_shape,
-    )
-    masked_dwi_reg_resized, _ = reslice(
-        masked_dwi_reg_to_template,
-        mni_t1_affine,
-        mni_t1_zooms,
-        synb0_zooms,
-        new_shape=synb0_shape,
-    )
-    mni_mask_resized, _ = reslice(
-        mni_mask.astype(np.float32),
-        mni_t1_affine,
-        mni_t1_zooms,
-        synb0_zooms,
-        new_shape=synb0_shape,
-        order=0,
+    masked_T1_reg_resized = to_synb0_grid.transform(masked_T1_reg_to_template)
+    masked_dwi_reg_resized = to_synb0_grid.transform(masked_dwi_reg_to_template)
+    mni_mask_resized = to_synb0_grid.transform(
+        mni_mask.astype(np.float32), interpolation="nearest"
     )
     mni_mask_resized = (mni_mask_resized > 0.5).astype(np.int32)
 

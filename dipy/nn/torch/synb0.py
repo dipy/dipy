@@ -6,7 +6,7 @@ Class and helper functions for fitting the Synb0 model using PyTorch.
 import numpy as np
 
 from dipy.data import get_fnames
-from dipy.nn.utils import normalize, set_logger_level, unnormalize
+from dipy.nn.utils import set_logger_level, unnormalize
 from dipy.testing.decorators import doctest_skip_parser, warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
@@ -17,6 +17,21 @@ _SYNB0_INPUT_SHAPE = (77, 91, 77)
 _SYNB0_PADDED_SHAPE = (80, 96, 80)
 _SYNB0_PADDING = ((0, 0), (2, 1), (3, 2), (2, 1))
 _SYNB0_UNPAD = (slice(None), 0, slice(2, -1), slice(3, -2), slice(2, -1))
+# The original Synb0-DisCo weights were trained on volumes laid out as
+# (z, x, y) (``util.nii2torch`` in the reference code), not (x, y, z).
+_NII_TO_NET = (0, 1, 4, 2, 3)
+_NET_TO_NII = (0, 1, 3, 4, 2)
+
+
+def _rescale(image, max_v):
+    """Map [0, max_v] linearly to [-1, 1] without clipping.
+
+    Matches ``util.normalize_img`` of the reference Synb0-DisCo code, which
+    does not clip values outside the range.
+    """
+    return image / max_v * 2 - 1
+
+
 if have_torch:
     from torch.nn import (
         Conv3d,
@@ -342,18 +357,20 @@ class Synb0:
 
         Parameters
         ----------
-        x_test : torch.Tensor (batch, 2, 80, 96, 80)
-            Image should match the required shape of the model.
+        x_test : np.ndarray (batch, 2, 80, 96, 80)
+            Image should match the required shape of the model, with spatial
+            axes in (x, y, z) order.
 
         Returns
         -------
         np.ndarray (batch, 1, 80, 96, 80)
-            Reconstructed b-inf image(s)
+            Reconstructed b-inf image(s), spatial axes in (x, y, z) order.
         """
+        x_test = np.ascontiguousarray(np.transpose(x_test, _NII_TO_NET))
         with torch.no_grad():
             x_test = torch.from_numpy(x_test).float().to(self.device)
             prediction = self.model(x_test)
-            return prediction.cpu().numpy()
+            return np.transpose(prediction.cpu().numpy(), _NET_TO_NII)
 
     @warning_for_keywords()
     def predict(self, b0, T1, *, batch_size=None, average=True):
@@ -416,8 +433,8 @@ class Synb0:
         # Normalize the data
         p99 = np.percentile(b0, 99, axis=(1, 2, 3))
         for i in range(shape[0]):
-            T1[i] = normalize(T1[i], min_v=0, max_v=150, new_min=-1, new_max=1)
-            b0[i] = normalize(b0[i], min_v=0, max_v=p99[i], new_min=-1, new_max=1)
+            T1[i] = _rescale(T1[i], 150)
+            b0[i] = _rescale(b0[i], p99[i])
 
         if dim == 3 and batch_size != 1:
             logger.warning(

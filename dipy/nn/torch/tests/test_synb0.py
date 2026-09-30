@@ -2,9 +2,10 @@
 """Tests for Synb0 PyTorch implementation."""
 
 import numpy as np
-from numpy.testing import assert_, assert_equal
+from numpy.testing import assert_, assert_almost_equal, assert_equal
 import pytest
 
+from dipy.data import get_fnames
 from dipy.nn.torch.synb0 import Synb0, UNet3D
 from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
@@ -62,6 +63,40 @@ def test_synb0_initialization(rng):
 
     # Check that device is set
     assert_(hasattr(synb0, "device"))
+
+
+@skip_no_torch
+def test_synb0_network_axis_layout():
+    """The weights expect (z, x, y) volumes, as in the reference nii2torch."""
+    synb0 = Synb0(verbose=False)
+    seen = {}
+
+    def spy(x):
+        seen["shape"] = tuple(x.shape)
+        return x[:, :1]
+
+    synb0.model = spy
+    x = np.zeros((1, 2, 80, 96, 80), dtype=np.float32)
+    x[0, 0, 5, 6, 7] = 1
+    out = synb0._predict(x)
+    assert_equal(seen["shape"], (1, 2, 80, 80, 96))
+    assert_equal(out.shape, (1, 1, 80, 96, 80))
+    assert_equal(out[0, 0, 5, 6, 7], 1)
+
+
+@skip_no_torch
+def test_synb0_default_weights_reference():
+    """Fold-1 weights reproduce the reference Synb0 output on the test data."""
+    pytest.importorskip("requests")
+    file_names = get_fnames(name="synb0_test_data")
+    b0 = np.load(file_names[0])["b0"][0]
+    T1 = np.load(file_names[0])["T1"][0]
+    target = np.load(file_names[1])["arr_0"][0]
+
+    synb0 = Synb0(verbose=False)
+    synb0.fetch_default_weights(0)
+    prediction = synb0.predict(b0, T1, average=False)
+    assert_almost_equal(prediction, target, decimal=1)
 
 
 @skip_no_torch

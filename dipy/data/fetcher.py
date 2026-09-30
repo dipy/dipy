@@ -598,20 +598,22 @@ fetch_synb0_torch_weights = _make_fetcher(
     "fetch_synb0_torch_weights",
     Path(dipy_home) / "synb0",
     "https://ndownloader.figshare.com/files/",
-    ["60676858", "60555233", "60555227", "60555230", "60676861"],
+    # Folds 1-5 of the original Synb0-DisCo release, in fold order so that
+    # index i matches the i-th TensorFlow weights of ``fetch_synb0_weights``.
+    ["60555227", "60676861", "60555230", "60676858", "60555233"],
     [
-        Path("synb0_default_weights1.h5"),
-        Path("synb0_default_weights2.h5"),
-        Path("synb0_default_weights3.h5"),
-        Path("synb0_default_weights4.h5"),
-        Path("synb0_default_weights5.h5"),
+        Path("synb0_default_torch_weights1.pth"),
+        Path("synb0_default_torch_weights2.pth"),
+        Path("synb0_default_torch_weights3.pth"),
+        Path("synb0_default_torch_weights4.pth"),
+        Path("synb0_default_torch_weights5.pth"),
     ],
     md5_list=[
+        "81c8320d494034538f31dc4e78cb30df",
+        "44808a9e4007c6ff3ebdd8fa5f8cb0a0",
+        "08e72dc41fcee86e2c5248b9920552cb",
         "0ac4438cbbc63ac8ce4d0f0213e4239a",
         "35bb00294e15bb61a3953dfc92c9ecf9",
-        "81c8320d494034538f31dc4e78cb30df",
-        "08e72dc41fcee86e2c5248b9920552cb",
-        "44808a9e4007c6ff3ebdd8fa5f8cb0a0",
     ],
     doc="Download Synb0 Pytorch model weights for Schilling et. al 2019",
 )
@@ -2213,12 +2215,9 @@ def get_fnames(*, name="small_64D", include_optional=False):
         return w1, w2, w3, w4, w5
     if name == "synb0_default_torch_weights":
         _, folder = fetch_synb0_torch_weights()
-        w1 = Path(folder) / "synb0_default_weights1.h5"
-        w2 = Path(folder) / "synb0_default_weights2.h5"
-        w3 = Path(folder) / "synb0_default_weights3.h5"
-        w4 = Path(folder) / "synb0_default_weights4.h5"
-        w5 = Path(folder) / "synb0_default_weights5.h5"
-        return w1, w2, w3, w4, w5
+        return tuple(
+            Path(folder) / f"synb0_default_torch_weights{i}.pth" for i in range(1, 6)
+        )
     if name == "synb0_test_data":
         files, folder = fetch_synb0_test()
         input_array = Path(folder) / "test_input_synb0.npz"
