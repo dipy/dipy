@@ -1331,3 +1331,156 @@ def generate_html_report(
         content=content,
     )
     return _write(path=output_path, text=page)
+
+
+# =============================================================================
+# Batch report
+# =============================================================================
+
+
+def _batch_row(*, result, page_dir):
+    """Table row of one acquisition of a batch.
+
+    Parameters
+    ----------
+    result : dict
+        Record produced for one acquisition.
+    page_dir : str
+        Directory of the page being written, for relative links.
+
+    Returns
+    -------
+    str
+        HTML fragment.
+    """
+    status = "PASS" if result.get("status") == "completed" else "FAIL"
+    report_path = result.get("report")
+    link = ""
+
+    if report_path and os.path.exists(report_path):
+        link = f'<a href="{os.path.relpath(report_path, page_dir)}">open</a>'
+    else:
+        index = os.path.join(result.get("out_dir", ""), "reports", "index.html")
+        if os.path.exists(index):
+            link = f'<a href="{os.path.relpath(index, page_dir)}">open</a>'
+
+    detail = result.get("error") or ""
+    if result.get("failed_stage"):
+        detail = f"{result['failed_stage']}: {detail}"
+
+    return (
+        f"<tr><td>{html.escape(result.get('label', ''))}</td>"
+        f"<td>{html.escape(result.get('subject', ''))}</td>"
+        f"<td>{html.escape(result.get('session') or '')}</td>"
+        f"<td>{_badge(status)}</td>"
+        f"<td>{result.get('duration', 0):.1f}s</td>"
+        f"<td>{html.escape(detail)}</td>"
+        f"<td>{link}</td></tr>"
+    )
+
+
+def generate_batch_report(*, results, output_path, pipeline_name, bids_dir):
+    """Write the HTML summary of a pipeline run over a BIDS dataset.
+
+    Parameters
+    ----------
+    results : list of dict
+        One record per acquisition, as produced by the batch loop.
+    output_path : str
+        Path where the HTML summary should be saved.
+    pipeline_name : str
+        Name of the pipeline that was run.
+    bids_dir : str
+        Root of the source BIDS dataset.
+
+    Returns
+    -------
+    str
+        Path of the summary page.
+    """
+    page_dir = os.path.dirname(os.path.abspath(output_path))
+    succeeded = [r for r in results if r.get("status") == "completed"]
+    failed = [r for r in results if r.get("status") != "completed"]
+    total_time = sum(r.get("duration", 0) for r in results)
+
+    summary = f"""
+    <section id="summary">
+        <h1>Summary</h1>
+        <div class="stat-row">
+            <div class="stat-card">
+                <div class="stat-label">Acquisitions</div>
+                <div class="stat-value">{len(results)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Succeeded</div>
+                <div class="stat-value">{len(succeeded)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Failed</div>
+                <div class="stat-value">{len(failed)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Duration</div>
+                <div class="stat-value">{total_time:.0f}
+                  <span style="font-size:14px;font-weight:500;
+                    color:#6b7280;margin-left:4px">s</span>
+                </div>
+            </div>
+        </div>
+        <div class="info-grid">
+            <div class="info-card">
+                <strong>Pipeline</strong>
+                <p>{html.escape(pipeline_name)}</p>
+            </div>
+            <div class="info-card">
+                <strong>BIDS Dataset</strong>
+                <p><code>{html.escape(bids_dir)}</code></p>
+            </div>
+            <div class="info-card">
+                <strong>Derivatives</strong>
+                <p><code>{html.escape(page_dir)}</code></p>
+            </div>
+        </div>
+    </section>
+    """
+
+    rows = "".join(_batch_row(result=result, page_dir=page_dir) for result in results)
+    table = f"""
+    <section id="runs">
+        <h1>Acquisitions</h1>
+        <table>
+            <thead><tr><th>Run</th><th>Subject</th><th>Session</th>
+            <th>Status</th><th>Duration</th><th>Detail</th>
+            <th>Report</th></tr></thead>
+            <tbody>{rows}</tbody>
+        </table>
+    </section>
+    """
+
+    sections = [("#summary", "Summary"), ("#runs", "Acquisitions")]
+    sidebar = (
+        '<div class="sidebar-section-label">Batch</div>'
+        + _links(sections)
+        + '<div class="sidebar-section-label">Acquisitions</div>'
+        + _links(
+            [
+                (
+                    os.path.relpath(
+                        os.path.join(r.get("out_dir", ""), "reports", "index.html"),
+                        page_dir,
+                    ),
+                    r.get("label", ""),
+                )
+                for r in results
+            ],
+            css="sidebar-link sidebar-sublink",
+        )
+    )
+    page = _page(
+        title=f"DIPY Auto Batch Report - {pipeline_name}",
+        subtitle=f"DIPY Auto BIDS batch — {pipeline_name}",
+        nav=sections,
+        sidebar=sidebar,
+        content=summary + table,
+    )
+    return _write(path=output_path, text=page)

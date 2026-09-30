@@ -9,7 +9,8 @@ and automatic DAG-based wiring. The pipeline:
 - Supports flexible TOML configuration via [[pipeline]] sections
 """
 
-from collections import defaultdict, deque
+from collections import Counter, defaultdict, deque
+import copy
 from datetime import datetime
 import difflib
 from functools import partial
@@ -43,10 +44,24 @@ import webbrowser
 
 import numpy as np
 
+from dipy.data import fetch_30_bundle_atlas_hcp842
+from dipy.io.bids import (
+    BIDS_ENTITY_ORDER,
+    build_entity_name,
+    derivative_path,
+    find_dwi_runs,
+    list_sessions,
+    list_subjects,
+    looks_like_dataset,
+    phase_encoding_info,
+    split_extension,
+    validate_dataset,
+    write_dataset_description,
+)
 from dipy.io.image import load_nifti, load_nifti_data
-from dipy.utils.logging import add_file_handler, logger
+from dipy.utils.logging import add_file_handler, file_handler, logger
 from dipy.utils.optpkg import optional_package
-from dipy.workflows import report, templates
+from dipy.workflows import interactive, report, templates
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.qc import qc_result, run_stage_qc
 from dipy.workflows.workflow import Workflow
@@ -55,6 +70,32 @@ try:  # standard module since Python 3.11
     import tomllib as toml
 except ImportError:
     toml, have_toml, _ = optional_package("tomli")
+
+
+class PipelineError(RuntimeError):
+    """Raised when a pipeline cannot be built or fails during execution.
+
+    Callers running a single pipeline translate this into ``sys.exit(1)``;
+    callers running a batch of pipelines catch it to isolate the failure to
+    one dataset entry.
+
+    Parameters
+    ----------
+    message : str
+        Human readable description of the failure.
+    stage : str, optional
+        Name of the pipeline stage that failed, when the failure happened
+        during the execution of a stage.
+
+    Attributes
+    ----------
+    stage : str or None
+        Name of the failing stage.
+    """
+
+    def __init__(self, message, *, stage=None):
+        super().__init__(message)
+        self.stage = stage
 
 
 def _pipeline_fingerprint(*, pipeline_stages, io_config):
@@ -1342,6 +1383,19 @@ def execute_semantic_pipeline(
         If True, only show execution plan.
     force : bool
         If ``True``, overwrite existing output files for every stage.
+
+    Returns
+    -------
+    dict
+        Execution information with the keys ``stages``, ``total_time``,
+        ``dag_visualization``, ``execution_order``, ``report`` and
+        ``dry_run``.
+
+    Raises
+    ------
+    PipelineError
+        If the configuration is invalid, the execution order cannot be
+        computed, the output directory lacks free space, or a stage fails.
     """
     pipeline_stages = config.get("pipeline", [])
     if not pipeline_stages:
@@ -1368,7 +1422,9 @@ def execute_semantic_pipeline(
             logger.error(f"  ✗ {error}")
         logger.error("=" * 70)
         logger.error("Please update your configuration file to fix these errors.")
-        sys.exit(1)
+        raise PipelineError(
+            f"Pipeline configuration validation failed: {'; '.join(validation_errors)}"
+        )
 
     logger.info("✓ Pipeline configuration validated successfully")
 
@@ -1378,7 +1434,7 @@ def execute_semantic_pipeline(
         execution_order = topological_sort(pipeline_stages, dependencies)
     except ValueError as e:
         logger.error(f"Failed to compute execution order: {e}")
-        sys.exit(1)
+        raise PipelineError(f"Failed to compute execution order: {e}") from e
 
     dag_viz = visualize_pipeline_dag(pipeline_stages, dependencies, execution_order)
     logger.info(dag_viz)
@@ -1455,12 +1511,15 @@ def execute_semantic_pipeline(
                     f"Insufficient disk space: need ~{_fmt_bytes(total_bytes)}, "
                     f"have {free_str} on '{out_dir_check}'"
                 )
-                sys.exit(1)
+                raise PipelineError(
+                    f"Insufficient disk space: need ~{_fmt_bytes(total_bytes)}, "
+                    f"have {free_str} on '{out_dir_check}'"
+                )
             elif free_bytes < int(total_bytes * 1.5):
                 logger.warning(f"  {avail_label:<{pad}}  {free_str}  ⚠ LOW MARGIN")
             else:
                 logger.info(f"  {avail_label:<{pad}}  {free_str}  ✓")
-        except SystemExit:
+        except PipelineError:
             raise
         except Exception as exc:
             logger.debug(f"Could not check free disk space on '{out_dir_check}': {exc}")
@@ -1468,7 +1527,14 @@ def execute_semantic_pipeline(
 
     if dry_run:
         logger.info("[Dry run mode] Pipeline plan shown above - no execution performed")
-        return
+        return {
+            "stages": [],
+            "total_time": 0.0,
+            "dag_visualization": dag_viz,
+            "execution_order": list(execution_order),
+            "report": None,
+            "dry_run": True,
+        }
 
     logger.info("=" * 60)
     logger.info("Starting Diffusion Pipeline Execution")
@@ -1653,7 +1719,9 @@ def execute_semantic_pipeline(
                 },
                 error=traceback.format_exc(),
             )
-            sys.exit(1)
+            raise PipelineError(
+                f"Pipeline failed at stage '{stage_name}': {e}", stage=stage_name
+            ) from e
 
     total_time = sum(
         s["duration"] for s in stages_info if s.get("duration") is not None
@@ -1668,6 +1736,8 @@ def execute_semantic_pipeline(
         "total_time": total_time,
         "dag_visualization": dag_viz,
         "execution_order": full_execution_order,
+        "report": None,
+        "dry_run": False,
     }
 
     if report_path is None:
@@ -1683,12 +1753,490 @@ def execute_semantic_pipeline(
             output_path=report_path,
             reports_dir=reports_dir,
         )
+        execution_info["report"] = report_path
         logger.info(f"HTML report generated: {report_path}")
         logger.info(f"Per-stage QC reports: {os.path.join(reports_dir, 'index.html')}")
         logger.info("Open them in a browser, or serve with: dipy_auto <report.html>")
     except Exception as e:
         logger.warning(f"Failed to generate HTML report: {e}")
         logger.debug(traceback.format_exc())
+
+    return execution_info
+
+
+_ANALYSIS_LEVELS = ("participant", "group")
+
+_BIDS_DERIVATIVE_MAP = {
+    "out_fa": ("FA", "dwimap"),
+    "out_md": ("MD", "dwimap"),
+    "out_rd": ("RD", "dwimap"),
+    "out_ad": ("AD", "dwimap"),
+    "out_denoised": ("denoised", "dwi"),
+    "out_mask": ("brain", "mask"),
+    "out_tractogram": (None, "tractography"),
+}
+
+
+def _classify_inputs(*, input_files, bids_mode):
+    """Sort the positional arguments of ``dipy_auto`` by kind.
+
+    Recognised by extension: ``.toml`` configurations, DWI NIfTI files,
+    b-value and b-vector files and HTML reports. A directory holding a
+    ``dataset_description.json`` or a ``sub-*`` entry is a BIDS dataset
+    root; in BIDS mode a second directory is the output directory and the
+    literal ``participant`` or ``group`` is the analysis level.
+
+    Parameters
+    ----------
+    input_files : sequence of str
+        Positional arguments as given on the command line.
+    bids_mode : bool
+        Whether ``--bids`` was passed, which enables the BIDS-App style
+        positional arguments.
+
+    Returns
+    -------
+    dict
+        Keys ``config_file``, ``dwi``, ``bvals``, ``bvecs``, ``report``,
+        ``bids_dir``, ``output_dir`` and ``analysis_level``.
+    """
+    found = {
+        "config_file": None,
+        "dwi": None,
+        "bvals": None,
+        "bvecs": None,
+        "report": None,
+        "bids_dir": None,
+        "output_dir": None,
+        "analysis_level": None,
+    }
+
+    for entry in input_files:
+        path = Path(entry)
+        name_lower = path.name.lower()
+        full_suffix = "".join(path.suffixes).lower()
+
+        if re.match(r".*report.*\.html$", name_lower):
+            found["report"] = found["report"] or entry
+        elif full_suffix == ".toml":
+            found["config_file"] = entry
+        elif full_suffix in (".nii.gz", ".nii"):
+            found["dwi"] = entry
+        elif path.suffix.lower() in (".bval", ".bvals"):
+            found["bvals"] = entry
+        elif path.suffix.lower() in (".bvec", ".bvecs"):
+            found["bvecs"] = entry
+        elif name_lower in _ANALYSIS_LEVELS and not path.exists():
+            found["analysis_level"] = name_lower
+        elif found["bids_dir"] is None and looks_like_dataset(path=entry):
+            found["bids_dir"] = entry
+        elif bids_mode and found["output_dir"] is None:
+            found["output_dir"] = entry
+        else:
+            logger.warning(f"Unrecognized file type, ignoring: {entry}")
+
+    return found
+
+
+def _fill_io_section(*, config, overrides, out_dir, out_report):
+    """Apply input overrides to the ``[io]`` section of a configuration.
+
+    Parameters
+    ----------
+    config : dict
+        Pipeline configuration, modified in place.
+    overrides : dict
+        Values to write into the ``[io]`` section. Empty values are
+        ignored, so a configuration file keeps its own paths.
+    out_dir : str
+        Output directory of the run.
+    out_report : str
+        Name of the report file inside ``out_dir``.
+
+    Returns
+    -------
+    dict
+        The ``[io]`` section, with an absolute ``out_dir`` that exists.
+    """
+    config.setdefault("io", {})
+    io_config = config["io"]
+
+    for key, value in overrides.items():
+        if value in (None, ""):
+            continue
+        existing = io_config.get(key, "")
+        if existing and existing != value:
+            logger.warning(f"Overriding {key}: {existing} → {value}")
+        io_config[key] = value
+
+    io_config["out_dir"] = os.path.abspath(out_dir or io_config.get("out_dir", "."))
+    io_config["out_report"] = os.path.join(io_config["out_dir"], out_report)
+    os.makedirs(io_config["out_dir"], exist_ok=True)
+
+    return io_config
+
+
+def _write_pipeline_config(*, config, out_dir, timestamp, pipeline_name):
+    """Write the configuration a run is about to execute.
+
+    Parameters
+    ----------
+    config : dict
+        Pipeline configuration.
+    out_dir : str
+        Directory to write into.
+    timestamp : str
+        Timestamp prefixed to the file name.
+    pipeline_name : str
+        Pipeline name used in the file name.
+
+    Returns
+    -------
+    str
+        Absolute path of the written configuration.
+    """
+    config_file = os.path.join(out_dir, f"{timestamp}_{pipeline_name}_pipeline.toml")
+
+    with open(config_file, "w") as f:
+        f.write(format_toml_config(config))
+
+    logger.info(f"Configuration saved to: {config_file}")
+    return config_file
+
+
+def _resolve_atlas_paths(*, config, io_config):
+    """Download the HCP atlas when a stage needs it and no path was given.
+
+    Parameters
+    ----------
+    config : dict
+        Pipeline configuration.
+    io_config : dict
+        The ``[io]`` section, updated in place with the atlas paths.
+
+    Raises
+    ------
+    PipelineError
+        If the atlas is required but cannot be fetched.
+    """
+    needs_atlas = any(
+        stage.get("cli", "") in ("dipy_slr", "dipy_recobundles")
+        for stage in config.get("pipeline", [])
+    )
+
+    if not needs_atlas:
+        return
+
+    atlas_tractogram = io_config.get("atlas_tractogram", "")
+    bundle_atlas_dir = io_config.get("bundle_atlas_dir", "")
+
+    if atlas_tractogram and bundle_atlas_dir:
+        return
+
+    logger.info("Atlas required for SLR/RecoBundles but not provided.")
+    logger.info("Downloading HCP 30-bundle atlas...")
+
+    try:
+        _, atlas_base = fetch_30_bundle_atlas_hcp842()
+    except Exception as e:
+        logger.error(f"Failed to download atlas: {e}")
+        logger.error(
+            "Please provide atlas paths manually using --atlas_tractogram "
+            "and --bundle_atlas_dir"
+        )
+        raise PipelineError(f"Failed to download atlas: {e}") from e
+
+    if not atlas_tractogram:
+        io_config["atlas_tractogram"] = os.path.join(
+            atlas_base, "Atlas_30_Bundles", "whole_brain", "whole_brain_MNI.trk"
+        )
+        logger.info(f"Atlas tractogram: {io_config['atlas_tractogram']}")
+
+    if not bundle_atlas_dir:
+        io_config["bundle_atlas_dir"] = os.path.join(
+            atlas_base, "Atlas_30_Bundles", "bundles"
+        )
+        logger.info(f"Bundle atlas directory: {io_config['bundle_atlas_dir']}")
+
+
+def _bids_run_out_dirs(*, runs, deriv_root):
+    """Give each acquisition its own output directory.
+
+    Several acquisitions of the same session share a datatype directory and
+    would overwrite each other, since stage output names carry no entity.
+    Those get a subdirectory named after the entities that tell them apart;
+    a lone acquisition writes straight into the datatype directory.
+
+    Parameters
+    ----------
+    runs : sequence of DWIRun
+        Acquisitions to process.
+    deriv_root : str
+        Root of the derivative dataset.
+
+    Returns
+    -------
+    list of str
+        One output directory per acquisition, in the same order.
+    """
+    datatype_dirs = [derivative_path(deriv_root=deriv_root, run=run) for run in runs]
+    counts = Counter(datatype_dirs)
+    out_dirs = []
+
+    for run, datatype_dir in zip(runs, datatype_dirs):
+        if counts[datatype_dir] == 1:
+            out_dirs.append(datatype_dir)
+            continue
+
+        extra = "_".join(
+            f"{key}-{run.entities[key]}"
+            for key in BIDS_ENTITY_ORDER
+            if key in run.entities and key not in ("sub", "ses")
+        )
+        out_dirs.append(
+            os.path.join(datatype_dir, extra or split_extension(filename=run.dwi)[0])
+        )
+
+    return out_dirs
+
+
+def _write_bids_derivative_links(*, run, deriv_root, execution_info):
+    """Expose headline outputs under BIDS-style names.
+
+    A symlink (a copy where symlinks are unavailable) is created at the
+    datatype level for each output of ``_BIDS_DERIVATIVE_MAP``, with a JSON
+    sidecar recording its provenance. Nothing is moved, so stage
+    resumption and the QC reports keep working on the original paths.
+
+    Parameters
+    ----------
+    run : DWIRun
+        Resolved diffusion acquisition.
+    deriv_root : str
+        Root of the derivative dataset.
+    execution_info : dict or None
+        Return value of :func:`execute_semantic_pipeline`.
+
+    Returns
+    -------
+    list of str
+        Paths of the links that were created.
+    """
+    datatype_dir = derivative_path(deriv_root=deriv_root, run=run)
+    entities = {
+        key: value
+        for key, value in run.entities.items()
+        if key not in ("suffix", "extension")
+    }
+    created = []
+
+    for stage in (execution_info or {}).get("stages", []):
+        for key, value in (stage.get("outputs") or {}).items():
+            if key not in _BIDS_DERIVATIVE_MAP:
+                continue
+            if not isinstance(value, (str, os.PathLike)):
+                continue
+
+            path = os.fspath(value)
+            if not os.path.isfile(path):
+                continue
+
+            description, bids_suffix = _BIDS_DERIVATIVE_MAP[key]
+            _, extension = split_extension(filename=path)
+
+            link_entities = dict(entities)
+            link_entities["desc"] = description or stage.get("name", "dipy")
+
+            name = build_entity_name(
+                entities=link_entities, suffix=bids_suffix, extension=extension
+            )
+            link = os.path.join(datatype_dir, name)
+
+            try:
+                if os.path.lexists(link):
+                    os.unlink(link)
+                os.symlink(os.path.relpath(path, datatype_dir), link)
+            except OSError:
+                shutil.copy2(path, link)
+
+            sidecar = {
+                "Sources": [f"bids::{os.path.relpath(path, deriv_root)}"],
+                "RawSources": [f"bids::{os.path.relpath(run.dwi, run.root)}"],
+                "GeneratedByStage": {
+                    "name": stage.get("name"),
+                    "cli": stage.get("cli"),
+                    "output": key,
+                },
+            }
+            with open(
+                os.path.join(datatype_dir, f"{name[: -len(extension)]}.json"), "w"
+            ) as f:
+                json.dump(sidecar, f, indent=4)
+
+            created.append(link)
+            logger.info(f"BIDS derivative: {os.path.basename(link)} → {path}")
+
+    return created
+
+
+def _write_batch_summary(*, results, deriv_root, timestamp, pipeline_name, bids_dir):
+    """Write the JSON and HTML summaries of a BIDS batch.
+
+    Parameters
+    ----------
+    results : list of dict
+        One record per processed acquisition.
+    deriv_root : str
+        Root of the derivative dataset.
+    timestamp : str
+        Timestamp shared by every artifact of the batch.
+    pipeline_name : str
+        Name of the pipeline that was run.
+    bids_dir : str
+        Root of the source BIDS dataset.
+
+    Returns
+    -------
+    json_path : str
+        Path of the JSON summary.
+    html_path : str or None
+        Path of the HTML summary, None when it could not be generated.
+    """
+    json_path = os.path.join(deriv_root, f"{timestamp}_batch_summary.json")
+
+    with open(json_path, "w") as f:
+        json.dump(
+            {
+                "pipeline": pipeline_name,
+                "bids_dir": bids_dir,
+                "deriv_root": deriv_root,
+                "timestamp": timestamp,
+                "runs": results,
+            },
+            f,
+            indent=4,
+        )
+
+    logger.info(f"Batch summary: {json_path}")
+    html_path = os.path.join(deriv_root, f"{timestamp}_batch_summary.html")
+
+    try:
+        report.generate_batch_report(
+            results=results,
+            output_path=html_path,
+            pipeline_name=pipeline_name,
+            bids_dir=bids_dir,
+        )
+        logger.info(f"Batch report: {html_path}")
+    except Exception as e:
+        logger.warning(f"Failed to generate the batch report: {e}")
+        logger.debug(traceback.format_exc())
+        html_path = None
+
+    return json_path, html_path
+
+
+_NON_PATH_IO_KEYS = frozenset(
+    {
+        "pe_dir",
+        "total_readout_time",
+        "effective_echo_spacing",
+        "echo_time",
+        "repetition_time",
+        "subject",
+        "session",
+        "entities",
+        "out_report",
+    }
+)
+
+
+def _validate_io_refs(*, config, io_config):
+    """Check that every ``${io.x}`` reference of a pipeline resolves to a file.
+
+    Keys listed in ``_NON_PATH_IO_KEYS`` hold scalar metadata rather than
+    paths and are never checked against the filesystem.
+
+    Parameters
+    ----------
+    config : dict
+        Full pipeline configuration.
+    io_config : dict
+        Values of the ``[io]`` section.
+
+    Returns
+    -------
+    missing : list of tuple
+        ``(reference, key)`` pairs whose ``[io]`` entry is absent or empty.
+    invalid : list of tuple
+        ``(reference, path)`` pairs whose ``[io]`` entry does not exist.
+    """
+    required_refs = set()
+
+    for stage in config.get("pipeline", []):
+        for key, value in stage.items():
+            if key in ("name", "cli") or not isinstance(value, str):
+                continue
+            for ref in extract_variable_references(value):
+                if not ref.startswith("io."):
+                    continue
+                io_key = ref.split(".", 1)[1]
+                if io_key.startswith("out_") or io_key in _NON_PATH_IO_KEYS:
+                    continue
+                required_refs.add((ref, io_key))
+
+    missing = []
+    invalid = []
+
+    for ref, io_key in sorted(required_refs):
+        path = str(io_config.get(io_key, "") or "")
+        if not path.strip():
+            missing.append((ref, io_key))
+        elif not os.path.exists(path):
+            invalid.append((ref, path))
+
+    return missing, invalid
+
+
+def _log_io_validation_errors(*, missing, invalid, label=None):
+    """Report the outcome of :func:`_validate_io_refs` to the log.
+
+    Parameters
+    ----------
+    missing : list of tuple
+        ``(reference, key)`` pairs with no value in the ``[io]`` section.
+    invalid : list of tuple
+        ``(reference, path)`` pairs pointing at a missing file.
+    label : str, optional
+        Dataset entry the errors belong to, prefixed to the header when
+        several entries are processed in one run.
+    """
+    header = (
+        "Input Validation Failed"
+        if label is None
+        else (f"Input Validation Failed for {label}")
+    )
+    logger.error("=" * 70)
+    logger.error(header)
+    logger.error("=" * 70)
+
+    if missing:
+        logger.error("✗ Missing input file definitions in [io] section:")
+        for ref, io_key in missing:
+            logger.error(f"  • {io_key} (required by ${{{ref}}})")
+
+        logger.error("Please provide input files using one of these methods:")
+        logger.error("  1. Edit the config file and set paths in the [io] section")
+        logger.error("  2. Pass them as positional arguments, for instance:")
+        logger.error("     dipy_auto dwi.nii.gz dwi.bval dwi.bvec")
+        logger.error("  3. Run over a BIDS dataset: dipy_auto <bids_dir> --bids")
+
+    if invalid:
+        logger.error("✗ Input files do not exist:")
+        for ref, path in invalid:
+            logger.error(f"  • {path} (from ${{{ref}}})")
+
+    logger.error("=" * 70)
 
 
 def _validate_mask_file(mask_file):
@@ -1866,7 +2414,13 @@ class AutoFlow(Workflow):
         t1_file=None,
         mask_file=None,
         dwi_opp_phase_file=None,
+        bids=False,
         bids_folder=None,
+        participant_label=None,
+        session_label=None,
+        acquisition_label=None,
+        run_label=None,
+        stop_on_error=False,
         atlas_tractogram=None,
         bundle_atlas_dir=None,
         interactive_mode=False,
@@ -1891,14 +2445,34 @@ class AutoFlow(Workflow):
             - ``.bvec`` / ``.bvecs`` — b-vectors file.
             - ``*report*.html`` — HTML report; all other inputs are ignored
               and the report is served via a local HTTP server.
+
+            With ``--bids``, the arguments follow the BIDS-App convention
+            instead: ``dipy_auto <bids_dir> [<output_dir>] [participant]``.
         t1_file : str, optional
-            Path to the T1 file.
+            Path to the T1 file. Resolved from the dataset with ``--bids``.
         mask_file : str, optional
             Path to the brain mask file.
         dwi_opp_phase_file : str, optional
             Path to the opposite phase DWI file (for phase correction).
+            Resolved from the fieldmaps of the dataset with ``--bids``.
+        bids : bool, optional
+            Treat the inputs as a BIDS dataset and run the pipeline on every
+            diffusion acquisition it contains, writing BIDS derivatives.
         bids_folder : str, optional
-            Path to the BIDS folder (reserved for future use).
+            Path to the BIDS dataset root, as an alternative to passing it
+            positionally. Requires ``--bids``.
+        participant_label : variable str, optional
+            Subject labels to process, with or without the ``sub-`` prefix.
+            All subjects are processed when omitted.
+        session_label : variable str, optional
+            Session labels to process, with or without the ``ses-`` prefix.
+        acquisition_label : variable str, optional
+            ``acq-`` labels to process.
+        run_label : variable str, optional
+            ``run-`` labels to process.
+        stop_on_error : bool, optional
+            Stop a BIDS batch at the first acquisition that fails instead of
+            reporting it and carrying on.
         atlas_tractogram : str, optional
             Path to atlas tractogram for registration (dipy_slr).
             If not provided and dipy_slr is in the pipeline, will auto-download
@@ -1921,11 +2495,11 @@ class AutoFlow(Workflow):
         list_pipelines : bool, optional
             List all available predefined pipelines and exit.
         out_dir : str, optional
-            Output directory.
+            Output directory. With ``--bids``, the root of the derivative
+            dataset, defaulting to ``<bids_dir>/derivatives/dipy``.
         out_report : str, optional
             Path to the report file.
         """
-
         if list_pipelines:
             current_log_level = logger.getEffectiveLevel()
             logger.info(
@@ -1933,419 +2507,670 @@ class AutoFlow(Workflow):
             )
             return
 
-        # =====================================================================
-        # Detect file types from input_files
-        # =====================================================================
+        inputs = _classify_inputs(input_files=input_files, bids_mode=bids)
 
-        config_file = None
-        dwi_file = None
-        bvals_file = None
-        bvecs_file = None
-
-        for f in input_files:
-            p = Path(f)
-            name_lower = p.name.lower()
-            full_suffix = "".join(p.suffixes).lower()
-
-            if re.match(r".*report.*\.html$", name_lower):
-                logger.info(
-                    f"HTML report detected: {f}. "
-                    "Ignoring all other inputs and opening report."
-                )
-                _serve_html_report(f)
-                return
-            elif full_suffix == ".toml":
-                config_file = f
-            elif full_suffix in (".nii.gz", ".nii"):
-                dwi_file = f
-            elif p.suffix.lower() in (".bval", ".bvals"):
-                bvals_file = f
-            elif p.suffix.lower() in (".bvec", ".bvecs"):
-                bvecs_file = f
-            else:
-                logger.warning(f"Unrecognized file type, ignoring: {f}")
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_dir = os.path.abspath(out_dir) or os.getcwd()
-
-        if list_pipelines:
-            current_log_level = logger.getEffectiveLevel()
+        if inputs["report"]:
             logger.info(
-                templates.list_pipelines_with_descriptions(log_level=current_log_level)
+                f"HTML report detected: {inputs['report']}. "
+                "Ignoring all other inputs and opening report."
             )
+            _serve_html_report(inputs["report"])
             return
 
-        # =====================================================================
-        # Detect file types from input_files
-        # =====================================================================
-
-        config_file = None
-        dwi_file = None
-        bvals_file = None
-        bvecs_file = None
-
-        for f in input_files:
-            p = Path(f)
-            name_lower = p.name.lower()
-            full_suffix = "".join(p.suffixes).lower()
-
-            if re.match(r".*report.*\.html$", name_lower):
-                logger.info(
-                    f"HTML report detected: {f}. "
-                    "Ignoring all other inputs and opening report."
-                )
-                _serve_html_report(f)
-                return
-            elif full_suffix == ".toml":
-                config_file = f
-            elif full_suffix in (".nii.gz", ".nii"):
-                dwi_file = f
-            elif p.suffix.lower() in (".bval", ".bvals"):
-                bvals_file = f
-            elif p.suffix.lower() in (".bvec", ".bvecs"):
-                bvecs_file = f
-            else:
-                logger.warning(f"Unrecognized file type, ignoring: {f}")
-
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_dir = os.path.abspath(out_dir) or os.getcwd()
+        bids_dir = bids_folder or inputs["bids_dir"]
 
-        # =================================================================
-        # Configuration Loading
-        # =================================================================
+        if bids_dir and not bids:
+            logger.error("=" * 70)
+            logger.error(
+                f"BIDS dataset detected at {bids_dir} but --bids was not given"
+            )
+            logger.error("=" * 70)
+            logger.error("Re-run in BIDS mode:")
+            logger.error(f"  dipy_auto {bids_dir} <output_dir> participant --bids")
+            logger.error(
+                "Optional filters: --participant_label 01 02 --session_label 1 "
+                "--acquisition_label b1000 --run_label 1"
+            )
+            logger.error("=" * 70)
+            sys.exit(1)
 
-        if config_file is None:
-            if interactive_mode and pipeline_type:
-                logger.warning("Both --interactive and --pipeline_type specified.")
-                choice = input(
-                    "Choose: [1] Use interactive mode, [2] Use pipeline_type: "
-                ).strip()
-                if choice == "1":
-                    pipeline_type = None
-                elif choice == "2":
-                    interactive_mode = False
-                else:
-                    logger.error("Invalid choice. Defaulting to pipeline_type.")
-                    interactive_mode = False
+        if bids:
+            if not bids_dir:
+                logger.error(
+                    "--bids requires a BIDS dataset directory: "
+                    "dipy_auto <bids_dir> [<output_dir>] participant --bids"
+                )
+                sys.exit(1)
+
+            if inputs["analysis_level"] == "group":
+                logger.error(
+                    "Group level analysis is not implemented. Use the "
+                    "'participant' analysis level."
+                )
+                sys.exit(1)
+
+            conflicting = {
+                "DWI file": inputs["dwi"],
+                "b-values file": inputs["bvals"],
+                "b-vectors file": inputs["bvecs"],
+                "--t1_file": t1_file,
+                "--mask_file": mask_file,
+                "--dwi_opp_phase_file": dwi_opp_phase_file,
+            }
+            conflicting = {k: v for k, v in conflicting.items() if v}
+
+            if conflicting:
+                logger.error(
+                    "Single subject inputs cannot be combined with --bids; "
+                    "they are resolved from the dataset instead:"
+                )
+                for name, value in conflicting.items():
+                    logger.error(f"  • {name}: {value}")
+                sys.exit(1)
 
             if interactive_mode:
-                if not bvals_file or not os.path.exists(bvals_file):
-                    logger.error(
-                        "Interactive mode requires --bvals_file to analyze "
-                        "data characteristics."
-                    )
-                    sys.exit(1)
+                logger.error("--interactive_mode is not supported with --bids")
+                sys.exit(1)
 
-                try:
-                    from dipy.workflows import interactive
-
-                    data_chars = interactive.analyze_bvals(bvals_file=bvals_file)
-                    interactive.print_data_summary(data_chars=data_chars)
-                    selected_pipeline = interactive.interactive_pipeline_selection(
-                        data_chars=data_chars
-                    )
-
-                    if selected_pipeline is None:
-                        logger.info("Building custom pipeline interactively...")
-                        config = interactive.build_interactive_pipeline_config(
-                            data_chars=data_chars
-                        )
-                    else:
-                        pipeline_type = selected_pipeline
-                except Exception as e:
-                    logger.error(f"Error in interactive mode: {e}")
-                    traceback.print_exc()
-                    sys.exit(1)
-
-            if "config" not in locals():
-                if pipeline_type:
-                    try:
-                        logger.info(f"Loading predefined pipeline: {pipeline_type}")
-                        config_str = templates.get_predefined_pipeline(
-                            pipeline_name=pipeline_type
-                        )
-                        config = toml.loads(config_str)
-                    except KeyError:
-                        logger.error(f"Unknown pipeline type: {pipeline_type}")
-                        current_log_level = logger.getEffectiveLevel()
-                        logger.info(
-                            templates.list_pipelines_with_descriptions(
-                                log_level=current_log_level
-                            )
-                        )
-                        sys.exit(1)
-                    except Exception as e:
-                        logger.error(f"Error loading predefined pipeline: {e}")
-                        sys.exit(1)
-                else:
-                    logger.info("Using default 'full' pipeline")
-                    try:
-                        config_str = templates.get_predefined_pipeline(
-                            pipeline_name="full"
-                        )
-                        config = toml.loads(config_str)
-                    except Exception as e:
-                        logger.error(f"Error loading default pipeline: {e}")
-                        sys.exit(1)
-
-            config.setdefault("io", {})
-            config["io"]["dwi"] = dwi_file or config.get("io", {}).get("dwi", "")
-            config["io"]["bvals"] = bvals_file or config.get("io", {}).get("bvals", "")
-            config["io"]["bvecs"] = bvecs_file or config.get("io", {}).get("bvecs", "")
-            config["io"]["t1w"] = t1_file or config.get("io", {}).get("t1w", "")
-            config["io"]["bids_folder"] = bids_folder or config.get("io", {}).get(
-                "bids_folder", ""
+            deriv_root = (
+                inputs["output_dir"]
+                or out_dir
+                or os.path.join(bids_dir, "derivatives", "dipy")
             )
-            config["io"]["atlas_tractogram"] = atlas_tractogram or config.get(
-                "io", {}
-            ).get("atlas_tractogram", "")
-            config["io"]["bundle_atlas_dir"] = bundle_atlas_dir or config.get(
-                "io", {}
-            ).get("bundle_atlas_dir", "")
-            config["io"]["out_dir"] = out_dir
-            config["io"]["out_report"] = os.path.join(out_dir, out_report)
 
-            os.makedirs(out_dir, exist_ok=True)
+            return self._run_bids_batch(
+                bids_dir=os.path.abspath(bids_dir),
+                deriv_root=os.path.abspath(deriv_root),
+                config_file=inputs["config_file"],
+                pipeline_type=pipeline_type,
+                participant_label=participant_label,
+                session_label=session_label,
+                acquisition_label=acquisition_label,
+                run_label=run_label,
+                atlas_tractogram=atlas_tractogram,
+                bundle_atlas_dir=bundle_atlas_dir,
+                start=start,
+                dry_run=dry_run,
+                stop_on_error=stop_on_error,
+                out_report=out_report,
+                timestamp=timestamp,
+            )
 
-            pipeline_name = pipeline_type or "default"
-            config_filename = f"{timestamp}_{pipeline_name}_pipeline.toml"
-            config_file = os.path.join(out_dir, config_filename)
+        return self._run_single(
+            config_file=inputs["config_file"],
+            dwi_file=inputs["dwi"],
+            bvals_file=inputs["bvals"],
+            bvecs_file=inputs["bvecs"],
+            t1_file=t1_file,
+            mask_file=mask_file,
+            dwi_opp_phase_file=dwi_opp_phase_file,
+            atlas_tractogram=atlas_tractogram,
+            bundle_atlas_dir=bundle_atlas_dir,
+            interactive_mode=interactive_mode,
+            pipeline_type=pipeline_type,
+            start=start,
+            dry_run=dry_run,
+            out_dir=os.path.abspath(out_dir),
+            out_report=out_report,
+            timestamp=timestamp,
+        )
 
-            formatted_toml = format_toml_config(config)
-            with open(config_file, "w") as f:
-                f.write(formatted_toml)
-            logger.info(f"Configuration saved to: {config_file}")
+    def _load_pipeline_config(
+        self, *, config_file, pipeline_type, interactive_mode=False, bvals_file=None
+    ):
+        """Load the pipeline configuration from a file or a template.
 
-        # =================================================================
-        # Load Configuration File
-        # =================================================================
+        Parameters
+        ----------
+        config_file : str or None
+            Path to a TOML configuration. When None, a predefined template
+            is used.
+        pipeline_type : str or None
+            Name of the predefined pipeline. None selects ``full``.
+        interactive_mode : bool, optional
+            Build the pipeline interactively instead of using a template.
+        bvals_file : str, optional
+            b-values file analysed by the interactive builder.
 
-        config_file = os.path.abspath(config_file)
-        cfg_name = os.path.basename(config_file)
-        logger.info(f"Running pipeline from {cfg_name}")
+        Returns
+        -------
+        config : dict
+            Parsed configuration.
+        pipeline_name : str
+            Name used for the generated configuration file.
+        """
+        if config_file is not None:
+            config_file = os.path.abspath(config_file)
 
-        if not config_file.endswith(".toml"):
-            logger.error(f"Configuration file must be TOML: {config_file}")
-            sys.exit(1)
+            if not config_file.endswith(".toml"):
+                logger.error(f"Configuration file must be TOML: {config_file}")
+                sys.exit(1)
 
-        try:
-            with open(config_file, "rb") as f:
-                config = toml.load(f)
-        except FileNotFoundError:
-            logger.error(f"Configuration file not found: {config_file}")
-            sys.exit(1)
-        except Exception as e:
-            logger.error(f"Error decoding TOML file: {e}")
-            sys.exit(1)
+            logger.info(f"Running pipeline from {os.path.basename(config_file)}")
 
-        # =================================================================
-        # Interactive Mode Support
-        # =================================================================
+            try:
+                with open(config_file, "rb") as f:
+                    config = toml.load(f)
+            except FileNotFoundError:
+                logger.error(f"Configuration file not found: {config_file}")
+                sys.exit(1)
+            except Exception as e:
+                logger.error(f"Error decoding TOML file: {e}")
+                sys.exit(1)
+
+            name = config.get("General", {}).get("name", "custom")
+            return config, name
+
+        if interactive_mode and pipeline_type:
+            logger.warning("Both --interactive and --pipeline_type specified.")
+            choice = input(
+                "Choose: [1] Use interactive mode, [2] Use pipeline_type: "
+            ).strip()
+            if choice == "1":
+                pipeline_type = None
+            elif choice == "2":
+                interactive_mode = False
+            else:
+                logger.error("Invalid choice. Defaulting to pipeline_type.")
+                interactive_mode = False
 
         if interactive_mode:
-            logger.info("Interactive mode enabled")
+            if not bvals_file or not os.path.exists(bvals_file):
+                logger.error(
+                    "Interactive mode requires a b-values file to analyze "
+                    "data characteristics."
+                )
+                sys.exit(1)
 
-            bvals_for_analysis = config.get("io", {}).get("bvals", bvals_file)
+            try:
+                data_chars = interactive.analyze_bvals(bvals_file=bvals_file)
+                interactive.print_data_summary(data_chars=data_chars)
+                selected_pipeline = interactive.interactive_pipeline_selection(
+                    data_chars=data_chars
+                )
 
-            if bvals_for_analysis and os.path.exists(bvals_for_analysis):
-                try:
-                    from dipy.workflows import interactive
-
-                    data_chars = interactive.analyze_bvals(
-                        bvals_file=bvals_for_analysis
+                if selected_pipeline is None:
+                    logger.info("Building custom pipeline interactively...")
+                    config = interactive.build_interactive_pipeline_config(
+                        data_chars=data_chars
                     )
+                    return config, "interactive"
 
-                    logger.info("\nYou can customize the pipeline interactively.")
-                    logger.info("Current configuration will be used as the base.")
+                pipeline_type = selected_pipeline
+            except Exception as e:
+                logger.error(f"Error in interactive mode: {e}")
+                traceback.print_exc()
+                sys.exit(1)
 
-                    # Save updated config
-                    formatted_toml = format_toml_config(config)
-                    with open(config_file, "w") as f:
-                        f.write(formatted_toml)
-                    logger.info(f"Updated configuration saved to: {config_file}")
+        if pipeline_type:
+            try:
+                logger.info(f"Loading predefined pipeline: {pipeline_type}")
+                config_str = templates.get_predefined_pipeline(
+                    pipeline_name=pipeline_type
+                )
+            except KeyError:
+                logger.error(f"Unknown pipeline type: {pipeline_type}")
+                current_log_level = logger.getEffectiveLevel()
+                logger.info(
+                    templates.list_pipelines_with_descriptions(
+                        log_level=current_log_level
+                    )
+                )
+                sys.exit(1)
+            except Exception as e:
+                logger.error(f"Error loading predefined pipeline: {e}")
+                sys.exit(1)
+        else:
+            logger.info("Using default 'full' pipeline")
+            try:
+                config_str = templates.get_predefined_pipeline(pipeline_name="full")
+            except Exception as e:
+                logger.error(f"Error loading default pipeline: {e}")
+                sys.exit(1)
 
-                except Exception as e:
-                    logger.warning(f"Interactive mode customization failed: {e}")
+        return toml.loads(config_str), pipeline_type or "default"
 
-        # =================================================================
-        # Validate Configuration
-        # =================================================================
+    def _run_single(
+        self,
+        *,
+        config_file,
+        dwi_file,
+        bvals_file,
+        bvecs_file,
+        t1_file,
+        mask_file,
+        dwi_opp_phase_file,
+        atlas_tractogram,
+        bundle_atlas_dir,
+        interactive_mode,
+        pipeline_type,
+        start,
+        dry_run,
+        out_dir,
+        out_report,
+        timestamp,
+    ):
+        """Run one pipeline on one set of input files.
+
+        Parameters
+        ----------
+        config_file : str or None
+            Path to a TOML configuration, or None to use a template.
+        dwi_file, bvals_file, bvecs_file : str or None
+            Diffusion input files.
+        t1_file, mask_file, dwi_opp_phase_file : str or None
+            Optional companion images.
+        atlas_tractogram, bundle_atlas_dir : str or None
+            Atlas paths, downloaded when needed and not provided.
+        interactive_mode : bool
+            Build the pipeline interactively.
+        pipeline_type : str or None
+            Name of the predefined pipeline.
+        start : str or None
+            Stage to start execution from.
+        dry_run : bool
+            Show the execution plan without running it.
+        out_dir : str
+            Output directory.
+        out_report : str
+            Name of the report file inside ``out_dir``.
+        timestamp : str
+            Timestamp prefixed to the generated artifacts.
+        """
+        config, pipeline_name = self._load_pipeline_config(
+            config_file=config_file,
+            pipeline_type=pipeline_type,
+            interactive_mode=interactive_mode,
+            bvals_file=bvals_file,
+        )
 
         if "pipeline" not in config or not isinstance(config["pipeline"], list):
             logger.error("Configuration missing [[pipeline]] sections")
             logger.error("Expected TOML structure with [[pipeline]] array sections")
             sys.exit(1)
 
-        io_config = config.get("io", {})
-        if out_dir:
-            io_config["out_dir"] = out_dir
-        io_config.setdefault("out_dir", ".")
-        io_config["out_dir"] = os.path.abspath(io_config["out_dir"])
-        os.makedirs(io_config["out_dir"], exist_ok=True)
+        if mask_file:
+            _validate_mask_file(mask_file)
 
-        log_file_path = os.path.join(io_config["out_dir"], f"{timestamp}_dipy_auto.log")
+        io_config = _fill_io_section(
+            config=config,
+            overrides={
+                "dwi": dwi_file,
+                "bvals": bvals_file,
+                "bvecs": bvecs_file,
+                "t1w": t1_file,
+                "mask": mask_file,
+                "dwi_opp_phase": dwi_opp_phase_file,
+                "atlas_tractogram": atlas_tractogram,
+                "bundle_atlas_dir": bundle_atlas_dir,
+            },
+            out_dir=out_dir,
+            out_report=out_report,
+        )
+
+        log_file_path = os.path.join(out_dir, f"{timestamp}_dipy_auto.log")
         add_file_handler(filename=log_file_path, level=logger.getEffectiveLevel())
         logger.info(f"Log file: {log_file_path}")
 
-        cli_overrides = {
-            "dwi": dwi_file,
-            "bvals": bvals_file,
-            "bvecs": bvecs_file,
-            "t1w": t1_file,
-            "bids_folder": bids_folder,
-            "atlas_tractogram": atlas_tractogram,
-            "bundle_atlas_dir": bundle_atlas_dir,
-        }
+        if config_file is None:
+            config_file = _write_pipeline_config(
+                config=config,
+                out_dir=out_dir,
+                timestamp=timestamp,
+                pipeline_name=pipeline_name,
+            )
 
-        for config_key, cli_value in cli_overrides.items():
-            if cli_value:
-                existing = io_config.get(config_key, "")
-                if existing and existing != cli_value:
-                    logger.warning(f"Overriding {config_key}: {existing} → {cli_value}")
-                io_config[config_key] = cli_value
+        try:
+            _resolve_atlas_paths(config=config, io_config=io_config)
+            missing, invalid = _validate_io_refs(config=config, io_config=io_config)
+            if missing or invalid:
+                _log_io_validation_errors(missing=missing, invalid=invalid)
+                raise PipelineError("Input validation failed")
 
-        # =================================================================
-        # Mask File Validation
-        # =================================================================
+            logger.info("✓ All input files validated successfully")
+            logger.info("Pipeline Configuration Summary:")
+            logger.info(f"  Config file: {os.path.basename(config_file)}")
+            logger.info(f"  Output directory: {io_config['out_dir']}")
+            logger.info(f"  Number of stages: {len(config['pipeline'])}")
+            logger.info(f"  Dry run: {dry_run}")
+            logger.info("")
 
-        if mask_file:
-            _validate_mask_file(mask_file)
-            io_config["mask"] = mask_file
-
-        # =================================================================
-        # Auto-download Atlas if needed for SLR or RecoBundles
-        # =================================================================
-
-        # Check if dipy_slr or dipy_recobundles are in the pipeline
-        needs_atlas = False
-        for stage in config.get("pipeline", []):
-            cli_name = stage.get("cli", "")
-            if cli_name in ("dipy_slr", "dipy_recobundles"):
-                needs_atlas = True
-                break
-
-        # If atlas is needed and paths are empty, download the atlas
-        if needs_atlas:
-            atlas_tractogram_path = io_config.get("atlas_tractogram", "")
-            bundle_atlas_dir_path = io_config.get("bundle_atlas_dir", "")
-
-            if not atlas_tractogram_path or not bundle_atlas_dir_path:
-                logger.info("Atlas required for SLR/RecoBundles but not provided.")
-                logger.info("Downloading HCP 30-bundle atlas...")
-
-                try:
-                    from dipy.data import fetch_30_bundle_atlas_hcp842
-
-                    # fetch_30_bundle_atlas_hcp842 returns (files_dict, base_path)
-                    _, atlas_base = fetch_30_bundle_atlas_hcp842()
-
-                    # Set the atlas paths
-                    if not atlas_tractogram_path:
-                        atlas_tractogram_path = os.path.join(
-                            atlas_base,
-                            "Atlas_30_Bundles",
-                            "whole_brain",
-                            "whole_brain_MNI.trk",
-                        )
-                        io_config["atlas_tractogram"] = atlas_tractogram_path
-                        logger.info(f"Atlas tractogram: {atlas_tractogram_path}")
-
-                    if not bundle_atlas_dir_path:
-                        bundle_atlas_dir_path = os.path.join(
-                            atlas_base, "Atlas_30_Bundles", "bundles"
-                        )
-                        io_config["bundle_atlas_dir"] = bundle_atlas_dir_path
-                        logger.info(f"Bundle atlas directory: {bundle_atlas_dir_path}")
-
-                except Exception as e:
-                    logger.error(f"Failed to download atlas: {e}")
-                    logger.error(
-                        "Please provide atlas paths manually using "
-                        "--atlas_tractogram and --bundle_atlas_dir"
-                    )
-                    sys.exit(1)
-
-        # =================================================================
-        # Validate Input Files BEFORE Pipeline Execution
-        # =================================================================
-
-        required_io_refs = set()
-
-        for stage in config.get("pipeline", []):
-            for key, value in stage.items():
-                if key in ("name", "cli"):
-                    continue
-                if isinstance(value, str):
-                    refs = extract_variable_references(value)
-                    for ref in refs:
-                        if ref.startswith("io."):
-                            io_key = ref.split(".", 1)[1]
-                            if not io_key.startswith("out_"):
-                                required_io_refs.add((ref, io_key))
-
-        missing_or_empty = []
-        invalid_paths = []
-
-        for ref, io_key in required_io_refs:
-            path = io_config.get(io_key, "")
-
-            if not path or path.strip() == "":
-                missing_or_empty.append((ref, io_key))
-            elif not os.path.exists(path):
-                invalid_paths.append((ref, path))
-
-        if missing_or_empty or invalid_paths:
-            logger.error("=" * 70)
-            logger.error("Input Validation Failed")
-            logger.error("=" * 70)
-
-            if missing_or_empty:
-                logger.error("✗ Missing input file definitions in [io] section:")
-                for ref, io_key in missing_or_empty:
-                    logger.error(f"  • {io_key} (required by ${{{ref}}})")
-
-                logger.error("Please provide input files using one of these methods:")
-                logger.error(
-                    "  1. Edit the config file and set paths in the [io] section"
-                )
-                logger.error("  2. Use CLI arguments:")
-                if any(k == "dwi" for _, k in missing_or_empty):
-                    logger.error("     dipy_auto --dwi-file <path>")
-                if any(k == "bvals" for _, k in missing_or_empty):
-                    logger.error("     dipy_auto --bvals-file <path>")
-                if any(k == "bvecs" for _, k in missing_or_empty):
-                    logger.error("     dipy_auto --bvecs-file <path>")
-
-            if invalid_paths:
-                logger.error("✗ Input files do not exist:")
-                for ref, path in invalid_paths:
-                    logger.error(f"  • {path} (from ${{{ref}}})")
-
-            logger.error("=" * 70)
+            execute_semantic_pipeline(
+                config=config,
+                io_config=io_config,
+                config_file_path=config_file,
+                report_path=os.path.join(
+                    io_config["out_dir"], f"{timestamp}_pipeline_report.html"
+                ),
+                start=start,
+                dry_run=dry_run,
+                force=self._force_overwrite,
+            )
+        except PipelineError as e:
+            logger.error(str(e))
             sys.exit(1)
 
-        logger.info("✓ All input files validated successfully")
+    def _run_bids_batch(
+        self,
+        *,
+        bids_dir,
+        deriv_root,
+        config_file,
+        pipeline_type,
+        participant_label,
+        session_label,
+        acquisition_label,
+        run_label,
+        atlas_tractogram,
+        bundle_atlas_dir,
+        start,
+        dry_run,
+        stop_on_error,
+        out_report,
+        timestamp,
+    ):
+        """Run one pipeline on every diffusion acquisition of a BIDS dataset.
 
-        # =================================================================
-        # Execute Semantic Pipeline
-        # =================================================================
+        Each acquisition is processed independently into
+        ``<deriv_root>/sub-X[/ses-Y]/dwi``, and a failure is reported in the
+        batch summary instead of stopping the batch.
 
-        logger.info("Pipeline Configuration Summary:")
-        logger.info(f"  Config file: {cfg_name}")
-        logger.info(f"  Output directory: {io_config['out_dir']}")
-        logger.info(f"  Number of stages: {len(config['pipeline'])}")
-        logger.info(f"  Dry run: {dry_run}")
+        Parameters
+        ----------
+        bids_dir : str
+            Root of the BIDS dataset.
+        deriv_root : str
+            Root of the derivative dataset to write into.
+        config_file : str or None
+            Path to a TOML configuration, or None to use a template.
+        pipeline_type : str or None
+            Name of the predefined pipeline.
+        participant_label, session_label, acquisition_label, run_label : \
+sequence of str or None
+            Entity filters restricting the acquisitions to process.
+        atlas_tractogram, bundle_atlas_dir : str or None
+            Atlas paths, downloaded when needed and not provided.
+        start : str or None
+            Stage to start execution from.
+        dry_run : bool
+            Show the execution plan of every run without running it.
+        stop_on_error : bool
+            Stop the batch at the first failing acquisition.
+        out_report : str
+            Name of the report file inside each run directory.
+        timestamp : str
+            Timestamp shared by every artifact of the batch.
+
+        Returns
+        -------
+        list of dict
+            One result record per acquisition.
+        """
+        try:
+            description = validate_dataset(root=bids_dir)
+        except ValueError as e:
+            logger.error(str(e))
+            sys.exit(1)
+
+        logger.info(f"BIDS dataset: {description.get('Name', bids_dir)}")
+
+        runs = find_dwi_runs(
+            root=bids_dir,
+            participant_label=participant_label,
+            session_label=session_label,
+            acquisition_label=acquisition_label,
+            run_label=run_label,
+        )
+
+        if not runs:
+            logger.error(f"No diffusion acquisition matched in {bids_dir}")
+            for name, value in (
+                ("--participant_label", participant_label),
+                ("--session_label", session_label),
+                ("--acquisition_label", acquisition_label),
+                ("--run_label", run_label),
+            ):
+                if value:
+                    logger.error(f"  {name} {' '.join(str(v) for v in value)}")
+            subjects = list_subjects(root=bids_dir)
+            logger.error(f"Subjects present: {', '.join(subjects) or 'none'}")
+            for subject in subjects:
+                sessions = list_sessions(root=bids_dir, subject=subject)
+                if sessions:
+                    logger.error(f"  sub-{subject} sessions: {', '.join(sessions)}")
+            sys.exit(1)
+
+        base_config, pipeline_name = self._load_pipeline_config(
+            config_file=config_file, pipeline_type=pipeline_type
+        )
+
+        if "pipeline" not in base_config or not isinstance(
+            base_config["pipeline"], list
+        ):
+            logger.error("Configuration missing [[pipeline]] sections")
+            logger.error("Expected TOML structure with [[pipeline]] array sections")
+            sys.exit(1)
+
+        os.makedirs(deriv_root, exist_ok=True)
+        write_dataset_description(
+            path=deriv_root,
+            source_datasets=[bids_dir],
+            pipeline_name=pipeline_name,
+        )
+
+        batch_log = os.path.join(deriv_root, f"{timestamp}_dipy_auto.log")
+        add_file_handler(filename=batch_log, level=logger.getEffectiveLevel())
+        logger.info(f"Batch log file: {batch_log}")
+        logger.info(f"Derivatives root: {deriv_root}")
+        logger.info(f"{len(runs)} diffusion acquisition(s) to process:")
+        for run in runs:
+            logger.info(f"  {run.label}")
+
+        results = []
+        run_out_dirs = _bids_run_out_dirs(runs=runs, deriv_root=deriv_root)
+
+        for index, (run, run_out_dir) in enumerate(zip(runs, run_out_dirs), start=1):
+            logger.info("")
+            logger.info("=" * 70)
+            logger.info(f"[{index}/{len(runs)}] {run.label}")
+            logger.info("=" * 70)
+
+            result = self._run_bids_entry(
+                run=run,
+                run_out_dir=run_out_dir,
+                base_config=base_config,
+                deriv_root=deriv_root,
+                pipeline_name=pipeline_name,
+                atlas_tractogram=atlas_tractogram,
+                bundle_atlas_dir=bundle_atlas_dir,
+                start=start,
+                dry_run=dry_run,
+                out_report=out_report,
+                timestamp=timestamp,
+            )
+            results.append(result)
+
+            if result["status"] == "failed" and stop_on_error:
+                logger.error(f"Stopping batch after {run.label} (--stop_on_error)")
+                break
+
+        _write_batch_summary(
+            results=results,
+            deriv_root=deriv_root,
+            timestamp=timestamp,
+            pipeline_name=pipeline_name,
+            bids_dir=bids_dir,
+        )
+
+        failed = [r for r in results if r["status"] == "failed"]
+        succeeded = [r for r in results if r["status"] == "completed"]
+
         logger.info("")
+        logger.info("=" * 70)
+        logger.info(
+            f"Batch finished: {len(results)} run(s), {len(succeeded)} succeeded, "
+            f"{len(failed)} failed"
+        )
+        for result in failed:
+            stage = result["failed_stage"]
+            where = f" at stage '{stage}'" if stage else ""
+            logger.error(f"  ✗ {result['label']} failed{where}: {result['error']}")
+        logger.info("=" * 70)
 
-        pipeline_report_path = os.path.join(
-            io_config["out_dir"], f"{timestamp}_pipeline_report.html"
-        )
-        execute_semantic_pipeline(
-            config=config,
-            io_config=io_config,
-            config_file_path=config_file,
-            report_path=pipeline_report_path,
-            start=start,
-            dry_run=dry_run,
-            force=self._force_overwrite,
-        )
+        if failed:
+            sys.exit(1)
+
+        return results
+
+    def _run_bids_entry(
+        self,
+        *,
+        run,
+        run_out_dir,
+        base_config,
+        deriv_root,
+        pipeline_name,
+        atlas_tractogram,
+        bundle_atlas_dir,
+        start,
+        dry_run,
+        out_report,
+        timestamp,
+    ):
+        """Run the pipeline on one diffusion acquisition of a BIDS dataset.
+
+        Parameters
+        ----------
+        run : DWIRun
+            Resolved diffusion acquisition.
+        run_out_dir : str
+            Output directory of this acquisition.
+        base_config : dict
+            Configuration shared by the batch. Copied before use.
+        deriv_root : str
+            Root of the derivative dataset.
+        pipeline_name : str
+            Name used for the generated configuration file.
+        atlas_tractogram, bundle_atlas_dir : str or None
+            Atlas paths, downloaded when needed and not provided.
+        start : str or None
+            Stage to start execution from.
+        dry_run : bool
+            Show the execution plan without running it.
+        out_report : str
+            Name of the report file inside the run directory.
+        timestamp : str
+            Timestamp shared by every artifact of the batch.
+
+        Returns
+        -------
+        dict
+            Record with the keys ``label``, ``subject``, ``session``,
+            ``entities``, ``out_dir``, ``status``, ``failed_stage``,
+            ``error``, ``duration``, ``metadata`` and ``report``.
+        """
+        metadata = phase_encoding_info(run=run)
+        record = {
+            "label": run.label,
+            "subject": run.subject,
+            "session": run.session,
+            "entities": dict(run.entities),
+            "out_dir": run_out_dir,
+            "status": "failed",
+            "failed_stage": None,
+            "error": None,
+            "duration": 0.0,
+            "metadata": metadata,
+            "report": None,
+        }
+
+        started = time.perf_counter()
+        os.makedirs(run_out_dir, exist_ok=True)
+
+        try:
+            with file_handler(
+                os.path.join(run_out_dir, f"{timestamp}_dipy_auto.log"),
+                level=logger.getEffectiveLevel(),
+            ):
+                config = copy.deepcopy(base_config)
+                io_config = _fill_io_section(
+                    config=config,
+                    overrides={
+                        "dwi": run.dwi,
+                        "bvals": run.bval,
+                        "bvecs": run.bvec,
+                        "t1w": run.t1w,
+                        "dwi_opp_phase": run.fmap_epi,
+                        "bids_folder": run.root,
+                        "subject": run.subject,
+                        "session": run.session or "",
+                        "entities": run.label,
+                        "pe_dir": metadata.get("PhaseEncodingDirection", ""),
+                        "total_readout_time": metadata.get("TotalReadoutTime", ""),
+                        "effective_echo_spacing": metadata.get(
+                            "EffectiveEchoSpacing", ""
+                        ),
+                        "echo_time": metadata.get("EchoTime", ""),
+                        "repetition_time": metadata.get("RepetitionTime", ""),
+                        "atlas_tractogram": atlas_tractogram,
+                        "bundle_atlas_dir": bundle_atlas_dir,
+                    },
+                    out_dir=run_out_dir,
+                    out_report=out_report,
+                )
+
+                if not run.is_complete:
+                    raise PipelineError(
+                        f"{run.label}: no b-value or b-vector file found next to "
+                        f"{run.dwi}"
+                    )
+
+                config_path = _write_pipeline_config(
+                    config=config,
+                    out_dir=run_out_dir,
+                    timestamp=timestamp,
+                    pipeline_name=pipeline_name,
+                )
+
+                _resolve_atlas_paths(config=config, io_config=io_config)
+
+                missing, invalid = _validate_io_refs(config=config, io_config=io_config)
+                if missing or invalid:
+                    _log_io_validation_errors(
+                        missing=missing, invalid=invalid, label=run.label
+                    )
+                    raise PipelineError(f"{run.label}: input validation failed")
+
+                execution_info = execute_semantic_pipeline(
+                    config=config,
+                    io_config=io_config,
+                    config_file_path=config_path,
+                    report_path=os.path.join(
+                        run_out_dir, f"{timestamp}_pipeline_report.html"
+                    ),
+                    start=start,
+                    dry_run=dry_run,
+                    force=self._force_overwrite,
+                )
+
+                record["status"] = "completed"
+                record["report"] = (execution_info or {}).get("report")
+
+                if not dry_run:
+                    _write_bids_derivative_links(
+                        run=run,
+                        deriv_root=deriv_root,
+                        execution_info=execution_info,
+                    )
+        except PipelineError as e:
+            logger.error(str(e))
+            record["error"] = str(e)
+            record["failed_stage"] = e.stage
+        except Exception as e:
+            logger.error(f"{run.label} failed: {e}")
+            logger.debug(traceback.format_exc())
+            record["error"] = str(e)
+
+        record["duration"] = time.perf_counter() - started
+        return record
