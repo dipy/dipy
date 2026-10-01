@@ -54,7 +54,7 @@ gitwash-update:
 
 html: api
 	#  Standard html build after examples have been prepared
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
+	DIPY_OFFSCREEN=1 FURY_OFFSCREEN=1 $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
 	@echo
 	@echo "Build finished. The HTML pages are in _build/html."
 

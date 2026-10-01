@@ -6,6 +6,7 @@ stand-in for the viewer or its visualizations.
 """
 
 import logging
+import os
 
 import nibabel as nib
 import numpy as np
@@ -25,7 +26,10 @@ _, has_fury, _ = optional_package("fury", min_version="2.0.0")
 if not has_fury:
     pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
 else:
-    from dipy.viz.skyline.app import Skyline, skyline, skyline_from_files
+    from PIL import Image
+
+    from dipy.viz import skyline, skyline_from_files
+    from dipy.viz.skyline.app import Skyline
     from dipy.viz.skyline.render.image import Image3D
     from dipy.viz.skyline.render.peak import Peak3D
     from dipy.viz.skyline.render.roi import ROI3D
@@ -35,6 +39,12 @@ else:
 
 AFFINE = np.eye(4)
 SHAPE = (8, 9, 10)
+
+
+class _FailingBeforeRenderSkyline(Skyline):
+    def before_render(self):
+        super().before_render()
+        raise RuntimeError("before-render failure")
 
 
 def _volume(seed=0, shape=SHAPE):
@@ -140,6 +150,91 @@ def test_stealth_viewer_creates_a_missing_output_directory(tmp_path):
 def test_stealth_viewer_has_no_sidebar(image_skyline):
     assert image_skyline.UI_window is None
     assert image_skyline._visualizer_type == "stealth"
+
+
+@pytest.mark.parametrize(
+    "dipy_value, fury_value, requested_type",
+    [
+        (None, None, "stealth"),
+        ("0", "0", "stealth"),
+        ("false", "1", "stealth"),
+        ("1", "0", "standalone"),
+        ("TrUe", "false", "gui"),
+        ("true", None, "jupyter"),
+    ],
+)
+def test_offscreen_environment_precedence(
+    tmp_path, dipy_value, fury_value, requested_type
+):
+    previous_dipy = os.environ.get("DIPY_OFFSCREEN")
+    previous_fury = os.environ.get("FURY_OFFSCREEN")
+    try:
+        for key, value in (
+            ("DIPY_OFFSCREEN", dipy_value),
+            ("FURY_OFFSCREEN", fury_value),
+        ):
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+        viewer = skyline(
+            visualizer_type=requested_type,
+            images=[(np.arange(64).reshape(4, 4, 4), AFFINE, "volume")],
+            out_dir=str(tmp_path),
+            out_stealth_png="offscreen.png",
+        )
+
+        assert viewer.UI_window is None
+        assert os.environ.get("DIPY_OFFSCREEN") == dipy_value
+        assert os.environ.get("FURY_OFFSCREEN") == fury_value
+        with Image.open(tmp_path / "offscreen.png") as image:
+            assert any(low != high for low, high in image.getextrema()[:3])
+    finally:
+        for key, value in (
+            ("DIPY_OFFSCREEN", previous_dipy),
+            ("FURY_OFFSCREEN", previous_fury),
+        ):
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+@pytest.mark.parametrize("fury_value", [None, "TrUe"])
+def test_offscreen_environment_restored_before_start_failure(tmp_path, fury_value):
+    previous_dipy = os.environ.get("DIPY_OFFSCREEN")
+    previous_fury = os.environ.get("FURY_OFFSCREEN")
+    viewer = _FailingBeforeRenderSkyline.__new__(_FailingBeforeRenderSkyline)
+    try:
+        os.environ.pop("DIPY_OFFSCREEN", None)
+        if fury_value is None:
+            os.environ.pop("FURY_OFFSCREEN", None)
+        else:
+            os.environ["FURY_OFFSCREEN"] = fury_value
+
+        with pytest.raises(RuntimeError, match="before-render failure"):
+            viewer.__init__(
+                visualizer_type="stealth",
+                images=[(np.arange(64).reshape(4, 4, 4), AFFINE, "volume")],
+                out_dir=str(tmp_path),
+                out_stealth_png="offscreen.png",
+            )
+
+        assert os.environ.get("FURY_OFFSCREEN") == fury_value
+    finally:
+        try:
+            if hasattr(viewer, "window"):
+                viewer.window.close()
+        finally:
+            for key, value in (
+                ("DIPY_OFFSCREEN", previous_dipy),
+                ("FURY_OFFSCREEN", previous_fury),
+            ):
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
 
 
 def test_default_background_is_dark(image_skyline):
