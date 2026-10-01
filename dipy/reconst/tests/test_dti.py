@@ -487,7 +487,8 @@ def test_wls_and_ls_fit():
     assert extra is None, "WLS fit should not return extra information"
 
 
-def test_rwls_rnlls_irls_fit():
+@set_random_number_generator()
+def test_rwls_rnlls_irls_fit(rng):
     # Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)]
     # and D ~ 10^-4 mm^2 /s
     b0 = 1000.0
@@ -509,7 +510,6 @@ def test_rwls_rnlls_irls_fit():
     npt.assert_almost_equal(Y[0], b0)
     Y = Y.reshape((-1,) + Y.shape)
 
-    rng = np.random.default_rng(20260927)
     noise = rng.normal(size=Y.shape)
     YN = Y + noise
     YN[0, -1] *= 10  # note 1D array!
@@ -1268,7 +1268,8 @@ def test_cholesky_transformations():
     npt.assert_array_almost_equal(dt_gt, dt_recovered)
 
 
-def test_dti_nlls_cholesky_accuracy():
+@set_random_number_generator()
+def test_dti_nlls_cholesky_accuracy(rng):
     """Test noisy NLLS with and without Cholesky parameterization."""
     evals_gt = np.array([0.0017, 0.0003, 0.0003])
     evecs_gt = np.eye(3)
@@ -1279,7 +1280,6 @@ def test_dti_nlls_cholesky_accuracy():
 
     signal_clean = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
 
-    rng = np.random.default_rng(20260927)
     noisy_signal = np.maximum(
         signal_clean + rng.normal(0.0, 100.0 / 50.0, signal_clean.shape),
         MIN_POSITIVE_SIGNAL,

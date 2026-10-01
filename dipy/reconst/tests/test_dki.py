@@ -40,6 +40,7 @@ from dipy.reconst.weights_method import (
 )
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.testing import check_for_warnings
+from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWireError
 
@@ -884,7 +885,8 @@ def test_MK_singularities():
         assert_almost_equal(MK_an, MK_nm, decimal=3)
 
 
-def test_dki_nls_cholesky_with_noise():
+@set_random_number_generator()
+def test_dki_nls_cholesky_with_noise(rng):
     """Test Cholesky NLS on a noisy DKI signal."""
     if not have_cvxpy:
         return
@@ -900,7 +902,6 @@ def test_dki_nls_cholesky_with_noise():
         snr=None,
     )
 
-    rng = np.random.default_rng(20260923)
     noisy_signal = np.maximum(
         signal_clean + rng.normal(0.0, S0 / 50.0, signal_clean.shape),
         MIN_POSITIVE_SIGNAL,

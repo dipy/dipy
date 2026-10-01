@@ -24,7 +24,24 @@ from dipy.utils.parallel import paramap
 
 
 def lower_triangular_to_cholesky(tensor_elements):
-    """Performs Cholesky decomposition of the diffusion tensor"""
+    """Convert diffusion-tensor elements to Cholesky elements.
+
+    Parameters
+    ----------
+    tensor_elements : array (6,)
+        Six independent elements of the diffusion tensor in lower-triangular
+        order.
+
+    Returns
+    -------
+    cholesky_elements : array (6,)
+        Six elements of the Cholesky decomposition, ordered as
+        ``(R0, R1, R2, R3, R4, R5)`` :footcite:p:`Koay2006b`.
+
+    References
+    ----------
+    .. footbibliography::
+    """
     R0 = np.sqrt(tensor_elements[0])
     R3 = tensor_elements[1] / R0
     R1 = np.sqrt(tensor_elements[2] - R3**2)
@@ -36,7 +53,24 @@ def lower_triangular_to_cholesky(tensor_elements):
 
 
 def cholesky_to_lower_triangular(R):
-    """Convert Cholesky decomposition elements to the diffusion tensor elements"""
+    """Convert Cholesky elements to diffusion-tensor elements.
+
+    Parameters
+    ----------
+    R : array (6,)
+        Six elements of the Cholesky decomposition, ordered as
+        ``(R0, R1, R2, R3, R4, R5)`` :footcite:p:`Koay2006b`.
+
+    Returns
+    -------
+    tensor_elements : array (6,)
+        Six independent elements of the diffusion tensor in lower-triangular
+        order.
+
+    References
+    ----------
+    .. footbibliography::
+    """
     Dxx = R[0] ** 2
     Dxy = R[0] * R[3]
     Dyy = R[1] ** 2 + R[3] ** 2
