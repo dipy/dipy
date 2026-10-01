@@ -272,9 +272,6 @@ class Image3D(Visualization):
 
         self._apply_colormap(self.colormap)
         self.bounds = self._slicer.get_bounding_box()
-        # The slicer is rebuilt whenever the direction or RGB mode changes. Only the
-        # first build starts at the volume center; a rebuild keeps the slices where
-        # they were, clipped to the new bounds.
         if getattr(self, "state", None) is None:
             self.state = np.mean(self.bounds, axis=0)
         else:
