@@ -107,6 +107,56 @@ def test_image3d_state_starts_at_the_volume_center():
     assert len(image.actor.children) == 3
 
 
+def test_image3d_changing_direction_keeps_the_slice_position():
+    data = _volume((6, 7, 8, 5))
+    image = Image3D("dwi.nii.gz", data, affine=AFFINE)
+    moved = np.asarray(image.bounds[0], dtype=float) + 1
+
+    image.update_state(np.asarray([*moved, 3]))
+
+    assert image._volume_idx == 3
+    npt.assert_allclose(image.state, moved)
+
+
+def test_image3d_rebuilding_the_slicer_keeps_the_slice_position():
+    data = _volume((6, 7, 8, 5))
+    image = Image3D("dwi.nii.gz", data, affine=AFFINE)
+    moved = np.asarray(image.bounds[0], dtype=float) + 1
+    image.update_state(moved)
+
+    image._volume_idx = 2
+    image._create_slicer_actor()
+
+    npt.assert_allclose(image.state, moved)
+
+
+def test_image3d_synced_views_keep_the_slice_position_on_direction_change():
+    # Wired the way Skyline syncs views: the source pushes its state to the others.
+    data = _volume((6, 7, 8, 5))
+    views = []
+
+    def sync(source, new_state):
+        for view in views:
+            if view is not source:
+                view.update_state(np.asarray(new_state))
+
+    source = Image3D("a.nii.gz", data, affine=AFFINE, sync_callabck=sync)
+    other = Image3D("b.nii.gz", data.copy(), affine=AFFINE, sync_callabck=sync)
+    views += [source, other]
+    moved = np.asarray(source.bounds[0], dtype=float) + 1
+    source.state = moved
+    sync(source, moved)
+
+    # What the Directions slider does on the source view.
+    source._volume_idx = 3
+    sync(source, np.asarray([*source.state, source._volume_idx]))
+    source._create_slicer_actor()
+
+    assert other._volume_idx == 3
+    npt.assert_allclose(source.state, moved)
+    npt.assert_allclose(other.state, moved)
+
+
 def test_image3d_active_volume_is_the_whole_volume_for_3d_data():
     image = _image()
 
