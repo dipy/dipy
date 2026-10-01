@@ -27,7 +27,7 @@ Jinja2
 pyperf
 virtualenv
 fury>=2.0.0
-imgui_bundle<=1.92.801,>=1.92.600
+imgui_bundle>=1.92.600,<=1.92.900
 matplotlib
 scikit_learn
 pandas
