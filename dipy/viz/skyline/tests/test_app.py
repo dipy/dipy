@@ -644,6 +644,45 @@ def test_new_visualizations_inherit_the_current_slice_position(make_skyline, tmp
     npt.assert_allclose(viewer._image_visualizations[-1].state, [3.0, 4.0, 5.0])
 
 
+def test_new_visualizations_inherit_the_current_direction(make_skyline):
+    shape = (*SHAPE, 5)
+    viewer = make_skyline(images=[_image_input("first.nii.gz", shape=shape)])
+    viewer.active_image._volume_idx = 3
+
+    viewer._queue_loaded_visualizations(
+        {
+            "images": [_image_input("second.nii.gz", seed=9, shape=shape)],
+            "peaks": [],
+            "rois": [],
+            "surfaces": [],
+            "tractograms": [],
+            "shm_coeffs": [],
+        }
+    )
+    viewer._drain_pending_visualizations()
+
+    assert viewer._image_visualizations[-1]._volume_idx == 3
+
+
+def test_new_visualizations_keep_their_direction_when_it_is_out_of_range(make_skyline):
+    viewer = make_skyline(images=[_image_input("first.nii.gz", shape=(*SHAPE, 5))])
+    viewer.active_image._volume_idx = 4
+
+    viewer._queue_loaded_visualizations(
+        {
+            "images": [_image_input("second.nii.gz", seed=9, shape=(*SHAPE, 3))],
+            "peaks": [],
+            "rois": [],
+            "surfaces": [],
+            "tractograms": [],
+            "shm_coeffs": [],
+        }
+    )
+    viewer._drain_pending_visualizations()
+
+    assert viewer._image_visualizations[-1]._volume_idx == 0
+
+
 def test_drain_pending_visualizations_resets_the_loading_counters(image_skyline):
     image_skyline._queue_loaded_visualizations(
         {

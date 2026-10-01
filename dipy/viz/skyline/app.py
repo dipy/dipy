@@ -535,23 +535,39 @@ class Skyline:
         -------
         np.ndarray or list or tuple or None
             Snapshot of slice state from an existing synchronizable visualization,
-            or None when no such visualization exists (first load).
+            or None when no such visualization exists (first load). For an image
+            with directions, the current direction is appended as a fourth value.
         """
         if self.active_image is not None:
-            return self._snapshot_state(
-                np.asarray(self.active_image.state, dtype=float)
-            )
+            return self._reference_state_of(self.active_image)
         if self._slice_focus_viz is not None:
             if self._slice_focus_viz not in self.visualizations:
                 self._slice_focus_viz = None
             else:
-                return self._snapshot_state(
-                    np.asarray(self._slice_focus_viz.state, dtype=float)
-                )
+                return self._reference_state_of(self._slice_focus_viz)
         for viz in reversed(self.visualizations):
             if isinstance(viz, (Image3D, Peak3D, SHGlyph3D)):
-                return self._snapshot_state(np.asarray(viz.state, dtype=float))
+                return self._reference_state_of(viz)
         return None
+
+    def _reference_state_of(self, viz):
+        """Return the slice state of ``viz``, with its direction if it has one.
+
+        Parameters
+        ----------
+        viz : Visualization
+            Visualization to take the reference state from.
+
+        Returns
+        -------
+        np.ndarray
+            Slice position, followed by the direction index for an image with
+            directions.
+        """
+        state = np.asarray(viz.state, dtype=float)
+        if isinstance(viz, Image3D) and viz._has_directions:
+            state = np.asarray([*state, viz._volume_idx], dtype=float)
+        return self._snapshot_state(state)
 
     def _apply_reference_slice_state_to_new_visualizations(
         self, reference_state, n_img_before, n_peak_before, n_sh_before
