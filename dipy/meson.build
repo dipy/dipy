@@ -22,6 +22,7 @@ Wno_implicit_function_declaration = cc.get_supported_arguments('-Wno-implicit-fu
 Wno_parentheses = cc.get_supported_arguments('-Wno-parentheses')
 Wno_switch = cc.get_supported_arguments('-Wno-switch')
 Wno_unused_label = cc.get_supported_arguments('-Wno-unused-label')
+Wno_unused_but_set_variable = cc.get_supported_arguments('-Wno-unused-but-set-variable')
 Wno_unused_variable = cc.get_supported_arguments('-Wno-unused-variable')
 
 # C++ warning flags
@@ -190,6 +191,12 @@ if not omp.found() and meson.get_compiler('c').get_id() == 'clang'
       endif
     endforeach
   endif
+endif
+
+# Cython can emit OpenMP scheduling variables outside the guarded OpenMP block.
+# Without OpenMP, these variables are assigned but never used.
+if not omp.found()
+  cython_c_args += Wno_unused_but_set_variable
 endif
 
 # SSE intrinsics

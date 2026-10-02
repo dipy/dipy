@@ -17,6 +17,7 @@ from dipy.workflows.reconst import (
     ReconstForceFlow,
     ReconstForecastFlow,
     ReconstGQIFlow,
+    ReconstOdffpFlow,
     ReconstPowermapFlow,
     ReconstRUMBAFlow,
     ReconstSFMFlow,
@@ -698,5 +699,126 @@ def test_reconst_force_invalid_range_options(monkeypatch, tmp_path):
             str(bvec_path),
             str(mask_path),
             wm_d_par_range=[0.003, 0.002],  # min > max
+            out_dir=str(tmp_path),
+        )
+
+
+def test_reconst_odffp(tmp_path):
+    """ReconstOdffpFlow generates a dictionary, matches and saves outputs."""
+    data_path, bval_path, bvec_path = get_fnames(name="small_64D")
+    volume, affine = load_nifti(data_path)
+    volume = volume[:3, :3, :2]
+    data_path = tmp_path / "dwi.nii.gz"
+    save_nifti(data_path, volume, affine)
+    mask = np.ones(volume.shape[:3], dtype=np.uint8)
+    mask[0, 0, 0] = 0
+    mask_path = tmp_path / "mask.nii.gz"
+    save_nifti(mask_path, mask, affine)
+
+    flow = ReconstOdffpFlow()
+    flow.run(
+        str(data_path),
+        str(bval_path),
+        str(bvec_path),
+        str(mask_path),
+        dict_size=300,
+        max_peaks_num=2,
+        max_chunk_size=300,
+        seed=0,
+        save_dict=True,
+        extract_pam_values=True,
+        out_dir=str(tmp_path),
+    )
+    outputs = flow.last_generated_outputs
+
+    pam = load_pam(outputs["out_pam"])
+    npt.assert_equal(pam.peak_dirs.shape, volume.shape[:3] + (2, 3))
+    npt.assert_equal(pam.shm_coeff.shape, volume.shape[:3] + (45,))
+    npt.assert_array_almost_equal(pam.affine, affine)
+    # The voxel outside the mask has no peaks.
+    npt.assert_array_equal(pam.peak_dirs[0, 0, 0], 0)
+
+    num_fibers = load_nifti_data(outputs["out_num_fibers"])
+    npt.assert_equal(num_fibers.shape, volume.shape[:3])
+    npt.assert_equal(num_fibers[0, 0, 0], 0)
+    assert num_fibers.min() >= 0
+    assert num_fibers.max() <= 2
+
+    free_water = load_nifti_data(outputs["out_free_water"])
+    npt.assert_equal(free_water.shape, volume.shape[:3])
+    assert np.all((free_water >= 0) & (free_water <= 1))
+
+    peaks_dir = load_nifti_data(outputs["out_peaks_dir"])
+    npt.assert_equal(peaks_dir.shape, volume.shape[:3] + (6,))
+    for key, last_dim in [
+        ("out_peaks_values", 2),
+        ("out_peaks_indices", 2),
+        ("out_qa", 2),
+        ("out_shm", 45),
+    ]:
+        arr = load_nifti_data(outputs[key])
+        npt.assert_equal(arr.shape, volume.shape[:3] + (last_dim,))
+    gfa = load_nifti_data(outputs["out_gfa"])
+    npt.assert_equal(gfa.shape, volume.shape[:3])
+    assert np.all((gfa >= 0) & (gfa <= 1))
+    qa = load_nifti_data(outputs["out_qa"])
+    assert np.all(qa >= 0)
+    assert qa[mask.astype(bool), 0].max() > 0
+    # Amplitudes are kept by default: main peaks are not all 1.
+    peak_values = load_nifti_data(outputs["out_peaks_values"])
+    assert np.unique(peak_values[mask.astype(bool), 0]).size > 1
+    assert (tmp_path / "odf_dict.npz").exists()
+
+    # The predicted signal is the fingerprint signal scaled by the measured b0.
+    predicted = load_nifti_data(outputs["out_predicted_signal"])
+    npt.assert_equal(predicted.shape, volume.shape)
+    npt.assert_array_equal(predicted[0, 0, 0], 0)
+    bvals, _ = read_bvals_bvecs(bval_path, bvec_path)
+    b0s = bvals <= 50
+    in_mask = mask.astype(bool)
+    b0_mean = volume[..., b0s].mean(axis=-1)
+    npt.assert_allclose(
+        predicted[..., b0s][in_mask], b0_mean[in_mask][:, None], rtol=1e-5
+    )
+
+    # Reusing the saved dictionary reproduces the matching exactly, whatever
+    # the seed.
+    out_dir = tmp_path / "reuse"
+    out_dir.mkdir()
+    flow = ReconstOdffpFlow()
+    flow.run(
+        str(data_path),
+        str(bval_path),
+        str(bvec_path),
+        str(mask_path),
+        dict_file=outputs["out_dict"],
+        seed=1,
+        out_dir=str(out_dir),
+    )
+    reused = load_pam(flow.last_generated_outputs["out_pam"])
+    npt.assert_array_equal(reused.peak_dirs, pam.peak_dirs)
+    npt.assert_array_equal(reused.peak_values, pam.peak_values)
+    npt.assert_array_equal(reused.shm_coeff, pam.shm_coeff)
+
+
+def test_reconst_odffp_invalid_interval(tmp_path):
+    data_path, bval_path, bvec_path = get_fnames(name="small_64D")
+    flow = ReconstOdffpFlow()
+    with pytest.raises(ValueError):
+        flow.run(
+            str(data_path),
+            str(bval_path),
+            str(bvec_path),
+            str(data_path),
+            p_iso=[0.5],
+            out_dir=str(tmp_path),
+        )
+    with pytest.raises(ValueError):
+        flow.run(
+            str(data_path),
+            str(bval_path),
+            str(bvec_path),
+            str(data_path),
+            d_a=[2.5, 1.5],
             out_dir=str(tmp_path),
         )

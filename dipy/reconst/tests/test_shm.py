@@ -671,6 +671,42 @@ def test_SphHarmFit():
     assert_equal(data.shape, (3, 4))
 
 
+def test_SphHarmFit_afd():
+    # Two positive Watson lobes crossing at 90 degrees with fractions 0.7/0.3
+    _, gtab, _ = make_fake_signal()
+    sphere = hemi_icosahedron.subdivide(n=5)
+    fractions = np.array([0.7, 0.3])
+    cos2 = (sphere.vertices @ np.eye(3)[:2].T) ** 2
+    sf = np.exp(5 * (cos2 - 1)) @ fractions
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        model = QballModel(gtab, sh_order_max=8)
+        coef = sf_to_sh(sf, sphere, sh_order_max=8)
+        fit = SphHarmFit(model, np.stack([coef, -coef, np.zeros_like(coef)]), None)
+
+        afd_all = fit.afd(npeaks=4, peak_threshold=0)
+        afd = fit[0].afd(npeaks=3)
+        afd_peak = fit[0].afd(npeaks=3, peak_threshold=0.5)
+        afd_integral = fit[0].afd(integral_threshold=afd[:2].mean())
+        afd_first = fit[0].afd(npeaks=1)
+
+    assert_equal(afd_all.shape, (3, 4))
+    # The lobes of a positive FOD partition its integral
+    npt.assert_allclose(afd_all[0].sum(), np.sqrt(4 * np.pi) * coef[0])
+    # No lobes without a positive isotropic component
+    assert_array_equal(afd_all[1:], 0)
+
+    assert_equal(afd[2], 0)
+    npt.assert_allclose(afd[:2] / afd[:2].sum(), fractions, atol=0.01)
+    npt.assert_allclose(afd_peak, [afd[0], 0, 0])
+    npt.assert_allclose(afd_integral, [afd[0], 0, 0, 0, 0])
+    npt.assert_allclose(afd_first, afd[:1])
+
+
 class TestOpdtModel(TestQballModel):
     model = OpdtModel
 

@@ -19,6 +19,7 @@ following form: Y.T = x.T B.T, or in python syntax data = np.dot(sh_coef, B.T)
 where data is Y.T and sh_coef is x.T.
 """
 
+from functools import cache
 from warnings import warn
 
 import numpy as np
@@ -27,8 +28,10 @@ import scipy.special as sps
 
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
+from dipy.core.sphere import hemi_icosahedron
 from dipy.reconst.cache import Cache
 from dipy.reconst.odf import OdfFit, OdfModel
+from dipy.reconst.recspeed import fmls_afd
 from dipy.utils.compatibility import check_max_version
 from dipy.utils.deprecator import (
     deprecate_with_version,
@@ -960,6 +963,41 @@ class QballBaseModel(SphHarmModel):
         return SphHarmFit(self, coef, mask)
 
 
+@cache
+def _afd_sphere():
+    """Directions, quadrature weights and adjacency used to compute the AFD.
+
+    Uses the same 1281 directions and integration weights as MRtrix3's
+    ``fod2fixel``.
+
+    Returns
+    -------
+    sphere : HemiSphere
+        Directions on which the FOD is sampled.
+    weights : ndarray (N,)
+        Quadrature weights of the directions over the full sphere.
+    adj_indptr : ndarray (N + 1,)
+        Offsets of each direction's neighbors in `adj_indices`.
+    adj_indices : ndarray
+        Neighbor indices of every direction.
+    """
+    sphere = hemi_icosahedron.subdivide(n=4)
+    n_dirs = len(sphere.vertices)
+
+    sh_order_max = 2 * int((np.sqrt(1 + 8 * n_dirs) - 3) / 4) + 2
+    B, _, _ = real_sh_descoteaux(sh_order_max, sphere.theta, sphere.phi, legacy=False)
+    integrals = np.zeros(B.shape[1])
+    integrals[0] = 2 * np.sqrt(np.pi)
+    weights = np.linalg.lstsq(B.T, integrals, rcond=None)[0]
+
+    edges = np.asarray(sphere.edges, dtype=np.intp)
+    edges = np.concatenate([edges, edges[:, ::-1]])
+    edges = edges[np.argsort(edges[:, 0], kind="stable")]
+    adj_indptr = np.zeros(n_dirs + 1, dtype=np.intp)
+    np.cumsum(np.bincount(edges[:, 0], minlength=n_dirs), out=adj_indptr[1:])
+    return sphere, weights, adj_indptr, np.ascontiguousarray(edges[:, 1])
+
+
 class SphHarmFit(OdfFit):
     """Diffusion data fit to a spherical harmonic model"""
 
@@ -1010,6 +1048,65 @@ class SphHarmFit(OdfFit):
     @auto_attr
     def gfa(self):
         return _gfa_sh(self.shm_coeff, sh0_index=0)
+
+    def afd(self, *, npeaks=5, peak_threshold=0.1, integral_threshold=0.0):
+        """Apparent fiber density (AFD) of each FOD lobe.
+
+        Each FOD is split into lobes :footcite:p:`Smith2013` and the AFD of a
+        lobe is its integral :footcite:p:`Raffelt2012`, as in MRtrix3's
+        ``fod2fixel -afd``.
+
+        Parameters
+        ----------
+        npeaks : int, optional
+            Maximum number of lobes returned per voxel.
+        peak_threshold : float, optional
+            Lobes whose maximum FOD amplitude is below this value are
+            discarded (``-fmls_peak_value`` in MRtrix3).
+        integral_threshold : float, optional
+            Lobes whose AFD is below this value are discarded
+            (``-fmls_integral`` in MRtrix3).
+
+        Returns
+        -------
+        afd : ndarray (..., npeaks)
+            AFD of each lobe, sorted by descending peak amplitude. Missing
+            lobes are set to 0.
+
+        Notes
+        -----
+        Voxels whose isotropic SH coefficient is not positive have no lobes.
+        The thresholds are absolute, so they depend on the scale of the FOD.
+        Unlike MRtrix3, the peak amplitude is the largest sampled amplitude of
+        the lobe, without Newton refinement.
+
+        References
+        ----------
+        .. footbibliography::
+        """
+        sphere, weights, adj_indptr, adj_indices = _afd_sphere()
+        B = self.model.sampling_matrix(sphere)
+        shm_coeff = self.shm_coeff.reshape(-1, self.shm_coeff.shape[-1])
+        afd = np.zeros((shm_coeff.shape[0], npeaks))
+        valid = np.flatnonzero((shm_coeff[:, 0] > 0) & np.isfinite(shm_coeff[:, 0]))
+
+        # Process voxels in chunks to bound the memory of the sampled FODs
+        chunk_size = 10000
+        for start in range(0, valid.size, chunk_size):
+            voxels = valid[start : start + chunk_size]
+            odf = np.dot(shm_coeff[voxels], B.T)
+            order = np.argsort(-odf, axis=-1, kind="stable")
+            afd[voxels] = fmls_afd(
+                odf,
+                order,
+                weights,
+                adj_indptr,
+                adj_indices,
+                npeaks,
+                peak_threshold,
+                integral_threshold,
+            )
+        return afd.reshape(self.shape + (npeaks,))
 
     @property
     def shm_coeff(self):
