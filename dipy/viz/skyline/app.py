@@ -64,6 +64,8 @@ class Skyline:
           snapshots.
 
         An unrecognized value logs an error and terminates the process.
+        ``DIPY_OFFSCREEN=1`` or ``true`` (case-insensitive) forces stealth.
+        Otherwise, ``visualizer_type`` controls rendering.
     images : list of tuple, optional
         Already-loaded image data to show at startup, as ``(data, affine)``
         or ``(data, affine, filename)`` tuples.
@@ -139,11 +141,16 @@ class Skyline:
         Spherical harmonic coefficient file paths loaded asynchronously
         into the viewer on startup.
     out_dir : str or Path, optional
-        Directory for the stealth-mode output image; created if missing.
-        Used only when ``visualizer_type`` is ``"stealth"``.
+        Directory for the offscreen output image; created if missing.
     out_stealth_png : str, optional
-        Output image name, without extension, used as the stealth window
-        title. Used only when ``visualizer_type`` is ``"stealth"``.
+        Output image name used as the offscreen window title. Applies when
+        stealth mode is requested or ``DIPY_OFFSCREEN`` is ``1``/``true``.
+
+    Notes
+    -----
+    Window creation sets ``FURY_OFFSCREEN`` to ``1`` for stealth or removes
+    the key otherwise. Skyline restores its previous value or absence after
+    setup/start returns or raises.
     """
 
     def __init__(
@@ -191,6 +198,8 @@ class Skyline:
               snapshots.
 
             An unrecognized value logs an error and terminates the process.
+            ``DIPY_OFFSCREEN=1`` or ``true`` (case-insensitive) forces stealth.
+            Otherwise, ``visualizer_type`` controls rendering.
         images : list of tuple, optional
             Already-loaded image data to show at startup, as ``(data, affine)``
             or ``(data, affine, filename)`` tuples.
@@ -266,17 +275,28 @@ class Skyline:
             Spherical harmonic coefficient file paths loaded asynchronously
             into the viewer on startup.
         out_dir : str or Path, optional
-            Directory for the stealth-mode output image; created if missing.
-            Used only when ``visualizer_type`` is ``"stealth"``.
+            Directory for the offscreen output image; created if missing.
         out_stealth_png : str, optional
-            Output image name, without extension, used as the stealth window
-            title. Used only when ``visualizer_type`` is ``"stealth"``.
+            Output image name used as the offscreen window title. Applies when
+            stealth mode is requested or ``DIPY_OFFSCREEN`` is ``1``/``true``.
+
+        Notes
+        -----
+        Window creation sets ``FURY_OFFSCREEN`` to ``1`` for stealth or removes
+        the key otherwise. Skyline restores its previous value or absence after
+        setup/start returns or raises.
         """
         if sh_basis not in SH_BASES:
             raise ValueError(f"sh_basis must be one of {SH_BASES}, got {sh_basis!r}.")
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
-        self._visualizer_type = visualizer_type
+        dipy_offscreen_requested = os.environ.get("DIPY_OFFSCREEN", "").lower() in (
+            "1",
+            "true",
+        )
+        self._visualizer_type = (
+            "stealth" if dipy_offscreen_requested else visualizer_type
+        )
         self._direct_load = True
         self._rgb = rgb
         self._cluster_thr = cluster_thr
@@ -284,112 +304,122 @@ class Skyline:
         self._cluster_length_thr = cluster_length_thr
         self._buan_pvals = buan_pvals
         self._sh_basis = sh_basis
-        if self._visualizer_type != "stealth":
-            os.environ["FURY_OFFSCREEN"] = "0"
-            self.window = create_window(
-                visualizer_type=self._visualizer_type,
-                size=self.size,
-                screen_config=[
-                    (self.ui_size[0], 0, self.size[0] - self.ui_size[0], self.size[1]),
-                ],
+        previous_fury_offscreen = os.environ.get("FURY_OFFSCREEN")
+        try:
+            if self._visualizer_type != "stealth":
+                self.window = create_window(
+                    visualizer_type=self._visualizer_type,
+                    size=self.size,
+                    screen_config=[
+                        (
+                            self.ui_size[0],
+                            0,
+                            self.size[0] - self.ui_size[0],
+                            self.size[1],
+                        ),
+                    ],
+                )
+            else:
+                title = "DIPY SKYLINE"
+                if out_stealth_png is not None:
+                    title = split_filename_extension(out_stealth_png)[0]
+                if out_dir is not None and out_dir != "":
+                    os.makedirs(out_dir, exist_ok=True)
+                    title = os.path.join(out_dir, title)
+                self.window = create_window(
+                    visualizer_type=self._visualizer_type, size=self.size, title=title
+                )
+            if bg_color is None:
+                bg_color = (1, 1, 1) if glass_brain else (0.1, 0.1, 0.1)
+            self._bg_color = bg_color
+            self.window.screens[0].scene.background = self._bg_color
+
+            if tract_colors is None:
+                tract_colors = "direction"
+            elif isinstance(tract_colors, str) and len(tract_colors.split(" ")) == 3:
+                tract_colors = tuple(map(float, tract_colors.split(" ")))
+            self._tract_colors = tract_colors
+
+            self._image_visualizations = []
+            self._peak_visualizations = []
+            self._roi_visualizations = []
+            self._surface_visualizations = []
+            self._tractogram_visualizations = []
+            self._sh_glyph_visualizations = []
+            self._pending_loaded_files = []
+            self._pending_tractogram_switches = []
+            self._loading_total = 0
+            self._loading_done = 0
+            self._is_drawing_ui = False
+            self._refresh_requested = False
+            self._pending_bg_color = None
+            self._pending_sync_requests = []
+            self._pending_scene_ops = []
+            self._is_cluster = is_cluster
+            self._is_light_version = is_light_version
+            self._glass_brain = glass_brain
+            self._tractogram_help = False
+            self.window.renderer.add_event_handler(self.handle_key_events, "key_down")
+            self.window.resize_callback(self.handle_resize)
+            self._color_gen = distinguishable_colormap()
+            self.active_image = None
+            self._slice_focus_viz = None
+
+            if self._visualizer_type != "stealth":
+                gpu_texture = load_image_as_wgpu_texture_view(
+                    str(LOGO_SMALL), self.window.device
+                )
+                logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
+                self.UI_window = UIWindow(
+                    "Image Controls",
+                    size=self.ui_size,
+                    render_callback=self.request_refresh,
+                    logo_tex_ref=logo_tex_ref,
+                    file_dialog_callback=self._append_visualization,
+                    bg_color_callback=self._update_background_color,
+                    snapshot_callback=self._save_snapshot,
+                )
+                self.window._imgui.set_gui(self.draw_ui)
+            else:
+                self.UI_window = None
+
+            initial_loaded_files = {
+                "images": images or [],
+                "peaks": peaks or [],
+                "rois": rois or [],
+                "surfaces": surfaces or [],
+                "tractograms": tractograms or [],
+                "shm_coeffs": sh_coeffs or [],
+            }
+            has_initial_visualizations = any(initial_loaded_files.values())
+            has_initial_files = any(
+                (initial_filenames, initial_rois, initial_peaks, initial_shm_coeffs)
             )
-        else:
-            os.environ["FURY_OFFSCREEN"] = "1"
-            title = "DIPY SKYLINE"
-            if out_stealth_png is not None:
-                title = split_filename_extension(out_stealth_png)[0]
-            if out_dir is not None and out_dir != "":
-                os.makedirs(out_dir, exist_ok=True)
-                title = os.path.join(out_dir, title)
-            self.window = create_window(
-                visualizer_type=self._visualizer_type, size=self.size, title=title
-            )
-        if bg_color is None:
-            bg_color = (1, 1, 1) if glass_brain else (0.1, 0.1, 0.1)
-        self._bg_color = bg_color
-        self.window.screens[0].scene.background = self._bg_color
 
-        if tract_colors is None:
-            tract_colors = "direction"
-        elif isinstance(tract_colors, str) and len(tract_colors.split(" ")) == 3:
-            tract_colors = tuple(map(float, tract_colors.split(" ")))
-        self._tract_colors = tract_colors
+            if has_initial_visualizations:
+                self._queue_loaded_visualizations(initial_loaded_files)
 
-        self._image_visualizations = []
-        self._peak_visualizations = []
-        self._roi_visualizations = []
-        self._surface_visualizations = []
-        self._tractogram_visualizations = []
-        self._sh_glyph_visualizations = []
-        self._pending_loaded_files = []
-        self._pending_tractogram_switches = []
-        self._loading_total = 0
-        self._loading_done = 0
-        self._is_drawing_ui = False
-        self._refresh_requested = False
-        self._pending_bg_color = None
-        self._pending_sync_requests = []
-        self._pending_scene_ops = []
-        self._is_cluster = is_cluster
-        self._is_light_version = is_light_version
-        self._glass_brain = glass_brain
-        self._tractogram_help = False
-        self.window.renderer.add_event_handler(self.handle_key_events, "key_down")
-        self.window.resize_callback(self.handle_resize)
-        self._color_gen = distinguishable_colormap()
-        self.active_image = None
-        self._slice_focus_viz = None
+            if has_initial_files:
+                self._append_visualization(
+                    filenames=initial_filenames,
+                    rois=initial_rois,
+                    peaks=initial_peaks,
+                    shm_coeffs=initial_shm_coeffs,
+                )
+            elif not has_initial_visualizations and self.UI_window is not None:
+                self.UI_window.request_file_dialog = True
 
-        if self._visualizer_type != "stealth":
-            gpu_texture = load_image_as_wgpu_texture_view(
-                str(LOGO_SMALL), self.window.device
-            )
-            logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
-            self.UI_window = UIWindow(
-                "Image Controls",
-                size=self.ui_size,
-                render_callback=self.request_refresh,
-                logo_tex_ref=logo_tex_ref,
-                file_dialog_callback=self._append_visualization,
-                bg_color_callback=self._update_background_color,
-                snapshot_callback=self._save_snapshot,
-            )
-            self.window._imgui.set_gui(self.draw_ui)
-        else:
-            self.UI_window = None
+            if self._visualizer_type == "stealth":
+                self._wait_for_loading_in_stealth_mode()
 
-        initial_loaded_files = {
-            "images": images or [],
-            "peaks": peaks or [],
-            "rois": rois or [],
-            "surfaces": surfaces or [],
-            "tractograms": tractograms or [],
-            "shm_coeffs": sh_coeffs or [],
-        }
-        has_initial_visualizations = any(initial_loaded_files.values())
-        has_initial_files = any(
-            (initial_filenames, initial_rois, initial_peaks, initial_shm_coeffs)
-        )
-
-        if has_initial_visualizations:
-            self._queue_loaded_visualizations(initial_loaded_files)
-
-        if has_initial_files:
-            self._append_visualization(
-                filenames=initial_filenames,
-                rois=initial_rois,
-                peaks=initial_peaks,
-                shm_coeffs=initial_shm_coeffs,
-            )
-        elif not has_initial_visualizations and self.UI_window is not None:
-            self.UI_window.request_file_dialog = True
-
-        if self._visualizer_type == "stealth":
-            self._wait_for_loading_in_stealth_mode()
-
-        self.before_render()
-        self._direct_load = False
-        self.window.start()
+            self.before_render()
+            self._direct_load = False
+            self.window.start()
+        finally:
+            if previous_fury_offscreen is None:
+                os.environ.pop("FURY_OFFSCREEN", None)
+            else:
+                os.environ["FURY_OFFSCREEN"] = previous_fury_offscreen
 
     def _wait_for_loading_in_stealth_mode(self):
         """Block until all queued and pending visualizations finish loading.
@@ -1436,24 +1466,29 @@ def skyline_from_files(
         File path for BUAN p-values used for BUAN-based coloring of
         tractograms.
     stealth : bool, optional
-        Whether to render offscreen and save a snapshot instead of opening
-        an interactive window; sets ``visualizer_type`` to ``"stealth"``.
+        Request offscreen capture. ``DIPY_OFFSCREEN=1`` or ``true``
+        (case-insensitive) forces capture; otherwise, ``stealth`` controls rendering.
     rgb : bool or None, optional
         ``None``: auto-detect from structured NIfTI ``DT_RGB24``
         dtype; show toggle for other 4D volumes with 3 or 4 channels.
         ``True``: force RGB mode.  ``False``: never treat as RGB.
     out_dir : str or Path, optional
-        Directory for the stealth-mode output image; created if missing.
-        Used only when ``stealth`` is True.
+        Directory for the offscreen output image; created if missing.
     out_stealth_png : str, optional
-        Output image name, without extension, used as the stealth window
-        title. Used only when ``stealth`` is True.
+        Output image name used as the offscreen window title. Applies when
+        ``stealth`` is True or ``DIPY_OFFSCREEN`` is ``1``/``true``.
 
     Returns
     -------
     Skyline
         The constructed viewer, returned once construction returns from
         its blocking ``self.window.start()`` call.
+
+    Notes
+    -----
+    Window creation sets ``FURY_OFFSCREEN`` to ``1`` for stealth or removes
+    the key otherwise. Skyline restores its previous value or absence after
+    setup/start returns or raises.
     """
     visualizer_type = "stealth" if stealth else "standalone"
 
@@ -1523,6 +1558,8 @@ def skyline(
           snapshots.
 
         An unrecognized value logs an error and terminates the process.
+        ``DIPY_OFFSCREEN=1`` or ``true`` (case-insensitive) forces stealth.
+        Otherwise, ``visualizer_type`` controls rendering.
     images : list of tuple, optional
         Already-loaded image data to show at startup, as ``(data, affine)``
         or ``(data, affine, filename)`` tuples.
@@ -1598,17 +1635,22 @@ def skyline(
         Spherical harmonic coefficient file paths loaded asynchronously
         into the viewer on startup.
     out_dir : str or Path, optional
-        Directory for the stealth-mode output image; created if missing.
-        Used only when ``visualizer_type`` is ``"stealth"``.
+        Directory for the offscreen output image; created if missing.
     out_stealth_png : str, optional
-        Output image name, without extension, used as the stealth window
-        title. Used only when ``visualizer_type`` is ``"stealth"``.
+        Output image name used as the offscreen window title. Applies when
+        stealth mode is requested or ``DIPY_OFFSCREEN`` is ``1``/``true``.
 
     Returns
     -------
     Skyline
         The constructed viewer, returned once construction returns from
         its blocking ``self.window.start()`` call.
+
+    Notes
+    -----
+    Window creation sets ``FURY_OFFSCREEN`` to ``1`` for stealth or removes
+    the key otherwise. Skyline restores its previous value or absence after
+    setup/start returns or raises.
     """
     return Skyline(
         visualizer_type=visualizer_type,
