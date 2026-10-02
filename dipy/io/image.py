@@ -1,7 +1,10 @@
+import warnings
+
 import nibabel as nib
 import numpy as np
 from packaging.version import Version
 
+from dipy.io.utils import decfa, has_rgb_dtype, unpack_rgb_array
 from dipy.utils.deprecator import warning_for_keywords
 
 
@@ -22,13 +25,30 @@ def load_nifti_data(fname, *, as_ndarray=True):
     -------
     data: np.ndarray or nib.ArrayProxy
 
+    Notes
+    -----
+    Structured RGB/RGBA data (NIfTI ``DT_RGB24``/``DT_RGBA32``) is
+    auto-unpacked into a plain array with an added trailing color-channel
+    axis, and a ``UserWarning`` is raised. Pass ``as_ndarray=False`` to skip
+    this and receive the raw structured data.
+
     See Also
     --------
     load_nifti
 
     """
     img = nib.load(fname)
-    return np.asanyarray(img.dataobj) if as_ndarray else img.dataobj
+    data = np.asanyarray(img.dataobj) if as_ndarray else img.dataobj
+    if as_ndarray and has_rgb_dtype(data):
+        warnings.warn(
+            "Loaded NIfTI data has a structured RGB/RGBA dtype (DT_RGB24 or "
+            "DT_RGBA32) and was auto-converted to a plain numeric array. "
+            "Pass as_ndarray=False to get the raw structured dtype.",
+            UserWarning,
+            stacklevel=3,
+        )
+        data = unpack_rgb_array(data)
+    return data
 
 
 @warning_for_keywords()
@@ -66,6 +86,14 @@ def load_nifti(
     A tuple, with (at the most, if all keyword args are set to True):
     (data, img.affine, img, vox_size, nib.aff2axcodes(img.affine))
 
+    Notes
+    -----
+    Unlike `load_nifti_data`, structured RGB/RGBA data is returned as-is
+    (structured dtype, no trailing color-channel axis). When ``return_img``
+    is True and the data has such a dtype, a ``UserWarning`` is raised
+    because ``img.get_fdata()`` cannot cast structured data to float; use
+    ``np.asarray(img.dataobj)`` instead.
+
     See Also
     --------
     load_nifti_data
@@ -73,6 +101,15 @@ def load_nifti(
     """
     img = nib.load(fname)
     data = np.asanyarray(img.dataobj) if as_ndarray else img.dataobj
+    if return_img and has_rgb_dtype(data):
+        warnings.warn(
+            "Loaded NIfTI image has a structured RGB/RGBA dtype (DT_RGB24 or "
+            "DT_RGBA32); img.get_fdata() cannot cast it to float and will "
+            "raise a TypeError. Use np.asarray(img.dataobj) to access the "
+            "data.",
+            UserWarning,
+            stacklevel=3,
+        )
     vox_size = img.header.get_zooms()[:3]
 
     ret_val = [data, img.affine]
@@ -88,7 +125,9 @@ def load_nifti(
 
 
 @warning_for_keywords()
-def save_nifti(fname, data, affine, *, hdr=None, dtype=None):
+def save_nifti(
+    fname, data, affine, *, hdr=None, dtype=None, as_decfa=False, scale=None
+):
     """Save a data array into a nifti file.
 
     Parameters
@@ -104,6 +143,15 @@ def save_nifti(fname, data, affine, *, hdr=None, dtype=None):
 
     hdr : nifti header, optional
         May contain additional information to store in the file header.
+
+    as_decfa : bool, optional
+        If True, encode data as a DEC FA image via ``dipy.io.utils.decfa``;
+        ``dtype`` is ignored in this case.
+
+    scale : bool or None, optional
+        When ``as_decfa`` is True, controls scaling of data assumed to be
+        in the 0-1 range up to the 0-255 range. None auto-detects: True for
+        float data, False for integer. Ignored when ``as_decfa`` is False.
 
     Returns
     -------
@@ -136,6 +184,12 @@ def save_nifti(fname, data, affine, *, hdr=None, dtype=None):
 
     kwargs = {"dtype": dtype} if NIBABEL_4_0_0_PLUS else {}
     result_img = nib.Nifti1Image(data, affine, header=hdr, **kwargs)
+
+    if as_decfa:
+        if scale is None:
+            scale = np.issubdtype(data.dtype, np.floating)
+        result_img = decfa(result_img, scale=scale)
+
     result_img.to_filename(fname)
 
 

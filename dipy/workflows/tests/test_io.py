@@ -21,6 +21,7 @@ from dipy.io.utils import nifti1_symmat
 from dipy.reconst import dti, utils as reconst_utils
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 from dipy.testing import assert_true, assert_warns
+from dipy.testing.decorators import set_random_number_generator
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWireError
 from dipy.workflows.base import _strip_rst_markup, format_key_value_table
@@ -148,6 +149,19 @@ def test_io_info_pam_missing_fields(tmp_path, caplog):
     ]:
         matching = [line for line in lines if label in line and "Not available" in line]
         npt.assert_equal(len(matching) > 0, True)
+
+
+@set_random_number_generator()
+def test_io_info_rgb(tmp_path, caplog, rng=None):
+    rgb_data = rng.random((3, 3, 3, 3))
+    save_nifti(str(tmp_path / "rgb_decfa.nii.gz"), rgb_data, np.eye(4), as_decfa=True)
+
+    io_info_flow = IoInfoFlow()
+    with caplog.at_level(logging.INFO, logger="dipy"):
+        io_info_flow.run(str(tmp_path / "rgb_decfa.nii.gz"))
+
+    assert "dimensions" in caplog.text.lower()
+    assert "min" in caplog.text.lower()
 
 
 def test_io_fetch(tmp_path):
