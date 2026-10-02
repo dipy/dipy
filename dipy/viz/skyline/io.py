@@ -11,7 +11,7 @@ from dipy.io.peaks import load_pam
 from dipy.io.streamline import load_tractogram
 from dipy.io.surface import load_gifti, load_pial
 from dipy.io.utils import create_nifti_header, split_filename_extension
-from dipy.reconst.shm import calculate_max_order, convert_sh_descoteaux_tournier
+from dipy.reconst.shm import calculate_max_order
 from dipy.utils.logging import logger
 
 mni_2009c = {
@@ -30,7 +30,67 @@ mni_2009c = {
 EMERGENCY_REF = create_nifti_header(
     mni_2009c["affine"], mni_2009c["dims"], mni_2009c["vox_size"]
 )
-SH_BASES = ("descoteaux07", "tournier07")
+SH_BASES = ("descoteaux07", "descoteaux07_legacy", "tournier07", "tournier19")
+
+
+def _validate_sh_basis(sh_basis):
+    """Return a supported input basis, logging invalid declarations.
+
+    Parameters
+    ----------
+    sh_basis : str
+        Input SH convention selected by the caller.
+
+    Returns
+    -------
+    str
+        Supported input convention, or ``"descoteaux07"`` for an invalid
+        declaration, which is logged.
+    """
+    if sh_basis not in SH_BASES:
+        logger.error(
+            f"sh_basis must be one of {SH_BASES}, got {sh_basis!r}. "
+            "Using 'descoteaux07'."
+        )
+        return "descoteaux07"
+    return sh_basis
+
+
+def _valid_shm_coeffs(coeffs, fname, *, full_basis=False):
+    """Check SH volume shape and coefficient count, logging invalid inputs.
+
+    Parameters
+    ----------
+    coeffs : ndarray or None
+        Candidate 4D SH coefficient volume to validate.
+    fname : str
+        Source filename or display name used in validation errors.
+    full_basis : bool, optional
+        Whether the coefficient axis includes both even and odd SH orders.
+
+    Returns
+    -------
+    bool
+        True for a 4D array with a valid SH coefficient count, otherwise False.
+    """
+    if isinstance(coeffs, np.ndarray) and coeffs.ndim == 4:
+        try:
+            calculate_max_order(coeffs.shape[-1], full_basis=full_basis)
+        except ValueError:
+            pass
+        else:
+            return True
+    shape = getattr(coeffs, "shape", None)
+    coefficient_layout = (
+        "full SH coefficient count (1, 4, 9, 16, ...)"
+        if full_basis
+        else "symmetric SH coefficient count (1, 6, 15, 28, 45, ...)"
+    )
+    logger.error(
+        f"{fname} does not contain SH coefficients: expected a 4D volume with "
+        f"a {coefficient_layout}, got shape {shape}."
+    )
+    return False
 
 
 def _reference_from_image(data, affine):
@@ -58,11 +118,6 @@ def _reference_from_image(data, affine):
 def _peaks_from_nifti(fname):
     """Load peak directions from a NIfTI peaks volume.
 
-    Accepts the two layouts Skyline recognizes: ``(X, Y, Z, N, 3)``, written
-    by ``pam_to_niftis(..., reshape_dirs=False)``, and ``(X, Y, Z, 3*N)``,
-    written by ``pam_to_niftis(..., reshape_dirs=True)`` and by MRtrix3
-    ``sh2peaks``.
-
     Parameters
     ----------
     fname : str
@@ -73,6 +128,13 @@ def _peaks_from_nifti(fname):
     tuple or None
         ``(peak_dirs, affine)`` with ``peak_dirs`` of shape (X, Y, Z, N, 3),
         or None if ``fname`` does not hold a recognized peaks layout.
+
+    Notes
+    -----
+    Accepts the two layouts Skyline recognizes: ``(X, Y, Z, N, 3)``, written
+    by ``pam_to_niftis(..., reshape_dirs=False)``, and ``(X, Y, Z, 3*N)``,
+    written by ``pam_to_niftis(..., reshape_dirs=True)`` and by MRtrix3
+    ``sh2peaks``.
     """
     data, affine = load_nifti(fname)
     if data.ndim == 4 and data.shape[-1] % 3 == 0:
@@ -85,41 +147,6 @@ def _peaks_from_nifti(fname):
         return None
     return np.nan_to_num(data.astype(np.float32), copy=False), affine
 
-
-def _shm_from_nifti(fname, sh_basis):
-    """Load SH coefficients from a 4D NIfTI ODF volume.
-
-    Parameters
-    ----------
-    fname : str
-        Path of the NIfTI SH coefficients file.
-    sh_basis : str
-        SH basis of ``fname``: ``"descoteaux07"`` or ``"tournier07"``. Any
-        value other than ``"tournier07"`` is treated as ``"descoteaux07"``.
-
-    Returns
-    -------
-    tuple or None
-        ``(coeffs, affine)`` with ``coeffs`` converted to legacy
-        descoteaux07, or None if ``fname`` does not hold a symmetric SH
-        coefficient volume.
-    """
-    data, affine = load_nifti(fname)
-    if data.ndim == 4:
-        try:
-            calculate_max_order(data.shape[-1])
-        except ValueError:
-            pass
-        else:
-            coeffs = data.astype(np.float32, copy=False)
-            if sh_basis == "tournier07":
-                coeffs = convert_sh_descoteaux_tournier(coeffs)
-            return coeffs, affine
-    logger.error(
-        f"{fname} does not contain SH coefficients: expected a 4D volume with "
-        f"a symmetric SH coefficient count (1, 6, 15, 28, 45, ...), got shape "
-        f"{data.shape}."
-    )
     return None
 
 
@@ -144,13 +171,14 @@ def load_files(
         Paths to ROI images (``.nii`` or ``.nii.gz``); other extensions
         are logged and skipped.
     peaks : list of str, optional
-        Paths of the peak files.
+        Paths to PAM or NIfTI peak-direction files.
     shm_coeffs : list of str, optional
-        Paths to spherical-harmonic coefficient files (``.pam5``); other
-        extensions are silently skipped.
+        Paths to spherical-harmonic coefficient files (``.pam5``, ``.nii``,
+        or ``.nii.gz``); unsupported extensions are logged and skipped.
     sh_basis : str, optional
-        SH basis of NIfTI ODFs in ``shm_coeffs``: ``"descoteaux07"`` or
-        ``"tournier07"``.
+        Input convention for PAM and NIfTI ODFs: ``"descoteaux07"`` (latest),
+        ``"descoteaux07_legacy"`` (old DIPY), ``"tournier07"`` (MRtrix 0.2),
+        or ``"tournier19"`` (MRtrix3).
 
     Returns
     -------
@@ -160,25 +188,17 @@ def load_files(
         of tuples for the matching ``create_*_visualization`` function:
 
         - images, rois : ``(data, affine, fname)``
-        - peaks : ``(pam, fname)``
+        - peaks : ``(peak_dirs, affine, fname, peak_values)``; NIfTI files
+          have ``peak_values=None``.
         - surfaces : ``(vertices, faces, fname)``
         - tractograms : ``(sft, fname)``
-        - shm_coeffs : ``(coeffs, affine, fname, "descoteaux")``
+        - shm_coeffs : ``(coeffs, affine, fname, sh_basis)``
 
     Notes
     -----
-    NIfTI peak files (``.nii``, ``.nii.gz``) are accepted in two layouts:
-    ``(X, Y, Z, N, 3)``, as written by
-    ``dipy.io.peaks.pam_to_niftis(..., reshape_dirs=False)``, and
-    ``(X, Y, Z, 3*N)``, as written with ``reshape_dirs=True`` and by MRtrix3
-    ``sh2peaks``. Each ``"peaks"`` entry is a
-    ``(peak_dirs, affine, filename, peak_values)`` tuple; ``peak_values`` is
-    None for NIfTI peaks, since a NIfTI peaks file carries no magnitude
-    information.
-
-    NIfTI ODF files must be a 4D volume whose last dimension is a symmetric
-    SH coefficient count (1, 6, 15, 28, 45, ...). Coefficients in the
-    ``tournier07`` (MRtrix3) basis are converted to legacy ``descoteaux07``.
+    SH coefficients remain in the declared input basis; only rendering converts
+    them. The convention is not inferred. Unsupported names are logged and use
+    ``"descoteaux07"``.
     """
     if fnames is None:
         fnames = []
@@ -276,13 +296,15 @@ def load_files(
         logger.info(f"Loading file ... \n{fname}\n")
         _, ext = split_filename_extension(fname)
         ext = ext.lower()
-        if ext == ".pam5":
-            pam = load_pam(fname)
-            skyline_shm_coeffs.append((pam.shm_coeff, pam.affine, fname, "descoteaux"))
-        elif ext in [".nii.gz", ".nii"]:
-            result = _shm_from_nifti(fname, sh_basis)
-            if result is not None:
-                skyline_shm_coeffs.append((*result, fname, "descoteaux"))
+        if ext in [".nii.gz", ".nii", ".pam5"]:
+            if ext == ".pam5":
+                pam = load_pam(fname)
+                data, affine = pam.shm_coeff, pam.affine
+            elif ext in [".nii.gz", ".nii"]:
+                data, affine = load_nifti(fname)
+            if _valid_shm_coeffs(data, fname):
+                input_basis = _validate_sh_basis(sh_basis)
+                skyline_shm_coeffs.append((data, affine, fname, input_basis))
         else:
             logger.error(
                 f"File extension '{ext}' is not supported for ODFs in Skyline."

@@ -15,7 +15,7 @@ from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO_SMALL
 from dipy.viz.skyline.compute import process_async_callbacks, run_async
-from dipy.viz.skyline.io import SH_BASES, load_files
+from dipy.viz.skyline.io import _valid_shm_coeffs, _validate_sh_basis, load_files
 
 fury_trip_msg = (
     "Skyline requires Fury version 2.0.0 or higher."
@@ -85,10 +85,15 @@ class Skyline:
         Already-loaded spherical harmonic coefficient data to show at
         startup, as ``(coeffs, affine)``, ``(coeffs, affine, filename)`` or
         ``(coeffs, affine, filename, basis_type)`` tuples. ``coeffs`` must
-        be a 4D ndarray, otherwise the entry is skipped with a warning.
+        be a 4D ndarray with a symmetric SH count, or a full SH count when the
+        fourth tuple element is ``"standard"``. Invalid entries are logged
+        and skipped.
     sh_basis : str, optional
-        SH basis of NIfTI ODFs: ``"descoteaux07"`` (DIPY legacy) or
-        ``"tournier07"`` (MRtrix3).
+        Input convention for ODF files and unlabelled arrays: ``"descoteaux07"``
+        (latest), ``"descoteaux07_legacy"`` (old DIPY), ``"tournier07"``
+        (MRtrix 0.2), or ``"tournier19"`` (MRtrix3). A fourth tuple element
+        overrides this selection.
+        Unsupported values are logged and use latest Descoteaux07.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
@@ -212,10 +217,15 @@ class Skyline:
             Already-loaded spherical harmonic coefficient data to show at
             startup, as ``(coeffs, affine)``, ``(coeffs, affine, filename)`` or
             ``(coeffs, affine, filename, basis_type)`` tuples. ``coeffs`` must
-            be a 4D ndarray, otherwise the entry is skipped with a warning.
+            be a 4D ndarray with a symmetric SH count, or a full SH count when the
+            fourth tuple element is ``"standard"``. Invalid entries are logged
+            and skipped.
         sh_basis : str, optional
-            SH basis of NIfTI ODFs: ``"descoteaux07"`` (DIPY legacy) or
-            ``"tournier07"`` (MRtrix3).
+            Input convention for ODF files and unlabelled arrays: ``"descoteaux07"``
+            (latest), ``"descoteaux07_legacy"`` (old DIPY), ``"tournier07"``
+            (MRtrix 0.2), or ``"tournier19"`` (MRtrix3). A fourth tuple element
+            overrides this selection.
+            Unsupported values are logged and use latest Descoteaux07.
         is_cluster : bool, optional
             Whether to cluster the tractograms.
         is_light_version : bool, optional
@@ -272,8 +282,7 @@ class Skyline:
             Output image name, without extension, used as the stealth window
             title. Used only when ``visualizer_type`` is ``"stealth"``.
         """
-        if sh_basis not in SH_BASES:
-            raise ValueError(f"sh_basis must be one of {SH_BASES}, got {sh_basis!r}.")
+        sh_basis = _validate_sh_basis(sh_basis)
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
         self._visualizer_type = visualizer_type
@@ -353,6 +362,7 @@ class Skyline:
                 file_dialog_callback=self._append_visualization,
                 bg_color_callback=self._update_background_color,
                 snapshot_callback=self._save_snapshot,
+                sh_basis=sh_basis,
             )
             self.window._imgui.set_gui(self.draw_ui)
         else:
@@ -916,7 +926,9 @@ class Skyline:
             Loaded spherical harmonic coefficient data, as
             ``(coeffs, affine)``, ``(coeffs, affine, filename)`` or
             ``(coeffs, affine, filename, basis_type)`` tuples. Entries whose
-            ``coeffs`` is not a 4D ndarray are skipped with a warning.
+            ``coeffs`` is not a 4D ndarray with a valid SH count are logged and
+            skipped. Explicit ``"standard"`` tuples use a full SH count;
+            other inputs use a symmetric count.
         is_cluster : bool, optional
             Overrides ``self._is_cluster`` for the tractograms in this batch.
         async_clustering : bool, optional
@@ -1000,11 +1012,8 @@ class Skyline:
                 filename = f"ODFs {idx}"
                 if len(input) >= 3:
                     filename = input[2]
-                if not isinstance(coeffs, np.ndarray) or len(coeffs.shape) != 4:
-                    logger.warning(
-                        f"The provide file: {filename} does not "
-                        "contain any SH coefficients or is not a 4D array."
-                    )
+                full_basis = len(input) == 4 and input[3] == "standard"
+                if not _valid_shm_coeffs(coeffs, filename, full_basis=full_basis):
                     continue
             sh3d = create_shm_visualization(
                 input,
@@ -1012,6 +1021,7 @@ class Skyline:
                 render_callback=self.request_refresh,
                 scale=1.0,
                 l_max=8,
+                basis_type=self._sh_basis,
                 sync_callback=self._synchronize_visualizations,
             )
             self._add_visualization(sh3d)
@@ -1025,7 +1035,7 @@ class Skyline:
             self.UI_window.request_file_dialog = True
 
     def _append_visualization(
-        self, *, filenames=None, rois=None, peaks=None, shm_coeffs=None
+        self, *, filenames=None, rois=None, peaks=None, shm_coeffs=None, sh_basis=None
     ):
         """Load files from disk asynchronously and queue them for display.
 
@@ -1044,7 +1054,12 @@ class Skyline:
             List of ``.pam5`` or NIfTI (.nii, .nii.gz) peak file paths.
         shm_coeffs : list of str, optional
             Paths to spherical harmonic coefficient files to load.
+        sh_basis : str or None, optional
+            Source convention for this batch, or the viewer's input default.
+            Unsupported values are logged and use latest Descoteaux07.
         """
+        batch_sh_basis = self._sh_basis if sh_basis is None else sh_basis
+        batch_sh_basis = _validate_sh_basis(batch_sh_basis)
         total_files = (
             len(filenames or [])
             + len(rois or [])
@@ -1063,7 +1078,7 @@ class Skyline:
                 rois=rois,
                 peaks=peaks,
                 shm_coeffs=shm_coeffs,
-                sh_basis=self._sh_basis,
+                sh_basis=batch_sh_basis,
             )
 
         def on_files_loaded(loaded_files, exception):
@@ -1396,12 +1411,13 @@ def skyline_from_files(
         Tuple of path for each peaks file (.pam5, or NIfTI with shape
         (X, Y, Z, 3*N) or (X, Y, Z, N, 3)) to be added to the Skyline viewer.
     shm_coeffs : list of str, optional
-        File paths for spherical harmonics coefficients to be loaded into
-        the Skyline viewer. Only ``.pam5`` files are supported; other
-        extensions are silently skipped.
+        File paths for spherical harmonics coefficients (``.pam5``, ``.nii``,
+        or ``.nii.gz``). Unsupported extensions are logged and skipped.
     sh_basis : str, optional
-        SH basis of NIfTI ODFs: 'descoteaux07' (DIPY legacy) or 'tournier07'
-        (MRtrix3).
+        Input convention for PAM and NIfTI ODFs: ``"descoteaux07"`` (latest),
+        ``"descoteaux07_legacy"`` (old DIPY), ``"tournier07"`` (MRtrix 0.2),
+        or ``"tournier19"`` (MRtrix3).
+        Unsupported values are logged and use latest Descoteaux07.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
@@ -1544,10 +1560,15 @@ def skyline(
         Already-loaded spherical harmonic coefficient data to show at
         startup, as ``(coeffs, affine)``, ``(coeffs, affine, filename)`` or
         ``(coeffs, affine, filename, basis_type)`` tuples. ``coeffs`` must
-        be a 4D ndarray, otherwise the entry is skipped with a warning.
+        be a 4D ndarray with a symmetric SH count, or a full SH count when the
+        fourth tuple element is ``"standard"``. Invalid entries are logged
+        and skipped.
     sh_basis : str, optional
-        SH basis of NIfTI ODFs: 'descoteaux07' (DIPY legacy) or 'tournier07'
-        (MRtrix3).
+        Input convention for ODF files and unlabelled arrays: ``"descoteaux07"``
+        (latest), ``"descoteaux07_legacy"`` (old DIPY), ``"tournier07"``
+        (MRtrix 0.2), or ``"tournier19"`` (MRtrix3). A fourth tuple element
+        overrides this selection.
+        Unsupported values are logged and use latest Descoteaux07.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
