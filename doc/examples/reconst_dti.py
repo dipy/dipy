@@ -259,10 +259,7 @@ eigenvalues:
 """
 
 AD = tenfit.ad
-save_nifti("tensors_ad.nii.gz", AD.astype(np.float32), affine)
-
 RD = tenfit.rd
-save_nifti("tensors_rd.nii.gz", RD.astype(np.float32), affine)
 
 """
 Other measures summarize the tensor while accounting for different
@@ -282,7 +279,6 @@ original definition (see the ``geodesic_anisotropy`` docstring for details).
 """
 
 GA = tenfit.ga
-save_nifti("tensors_ga.nii.gz", GA.astype(np.float32), affine)
 
 """
 The apparent diffusion coefficient (ADC) is the diffusivity along a given
@@ -437,11 +433,9 @@ fiber population appears as decreased NA, while selective degeneration of
 secondary crossing fibers appears as increased NA.
 """
 
+MD = tenfit.md
 NA = tenfit.na
-save_nifti("tensors_na.nii.gz", NA.astype(np.float32), affine)
-
 MO = tenfit.mode
-save_nifti("tensors_mo.nii.gz", MO.astype(np.float32), affine)
 
 """
 Let's try to visualize the tensor ellipsoids of a small rectangular
