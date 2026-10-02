@@ -6,16 +6,22 @@ stand-in for the viewer or its visualizations.
 """
 
 import logging
+import time
 
 import nibabel as nib
 import numpy as np
 import numpy.testing as npt
 import pytest
 
+from dipy.data import default_sphere
+from dipy.direction.peaks import PeaksAndMetrics
 from dipy.io.image import save_nifti
+from dipy.io.peaks import load_pam, save_pam
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
+from dipy.reconst.shm import real_sh_descoteaux, real_sh_tournier
 from dipy.utils.optpkg import optional_package
+from dipy.viz.skyline.compute import process_async_callbacks
 
 _, has_pygfx, _ = optional_package("pygfx")
 if has_pygfx:
@@ -92,6 +98,25 @@ def _sh_coeffs(shape=(2, 2, 2), l_max=8):
 
 def _sh_input(name="odf"):
     return (_sh_coeffs(), AFFINE, name)
+
+
+def _pam5_with_sh_coeffs(path, coeffs):
+    n_vertices = default_sphere.vertices.shape[0]
+    pam = PeaksAndMetrics()
+    pam.affine = AFFINE
+    pam.peak_dirs = np.zeros((2, 2, 2, 5, 3), dtype=np.float32)
+    pam.peak_dirs[..., 0, 0] = 1.0
+    pam.peak_values = np.ones((2, 2, 2, 5), dtype=np.float32)
+    pam.peak_indices = np.zeros((2, 2, 2, 5), dtype=np.int32)
+    pam.shm_coeff = coeffs
+    pam.sphere = default_sphere
+    pam.B = np.zeros((coeffs.shape[-1], n_vertices), dtype=np.float32)
+    pam.total_weight = 0.5
+    pam.ang_thr = 45.0
+    pam.gfa = np.zeros((2, 2, 2), dtype=np.float32)
+    pam.qa = np.zeros((2, 2, 2, 5), dtype=np.float32)
+    pam.odf = np.zeros((2, 2, 2, n_vertices), dtype=np.float32)
+    save_pam(str(path), pam, affine=AFFINE)
 
 
 @pytest.fixture
@@ -277,14 +302,15 @@ def test_load_visualizations_builds_one_glyph_per_coefficient_volume(image_skyli
     assert glyph.viz_type == "sh_glyph"
 
 
-def test_load_visualizations_warns_on_non_4d_sh_coefficients(image_skyline, caplog):
-    flat = (np.zeros((2, 2, 45), dtype=np.float32), AFFINE, "flat_odf")
-
-    with caplog.at_level(logging.WARNING):
-        image_skyline._load_visualiations([], [], [], [], [], [flat])
-
+@pytest.mark.parametrize("shape", [(2, 2, 45), (2, 2, 2, 7)])
+def test_load_visualizations_skips_malformed_sh_coefficients(
+    image_skyline, caplog, shape
+):
+    invalid = (np.zeros(shape, dtype=np.float32), AFFINE, "invalid_odf")
+    with caplog.at_level(logging.ERROR):
+        image_skyline._load_visualiations([], [], [], [], [], [invalid])
     assert image_skyline._sh_glyph_visualizations == []
-    assert "does not contain any SH coefficients" in caplog.text
+    assert "invalid_odf" in caplog.text
 
 
 def test_load_visualizations_warns_on_empty_tractograms(image_skyline, caplog):
@@ -908,7 +934,7 @@ def test_skyline_from_files_loads_nifti_peaks_and_odfs(tmp_path):
         [],
         peaks=[str(peaks_path)],
         shm_coeffs=[str(odf_path)],
-        sh_basis="tournier07",
+        sh_basis="tournier19",
         stealth=True,
         out_dir=str(tmp_path),
         out_stealth_png="nifti.png",
@@ -922,6 +948,231 @@ def test_skyline_from_files_loads_nifti_peaks_and_odfs(tmp_path):
     assert viewer._image_visualizations == []
 
 
-def test_skyline_rejects_unknown_sh_basis(make_skyline):
-    with pytest.raises(ValueError, match="sh_basis must be one of"):
-        make_skyline(sh_basis="mrtrix")
+@pytest.mark.parametrize(
+    "sh_basis, vector, evaluate_basis, legacy",
+    [
+        ("descoteaux07", [4, 0, 0.2, 0, -0.1, 0], real_sh_descoteaux, False),
+        (
+            "descoteaux07_legacy",
+            [4, 0, -0.2, 0, -0.1, 0],
+            real_sh_descoteaux,
+            True,
+        ),
+        (
+            "tournier07",
+            [4, 0, -0.1 * np.sqrt(2), 0, -0.2 * np.sqrt(2), 0],
+            real_sh_tournier,
+            True,
+        ),
+        ("tournier19", [4, 0, -0.1, 0, -0.2, 0], real_sh_tournier, False),
+    ],
+)
+def test_skyline_declared_odfs_preserve_sampled_function(
+    make_skyline, sh_basis, vector, evaluate_basis, legacy
+):
+    coeffs = np.tile(np.array(vector, dtype=np.float32), (2, 2, 2, 1))
+    original = coeffs.copy()
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    if legacy:
+        with pytest.warns(PendingDeprecationWarning, match="The legacy .* basis"):
+            source_basis, _, _ = evaluate_basis(2, theta, phi, legacy=True)
+    else:
+        source_basis, _, _ = evaluate_basis(2, theta, phi, legacy=False)
+    viewer = make_skyline(sh_coeffs=[(coeffs, AFFINE)], sh_basis=sh_basis)
+    destination_basis, _, _ = real_sh_tournier(
+        2, theta, phi, full_basis=True, legacy=False
+    )
+    latest_basis, _, _ = real_sh_descoteaux(2, theta, phi, legacy=False)
+    expected = np.array([4, 0, 0.2, 0, -0.1, 0]) @ latest_basis.T
+    npt.assert_allclose(
+        original @ source_basis.T,
+        np.broadcast_to(expected, (2, 2, 2, 3)),
+        atol=1e-6,
+        rtol=1e-5,
+    )
+    npt.assert_allclose(
+        viewer._sh_glyph_visualizations[0]._slicer.coeffs_4d @ destination_basis.T,
+        original @ source_basis.T,
+        atol=1e-6,
+        rtol=1e-5,
+    )
+    npt.assert_array_equal(coeffs, original)
+    glyph = viewer._sh_glyph_visualizations[0]
+    assert f"Input SH basis: {sh_basis}" in glyph._info.splitlines()
+
+
+@pytest.mark.parametrize("extension", [".nii", ".nii.gz", ".pam5"])
+@pytest.mark.parametrize(
+    "sh_basis, vector, evaluate_basis, legacy",
+    [
+        ("descoteaux07", [4, 0, 0.2, 0, -0.1, 0], real_sh_descoteaux, False),
+        (
+            "descoteaux07_legacy",
+            [4, 0, -0.2, 0, -0.1, 0],
+            real_sh_descoteaux,
+            True,
+        ),
+        (
+            "tournier07",
+            [4, 0, -0.1 * np.sqrt(2), 0, -0.2 * np.sqrt(2), 0],
+            real_sh_tournier,
+            True,
+        ),
+        ("tournier19", [4, 0, -0.1, 0, -0.2, 0], real_sh_tournier, False),
+    ],
+)
+def test_skyline_from_files_preserves_odf_source_basis(
+    tmp_path, sh_basis, vector, evaluate_basis, legacy, extension
+):
+    coeffs = np.tile(np.array(vector, dtype=np.float32), (2, 2, 2, 1))
+    path = tmp_path / (sh_basis + extension)
+    if extension == ".pam5":
+        _pam5_with_sh_coeffs(path, coeffs)
+        saved_coeffs = load_pam(str(path)).shm_coeff
+    else:
+        save_nifti(str(path), coeffs, AFFINE)
+        saved_coeffs = np.asanyarray(nib.load(str(path)).dataobj)
+    npt.assert_array_equal(saved_coeffs, coeffs)
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    if legacy:
+        with pytest.warns(PendingDeprecationWarning, match="The legacy .* basis"):
+            source_basis, _, _ = evaluate_basis(2, theta, phi, legacy=True)
+    else:
+        source_basis, _, _ = evaluate_basis(2, theta, phi, legacy=False)
+    destination_basis, _, _ = real_sh_tournier(
+        2, theta, phi, full_basis=True, legacy=False
+    )
+    viewer = skyline_from_files(
+        [],
+        shm_coeffs=[str(path)],
+        sh_basis=sh_basis,
+        stealth=True,
+        out_dir=str(tmp_path),
+    )
+    assert len(viewer._sh_glyph_visualizations) == 1
+    glyph = viewer._sh_glyph_visualizations[0]
+    npt.assert_allclose(
+        glyph._slicer.coeffs_4d @ destination_basis.T,
+        saved_coeffs @ source_basis.T,
+        atol=1e-6,
+        rtol=1e-5,
+    )
+    assert glyph.path == str(path)
+    assert f"Input SH basis: {sh_basis}" in glyph._info.splitlines()
+
+
+def test_skyline_logs_unknown_basis_and_uses_descoteaux(make_skyline, caplog):
+    coeffs = np.tile(np.array([4, 0, 0.2, 0, -0.1, 0], dtype=np.float32), (2, 2, 2, 1))
+    with caplog.at_level(logging.ERROR):
+        viewer = make_skyline(sh_basis="mrtrix", sh_coeffs=[(coeffs, AFFINE)])
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    source, _, _ = real_sh_descoteaux(2, theta, phi, legacy=False)
+    destination, _, _ = real_sh_tournier(2, theta, phi, full_basis=True, legacy=False)
+    npt.assert_allclose(
+        viewer._sh_glyph_visualizations[0]._slicer.coeffs_4d @ destination.T,
+        coeffs @ source.T,
+        atol=1e-6,
+    )
+    assert any(
+        record.levelno == logging.ERROR and "mrtrix" in record.getMessage()
+        for record in caplog.records
+    )
+
+
+def test_queued_odf_imports_preserve_each_batch_convention(
+    tmp_path, make_skyline, caplog
+):
+    latest = np.array([4, 0, 0.2, 0, -0.1, 0], dtype=np.float32)
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    basis, _, _ = real_sh_descoteaux(2, theta, phi, legacy=False)
+    standard_tournier, _, _ = real_sh_tournier(
+        2, theta, phi, full_basis=True, legacy=False
+    )
+    viewer = make_skyline(sh_coeffs=[(np.tile(latest, (2, 2, 2, 1)), AFFINE)])
+    initial_coeffs = viewer._sh_glyph_visualizations[0]._slicer.coeffs_4d.copy()
+    initial_info = viewer._sh_glyph_visualizations[0]._info
+    assert "Input SH basis: descoteaux07" in initial_info.splitlines()
+    source_by_path = {}
+    expected_by_path = {}
+    for batch_index, (label, vector) in enumerate(
+        (
+            ("descoteaux07_legacy", [4, 0, -0.2, 0, -0.1, 0]),
+            (
+                "tournier07",
+                [4, 0, -0.1 * np.sqrt(2), 0, -0.2 * np.sqrt(2), 0],
+            ),
+            ("tournier19", [4, 0, -0.1, 0, -0.2, 0]),
+            ("unknown", latest),
+        ),
+        start=1,
+    ):
+        path = str(tmp_path / (label + ".nii.gz"))
+        batch_scale = 1 + batch_index / 4
+        source = np.array(vector, dtype=np.float32) * batch_scale
+        save_nifti(path, np.tile(source, (2, 2, 2, 1)), AFFINE)
+        expected_by_path[path] = (latest * batch_scale) @ basis.T
+        source_by_path[path] = "descoteaux07" if label == "unknown" else label
+        viewer._append_visualization(shm_coeffs=[path], sh_basis=label)
+    deadline = time.monotonic() + 10
+    while (
+        len(viewer._sh_glyph_visualizations) <= len(expected_by_path)
+        and time.monotonic() < deadline
+    ):
+        process_async_callbacks()
+        viewer._drain_pending_visualizations()
+        time.sleep(0.01)
+    assert {glyph.path for glyph in viewer._sh_glyph_visualizations[1:]} == set(
+        expected_by_path
+    )
+    npt.assert_array_equal(
+        viewer._sh_glyph_visualizations[0]._slicer.coeffs_4d, initial_coeffs
+    )
+    assert viewer._sh_glyph_visualizations[0]._info == initial_info
+    for glyph in viewer._sh_glyph_visualizations[1:]:
+        full = glyph._slicer.coeffs_4d[0, 0, 0]
+        npt.assert_allclose(
+            full @ standard_tournier.T, expected_by_path[glyph.path], atol=1e-6
+        )
+        assert (
+            f"Input SH basis: {source_by_path[glyph.path]}" in glyph._info.splitlines()
+        )
+    assert any(
+        record.levelno == logging.ERROR and "unknown" in record.getMessage()
+        for record in caplog.records
+    )
+
+
+def test_explicit_standard_odfs_override_viewer_source_basis(make_skyline):
+    coeffs = np.zeros((2, 2, 2, 81), dtype=np.float32)
+    coeffs[..., 0] = 4
+    coeffs[..., 5] = 0.2
+    coeffs[..., 7] = -0.1
+    original = coeffs.copy()
+    viewer = make_skyline(
+        sh_coeffs=[(coeffs, AFFINE, "standard_odf", "standard")],
+        sh_basis="descoteaux07_legacy",
+    )
+    glyph = viewer._sh_glyph_visualizations[0]
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    basis, _, _ = real_sh_tournier(8, theta, phi, full_basis=True, legacy=False)
+    npt.assert_allclose(
+        glyph._slicer.coeffs_4d @ basis.T, original @ basis.T, atol=1e-6
+    )
+    npt.assert_array_equal(coeffs, original)
+    assert "Input SH basis: standard" in glyph._info.splitlines()
+
+
+def test_explicit_standard_odfs_reject_symmetric_only_count(image_skyline, caplog):
+    coeffs = np.zeros((2, 2, 2, 45), dtype=np.float32)
+    coeffs[..., 0] = 4
+    with caplog.at_level(logging.ERROR):
+        image_skyline._load_visualiations(
+            [], [], [], [], [], [(coeffs, AFFINE, "invalid_standard", "standard")]
+        )
+    assert image_skyline._sh_glyph_visualizations == []
+    assert "invalid_standard" in caplog.text

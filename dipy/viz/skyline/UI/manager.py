@@ -1,16 +1,19 @@
 """Skyline sidebar window: section grouping, file dialogs, and font setup."""
 
 from collections.abc import Callable
+from functools import partial
 
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import (
     color_picker,
     colors_equal,
+    dropdown,
     loading,
     render_file_dialog,
     render_section_header,
 )
 from dipy.viz.skyline.UI.theme import FONT, FONT_AWESOME, THEME
+from dipy.viz.skyline.io import SH_BASES, _validate_sh_basis
 
 imgui_bundle, has_imgui, _ = optional_package(
     "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
@@ -29,6 +32,12 @@ _GROUP_LABELS = {
     "roi": "ROIs",
     "surface": "Surfaces",
 }
+_SH_BASIS_LABELS = (
+    "Descoteaux07",
+    "Descoteaux07 (legacy)",
+    "Tournier07 (MRtrix 0.2)",
+    "Tournier19 (MRtrix3)",
+)
 
 
 class UIManager:
@@ -76,6 +85,9 @@ class UIWindow:
         Callback invoked when background color changes.
     snapshot_callback : callable, optional
         Callback invoked when a snapshot path is selected.
+    sh_basis : str, optional
+        Initial input SH convention for ODF imports, selected from ``SH_BASES``.
+        Unsupported values are logged and use latest Descoteaux07.
     """
 
     def __init__(
@@ -91,6 +103,7 @@ class UIWindow:
         file_dialog_callback=None,
         bg_color_callback=None,
         snapshot_callback=None,
+        sh_basis="descoteaux07",
     ):
         """Initialize the sidebar window.
 
@@ -116,7 +129,11 @@ class UIWindow:
             Callback invoked when background color changes.
         snapshot_callback : callable, optional
             Callback invoked when a snapshot path is selected.
+        sh_basis : str, optional
+            Initial input SH convention for ODF imports, selected from ``SH_BASES``.
+            Unsupported values are logged and use latest Descoteaux07.
         """
+        self._sh_basis = _validate_sh_basis(sh_basis)
         self.title = title
         self.is_open = default_open
         self.flags = flags
@@ -289,16 +306,28 @@ class UIWindow:
                     type="peak",
                 )
 
-            if imgui.menu_item("ODFs", "", False)[0]:
-                self.request_file_dialog = False
-                self._is_dialog_open = True
-                render_file_dialog(
-                    title="Select Spherical Harmonics ODFs File(s)",
-                    name="ODFs Files (*.pam5 *.nii *.nii.gz)",
-                    extensions="*.pam5 *.nii *.gz",
-                    callback=self._file_dialog_closed,
-                    type="shm_coeff",
+            if imgui.begin_menu("ODFs"):
+                current_label = _SH_BASIS_LABELS[SH_BASES.index(self._sh_basis)]
+                changed, selected_label = dropdown(
+                    "Input SH basis", _SH_BASIS_LABELS, current_label, width=220
                 )
+                if changed:
+                    self._sh_basis = SH_BASES[_SH_BASIS_LABELS.index(selected_label)]
+                imgui.text("Converted to Fury standard for display.")
+                if imgui.menu_item("Select files...", "", False)[0]:
+                    self.request_file_dialog = False
+                    self._is_dialog_open = True
+                    selected_basis = self._sh_basis
+                    render_file_dialog(
+                        title="Select Spherical Harmonics ODFs File(s)",
+                        name="ODFs Files (*.pam5 *.nii *.nii.gz)",
+                        extensions="*.pam5 *.nii *.gz",
+                        callback=partial(
+                            self._file_dialog_closed, sh_basis=selected_basis
+                        ),
+                        type="shm_coeff",
+                    )
+                imgui.end_menu()
 
             if imgui.menu_item("Surfaces", "", False)[0]:
                 self.request_file_dialog = False
@@ -483,7 +512,7 @@ class UIWindow:
         return self._section_open
 
     def _file_dialog_closed(
-        self, *, filenames=None, rois=None, peaks=None, shm_coeffs=None
+        self, *, filenames=None, rois=None, peaks=None, shm_coeffs=None, sh_basis=None
     ):
         """Forward dialog results to :attr:`file_dialog_callback` if present.
 
@@ -497,12 +526,22 @@ class UIWindow:
             Selected peak paths.
         shm_coeffs : list or None, optional
             Selected SH coefficient paths.
+        sh_basis : str or None, optional
+            Input convention captured when the ODF picker opened.
         """
         self._is_dialog_open = False
+        if not any((filenames, rois, peaks, shm_coeffs)):
+            return
         if self.file_dialog_callback is not None:
-            self.file_dialog_callback(
-                filenames=filenames, rois=rois, peaks=peaks, shm_coeffs=shm_coeffs
-            )
+            selection = {
+                "filenames": filenames,
+                "rois": rois,
+                "peaks": peaks,
+                "shm_coeffs": shm_coeffs,
+            }
+            if shm_coeffs:
+                selection["sh_basis"] = sh_basis
+            self.file_dialog_callback(**selection)
 
     def _update_bg_color(self, new_color):
         """Store the sidebar's background picker color and notify the host scene.
