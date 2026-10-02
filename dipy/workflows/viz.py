@@ -68,8 +68,10 @@ class SkylineFlow(Workflow):
             Tuple of path for each ODF file (.pam5, or 4D NIfTI of SH
             coefficients) to be added to the Skyline viewer.
         sh_basis : str, optional
-            SH basis of NIfTI ODFs: 'descoteaux07' (DIPY legacy) or 'tournier07'
-            (MRtrix3).
+            Input convention for PAM and NIfTI ODFs: 'descoteaux07' (latest),
+            'descoteaux07_legacy' (old DIPY), 'tournier07' (MRtrix 0.2),
+            or 'tournier19' (MRtrix3).
+            Unsupported values are logged and use latest Descoteaux07.
         cluster : bool, optional
             Whether to cluster the tractograms.
         performance_version : bool, optional

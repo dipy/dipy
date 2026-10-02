@@ -5,12 +5,19 @@ supplied by a real offscreen ``Skyline`` viewer, so the sidebar draws the same
 widgets it draws in the application.
 """
 
+import logging
+import time
+
 import nibabel as nib
 import numpy as np
+import numpy.testing as npt
 import pytest
 
+from dipy.io.image import save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.reconst.shm import real_sh_descoteaux, real_sh_tournier
 from dipy.utils.optpkg import optional_package
+from dipy.viz.skyline.compute import process_async_callbacks
 
 _, has_fury, _ = optional_package("fury", min_version="2.0.0")
 _, has_imgui, _ = optional_package(
@@ -22,6 +29,7 @@ if not (has_fury and has_imgui):
         allow_module_level=True,
     )
 else:
+    from fury.utils import create_sh_basis_matrix
     from imgui_bundle import imgui
 
     from dipy.viz.skyline.UI.manager import (
@@ -76,6 +84,17 @@ def viewer(tmp_path_factory):
     )
 
 
+@pytest.fixture
+def import_viewer(tmp_path):
+    coeffs = np.tile(np.array([4, 0, 0.2, 0, -0.1, 0], dtype=np.float32), (2, 2, 2, 1))
+    return skyline(
+        visualizer_type="stealth",
+        sh_coeffs=[(coeffs, AFFINE, "existing_odf")],
+        out_dir=str(tmp_path),
+        out_stealth_png="import.png",
+    )
+
+
 def _window(**kwargs):
     kwargs.setdefault("logo_tex_ref", imgui.ImTextureRef())
     kwargs.setdefault("size", (400, 900))
@@ -86,6 +105,14 @@ def _populate(window, viewer):
     for viz in viewer.visualizations:
         window.add(f"{viz.path}:{viz.name}", viz.renderer, viz_type=viz.viz_type)
     return window
+
+
+def _finish_loading(viewer):
+    deadline = time.monotonic() + 10
+    while viewer._loading_total and time.monotonic() < deadline:
+        process_async_callbacks()
+        viewer._drain_pending_visualizations()
+        time.sleep(0.01)
 
 
 def test_ui_manager_registers_windows_by_name(ui):
@@ -187,25 +214,154 @@ def test_remove_is_a_noop_for_an_unknown_section(ui):
     assert window.sections == {}
 
 
-def test_file_dialog_closed_forwards_every_selection_kind(ui):
-    captured = {}
-    window = _window(file_dialog_callback=lambda **kwargs: captured.update(kwargs))
+@pytest.mark.parametrize(
+    "sh_basis, vector, evaluate_basis, legacy",
+    [
+        ("descoteaux07", [4, 0, 0.2, 0, -0.1, 0], real_sh_descoteaux, False),
+        (
+            "descoteaux07_legacy",
+            [4, 0, -0.2, 0, -0.1, 0],
+            real_sh_descoteaux,
+            True,
+        ),
+        (
+            "tournier07",
+            [4, 0, -0.1 * np.sqrt(2), 0, -0.2 * np.sqrt(2), 0],
+            real_sh_tournier,
+            True,
+        ),
+        ("tournier19", [4, 0, -0.1, 0, -0.2, 0], real_sh_tournier, False),
+    ],
+)
+def test_file_dialog_closed_imports_odfs_with_declared_basis(
+    ui, tmp_path, import_viewer, sh_basis, vector, evaluate_basis, legacy
+):
+    data = np.tile(np.array(vector, dtype=np.float32), (2, 2, 2, 1))
+    path = str(tmp_path / "selected_odf.nii.gz")
+    save_nifti(path, data, AFFINE)
+    existing_coeffs = import_viewer._sh_glyph_visualizations[0]._slicer.coeffs_4d.copy()
+    existing_info = import_viewer._sh_glyph_visualizations[0]._info
+    assert "Input SH basis: descoteaux07" in existing_info
+    window = _populate(
+        _window(
+            file_dialog_callback=import_viewer._append_visualization, sh_basis=sh_basis
+        ),
+        import_viewer,
+    )
     window._is_dialog_open = True
-
-    window._file_dialog_closed(
-        filenames=["a.nii.gz"],
-        rois=["r.nii.gz"],
-        peaks=["p.nii.gz"],
-        shm_coeffs=["s.pam5"],
+    ui.frame(window.render)
+    window._sh_basis = (
+        "descoteaux07_legacy" if sh_basis == "descoteaux07" else "descoteaux07"
     )
 
-    assert captured == {
-        "filenames": ["a.nii.gz"],
-        "rois": ["r.nii.gz"],
-        "peaks": ["p.nii.gz"],
-        "shm_coeffs": ["s.pam5"],
-    }
+    window._file_dialog_closed(shm_coeffs=[path], sh_basis=sh_basis)
+    _finish_loading(import_viewer)
+    ui.frame(_populate(window, import_viewer).render)
+
     assert window._is_dialog_open is False
+    glyphs = {glyph.path: glyph for glyph in import_viewer._sh_glyph_visualizations}
+    assert set(glyphs) == {"existing_odf", path}
+    assert f"Input SH basis: {sh_basis}" in glyphs[path]._info
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    vertices = np.column_stack(
+        (np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta))
+    )
+    if legacy:
+        with pytest.warns(PendingDeprecationWarning, match="The legacy .* basis"):
+            source_basis, _, _ = evaluate_basis(2, theta, phi, legacy=True)
+    else:
+        source_basis, _, _ = evaluate_basis(2, theta, phi, legacy=False)
+    standard_basis = create_sh_basis_matrix(vertices, 2)
+    npt.assert_allclose(
+        glyphs[path]._slicer.coeffs_4d @ standard_basis.T,
+        data @ source_basis.T,
+        atol=1e-6,
+        rtol=1e-5,
+    )
+    npt.assert_array_equal(glyphs["existing_odf"]._slicer.coeffs_4d, existing_coeffs)
+    assert glyphs["existing_odf"]._info == existing_info
+
+
+def test_file_dialog_closed_imports_non_odf_selections(
+    ui, tmp_path, import_viewer, caplog
+):
+    image = np.arange(np.prod(SHAPE), dtype=np.float32).reshape(SHAPE)
+    roi = np.zeros(SHAPE, dtype=np.uint8)
+    roi[2:5, 3:6, 4:7] = 1
+    peak_dirs = np.zeros((2, 2, 2, 1, 3), dtype=np.float32)
+    peak_dirs[..., 0] = 1
+    image_path = str(tmp_path / "image.nii.gz")
+    roi_path = str(tmp_path / "roi.nii.gz")
+    peak_path = str(tmp_path / "peaks.nii.gz")
+    for path, data in ((image_path, image), (roi_path, roi), (peak_path, peak_dirs)):
+        save_nifti(path, data, AFFINE)
+    existing_coeffs = import_viewer._sh_glyph_visualizations[0]._slicer.coeffs_4d.copy()
+    existing_info = import_viewer._sh_glyph_visualizations[0]._info
+    window = _populate(
+        _window(file_dialog_callback=import_viewer._append_visualization), import_viewer
+    )
+    window._is_dialog_open = True
+    ui.frame(window.render)
+
+    with caplog.at_level(logging.ERROR):
+        window._file_dialog_closed(
+            filenames=[image_path],
+            rois=[roi_path],
+            peaks=[peak_path],
+            sh_basis="unknown",
+        )
+        _finish_loading(import_viewer)
+    ui.frame(_populate(window, import_viewer).render)
+
+    assert window._is_dialog_open is False
+    assert {viz.path for viz in import_viewer.visualizations} == {
+        "existing_odf",
+        image_path,
+        roi_path,
+        peak_path,
+    }
+    npt.assert_array_equal(import_viewer._image_visualizations[0].dwi, image)
+    npt.assert_array_equal(import_viewer._roi_visualizations[0].roi, roi)
+    npt.assert_array_equal(import_viewer._peak_visualizations[0].peaks, peak_dirs)
+    npt.assert_array_equal(
+        import_viewer._sh_glyph_visualizations[0]._slicer.coeffs_4d, existing_coeffs
+    )
+    assert import_viewer._sh_glyph_visualizations[0]._info == existing_info
+    assert not any(record.levelno >= logging.ERROR for record in caplog.records)
+
+
+@pytest.mark.parametrize("selection", [None, []])
+def test_file_dialog_closed_cancellation_preserves_visualizations(
+    ui, import_viewer, selection, caplog
+):
+    existing_visualizations = tuple(import_viewer.visualizations)
+    existing_coeffs = import_viewer._sh_glyph_visualizations[0]._slicer.coeffs_4d.copy()
+    existing_info = import_viewer._sh_glyph_visualizations[0]._info
+    window = _populate(
+        _window(file_dialog_callback=import_viewer._append_visualization), import_viewer
+    )
+    window._is_dialog_open = True
+    ui.frame(window.render)
+
+    with caplog.at_level(logging.ERROR):
+        window._file_dialog_closed(
+            filenames=selection,
+            rois=selection,
+            peaks=selection,
+            shm_coeffs=selection,
+            sh_basis="unknown",
+        )
+        _finish_loading(import_viewer)
+    ui.frame(window.render)
+
+    assert window._is_dialog_open is False
+    assert tuple(import_viewer.visualizations) == existing_visualizations
+    npt.assert_array_equal(
+        import_viewer._sh_glyph_visualizations[0]._slicer.coeffs_4d, existing_coeffs
+    )
+    assert import_viewer._sh_glyph_visualizations[0]._info == existing_info
+    assert not any(record.levelno >= logging.ERROR for record in caplog.records)
 
 
 def test_update_bg_color_stores_and_notifies(ui):
