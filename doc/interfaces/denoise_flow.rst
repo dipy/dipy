@@ -10,6 +10,43 @@ Multiple denoising methods are available in DIPY.
 You can try these methods using your own data; we will be using the data in DIPY.
 You can check how to :ref:`fetch the DIPY data<data_fetch>`.
 
+--------------------------
+Automatic method selection
+--------------------------
+
+The ``dipy_denoise`` command chooses a denoising method from the data itself
+and runs it. By default (``--method auto``), the choice is made per input file
+from the number of volumes, the number of diffusion-weighted volumes and an
+estimate of their SNR. The criteria are checked in this order and the first
+one that matches decides:
+
+#. fewer than ``--min_volumes`` volumes (3D or a handful of 4D volumes):
+   NLMEANS, because PCA-based methods have no redundancy to exploit;
+#. fewer than ``--min_directions`` diffusion-weighted volumes: MPPCA;
+#. an estimated SNR below ``--min_snr``: MPPCA;
+#. otherwise: Patch2Self, or MPPCA when no ``--bvalues_files`` is given.
+
+``--method`` takes precedence over these thresholds: with any value other
+than ``auto``, ``--min_volumes``, ``--min_directions`` and ``--min_snr`` are
+ignored.
+
+Patch2Self predicts each volume from all the others. With few directions and
+a low SNR, that regression shrinks every volume toward their common mean and
+removes the angular contrast together with the noise, which then breaks
+tensor fitting and tractography downstream. MPPCA works on local patches and
+degrades more gracefully in that regime.
+
+Create a directory for the output and run the command with the b-values file,
+so that b0 volumes are separated from the diffusion-weighted ones::
+
+    mkdir denoise_output
+    dipy_denoise data/stanford_hardi/HARDI150.nii.gz --bvalues_files data/stanford_hardi/HARDI150.bval --out_dir "denoise_output"
+
+The chosen method and the reason are logged. A specific method can be forced
+with ``--method patch2self``, ``--method mppca`` or ``--method nlmeans``; the
+thresholds are tunable with ``--min_volumes``, ``--min_directions`` and
+``--min_snr``. The denoised volume is saved as ``dwi_denoised.nii.gz``.
+
 --------------------------------------
 Denoising using Overcomplete Local PCA
 --------------------------------------

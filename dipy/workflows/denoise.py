@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 import shutil
+import sys
 
 import numpy as np
 
@@ -12,8 +13,312 @@ from dipy.denoise.patch2self import patch2self
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
+from dipy.segment.threshold import otsu
 from dipy.utils.logging import logger
+from dipy.workflows.multi_io import _resolve_path_or_pattern
 from dipy.workflows.workflow import Workflow
+
+DENOISING_METHODS = ("auto", "patch2self", "mppca", "nlmeans")
+
+
+def estimate_dwi_snr(*, data, b0s_mask):
+    """Estimate the mean SNR of the diffusion-weighted volumes.
+
+    The noise standard deviation is estimated per volume with
+    :func:`dipy.denoise.noise_estimate.estimate_sigma`. The signal is the
+    mean of the diffusion-weighted volumes inside a foreground mask obtained
+    by Otsu thresholding of the mean volume.
+
+    Parameters
+    ----------
+    data : ndarray
+        4D diffusion data.
+    b0s_mask : ndarray
+        Boolean array of length ``data.shape[-1]``, True for b0 volumes.
+
+    Returns
+    -------
+    float
+        Mean SNR over the diffusion-weighted volumes. ``inf`` when the noise
+        estimate is zero, ``nan`` when there is no diffusion-weighted volume.
+    """
+    dwi_mask = ~b0s_mask
+    if not dwi_mask.any():
+        return np.nan
+    dwi = data[..., dwi_mask]
+    mean_vol = dwi.mean(axis=-1)
+    foreground = mean_vol > otsu(mean_vol)
+    if not foreground.any():
+        return np.nan
+    sigma = estimate_sigma(dwi).mean()
+    signal = dwi[foreground].mean()
+    if sigma == 0:
+        return np.inf
+    return float(signal / sigma)
+
+
+def select_denoising_method(
+    *, n_volumes, n_dwi, snr, min_volumes=10, min_directions=30, min_snr=5.0
+):
+    """Choose a denoising method from the data characteristics.
+
+    Patch2Self regresses each volume on all the others, so it needs many
+    diffusion-weighted volumes with enough signal to learn from. With few
+    directions and low SNR the regression shrinks every volume toward their
+    common mean and the angular contrast is lost. MP-PCA works on local
+    patches and degrades more gracefully in that regime. Non-local means is
+    the fallback for 3D data or a handful of volumes, where PCA methods have
+    no redundancy to exploit.
+
+    The criteria are checked in order and the first one that matches decides:
+    ``min_volumes`` (non-local means), then ``min_directions`` (MP-PCA), then
+    ``min_snr`` (MP-PCA). Patch2Self is returned when none of them matches.
+
+    Parameters
+    ----------
+    n_volumes : int
+        Number of volumes in the data (1 for 3D data).
+    n_dwi : int
+        Number of diffusion-weighted (non-b0) volumes.
+    snr : float
+        Estimated SNR of the diffusion-weighted volumes. ``nan`` disables the
+        SNR criterion.
+    min_volumes : int, optional
+        Below this number of volumes, use non-local means.
+    min_directions : int, optional
+        Minimum number of diffusion-weighted volumes for Patch2Self.
+    min_snr : float, optional
+        Minimum SNR for Patch2Self.
+
+    Returns
+    -------
+    method : str
+        One of ``'patch2self'``, ``'mppca'`` or ``'nlmeans'``.
+    reason : str
+        Human readable justification of the choice.
+    """
+    if n_volumes < min_volumes:
+        return "nlmeans", f"{n_volumes} volume(s) < {min_volumes}"
+    if n_dwi < min_directions:
+        return "mppca", f"{n_dwi} diffusion-weighted volumes < {min_directions}"
+    if not np.isnan(snr) and snr < min_snr:
+        return "mppca", f"estimated SNR {snr:.1f} < {min_snr}"
+    reason = f"{n_dwi} diffusion-weighted volumes"
+    if not np.isnan(snr):
+        reason += f", estimated SNR {snr:.1f}"
+    return "patch2self", reason
+
+
+class DenoiseFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return "denoise"
+
+    def run(
+        self,
+        input_files,
+        *,
+        bvalues_files=None,
+        method="auto",
+        b0_threshold=50,
+        min_volumes=10,
+        min_directions=30,
+        min_snr=5.0,
+        patch_radius=2,
+        model="ols",
+        ver=3,
+        clip_negative_vals=False,
+        sigma=0.0,
+        block_radius=5,
+        rician=True,
+        out_dir="",
+        out_denoised="dwi_denoised.nii.gz",
+    ):
+        """Denoise diffusion data, selecting the method from the data.
+
+        With ``method='auto'``, the method is chosen per input file from the
+        number of volumes, the number of diffusion-weighted volumes and an
+        estimate of their SNR. See :footcite:p:`Fadnavis2020`,
+        :footcite:p:`Veraart2016a` and :footcite:p:`Descoteaux2008a` for the
+        underlying methods.
+
+        An explicit ``method`` takes precedence over the selection thresholds:
+        ``min_volumes``, ``min_directions`` and ``min_snr`` are only read with
+        ``method='auto'``. In that case the criteria are checked in the
+        following order and the first one that matches decides:
+
+        1. fewer than ``min_volumes`` volumes: 'nlmeans';
+        2. fewer than ``min_directions`` diffusion-weighted volumes: 'mppca';
+        3. estimated SNR below ``min_snr``: 'mppca';
+        4. otherwise 'patch2self', or 'mppca' when no ``bvalues_files`` is
+           given.
+
+        Parameters
+        ----------
+        input_files : string or Path
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : variable string or Path, optional
+            Path to the b-values files, one per input volume. Required for
+            'patch2self' and used by 'auto' to separate b0 volumes from
+            diffusion-weighted ones. Without it, 'auto' treats every volume
+            as diffusion-weighted.
+        method : string, optional
+            Denoising method: 'auto', 'patch2self', 'mppca' or 'nlmeans'.
+            Any value other than 'auto' forces that method and the
+            ``min_volumes``, ``min_directions`` and ``min_snr`` thresholds are
+            ignored.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        min_volumes : int, optional
+            'auto' only. Below this number of volumes, 'nlmeans' is used.
+            Checked first: it takes precedence over ``min_directions`` and
+            ``min_snr``.
+        min_directions : int, optional
+            'auto' only. Minimum number of diffusion-weighted volumes for
+            'patch2self'; otherwise 'mppca' is used. Checked after
+            ``min_volumes`` and before ``min_snr``.
+        min_snr : float, optional
+            'auto' only. Minimum estimated SNR of the diffusion-weighted
+            volumes for 'patch2self'; otherwise 'mppca' is used. Checked last,
+            only when ``min_volumes`` and ``min_directions`` are both
+            satisfied.
+        patch_radius : variable int, optional
+            Radius of the local patch for 'mppca' and 'nlmeans'.
+        model : string, optional
+            Linear model for 'patch2self': 'ols', 'ridge' or 'lasso'.
+        ver : int, optional
+            Version of the Patch2Self algorithm, 1 or 3.
+        clip_negative_vals : bool, optional
+            'patch2self' only. Set negative values after denoising to 0.
+        sigma : float, optional
+            'nlmeans' only. Noise standard deviation; 0 estimates it from the
+            data.
+        block_radius : int, optional
+            'nlmeans' only. Block size is ``2 x block_radius + 1``.
+        rician : bool, optional
+            'nlmeans' only. Assume Rician rather than Gaussian noise.
+        out_dir : string or Path, optional
+            Output directory.
+        out_denoised : string, optional
+            Name of the resulting denoised volume.
+
+        References
+        ----------
+        .. footbibliography::
+
+        """
+        method = method.lower()
+        if method not in DENOISING_METHODS:
+            logger.error(
+                f"Unknown denoising method '{method}'. "
+                f"Choose one of: {', '.join(DENOISING_METHODS)}."
+            )
+            sys.exit(1)
+
+        if bvalues_files is not None:
+            if not isinstance(bvalues_files, list):
+                bvalues_files = [bvalues_files]
+            resolved_bvals = []
+            for pattern in bvalues_files:
+                matches = _resolve_path_or_pattern(pattern)
+                if not matches:
+                    logger.error(f"b-values file not found: {pattern}")
+                    sys.exit(1)
+                resolved_bvals.extend(matches)
+            bvalues_files = resolved_bvals
+        if isinstance(patch_radius, list) and len(patch_radius) == 1:
+            patch_radius = int(patch_radius[0])
+
+        io_it = self.get_io_iterator()
+        if (
+            bvalues_files is not None
+            and io_it
+            and len(bvalues_files) != len(io_it.inputs[0])
+        ):
+            logger.error(
+                f"{len(bvalues_files)} b-values files for "
+                f"{len(io_it.inputs[0])} input volumes."
+            )
+            sys.exit(1)
+
+        for idx, (fpath, odenoised) in enumerate(io_it):
+            if self._skip:
+                shutil.copy(fpath, odenoised)
+                logger.warning("Denoising skipped for now.")
+                continue
+
+            logger.info(f"Denoising {fpath}")
+            data, affine, image = load_nifti(fpath, return_img=True)
+            n_volumes = data.shape[-1] if data.ndim == 4 else 1
+
+            bvals = None
+            b0s_mask = np.zeros(n_volumes, dtype=bool)
+            if bvalues_files is not None:
+                bvals, _ = read_bvals_bvecs(bvalues_files[idx], None)
+                if len(bvals) != n_volumes:
+                    logger.error(
+                        f"{len(bvals)} b-values for {n_volumes} volumes in {fpath}."
+                    )
+                    sys.exit(1)
+                b0s_mask = bvals <= b0_threshold
+
+            chosen = method
+            if method == "auto":
+                snr = np.nan
+                if data.ndim == 4:
+                    if bvalues_files is None:
+                        logger.warning(
+                            "No b-values file given: treating every volume as "
+                            "diffusion-weighted for method selection."
+                        )
+                    snr = estimate_dwi_snr(data=data, b0s_mask=b0s_mask)
+                chosen, reason = select_denoising_method(
+                    n_volumes=n_volumes,
+                    n_dwi=int((~b0s_mask).sum()),
+                    snr=snr,
+                    min_volumes=min_volumes,
+                    min_directions=min_directions,
+                    min_snr=min_snr,
+                )
+                if chosen == "patch2self" and bvals is None:
+                    chosen, reason = "mppca", "no b-values file for 'patch2self'"
+                logger.info(f"Selected '{chosen}' denoising ({reason})")
+            else:
+                logger.info(f"Using '{chosen}' denoising")
+
+            if chosen == "patch2self":
+                if bvals is None:
+                    logger.error("'patch2self' requires a b-values file.")
+                    sys.exit(1)
+                extra_args = {"patch_radius": patch_radius} if ver == 1 else {}
+                denoised_data = patch2self(
+                    data,
+                    bvals,
+                    model=model,
+                    b0_threshold=b0_threshold,
+                    clip_negative_vals=clip_negative_vals,
+                    version=ver,
+                    **extra_args,
+                )
+            elif chosen == "mppca":
+                denoised_data = mppca(data, patch_radius=patch_radius)
+            else:
+                sigma_used = sigma
+                if not sigma_used:
+                    logger.info("Estimating sigma")
+                    sigma_used = estimate_sigma(data)
+                    logger.debug(f"Found sigma {sigma_used}")
+                denoised_data = nlmeans(
+                    data,
+                    sigma=sigma_used,
+                    patch_radius=patch_radius,
+                    block_radius=block_radius,
+                    rician=rician,
+                )
+
+            save_nifti(odenoised, denoised_data, affine, hdr=image.header)
+            logger.info("Denoised volume saved as %s", odenoised)
 
 
 class Patch2SelfFlow(Workflow):
