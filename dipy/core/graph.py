@@ -1,11 +1,25 @@
-"""A simple graph class"""
+"""Deprecated. A simple graph class, removed in DIPY 2.0.
 
-from dipy.utils.deprecator import warning_for_keywords
+Nothing in DIPY uses :class:`Graph`. Use ``networkx`` for graph manipulation.
+"""
+
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
 
 
 class Graph:
-    """A simple graph class"""
+    """A simple graph class.
 
+    .. deprecated:: 1.13.0
+        ``dipy.core.graph`` is unused within DIPY and is removed in 2.0.0.
+        Use ``networkx`` instead.
+    """
+
+    @deprecate_with_version(
+        "dipy.core.graph.Graph is deprecated and is removed in DIPY 2.0.0. "
+        "Use networkx instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def __init__(self):
         """A graph class with nodes and edges :-)
 
@@ -18,8 +32,11 @@ class Graph:
 
         Examples
         --------
+        >>> import warnings
         >>> from dipy.core.graph import Graph
-        >>> g=Graph()
+        >>> with warnings.catch_warnings():
+        ...     warnings.simplefilter("ignore", category=DeprecationWarning)
+        ...     g = Graph()
         >>> g.add_node('a', attr=5)
         >>> g.add_node('b', attr=6)
         >>> g.add_node('c', attr=10)

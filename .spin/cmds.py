@@ -3,9 +3,12 @@
 import datetime
 import json
 import os
+import pstats
 import re
 import shutil
 import subprocess
+import sys
+import tempfile
 import tomllib
 
 import click
@@ -13,13 +16,27 @@ from packaging.version import Version
 from spin import util
 from spin.cmds import meson
 
+try:
+    import resource  # Unix-only
+except ImportError:
+    resource = None
+
+try:
+    import psutil  # optional extra
+except ImportError:
+    psutil = None
+
 
 # From scipy: benchmarks/benchmarks/common.py
 def _set_mem_rlimit(*, max_mem=None):
     """Set address space rlimit."""
-    import resource
-
-    import psutil
+    missing = [
+        name
+        for name, mod in (("resource", resource), ("psutil", psutil))
+        if mod is None
+    ]
+    if missing:
+        raise ImportError(f"{', '.join(missing)} required to cap memory usage.")
 
     mem = psutil.virtual_memory()
 
@@ -252,6 +269,220 @@ def clean():
     print(f"Removing `{install_dir}`")
     if os.path.isdir(install_dir):
         shutil.rmtree(install_dir)
+
+
+_PROFILE_DRIVER = """\
+import ast
+import cProfile
+import functools
+import importlib
+import os
+import sys
+import types
+
+# sys.path[0] is the throwaway directory this driver was written to. Drop it and
+# put the script or invocation directory last instead: a stray file in /tmp must
+# not shadow a real module, and neither must a source checkout shadow the built
+# package spin placed on PYTHONPATH.
+del sys.path[0]
+
+output, kind, spec = sys.argv[1:4]
+rest = sys.argv[4:]
+
+
+def _coerce(raw):
+    try:
+        return ast.literal_eval(raw)
+    except (ValueError, SyntaxError):
+        return raw
+
+
+if kind == "script":
+    sys.path.append(os.path.dirname(os.path.abspath(spec)))
+    sys.argv = [spec, *rest]
+    with open(spec, "rb") as fh:
+        code = compile(fh.read(), spec, "exec")
+    main = types.ModuleType("__main__")
+    main.__file__ = spec
+    sys.modules["__main__"] = main
+    run = functools.partial(exec, code, main.__dict__)
+else:
+    sys.path.append(os.getcwd())
+    module_name, _, attr = spec.partition(":")
+    target = importlib.import_module(module_name)
+    for part in attr.split("."):
+        target = getattr(target, part)
+    run = functools.partial(target, *[_coerce(a) for a in rest])
+
+profiler = cProfile.Profile()
+try:
+    profiler.runcall(run)
+finally:
+    profiler.dump_stats(output)
+"""
+
+
+def _profile_command(*, target, args, output):
+    """Build the profiling invocation for a script or a callable.
+
+    Both run under a throwaway driver that keeps the built package ahead of
+    the source tree on ``sys.path`` and lets ``SystemExit`` reach the
+    interpreter. A callable target is imported first and only the call itself
+    is profiled, so import machinery does not swamp the stats.
+
+    Parameters
+    ----------
+    target : str
+        Path to a Python script, or ``module:callable`` dotted target.
+    args : tuple of str
+        Extra arguments handed to the script (as ``sys.argv``) or to the
+        callable (each parsed with ``ast.literal_eval`` when possible).
+    output : str
+        Path of the ``.prof`` file the run writes.
+
+    Returns
+    -------
+    cmd : list of str
+        Command to execute.
+    driver : str
+        Path of the temporary driver script, to be removed once the run
+        completes.
+    """
+    if os.path.isfile(target):
+        kind = "script"
+    else:
+        kind = "callable"
+        module_name, sep, attr = target.partition(":")
+        if not (sep and module_name and attr):
+            raise click.BadParameter(
+                f"{target!r} is neither an existing script nor a 'module:callable'."
+            )
+    fd, driver = tempfile.mkstemp(prefix="spin_profile_", suffix=".py")
+    with os.fdopen(fd, "w") as fh:
+        fh.write(_PROFILE_DRIVER)
+    return [sys.executable, driver, output, kind, target, *args], driver
+
+
+@click.command(context_settings={"ignore_unknown_options": True})
+@meson.build_dir_option
+@click.argument("target")
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+@click.option(
+    "-n",
+    "--limit",
+    default=20,
+    show_default=True,
+    help="Number of entries to print.",
+)
+@click.option(
+    "-s",
+    "--sort",
+    default="cumulative",
+    show_default=True,
+    type=click.Choice(
+        [
+            "calls",
+            "cumtime",
+            "cumulative",
+            "file",
+            "filename",
+            "line",
+            "module",
+            "name",
+            "ncalls",
+            "nfl",
+            "pcalls",
+            "stdname",
+            "time",
+            "tottime",
+        ]
+    ),
+    help="pstats sort key.",
+)
+@click.option(
+    "-f",
+    "--filter",
+    "pattern",
+    default=None,
+    metavar="REGEX",
+    help="Only print entries whose name matches this regular expression.",
+)
+@click.option(
+    "-o",
+    "--output",
+    default=None,
+    metavar="FILE.prof",
+    help="Keep the raw cProfile stats at this path (for snakeviz, tuna, ...).",
+)
+@click.pass_context
+def profile(ctx, *, target, args, limit, sort, pattern, output, build_dir=None):
+    """⏱ Profile a script or a callable with cProfile.
+
+    TARGET is a path to a Python script, or ``module:callable``.
+    Remaining ARGS go to the script as ``sys.argv`` or to the callable
+    as positional arguments. Callable arguments are parsed with
+    ``ast.literal_eval`` when possible, so ``1`` is an int and ``"1"`` (quoted
+    twice for the shell, e.g. ``"'1'"``) is a str. Keyword arguments are not
+    supported.
+
+    Options belonging to TARGET itself must follow ``--``, otherwise ``-n``,
+    ``-s``, ``-f``, ``-o``, ``-C`` and ``--help`` are claimed by this command.
+
+    Cython code is only visible to the profiler when the extension was
+    compiled with ``# cython: profile=True``.
+
+    \b
+    Examples:
+
+    \b
+    $ spin profile my_script.py --some-flag
+    $ spin profile my_script.py -- -o script_output.json
+    $ spin profile dipy.core.geometry:sphere2cart 1 0.5 0.3 -n 30
+    $ spin profile numpy:sum "[1, 2, 3]" -s time
+    $ spin profile my_script.py -f "reconst" -o run.prof
+    """
+    driver = None
+    scratch = None
+    returncode = 0
+    have_stats = False
+    try:
+        # Always profile into a fresh file, so stats left at ``output`` by an
+        # earlier run are never mistaken for this one's.
+        fd, scratch = tempfile.mkstemp(prefix="spin_profile_", suffix=".prof")
+        os.close(fd)
+        cmd, driver = _profile_command(target=target, args=args, output=scratch)
+
+        build_cmd = meson._get_configured_command("build")
+        if build_cmd:
+            ctx.invoke(build_cmd, build_dir=build_dir, quiet=True)
+        meson._set_pythonpath(build_dir, quiet=True)
+
+        # A target that raises still leaves usable stats behind, so report them
+        # instead of letting spin exit on the non-zero return code. A target that
+        # dies before the profiler dumps anything leaves the file empty.
+        returncode = util.run(cmd, sys_exit=False).returncode
+        if os.path.getsize(scratch):
+            try:
+                stats = pstats.Stats(scratch).strip_dirs().sort_stats(sort)
+            except (AttributeError, EOFError, OSError, TypeError, ValueError):
+                click.secho("The run left no readable stats.", fg="red")
+            else:
+                have_stats = True
+                restrictions = (pattern, limit) if pattern else (limit,)
+                stats.print_stats(*restrictions)
+                if output is not None:
+                    output = os.path.abspath(output)
+                    shutil.copyfile(scratch, output)
+    finally:
+        for path in (driver, scratch):
+            if path is not None and os.path.exists(path):
+                os.remove(path)
+    if not have_stats:
+        click.secho("The run collected no profile stats.", fg="yellow")
+    elif output is not None:
+        click.secho(f"Raw stats written to {output}", fg="bright_green")
+    if returncode:
+        raise SystemExit(returncode)
 
 
 # ---------------------------------------------------------------------------
@@ -1129,9 +1360,7 @@ def prepare_release(*, from_step, last_tag, new_version, maint_branch):
     # ── Auto-detect maintenance branch ────────────────────────────────────
     if maint_branch is None:
         try:
-            import subprocess as _sp
-
-            current = _sp.check_output(
+            current = subprocess.check_output(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"], text=True
             ).strip()
             if current.startswith("maint/"):

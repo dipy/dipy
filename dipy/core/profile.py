@@ -1,9 +1,12 @@
-"""Class for profiling cython code"""
+"""Deprecated. Class for profiling cython code, removed in DIPY 2.0.
+
+Use the ``spin profile`` developer command instead.
+"""
 
 import os
 import subprocess
 
-from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
@@ -14,10 +17,15 @@ pstats, _, _ = optional_package(
     "part of the python-profiler package in "
     "Debian/Ubuntu",
 )
+pyximport, have_pyximport, _ = optional_package("pyximport")
 
 
 class Profiler:
     """Profile python/cython files or functions
+
+    .. deprecated:: 1.13.0
+        ``dipy.core.profile`` is removed in 2.0.0. Use ``spin profile``
+        from a source checkout instead.
 
     If you are profiling cython code you need to add
     # cython: profile=True on the top of your .pyx file
@@ -54,10 +62,17 @@ class Profiler:
 
     """
 
+    @deprecate_with_version(
+        "dipy.core.profile.Profiler is deprecated and is removed in DIPY 2.0.0. "
+        "Use the `spin profile` developer command instead.",
+        since="1.13.0",
+        until="2.0.0",
+    )
     def __init__(self, *args, call=None):
-        # Delay import until use of class instance.  We were getting some very
-        # odd build-as-we-go errors running tests and documentation otherwise
-        import pyximport
+        if not have_pyximport:
+            raise ImportError(
+                "pyximport (Cython) is required by dipy.core.profile.Profiler."
+            )
 
         pyximport.install()
 

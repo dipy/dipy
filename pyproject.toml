@@ -221,6 +221,7 @@ Environments = [
 ]
 Metrics = [
     ".spin/cmds.py:bench",
+    ".spin/cmds.py:profile",
     # ".spin/cmds.py:coverage
 ]
 Release = [

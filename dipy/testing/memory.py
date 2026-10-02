@@ -1,17 +1,28 @@
+"""Reference-count helpers for leak tests."""
+
 from collections import defaultdict
 import gc
 
-from dipy.utils.deprecator import warning_for_keywords
+from dipy.utils.deprecator import deprecate_with_version, warning_for_keywords
 
 
+@deprecate_with_version(
+    "dipy.testing.memory.get_type_refcount is deprecated and is removed in "
+    "DIPY 2.0.0 without replacement.",
+    since="1.13.0",
+    until="2.0.0",
+)
 @warning_for_keywords(from_version="1.13.0")
 def get_type_refcount(*, pattern=None):
     """
     Retrieves refcount of types for which their name matches `pattern`.
 
+    .. deprecated:: 1.13.0
+        Removed in 2.0.0 without replacement.
+
     Parameters
     ----------
-    pattern : str
+    pattern : str, optional
         Consider only types that have `pattern` in their name.
 
     Returns

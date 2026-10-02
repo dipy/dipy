@@ -48,6 +48,31 @@ DIPY 1.13.0 changes
   removed. ``info`` is a property, so the parameter was never reachable and the
   summary was always printed to stdout; the behaviour is unchanged.
 
+- ``dipy.core.graph`` is deprecated and is removed in 2.0.0. Nothing in DIPY uses
+  its ``Graph`` class; instantiating it now raises a ``DeprecationWarning``. Use
+  ``networkx`` for graph manipulation instead.
+
+- ``dipy.core.profile`` is deprecated and is removed in 2.0.0. Its ``Profiler``
+  class is replaced by the ``spin profile`` developer command, which profiles a
+  script or a ``module:callable`` with cProfile from a source checkout::
+
+      spin profile my_script.py
+      spin profile dipy.core.geometry:sphere2cart 1 0.5 0.3 -n 30
+
+- ``histeq`` moved from ``dipy.core.histeq`` to ``dipy.utils.histeq``. The old
+  location still resolves, calling it warns, and it is removed in 2.0.0::
+
+      from dipy.core.histeq import histeq  # deprecated
+
+  becomes::
+
+      from dipy.utils.histeq import histeq
+
+**Testing**
+
+- ``dipy.testing.memory.get_type_refcount`` is deprecated and is removed in 2.0.0
+  without replacement.
+
 DIPY 1.12.0 changes
 -------------------
 
