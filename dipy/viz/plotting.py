@@ -2,14 +2,176 @@
 plotting functions
 """
 
+import math
 from warnings import warn
 
 import numpy as np
 
+from dipy.core.gradients import GradientTable
+from dipy.core.sphere import Sphere
+from dipy.io.utils import split_filename_extension
 from dipy.utils.deprecator import warning_for_keywords
 from dipy.utils.optpkg import optional_package
 
+fury, have_fury, _ = optional_package("fury", min_version="2.0.0")
+if have_fury:
+    from fury import actor, ui, window
+
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
+
+
+def plot_gradient_sphere(data, *, scene=None, colors=None, filename=None, show=False):
+    """Render an acquisition gradient scheme or sphere in q-space with FURY.
+
+    Parameters
+    ----------
+    data : GradientTable or Sphere
+        Gradient scheme or unit-sphere vertices to render.
+    scene : fury.window.Scene, optional
+        Existing scene to add the glyphs to. A white scene is created when absent.
+    colors : tuple or ndarray, optional
+        One RGB color or one RGB color for every plotted point.
+    filename : str or Path, optional
+        Output image path.
+    show : bool, optional
+        Whether to display the scene interactively. Hovering a glyph updates the
+        information text at the bottom of the window. If ``filename`` is given,
+        its basename without the extension is used as the window title.
+
+    Returns
+    -------
+    scene : fury.window.Scene
+        Scene containing the rendered glyphs.
+
+    Raises
+    ------
+    TypeError
+        If ``data`` is neither a gradient table nor a sphere.
+    ValueError
+        If FURY is unavailable, the gradient table has no valid non-b0
+        directions, the colors have an invalid shape, or ``scene`` is invalid.
+    """
+    if not have_fury:
+        raise ValueError("fury package needed for visualization.")
+
+    if isinstance(data, GradientTable):
+        non_b0_mask = ~data.b0s_mask
+        non_b0_bvals = data.bvals[non_b0_mask]
+        if (
+            not np.any(non_b0_mask)
+            or not np.all(np.isfinite(non_b0_bvals))
+            or np.any(non_b0_bvals <= 0)
+        ):
+            raise ValueError(
+                "Gradient table must contain finite, positive non-b0 b-values."
+            )
+        points = data.gradients / np.max(non_b0_bvals)
+        glyph_colors = np.zeros((len(points), 3))
+        shell_span = np.ptp(non_b0_bvals)
+        glyph_colors[non_b0_mask, 2] = 1.0
+        if shell_span == 0:
+            glyph_colors[non_b0_mask, 1] = 0.0
+        else:
+            glyph_colors[non_b0_mask, 1] = (
+                non_b0_bvals - non_b0_bvals.min()
+            ) / shell_span
+    elif isinstance(data, Sphere):
+        points = data.vertices
+        glyph_colors = (0.0, 1.0, 0.0)
+    else:
+        raise TypeError("data must be a GradientTable or Sphere.")
+
+    if colors is not None:
+        colors = np.asarray(colors)
+        if colors.shape == (3,):
+            glyph_colors = tuple(colors)
+        elif colors.shape == (len(points), 3):
+            glyph_colors = colors
+        else:
+            raise ValueError("colors must be one RGB tuple or an (N, 3) RGB array.")
+    if scene is None:
+        scene = window.Scene(background=(1.0, 1.0, 1.0, 1.0))
+    elif not isinstance(scene, window.Scene):
+        raise ValueError("scene must be a FURY Scene.")
+
+    info_text = getattr(scene, "_gradient_sphere_info_text", None)
+    if info_text is None:
+        info_text = ui.TextBlock2D(
+            text="Hover a sphere to inspect it.",
+            font_size=24,
+            color=(0.0, 0.0, 0.0),
+            bg_color=(1.0, 1.0, 1.0),
+            position=(20, 750),
+            size=(760, 30),
+        )
+        scene.add(info_text)
+        scene._gradient_sphere_info_text = info_text
+
+    glyph_actor = actor.sphere(
+        points, colors=glyph_colors, radii=0.04, impostor=False, theta=48, phi=48
+    )
+    faces_per_point = len(glyph_actor.geometry.indices.data) // len(points)
+
+    def update_info(event):
+        face_index = event.pick_info.get("face_index")
+        if face_index is None:
+            return
+        point_index = face_index // faces_per_point
+        point = points[point_index]
+        point_text = f"q=({point[0]:.3f}, {point[1]:.3f}, {point[2]:.3f})"
+        if isinstance(data, GradientTable):
+            if data.b0s_mask[point_index]:
+                info_text.message = f"Gradient {point_index}: b0, {point_text}"
+            else:
+                info_text.message = (
+                    f"Gradient {point_index}: b={data.bvals[point_index]:g} s/mm², "
+                    f"{point_text}"
+                )
+        else:
+            info_text.message = f"Sphere vertex {point_index}: {point_text}"
+        info_text.update_alignment()
+
+    def clear_info(event):
+        info_text.message = "Hover a sphere to inspect it."
+        info_text.update_alignment()
+
+    glyph_actor.add_event_handler(update_info, "pointer_move")
+    glyph_actor.add_event_handler(clear_info, "pointer_leave")
+    scene.add(glyph_actor)
+    if filename is not None or show:
+        title, _ = (
+            split_filename_extension(filename) if filename is not None else ("DIPY", "")
+        )
+        manager = window.ShowManager(
+            scene=scene,
+            size=(1000, 1000) if filename is not None else (800, 800),
+            window_type="default" if show else "offscreen",
+            title=title,
+        )
+
+        def position_info_text(size):
+            available_width = max(size[0] - 40, 1)
+            max_message_width = 32 * info_text.font_size
+            lines = math.ceil(max_message_width / available_width)
+            footer_height = min(
+                max(size[1] - 40, 1),
+                16 + lines * math.ceil(info_text.font_size * 1.4),
+            )
+            info_text.resize((available_width, footer_height))
+            info_text.set_position((20, size[1] - footer_height - 20))
+
+        manager.resize_callback(position_info_text)
+        position_info_text(manager.size)
+        manager.render()
+        window.render_screens(manager.renderer, manager.screens, is_dirty=True)
+        info_text.update_alignment()
+        if filename is not None:
+            manager._draw_function()
+            manager.snapshot(fname=filename)
+        if show:
+            manager.start()
+
+    return scene
 
 
 @warning_for_keywords()
