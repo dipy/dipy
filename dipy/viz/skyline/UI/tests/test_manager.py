@@ -9,8 +9,6 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from dipy.data import default_sphere
-from dipy.direction.peaks import PeaksAndMetrics
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.utils.optpkg import optional_package
 
@@ -57,13 +55,9 @@ def viewer(tmp_path_factory):
     reference = nib.Nifti1Image(np.zeros(SHAPE, dtype=np.float32), AFFINE)
     sft = StatefulTractogram(lines, reference, Space.RASMM)
 
-    pam = PeaksAndMetrics()
-    pam.affine = AFFINE
-    pam.peak_dirs = np.zeros((3, 3, 3, 5, 3), dtype=np.float32)
-    pam.peak_dirs[..., 0, 0] = 1.0
-    pam.peak_values = np.ones((3, 3, 3, 5), dtype=np.float32)
-    pam.peak_indices = np.zeros((3, 3, 3, 5), dtype=np.int32)
-    pam.sphere = default_sphere
+    peak_dirs = np.zeros((3, 3, 3, 5, 3), dtype=np.float32)
+    peak_dirs[..., 0, 0] = 1.0
+    peak_values = np.ones((3, 3, 3, 5), dtype=np.float32)
 
     n_coeffs = sum(2 * ell + 1 for ell in range(0, 9, 2))
     coeffs = np.zeros((2, 2, 2, n_coeffs), dtype=np.float32)
@@ -72,7 +66,7 @@ def viewer(tmp_path_factory):
     return skyline(
         visualizer_type="stealth",
         images=[(data, AFFINE, "vol.nii.gz")],
-        peaks=[(pam, "peaks.pam5")],
+        peaks=[(peak_dirs, AFFINE, "peaks.pam5", peak_values)],
         rois=[(mask, AFFINE, "roi.nii.gz")],
         surfaces=[(vertices, faces, "surf.gii")],
         tractograms=[(sft, "tracts.trk")],
@@ -199,12 +193,16 @@ def test_file_dialog_closed_forwards_every_selection_kind(ui):
     window._is_dialog_open = True
 
     window._file_dialog_closed(
-        filenames=["a.nii.gz"], rois=["r.nii.gz"], shm_coeffs=["s.pam5"]
+        filenames=["a.nii.gz"],
+        rois=["r.nii.gz"],
+        peaks=["p.nii.gz"],
+        shm_coeffs=["s.pam5"],
     )
 
     assert captured == {
         "filenames": ["a.nii.gz"],
         "rois": ["r.nii.gz"],
+        "peaks": ["p.nii.gz"],
         "shm_coeffs": ["s.pam5"],
     }
     assert window._is_dialog_open is False
