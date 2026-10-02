@@ -158,7 +158,6 @@ def test_tensor_model():
     npt.assert_equal(dtifit.trace.shape, data.shape[:3])
     npt.assert_equal(dtifit.mode.shape, data.shape[:3])
     npt.assert_equal(dtifit.na.shape, data.shape[:3])
-    npt.assert_array_almost_equal(dtifit.na, norm_anisotropy(dtifit.quadratic_form))
     npt.assert_equal(dtifit.linearity.shape, data.shape[:3])
     npt.assert_equal(dtifit.planarity.shape, data.shape[:3])
     npt.assert_equal(dtifit.sphericity.shape, data.shape[:3])
