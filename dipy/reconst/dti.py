@@ -377,7 +377,7 @@ def isotropic(q_form):
     :footcite:p:`Ennis2006`):
 
     .. math::
-        \bar{A} = \frac{1}{2} tr(A) I
+        \bar{A} = \frac{1}{3} tr(A) I
 
     References
     ----------
@@ -415,7 +415,7 @@ def deviatoric(q_form):
     .. math::
         \widetilde{A} = A - \bar{A}
 
-    Where $A$ is the tensor quadratic form and $\bar{A}$ is the anisotropic
+    Where $A$ is the tensor quadratic form and $\bar{A}$ is the isotropic
     part of the tensor.
 
     References
@@ -479,8 +479,11 @@ def mode(q_form):
     Notes
     -----
     Mode ranges between -1 (planar anisotropy) and +1 (linear anisotropy)
-    with 0 representing isotropy. Mode is calculated with the following
-    equation (equation 9 in :footcite:p:`Ennis2006`):
+    with 0 representing orthotropy. Mode is undefined for isotropic tensors:
+    0 is returned when the deviatoric part is exactly zero, but nearly
+    isotropic tensors can give unstable values anywhere in [-1, 1]. Mode is
+    calculated with the following equation (equation 9 in
+    :footcite:p:`Ennis2006`):
 
     .. math::
 
@@ -561,8 +564,8 @@ def planarity(evals, *, axis=-1):
 
     Returns
     -------
-    linearity : array
-        Calculated linearity of the diffusion tensor.
+    planarity : array
+        Calculated planarity of the diffusion tensor.
 
     Notes
     -----
@@ -608,7 +611,7 @@ def sphericity(evals, *, axis=-1):
 
     .. math::
 
-        Sphericity = \frac{3 \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+        Sphericity = \frac{3 \lambda_3}{\lambda_1+\lambda_2+\lambda_3}
 
     References
     ----------
@@ -952,7 +955,7 @@ class TensorFit:
     @auto_attr
     def mode(self):
         """
-        Tensor mode calculated from cached eigenvalues.
+        Tensor mode calculated from the tensor quadratic form.
         """
         return mode(self.quadratic_form)
 
@@ -1046,17 +1049,17 @@ class TensorFit:
         r"""
         Returns
         -------
-        sphericity : array
-            Calculated sphericity of the diffusion tensor
+        planarity : array
+            Calculated planarity of the diffusion tensor
             :footcite:p:`Westin1997`.
 
         Notes
         -----
-        Sphericity is calculated with the following equation:
+        Planarity is calculated with the following equation:
 
         .. math::
 
-            Sphericity =
+            Planarity =
             \frac{2 (\lambda_2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
         References
