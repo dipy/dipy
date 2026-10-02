@@ -342,6 +342,8 @@ def afq_profile(
         Weight each streamline (1D) or each node (2D) when calculating the
         tract-profiles. Must sum to 1 across streamlines (in each node if
         relevant). If callable, this is a function that calculates weights.
+        When using ``gaussian_weights`` directly, its node count matches
+        ``n_points``. Other callables receive the bundle and ``weights_kwarg``.
     profile_stat : callable, optional
         The statistic used to average the profile across streamlines.
         If weights is not None, this must take weights as a keyword argument.
@@ -382,6 +384,8 @@ def afq_profile(
 
     if weights is not None:
         if callable(weights):
+            if weights is gaussian_weights:
+                weights_kwarg["n_points"] = n_points
             weights = weights(bundle, **weights_kwarg)
         else:
             # We check that weights *always sum to 1 across streamlines*:

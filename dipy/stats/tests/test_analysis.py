@@ -137,6 +137,33 @@ def test_afq_profile():
     npt.assert_raises(ValueError, afq_profile, data, empty_bundle, np.eye(4))
 
 
+def test_afq_profile_gaussian_weights_node_count():
+    data = np.ones((10, 10, 10))
+    streamline = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [2.0, 0.0, 0.0]])
+    bundle = Streamlines([streamline, streamline.copy()])
+    profile = afq_profile(
+        data,
+        bundle,
+        np.eye(4),
+        n_points=10,
+        weights=gaussian_weights,
+        stat=np.median,
+    )
+    npt.assert_allclose(profile, np.ones(10))
+
+
+def test_afq_profile_custom_weight_callable():
+    data = np.ones((10, 10, 10))
+    streamline = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [2.0, 0.0, 0.0]])
+    bundle = Streamlines([streamline, streamline.copy()])
+
+    def weights(streamlines):
+        return np.full(len(streamlines), 1 / len(streamlines))
+
+    profile = afq_profile(data, bundle, np.eye(4), n_points=10, weights=weights)
+    npt.assert_allclose(profile, np.ones(10))
+
+
 def test_buan_profile():
     data = np.ones((40, 40, 40), dtype=float)
 
