@@ -11,12 +11,19 @@ from dipy.reconst import shm
 from dipy.core.interpolation cimport (
     _trilinear_interpolation_iso,
     offset,
+    trilinear_interpolate3d_c,
     trilinear_interpolate4d_c,
 )
 from libc.stdlib cimport malloc, free
+from scipy.linalg.cython_blas cimport dgemv
 
 cdef extern from "stdlib.h" nogil:
     void *memset(void *ptr, int value, size_t num)
+
+# stack buffer size for interpolated SH coefficients
+# if larger than this, switch to malloc
+cdef enum:
+    _SH_STACK_COEFF = 256
 
 
 cdef class PmfGen:
@@ -25,7 +32,7 @@ cdef class PmfGen:
                  double[:, :, :, :] data,
                  object sphere):
         self.data = np.asarray(data, dtype=float, order="C")
-        self.vertices = np.asarray(sphere.vertices, dtype=float)
+        self.vertices = np.asarray(sphere.vertices, dtype=float, order="C")
         self.pmf = np.zeros(self.vertices.shape[0])
         self.sphere = sphere
 
@@ -104,10 +111,38 @@ cdef class SimplePmfGen(PmfGen):
             double pmf_value = 0
 
         idx = self.find_closest(xyz)
-        trilinear_interpolate4d_c(self.data[:, :, :, idx:idx+1],
-                                  point,
-                                  &pmf_value)
+        trilinear_interpolate3d_c(self.data[:, :, :, idx], point, &pmf_value)
         return pmf_value
+
+
+def _sh_order_from_ncoef(ncoef, full_basis=None):
+    """Infer ``(sh_order_max, full_basis)`` from a number of SH coefficients.
+
+    A symmetric basis (even ``l`` only) has ``(l + 1)(l + 2) / 2``
+    coefficients, a full basis has ``(l + 1)**2``.
+    """
+    if full_basis is None:
+        sym_order = (-3.0 + np.sqrt(1.0 + 8.0 * ncoef)) / 2.0
+        if sym_order.is_integer() and int(sym_order) % 2 == 0:
+            return int(sym_order), False
+        full_order = np.sqrt(ncoef) - 1.0
+        if full_order.is_integer():
+            return int(full_order), True
+        raise ValueError(
+            f"{ncoef} coefficients do not match a symmetric or a full SH basis."
+        )
+    sh_order = shm.order_from_ncoef(ncoef, full_basis=full_basis)
+    if full_basis:
+        expected = (sh_order + 1) ** 2
+    else:
+        expected = (sh_order + 1) * (sh_order + 2) // 2
+    if expected != ncoef or (not full_basis and sh_order % 2 != 0):
+        kind = "full" if full_basis else "symmetric"
+        raise ValueError(
+            f"{ncoef} coefficients do not match a {kind} SH basis "
+            f"(order {sh_order} has {expected})."
+        )
+    return sh_order, bool(full_basis)
 
 
 cdef class SHCoeffPmfGen(PmfGen):
@@ -116,36 +151,66 @@ cdef class SHCoeffPmfGen(PmfGen):
                  double[:, :, :, :] shcoeff_array,
                  object sphere,
                  object basis_type,
-                 legacy=True):
+                 legacy=True,
+                 full_basis=None):
+        """
+        Parameters
+        ----------
+        shcoeff_array : ndarray, shape (x, y, z, ncoef)
+            Spherical harmonic coefficients.
+        sphere : Sphere
+            Sphere on which the pmf is evaluated.
+        basis_type : str or None
+            One of ``dipy.reconst.shm.sph_harm_lookup``.
+        legacy : bool, optional
+            Use the legacy basis definition.
+        full_basis : bool or None, optional
+            True if ``shcoeff_array`` uses a full (odd and even order) SH
+            basis, as produced by asymmetric ODF models. If None, it is
+            inferred from the number of coefficients.
+        """
         cdef:
             int sh_order
 
         PmfGen.__init__(self, shcoeff_array, sphere)
 
-        sh_order = shm.order_from_ncoef(shcoeff_array.shape[3])
+        sh_order, full_basis = _sh_order_from_ncoef(
+            shcoeff_array.shape[3], full_basis
+        )
         try:
             basis = shm.sph_harm_lookup[basis_type]
         except KeyError:
             raise ValueError(f"{basis_type} is not a known basis type.")
-        self.B, _, _ = basis(sh_order, sphere.theta, sphere.phi, legacy=legacy)
+        B, _, _ = basis(sh_order, sphere.theta, sphere.phi,
+                        full_basis=full_basis, legacy=legacy)
+        if B.shape[1] != shcoeff_array.shape[3]:
+            raise ValueError(
+                f"SH basis has {B.shape[1]} functions but "
+                f"{shcoeff_array.shape[3]} coefficients were given."
+            )
+        # C-contiguous so get_pmf_c can hand it to BLAS
+        self.B = np.asarray(B, dtype=float, order="C")
+        self.nb_coeff = self.B.shape[1]
 
     cdef double* get_pmf_c(self, double* point, double* out) noexcept nogil:
         cdef:
-            cnp.npy_intp i, j
-            cnp.npy_intp len_pmf = self.pmf.shape[0]
-            cnp.npy_intp len_B = self.B.shape[1]
-            double _sum
-            double *coeff = <double*> malloc(len_B * sizeof(double))
+            int m = self.nb_coeff, n = self.pmf.shape[0], one = 1
+            double alpha = 1.0, beta = 0.0
+            double stack_buf[_SH_STACK_COEFF]
+            double* coeff = stack_buf
+
+        if m > _SH_STACK_COEFF:
+            coeff = <double*> malloc(m * sizeof(double))
 
         if trilinear_interpolate4d_c(self.data, point, coeff) != 0:
-            memset(out, 0, len_pmf * sizeof(double))
+            memset(out, 0, n * sizeof(double))
         else:
-            for i in range(len_pmf):
-                _sum = 0
-                for j in range(len_B):
-                    _sum = _sum + (self.B[i, j] * coeff[j])
-                out[i] = _sum
-        free(coeff)
+            # C-order (n, m) B is column-major (m, n) to BLAS, hence "T"
+            dgemv("T", &m, &n, &alpha, &self.B[0, 0], &m, coeff, &one,
+                  &beta, out, &one)
+
+        if coeff != stack_buf:
+            free(coeff)
         return out
 
     cdef double get_pmf_value_c(self,
@@ -158,15 +223,21 @@ cdef class SHCoeffPmfGen(PmfGen):
         cdef:
             int idx = self.find_closest(xyz)
             cnp.npy_intp j
-            cnp.npy_intp len_B = self.B.shape[1]
-            double *coeff = <double*> malloc(len_B * sizeof(double))
+            int m = self.nb_coeff
+            double stack_buf[_SH_STACK_COEFF]
+            double* coeff = stack_buf
+            const double* brow = &self.B[idx, 0]
             double pmf_value = 0
 
-        if trilinear_interpolate4d_c(self.data, point, coeff) == 0:
-            for j in range(len_B):
-                pmf_value = pmf_value + (self.B[idx, j] * coeff[j])
+        if m > _SH_STACK_COEFF:
+            coeff = <double*> malloc(m * sizeof(double))
 
-        free(coeff)
+        if trilinear_interpolate4d_c(self.data, point, coeff) == 0:
+            for j in range(m):
+                pmf_value = pmf_value + brow[j] * coeff[j]
+
+        if coeff != stack_buf:
+            free(coeff)
         return pmf_value
 
 
