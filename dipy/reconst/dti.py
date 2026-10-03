@@ -465,6 +465,9 @@ def mode(q_form):
 
     See :footcite:p:`Ennis2006` for further details about the method.
 
+    Mode is the third orthogonal moment of the eigenvalue distribution
+    :footcite:p:`Chad2021`.
+
     Parameters
     ----------
     q_form : ndarray
@@ -509,6 +512,51 @@ def mode(q_form):
     mode[nonzero] = mode_nonzero
 
     return mode
+
+
+def norm_anisotropy(q_form):
+    r"""
+    Norm of anisotropy (NA) of a diffusion tensor.
+
+    NA is the second orthogonal moment of the eigenvalue distribution. See
+    :footcite:p:`Ennis2006` and :footcite:p:`Chad2021` for further details.
+
+    Parameters
+    ----------
+    q_form : ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (x, y, z, 3, 3) or (n, 3, 3) or (3, 3).
+
+    Returns
+    -------
+    na : array
+        Calculated norm of anisotropy in each spatial coordinate.
+
+    Notes
+    -----
+    Quote from :footcite:t:`Chad2021`:
+    "... NA is a shape measure directly based on the variance of the
+    eigenvalues and thus irrespective of alteration in MD. Degeneration of
+    primarily single-tract regions would manifest as decreased NA, whereas
+    selective degeneration of secondary crossing tracts would manifest as
+    increased NA."
+
+    NA is computed as (equation 6 in :footcite:p:`Chad2021`):
+
+    .. math::
+
+        NA = \lVert \widetilde{D} \rVert
+            = \sqrt{(\lambda_1-MD)^2 + (\lambda_2-MD)^2 + (\lambda_3-MD)^2}
+
+    Where :math:`\widetilde{D}` is the deviatoric part of the tensor quadratic form.
+
+    References
+    ----------
+    .. footbibliography::
+    """
+
+    A_squiggle = deviatoric(q_form)
+    return norm(A_squiggle)
 
 
 @warning_for_keywords()
@@ -958,6 +1006,16 @@ class TensorFit:
         Tensor mode calculated from the tensor quadratic form.
         """
         return mode(self.quadratic_form)
+
+    @auto_attr
+    def na(self):
+        """Norm of anisotropy (NA) of the tensor.
+
+        Computed from the cached eigenvalues, which is equivalent to
+        :func:`norm_anisotropy` applied to the quadratic form.
+        """
+        evals = self.evals
+        return np.sqrt(np.sum((evals - evals.mean(-1, keepdims=True)) ** 2, -1))
 
     @auto_attr
     def md(self):
