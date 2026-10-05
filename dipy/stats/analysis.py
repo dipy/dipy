@@ -200,7 +200,9 @@ def buan_profile(model_bundle, bundle, orig_bundle, metric, affine, *, no_disks=
         raise ValueError("One of the bundles contains no streamlines")
 
     dist, indx = assignment_map(bundle, model_bundle, no_disks)
-    ind = np.array(indx)
+    # Assignment indices address concatenated centroids. Each centroid has
+    # no_disks points, so remove its offset before grouping by disk.
+    ind = np.asarray(indx) % no_disks
     affine_r = np.linalg.inv(affine)
     transformed_orig_bundle = transform_streamlines(orig_bundle, affine_r)
     bundle_profile = np.zeros(no_disks)

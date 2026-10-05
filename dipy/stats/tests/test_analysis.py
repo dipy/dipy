@@ -176,6 +176,27 @@ def test_afq_profile_custom_weight_callable():
     npt.assert_allclose(profile, np.ones(10))
 
 
+@pytest.mark.parametrize("reverse_model", [False, True])
+def test_buan_profile_multiple_centroids(reverse_model):
+    """Every atlas centroid contributes to its corresponding disk."""
+    x = np.arange(2.0, 7.0)
+    first = np.column_stack([x, np.full(5, 2.0), np.full(5, 2.0)])
+    second = first + [0, 100, 0]
+    model = Streamlines([second, first] if reverse_model else [first, second])
+    target = Streamlines([second])
+    volume = np.ones((10, 110, 5))
+
+    profile = buan_profile(model, target, target, volume, np.eye(4), no_disks=5)
+    npt.assert_allclose(profile, np.ones(5))
+
+    # Both centroids have zero distance, so their weights must be equal.
+    volume[:, :50, :] = 2
+    volume[:, 50:, :] = 10
+    target = Streamlines([first, second])
+    profile = buan_profile(model, target, target, volume, np.eye(4), no_disks=5)
+    npt.assert_allclose(profile, np.full(5, 6.0))
+
+
 def test_buan_profile():
     data = np.ones((40, 40, 40), dtype=float)
 
