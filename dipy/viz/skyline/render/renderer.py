@@ -403,7 +403,7 @@ def create_window(
         - "standalone": a standalone window with full interactivity.
         - "gui": a Qt-based GUI window.
         - "jupyter": an inline Jupyter notebook visualizer.
-        - "stealth": an offscreen visualizer without GUI.
+        - "stealth": an offscreen visualizer without GUI or corner axes gizmo.
     size : tuple of int, optional
         Window size in pixels as ``(width, height)``.
     screen_config : list, optional
@@ -459,6 +459,11 @@ def create_window(
                 glfw.set_window_icon(show_m.window._window, 1, [(img)])
                 glfw.poll_events()
                 img.close()
+        if hasattr(show_m, "show_axes_gizmo"):
+            show_m.show_axes_gizmo(labels=["L", "R", "P", "A", "S", "I"])
+        logger.info(
+            "Created visualizer currently assumes Neurological convention for axes."
+        )
 
     else:
         show_m = window.ShowManager(
@@ -468,11 +473,6 @@ def create_window(
             screen_config=screen_config,
             imgui=False,
         )
-    if hasattr(show_m, "show_axes_gizmo"):
-        show_m.show_axes_gizmo(labels=["L", "R", "P", "A", "S", "I"])
-    logger.info(
-        "Created visualizer currently assumes Neurological convention for axes."
-    )
     if visualizer_type == "stealth":
         os.environ["FURY_OFFSCREEN"] = "1"
     else:

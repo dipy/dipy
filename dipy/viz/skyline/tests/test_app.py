@@ -5,8 +5,10 @@ from real volumes, tractograms, peaks and surfaces. Nothing here fabricates a
 stand-in for the viewer or its visualizations.
 """
 
+import gc
 import logging
 import os
+import weakref
 
 import nibabel as nib
 import numpy as np
@@ -126,6 +128,26 @@ def test_stealth_viewer_writes_the_requested_png(tmp_path, make_skyline):
 
     assert (tmp_path / "shot.png").is_file()
     assert (tmp_path / "shot.png").stat().st_size > 0
+
+
+def test_stealth_viewers_are_collected_after_capture(tmp_path, make_skyline):
+    for iteration in range(3):
+        filename = f"capture-{iteration}.png"
+        viewer = make_skyline(images=[_image_input()], out_stealth_png=filename)
+        with Image.open(tmp_path / filename) as image:
+            pixels = np.asarray(image.convert("RGB"))
+            assert np.any(pixels != pixels[0, 0])
+        del pixels
+        watched = [
+            weakref.ref(viewer),
+            weakref.ref(viewer.window),
+            weakref.ref(viewer.window.renderer),
+            weakref.ref(viewer.window.window),
+        ]
+        assert viewer.window.window.get_closed()
+        del viewer
+        gc.collect()
+        assert all(ref() is None for ref in watched)
 
 
 def test_stealth_viewer_defaults_to_the_dipy_skyline_filename(tmp_path, make_skyline):
@@ -401,12 +423,14 @@ def test_remove_visualization_rejects_unknown_types(image_skyline):
 def test_remove_visualization_drops_it_from_the_right_list(make_skyline):
     viewer = make_skyline(images=[_image_input()], rois=[_roi_input()])
     roi = viewer._roi_visualizations[0]
+    active_image = viewer.active_image
 
     viewer._remove_visualization(roi)
 
     assert viewer._roi_visualizations == []
     assert roi not in viewer.visualizations
     assert len(viewer._image_visualizations) == 1
+    assert viewer.active_image is active_image
 
 
 def test_remove_visualization_clears_the_slice_focus(make_skyline):
@@ -421,9 +445,96 @@ def test_remove_visualization_clears_the_slice_focus(make_skyline):
 
 
 def test_remove_the_last_visualization_in_stealth_mode(image_skyline):
-    image_skyline._remove_visualization(image_skyline._image_visualizations[0])
+    image = image_skyline._image_visualizations[0]
+    removed = weakref.ref(image)
+    image_skyline._remove_visualization(image)
+    image_skyline._refresh_actors()
+    del image
+    gc.collect()
 
     assert image_skyline.visualizations == []
+    assert image_skyline.active_image is None
+    assert image_skyline._get_reference_slice_state() is None
+    assert removed() is None
+
+
+@pytest.mark.parametrize("removing_index", [0, 2])
+def test_image_removal_preserves_a_registered_reference(make_skyline, removing_index):
+    viewer = make_skyline(
+        images=[_image_input(name, shape=(*SHAPE, 5)) for name in ("a", "b", "c")]
+    )
+    states = np.asarray([[1, 2, 3, 1], [2, 3, 4, 2], [4, 5, 6, 4]], dtype=float)
+    for image, state in zip(viewer._image_visualizations, states):
+        image.update_state(state)
+    del image
+    expected = viewer._image_visualizations[2 if removing_index == 0 else 1]
+    reference = viewer._reference_state_of(expected).copy()
+    initial_flags = [image.active for image in viewer._image_visualizations]
+    removed_image = viewer._image_visualizations[removing_index]
+    removed = weakref.ref(removed_image)
+    viewer._remove_visualization(removed_image)
+    viewer._refresh_actors()
+    del removed_image
+    gc.collect()
+
+    assert removed() is None
+    assert viewer.active_image is expected
+    assert expected in viewer._image_visualizations
+    assert expected.active
+    if removing_index == 0:
+        assert [
+            image.active for image in viewer._image_visualizations
+        ] == initial_flags[1:]
+    npt.assert_array_equal(viewer._get_reference_slice_state(), reference)
+    surviving_states = [
+        viewer._reference_state_of(image).copy()
+        for image in viewer._image_visualizations
+    ]
+    viewer._queue_loaded_visualizations(
+        {
+            "images": [_image_input("d", shape=(*SHAPE, 5))],
+            "peaks": [],
+            "rois": [],
+            "surfaces": [],
+            "tractograms": [],
+            "shm_coeffs": [],
+        }
+    )
+    viewer._drain_pending_visualizations()
+
+    new_image = viewer._image_visualizations[-1]
+    npt.assert_array_equal(new_image.state, reference[:3])
+    assert new_image._volume_idx == reference[3]
+    for image, state in zip(viewer._image_visualizations[:-1], surviving_states):
+        npt.assert_array_equal(viewer._reference_state_of(image), state)
+
+
+def test_last_image_removal_uses_surviving_odf_reference(make_skyline):
+    viewer = make_skyline(images=[_image_input()], sh_coeffs=[_sh_input()])
+    image = viewer.active_image
+    image.update_state(np.asarray([4, 5, 6], dtype=float))
+    glyph = viewer._sh_glyph_visualizations[0]
+    reference = np.asarray([1, 0, 1], dtype=float)
+    glyph.update_state(reference)
+    viewer._remove_visualization(image)
+    viewer._refresh_actors()
+
+    assert viewer.active_image is None
+    npt.assert_array_equal(viewer._get_reference_slice_state(), reference)
+    viewer._queue_loaded_visualizations(
+        {
+            "images": [_image_input("replacement")],
+            "peaks": [],
+            "rois": [],
+            "surfaces": [],
+            "tractograms": [],
+            "shm_coeffs": [],
+        }
+    )
+    viewer._drain_pending_visualizations()
+
+    npt.assert_array_equal(viewer.active_image.state, reference)
+    npt.assert_array_equal(glyph.state, reference)
 
 
 def test_enqueue_scene_op_runs_immediately_outside_the_ui_draw(image_skyline):

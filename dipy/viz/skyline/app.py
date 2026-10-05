@@ -1157,6 +1157,14 @@ class Skyline:
         """
         if isinstance(viz, Image3D):
             self._image_visualizations.remove(viz)
+            if viz is self.active_image:
+                self.active_image = (
+                    self._image_visualizations[-1]
+                    if self._image_visualizations
+                    else None
+                )
+                if self.active_image is not None:
+                    self.active_image.active = True
         elif isinstance(viz, Peak3D):
             self._peak_visualizations.remove(viz)
         elif isinstance(viz, ROI3D):
