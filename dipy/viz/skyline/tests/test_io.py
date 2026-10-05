@@ -8,10 +8,14 @@ import pytest
 from dipy.data import default_sphere
 from dipy.direction.peaks import PeaksAndMetrics
 from dipy.io.image import save_nifti
-from dipy.io.peaks import save_pam
+from dipy.io.peaks import load_pam, save_pam
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
-from dipy.viz.skyline.io import EMERGENCY_REF, load_files, load_npy
+from dipy.viz.skyline.io import (
+    EMERGENCY_REF,
+    load_files,
+    load_npy,
+)
 
 AFFINE = np.array(
     [
@@ -186,24 +190,47 @@ def test_load_files_rejects_non_peak_inputs(tmp_path, caplog):
     assert "is not supported for peaks in Skyline" in caplog.text
 
 
-@pytest.mark.parametrize("sh_basis", ["descoteaux07", "tournier07"])
-def test_load_files_reads_nifti_shm_coefficients(tmp_path, sh_basis):
-    data = np.zeros((2, 2, 2, 6), dtype=np.float32)
-    data[...] = np.arange(6, dtype=np.float32)
-    path = tmp_path / "odf.nii.gz"
-    save_nifti(str(path), data, AFFINE)
-
-    loaded = load_files([], shm_coeffs=[str(path)], sh_basis=sh_basis)
-
-    assert len(loaded["shm_coeffs"]) == 1
-    coeffs, affine, coeff_path, basis = loaded["shm_coeffs"][0]
-    if sh_basis == "tournier07":
-        npt.assert_allclose(coeffs[0, 0, 0], [0, 5, 4, 3, 2, 1])
+@pytest.mark.parametrize("extension", [".nii", ".nii.gz", ".pam5"])
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+@pytest.mark.parametrize(
+    "sh_basis, source_coeffs",
+    [
+        (None, [4, 0, 0.2, 0, -0.1, 0]),
+        ("descoteaux07", [4, 0, 0.2, 0, -0.1, 0]),
+        ("descoteaux07_legacy", [4, 0, -0.2, 0, -0.1, 0]),
+        ("tournier07", [4, 0, -0.1 * np.sqrt(2), 0, -0.2 * np.sqrt(2), 0]),
+        ("tournier19", [4, 0, -0.1, 0, -0.2, 0]),
+        ("unknown", [4, 0, 0.2, 0, -0.1, 0]),
+    ],
+)
+def test_load_files_preserves_declared_odfs(
+    tmp_path, extension, dtype, sh_basis, source_coeffs, caplog
+):
+    data = np.empty((2, 2, 2, 6), dtype=dtype)
+    data[...] = source_coeffs
+    sub_float32_offset = 2.0**-25
+    data[0, 0, 0, 0] += sub_float32_offset
+    if extension == ".pam5":
+        path = _pam5(tmp_path, name="odf.pam5")
+        pam = load_pam(path)
+        pam.shm_coeff = data
+        save_pam(path, pam)
     else:
-        npt.assert_allclose(coeffs[0, 0, 0], np.arange(6))
-    assert basis == "descoteaux"
-    assert coeff_path == str(path)
+        path = str(tmp_path / ("odf" + extension))
+        save_nifti(path, data, AFFINE)
+    kwargs = {} if sh_basis is None else {"sh_basis": sh_basis}
+    loaded = load_files([], shm_coeffs=[path], **kwargs)
+    coeffs, affine, coeff_path, basis = loaded["shm_coeffs"][0]
+    npt.assert_array_equal(coeffs, data)
+    assert coeffs.dtype == data.dtype
+    assert basis == ("descoteaux07" if sh_basis in (None, "unknown") else sh_basis)
+    assert coeff_path == path
     npt.assert_allclose(affine, AFFINE)
+    if sh_basis == "unknown":
+        assert any(
+            record.levelno == logging.ERROR and "unknown" in record.getMessage()
+            for record in caplog.records
+        )
 
 
 def test_load_files_reads_pial_surfaces(tmp_path):
@@ -348,20 +375,46 @@ def test_load_files_reads_shm_coefficients(tmp_path):
     assert coeffs.shape == (2, 2, 2, 45)
     npt.assert_allclose(affine, AFFINE)
     assert coeff_path == path
-    assert basis == "descoteaux"
+    assert basis == "descoteaux07"
 
 
+@pytest.mark.parametrize("extension", [".nii", ".nii.gz"])
+@pytest.mark.parametrize(
+    "sh_basis", ["descoteaux07", "descoteaux07_legacy", "tournier07", "tournier19"]
+)
 @pytest.mark.parametrize("shape", [(4, 5, 6), (2, 2, 2, 7)])
-def test_load_files_rejects_nifti_without_sh_coefficients(tmp_path, caplog, shape):
+def test_load_files_rejects_nifti_without_sh_coefficients(
+    tmp_path, caplog, shape, extension, sh_basis
+):
     data = np.zeros(shape, dtype=np.float32)
-    path = tmp_path / "not_shm.nii.gz"
+    path = tmp_path / ("not_shm" + extension)
     save_nifti(str(path), data, AFFINE)
 
     with caplog.at_level(logging.ERROR):
-        loaded = load_files([], shm_coeffs=[str(path)])
+        loaded = load_files([], shm_coeffs=[str(path)], sh_basis=sh_basis)
 
     assert loaded["shm_coeffs"] == []
-    assert "does not contain SH coefficients" in caplog.text
+    assert any(
+        record.levelno == logging.ERROR and str(path) in record.getMessage()
+        for record in caplog.records
+    )
+
+
+@pytest.mark.parametrize(
+    "sh_basis", ["descoteaux07", "descoteaux07_legacy", "tournier07", "tournier19"]
+)
+@pytest.mark.parametrize("shape", [None, (2, 2, 2), (2, 2, 2, 7)])
+def test_load_files_skips_missing_or_malformed_pam_odfs(
+    tmp_path, caplog, shape, sh_basis
+):
+    path = _pam5(tmp_path)
+    pam = load_pam(path)
+    pam.shm_coeff = None if shape is None else np.zeros(shape, dtype=np.float32)
+    save_pam(path, pam)
+    with caplog.at_level(logging.ERROR):
+        loaded = load_files([], shm_coeffs=[path], sh_basis=sh_basis)
+    assert loaded["shm_coeffs"] == []
+    assert path in caplog.text
 
 
 def test_load_files_combines_every_supported_input(tmp_path):
