@@ -102,7 +102,15 @@ def get_polydata_lines(polydata):
 
 
 @warning_for_keywords()
-def save_vtk_streamlines(streamlines, filename, *, to_lps=True, binary=False):
+def save_vtk_streamlines(
+    streamlines,
+    filename,
+    *,
+    to_lps=True,
+    binary=False,
+    data_per_streamline=None,
+    data_per_point=None,
+):
     """Save streamlines as polydata to a supported format file.
 
     File formats can be VTK, VTP and FIB.
@@ -118,6 +126,11 @@ def save_vtk_streamlines(streamlines, filename, *, to_lps=True, binary=False):
         Will be supported by MITKDiffusion and MI-Brain
     binary : bool
         save the file as binary
+    data_per_streamline : dict, optional
+        Scalar or vector arrays with one row per streamline.
+    data_per_point : dict, optional
+        Sequences of scalar or vector arrays, one array per streamline and
+        one row per point. Metadata values are not spatially transformed.
 
     """
     if to_lps:
@@ -131,11 +144,29 @@ def save_vtk_streamlines(streamlines, filename, *, to_lps=True, binary=False):
     if (fmt or Path(filename).suffix.lower()) == ".vtk":
         opts["vtk_version"] = "4.2"
 
-    px.write(convert_to_polydata_lines(streamlines), str(filename), fmt=fmt, **opts)
+    polydata = convert_to_polydata_lines(streamlines)
+    lengths = np.diff(polydata.offsets)
+    for name, values in (data_per_streamline or {}).items():
+        values = np.asarray(values)
+        if values.ndim not in (1, 2) or len(values) != len(lengths):
+            raise ValueError(
+                f"Streamline metadata {name!r} must have one row per line."
+            )
+        polydata.element_attrs[name] = values
+    for name, values in (data_per_point or {}).items():
+        values = [np.asarray(value) for value in values]
+        if len(values) != len(lengths) or any(
+            value.ndim not in (1, 2) or len(value) != length
+            for value, length in zip(values, lengths)
+        ):
+            raise ValueError(f"Point metadata {name!r} must match each line's length.")
+        if values:
+            polydata.vertex_attrs[name] = np.concatenate(values, axis=0)
+    px.write(polydata, str(filename), fmt=fmt, **opts)
 
 
 @warning_for_keywords()
-def load_vtk_streamlines(filename, *, to_lps=True):
+def load_vtk_streamlines(filename, *, to_lps=True, load_dps_dpp=False):
     """Load streamlines from polydata.
 
     Load formats can be VTK, VTP and FIB.
@@ -147,11 +178,18 @@ def load_vtk_streamlines(filename, *, to_lps=True):
     to_lps : bool
         Default to True, will follow the vtk file convention for streamlines
         Will be supported by MITK-Diffusion and MI-Brain
+    load_dps_dpp : bool, optional
+        Return streamline and point metadata along with coordinates. Default
+        False preserves the coordinates only return value.
 
     Returns
     -------
     output :  list
          list of 2D arrays
+    data_per_streamline, data_per_point : dict
+        Returned only when ``load_dps_dpp=True``. Scalar attributes have a
+        trailing singleton dimension. Point attributes follow line connectivity,
+        including repeated vertices. Metadata values are not transformed.
 
     """
     polydata = px.read(str(filename), fmt=_polyxios_format(filename))
@@ -160,9 +198,39 @@ def load_vtk_streamlines(filename, *, to_lps=True):
         to_lps = np.eye(4)
         to_lps[0, 0] = -1
         to_lps[1, 1] = -1
-        return transform_streamlines(lines, to_lps)
+        lines = transform_streamlines(lines, to_lps)
 
-    return lines
+    if not load_dps_dpp:
+        return lines
+
+    line_cells = np.flatnonzero(
+        np.isin(
+            polydata.element_types, [ELEMENT_TYPES["line"], ELEMENT_TYPES["poly_line"]]
+        )
+    )
+    if not len(line_cells):
+        # Match get_polydata_lines' fallback for VTP files written as polygons.
+        line_cells = np.arange(len(polydata.element_types))
+    indices = [
+        polydata.connectivity[polydata.offsets[i] : polydata.offsets[i + 1]]
+        for i in line_cells
+    ]
+    dps, dpp = {}, {}
+    for name, values in polydata.element_attrs.items():
+        values = np.asarray(values)
+        if values.ndim not in (1, 2) or len(values) != len(polydata.element_types):
+            raise ValueError(f"Cell metadata {name!r} must have one row per cell.")
+        if values.ndim == 1:
+            values = values[:, None]
+        dps[name] = values[line_cells]
+    for name, values in polydata.vertex_attrs.items():
+        values = np.asarray(values)
+        if values.ndim not in (1, 2) or len(values) != len(polydata.vertices):
+            raise ValueError(f"Point metadata {name!r} must have one row per vertex.")
+        if values.ndim == 1:
+            values = values[:, None]
+        dpp[name] = [values[index] for index in indices]
+    return lines, dps, dpp
 
 
 @warning_for_keywords()
@@ -246,7 +314,14 @@ def save_tractogram(
 
     elif extension in [".vtk", ".vtp", ".fib"]:
         binary = extension in [".vtk", ".fib"]
-        save_vtk_streamlines(sft.streamlines, filename, binary=binary, to_lps=False)
+        save_vtk_streamlines(
+            sft.streamlines,
+            filename,
+            binary=binary,
+            to_lps=False,
+            data_per_streamline=sft.data_per_streamline,
+            data_per_point=sft.data_per_point,
+        )
         logger.warning(
             "StatefulTractogram was previously saving  in LPSMM space.\n"
             "Now use to_space=Space.LPSMM to match the previous behavior."
@@ -363,7 +438,9 @@ def load_tractogram(
             data_per_streamline = tractogram_obj.data_per_streamline
 
     elif extension in [".vtk", ".vtp", ".fib"]:
-        streamlines = load_vtk_streamlines(filename, to_lps=False)
+        streamlines, data_per_streamline, data_per_point = load_vtk_streamlines(
+            filename, to_lps=False, load_dps_dpp=True
+        )
         logger.warning(
             "StatefulTractogram was previously saving in LPSMM space.\n"
             "Use from_space=Space.LPSMM to load older files."

@@ -218,6 +218,21 @@ save_tractogram(raf_sft, "raf_1000.trk")
 save_tractogram(lpt_sft, "lpt_1000.trk")
 save_tractogram(rpt_sft, "rpt_1000.trk")
 
+# VTK and VTP also preserve scalar and vector metadata. Values attached to
+# streamlines become cell attributes, and values attached to points become
+# vertex attributes. Loading maps the latter through line connectivity rather
+# than assuming vertices are stored in streamline order.
+#
+# For example, attach a label to each streamline before saving a VTP file:
+
+cc_sft.data_per_streamline["bundle_label"] = np.ones((len(cc_sft), 1))
+save_tractogram(cc_sft, "cc_metadata.vtp")
+cc_metadata = load_tractogram("cc_metadata.vtp", reference_anatomy)
+np.testing.assert_array_equal(
+    cc_metadata.data_per_streamline["bundle_label"],
+    cc_sft.data_per_streamline["bundle_label"],
+)
+
 nib.save(nib.Nifti1Image(cc_density, affine, nifti_header), "cc_density.nii.gz")
 nib.save(nib.Nifti1Image(laf_density, affine, nifti_header), "laf_density.nii.gz")
 nib.save(nib.Nifti1Image(raf_density, affine, nifti_header), "raf_density.nii.gz")

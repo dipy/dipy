@@ -8,6 +8,7 @@ import pytest
 from dipy.data import get_fnames
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import (
+    convert_to_polydata_lines,
     load_tractogram,
     load_trk,
     load_vtk_streamlines,
@@ -19,7 +20,7 @@ from dipy.io.utils import Origin, Space, create_nifti_header
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
 
-_, have_polyxios, _ = optional_package("polyxios", min_version="0.2.0")
+px, have_polyxios, _ = optional_package("polyxios", min_version="0.2.0")
 
 FILEPATH_DIX = None
 SPACES = [Space.RASMM, Space.LPSMM, Space.VOXMM, Space.VOX]
@@ -186,7 +187,6 @@ def teardown_module():
 
 
 def io_tractogram(tmp_path, extension):
-
     fname = f"test.{extension}"
     fpath = tmp_path / fname
 
@@ -307,6 +307,123 @@ def test_vtk_streamlines_to_lps(tmp_path):
     npt.assert_array_almost_equal(
         load_vtk_streamlines(fname, to_lps=True)[0], VTK_STREAMLINES[0]
     )
+
+
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
+@pytest.mark.parametrize("ext", [".vtk", ".vtp", ".fib"])
+@pytest.mark.parametrize("binary", [False, True])
+def test_vtk_metadata_roundtrip(tmp_path, ext, binary):
+    """Scalar and vector metadata survive repeated reads and writes."""
+    filename = tmp_path / f"metadata{ext}"
+    lengths = [len(line) for line in VTK_STREAMLINES]
+    dps = {"label": np.arange(3)[:, None], "vector": np.arange(9).reshape(3, 3)}
+    dpp = {
+        "value": [np.arange(n, dtype=float)[:, None] for n in lengths],
+        "vector": [np.arange(n * 3, dtype=float).reshape(n, 3) for n in lengths],
+    }
+    lines = VTK_STREAMLINES
+    for _ in range(3):
+        save_vtk_streamlines(
+            lines,
+            filename,
+            binary=binary,
+            data_per_streamline=dps,
+            data_per_point=dpp,
+        )
+        lines, actual_dps, actual_dpp = load_vtk_streamlines(
+            filename, load_dps_dpp=True
+        )
+        for actual, expected in zip(lines, VTK_STREAMLINES):
+            npt.assert_allclose(actual, expected)
+        for key in dps:
+            npt.assert_array_equal(actual_dps[key], dps[key])
+        for key in dpp:
+            for actual, expected in zip(actual_dpp[key], dpp[key]):
+                npt.assert_array_equal(actual, expected)
+        dps, dpp = actual_dps, actual_dpp
+    assert isinstance(load_vtk_streamlines(filename), list)
+
+
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
+@pytest.mark.parametrize("ext", [".vtk", ".vtp"])
+def test_vtk_stateful_metadata_roundtrip(tmp_path, ext):
+    """The public tractogram API retains both kinds of metadata."""
+    header = create_nifti_header(np.eye(4), (20, 20, 20), (1, 1, 1))
+    dps = {"label": np.arange(3)[:, None]}
+    dpp = {"value": [np.ones((len(line), 1)) for line in VTK_STREAMLINES]}
+    original = StatefulTractogram(
+        VTK_STREAMLINES,
+        header,
+        Space.RASMM,
+        data_per_streamline=dps,
+        data_per_point=dpp,
+    )
+    filename = tmp_path / f"metadata{ext}"
+    current = original
+    for _ in range(3):
+        save_tractogram(current, filename)
+        current = load_tractogram(filename, header)
+        npt.assert_array_equal(current.data_per_streamline["label"], dps["label"])
+        for actual, expected in zip(current.data_per_point["value"], dpp["value"]):
+            npt.assert_array_equal(actual, expected)
+        npt.assert_allclose(current.streamlines._data, original.streamlines._data)
+
+
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
+@pytest.mark.parametrize("ext", [".vtk", ".vtp"])
+def test_vtk_metadata_connectivity(tmp_path, ext):
+    """Point metadata follows reordered and repeated vertex indices."""
+    polydata = convert_to_polydata_lines(VTK_STREAMLINES[:2])
+    polydata.connectivity[:] = [4, 1, 4, 3, 0]
+    polydata.vertex_attrs["value"] = np.arange(5, dtype=float)
+    polydata.element_attrs["label"] = np.array([10, 20], dtype=np.int32)
+    filename = tmp_path / f"connectivity{ext}"
+    opts = {"vtk_version": "4.2"} if ext == ".vtk" else {}
+    px.write(polydata, filename, binary=False, **opts)
+    lines, dps, dpp = load_vtk_streamlines(filename, to_lps=False, load_dps_dpp=True)
+    npt.assert_array_equal(dps["label"], [[10], [20]])
+    for i, indices in enumerate(([4, 1, 4], [3, 0])):
+        npt.assert_array_equal(lines[i], polydata.vertices[indices])
+        npt.assert_array_equal(dpp["value"][i], np.array(indices)[:, None])
+
+
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
+@pytest.mark.parametrize("ext", [".vtk", ".vtp"])
+def test_vtk_metadata_absent(tmp_path, ext):
+    """Geometry only files yield empty metadata dictionaries."""
+    filename = tmp_path / f"plain{ext}"
+    save_vtk_streamlines(VTK_STREAMLINES, filename)
+    lines, dps, dpp = load_vtk_streamlines(filename, load_dps_dpp=True)
+    assert len(lines) == len(VTK_STREAMLINES)
+    assert dps == dpp == {}
+
+
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"data_per_streamline": {"bad": np.ones((2, 1))}},
+        {"data_per_streamline": {"bad": np.ones((3, 1, 1))}},
+        {"data_per_point": {"bad": [np.ones((3, 1))]}},
+        {"data_per_point": {"bad": [np.ones((2, 1)) for _ in range(3)]}},
+    ],
+)
+def test_vtk_metadata_invalid_save(tmp_path, metadata):
+    """Malformed metadata is rejected instead of being attached to wrong points."""
+    with pytest.raises(ValueError, match="metadata 'bad'"):
+        save_vtk_streamlines(VTK_STREAMLINES, tmp_path / "bad.vtk", **metadata)
+    assert not (tmp_path / "bad.vtk").exists()
+
+
+@pytest.mark.skipif(not have_polyxios, reason="Requires polyxios")
+@pytest.mark.parametrize("attribute", ["element_attrs", "vertex_attrs"])
+def test_vtk_metadata_invalid_load(monkeypatch, attribute):
+    """Validate the decoder's metadata dimensions before indexing."""
+    polydata = convert_to_polydata_lines(VTK_STREAMLINES)
+    getattr(polydata, attribute)["bad"] = np.ones((1, 1))
+    monkeypatch.setattr(px, "read", lambda *args, **kwargs: polydata)
+    with pytest.raises(ValueError, match="metadata 'bad'"):
+        load_vtk_streamlines("bad.vtk", load_dps_dpp=True)
 
 
 def trk_loader(tmp_path, filename):
