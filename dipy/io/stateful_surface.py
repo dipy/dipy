@@ -671,8 +671,8 @@ class StatefulSurface:
         """Unsafe function to transform vertices"""
         if self._space == Space.LPSMM:
             if self._vertices.size > 0:
-                flip_affine = np.diag([-1, -1, 1, 1])
-                self._vertices = apply_affine(flip_affine, self._vertices, inplace=True)
+                # RAS and LPS differ only in the signs of the x and y axes.
+                self._vertices = self._vertices * [-1, -1, 1]
             self._space = Space.RASMM
             logger.debug("Moved vertices from lpsmm to rasmm.")
         else:
@@ -682,8 +682,8 @@ class StatefulSurface:
         """Unsafe function to transform vertices"""
         if self._space == Space.RASMM:
             if self._vertices.size > 0:
-                flip_affine = np.diag([-1, -1, 1, 1])
-                self._vertices = apply_affine(flip_affine, self._vertices, inplace=True)
+                # RAS and LPS differ only in the signs of the x and y axes.
+                self._vertices = self._vertices * [-1, -1, 1]
             self._space = Space.LPSMM
             logger.debug("Moved vertices from lpsmm to rasmm.")
         else:

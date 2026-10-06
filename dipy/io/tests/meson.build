@@ -6,6 +6,7 @@ python_sources = [
     'test_io_peaks.py',
     'test_stateful_tractogram.py',
     'test_stateful_surface.py',
+    'test_stateful_surface_coordinates.py',
     'test_surface.py',
     'test_streamline.py',
     'test_utils.py',
