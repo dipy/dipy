@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import Mock
 
 import nibabel as nib
 import numpy as np
@@ -111,6 +112,27 @@ def test_median_otsu_flow_with_bvalues(tmp_path):
         npt.assert_equal(result_mask_data.shape, volume.shape[:3])
 
 
+@pytest.mark.parametrize("existing_output", ["recognized.trx", "labels.npy"])
+def test_recobundles_flow_skip_existing_outputs(tmp_path, monkeypatch, existing_output):
+    input_path = tmp_path / "input.trk"
+    model_path = tmp_path / "model.trk"
+    input_path.touch()
+    model_path.touch()
+    output_path = tmp_path / existing_output
+    output_path.write_bytes(b"existing output")
+
+    loader = Mock(
+        side_effect=AssertionError("Skipped workflows must not load tractograms")
+    )
+    monkeypatch.setattr("dipy.workflows.segment.load_tractogram", loader)
+
+    rb_flow = RecoBundlesFlow()
+    rb_flow.run(input_path, model_path, out_dir=tmp_path)
+
+    loader.assert_not_called()
+    assert output_path.read_bytes() == b"existing output"
+
+
 def test_recobundles_flow(tmp_path):
     data_path = get_fnames(name="fornix")
 
@@ -131,6 +153,9 @@ def test_recobundles_flow(tmp_path):
     f1_path = tmp_path / "f1.trk"
     sft = StatefulTractogram(f, data_path, Space.RASMM)
     save_tractogram(sft, f1_path, bbox_valid_check=False)
+
+    for output_name in ["recognized.trx", "labels.npy"]:
+        (tmp_path / output_name).touch()
 
     rb_flow = RecoBundlesFlow(force=True)
     rb_flow.run(

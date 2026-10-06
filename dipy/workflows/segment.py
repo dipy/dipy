@@ -288,6 +288,8 @@ class RecoBundlesFlow(Workflow):
         logger.info("### RecoBundles ###")
 
         io_it = self.get_io_iterator()
+        if not io_it:
+            return
 
         t = time()
         logger.info(streamline_files)
