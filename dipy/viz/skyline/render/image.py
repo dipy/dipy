@@ -1,5 +1,6 @@
 """NIfTI-backed volume slicers with linked UI controls for Skyline."""
 
+import nibabel as nib
 import numpy as np
 
 from dipy.io.utils import has_rgb_dtype, is_rgb_compatible_data, unpack_rgb_array
@@ -65,8 +66,8 @@ def create_image_visualization(
     Parameters
     ----------
     input : tuple
-        Tuple of ``(data, affine, filename)`` or ``(data, affine)`` holding
-        an already-loaded image volume, its affine, and an optional filename.
+        Tuple of ``(data, affine, filename)`` or ``(data, affine)`` where
+        ``data`` is a nibabel image or ndarray. The filename is a display label.
     idx : int
         Index of the image for naming purposes when filename is not provided.
     interpolation : str, optional
@@ -136,10 +137,10 @@ class Image3D(Visualization):
     ----------
     name : str
         Display name used in the Skyline UI.
-    volume : ndarray
-        Input image volume with shape ``(X, Y, Z)`` or ``(X, Y, Z, N)``.
+    volume : nibabel.spatialimages.SpatialImage or ndarray
+        Input image or array with shape ``(X, Y, Z)`` or ``(X, Y, Z, N)``.
     affine : ndarray, optional
-        Voxel-to-world affine used to position slices in world coordinates.
+        Rendering affine; uses the image affine when omitted for image inputs.
     interpolation : str, optional
         Slice interpolation mode (``"linear"`` or ``"nearest"``).
     render_callback : callable, optional
@@ -179,10 +180,10 @@ class Image3D(Visualization):
         ----------
         name : str
             Display name used in the Skyline UI.
-        volume : ndarray
-            Input image volume with shape ``(X, Y, Z)`` or ``(X, Y, Z, N)``.
+        volume : nibabel.spatialimages.SpatialImage or ndarray
+            Input image or array with shape ``(X, Y, Z)`` or ``(X, Y, Z, N)``.
         affine : ndarray, optional
-            Voxel-to-world affine used to position slices in world coordinates.
+            Rendering affine; uses the image affine when omitted for image inputs.
         interpolation : str, optional
             Slice interpolation mode (``"linear"`` or ``"nearest"``).
         render_callback : callable, optional
@@ -200,8 +201,15 @@ class Image3D(Visualization):
         sync_callabck : callable, optional
             Callback used to synchronize state across views.
         """
-        self.dwi = volume
-        self.affine = affine
+        self._img = (
+            volume if isinstance(volume, nib.spatialimages.SpatialImage) else None
+        )
+        if self._img is not None:
+            self.dwi = np.asanyarray(self._img.dataobj)
+            self.affine = self._img.affine if affine is None else affine
+        else:
+            self.dwi = volume
+            self.affine = affine
         self._rgb_user = rgb
         if rgb is None:
             rgb = has_rgb_dtype(self.dwi)
@@ -410,10 +418,12 @@ class Image3D(Visualization):
             any), data type, and affine information (if available).
         """
         np.set_printoptions(suppress=True, precision=2)
-        info = f"Dimensions: {self.dwi.shape[:3]}"
+        shape = self._img.shape if self._img is not None else self.dwi.shape
+        dtype = self._img.get_data_dtype() if self._img is not None else self.dwi.dtype
+        info = f"Dimensions: {shape[:3]}"
         if self._has_directions:
             info += f"\nDirections: {self.dwi.shape[3]}"
-        info += f"\nData Type: {self.dwi.dtype}"
+        info += f"\nData Type: {dtype}"
         if self.affine is not None:
             info += "\n" + format_affine_info(self.affine)
 

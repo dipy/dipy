@@ -199,8 +199,8 @@ def decfa(img_orig, *, scale=False):
         the elements on the last dimension represent R, G and B components.
 
     scale: bool.
-        Whether to scale the incoming data from the 0-1 to the 0-255 range
-        expected in the output.
+        Whether to scale data from the 0-1 to the 0-255 range.
+        Ignored for integer data, which already represents channel values.
 
     Returns
     -------
@@ -226,12 +226,12 @@ def decfa(img_orig, *, scale=False):
 
     data_orig = np.asanyarray(img_orig.dataobj)
 
-    if scale:
+    if scale and not np.issubdtype(data_orig.dtype, np.integer):
         data_orig = (data_orig * 255).astype("uint8")
 
-    for ii in np.ndindex(img_orig.shape[:3]):
-        val = data_orig[ii]
-        out_data[ii] = (val[0], val[1], val[2])
+    out_data["R"] = data_orig[..., 0]
+    out_data["G"] = data_orig[..., 1]
+    out_data["B"] = data_orig[..., 2]
 
     new_hdr = img_orig.header
     new_hdr["dim"][4] = 1
@@ -266,9 +266,9 @@ def decfa_to_float(img_orig):
     data_orig = np.asanyarray(img_orig.dataobj)
     out_data = np.zeros(data_orig.shape + (3,), dtype=np.uint8)
 
-    for ii in np.ndindex(img_orig.shape[:3]):
-        val = data_orig[ii]
-        out_data[ii] = np.array([val[0], val[1], val[2]])
+    out_data[..., 0] = data_orig["R"]
+    out_data[..., 1] = data_orig["G"]
+    out_data[..., 2] = data_orig["B"]
 
     new_hdr = img_orig.header
     new_hdr["dim"][4] = 3

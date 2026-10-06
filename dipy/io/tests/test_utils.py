@@ -74,7 +74,8 @@ def test_equivalence_lpsmm_sft_sfs():
     assert_allclose(sft.streamlines._data, sfs.vertices, atol=1e-3, rtol=1e-6)
 
 
-def test_decfa():
+@set_random_number_generator()
+def test_decfa(rng=None):
     data_orig = np.zeros((4, 4, 4, 3))
     data_orig[0, 0, 0] = np.array([1, 0, 0])
     img_orig = nib.Nifti1Image(data_orig, np.eye(4))
@@ -103,6 +104,28 @@ def test_decfa():
     data_rt = np.asanyarray(round_trip.dataobj)
     assert data_rt.shape == (4, 4, 4, 3)
     assert np.all(data_rt[0, 0, 0] == np.array([25, 0, 0]))
+
+    data_large = rng.random((10, 10, 10, 3))
+    img_large = nib.Nifti1Image(data_large, np.eye(4))
+    img_rgb = decfa(img_large, scale=True)
+    out_rgb = np.asanyarray(img_rgb.dataobj)
+    unpacked = unpack_rgb_array(out_rgb)
+    expected = (data_large * 255).astype("uint8")
+    assert_array_equal(unpacked, expected)
+
+    rt = decfa_to_float(img_rgb)
+    rt_data = np.asanyarray(rt.dataobj)
+    assert_array_equal(rt_data, expected)
+
+
+@pytest.mark.parametrize("dtype", [np.uint8, np.uint16, np.int16, np.int32])
+def test_decfa_integer_scaling_preserves_channels(dtype):
+    data = np.array([[[[10, 200, 255], [0, 1, 128]]]], dtype=dtype)
+    img = nib.Nifti1Image(data, np.eye(4))
+
+    converted = decfa(img, scale=True)
+
+    assert_array_equal(unpack_rgb_array(np.asanyarray(converted.dataobj)), data)
 
 
 def is_affine_valid(affine):
