@@ -18,7 +18,6 @@ from dipy.direction.pmf cimport PmfGen
 from dipy.utils.fast_numpy cimport (
     copy_point,
     cross,
-    cumsum,
     norm,
     normalize,
     random_float,
@@ -27,10 +26,8 @@ from dipy.utils.fast_numpy cimport (
     RNGState,
     where_to_insert,
 )
-from dipy.tracking.tractogen cimport prepare_pmf
 from dipy.tracking.tracker_parameters cimport TrackerParameters, TrackerStatus
 
-from libc.stdlib cimport malloc, free
 from libc.math cimport pow, sin, cos, fabs
 
 cdef extern from "dpy_math.h" nogil:
@@ -744,28 +741,39 @@ cdef TrackerStatus deterministic_propagator(double* point,
         double max_value=0
         double* newdir
         double* pmf
-        double cos_sim
+        double cos_sim, max_pmf
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
+        bint is_symmetric=params.is_symmetric
+        double cos_similarity=params.cos_similarity
+        double[:, ::1] vertices=pmf_gen.vertices
 
     if norm(direction) == 0:
         return TrackerStatus.FAIL
     normalize(direction)
 
-    pmf = <double*> malloc(len_pmf * sizeof(double))
-    prepare_pmf(pmf, point, pmf_gen, params.sh.pmf_threshold, len_pmf)
+    pmf = stream_data
+    pmf_gen.get_pmf_c(point, pmf)
+
+    # single pass: pmf threshold and angle mask
+    max_pmf = 0
+    for i in range(len_pmf):
+        if pmf[i] > max_pmf:
+            max_pmf = pmf[i]
+    max_pmf = max_pmf * params.sh.pmf_threshold
 
     for i in range(len_pmf):
-        cos_sim = pmf_gen.vertices[i][0] * direction[0] \
-                + pmf_gen.vertices[i][1] * direction[1] \
-                + pmf_gen.vertices[i][2] * direction[2]
-        if cos_sim < 0:
+        if pmf[i] < max_pmf or pmf[i] <= max_value:
+            continue
+        cos_sim = vertices[i, 0] * direction[0] \
+            + vertices[i, 1] * direction[1] \
+            + vertices[i, 2] * direction[2]
+        if cos_sim < 0 and is_symmetric:
             cos_sim = cos_sim * -1
-        if cos_sim > params.cos_similarity and pmf[i] > max_value:
+        if cos_sim > cos_similarity:
             max_idx = i
             max_value = pmf[i]
 
     if max_value <= 0:
-        free(pmf)
         return TrackerStatus.FAIL
 
     newdir = &pmf_gen.vertices[max_idx][0]
@@ -781,7 +789,6 @@ cdef TrackerStatus deterministic_propagator(double* point,
         direction[0] = direction[0] * -1
         direction[1] = direction[1] * -1
         direction[2] = direction[2] * -1
-    free(pmf)
     return TrackerStatus.SUCCESS
 
 
@@ -804,7 +811,7 @@ cdef TrackerStatus probabilistic_propagator(double* point,
     params : TrackerParameters
         Parallel Transport Tractography (PTT) parameters.
     stream_data : double*
-        Streamline data persitant across tracking steps.
+        Scratch buffer of at least ``len(pmf)`` doubles.
     pmf_gen : PmfGen
         Orientation data.
     rng : RNGState*
@@ -821,29 +828,43 @@ cdef TrackerStatus probabilistic_propagator(double* point,
         cnp.npy_intp i, idx
         double* newdir
         double* pmf
-        double last_cdf, cos_sim
+        double last_cdf, cos_sim, max_pmf, value
         cnp.npy_intp len_pmf=pmf_gen.pmf.shape[0]
+        bint is_symmetric=params.is_symmetric
+        double cos_similarity=params.cos_similarity
+        double[:, ::1] vertices=pmf_gen.vertices
 
     if norm(direction) == 0:
         return TrackerStatus.FAIL
     normalize(direction)
 
-    pmf = <double*> malloc(len_pmf * sizeof(double))
-    prepare_pmf(pmf, point, pmf_gen, params.sh.pmf_threshold, len_pmf)
+    pmf = stream_data
+    pmf_gen.get_pmf_c(point, pmf)
 
+    # single pass: pmf threshold, angle mask and cdf
+    max_pmf = 0
     for i in range(len_pmf):
-        cos_sim = pmf_gen.vertices[i][0] * direction[0] \
-                + pmf_gen.vertices[i][1] * direction[1] \
-                + pmf_gen.vertices[i][2] * direction[2]
-        if cos_sim < 0:
-            cos_sim = cos_sim * -1
-        if cos_sim < params.cos_similarity:
-            pmf[i] = 0
+        if pmf[i] > max_pmf:
+            max_pmf = pmf[i]
+    max_pmf = max_pmf * params.sh.pmf_threshold
 
-    cumsum(pmf, pmf, len_pmf)
-    last_cdf = pmf[len_pmf - 1]
+    last_cdf = 0
+    for i in range(len_pmf):
+        value = pmf[i]
+        if value < max_pmf:
+            value = 0
+        else:
+            cos_sim = vertices[i, 0] * direction[0] \
+                    + vertices[i, 1] * direction[1] \
+                    + vertices[i, 2] * direction[2]
+            if cos_sim < 0 and is_symmetric:
+                cos_sim = cos_sim * -1
+            if cos_sim < cos_similarity:
+                value = 0
+        last_cdf = last_cdf + value
+        pmf[i] = last_cdf
+
     if last_cdf == 0:
-        free(pmf)
         return TrackerStatus.FAIL
 
     idx = where_to_insert(pmf, random_float(rng) * last_cdf, len_pmf)
@@ -860,7 +881,6 @@ cdef TrackerStatus probabilistic_propagator(double* point,
         direction[0] = direction[0] * -1
         direction[1] = direction[1] * -1
         direction[2] = direction[2] * -1
-    free(pmf)
     return TrackerStatus.SUCCESS
 
 

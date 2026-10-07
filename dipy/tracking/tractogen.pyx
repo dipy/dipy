@@ -3,14 +3,17 @@
 # cython: wraparound=False
 # cython: Nonecheck=False
 
-cimport ctime
-from cython.parallel import prange
+from cython.parallel import prange, threadid
 import numpy as np
 cimport numpy as cnp
 
+from dipy.align.fused_types cimport floating
 from dipy.direction.pmf cimport PmfGen
+from dipy.reconst.dirspeed cimport peak_directions_c
+from dipy.tracking._utils import _iter_chunk
 from dipy.tracking.stopping_criterion cimport StoppingCriterion
 from dipy.utils cimport fast_numpy
+from dipy.utils.omp import determine_num_threads
 
 from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                StoppingCriterion,
@@ -18,33 +21,36 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                ENDPOINT,
                                                OUTSIDEIMAGE,
                                                INVALIDPOINT,
-                                               VALIDSTREAMLIME,
-                                               INVALIDSTREAMLIME)
+                                               VALIDSTREAMLINE,
+                                               INVALIDSTREAMLINE)
 from dipy.tracking.tracker_parameters cimport (TrackerParameters,
                                                TrackerStatus)
 
-from libc.stdlib cimport malloc, free
-from libc.string cimport memcpy, memset
-from libc.math cimport ceil
+from libc.string cimport memset
 
 
 def generate_tractogram(double[:, ::1] seed_positions,
-                        double[:, ::1] seed_directions,
+                        seed_directions,
                         StoppingCriterion sc,
                         TrackerParameters params,
                         PmfGen pmf_gen,
                         affine,
                         int nbr_threads=0,
-                        float buffer_frac=1.0,
-                        bint save_seeds=0):
+                        int chunk_size=25000,
+                        bint save_seeds=0,
+                        int max_cross=-1,
+                        double relative_peak_threshold=0.5,
+                        double min_separation_angle=25,
+                        bint chunked=0):
     """Generate a tractogram from a set of seed points and directions.
 
     Parameters
     ----------
     seed_positions : ndarray
         Seed positions for the streamlines.
-    seed_directions : ndarray
-        Seed directions for the streamlines.
+    seed_directions : ndarray or None
+        Seed directions for the streamlines. If None, the peaks of the pmf at
+        each seed are used (see ``max_cross``).
     sc : StoppingCriterion
         Stopping criterion for the streamlines.
     params : TrackerParameters
@@ -55,87 +61,239 @@ def generate_tractogram(double[:, ::1] seed_positions,
         Affine transformation for the streamlines.
     nbr_threads : int, optional
         Number of threads to use for streamline generation.
-    buffer_frac : float, optional
-        Fraction of the seed points to process in each iteration.
+    chunk_size : int, optional
+        Number of seeds tracked at once. Lower it to reduce memory usage.
     save_seeds : bool, optional
         If True, return seeds alongside streamlines
+    max_cross : int, optional
+        Maximum number of peaks tracked per seed when ``seed_directions`` is
+        None. Use all peaks when <= 0.
+    relative_peak_threshold, min_separation_angle : float, optional
+        Peak selection parameters when ``seed_directions`` is None (see
+        :func:`dipy.direction.peak_directions`).
+    chunked : bool, optional
+        If True, yield one ``(points, lengths)`` tuple per chunk of seeds
+        (``(points, lengths, seeds)`` with ``save_seeds``), where ``points``
+        is the concatenation of the chunk's streamlines. Much cheaper to
+        consume than one streamline at a time, e.g. with
+        :func:`dipy.io.streamline.save_trx_from_generator`.
 
     Yields
     ------
-    streamlines : nibabel.streamlines.ArraySequence
-        Streamlines generated from the seed points.
-    seeds : ndarray, optional
-        seed points associated with the generated streamlines.
+    streamline : ndarray, shape (N, 3)
+        Streamline in world space, or ``(streamline, seed)`` with
+        ``save_seeds``, or chunk tuples with ``chunked`` (see above).
 
     """
     cdef:
-        cnp.npy_intp _len = seed_positions.shape[0]
-        cnp.npy_intp _plen = int(ceil(_len * buffer_frac))
-        cnp.npy_intp i, seed_start, seed_end
-        double** streamlines_arr
-        int* length_arr
-        StreamlineStatus* status_arr
+        cnp.npy_intp nseed = seed_positions.shape[0]
+        cnp.npy_intp step = 2 * params.max_nbr_pts
+        cnp.npy_intp start, n, nsl
+        cnp.npy_uint64 rng_seed
+        double[:, ::1] seeds, dirs, sline, scratch
+        cnp.npy_intp[::1] offsets, sl_seed, out_offsets
+        int[:, ::1] stream_idx
+        int[::1] status
 
-    if buffer_frac <=0 or buffer_frac > 1:
-        raise ValueError("buffer_frac must > 0 and <= 1.")
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be > 0.")
+    if nbr_threads <= 0:
+        nbr_threads = determine_num_threads(None)
 
-    lin_T = affine[:3, :3].T.copy()
-    offset = affine[:3, 3].copy()
+    # per-streamline rng seed, independent of thread scheduling
+    if params.random_seed > 0:
+        rng_seed = params.random_seed
+    else:
+        rng_seed = np.random.default_rng().integers(0, 2**63, dtype=np.uint64)
+
+    # per-thread scratch: pmf and propagator state (>= 100 doubles for PTT)
+    scratch = np.empty((nbr_threads, max(100, pmf_gen.pmf.shape[0])))
+
+    cdef double[:, ::1] lin_T = np.asarray(affine[:3, :3].T, order="C")
+    cdef double[::1] offset = np.asarray(affine[:3, 3], order="C")
 
     inv_affine = np.linalg.inv(affine)
     seed_positions = np.dot(seed_positions, inv_affine[:3, :3].T.copy())
     seed_positions += inv_affine[:3, 3]
+    if seed_directions is not None:
+        seed_directions = np.asarray(seed_directions, dtype=float, order="C")
 
-    seed_start = 0
-    seed_end = _plen
-    while seed_start < _len:
-        streamlines_arr = <double**> malloc(_plen * sizeof(double*))
-        length_arr = <int*> malloc(_plen * sizeof(int))
-        status_arr = <StreamlineStatus*> malloc(_plen * sizeof(int))
+    for start in range(0, nseed, chunk_size):
+        n = min(chunk_size, nseed - start)
+        seeds = seed_positions[start:start + n]
+        if seed_directions is None:
+            offsets, dirs = seed_peaks(seeds, pmf_gen, params.is_symmetric,
+                                       nbr_threads, max_cross,
+                                       relative_peak_threshold,
+                                       min_separation_angle)
+        else:
+            offsets = np.arange(n + 1)
+            dirs = seed_directions[start:start + n]
+        nsl = offsets[n]
+        sl_seed = np.repeat(np.arange(n), np.diff(offsets))
+        sline = np.empty((nsl * step, 3))
+        stream_idx = np.empty((nsl, 2), dtype=np.intc)
+        status = np.empty(nsl, dtype=np.intc)
 
-        if streamlines_arr == NULL or length_arr == NULL or status_arr == NULL:
-            raise MemoryError("Memory allocation failed")
+        generate_tractogram_c(seeds, dirs, sl_seed, start, rng_seed,
+                              nbr_threads, sc, params, pmf_gen, scratch,
+                              sline, stream_idx, status)
 
-        generate_tractogram_c(seed_positions[seed_start:seed_end],
-                              seed_directions[seed_start:seed_end],
-                              nbr_threads, sc, params, pmf_gen,
-                              streamlines_arr, length_arr, status_arr)
+        idx = np.asarray(stream_idx)
+        lengths = idx[:, 1] - idx[:, 0] + 1
+        keep = np.flatnonzero(
+            ((np.asarray(status) == <int>VALIDSTREAMLINE) | params.return_all)
+            & (lengths >= params.min_nbr_pts) & (lengths <= params.max_nbr_pts))
+        lengths = lengths[keep]
+        out_offsets = np.zeros(len(keep) + 1, dtype=np.intp)
+        np.cumsum(lengths, out=np.asarray(out_offsets)[1:])
+        points = np.empty((out_offsets[len(keep)], 3))
+        compact_chunk(sline, keep * step + idx[keep, 0], out_offsets, points,
+                      lin_T, offset, nbr_threads)
+        seeds_out = None
+        if save_seeds:
+            seeds_out = (
+                np.dot(np.asarray(seeds)[np.asarray(sl_seed)[keep]],
+                       np.asarray(lin_T)) + np.asarray(offset))
+        if chunked:
+            if seeds_out is None:
+                yield (points, lengths)
+            else:
+                yield (points, lengths, seeds_out)
+        else:
+            yield from _iter_chunk(points, lengths, seeds_out)
 
-        for i in range(seed_end - seed_start):
-            if ((status_arr[i] == VALIDSTREAMLIME or params.return_all)
-                and (length_arr[i] >= params.min_nbr_pts
-                     and length_arr[i] <= params.max_nbr_pts)):
-                s = np.asarray(<cnp.float_t[:length_arr[i]*3]> streamlines_arr[i])
-                track = s.copy().reshape((-1, 3))
-                if save_seeds:
-                    yield (
-                        np.dot(track, lin_T) + offset,
-                        np.dot(seed_positions[seed_start + i], lin_T) + offset,
-                    )
-                else:
-                    yield np.dot(track, lin_T) + offset
-            free(streamlines_arr[i])
 
-        free(streamlines_arr)
-        free(length_arr)
-        free(status_arr)
+def compact_chunk(const floating[:, ::1] sline,
+                  cnp.npy_intp[::1] starts,
+                  cnp.npy_intp[::1] out_offsets,
+                  double[:, ::1] out,
+                  double[:, ::1] lin_T,
+                  double[::1] offset,
+                  int nbr_threads):
+    """Copy the kept streamlines out of the chunk buffer, applying the affine.
 
-        seed_start += _plen
-        seed_end += _plen
-        if seed_end > _len:
-            seed_end = _len
+    ``starts[i]`` is the first row of streamline ``i`` in ``sline``; its points
+    land at ``out[out_offsets[i]:out_offsets[i + 1]]``. ``sline`` may be
+    float32 (GPU backends) or float64.
+    """
+    cdef cnp.npy_intp n = starts.shape[0], i, j, k, src, dst
+    cdef double x, y, z
+
+    for i in prange(n, nogil=True, num_threads=nbr_threads, schedule="static"):
+        src = starts[i]
+        dst = out_offsets[i]
+        for j in range(out_offsets[i + 1] - dst):
+            x = sline[src + j, 0]
+            y = sline[src + j, 1]
+            z = sline[src + j, 2]
+            for k in range(3):
+                out[dst + j, k] = (x * lin_T[0, k] + y * lin_T[1, k]
+                                   + z * lin_T[2, k] + offset[k])
+
+
+def seed_peaks(double[:, ::1] seeds,
+               PmfGen pmf_gen,
+               bint is_symmetric,
+               int nbr_threads=0,
+               int max_cross=-1,
+               double relative_peak_threshold=0.5,
+               double min_separation_angle=25):
+    """Peaks of the pmf at each seed (voxel coordinates), in parallel.
+
+    Returns
+    -------
+    offsets : ndarray, shape (nseed + 1,)
+        Exclusive prefix sum of the number of peaks per seed.
+    directions : ndarray, shape (offsets[-1], 3)
+        Peak directions, sorted by decreasing peak value within each seed.
+    """
+    cdef:
+        cnp.npy_intp n = seeds.shape[0], dimt = pmf_gen.pmf.shape[0]
+        cnp.npy_intp cap = dimt if max_cross <= 0 else max_cross
+        cnp.npy_intp i, j, k, t
+        double[:, ::1] verts = pmf_gen.vertices
+        cnp.uint16_t[:, ::1] edges = np.asarray(
+            pmf_gen.sphere.edges, dtype=np.uint16, order="C")
+        cnp.npy_intp[::1] counts, offsets
+        double[:, ::1] dirs
+
+    if nbr_threads <= 0:
+        nbr_threads = determine_num_threads(None)
+
+    # per-thread scratch for peak_directions_c
+    cdef:
+        double[:, ::1] pmf = np.empty((nbr_threads, dimt))
+        double[:, ::1] values = np.empty((nbr_threads, dimt))
+        cnp.npy_intp[:, ::1] indices = np.empty((nbr_threads, dimt), dtype=np.intp)
+        double[:, :, ::1] out_dirs = np.empty((nbr_threads, dimt, 3))
+        double[:, :, ::1] uniq = np.empty((nbr_threads, dimt, 3))
+        cnp.uint16_t[:, ::1] mapping = np.empty((nbr_threads, dimt), dtype=np.uint16)
+        cnp.uint16_t[:, ::1] index = np.empty((nbr_threads, dimt), dtype=np.uint16)
+
+    counts = np.empty(n, dtype=np.intp)
+    for i in prange(n, nogil=True, num_threads=nbr_threads, schedule="dynamic",
+                    chunksize=64):
+        t = threadid()
+        counts[i] = _peaks_at(&seeds[i, 0], pmf_gen, verts, edges, is_symmetric,
+                              relative_peak_threshold, min_separation_angle,
+                              cap, pmf[t], out_dirs[t], values[t], indices[t],
+                              uniq[t], mapping[t], index[t])
+
+    offsets = np.zeros(n + 1, dtype=np.intp)
+    np.cumsum(counts, out=np.asarray(offsets)[1:])
+    dirs = np.empty((offsets[n], 3))
+    for i in prange(n, nogil=True, num_threads=nbr_threads, schedule="dynamic",
+                    chunksize=64):
+        t = threadid()
+        k = _peaks_at(&seeds[i, 0], pmf_gen, verts, edges, is_symmetric,
+                      relative_peak_threshold, min_separation_angle, cap,
+                      pmf[t], out_dirs[t], values[t], indices[t], uniq[t],
+                      mapping[t], index[t])
+        for j in range(k):
+            dirs[offsets[i] + j, 0] = verts[indices[t, j], 0]
+            dirs[offsets[i] + j, 1] = verts[indices[t, j], 1]
+            dirs[offsets[i] + j, 2] = verts[indices[t, j], 2]
+    return np.asarray(offsets), np.asarray(dirs)
+
+
+cdef cnp.npy_intp _peaks_at(double* seed,
+                            PmfGen pmf_gen,
+                            double[:, ::1] verts,
+                            cnp.uint16_t[:, ::1] edges,
+                            bint is_symmetric,
+                            double relative_peak_threshold,
+                            double min_separation_angle,
+                            cnp.npy_intp cap,
+                            double[::1] pmf,
+                            double[:, ::1] out_dirs,
+                            double[::1] values,
+                            cnp.npy_intp[::1] indices,
+                            double[:, ::1] uniq,
+                            cnp.uint16_t[::1] mapping,
+                            cnp.uint16_t[::1] index) noexcept nogil:
+    cdef cnp.npy_intp k
+    pmf_gen.get_pmf_c(seed, &pmf[0])
+    k = peak_directions_c(pmf, verts, edges, relative_peak_threshold,
+                          min_separation_angle, is_symmetric, out_dirs,
+                          values, indices, uniq, mapping, index)
+    return k if k < cap else cap
 
 
 cdef void generate_tractogram_c(
-    double[:, ::1] seed_positions,
-    double[:, ::1] seed_directions,
+    double[:, ::1] seeds,
+    double[:, ::1] directions,
+    cnp.npy_intp[::1] sl_seed,
+    cnp.npy_intp sl_offset,
+    cnp.npy_uint64 rng_seed,
     int nbr_threads,
     StoppingCriterion sc,
     TrackerParameters params,
     PmfGen pmf_gen,
-    double** streamlines,
-    int* lengths,
-    StreamlineStatus* status,
+    double[:, ::1] scratch,
+    double[:, ::1] sline,
+    int[:, ::1] stream_idx,
+    int[::1] status,
 ):
     """Generate a tractogram from a set of seed points and directions.
 
@@ -143,10 +301,16 @@ cdef void generate_tractogram_c(
 
     Parameters
     ----------
-    seed_positions : ndarray
-        Seed positions for the streamlines.
-    seed_directions : ndarray
-        Seed directions for the streamlines.
+    seeds : ndarray
+        Seed positions (voxel coordinates).
+    directions : ndarray, shape (nsl, 3)
+        Seed direction of each streamline.
+    sl_seed : ndarray, shape (nsl,)
+        Index into ``seeds`` of each streamline.
+    sl_offset : int
+        Index of ``directions[0]`` in the whole tractogram (for the rng).
+    rng_seed : int
+        Base random seed.
     nbr_threads : int
         Number of threads to use for streamline generation.
     sc : StoppingCriterion
@@ -155,55 +319,48 @@ cdef void generate_tractogram_c(
         Parameters for the streamline generation.
     pmf_gen : PmfGen
         Probability mass function generator.
-    streamlines : list
-        List to store the generated streamlines.
-    lengths : list
-        List to store the lengths of the generated streamlines.
-    status : list
-        List to store the status of the generated streamlines.
+    scratch : ndarray, shape (nbr_threads, >= max(100, len(pmf)))
+        Per-thread scratch buffer.
+    sline : ndarray, shape (nsl * 2 * max_nbr_pts, 3)
+        Buffer receiving the streamline points.
+    stream_idx : ndarray, shape (nsl, 2)
+        First and last point of each streamline in its ``sline`` block.
+    status : ndarray, shape (nsl,)
+        Status of each streamline.
 
     """
     cdef:
-        cnp.npy_intp _len=seed_positions.shape[0]
+        cnp.npy_intp nsl = directions.shape[0]
+        cnp.npy_intp step = 2 * params.max_nbr_pts
         cnp.npy_intp i
-        double* stream
-        int* stream_idx
-
-    if nbr_threads <= 0:
-        nbr_threads = 0
 
     for i in prange(
-        _len, nogil=True, num_threads=nbr_threads, schedule="dynamic", chunksize=64
+        nsl, nogil=True, num_threads=nbr_threads, schedule="dynamic", chunksize=64
     ):
-        stream = <double*> malloc((params.max_nbr_pts * 3 * 2 + 1) * sizeof(double))
-        stream_idx = <int*> malloc(2 * sizeof(int))
-
-        status[i] = generate_local_streamline(&seed_positions[i][0],
-                                              &seed_directions[i][0],
-                                              stream,
-                                              stream_idx,
+        status[i] = generate_local_streamline(&seeds[sl_seed[i], 0],
+                                              &directions[i, 0],
+                                              &sline[i * step, 0],
+                                              &stream_idx[i, 0],
+                                              &scratch[threadid(), 0],
+                                              rng_seed ^ (sl_offset + i),
                                               sc,
                                               params,
                                               pmf_gen)
 
-        # copy the streamlines points from the buffer to a 1d vector of
-        # the streamline length
-        lengths[i] = stream_idx[1] - stream_idx[0] + 1
-        streamlines[i] = <double*> malloc(lengths[i] * 3 * sizeof(double))
-        memcpy(
-            &streamlines[i][0],
-            &stream[stream_idx[0] * 3],
-            lengths[i] * 3 * sizeof(double),
-        )
 
-        free(stream)
-        free(stream_idx)
+cdef inline cnp.npy_uint64 splitmix64(cnp.npy_uint64 x) noexcept nogil:
+    x = x + <cnp.npy_uint64>0x9E3779B97F4A7C15
+    x = (x ^ (x >> 30)) * <cnp.npy_uint64>0xBF58476D1CE4E5B9
+    x = (x ^ (x >> 27)) * <cnp.npy_uint64>0x94D049BB133111EB
+    return x ^ (x >> 31)
 
 
 cdef StreamlineStatus generate_local_streamline(double* seed,
                                                 double* direction,
                                                 double* stream,
                                                 int* stream_idx,
+                                                double* stream_data,
+                                                cnp.npy_uint64 rng_seed,
                                                 StoppingCriterion sc,
                                                 TrackerParameters params,
                                                 PmfGen pmf_gen) noexcept nogil:
@@ -221,6 +378,11 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         Buffer to store the generated streamline.
     stream_idx : ndarray
         Buffer to store the indices of the generated streamline.
+    stream_data : double*
+        Scratch buffer (>= max(100, len(pmf)) doubles): pmf and propagator
+        state.
+    rng_seed : int
+        Random seed, unique to this streamline.
     sc : StoppingCriterion
         Stopping criterion for the streamline.
     params : TrackerParameters
@@ -231,23 +393,16 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     """
     cdef:
         cnp.npy_intp i, j
-        cnp.npy_uint32 s_random_seed
         double[3] point
         double[3] voxdir
         double voxdir_norm
-        double* stream_data
         StreamlineStatus status_forward, status_backward
         fast_numpy.RNGState rng
 
-    # set the random generator
-    if params.random_seed > 0:
-        s_random_seed = int(
-            (seed[0] * 2 + seed[1] * 3 + seed[2] * 5) * params.random_seed
-            )
-    else:
-        s_random_seed = <cnp.npy_uint32>ctime.time_ns()
-
-    fast_numpy.seed_rng(&rng, s_random_seed)
+    # mix in the seed position so equal indices from different seeds differ
+    for j in range(3):
+        rng_seed = splitmix64(rng_seed ^ (<cnp.npy_uint64*> seed)[j])
+    fast_numpy.seed_rng(&rng, splitmix64(rng_seed))
 
     # set the initial position
     fast_numpy.copy_point(seed, point)
@@ -258,10 +413,9 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
     # the input direction is invalid
     voxdir_norm = fast_numpy.norm(voxdir)
     if voxdir_norm < 0.99 or voxdir_norm > 1.01:
-        return INVALIDSTREAMLIME
+        return INVALIDSTREAMLINE
 
     # forward tracking
-    stream_data = <double*> malloc(100 * sizeof(double))
     memset(stream_data, 0, 100 * sizeof(double))
     status_forward = TRACKPOINT
     for i in range(1, params.max_nbr_pts):
@@ -283,10 +437,8 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         ):
             break
     stream_idx[1] = params.max_nbr_pts + i - 1
-    free(stream_data)
 
     # backward tracking
-    stream_data = <double*> malloc(100 * sizeof(double))
     memset(stream_data, 0, 100 * sizeof(double))
 
     fast_numpy.copy_point(seed, point)
@@ -322,50 +474,11 @@ cdef StreamlineStatus generate_local_streamline(double* seed,
         ):
             break
     stream_idx[0] = params.max_nbr_pts - i + 1
-    free(stream_data)
 
     # check for valid streamline ending status
     if (
         (status_backward == ENDPOINT or status_backward == OUTSIDEIMAGE)
         and (status_forward == ENDPOINT or status_forward == OUTSIDEIMAGE)
     ):
-        return VALIDSTREAMLIME
-    return INVALIDSTREAMLIME
-
-
-cdef void prepare_pmf(double* pmf,
-                      double* point,
-                      PmfGen pmf_gen,
-                      double pmf_threshold,
-                      int pmf_len) noexcept nogil:
-    """Prepare the probability mass function for streamline generation.
-
-    Parameters
-    ----------
-    pmf : ndarray
-        Probability mass function.
-    point : ndarray
-        Current tracking position.
-    pmf_gen : PmfGen
-        Probability mass function generator.
-    pmf_threshold : float
-        Threshold for the probability mass function.
-    pmf_len : int
-        Length of the probability mass function.
-
-    """
-    cdef:
-        cnp.npy_intp i
-        double absolute_pmf_threshold
-        double max_pmf=0
-
-    pmf = pmf_gen.get_pmf_c(point, pmf)
-
-    for i in range(pmf_len):
-        if pmf[i] > max_pmf:
-            max_pmf = pmf[i]
-    absolute_pmf_threshold = pmf_threshold * max_pmf
-
-    for i in range(pmf_len):
-        if pmf[i] < absolute_pmf_threshold:
-            pmf[i] = 0.0
+        return VALIDSTREAMLINE
+    return INVALIDSTREAMLINE

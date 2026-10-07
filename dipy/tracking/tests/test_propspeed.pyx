@@ -25,7 +25,7 @@ from dipy.utils.fast_numpy cimport RNGState, seed_rng
 
 def test_tracker_deterministic():
     # Test the probabilistic tracker function
-    cdef double[:] stream_data = np.zeros(3, dtype=float)
+    cdef double[:] stream_data = np.zeros(len(unit_octahedron.vertices), dtype=float)
     cdef double[:] point
     cdef double[:] direction
     cdef RNGState rng
@@ -97,7 +97,7 @@ def test_deterministic_performances():
 
 def test_tracker_probabilistic():
     # Test the probabilistic tracker function
-    cdef double[:] stream_data = np.zeros(3, dtype=float)
+    cdef double[:] stream_data = np.zeros(len(unit_octahedron.vertices), dtype=float)
     cdef double[:] point
     cdef double[:] direction
     cdef RNGState rng

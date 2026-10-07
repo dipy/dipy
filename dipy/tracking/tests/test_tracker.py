@@ -3,12 +3,14 @@ import warnings
 import nibabel as nib
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import get_fnames, get_sphere
 from dipy.direction.peaks import PeaksAndMetrics
 from dipy.reconst.shm import descoteaux07_legacy_msg, sh_to_sf
 from dipy.tracking import tracker
+from dipy.tracking.simplet import SIMPLE_BACKENDS, simple_backend_available
 from dipy.tracking.stopping_criterion import (
     BinaryStoppingCriterion,
     ThresholdStoppingCriterion,
@@ -29,7 +31,6 @@ def track(method, **kwargs):
 
     # seeds position and initial directions
     mask = nib.load(fnames[25]).get_fdata()
-    sc = BinaryStoppingCriterion(mask)
     affine = nib.load(fnames[25]).affine
     seed_mask = np.ones(mask.shape)
     seeds = random_seeds_from_mask(
@@ -38,8 +39,14 @@ def track(method, **kwargs):
     directions = np.random.random(seeds.shape)
     directions = np.array([v / np.linalg.norm(v) for v in directions])
 
+    backend = kwargs.get("backend", "cpu")
     use_sf = kwargs.get("use_sf", False)
     use_directions = kwargs.get("use_dirs", False)
+
+    if backend == "cpu":
+        sc = BinaryStoppingCriterion(mask)
+    else:
+        sc = ThresholdStoppingCriterion(mask, 0.5)
 
     # test return_all=True
     params = {
@@ -55,6 +62,8 @@ def track(method, **kwargs):
         "seed_directions": directions if use_directions else None,
         "sphere": sphere,
     }
+    if "backend" in kwargs:
+        params["backend"] = backend
     stream_gen = method(seeds, sc, affine, **params)
 
     streamlines = Streamlines(stream_gen)
@@ -77,6 +86,8 @@ def track(method, **kwargs):
         "seed_directions": directions if use_directions else None,
         "sphere": sphere,
     }
+    if "backend" in kwargs:
+        params["backend"] = backend
 
     stream_gen = method(seeds, sc, affine, **params)
 
@@ -102,8 +113,23 @@ def test_probabilistic_tracking():
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        track(tracker.probabilistic_tracking, use_dirs=True)
-        track(tracker.probabilistic_tracking, use_sf=True, use_dirs=True)
+        track(tracker.probabilistic_tracking, use_dirs=True, backend="cpu")
+        track(tracker.probabilistic_tracking, use_sf=True, use_dirs=True, backend="cpu")
+
+
+@pytest.mark.parametrize("simple_backend", list(SIMPLE_BACKENDS))
+def test_simple_probabilistic_tracking(simple_backend):
+    if not simple_backend_available(simple_backend):
+        pytest.skip(f"{simple_backend} simple tracker backend not available")
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        track(tracker.probabilistic_tracking, backend=simple_backend)
+        track(tracker.probabilistic_tracking, use_dirs=True, backend=simple_backend)
+        track(tracker.probabilistic_tracking, use_sf=True, backend=simple_backend)
 
 
 def test_ptt_tracking():

@@ -34,6 +34,7 @@ def generate_tracking_parameters(
     double peak_values_threshold=0.0239,
     double angle_threshold=60,
     double min_total_weight=0.5,
+    bint is_symmetric=True,
 ):
 
     cdef TrackerParameters params
@@ -48,7 +49,8 @@ def generate_tracking_parameters(
                                    pmf_threshold=pmf_threshold,
                                    max_angle=max_angle,
                                    random_seed=random_seed,
-                                   return_all=return_all)
+                                   return_all=return_all,
+                                   is_symmetric=is_symmetric)
         params.set_tracker_c(deterministic_propagator)
         return params
     elif algo_name in ["probabilistic", "prob"]:
@@ -59,7 +61,8 @@ def generate_tracking_parameters(
                                    pmf_threshold=pmf_threshold,
                                    max_angle=max_angle,
                                    random_seed=random_seed,
-                                   return_all=return_all)
+                                   return_all=return_all,
+                                   is_symmetric=is_symmetric)
         params.set_tracker_c(probabilistic_propagator)
         return params
     elif algo_name == "ptt":
@@ -102,12 +105,13 @@ cdef class TrackerParameters:
                  probe_radius=None, probe_quality=None, probe_count=None,
                  data_support_exponent=None, random_seed=None,
                  peak_values_threshold=None, angle_threshold=None,
-                 min_total_weight=None):
+                 min_total_weight=None, is_symmetric=True):
         cdef cnp.npy_intp i
 
         self.max_nbr_pts = int(max_len/step_size)
         self.min_nbr_pts = int(min_len/step_size)
         self.return_all = return_all
+        self.is_symmetric = is_symmetric
         self.random_seed = random_seed
         self.step_size = step_size
         self.average_voxel_size = 0
