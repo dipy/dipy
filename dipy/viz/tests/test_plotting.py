@@ -13,6 +13,9 @@ from dipy.sims.voxel import multi_tensor
 from dipy.utils.optpkg import optional_package
 
 _, have_matplotlib, _ = optional_package("matplotlib")
+_, have_fury, _ = optional_package("fury", min_version="2.0.0")
+if have_fury:
+    from fury import window
 
 if have_matplotlib:
     import matplotlib
@@ -165,6 +168,117 @@ def qti_fits():
 
 def _displayed(ax):
     return ax.get_images()[-1].get_array()
+
+
+def _dominant_pixels(pixels, channel):
+    other_channels = [index for index in range(3) if index != channel]
+    return np.count_nonzero(
+        (pixels[..., channel] > 0.6)
+        & (pixels[..., channel] > pixels[..., other_channels[0]] * 1.5)
+        & (pixels[..., channel] > pixels[..., other_channels[1]] * 1.5)
+    )
+
+
+def _gradient_plot_table():
+    return gradient_table(
+        [0.0, 1000.0, 1000.0, 2500.0],
+        bvecs=np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+            ]
+        ),
+    )
+
+
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+def test_plot_gradient_sphere_draws_overlaid_spheres_and_saves(tmp_path):
+    red_sphere = HemiSphere(xyz=np.array([[1.0, 0.0, 0.0]]))
+    green_sphere = HemiSphere(xyz=np.array([[0.0, 1.0, 0.0]]))
+
+    scene = plotting.plot_gradient_sphere(red_sphere, colors=(1.0, 0.0, 0.0))
+    output = tmp_path / "spheres.png"
+    returned_scene = plotting.plot_gradient_sphere(
+        green_sphere, scene=scene, colors=(0.0, 1.0, 0.0), filename=output
+    )
+    pixels = plt.imread(output)[..., :3]
+
+    assert returned_scene is scene
+    assert output.is_file()
+    assert output.stat().st_size > 0
+    assert pixels.shape[0] == pixels.shape[1] >= 1000
+    assert _dominant_pixels(pixels, 0) > 20
+    assert _dominant_pixels(pixels, 1) > 20
+
+
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+def test_plot_gradient_sphere_renders_gradient_shells_from_bvalues(tmp_path):
+    output = tmp_path / "gradients.png"
+
+    plotting.plot_gradient_sphere(_gradient_plot_table(), filename=output)
+    pixels = plt.imread(output)[..., :3]
+
+    assert output.is_file()
+    assert np.count_nonzero(np.all(pixels < 0.2, axis=-1)) > 20
+    assert _dominant_pixels(pixels, 2) > 20
+    assert (
+        np.count_nonzero(
+            (pixels[..., 1] > 0.6) & (pixels[..., 2] > 0.6) & (pixels[..., 0] < 0.3)
+        )
+        > 20
+    )
+    assert np.count_nonzero(np.all(pixels[-150:, 20:700] < 0.35, axis=-1)) > 20
+    assert not np.any(np.all(pixels[-150:, :20] < 0.35, axis=-1))
+
+
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+def test_plot_gradient_sphere_hover_updates_bottom_information():
+    scene = plotting.plot_gradient_sphere(_gradient_plot_table())
+    manager = window.ShowManager(
+        scene=scene, size=(800, 800), window_type="offscreen", pixel_ratio=1
+    )
+    window.render_screens(manager.renderer, manager.screens)
+    pixels = manager.snapshot()
+    cyan = (pixels[..., 1] > 150) & (pixels[..., 2] > 150) & (pixels[..., 0] < 80)
+    row, column = np.argwhere(cyan)[-1]
+    label = scene._gradient_sphere_info_text
+
+    manager.renderer.convert_event(
+        {"event_type": "pointer_move", "x": int(column), "y": int(row)}
+    )
+    assert "Gradient 3: b=2500" in label.message
+    assert "q=(0.000, 0.000, 1.000)" in label.message
+    window.render_screens(manager.renderer, manager.screens)
+    hovered_pixels = manager.snapshot()
+    assert not np.any(np.all(hovered_pixels[:, :5, :3] < 90, axis=-1))
+    assert np.any(np.all(hovered_pixels[-150:, 20:400, :3] < 90, axis=-1))
+
+    manager.renderer.convert_event({"event_type": "pointer_move", "x": 400, "y": 400})
+    assert label.message == "Hover a sphere to inspect it."
+
+
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+def test_plot_gradient_sphere_rejects_invalid_inputs_before_drawing(tmp_path):
+    sphere = HemiSphere(xyz=np.array([[1.0, 0.0, 0.0]]))
+    all_b0 = gradient_table([0.0, 0.0], bvecs=np.zeros((2, 3)))
+    invalid_gtab = _gradient_plot_table()
+    invalid_gtab.bvals[1] = np.nan
+    output = tmp_path / "unwritten.png"
+
+    with pytest.raises(TypeError, match="GradientTable or Sphere"):
+        plotting.plot_gradient_sphere(object(), filename=output)
+    with pytest.raises(ValueError, match="finite, positive non-b0"):
+        plotting.plot_gradient_sphere(all_b0, filename=output)
+    with pytest.raises(ValueError, match="finite, positive non-b0"):
+        plotting.plot_gradient_sphere(invalid_gtab, filename=output)
+    with pytest.raises(ValueError, match="colors"):
+        plotting.plot_gradient_sphere(sphere, colors=np.ones((2, 2)), filename=output)
+    with pytest.raises(ValueError, match="FURY Scene"):
+        plotting.plot_gradient_sphere(sphere, scene=object(), filename=output)
+
+    assert not output.exists()
 
 
 def test_compare_maps_lays_fits_on_rows_and_maps_on_columns(dti_fit, dki_fit):

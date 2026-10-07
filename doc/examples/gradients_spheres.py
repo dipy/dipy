@@ -28,7 +28,7 @@ import numpy as np
 
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, Sphere, disperse_charges
-from dipy.viz import actor, window
+from dipy.viz.plotting import plot_gradient_sphere
 
 ###############################################################################
 # We can first create some random points on a ``HemiSphere`` using spherical
@@ -51,18 +51,15 @@ hsph_updated, potential = disperse_charges(hsph_initial, 5000)
 # In ``hsph_updated`` we have the updated ``HemiSphere`` with the points nicely
 # distributed on the hemisphere. Let's visualize them.
 
-# Enables/disables interactive visualization
-interactive = False
 
-scene = window.Scene()
-scene.SetBackground(1, 1, 1)
-
-scene.add(actor.point(hsph_initial.vertices, window.colors.red, point_radius=0.05))
-scene.add(actor.point(hsph_updated.vertices, window.colors.green, point_radius=0.05))
-
-window.record(scene=scene, out_path="initial_vs_updated.png", size=(300, 300))
-if interactive:
-    window.show(scene)
+initial_scene = plot_gradient_sphere(hsph_initial, colors=(1, 0, 0))
+plot_gradient_sphere(
+    hsph_updated,
+    scene=initial_scene,
+    colors=(0, 1, 0),
+    filename="initial_vs_updated.png",
+    show=True,
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -76,12 +73,7 @@ if interactive:
 
 sph = Sphere(xyz=np.vstack((hsph_updated.vertices, -hsph_updated.vertices)))
 
-scene.clear()
-scene.add(actor.point(sph.vertices, window.colors.green, point_radius=0.05))
-
-window.record(scene=scene, out_path="full_sphere.png", size=(300, 300))
-if interactive:
-    window.show(scene)
+plot_gradient_sphere(sph, colors=(0, 1, 0), filename="full_sphere.png", show=True)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
@@ -119,23 +111,12 @@ print(bvecs)
 
 gtab = gradient_table(bvals, bvecs=bvecs)
 
-scene.clear()
 
 ###############################################################################
-# We can also visualize the gradients. Let's color the first shell blue and
-# the second shell cyan.
+# We can also visualize the gradients. The b0 points are black, the lowest
+# shell is blue, and higher shells interpolate from blue to cyan.
 
-colors_b1000 = window.colors.blue * np.ones(vertices.shape)
-colors_b2500 = window.colors.cyan * np.ones(vertices.shape)
-colors = np.vstack((colors_b1000, colors_b2500))
-colors = np.insert(colors, (0, colors.shape[0]), np.array([0, 0, 0]), axis=0)
-colors = np.ascontiguousarray(colors)
-
-scene.add(actor.point(gtab.gradients, colors, point_radius=100))
-
-window.record(scene=scene, out_path="gradients.png", size=(300, 300))
-if interactive:
-    window.show(scene)
+plot_gradient_sphere(gtab, filename="gradients.png", show=True)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
