@@ -68,6 +68,13 @@ class TissueClassifierHMRF:
             3D final refined segmentation containing all tissue types.
         PVE : ndarray,
             3D probability map of each tissue type.
+
+        Notes
+        -----
+        For nonnegative images with zero-valued background and positive
+        foreground, an initial assignment with empty classes is retried using
+        tissue means distributed uniformly over the positive intensity range.
+        The background mean remains zero.
         """
         nclasses += 1  # One extra class for the background
         energy_sum = [1e-05]
@@ -86,6 +93,12 @@ class TissueClassifierHMRF:
 
         neglogl = com.negloglikelihood(image, mu, var, nclasses)
         seg_init = icm.initialize_maximum_likelihood(neglogl)
+
+        if image.min() == 0 and image.max() > 0 and np.unique(seg_init).size < nclasses:
+            foreground = image[image > 0]
+            mu[1:] = np.linspace(foreground.min(), foreground.max(), nclasses - 1)
+            neglogl = com.negloglikelihood(image, mu, var, nclasses)
+            seg_init = icm.initialize_maximum_likelihood(neglogl)
 
         mu, var = com.seg_stats(image, seg_init, nclasses)
         var = np.maximum(var, min_var)

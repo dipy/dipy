@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from dipy.data import get_fnames
 from dipy.segment.mrf import ConstantObservationModel, IteratedConditionalModes
@@ -432,3 +433,43 @@ def test_classify():
     npt.assert_(seg_final.min() == 0.0)
 
     npt.assert_(imgseg.energies_sum[0] > imgseg.energies_sum[-1])
+
+
+@pytest.mark.parametrize("scale", [1, 1000])
+@set_random_number_generator()
+def test_classify_masked_skewed_intensities(scale, *, rng=None):
+    image = np.zeros((15, 15, 15))
+    expected = np.zeros(image.shape, dtype=np.int16)
+    for index, mean in enumerate((0.75, 0.85, 0.95)):
+        region = np.s_[3 + 3 * index : 6 + 3 * index, 3:12, 3:12]
+        image[region] = rng.normal(mean, 0.01, (3, 9, 9))
+        expected[region] = index + 1
+
+    with np.errstate(divide="raise", invalid="raise"):
+        initial, final, pve = TissueClassifierHMRF(verbose=False).classify(
+            scale * image, 3, 0.1, max_iter=10
+        )
+
+    npt.assert_array_equal(initial, expected)
+    npt.assert_array_equal(final, expected)
+    npt.assert_equal(pve.shape, image.shape + (3,))
+    npt.assert_(np.isfinite(pve).all())
+    npt.assert_(np.all((pve >= 0) & (pve <= 1)))
+
+
+@pytest.mark.parametrize(
+    "intensities",
+    [(-0.5, -0.125, 0.25, 0.625, 1), (0.6, 0.7, 0.8, 0.9, 1), (0, 0.37, 0.38, 1, 1)],
+)
+def test_classify_populated_initial_classes(intensities):
+    image = np.broadcast_to(np.array(intensities)[:, None, None], (5, 3, 3)).copy()
+    expected = np.broadcast_to(np.array([0, 1, 2, 3, 3])[:, None, None], image.shape)
+
+    with np.errstate(divide="raise", invalid="raise"):
+        initial, final, pve = TissueClassifierHMRF(verbose=False).classify(
+            image, 3, 0.1, max_iter=10
+        )
+
+    npt.assert_array_equal(initial, expected)
+    npt.assert_array_equal(final, expected)
+    npt.assert_(np.isfinite(pve).all())
