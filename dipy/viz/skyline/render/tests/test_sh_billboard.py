@@ -1,3 +1,6 @@
+import gc
+import weakref
+
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -8,6 +11,8 @@ _, has_fury, _ = optional_package("fury", min_version="2.0.0")
 if not has_fury:
     pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
 else:
+    from fury import window
+
     from dipy.viz.skyline.render import sh_billboard
     from dipy.viz.skyline.render.sh_billboard import (
         SlicedSphGlyphMaterial,
@@ -30,6 +35,42 @@ def _glyph_inputs(n_glyphs=4):
     centers = np.arange(n_glyphs * 3, dtype=np.float32).reshape(n_glyphs, 3)
     voxel_coords = np.arange(n_glyphs * 3, dtype=np.int32).reshape(n_glyphs, 3)
     return coeffs, centers, voxel_coords
+
+
+@pytest.mark.parametrize("hidden_before_removal", [False, True])
+def test_rendered_glyphs_are_collected_after_scene_removal(hidden_before_removal):
+    manager = window.ShowManager(size=(128, 96), window_type="offscreen", imgui=False)
+    screen = manager.screens[0]
+    try:
+        for _ in range(3):
+            actor = sph_glyph_billboard_sliced(*_glyph_inputs(), lut_res=4)
+            actor.material.vis_x = -1
+            actor.material.vis_y = -1
+            actor.material.vis_z = -1
+            screen.scene.add(actor)
+            window.update_camera(screen.camera, None, actor)
+            manager._draw_function()
+            pixels = manager.snapshot(fname=None)
+            assert np.any(pixels[..., :3] != pixels[0, 0, :3])
+            del pixels
+            if hidden_before_removal:
+                actor.visible = False
+                manager._draw_function()
+            watched = [weakref.ref(actor)]
+            watched.extend(
+                weakref.ref(buffer) for buffer in actor._sh_hermite_lut_buffers
+            )
+            watched.extend(
+                weakref.ref(buffer.data) for buffer in actor._sh_hermite_lut_buffers
+            )
+            screen.scene.remove(actor)
+            del actor
+            for _ in range(20):
+                manager._draw_function()
+            gc.collect()
+            assert all(ref() is None for ref in watched)
+    finally:
+        manager.close()
 
 
 def test_gpu_max_buffer_size_is_positive_and_cached():

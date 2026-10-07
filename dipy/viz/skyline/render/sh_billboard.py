@@ -343,7 +343,6 @@ class BillboardSphGlyphShader(MeshShader):
             Billboard object rendered by this shader.
         """
         super().__init__(wobject)
-        self._wobject = wobject
         self["billboard_count"] = getattr(wobject, "billboard_count", 1)
         self["lighting"] = "phong"
         self["n_coeffs"] = getattr(wobject, "coeffs_per_glyph", 0)

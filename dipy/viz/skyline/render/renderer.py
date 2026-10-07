@@ -1,5 +1,6 @@
 """Shared FURY window factory and base class for Skyline visualizations."""
 
+import os
 from pathlib import Path
 import sys
 
@@ -402,7 +403,7 @@ def create_window(
         - "standalone": a standalone window with full interactivity.
         - "gui": a Qt-based GUI window.
         - "jupyter": an inline Jupyter notebook visualizer.
-        - "stealth": an offscreen visualizer without GUI.
+        - "stealth": an offscreen visualizer without GUI or corner axes gizmo.
     size : tuple of int, optional
         Window size in pixels as ``(width, height)``.
     screen_config : list, optional
@@ -422,6 +423,10 @@ def create_window(
     If ``visualizer_type`` is not one of the recognized values, the error is
     logged and the process exits via ``sys.exit(1)`` instead of raising a
     Python exception.
+
+    Successful window creation sets ``FURY_OFFSCREEN`` to ``1`` for stealth
+    or removes the key otherwise. Direct callers must restore their own
+    previous environment value or absence.
     """
     if visualizer_type == "standalone":
         window_type = "default"
@@ -447,7 +452,6 @@ def create_window(
             screen_config=screen_config,
             imgui=True,
             imgui_draw_function=lambda: None,
-            pixel_ratio=1.5,
         )
         if window_type == "default":
             with Image.open(LOGO_SMALL) as img:
@@ -455,6 +459,11 @@ def create_window(
                 glfw.set_window_icon(show_m.window._window, 1, [(img)])
                 glfw.poll_events()
                 img.close()
+        if hasattr(show_m, "show_axes_gizmo"):
+            show_m.show_axes_gizmo(labels=["L", "R", "P", "A", "S", "I"])
+        logger.info(
+            "Created visualizer currently assumes Neurological convention for axes."
+        )
 
     else:
         show_m = window.ShowManager(
@@ -462,12 +471,10 @@ def create_window(
             size=size,
             window_type=window_type,
             screen_config=screen_config,
-            pixel_ratio=1.5,
             imgui=False,
         )
-    if hasattr(show_m, "show_axes_gizmo"):
-        show_m.show_axes_gizmo(labels=["L", "R", "P", "A", "S", "I"])
-    logger.info(
-        "Created visualizer currently assumes Neurological convention for axes."
-    )
+    if visualizer_type == "stealth":
+        os.environ["FURY_OFFSCREEN"] = "1"
+    else:
+        os.environ.pop("FURY_OFFSCREEN", None)
     return show_m
