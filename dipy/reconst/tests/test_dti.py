@@ -739,41 +739,24 @@ def test_nnls_jacobian_func(rng=None):
 
     nlls = dti._NllsHelper()
     sigma_scalar = 1.4826 * np.median(np.abs(error - np.median(error)))
-    sigma_array = np.full_like(Y, sigma_scalar)
-    for sigma in [sigma_scalar, sigma_array]:
-        weights = 1 / sigma**2
+    weight = 1 / sigma_scalar**2
+    weights_array = np.linspace(0, 2 * weight, len(Y))
+    weights_array[:2] = 0
+    step = 1e-20
+    for weights in [None, weight, np.full_like(Y, weight), weights_array]:
         for D in [D_orig, np.zeros_like(D_orig)]:
-            # Test Jacobian at D
-            args = [D, X, Y, weights]
-            # 1. call 'err_func', to set internal stuff in the class
-            nlls.err_func(*args)
-            # 2. call 'jabobian_func', corresponds to last err_func call
-            # analytical = nlls.jacobian_func(*args)
+            # Populate the cached signal and weights before evaluating the Jacobian.
+            nlls.err_func(D, X, Y, weights)
+            analytical = nlls.jacobian_func(D, X, Y, weights)
 
-            # test analytical gradient (needs to be performed per data-point)
-            for i in range(len(X)):
-                args = [X[i], Y[i], weights]
+            # Complex steps avoid subtracting nearly equal residuals.
+            approx = np.empty_like(analytical)
+            for j in range(len(D)):
+                perturbed = D.astype(complex)
+                perturbed[j] += 1j * step
+                approx[:, j] = nlls.err_func(perturbed, X, Y, weights).imag / step
 
-                # FIXME: this is sometimes failing in tests on Github
-                # approx = opt.approx_fprime(D, nlls.err_func, 1e-8, *args)
-                #
-                #        approx_fprime wants nlls.err_func to return a scalar
-                #        value, which it ought to do if called with a single
-                #        data point (otherwise, it returns an array, consistent
-                #        with scipy.opt.leastsq) but something seems broken in
-                #        some tests, so let's make a function that ensures a
-                #        scalar is returned. Issue for this *test*, not for
-                #        nlls.err_func, which works correctly
-                # def ef(x):
-                #     tmp = nlls.err_func(x, *args)
-                #     return tmp if np.isscalar(tmp) else tmp[0]
-
-                # NOTE: approx_fprime not accurate enough to pass this test
-                #       even though it will pass if using autograd code
-                #       to ensure a truly accurate derivative of nlls.err_func
-                # approx = opt.approx_fprime(D, ef, 1e-8)
-                # assert np.allclose(approx, analytical[i])
-                assert True
+            npt.assert_allclose(approx, analytical, rtol=1e-12, atol=1e-12)
 
 
 def test_nlls_fit_tensor():
