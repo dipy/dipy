@@ -18,6 +18,7 @@ is an MIT-licensed project.
 """
 
 import ast
+from functools import partial
 from importlib import import_module
 from inspect import getmodule, ismethod
 import os
@@ -283,6 +284,19 @@ class ApiDocWriter:
                         print(n.lineno)
                         print(n.targets[0])
                         print(str(e))
+
+            # Include explicitly exported public objects from private modules.
+            # Parsing definitions alone misses APIs re-exported in __init__.py.
+            if self.other_defines:
+                for name in getattr(mod, "__all__", ()):
+                    if name.startswith("_") or pat.search(name):
+                        continue
+                    obj = getattr(mod, name, None)
+                    if isinstance(obj, (FunctionType, BuiltinFunctionType, partial)):
+                        if name not in functions:
+                            functions.append(name)
+                    elif isinstance(obj, type) and name not in classes:
+                        classes.append(name)
 
             return functions, classes, constants
         else:
