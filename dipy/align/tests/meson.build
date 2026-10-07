@@ -1,5 +1,6 @@
 python_sources = ['__init__.py',
   'test_api.py',
+  'test_api_masks.py',
   'test_crosscorr.py',
   'test_expectmax.py',
   'test_imaffine.py',

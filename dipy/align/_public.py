@@ -98,6 +98,22 @@ def _handle_pipeline_inputs(
     return static, static_affine, moving, moving_affine, starting_affine
 
 
+def _handle_registration_mask(mask, image_shape, image_affine):
+    """Prepare a registration mask on the corresponding image grid."""
+    if mask is None or isinstance(mask, np.ndarray):
+        return mask
+
+    mask, mask_affine = read_img_arr_or_path(mask)
+    mask_map = AffineMap(
+        None,
+        domain_grid_shape=image_shape,
+        domain_grid2world=image_affine,
+        codomain_grid_shape=mask.shape,
+        codomain_grid2world=mask_affine,
+    )
+    return mask_map.transform(mask, interpolation="nearest")
+
+
 @warning_for_keywords()
 def syn_registration(
     moving,
@@ -484,13 +500,15 @@ def affine_registration(
         Set it to True to return the value of the optimized coefficients and
         the optimization quality metric.
 
-    moving_mask : array, shape (S', R', C') or (R', C'), optional
+    moving_mask : array, nifti image, str or Path, optional
         moving image mask that defines which pixels in the moving image
-        are used to calculate the mutual information.
+        are used to calculate the mutual information. Array masks must have
+        the same shape and voxel grid as the moving image.
 
-    static_mask : array, shape (S, R, C) or (R, C), optional
+    static_mask : array, nifti image, str or Path, optional
         static image mask that defines which pixels in the static image
-        are used to calculate the mutual information.
+        are used to calculate the mutual information. Array masks must have
+        the same shape and voxel grid as the static image.
 
     optimizer_options : dict, optional
         AffineRegistration key-word argument: options to be passed to the
@@ -538,6 +556,12 @@ def affine_registration(
     step (`affine`) is omitted, the resulting affine may not have all 12
     degrees of freedom adjusted.
 
+    Image masks and masks loaded from filenames must already be aligned with
+    their corresponding images in world coordinates. They are resampled onto
+    the image voxel grid using nearest-neighbor interpolation and the affine
+    stored in the mask image. Explicit ``moving_affine`` and ``static_affine``
+    overrides are used for the corresponding image grids.
+
     """
     pipeline = pipeline or ["center_of_mass", "translation", "rigid", "affine"]
     if level_iters is None:
@@ -562,6 +586,9 @@ def affine_registration(
             starting_affine=starting_affine,
         )
     )
+
+    static_mask = _handle_registration_mask(static_mask, static.shape, static_affine)
+    moving_mask = _handle_registration_mask(moving_mask, moving.shape, moving_affine)
 
     # Define the Affine registration object we'll use with the chosen metric.
     if not isinstance(metric, str):
