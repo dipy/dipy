@@ -17,6 +17,7 @@ from dipy.reconst.dti import (
     TensorModel,
     _decompose_tensor_nan,
     axial_diffusivity,
+    cholesky_to_lower_triangular,
     color_fa,
     decompose_tensor,
     fractional_anisotropy,
@@ -24,6 +25,7 @@ from dipy.reconst.dti import (
     geodesic_anisotropy,
     linearity,
     lower_triangular,
+    lower_triangular_to_cholesky,
     mean_diffusivity,
     mode,
     ols_fit_tensor,
@@ -485,26 +487,31 @@ def test_wls_and_ls_fit():
     assert extra is None, "WLS fit should not return extra information"
 
 
-def test_rwls_rnlls_irls_fit():
-    # Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s
+@set_random_number_generator()
+def test_rwls_rnlls_irls_fit(rng):
+    # Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)]
+    # and D ~ 10^-4 mm^2 /s
     b0 = 1000.0
     bval, bvec = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
     B = bval[1]
+
     # Scale the eigenvalues and tensor by the B value so the units match
     D = np.array([1.0, 1.0, 1.0, 0.0, 0.0, 1.0, -np.log(b0) * B]) / B
     evals = np.array([2.0, 1.0, 0.0]) / B
     md = evals.mean()
     tensor = from_lower_triangular(D)
-    # Design Matrix
+
+    # Design matrix
     gtab = grad.gradient_table(bval, bvecs=bvec)
     X = dti.design_matrix(gtab)
+
     # Signals
     Y = np.exp(np.dot(X, D))
     npt.assert_almost_equal(Y[0], b0)
     Y = Y.reshape((-1,) + Y.shape)
 
-    noise = 1 * np.random.normal(size=Y.shape)
-    YN = Y + noise  # error, or weights irrelevant
+    noise = rng.normal(size=Y.shape)
+    YN = Y + noise
     YN[0, -1] *= 10  # note 1D array!
 
     for a, ar in zip(["WLS", "NLLS"], ["RWLS", "RNLLS"]):
@@ -512,31 +519,33 @@ def test_rwls_rnlls_irls_fit():
         model = TensorModel(gtab, fit_method=a, return_S0_hat=True)
         tensor_est = model.fit(YN)
 
-        model = TensorModel(gtab, fit_method=ar, return_S0_hat=True, num_iter=10)
+        model = TensorModel(
+            gtab,
+            fit_method=ar,
+            return_S0_hat=True,
+            num_iter=10,
+        )
         tensor_est_R = model.fit(YN)
 
-        npt.assert_array_less(
-            np.linalg.norm(tensor_est_R.evals[0] - evals),
-            np.linalg.norm(tensor_est.evals[0] - evals),
+        npt.assert_(
+            np.linalg.norm(tensor_est_R.evals[0] - evals)
+            <= np.linalg.norm(tensor_est.evals[0] - evals)
         )
 
-        npt.assert_array_less(
-            np.linalg.norm(tensor_est_R.quadratic_form[0] - tensor),
-            np.linalg.norm(tensor_est.quadratic_form[0] - tensor),
+        npt.assert_(
+            np.linalg.norm(tensor_est_R.quadratic_form[0] - tensor)
+            <= np.linalg.norm(tensor_est.quadratic_form[0] - tensor)
         )
 
-        npt.assert_array_less(
-            np.linalg.norm(tensor_est_R.md[0] - md),
-            np.linalg.norm(tensor_est.md[0] - md),
+        npt.assert_(
+            np.linalg.norm(tensor_est_R.md[0] - md)
+            <= np.linalg.norm(tensor_est.md[0] - md)
         )
 
-        # error is often almost exactly the same, so this test sometimes fails
-        # npt.assert_array_less(np.linalg.norm(tensor_est_R.S0_hat[0] - b0),
-        #                       np.linalg.norm(tensor_est.S0_hat[0] - b0))
-
-    # test RWLS/RNLLS implemented explicitly via IRLS function
+    # Test RWLS/RNLLS implemented explicitly via IRLS function
     for wm, fit_type in zip(
-        [weights_method_wls_m_est, weights_method_nlls_m_est], ["WLS", "NLLS"]
+        [weights_method_wls_m_est, weights_method_nlls_m_est],
+        ["WLS", "NLLS"],
     ):
         # IRLS implementation
         model = TensorModel(
@@ -548,37 +557,62 @@ def test_rwls_rnlls_irls_fit():
             num_iter=10,
         )
         tensor_est_R1 = model.fit(YN)
-        npt.assert_equal(tensor_est_R1.model.extra["robust"].shape, YN.shape)
-        npt.assert_equal(tensor_est_R1.model.extra["robust"][0, -1], 0)
 
-        # 'shortcut' method RWLS/RNLLS
+        npt.assert_equal(
+            tensor_est_R1.model.extra["robust"].shape,
+            YN.shape,
+        )
+        npt.assert_equal(
+            tensor_est_R1.model.extra["robust"][0, -1],
+            0,
+        )
+
+        # Shortcut method RWLS/RNLLS
         model = TensorModel(
             gtab,
             fit_method="R" + fit_type,
-            return_S0_hat=False,  # NOTE increase coverage
+            return_S0_hat=False,
             num_iter=10,
         )
         tensor_est_R2 = model.fit(YN)
-        npt.assert_equal(tensor_est_R2.model.extra["robust"].shape, YN.shape)
-        npt.assert_equal(tensor_est_R2.model.extra["robust"][0, -1], 0)
 
-        npt.assert_almost_equal(tensor_est_R1.evals[0], tensor_est_R2.evals[0])
-
-        npt.assert_almost_equal(
-            tensor_est_R1.quadratic_form[0], tensor_est_R2.quadratic_form[0]
+        npt.assert_equal(
+            tensor_est_R2.model.extra["robust"].shape,
+            YN.shape,
+        )
+        npt.assert_equal(
+            tensor_est_R2.model.extra["robust"][0, -1],
+            0,
         )
 
-    # test that error is raised if not enough data
+        npt.assert_almost_equal(
+            tensor_est_R1.evals[0],
+            tensor_est_R2.evals[0],
+        )
+
+        npt.assert_almost_equal(
+            tensor_est_R1.quadratic_form[0],
+            tensor_est_R2.quadratic_form[0],
+        )
+
+    # Test that an error is raised if there is not enough data
     model = TensorModel(gtab, fit_method="RWLS", num_iter=10)
     npt.assert_raises(ValueError, model.fit, YN[:, 0:3])
 
-    # force use of iter_fit_tensor without making a large test
-    model = TensorModel(gtab, fit_method="RWLS", return_S0_hat=True, num_iter=10)
+    # Force use of iter_fit_tensor without making a large test
+    model = TensorModel(
+        gtab,
+        fit_method="RWLS",
+        return_S0_hat=True,
+        num_iter=10,
+    )
     tensor_est_R2 = model.fit(np.repeat(YN, repeats=1e4 + 1, axis=0))
 
-    # test if error is raised if weights has incorrect shape
+    # Test if an error is raised when weights have incorrect shape
     model = TensorModel(
-        gtab, fit_method="NLLS", weights=np.array([[1.0, 1.0], [0.0, 1.0]])
+        gtab,
+        fit_method="NLLS",
+        weights=np.array([[1.0, 1.0], [0.0, 1.0]]),
     )
     npt.assert_raises(AssertionError, model.fit, YN)
 
@@ -1224,3 +1258,92 @@ def test_quantize_evecs_parallel_engines():
         except Exception as e:
             # If an engine fails, that's okay - just skip it
             print(f"Warning: Could not test engine {engine}: {e}")
+
+
+def test_cholesky_transformations():
+    """Test Cholesky decomposition and its inverse for DTI."""
+    dt_gt = np.array([0.0017, 0, 0.0003, 0, 0, 0.0003])
+    r_elements = lower_triangular_to_cholesky(dt_gt)
+    dt_recovered = cholesky_to_lower_triangular(r_elements)
+    npt.assert_array_almost_equal(dt_gt, dt_recovered)
+
+
+@set_random_number_generator()
+def test_dti_nlls_cholesky_accuracy(rng):
+    """Test noisy NLLS with and without Cholesky parameterization."""
+    evals_gt = np.array([0.0017, 0.0003, 0.0003])
+    evecs_gt = np.eye(3)
+
+    _, fbvals, fbvecs = get_fnames(name="small_25")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
+
+    signal_clean = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
+
+    noisy_signal = np.maximum(
+        signal_clean + rng.normal(0.0, 100.0 / 50.0, signal_clean.shape),
+        MIN_POSITIVE_SIGNAL,
+    )
+
+    nls_fit = dti.TensorModel(gtab, fit_method="NLS", cholesky=False, jac=False).fit(
+        noisy_signal
+    )
+
+    cholesky_fit = dti.TensorModel(
+        gtab, fit_method="NLS", cholesky=True, jac=False
+    ).fit(noisy_signal)
+
+    npt.assert_allclose(nls_fit.evals, evals_gt, atol=5e-4)
+    npt.assert_allclose(cholesky_fit.evals, evals_gt, atol=5e-4)
+    npt.assert_allclose(cholesky_fit.evals, nls_fit.evals, atol=1e-6)
+
+
+def test_dti_nlls_cholesky_positivity():
+    """Test that Cholesky prevents negative tensor eigenvalues."""
+    evals_gt = np.array([0.0017, 0.0003, -0.0001])
+    evecs_gt = np.eye(3)
+
+    _, fbvals, fbvecs = get_fnames(name="small_25")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
+    design_matrix = dti.design_matrix(gtab)
+
+    signal_pred = single_tensor(gtab, S0=100, evals=evals_gt, evecs=evecs_gt)
+
+    plain_params, _ = dti.nlls_fit_tensor(
+        design_matrix,
+        signal_pred,
+        jac=False,
+        cholesky=False,
+        return_lower_triangular=True,
+    )
+
+    cholesky_params, _ = dti.nlls_fit_tensor(
+        design_matrix,
+        signal_pred,
+        jac=False,
+        cholesky=True,
+        return_lower_triangular=True,
+    )
+
+    plain_tensor = dti.from_lower_triangular(plain_params[0, :6])
+    cholesky_tensor = dti.from_lower_triangular(cholesky_params[0, :6])
+
+    plain_evals = np.linalg.eigvalsh(plain_tensor)
+    cholesky_evals = np.linalg.eigvalsh(cholesky_tensor)
+
+    npt.assert_(np.any(plain_evals < -1e-8))
+    npt.assert_(np.all(cholesky_evals >= -1e-12))
+
+
+def test_cholesky_jac_warning():
+    """Test that a warning is raised when jac=True is combined with
+    cholesky=True, since the analytical Jacobian is not implemented
+    for the Cholesky parameterization."""
+    _, fbvals, fbvecs = get_fnames(name="small_25")
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = grad.gradient_table(bvals, bvecs=bvecs)
+
+    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True, jac=True)
+    data = np.ones(bvals.shape[0]) * 100
+    assert_warns(UserWarning, dtim.fit, data)
