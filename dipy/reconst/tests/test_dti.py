@@ -584,11 +584,12 @@ def test_rwls_rnlls_irls_fit():
 
 
 def test_masked_array_with_tensor():
-    data = np.ones((2, 4, 56))
+    data, gtab = dsi_voxels()
+    data = data[:2, :4, 0]
     mask = np.array([[True, False, False, True], [True, False, True, False]])
 
-    bval, bvec = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
-    gtab = grad.gradient_table_from_bvals_bvecs(bval, bvec)
+    # bval, bvec = read_bvals_bvecs(*get_fnames(name="55dir_grad"))
+    # gtab = grad.gradient_table_from_bvals_bvecs(bval, bvec)
 
     # test self.extra with mask by using return_leverages
     tensor_model = TensorModel(gtab, return_leverages=True)
@@ -597,6 +598,13 @@ def test_masked_array_with_tensor():
     npt.assert_equal(tensor.fa.shape, (2, 4))
     npt.assert_equal(tensor.evals.shape, (2, 4, 3))
     npt.assert_equal(tensor.evecs.shape, (2, 4, 3, 3))
+
+    s0 = 1000
+    prediction = tensor.predict(gtab, S0=s0)
+    # Current behavior is wrong:
+    npt.assert_almost_equal(prediction[0, 1], s0 * np.ones(gtab.bvals.shape[0]))
+    # Desired behavior is failing:
+    npt.assert_almost_equal(prediction[0, 1], np.zeros(gtab.bvals.shape[0]))
 
     tensor = tensor[0]
     npt.assert_equal(tensor.shape, (4,))
