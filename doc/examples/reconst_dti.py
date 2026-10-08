@@ -337,8 +337,8 @@ Norm = norm(q_form)
 
 """
 The trace is the sum of the eigenvalues, which is three times MD. It is
-rarely reported on its own, but is useful for deriving other metrics and for
-quality assurance:
+commonly reconstructed at the scanner as part of clinical protocols for
+assessment and diagnostics:
 
 .. math::
 
