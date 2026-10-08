@@ -486,11 +486,11 @@ def affine_registration(
 
     moving_mask : array, shape (S', R', C') or (R', C'), optional
         moving image mask that defines which pixels in the moving image
-        are used to calculate the mutual information.
+        are used to calculate the similarity metric.
 
     static_mask : array, shape (S, R, C) or (R, C), optional
         static image mask that defines which pixels in the static image
-        are used to calculate the mutual information.
+        are used to calculate the similarity metric.
 
     optimizer_options : dict, optional
         AffineRegistration key-word argument: options to be passed to the
@@ -537,6 +537,9 @@ def affine_registration(
     that gradually approximates the final registration. If the final default
     step (`affine`) is omitted, the resulting affine may not have all 12
     degrees of freedom adjusted.
+
+    With ``metric="CC"``, masks select the centers of local neighborhoods.
+    Pixels outside the masks can still contribute to those neighborhoods.
 
     """
     pipeline = pipeline or ["center_of_mass", "translation", "rigid", "affine"]
@@ -847,8 +850,7 @@ def register_dwi_series(
 
     static_mask : array, shape (S, R, C) or (R, C), optional
         static image mask that defines which pixels in the static image
-        are used to calculate the mutual information. Not supported when
-        ``metric="CC"``.
+        are used to calculate the similarity metric.
 
     level_iters : list of int, optional
         The number of iterations at each level of the Gaussian pyramid.
@@ -861,7 +863,6 @@ def register_dwi_series(
 
     metric : string, optional
         The metric to be optimized. One of `CC`, `MI`.
-        CC does not support ``static_mask``.
 
     metric_kwargs : dict, optional
         Metric initialization arguments forwarded to ``affine_registration``:

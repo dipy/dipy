@@ -7,7 +7,7 @@ from numpy.testing import (
     assert_raises,
 )
 
-from dipy.align import imaffine, vector_fields as vf
+from dipy.align import crosscorr as cc, imaffine, vector_fields as vf
 from dipy.align.imaffine import (
     AffineInvalidValuesError,
     AffineInversionError,
@@ -336,6 +336,45 @@ def test_affreg_cc(rng=None):
         end_sad = np.abs(static - transformed).sum()
         reduction = 1 - end_sad / start_sad
         assert reduction > 0.8
+
+
+@set_random_number_generator(202311)
+def test_cc_masks(rng=None):
+    """Test that affine CC includes only centers selected by both masks."""
+    for dim in [2, 3]:
+        shape = (7,) * dim
+        static = rng.random(shape)
+        moving = rng.random(shape)
+        static_mask = np.zeros(shape, dtype=np.int32)
+        moving_mask = np.zeros(shape, dtype=np.int32)
+        static_mask[(2,) * dim] = 1
+        moving_mask[(4,) * dim] = 1
+        transform = regtransforms[("TRANSLATION", dim)]
+        params = transform.get_identity_parameters()
+
+        metric = imaffine.CrossCorrelationMetric(radius=1)
+        metric.setup(
+            transform,
+            static,
+            moving,
+            static_mask=static_mask,
+            moving_mask=static_mask,
+        )
+        included_energy, included_gradient = metric.distance_and_gradient(params)
+
+        metric.setup(
+            transform,
+            static,
+            moving,
+            static_mask=static_mask,
+            moving_mask=moving_mask,
+        )
+        excluded_energy, excluded_gradient = metric.distance_and_gradient(params)
+
+        assert included_energy < 0
+        assert np.any(included_gradient != 0)
+        assert_equal(excluded_energy, 0)
+        assert_array_equal(excluded_gradient, 0)
 
 
 @set_random_number_generator(202311)
@@ -834,12 +873,10 @@ def test_CCMetric_exceptions():
     metric = imaffine.CrossCorrelationMetric(radius=2)
     assert_raises(ValueError, metric.setup, transform, static[:4], moving[:4])
 
-    metric = imaffine.CrossCorrelationMetric(radius=1)
-    assert_raises(
-        NotImplementedError,
-        metric.setup,
-        transform,
-        static,
-        moving,
-        static_mask=np.ones_like(static),
-    )
+    for compute_affine, shape in [
+        (cc.compute_cc_affine_2d, (9, 9)),
+        (cc.compute_cc_affine_3d, (9, 9, 9)),
+    ]:
+        factors_cc = np.zeros(shape + (5,))
+        mask = np.ones((8,) + shape[1:], dtype=np.int32)
+        assert_raises(ValueError, compute_affine, factors_cc, 1, mask=mask)
