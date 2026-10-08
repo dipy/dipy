@@ -289,7 +289,7 @@ direction $\\mathbf{g}$:
     ADC = \\mathbf{g}^T \\mathbf{D} \\mathbf{g}
 
 ``TensorFit.adc`` evaluates it for every vertex of a sphere, so it returns one
-volume per direction. Here we compute it along the three axes of the image.
+volume per direction. Here we compute it along the three principal axes.
 """
 
 from dipy.core.sphere import Sphere
