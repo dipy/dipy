@@ -44,7 +44,7 @@ fury, has_fury_v2, _ = optional_package(
 )
 if has_fury_v2:
     from fury import distinguishable_colormap
-    from fury.actor import Group, streamlines, streamtube
+    from fury.actor import Group, line, streamtube
     from fury.colormap import line_colors
     from fury.ui import TextBlock2D
 
@@ -296,7 +296,9 @@ def create_streamline_visualization(
     )
 
 
-def create_streamline(lines, *, color=(1, 0, 0), line_type="Line", segments=4):
+def create_streamline(
+    lines, *, color=(1, 0, 0), line_type="Line", segments=4, opacity=100, thickness=0.35
+):
     """Instantiate Fury line or tube geometry for polyline streamlines.
 
     Parameters
@@ -309,6 +311,10 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="Line", segments=4):
         Primitive style passed to Fury.
     segments : int, optional
         Tube tessellation segments when ``line_type`` is ``"Tube"``.
+    opacity : float, optional
+        Line opacity percentage in ``[0, 100]``; ignored for tubes.
+    thickness : float, optional
+        Positive finite line width in logical screen pixels; ignored for tubes.
 
     Returns
     -------
@@ -316,6 +322,12 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="Line", segments=4):
         Fury actor (line or tube container) ready to parent under a
         ``Group``, or None when ``line_type`` is neither ``"Line"`` nor
         ``"Tube"``.
+
+    Notes
+    -----
+    Lines retain depth writes at partial opacity to preserve foreground occlusion.
+    Zero-alpha fragments are discarded. Translucent overlaps use classic alpha
+    blending, not order-independent transparency.
     """
     if isinstance(color, str) and color == "direction" and lines:
         color = line_colors(lines)
@@ -336,21 +348,91 @@ def create_streamline(lines, *, color=(1, 0, 0), line_type="Line", segments=4):
         )
         return tubes
     elif line_type == "Line":
+        if not np.isfinite(opacity) or not 0 <= opacity <= 100:
+            raise ValueError("opacity must be between 0 and 100")
+        if not np.isfinite(thickness) or thickness <= 0:
+            raise ValueError("thickness must be a positive finite number")
         if (
             isinstance(color, np.ndarray)
             and color.ndim == 2
             and len(color) == len(lines)
         ):
             color = np.repeat(color, [len(line) for line in lines], axis=0)
-        lines = streamlines(
-            lines=lines,
-            colors=color,
-            thickness=5,
-            outline_thickness=0.4,
-            outline_color=(0.15, 0.15, 0.15),
-        )
-        lines.material.aa = True
-        return lines
+        actor = line(lines=lines, colors=color, material="basic")
+        actor.local.position = (0, 0, 0)
+        _set_line_appearance(actor, opacity=opacity, thickness=thickness)
+        return actor
+
+
+def _set_line_appearance(actor, *, opacity, thickness):
+    """Apply Skyline's screen-space line appearance.
+
+    Parameters
+    ----------
+    actor : Actor
+        Line actor to update without rebuilding geometry.
+    opacity : float
+        Opacity percentage in ``[0, 100]``.
+    thickness : float
+        Positive finite width in logical screen pixels.
+
+    Notes
+    -----
+    A minimal positive float32 alpha-test threshold enables zero-alpha discard
+    without clipping visible opacity.
+    """
+    actor.material.thickness = float(thickness)
+    actor.material.opacity = opacity / 100.0
+    actor.material.aa = True
+    actor.material.thickness_space = "screen"
+    actor.material.alpha_mode = "blend"
+    actor.material.depth_write = True
+    actor.material.alpha_test = np.finfo(np.float32).tiny
+    actor.material.alpha_compare = "<="
+
+
+def _line_appearance_widgets(opacity, thickness):
+    """Draw the shared Line-only appearance controls.
+
+    Parameters
+    ----------
+    opacity : int
+        Current opacity percentage.
+    thickness : float
+        Current width in logical screen pixels.
+
+    Returns
+    -------
+    changed : bool
+        Whether either control changed.
+    opacity : int
+        Updated opacity percentage.
+    thickness : float
+        Updated line width.
+    """
+    imgui.spacing()
+    opacity_changed, opacity = thin_slider(
+        "Opacity",
+        opacity,
+        0,
+        100,
+        value_type="int",
+        text_format=".0f",
+        value_unit="%",
+        step=1,
+    )
+    imgui.spacing()
+    thickness_changed, thickness = thin_slider(
+        "Thickness",
+        thickness,
+        0.1,
+        0.5,
+        value_type="float",
+        text_format=".2f",
+        value_unit=" px",
+        step=0.01,
+    )
+    return opacity_changed or thickness_changed, opacity, thickness
 
 
 class Streamline3D(Visualization):
@@ -421,6 +503,8 @@ class Streamline3D(Visualization):
         self._saturation_low = 0.2
         self._value = 0.8
         self._line_type = line_type
+        self._line_opacity = 100
+        self._line_thickness = 0.35
         self._buan_pvals_file = buan_pvals_file
         self._buan_pvals_data = None
         self._buan_color_idx = None
@@ -441,7 +525,18 @@ class Streamline3D(Visualization):
             lines=self.sft.streamlines,
             color=self.color,
             line_type=self._line_type,
+            opacity=self._line_opacity,
+            thickness=self._line_thickness,
         )
+
+    def _apply_line_appearance(self):
+        """Update the current line actor from stored appearance settings."""
+        if self._line_type == "Line":
+            _set_line_appearance(
+                self._actor,
+                opacity=self._line_opacity,
+                thickness=self._line_thickness,
+            )
 
     @property
     def actor(self):
@@ -553,6 +648,16 @@ class Streamline3D(Visualization):
             self._loader(True, message="Switching line type...")
         elif line_type_dialog_state == "cancel":
             self._requested_line_type = None
+
+        if self._line_type == "Line":
+            changed, opacity, thickness = _line_appearance_widgets(
+                self._line_opacity, self._line_thickness
+            )
+            if changed:
+                self._line_opacity = opacity
+                self._line_thickness = thickness
+                self.apply_scene_op(self._apply_line_appearance)
+                self.render()
 
         imgui.spacing()
         imgui.spacing()
@@ -729,6 +834,8 @@ class ClusterStreamline3D(Visualization):
         self._sizes = np.asarray([])
         self._lengths = np.asarray([])
         self._line_type = line_type
+        self._line_opacity = 100
+        self._line_thickness = 0.35
         self._actor = Group()
         self._pending_thr = None
         self._thr_changed_at = None
@@ -901,8 +1008,21 @@ class ClusterStreamline3D(Visualization):
             color=color,
             line_type=self._line_type,
             segments=3,
+            opacity=self._line_opacity,
+            thickness=self._line_thickness,
         )
         return centroid_rep, streamline_actor
+
+    def _apply_line_appearance(self):
+        """Update member lines without changing centroid or tube appearance."""
+        if self._line_type == "Line":
+            for state in self._cluster_state.values():
+                if state["cluster_actor"] is not None:
+                    _set_line_appearance(
+                        state["cluster_actor"],
+                        opacity=self._line_opacity,
+                        thickness=self._line_thickness,
+                    )
 
     def _selected_unexpanded_clusters(self):
         """Return the centroid actors that are selected but not expanded.
@@ -1125,6 +1245,16 @@ class ClusterStreamline3D(Visualization):
         if changed:
             self._line_type = new.title()
             self.apply_scene_op(self._apply_cluster_line_type_change)
+
+        if self._line_type == "Line":
+            changed, opacity, thickness = _line_appearance_widgets(
+                self._line_opacity, self._line_thickness
+            )
+            if changed:
+                self._line_opacity = opacity
+                self._line_thickness = thickness
+                self.apply_scene_op(self._apply_line_appearance)
+                self.render()
 
         imgui.spacing()
         imgui.spacing()
