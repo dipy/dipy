@@ -109,6 +109,21 @@ def select_denoising_method(
     return "patch2self", reason
 
 
+def _patch2self_extra_args(patch_radius, ver):
+    """Return the version-dependent extra args for :func:`patch2self`.
+
+    ``patch_radius`` is only supported for version 1, so it is dropped
+    with a warning for any other version.
+    """
+    if ver == 1:
+        return {"patch_radius": patch_radius}
+    logger.warning(
+        f"patch_radius is not supported for Patch2Self version {ver} "
+        "and will be ignored."
+    )
+    return {}
+
+
 class DenoiseFlow(Workflow):
     @classmethod
     def get_short_name(cls):
@@ -291,7 +306,7 @@ class DenoiseFlow(Workflow):
                 if bvals is None:
                     logger.error("'patch2self' requires a b-values file.")
                     sys.exit(1)
-                extra_args = {"patch_radius": patch_radius} if ver == 1 else {}
+                extra_args = _patch2self_extra_args(patch_radius, ver)
                 denoised_data = patch2self(
                     data,
                     bvals,
@@ -408,7 +423,7 @@ class Patch2SelfFlow(Workflow):
                 logger.info(f"Denoising {fpath}")
                 data, affine, image = load_nifti(fpath, return_img=True)
                 bvals = np.loadtxt(bvalpath)
-                extra_args = {"patch_radius": patch_radius} if ver == 1 else {}
+                extra_args = _patch2self_extra_args(patch_radius, ver)
                 denoised_data = patch2self(
                     data,
                     bvals,
