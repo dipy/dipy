@@ -1,8 +1,13 @@
 import numpy as np
+import pytest
 
 from dipy.core.geometry import normalized_vector
 from dipy.core.gradients import gradient_table
-from dipy.stats.qc import neighboring_dwi_correlation
+from dipy.stats.qc import (
+    dwi_contrast,
+    find_qspace_contrast,
+    neighboring_dwi_correlation,
+)
 
 rng = np.random.default_rng()
 
@@ -120,3 +125,223 @@ def test_neighboring_dwi_correlation():
     )
     estimated_ndc = neighboring_dwi_correlation(dwi_data, gtab, mask=mask)
     assert np.allclose(real_r, estimated_ndc)
+
+
+def create_contrast_test_data(num_b0s=1):
+    """Create DWI data with known neighbor and contrast correlations.
+
+    Four DWI volumes are used. The first two are nearly parallel to the
+    x-axis and the second two are nearly parallel to the y-axis. Thus,
+    volumes within each pair are q-space neighbors, while volumes from
+    the other pair provide the contrast directions.
+
+    The image data are constructed to have an exact known correlation
+    matrix.
+
+    Parameters
+    ----------
+    num_b0s : int, optional
+        Number of b=0 volumes to prepend.
+
+    Returns
+    -------
+    expected_contrast : float
+        Expected DWI contrast.
+    dwi_data : ndarray
+        Simulated 4D DWI data.
+    mask : ndarray
+        Mask containing all simulated brain voxels.
+    gtab : dipy.core.gradients.GradientTable
+        Gradient table with known neighbor and contrast relationships.
+    """
+    # Eight voxels are enough to construct four mutually orthogonal
+    # zero-mean basis signals.
+    mask = np.ones((2, 2, 2), dtype=bool)
+
+    basis = np.array(
+        [
+            [1, -1, 1, -1, 1, -1, 1, -1],
+            [1, 1, -1, -1, 1, 1, -1, -1],
+            [1, 1, 1, 1, -1, -1, -1, -1],
+            [1, -1, -1, 1, -1, 1, 1, -1],
+        ],
+        dtype=float,
+    )
+
+    # Correlations between the four DWI volumes.
+    #
+    # Neighbor pairs:
+    #   0 <-> 1 : 0.8
+    #   2 <-> 3 : 0.8
+    #
+    # Contrast selections will be:
+    #   0 -> 2 : 0.20
+    #   1 -> 2 : 0.16
+    #   2 -> 0 : 0.20
+    #   3 -> 0 : 0.50
+    correlation = np.array(
+        [
+            [1.00, 0.80, 0.20, 0.50],
+            [0.80, 1.00, 0.16, 0.40],
+            [0.20, 0.16, 1.00, 0.80],
+            [0.50, 0.40, 0.80, 1.00],
+        ]
+    )
+
+    # Because the basis signals are mutually orthogonal and have equal
+    # variance, applying the Cholesky factor produces signals having the
+    # correlation matrix above.
+    L = np.linalg.cholesky(correlation)
+    signals = L @ basis
+
+    dwi_data = np.zeros((2, 2, 2, num_b0s + 4))
+
+    for index in range(4):
+        dwi_data[..., num_b0s + index][mask] = signals[index]
+
+    # Two very close directions around x and two around y.
+    x = np.array([1.0, 0.0, 0.0])
+    x_neighbor = normalized_vector(np.array([1.0, 0.001, 0.0]))
+    y = np.array([0.0, 1.0, 0.0])
+    y_neighbor = normalized_vector(np.array([0.001, 1.0, 0.0]))
+
+    bvals = np.array([0] * num_b0s + [1000] * 4)
+
+    bvecs = np.vstack(
+        [
+            np.zeros((num_b0s, 3)),
+            x,
+            x_neighbor,
+            y,
+            y_neighbor,
+        ]
+    )
+
+    gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=50)
+
+    neighbor_correlations = [
+        correlation[0, 1],
+        correlation[1, 0],
+        correlation[2, 3],
+        correlation[3, 2],
+    ]
+
+    contrast_correlations = [
+        correlation[0, 2],
+        correlation[1, 2],
+        correlation[2, 0],
+        correlation[3, 0],
+    ]
+
+    expected_contrast = np.mean(neighbor_correlations) / np.mean(contrast_correlations)
+
+    return expected_contrast, dwi_data, mask, gtab
+
+
+def test_find_qspace_contrast():
+    """Test that the expected contrast DWI is selected."""
+
+    _, _, _, gtab = create_contrast_test_data(num_b0s=1)
+
+    contrast_indices = find_qspace_contrast(gtab)
+
+    # Volume layout:
+    # 0: b0
+    # 1: x
+    # 2: x + small perturbation
+    # 3: y
+    # 4: y + small perturbation
+    #
+    # The x-like volumes should select y as their contrast DWI,
+    # and the y-like volumes should select x.
+    expected_indices = [
+        (1, 3),
+        (2, 3),
+        (3, 1),
+        (4, 1),
+    ]
+
+    assert contrast_indices == expected_indices
+
+
+def test_dwi_contrast():
+    """Test DWI contrast with known correlations."""
+
+    expected_contrast, dwi_data, mask, gtab = create_contrast_test_data(num_b0s=1)
+
+    estimated_contrast = dwi_contrast(
+        dwi_data,
+        gtab,
+        mask=mask,
+    )
+
+    assert np.allclose(expected_contrast, estimated_contrast)
+
+    # Since all voxels are included in the mask, the result should be
+    # identical without explicitly providing the mask.
+    estimated_contrast_no_mask = dwi_contrast(
+        dwi_data,
+        gtab,
+    )
+
+    assert np.allclose(
+        expected_contrast,
+        estimated_contrast_no_mask,
+    )
+
+
+def test_find_qspace_contrast_multishell():
+    """Test contrast DWI selection with different q-space magnitudes."""
+
+    # Reference direction at b=1000.
+    #
+    # Volume 1 is exactly orthogonal, but at b=4000.
+    # Volume 2 is not exactly orthogonal (60 degrees), but is at the
+    # same b-value as the reference.
+    #
+    # Yeh's normalized perpendicular-vector criterion should select
+    # volume 2 for volume 0.
+    bvals = np.array([1000, 4000, 1000])
+
+    bvecs = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.5, np.sqrt(3) / 2, 0.0],
+        ]
+    )
+
+    gtab = gradient_table(
+        bvals,
+        bvecs=bvecs,
+        b0_threshold=50,
+    )
+
+    contrast_indices = find_qspace_contrast(gtab)
+
+    assert contrast_indices[0] == (0, 2)
+
+
+def test_find_qspace_contrast_nearly_parallel():
+    """Test that nearly parallel vectors are treated as parallel."""
+
+    bvals = np.array([1000, 1000])
+
+    bvecs = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            normalized_vector(np.array([1.0, 1e-12, 0.0])),
+        ]
+    )
+
+    gtab = gradient_table(
+        bvals,
+        bvecs=bvecs,
+        b0_threshold=50,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="At least one non-parallel DWI direction is required",
+    ):
+        find_qspace_contrast(gtab)
