@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -17,6 +18,7 @@ from dipy.workflows.denoise import (
     MPPCAFlow,
     NLMeansFlow,
     Patch2SelfFlow,
+    _patch2self_extra_args,
     estimate_dwi_snr,
     select_denoising_method,
 )
@@ -59,6 +61,31 @@ def test_patch2self_flow(tmp_path):
         data_path, fbvals, patch_radius=(0, 0, 0), out_dir=tmp_path, ver=3
     )
     assert_true(Path(patch2self_flow.last_generated_outputs["out_denoised"]).is_file())
+
+
+def test_patch2self_extra_args_ignored_radius_warns(caplog):
+    with caplog.at_level(logging.WARNING, logger="dipy"):
+        extra_args = _patch2self_extra_args(2, ver=3)
+    npt.assert_equal(extra_args, {})
+    assert_true(
+        any(
+            "patch_radius" in record.getMessage()
+            for record in caplog.records
+            if record.levelname == "WARNING"
+        )
+    )
+
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger="dipy"):
+        extra_args = _patch2self_extra_args(2, ver=1)
+    npt.assert_equal(extra_args, {"patch_radius": 2})
+    assert_false(
+        any(
+            "patch_radius" in record.getMessage()
+            for record in caplog.records
+            if record.levelname == "WARNING"
+        )
+    )
 
 
 def test_lpca_flow(tmp_path):
