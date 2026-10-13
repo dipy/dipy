@@ -29,6 +29,7 @@ if not (has_fury and has_imgui):
         allow_module_level=True,
     )
 else:
+    from fury.actor import show_slices
     from fury.utils import create_sh_basis_matrix
     from imgui_bundle import icons_fontawesome_6, imgui
 
@@ -92,6 +93,20 @@ def import_viewer(tmp_path):
         sh_coeffs=[(coeffs, AFFINE, "existing_odf")],
         out_dir=str(tmp_path),
         out_stealth_png="import.png",
+    )
+
+
+@pytest.fixture
+def overlapping_images_viewer(tmp_path):
+    data = np.arange(np.prod(SHAPE), dtype=np.float32).reshape(SHAPE)
+    return skyline(
+        visualizer_type="stealth",
+        images=[
+            (data, AFFINE, "first.nii.gz"),
+            (data + 1, AFFINE, "second.nii.gz"),
+        ],
+        out_dir=str(tmp_path),
+        out_stealth_png="overlapping.png",
     )
 
 
@@ -461,6 +476,85 @@ def test_render_draws_open_sections_of_every_visualization_type(ui, viewer):
         "tractography",
         "sh_glyph",
     }
+
+
+@pytest.mark.parametrize("first_is_open", [False, True])
+def test_image_titles_select_front_layer_without_expanding(
+    ui, overlapping_images_viewer, first_is_open
+):
+    viewer = overlapping_images_viewer
+    first, second = viewer._image_visualizations
+    window = _window()
+    header_geometry = {}
+    section_names = {}
+    base_poses = {}
+
+    def slice_planes(image):
+        return np.asarray(
+            [
+                child.plane if hasattr(child, "plane") else child.material.plane
+                for child in image.actor.children
+            ]
+        )
+
+    def register_image(image):
+        section_name = f"{image.path}:{image.name}"
+        section_names[image] = section_name
+
+        def render_image(is_open, *, group_visible=True):
+            start = imgui.get_cursor_screen_pos()
+            width = imgui.get_content_region_avail().x
+            header_geometry[image] = (start.x, start.y, width)
+            return image.renderer(is_open, group_visible=group_visible)
+
+        window.add(section_name, render_image, viz_type="image")
+        show_slices(image.actor, image.state)
+        base_poses[image] = slice_planes(image).copy()
+
+    register_image(first)
+    register_image(second)
+    window.section_open_states[section_names[first]] = first_is_open
+    initial_expansion = window.section_open_states.copy()
+    viewer._arrange_image_actors()
+
+    def render():
+        window.render()
+        viewer._arrange_image_actors()
+
+    def click_header(image, *, arrow=False):
+        for _ in range(3):
+            ui.frame(render)
+        x, y, width = header_geometry[image]
+        position = (x + width - 26 if arrow else x + 70, y + 20)
+        for _ in range(3):
+            ui.frame(render, mouse=position)
+        ui.frame(render, mouse=position, press=True)
+        ui.frame(render, mouse=position)
+
+    def assert_front_and_base(front, back):
+        assert viewer.active_image is front
+        np.testing.assert_allclose(slice_planes(back), base_poses[back])
+        np.testing.assert_allclose(slice_planes(front)[:, :3], base_poses[front][:, :3])
+        np.testing.assert_allclose(
+            slice_planes(front)[:, 3], base_poses[front][:, 3] + 0.01
+        )
+
+    click_header(first)
+    assert_front_and_base(first, second)
+    assert window.section_open_states == initial_expansion
+
+    click_header(second)
+    assert_front_and_base(second, first)
+    assert window.section_open_states == initial_expansion
+
+    click_header(first, arrow=True)
+    assert window.section_open_states[section_names[first]] is not first_is_open
+    assert window.section_open_states[section_names[second]] is False
+    assert_front_and_base(second, first)
+
+    click_header(first, arrow=True)
+    assert window.section_open_states == initial_expansion
+    assert_front_and_base(second, first)
 
 
 def test_render_groups_sections_under_the_documented_labels(ui, viewer):

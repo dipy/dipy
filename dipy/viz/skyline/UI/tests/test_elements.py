@@ -256,15 +256,23 @@ def test_section_header_is_inert_without_input(ui):
 
 
 @requires_imgui
-def test_section_header_body_click_opens_the_section(ui):
+@pytest.mark.parametrize("is_open", [False, True])
+@pytest.mark.parametrize("is_visible", [False, True])
+def test_section_header_body_click_preserves_expansion_and_selects(
+    ui, is_open, is_visible
+):
     result = ui.click(
         lambda: render_section_header(
-            "Images", is_open=False, type="image", width=HEADER_WIDTH
+            "Images",
+            is_open=is_open,
+            is_visible=is_visible,
+            type="image",
+            width=HEADER_WIDTH,
         ),
         at=HEADER_BODY,
     )
 
-    assert result == (True, True, False, True)
+    assert result == (is_open, is_visible, False, True)
 
 
 @requires_imgui

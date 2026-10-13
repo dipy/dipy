@@ -1789,6 +1789,7 @@ def skyline(
 
     Global visibility affects all slice datasets; positions affect synchronized
     datasets only. Individual visibility changes remain local.
+    Titles select layers; trailing arrows toggle expansion.
     """
     return Skyline(
         visualizer_type=visualizer_type,
