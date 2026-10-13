@@ -556,13 +556,78 @@ def test_image3d_full_opacity_restores_bayer_dithering():
         assert material.alpha_mode == "bayer"
 
 
-def test_image3d_set_slice_state_applies_visibility():
-    image = _image()
+@pytest.mark.parametrize("synchronize", [False, True])
+@pytest.mark.parametrize("group_visible", [False, True])
+def test_image3d_set_slice_visibility_preserves_state(synchronize, group_visible):
+    image = Image3D("dwi.nii.gz", _volume((6, 7, 8, 5)), affine=AFFINE)
+    image.update_state([1, 2, 3, 2])
+    image._synchronize = synchronize
+    image._visible = False
+    image.actor.visible = group_visible
+    before = np.asarray(image.state).copy()
+    planes = [tuple(actor.material.plane) for actor in image.actor.children]
+    visibility = [True, False, True]
 
-    image._set_slice_state((True, False, True), image.state)
+    image.set_slice_visibility(visibility)
+    visibility[0] = False
 
-    visibilities = [actor.visible for actor in image.actor.children]
-    assert visibilities == [True, False, True]
+    assert image._slice_visibility == [True, False, True]
+    assert [actor.visible for actor in image.actor.children] == [True, False, True]
+    assert [tuple(actor.material.plane) for actor in image.actor.children] == planes
+    npt.assert_array_equal(image.state, before)
+    assert image._volume_idx == 2
+    assert image._visible is False
+    assert image.actor.visible is group_visible
+
+
+def test_image3d_queued_visibility_survives_direction_rebuild():
+    image = Image3D("dwi.nii.gz", _volume((6, 7, 8, 5)), affine=AFFINE)
+    original_actor = image.actor
+    deferred = []
+    image._scene_op_callback = lambda func, *args, **kwargs: deferred.append(
+        (func, args, kwargs)
+    )
+    visibility = [False, True, False]
+
+    image.set_slice_visibility(visibility)
+    visibility[:] = [True, True, True]
+    image.update_state(np.array([1, 2, 3, 3]))
+
+    assert image._slice_visibility == [False, True, False]
+    assert [actor.visible for actor in original_actor.children] == [True, True, True]
+    for func, args, kwargs in deferred:
+        func(*args, **kwargs)
+
+    assert image.actor is not original_actor
+    assert [actor.visible for actor in image.actor.children] == [False, True, False]
+    assert image._volume_idx == 3
+    npt.assert_array_equal(image.state, [1, 2, 3])
+    npt.assert_allclose(
+        [actor.material.plane[3] for actor in image.actor.children],
+        np.array([1, 2, 3]) + 1e-3,
+    )
+
+
+@pytest.mark.parametrize("rgb", [False, True])
+def test_image3d_rgb_rebuild_preserves_slice_visibility(rgb):
+    image = Image3D("rgb.nii.gz", _volume((6, 7, 8, 3)), affine=AFFINE, rgb=rgb)
+    image.update_state(np.array([1, 2, 3]))
+    image.set_slice_visibility([False, True, False])
+    original_actor = image.actor
+
+    image.rgb = not rgb
+    image._has_directions = not image.rgb
+    image._create_slicer_actor()
+
+    assert image.actor is not original_actor
+    assert image.rgb is (not rgb)
+    assert image._slice_visibility == [False, True, False]
+    assert [actor.visible for actor in image.actor.children] == [False, True, False]
+    npt.assert_array_equal(image.state, [1, 2, 3])
+    npt.assert_allclose(
+        [actor.material.plane[3] for actor in image.actor.children],
+        np.array([1, 2, 3]) + 1e-3,
+    )
 
 
 def test_image3d_set_clim_updates_every_slice():

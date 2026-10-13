@@ -281,6 +281,8 @@ class Image3D(Visualization):
         voxel-pick handler, shows the initial slices, and requests a render.
         """
         volume = self.active_volume
+        previous_slicer = getattr(self, "_slicer", None)
+        visible = previous_slicer.visible if previous_slicer is not None else True
         self._slicer = volume_slicer(
             volume,
             affine=self.affine,
@@ -288,6 +290,7 @@ class Image3D(Visualization):
             alpha_mode="bayer",
             depth_write=True,
         )
+        self._slicer.visible = visible
 
         self._apply_colormap(self.colormap)
         self.bounds = self._slicer.get_bounding_box()
@@ -296,7 +299,8 @@ class Image3D(Visualization):
         else:
             self.state = np.clip(self.state, self.bounds[0], self.bounds[1])
         self._slicer.add_event_handler(self._pick_voxel, "pointer_down")
-        show_slices(self._slicer, self.state)
+        self._apply_slice_position()
+        self._apply_slice_visibility()
         self.render()
 
     def _is_divergent_colormap(self):
@@ -446,7 +450,7 @@ class Image3D(Visualization):
         """
         if self._synchronize:
             self.state = new_state[:3]
-            self.apply_scene_op(show_slices, self._slicer, self.state)
+            self.apply_scene_op(self._apply_slice_position)
             if (
                 len(new_state) == 4
                 and self._has_directions
@@ -479,22 +483,26 @@ class Image3D(Visualization):
                 actor.material.depth_write = True
                 actor.material.alpha_mode = "bayer"
 
-    def _set_slice_state(self, visibility, state):
-        """Update per-axis slice visibility and slice positions.
-
-        No-op if the slicer actor has not been created yet.
+    def set_slice_visibility(self, visibility):
+        """Set X/Y/Z slice visibility independently of slice synchronization.
 
         Parameters
         ----------
-        visibility : tuple(bool, bool, bool)
-            Per-axis visibility flags for X/Y/Z slices.
-        state : array-like
-            Current slice state for X/Y/Z.
+        visibility : sequence of bool
+            Three per-axis visibility flags.
         """
+        self._slice_visibility = list(visibility)
+        self.apply_scene_op(self._apply_slice_visibility)
+
+    def _apply_slice_visibility(self):
+        """Apply the current per-axis visibility to the slicer actor."""
         if self._slicer is None:
             return
-        set_group_visibility(self._slicer, visibility)
-        show_slices(self._slicer, state)
+        set_group_visibility(self._slicer, tuple(self._slice_visibility))
+
+    def _apply_slice_position(self):
+        """Apply the current slice positions to the slicer actor."""
+        show_slices(self._slicer, self.state)
 
     def _set_clim(self, value_range):
         """Set the scalar display range on every slice actor's material.
@@ -587,12 +595,14 @@ class Image3D(Visualization):
                 )
             )
         render_data = render_group("Slice", slicers)
+        visibility = self._slice_visibility.copy()
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
                 slider_state[idx] = round(new)
                 self.state = slice_state_from_slider_values(
                     slider_state, affine=self.affine
                 )
+                self.apply_scene_op(self._apply_slice_position)
                 if self._synchronize and self._sync_callabck is not None:
                     self._sync_callabck(
                         self,
@@ -600,12 +610,9 @@ class Image3D(Visualization):
                         if self._has_directions
                         else self.state,
                     )
-            self._slice_visibility[idx] = toggle
-        self.apply_scene_op(
-            self._set_slice_state,
-            tuple(self._slice_visibility),
-            np.asarray(self.state),
-        )
+            visibility[idx] = toggle
+        if visibility != self._slice_visibility:
+            self.set_slice_visibility(visibility)
 
         imgui.spacing()
         volume_for_range = (

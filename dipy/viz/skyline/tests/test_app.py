@@ -1421,3 +1421,243 @@ def test_explicit_standard_odfs_reject_symmetric_only_count(image_skyline, caplo
         )
     assert image_skyline._sh_glyph_visualizations == []
     assert "invalid_standard" in caplog.text
+
+
+def _assert_slice_visibility(viz, expected):
+    assert viz._slice_visibility == list(expected)
+    if isinstance(viz, Image3D):
+        assert [child.visible for child in viz.actor.children] == list(expected)
+    elif isinstance(viz, Peak3D):
+        for child in viz.actor.children:
+            assert tuple(child.material.visibility) == tuple(expected)
+    else:
+        material = viz._slicer._glyph_actor.material
+        assert (material.vis_x, material.vis_y, material.vis_z) == tuple(expected)
+
+
+def test_global_positions_move_queued_actors_without_changing_direction(make_skyline):
+    viewer = make_skyline(
+        images=[
+            _image_input("a.nii.gz"),
+            _image_input("b.nii.gz", shape=(*SHAPE, 3)),
+            _image_input("fixed.nii.gz"),
+        ],
+        peaks=[_peak_input()],
+        sh_coeffs=[_sh_input()],
+    )
+    first, direction_image, fixed = viewer._image_visualizations
+    fixed._synchronize = False
+    fixed_state = np.array(fixed.state).copy()
+    fixed_planes = [child.material.plane.copy() for child in fixed.actor.children]
+    direction_image.update_state(np.array([2, 2, 2, 2]))
+    viewer._is_drawing_ui = True
+    for axis in range(3):
+        viewer._set_global_slice_position(axis, 1)
+    viewer._is_drawing_ui = False
+    viewer._flush_pending_sync_requests()
+    viewer._flush_pending_scene_ops()
+
+    for viz in (
+        first,
+        direction_image,
+        *viewer._peak_visualizations,
+        *viewer._sh_glyph_visualizations,
+    ):
+        npt.assert_allclose(viz.state, [1, 1, 1])
+    for image in (first, direction_image):
+        npt.assert_allclose(
+            [child.material.plane[3] for child in image.actor.children],
+            np.ones(3) + 1e-3,
+        )
+    for chunk in viewer._peak_visualizations[0].actor.children:
+        npt.assert_allclose(chunk.cross_section, [1, 1, 1])
+    material = viewer._sh_glyph_visualizations[0]._slicer._glyph_actor.material
+    npt.assert_allclose(
+        [material.active_slice_x, material.active_slice_y, material.active_slice_z],
+        [1, 1, 1],
+    )
+    assert direction_image._volume_idx == 2
+    npt.assert_allclose(fixed.state, fixed_state)
+    npt.assert_allclose(
+        [child.material.plane for child in fixed.actor.children], fixed_planes
+    )
+
+
+def test_global_visibility_uses_latest_action_across_all_renderers(make_skyline):
+    viewer = make_skyline(
+        images=[_image_input(shape=(*SHAPE, 3))],
+        peaks=[_peak_input()],
+        sh_coeffs=[_sh_input()],
+    )
+    image, peak, glyph = viewer.visualizations
+    peak._synchronize = False
+    states = [np.array(viz.state).copy() for viz in viewer.visualizations]
+    image._visible = False
+    image.actor.visible = False
+
+    viewer._is_drawing_ui = True
+    viewer._set_global_slice_visibility(0, False)
+    assert viewer._get_global_slice_controls()[3] == [False, True, True]
+    viewer._is_drawing_ui = False
+    viewer._flush_pending_scene_ops()
+    for viz in viewer.visualizations:
+        _assert_slice_visibility(viz, [False, True, True])
+
+    glyph.set_slice_visibility([True, True, True])
+    _assert_slice_visibility(image, [False, True, True])
+    _assert_slice_visibility(peak, [False, True, True])
+    _assert_slice_visibility(glyph, [True, True, True])
+    assert viewer._get_global_slice_controls()[3] == [True, True, True]
+
+    viewer._set_global_slice_visibility(0, False)
+    image.update_state(np.array([*image.state, 1]))
+    _assert_slice_visibility(image, [False, True, True])
+    for viz in viewer.visualizations:
+        _assert_slice_visibility(viz, [False, True, True])
+    viewer._set_global_slice_visibility(0, True)
+    for viz, state in zip(viewer.visualizations, states):
+        _assert_slice_visibility(viz, [True, True, True])
+        npt.assert_allclose(viz.state, state)
+    assert image._visible is False
+    assert image.actor.visible is False
+    assert image._volume_idx == 1
+
+
+def test_global_positions_use_affine_coordinates_and_target_snapping(make_skyline):
+    affine = np.diag([2.0, 1.0, 3.0, 1.0])
+    affine[:3, 3] = [10, 20, 30]
+    viewer = make_skyline(
+        images=[(_volume(), affine, "reference")],
+        peaks=[_peak_input()],
+        sh_coeffs=[_sh_input()],
+    )
+    for axis, value in enumerate((8, 2, 9)):
+        viewer._set_global_slice_position(axis, value)
+    npt.assert_allclose(viewer.active_image.state, [18, 22, 39])
+    name, values, bounds, _ = viewer._get_global_slice_controls()
+    assert name == "reference"
+    npt.assert_allclose(values, [8, 2, 9])
+    assert bounds == ((0, 16), (0, 9), (0, 30))
+    for chunk in viewer._peak_visualizations[0].actor.children:
+        npt.assert_allclose(chunk.cross_section, [2, 2, 2])
+    material = viewer._sh_glyph_visualizations[0]._slicer._glyph_actor.material
+    npt.assert_allclose(
+        [material.active_slice_x, material.active_slice_y, material.active_slice_z],
+        [1, 1, 1],
+    )
+
+
+@pytest.mark.parametrize("dataset_type", ["peaks", "sh_coeffs"])
+def test_global_controls_work_without_images_or_synchronized_reference(
+    make_skyline, dataset_type
+):
+    data = _peak_input() if dataset_type == "peaks" else _sh_input()
+    viewer = make_skyline(**{dataset_type: [data]})
+    viz = viewer.visualizations[0]
+    assert viewer._get_global_slice_reference() is viz
+    viewer._set_global_slice_position(0, 1)
+    assert viz.state[0] == 1
+    viz._synchronize = False
+    before = np.array(viz.state).copy()
+    viewer._set_global_slice_position(0, 0)
+    viewer._set_global_slice_visibility(0, False)
+    assert viewer._get_global_slice_controls() == (
+        None,
+        None,
+        None,
+        [False, True, True],
+    )
+    _assert_slice_visibility(viz, [False, True, True])
+    npt.assert_allclose(viz.state, before)
+
+
+def test_global_reference_excludes_removed_and_unsynchronized_datasets(make_skyline):
+    viewer = make_skyline(
+        images=[_image_input("a"), _image_input("b")],
+        peaks=[_peak_input()],
+        sh_coeffs=[_sh_input()],
+    )
+    first, second = viewer._image_visualizations
+    peak = viewer._peak_visualizations[0]
+    glyph = viewer._sh_glyph_visualizations[0]
+    assert viewer._get_global_slice_reference() is second
+    second._synchronize = False
+    viewer._slice_focus_viz = peak
+    assert viewer._get_global_slice_reference() is peak
+    peak._synchronize = False
+    assert viewer._get_global_slice_reference() is glyph
+    viewer._remove_visualization(second)
+    assert viewer.active_image is first
+    assert first.active is True
+    assert viewer._get_global_slice_reference() is first
+    viewer._slice_focus_viz = second
+    viewer._remove_visualization(first)
+    assert viewer.active_image is None
+    assert viewer._get_global_slice_reference() is glyph
+    viewer._remove_visualization(peak)
+    viewer._remove_visualization(glyph)
+    assert viewer._get_global_slice_controls() is None
+
+
+def test_new_slice_datasets_inherit_aggregate_visibility(make_skyline):
+    viewer = make_skyline(images=[_image_input("original")])
+    viewer._set_global_slice_visibility(0, False)
+    original = viewer.active_image
+    viewer._queue_loaded_visualizations(
+        {
+            "images": [_image_input("new")],
+            "peaks": [_peak_input()],
+            "shm_coeffs": [_sh_input()],
+            "rois": [],
+            "surfaces": [],
+            "tractograms": [],
+        }
+    )
+    viewer._drain_pending_visualizations()
+    for viz in viewer.visualizations:
+        _assert_slice_visibility(viz, [False, True, True])
+    viewer._sh_glyph_visualizations[0].set_slice_visibility([True, True, True])
+    viewer._queue_loaded_visualizations(
+        {
+            "images": [_image_input("mixed")],
+            "peaks": [],
+            "shm_coeffs": [],
+            "rois": [],
+            "surfaces": [],
+            "tractograms": [],
+        }
+    )
+    viewer._drain_pending_visualizations()
+    _assert_slice_visibility(viewer._image_visualizations[-1], [True, True, True])
+    _assert_slice_visibility(original, [False, True, True])
+
+
+def test_global_position_preserves_unsynchronized_shared_state_without_affine(
+    make_skyline,
+):
+    viewer = make_skyline(
+        images=[(_volume(), None, name) for name in ("reference", "fixed", "source")]
+    )
+    reference, fixed, source = viewer._image_visualizations
+    source.update_state(np.array([2.0, 2.0, 2.0]))
+    viewer._synchronize_visualizations(source, source.state)
+    fixed._synchronize = False
+    source._synchronize = False
+    before = np.array(fixed.state).copy()
+    before_planes = np.array([child.material.plane for child in fixed.actor.children])
+
+    viewer._set_global_slice_position(0, 1)
+
+    npt.assert_allclose(reference.state, [1, 2, 2])
+    npt.assert_array_equal(fixed.state, before)
+    npt.assert_array_equal(
+        [child.material.plane for child in fixed.actor.children], before_planes
+    )
+    for image in viewer._image_visualizations:
+        image.active = image is fixed
+    viewer._arrange_image_actors()
+    assert viewer.active_image is fixed
+    npt.assert_allclose(
+        [child.material.plane[3] for child in fixed.actor.children],
+        before_planes[:, 3] + len(viewer._image_visualizations) * 0.005,
+    )
