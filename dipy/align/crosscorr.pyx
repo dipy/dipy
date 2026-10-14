@@ -371,7 +371,8 @@ cdef double _compute_cc_2d(
         double[:] metric_gradient=None,
         double[:] theta=None,
         Transform transform=None,
-        double[:, :] grid2world=None):
+        double[:, :] grid2world=None,
+        int[:, :] mask=None):
     """Compute 2D CC energy and write the requested gradient output.
 
     This helper contains the common computation used by SyN and affine
@@ -415,6 +416,9 @@ cdef double _compute_cc_2d(
         transform from static grid coordinates to the physical coordinates
         where the affine transform Jacobian must be evaluated. Used only for
         affine registration and required when ``metric_gradient`` is not None.
+    mask : array, shape (R, C), optional
+        mask selecting neighborhood centers that contribute to the metric.
+        Nonzero values are included and zero values are excluded.
 
     Returns
     -------
@@ -433,11 +437,18 @@ cdef double _compute_cc_2d(
         double spatial_derivative
         double[:, :] J
         double[:] x
+        bint use_mask
 
     if metric_gradient is not None:
         n = metric_gradient.shape[0]
         J = np.empty((2, n), dtype=np.float64)
         x = np.empty((2,), dtype=np.float64)
+    if mask is not None and (
+        mask.shape[0] != nr or mask.shape[1] != nc
+    ):
+        raise ValueError("mask and factors must have the same spatial shape")
+
+    use_mask = mask is not None
 
     with nogil:
         if metric_gradient is not None:
@@ -445,6 +456,8 @@ cdef double _compute_cc_2d(
 
         for r in range(radius, nr-radius):
             for c in range(radius, nc-radius):
+                if use_mask and mask[r, c] == 0:
+                    continue
                 Ii = factors[r, c, 0]
                 Ji = factors[r, c, 1]
                 sfm = factors[r, c, 2]
@@ -505,7 +518,8 @@ cdef double _compute_cc_3d(
         double[:] metric_gradient=None,
         double[:] theta=None,
         Transform transform=None,
-        double[:, :] grid2world=None):
+        double[:, :] grid2world=None,
+        int[:, :, :] mask=None):
     """Compute 3D CC energy and write the requested gradient output.
 
     This helper contains the common computation used by SyN and affine
@@ -549,6 +563,9 @@ cdef double _compute_cc_3d(
         transform from static grid coordinates to the physical coordinates
         where the affine transform Jacobian must be evaluated. Used only for
         affine registration and required when ``metric_gradient`` is not None.
+    mask : array, shape (S, R, C), optional
+        mask selecting neighborhood centers that contribute to the metric.
+        Nonzero values are included and zero values are excluded.
 
     Returns
     -------
@@ -568,11 +585,20 @@ cdef double _compute_cc_3d(
         double spatial_derivative
         double[:, :] J
         double[:] x
+        bint use_mask
 
     if metric_gradient is not None:
         n = metric_gradient.shape[0]
         J = np.empty((3, n), dtype=np.float64)
         x = np.empty((3,), dtype=np.float64)
+    if mask is not None and (
+        mask.shape[0] != ns
+        or mask.shape[1] != nr
+        or mask.shape[2] != nc
+    ):
+        raise ValueError("mask and factors must have the same spatial shape")
+
+    use_mask = mask is not None
 
     with nogil:
         if metric_gradient is not None:
@@ -581,6 +607,8 @@ cdef double _compute_cc_3d(
         for s in range(radius, ns-radius):
             for r in range(radius, nr-radius):
                 for c in range(radius, nc-radius):
+                    if use_mask and mask[s, r, c] == 0:
+                        continue
                     Ii = factors[s, r, c, 0]
                     Ji = factors[s, r, c, 1]
                     sfm = factors[s, r, c, 2]
@@ -991,7 +1019,8 @@ def compute_cc_affine_2d(
         double[:] theta=None,
         Transform transform=None,
         double[:, :] grid2world=None,
-        double[:] metric_gradient=None):
+        double[:] metric_gradient=None,
+        int[:, :] mask=None):
     """Compute 2D CC energy and, if requested, its parameter gradient.
 
     Computes the local normalized cross-correlation energy and, when
@@ -1032,6 +1061,9 @@ def compute_cc_affine_2d(
     metric_gradient : array, shape (n,), optional
         array to write the gradient of the cross correlation energy with
         respect to ``theta``. If None, the gradient is not computed.
+    mask : array, shape (R, C), optional
+        mask selecting neighborhood centers that contribute to the metric.
+        Nonzero values are included and zero values are excluded.
 
     Returns
     -------
@@ -1060,6 +1092,7 @@ def compute_cc_affine_2d(
         theta,
         transform,
         grid2world,
+        mask,
     )
 
 
@@ -1073,7 +1106,8 @@ def compute_cc_affine_3d(
         double[:] theta=None,
         Transform transform=None,
         double[:, :] grid2world=None,
-        double[:] metric_gradient=None):
+        double[:] metric_gradient=None,
+        int[:, :, :] mask=None):
     """Compute 3D CC energy and, if requested, its parameter gradient.
 
     Computes the local normalized cross-correlation energy and, when
@@ -1114,6 +1148,9 @@ def compute_cc_affine_3d(
     metric_gradient : array, shape (n,), optional
         array to write the gradient of the cross correlation energy with
         respect to ``theta``. If None, the gradient is not computed.
+    mask : array, shape (S, R, C), optional
+        mask selecting neighborhood centers that contribute to the metric.
+        Nonzero values are included and zero values are excluded.
 
     Returns
     -------
@@ -1142,4 +1179,5 @@ def compute_cc_affine_3d(
         theta,
         transform,
         grid2world,
+        mask,
     )
