@@ -5,6 +5,7 @@ import os
 
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
+from dipy.workflows.templates import PREDEFINED_PIPELINES, list_predefined_pipelines
 
 # =============================================================================
 # Data Analysis Functions
@@ -86,7 +87,7 @@ def analyze_bvals(*, bvals_file, b0_threshold=50):
     supports_dki = num_bvals >= 3
 
     if is_multi_shell and supports_dki:
-        recommended_pipeline = "multi_shell"
+        recommended_pipeline = "full"
         recommended_methods = ["dti", "dki", "csd", "csa", "gqi"]
     elif is_single_shell and non_zero_bvals and non_zero_bvals[0] >= 1000:
         recommended_pipeline = "tractography"
@@ -95,7 +96,7 @@ def analyze_bvals(*, bvals_file, b0_threshold=50):
         recommended_pipeline = "dti_only"
         recommended_methods = ["dti"]
     else:
-        recommended_pipeline = "basic"
+        recommended_pipeline = "preprocessing"
         recommended_methods = ["dti"]
 
     return DataCharacteristics(
@@ -914,11 +915,6 @@ def interactive_pipeline_selection(*, data_chars):
     str or None
         Selected pipeline name, or None for custom interactive mode.
     """
-    from dipy.workflows.templates import (
-        PREDEFINED_PIPELINES,
-        list_predefined_pipelines,
-    )
-
     print("\n" + "=" * 60)
     print("Pipeline Selection")
     print("=" * 60)

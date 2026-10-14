@@ -297,7 +297,8 @@ def _stage_parameter_errors(*, stage):
     """List the parameters of a stage that its workflow cannot accept.
 
     A stage may set any argument of the workflow ``run`` or ``__init__``
-    methods, and must set every ``run`` argument that has no default.
+    methods, at its top level or under its ``inputs`` and ``params`` tables,
+    and must set every ``run`` argument that has no default.
 
     Parameters
     ----------
@@ -316,12 +317,10 @@ def _stage_parameter_errors(*, stage):
     init_params = inspect.signature(workflow_class.__init__).parameters
     variadic = (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
 
+    given = _stage_run_params(stage)
+
     unknown = sorted(
-        key
-        for key in stage
-        if key not in ("name", "cli")
-        and key not in run_params
-        and key not in init_params
+        key for key in given if key not in run_params and key not in init_params
     )
     missing = [
         name
@@ -329,7 +328,7 @@ def _stage_parameter_errors(*, stage):
         if name != "self"
         and param.default is inspect.Parameter.empty
         and param.kind not in variadic
-        and name not in stage
+        and name not in given
     ]
 
     errors = []
@@ -424,6 +423,91 @@ def validate_pipeline_config(pipeline_stages):
                     )
 
     return len(errors) == 0, errors
+
+
+def _unset_io_inputs(*, stage, io_config):
+    """List the ``[io]`` entries a stage references but that hold no value.
+
+    Parameters
+    ----------
+    stage : dict
+        Stage configuration from a ``[[pipeline]]`` section.
+    io_config : dict
+        Values of the ``[io]`` section.
+
+    Returns
+    -------
+    list of str
+        Sorted ``[io]`` keys, excluding the ``out_*`` ones.
+    """
+    refs = set()
+    pending = [value for key, value in stage.items() if key not in ("name", "cli")]
+    while pending:
+        value = pending.pop()
+        if isinstance(value, dict):
+            pending.extend(value.values())
+        elif isinstance(value, list):
+            pending.extend(value)
+        else:
+            refs.update(extract_variable_references(value))
+
+    keys = {ref.split(".", 1)[1] for ref in refs if ref.startswith("io.")}
+    return sorted(
+        key
+        for key in keys
+        if not key.startswith("out_") and not str(io_config.get(key, "") or "").strip()
+    )
+
+
+def optional_stages_to_skip(*, pipeline_stages, execution_order, io_config):
+    """Find the optional stages that cannot run with the inputs at hand.
+
+    A stage marked ``optional = true`` is skipped when an ``[io]`` entry it
+    references is empty, for instance a T1 registration run without a T1
+    image. An optional stage reading the outputs of a skipped stage is
+    skipped too.
+
+    Parameters
+    ----------
+    pipeline_stages : list
+        List of stage configurations from [[pipeline]] sections.
+    execution_order : list of str
+        Stage names in execution order, from :func:`topological_sort`.
+    io_config : dict
+        Values of the ``[io]`` section.
+
+    Returns
+    -------
+    dict
+        Mapping of skipped stage name to the reason it is skipped.
+
+    Raises
+    ------
+    PipelineError
+        If a stage that is not optional reads the outputs of a skipped stage.
+    """
+    stage_map = {stage["name"]: stage for stage in pipeline_stages}
+    dependencies = build_dependency_graph(pipeline_stages)
+    skipped = {}
+
+    for name in execution_order:
+        stage = stage_map[name]
+        unset = _unset_io_inputs(stage=stage, io_config=io_config)
+        upstream = sorted(dependencies.get(name, set()) & skipped.keys())
+
+        if stage.get("optional", False) and unset:
+            skipped[name] = f"no value for {', '.join(f'io.{k}' for k in unset)}"
+        elif upstream and stage.get("optional", False):
+            skipped[name] = f"needs the skipped stage(s) {', '.join(upstream)}"
+        elif upstream:
+            raise PipelineError(
+                f"Stage '{name}' needs the outputs of the skipped optional "
+                f"stage(s) {', '.join(upstream)}; mark it optional or provide "
+                "the missing inputs",
+                stage=name,
+            )
+
+    return skipped
 
 
 def build_dependency_graph(pipeline_stages):
@@ -927,6 +1011,9 @@ def _execute_stage_isolated(*, module_name, class_name, init_params, run_params)
     return queue.get_nowait()
 
 
+_STAGE_KEYS = ("name", "cli", "inputs", "params", "optional")
+
+
 def _stage_run_params(resolved_config):
     """Merge the ``inputs``, ``params`` and top-level keys of a stage config.
 
@@ -946,7 +1033,7 @@ def _stage_run_params(resolved_config):
         **{
             key: value
             for key, value in resolved_config.items()
-            if key not in ("name", "cli", "inputs", "params")
+            if key not in _STAGE_KEYS
         },
     }
 
@@ -1008,6 +1095,8 @@ def _write_stage_qc(
             qc = qc_result(error=error, status="FAIL")
         elif record.get("skipped") == "restart" and previous is not None:
             qc = previous["qc"]
+        elif record.get("skipped") == "optional":
+            qc = qc_result(status="INFO")
         else:
             try:
                 resolved = resolve_stage_parameters(
@@ -1441,14 +1530,15 @@ def execute_semantic_pipeline(
     -------
     dict
         Execution information with the keys ``stages``, ``total_time``,
-        ``dag_visualization``, ``execution_order``, ``report`` and
-        ``dry_run``.
+        ``dag_visualization``, ``execution_order``, ``optional_skips``
+        (skipped optional stage name to reason), ``report`` and ``dry_run``.
 
     Raises
     ------
     PipelineError
         If the configuration is invalid, the execution order cannot be
-        computed, the output directory lacks free space, or a stage fails.
+        computed, a required stage depends on a skipped optional stage, the
+        output directory lacks free space, or a stage fails.
     """
     pipeline_stages = config.get("pipeline", [])
     if not pipeline_stages:
@@ -1492,6 +1582,14 @@ def execute_semantic_pipeline(
     dag_viz = visualize_pipeline_dag(pipeline_stages, dependencies, execution_order)
     logger.info(dag_viz)
     logger.info(f"Execution order: {' → '.join(execution_order)}")
+
+    optional_skips = optional_stages_to_skip(
+        pipeline_stages=pipeline_stages,
+        execution_order=execution_order,
+        io_config=io_config,
+    )
+    for stage_name, reason in optional_skips.items():
+        logger.info(f"Skipping optional stage '{stage_name}': {reason}")
 
     # Detect and resolve output filename conflicts
     conflicts = detect_output_conflicts(pipeline_stages=pipeline_stages)
@@ -1585,6 +1683,7 @@ def execute_semantic_pipeline(
             "total_time": 0.0,
             "dag_visualization": dag_viz,
             "execution_order": list(execution_order),
+            "optional_skips": optional_skips,
             "report": None,
             "dry_run": True,
         }
@@ -1690,6 +1789,21 @@ def execute_semantic_pipeline(
         stage_config = stage_map[stage_name]
         stage_start = time.perf_counter()
 
+        if stage_name in optional_skips:
+            stages_info.append(
+                {
+                    "name": stage_name,
+                    "cli": stage_config.get("cli"),
+                    "duration": 0.0,
+                    "success": True,
+                    "outputs": {},
+                    "skipped": "optional",
+                    "reason": optional_skips[stage_name],
+                }
+            )
+            write_qc(record=stages_info[-1])
+            continue
+
         if not force:
             already_done = discover_stage_outputs(
                 stage_name=stage_name,
@@ -1789,6 +1903,7 @@ def execute_semantic_pipeline(
         "total_time": total_time,
         "dag_visualization": dag_viz,
         "execution_order": full_execution_order,
+        "optional_skips": optional_skips,
         "report": None,
         "dry_run": False,
     }
@@ -2208,7 +2323,8 @@ def _validate_io_refs(*, config, io_config):
     """Check that every ``${io.x}`` reference of a pipeline resolves to a file.
 
     Keys listed in ``_NON_PATH_IO_KEYS`` hold scalar metadata rather than
-    paths and are never checked against the filesystem.
+    paths and are never checked against the filesystem. An empty entry used
+    only by optional stages is not an error: those stages are skipped.
 
     Parameters
     ----------
@@ -2225,6 +2341,7 @@ def _validate_io_refs(*, config, io_config):
         ``(reference, path)`` pairs whose ``[io]`` entry does not exist.
     """
     required_refs = set()
+    optional_refs = set()
 
     for stage in config.get("pipeline", []):
         for key, value in stage.items():
@@ -2236,15 +2353,19 @@ def _validate_io_refs(*, config, io_config):
                 io_key = ref.split(".", 1)[1]
                 if io_key.startswith("out_") or io_key in _NON_PATH_IO_KEYS:
                     continue
-                required_refs.add((ref, io_key))
+                if stage.get("optional", False):
+                    optional_refs.add((ref, io_key))
+                else:
+                    required_refs.add((ref, io_key))
 
     missing = []
     invalid = []
 
-    for ref, io_key in sorted(required_refs):
+    for ref, io_key in sorted(required_refs | optional_refs):
         path = str(io_config.get(io_key, "") or "")
         if not path.strip():
-            missing.append((ref, io_key))
+            if (ref, io_key) in required_refs:
+                missing.append((ref, io_key))
         elif not os.path.exists(path):
             invalid.append((ref, path))
 

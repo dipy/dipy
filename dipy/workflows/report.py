@@ -538,6 +538,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             color: #166534;
             border: 1px solid #bbf7d0;
         }}
+        .badge-optional {{
+            background: #f8fafc;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }}
         /* ── QC ──────────────────────────────────────────────── */
         .badge-pass {{
             background: #f0fdf4;
@@ -765,6 +770,11 @@ def _run_badge(record):
         return '<span class="stage-badge badge-restart">Previous Run</span>'
     if skipped == "user_mask":
         return '<span class="stage-badge badge-user-mask">User Mask</span>'
+    if skipped == "optional":
+        reason = html.escape(record.get("reason", ""), quote=True)
+        return (
+            f'<span class="stage-badge badge-optional" title="{reason}">Skipped</span>'
+        )
     return ""
 
 

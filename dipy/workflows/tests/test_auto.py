@@ -55,7 +55,7 @@ def test_auto_single_subject_dry_run():
 
         AutoFlow().run(
             [paths["dwi"], paths["bvals"], paths["bvecs"]],
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
             out_dir=out_dir,
         )
@@ -75,7 +75,7 @@ def test_auto_releases_log_files():
         inputs = [paths["dwi"], paths["bvals"], paths["bvecs"]]
         out_dir = os.path.join(tmp, "out")
 
-        AutoFlow().run(inputs, pipeline_type="denoise", dry_run=True, out_dir=out_dir)
+        AutoFlow().run(inputs, pipeline_type="dti_only", dry_run=True, out_dir=out_dir)
         npt.assert_equal(logging.getLogger("dipy").handlers, handlers)
 
         npt.assert_raises(
@@ -93,7 +93,7 @@ def test_auto_releases_log_files():
             [root, os.path.join(tmp, "deriv")],
             bids=True,
             participant_label=["01"],
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
         )
         npt.assert_equal(logging.getLogger("dipy").handlers, handlers)
@@ -186,7 +186,7 @@ def test_auto_missing_inputs():
             SystemExit,
             AutoFlow().run,
             [os.path.join(tmp, "nope.nii.gz"), paths["bvals"], paths["bvecs"]],
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
             out_dir=out_dir,
         )
@@ -203,7 +203,7 @@ def test_auto_rejects_invalid_mask():
             AutoFlow().run,
             [paths["dwi"], paths["bvals"], paths["bvecs"]],
             mask_file=mask_file,
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
             out_dir=os.path.join(tmp, "out"),
         )
@@ -232,7 +232,7 @@ def test_auto_bids_dry_run():
             [root, deriv, "participant"],
             bids=True,
             participant_label=["01", "02"],
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
         )
 
@@ -243,7 +243,7 @@ def test_auto_bids_dry_run():
 
         summary = _summary(deriv)
         npt.assert_equal(len(summary["runs"]), 4)
-        npt.assert_equal(summary["pipeline"], "denoise")
+        npt.assert_equal(summary["pipeline"], "dti_only")
         npt.assert_equal(summary["bids_dir"], root)
 
         # one configuration per acquisition, each pointing at its own DWI
@@ -271,7 +271,7 @@ def test_auto_bids_default_derivatives_root():
             [root],
             bids=True,
             participant_label=["01", "02"],
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
         )
 
@@ -292,7 +292,7 @@ def test_auto_bids_filters():
             bids=True,
             participant_label=["02"],
             session_label=["1"],
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
         )
 
@@ -311,7 +311,7 @@ def test_auto_bids_no_match_exits():
             [root, os.path.join(tmp, "deriv")],
             bids=True,
             participant_label=["99"],
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
         )
 
@@ -325,7 +325,7 @@ def test_auto_bids_derivatives_layout():
             [root, deriv],
             bids=True,
             participant_label=["01", "02"],
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
         )
 
@@ -356,7 +356,8 @@ def test_auto_bids_missing_gradients_is_isolated():
             AutoFlow().run,
             [root, deriv],
             bids=True,
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
+            dry_run=True,
         )
 
         summary = _summary(deriv)
@@ -380,7 +381,7 @@ def test_auto_bids_stop_on_error():
             AutoFlow().run,
             [str(root), deriv],
             bids=True,
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             stop_on_error=True,
             dry_run=True,
         )
@@ -400,7 +401,7 @@ def test_auto_bids_conflicting_inputs():
             AutoFlow().run,
             [root, paths["dwi"]],
             bids=True,
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
         )
 
@@ -410,7 +411,7 @@ def test_auto_bids_conflicting_inputs():
             [root],
             bids=True,
             t1_file=paths["dwi"],
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
         )
 
@@ -423,7 +424,7 @@ def test_auto_bids_rejects_group_level():
             AutoFlow().run,
             [root, os.path.join(tmp, "deriv"), "group"],
             bids=True,
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
         )
 
@@ -435,7 +436,7 @@ def test_auto_detects_bids_without_flag():
             SystemExit,
             AutoFlow().run,
             [root],
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
         )
 
@@ -462,7 +463,7 @@ def test_auto_bids_missing_dataset_description():
             AutoFlow().run,
             [str(root), os.path.join(tmp, "deriv")],
             bids=True,
-            pipeline_type="denoise",
+            pipeline_type="dti_only",
             dry_run=True,
         )
 
@@ -472,7 +473,9 @@ def test_auto_bids_smoke():
         root = _phantom_bids_tree(Path(tmp) / "ds")
         deriv = os.path.join(tmp, "deriv")
 
-        AutoFlow().run([root, deriv, "participant"], bids=True, pipeline_type="denoise")
+        AutoFlow().run(
+            [root, deriv, "participant"], bids=True, pipeline_type="dti_only"
+        )
 
         summary = _summary(deriv)
         npt.assert_equal([r["status"] for r in summary["runs"]], ["completed"])

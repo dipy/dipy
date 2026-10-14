@@ -7,25 +7,20 @@ Automatic Pipelines
 ``dipy_auto`` runs a whole diffusion pipeline from a single command. A pipeline
 is a list of stages described in a TOML file; each stage names a DIPY command
 line workflow and how its inputs connect to the outputs of the stages before
-it. Nine pipelines ship with DIPY, from plain denoising to a full
+it. Four pipelines ship with DIPY, from plain denoising to a full
 preprocessing, reconstruction, tracking and bundle segmentation chain.
 
 ====================== ======================================================
 Name                   Stages
 ====================== ======================================================
-``denoise``            NLMeans denoising, threshold mask, image information
-``basic``              ``denoise`` with a median Otsu brain extraction
 ``preprocessing``      b0 extraction, brain mask, Gibbs unringing, motion
                        correction, MP-PCA denoising
 ``dti_only``           Denoising, brain mask, DTI fit and tensor metrics
-``multi_shell``        Denoising, brain mask, DTI, DKI, CSD, CSA and GQI fits
 ``tractography``       Denoising, brain mask, DTI and CSD fits, tracking
-``full``               Full preprocessing, DTI and FORCE fits, tracking, SLR to
-                       an atlas, RecoBundles, bundle labelling, BUAN profiles
-``full_with_motion``   ``full`` with motion correction
-``comprehensive``      Full preprocessing with motion correction, DTI, DKI, CSD,
-                       CSA, GQI and FORCE fits, tracking, SLR and RecoBundles for
-                       each method
+``full``               Full preprocessing with motion correction, T1
+                       registration to the b0, DTI and FORCE fits, tracking,
+                       SLR to an atlas, RecoBundles, bundle labelling, BUAN
+                       profiles
 ====================== ======================================================
 
 ``full`` runs when neither ``--pipeline_type`` nor a configuration file is
@@ -48,6 +43,9 @@ Add the companion images the pipeline needs::
     dipy_auto dwi.nii.gz dwi.bval dwi.bvec --t1_file t1.nii.gz \
         --mask_file brain_mask.nii.gz --out_dir results
 
+In ``full``, the T1 image is registered rigidly to the mean b0, giving
+``t1w_dwispace.nii.gz`` and its transform ``t1w_to_dwi_affine.txt``; without
+``--t1_file`` that stage is skipped and the rest of the pipeline runs as usual.
 A mask given with ``--mask_file`` must be binary and cover at least a quarter
 of the volume. It replaces the output of every stage that computes a brain
 mask, and those stages are skipped. Pipelines with ``dipy_slr`` or
@@ -125,6 +123,20 @@ workflow behind ``cli``, under the same name as its command line option.
 file a previous stage wrote for one of its ``out_*`` arguments, or its
 ``out_dir``. These references alone set the execution order: stages run in
 dependency order, whatever their order in the file.
+
+A stage with ``optional = true`` runs only when every ``[io]`` entry it
+references has a value. Otherwise it is skipped, shown as such in the reports,
+and so is every optional stage that reads its outputs; a stage that is not
+optional and reads them stops the run before it starts. This is how ``full``
+registers the T1 image only when one is given::
+
+    [[pipeline]]
+    name = "t1_registration"
+    cli = "dipy_align_affine"
+    static_image_files = "${b0_extraction.out_b0}"
+    moving_image_files = "${io.t1w}"
+    transform = "rigid"
+    optional = true
 
 Run it with::
 

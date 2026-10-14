@@ -6,8 +6,9 @@ import tomllib
 import numpy as np
 import numpy.testing as npt
 import pytest
+from scipy.ndimage import shift
 
-from dipy.io.image import save_nifti
+from dipy.io.image import load_nifti, save_nifti
 from dipy.workflows import templates
 from dipy.workflows.combined_workflow import (
     PipelineError,
@@ -25,6 +26,7 @@ from dipy.workflows.combined_workflow import (
     execute_semantic_pipeline,
     extract_variable_references,
     format_toml_config,
+    optional_stages_to_skip,
     resolve_output_conflicts,
     resolve_stage_parameters,
     topological_sort,
@@ -168,6 +170,74 @@ def test_validate_pipeline_config():
         npt.assert_equal(any(expected in e for e in errors), True)
 
 
+def test_validate_pipeline_config_parameter_tables():
+    stages = [
+        {
+            "name": "mask",
+            "cli": "dipy_mask",
+            "inputs": {"input_files": "${io.dwi}"},
+            "params": {"lb": 15},
+            "optional": True,
+        }
+    ]
+    npt.assert_equal(validate_pipeline_config(stages), (True, []))
+
+    stages[0]["params"] = {"lbb": 15}
+    is_valid, errors = validate_pipeline_config(stages)
+    npt.assert_equal(is_valid, False)
+    npt.assert_equal(len(errors), 2)
+
+
+def test_optional_stages_to_skip():
+    stages = [
+        {"name": "b0", "cli": "x", "input_files": "${io.dwi}"},
+        {
+            "name": "t1_reg",
+            "cli": "x",
+            "static": "${b0.out_b0}",
+            "moving": ["${io.t1w}"],
+            "optional": True,
+        },
+        {
+            "name": "t1_seg",
+            "cli": "x",
+            "input": "${t1_reg.out_moved}",
+            "optional": True,
+        },
+        {"name": "dti", "cli": "x", "input_files": "${io.dwi}"},
+    ]
+    order = ["b0", "t1_reg", "t1_seg", "dti"]
+
+    npt.assert_equal(
+        optional_stages_to_skip(
+            pipeline_stages=stages,
+            execution_order=order,
+            io_config={"dwi": "dwi.nii.gz", "t1w": "t1.nii.gz"},
+        ),
+        {},
+    )
+
+    skipped = optional_stages_to_skip(
+        pipeline_stages=stages,
+        execution_order=order,
+        io_config={"dwi": "dwi.nii.gz", "t1w": ""},
+    )
+    npt.assert_equal(
+        skipped,
+        {
+            "t1_reg": "no value for io.t1w",
+            "t1_seg": "needs the skipped stage(s) t1_reg",
+        },
+    )
+
+    del stages[2]["optional"]
+    with pytest.raises(PipelineError) as error:
+        optional_stages_to_skip(
+            pipeline_stages=stages, execution_order=order, io_config={"dwi": "a"}
+        )
+    npt.assert_equal(error.value.stage, "t1_seg")
+
+
 def test_detect_and_resolve_output_conflicts():
     config = {
         "pipeline": [
@@ -306,6 +376,20 @@ def test_validate_io_refs():
 
         npt.assert_equal(missing, [("io.bvals", "bvals")])
         npt.assert_equal(invalid, [("io.bvecs", os.path.join(tmp, "nope"))])
+
+        # inputs of optional stages may be left empty, but not point nowhere
+        config["pipeline"].append(
+            {"name": "t1", "cli": "x", "moving": "${io.t1w}", "optional": True}
+        )
+        io_config.update(bvals=dwi, bvecs=dwi)
+        npt.assert_equal(
+            _validate_io_refs(config=config, io_config=io_config), ([], [])
+        )
+        io_config["t1w"] = os.path.join(tmp, "t1.nii.gz")
+        npt.assert_equal(
+            _validate_io_refs(config=config, io_config=io_config),
+            ([], [("io.t1w", os.path.join(tmp, "t1.nii.gz"))]),
+        )
 
 
 def test_validate_mask_file():
@@ -559,4 +643,76 @@ def test_execute_pipeline_stage_failure():
         npt.assert_equal(error.value.stage, "denoise")
         npt.assert_equal(
             os.path.exists(os.path.join(tmp, "reports", "index.html")), True
+        )
+
+
+def test_full_pipeline_skips_t1_registration_without_t1():
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        config = tomllib.loads(templates.get_predefined_pipeline(pipeline_name="full"))
+        io_config = {**config["io"], **paths, "out_dir": tmp}
+
+        info = execute_semantic_pipeline(
+            config=config, io_config=io_config, dry_run=True
+        )
+        npt.assert_equal(
+            info["optional_skips"], {"t1_registration": "no value for io.t1w"}
+        )
+
+        io_config["t1w"] = paths["dwi"]
+        info = execute_semantic_pipeline(
+            config=config, io_config=io_config, dry_run=True
+        )
+        npt.assert_equal(info["optional_skips"], {})
+
+
+def test_execute_pipeline_optional_t1_registration():
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        data, affine = load_nifti(paths["dwi"])
+        t1w = os.path.join(tmp, "t1w.nii.gz")
+        save_nifti(t1w, shift(data[..., 0], (1.5, -1, 0.5)).astype(np.float32), affine)
+        config = {
+            "pipeline": [
+                {
+                    "name": "b0_extraction",
+                    "cli": "dipy_extract_b0",
+                    "input_files": "${io.dwi}",
+                    "bvalues_files": "${io.bvals}",
+                },
+                {
+                    "name": "t1_registration",
+                    "cli": "dipy_align_affine",
+                    "static_image_files": "${b0_extraction.out_b0}",
+                    "moving_image_files": "${io.t1w}",
+                    "transform": "rigid",
+                    "optional": True,
+                },
+            ]
+        }
+
+        skipped_dir = os.path.join(tmp, "no_t1")
+        os.makedirs(skipped_dir)
+        info = execute_semantic_pipeline(
+            config=config,
+            io_config={**paths, "t1w": "", "out_dir": skipped_dir},
+        )
+        npt.assert_equal(info["stages"][1]["skipped"], "optional")
+        npt.assert_equal(
+            os.path.exists(os.path.join(skipped_dir, "moved.nii.gz")), False
+        )
+        with open(os.path.join(skipped_dir, "reports", "index.html")) as f:
+            npt.assert_equal("badge-optional" in f.read(), True)
+
+        out_dir = os.path.join(tmp, "with_t1")
+        os.makedirs(out_dir)
+        info = execute_semantic_pipeline(
+            config=config, io_config={**paths, "t1w": t1w, "out_dir": out_dir}
+        )
+        npt.assert_equal("skipped" in info["stages"][1], False)
+        # the 2.5 mm voxels of the phantom turn the voxel shift into millimetres
+        npt.assert_array_almost_equal(
+            np.loadtxt(info["stages"][1]["outputs"]["out_affine"])[:3, 3],
+            [3.75, -2.5, 1.25],
+            decimal=0,
         )

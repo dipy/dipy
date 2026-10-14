@@ -7,97 +7,6 @@ specification with [[pipeline]] sections and automatic DAG-based wiring.
 import logging
 
 # =============================================================================
-# Denoise Pipeline - Simple denoising example
-# =============================================================================
-
-DENOISE_PIPELINE = """
-[General]
-name = "denoise_pipeline"
-description = "Simple denoising pipeline with masking and info"
-version = "1.0.0"
-author = "DIPY Developers"
-
-[io]
-dwi = ""
-bvals = ""
-bvecs = ""
-t1w = ""
-bids_folder = ""
-dwi_opp_phase = ""
-pe_dir = ""
-total_readout_time = ""
-effective_echo_spacing = ""
-echo_time = ""
-repetition_time = ""
-out_dir = "."
-
-[[pipeline]]
-name = "denoise"
-cli = "dipy_denoise_nlmeans"
-input_files = "${io.dwi}"
-
-[[pipeline]]
-name = "mask"
-cli = "dipy_mask"
-input_files = "${denoise.out_denoised}"
-lb = 15
-
-[[pipeline]]
-name = "info"
-cli = "dipy_info"
-input_files = "${mask.out_mask}"
-"""
-
-# =============================================================================
-# Basic Pipeline - Minimal preprocessing
-# =============================================================================
-
-BASIC_PIPELINE = """
-[General]
-name = "basic_pipeline"
-description = "Basic preprocessing: denoise + brain extraction + info"
-version = "1.0.0"
-author = "DIPY Developers"
-
-[io]
-dwi = ""
-bvals = ""
-bvecs = ""
-t1w = ""
-bids_folder = ""
-dwi_opp_phase = ""
-pe_dir = ""
-total_readout_time = ""
-effective_echo_spacing = ""
-echo_time = ""
-repetition_time = ""
-out_dir = "."
-
-[[pipeline]]
-name = "denoise"
-cli = "dipy_denoise_nlmeans"
-input_files = "${io.dwi}"
-
-[[pipeline]]
-name = "brain_extraction"
-cli = "dipy_median_otsu"
-input_files = "${denoise.out_denoised}"
-save_masked = true
-vol_idx = "0, 1"
-
-[[pipeline]]
-name = "mask"
-cli = "dipy_mask"
-input_files = "${denoise.out_denoised}"
-lb = 15
-
-[[pipeline]]
-name = "info"
-cli = "dipy_info"
-input_files = "${mask.out_mask}"
-"""
-
-# =============================================================================
 # Preprocessing Pipeline - Complete preprocessing chain
 # =============================================================================
 
@@ -190,6 +99,7 @@ input_files = "${io.dwi}"
 name = "brain_mask"
 cli = "dipy_median_otsu"
 input_files = "${denoise.out_denoised}"
+bvalues_files = "${io.bvals}"
 median_radius = 2
 numpass = 5
 
@@ -202,91 +112,6 @@ bvectors_files = "${io.bvecs}"
 mask_files = "${brain_mask.out_mask}"
 fit_method = "WLS"
 b0_threshold = 50
-"""
-
-# =============================================================================
-# Multi-shell Pipeline - Multiple reconstruction methods
-# =============================================================================
-
-MULTI_SHELL_PIPELINE = """
-[General]
-name = "multi_shell_pipeline"
-description = "Preprocessing + multi-method (DTI, DKI, CSD, CSA, GQI, MAPMRI)"
-version = "1.0.0"
-author = "DIPY Developers"
-
-[io]
-dwi = ""
-bvals = ""
-bvecs = ""
-t1w = ""
-bids_folder = ""
-dwi_opp_phase = ""
-pe_dir = ""
-total_readout_time = ""
-effective_echo_spacing = ""
-echo_time = ""
-repetition_time = ""
-out_dir = "."
-
-# Preprocessing stages
-[[pipeline]]
-name = "denoise"
-cli = "dipy_denoise_mppca"
-input_files = "${io.dwi}"
-
-[[pipeline]]
-name = "brain_mask"
-cli = "dipy_median_otsu"
-input_files = "${denoise.out_denoised}"
-median_radius = 2
-numpass = 5
-
-# Reconstruction stages - run in parallel (no dependencies between them)
-[[pipeline]]
-name = "dti_fit"
-cli = "dipy_fit_dti"
-input_files = "${denoise.out_denoised}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
-mask_files = "${brain_mask.out_mask}"
-fit_method = "WLS"
-b0_threshold = 50
-
-[[pipeline]]
-name = "dki_fit"
-cli = "dipy_fit_dki"
-input_files = "${denoise.out_denoised}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
-mask_files = "${brain_mask.out_mask}"
-b0_threshold = 50
-
-[[pipeline]]
-name = "csd_fit"
-cli = "dipy_fit_csd"
-input_files = "${denoise.out_denoised}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
-mask_files = "${brain_mask.out_mask}"
-b0_threshold = 50
-
-[[pipeline]]
-name = "csa_fit"
-cli = "dipy_fit_csa"
-input_files = "${denoise.out_denoised}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
-mask_files = "${brain_mask.out_mask}"
-sh_order_max = 8
-
-[[pipeline]]
-name = "gqi_fit"
-cli = "dipy_fit_gqi"
-input_files = "${denoise.out_denoised}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
-mask_files = "${brain_mask.out_mask}"
 """
 
 # =============================================================================
@@ -324,6 +149,7 @@ input_files = "${io.dwi}"
 name = "brain_mask"
 cli = "dipy_median_otsu"
 input_files = "${denoise.out_denoised}"
+bvalues_files = "${io.bvals}"
 median_radius = 2
 numpass = 5
 
@@ -368,7 +194,7 @@ step_size = 0.5
 FULL_PIPELINE = """
 [General]
 name = "full_pipeline"
-description = "Full pipeline: preprocessing + reconstruction + tracking + SLR + bundles"
+description = "Full pipeline: preprocessing with motion correction + T1 registration + reconstruction + tracking + SLR + bundles"
 version = "1.0.0"
 author = "DIPY Developers"
 
@@ -403,6 +229,8 @@ bundle_atlas_dir = ""
 #      is itself a source of ringing.
 #   4. The brain mask is thresholded on intensity, so it is computed last: on
 #      denoised, unrung, bias-corrected data, and on the final grid.
+#   5. Motion correction rotates the b-vectors; every later stage reads the
+#      rotated ones.
 [[pipeline]]
 name = "denoise"
 cli = "dipy_denoise_patch2self"
@@ -418,11 +246,18 @@ slice_axis = 2
 num_processes = -1
 
 [[pipeline]]
+name = "motion_correction"
+cli = "dipy_correct_motion"
+input_files = "${gibbs.out_unring}"
+bvalues_files = "${io.bvals}"
+bvectors_files = "${io.bvecs}"
+
+[[pipeline]]
 name = "bias_correction"
 cli = "dipy_correct_biasfield"
-input_files = "${gibbs.out_unring}"
+input_files = "${motion_correction.out_moved}"
 bval = "${io.bvals}"
-bvec = "${io.bvecs}"
+bvec = "${motion_correction.out_bvecs}"
 method = "bspline"
 
 # Resampling. Everything below this point works on the resliced grid.
@@ -449,13 +284,24 @@ numpass = 5
 finalize_mask = true
 save_masked = true
 
+# T1 to diffusion space, skipped when no T1 image is given.
+[[pipeline]]
+name = "t1_registration"
+cli = "dipy_align_affine"
+static_image_files = "${b0_extraction.out_b0}"
+moving_image_files = "${io.t1w}"
+transform = "rigid"
+out_moved = "t1w_dwispace.nii.gz"
+out_affine = "t1w_to_dwi_affine.txt"
+optional = true
+
 # Multiple reconstructions
 [[pipeline]]
 name = "dti_fit"
 cli = "dipy_fit_dti"
 input_files = "${reslice.out_resliced}"
 bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
+bvectors_files = "${motion_correction.out_bvecs}"
 mask_files = "${brain_mask.out_mask}"
 fit_method = "WLS"
 extract_pam_values = true
@@ -466,7 +312,7 @@ name = "force_fit"
 cli = "dipy_fit_force"
 input_files = "${reslice.out_resliced}"
 bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
+bvectors_files = "${motion_correction.out_bvecs}"
 mask_files = "${brain_mask.out_mask}"
 compute_kurtosis = true
 engine = "ray"
@@ -517,484 +363,12 @@ metric_folder= "${dti_fit.out_dir}"
 orig_bundle_folder= "${label_bundles.out_dir}"
 out_dir = "${io.out_dir}/buan_profiles"
 """
-
-# =============================================================================
-# Full Pipeline with Motion Correction - Complete analysis
-# =============================================================================
-
-FULL_PIPELINE_WITH_MOTION = """
-[General]
-name = "full_pipeline_with_motion"
-description = "Full pipeline: preprocessing + reconstruction + tracking + SLR + bundles"
-version = "1.0.0"
-author = "DIPY Developers"
-
-[io]
-dwi = ""
-bvals = ""
-bvecs = ""
-t1w = ""
-bids_folder = ""
-dwi_opp_phase = ""
-pe_dir = ""
-total_readout_time = ""
-effective_echo_spacing = ""
-echo_time = ""
-repetition_time = ""
-out_dir = "."
-atlas_tractogram = ""
-bundle_atlas_dir = ""
-
-# Full preprocessing chain
-[[pipeline]]
-name = "reslice"
-cli = "dipy_reslice"
-input_files = "${io.dwi}"
-order = "lanczos2"
-
-[[pipeline]]
-name = "b0_extraction"
-cli = "dipy_extract_b0"
-input_files = "${reslice.out_resliced}"
-bvalues_files = "${io.bvals}"
-b0_threshold = 50
-
-[[pipeline]]
-name = "brain_mask"
-cli = "dipy_brain_mask"
-input_files = "${reslice.out_resliced}"
-bvalues_files = ["${io.bvals}"]
-median_radius = 2
-numpass = 5
-finalize_mask = true
-save_masked = true
-
-[[pipeline]]
-name = "gibbs"
-cli = "dipy_gibbs_ringing"
-input_files = "${brain_mask.out_masked}"
-slice_axis = 2
-num_processes = -1
-
-# Step 3: Motion correction
-[[pipeline]]
-name = "motion_correction"
-cli = "dipy_correct_motion"
-input_files = "${gibbs.out_unring}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
-
-# Step 4: Bias field correction (using median_otsu on b0)
-[[pipeline]]
-name = "bias_correction"
-cli = "dipy_correct_biasfield"
-input_files = "${motion_correction.out_moved}"
-bval = "${io.bvals}"
-bvec = "${io.bvecs}"
-mask = "${brain_mask.out_mask}"
-method = "bspline"
-
-# Step 5: Denoising with Patch2Self
-[[pipeline]]
-name = "denoise"
-cli = "dipy_denoise_patch2self"
-input_files = "${bias_correction.out_corrected}"
-bval_files = "${io.bvals}"
-verbose = true
-
-# Multiple reconstructions
-[[pipeline]]
-name = "dti_fit"
-cli = "dipy_fit_dti"
-input_files = "${denoise.out_denoised}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
-mask_files = "${brain_mask.out_mask}"
-fit_method = "WLS"
-extract_pam_values = true
-out_dir = "${io.out_dir}/dti"
-
-[[pipeline]]
-name = "force_fit"
-cli = "dipy_fit_force"
-input_files = "${denoise.out_denoised}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
-mask_files = "${brain_mask.out_mask}"
-compute_kurtosis = true
-engine = "ray"
-out_dir = "${io.out_dir}/force"
-
-[[pipeline]]
-name = "csd_fit"
-cli = "dipy_fit_csd"
-input_files = "${denoise.out_denoised}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
-mask_files = "${brain_mask.out_mask}"
-extract_pam_values = true
-out_dir = "${io.out_dir}/csd"
-
-# Tractography
-[[pipeline]]
-name = "tracking"
-cli = "dipy_track"
-pam_files = "${force_fit.out_pam}"
-stopping_files = "${force_fit.out_fa}"
-seeding_files = "${brain_mask.out_mask}"
-seed_density = 2
-
-# Registration (SLR)
-[[pipeline]]
-name = "register"
-cli = "dipy_slr"
-moving_files = "${tracking.out_tractogram}"
-static_files = "${io.atlas_tractogram}"
-bbox_valid_check = false
-
-# Bundle segmentation (RecoBundles)
-[[pipeline]]
-name = "segment_bundles"
-cli = "dipy_recobundles"
-streamline_files = "${register.out_moved}"
-model_bundle_files = "${io.bundle_atlas_dir}/*.trk"
-mix_names = true
-out_dir = "${io.out_dir}/rec_bundles"
-
-# Label bundles
-[[pipeline]]
-name = "label_bundles"
-cli = "dipy_labelsbundles"
-streamline_files = "${tracking.out_tractogram}"
-labels_files = "${segment_bundles.out_dir}/*_labels.npy"
-mix_names = true
-out_dir = "${io.out_dir}/org_bundles"
-
-# Buan profiles
-[[pipeline]]
-name = "buan_profiles"
-cli = "dipy_buan_profiles"
-model_bundle_folder = "${io.bundle_atlas_dir}"
-subject_folder = "${io.out_dir}"
-metric_folder= "${dti_fit.out_dir}"
-orig_bundle_folder= "${label_bundles.out_dir}"
-out_dir = "${io.out_dir}/buan_profiles"
-"""
-
-# =============================================================================
-# Comprehensive Pipeline - Complete end-to-end analysis
-# =============================================================================
-
-COMPREHENSIVE_PIPELINE = """
-[General]
-name = "comprehensive_pipeline"
-description = "Complete end-to-end with all preprocessing and 6 methods"
-version = "1.0.0"
-author = "DIPY Developers"
-
-[io]
-dwi = ""
-bvals = ""
-bvecs = ""
-t1w = ""
-bids_folder = ""
-dwi_opp_phase = ""
-pe_dir = ""
-total_readout_time = ""
-effective_echo_spacing = ""
-echo_time = ""
-repetition_time = ""
-out_dir = "."
-atlas_tractogram = ""
-bundle_atlas_dir = ""
-
-# Preprocessing follows the stage order documented in the full pipeline:
-# denoising and Gibbs unringing run on the data as acquired, before any stage
-# that interpolates, and the brain mask is computed last on corrected data.
-[[pipeline]]
-name = "denoise"
-cli = "dipy_denoise_patch2self"
-input_files = "${io.dwi}"
-bval_files = "${io.bvals}"
-
-[[pipeline]]
-name = "gibbs"
-cli = "dipy_gibbs_ringing"
-input_files = "${denoise.out_denoised}"
-slice_axis = 2
-n_points = 3
-
-[[pipeline]]
-name = "motion_correction"
-cli = "dipy_correct_motion"
-input_files = "${gibbs.out_unring}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${io.bvecs}"
-
-[[pipeline]]
-name = "bias_correction"
-cli = "dipy_correct_biasfield"
-input_files = "${motion_correction.out_moved}"
-bval = "${io.bvals}"
-bvec = "${motion_correction.out_bvecs}"
-method = "bspline"
-
-[[pipeline]]
-name = "b0_extraction"
-cli = "dipy_extract_b0"
-input_files = "${bias_correction.out_corrected}"
-bvalues_files = "${io.bvals}"
-b0_threshold = 50
-
-[[pipeline]]
-name = "brain_mask"
-cli = "dipy_brain_mask"
-input_files = "${bias_correction.out_corrected}"
-bvalues_files = ["${io.bvals}"]
-median_radius = 2
-numpass = 5
-finalize_mask = true
-save_masked = true
-
-# Multi-method reconstruction, on the motion corrected gradient table
-[[pipeline]]
-name = "dti_fit"
-cli = "dipy_fit_dti"
-input_files = "${bias_correction.out_corrected}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${motion_correction.out_bvecs}"
-mask_files = "${brain_mask.out_mask}"
-fit_method = "WLS"
-b0_threshold = 50
-extract_pam_values = true
-out_dir = "${io.out_dir}/dti"
-
-[[pipeline]]
-name = "dki_fit"
-cli = "dipy_fit_dki"
-input_files = "${bias_correction.out_corrected}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${motion_correction.out_bvecs}"
-mask_files = "${brain_mask.out_mask}"
-b0_threshold = 50
-extract_pam_values = true
-out_dir = "${io.out_dir}/dki"
-
-[[pipeline]]
-name = "csd_fit"
-cli = "dipy_fit_csd"
-input_files = "${bias_correction.out_corrected}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${motion_correction.out_bvecs}"
-mask_files = "${brain_mask.out_mask}"
-b0_threshold = 50
-extract_pam_values = true
-out_dir = "${io.out_dir}/csd"
-
-[[pipeline]]
-name = "csa_fit"
-cli = "dipy_fit_csa"
-input_files = "${bias_correction.out_corrected}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${motion_correction.out_bvecs}"
-mask_files = "${brain_mask.out_mask}"
-sh_order_max = 8
-extract_pam_values = true
-out_dir = "${io.out_dir}/csa"
-
-[[pipeline]]
-name = "gqi_fit"
-cli = "dipy_fit_gqi"
-input_files = "${bias_correction.out_corrected}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${motion_correction.out_bvecs}"
-mask_files = "${brain_mask.out_mask}"
-extract_pam_values = true
-out_dir = "${io.out_dir}/gqi"
-
-[[pipeline]]
-name = "force_fit"
-cli = "dipy_fit_force"
-input_files = "${bias_correction.out_corrected}"
-bvalues_files = "${io.bvals}"
-bvectors_files = "${motion_correction.out_bvecs}"
-mask_files = "${brain_mask.out_mask}"
-out_dir = "${io.out_dir}/force"
-
-# Multi-method fiber tracking
-[[pipeline]]
-name = "track_dti"
-cli = "dipy_track"
-pam_files = "${dti_fit.out_pam}"
-stopping_files = "${dti_fit.out_fa}"
-seeding_files = "${brain_mask.out_mask}"
-seed_density = 2
-step_size = 0.5
-out_dir = "${io.out_dir}/track_dti"
-
-[[pipeline]]
-name = "track_dki"
-cli = "dipy_track"
-pam_files = "${dki_fit.out_pam}"
-stopping_files = "${dti_fit.out_fa}"
-seeding_files = "${brain_mask.out_mask}"
-seed_density = 2
-step_size = 0.5
-out_dir = "${io.out_dir}/track_dki"
-
-[[pipeline]]
-name = "track_csd"
-cli = "dipy_track"
-pam_files = "${csd_fit.out_pam}"
-stopping_files = "${dti_fit.out_fa}"
-seeding_files = "${brain_mask.out_mask}"
-seed_density = 2
-step_size = 0.5
-out_dir = "${io.out_dir}/track_csd"
-
-[[pipeline]]
-name = "track_csa"
-cli = "dipy_track"
-pam_files = "${csa_fit.out_pam}"
-stopping_files = "${dti_fit.out_fa}"
-seeding_files = "${brain_mask.out_mask}"
-seed_density = 2
-step_size = 0.5
-out_dir = "${io.out_dir}/track_csa"
-
-[[pipeline]]
-name = "track_gqi"
-cli = "dipy_track"
-pam_files = "${gqi_fit.out_pam}"
-stopping_files = "${dti_fit.out_fa}"
-seeding_files = "${brain_mask.out_mask}"
-seed_density = 2
-step_size = 0.5
-out_dir = "${io.out_dir}/track_gqi"
-
-[[pipeline]]
-name = "track_force"
-cli = "dipy_track"
-pam_files = "${force_fit.out_pam}"
-stopping_files = "${dti_fit.out_fa}"
-seeding_files = "${brain_mask.out_mask}"
-seed_density = 2
-step_size = 0.5
-out_dir = "${io.out_dir}/track_force"
-
-# Multi-method registration (SLR to atlas)
-[[pipeline]]
-name = "register_dti"
-cli = "dipy_slr"
-moving_files = "${track_dti.out_tractogram}"
-static_files = "${io.atlas_tractogram}"
-bbox_valid_check = false
-out_dir = "${io.out_dir}/register_dti"
-
-[[pipeline]]
-name = "register_dki"
-cli = "dipy_slr"
-moving_files = "${track_dki.out_tractogram}"
-static_files = "${io.atlas_tractogram}"
-bbox_valid_check = false
-out_dir = "${io.out_dir}/register_dki"
-
-[[pipeline]]
-name = "register_csd"
-cli = "dipy_slr"
-moving_files = "${track_csd.out_tractogram}"
-static_files = "${io.atlas_tractogram}"
-bbox_valid_check = false
-out_dir = "${io.out_dir}/register_csd"
-
-[[pipeline]]
-name = "register_csa"
-cli = "dipy_slr"
-moving_files = "${track_csa.out_tractogram}"
-static_files = "${io.atlas_tractogram}"
-bbox_valid_check = false
-out_dir = "${io.out_dir}/register_csa"
-
-[[pipeline]]
-name = "register_gqi"
-cli = "dipy_slr"
-moving_files = "${track_gqi.out_tractogram}"
-static_files = "${io.atlas_tractogram}"
-bbox_valid_check = false
-out_dir = "${io.out_dir}/register_gqi"
-
-[[pipeline]]
-name = "register_force"
-cli = "dipy_slr"
-moving_files = "${track_force.out_tractogram}"
-static_files = "${io.atlas_tractogram}"
-bbox_valid_check = false
-out_dir = "${io.out_dir}/register_force"
-
-# Multi-method bundle segmentation (RecoBundles)
-[[pipeline]]
-name = "segment_dti"
-cli = "dipy_recobundles"
-streamline_files = "${register_dti.out_moved}"
-model_bundle_files = "${io.bundle_atlas_dir}/*.trk"
-mix_names = true
-out_dir = "${io.out_dir}/segment_dti"
-
-[[pipeline]]
-name = "segment_dki"
-cli = "dipy_recobundles"
-streamline_files = "${register_dki.out_moved}"
-model_bundle_files = "${io.bundle_atlas_dir}/*.trk"
-mix_names = true
-out_dir = "${io.out_dir}/segment_dki"
-
-[[pipeline]]
-name = "segment_csd"
-cli = "dipy_recobundles"
-streamline_files = "${register_csd.out_moved}"
-model_bundle_files = "${io.bundle_atlas_dir}/*.trk"
-mix_names = true
-out_dir = "${io.out_dir}/segment_csd"
-
-[[pipeline]]
-name = "segment_csa"
-cli = "dipy_recobundles"
-streamline_files = "${register_csa.out_moved}"
-model_bundle_files = "${io.bundle_atlas_dir}/*.trk"
-mix_names = true
-out_dir = "${io.out_dir}/segment_csa"
-
-[[pipeline]]
-name = "segment_gqi"
-cli = "dipy_recobundles"
-streamline_files = "${register_gqi.out_moved}"
-model_bundle_files = "${io.bundle_atlas_dir}/*.trk"
-mix_names = true
-out_dir = "${io.out_dir}/segment_gqi"
-
-[[pipeline]]
-name = "segment_force"
-cli = "dipy_recobundles"
-streamline_files = "${register_force.out_moved}"
-model_bundle_files = "${io.bundle_atlas_dir}/*.trk"
-mix_names = true
-out_dir = "${io.out_dir}/segment_force"
-"""
-
 
 # =============================================================================
 # Pipeline Dictionary and Helper Functions
 # =============================================================================
 
 PREDEFINED_PIPELINES = {
-    "denoise": {
-        "description": "Simple denoising: nlmeans + mask + info",
-        "config": DENOISE_PIPELINE,
-    },
-    "basic": {
-        "description": "Basic preprocessing: denoise + brain extraction + mask + info",
-        "config": BASIC_PIPELINE,
-    },
     "preprocessing": {
         "description": "Full preprocessing: b0 → brain → Gibbs → motion → denoise",
         "config": PREPROCESSING_PIPELINE,
@@ -1003,30 +377,16 @@ PREDEFINED_PIPELINES = {
         "description": "Preprocessing + DTI reconstruction with tensor metrics",
         "config": DTI_ONLY_PIPELINE,
     },
-    "multi_shell": {
-        "description": "Multi-method: DTI, DKI, CSD, CSA, GQI (parallel)",
-        "config": MULTI_SHELL_PIPELINE,
-    },
     "tractography": {
         "description": "Preprocessing + DTI + CSD + fiber tracking",
         "config": TRACTOGRAPHY_PIPELINE,
     },
     "full": {
         "description": (
-            "Full pipeline: preprocessing + reconstruction + tracking + SLR + bundles"
+            "Full pipeline: preprocessing with motion correction + T1 registration"
+            " + reconstruction + tracking + SLR + bundles"
         ),
         "config": FULL_PIPELINE,
-    },
-    "full_with_motion": {
-        "description": (
-            "Full pipeline with motion correction: preprocessing + reconstruction"
-            " + tracking + SLR + bundles"
-        ),
-        "config": FULL_PIPELINE_WITH_MOTION,
-    },
-    "comprehensive": {
-        "description": "Complete: preprocessing + 6 methods + tracking + SLR + bundles",
-        "config": COMPREHENSIVE_PIPELINE,
     },
 }
 
