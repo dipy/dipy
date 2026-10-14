@@ -482,7 +482,7 @@ def test_auto_bids_smoke():
 
         run_dir = Path(summary["runs"][0]["out_dir"])
         npt.assert_equal((run_dir / "reports" / "index.html").exists(), True)
-        npt.assert_equal((run_dir / "dwi_nlmeans.nii.gz").exists(), True)
+        npt.assert_equal((run_dir / "dwi_denoised.nii.gz").exists(), True)
 
         # headline outputs are exposed under BIDS-style names
         link = run_dir / "sub-01_desc-denoised_dwi.nii.gz"

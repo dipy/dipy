@@ -16,6 +16,7 @@ python_sources = [
     'reconst.py',
     'report.py',
     'segment.py',
+    'stage_isolation.py',
     'stats.py',
     'templates.py',
     'tracking.py',

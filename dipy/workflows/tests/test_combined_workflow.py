@@ -1,5 +1,7 @@
 import logging
 import os
+import subprocess
+import sys
 from tempfile import TemporaryDirectory
 import tomllib
 
@@ -33,6 +35,7 @@ from dipy.workflows.combined_workflow import (
     validate_pipeline_config,
     visualize_pipeline_dag,
 )
+from dipy.workflows.stage_isolation import execute_stage_isolated
 from dipy.workflows.tests.test_qc import _phantom
 
 
@@ -476,6 +479,15 @@ def test_predefined_pipelines_are_valid(name):
     )
 
 
+def test_preprocessing_matches_full():
+    def stages(name):
+        text = templates.get_predefined_pipeline(pipeline_name=name)
+        return tomllib.loads(text)["pipeline"]
+
+    preprocessing = stages("preprocessing")
+    npt.assert_equal(stages("full")[: len(preprocessing)], preprocessing)
+
+
 def test_template_lookup_and_listing():
     npt.assert_raises(KeyError, templates.get_predefined_pipeline, pipeline_name="x")
     npt.assert_raises(KeyError, templates.get_pipeline_description, pipeline_name="x")
@@ -716,3 +728,38 @@ def test_execute_pipeline_optional_t1_registration():
             [3.75, -2.5, 1.25],
             decimal=0,
         )
+
+
+def test_stage_isolation_keeps_openmp_out_of_the_child():
+    # the spawned child imports this module first: it must not load the
+    # libomp that DIPY's extensions link against, or torch crashes later
+    code = (
+        "import sys, dipy.workflows.stage_isolation; "
+        "print(any(name.startswith('dipy.') and name.endswith('omp') "
+        "for name in sys.modules))"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    )
+    npt.assert_equal(result.stdout.strip(), "False")
+
+
+def test_execute_stage_isolated():
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        outputs = execute_stage_isolated(
+            module_name="dipy.workflows.mask",
+            class_name="MaskFlow",
+            init_params={},
+            run_params={"input_files": paths["dwi"], "lb": 15, "out_dir": tmp},
+        )
+        npt.assert_equal(os.path.exists(os.path.join(tmp, "mask.nii.gz")), True)
+        npt.assert_equal(outputs is not None, True)
+
+        with pytest.raises(RuntimeError, match="exited with code"):
+            execute_stage_isolated(
+                module_name="dipy.workflows.mask",
+                class_name="MaskFlow",
+                init_params={},
+                run_params={"input_files": os.path.join(tmp, "nope.nii.gz"), "lb": 1},
+            )

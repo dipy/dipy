@@ -1150,6 +1150,7 @@ def qc_generic(*, outputs, inputs, io_config, max_outputs=6):
 
 
 QC_FUNCS = {
+    "dipy_denoise": qc_denoise,
     "dipy_denoise_patch2self": qc_denoise,
     "dipy_denoise_mppca": qc_denoise,
     "dipy_denoise_lpca": qc_denoise,

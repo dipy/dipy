@@ -13,7 +13,7 @@ import logging
 PREPROCESSING_PIPELINE = """
 [General]
 name = "preprocessing_pipeline"
-description = "Full preprocessing: b0 → brain → Gibbs → motion → denoise"
+description = "Full preprocessing: denoise → Gibbs → motion → bias → reslice → mask"
 version = "1.0.0"
 author = "DIPY Developers"
 
@@ -31,26 +31,20 @@ echo_time = ""
 repetition_time = ""
 out_dir = "."
 
+# Same chain, in the same order, as the preprocessing of the full pipeline;
+# see the comments there for the constraints that fix this order.
 [[pipeline]]
-name = "b0_extraction"
-cli = "dipy_extract_b0"
+name = "denoise"
+cli = "dipy_denoise"
 input_files = "${io.dwi}"
 bvalues_files = "${io.bvals}"
-b0_threshold = 50
-
-[[pipeline]]
-name = "brain_mask"
-cli = "dipy_median_otsu"
-input_files = "${b0_extraction.out_b0}"
-median_radius = 2
-numpass = 5
 
 [[pipeline]]
 name = "gibbs"
 cli = "dipy_gibbs_ringing"
-input_files = "${io.dwi}"
+input_files = "${denoise.out_denoised}"
 slice_axis = 2
-n_points = 3
+num_processes = -1
 
 [[pipeline]]
 name = "motion_correction"
@@ -60,9 +54,35 @@ bvalues_files = "${io.bvals}"
 bvectors_files = "${io.bvecs}"
 
 [[pipeline]]
-name = "denoise"
-cli = "dipy_denoise_mppca"
+name = "bias_correction"
+cli = "dipy_correct_biasfield"
 input_files = "${motion_correction.out_moved}"
+bval = "${io.bvals}"
+bvec = "${motion_correction.out_bvecs}"
+method = "bspline"
+
+[[pipeline]]
+name = "reslice"
+cli = "dipy_reslice"
+input_files = "${bias_correction.out_corrected}"
+order = "lanczos2"
+
+[[pipeline]]
+name = "b0_extraction"
+cli = "dipy_extract_b0"
+input_files = "${reslice.out_resliced}"
+bvalues_files = "${io.bvals}"
+b0_threshold = 50
+
+[[pipeline]]
+name = "brain_mask"
+cli = "dipy_brain_mask"
+input_files = "${reslice.out_resliced}"
+bvalues_files = ["${io.bvals}"]
+median_radius = 2
+numpass = 5
+finalize_mask = true
+save_masked = true
 """
 
 # =============================================================================
@@ -92,8 +112,9 @@ out_dir = "."
 
 [[pipeline]]
 name = "denoise"
-cli = "dipy_denoise_nlmeans"
+cli = "dipy_denoise"
 input_files = "${io.dwi}"
+bvalues_files = "${io.bvals}"
 
 [[pipeline]]
 name = "brain_mask"
@@ -142,8 +163,9 @@ out_dir = "."
 # Preprocessing
 [[pipeline]]
 name = "denoise"
-cli = "dipy_denoise_mppca"
+cli = "dipy_denoise"
 input_files = "${io.dwi}"
+bvalues_files = "${io.bvals}"
 
 [[pipeline]]
 name = "brain_mask"
@@ -233,10 +255,9 @@ bundle_atlas_dir = ""
 #      rotated ones.
 [[pipeline]]
 name = "denoise"
-cli = "dipy_denoise_patch2self"
+cli = "dipy_denoise"
 input_files = "${io.dwi}"
-bval_files = "${io.bvals}"
-verbose = true
+bvalues_files = "${io.bvals}"
 
 [[pipeline]]
 name = "gibbs"
@@ -370,7 +391,7 @@ out_dir = "${io.out_dir}/buan_profiles"
 
 PREDEFINED_PIPELINES = {
     "preprocessing": {
-        "description": "Full preprocessing: b0 → brain → Gibbs → motion → denoise",
+        "description": "Full preprocessing: denoise → Gibbs → motion → bias → reslice → mask",
         "config": PREPROCESSING_PIPELINE,
     },
     "dti_only": {

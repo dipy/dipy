@@ -13,8 +13,9 @@ preprocessing, reconstruction, tracking and bundle segmentation chain.
 ====================== ======================================================
 Name                   Stages
 ====================== ======================================================
-``preprocessing``      b0 extraction, brain mask, Gibbs unringing, motion
-                       correction, MP-PCA denoising
+``preprocessing``      Denoising, Gibbs unringing, motion and bias
+                       field correction, reslicing, b0 extraction, brain mask:
+                       the preprocessing of ``full``
 ``dti_only``           Denoising, brain mask, DTI fit and tensor metrics
 ``tractography``       Denoising, brain mask, DTI and CSD fits, tracking
 ``full``               Full preprocessing with motion correction, T1
@@ -22,6 +23,10 @@ Name                   Stages
                        SLR to an atlas, RecoBundles, bundle labelling, BUAN
                        profiles
 ====================== ======================================================
+
+Every pipeline denoises with ``dipy_denoise``, which picks Patch2Self,
+MP-PCA or NLMeans from the number of volumes, of diffusion directions and
+the SNR of the data.
 
 ``full`` runs when neither ``--pipeline_type`` nor a configuration file is
 given. ``dipy_auto --list_pipelines`` lists the pipelines with their
@@ -98,9 +103,9 @@ an optional ``[General]`` table, an ``[io]`` table of input paths and one
 
     [[pipeline]]
     name = "denoise"
-    cli = "dipy_denoise_patch2self"
+    cli = "dipy_denoise"
     input_files = "${io.dwi}"
-    bval_files = "${io.bvals}"
+    bvalues_files = "${io.bvals}"
 
     [[pipeline]]
     name = "brain_mask"
@@ -208,7 +213,7 @@ The output is a BIDS-Derivatives dataset::
                 <timestamp>_<pipeline>_pipeline.toml
                 <timestamp>_pipeline_report.html
                 reports/index.html
-                dwi_mppca.nii.gz
+                dwi_denoised.nii.gz
                 sub-01_desc-denoised_dwi.nii.gz
                 sub-01_desc-denoised_dwi.json
         sub-02/

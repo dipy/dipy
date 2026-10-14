@@ -20,7 +20,6 @@ import http.server
 import importlib
 import inspect
 import json
-import multiprocessing as mp
 import os
 
 # PyTorch wheels on macOS bundle their own libomp.dylib, which conflicts with
@@ -65,6 +64,7 @@ from dipy.utils.optpkg import optional_package
 from dipy.workflows import interactive, report, templates
 from dipy.workflows.cli import cli_flows
 from dipy.workflows.qc import qc_result, run_stage_qc
+from dipy.workflows.stage_isolation import execute_stage_isolated
 from dipy.workflows.workflow import Workflow
 
 try:  # standard module since Python 3.11
@@ -922,94 +922,9 @@ def resolve_output_conflicts(*, config, conflicts):
     return warnings
 
 
-# ---------------------------------------------------------------------------
-# Subprocess isolation for PyTorch-based stages
-# ---------------------------------------------------------------------------
-# CLIs that bundle PyTorch (libiomp5) must run in a spawned subprocess so
-# that the Intel OpenMP runtime never shares a process with the LLVM/Apple
-# OpenMP runtime (libomp) already loaded by scipy/numpy.  Using spawn (not
-# fork) gives the child a clean address space with no inherited OpenMP state.
+# Stages built on PyTorch run through stage_isolation, away from the libomp
+# that DIPY's OpenMP extensions load in this process.
 _ISOLATED_STAGE_CLIS = frozenset(["dipy_brain_mask"])
-
-
-def _stage_worker(*, queue, module_name, class_name, init_params, run_params):
-    """Worker run inside a spawned subprocess for OpenMP-isolated stages.
-
-    Parameters
-    ----------
-    queue : multiprocessing.Queue
-        Used to pass ``last_generated_outputs`` back to the parent.
-    module_name : str
-        Dotted module path of the workflow.
-    class_name : str
-        Class name of the workflow inside *module_name*.
-    init_params : dict
-        Keyword arguments forwarded to ``workflow.__init__``.
-    run_params : dict
-        Keyword arguments forwarded to ``workflow.run``.
-    """
-    # PyTorch wheels on macOS bundle their own libomp.dylib, which conflicts
-    # with the conda/Homebrew libomp.dylib loaded by scipy/numpy.  Both are
-    # LLVM libomp (same implementation), so duplicate-loading is safe: the
-    # second initialisation is a no-op and there is no thread-pool corruption
-    # risk (unlike Intel libiomp5 + LLVM libomp, which are incompatible).
-    # Setting this here — before any import — ensures it is active before
-    # either copy is loaded.  This is safe only because this function runs
-    # in a spawned subprocess with no inherited OpenMP state from the parent.
-    os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
-
-    module = importlib.import_module(module_name)
-    workflow_class = getattr(module, class_name)
-    workflow = workflow_class(**init_params)
-    workflow.run(**run_params)
-    queue.put(getattr(workflow, "last_generated_outputs", None))
-
-
-def _execute_stage_isolated(*, module_name, class_name, init_params, run_params):
-    """Run a workflow stage in a spawned subprocess.
-
-    Parameters
-    ----------
-    module_name : str
-        Dotted module path of the workflow.
-    class_name : str
-        Class name of the workflow inside *module_name*.
-    init_params : dict
-        Keyword arguments forwarded to ``workflow.__init__``.
-    run_params : dict
-        Keyword arguments forwarded to ``workflow.run``.
-
-    Returns
-    -------
-    object
-        The value of ``workflow.last_generated_outputs`` from the child
-        process, or ``None`` if the attribute was absent.
-
-    Raises
-    ------
-    RuntimeError
-        If the child process exits with a non-zero exit code.
-    """
-    ctx = mp.get_context("spawn")
-    queue = ctx.Queue()
-    proc = ctx.Process(
-        target=_stage_worker,
-        kwargs={
-            "queue": queue,
-            "module_name": module_name,
-            "class_name": class_name,
-            "init_params": init_params,
-            "run_params": run_params,
-        },
-    )
-    proc.start()
-    proc.join()
-    if proc.exitcode != 0:
-        raise RuntimeError(
-            f"Isolated stage subprocess exited with code {proc.exitcode}"
-        )
-    return queue.get_nowait()
-
 
 _STAGE_KEYS = ("name", "cli", "inputs", "params", "optional")
 
@@ -1223,7 +1138,7 @@ def execute_pipeline_stage(
 
     try:
         if isolated:
-            last_outputs = _execute_stage_isolated(
+            last_outputs = execute_stage_isolated(
                 module_name=module_name,
                 class_name=class_name,
                 init_params=init_params,
@@ -1352,6 +1267,7 @@ def discover_stage_outputs(*, stage_name, stage_config, io_config):
             )
 
         cli_workflow_patterns = {
+            "dipy_denoise": ["dwi_denoised.nii.gz"],
             "dipy_denoise_nlmeans": ["dwi_nlmeans.nii.gz"],
             "dipy_denoise_mppca": ["dwi_mppca.nii.gz"],
             "dipy_denoise_patch2self": ["dwi_patch2self.nii.gz"],
@@ -2456,16 +2372,6 @@ def _validate_mask_file(mask_file):
 # =============================================================================
 # AutoFlow Workflow
 # =============================================================================
-# TODO:
-# - Done: handle maskfile, check binary, % of white voxels.
-# - Add opposite phase encoding (AP/PA)
-# - Done: handle incorrect --start name.
-# - Done: Create dipy_brain_mask workflow and add to pipelines
-#   (SynthSeg, median_otsu, PUMBA, EVAC+)
-# - Create dipy_denoise
-# - dipy cluster qbx
-
-
 class _ReportHandler(http.server.SimpleHTTPRequestHandler):
     """Serve a report and launch Skyline on the files it lists.
 
@@ -2556,7 +2462,7 @@ def _serve_html_report(report_path):
 # - Done: handle incorrect --start name.
 # - Done: Create dipy_brain_mask workflow and add to pipelines
 #   (SynthSeg, median_otsu, PUMBA, EVAC+)
-# - Create dipy_denoise
+# - Done: Create dipy_denoise and use it in the pipelines
 # - dipy cluster qbx
 
 
