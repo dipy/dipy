@@ -1,4 +1,6 @@
 import colorsys
+from itertools import pairwise
+import logging
 
 import nibabel as nib
 import numpy as np
@@ -14,9 +16,14 @@ _, has_fury, _ = optional_package("fury", min_version="2.0.0")
 if not has_fury:
     pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
 else:
+    from fury import window
+    from fury.colormap import line_colors
+    from fury.lib import OrthographicCamera
+
     from dipy.viz.skyline.render.streamline import (
         ClusterStreamline3D,
         Streamline3D,
+        _set_line_appearance,
         apply_buan_colors,
         create_cluster_help,
         create_colormap,
@@ -70,20 +77,47 @@ def _sft(lines=None):
     )
 
 
-def test_create_streamline_line_and_tube_return_actors():
-    """``create_streamline`` builds line or tube geometry for ``Line`` / ``Tube``."""
-    lines = _minimal_polylines()
-
-    line_actor = create_streamline(
-        lines, line_type="Line", color=np.array([1.0, 0.0, 0.0])
+@pytest.mark.parametrize("diagonal", [False, True])
+@pytest.mark.parametrize("opacity", [50, 100])
+def test_line_subpixel_rendered_coverage(diagonal, opacity):
+    y = 20 if diagonal else 0
+    actor = create_streamline(
+        [np.array([[-20.0, -y, 0], [20.0, y, 0]])],
+        color=(1, 1, 1),
+        opacity=opacity,
     )
-    tube_actor = create_streamline(
-        lines, line_type="Tube", color=np.array([1.0, 0.0, 0.0])
-    )
+    scene = window.Scene()
+    scene.background = (0, 0, 0)
+    scene.add(actor)
+    intensities = []
+    for thickness in (0.01, 0.03, 0.05, 0.1, 0.3, 0.5, 1.0, 2.0):
+        _set_line_appearance(actor, opacity=opacity, thickness=thickness)
+        frame = window.snapshot(scene=scene, return_array=True, fname=None)
+        intensities.append(int(frame[..., :3].sum()))
 
-    assert line_actor is not None
-    assert tube_actor is not None
-    assert hasattr(line_actor, "material")
+    assert intensities[0] > 0
+    assert all(a < b for a, b in pairwise(intensities)), intensities
+
+
+@pytest.mark.parametrize("thickness", [0.05, 2.0])
+def test_line_opacity_rendering_is_independent_of_thickness(thickness):
+    actor = create_streamline(
+        [np.array([[-20.0, 0, 0], [20.0, 0, 0]])],
+        color=(1, 1, 1),
+        thickness=thickness,
+    )
+    scene = window.Scene()
+    scene.background = (0, 0, 0)
+    scene.add(actor)
+    frames = []
+    for opacity in (100, 50, 0, 100):
+        _set_line_appearance(actor, opacity=opacity, thickness=thickness)
+        frames.append(window.snapshot(scene=scene, return_array=True, fname=None))
+
+    assert frames[0][..., :3].sum() > frames[1][..., :3].sum() > 0
+    npt.assert_array_equal(frames[2][..., :3], 0)
+    npt.assert_allclose(frames[3], frames[0], atol=1)
+    npt.assert_allclose(actor.material.thickness, thickness)
 
 
 def test_create_streamline_legacy_lowercase_does_not_match():
@@ -93,34 +127,89 @@ def test_create_streamline_legacy_lowercase_does_not_match():
     assert create_streamline(lines, line_type="tube") is None
 
 
+@pytest.mark.parametrize(
+    "color_form", ["rgb", "rgba", "per_line", "per_point", "direction"]
+)
+def test_line_world_coordinates_and_colors(color_form):
+    lines = [
+        np.array([[10.0, 20, 30], [20.0, 20, 30]], dtype=np.float32),
+        np.array([[10.0, 25, 30], [15.0, 30, 30], [20.0, 35, 30]], dtype=np.float32),
+    ]
+    points = np.concatenate(lines)
+    if color_form in ("rgb", "rgba"):
+        color = (0.2, 0.4, 0.6) if color_form == "rgb" else (0.2, 0.4, 0.6, 0.8)
+        expected_colors = np.tile(color, (len(points), 1))
+    elif color_form == "per_point":
+        color = np.random.default_rng(11).random((len(points), 3)).astype(np.float32)
+        expected_colors = color
+    else:
+        color = (
+            "direction"
+            if color_form == "direction"
+            else np.array([[1.0, 0, 0], [0, 1.0, 0]], dtype=np.float32)
+        )
+        per_line = line_colors(lines) if color_form == "direction" else color
+        expected_colors = np.repeat(per_line, [len(p) for p in lines], axis=0)
+
+    actor = create_streamline(lines, color=color)
+    positions = actor.geometry.positions.data
+    finite = np.isfinite(positions).all(axis=1)
+    homogeneous = np.column_stack((positions[finite], np.ones(finite.sum())))
+    world_positions = (actor.world.matrix @ homogeneous.T).T[:, :3]
+    npt.assert_allclose(world_positions, points)
+    npt.assert_allclose(actor.geometry.colors.data[finite], expected_colors)
+
+
 @pytest.mark.parametrize("line_type", ["Line", "Tube"])
 @pytest.mark.parametrize("n_lines", [2, 3, 4, 10])
-def test_create_streamline_accepts_default_tuple_color(line_type, n_lines):
-    """A plain RGB tuple works for any line count.
-
-    ``len(color)`` used to be compared against ``len(lines)`` before the array
-    check, so a 3-tuple raised ``AttributeError`` looking for ``.ndim``.
-    """
+def test_create_streamline_accepts_constant_color(line_type, n_lines):
     actor = create_streamline(_polylines(n_lines), line_type=line_type)
+    colors = actor.geometry.colors.data
+    finite = np.isfinite(colors).all(axis=1)
+    npt.assert_allclose(colors[finite, :3], np.tile((1, 0, 0), (finite.sum(), 1)))
 
-    assert actor is not None
+
+@pytest.mark.parametrize("opacity", [0, 100])
+def test_line_opacity_boundaries(opacity):
+    actor = create_streamline(_minimal_polylines(), opacity=opacity)
+    npt.assert_allclose(actor.material.opacity, opacity / 100)
 
 
-@pytest.mark.parametrize("line_type", ["Line", "Tube"])
-def test_create_streamline_color_forms(line_type):
-    """Constant, per-line, per-point and directional colors all build actors."""
-    lines = _polylines(5)
-    n_points = sum(len(line) for line in lines)
-    rng = np.random.default_rng(11)
+@pytest.mark.parametrize("opacity", [-1, 101, np.nan, np.inf, -np.inf])
+def test_line_rejects_invalid_opacity(opacity):
+    with pytest.raises(ValueError, match="^opacity must be between 0 and 100$"):
+        create_streamline(_minimal_polylines(), opacity=opacity)
 
-    for color in (
-        (1, 0, 0),
-        np.array([1.0, 0.0, 0.0], dtype=np.float32),
-        rng.random((len(lines), 3)).astype(np.float32),
-        rng.random((n_points, 3)).astype(np.float32),
-        "direction",
+
+@pytest.mark.parametrize("thickness", [0, -0.01, np.nan, np.inf, -np.inf])
+def test_line_rejects_invalid_thickness(thickness):
+    with pytest.raises(
+        ValueError, match="^thickness must be a positive finite number$"
     ):
-        assert create_streamline(lines, color=color, line_type=line_type) is not None
+        create_streamline(_minimal_polylines(), thickness=thickness)
+
+
+def _assert_same_tube(actual, expected):
+    """Compare tube geometry and material appearance."""
+    assert type(actual.material) is type(expected.material)
+    npt.assert_allclose(actual.material.opacity, expected.material.opacity)
+    assert actual.material.alpha_mode == expected.material.alpha_mode
+    for name in ("positions", "indices", "normals", "colors"):
+        npt.assert_allclose(
+            getattr(actual.geometry, name).data, getattr(expected.geometry, name).data
+        )
+
+
+@pytest.mark.parametrize(
+    "opacity, thickness", [(-1, 0), (101, -1), (np.nan, np.inf), (np.inf, np.nan)]
+)
+def test_tubes_ignore_line_appearance_arguments(opacity, thickness):
+    lines = _minimal_polylines()
+    actual = create_streamline(
+        lines, line_type="Tube", opacity=opacity, thickness=thickness
+    )
+    expected = create_streamline(lines, line_type="Tube")
+    _assert_same_tube(actual, expected)
 
 
 def test_create_colormap_shape_and_range():
@@ -188,8 +277,6 @@ def test_apply_buan_colors_follows_the_hue_and_value_settings():
 
 
 def test_apply_buan_colors_caps_the_band_count(caplog):
-    import logging
-
     lines = _polylines(3, n_points=5)
     pvals = np.linspace(0.0, 1.0, 1500)
 
@@ -518,3 +605,200 @@ def test_cluster_streamline_save_ignores_an_empty_selection_of_files(
 def test_cluster_streamline_exposes_a_group_actor(cluster_viz):
     assert cluster_viz.actor is cluster_viz._actor
     assert len(cluster_viz.actor.children) >= 1
+
+
+def _assert_line_appearance(actor, opacity, thickness):
+    """Check retained line width and opacity."""
+    npt.assert_allclose(actor.material.opacity, opacity / 100)
+    npt.assert_allclose(actor.material.thickness, thickness)
+
+
+def test_streamline_appearance_survives_recoloring_and_type_changes(tmp_path):
+    viz = Streamline3D("bundle", _sft(_bundle()), color=(1, 1, 1))
+    viz._line_opacity = 40
+    viz._line_thickness = 0.03
+    viz._apply_line_appearance()
+    _assert_line_appearance(viz.actor, 40, 0.03)
+
+    pvals_path = tmp_path / "pvals.npy"
+    np.save(pvals_path, np.linspace(0, 1, 30))
+    viz.handle_color_change([str(pvals_path)])
+    _assert_line_appearance(viz.actor, 40, 0.03)
+    viz._value = 0.5
+    viz._update_buan_colors_on_sliders()
+    _assert_line_appearance(viz.actor, 40, 0.03)
+
+    viz._line_type = "Tube"
+    viz._create_streamline_actor()
+    expected_tube = create_streamline(
+        viz.sft.streamlines, color=viz.color, line_type="Tube"
+    )
+    _assert_same_tube(viz.actor, expected_tube)
+    viz._apply_line_appearance()
+    _assert_same_tube(viz.actor, expected_tube)
+    viz._line_type = "Line"
+    viz._create_streamline_actor()
+    _assert_line_appearance(viz.actor, 40, 0.03)
+
+    scene = window.Scene()
+    scene.background = (0, 0, 0)
+    scene.add(viz.actor)
+    partial = window.snapshot(scene=scene, return_array=True, fname=None)
+    viz._line_opacity = 100
+    viz._apply_line_appearance()
+    full = window.snapshot(scene=scene, return_array=True, fname=None)
+    viz._line_thickness = 0.10
+    viz._apply_line_appearance()
+    wider = window.snapshot(scene=scene, return_array=True, fname=None)
+    assert 0 < partial[..., :3].sum() < full[..., :3].sum() < wider[..., :3].sum()
+
+    viz.color = viz._original_color
+    viz._line_opacity = 40
+    viz._line_thickness = 0.03
+    viz._create_streamline_actor()
+    _assert_line_appearance(viz.actor, 40, 0.03)
+
+
+def test_cluster_member_appearance_persists_without_affecting_centroids(cluster_viz):
+    viz = cluster_viz
+    viz._line_opacity = 40
+    viz._line_thickness = 0.03
+    viz._apply_line_appearance()
+    for centroid in viz._cluster_state:
+        npt.assert_allclose(centroid.material.opacity, 0.5)
+    viz._select_all_clusters()
+    viz._expand_clusters()
+    for centroid, state in viz._cluster_state.items():
+        _assert_line_appearance(state["cluster_actor"], 40, 0.03)
+        npt.assert_allclose(centroid.material.opacity, 1)
+
+    viz._line_opacity = 60
+    viz._line_thickness = 0.07
+    viz._apply_line_appearance()
+    for state in viz._cluster_state.values():
+        _assert_line_appearance(state["cluster_actor"], 60, 0.07)
+    viz._collapse_clusters()
+    viz._expand_clusters()
+    for state in viz._cluster_state.values():
+        _assert_line_appearance(state["cluster_actor"], 60, 0.07)
+
+    viz._line_type = "Tube"
+    viz._apply_cluster_line_type_change()
+    viz._apply_line_appearance()
+    for state in viz._cluster_state.values():
+        expected = create_streamline(
+            viz._clusters[state["cluster"]],
+            color=state["color"],
+            line_type="Tube",
+            segments=3,
+        )
+        _assert_same_tube(state["cluster_actor"], expected)
+    viz._line_type = "Line"
+    viz._apply_cluster_line_type_change()
+    for state in viz._cluster_state.values():
+        _assert_line_appearance(state["cluster_actor"], 60, 0.07)
+
+    viz._perform_clustering()
+    viz._select_all_clusters()
+    viz._expand_clusters()
+    for state in viz._cluster_state.values():
+        _assert_line_appearance(state["cluster_actor"], 60, 0.07)
+    viz._deselect_all_clusters()
+    for centroid in viz._cluster_state:
+        npt.assert_allclose(centroid.material.opacity, 0.5)
+
+
+def _depth_scene_snapshot(actors, *, opposite_view=False):
+    """Render overlapping actors with a fixed orthographic camera.
+
+    The initial frame consumes resize events before fixing the camera.
+
+    Parameters
+    ----------
+    actors : list of Actor
+        Actors to render against a black background.
+    opposite_view : bool, optional
+        View from negative rather than positive world z.
+
+    Returns
+    -------
+    ndarray
+        Rendered RGBA pixels.
+    """
+    scene = window.Scene(background=(0, 0, 0))
+    scene.add(*actors)
+    camera = OrthographicCamera(50, 25)
+    show = window.ShowManager(
+        scene=scene,
+        camera=camera,
+        window_type="offscreen",
+        size=(800, 400),
+        pixel_ratio=1,
+        camera_light=False,
+    )
+    try:
+        show.render()
+        show.window.draw()
+        camera.width = 50
+        camera.height = 25
+        camera.world.position = (0, 0, -50 if opposite_view else 50)
+        camera.look_at((0, 0, 0))
+        show.render()
+        show.window.draw()
+        return show.snapshot(fname=None)
+    finally:
+        show.window.close()
+
+
+@pytest.mark.parametrize("thickness", [0.1, 0.3, 0.5, 2.0])
+@pytest.mark.parametrize("reversed_order", [False, True])
+@pytest.mark.parametrize("separate_layers", [False, True])
+def test_transparent_line_nearest_color_follows_camera(
+    thickness, reversed_order, separate_layers
+):
+    lines = [
+        np.array([[-20.0, 0, 5], [20.0, 0, 5]], dtype=np.float32),
+        np.array([[-20.0, 0, -5], [20.0, 0, -5]], dtype=np.float32),
+    ]
+    colors = np.array([[1.0, 0, 0], [0, 0, 1.0]], dtype=np.float32)
+    if reversed_order:
+        lines.reverse()
+        colors = colors[::-1]
+    if separate_layers:
+        actors = [
+            create_streamline([points], color=color, opacity=50, thickness=thickness)
+            for points, color in zip(lines, colors)
+        ]
+    else:
+        actors = [
+            create_streamline(lines, color=colors, opacity=50, thickness=thickness)
+        ]
+
+    front_view = _depth_scene_snapshot(actors)
+    rear_view = _depth_scene_snapshot(actors, opposite_view=True)
+    assert front_view[..., 0].sum() > front_view[..., 2].sum()
+    assert rear_view[..., 2].sum() > rear_view[..., 0].sum()
+
+
+@pytest.mark.parametrize("zero_alpha_source", ["opacity", "vertex_color"])
+@pytest.mark.parametrize("foreground_first", [False, True])
+def test_invisible_line_does_not_occlude_other_streamlines(
+    zero_alpha_source, foreground_first
+):
+    rear = create_streamline(
+        [np.array([[-20.0, 0, -5], [20.0, 0, -5]])],
+        color=(0, 0, 1),
+        thickness=2,
+    )
+    front = create_streamline(
+        [np.array([[-20.0, 0, 5], [20.0, 0, 5]])],
+        color=(1, 0, 0, 0) if zero_alpha_source == "vertex_color" else (1, 0, 0),
+        opacity=0 if zero_alpha_source == "opacity" else 100,
+        thickness=2,
+    )
+    baseline = _depth_scene_snapshot([rear])
+    actors = [front, rear] if foreground_first else [rear, front]
+    with_invisible_front = _depth_scene_snapshot(actors)
+
+    assert baseline[..., 2].sum() > 0
+    npt.assert_allclose(with_invisible_front, baseline, atol=1)
