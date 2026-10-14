@@ -1,3 +1,5 @@
+import logging
+import os
 import re
 
 import numpy as np
@@ -9,6 +11,8 @@ _, has_fury, _ = optional_package("fury", min_version="2.0.0")
 if not has_fury:
     pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
 else:
+    from fury import window
+
     from dipy.viz.skyline.render.image import Image3D
     from dipy.viz.skyline.render.renderer import (
         Visualization,
@@ -22,6 +26,18 @@ else:
     )
     from dipy.viz.skyline.render.roi import ROI3D
     from dipy.viz.skyline.render.sh_slicer import create_shm_visualization
+
+
+@pytest.fixture(autouse=True)
+def restore_fury_offscreen():
+    previous_fury_offscreen = os.environ.get("FURY_OFFSCREEN")
+    try:
+        yield
+    finally:
+        if previous_fury_offscreen is None:
+            os.environ.pop("FURY_OFFSCREEN", None)
+        else:
+            os.environ["FURY_OFFSCREEN"] = previous_fury_offscreen
 
 
 def test_affine_voxel_sizes_use_affine_columns():
@@ -190,15 +206,33 @@ def test_create_window_stealth_is_offscreen(tmp_path):
         visualizer_type="stealth", size=(64, 48), title=str(tmp_path / "scene")
     )
 
-    assert len(show_manager.screens) == 1
-    assert show_manager._imgui is None
-    assert tuple(show_manager.size) == (64, 48)
+    try:
+        assert os.environ["FURY_OFFSCREEN"] == "1"
+        assert len(show_manager.screens) == 1
+        assert show_manager._imgui is None
+        assert tuple(show_manager.size) == (64, 48)
+    finally:
+        show_manager.close()
+
+
+def test_create_window_uses_native_snapshot_dimensions():
+    direct = window.ShowManager(
+        size=(96, 72), title="direct", window_type="offscreen", imgui=False
+    )
+    skyline = create_window(visualizer_type="stealth", size=(96, 72), title="skyline")
+    try:
+        direct.render()
+        skyline.render()
+        direct.window.draw()
+        skyline.window.draw()
+        assert skyline.snapshot().shape == direct.snapshot().shape
+    finally:
+        direct.close()
+        skyline.close()
 
 
 def test_create_window_exits_on_an_unknown_visualizer_type(caplog):
     """An unrecognized visualizer type is reported and aborts the process."""
-    import logging
-
     with caplog.at_level(logging.ERROR), pytest.raises(SystemExit) as excinfo:
         create_window(visualizer_type="hologram")
 

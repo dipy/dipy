@@ -106,14 +106,15 @@ class SkylineFlow(Workflow):
             File path for BUAN p-values to be used for BUAN-based coloring of
             tractograms.
         stealth : bool, optional
-            Do not use interactive mode just save figure.
+            Capture a figure instead of opening an interactive window.
+            ``DIPY_OFFSCREEN=1`` or ``true`` (case-insensitive) also captures when False.
         rgb : bool or None, optional
             ``None``: auto-detect from structured NIfTI ``DT_RGB24`` dtype;
             ``--rgb`` forces RGB; ``--no-rgb`` disables it entirely.
         out_dir : str or Path, optional
-            Output directory to save the figure if stealth mode is enabled.
+            Output directory for offscreen figures.
         out_stealth_png : str, optional
-            Filename of saved picture if stealth mode is enabled.
+            Filename of the offscreen figure.
         """
         super().__init__(force=True)
         skyline_input_files = []
