@@ -20,6 +20,7 @@ import http.server
 import importlib
 import inspect
 import json
+import multiprocessing as mp
 import os
 
 # PyTorch wheels on macOS bundle their own libomp.dylib, which conflicts with
@@ -59,7 +60,7 @@ from dipy.io.bids import (
     write_dataset_description,
 )
 from dipy.io.image import load_nifti, load_nifti_data
-from dipy.utils.logging import add_file_handler, file_handler, logger
+from dipy.utils.logging import file_handler, logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows import interactive, report, templates
 from dipy.workflows.cli import cli_flows
@@ -292,8 +293,64 @@ def introspect_workflow_outputs(cli_name: str):
     return outputs
 
 
+def _stage_parameter_errors(*, stage):
+    """List the parameters of a stage that its workflow cannot accept.
+
+    A stage may set any argument of the workflow ``run`` or ``__init__``
+    methods, and must set every ``run`` argument that has no default.
+
+    Parameters
+    ----------
+    stage : dict
+        Stage configuration from a ``[[pipeline]]`` section, with a ``cli``
+        known to ``cli_flows``.
+
+    Returns
+    -------
+    list of str
+        One message per unknown or missing parameter.
+    """
+    module_name, class_name = cli_flows[stage["cli"]]
+    workflow_class = getattr(importlib.import_module(module_name), class_name)
+    run_params = inspect.signature(workflow_class.run).parameters
+    init_params = inspect.signature(workflow_class.__init__).parameters
+    variadic = (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
+
+    unknown = sorted(
+        key
+        for key in stage
+        if key not in ("name", "cli")
+        and key not in run_params
+        and key not in init_params
+    )
+    missing = [
+        name
+        for name, param in run_params.items()
+        if name != "self"
+        and param.default is inspect.Parameter.empty
+        and param.kind not in variadic
+        and name not in stage
+    ]
+
+    errors = []
+    if unknown:
+        errors.append(
+            f"Stage '{stage['name']}': Unknown parameters for {stage['cli']}: {unknown}"
+        )
+    if missing:
+        errors.append(
+            f"Stage '{stage['name']}': Missing required parameters for "
+            f"{stage['cli']}: {missing}"
+        )
+    return errors
+
+
 def validate_pipeline_config(pipeline_stages):
     """Validate pipeline configuration for correct input/output references.
+
+    Checks that every stage names a known CLI, sets only parameters its
+    workflow accepts along with all the required ones, and references
+    existing outputs of other stages.
 
     Parameters
     ----------
@@ -319,6 +376,7 @@ def validate_pipeline_config(pipeline_stages):
         try:
             outputs = introspect_workflow_outputs(cli_name)
             stage_outputs[stage_name] = outputs
+            errors.extend(_stage_parameter_errors(stage=stage))
         except ValueError as e:
             errors.append(f"Stage '{stage_name}': {str(e)}")
         except Exception as e:
@@ -806,9 +864,6 @@ def _stage_worker(*, queue, module_name, class_name, init_params, run_params):
     run_params : dict
         Keyword arguments forwarded to ``workflow.run``.
     """
-    import importlib
-    import os
-
     # PyTorch wheels on macOS bundle their own libomp.dylib, which conflicts
     # with the conda/Homebrew libomp.dylib loaded by scipy/numpy.  Both are
     # LLVM libomp (same implementation), so duplicate-loading is safe: the
@@ -851,8 +906,6 @@ def _execute_stage_isolated(*, module_name, class_name, init_params, run_params)
     RuntimeError
         If the child process exits with a non-zero exit code.
     """
-    import multiprocessing as mp
-
     ctx = mp.get_context("spawn")
     queue = ctx.Queue()
     proc = ctx.Process(
@@ -2810,46 +2863,46 @@ class AutoFlow(Workflow):
         )
 
         log_file_path = os.path.join(out_dir, f"{timestamp}_dipy_auto.log")
-        add_file_handler(filename=log_file_path, level=logger.getEffectiveLevel())
-        logger.info(f"Log file: {log_file_path}")
+        with file_handler(log_file_path, level=logger.getEffectiveLevel()):
+            logger.info(f"Log file: {log_file_path}")
 
-        if config_file is None:
-            config_file = _write_pipeline_config(
-                config=config,
-                out_dir=out_dir,
-                timestamp=timestamp,
-                pipeline_name=pipeline_name,
-            )
+            if config_file is None:
+                config_file = _write_pipeline_config(
+                    config=config,
+                    out_dir=out_dir,
+                    timestamp=timestamp,
+                    pipeline_name=pipeline_name,
+                )
 
-        try:
-            _resolve_atlas_paths(config=config, io_config=io_config)
-            missing, invalid = _validate_io_refs(config=config, io_config=io_config)
-            if missing or invalid:
-                _log_io_validation_errors(missing=missing, invalid=invalid)
-                raise PipelineError("Input validation failed")
+            try:
+                _resolve_atlas_paths(config=config, io_config=io_config)
+                missing, invalid = _validate_io_refs(config=config, io_config=io_config)
+                if missing or invalid:
+                    _log_io_validation_errors(missing=missing, invalid=invalid)
+                    raise PipelineError("Input validation failed")
 
-            logger.info("✓ All input files validated successfully")
-            logger.info("Pipeline Configuration Summary:")
-            logger.info(f"  Config file: {os.path.basename(config_file)}")
-            logger.info(f"  Output directory: {io_config['out_dir']}")
-            logger.info(f"  Number of stages: {len(config['pipeline'])}")
-            logger.info(f"  Dry run: {dry_run}")
-            logger.info("")
+                logger.info("✓ All input files validated successfully")
+                logger.info("Pipeline Configuration Summary:")
+                logger.info(f"  Config file: {os.path.basename(config_file)}")
+                logger.info(f"  Output directory: {io_config['out_dir']}")
+                logger.info(f"  Number of stages: {len(config['pipeline'])}")
+                logger.info(f"  Dry run: {dry_run}")
+                logger.info("")
 
-            execute_semantic_pipeline(
-                config=config,
-                io_config=io_config,
-                config_file_path=config_file,
-                report_path=os.path.join(
-                    io_config["out_dir"], f"{timestamp}_pipeline_report.html"
-                ),
-                start=start,
-                dry_run=dry_run,
-                force=self._force_overwrite,
-            )
-        except PipelineError as e:
-            logger.error(str(e))
-            sys.exit(1)
+                execute_semantic_pipeline(
+                    config=config,
+                    io_config=io_config,
+                    config_file_path=config_file,
+                    report_path=os.path.join(
+                        io_config["out_dir"], f"{timestamp}_pipeline_report.html"
+                    ),
+                    start=start,
+                    dry_run=dry_run,
+                    force=self._force_overwrite,
+                )
+            except PipelineError as e:
+                logger.error(str(e))
+                sys.exit(1)
 
     def _run_bids_batch(
         self,
@@ -2960,68 +3013,70 @@ sequence of str or None
         )
 
         batch_log = os.path.join(deriv_root, f"{timestamp}_dipy_auto.log")
-        add_file_handler(filename=batch_log, level=logger.getEffectiveLevel())
-        logger.info(f"Batch log file: {batch_log}")
-        logger.info(f"Derivatives root: {deriv_root}")
-        logger.info(f"{len(runs)} diffusion acquisition(s) to process:")
-        for run in runs:
-            logger.info(f"  {run.label}")
+        with file_handler(batch_log, level=logger.getEffectiveLevel()):
+            logger.info(f"Batch log file: {batch_log}")
+            logger.info(f"Derivatives root: {deriv_root}")
+            logger.info(f"{len(runs)} diffusion acquisition(s) to process:")
+            for run in runs:
+                logger.info(f"  {run.label}")
 
-        results = []
-        run_out_dirs = _bids_run_out_dirs(runs=runs, deriv_root=deriv_root)
+            results = []
+            run_out_dirs = _bids_run_out_dirs(runs=runs, deriv_root=deriv_root)
 
-        for index, (run, run_out_dir) in enumerate(zip(runs, run_out_dirs), start=1):
+            for index, (run, run_out_dir) in enumerate(
+                zip(runs, run_out_dirs), start=1
+            ):
+                logger.info("")
+                logger.info("=" * 70)
+                logger.info(f"[{index}/{len(runs)}] {run.label}")
+                logger.info("=" * 70)
+
+                result = self._run_bids_entry(
+                    run=run,
+                    run_out_dir=run_out_dir,
+                    base_config=base_config,
+                    deriv_root=deriv_root,
+                    pipeline_name=pipeline_name,
+                    atlas_tractogram=atlas_tractogram,
+                    bundle_atlas_dir=bundle_atlas_dir,
+                    start=start,
+                    dry_run=dry_run,
+                    out_report=out_report,
+                    timestamp=timestamp,
+                )
+                results.append(result)
+
+                if result["status"] == "failed" and stop_on_error:
+                    logger.error(f"Stopping batch after {run.label} (--stop_on_error)")
+                    break
+
+            _write_batch_summary(
+                results=results,
+                deriv_root=deriv_root,
+                timestamp=timestamp,
+                pipeline_name=pipeline_name,
+                bids_dir=bids_dir,
+            )
+
+            failed = [r for r in results if r["status"] == "failed"]
+            succeeded = [r for r in results if r["status"] == "completed"]
+
             logger.info("")
             logger.info("=" * 70)
-            logger.info(f"[{index}/{len(runs)}] {run.label}")
+            logger.info(
+                f"Batch finished: {len(results)} run(s), {len(succeeded)} succeeded, "
+                f"{len(failed)} failed"
+            )
+            for result in failed:
+                stage = result["failed_stage"]
+                where = f" at stage '{stage}'" if stage else ""
+                logger.error(f"  ✗ {result['label']} failed{where}: {result['error']}")
             logger.info("=" * 70)
 
-            result = self._run_bids_entry(
-                run=run,
-                run_out_dir=run_out_dir,
-                base_config=base_config,
-                deriv_root=deriv_root,
-                pipeline_name=pipeline_name,
-                atlas_tractogram=atlas_tractogram,
-                bundle_atlas_dir=bundle_atlas_dir,
-                start=start,
-                dry_run=dry_run,
-                out_report=out_report,
-                timestamp=timestamp,
-            )
-            results.append(result)
+            if failed:
+                sys.exit(1)
 
-            if result["status"] == "failed" and stop_on_error:
-                logger.error(f"Stopping batch after {run.label} (--stop_on_error)")
-                break
-
-        _write_batch_summary(
-            results=results,
-            deriv_root=deriv_root,
-            timestamp=timestamp,
-            pipeline_name=pipeline_name,
-            bids_dir=bids_dir,
-        )
-
-        failed = [r for r in results if r["status"] == "failed"]
-        succeeded = [r for r in results if r["status"] == "completed"]
-
-        logger.info("")
-        logger.info("=" * 70)
-        logger.info(
-            f"Batch finished: {len(results)} run(s), {len(succeeded)} succeeded, "
-            f"{len(failed)} failed"
-        )
-        for result in failed:
-            stage = result["failed_stage"]
-            where = f" at stage '{stage}'" if stage else ""
-            logger.error(f"  ✗ {result['label']} failed{where}: {result['error']}")
-        logger.info("=" * 70)
-
-        if failed:
-            sys.exit(1)
-
-        return results
+            return results
 
     def _run_bids_entry(
         self,

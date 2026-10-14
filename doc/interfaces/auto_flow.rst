@@ -10,9 +10,28 @@ line workflow and how its inputs connect to the outputs of the stages before
 it. Nine pipelines ship with DIPY, from plain denoising to a full
 preprocessing, reconstruction, tracking and bundle segmentation chain.
 
-List them with::
+====================== ======================================================
+Name                   Stages
+====================== ======================================================
+``denoise``            NLMeans denoising, threshold mask, image information
+``basic``              ``denoise`` with a median Otsu brain extraction
+``preprocessing``      b0 extraction, brain mask, Gibbs unringing, motion
+                       correction, MP-PCA denoising
+``dti_only``           Denoising, brain mask, DTI fit and tensor metrics
+``multi_shell``        Denoising, brain mask, DTI, DKI, CSD, CSA and GQI fits
+``tractography``       Denoising, brain mask, DTI and CSD fits, tracking
+``full``               Full preprocessing, DTI and FORCE fits, tracking, SLR to
+                       an atlas, RecoBundles, bundle labelling, BUAN profiles
+``full_with_motion``   ``full`` with motion correction
+``comprehensive``      Full preprocessing with motion correction, DTI, DKI, CSD,
+                       CSA, GQI and FORCE fits, tracking, SLR and RecoBundles for
+                       each method
+====================== ======================================================
 
-    dipy_auto --list_pipelines
+``full`` runs when neither ``--pipeline_type`` nor a configuration file is
+given. ``dipy_auto --list_pipelines`` lists the pipelines with their
+description; it shows ``full`` only, unless it is run with
+``--log_level DEBUG``.
 
 -------------------
 One set of images
@@ -29,13 +48,30 @@ Add the companion images the pipeline needs::
     dipy_auto dwi.nii.gz dwi.bval dwi.bvec --t1_file t1.nii.gz \
         --mask_file brain_mask.nii.gz --out_dir results
 
+A mask given with ``--mask_file`` must be binary and cover at least a quarter
+of the volume. It replaces the output of every stage that computes a brain
+mask, and those stages are skipped. Pipelines with ``dipy_slr`` or
+``dipy_recobundles`` stages download the HCP 30-bundle atlas on their first
+run, unless ``--atlas_tractogram`` and ``--bundle_atlas_dir`` point at another
+atlas.
+
 ``--dry_run`` prints the execution plan, the stage order and an estimate of the
-disk space the run needs, without executing anything. ``--start <stage>``
-resumes a pipeline from one stage, reusing the outputs already on disk.
+disk space the run needs, without executing anything. The run stops before the
+first stage if the output directory lacks that space.
+
+A stage whose outputs are all already on disk is skipped, so re-running a
+command after a failure picks up where it stopped. ``--force`` runs every stage
+again and overwrites its outputs. ``--start <stage>`` skips every stage before
+``<stage>`` without checking for its outputs, and reads them from disk; use it
+to re-run the later stages of a pipeline with different parameters.
+
+``--interactive_mode`` inspects the b-values, suggests a pipeline and offers to
+build one stage by stage.
 
 Each run writes, into ``--out_dir``:
 
-- ``<timestamp>_<pipeline>_pipeline.toml``, the exact configuration that ran;
+- ``<timestamp>_<pipeline>_pipeline.toml``, the exact configuration that ran,
+  unless the run was started from a configuration file;
 - ``<timestamp>_dipy_auto.log``, the full log;
 - ``<timestamp>_pipeline_report.html``, the final report;
 - ``reports/NN_<stage>.html`` and ``reports/index.html``, the per-stage QC
@@ -44,6 +80,64 @@ Each run writes, into ``--out_dir``:
 Reopen a report, with its images served so the QC buttons work::
 
     dipy_auto results/20260929_120000_pipeline_report.html
+
+--------------------
+Writing a pipeline
+--------------------
+
+Start from the configuration a run wrote, or from scratch. A configuration has
+an optional ``[General]`` table, an ``[io]`` table of input paths and one
+``[[pipeline]]`` table per stage::
+
+    [General]
+    name = "my_dti"
+
+    [io]
+    dwi = ""
+    bvals = ""
+    bvecs = ""
+    out_dir = "."
+
+    [[pipeline]]
+    name = "denoise"
+    cli = "dipy_denoise_patch2self"
+    input_files = "${io.dwi}"
+    bval_files = "${io.bvals}"
+
+    [[pipeline]]
+    name = "brain_mask"
+    cli = "dipy_median_otsu"
+    input_files = "${denoise.out_denoised}"
+    save_masked = true
+
+    [[pipeline]]
+    name = "dti_fit"
+    cli = "dipy_fit_dti"
+    input_files = "${denoise.out_denoised}"
+    bvalues_files = "${io.bvals}"
+    bvectors_files = "${io.bvecs}"
+    mask_files = "${brain_mask.out_mask}"
+    out_dir = "${io.out_dir}/dti"
+
+Every key of a stage other than ``name`` and ``cli`` is an argument of the
+workflow behind ``cli``, under the same name as its command line option.
+``${io.<key>}`` reads the ``[io]`` table, and ``${<stage>.<output>}`` reads the
+file a previous stage wrote for one of its ``out_*`` arguments, or its
+``out_dir``. These references alone set the execution order: stages run in
+dependency order, whatever their order in the file.
+
+Run it with::
+
+    dipy_auto my_dti.toml dwi.nii.gz dwi.bval dwi.bvec --out_dir results
+
+The files on the command line fill the ``[io]`` table, so one configuration
+serves many subjects. Before any stage runs, ``dipy_auto`` stops on an input
+file that does not exist, then on an unknown command, a misspelled or missing
+argument, a reference to a stage or output that does not exist, or a dependency
+cycle, listing every problem of the configuration at once. When several stages
+would write a file of the same name in the same directory, each of those
+outputs is renamed after its stage, for instance ``pam_csd_fit.pam5``, and the
+configuration is saved with the new names.
 
 -------------------------
 A whole BIDS dataset
@@ -102,10 +196,9 @@ The output is a BIDS-Derivatives dataset::
                 <timestamp>_<pipeline>_pipeline.toml
                 <timestamp>_pipeline_report.html
                 reports/index.html
-                dwi_denoised.nii.gz
+                dwi_mppca.nii.gz
                 sub-01_desc-denoised_dwi.nii.gz
                 sub-01_desc-denoised_dwi.json
-                dti/
         sub-02/
             ses-1/
                 dwi/

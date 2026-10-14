@@ -2,6 +2,7 @@ python_sources = [
   '__init__.py',
   'test_align.py',
   'test_auto.py',
+  'test_combined_workflow.py',
   'test_denoise.py',
   'test_docstring_parser.py',
   'test_iap.py',

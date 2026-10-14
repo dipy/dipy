@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -63,6 +64,161 @@ def test_auto_single_subject_dry_run():
         npt.assert_equal(len(configs), 1)
         npt.assert_equal(
             any(f.endswith("_dipy_auto.log") for f in os.listdir(out_dir)), True
+        )
+
+
+def test_auto_releases_log_files():
+    handlers = list(logging.getLogger("dipy").handlers)
+
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        inputs = [paths["dwi"], paths["bvals"], paths["bvecs"]]
+        out_dir = os.path.join(tmp, "out")
+
+        AutoFlow().run(inputs, pipeline_type="denoise", dry_run=True, out_dir=out_dir)
+        npt.assert_equal(logging.getLogger("dipy").handlers, handlers)
+
+        npt.assert_raises(
+            SystemExit,
+            AutoFlow().run,
+            inputs[:1],
+            pipeline_type="dti_only",
+            dry_run=True,
+            out_dir=out_dir,
+        )
+        npt.assert_equal(logging.getLogger("dipy").handlers, handlers)
+
+        root = _make_bids_tree(Path(tmp) / "ds")
+        AutoFlow().run(
+            [root, os.path.join(tmp, "deriv")],
+            bids=True,
+            participant_label=["01"],
+            pipeline_type="denoise",
+            dry_run=True,
+        )
+        npt.assert_equal(logging.getLogger("dipy").handlers, handlers)
+
+
+def test_auto_list_pipelines():
+    with TemporaryDirectory() as tmp:
+        out_dir = os.path.join(tmp, "out")
+        npt.assert_equal(AutoFlow().run([], list_pipelines=True, out_dir=out_dir), None)
+        npt.assert_equal(os.path.exists(out_dir), False)
+
+
+def test_auto_unknown_pipeline_type():
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        npt.assert_raises(
+            SystemExit,
+            AutoFlow().run,
+            [paths["dwi"], paths["bvals"], paths["bvecs"]],
+            pipeline_type="does_not_exist",
+            dry_run=True,
+            out_dir=os.path.join(tmp, "out"),
+        )
+
+
+def test_auto_config_file():
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        out_dir = os.path.join(tmp, "out")
+        config_file = os.path.join(tmp, "custom.toml")
+        Path(config_file).write_text(
+            "[General]\n"
+            'name = "custom_denoise"\n\n'
+            "[[pipeline]]\n"
+            'name = "denoise"\n'
+            'cli = "dipy_denoise_nlmeans"\n'
+            'input_files = "${io.dwi}"\n'
+        )
+
+        AutoFlow().run(
+            [config_file, paths["dwi"], paths["bvals"], paths["bvecs"]],
+            dry_run=True,
+            out_dir=out_dir,
+        )
+
+        # the user's configuration is used in place, not copied
+        npt.assert_equal(
+            [f for f in os.listdir(out_dir) if f.endswith("_pipeline.toml")], []
+        )
+        npt.assert_equal(
+            any(f.endswith("_dipy_auto.log") for f in os.listdir(out_dir)), True
+        )
+
+
+def test_auto_invalid_config_file():
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        inputs = [paths["dwi"], paths["bvals"], paths["bvecs"]]
+        out_dir = os.path.join(tmp, "out")
+
+        broken = os.path.join(tmp, "broken.toml")
+        Path(broken).write_text("[[pipeline]\nname = ")
+        no_stage = os.path.join(tmp, "no_stage.toml")
+        Path(no_stage).write_text('[General]\nname = "empty"\n')
+
+        for config_file in (os.path.join(tmp, "missing.toml"), broken, no_stage):
+            npt.assert_raises(
+                SystemExit,
+                AutoFlow().run,
+                [config_file, *inputs],
+                dry_run=True,
+                out_dir=out_dir,
+            )
+
+
+def test_auto_missing_inputs():
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        out_dir = os.path.join(tmp, "out")
+
+        npt.assert_raises(
+            SystemExit,
+            AutoFlow().run,
+            [paths["dwi"]],
+            pipeline_type="dti_only",
+            dry_run=True,
+            out_dir=out_dir,
+        )
+        npt.assert_raises(
+            SystemExit,
+            AutoFlow().run,
+            [os.path.join(tmp, "nope.nii.gz"), paths["bvals"], paths["bvecs"]],
+            pipeline_type="denoise",
+            dry_run=True,
+            out_dir=out_dir,
+        )
+
+
+def test_auto_rejects_invalid_mask():
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        mask_file = os.path.join(tmp, "mask.nii.gz")
+        _write_nifti(mask_file)
+
+        npt.assert_raises(
+            SystemExit,
+            AutoFlow().run,
+            [paths["dwi"], paths["bvals"], paths["bvecs"]],
+            mask_file=mask_file,
+            pipeline_type="denoise",
+            dry_run=True,
+            out_dir=os.path.join(tmp, "out"),
+        )
+
+
+def test_auto_interactive_requires_bvals():
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        npt.assert_raises(
+            SystemExit,
+            AutoFlow().run,
+            [paths["dwi"]],
+            interactive_mode=True,
+            dry_run=True,
+            out_dir=os.path.join(tmp, "out"),
         )
 
 
