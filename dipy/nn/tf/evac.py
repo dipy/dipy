@@ -14,8 +14,11 @@ from dipy.nn.utils import (
 from dipy.segment.utils import remove_holes_and_islands
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.deprecator import warning_for_keywords
-from dipy.utils.logging import logger
+from dipy.utils.logging import get_logger
 from dipy.utils.optpkg import optional_package
+
+# A child of the DIPY logger: ``verbose`` only quiets the model messages.
+logger = get_logger(name="dipy.nn")
 
 tf, have_tf, _ = optional_package("tensorflow", min_version="2.18.0")
 if have_tf:
@@ -464,9 +467,8 @@ class EVACPlus:
             dim = 3
             if batch_size is not None:
                 logger.warning(
-                    "Batch size specified, but not used",
-                    "due to the input not having \
-                                a batch dimension",
+                    "Batch size specified, but not used due to the input not having "
+                    "a batch dimension"
                 )
 
             T1 = np.expand_dims(T1, 0)
