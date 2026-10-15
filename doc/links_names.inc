@@ -111,6 +111,7 @@
 .. _pandas: https://pandas.pydata.org
 .. _pytables: https://www.pytables.org
 .. _tensorflow: https://www.tensorflow.org
+.. _pytorch: https://pytorch.org
 .. _tqdm: https://tqdm.github.io/
 .. _trx-python: https://tee-ar-ex.github.io/trx-python/
 
