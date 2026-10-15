@@ -43,7 +43,7 @@ def _write_gradients(stem):
 def _write_json(path, content):
     """Write a JSON sidecar, creating parent directories as needed."""
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(content, f)
 
 
@@ -164,11 +164,13 @@ def test_validate_dataset():
 
         malformed = Path(tmp) / "bad"
         (malformed / "sub-01").mkdir(parents=True)
-        (malformed / "dataset_description.json").write_text("{not json")
+        (malformed / "dataset_description.json").write_text(
+            "{not json", encoding="utf-8"
+        )
         npt.assert_raises(ValueError, validate_dataset, root=malformed)
 
         as_file = Path(tmp) / "file.txt"
-        as_file.write_text("x")
+        as_file.write_text("x", encoding="utf-8")
         npt.assert_raises(ValueError, validate_dataset, root=as_file)
 
 
@@ -421,7 +423,7 @@ def test_write_dataset_description():
         target = write_dataset_description(
             path=deriv, source_datasets=[tmp], pipeline_name="denoise"
         )
-        with open(target) as f:
+        with open(target, encoding="utf-8") as f:
             content = json.load(f)
 
         npt.assert_equal(content["Name"], "dipy")
@@ -443,13 +445,15 @@ def test_validate_dataset_ignores_sub_files():
         root = Path(tmp) / "ds"
         root.mkdir()
         _write_json(root / "dataset_description.json", {"Name": "x"})
-        (root / "sub-01.tsv").write_text("x")
+        (root / "sub-01.tsv").write_text("x", encoding="utf-8")
         npt.assert_raises(ValueError, validate_dataset, root=root)
 
 
 def test_find_dwi_runs_glob_characters_in_root():
     with TemporaryDirectory() as tmp:
-        root = _make_bids_tree(Path(tmp) / "ds[1]*?")
+        # Windows forbids * and ? in file names; [ ] still form a glob pattern
+        name = "ds[1]" if os.name == "nt" else "ds[1]*?"
+        root = _make_bids_tree(Path(tmp) / name)
         runs = find_dwi_runs(root=root)
         npt.assert_equal(len(runs), 5)
         npt.assert_equal(Path(runs[0].bval).name, "sub-01_dwi.bval")
@@ -644,7 +648,7 @@ def test_write_dataset_description_links():
         source.mkdir()
         deriv = os.path.join(tmp, "deriv")
         target = write_dataset_description(path=deriv, source_datasets=[str(source)])
-        with open(target) as f:
+        with open(target, encoding="utf-8") as f:
             content = json.load(f)
 
         uri = source.absolute().as_uri()
@@ -653,7 +657,7 @@ def test_write_dataset_description_links():
         npt.assert_equal(" " in uri, False)
 
         target = write_dataset_description(path=deriv)
-        with open(target) as f:
+        with open(target, encoding="utf-8") as f:
             content = json.load(f)
         npt.assert_equal(content["SourceDatasets"], [])
         npt.assert_equal("DatasetLinks" in content, False)

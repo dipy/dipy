@@ -339,7 +339,7 @@ def validate_dataset(*, root, require_description=True):
 
     if description_file.exists():
         try:
-            with open(description_file) as f:
+            with open(description_file, encoding="utf-8") as f:
                 description = json.load(f)
         except (OSError, json.JSONDecodeError) as e:
             raise ValueError(
@@ -503,7 +503,7 @@ def _read_json(*, path):
         Parsed contents, empty when the file cannot be read or parsed.
     """
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     except (OSError, json.JSONDecodeError) as e:
         logger.warning(f"Ignoring malformed JSON sidecar {path}: {e}")
@@ -1137,7 +1137,7 @@ def write_dataset_description(
         content["DatasetLinks"] = {"raw": content["SourceDatasets"][0]["URL"]}
 
     target = path / "dataset_description.json"
-    with open(target, "w") as f:
+    with open(target, "w", encoding="utf-8") as f:
         json.dump(content, f, indent=4)
 
     logger.info(f"Derivative dataset description written to {target}")

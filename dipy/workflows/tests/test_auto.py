@@ -17,7 +17,7 @@ def _summary(deriv_root):
     """Load the JSON batch summary written in a derivative dataset."""
     names = [f for f in os.listdir(deriv_root) if f.endswith("_batch_summary.json")]
     npt.assert_equal(len(names), 1)
-    with open(os.path.join(deriv_root, names[0])) as f:
+    with open(os.path.join(deriv_root, names[0]), encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -35,7 +35,7 @@ def _phantom_bids_tree(root):
     """Build a one subject BIDS dataset holding a DWI phantom."""
     root = Path(root)
     (root / "sub-01" / "dwi").mkdir(parents=True)
-    with open(root / "dataset_description.json", "w") as f:
+    with open(root / "dataset_description.json", "w", encoding="utf-8") as f:
         json.dump({"Name": "phantom", "BIDSVersion": "1.9.0"}, f)
 
     paths = _phantom(str(root / "sub-01" / "dwi"))
@@ -131,7 +131,8 @@ def test_auto_config_file():
             "[[pipeline]]\n"
             'name = "denoise"\n'
             'cli = "dipy_denoise_nlmeans"\n'
-            'input_files = "${io.dwi}"\n'
+            'input_files = "${io.dwi}"\n',
+            encoding="utf-8",
         )
 
         AutoFlow().run(
@@ -160,14 +161,14 @@ def test_auto_config_file_left_untouched_by_conflicts():
             "\n[[pipeline]]\n"
             'name = "d2"\ncli = "dipy_denoise_nlmeans"\ninput_files = "${io.dwi}"\n'
         )
-        Path(config_file).write_text(text)
+        Path(config_file).write_text(text, encoding="utf-8")
 
         AutoFlow().run(
             [config_file, paths["dwi"], paths["bvals"], paths["bvecs"]],
             out_dir=out_dir,
         )
 
-        npt.assert_equal(Path(config_file).read_text(), text)
+        npt.assert_equal(Path(config_file).read_text(encoding="utf-8"), text)
         resolved = os.path.join(out_dir, "custom_resolved.toml")
         with open(resolved, "rb") as f:
             stages = tomllib.load(f)["pipeline"]
@@ -179,7 +180,9 @@ def test_auto_config_file_left_untouched_by_conflicts():
             f for f in os.listdir(out_dir) if f.endswith("_pipeline_report.html")
         ]
         npt.assert_equal(len(reports), 1)
-        npt.assert_equal(resolved in Path(out_dir, reports[0]).read_text(), True)
+        npt.assert_equal(
+            resolved in Path(out_dir, reports[0]).read_text(encoding="utf-8"), True
+        )
 
 
 def test_auto_uses_the_configured_output_directory():
@@ -188,9 +191,10 @@ def test_auto_uses_the_configured_output_directory():
         out_dir = os.path.join(tmp, "from_config")
         config_file = os.path.join(tmp, "custom.toml")
         Path(config_file).write_text(
-            f'[io]\nout_dir = "{out_dir}"\n\n'
+            f"[io]\nout_dir = '{out_dir}'\n\n"
             '[[pipeline]]\nname = "denoise"\ncli = "dipy_denoise_nlmeans"\n'
-            'input_files = "${io.dwi}"\n'
+            'input_files = "${io.dwi}"\n',
+            encoding="utf-8",
         )
 
         AutoFlow().run(
@@ -209,9 +213,9 @@ def test_auto_invalid_config_file():
         out_dir = os.path.join(tmp, "out")
 
         broken = os.path.join(tmp, "broken.toml")
-        Path(broken).write_text("[[pipeline]\nname = ")
+        Path(broken).write_text("[[pipeline]\nname = ", encoding="utf-8")
         no_stage = os.path.join(tmp, "no_stage.toml")
-        Path(no_stage).write_text('[General]\nname = "empty"\n')
+        Path(no_stage).write_text('[General]\nname = "empty"\n', encoding="utf-8")
 
         for config_file in (os.path.join(tmp, "missing.toml"), broken, no_stage):
             npt.assert_raises(
@@ -290,7 +294,9 @@ def test_auto_bids_dry_run():
             dry_run=True,
         )
 
-        with open(os.path.join(deriv, "dataset_description.json")) as f:
+        with open(
+            os.path.join(deriv, "dataset_description.json"), encoding="utf-8"
+        ) as f:
             description = json.load(f)
         npt.assert_equal(description["DatasetType"], "derivative")
         npt.assert_equal(description["GeneratedBy"][0]["Name"], "dipy")
@@ -308,12 +314,14 @@ def test_auto_bids_dry_run():
         toml_file = next(
             f for f in os.listdir(run["out_dir"]) if f.endswith("_pipeline.toml")
         )
-        text = Path(run["out_dir"], toml_file).read_text()
+        with open(Path(run["out_dir"], toml_file), "rb") as f:
+            io_values = set(tomllib.load(f)["io"].values())
         npt.assert_equal(
-            os.path.join(root, "sub-01", "dwi", "sub-01_dwi.nii.gz") in text, True
+            os.path.join(root, "sub-01", "dwi", "sub-01_dwi.nii.gz") in io_values, True
         )
         npt.assert_equal(
-            os.path.join(root, "sub-01", "anat", "sub-01_T1w.nii.gz") in text, True
+            os.path.join(root, "sub-01", "anat", "sub-01_T1w.nii.gz") in io_values,
+            True,
         )
 
 
@@ -324,10 +332,11 @@ def test_auto_bids_runs_do_not_inherit_inputs():
         config_file = os.path.join(tmp, "custom.toml")
         Path(config_file).write_text(
             "[io]\n"
-            f'session = "9"\nt1w = "{os.path.join(tmp, "other_T1w.nii.gz")}"\n'
-            f'dwi_opp_phase = "{os.path.join(tmp, "other_epi.nii.gz")}"\n\n'
+            f"session = '9'\nt1w = '{os.path.join(tmp, 'other_T1w.nii.gz')}'\n"
+            f"dwi_opp_phase = '{os.path.join(tmp, 'other_epi.nii.gz')}'\n\n"
             '[[pipeline]]\nname = "denoise"\ncli = "dipy_denoise_nlmeans"\n'
-            'input_files = "${io.dwi}"\n'
+            'input_files = "${io.dwi}"\n',
+            encoding="utf-8",
         )
 
         AutoFlow().run(
@@ -603,7 +612,7 @@ def test_auto_bids_smoke():
         # headline outputs are exposed under BIDS-style names
         link = run_dir / "sub-01_desc-denoised_dwi.nii.gz"
         npt.assert_equal(link.exists(), True)
-        with open(run_dir / "sub-01_desc-denoised_dwi.json") as f:
+        with open(run_dir / "sub-01_desc-denoised_dwi.json", encoding="utf-8") as f:
             sidecar = json.load(f)
         npt.assert_equal(sidecar["GeneratedByStage"]["name"], "denoise")
         npt.assert_equal(

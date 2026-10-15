@@ -2673,8 +2673,10 @@ def _write_bids_derivative_links(*, run, deriv_root, execution_info):
             shutil.copy2(path, link)
 
         sidecar = {
-            "Sources": [f"bids::{os.path.relpath(path, deriv_root)}"],
-            "RawSources": [f"bids:raw:{os.path.relpath(run.dwi, run.root)}"],
+            "Sources": [f"bids::{Path(os.path.relpath(path, deriv_root)).as_posix()}"],
+            "RawSources": [
+                f"bids:raw:{Path(os.path.relpath(run.dwi, run.root)).as_posix()}"
+            ],
             "GeneratedByStage": {
                 "name": stage.get("name"),
                 "cli": stage.get("cli"),

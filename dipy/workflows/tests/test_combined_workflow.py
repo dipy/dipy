@@ -384,7 +384,7 @@ def test_fill_io_section():
 def test_validate_io_refs():
     with TemporaryDirectory() as tmp:
         dwi = os.path.join(tmp, "dwi.nii.gz")
-        open(dwi, "w").close()
+        open(dwi, "w", encoding="utf-8").close()
         config = {
             "pipeline": [
                 {
@@ -474,8 +474,8 @@ def test_discover_stage_outputs():
             {"out_dir": tmp},
         )
 
-        open(os.path.join(tmp, "dwi_nlmeans.nii.gz"), "w").close()
-        open(os.path.join(tmp, "custom.nii.gz"), "w").close()
+        open(os.path.join(tmp, "dwi_nlmeans.nii.gz"), "w", encoding="utf-8").close()
+        open(os.path.join(tmp, "custom.nii.gz"), "w", encoding="utf-8").close()
 
         found = discover_stage_outputs(
             stage_name="denoise", stage_config=stage, io_config=io_config
@@ -759,7 +759,7 @@ def test_execute_pipeline_failed_rerun_hides_previous_reports():
             ),
             None,
         )
-        with open(os.path.join(reports_dir, "index.html")) as f:
+        with open(os.path.join(reports_dir, "index.html"), encoding="utf-8") as f:
             npt.assert_equal("PENDING" in f.read(), True)
 
 
@@ -818,7 +818,9 @@ def test_execute_pipeline_optional_t1_registration():
         npt.assert_equal(
             os.path.exists(os.path.join(skipped_dir, "moved.nii.gz")), False
         )
-        with open(os.path.join(skipped_dir, "reports", "index.html")) as f:
+        with open(
+            os.path.join(skipped_dir, "reports", "index.html"), encoding="utf-8"
+        ) as f:
             npt.assert_equal("badge-optional" in f.read(), True)
 
         out_dir = os.path.join(tmp, "with_t1")
@@ -881,7 +883,7 @@ def test_execute_stage_isolated_reports_child_errors():
         npt.assert_equal("Traceback" in str(error.value), True)
 
         # the child appends to the log files of the parent
-        with open(log_file) as f:
+        with open(log_file, encoding="utf-8") as f:
             text = f.read()
         npt.assert_equal(
             "Isolated stage dipy.workflows.mask.MaskFlow failed" in text, True
@@ -967,8 +969,8 @@ def test_discover_stage_outputs_ignores_lookalikes():
             os.path.join(tmp, "gone.nii.gz"),
             os.path.join(tmp, "sub-01_desc-denoised_dwi.nii.gz"),
         )
-        open(os.path.join(tmp, "my_denoised.nii.gz"), "w").close()
-        open(os.path.join(tmp, "denoised.nii.gz"), "w").close()
+        open(os.path.join(tmp, "my_denoised.nii.gz"), "w", encoding="utf-8").close()
+        open(os.path.join(tmp, "denoised.nii.gz"), "w", encoding="utf-8").close()
         npt.assert_equal(
             discover_stage_outputs(
                 stage_name="denoise", stage_config=stage, io_config=io_config
@@ -993,12 +995,12 @@ def test_discover_stage_outputs_ignores_lookalikes():
             "cli": "dipy_fit_dti",
             "params": {"out_fa": "${io.prefix}_fa.nii.gz"},
         }
-        open(os.path.join(tmp, "kfa.nii.gz"), "w").close()
+        open(os.path.join(tmp, "kfa.nii.gz"), "w", encoding="utf-8").close()
         found = discover_stage_outputs(
             stage_name="dti", stage_config=dti, io_config={**io_config, "prefix": "s"}
         )
         npt.assert_equal("out_fa" in found, False)
-        open(os.path.join(tmp, "s_fa.nii.gz"), "w").close()
+        open(os.path.join(tmp, "s_fa.nii.gz"), "w", encoding="utf-8").close()
         found = discover_stage_outputs(
             stage_name="dti", stage_config=dti, io_config={**io_config, "prefix": "s"}
         )
@@ -1032,7 +1034,7 @@ def test_execute_pipeline_dry_run_keeps_user_config():
             "[[pipeline]]\n"
             'name = "d2"\ncli = "dipy_denoise_nlmeans"\ninput_files = "b"\n'
         )
-        with open(config_file, "w") as f:
+        with open(config_file, "w", encoding="utf-8") as f:
             f.write(text)
         with open(config_file, "rb") as f:
             config = tomllib.load(f)
@@ -1044,7 +1046,7 @@ def test_execute_pipeline_dry_run_keeps_user_config():
             dry_run=True,
         )
 
-        with open(config_file) as f:
+        with open(config_file, encoding="utf-8") as f:
             npt.assert_equal(f.read(), text)
         with open(os.path.join(out_dir, "mine_resolved.toml"), "rb") as f:
             saved = tomllib.load(f)
@@ -1162,7 +1164,7 @@ def test_write_bids_derivative_links():
                 ("out_mask", "mask"),
             ):
                 path = os.path.join(run_dir, stage, name)
-                open(path, "w").close()
+                open(path, "w", encoding="utf-8").close()
                 outputs[stage][key] = path
 
         execution_info = {
@@ -1205,7 +1207,9 @@ def test_write_bids_derivative_links():
             os.path.realpath(outputs["force"]["out_fa"]),
         )
 
-        with open(os.path.join(run_dir, "sub-01_desc-FAdti_dwimap.json")) as f:
+        with open(
+            os.path.join(run_dir, "sub-01_desc-FAdti_dwimap.json"), encoding="utf-8"
+        ) as f:
             sidecar = json.load(f)
         npt.assert_equal(
             sidecar["RawSources"], ["bids:raw:sub-01/dwi/sub-01_dwi.nii.gz"]
@@ -1283,6 +1287,8 @@ def _interactive_call(expression, answers):
         input=answers,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
         check=True,
     )
     line = next(x for x in result.stdout.splitlines() if "RESULT=" in x)
@@ -1361,8 +1367,8 @@ def test_config_files_are_utf8_whatever_the_locale():
     code = (
         "import locale, sys\n"
         "from dipy.workflows import combined_workflow as cw\n"
-        "assert locale.getpreferredencoding(False).lower() in "
-        "('ascii', 'us-ascii', 'ansi_x3.4-1968')\n"
+        "encoding = locale.getpreferredencoding(False)\n"
+        "assert '\\u2192'.encode(encoding, 'replace') == b'?', encoding\n"
         "out = sys.argv[1]\n"
         "config = {'General': {'name': 'a \\u2192 b'}}\n"
         "path = cw._write_pipeline_config(config=config, out_dir=out, "
@@ -1529,9 +1535,9 @@ def test_execute_pipeline_reruns_stages_left_behind_by_a_failed_run():
         )
 
         # denoise runs again with new parameters, then dti fails
-        with open(paths["bvecs"]) as f:
+        with open(paths["bvecs"], encoding="utf-8") as f:
             bvecs = f.read()
-        with open(paths["bvecs"], "w") as f:
+        with open(paths["bvecs"], "w", encoding="utf-8") as f:
             f.write("garbage\n")
         with pytest.raises(PipelineError) as error:
             execute_semantic_pipeline(
@@ -1543,7 +1549,7 @@ def test_execute_pipeline_reruns_stages_left_behind_by_a_failed_run():
         npt.assert_equal(_load_stage_state(out_dir=out_dir)["dti"]["invalid"], True)
 
         # dti, computed from the previous denoised volume, cannot be reused
-        with open(paths["bvecs"], "w") as f:
+        with open(paths["bvecs"], "w", encoding="utf-8") as f:
             f.write(bvecs)
         info = execute_semantic_pipeline(
             config=_denoise_dti_config(patch_radius=2, mask=mask), io_config=io_config

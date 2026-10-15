@@ -69,7 +69,7 @@ def analyze_bvals(*, bvals_file, b0_threshold=50):
         raise FileNotFoundError(f"B-values file not found: {bvals_file}")
 
     try:
-        with open(bvals_file) as f:
+        with open(bvals_file, encoding="utf-8") as f:
             content = f.read()
             bvals = [float(x) for x in content.split()]
     except (OSError, ValueError) as e:

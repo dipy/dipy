@@ -159,7 +159,7 @@ def test_streamline_qc():
         )
         assert _statuses(result)["Streamlines"] == "PASS"
         assert _statuses(result)["Streamlines shorter than 10 mm"] == "PASS"
-        assert len(result["figures"]) == 2
+        assert len(result["figures"]) == (2 if qc.has_mpl else 0)
 
         affine = str(out_dir / "affine.txt")
         np.savetxt(affine, np.eye(4))
@@ -265,12 +265,12 @@ def test_pipeline_writes_stage_reports():
             assert record["qc"]["metrics"]
         assert (reports_dir / "index.html").exists()
 
-        page = (reports_dir / "01_gibbs.html").read_text()
+        page = (reports_dir / "01_gibbs.html").read_text(encoding="utf-8")
         sources = re.findall(r'src="([^"]*)"', page)
-        assert sources
+        assert bool(sources) is bool(qc.has_mpl)
         assert all(src.startswith("data:image/png;base64,") for src in sources)
 
-        final = Path(report_path).read_text()
+        final = Path(report_path).read_text(encoding="utf-8")
         for index, name in enumerate(names, start=1):
             assert (
                 f'id="{report.stage_basename(index=index, stage_name=name)}"' in final
@@ -295,11 +295,13 @@ def test_output_buttons():
 
 
 def test_output_buttons_quote_paths(tmp_path):
-    folder = tmp_path / "o'brien \\ <x> & y"
+    windows = os.name == "nt"
+    # Windows forbids \ < > ? in file names, its paths still hold backslashes
+    folder = tmp_path / ("o'brien & y" if windows else "o'brien \\ <x> & y")
     folder.mkdir()
     volume = str(folder / "fa.nii.gz")
     save_nifti(volume, np.zeros((4, 4, 4), dtype=np.float32), np.eye(4))
-    text = str(folder / "a b#c?.txt")
+    text = str(folder / ("a b#c.txt" if windows else "a b#c?.txt"))
     np.savetxt(text, np.eye(4))
 
     items = report._output_items(
@@ -308,7 +310,9 @@ def test_output_buttons_quote_paths(tmp_path):
     (onclick,) = re.findall(r'onclick="qcOpen\(([^"]*)\)"', items)
     assert json.loads(html.unescape(onclick)) == volume
     (href,) = re.findall(r'class="qc-open" href="([^"]*)"', items)
-    assert unquote(html.unescape(href)) == os.path.relpath(text, tmp_path)
+    assert (
+        unquote(html.unescape(href)) == Path(os.path.relpath(text, tmp_path)).as_posix()
+    )
     assert "#" not in href and "?" not in href and " " not in href
     assert "<x>" not in items
 
@@ -407,7 +411,7 @@ def _final_report(*, out_dir, config, stage_names, run_id=None, config_file=None
             reports_dir=str(out_dir / "reports"),
             run_id=run_id,
         )
-    ).read_text()
+    ).read_text(encoding="utf-8")
 
 
 def test_report_escapes_user_strings(tmp_path):
@@ -430,7 +434,7 @@ def test_report_escapes_user_strings(tmp_path):
         stage_names=names,
         config_file=str(tmp_path / f"{evil}.toml"),
     )
-    stage_page = (tmp_path / "reports" / "01_denoise.html").read_text()
+    stage_page = (tmp_path / "reports" / "01_denoise.html").read_text(encoding="utf-8")
     for text in (page, stage_page):
         assert evil not in text
         assert html.escape(evil) in text
@@ -440,7 +444,7 @@ def test_report_links_are_relative_urls(tmp_path):
     conf_dir = tmp_path / "my conf"
     conf_dir.mkdir()
     config_file = conf_dir / "pipe#1.toml"
-    config_file.write_text("")
+    config_file.write_text("", encoding="utf-8")
     out_dir = tmp_path / "out"
     names = ["denoise"]
     report.write_stage_report(
@@ -462,14 +466,19 @@ def test_report_links_are_relative_urls(tmp_path):
     batch = tmp_path / "batch"
     run_dir = batch / "sub 01"
     (run_dir / "reports").mkdir(parents=True)
-    (run_dir / "reports" / "index.html").write_text("")
+    (run_dir / "reports" / "index.html").write_text("", encoding="utf-8")
     path = report.generate_batch_report(
         results=[{"label": "r", "out_dir": str(run_dir), "status": "completed"}],
         output_path=str(batch / "summary.html"),
         pipeline_name="p",
         bids_dir=str(tmp_path),
     )
-    assert Path(path).read_text().count('href="sub%2001/reports/index.html"') == 2
+    assert (
+        Path(path)
+        .read_text(encoding="utf-8")
+        .count('href="sub%2001/reports/index.html"')
+        == 2
+    )
 
 
 def test_report_ignores_records_of_other_runs(tmp_path):
@@ -510,7 +519,7 @@ def test_report_ignores_records_of_other_runs(tmp_path):
             pipeline_name="p",
             run_id="second",
         )
-    ).read_text()
+    ).read_text(encoding="utf-8")
     assert PENDING in index
 
     page = _final_report(out_dir=tmp_path, config={}, stage_names=names)
@@ -552,9 +561,9 @@ def test_non_finite_values_stay_out_of_json(tmp_path):
         record=record,
         pipeline_name="p",
     )
-    text = (tmp_path / "reports" / "01_denoise.json").read_text()
+    text = (tmp_path / "reports" / "01_denoise.json").read_text(encoding="utf-8")
     json.loads(text, parse_constant=_reject_constant)
-    assert "N/A" in Path(page).read_text()
+    assert "N/A" in Path(page).read_text(encoding="utf-8")
 
 
 def _dti_phantom(out_dir):
@@ -726,7 +735,7 @@ def test_trx_tractograms_are_closed(tmp_path):
 
 
 def test_qc_reads_files_with_glob_characters(tmp_path):
-    folder = tmp_path / "sub[01]*?"
+    folder = tmp_path / ("sub[01]" if os.name == "nt" else "sub[01]*?")
     folder.mkdir()
     paths = _dti_phantom(folder)
     result = qc.run_stage_qc(
@@ -864,7 +873,7 @@ def test_truncated_stage_record_is_pending(tmp_path):
             pipeline_name="p",
         )
     record = reports_dir / "02_brain_mask.json"
-    record.write_text(record.read_text()[:20])
+    record.write_text(record.read_text()[:20], encoding="utf-8")
     assert not list(reports_dir.glob("*.tmp"))
 
     records = report.load_stage_records(reports_dir=str(reports_dir), stage_names=names)
