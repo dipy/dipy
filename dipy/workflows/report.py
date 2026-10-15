@@ -581,9 +581,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             font-size: 12px;
         }}
         .figure-img {{
-            width: 100%;
+            max-width: 100%;
+            height: auto;
             display: block;
-            background: #000;
+            margin: 0 auto;
+        }}
+        .figure-note {{
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            padding: 6px 16px;
+            font-size: 12px;
+            font-style: italic;
         }}
         .sidebar-link.current {{
             color: #E87722;
@@ -977,7 +985,13 @@ def render_stage_section(*, record, number, anchor, page_dir):
     figures = "".join(
         f'<div class="viewer-container"><div class="viewer-header">'
         f"{html.escape(f['title'])}</div>"
-        f'<img class="figure-img" src="{f["data_uri"]}" alt=""></div>'
+        f'<img class="figure-img" src="{f["data_uri"]}" alt="">'
+        + (
+            f'<div class="figure-note">{html.escape(f["note"])}</div>'
+            if f.get("note")
+            else ""
+        )
+        + "</div>"
         for f in qc["figures"]
     )
     error = (

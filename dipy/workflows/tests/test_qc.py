@@ -20,6 +20,7 @@ import zipfile
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 import trx.trx_file_memmap as tmm
 
 from dipy.core.gradients import gradient_table
@@ -206,6 +207,24 @@ def test_streamline_qc():
         statuses = _statuses(result)
         assert statuses["AF_L (mean length 30 mm)"] == "PASS"
         assert statuses["CST (mean length 3 mm)"] == "WARN"
+
+
+@pytest.mark.skipif(not qc.has_mpl, reason="Requires matplotlib")
+def test_streamlines_figure_notes_subsample():
+    line = np.c_[np.linspace(0, 30, 5), np.zeros(5), np.zeros(5)]
+    streamlines = [line + [0, y, 0] for y in range(4500)]
+
+    figure = qc._streamlines_figure(title="T", groups=[("t", streamlines)])
+    assert "3,000 out of 4,500 streamlines" in figure["note"]
+    figure = qc._streamlines_figure(title="T", groups=[("t", streamlines[:10])])
+    assert "note" not in figure
+
+    record = _stage_record(name="track", cli="dipy_track", status="PASS")
+    record["qc"]["figures"] = [{"title": "T", "data_uri": "", "note": "<sample>"}]
+    section = report.render_stage_section(
+        record=record, number=1, anchor="s", page_dir="."
+    )
+    assert '<div class="figure-note">&lt;sample&gt;</div>' in section
 
 
 def test_pipeline_writes_stage_reports():

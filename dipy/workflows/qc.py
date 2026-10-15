@@ -537,7 +537,7 @@ def _optional_figure(func):
     return wrapper
 
 
-def _encode(*, title, fig):
+def _encode(*, title, fig, note=None):
     buffer = io.BytesIO()
     fig.savefig(
         buffer,
@@ -547,7 +547,10 @@ def _encode(*, title, fig):
         facecolor=fig.get_facecolor(),
     )
     data = base64.b64encode(buffer.getvalue()).decode("ascii")
-    return {"title": title, "data_uri": f"data:image/png;base64,{data}"}
+    figure = {"title": title, "data_uri": f"data:image/png;base64,{data}"}
+    if note:
+        figure["note"] = note
+    return figure
 
 
 def _window(*, volume):
@@ -648,16 +651,20 @@ def _streamlines_figure(*, title, groups, max_streamlines=3000):
     """Axial, coronal and sagittal projections of streamline groups.
 
     A single group is colored by streamline direction, several groups get
-    one color each.
+    one color each. At most about ``max_streamlines`` are drawn, shared
+    between groups in proportion to their size, and the figure carries a
+    note when that is a subsample.
     """
     total = sum(len(s) for _, s in groups)
     rng = np.random.default_rng(0)
     fig = mpl_figure.Figure(figsize=(12, 4), facecolor="black")
     axes = fig.subplots(1, 3)
+    n_shown = 0
     for i, (label, streamlines) in enumerate(groups):
         n_keep = max(1, int(max_streamlines * len(streamlines) / total))
         keep = rng.choice(len(streamlines), min(n_keep, len(streamlines)), False)
         subset = [streamlines[k] for k in keep]
+        n_shown += len(subset)
         if len(groups) == 1:
             colors = [
                 np.abs(s[-1] - s[0]) / (np.linalg.norm(s[-1] - s[0]) or 1)
@@ -682,7 +689,13 @@ def _streamlines_figure(*, title, groups, max_streamlines=3000):
     if 1 < len(groups) <= 15:
         axes[-1].legend(fontsize=6, loc="upper right", framealpha=0.3)
     fig.tight_layout()
-    return _encode(title=title, fig=fig)
+    note = (
+        f"Random sample of {n_shown:,} out of {total:,} streamlines, for display "
+        "only. The saved tractogram holds all of them."
+        if n_shown < total
+        else None
+    )
+    return _encode(title=title, fig=fig, note=note)
 
 
 @_optional_figure
