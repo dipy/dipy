@@ -15,6 +15,7 @@ class CustomHandler(logging.Handler):
     @warning_for_keywords(from_version="1.13.0")
     def __init__(self, *, stream=None, filename=None):
         super().__init__()  # call with no arguments
+        self.filename = None if filename is None else str(filename)
         if filename is not None:
             self._should_close = True
             self.stream = open(filename, "a", encoding="utf-8")
@@ -172,7 +173,7 @@ def add_file_handler(
     return handler
 
 
-def remove_file_handler(handler):
+def remove_file_handler(*, handler):
     """Detach a handler previously added by :func:`add_file_handler`.
 
     Parameters
@@ -184,6 +185,28 @@ def remove_file_handler(handler):
     _logger = logging.getLogger("dipy")
     _logger.removeHandler(handler)
     handler.close()
+
+
+def attached_log_files(*, name="dipy"):
+    """List the files a logger writes to.
+
+    Parameters
+    ----------
+    name : str, optional
+        The logger name.
+
+    Returns
+    -------
+    list of tuple
+        ``(filename, level)`` of every :class:`CustomHandler` of the logger
+        that writes to a file, such as those added by
+        :func:`add_file_handler`.
+    """
+    return [
+        (handler.filename, handler.level)
+        for handler in logging.getLogger(name).handlers
+        if getattr(handler, "filename", None)
+    ]
 
 
 @contextmanager
@@ -207,7 +230,7 @@ def file_handler(filename, *, level=None):
     try:
         yield handler
     finally:
-        remove_file_handler(handler)
+        remove_file_handler(handler=handler)
 
 
 # Provide a default logger for convenience

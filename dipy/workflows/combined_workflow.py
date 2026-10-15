@@ -11,11 +11,11 @@ and automatic DAG-based wiring. The pipeline:
 
 from collections import Counter, defaultdict, deque
 import copy
-from datetime import datetime
+from datetime import date, datetime, time as clock_time
 import difflib
 from functools import partial
-import glob
 import hashlib
+import hmac
 import http.server
 import importlib
 import inspect
@@ -32,6 +32,7 @@ os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 from pathlib import Path
 import re
+import secrets
 import shutil
 import socket
 import socketserver
@@ -40,6 +41,7 @@ import sys
 import time
 import traceback
 import urllib.parse
+import uuid
 import webbrowser
 
 import numpy as np
@@ -63,6 +65,7 @@ from dipy.utils.logging import file_handler, logger
 from dipy.utils.optpkg import optional_package
 from dipy.workflows import interactive, report, templates
 from dipy.workflows.cli import cli_flows
+from dipy.workflows.multi_io import _resolve_path_or_pattern, connect_output_paths
 from dipy.workflows.qc import qc_result, run_stage_qc
 from dipy.workflows.stage_isolation import execute_stage_isolated
 from dipy.workflows.workflow import Workflow
@@ -137,7 +140,7 @@ def _load_timing_cache(*, out_dir, fingerprint):
     """
     path = os.path.join(out_dir, "pipeline_timing.json")
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         if data.get("_fingerprint") != fingerprint:
             logger.debug("Timing cache fingerprint mismatch — discarding.")
@@ -162,17 +165,120 @@ def _save_timing_cache(*, out_dir, fingerprint, timing_data):
     path = os.path.join(out_dir, "pipeline_timing.json")
     try:
         os.makedirs(out_dir, exist_ok=True)
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump({"_fingerprint": fingerprint, **timing_data}, f, indent=2)
     except Exception as e:
         logger.debug(f"Could not save timing cache: {e}")
 
 
+def _toml_key(*, key):
+    """Write a TOML key, quoting it when it is not a bare key.
+
+    Parameters
+    ----------
+    key : str
+        Key to write.
+
+    Returns
+    -------
+    str
+        The key in TOML syntax.
+    """
+    key = str(key)
+    if re.fullmatch(r"[A-Za-z0-9_-]+", key):
+        return key
+    return _toml_value(value=key)
+
+
+def _toml_value(*, value):
+    """Write a value in TOML syntax.
+
+    Strings become basic strings, lists and tuples arrays and dictionaries
+    inline tables. ``None`` has no TOML counterpart: it is dropped from
+    arrays and tables, and :func:`format_toml_config` skips keys holding it.
+
+    Parameters
+    ----------
+    value : bool, int, float, str, os.PathLike, date, time, list, tuple or dict
+        Value to write. Dates and times, which ``tomllib`` reads from TOML
+        date-time literals, are written back as such literals.
+
+    Returns
+    -------
+    str
+        The value in TOML syntax.
+
+    Raises
+    ------
+    TypeError
+        If the value has no TOML representation.
+    """
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, np.integer)):
+        return str(int(value))
+    if isinstance(value, (float, np.floating)):
+        value = float(value)
+        if np.isnan(value):
+            return "nan"
+        if np.isinf(value):
+            return "inf" if value > 0 else "-inf"
+        return repr(value)
+    if isinstance(value, (str, os.PathLike)):
+        # JSON escapes are a subset of TOML basic string escapes, apart from
+        # DEL, which TOML forbids unescaped.
+        return json.dumps(os.fspath(value), ensure_ascii=False).replace(
+            "\x7f", "\\u007F"
+        )
+    if isinstance(value, clock_time) and value.utcoffset() is not None:
+        raise TypeError(f"TOML has no time of day with an offset: {value!r}")
+    if isinstance(value, (date, clock_time)):
+        return value.isoformat()
+    if isinstance(value, (list, tuple)):
+        items = [_toml_value(value=item) for item in value if item is not None]
+        return f"[{', '.join(items)}]"
+    if isinstance(value, dict):
+        items = [
+            f"{_toml_key(key=key)} = {_toml_value(value=item)}"
+            for key, item in value.items()
+            if item is not None
+        ]
+        return f"{{ {', '.join(items)} }}" if items else "{}"
+    raise TypeError(f"Cannot write a {type(value).__name__} value to TOML: {value!r}")
+
+
+def _toml_entries(*, table, first=()):
+    """Write the ``key = value`` lines of a table.
+
+    Parameters
+    ----------
+    table : dict
+        Table to write. Keys holding ``None`` are skipped.
+    first : sequence of str
+        Keys written before the others, when present.
+
+    Returns
+    -------
+    list of str
+        One line per key.
+    """
+    keys = [key for key in first if key in table]
+    keys += [key for key in table if key not in keys]
+    return [
+        f"{_toml_key(key=key)} = {_toml_value(value=table[key])}"
+        for key in keys
+        if table[key] is not None
+    ]
+
+
 def format_toml_config(config):
     """Format configuration as readable TOML string.
 
-    This creates a human-readable TOML format matching the template style,
-    with proper multiline formatting for [[pipeline]] sections.
+    Top-level dictionaries become ``[table]`` sections, ``[General]`` and
+    ``[io]`` first, and lists of dictionaries become arrays of tables, such
+    as the ``[[pipeline]]`` sections whose ``name`` and ``cli`` are written
+    first. Nested dictionaries are written as inline tables, so that the
+    output always parses back to ``config``, ``None`` values aside.
 
     Parameters
     ----------
@@ -184,55 +290,40 @@ def format_toml_config(config):
     str
         Formatted TOML string.
     """
-    lines = []
 
-    if "General" in config:
-        lines.append("[General]")
-        for key, value in config["General"].items():
-            if isinstance(value, str):
-                # Escape backslashes for Windows paths
-                escaped_value = value.replace("\\", "\\\\")
-                lines.append(f'{key} = "{escaped_value}"')
-            else:
-                lines.append(f"{key} = {value}")
+    def is_table_array(value):
+        return (
+            isinstance(value, list)
+            and bool(value)
+            and all(isinstance(item, dict) for item in value)
+        )
+
+    plain = {
+        key: value
+        for key, value in config.items()
+        if not isinstance(value, dict) and not is_table_array(value)
+    }
+    tables = [key for key in ("General", "io") if isinstance(config.get(key), dict)]
+    tables += [
+        key
+        for key, value in config.items()
+        if isinstance(value, dict) and key not in tables
+    ]
+    arrays = [key for key, value in config.items() if is_table_array(value)]
+
+    lines = _toml_entries(table=plain)
+    if lines:
         lines.append("")
 
-    if "io" in config:
-        lines.append("[io]")
-        for key, value in config["io"].items():
-            if isinstance(value, str):
-                # Escape backslashes for Windows paths
-                escaped_value = value.replace("\\", "\\\\")
-                lines.append(f'{key} = "{escaped_value}"')
-            else:
-                lines.append(f"{key} = {value}")
+    for key in tables:
+        lines.append(f"[{_toml_key(key=key)}]")
+        lines.extend(_toml_entries(table=config[key]))
         lines.append("")
 
-    if "pipeline" in config:
-        for stage in config["pipeline"]:
-            lines.append("[[pipeline]]")
-            if "name" in stage:
-                # Escape backslashes for Windows paths
-                escaped_name = stage["name"].replace("\\", "\\\\")
-                lines.append(f'name = "{escaped_name}"')
-            if "cli" in stage:
-                # Escape backslashes for Windows paths
-                escaped_cli = stage["cli"].replace("\\", "\\\\")
-                lines.append(f'cli = "{escaped_cli}"')
-
-            for key, value in stage.items():
-                if key in ("name", "cli"):
-                    continue
-                if isinstance(value, str):
-                    # Escape backslashes for Windows paths
-                    escaped_value = value.replace("\\", "\\\\")
-                    lines.append(f'{key} = "{escaped_value}"')
-                elif isinstance(value, bool):
-                    lines.append(f"{key} = {str(value).lower()}")
-                elif isinstance(value, (int, float)):
-                    lines.append(f"{key} = {value}")
-                else:
-                    lines.append(f"{key} = {value}")
+    for key in arrays:
+        for item in config[key]:
+            lines.append(f"[[{_toml_key(key=key)}]]")
+            lines.extend(_toml_entries(table=item, first=("name", "cli")))
             lines.append("")
 
     return "\n".join(lines)
@@ -261,6 +352,33 @@ def extract_variable_references(value):
     if not isinstance(value, str):
         return set()
     return set(re.findall(r"\$\{([^}]+)\}", value))
+
+
+def _stage_references(*, stage):
+    """Collect the variable references of a stage, nested values included.
+
+    Parameters
+    ----------
+    stage : dict
+        Stage configuration from a ``[[pipeline]]`` section.
+
+    Returns
+    -------
+    set of str
+        References found in every value but ``name`` and ``cli``, walking
+        lists and dictionaries.
+    """
+    refs = set()
+    pending = [value for key, value in stage.items() if key not in ("name", "cli")]
+    while pending:
+        value = pending.pop()
+        if isinstance(value, dict):
+            pending.extend(value.values())
+        elif isinstance(value, (list, tuple)):
+            pending.extend(value)
+        else:
+            refs.update(extract_variable_references(value))
+    return refs
 
 
 def introspect_workflow_outputs(cli_name: str):
@@ -317,7 +435,7 @@ def _stage_parameter_errors(*, stage):
     init_params = inspect.signature(workflow_class.__init__).parameters
     variadic = (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
 
-    given = _stage_run_params(stage)
+    given = _stage_run_params(resolved_config=stage)
 
     unknown = sorted(
         key for key in given if key not in run_params and key not in init_params
@@ -386,41 +504,35 @@ def validate_pipeline_config(pipeline_stages):
     for stage in pipeline_stages:
         stage_name = stage["name"]
 
-        for param_name, param_value in stage.items():
-            if param_name in ["name", "cli"]:
+        for ref in sorted(_stage_references(stage=stage)):
+            if "." not in ref:
+                errors.append(
+                    f"Stage '{stage_name}': Invalid reference "
+                    f"'${{{ref}}}' (missing dot notation)"
+                )
                 continue
 
-            refs = extract_variable_references(param_value)
+            ref_stage, ref_output = ref.split(".", 1)
 
-            for ref in refs:
-                if "." not in ref:
-                    errors.append(
-                        f"Stage '{stage_name}': Invalid reference "
-                        f"'${{{ref}}}' (missing dot notation)"
-                    )
-                    continue
+            if ref_stage == "io":
+                continue
 
-                ref_stage, ref_output = ref.split(".", 1)
+            if ref_stage not in stage_outputs:
+                errors.append(
+                    f"Stage '{stage_name}': References unknown stage "
+                    f"'{ref_stage}' in '${{{ref}}}'"
+                )
+                continue
 
-                if ref_stage == "io":
-                    continue
-
-                if ref_stage not in stage_outputs:
-                    errors.append(
-                        f"Stage '{stage_name}': References unknown stage "
-                        f"'{ref_stage}' in '${{{ref}}}'"
-                    )
-                    continue
-
-                available_outputs = stage_outputs[ref_stage]
-                if ref_output == "out_dir":
-                    pass  # out_dir is always a valid reference on any stage
-                elif ref_output not in available_outputs:
-                    errors.append(
-                        f"Stage '{stage_name}': Unknown output '{ref_output}' "
-                        f"from stage '{ref_stage}'. Available: "
-                        f"{sorted(available_outputs)}"
-                    )
+            available_outputs = stage_outputs[ref_stage]
+            if ref_output == "out_dir":
+                pass  # out_dir is always a valid reference on any stage
+            elif ref_output not in available_outputs:
+                errors.append(
+                    f"Stage '{stage_name}': Unknown output '{ref_output}' "
+                    f"from stage '{ref_stage}'. Available: "
+                    f"{sorted(available_outputs)}"
+                )
 
     return len(errors) == 0, errors
 
@@ -440,17 +552,7 @@ def _unset_io_inputs(*, stage, io_config):
     list of str
         Sorted ``[io]`` keys, excluding the ``out_*`` ones.
     """
-    refs = set()
-    pending = [value for key, value in stage.items() if key not in ("name", "cli")]
-    while pending:
-        value = pending.pop()
-        if isinstance(value, dict):
-            pending.extend(value.values())
-        elif isinstance(value, list):
-            pending.extend(value)
-        else:
-            refs.update(extract_variable_references(value))
-
+    refs = _stage_references(stage=stage)
     keys = {ref.split(".", 1)[1] for ref in refs if ref.startswith("io.")}
     return sorted(
         key
@@ -528,22 +630,8 @@ def build_dependency_graph(pipeline_stages):
 
     for stage in pipeline_stages:
         name = stage["name"]
-        refs = set()
 
-        for key, value in stage.items():
-            if key in ("name", "cli"):
-                continue
-
-            if isinstance(value, dict):
-                for nested_value in value.values():
-                    refs.update(extract_variable_references(nested_value))
-            elif isinstance(value, list):
-                for item in value:
-                    refs.update(extract_variable_references(item))
-            else:
-                refs.update(extract_variable_references(value))
-
-        for ref in refs:
+        for ref in _stage_references(stage=stage):
             parts = ref.split(".")
             if len(parts) >= 2:
                 dep_stage = parts[0]
@@ -640,7 +728,9 @@ def visualize_pipeline_dag(
     return "\n".join(lines)
 
 
-def resolve_stage_parameters(stage_config, resolved_outputs, io_config):
+def resolve_stage_parameters(
+    stage_config, resolved_outputs, io_config, *, known_stages=()
+):
     """Resolve variable references in stage parameters.
 
     Parameters
@@ -651,11 +741,22 @@ def resolve_stage_parameters(stage_config, resolved_outputs, io_config):
         Mapping of stage_name -> {output_param -> file_path}.
     io_config : dict
         IO configuration from [io] section.
+    known_stages : collection of str, optional
+        Names of every stage of the pipeline. A reference to one of them
+        that has no entry in ``resolved_outputs`` is an error instead of
+        being left unresolved.
 
     Returns
     -------
     dict
         Stage configuration with all variables resolved.
+
+    Raises
+    ------
+    ValueError
+        If a reference names an output its stage did not produce.
+    PipelineError
+        If a reference names a stage of ``known_stages`` without outputs.
     """
 
     def resolve_value(value):
@@ -669,6 +770,13 @@ def resolve_stage_parameters(stage_config, resolved_outputs, io_config):
                     io_key = ".".join(parts[1:])
                     replacement = io_config.get(io_key, "")
                     value = value.replace(f"${{{match}}}", str(replacement))
+
+                elif parts[0] in known_stages and parts[0] not in resolved_outputs:
+                    raise PipelineError(
+                        f"Cannot resolve '${{{match}}}': stage '{parts[0]}' has "
+                        "no outputs. It was not run and none of its outputs were "
+                        "found on disk."
+                    )
 
                 elif parts[0] in resolved_outputs:
                     stage_name = parts[0]
@@ -801,8 +909,9 @@ def detect_output_conflicts(*, pipeline_stages):
         if not cli:
             continue
 
+        params = _stage_run_params(resolved_config=stage)
         # Get the output directory for this stage (None means use default)
-        stage_out_dir = stage.get("out_dir", None)
+        stage_out_dir = params.get("out_dir", None)
 
         # Dynamically get output parameters for this CLI
         output_params = get_workflow_output_params(cli_command=cli)
@@ -810,7 +919,7 @@ def detect_output_conflicts(*, pipeline_stages):
         for output_param in output_params:
             # Skip if stage already has explicit output parameter
             # (user manually specified to avoid conflict)
-            if output_param in stage:
+            if output_param in params:
                 continue
 
             # Key by both output_param AND out_dir
@@ -929,7 +1038,7 @@ _ISOLATED_STAGE_CLIS = frozenset(["dipy_brain_mask"])
 _STAGE_KEYS = ("name", "cli", "inputs", "params", "optional")
 
 
-def _stage_run_params(resolved_config):
+def _stage_run_params(*, resolved_config):
     """Merge the ``inputs``, ``params`` and top-level keys of a stage config.
 
     Parameters
@@ -953,7 +1062,7 @@ def _stage_run_params(resolved_config):
     }
 
 
-def _open_command(path):
+def _open_command(*, path):
     """Shell command that opens a file with the platform's default viewer.
 
     Parameters
@@ -978,6 +1087,7 @@ def _write_stage_qc(
     io_config,
     stage_names,
     pipeline_name,
+    run_id=None,
     error=None,
 ):
     """Run the QC of a stage and write its page, never raising.
@@ -996,6 +1106,9 @@ def _write_stage_qc(
         All stage names in execution order.
     pipeline_name : str
         Pipeline name shown in the page header.
+    run_id : str, optional
+        Identifier of the current pipeline invocation, stored in the stage
+        record so that the index ignores records left by earlier runs.
     error : str, optional
         Traceback of a failed stage; the page then reports a FAIL.
     """
@@ -1019,7 +1132,7 @@ def _write_stage_qc(
                 )
             except ValueError:
                 resolved = stage_map[name]
-            inputs = _stage_run_params(resolved)
+            inputs = _stage_run_params(resolved_config=resolved)
             qc = run_stage_qc(
                 cli=record.get("cli"),
                 outputs=record.get("outputs", {}),
@@ -1032,14 +1145,16 @@ def _write_stage_qc(
             index=index,
             record={**record, "qc": qc},
             pipeline_name=pipeline_name,
+            run_id=run_id,
         )
         report.write_index(
             reports_dir=reports_dir,
             stage_names=stage_names,
             pipeline_name=pipeline_name,
+            run_id=run_id,
         )
         logger.info(f"QC report [{qc['status']}]: {page}")
-        logger.info(f"  Open it now: {_open_command(page)}  (or double-click it)")
+        logger.info(f"  Open it now: {_open_command(path=page)}  (or double-click it)")
     except Exception:
         logger.warning(
             f"Could not write the QC report of stage '{name}':\n"
@@ -1048,7 +1163,13 @@ def _write_stage_qc(
 
 
 def execute_pipeline_stage(
-    *, stage_name, stage_config, resolved_outputs, io_config, force=False
+    *,
+    stage_name,
+    stage_config,
+    resolved_outputs,
+    io_config,
+    force=False,
+    known_stages=(),
 ):
     """Execute a single pipeline stage.
 
@@ -1065,11 +1186,20 @@ def execute_pipeline_stage(
     force : bool
         If ``True``, overwrite existing output files. Overrides any
         stage-level ``force`` setting from the configuration.
+    known_stages : collection of str, optional
+        Names of every stage of the pipeline, see
+        :func:`resolve_stage_parameters`.
 
     Returns
     -------
     dict
         Mapping of output_param -> file_path for this stage.
+
+    Raises
+    ------
+    PipelineError
+        If a file the stage would write is one of its inputs or a file of
+        the ``[io]`` section.
     """
     cli_name = stage_config["cli"]
 
@@ -1077,7 +1207,9 @@ def execute_pipeline_stage(
         raise ValueError(f"Unknown CLI: {cli_name}")
 
     workflow_params = _stage_run_params(
-        resolve_stage_parameters(stage_config, resolved_outputs, io_config)
+        resolved_config=resolve_stage_parameters(
+            stage_config, resolved_outputs, io_config, known_stages=known_stages
+        )
     )
 
     module_name, class_name = cli_flows[cli_name]
@@ -1125,7 +1257,22 @@ def execute_pipeline_stage(
             f"Valid: {list(valid_params.keys())}"
         )
 
-    final_params = {**valid_params, **workflow_params}
+    # Defaults are left to the workflow: passing them explicitly would trip
+    # the deprecation of arguments nobody set, and fail once they expire.
+    final_params = workflow_params
+
+    protected = _protected_files(run_params=final_params, io_config=io_config)
+    for planned in _planned_stage_outputs(
+        workflow_class=workflow_class, init_params=init_params, run_params=final_params
+    ):
+        owner = protected.get(os.path.realpath(planned))
+        if owner is not None:
+            raise PipelineError(
+                f"Stage '{stage_name}' would overwrite its input file {planned} "
+                f"(from '{owner}'). Give the stage another output name or "
+                "output directory, or move the input file elsewhere.",
+                stage=stage_name,
+            )
 
     isolated = cli_name in _ISOLATED_STAGE_CLIS
     if isolated:
@@ -1178,8 +1325,16 @@ def execute_pipeline_stage(
         raise
 
 
-def discover_stage_outputs(*, stage_name, stage_config, io_config):
+def discover_stage_outputs(*, stage_name, stage_config, io_config, record=None):
     """Discover outputs from a previously executed stage.
+
+    When ``record`` lists the files a run of the stage wrote, those files are
+    the outputs: a workflow may rename its outputs, prefix them with its
+    input names or return an input untouched. Otherwise only the exact file
+    names a run of the stage writes are considered: the names set in its
+    configuration, or else the defaults of its workflow, inside the stage
+    output directory. A file elsewhere whose name merely resembles an output
+    is never taken for one.
 
     Parameters
     ----------
@@ -1189,122 +1344,154 @@ def discover_stage_outputs(*, stage_name, stage_config, io_config):
         Stage configuration.
     io_config : dict
         IO configuration.
+    record : dict, optional
+        Record of the stage in the pipeline state, see
+        :func:`_load_stage_state`.
 
     Returns
     -------
     dict
-        Dictionary mapping output parameter names to file paths.
+        Dictionary mapping output parameter names to the existing files,
+        plus ``out_dir``.
     """
     cli_name = stage_config.get("cli")
     if not cli_name or cli_name not in cli_flows:
         return {}
 
-    outputs = introspect_workflow_outputs(cli_name)
-    # The stage out_dir still carries its ${io.*} references at this point.
-    out_dir = resolve_stage_parameters(
-        stage_config.get("out_dir"), {}, io_config
-    ) or io_config.get("out_dir", ".")
+    module_name, class_name = cli_flows[cli_name]
+    try:
+        workflow_class = getattr(importlib.import_module(module_name), class_name)
+        run_params = inspect.signature(workflow_class.run).parameters
+    except Exception as e:
+        logger.debug(f"Could not introspect {cli_name}: {e}")
+        return {}
+
+    # The configured names still carry their ${io.*} references at this point.
+    configured = resolve_stage_parameters(
+        _stage_run_params(resolved_config=stage_config), {}, io_config
+    )
+    out_dir = configured.get("out_dir") or io_config.get("out_dir", ".")
     discovered = {}
 
-    # Strategy 1: Check if output filenames are explicitly specified in config
-    for output_param in outputs:
-        if output_param in stage_config:
-            specified_file = stage_config[output_param]
-            full_path = os.path.join(out_dir, specified_file)
-            if os.path.exists(full_path):
-                discovered[output_param] = full_path
-                logger.debug(f"Discovered {output_param} from config: {full_path}")
-
-    # Strategy 2: Get default filenames from workflow signature
-    try:
-        module_name, class_name = cli_flows[cli_name]
-        module = importlib.import_module(module_name)
-        workflow_class = getattr(module, class_name)
-        sig = inspect.signature(workflow_class.run)
-
-        for output_param in outputs:
-            if output_param in discovered:
-                continue
-
-            param = sig.parameters.get(output_param)
-            if param and param.default != inspect.Parameter.empty:
-                default_filename = param.default
-                full_path = os.path.join(out_dir, default_filename)
-                if os.path.exists(full_path):
-                    discovered[output_param] = full_path
-                    logger.debug(
-                        f"Discovered {output_param} using default: {full_path}"
-                    )
-    except Exception as e:
-        logger.debug(f"Could not introspect defaults for {cli_name}: {e}")
-
-    # Strategy 3: Pattern matching for outputs not yet discovered
-    for output_param in outputs:
-        if output_param in discovered:
-            continue
-
-        potential_patterns = []
-
-        if "out_" in output_param:
-            suffix = output_param.replace("out_", "")
-            # Try exact patterns first (without wildcards)
-            potential_patterns.extend(
-                [
-                    os.path.join(out_dir, f"{suffix}.nii.gz"),
-                    os.path.join(out_dir, f"{suffix}.nii"),
-                    os.path.join(out_dir, f"{suffix}.trk"),
-                    os.path.join(out_dir, f"{suffix}.tck"),
-                    os.path.join(out_dir, f"{suffix}.txt"),
-                    os.path.join(out_dir, f"{suffix}.pam5"),
-                ]
-            )
-            # Then try wildcards as fallback
-            potential_patterns.extend(
-                [
-                    os.path.join(out_dir, f"*{suffix}.nii.gz"),
-                    os.path.join(out_dir, f"*{suffix}.nii"),
-                ]
-            )
-
-        cli_workflow_patterns = {
-            "dipy_denoise": ["dwi_denoised.nii.gz"],
-            "dipy_denoise_nlmeans": ["dwi_nlmeans.nii.gz"],
-            "dipy_denoise_mppca": ["dwi_mppca.nii.gz"],
-            "dipy_denoise_patch2self": ["dwi_patch2self.nii.gz"],
-            "dipy_gibbs_ringing": ["dwi_unring.nii.gz", "*_unring.nii.gz"],
-            "dipy_correct_motion": ["dwi_moved.nii.gz", "*_moved.nii.gz"],
-            "dipy_extract_b0": ["b0.nii.gz", "*_b0.nii.gz"],
+    recorded = (record or {}).get("outputs")
+    if isinstance(recorded, dict):
+        candidates = {
+            key: os.path.join(io_config.get("out_dir", "."), path)
+            for key, path in recorded.items()
         }
+    else:
+        candidates = {}
+        for output_param in introspect_workflow_outputs(cli_name):
+            filename = configured.get(output_param)
+            if not filename:
+                default = run_params[output_param].default
+                if default is inspect.Parameter.empty or not default:
+                    continue
+                filename = default
+            candidates[output_param] = os.path.join(out_dir, str(filename))
 
-        if cli_name in cli_workflow_patterns:
-            potential_patterns.extend(
-                os.path.join(out_dir, pattern)
-                for pattern in cli_workflow_patterns[cli_name]
-            )
-
-        stage_specific = stage_name.lower().replace("_", "")
-        potential_patterns.extend(
-            [
-                os.path.join(out_dir, f"{stage_specific}.nii.gz"),
-                os.path.join(out_dir, f"{stage_specific}.nii"),
-                os.path.join(out_dir, f"*{stage_specific}*.nii.gz"),
-            ]
-        )
-
-        for pattern in potential_patterns:
-            if "*" in pattern:
-                matches = glob.glob(pattern)
-                if matches:
-                    discovered[output_param] = matches[0]
-                    break
-            elif os.path.exists(pattern):
-                discovered[output_param] = pattern
-                break
+    for output_param, full_path in candidates.items():
+        if os.path.exists(full_path):
+            discovered[output_param] = full_path
+            logger.debug(f"Stage '{stage_name}': found {output_param} at {full_path}")
 
     if out_dir:
         discovered["out_dir"] = out_dir
 
     return discovered
+
+
+def _planned_stage_outputs(*, workflow_class, init_params, run_params):
+    """Predict the files a workflow run will write.
+
+    The prediction follows the naming of the workflow input/output iterator:
+    the ``out_*`` names given or defaulted, placed after the output strategy
+    and prefixed with the input names when ``mix_names`` is set. Workflows
+    renaming their outputs while they run are not followed.
+
+    Parameters
+    ----------
+    workflow_class : type
+        Workflow class of the stage.
+    init_params : dict
+        Arguments the workflow is constructed with.
+    run_params : dict
+        Arguments the workflow runs with.
+
+    Returns
+    -------
+    list of str
+        Absolute paths of the planned outputs, empty when they cannot be
+        predicted.
+    """
+    signature = inspect.signature(workflow_class.run).parameters
+    positional = [
+        name
+        for name, param in signature.items()
+        if name != "self" and param.default is inspect.Parameter.empty
+    ]
+    out_names = [
+        run_params.get(name, param.default)
+        for name, param in signature.items()
+        if name.startswith("out_") and name != "out_dir"
+    ]
+    if not out_names or any(name not in run_params for name in positional):
+        return []
+    try:
+        inputs = []
+        for name in positional:
+            value = run_params[name]
+            values = value if isinstance(value, (list, tuple)) else [value]
+            inputs.append([p for v in values for p in _resolve_path_or_pattern(v)])
+        if not all(inputs):
+            return []
+        default_out_dir = signature["out_dir"].default if "out_dir" in signature else ""
+        _, outputs = connect_output_paths(
+            inputs,
+            run_params.get("out_dir", default_out_dir) or "",
+            [str(name) for name in out_names],
+            output_strategy=init_params.get("output_strategy", "absolute"),
+            mix_names=bool(init_params.get("mix_names", False)),
+        )
+    except Exception as e:
+        logger.debug(f"Could not predict the outputs of {workflow_class}: {e}")
+        return []
+    return [os.path.abspath(path) for group in outputs for path in group]
+
+
+def _protected_files(*, run_params, io_config):
+    """Real paths of the existing files a stage reads or the user provided.
+
+    Parameters
+    ----------
+    run_params : dict
+        Arguments the stage workflow runs with.
+    io_config : dict
+        IO configuration.
+
+    Returns
+    -------
+    dict
+        Mapping of real path to the parameter or ``[io]`` key naming it.
+    """
+    protected = {}
+
+    def collect(*, label, value):
+        if isinstance(value, dict):
+            for key, item in value.items():
+                collect(label=f"{label}.{key}", value=item)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                collect(label=label, value=item)
+        elif isinstance(value, (str, os.PathLike)) and os.path.isfile(value):
+            protected.setdefault(os.path.realpath(value), label)
+
+    for key, value in io_config.items():
+        collect(label=f"io.{key}", value=value)
+    for key, value in run_params.items():
+        if not (key.startswith("out_") and key != "out_dir"):
+            collect(label=key, value=value)
+    return protected
 
 
 def estimate_pipeline_disk_usage(*, pipeline_stages, io_config):
@@ -1411,6 +1598,242 @@ def estimate_pipeline_disk_usage(*, pipeline_stages, io_config):
     return total_bytes, itemized
 
 
+def check_start_stage(*, start, stage_names):
+    """Check that the stage given to ``--start`` exists.
+
+    Parameters
+    ----------
+    start : str or None
+        Stage name given to ``--start``. Nothing is checked when None.
+    stage_names : sequence of str
+        Names of the pipeline stages.
+
+    Raises
+    ------
+    PipelineError
+        If ``start`` names no stage, with the closest names as suggestions.
+    """
+    if start is None or start in stage_names:
+        return
+    suggestions = difflib.get_close_matches(start, stage_names, n=3, cutoff=0.6)
+    msg = f"Stage '{start}' not found in pipeline."
+    if suggestions:
+        msg += f" Did you mean: {', '.join(suggestions)}?"
+    msg += f" Available stages: {', '.join(stage_names)}"
+    raise PipelineError(msg)
+
+
+def _write_resolved_config(*, config, config_file_path, out_dir, overwrite):
+    """Save a configuration whose output conflicts were resolved.
+
+    Parameters
+    ----------
+    config : dict
+        Pipeline configuration with the renamed outputs.
+    config_file_path : str
+        Configuration file the run was started from.
+    out_dir : str
+        Output directory of the run.
+    overwrite : bool
+        Whether ``config_file_path`` was written by this run and may be
+        replaced. Otherwise it belongs to the user and is left untouched:
+        the configuration goes to ``<out_dir>/<name>_resolved.toml``.
+
+    Returns
+    -------
+    str
+        Path of the written configuration.
+    """
+    target = config_file_path
+    if not overwrite:
+        stem = os.path.basename(config_file_path)
+        stem = stem.removesuffix(".toml")
+        target = os.path.join(out_dir, f"{stem}_resolved.toml")
+        os.makedirs(out_dir, exist_ok=True)
+
+    with open(target, "w", encoding="utf-8") as f:
+        f.write(format_toml_config(config))
+    return target
+
+
+_STAGE_STATE_FILE = "pipeline_state.json"
+
+
+def _load_stage_state(*, out_dir, stage_names=()):
+    """Load the record of the stages run in ``out_dir``.
+
+    Parameters
+    ----------
+    out_dir : str
+        Pipeline output directory.
+    stage_names : collection of str, optional
+        Stages marked ``invalid`` when the saved record exists but cannot be
+        read, so that none of their outputs is trusted.
+
+    Returns
+    -------
+    dict
+        Mapping of stage name to a dict holding ``params``, the fingerprint
+        of the parameters its outputs were computed with, ``outputs``, the
+        files it wrote as ``output_param -> path`` with paths relative to
+        ``out_dir`` when inside it, and ``invalid``, set while its outputs
+        cannot be trusted: from the moment it or an upstream stage starts
+        running again until it completes. ``{}`` when nothing was saved.
+    """
+    path = os.path.join(out_dir, _STAGE_STATE_FILE)
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, encoding="utf-8") as f:
+            stages = json.load(f)["stages"]
+        if not isinstance(stages, dict) or not all(
+            isinstance(record, dict) for record in stages.values()
+        ):
+            raise ValueError("unexpected content")
+        return stages
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        logger.warning(
+            f"Could not read {path} ({e}): every stage runs again, as none of "
+            "the outputs in that directory can be trusted."
+        )
+        return {name: {"invalid": True} for name in stage_names}
+
+
+def _save_stage_state(*, out_dir, stage_state):
+    """Persist the record of the stages run in ``out_dir``.
+
+    The record is replaced atomically, so that a run interrupted while
+    saving it leaves the previous record intact.
+
+    Parameters
+    ----------
+    out_dir : str
+        Pipeline output directory.
+    stage_state : dict
+        Mapping of stage name to its record, see :func:`_load_stage_state`.
+    """
+    path = os.path.join(out_dir, _STAGE_STATE_FILE)
+    tmp = f"{path}.{os.getpid()}.tmp"
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump({"stages": stage_state}, f, indent=2, sort_keys=True)
+        os.replace(tmp, path)
+    except (OSError, TypeError, ValueError) as e:
+        logger.warning(f"Could not save the stage state to {path}: {e}")
+
+
+def _recorded_outputs(*, outputs, out_dir):
+    """Paths of the files a stage run wrote, as saved in the stage state.
+
+    Parameters
+    ----------
+    outputs : dict
+        Mapping of output_param -> file_path returned by the stage.
+    out_dir : str
+        Pipeline output directory, holding the stage state.
+
+    Returns
+    -------
+    dict
+        Mapping of output_param -> path of the existing files, relative to
+        ``out_dir`` when inside it, absolute otherwise.
+    """
+    base = os.path.abspath(out_dir)
+    recorded = {}
+    for key, path in outputs.items():
+        if key == "out_dir" or not isinstance(path, (str, os.PathLike)):
+            continue
+        if not os.path.isfile(path):
+            continue
+        path = os.path.abspath(path)
+        try:
+            inside = os.path.commonpath([path, base]) == base
+        except ValueError:
+            inside = False
+        recorded[key] = os.path.relpath(path, base) if inside else path
+    return recorded
+
+
+def _downstream_stages(*, stage_name, dependencies):
+    """Stages depending on a stage, directly or through other stages.
+
+    Parameters
+    ----------
+    stage_name : str
+        Name of the stage.
+    dependencies : dict
+        Mapping of stage name to the set of stages it depends on.
+
+    Returns
+    -------
+    set of str
+        Names of the dependent stages.
+    """
+    found = set()
+    queue = deque([stage_name])
+    while queue:
+        current = queue.popleft()
+        for name, upstream in dependencies.items():
+            if current in upstream and name not in found:
+                found.add(name)
+                queue.append(name)
+    return found
+
+
+def _stage_params_fingerprint(
+    *, stage_config, resolved_outputs, io_config, known_stages
+):
+    """Hash the parameters a stage runs with, its input files included.
+
+    Absolute and existing paths are normalized, so that the same file
+    reached through an executed or a discovered upstream stage, or through a
+    symbolic link, hashes alike whether or not it exists yet.
+
+    Parameters
+    ----------
+    stage_config : dict
+        Stage configuration.
+    resolved_outputs : dict
+        Mapping of stage_name -> {output_param -> file_path}.
+    io_config : dict
+        IO configuration.
+    known_stages : collection of str
+        Names of every stage of the pipeline.
+
+    Returns
+    -------
+    str or None
+        16-character hex digest, None when the parameters cannot be resolved.
+    """
+    try:
+        params = _stage_run_params(
+            resolved_config=resolve_stage_parameters(
+                stage_config, resolved_outputs, io_config, known_stages=known_stages
+            )
+        )
+    except Exception:
+        return None
+
+    def normalize(value):
+        if isinstance(value, dict):
+            return {k: normalize(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [normalize(v) for v in value]
+        if isinstance(value, os.PathLike):
+            value = os.fspath(value)
+        if isinstance(value, str) and (os.path.isabs(value) or os.path.exists(value)):
+            return os.path.realpath(value)
+        return value
+
+    content = json.dumps(
+        {"cli": stage_config.get("cli"), "params": normalize(params)},
+        sort_keys=True,
+        default=str,
+    )
+    return hashlib.sha256(content.encode()).hexdigest()[:16]
+
+
 def execute_semantic_pipeline(
     *,
     config,
@@ -1420,6 +1843,7 @@ def execute_semantic_pipeline(
     start=None,
     dry_run=False,
     force=False,
+    overwrite_config=False,
 ):
     """Execute pipeline using semantic DAG-based approach.
 
@@ -1441,6 +1865,11 @@ def execute_semantic_pipeline(
         If True, only show execution plan.
     force : bool
         If ``True``, overwrite existing output files for every stage.
+    overwrite_config : bool
+        Whether ``config_file_path`` was written by this run, so that it can
+        be updated when output conflicts are resolved. A configuration of
+        the user is never modified: the resolved one is written to the
+        output directory instead, and the report links to it.
 
     Returns
     -------
@@ -1452,23 +1881,17 @@ def execute_semantic_pipeline(
     Raises
     ------
     PipelineError
-        If the configuration is invalid, the execution order cannot be
-        computed, a required stage depends on a skipped optional stage, the
-        output directory lacks free space, or a stage fails.
+        If the configuration has no stage or is invalid, ``start`` names no
+        stage, the execution order cannot be computed, a required stage
+        depends on a skipped optional stage, the output directory lacks free
+        space, or a stage fails.
     """
     pipeline_stages = config.get("pipeline", [])
     if not pipeline_stages:
-        raise ValueError("No [[pipeline]] sections found in configuration")
+        raise PipelineError("No [[pipeline]] sections found in configuration")
 
     stage_names = [s["name"] for s in pipeline_stages]
-
-    if start is not None and start not in stage_names:
-        suggestions = difflib.get_close_matches(start, stage_names, n=3, cutoff=0.6)
-        msg = f"Stage '{start}' not found in pipeline."
-        if suggestions:
-            msg += f" Did you mean: {', '.join(suggestions)}?"
-        msg += f" Available stages: {', '.join(stage_names)}"
-        raise ValueError(msg)
+    check_start_stage(start=start, stage_names=stage_names)
 
     logger.info(f"Building pipeline with {len(pipeline_stages)} stages...")
 
@@ -1532,11 +1955,13 @@ def execute_semantic_pipeline(
             logger.warning(f"  ⚠ {warning}")
         logger.warning("=" * 60)
 
-        # Save updated config file with resolved conflicts
         if config_file_path:
-            formatted_toml = format_toml_config(config)
-            with open(config_file_path, "w") as f:
-                f.write(formatted_toml)
+            config_file_path = _write_resolved_config(
+                config=config,
+                config_file_path=config_file_path,
+                out_dir=io_config.get("out_dir", "."),
+                overwrite=overwrite_config,
+            )
             logger.info(
                 f"Configuration with resolved conflicts saved to: {config_file_path}"
             )
@@ -1619,6 +2044,7 @@ def execute_semantic_pipeline(
     )
     timing_cache = _load_timing_cache(out_dir=out_dir, fingerprint=fingerprint)
     reports_dir = os.path.join(out_dir, "reports")
+    run_id = uuid.uuid4().hex
     write_qc = partial(
         _write_stage_qc,
         stage_map=stage_map,
@@ -1626,7 +2052,10 @@ def execute_semantic_pipeline(
         io_config=io_config,
         stage_names=full_execution_order,
         pipeline_name=config.get("General", {}).get("name", "Pipeline"),
+        run_id=run_id,
     )
+
+    stage_state = _load_stage_state(out_dir=out_dir, stage_names=stage_names)
 
     if start:
         start_idx = execution_order.index(start)
@@ -1640,11 +2069,19 @@ def execute_semantic_pipeline(
 
             for skipped_stage in skipped_stages:
                 stage_config = stage_map[skipped_stage]
+                record = stage_state.get(skipped_stage, {})
                 discovered = discover_stage_outputs(
                     stage_name=skipped_stage,
                     stage_config=stage_config,
                     io_config=io_config,
+                    record=record,
                 )
+                if record.get("invalid"):
+                    logger.warning(
+                        f"The outputs of skipped stage '{skipped_stage}' are out "
+                        "of date: it or a stage it depends on ran again without "
+                        "it completing since."
+                    )
 
                 if discovered:
                     resolved_outputs[skipped_stage] = discovered
@@ -1701,6 +2138,8 @@ def execute_semantic_pipeline(
                     f"{io_config['mask']}"
                 )
 
+    executed = set()
+
     for stage_name in execution_order:
         stage_config = stage_map[stage_name]
         stage_start = time.perf_counter()
@@ -1720,16 +2159,49 @@ def execute_semantic_pipeline(
             write_qc(record=stages_info[-1])
             continue
 
-        if not force:
+        if stage_name in user_mask_stages:
+            stages_info.append(
+                {
+                    "name": stage_name,
+                    "cli": stage_config.get("cli"),
+                    "duration": 0.0,
+                    "success": True,
+                    "outputs": resolved_outputs.get(stage_name, {}),
+                    "skipped": "user_mask",
+                }
+            )
+            write_qc(record=stages_info[-1])
+            continue
+
+        params_fingerprint = _stage_params_fingerprint(
+            stage_config=stage_config,
+            resolved_outputs=resolved_outputs,
+            io_config=io_config,
+            known_stages=stage_names,
+        )
+        rerun_upstream = sorted(dependencies.get(stage_name, set()) & executed)
+        previous = stage_state.get(stage_name, {})
+        params_changed = params_fingerprint is None or (
+            "params" in previous and previous["params"] != params_fingerprint
+        )
+        invalid = bool(previous.get("invalid"))
+
+        if stage_name == start:
+            logger.info(f"Stage '{stage_name}' runs again: execution starts there.")
+        elif not force and not rerun_upstream and not params_changed and not invalid:
             already_done = discover_stage_outputs(
                 stage_name=stage_name,
                 stage_config=stage_config,
                 io_config=io_config,
+                record=previous,
             )
-            try:
-                expected = introspect_workflow_outputs(stage_config.get("cli", ""))
-            except Exception:
-                expected = set()
+            if "outputs" in previous:
+                expected = set(previous["outputs"])
+            else:
+                try:
+                    expected = introspect_workflow_outputs(stage_config.get("cli", ""))
+                except Exception:
+                    expected = set()
             if already_done and expected and already_done.keys() >= expected:
                 resolved_outputs[stage_name] = already_done
                 stages_info.append(
@@ -1745,30 +2217,49 @@ def execute_semantic_pipeline(
                 logger.info(f"Stage '{stage_name}' outputs already exist, skipping.")
                 write_qc(record=stages_info[-1])
                 continue
-
-        if stage_name in user_mask_stages:
-            stages_info.append(
-                {
-                    "name": stage_name,
-                    "cli": stage_config.get("cli"),
-                    "duration": 0.0,
-                    "success": True,
-                    "outputs": resolved_outputs.get(stage_name, {}),
-                    "skipped": "user_mask",
-                }
+        elif not force and rerun_upstream:
+            logger.info(
+                f"Stage '{stage_name}' runs again: its input stage(s) "
+                f"{', '.join(rerun_upstream)} ran in this invocation."
             )
-            write_qc(record=stages_info[-1])
-            continue
+        elif not force and invalid and not params_changed:
+            logger.info(
+                f"Stage '{stage_name}' runs again: its outputs are out of date, "
+                "it or a stage it depends on ran again without it completing."
+            )
+        elif not force and params_fingerprint is not None:
+            logger.info(
+                f"Stage '{stage_name}' runs again: its parameters changed since "
+                "its outputs were written."
+            )
+
+        # Until this stage completes, neither its outputs nor those of the
+        # stages fed by them match their inputs, whatever stops the run.
+        for name in {stage_name} | _downstream_stages(
+            stage_name=stage_name, dependencies=dependencies
+        ):
+            stage_state[name] = {**stage_state.get(name, {}), "invalid": True}
+        _save_stage_state(out_dir=out_dir, stage_state=stage_state)
 
         try:
+            # The decision to run was taken above. Without force, a workflow
+            # finding any of its outputs on disk would silently do nothing.
             outputs = execute_pipeline_stage(
                 stage_name=stage_name,
                 stage_config=stage_config,
                 resolved_outputs=resolved_outputs,
                 io_config=io_config,
-                force=force,
+                force=True,
+                known_stages=stage_names,
             )
             resolved_outputs[stage_name] = outputs
+            executed.add(stage_name)
+            if params_fingerprint is not None:
+                stage_state[stage_name] = {
+                    "params": params_fingerprint,
+                    "outputs": _recorded_outputs(outputs=outputs, out_dir=out_dir),
+                }
+                _save_stage_state(out_dir=out_dir, stage_state=stage_state)
 
             stage_duration = time.perf_counter() - stage_start
             stages_info.append(
@@ -1832,10 +2323,11 @@ def execute_semantic_pipeline(
     try:
         report_path = report.generate_html_report(
             config=config,
-            config_file_path=config_file_path or "config.toml",
+            config_file_path=config_file_path,
             execution_info=execution_info,
             output_path=report_path,
             reports_dir=reports_dir,
+            run_id=run_id,
         )
         execution_info["report"] = report_path
         logger.info(f"HTML report generated: {report_path}")
@@ -1922,7 +2414,7 @@ def _classify_inputs(*, input_files, bids_mode):
     return found
 
 
-def _fill_io_section(*, config, overrides, out_dir, out_report):
+def _fill_io_section(*, config, overrides, out_dir, out_report, reset_keys=()):
     """Apply input overrides to the ``[io]`` section of a configuration.
 
     Parameters
@@ -1931,11 +2423,17 @@ def _fill_io_section(*, config, overrides, out_dir, out_report):
         Pipeline configuration, modified in place.
     overrides : dict
         Values to write into the ``[io]`` section. Empty values are
-        ignored, so a configuration file keeps its own paths.
+        ignored, so a configuration file keeps its own paths, except for
+        the keys of ``reset_keys``.
     out_dir : str
         Output directory of the run.
     out_report : str
         Name of the report file inside ``out_dir``.
+    reset_keys : collection of str, optional
+        Keys of ``overrides`` that describe one acquisition, such as its T1
+        image or session in a BIDS batch. They are always written, an empty
+        value clearing what the configuration holds, so that an acquisition
+        never inherits the inputs of another.
 
     Returns
     -------
@@ -1946,6 +2444,12 @@ def _fill_io_section(*, config, overrides, out_dir, out_report):
     io_config = config["io"]
 
     for key, value in overrides.items():
+        if value in (None, "") and key in reset_keys:
+            existing = io_config.get(key, "")
+            if existing not in (None, ""):
+                logger.warning(f"Clearing {key}: {existing} (none for this run)")
+            io_config[key] = ""
+            continue
         if value in (None, ""):
             continue
         existing = io_config.get(key, "")
@@ -1981,7 +2485,7 @@ def _write_pipeline_config(*, config, out_dir, timestamp, pipeline_name):
     """
     config_file = os.path.join(out_dir, f"{timestamp}_{pipeline_name}_pipeline.toml")
 
-    with open(config_file, "w") as f:
+    with open(config_file, "w", encoding="utf-8") as f:
         f.write(format_toml_config(config))
 
     logger.info(f"Configuration saved to: {config_file}")
@@ -2084,13 +2588,32 @@ def _bids_run_out_dirs(*, runs, deriv_root):
     return out_dirs
 
 
+def _bids_label(*, text):
+    """Reduce a text to the alphanumeric characters a BIDS label allows.
+
+    Parameters
+    ----------
+    text : str
+        Text to reduce, such as a stage name.
+
+    Returns
+    -------
+    str
+        ``text`` without its non-alphanumeric characters.
+    """
+    return re.sub(r"[^A-Za-z0-9]", "", text)
+
+
 def _write_bids_derivative_links(*, run, deriv_root, execution_info):
     """Expose headline outputs under BIDS-style names.
 
     A symlink (a copy where symlinks are unavailable) is created at the
     datatype level for each output of ``_BIDS_DERIVATIVE_MAP``, with a JSON
     sidecar recording its provenance. Nothing is moved, so stage
-    resumption and the QC reports keep working on the original paths.
+    resumption and the QC reports keep working on the original paths. When
+    several stages produce the same output, such as the FA of both the DTI
+    and the FORCE fits, the stage name is appended to the ``desc`` entity
+    (``desc-FAdti``, ``desc-FAforce``) so that no link replaces another.
 
     Parameters
     ----------
@@ -2114,51 +2637,56 @@ def _write_bids_derivative_links(*, run, deriv_root, execution_info):
     }
     created = []
 
-    for stage in (execution_info or {}).get("stages", []):
-        for key, value in (stage.get("outputs") or {}).items():
-            if key not in _BIDS_DERIVATIVE_MAP:
-                continue
-            if not isinstance(value, (str, os.PathLike)):
-                continue
+    linked = [
+        (stage, key, os.fspath(value))
+        for stage in (execution_info or {}).get("stages", [])
+        for key, value in (stage.get("outputs") or {}).items()
+        if key in _BIDS_DERIVATIVE_MAP
+        and isinstance(value, (str, os.PathLike))
+        and os.path.isfile(value)
+    ]
+    producers = Counter(key for _, key, _ in linked)
 
-            path = os.fspath(value)
-            if not os.path.isfile(path):
-                continue
+    for stage, key, path in linked:
+        description, bids_suffix = _BIDS_DERIVATIVE_MAP[key]
+        _, extension = split_extension(filename=path)
+        stage_label = _bids_label(text=re.sub(r"_fit$", "", stage.get("name") or ""))
 
-            description, bids_suffix = _BIDS_DERIVATIVE_MAP[key]
-            _, extension = split_extension(filename=path)
+        if description is None:
+            description = stage_label or "dipy"
+        elif producers[key] > 1:
+            description += stage_label
 
-            link_entities = dict(entities)
-            link_entities["desc"] = description or stage.get("name", "dipy")
+        link_entities = dict(entities)
+        link_entities["desc"] = description
 
-            name = build_entity_name(
-                entities=link_entities, suffix=bids_suffix, extension=extension
-            )
-            link = os.path.join(datatype_dir, name)
+        name = build_entity_name(
+            entities=link_entities, suffix=bids_suffix, extension=extension
+        )
+        link = os.path.join(datatype_dir, name)
 
-            try:
-                if os.path.lexists(link):
-                    os.unlink(link)
-                os.symlink(os.path.relpath(path, datatype_dir), link)
-            except OSError:
-                shutil.copy2(path, link)
+        try:
+            if os.path.lexists(link):
+                os.unlink(link)
+            os.symlink(os.path.relpath(path, datatype_dir), link)
+        except OSError:
+            shutil.copy2(path, link)
 
-            sidecar = {
-                "Sources": [f"bids::{os.path.relpath(path, deriv_root)}"],
-                "RawSources": [f"bids::{os.path.relpath(run.dwi, run.root)}"],
-                "GeneratedByStage": {
-                    "name": stage.get("name"),
-                    "cli": stage.get("cli"),
-                    "output": key,
-                },
-            }
-            with open(
-                os.path.join(datatype_dir, f"{name[: -len(extension)]}.json"), "w"
-            ) as f:
-                json.dump(sidecar, f, indent=4)
+        sidecar = {
+            "Sources": [f"bids::{os.path.relpath(path, deriv_root)}"],
+            "RawSources": [f"bids:raw:{os.path.relpath(run.dwi, run.root)}"],
+            "GeneratedByStage": {
+                "name": stage.get("name"),
+                "cli": stage.get("cli"),
+                "output": key,
+            },
+        }
+        sidecar_name = f"{split_extension(filename=name)[0]}.json"
+        with open(os.path.join(datatype_dir, sidecar_name), "w", encoding="utf-8") as f:
+            json.dump(sidecar, f, indent=4)
 
-            created.append(link)
-            logger.info(f"BIDS derivative: {os.path.basename(link)} → {path}")
+        created.append(link)
+        logger.info(f"BIDS derivative: {os.path.basename(link)} → {path}")
 
     return created
 
@@ -2188,7 +2716,7 @@ def _write_batch_summary(*, results, deriv_root, timestamp, pipeline_name, bids_
     """
     json_path = os.path.join(deriv_root, f"{timestamp}_batch_summary.json")
 
-    with open(json_path, "w") as f:
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(
             {
                 "pipeline": pipeline_name,
@@ -2260,19 +2788,16 @@ def _validate_io_refs(*, config, io_config):
     optional_refs = set()
 
     for stage in config.get("pipeline", []):
-        for key, value in stage.items():
-            if key in ("name", "cli") or not isinstance(value, str):
+        for ref in _stage_references(stage=stage):
+            if not ref.startswith("io."):
                 continue
-            for ref in extract_variable_references(value):
-                if not ref.startswith("io."):
-                    continue
-                io_key = ref.split(".", 1)[1]
-                if io_key.startswith("out_") or io_key in _NON_PATH_IO_KEYS:
-                    continue
-                if stage.get("optional", False):
-                    optional_refs.add((ref, io_key))
-                else:
-                    required_refs.add((ref, io_key))
+            io_key = ref.split(".", 1)[1]
+            if io_key.startswith("out_") or io_key in _NON_PATH_IO_KEYS:
+                continue
+            if stage.get("optional", False):
+                optional_refs.add((ref, io_key))
+            else:
+                required_refs.add((ref, io_key))
 
     missing = []
     invalid = []
@@ -2329,8 +2854,11 @@ def _log_io_validation_errors(*, missing, invalid, label=None):
     logger.error("=" * 70)
 
 
-def _validate_mask_file(mask_file):
-    """Validate that a mask file is binary and has sufficient brain coverage.
+def _validate_mask_file(*, mask_file):
+    """Validate that a mask file is binary and holds brain voxels.
+
+    A mask covering less than 25 % of the volume only draws a warning: a
+    tight brain mask on a large field of view legitimately covers less.
 
     Parameters
     ----------
@@ -2339,32 +2867,30 @@ def _validate_mask_file(mask_file):
 
     Raises
     ------
-    SystemExit
-        If the file cannot be loaded, is not binary, or covers less than
-        25 % of the volume.
+    PipelineError
+        If the file cannot be loaded, is not binary, or is empty.
     """
     try:
         data = load_nifti_data(mask_file)
     except Exception as e:
-        logger.error(f"Cannot load mask file '{mask_file}': {e}")
-        sys.exit(1)
+        raise PipelineError(f"Cannot load mask file '{mask_file}': {e}") from e
 
     unique_vals = np.unique(data)
     non_zero = unique_vals[unique_vals != 0]
     if len(non_zero) > 1:
-        logger.error(
+        raise PipelineError(
             f"Mask '{mask_file}' is not binary: "
             f"found {len(unique_vals)} unique values ({unique_vals[:8]}...)."
         )
-        sys.exit(1)
 
     coverage = float((data > 0).sum()) / data.size
+    if coverage == 0:
+        raise PipelineError(f"Mask '{mask_file}' is empty: no voxel is non-zero.")
     if coverage < 0.25:
-        logger.error(
-            f"Mask '{mask_file}' has insufficient coverage: "
-            f"{coverage:.1%} of voxels are non-zero (minimum 25 % required)."
+        logger.warning(
+            f"Mask '{mask_file}' covers only {coverage:.1%} of the volume; "
+            "check that it is not cropping the brain."
         )
-        sys.exit(1)
 
     logger.info(f"✓ Mask validated: binary, {coverage:.1%} coverage — {mask_file}")
 
@@ -2375,44 +2901,110 @@ def _validate_mask_file(mask_file):
 class _ReportHandler(http.server.SimpleHTTPRequestHandler):
     """Serve a report and launch Skyline on the files it lists.
 
-    The pages call ``/qc-open?path=...``; anything else is served statically.
-    Only files under the served directory can be opened, and the response
-    body is the message the page shows when the launch fails.
+    HTML pages are served with a ``<meta name="dipy-qc-token">`` tag holding
+    the server token, which their buttons send back with the file to open in
+    a ``POST /qc-open`` request. A launch requires that token, so that no
+    other web page can trigger one, and only opens files under the served
+    directory. The response body is the message the page shows when the
+    launch fails. Anything else is served statically.
+
+    Parameters
+    ----------
+    *args
+        Positional arguments of :class:`http.server.SimpleHTTPRequestHandler`.
+    token : str, optional
+        Secret a launch request must carry. Without it, every launch request
+        is refused.
+    **kwargs
+        Keyword arguments of :class:`http.server.SimpleHTTPRequestHandler`.
     """
 
-    def do_GET(self):  # noqa: N802 — http.server API
-        if urllib.parse.urlparse(self.path).path != "/qc-open":
-            super().do_GET()
+    def __init__(self, *args, token=None, **kwargs):
+        # The base class handles the request from its constructor.
+        self.token = token
+        super().__init__(*args, **kwargs)
+
+    def do_GET(self):
+        if urllib.parse.urlparse(self.path).path == "/qc-open":
+            self._reply(405, "Skyline is launched with a POST request.")
             return
 
-        query = urllib.parse.urlparse(self.path).query
-        target = urllib.parse.parse_qs(query).get("path", [""])[0]
-        skyline = shutil.which("dipy_skyline")
+        page = self.translate_path(self.path)
+        if os.path.isdir(page) and self.path.split("?", 1)[0].endswith("/"):
+            page = os.path.join(page, "index.html")
+        if self.token and os.path.isfile(page) and page.endswith((".html", ".htm")):
+            self._send_page(page=page)
+        else:
+            super().do_GET()
+
+    def do_POST(self):
+        if urllib.parse.urlparse(self.path).path != "/qc-open":
+            self._reply(404, "Not found.")
+            return
+
+        try:
+            length = min(int(self.headers.get("Content-Length") or 0), 65536)
+        except ValueError:
+            length = 0
+        fields = urllib.parse.parse_qs(
+            self.rfile.read(length).decode("utf-8", errors="replace")
+        )
+        token = fields.get("token", [""])[0].encode()
+        target = fields.get("path", [""])[0]
+        host = (self.headers.get("Host") or "").rsplit(":", 1)[0]
         root = Path(self.directory).resolve()
         path = Path(target).resolve()
 
-        if skyline is None:
+        if (
+            not self.token
+            or not hmac.compare_digest(token, self.token.encode())
+            or host not in ("127.0.0.1", "localhost")
+        ):
+            self._reply(403, "This request does not come from a page of this report.")
+        elif not path.is_file() or root not in path.parents:
+            self._reply(403, f"'{target}' is not a file served by this report.")
+        elif (skyline := shutil.which("dipy_skyline")) is None:
             self._reply(
                 404,
                 "Skyline (dipy_skyline) was not found in this environment. "
                 "Install it, or run the command below yourself.",
             )
-        elif not path.is_file() or root not in path.parents:
-            self._reply(403, f"'{target}' is not a file served by this report.")
         else:
             subprocess.Popen([skyline, str(path)])
             self._reply(200, f"Skyline launched on {path.name}.")
 
+    def _send_page(self, *, page):
+        with open(page, "rb") as f:
+            body = f.read()
+        meta = f'<meta name="dipy-qc-token" content="{self.token}">'.encode()
+        body, found = re.subn(
+            rb"<head(\s[^>]*)?>",
+            lambda m: m.group(0) + meta,
+            body,
+            count=1,
+            flags=re.IGNORECASE,
+        )
+        if not found:
+            body = meta + body
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
     def _reply(self, code, message):
         body = message.encode()
         self.send_response(code)
+        if code == 405:
+            self.send_header("Allow", "POST")
         self.send_header("Content-Type", "text/plain; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
 
 
-def _serve_html_report(report_path):
+def _serve_html_report(*, report_path):
     """Serve an HTML pipeline report via a local HTTP server and open it.
 
     The server is rooted at the pipeline output directory, so that a stage
@@ -2441,7 +3033,9 @@ def _serve_html_report(report_path):
             except OSError:
                 port += 1
 
-    handler = partial(_ReportHandler, directory=report_dir)
+    handler = partial(
+        _ReportHandler, directory=report_dir, token=secrets.token_urlsafe(32)
+    )
     url = f"http://localhost:{port}/{report_name}"
     logger.info(f"Serving report at: {url}")
     logger.info("Press Ctrl+C to stop the server.")
@@ -2564,8 +3158,9 @@ class AutoFlow(Workflow):
         interactive_mode : bool, optional
             Enable interactive mode for pipeline customization.
         pipeline_type : str, optional
-            Predefined pipeline type (e.g., 'denoise', 'preprocessing', 'dti_only').
-            Use --list-pipelines to see all available pipelines.
+            Predefined pipeline type: 'preprocessing', 'dti_only',
+            'tractography' or 'full'. Use --list-pipelines to see all available
+            pipelines.
         start : str, optional
             Stage name to start execution from. Earlier stages will be skipped,
             but their outputs must exist on disk. Use this to resume a failed
@@ -2575,8 +3170,10 @@ class AutoFlow(Workflow):
         list_pipelines : bool, optional
             List all available predefined pipelines and exit.
         out_dir : str, optional
-            Output directory. With ``--bids``, the root of the derivative
-            dataset, defaulting to ``<bids_dir>/derivatives/dipy``.
+            Output directory. When omitted, the ``out_dir`` of the ``[io]``
+            section of the configuration, or the current directory. With
+            ``--bids``, the root of the derivative dataset, defaulting to
+            ``<bids_dir>/derivatives/dipy``.
         out_report : str, optional
             Path to the report file.
         """
@@ -2594,7 +3191,7 @@ class AutoFlow(Workflow):
                 f"HTML report detected: {inputs['report']}. "
                 "Ignoring all other inputs and opening report."
             )
-            _serve_html_report(inputs["report"])
+            _serve_html_report(report_path=inputs["report"])
             return
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -2691,7 +3288,7 @@ class AutoFlow(Workflow):
             pipeline_type=pipeline_type,
             start=start,
             dry_run=dry_run,
-            out_dir=os.path.abspath(out_dir),
+            out_dir=os.path.abspath(out_dir) if out_dir else "",
             out_report=out_report,
             timestamp=timestamp,
         )
@@ -2852,7 +3449,8 @@ class AutoFlow(Workflow):
         dry_run : bool
             Show the execution plan without running it.
         out_dir : str
-            Output directory.
+            Output directory. When empty, the ``out_dir`` of the ``[io]``
+            section is used, the current directory if it has none.
         out_report : str
             Name of the report file inside ``out_dir``.
         timestamp : str
@@ -2871,7 +3469,11 @@ class AutoFlow(Workflow):
             sys.exit(1)
 
         if mask_file:
-            _validate_mask_file(mask_file)
+            try:
+                _validate_mask_file(mask_file=mask_file)
+            except PipelineError as e:
+                logger.error(str(e))
+                sys.exit(1)
 
         io_config = _fill_io_section(
             config=config,
@@ -2889,11 +3491,13 @@ class AutoFlow(Workflow):
             out_report=out_report,
         )
 
+        out_dir = io_config["out_dir"]
         log_file_path = os.path.join(out_dir, f"{timestamp}_dipy_auto.log")
         with file_handler(log_file_path, level=logger.getEffectiveLevel()):
             logger.info(f"Log file: {log_file_path}")
 
-            if config_file is None:
+            generated_config = config_file is None
+            if generated_config:
                 config_file = _write_pipeline_config(
                     config=config,
                     out_dir=out_dir,
@@ -2926,6 +3530,7 @@ class AutoFlow(Workflow):
                     start=start,
                     dry_run=dry_run,
                     force=self._force_overwrite,
+                    overwrite_config=generated_config,
                 )
             except PipelineError as e:
                 logger.error(str(e))
@@ -3030,6 +3635,15 @@ sequence of str or None
         ):
             logger.error("Configuration missing [[pipeline]] sections")
             logger.error("Expected TOML structure with [[pipeline]] array sections")
+            sys.exit(1)
+
+        try:
+            check_start_stage(
+                start=start,
+                stage_names=[stage.get("name") for stage in base_config["pipeline"]],
+            )
+        except PipelineError as e:
+            logger.error(str(e))
             sys.exit(1)
 
         os.makedirs(deriv_root, exist_ok=True)
@@ -3176,30 +3790,33 @@ sequence of str or None
                 level=logger.getEffectiveLevel(),
             ):
                 config = copy.deepcopy(base_config)
+                run_inputs = {
+                    "dwi": run.dwi,
+                    "bvals": run.bval,
+                    "bvecs": run.bvec,
+                    "t1w": run.t1w,
+                    "mask": None,
+                    "dwi_opp_phase": run.fmap_epi,
+                    "bids_folder": run.root,
+                    "subject": run.subject,
+                    "session": run.session,
+                    "entities": run.label,
+                    "pe_dir": metadata.get("PhaseEncodingDirection"),
+                    "total_readout_time": metadata.get("TotalReadoutTime"),
+                    "effective_echo_spacing": metadata.get("EffectiveEchoSpacing"),
+                    "echo_time": metadata.get("EchoTime"),
+                    "repetition_time": metadata.get("RepetitionTime"),
+                }
                 io_config = _fill_io_section(
                     config=config,
                     overrides={
-                        "dwi": run.dwi,
-                        "bvals": run.bval,
-                        "bvecs": run.bvec,
-                        "t1w": run.t1w,
-                        "dwi_opp_phase": run.fmap_epi,
-                        "bids_folder": run.root,
-                        "subject": run.subject,
-                        "session": run.session or "",
-                        "entities": run.label,
-                        "pe_dir": metadata.get("PhaseEncodingDirection", ""),
-                        "total_readout_time": metadata.get("TotalReadoutTime", ""),
-                        "effective_echo_spacing": metadata.get(
-                            "EffectiveEchoSpacing", ""
-                        ),
-                        "echo_time": metadata.get("EchoTime", ""),
-                        "repetition_time": metadata.get("RepetitionTime", ""),
+                        **run_inputs,
                         "atlas_tractogram": atlas_tractogram,
                         "bundle_atlas_dir": bundle_atlas_dir,
                     },
                     out_dir=run_out_dir,
                     out_report=out_report,
+                    reset_keys=run_inputs.keys(),
                 )
 
                 if not run.is_complete:
@@ -3234,6 +3851,7 @@ sequence of str or None
                     start=start,
                     dry_run=dry_run,
                     force=self._force_overwrite,
+                    overwrite_config=True,
                 )
 
                 record["status"] = "completed"

@@ -3,6 +3,7 @@ import logging
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import tomllib
 
 import numpy.testing as npt
 import pytest
@@ -148,6 +149,59 @@ def test_auto_config_file():
         )
 
 
+def test_auto_config_file_left_untouched_by_conflicts():
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        out_dir = os.path.join(tmp, "out")
+        config_file = os.path.join(tmp, "custom.toml")
+        text = (
+            "[[pipeline]]\n"
+            'name = "d1"\ncli = "dipy_denoise_nlmeans"\ninput_files = "${io.dwi}"\n'
+            "\n[[pipeline]]\n"
+            'name = "d2"\ncli = "dipy_denoise_nlmeans"\ninput_files = "${io.dwi}"\n'
+        )
+        Path(config_file).write_text(text)
+
+        AutoFlow().run(
+            [config_file, paths["dwi"], paths["bvals"], paths["bvecs"]],
+            out_dir=out_dir,
+        )
+
+        npt.assert_equal(Path(config_file).read_text(), text)
+        resolved = os.path.join(out_dir, "custom_resolved.toml")
+        with open(resolved, "rb") as f:
+            stages = tomllib.load(f)["pipeline"]
+        npt.assert_equal(
+            [s["out_denoised"] for s in stages],
+            ["denoised_d1.nii.gz", "denoised_d2.nii.gz"],
+        )
+        reports = [
+            f for f in os.listdir(out_dir) if f.endswith("_pipeline_report.html")
+        ]
+        npt.assert_equal(len(reports), 1)
+        npt.assert_equal(resolved in Path(out_dir, reports[0]).read_text(), True)
+
+
+def test_auto_uses_the_configured_output_directory():
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        out_dir = os.path.join(tmp, "from_config")
+        config_file = os.path.join(tmp, "custom.toml")
+        Path(config_file).write_text(
+            f'[io]\nout_dir = "{out_dir}"\n\n'
+            '[[pipeline]]\nname = "denoise"\ncli = "dipy_denoise_nlmeans"\n'
+            'input_files = "${io.dwi}"\n'
+        )
+
+        AutoFlow().run(
+            [config_file, paths["dwi"], paths["bvals"], paths["bvecs"]], dry_run=True
+        )
+
+        npt.assert_equal(
+            any(f.endswith("_dipy_auto.log") for f in os.listdir(out_dir)), True
+        )
+
+
 def test_auto_invalid_config_file():
     with TemporaryDirectory() as tmp:
         paths = _phantom(tmp)
@@ -260,6 +314,68 @@ def test_auto_bids_dry_run():
         )
         npt.assert_equal(
             os.path.join(root, "sub-01", "anat", "sub-01_T1w.nii.gz") in text, True
+        )
+
+
+def test_auto_bids_runs_do_not_inherit_inputs():
+    with TemporaryDirectory() as tmp:
+        root = _make_bids_tree(Path(tmp) / "ds")
+        deriv = os.path.join(tmp, "deriv")
+        config_file = os.path.join(tmp, "custom.toml")
+        Path(config_file).write_text(
+            "[io]\n"
+            f'session = "9"\nt1w = "{os.path.join(tmp, "other_T1w.nii.gz")}"\n'
+            f'dwi_opp_phase = "{os.path.join(tmp, "other_epi.nii.gz")}"\n\n'
+            '[[pipeline]]\nname = "denoise"\ncli = "dipy_denoise_nlmeans"\n'
+            'input_files = "${io.dwi}"\n'
+        )
+
+        AutoFlow().run(
+            [config_file, root, deriv],
+            bids=True,
+            participant_label=["01", "02"],
+            dry_run=True,
+        )
+
+        io_sections = {}
+        for run in _summary(deriv)["runs"]:
+            name = next(
+                f for f in os.listdir(run["out_dir"]) if f.endswith("_pipeline.toml")
+            )
+            with open(os.path.join(run["out_dir"], name), "rb") as f:
+                io_sections[run["label"]] = tomllib.load(f)["io"]
+
+        # sub-01 has no session and no fieldmap: the configured ones are cleared
+        npt.assert_equal(io_sections["sub-01"]["session"], "")
+        npt.assert_equal(io_sections["sub-01"]["dwi_opp_phase"], "")
+        npt.assert_equal(
+            io_sections["sub-01"]["t1w"],
+            os.path.join(root, "sub-01", "anat", "sub-01_T1w.nii.gz"),
+        )
+        npt.assert_equal(io_sections["sub-02_ses-2"]["session"], "2")
+
+
+def test_auto_bids_unknown_start_stage():
+    with TemporaryDirectory() as tmp:
+        root = _make_bids_tree(Path(tmp) / "ds")
+        deriv = os.path.join(tmp, "deriv")
+
+        npt.assert_raises(
+            SystemExit,
+            AutoFlow().run,
+            [root, deriv],
+            bids=True,
+            participant_label=["01"],
+            pipeline_type="dti_only",
+            start="dti_fitt",
+            dry_run=True,
+        )
+        # rejected once, before any acquisition is processed
+        npt.assert_equal(
+            [f for f in os.listdir(deriv) if f.endswith("_batch_summary.json")]
+            if os.path.isdir(deriv)
+            else [],
+            [],
         )
 
 
@@ -490,7 +606,9 @@ def test_auto_bids_smoke():
         with open(run_dir / "sub-01_desc-denoised_dwi.json") as f:
             sidecar = json.load(f)
         npt.assert_equal(sidecar["GeneratedByStage"]["name"], "denoise")
-        npt.assert_equal(sidecar["RawSources"][0].startswith("bids::"), True)
+        npt.assert_equal(
+            sidecar["RawSources"], ["bids:raw:sub-01/dwi/sub-01_dwi.nii.gz"]
+        )
 
         names = [f for f in os.listdir(deriv) if f.endswith("_batch_summary.html")]
         npt.assert_equal(len(names), 1)

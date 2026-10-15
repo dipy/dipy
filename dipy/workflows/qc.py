@@ -7,9 +7,11 @@ the HTML pages built from them are self-contained.
 """
 
 import base64
+import contextlib
 import functools
 import glob
 import io
+import math
 import os
 from pathlib import Path
 import traceback
@@ -36,6 +38,12 @@ mpl_collections, _, _ = optional_package("matplotlib.collections")
 
 STATUS_LEVELS = ("INFO", "PASS", "WARN", "FAIL", "ERROR")
 B0_THRESHOLD = 50
+
+# Gradient file parameter names across the QC'd workflows, most common first:
+# dipy_denoise_patch2self takes ``bval_files``, dipy_correct_biasfield
+# ``bval`` / ``bvec``.
+BVAL_PARAMS = ("bvalues_files", "bval_files", "bval")
+BVEC_PARAMS = ("bvectors_files", "bvec_files", "bvec")
 
 QC_THRESHOLDS = {
     "denoise_ssim": 0.90,
@@ -117,9 +125,12 @@ def foreground_mask(*, volume):
     Returns
     -------
     ndarray of bool
-        Foreground voxels.
+        Foreground voxels; empty for a constant volume, which has no
+        foreground to separate.
     """
     volume = np.nan_to_num(volume)
+    if not np.ptp(volume):
+        return np.zeros(volume.shape, dtype=bool)
     return volume > otsu(volume)
 
 
@@ -136,12 +147,16 @@ def snr(*, volume, mask):
     Returns
     -------
     float
-        SNR, ``inf`` if the background is constant.
+        SNR, ``inf`` if the background is constant and ``nan`` if either
+        region is empty. Callers must not compare non-finite values.
     """
-    noise = float(np.std(volume[~mask]))
+    background, foreground = volume[~mask], volume[mask]
+    if not (background.size and foreground.size):
+        return float("nan")
+    noise = float(np.std(background))
     if noise == 0:
         return float("inf")
-    return float(np.mean(volume[mask])) / noise
+    return float(np.mean(foreground)) / noise
 
 
 def radial_amplitude_spectrum(*, volume, n_bins=64):
@@ -172,9 +187,26 @@ def radial_amplitude_spectrum(*, volume, n_bins=64):
     return 0.5 * (edges[1:] + edges[:-1]), sums / np.maximum(counts, 1)
 
 
-def _plain(value):
+def _plain(*, value):
+    """Plain Python value, non-finite floats mapped to ``None``.
+
+    JSON has no representation for NaN and infinity, so they are dropped
+    here rather than written as the non-standard ``NaN`` / ``Infinity``.
+
+    Parameters
+    ----------
+    value : object
+        Metric value, possibly a NumPy scalar.
+
+    Returns
+    -------
+    object
+        ``value`` as a built-in type, ``None`` if it is a non-finite float.
+    """
     if isinstance(value, np.generic):
-        return value.item()
+        value = value.item()
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
     return value
 
 
@@ -209,14 +241,14 @@ def _metric(*, name, value, unit="", ok=None, rule="", fail=False):
         status = "FAIL" if fail else "WARN"
     return {
         "name": name,
-        "value": _plain(value),
+        "value": _plain(value=value),
         "unit": unit,
         "status": status,
         "rule": rule,
     }
 
 
-def _fmt(values, *, precision=3):
+def _fmt(*, values, precision=3):
     return ", ".join(f"{v:.{precision}g}" for v in np.ravel(values))
 
 
@@ -278,16 +310,22 @@ def qc_result(*, metrics=(), figures=(), error=None, status=None):
 # =============================================================================
 
 
-def _first_path(value):
-    """First existing file behind a path, a glob pattern or a list of them."""
+def _first_path(*, value):
+    """First existing file behind a path, a glob pattern or a list of them.
+
+    An existing path is returned as is, so that a file whose name holds glob
+    characters such as ``[`` is not taken for a pattern.
+    """
     for item in value if isinstance(value, (list, tuple)) else [value]:
+        if item and os.path.exists(str(item)):
+            return str(item)
         matches = sorted(glob.glob(str(item)))
         if matches:
             return matches[0]
     return None
 
 
-def _is_nifti(path):
+def _is_nifti(*, path):
     p = str(path)
     return p.endswith((".nii", ".nii.gz")) and os.path.exists(p)
 
@@ -309,7 +347,7 @@ def _load_volume(*, path, volumes=None):
     affine : ndarray
         Matching 4x4 affine.
     """
-    img = nib.load(_first_path(path))
+    img = nib.load(_first_path(value=path))
     if volumes is None or img.ndim == 3:
         data = np.asarray(img.dataobj, dtype=np.float32)
     else:
@@ -320,23 +358,105 @@ def _load_volume(*, path, volumes=None):
     return nib.orientations.apply_orientation(data, ornt), affine
 
 
-def _gradients(*, io_config):
-    return read_bvals_bvecs(io_config["bvals"], io_config["bvecs"])
+def _gradient_file(*, inputs, io_config, params, io_key):
+    """Stage gradient file under any of its parameter names, else ``[io]``.
+
+    Parameters
+    ----------
+    inputs : dict
+        Resolved stage parameters.
+    io_config : dict
+        Pipeline ``[io]`` section.
+    params : sequence of str
+        Names the stage workflows give the file parameter, tried in order.
+    io_key : str
+        ``[io]`` entry used when the stage sets none of ``params``.
+
+    Returns
+    -------
+    str or None
+        First existing file, ``None`` when there is none.
+    """
+    value = next((inputs[p] for p in params if inputs.get(p)), None)
+    return _first_path(value=value or io_config.get(io_key) or "")
+
+
+def _bvals(*, inputs, io_config):
+    """b-values and b0 threshold of a stage.
+
+    The stage's own b-values (``bvalues_files``, or ``bval_files`` /
+    ``bval`` depending on the workflow) and ``b0_threshold`` win over the
+    pipeline ``[io]`` b-values and ``B0_THRESHOLD``, so the QC sees the same
+    gradient table as the stage did.
+
+    Parameters
+    ----------
+    inputs : dict
+        Resolved stage parameters.
+    io_config : dict
+        Pipeline ``[io]`` section.
+
+    Returns
+    -------
+    bvals : ndarray or None
+        b-values, ``None`` when neither the stage nor ``[io]`` has any.
+    b0_threshold : float
+        b-value at or below which a volume counts as a b0.
+    """
+    path = _gradient_file(
+        inputs=inputs, io_config=io_config, params=BVAL_PARAMS, io_key="bvals"
+    )
+    bvals = read_bvals_bvecs(path, None)[0] if path else None
+    return bvals, float(inputs.get("b0_threshold", B0_THRESHOLD))
+
+
+def _gradients(*, inputs, io_config):
+    """b-values, b-vectors and b0 threshold of a stage.
+
+    See ``_bvals``; the stage b-vectors (``bvectors_files``, ``bvec_files``
+    or ``bvec``) likewise win over ``[io]`` so that a stage fed
+    motion-corrected b-vectors is checked against them.
+
+    Parameters
+    ----------
+    inputs : dict
+        Resolved stage parameters.
+    io_config : dict
+        Pipeline ``[io]`` section.
+
+    Returns
+    -------
+    bvals : ndarray
+        b-values.
+    bvecs : ndarray
+        b-vectors.
+    b0_threshold : float
+        b-value at or below which a volume counts as a b0.
+    """
+    bvals, bvecs = read_bvals_bvecs(
+        _gradient_file(
+            inputs=inputs, io_config=io_config, params=BVAL_PARAMS, io_key="bvals"
+        ),
+        _gradient_file(
+            inputs=inputs, io_config=io_config, params=BVEC_PARAMS, io_key="bvecs"
+        ),
+    )
+    return bvals, bvecs, float(inputs.get("b0_threshold", B0_THRESHOLD))
 
 
 def _b0_indices(*, bvals, n_volumes, threshold=B0_THRESHOLD):
-    if len(bvals) != n_volumes:
+    if bvals is None or len(bvals) != n_volumes:
         return np.array([0])
     idx = np.flatnonzero(bvals <= threshold)
     return idx if idx.size else np.array([0])
 
 
-def _mean_b0(*, path, bvals):
+def _mean_b0(*, path, bvals, b0_threshold=B0_THRESHOLD):
     """Mean b0 volume of a 3D/4D NIfTI file, read volume by volume."""
-    img = nib.load(_first_path(path))
+    img = nib.load(_first_path(value=path))
     if img.ndim == 3:
         return _load_volume(path=path)[0]
-    idx = _b0_indices(bvals=bvals, n_volumes=img.shape[3])
+    idx = _b0_indices(bvals=bvals, n_volumes=img.shape[3], threshold=b0_threshold)
     return _load_volume(path=path, volumes=idx)[0].mean(axis=-1)
 
 
@@ -344,28 +464,41 @@ def _load_mask(*, path):
     return _load_volume(path=path)[0] > 0
 
 
-def _load_streamlines(*, path):
+@contextlib.contextmanager
+def _open_streamlines(*, path):
     """Streamlines of a tractogram, in RASMM space.
 
     ``.trx`` files are memory-mapped rather than read, since a whole-brain
-    tractogram does not fit in memory comfortably.
+    tractogram does not fit in memory comfortably. The mapping, and the
+    temporary folder a compressed ``.trx`` is extracted to, are released on
+    exit, so the streamlines must not be used outside the ``with`` block.
 
     Parameters
     ----------
     path : str
         Tractogram file.
 
-    Returns
-    -------
+    Yields
+    ------
     nibabel.streamlines.ArraySequence
         Streamlines.
     """
-    if str(path).endswith(".trx"):
-        return tmm.load(str(path)).streamlines
-    return load_tractogram(str(path), "same", bbox_valid_check=False).streamlines
+    if str(path).endswith((".trk", ".tck")):
+        # A .tck carries no reference image, which load_tractogram(..., "same")
+        # needs; nibabel returns both formats in RASMM without one.
+        yield nib.streamlines.load(str(path)).streamlines
+        return
+    if not str(path).endswith(".trx"):
+        yield load_tractogram(str(path), "same", bbox_valid_check=False).streamlines
+        return
+    trx = tmm.load(str(path))
+    try:
+        yield trx.streamlines
+    finally:
+        trx.close()
 
 
-def _lengths(streamlines):
+def _lengths(*, streamlines):
     return np.asarray(list(length(streamlines)), dtype=float)
 
 
@@ -417,7 +550,7 @@ def _encode(*, title, fig):
     return {"title": title, "data_uri": f"data:image/png;base64,{data}"}
 
 
-def _window(volume):
+def _window(*, volume):
     """Display range and colormap; signed volumes get a diverging map.
 
     A volume counts as signed only when a real share of it is negative: an
@@ -455,7 +588,7 @@ def _mosaic(*, title, volumes, labels, overlay=None, n_cuts=7):
     )
     axes = fig.subplots(len(volumes), n_cuts, squeeze=False)
     for row, (volume, label) in enumerate(zip(volumes, labels)):
-        vmin, vmax, cmap = _window(volume)
+        vmin, vmax, cmap = _window(volume=volume)
         for col, frac in enumerate(fractions):
             k = int(round(frac * (volume.shape[2] - 1)))
             ax = axes[row, col]
@@ -576,11 +709,11 @@ def _profiles_figure(*, title, profiles, n_cols=4):
 # =============================================================================
 
 
-def _before_after(*, before_path, after_path, io_config, ssim_min):
+def _before_after(*, before_path, after_path, inputs, io_config, ssim_min):
     """Shared before/after comparison on the mean b0 of two DWI files."""
-    bvals, _ = _gradients(io_config=io_config)
-    before = _mean_b0(path=before_path, bvals=bvals)
-    after = _mean_b0(path=after_path, bvals=bvals)
+    bvals, b0_threshold = _bvals(inputs=inputs, io_config=io_config)
+    before = _mean_b0(path=before_path, bvals=bvals, b0_threshold=b0_threshold)
+    after = _mean_b0(path=after_path, bvals=bvals, b0_threshold=b0_threshold)
     mask = foreground_mask(volume=before)
     ssim = ssim_3d(a=before, b=after, mask=mask)
     metrics = [
@@ -600,22 +733,47 @@ def _before_after(*, before_path, after_path, io_config, ssim_min):
 
 
 def qc_denoise(*, outputs, inputs, io_config):
-    """SNR gain, SSIM and residual of denoising."""
+    """SNR gain, SSIM and residual of denoising.
+
+    The SNR comparison is skipped (INFO) when either SNR is not finite, as
+    happens on synthetic data with a constant background.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; reads ``out_denoised``.
+    inputs : dict
+        Resolved stage parameters; reads ``input_files`` and, when present,
+        ``bvalues_files`` and ``b0_threshold``.
+    io_config : dict
+        Pipeline ``[io]`` section, the fallback for the b-values.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
     before, after, mask, metrics, figures = _before_after(
         before_path=inputs["input_files"],
         after_path=outputs["out_denoised"],
+        inputs=inputs,
         io_config=io_config,
         ssim_min=QC_THRESHOLDS["denoise_ssim"],
     )
     snr_before = snr(volume=before, mask=mask)
     snr_after = snr(volume=after, mask=mask)
     tolerance = QC_THRESHOLDS["snr_drop_tolerance"]
+    ok = None
+    if math.isfinite(snr_before) and math.isfinite(snr_after):
+        ok = snr_after >= (1 - tolerance) * snr_before
     metrics += [
         _metric(name="SNR before (mean b0)", value=snr_before),
         _metric(
             name="SNR after (mean b0)",
             value=snr_after,
-            ok=snr_after >= (1 - tolerance) * snr_before,
+            ok=ok,
             rule=f"≥ SNR before − {100 * tolerance:g} %",
         ),
     ]
@@ -623,10 +781,29 @@ def qc_denoise(*, outputs, inputs, io_config):
 
 
 def qc_gibbs(*, outputs, inputs, io_config):
-    """SSIM and difference image of Gibbs unringing."""
+    """SSIM and difference image of Gibbs unringing.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; reads ``out_unring``.
+    inputs : dict
+        Resolved stage parameters; reads ``input_files`` and, when present,
+        ``bvalues_files`` and ``b0_threshold``.
+    io_config : dict
+        Pipeline ``[io]`` section, the fallback for the b-values.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
     *_, metrics, figures = _before_after(
         before_path=inputs["input_files"],
         after_path=outputs["out_unring"],
+        inputs=inputs,
         io_config=io_config,
         ssim_min=QC_THRESHOLDS["gibbs_ssim"],
     )
@@ -634,10 +811,33 @@ def qc_gibbs(*, outputs, inputs, io_config):
 
 
 def qc_bias_correction(*, outputs, inputs, io_config):
-    """Intensity uniformity and Fourier spectrum before/after bias correction."""
-    bvals, _ = _gradients(io_config=io_config)
-    before = _mean_b0(path=inputs["input_files"], bvals=bvals)
-    after = _mean_b0(path=outputs["out_corrected"], bvals=bvals)
+    """Intensity uniformity and Fourier spectrum before/after bias correction.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; reads ``out_corrected`` and,
+        when it exists, ``out_bias_field``.
+    inputs : dict
+        Resolved stage parameters; reads ``input_files`` and, when present,
+        ``bvalues_files`` and ``b0_threshold``.
+    io_config : dict
+        Pipeline ``[io]`` section, the fallback for the b-values.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
+    bvals, b0_threshold = _bvals(inputs=inputs, io_config=io_config)
+    before = _mean_b0(
+        path=inputs["input_files"], bvals=bvals, b0_threshold=b0_threshold
+    )
+    after = _mean_b0(
+        path=outputs["out_corrected"], bvals=bvals, b0_threshold=b0_threshold
+    )
     mask = foreground_mask(volume=before)
     cv_before = float(np.std(before[mask]) / np.mean(before[mask]))
     cv_after = float(np.std(after[mask]) / np.mean(after[mask]))
@@ -651,7 +851,7 @@ def qc_bias_correction(*, outputs, inputs, io_config):
         ),
     ]
     volumes, labels = [before, after], ["before", "after"]
-    if _is_nifti(outputs.get("out_bias_field", "")):
+    if _is_nifti(path=outputs.get("out_bias_field", "")):
         volumes.append(_load_volume(path=outputs["out_bias_field"])[0])
         labels.append("bias field")
     figures = [
@@ -669,22 +869,43 @@ def qc_bias_correction(*, outputs, inputs, io_config):
     return metrics, figures
 
 
-def _fov_center(img):
+def _fov_center(*, img):
     """World coordinates of the field-of-view center of a NIfTI image."""
     return (img.affine @ np.append((np.array(img.shape[:3]) - 1) / 2, 1))[:3]
 
 
 def qc_reslice(*, outputs, inputs, io_config):
-    """Grid change and field-of-view preservation of reslicing."""
-    bvals, _ = _gradients(io_config=io_config)
-    img_before = nib.load(_first_path(inputs["input_files"]))
-    img_after = nib.load(_first_path(outputs["out_resliced"]))
+    """Grid change and field-of-view preservation of reslicing.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; reads ``out_resliced``.
+    inputs : dict
+        Resolved stage parameters; reads ``input_files`` and, when present,
+        ``bvalues_files`` and ``b0_threshold``.
+    io_config : dict
+        Pipeline ``[io]`` section, the fallback for the b-values.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
+    bvals, b0_threshold = _bvals(inputs=inputs, io_config=io_config)
+    img_before = nib.load(_first_path(value=inputs["input_files"]))
+    img_after = nib.load(_first_path(value=outputs["out_resliced"]))
     zooms_before = img_before.header.get_zooms()[:3]
-    shift = float(np.linalg.norm(_fov_center(img_after) - _fov_center(img_before)))
+    zooms_after = img_after.header.get_zooms()[:3]
+    shift = float(
+        np.linalg.norm(_fov_center(img=img_after) - _fov_center(img=img_before))
+    )
     metrics = [
         _metric(
             name="Voxel size before → after",
-            value=f"{_fmt(zooms_before)} → {_fmt(img_after.header.get_zooms()[:3])}",
+            value=f"{_fmt(values=zooms_before)} → {_fmt(values=zooms_after)}",
             unit="mm",
         ),
         _metric(
@@ -703,8 +924,16 @@ def qc_reslice(*, outputs, inputs, io_config):
         _mosaic(
             title="Mean b0 before and after reslicing",
             volumes=[
-                _mean_b0(path=inputs["input_files"], bvals=bvals),
-                _mean_b0(path=outputs["out_resliced"], bvals=bvals),
+                _mean_b0(
+                    path=inputs["input_files"],
+                    bvals=bvals,
+                    b0_threshold=b0_threshold,
+                ),
+                _mean_b0(
+                    path=outputs["out_resliced"],
+                    bvals=bvals,
+                    b0_threshold=b0_threshold,
+                ),
             ],
             labels=["before", "after"],
         )
@@ -713,9 +942,29 @@ def qc_reslice(*, outputs, inputs, io_config):
 
 
 def qc_b0_extraction(*, outputs, inputs, io_config, max_rows=8):
-    """b0 indices and consistency of the b0 volumes."""
-    bvals, _ = _gradients(io_config=io_config)
-    threshold = inputs.get("b0_threshold", B0_THRESHOLD)
+    """b0 indices and consistency of the b0 volumes.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; unused, the b0 volumes are
+        read from the stage input.
+    inputs : dict
+        Resolved stage parameters; reads ``input_files`` and, when present,
+        ``bvalues_files`` and ``b0_threshold``.
+    io_config : dict
+        Pipeline ``[io]`` section, the fallback for the b-values.
+    max_rows : int, optional
+        Maximum number of b0 volumes shown in the mosaic.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
+    bvals, threshold = _bvals(inputs=inputs, io_config=io_config)
     idx = np.flatnonzero(bvals <= threshold)
     metrics = [
         _metric(name="b0 indices", value=", ".join(map(str, idx))),
@@ -730,6 +979,8 @@ def qc_b0_extraction(*, outputs, inputs, io_config, max_rows=8):
     if not idx.size:
         return metrics, []
     b0s, _ = _load_volume(path=inputs["input_files"], volumes=idx)
+    if b0s.ndim == 3:
+        b0s = b0s[..., None]
     mask = foreground_mask(volume=b0s.mean(axis=-1))
     means = b0s[mask].mean(axis=0)
     cv = float(np.std(means) / np.mean(means))
@@ -754,8 +1005,26 @@ def qc_b0_extraction(*, outputs, inputs, io_config, max_rows=8):
 
 
 def qc_brain_mask(*, outputs, inputs, io_config):
-    """Volume, connectivity and coverage of the brain mask."""
-    bvals, _ = _gradients(io_config=io_config)
+    """Volume, connectivity and coverage of the brain mask.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; reads ``out_mask``.
+    inputs : dict
+        Resolved stage parameters; reads ``input_files`` and, when present,
+        ``bvalues_files`` and ``b0_threshold``.
+    io_config : dict
+        Pipeline ``[io]`` section, the fallback for the b-values.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
+    bvals, b0_threshold = _bvals(inputs=inputs, io_config=io_config)
     mask, affine = _load_volume(path=outputs["out_mask"])
     mask = mask > 0
     n_components = int(ndimage.label(mask)[1])
@@ -788,7 +1057,13 @@ def qc_brain_mask(*, outputs, inputs, io_config):
     figures = [
         _mosaic(
             title="Brain mask contour over the mean b0",
-            volumes=[_mean_b0(path=inputs["input_files"], bvals=bvals)],
+            volumes=[
+                _mean_b0(
+                    path=inputs["input_files"],
+                    bvals=bvals,
+                    b0_threshold=b0_threshold,
+                )
+            ],
             labels=["mean b0"],
             overlay=mask,
         )
@@ -801,7 +1076,7 @@ def _maps_qc(*, outputs, mask, keys):
     metrics, values, volumes = [], {}, {}
     for key in keys:
         path = outputs.get(f"out_{key}", "")
-        if not _is_nifti(path):
+        if not _is_nifti(path=path):
             continue
         data, _ = _load_volume(path=path)
         vals = data[mask & np.isfinite(data)]
@@ -825,49 +1100,95 @@ def _maps_qc(*, outputs, mask, keys):
     return metrics, figures
 
 
-def _signal_nrmse(*, data, predicted, mask, bvals):
-    """Voxel-wise NRMSE between measured and predicted signals.
+def _signal_nrmse(*, measured, predicted, bvals, b0_threshold=B0_THRESHOLD):
+    """Per-voxel NRMSE between measured and predicted signals.
 
     Both signals are divided by their own mean b0 so that absolute and
     S0-normalised predictions compare alike.
+
+    Parameters
+    ----------
+    measured, predicted : ndarray, shape (n_voxels, n_volumes)
+        Signals of the voxels to evaluate.
+    bvals : ndarray
+        b-values, used to find the b0 volumes.
+    b0_threshold : float, optional
+        b-value at or below which a volume counts as a b0.
+
+    Returns
+    -------
+    ndarray, shape (n_voxels,)
+        NRMSE of each voxel.
     """
-    b0 = _b0_indices(bvals=bvals, n_volumes=data.shape[-1])
-    measured, model = data[mask], predicted[mask]
+    b0 = _b0_indices(bvals=bvals, n_volumes=measured.shape[-1], threshold=b0_threshold)
     measured = measured / np.maximum(measured[:, b0].mean(-1, keepdims=True), 1e-6)
-    model = model / np.maximum(model[:, b0].mean(-1, keepdims=True), 1e-6)
-    nrmse = np.sqrt(np.mean((model - measured) ** 2, axis=-1)) / np.maximum(
+    model = predicted / np.maximum(predicted[:, b0].mean(-1, keepdims=True), 1e-6)
+    return np.sqrt(np.mean((model - measured) ** 2, axis=-1)) / np.maximum(
         measured.mean(axis=-1), 1e-6
     )
-    nrmse_map = np.zeros(mask.shape, dtype=np.float32)
-    nrmse_map[mask] = nrmse
-    return nrmse_map
+
+
+def _scatter(*, values, mask):
+    """3D map holding ``values`` in ``mask`` and zero elsewhere."""
+    volume = np.zeros(mask.shape, dtype=np.float32)
+    volume[mask] = values
+    return volume
 
 
 def qc_dti(*, outputs, inputs, io_config):
-    """DTI metric ranges and tensor fit residual."""
+    """DTI metric ranges and tensor fit residual.
+
+    The residual is computed on the brain-mask voxels only, so that neither
+    the predicted signal nor the tensor parameters are held for the whole
+    field of view.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; reads ``out_fa``, ``out_md``,
+        ``out_ad``, ``out_rd`` and, for the residual, ``out_eval``,
+        ``out_evec`` and ``out_s0`` when they exist.
+    inputs : dict
+        Resolved stage parameters; reads ``mask_files``, ``input_files``
+        and, when present, ``bvalues_files``, ``bvectors_files`` and
+        ``b0_threshold``.
+    io_config : dict
+        Pipeline ``[io]`` section, the fallback for the gradients.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
     mask = _load_mask(path=inputs["mask_files"])
     metrics, figures = _maps_qc(
         outputs=outputs, mask=mask, keys=["fa", "md", "ad", "rd"]
     )
 
     evals_path, evecs_path = outputs.get("out_eval", ""), outputs.get("out_evec", "")
-    if not (_is_nifti(evals_path) and _is_nifti(evecs_path)):
+    if not (_is_nifti(path=evals_path) and _is_nifti(path=evecs_path)):
         return metrics, figures
-    bvals, bvecs = _gradients(io_config=io_config)
-    data, _ = _load_volume(path=inputs["input_files"])
-    evals, _ = _load_volume(path=evals_path)
-    evecs, _ = _load_volume(path=evecs_path)
-    if _is_nifti(outputs.get("out_s0", "")):
-        s0 = _load_volume(path=outputs["out_s0"])[0]
+    bvals, bvecs, b0_threshold = _gradients(inputs=inputs, io_config=io_config)
+    measured = _load_volume(path=inputs["input_files"])[0][mask]
+    evals = _load_volume(path=evals_path)[0][mask]
+    evecs = _load_volume(path=evecs_path)[0][mask]
+    if _is_nifti(path=outputs.get("out_s0", "")):
+        s0 = _load_volume(path=outputs["out_s0"])[0][mask]
     else:
-        s0 = data[..., _b0_indices(bvals=bvals, n_volumes=data.shape[-1])].mean(-1)
-    params = np.concatenate([evals, evecs.reshape(evecs.shape[:3] + (9,))], axis=-1)
-    gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=B0_THRESHOLD)
-    predicted = np.zeros_like(data)
-    predicted[mask] = tensor_prediction(params[mask], gtab, s0[mask])
+        b0 = _b0_indices(
+            bvals=bvals, n_volumes=measured.shape[-1], threshold=b0_threshold
+        )
+        s0 = measured[:, b0].mean(-1)
+    params = np.concatenate([evals, evecs.reshape(-1, 9)], axis=-1)
+    gtab = gradient_table(bvals, bvecs=bvecs, b0_threshold=b0_threshold)
+    predicted = tensor_prediction(params, gtab, s0).astype(measured.dtype)
 
-    nrmse_map = _signal_nrmse(data=data, predicted=predicted, mask=mask, bvals=bvals)
-    median = float(np.nanmedian(nrmse_map[mask]))
+    nrmse = _signal_nrmse(
+        measured=measured, predicted=predicted, bvals=bvals, b0_threshold=b0_threshold
+    )
+    median = float(np.nanmedian(nrmse))
     limit = QC_THRESHOLDS["dti_residual_nrmse"]
     metrics.append(
         _metric(
@@ -879,14 +1200,37 @@ def qc_dti(*, outputs, inputs, io_config):
     )
     figures.append(
         _mosaic(
-            title="Tensor fit residual (NRMSE)", volumes=[nrmse_map], labels=["NRMSE"]
+            title="Tensor fit residual (NRMSE)",
+            volumes=[_scatter(values=nrmse, mask=mask)],
+            labels=["NRMSE"],
         )
     )
     return metrics, figures
 
 
 def qc_force(*, outputs, inputs, io_config):
-    """FORCE metric ranges, match uncertainty and signal matching error."""
+    """FORCE metric ranges, match uncertainty and signal matching error.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; reads the scalar maps
+        (``out_fa``, ``out_md``, ``out_rd``, ``out_mk``, ``out_ak``,
+        ``out_rk``), ``out_uncertainty``, ``out_ambiguity`` and
+        ``out_predicted_signal`` when they exist.
+    inputs : dict
+        Resolved stage parameters; reads ``mask_files``, ``input_files`` and,
+        when present, ``bvalues_files`` and ``b0_threshold``.
+    io_config : dict
+        Pipeline ``[io]`` section, the fallback for the b-values.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
     mask = _load_mask(path=inputs["mask_files"])
     metrics, figures = _maps_qc(
         outputs=outputs, mask=mask, keys=["fa", "md", "rd", "mk", "ak", "rk"]
@@ -894,7 +1238,7 @@ def qc_force(*, outputs, inputs, io_config):
     volumes, labels = [], []
     for key in ("uncertainty", "ambiguity"):
         path = outputs.get(f"out_{key}", "")
-        if not _is_nifti(path):
+        if not _is_nifti(path=path):
             continue
         data, _ = _load_volume(path=path)
         metrics.append(
@@ -909,24 +1253,28 @@ def qc_force(*, outputs, inputs, io_config):
             )
         )
 
-    if _is_nifti(outputs.get("out_predicted_signal", "")):
-        bvals, _ = _gradients(io_config=io_config)
-        data, _ = _load_volume(path=inputs["input_files"])
+    if _is_nifti(path=outputs.get("out_predicted_signal", "")):
+        bvals, b0_threshold = _bvals(inputs=inputs, io_config=io_config)
         predicted, _ = _load_volume(path=outputs["out_predicted_signal"])
-        if predicted.shape == data.shape:
-            nrmse_map = _signal_nrmse(
-                data=data, predicted=predicted, mask=mask, bvals=bvals
+        shape, predicted = predicted.shape, predicted[mask]
+        data, _ = _load_volume(path=inputs["input_files"])
+        if data.shape == shape:
+            nrmse = _signal_nrmse(
+                measured=data[mask],
+                predicted=predicted,
+                bvals=bvals,
+                b0_threshold=b0_threshold,
             )
             metrics.append(
                 _metric(
                     name="Signal matching error (median NRMSE)",
-                    value=float(np.nanmedian(nrmse_map[mask])),
+                    value=float(np.nanmedian(nrmse)),
                 )
             )
             figures.append(
                 _mosaic(
                     title="Signal matching error (NRMSE)",
-                    volumes=[nrmse_map],
+                    volumes=[_scatter(values=nrmse, mask=mask)],
                     labels=["NRMSE"],
                 )
             )
@@ -934,20 +1282,40 @@ def qc_force(*, outputs, inputs, io_config):
 
 
 def qc_tracking(*, outputs, inputs, io_config):
-    """Streamline count and length distribution."""
-    streamlines = _load_streamlines(path=outputs["out_tractogram"])
-    metrics = [
-        _metric(
-            name="Streamlines",
-            value=len(streamlines),
-            ok=len(streamlines) > 0,
-            rule="> 0",
-            fail=True,
+    """Streamline count and length distribution.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; reads ``out_tractogram``.
+    inputs : dict
+        Resolved stage parameters; unused.
+    io_config : dict
+        Pipeline ``[io]`` section; unused.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
+    with _open_streamlines(path=outputs["out_tractogram"]) as streamlines:
+        metrics = [
+            _metric(
+                name="Streamlines",
+                value=len(streamlines),
+                ok=len(streamlines) > 0,
+                rule="> 0",
+                fail=True,
+            )
+        ]
+        if not len(streamlines):
+            return metrics, []
+        lengths = _lengths(streamlines=streamlines)
+        figure = _streamlines_figure(
+            title="Tractogram", groups=[("tractogram", streamlines)]
         )
-    ]
-    if not len(streamlines):
-        return metrics, []
-    lengths = _lengths(streamlines)
     short_mm = QC_THRESHOLDS["short_streamline_mm"]
     short_max = QC_THRESHOLDS["short_streamline_fraction"]
     short = float(np.mean(lengths < short_mm))
@@ -955,7 +1323,12 @@ def qc_tracking(*, outputs, inputs, io_config):
         _metric(
             name="Length min / mean / median / max",
             value=_fmt(
-                [lengths.min(), lengths.mean(), np.median(lengths), lengths.max()]
+                values=[
+                    lengths.min(),
+                    lengths.mean(),
+                    np.median(lengths),
+                    lengths.max(),
+                ]
             ),
             unit="mm",
         ),
@@ -969,23 +1342,42 @@ def qc_tracking(*, outputs, inputs, io_config):
     ]
     figures = [
         _histograms(title="Streamline length", values={"length (mm)": lengths}),
-        _streamlines_figure(title="Tractogram", groups=[("tractogram", streamlines)]),
+        figure,
     ]
     return metrics, figures
 
 
 def qc_register(*, outputs, inputs, io_config):
-    """Affine plausibility and centroid distance of streamline registration."""
+    """Affine plausibility and centroid distance of streamline registration.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; reads ``out_affine``,
+        ``out_moved`` and, when they all exist, ``out_stat_centroids``,
+        ``out_moving_centroids`` and ``out_moved_centroids``.
+    inputs : dict
+        Resolved stage parameters; reads ``static_files`` when present.
+    io_config : dict
+        Pipeline ``[io]`` section; unused.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
     affine = np.loadtxt(outputs["out_affine"])
     scale, _, angles, translate, _ = decompose_matrix(affine)
     lo, hi = QC_THRESHOLDS["slr_scale"]
     metrics = [
         _metric(name="Affine", value=np.array2string(affine, precision=3)),
-        _metric(name="Translation", value=_fmt(translate), unit="mm"),
-        _metric(name="Rotation", value=_fmt(np.degrees(angles)), unit="deg"),
+        _metric(name="Translation", value=_fmt(values=translate), unit="mm"),
+        _metric(name="Rotation", value=_fmt(values=np.degrees(angles)), unit="deg"),
         _metric(
             name="Scale",
-            value=_fmt(scale),
+            value=_fmt(values=scale),
             ok=bool(np.all((np.asarray(scale) >= lo) & (np.asarray(scale) <= hi))),
             rule=f"each in [{lo}, {hi}]",
         ),
@@ -994,31 +1386,37 @@ def qc_register(*, outputs, inputs, io_config):
         outputs.get(key, "")
         for key in ("out_stat_centroids", "out_moving_centroids", "out_moved_centroids")
     ]
-    if all(os.path.exists(p) for p in centroid_paths):
-        static, moving, moved = (_load_streamlines(path=p) for p in centroid_paths)
-        before = _mean_min_mdf(a=static, b=moving)
-        after = _mean_min_mdf(a=static, b=moved)
-        metrics += [
-            _metric(name="Centroid distance before", value=before, unit="mm"),
-            _metric(
-                name="Centroid distance after",
-                value=after,
-                unit="mm",
-                ok=after <= before,
-                rule="≤ distance before",
-            ),
+    with contextlib.ExitStack() as stack:
+        if all(os.path.exists(p) for p in centroid_paths):
+            static, moving, moved = (
+                stack.enter_context(_open_streamlines(path=p)) for p in centroid_paths
+            )
+            before = _mean_min_mdf(a=static, b=moving)
+            after = _mean_min_mdf(a=static, b=moved)
+            metrics += [
+                _metric(name="Centroid distance before", value=before, unit="mm"),
+                _metric(
+                    name="Centroid distance after",
+                    value=after,
+                    unit="mm",
+                    ok=after <= before,
+                    rule="≤ distance before",
+                ),
+            ]
+        moved = stack.enter_context(_open_streamlines(path=outputs["out_moved"]))
+        metrics.append(_metric(name="Moved streamlines", value=len(moved)))
+        groups = [("moved", moved)]
+        atlas = _first_path(value=inputs.get("static_files", ""))
+        if atlas:
+            groups.insert(
+                0, ("atlas", stack.enter_context(_open_streamlines(path=atlas)))
+            )
+        figures = [
+            _streamlines_figure(
+                title="Atlas (static) and registered (moved) tractograms",
+                groups=groups,
+            )
         ]
-    moved = _load_streamlines(path=outputs["out_moved"])
-    metrics.append(_metric(name="Moved streamlines", value=len(moved)))
-    groups = [("moved", moved)]
-    atlas = _first_path(inputs.get("static_files", ""))
-    if atlas:
-        groups.insert(0, ("atlas", _load_streamlines(path=atlas)))
-    figures = [
-        _streamlines_figure(
-            title="Atlas (static) and registered (moved) tractograms", groups=groups
-        )
-    ]
     return metrics, figures
 
 
@@ -1053,49 +1451,109 @@ def _bundles_qc(*, out_dir, stem, io_config):
     """
     files = sorted(Path(out_dir).glob(f"*{stem}.tr[xk]"))
     atlas_dir = io_config.get("bundle_atlas_dir", "")
-    known = [Path(p).name.split(".")[0] for p in glob.glob(f"{atlas_dir}/*.tr[xk]")]
+    known = (
+        [p.name.split(".")[0] for p in Path(atlas_dir).glob("*.tr[xk]")]
+        if atlas_dir
+        else []
+    )
     min_count = QC_THRESHOLDS["min_bundle_streamlines"]
 
     metrics, groups = [], []
-    for f in files:
-        name = _bundle_name(path=f, stem=stem, known=known)
-        streamlines = _load_streamlines(path=f)
-        mean_length = _lengths(streamlines).mean() if len(streamlines) else 0.0
-        metrics.append(
-            _metric(
-                name=f"{name} (mean length {mean_length:.0f} mm)",
-                value=len(streamlines),
-                unit="streamlines",
-                ok=len(streamlines) >= min_count,
-                rule=f"≥ {min_count}",
+    with contextlib.ExitStack() as stack:
+        for f in files:
+            name = _bundle_name(path=f, stem=stem, known=known)
+            streamlines = stack.enter_context(_open_streamlines(path=f))
+            mean_length = (
+                _lengths(streamlines=streamlines).mean() if len(streamlines) else 0.0
             )
+            metrics.append(
+                _metric(
+                    name=f"{name} (mean length {mean_length:.0f} mm)",
+                    value=len(streamlines),
+                    unit="streamlines",
+                    ok=len(streamlines) >= min_count,
+                    rule=f"≥ {min_count}",
+                )
+            )
+            if len(streamlines):
+                groups.append((name, streamlines))
+        figures = (
+            [_streamlines_figure(title="Bundles", groups=groups)] if groups else []
         )
-        if len(streamlines):
-            groups.append((name, streamlines))
     if not files:
         metrics.append(
             _metric(name="Bundles found", value=0, ok=False, rule="> 0", fail=True)
         )
-    figures = [_streamlines_figure(title="Bundles", groups=groups)] if groups else []
     return metrics, figures
 
 
 def qc_segment_bundles(*, outputs, inputs, io_config):
-    """Streamline count of each RecoBundles bundle, in atlas space."""
+    """Streamline count of each RecoBundles bundle, in atlas space.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; reads ``out_dir``.
+    inputs : dict
+        Resolved stage parameters; unused.
+    io_config : dict
+        Pipeline ``[io]`` section, read for ``bundle_atlas_dir``.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
     return _bundles_qc(
         out_dir=outputs["out_dir"], stem="recognized", io_config=io_config
     )
 
 
 def qc_label_bundles(*, outputs, inputs, io_config):
-    """Streamline count of each bundle, in native space."""
+    """Streamline count of each bundle, in native space.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; reads ``out_dir``.
+    inputs : dict
+        Resolved stage parameters; unused.
+    io_config : dict
+        Pipeline ``[io]`` section, read for ``bundle_atlas_dir``.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
     return _bundles_qc(
         out_dir=outputs["out_dir"], stem="recognized_orig", io_config=io_config
     )
 
 
 def qc_buan_profiles(*, outputs, inputs, io_config):
-    """Completeness and plot of BUAN along-tract profiles."""
+    """Completeness and plot of BUAN along-tract profiles.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; reads ``out_dir``.
+    inputs : dict
+        Resolved stage parameters; unused.
+    io_config : dict
+        Pipeline ``[io]`` section; unused.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
     files = sorted(Path(outputs["out_dir"]).glob("*_profile.npy"))
     profiles = {}
     for f in files:
@@ -1126,9 +1584,31 @@ def qc_buan_profiles(*, outputs, inputs, io_config):
 
 
 def qc_generic(*, outputs, inputs, io_config, max_outputs=6):
-    """Non-finite voxel count and mosaic of each NIfTI output."""
+    """Non-finite voxel count and mosaic of each NIfTI output.
+
+    Parameters
+    ----------
+    outputs : dict
+        Stage outputs, ``out_<param> -> path``; every existing NIfTI file
+        but ``out_dir`` is checked.
+    inputs : dict
+        Resolved stage parameters; unused.
+    io_config : dict
+        Pipeline ``[io]`` section; unused.
+    max_outputs : int, optional
+        Maximum number of NIfTI outputs checked.
+
+    Returns
+    -------
+    metrics : list of dict
+        Metric records.
+    figures : list of dict
+        Figure records.
+    """
     metrics, figures = [], []
-    niftis = [(k, p) for k, p in outputs.items() if k != "out_dir" and _is_nifti(p)]
+    niftis = [
+        (k, p) for k, p in outputs.items() if k != "out_dir" and _is_nifti(path=p)
+    ]
     for key, path in niftis[:max_outputs]:
         data, _ = _load_volume(path=path)
         bad = int(np.count_nonzero(~np.isfinite(data)))
@@ -1160,6 +1640,7 @@ QC_FUNCS = {
     "dipy_reslice": qc_reslice,
     "dipy_extract_b0": qc_b0_extraction,
     "dipy_brain_mask": qc_brain_mask,
+    "dipy_median_otsu": qc_brain_mask,
     "dipy_fit_dti": qc_dti,
     "dipy_fit_force": qc_force,
     "dipy_track": qc_tracking,

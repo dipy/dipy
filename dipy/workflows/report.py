@@ -11,8 +11,11 @@ from datetime import datetime
 import html
 import importlib
 import json
+import math
 import os
+from pathlib import Path
 import re
+import urllib.parse
 
 from dipy.utils.logging import logger
 from dipy.workflows.cli import cli_flows
@@ -699,20 +702,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             }}
         }}
         function qcOpen(path) {{
-            fetch('/qc-open?path=' + encodeURIComponent(path))
+            var notServed =
+                'Skyline can only be launched when this report is served. ' +
+                'Run "dipy_auto <report.html>" and use the button from there, ' +
+                'or run the command below yourself.';
+            // The server adds this tag to the pages it serves, never to files.
+            var token = document.querySelector('meta[name="dipy-qc-token"]');
+            if (!token) {{
+                qcDialog(notServed, path);
+                return;
+            }}
+            fetch('/qc-open', {{
+                method: 'POST',
+                body: new URLSearchParams({{path: path, token: token.content}})
+            }})
                 .then(function (r) {{
                     if (!r.ok) {{
                         return r.text().then(function (t) {{ qcDialog(t, path); }});
                     }}
                 }})
-                .catch(function () {{
-                    qcDialog(
-                        'Skyline can only be launched when this report is served. ' +
-                        'Run "dipy_auto <report.html>" and use the button from there, ' +
-                        'or run the command below yourself.',
-                        path
-                    );
-                }});
+                .catch(function () {{ qcDialog(notServed, path); }});
         }}
     </script>
 </body>
@@ -760,11 +769,12 @@ def stage_basename(*, index, stage_name):
     return f"{index:02d}_{re.sub(r'[^A-Za-z0-9_-]', '_', stage_name)}"
 
 
-def _badge(status):
+def _badge(*, status):
+    status = html.escape(status)
     return f'<span class="stage-badge badge-{status.lower()}">{status}</span>'
 
 
-def _run_badge(record):
+def _run_badge(*, record):
     skipped = record.get("skipped")
     if skipped == "restart":
         return '<span class="stage-badge badge-restart">Previous Run</span>'
@@ -778,24 +788,62 @@ def _run_badge(record):
     return ""
 
 
-def _duration(record):
+def _duration(*, record):
     duration = record.get("duration")
-    return f"{duration:.2f}s" if duration is not None else "N/A"
+    if isinstance(duration, (int, float)) and math.isfinite(duration):
+        return f"{duration:.2f}s"
+    return "N/A"
 
 
-def _links(links, *, css="sidebar-link", current=None):
+def _links(*, links, css="sidebar-link", current=None):
     return "\n".join(
-        f'<a href="{href}" class="{css}{" current" if href == current else ""}">'
+        f'<a href="{html.escape(href, quote=True)}" '
+        f'class="{css}{" current" if href == current else ""}">'
         f"{html.escape(label)}</a>"
         for href, label in links
     )
+
+
+def _href(*, path, page_dir):
+    """URL of a local file, relative to the page linking to it.
+
+    Parameters
+    ----------
+    path : str
+        File to link to.
+    page_dir : str
+        Directory of the page holding the link.
+
+    Returns
+    -------
+    str
+        Percent-encoded relative URL with forward slashes, or an absolute
+        ``file://`` URI when no relative path exists (another drive on
+        Windows). Not HTML-escaped.
+    """
+    try:
+        rel = os.path.relpath(path, page_dir)
+    except ValueError:
+        return Path(os.path.abspath(path)).as_uri()
+    return urllib.parse.quote(rel.replace(os.sep, "/"))
+
+
+def _json_safe(*, value):
+    """Copy of ``value`` with non-finite floats replaced by ``None``."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, dict):
+        return {k: _json_safe(value=v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(value=v) for v in value]
+    return value
 
 
 def _page(*, title, subtitle, nav, sidebar, content):
     return HTML_TEMPLATE.format(
         title=html.escape(title),
         subtitle=html.escape(subtitle),
-        nav=_links(nav, css=""),
+        nav=_links(links=nav, css=""),
         sidebar=sidebar,
         content=content,
         timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -803,6 +851,8 @@ def _page(*, title, subtitle, nav, sidebar, content):
 
 
 def _format_value(*, value, unit):
+    if value is None:
+        return "N/A"
     text = f"{value:.4g}" if isinstance(value, float) else str(value)
     return html.escape(f"{text} {unit}".strip())
 
@@ -834,11 +884,11 @@ def _output_items(*, outputs, page_dir):
         elif path.endswith(SKYLINE_FORMATS):
             button = (
                 f'<button class="qc-open" '
-                f"onclick=\"qcOpen('{html.escape(path, quote=True)}')\">"
+                f'onclick="qcOpen({html.escape(json.dumps(path), quote=True)})">'
                 f"Open in Skyline</button>"
             )
         else:
-            href = os.path.relpath(path, page_dir)
+            href = html.escape(_href(path=path, page_dir=page_dir), quote=True)
             button = f'<a class="qc-open" href="{href}" target="_blank">Open</a>'
         items += (
             f'<div class="output-item"><strong>{html.escape(key)}</strong>'
@@ -871,7 +921,7 @@ def render_stage_section(*, record, number, anchor, page_dir):
     rows = "".join(
         f"<tr><td>{html.escape(m['name'])}</td>"
         f'<td class="metric-value">{_format_value(value=m["value"], unit=m["unit"])}</td>'
-        f"<td>{html.escape(m['rule'])}</td><td>{_badge(m['status'])}</td></tr>"
+        f"<td>{html.escape(m['rule'])}</td><td>{_badge(status=m['status'])}</td></tr>"
         for m in qc["metrics"]
     )
     metrics = (
@@ -898,29 +948,35 @@ def render_stage_section(*, record, number, anchor, page_dir):
     <div class="stage-section" id="{anchor}">
         <div class="stage-header">
             <div class="stage-title">Stage {number}: {html.escape(record["name"])}
-                {_badge(qc["status"])}{_run_badge(record)}</div>
-            <div class="stage-time">{_duration(record)}</div>
+                {_badge(status=qc["status"])}{_run_badge(record=record)}</div>
+            <div class="stage-time">{_duration(record=record)}</div>
         </div>
-        <p><strong>CLI Command:</strong> <code>{record.get("cli", "N/A")}</code></p>
+        <p><strong>CLI Command:</strong>
+            <code>{html.escape(str(record.get("cli", "N/A")))}</code></p>
         {error}{metrics}{figures}{outputs}
     </div>
     """
 
 
-def _overview_section(*, stage_names, records, href_prefix):
+def _overview_section(*, stage_names, records, reports_dir, page_dir):
     rows = ""
     for index, (name, record) in enumerate(zip(stage_names, records), start=1):
         if record is None:
             rows += (
                 f"<tr><td>{index}</td><td>{html.escape(name)}</td><td></td><td></td>"
-                f"<td>{_badge('PENDING')}</td><td></td></tr>"
+                f"<td>{_badge(status='PENDING')}</td><td></td></tr>"
             )
             continue
-        href = f"{href_prefix}{stage_basename(index=index, stage_name=name)}.html"
+        page = os.path.join(
+            reports_dir, f"{stage_basename(index=index, stage_name=name)}.html"
+        )
+        href = html.escape(_href(path=page, page_dir=page_dir), quote=True)
         rows += (
-            f"<tr><td>{index}</td><td>{html.escape(name)}{_run_badge(record)}</td>"
-            f"<td><code>{record.get('cli', '')}</code></td>"
-            f"<td>{_duration(record)}</td><td>{_badge(record['qc']['status'])}</td>"
+            f"<tr><td>{index}</td>"
+            f"<td>{html.escape(name)}{_run_badge(record=record)}</td>"
+            f"<td><code>{html.escape(str(record.get('cli', '')))}</code></td>"
+            f"<td>{_duration(record=record)}</td>"
+            f"<td>{_badge(status=record['qc']['status'])}</td>"
             f'<td><a href="{href}">open</a></td></tr>'
         )
     return f"""
@@ -935,7 +991,7 @@ def _overview_section(*, stage_names, records, href_prefix):
     """
 
 
-def load_stage_record(*, reports_dir, index, stage_name):
+def load_stage_record(*, reports_dir, index, stage_name, run_id=None):
     """Load the JSON record of one stage.
 
     Parameters
@@ -946,22 +1002,34 @@ def load_stage_record(*, reports_dir, index, stage_name):
         1-based position of the stage.
     stage_name : str
         Stage name.
+    run_id : str, optional
+        Identifier of the current pipeline run. When given, a record written
+        by another run (or by no run at all) is stale and treated as
+        missing. When ``None``, any record is returned.
 
     Returns
     -------
     dict or None
-        Stage record, ``None`` if the stage has no record yet.
+        Stage record, ``None`` if the stage has no record yet, or only a
+        stale or unreadable one.
     """
     path = os.path.join(
         reports_dir, stage_basename(index=index, stage_name=stage_name) + ".json"
     )
     if not os.path.exists(path):
         return None
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(path, encoding="utf-8") as f:
+            record = json.load(f)
+    except (OSError, ValueError):
+        logger.warning(f"Ignoring unreadable QC record '{path}'.")
+        return None
+    if run_id is not None and record.get("run_id") != run_id:
+        return None
+    return record
 
 
-def load_stage_records(*, reports_dir, stage_names):
+def load_stage_records(*, reports_dir, stage_names, run_id=None):
     """Load the JSON record of each stage.
 
     Parameters
@@ -970,22 +1038,46 @@ def load_stage_records(*, reports_dir, stage_names):
         Directory holding the stage pages.
     stage_names : list of str
         Stage names in pipeline order.
+    run_id : str, optional
+        Identifier of the current pipeline run, see ``load_stage_record``.
 
     Returns
     -------
     list
-        One record dict per stage, ``None`` for stages without a record.
+        One record dict per stage, ``None`` for stages without a record of
+        the current run.
     """
     return [
-        load_stage_record(reports_dir=reports_dir, index=index, stage_name=name)
+        load_stage_record(
+            reports_dir=reports_dir, index=index, stage_name=name, run_id=run_id
+        )
         for index, name in enumerate(stage_names, start=1)
     ]
 
 
 def _write(*, path, text):
+    """Write ``text`` to ``path`` atomically.
+
+    The text goes to a temporary file first, so that a run killed while
+    writing never leaves a truncated record or page behind.
+
+    Parameters
+    ----------
+    path : str
+        Destination file.
+    text : str
+        File content.
+
+    Returns
+    -------
+    str
+        ``path``.
+    """
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
+    tmp = f"{path}.tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         f.write(text)
+    os.replace(tmp, path)
     return path
 
 
@@ -994,8 +1086,13 @@ def _write(*, path, text):
 # =============================================================================
 
 
-def write_stage_report(*, reports_dir, stage_names, index, record, pipeline_name):
+def write_stage_report(
+    *, reports_dir, stage_names, index, record, pipeline_name, run_id=None
+):
     """Write the JSON record and the standalone HTML page of one stage.
+
+    Non-finite floats are written as ``null`` so that the record stays
+    standard JSON.
 
     Parameters
     ----------
@@ -1009,16 +1106,21 @@ def write_stage_report(*, reports_dir, stage_names, index, record, pipeline_name
         Stage record, see ``render_stage_section``.
     pipeline_name : str
         Pipeline name shown in the page header.
+    run_id : str, optional
+        Identifier of the current pipeline run, stored in the record as
+        ``run_id`` so that reports of later runs can tell it from their own.
 
     Returns
     -------
     str
         Path of the HTML page.
     """
+    if run_id is not None:
+        record = {**record, "run_id": run_id}
     base = stage_basename(index=index, stage_name=record["name"])
     _write(
         path=os.path.join(reports_dir, base + ".json"),
-        text=json.dumps(record, default=str),
+        text=json.dumps(_json_safe(value=record), default=str, allow_nan=False),
     )
 
     pages = [
@@ -1032,9 +1134,11 @@ def write_stage_report(*, reports_dir, stage_names, index, record, pipeline_name
         nav.append((pages[index][0], "Next →"))
     sidebar = (
         '<div class="sidebar-section-label">Report</div>'
-        + _links([("index.html", "Overview")])
+        + _links(links=[("index.html", "Overview")])
         + '<div class="sidebar-section-label">Stages</div>'
-        + _links(pages, css="sidebar-link sidebar-sublink", current=base + ".html")
+        + _links(
+            links=pages, css="sidebar-link sidebar-sublink", current=base + ".html"
+        )
     )
     page = _page(
         title=f"Stage {index}: {record['name']}",
@@ -1048,7 +1152,7 @@ def write_stage_report(*, reports_dir, stage_names, index, record, pipeline_name
     return _write(path=os.path.join(reports_dir, base + ".html"), text=page)
 
 
-def write_index(*, reports_dir, stage_names, pipeline_name):
+def write_index(*, reports_dir, stage_names, pipeline_name, run_id=None):
     """Write ``index.html``, the live overview of all stage pages.
 
     Parameters
@@ -1059,20 +1163,25 @@ def write_index(*, reports_dir, stage_names, pipeline_name):
         All stage names in pipeline order.
     pipeline_name : str
         Pipeline name shown in the page header.
+    run_id : str, optional
+        Identifier of the current pipeline run; records of other runs are
+        shown as pending. All records are shown when ``None``.
 
     Returns
     -------
     str
         Path of the index page.
     """
-    records = load_stage_records(reports_dir=reports_dir, stage_names=stage_names)
+    records = load_stage_records(
+        reports_dir=reports_dir, stage_names=stage_names, run_id=run_id
+    )
     pages = [
         (f"{stage_basename(index=i, stage_name=n)}.html", f"{i}. {n}")
         for i, (n, r) in enumerate(zip(stage_names, records), start=1)
         if r is not None
     ]
     sidebar = '<div class="sidebar-section-label">Stages</div>' + _links(
-        pages, css="sidebar-link sidebar-sublink"
+        links=pages, css="sidebar-link sidebar-sublink"
     )
     page = _page(
         title=f"QC Overview - {pipeline_name}",
@@ -1080,7 +1189,10 @@ def write_index(*, reports_dir, stage_names, pipeline_name):
         nav=[("index.html", "Overview")],
         sidebar=sidebar,
         content=_overview_section(
-            stage_names=stage_names, records=records, href_prefix=""
+            stage_names=stage_names,
+            records=records,
+            reports_dir=reports_dir,
+            page_dir=reports_dir,
         ),
     )
     return _write(path=os.path.join(reports_dir, "index.html"), text=page)
@@ -1092,7 +1204,23 @@ def write_index(*, reports_dir, stage_names, pipeline_name):
 
 
 def generate_summary_section(*, config, execution_info, records):
-    """Generate summary section with key information and overall QC status."""
+    """Generate summary section with key information and overall QC status.
+
+    Parameters
+    ----------
+    config : dict
+        Pipeline configuration; reads the ``[General]`` metadata and
+        ``io.out_dir``.
+    execution_info : dict
+        Execution information; reads ``stages`` and ``total_time``.
+    records : list of dict or None
+        Stage records, ``None`` for stages without one.
+
+    Returns
+    -------
+    str
+        HTML fragment.
+    """
     general = config.get("General", {})
     statuses = [r["qc"]["status"] for r in records if r is not None]
     worst = max(statuses, key=STATUS_LEVELS.index, default="INFO")
@@ -1141,19 +1269,36 @@ def generate_summary_section(*, config, execution_info, records):
         </div>
     </section>
     """.format(
-        name=general.get("name", "Unknown"),
-        description=general.get("description", "No description"),
-        version=general.get("version", "N/A"),
-        author=general.get("author", "N/A"),
+        name=html.escape(str(general.get("name", "Unknown"))),
+        description=html.escape(str(general.get("description", "No description"))),
+        version=html.escape(str(general.get("version", "N/A"))),
+        author=html.escape(str(general.get("author", "N/A"))),
         num_stages=len(execution_info.get("stages", [])),
         total_time=execution_info.get("total_time", 0),
-        worst=_badge(worst),
-        out_dir=config.get("io", {}).get("out_dir", "."),
+        worst=_badge(status=worst),
+        out_dir=html.escape(str(config.get("io", {}).get("out_dir", "."))),
     )
 
 
-def generate_config_section(*, config, config_file_path):
-    """Generate configuration section with links."""
+def generate_config_section(*, config, config_file_path, page_dir):
+    """Generate configuration section with links.
+
+    Parameters
+    ----------
+    config : dict
+        Pipeline configuration; reads the ``[io]`` input files.
+    config_file_path : str or None
+        Path to the configuration file. Without an existing file, no link is
+        shown.
+    page_dir : str
+        Directory of the page being written, for the relative link to the
+        configuration file.
+
+    Returns
+    -------
+    str
+        HTML fragment.
+    """
     io_config = config.get("io", {})
     inputs = [
         ("DWI Image", io_config.get("dwi", "Not specified")),
@@ -1163,9 +1308,20 @@ def generate_config_section(*, config, config_file_path):
     if io_config.get("t1w"):
         inputs.append(("T1-weighted Image", io_config["t1w"]))
     items = "".join(
-        f'<div class="output-item"><strong>{label}</strong><code>{value}</code></div>'
+        f'<div class="output-item"><strong>{label}</strong>'
+        f"<code>{html.escape(str(value))}</code></div>"
         for label, value in inputs
     )
+    if config_file_path and os.path.isfile(config_file_path):
+        config_href = html.escape(
+            _href(path=str(config_file_path), page_dir=page_dir), quote=True
+        )
+        config_item = (
+            f"<code>{html.escape(str(config_file_path))}</code>"
+            f'<a href="{config_href}" class="download-link">View Config File</a>'
+        )
+    else:
+        config_item = "<code>Not saved</code>"
     return f"""
     <section id="configuration">
         <h1>Configuration</h1>
@@ -1174,15 +1330,28 @@ def generate_config_section(*, config, config_file_path):
         <h2>Configuration File</h2>
         <div class="output-item">
             <strong>Config Path</strong>
-            <code>{config_file_path}</code>
-            <a href="{config_file_path}" class="download-link">View Config File</a>
+            {config_item}
         </div>
     </section>
     """
 
 
 def generate_pipeline_section(*, dag_visualization, execution_order):
-    """Generate pipeline DAG and execution order section."""
+    """Generate pipeline DAG and execution order section.
+
+    Parameters
+    ----------
+    dag_visualization : str
+        Text rendering of the pipeline dependency graph.
+    execution_order : list of str
+        Stage names in execution order.
+
+    Returns
+    -------
+    str
+        HTML fragment.
+    """
+    order = html.escape(" → ".join(execution_order))
     return f"""
     <section id="pipeline">
         <h1>Pipeline Execution Graph</h1>
@@ -1192,7 +1361,7 @@ def generate_pipeline_section(*, dag_visualization, execution_order):
             <pre>{html.escape(dag_visualization)}</pre>
         </div>
         <h2>Execution Order</h2>
-        <p><strong>{" → ".join(execution_order)}</strong></p>
+        <p><strong>{order}</strong></p>
     </section>
     """
 
@@ -1206,6 +1375,11 @@ def generate_methods_section(*, records, pipeline_name):
         Stage records.
     pipeline_name : str
         Name of the pipeline.
+
+    Returns
+    -------
+    str
+        HTML fragment.
     """
     descriptions = []
     for record in records:
@@ -1219,7 +1393,8 @@ def generate_methods_section(*, records, pipeline_name):
         except Exception:
             first_line = cli_name
         descriptions.append(
-            f"<li><strong>{record['name']}</strong>: {first_line} ({cli_name})</li>"
+            f"<li><strong>{html.escape(record['name'])}</strong>: "
+            f"{html.escape(first_line)} ({html.escape(cli_name)})</li>"
         )
 
     steps = "<ol>" + "\n".join(descriptions) + "</ol>" if descriptions else ""
@@ -1230,7 +1405,7 @@ def generate_methods_section(*, records, pipeline_name):
             <p>Results included in this report were generated using DIPY Auto
             (Diffusion Imaging in Python), a comprehensive pipeline for diffusion
             MRI data processing and analysis.</p>
-            <h2>Pipeline: {pipeline_name}</h2>
+            <h2>Pipeline: {html.escape(str(pipeline_name))}</h2>
             <p>The following processing steps were applied:</p>
             {steps}
             <h2>References</h2>
@@ -1246,7 +1421,7 @@ https://doi.org/10.3389/fninf.2014.00008</div>
 
 
 def generate_html_report(
-    *, config, config_file_path, execution_info, output_path, reports_dir
+    *, config, config_file_path, execution_info, output_path, reports_dir, run_id=None
 ):
     """Generate the final report combining every stage QC page.
 
@@ -1266,6 +1441,11 @@ def generate_html_report(
         Path where HTML report should be saved.
     reports_dir : str
         Directory holding the stage pages and their JSON records.
+    run_id : str, optional
+        Identifier of the current pipeline run. Stage records written by
+        another run, such as those left behind by a previous run that went
+        further than a failed rerun, are shown as pending. All records are
+        used when ``None``.
 
     Returns
     -------
@@ -1275,10 +1455,11 @@ def generate_html_report(
     logger.info("Generating final HTML report from the stage QC records...")
     pipeline_name = config.get("General", {}).get("name", "Pipeline")
     stage_names = execution_info.get("execution_order", [])
-    records = load_stage_records(reports_dir=reports_dir, stage_names=stage_names)
+    records = load_stage_records(
+        reports_dir=reports_dir, stage_names=stage_names, run_id=run_id
+    )
 
     html_dir = os.path.dirname(os.path.abspath(output_path))
-    href_prefix = os.path.relpath(reports_dir, html_dir) + "/"
     stages = [
         (index, record)
         for index, record in enumerate(records, start=1)
@@ -1289,13 +1470,18 @@ def generate_html_report(
         generate_summary_section(
             config=config, execution_info=execution_info, records=records
         )
-        + generate_config_section(config=config, config_file_path=config_file_path)
+        + generate_config_section(
+            config=config, config_file_path=config_file_path, page_dir=html_dir
+        )
         + generate_pipeline_section(
             dag_visualization=execution_info.get("dag_visualization", ""),
             execution_order=stage_names,
         )
         + _overview_section(
-            stage_names=stage_names, records=records, href_prefix=href_prefix
+            stage_names=stage_names,
+            records=records,
+            reports_dir=reports_dir,
+            page_dir=html_dir,
         )
         + '<section id="results"><h1>Stage Results</h1>'
         + "".join(
@@ -1321,17 +1507,17 @@ def generate_html_report(
     ]
     sidebar = (
         '<div class="sidebar-section-label">Report</div>'
-        + _links(sections)
+        + _links(links=sections)
         + '<div class="sidebar-section-label">Stages</div>'
         + _links(
-            [
+            links=[
                 (f"#{stage_basename(index=i, stage_name=r['name'])}", r["name"])
                 for i, r in stages
             ],
             css="sidebar-link sidebar-sublink",
         )
         + '<div class="sidebar-section-label">Info</div>'
-        + _links([("#methods", "Methods")])
+        + _links(links=[("#methods", "Methods")])
     )
     page = _page(
         title=f"DIPY Auto Pipeline Report - {pipeline_name}",
@@ -1367,12 +1553,16 @@ def _batch_row(*, result, page_dir):
     report_path = result.get("report")
     link = ""
 
+    target = None
     if report_path and os.path.exists(report_path):
-        link = f'<a href="{os.path.relpath(report_path, page_dir)}">open</a>'
+        target = report_path
     else:
         index = os.path.join(result.get("out_dir", ""), "reports", "index.html")
         if os.path.exists(index):
-            link = f'<a href="{os.path.relpath(index, page_dir)}">open</a>'
+            target = index
+    if target is not None:
+        href = html.escape(_href(path=target, page_dir=page_dir), quote=True)
+        link = f'<a href="{href}">open</a>'
 
     detail = result.get("error") or ""
     if result.get("failed_stage"):
@@ -1382,7 +1572,7 @@ def _batch_row(*, result, page_dir):
         f"<tr><td>{html.escape(result.get('label', ''))}</td>"
         f"<td>{html.escape(result.get('subject', ''))}</td>"
         f"<td>{html.escape(result.get('session') or '')}</td>"
-        f"<td>{_badge(status)}</td>"
+        f"<td>{_badge(status=status)}</td>"
         f"<td>{result.get('duration', 0):.1f}s</td>"
         f"<td>{html.escape(detail)}</td>"
         f"<td>{link}</td></tr>"
@@ -1470,14 +1660,16 @@ def generate_batch_report(*, results, output_path, pipeline_name, bids_dir):
     sections = [("#summary", "Summary"), ("#runs", "Acquisitions")]
     sidebar = (
         '<div class="sidebar-section-label">Batch</div>'
-        + _links(sections)
+        + _links(links=sections)
         + '<div class="sidebar-section-label">Acquisitions</div>'
         + _links(
-            [
+            links=[
                 (
-                    os.path.relpath(
-                        os.path.join(r.get("out_dir", ""), "reports", "index.html"),
-                        page_dir,
+                    _href(
+                        path=os.path.join(
+                            r.get("out_dir", ""), "reports", "index.html"
+                        ),
+                        page_dir=page_dir,
                     ),
                     r.get("label", ""),
                 )
