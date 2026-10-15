@@ -1,4 +1,5 @@
 import importlib
+import logging
 import os
 import sys
 import warnings
@@ -170,3 +171,12 @@ def test_T1_error():
     synthseg_model = synthseg.SynthSeg()
     fake_affine = np.array([np.eye(4), np.eye(4), np.eye(4)])
     npt.assert_raises(ValueError, synthseg_model.predict, T1, fake_affine)
+
+
+@pytest.mark.skipif(not have_torch, reason="Requires Torch")
+def test_quiet_model_leaves_the_dipy_logger_alone():
+    dipy_logger = logging.getLogger("dipy")
+    level = dipy_logger.level
+    synthseg.SynthSeg(verbose=False)
+    npt.assert_equal(dipy_logger.level, level)
+    npt.assert_equal(dipy_logger.isEnabledFor(logging.WARNING), True)

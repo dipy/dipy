@@ -44,6 +44,8 @@ The following packages are required only for specific DIPY modules:
 * scikit-learn_ - machine learning utilities
 * statsmodels_ - statistical analysis
 * pandas_ - data manipulation and analysis
-* tensorflow_ - deep learning models
+* pytorch_ - deep learning models
+* tensorflow_ - deep learning models (deprecated since DIPY 1.10, removed in
+  DIPY 2.0; use PyTorch instead)
 
 .. include:: ../links_names.inc

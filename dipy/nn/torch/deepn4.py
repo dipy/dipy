@@ -7,8 +7,11 @@ from scipy.ndimage import gaussian_filter
 from dipy.data import get_fnames
 from dipy.nn.utils import normalize, recover_img, set_logger_level, transform_img
 from dipy.testing.decorators import doctest_skip_parser
-from dipy.utils.logging import logger
+from dipy.utils.logging import get_logger
 from dipy.utils.optpkg import optional_package
+
+# A child of the DIPY logger: ``verbose`` only quiets the model messages.
+logger = get_logger(name="dipy.nn")
 
 torch, have_torch, _ = optional_package("torch", min_version="2.2.0")
 if have_torch:
