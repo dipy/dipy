@@ -7,7 +7,7 @@ Automatic Pipelines
 ``dipy_auto`` runs a whole diffusion pipeline from a single command. A pipeline
 is a list of stages described in a TOML file; each stage names a DIPY command
 line workflow and how its inputs connect to the outputs of the stages before
-it. Four pipelines ship with DIPY, from plain denoising to a full
+it. Four pipelines ship with DIPY, from preprocessing alone to a full
 preprocessing, reconstruction, tracking and bundle segmentation chain.
 
 ====================== ======================================================

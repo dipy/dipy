@@ -438,5 +438,226 @@ def test_write_dataset_description():
         npt.assert_equal(validate_dataset(root=deriv)["DatasetType"], "derivative")
 
 
+def test_validate_dataset_ignores_sub_files():
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp) / "ds"
+        root.mkdir()
+        _write_json(root / "dataset_description.json", {"Name": "x"})
+        (root / "sub-01.tsv").write_text("x")
+        npt.assert_raises(ValueError, validate_dataset, root=root)
+
+
+def test_find_dwi_runs_glob_characters_in_root():
+    with TemporaryDirectory() as tmp:
+        root = _make_bids_tree(Path(tmp) / "ds[1]*?")
+        runs = find_dwi_runs(root=root)
+        npt.assert_equal(len(runs), 5)
+        npt.assert_equal(Path(runs[0].bval).name, "sub-01_dwi.bval")
+
+
+def test_find_dwi_runs_nii_and_nii_gz_duplicates(caplog):
+    with TemporaryDirectory() as tmp:
+        root = _make_bids_tree(Path(tmp) / "ds")
+        _write_nifti(Path(root) / "sub-01/dwi/sub-01_dwi.nii")
+        runs = [run for run in find_dwi_runs(root=root) if run.subject == "01"]
+        npt.assert_equal(len(runs), 1)
+        npt.assert_equal(Path(runs[0].dwi).name, "sub-01_dwi.nii.gz")
+        npt.assert_equal("ignoring" in caplog.text, True)
+
+        # a lone .nii file is still found
+        os.remove(os.path.join(root, "sub-01/dwi/sub-01_dwi.nii.gz"))
+        runs = [run for run in find_dwi_runs(root=root) if run.subject == "01"]
+        npt.assert_equal(len(runs), 1)
+        npt.assert_equal(Path(runs[0].dwi).name, "sub-01_dwi.nii")
+
+
+def test_find_dwi_runs_label_filters():
+    with TemporaryDirectory() as tmp:
+        root = _make_bids_tree(Path(tmp) / "ds")
+        npt.assert_equal(len(find_dwi_runs(root=root, run_label=["01"])), 1)
+        npt.assert_equal(len(find_dwi_runs(root=root, run_label=["run-001"])), 1)
+        npt.assert_equal(len(find_dwi_runs(root=root, run_label=["3"])), 0)
+        # subject labels are not numbers: 2 does not select sub-02
+        npt.assert_equal(len(find_dwi_runs(root=root, participant_label=["2"])), 0)
+        # a bare string is one label, not a sequence of characters
+        npt.assert_equal(len(find_dwi_runs(root=root, participant_label="02")), 3)
+
+
+def test_find_dwi_runs_numeric_run_order():
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp) / "ds"
+        _write_json(root / "dataset_description.json", {"Name": "x"})
+        for run in (10, 2):
+            _write_nifti(root / f"sub-01/dwi/sub-01_run-{run}_dwi.nii.gz")
+        runs = find_dwi_runs(root=root)
+        npt.assert_equal([run.entities["run"] for run in runs], ["2", "10"])
+
+
+def test_inherited_files_most_specific_wins():
+    with TemporaryDirectory() as tmp:
+        root = _make_bids_tree(Path(tmp) / "ds")
+        dwi_dir = Path(root) / "sub-01/dwi"
+        stem = dwi_dir / "sub-01_run-1_dwi"
+        _write_nifti(f"{stem}.nii.gz")
+        np.savetxt(f"{stem}.bval", np.array([[0, 500, 500, 500, 500, 500]]), fmt="%d")
+        _write_json(f"{stem}.json", {"TotalReadoutTime": 0.09})
+
+        chain = inherited_files(
+            root=root, path=f"{stem}.nii.gz", suffix="dwi", extension=".json"
+        )
+        npt.assert_equal(
+            [Path(path).name for path in chain],
+            ["sub-01_run-1_dwi.json", "sub-01_dwi.json", "dwi.json"],
+        )
+
+        sidecar, metadata = read_sidecar(root=root, path=f"{stem}.nii.gz")
+        npt.assert_equal(Path(sidecar).name, "sub-01_run-1_dwi.json")
+        npt.assert_equal(metadata["TotalReadoutTime"], 0.09)
+        npt.assert_equal(metadata["PhaseEncodingDirection"], "j-")
+
+        run = next(r for r in find_dwi_runs(root=root) if r.entities.get("run") == "1")
+        npt.assert_equal(Path(run.bval).name, "sub-01_run-1_dwi.bval")
+        # the generic bvec still applies through inheritance
+        npt.assert_equal(Path(run.bvec).name, "sub-01_dwi.bvec")
+
+
+def test_find_t1w_other_session_warns(caplog):
+    with TemporaryDirectory() as tmp:
+        root = _make_bids_tree(Path(tmp) / "ds")
+        find_t1w(root=root, entities={"sub": "02", "ses": "1"})
+        npt.assert_equal("No T1w in" in caplog.text, False)
+        fallback = find_t1w(root=root, entities={"sub": "02", "ses": "2"})
+        npt.assert_equal(Path(fallback).name, "sub-02_ses-1_T1w.nii.gz")
+        npt.assert_equal("No T1w in sub-02/ses-2" in caplog.text, True)
+
+
+def _make_fmap_case(*, root, intended_for):
+    """Add sub-04 with a dir-AP DWI and a dir-PA, opposite PE fieldmap."""
+    root = Path(root)
+    dwi = root / "sub-04/dwi/sub-04_dir-AP_dwi.nii.gz"
+    _write_nifti(dwi)
+    _write_json(
+        root / "sub-04/dwi/sub-04_dir-AP_dwi.json", {"PhaseEncodingDirection": "j-"}
+    )
+    _write_nifti(root / "sub-04/fmap/sub-04_dir-PA_epi.nii.gz")
+    content = {"PhaseEncodingDirection": "j"}
+    if intended_for is not None:
+        content["IntendedFor"] = intended_for
+    _write_json(root / "sub-04/fmap/sub-04_dir-PA_epi.json", content)
+    return str(dwi)
+
+
+def _fmap_of(*, root, dwi):
+    """Return the fieldmap chosen for ``dwi``, resolving its own metadata."""
+    return find_opposite_pe_fmap(
+        root=root,
+        dwi_path=dwi,
+        dwi_metadata=read_sidecar(root=root, path=dwi)[1],
+        entities=parse_entities(filename=dwi),
+    )[0]
+
+
+def test_find_opposite_pe_fmap_skips_other_modality():
+    with TemporaryDirectory() as tmp:
+        root = _make_bids_tree(Path(tmp) / "ds")
+        dwi = _make_fmap_case(
+            root=root, intended_for=["bids::sub-04/func/sub-04_task-rest_bold.nii.gz"]
+        )
+        npt.assert_equal(_fmap_of(root=root, dwi=dwi), None)
+
+    with TemporaryDirectory() as tmp:
+        root = _make_bids_tree(Path(tmp) / "ds")
+        dwi = _make_fmap_case(root=root, intended_for=None)
+        fmap = _fmap_of(root=root, dwi=dwi)
+        npt.assert_equal(Path(fmap).name, "sub-04_dir-PA_epi.nii.gz")
+
+    with TemporaryDirectory() as tmp:
+        root = _make_bids_tree(Path(tmp) / "ds")
+        dwi = _make_fmap_case(
+            root=root, intended_for="bids:raw:sub-04/dwi/sub-04_dir-AP_dwi.nii.gz"
+        )
+        fmap = _fmap_of(root=root, dwi=dwi)
+        npt.assert_equal(Path(fmap).name, "sub-04_dir-PA_epi.nii.gz")
+
+
+def test_fmap_of_other_run_is_a_warned_last_resort(caplog):
+    with TemporaryDirectory() as tmp:
+        root = _make_bids_tree(Path(tmp) / "ds")
+        run_2 = os.path.join(
+            root, "sub-02/ses-1/dwi/sub-02_ses-1_acq-b1000_dir-AP_run-2_dwi.nii.gz"
+        )
+        npt.assert_equal(
+            Path(_fmap_of(root=root, dwi=run_2)).name,
+            "sub-02_ses-1_acq-b1000_dir-PA_epi.nii.gz",
+        )
+        npt.assert_equal("IntendedFor other diffusion runs" in caplog.text, True)
+
+        caplog.clear()
+        fmap_dir = Path(root) / "sub-02/ses-1/fmap"
+        _write_nifti(fmap_dir / "sub-02_ses-1_acq-b1000_dir-PA_run-2_epi.nii.gz")
+        # an empty IntendedFor, as the run-1 one would otherwise be inherited
+        _write_json(
+            fmap_dir / "sub-02_ses-1_acq-b1000_dir-PA_run-2_epi.json",
+            {"PhaseEncodingDirection": "j-", "IntendedFor": []},
+        )
+        npt.assert_equal(
+            Path(_fmap_of(root=root, dwi=run_2)).name,
+            "sub-02_ses-1_acq-b1000_dir-PA_run-2_epi.nii.gz",
+        )
+        npt.assert_equal("IntendedFor other diffusion runs" in caplog.text, False)
+
+        run_1 = run_2.replace("run-2", "run-1")
+        npt.assert_equal(
+            Path(_fmap_of(root=root, dwi=run_1)).name,
+            "sub-02_ses-1_acq-b1000_dir-PA_epi.nii.gz",
+        )
+
+
+def test_non_ascii_digit_run_labels():
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp) / "ds"
+        _write_json(root / "dataset_description.json", {"Name": "x"})
+        for run in ("2", "\u00b2", "10"):
+            _write_nifti(root / f"sub-01/dwi/sub-01_run-{run}_dwi.nii.gz")
+        runs = find_dwi_runs(root=root)
+        npt.assert_equal([run.entities["run"] for run in runs], ["2", "10", "\u00b2"])
+        selected = find_dwi_runs(root=root, run_label=["\u00b2", "02"])
+        npt.assert_equal(
+            sorted(run.entities["run"] for run in selected), ["2", "\u00b2"]
+        )
+
+
+def test_dwi_run_is_hashable():
+    with TemporaryDirectory() as tmp:
+        root = _make_bids_tree(Path(tmp) / "ds")
+        runs = find_dwi_runs(root=root)
+        npt.assert_equal(len(set(runs)), len(runs))
+        again = find_dwi_runs(root=root)
+        npt.assert_equal(runs[0] == again[0], True)
+        npt.assert_equal(hash(runs[0]), hash(again[0]))
+        npt.assert_equal({run: run.label for run in runs}[again[0]], runs[0].label)
+
+
+def test_write_dataset_description_links():
+    with TemporaryDirectory() as tmp:
+        source = Path(tmp) / "raw data"
+        source.mkdir()
+        deriv = os.path.join(tmp, "deriv")
+        target = write_dataset_description(path=deriv, source_datasets=[str(source)])
+        with open(target) as f:
+            content = json.load(f)
+
+        uri = source.absolute().as_uri()
+        npt.assert_equal(content["SourceDatasets"], [{"URL": uri}])
+        npt.assert_equal(content["DatasetLinks"], {"raw": uri})
+        npt.assert_equal(" " in uri, False)
+
+        target = write_dataset_description(path=deriv)
+        with open(target) as f:
+            content = json.load(f)
+        npt.assert_equal(content["SourceDatasets"], [])
+        npt.assert_equal("DatasetLinks" in content, False)
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
