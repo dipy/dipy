@@ -8,8 +8,11 @@ import tomllib
 import numpy.testing as npt
 import pytest
 
+from dipy.io.image import load_nifti
 from dipy.io.tests.test_bids import _make_bids_tree, _write_gradients, _write_nifti
+from dipy.workflows.base import IntrospectiveArgumentParser
 from dipy.workflows.combined_workflow import AutoFlow
+from dipy.workflows.reconst import ReconstDtiFlow
 from dipy.workflows.tests.test_qc import _phantom
 
 
@@ -105,6 +108,26 @@ def test_auto_list_pipelines():
         out_dir = os.path.join(tmp, "out")
         npt.assert_equal(AutoFlow().run([], list_pipelines=True, out_dir=out_dir), None)
         npt.assert_equal(os.path.exists(out_dir), False)
+
+
+def test_auto_command_line_needs_no_inputs_to_list_pipelines():
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(AutoFlow())
+    npt.assert_equal(parser.parse_args(["--list_pipelines"]).input_files, [])
+    npt.assert_equal(
+        parser.parse_args(["a.toml", "dwi.nii.gz"]).input_files,
+        ["a.toml", "dwi.nii.gz"],
+    )
+    # without --list_pipelines, missing inputs are still an error
+    with pytest.raises(SystemExit) as error:
+        AutoFlow().run([])
+    npt.assert_equal(error.value.code, 2)
+
+    # the other workflows keep requiring their inputs
+    parser = IntrospectiveArgumentParser()
+    parser.add_workflow(ReconstDtiFlow())
+    with pytest.raises(SystemExit):
+        parser.parse_args([])
 
 
 def test_auto_unknown_pipeline_type():
@@ -491,6 +514,85 @@ def test_auto_bids_missing_gradients_is_isolated():
         npt.assert_equal(len([s for s in statuses.values() if s == "failed"]), 1)
         failure = next(r for r in summary["runs"] if r["label"] == "sub-03")
         npt.assert_equal("b-value" in failure["error"], True)
+
+
+_EXITING_CONFIG = (
+    "[[pipeline]]\nname = 'mask'\ncli = 'dipy_median_otsu'\n"
+    "input_files = '${io.dwi}'\n"
+    # two b-value files for one image: the workflow calls sys.exit(1)
+    "bvalues_files = ['${io.bvals}', '${io.bvals}']\n"
+)
+
+
+def test_auto_bids_batch_survives_a_workflow_exit():
+    with TemporaryDirectory() as tmp:
+        root = _make_bids_tree(Path(tmp) / "ds")
+        deriv = os.path.join(tmp, "deriv")
+        config_file = os.path.join(tmp, "custom.toml")
+        Path(config_file).write_text(_EXITING_CONFIG, encoding="utf-8")
+
+        npt.assert_raises(
+            SystemExit,
+            AutoFlow().run,
+            [config_file, root, deriv],
+            bids=True,
+            participant_label=["01", "02"],
+        )
+
+        runs = _summary(deriv)["runs"]
+        npt.assert_equal(len(runs), 4)
+        for run in runs:
+            npt.assert_equal(run["status"], "failed")
+            npt.assert_equal(run["failed_stage"], "mask")
+            npt.assert_equal("exited with code 1" in run["error"], True)
+
+
+def test_auto_bids_keeps_outputs_named_like_their_derivative():
+    with TemporaryDirectory() as tmp:
+        root = _phantom_bids_tree(Path(tmp) / "ds")
+        deriv = os.path.join(tmp, "deriv")
+        config_file = os.path.join(tmp, "custom.toml")
+        Path(config_file).write_text(
+            "[[pipeline]]\nname = 'denoise'\ncli = 'dipy_denoise_nlmeans'\n"
+            "input_files = '${io.dwi}'\n"
+            "out_denoised = 'sub-01_desc-denoised_dwi.nii.gz'\n",
+            encoding="utf-8",
+        )
+
+        AutoFlow().run([config_file, root, deriv], bids=True)
+
+        run = _summary(deriv)["runs"][0]
+        npt.assert_equal(run["status"], "completed")
+        output = Path(run["out_dir"], "sub-01_desc-denoised_dwi.nii.gz")
+        npt.assert_equal(output.is_symlink(), False)
+        npt.assert_equal(load_nifti(str(output))[0].ndim, 4)
+        npt.assert_equal(
+            output.with_name("sub-01_desc-denoised_dwi.json").exists(), True
+        )
+
+
+def test_auto_bids_failed_export_fails_the_run():
+    with TemporaryDirectory() as tmp:
+        root = _phantom_bids_tree(Path(tmp) / "ds")
+        deriv = os.path.join(tmp, "deriv")
+        config_file = os.path.join(tmp, "custom.toml")
+        Path(config_file).write_text(
+            "[[pipeline]]\nname = 'denoise'\ncli = 'dipy_denoise_nlmeans'\n"
+            "input_files = '${io.dwi}'\n",
+            encoding="utf-8",
+        )
+        # a folder where the sidecar of the derivative goes
+        os.makedirs(
+            os.path.join(deriv, "sub-01", "dwi", "sub-01_desc-denoised_dwi.json")
+        )
+
+        npt.assert_raises(
+            SystemExit, AutoFlow().run, [config_file, root, deriv], bids=True
+        )
+
+        run = _summary(deriv)["runs"][0]
+        npt.assert_equal(run["status"], "failed")
+        npt.assert_equal(run["failed_stage"], "bids_export")
 
 
 def test_auto_bids_stop_on_error():

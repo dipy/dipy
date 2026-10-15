@@ -8,6 +8,7 @@ every page opens with a double-click, without a web server.
 """
 
 from datetime import datetime
+import glob
 import html
 import importlib
 import json
@@ -15,6 +16,8 @@ import math
 import os
 from pathlib import Path
 import re
+import shlex
+import subprocess
 import urllib.parse
 
 from dipy.utils.logging import logger
@@ -684,10 +687,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
 
     <script>
-        function qcDialog(message, path) {{
+        function qcDialog(message, command) {{
             document.getElementById('qc-dialog-msg').textContent = message;
-            document.getElementById('qc-dialog-cmd').textContent =
-                'dipy_skyline ' + path;
+            document.getElementById('qc-dialog-cmd').textContent = command;
             document.getElementById('qc-dialog').style.display = 'flex';
         }}
         function qcClose() {{
@@ -701,7 +703,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 window.prompt('Copy the command:', text);
             }}
         }}
-        function qcOpen(path) {{
+        function qcOpen(path, command) {{
             var notServed =
                 'Skyline can only be launched when this report is served. ' +
                 'Run "dipy_auto <report.html>" and use the button from there, ' +
@@ -709,7 +711,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             // The server adds this tag to the pages it serves, never to files.
             var token = document.querySelector('meta[name="dipy-qc-token"]');
             if (!token) {{
-                qcDialog(notServed, path);
+                qcDialog(notServed, command);
                 return;
             }}
             fetch('/qc-open', {{
@@ -718,10 +720,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             }})
                 .then(function (r) {{
                     if (!r.ok) {{
-                        return r.text().then(function (t) {{ qcDialog(t, path); }});
+                        return r.text().then(function (t) {{ qcDialog(t, command); }});
                     }}
                 }})
-                .catch(function () {{ qcDialog(notServed, path); }});
+                .catch(function () {{ qcDialog(notServed, command); }});
         }}
     </script>
 </body>
@@ -857,6 +859,45 @@ def _format_value(*, value, unit):
     return html.escape(f"{text} {unit}".strip())
 
 
+def skyline_argument(*, path):
+    """Command-line argument that makes Skyline load exactly ``path``.
+
+    Skyline expands its input files as glob patterns, so the characters
+    ``*``, ``?`` and ``[`` of a real file name are escaped.
+
+    Parameters
+    ----------
+    path : str
+        File to display.
+
+    Returns
+    -------
+    str
+        Glob-escaped path.
+    """
+    return glob.escape(str(path))
+
+
+def skyline_command(*, path):
+    """Shell command that opens ``path`` in Skyline.
+
+    Parameters
+    ----------
+    path : str
+        File to display.
+
+    Returns
+    -------
+    str
+        ``dipy_skyline`` followed by the escaped path, quoted for the shell
+        of the current platform so that it can be pasted as is.
+    """
+    argument = skyline_argument(path=path)
+    if os.name == "nt":
+        return f"dipy_skyline {subprocess.list2cmdline([argument])}"
+    return f"dipy_skyline {shlex.quote(argument)}"
+
+
 def _output_items(*, outputs, page_dir):
     """Output list of a stage, each file with a button that opens it.
 
@@ -882,9 +923,12 @@ def _output_items(*, outputs, page_dir):
         if key == "out_dir" or not os.path.exists(path):
             button = ""
         elif path.endswith(SKYLINE_FORMATS):
+            arguments = html.escape(
+                f"{json.dumps(path)}, {json.dumps(skyline_command(path=path))}",
+                quote=True,
+            )
             button = (
-                f'<button class="qc-open" '
-                f'onclick="qcOpen({html.escape(json.dumps(path), quote=True)})">'
+                f'<button class="qc-open" onclick="qcOpen({arguments})">'
                 f"Open in Skyline</button>"
             )
         else:

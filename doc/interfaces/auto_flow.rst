@@ -111,6 +111,7 @@ an optional ``[General]`` table, an ``[io]`` table of input paths and one
     name = "brain_mask"
     cli = "dipy_median_otsu"
     input_files = "${denoise.out_denoised}"
+    bvalues_files = "${io.bvals}"
     save_masked = true
 
     [[pipeline]]
@@ -128,6 +129,10 @@ workflow behind ``cli``, under the same name as its command line option.
 file a previous stage wrote for one of its ``out_*`` arguments, or its
 ``out_dir``. These references alone set the execution order: stages run in
 dependency order, whatever their order in the file.
+
+``dipy_median_otsu`` computes the mask from the b0 volumes it finds with
+``bvalues_files``. Without b-values it needs ``vol_idx``, the indices of the
+volumes to use, as a 4D image has no single volume to segment.
 
 A stage with ``optional = true`` runs only when every ``[io]`` entry it
 references has a value. Otherwise it is skipped, shown as such in the reports,

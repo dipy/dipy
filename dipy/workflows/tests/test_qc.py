@@ -1,4 +1,5 @@
 from functools import partial
+import glob
 import html
 import importlib
 import inspect
@@ -7,6 +8,7 @@ import math
 import os
 from pathlib import Path
 import re
+import shlex
 import socketserver
 from tempfile import TemporaryDirectory
 from threading import Thread
@@ -289,7 +291,10 @@ def test_output_buttons():
             outputs={"out_fa": volume, "out_affine": text, "out_dir": out_dir},
             page_dir=out_dir,
         )
-        assert f"qcOpen({html.escape(json.dumps(volume), quote=True)})" in items
+        (onclick,) = re.findall(r'onclick="qcOpen\(([^"]*)\)"', items)
+        path, command = json.loads(f"[{html.unescape(onclick)}]")
+        assert path == volume
+        assert command == report.skyline_command(path=volume)
         assert 'href="affine.txt"' in items
         assert items.count("qc-open") == 2
 
@@ -308,13 +313,35 @@ def test_output_buttons_quote_paths(tmp_path):
         outputs={"out_fa": volume, "out_affine": text}, page_dir=str(tmp_path)
     )
     (onclick,) = re.findall(r'onclick="qcOpen\(([^"]*)\)"', items)
-    assert json.loads(html.unescape(onclick)) == volume
+    path, command = json.loads(f"[{html.unescape(onclick)}]")
+    assert path == volume
+    assert command == report.skyline_command(path=volume)
     (href,) = re.findall(r'class="qc-open" href="([^"]*)"', items)
     assert (
         unquote(html.unescape(href)) == Path(os.path.relpath(text, tmp_path)).as_posix()
     )
     assert "#" not in href and "?" not in href and " " not in href
     assert "<x>" not in items
+
+
+def test_skyline_command_loads_exactly_the_file(tmp_path):
+    # Skyline expands its inputs as glob patterns and the command is pasted
+    # in a shell: spaces and glob characters must reach it unchanged.
+    name = "sub [01] o'brien" if os.name == "nt" else "sub [01]*? o'brien"
+    folder = tmp_path / name
+    folder.mkdir()
+    (folder / "fa.nii.gz").write_bytes(b"")
+    (tmp_path / "sub 0 o'brien").mkdir()
+    volume = str(folder / "fa.nii.gz")
+
+    argument = report.skyline_argument(path=volume)
+    assert glob.glob(argument) == [volume]
+
+    command = report.skyline_command(path=volume)
+    words = command.split(" ", 1) if os.name == "nt" else shlex.split(command)
+    assert words[0] == "dipy_skyline"
+    unquoted = words[1].strip('"') if os.name == "nt" else words[1]
+    assert unquoted == argument
 
 
 def _serve(*, out_dir, token):

@@ -1162,6 +1162,42 @@ def _write_stage_qc(
         )
 
 
+def _written_outputs(*, stage_name, outputs):
+    """Keep the outputs a stage run actually wrote.
+
+    A workflow reports every output it could write, including those that
+    depend on its options (the kurtosis maps of FORCE without
+    ``compute_kurtosis``, the DTI maps left out of ``save_metrics``...).
+    Files that do not exist are dropped so that reports, QC, resumption and
+    downstream stages only ever see real outputs.
+
+    Parameters
+    ----------
+    stage_name : str
+        Name of the stage, for the log.
+    outputs : dict
+        Mapping of output parameter name to path, as reported by the
+        workflow.
+
+    Returns
+    -------
+    dict
+        The outputs whose files or folders exist.
+    """
+    written, skipped = {}, []
+    for key, path in outputs.items():
+        if isinstance(path, (str, os.PathLike)) and not os.path.exists(path):
+            skipped.append(key)
+        else:
+            written[key] = path
+    if skipped:
+        logger.debug(
+            f"Stage '{stage_name}' did not write {', '.join(sorted(skipped))} "
+            "(not requested by its options)"
+        )
+    return written
+
+
 def execute_pipeline_stage(
     *,
     stage_name,
@@ -1293,7 +1329,14 @@ def execute_pipeline_stage(
             )
         else:
             workflow = workflow_class(**init_params)
-            workflow.run(**final_params)
+            # Several workflows report bad inputs with sys.exit; turn it into
+            # a stage failure so that the pipeline and a BIDS batch go on.
+            try:
+                workflow.run(**final_params)
+            except SystemExit as e:
+                raise RuntimeError(
+                    f"{cli_name} exited with code {e.code}; see the messages above"
+                ) from None
             last_outputs = getattr(workflow, "last_generated_outputs", None)
 
         stage_outputs = {}
@@ -1312,6 +1355,7 @@ def execute_pipeline_stage(
                     stage_outputs[out_param] = out_file
                 logger.debug(f"Stage '{stage_name}' outputs (zipped): {stage_outputs}")
 
+        stage_outputs = _written_outputs(stage_name=stage_name, outputs=stage_outputs)
         if "out_dir" in final_params:
             stage_outputs["out_dir"] = final_params["out_dir"]
 
@@ -1984,7 +2028,10 @@ def execute_semantic_pipeline(
 
     if disk_itemized:
         logger.info("=" * 60)
-        logger.info("Estimated disk usage:")
+        logger.info(
+            "Estimated disk usage (upper bound: every output a stage can write, "
+            "optional ones included):"
+        )
         col1 = max(len(s) for s, _, _ in disk_itemized)
         col2 = max(len(f) for _, f, _ in disk_itemized)
         for stage_name, filename, item_bytes in disk_itemized:
@@ -2646,6 +2693,12 @@ def _write_bids_derivative_links(*, run, deriv_root, execution_info):
         and os.path.isfile(value)
     ]
     producers = Counter(key for _, key, _ in linked)
+    stage_files = {
+        os.path.realpath(value)
+        for stage in (execution_info or {}).get("stages", [])
+        for value in (stage.get("outputs") or {}).values()
+        if isinstance(value, (str, os.PathLike)) and os.path.isfile(value)
+    }
 
     for stage, key, path in linked:
         description, bids_suffix = _BIDS_DERIVATIVE_MAP[key]
@@ -2665,12 +2718,21 @@ def _write_bids_derivative_links(*, run, deriv_root, execution_info):
         )
         link = os.path.join(datatype_dir, name)
 
-        try:
-            if os.path.lexists(link):
-                os.unlink(link)
-            os.symlink(os.path.relpath(path, datatype_dir), link)
-        except OSError:
-            shutil.copy2(path, link)
+        if os.path.realpath(link) == os.path.realpath(path):
+            logger.debug(f"{path} already has its BIDS name, nothing to link")
+        elif not os.path.islink(link) and os.path.realpath(link) in stage_files:
+            logger.warning(
+                f"Not linking {path} to {link}: that name is taken by another "
+                "output of the pipeline"
+            )
+            continue
+        else:
+            try:
+                if os.path.lexists(link):
+                    os.unlink(link)
+                os.symlink(os.path.relpath(path, datatype_dir), link)
+            except OSError:
+                shutil.copy2(path, link)
 
         sidecar = {
             "Sources": [f"bids::{Path(os.path.relpath(path, deriv_root)).as_posix()}"],
@@ -2972,7 +3034,7 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
                 "Install it, or run the command below yourself.",
             )
         else:
-            subprocess.Popen([skyline, str(path)])
+            subprocess.Popen([skyline, report.skyline_argument(path=path)])
             self._reply(200, f"Skyline launched on {path.name}.")
 
     def _send_page(self, *, page):
@@ -3071,7 +3133,13 @@ class AutoFlow(Workflow):
     - Interactive mode for dynamic pipeline construction
     - Predefined pipeline templates
     - Dry-run mode for testing configurations
+
+    Its input files are optional on the command line, so that
+    ``dipy_auto --list_pipelines`` works on its own; ``run`` reports missing
+    inputs itself.
     """
+
+    inputs_are_optional = True
 
     @classmethod
     def get_short_name(cls):
@@ -3185,6 +3253,15 @@ class AutoFlow(Workflow):
                 templates.list_pipelines_with_descriptions(log_level=current_log_level)
             )
             return
+
+        if not input_files:
+            logger.error(
+                "No input given. Pass a configuration file and the DWI, b-value "
+                "and b-vector files, a BIDS dataset, or an HTML report "
+                "(see dipy_auto --help). To see the available pipelines: "
+                "dipy_auto --list_pipelines"
+            )
+            sys.exit(2)
 
         inputs = _classify_inputs(input_files=input_files, bids_mode=bids)
 
@@ -3856,19 +3933,30 @@ sequence of str or None
                     overwrite_config=True,
                 )
 
-                record["status"] = "completed"
                 record["report"] = (execution_info or {}).get("report")
 
                 if not dry_run:
-                    _write_bids_derivative_links(
-                        run=run,
-                        deriv_root=deriv_root,
-                        execution_info=execution_info,
-                    )
+                    try:
+                        _write_bids_derivative_links(
+                            run=run,
+                            deriv_root=deriv_root,
+                            execution_info=execution_info,
+                        )
+                    except Exception as e:
+                        raise PipelineError(
+                            f"{run.label}: writing the BIDS derivatives failed: {e}",
+                            stage="bids_export",
+                        ) from e
+
+                record["status"] = "completed"
         except PipelineError as e:
             logger.error(str(e))
             record["error"] = str(e)
             record["failed_stage"] = e.stage
+        except SystemExit as e:
+            record["error"] = f"exited with code {e.code}"
+            logger.error(f"{run.label} failed: {record['error']}")
+            logger.debug(traceback.format_exc())
         except Exception as e:
             logger.error(f"{run.label} failed: {e}")
             logger.debug(traceback.format_exc())

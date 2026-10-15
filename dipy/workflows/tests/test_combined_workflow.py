@@ -763,6 +763,110 @@ def test_execute_pipeline_failed_rerun_hides_previous_reports():
             npt.assert_equal("PENDING" in f.read(), True)
 
 
+def test_execute_pipeline_turns_a_workflow_exit_into_a_stage_failure():
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        config = {
+            "pipeline": [
+                {
+                    "name": "mask",
+                    "cli": "dipy_median_otsu",
+                    "input_files": "${io.dwi}",
+                    # two b-value files for one image: the workflow calls sys.exit
+                    "bvalues_files": ["${io.bvals}", "${io.bvals}"],
+                }
+            ]
+        }
+
+        with pytest.raises(PipelineError, match="exited with code 1") as error:
+            execute_semantic_pipeline(
+                config=config, io_config={**paths, "out_dir": tmp}
+            )
+
+        npt.assert_equal(error.value.stage, "mask")
+        (record,) = report.load_stage_records(
+            reports_dir=os.path.join(tmp, "reports"), stage_names=["mask"]
+        )
+        npt.assert_equal(record["qc"]["status"], "FAIL")
+
+
+def test_write_bids_derivative_links_never_replaces_outputs():
+    with TemporaryDirectory() as tmp:
+        run = _dwi_run(os.path.join(tmp, "ds"))
+        deriv = os.path.join(tmp, "deriv")
+        run_dir = os.path.join(deriv, "sub-01", "dwi")
+        os.makedirs(run_dir)
+        named = os.path.join(run_dir, "sub-01_desc-FA_dwimap.nii.gz")
+        taken = os.path.join(run_dir, "sub-01_desc-brain_mask.nii.gz")
+        other_mask = os.path.join(run_dir, "mask.nii.gz")
+        for path, content in ((named, "fa"), (taken, "md"), (other_mask, "mask")):
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(content)
+
+        execution_info = {
+            "stages": [
+                {
+                    "name": "dti_fit",
+                    "cli": "dipy_fit_dti",
+                    # out_md is written under the name of the mask derivative
+                    "outputs": {"out_fa": named, "out_md": taken},
+                },
+                {
+                    "name": "brain_mask",
+                    "cli": "dipy_median_otsu",
+                    "outputs": {"out_mask": other_mask},
+                },
+            ]
+        }
+        created = _write_bids_derivative_links(
+            run=run, deriv_root=deriv, execution_info=execution_info
+        )
+
+        for path, content in ((named, "fa"), (taken, "md"), (other_mask, "mask")):
+            npt.assert_equal(os.path.islink(path), False)
+            with open(path, encoding="utf-8") as f:
+                npt.assert_equal(f.read(), content)
+        npt.assert_equal(named in created, True)
+        npt.assert_equal(taken in created, False)
+        npt.assert_equal(
+            os.path.exists(os.path.join(run_dir, "sub-01_desc-FA_dwimap.json")), True
+        )
+
+
+def test_execute_pipeline_keeps_only_written_outputs():
+    with TemporaryDirectory() as tmp:
+        paths = _phantom(tmp)
+        data, affine = load_nifti(paths["dwi"])
+        mask = os.path.join(tmp, "mask.nii.gz")
+        save_nifti(mask, np.ones(data.shape[:3], dtype=np.uint8), affine)
+        config = {
+            "pipeline": [
+                {
+                    "name": "dti",
+                    "cli": "dipy_fit_dti",
+                    "input_files": "${io.dwi}",
+                    "bvalues_files": "${io.bvals}",
+                    "bvectors_files": "${io.bvecs}",
+                    "mask_files": mask,
+                    "save_metrics": ["fa", "md"],
+                }
+            ]
+        }
+
+        info = execute_semantic_pipeline(
+            config=config, io_config={**paths, "out_dir": tmp}
+        )
+
+        outputs = info["stages"][0]["outputs"]
+        npt.assert_equal({"out_fa", "out_md"} <= set(outputs), True)
+        npt.assert_equal("out_rd" in outputs, False)
+        npt.assert_equal(all(os.path.exists(path) for path in outputs.values()), True)
+        (record,) = report.load_stage_records(
+            reports_dir=os.path.join(tmp, "reports"), stage_names=["dti"]
+        )
+        npt.assert_equal(set(record["outputs"]), set(outputs))
+
+
 def test_full_pipeline_skips_t1_registration_without_t1():
     with TemporaryDirectory() as tmp:
         paths = _phantom(tmp)
