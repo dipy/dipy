@@ -1,7 +1,10 @@
+import logging
+
 import numpy as np
 import numpy.testing as npt
 import pytest
 
+from dipy.reconst.shm import real_sh_descoteaux, real_sh_tournier, sph_harm_ind_list
 from dipy.utils.optpkg import optional_package
 
 _, has_fury, _ = optional_package("fury", min_version="2.0.0")
@@ -9,18 +12,33 @@ if not has_fury:
     pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
 else:
     from fury import window
+    from fury.utils import create_sh_basis_matrix
 
     from dipy.viz.skyline.render.renderer import affine_voxel_sizes
     from dipy.viz.skyline.render.sh_slicer import (
         SHGlyph3D,
         SHSlicer,
-        _descoteaux_to_fury_standard,
+        _sh_to_fury_standard,
         create_shm_visualization,
     )
 
 SH_ORDER = 8
 N_DESCOTEAUX = sum(2 * ell + 1 for ell in range(0, SH_ORDER + 1, 2))
 SHAPE = (6, 5, 4)
+SOURCE_BASES = ["descoteaux07", "descoteaux07_legacy", "tournier07", "tournier19"]
+
+
+def _source_basis(basis_type, sh_order, theta, phi):
+    evaluator = (
+        real_sh_descoteaux if basis_type.startswith("descoteaux") else real_sh_tournier
+    )
+    legacy = basis_type in ("descoteaux07_legacy", "tournier07")
+    if legacy:
+        with pytest.warns(PendingDeprecationWarning, match="The legacy .* basis"):
+            basis, _, _ = evaluator(sh_order, theta, phi, legacy=True)
+    else:
+        basis, _, _ = evaluator(sh_order, theta, phi, legacy=False)
+    return basis
 
 
 def _coeffs(shape=SHAPE, n_coeffs=N_DESCOTEAUX):
@@ -62,41 +80,144 @@ def test_create_shm_visualization_uses_the_given_filename():
     assert viz.path == "odf.pam5"
 
 
-def test_create_shm_visualization_takes_the_basis_from_a_four_tuple():
-    viz = create_shm_visualization(
-        (_coeffs(), np.eye(4), "odf.pam5", "descoteaux07"), 0
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+@pytest.mark.parametrize("input_kind", ["slicer", "declared_tuple"])
+@pytest.mark.parametrize(
+    "basis_type, vector, evaluate_basis, legacy",
+    [
+        ("descoteaux07", [4, 0, 0.2, 0, -0.1, 0], real_sh_descoteaux, False),
+        (
+            "descoteaux07_legacy",
+            [4, 0, -0.2, 0, -0.1, 0],
+            real_sh_descoteaux,
+            True,
+        ),
+        (
+            "tournier07",
+            [4, 0, -0.1 * np.sqrt(2), 0, -0.2 * np.sqrt(2), 0],
+            real_sh_tournier,
+            True,
+        ),
+        ("tournier19", [4, 0, -0.1, 0, -0.2, 0], real_sh_tournier, False),
+    ],
+)
+def test_declared_sh_inputs_preserve_sampled_odf(
+    basis_type, vector, evaluate_basis, legacy, input_kind, dtype
+):
+    coeffs = np.tile(np.array(vector, dtype=dtype), (2, 2, 2, 1))
+    original = coeffs.copy()
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    vertices = np.column_stack(
+        (np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta))
     )
+    if legacy:
+        with pytest.warns(PendingDeprecationWarning, match="The legacy .* basis"):
+            source_basis, _, _ = evaluate_basis(2, theta, phi, legacy=True)
+    else:
+        source_basis, _, _ = evaluate_basis(2, theta, phi, legacy=False)
+    if input_kind == "slicer":
+        slicer = SHSlicer(coeffs, basis_type=basis_type)
+    else:
+        glyph = create_shm_visualization(
+            (coeffs, np.eye(4), "odf.pam5", basis_type),
+            0,
+            basis_type="descoteaux07_legacy",
+        )
+        slicer = glyph._slicer
+    standard_basis = create_sh_basis_matrix(vertices, 2)
+    latest_basis, _, _ = real_sh_descoteaux(2, theta, phi, legacy=False)
+    expected = np.array([4, 0, 0.2, 0, -0.1, 0]) @ latest_basis.T
+    npt.assert_allclose(
+        original @ source_basis.T,
+        np.broadcast_to(expected, (2, 2, 2, 3)),
+        atol=1e-6,
+        rtol=1e-5,
+    )
+    npt.assert_allclose(
+        slicer.coeffs_4d @ standard_basis.T,
+        original @ source_basis.T,
+        atol=1e-6,
+        rtol=1e-5,
+    )
+    npt.assert_array_equal(coeffs, original)
+    assert slicer.input_basis_type == basis_type
+    assert slicer.basis_type == "standard"
+    assert slicer.coeffs_4d.dtype == dtype
 
-    assert viz.shape == SHAPE
+
+@pytest.mark.parametrize("basis_type", SOURCE_BASES)
+@pytest.mark.parametrize("shape", [(1, 1, 1), (2, 1, 1)])
+@pytest.mark.parametrize("sh_order", [0, 2, 4, 8])
+@pytest.mark.parametrize("dtype", [np.uint8, np.int16, np.float32, np.float64])
+def test_sh_to_fury_standard_preserves_sampled_odf(sh_order, dtype, shape, basis_type):
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    vertices = np.column_stack(
+        (np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta))
+    )
+    source_basis = _source_basis(basis_type, sh_order, theta, phi)
+    coeffs = np.arange(np.prod(shape) * source_basis.shape[-1], dtype=dtype).reshape(
+        *shape, -1
+    )
+    if np.issubdtype(dtype, np.floating):
+        coeffs /= 7
+    original = coeffs.copy()
+    converted = _sh_to_fury_standard(coeffs, sh_order, basis_type=basis_type)
+    standard_basis = create_sh_basis_matrix(vertices, sh_order)
+    npt.assert_allclose(
+        converted @ standard_basis.T, coeffs @ source_basis.T, atol=1e-6, rtol=1e-5
+    )
+    npt.assert_array_equal(coeffs, original)
+    assert converted.dtype == np.result_type(dtype, np.float32)
+    _, orders = sph_harm_ind_list(sh_order, full_basis=True)
+    npt.assert_array_equal(converted[..., orders % 2 != 0], 0)
 
 
-def test_descoteaux_to_fury_standard_expands_to_the_full_basis():
-    coeffs = np.arange(N_DESCOTEAUX, dtype=np.float32).reshape(1, 1, 1, -1)
+@pytest.mark.parametrize("basis_type", SOURCE_BASES)
+@pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64])
+def test_sh_to_fury_standard_preserves_signed_minimum(dtype, basis_type):
+    coeffs = np.zeros((1, 1, 1, 6), dtype=dtype)
+    coeffs[..., 2] = np.iinfo(dtype).min
+    original = coeffs.copy()
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    vertices = np.column_stack(
+        (np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta))
+    )
+    source_basis = _source_basis(basis_type, 2, theta, phi)
+    standard_basis = create_sh_basis_matrix(vertices, 2)
 
-    converted = _descoteaux_to_fury_standard(coeffs, SH_ORDER)
+    converted = _sh_to_fury_standard(coeffs, 2, basis_type=basis_type)
 
-    assert converted.shape == (1, 1, 1, (SH_ORDER + 1) ** 2)
-    assert converted.dtype == coeffs.dtype
-
-
-def test_descoteaux_to_fury_standard_mirrors_the_order_of_m():
-    coeffs = np.zeros((1, 1, 1, N_DESCOTEAUX), dtype=np.float32)
-    coeffs[0, 0, 0, 0] = 1.0
-    coeffs[0, 0, 0, 1] = 2.0
-
-    converted = _descoteaux_to_fury_standard(coeffs, SH_ORDER)
-
-    assert converted[0, 0, 0, 0] == 1.0
-    assert converted[0, 0, 0, 2 * 2 + 2 + 2] == 2.0
+    npt.assert_allclose(
+        converted @ standard_basis.T,
+        coeffs @ source_basis.T,
+        atol=1e-6,
+        rtol=1e-5,
+    )
+    npt.assert_array_equal(coeffs, original)
 
 
-def test_descoteaux_to_fury_standard_leaves_odd_orders_empty():
-    coeffs = np.ones((1, 1, 1, N_DESCOTEAUX), dtype=np.float32)
-
-    converted = _descoteaux_to_fury_standard(coeffs, SH_ORDER)
-
-    npt.assert_array_equal(converted[0, 0, 0, 1:4], np.zeros(3))
-    assert np.count_nonzero(converted) == N_DESCOTEAUX
+@pytest.mark.parametrize("basis_type", ["descoteaux", "unknown"])
+def test_sh_slicer_logs_unknown_basis_and_uses_descoteaux(basis_type, caplog):
+    coeffs = np.tile(np.array([4, 0, 0.2, 0, -0.1, 0], dtype=np.float32), (2, 2, 2, 1))
+    with caplog.at_level(logging.ERROR):
+        slicer = SHSlicer(coeffs, basis_type=basis_type)
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    vertices = np.column_stack(
+        (np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta))
+    )
+    destination = create_sh_basis_matrix(vertices, 2)
+    source, _, _ = real_sh_descoteaux(2, theta, phi, legacy=False)
+    npt.assert_allclose(slicer.coeffs_4d @ destination.T, coeffs @ source.T, atol=1e-6)
+    assert slicer.input_basis_type == "descoteaux07"
+    assert slicer.basis_type == "standard"
+    assert any(
+        record.levelno == logging.ERROR and basis_type in record.getMessage()
+        for record in caplog.records
+    )
 
 
 def test_sh_slicer_caps_l_max_to_a_lower_order_present_in_descoteaux_coeffs():
@@ -111,16 +232,26 @@ def test_sh_slicer_caps_l_max_to_a_lower_order_present_in_descoteaux_coeffs():
     assert slicer.n_coeffs == (4 + 1) ** 2
 
 
-def test_sh_slicer_truncates_higher_order_descoteaux_coeffs_to_l_max():
-    """A file with more detail than requested is still capped at l_max."""
-    order10_ncoeffs = sum(2 * ell + 1 for ell in range(0, 10 + 1, 2))  # 66
-    coeffs = np.zeros((2, 2, 2, order10_ncoeffs), dtype=np.float32)
-    coeffs[..., 0] = 1.0
+@pytest.mark.parametrize("basis_type", SOURCE_BASES)
+def test_sh_slicer_truncates_higher_order_coeffs_to_l_max(basis_type):
+    coeffs = np.arange(66, dtype=np.float64).reshape(1, 1, 1, 66) / 7
+    coeffs[..., 0] = 4
+    original = coeffs.copy()
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    vertices = np.column_stack(
+        (np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta))
+    )
+    source_basis = _source_basis(basis_type, 8, theta, phi)
+    slicer = SHSlicer(coeffs, l_max=8, basis_type=basis_type)
 
-    slicer = SHSlicer(coeffs, l_max=8, basis_type="descoteaux07")
-
-    assert slicer.l_max == 8
-    assert slicer.n_coeffs == (8 + 1) ** 2
+    npt.assert_allclose(
+        slicer.coeffs_4d @ create_sh_basis_matrix(vertices, 8).T,
+        coeffs[..., :45] @ source_basis.T,
+        atol=1e-6,
+        rtol=1e-5,
+    )
+    npt.assert_array_equal(coeffs, original)
 
 
 def test_sh_slicer_rejects_invalid_descoteaux_coefficient_count():
@@ -131,6 +262,42 @@ def test_sh_slicer_rejects_invalid_descoteaux_coefficient_count():
 
     with pytest.raises(ValueError):
         SHSlicer(coeffs, basis_type="descoteaux07")
+
+
+@pytest.mark.parametrize("basis_type", SOURCE_BASES)
+def test_sh_slicer_preserves_symmetric_input_with_odd_requested_order(basis_type):
+    coeffs = np.arange(15, dtype=np.float64).reshape(1, 1, 1, 15) / 7
+    coeffs[..., 0] = 4
+    original = coeffs.copy()
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    vertices = np.column_stack(
+        (np.sin(theta) * np.cos(phi), np.sin(theta) * np.sin(phi), np.cos(theta))
+    )
+    source_basis = _source_basis(basis_type, 2, theta, phi)
+
+    slicer = SHSlicer(coeffs, l_max=3, basis_type=basis_type)
+
+    assert slicer.coeffs_4d.shape == (1, 1, 1, 16)
+    _, orders = sph_harm_ind_list(3, full_basis=True)
+    npt.assert_array_equal(slicer.coeffs_4d[..., orders % 2 != 0], 0)
+    npt.assert_allclose(
+        slicer.coeffs_4d @ create_sh_basis_matrix(vertices, 3).T,
+        coeffs[..., :6] @ source_basis.T,
+        atol=1e-6,
+        rtol=1e-5,
+    )
+    npt.assert_array_equal(coeffs, original)
+
+
+def test_sh_slicer_standard_input_retains_odd_harmonics():
+    coeffs = np.arange(16, dtype=np.float32).reshape(1, 1, 1, 16)
+    original = coeffs.copy()
+    slicer = SHSlicer(coeffs, l_max=3, basis_type="standard")
+
+    npt.assert_array_equal(slicer.coeffs_4d, original)
+    assert slicer.input_basis_type == "standard"
+    assert slicer.basis_type == "standard"
 
 
 def test_sh_glyph_starts_at_the_volume_center():

@@ -12,7 +12,13 @@ docstrings for coordinate-space and slicing details.
 
 import numpy as np
 
-from dipy.reconst.shm import calculate_max_order
+from dipy.reconst.shm import (
+    calculate_max_order,
+    convert_sh_descoteaux_tournier,
+    convert_sh_from_legacy,
+    convert_sh_to_legacy,
+    sph_harm_ind_list,
+)
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import (
     create_numeric_input,
@@ -20,6 +26,7 @@ from dipy.viz.skyline.UI.elements import (
     thin_slider,
     toggle_button,
 )
+from dipy.viz.skyline.io import _validate_sh_basis
 from dipy.viz.skyline.render.renderer import (
     Visualization,
     affine_voxel_sizes,
@@ -136,39 +143,28 @@ def create_shm_visualization(
     )
 
 
-def _descoteaux_to_fury_standard(coeffs_4d, sh_order):
-    """Convert even-order descoteaux07 SH coefficients to Fury's standard basis.
+def _sh_to_fury_standard(coeffs_4d, sh_order, *, basis_type="descoteaux07"):
+    """Convert the declared source to MRtrix3 harmonics and pad odd orders.
 
-    The legacy descoteaux07 basis uses Im(Y) for m>0 and Re(Y) for m<0, while
-    FURY uses cos(mφ) for m>0 and sin(|m|φ) for m<0. Coefficients satisfy
-    ``c_fury(l, m) = c_desc(l, -m)``.
-
-    Parameters
-    ----------
-    coeffs_4d : ndarray
-        Volume storing descoteaux07 coefficients along the last axis.
-    sh_order : int
-        Maximum even spherical harmonic order present in the volume.
-
-    Returns
-    -------
-    ndarray
-        Array with the same leading shape as ``coeffs_4d`` and
-        ``(sh_order + 1) ** 2`` standard-basis coefficients on the last axis.
+    Fury's standard basis is nonlegacy Tournier (MRtrix3), in full ordering.
     """
-    n_std = (sh_order + 1) ** 2
-    out = np.zeros(coeffs_4d.shape[:-1] + (n_std,), dtype=coeffs_4d.dtype)
+    _, orders = sph_harm_ind_list(sh_order, full_basis=True)
+    even_orders = orders % 2 == 0
+    output_dtype = np.result_type(coeffs_4d.dtype, np.float32)
+    coeffs = coeffs_4d[..., : np.count_nonzero(even_orders)].astype(
+        output_dtype, copy=False
+    )
 
-    desc_idx = 0
-    for l_val in range(0, sh_order + 1, 2):
-        for m in range(-l_val, l_val + 1):
-            fury_m = -m
-            fury_idx = l_val * l_val + l_val + fury_m
+    if basis_type == "descoteaux07":
+        coeffs = convert_sh_to_legacy(coeffs, "descoteaux07")
+    if basis_type in ("descoteaux07", "descoteaux07_legacy"):
+        coeffs = convert_sh_descoteaux_tournier(coeffs)
+    elif basis_type == "tournier07":
+        coeffs = convert_sh_from_legacy(coeffs, "tournier07")
 
-            out[..., fury_idx] = coeffs_4d[..., desc_idx]
-            desc_idx += 1
-
-    return out
+    full_coeffs = np.zeros(coeffs_4d.shape[:-1] + (orders.size,), dtype=output_dtype)
+    full_coeffs[..., even_orders] = coeffs
+    return full_coeffs
 
 
 class SHSlicer:
@@ -179,16 +175,19 @@ class SHSlicer:
     and forwards per-axis slice/visibility/scale/opacity changes to that
     actor's material without ever rebuilding the geometry.
 
+    ``input_basis_type`` retains the resolved source convention;
+    ``basis_type`` identifies the standard rendering backend.
+
     Parameters
     ----------
     coeffs_4d : ndarray, shape (X, Y, Z, C)
-        SH coefficients per voxel.  Converted from ``descoteaux07`` to
-        Fury's standard basis on construction if needed.
+        SH coefficients per voxel, converted from the declared source to
+        Fury's standard basis on construction unless already standard.
     scale : float, optional
         Uniform billboard size multiplier relative to estimated SH radii.
     l_max : int, optional
-        Maximum SH order to shade.  For ``descoteaux``/``descoteaux07``
-        input, capped to the order implied by ``coeffs_4d``'s last axis
+        Maximum SH order to shade. For symmetric Skyline input,
+        capped to the order implied by ``coeffs_4d``'s last axis
         when that is lower; for ``standard`` input it must not exceed that
         order (raises ``ValueError`` downstream otherwise).
     lut_res : int, optional
@@ -196,8 +195,11 @@ class SHSlicer:
     mask : ndarray of bool, shape (X, Y, Z), optional
         When given, voxels outside the mask are excluded even if their
         coefficients are non-zero.
-    basis_type : {"standard", "descoteaux", "descoteaux07"}, optional
-        SH basis convention of ``coeffs_4d``.
+    basis_type : str, optional
+        ``"standard"`` for Fury's full basis, otherwise a Skyline input label:
+        ``"descoteaux07"``, ``"descoteaux07_legacy"``, ``"tournier07"``
+        (MRtrix 0.2), or ``"tournier19"`` (MRtrix3).
+        Unsupported values are logged and use latest Descoteaux07.
     color_type : {"orientation", "sign"}, optional
         Glyph coloring: direction-mapped hue, or a two-color sign split.
     """
@@ -218,13 +220,13 @@ class SHSlicer:
         Parameters
         ----------
         coeffs_4d : ndarray, shape (X, Y, Z, C)
-            SH coefficients per voxel.  Converted from ``descoteaux07`` to
-            Fury's standard basis on construction if needed.
+            SH coefficients per voxel, converted from the declared source to
+            Fury's standard basis on construction unless already standard.
         scale : float, optional
             Uniform billboard size multiplier relative to estimated SH radii.
         l_max : int, optional
-            Maximum SH order to shade.  For ``descoteaux``/``descoteaux07``
-            input, capped to the order implied by ``coeffs_4d``'s last axis
+            Maximum SH order to shade. For symmetric Skyline input,
+            capped to the order implied by ``coeffs_4d``'s last axis
             when that is lower; for ``standard`` input it must not exceed
             that order (raises ``ValueError`` downstream otherwise).
         lut_res : int, optional
@@ -232,16 +234,24 @@ class SHSlicer:
         mask : ndarray of bool, shape (X, Y, Z), optional
             When given, voxels outside the mask are excluded even if their
             coefficients are non-zero.
-        basis_type : {"standard", "descoteaux", "descoteaux07"}, optional
-            SH basis convention of ``coeffs_4d``.
+        basis_type : str, optional
+            ``"standard"`` for Fury's full basis, otherwise a Skyline input label:
+            ``"descoteaux07"``, ``"descoteaux07_legacy"``, ``"tournier07"``
+            (MRtrix 0.2), or ``"tournier19"`` (MRtrix3).
+            Unsupported values are logged and use latest Descoteaux07.
         color_type : {"orientation", "sign"}, optional
             Glyph coloring: direction-mapped hue, or a two-color sign split.
         """
-        if basis_type in ("descoteaux", "descoteaux07"):
+        self.input_basis_type = (
+            "standard" if basis_type == "standard" else _validate_sh_basis(basis_type)
+        )
+        if self.input_basis_type != "standard":
             data_sh_order = calculate_max_order(coeffs_4d.shape[-1])
             l_max = min(l_max, data_sh_order)
-            coeffs_4d = _descoteaux_to_fury_standard(coeffs_4d, l_max)
-            basis_type = "standard"
+            coeffs_4d = _sh_to_fury_standard(
+                coeffs_4d, l_max, basis_type=self.input_basis_type
+            )
+        basis_type = "standard"
 
         self.coeffs_4d = coeffs_4d
         self.shape = coeffs_4d.shape[:3]
@@ -425,8 +435,11 @@ class SHGlyph3D(Visualization):
         Maximum SH order to shade.
     lut_res : int, optional
         Cube-map Hermite LUT resolution per face edge.
-    basis_type : {"standard", "descoteaux", "descoteaux07"}, optional
-        SH basis convention of ``coeffs``.
+    basis_type : str, optional
+        ``"standard"`` for Fury's full basis, otherwise a Skyline input label:
+        ``"descoteaux07"``, ``"descoteaux07_legacy"``, ``"tournier07"``
+        (MRtrix 0.2), or ``"tournier19"`` (MRtrix3).
+        Unsupported values are logged and use latest Descoteaux07.
     color_type : {"orientation", "sign"}, optional
         Glyph coloring: direction-mapped hue, or a two-color sign split.
     mask : ndarray of bool, optional
@@ -471,8 +484,11 @@ class SHGlyph3D(Visualization):
             Maximum SH order to shade.
         lut_res : int, optional
             Cube-map Hermite LUT resolution per face edge.
-        basis_type : {"standard", "descoteaux", "descoteaux07"}, optional
-            SH basis convention of ``coeffs``.
+        basis_type : str, optional
+            ``"standard"`` for Fury's full basis, otherwise a Skyline input label:
+            ``"descoteaux07"``, ``"descoteaux07_legacy"``, ``"tournier07"``
+            (MRtrix 0.2), or ``"tournier19"`` (MRtrix3).
+            Unsupported values are logged and use latest Descoteaux07.
         color_type : {"orientation", "sign"}, optional
             Glyph coloring: direction-mapped hue, or a two-color sign split.
         mask : ndarray of bool, optional
@@ -535,17 +551,18 @@ class SHGlyph3D(Visualization):
         return self._slicer.actor
 
     def _populate_info(self):
-        """Build the multi-line summary shown in the info panel.
+        """Build the multi-line summary shown in the Info hover tooltip.
 
         Returns
         -------
         str
-            Dimensions, SH coefficient count and order, plus voxel sizes,
-            voxel order, and affine when an affine is available.
+            Dimensions, render coefficient count/order, input convention
+            and affine information.
         """
         info = f"Dimensions: {self.shape}"
         info += f"\nSH Coefficients: {self._slicer.n_coeffs}"
         info += f"\nSH Order: {self._slicer.l_max}"
+        info += f"\nInput SH basis: {self._slicer.input_basis_type}"
         if self.affine is not None:
             info += "\n" + format_affine_info(self.affine)
 
