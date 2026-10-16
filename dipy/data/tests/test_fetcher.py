@@ -31,6 +31,21 @@ from dipy.data.fetcher import (
 _BAD_MD5 = "0" * 32
 
 
+@pytest.mark.parametrize(
+    "content, expected",
+    [
+        (b"", "d41d8cd98f00b204e9800998ecf8427e"),
+        (b"abc", "900150983cd24fb0d6963f7d28e17f72"),
+        (b"a" * 1_000_000, "7707d6ae4e027c70eea2a935c2296f21"),
+    ],
+)
+def test_get_file_md5_known_digests(tmp_path, content, expected):
+    """Check real hashing for empty, short, and multi-chunk files."""
+    path = tmp_path / "synthetic.txt"
+    path.write_bytes(content)
+    assert _get_file_md5(path) == expected
+
+
 def _free_port_server(directory):
     """Start an HTTP server on an OS-assigned free port serving *directory*.
 
