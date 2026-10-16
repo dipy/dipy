@@ -34,7 +34,12 @@ if has_fury_v2:
 
     from dipy.viz.skyline.render.image import Image3D, create_image_visualization
     from dipy.viz.skyline.render.peak import Peak3D, create_peak_visualization
-    from dipy.viz.skyline.render.renderer import create_window
+    from dipy.viz.skyline.render.renderer import (
+        create_window,
+        slice_slider_bounds,
+        slice_slider_values_from_state,
+        slice_state_from_slider_values,
+    )
     from dipy.viz.skyline.render.roi import ROI3D, create_roi_visualization
     from dipy.viz.skyline.render.sh_slicer import SHGlyph3D, create_shm_visualization
     from dipy.viz.skyline.render.streamline import (
@@ -388,6 +393,9 @@ class Skyline:
                     bg_color_callback=self._update_background_color,
                     snapshot_callback=self._save_snapshot,
                     sh_basis=sh_basis,
+                    slice_controls_callback=self._get_global_slice_controls,
+                    slice_position_callback=self._set_global_slice_position,
+                    slice_visibility_callback=self._set_global_slice_visibility,
                 )
                 self.window._imgui.set_gui(self.draw_ui)
             else:
@@ -710,6 +718,89 @@ class Skyline:
                 )
         self._refresh_requested = True
 
+    def _get_global_slice_reference(self):
+        """Return the registered synchronized slice reference."""
+        eligible = [
+            viz
+            for viz in self.visualizations
+            if isinstance(viz, (Image3D, Peak3D, SHGlyph3D)) and viz._synchronize
+        ]
+        if self.active_image in eligible:
+            return self.active_image
+        if self._slice_focus_viz in eligible:
+            return self._slice_focus_viz
+        return eligible[-1] if eligible else None
+
+    def _get_global_slice_controls(self):
+        """Return the reference, slider values, bounds, and visibility."""
+        datasets = (
+            self._image_visualizations
+            + self._peak_visualizations
+            + self._sh_glyph_visualizations
+        )
+        if not datasets:
+            return None
+        visibility = [
+            any(viz._slice_visibility[axis] for viz in datasets) for axis in range(3)
+        ]
+        reference = self._get_global_slice_reference()
+        if reference is None:
+            return None, None, None, visibility
+        if isinstance(reference, Image3D):
+            shape = reference.dwi.shape[:3]
+        elif isinstance(reference, Peak3D):
+            shape = reference.peaks.shape[:3]
+        else:
+            shape = reference.shape
+        values = slice_slider_values_from_state(
+            reference.state, affine=reference.affine
+        )
+        bounds = slice_slider_bounds(shape, affine=reference.affine)
+        return reference.name, values, bounds, visibility
+
+    def _set_global_slice_position(self, axis, value):
+        """Move synchronized slices in the reference's slider coordinates.
+
+        Parameters
+        ----------
+        axis : int
+            X/Y/Z axis index.
+        value : float
+            Slice slider coordinate.
+        """
+        reference = self._get_global_slice_reference()
+        if reference is None:
+            return
+        values = slice_slider_values_from_state(
+            reference.state, affine=reference.affine
+        ).copy()
+        values[axis] = round(value)
+        new_state = slice_state_from_slider_values(values, affine=reference.affine)
+        reference.update_state(new_state)
+        self._synchronize_visualizations(reference, new_state)
+        self.request_refresh()
+
+    def _set_global_slice_visibility(self, axis, visible):
+        """Set one slice axis across all datasets, regardless of synchronization.
+
+        Parameters
+        ----------
+        axis : int
+            X/Y/Z axis index.
+        visible : bool
+            Whether to show this axis.
+        """
+        for viz in (
+            self._image_visualizations
+            + self._peak_visualizations
+            + self._sh_glyph_visualizations
+        ):
+            visibility = viz._slice_visibility.copy()
+            visibility[axis] = visible
+            if visibility != viz._slice_visibility:
+                viz.set_slice_visibility(visibility)
+        self.request_refresh()
+
     def _get_reference_slice_state(self):
         """Return a snapshot of the current slice pose for load-time alignment.
 
@@ -791,6 +882,7 @@ class Skyline:
             n_peak_before = len(self._peak_visualizations)
             n_sh_before = len(self._sh_glyph_visualizations)
             reference_slice_state = self._get_reference_slice_state()
+            global_slice_controls = self._get_global_slice_controls()
             self._load_visualiations(
                 loaded_files["images"],
                 loaded_files["peaks"],
@@ -807,6 +899,14 @@ class Skyline:
                 n_peak_before,
                 n_sh_before,
             )
+            if global_slice_controls is not None:
+                visibility = global_slice_controls[3]
+                for viz in (
+                    self._image_visualizations[n_img_before:]
+                    + self._peak_visualizations[n_peak_before:]
+                    + self._sh_glyph_visualizations[n_sh_before:]
+                ):
+                    viz.set_slice_visibility(visibility)
 
             if self._visualizer_type != "stealth":
                 self._update_tractogram_helper()
@@ -1195,6 +1295,12 @@ class Skyline:
 
         if viz is self._slice_focus_viz:
             self._slice_focus_viz = None
+        if viz is self.active_image:
+            self.active_image = (
+                self._image_visualizations[-1] if self._image_visualizations else None
+            )
+            for image in self._image_visualizations:
+                image.active = image is self.active_image
 
         if len(self.visualizations) == 0 and self.UI_window is not None:
             self.UI_window.request_file_dialog = True
@@ -1680,6 +1786,10 @@ def skyline(
     Window creation sets ``FURY_OFFSCREEN`` to ``1`` for stealth or removes
     the key otherwise. Skyline restores its previous value or absence after
     setup/start returns or raises.
+
+    Global visibility affects all slice datasets; positions affect synchronized
+    datasets only. Individual visibility changes remain local.
+    Titles select layers; trailing arrows toggle expansion.
     """
     return Skyline(
         visualizer_type=visualizer_type,

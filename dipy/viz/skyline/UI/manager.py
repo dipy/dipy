@@ -11,6 +11,8 @@ from dipy.viz.skyline.UI.elements import (
     loading,
     render_file_dialog,
     render_section_header,
+    thin_slider,
+    toggle_button,
 )
 from dipy.viz.skyline.UI.theme import FONT, FONT_AWESOME, THEME
 from dipy.viz.skyline.io import SH_BASES, _validate_sh_basis
@@ -88,6 +90,12 @@ class UIWindow:
     sh_basis : str, optional
         Initial input SH convention for ODF imports, selected from ``SH_BASES``.
         Unsupported values are logged and use latest Descoteaux07.
+    slice_controls_callback : callable, optional
+        Getter for the global slice reference, coordinates, bounds, and visibility.
+    slice_position_callback : callable, optional
+        Command accepting a slice axis index and slider coordinate.
+    slice_visibility_callback : callable, optional
+        Command accepting a slice axis index and visibility flag.
     """
 
     def __init__(
@@ -104,6 +112,9 @@ class UIWindow:
         bg_color_callback=None,
         snapshot_callback=None,
         sh_basis="descoteaux07",
+        slice_controls_callback=None,
+        slice_position_callback=None,
+        slice_visibility_callback=None,
     ):
         """Initialize the sidebar window.
 
@@ -132,6 +143,12 @@ class UIWindow:
         sh_basis : str, optional
             Initial input SH convention for ODF imports, selected from ``SH_BASES``.
             Unsupported values are logged and use latest Descoteaux07.
+        slice_controls_callback : callable, optional
+            Getter for global slice controls.
+        slice_position_callback : callable, optional
+            Command accepting a slice axis index and slider coordinate.
+        slice_visibility_callback : callable, optional
+            Command accepting a slice axis index and visibility flag.
         """
         self._sh_basis = _validate_sh_basis(sh_basis)
         self.title = title
@@ -144,6 +161,9 @@ class UIWindow:
         self._group_open = {}
         self._group_visible = {}
         self._render_callback = render_callback
+        self._slice_controls_callback = slice_controls_callback
+        self._slice_position_callback = slice_position_callback
+        self._slice_visibility_callback = slice_visibility_callback
         self.logo_tex_ref = logo_tex_ref
         self.logo_size = (32, 32)
         self._title_text = "DIPY SKYLINE"
@@ -402,6 +422,7 @@ class UIWindow:
         imgui.set_cursor_screen_pos(org_start)
         imgui.dummy((available_width, self.logo_size[1] + spacing * 5 + 1))
         imgui.pop_id()
+        self._render_global_slice_controls()
 
         imgui.begin_child(
             "sections",
@@ -488,6 +509,56 @@ class UIWindow:
         if self._show_loader and not imgui.is_popup_open("LoadingOverlay"):
             imgui.open_popup("LoadingOverlay")
         loading("LoadingOverlay", self._loading_message, self._show_loader)
+
+    def _render_global_slice_controls(self):
+        """Draw global axis controls outside the scrolling dataset list."""
+        if (
+            self._slice_controls_callback is None
+            or self._slice_position_callback is None
+            or self._slice_visibility_callback is None
+        ):
+            return
+        controls = self._slice_controls_callback()
+        if controls is None:
+            return
+        reference_name, values, bounds, visibility = controls
+        has_reference = reference_name is not None
+        imgui.push_id("global_slices")
+        imgui.spacing()
+        imgui.spacing()
+        slice_icon = icons_fontawesome_6.ICON_FA_SLIDERS
+        imgui.text_colored(THEME["primary"], f"{slice_icon} Global Slices")
+        imgui.spacing()
+        if has_reference:
+            reference_icon = icons_fontawesome_6.ICON_FA_CROSSHAIRS
+            imgui.push_style_color(imgui.Col_.text, THEME["secondary"])
+            imgui.text_wrapped(f"{reference_icon} Reference: {reference_name}")
+            imgui.pop_style_color()
+        else:
+            imgui.text_wrapped("Enable Synchronize Slices to adjust positions.")
+        imgui.spacing()
+        for axis, label in enumerate(("X", "Y", "Z")):
+            imgui.push_id(axis)
+            changed, visible = toggle_button(visibility[axis])
+            if changed:
+                self._slice_visibility_callback(axis, visible)
+            imgui.same_line(0, 8)
+            imgui.begin_disabled(not has_reference)
+            changed, value = thin_slider(
+                label,
+                float(values[axis]) if has_reference else 0.0,
+                bounds[axis][0] if has_reference else 0,
+                bounds[axis][1] if has_reference else 1,
+                step=1,
+                text_format=".0f",
+                value_type="float",
+            )
+            imgui.end_disabled()
+            if changed:
+                self._slice_position_callback(axis, value)
+            imgui.pop_id()
+        imgui.pop_id()
+        imgui.spacing()
 
     @property
     def sections(self):

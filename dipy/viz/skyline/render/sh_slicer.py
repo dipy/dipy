@@ -627,8 +627,19 @@ class SHGlyph3D(Visualization):
             self.state = new_state[:3]
             self.apply_scene_op(self.set_slices)
 
-    def set_slice_visibility(self):
-        """Show/hide each axis's slice per :attr:`_slice_visibility`."""
+    def set_slice_visibility(self, visibility):
+        """Set X/Y/Z slice visibility independently of slice synchronization.
+
+        Parameters
+        ----------
+        visibility : sequence of bool
+            Three per-axis visibility flags.
+        """
+        self._slice_visibility = list(visibility)
+        self.apply_scene_op(self._apply_slice_visibility)
+
+    def _apply_slice_visibility(self):
+        """Apply the current visibility to each axis's slice uniform."""
         for i, axis in enumerate(("x", "y", "z")):
             if self._slice_visibility[i]:
                 self._slicer.show_axis(axis)
@@ -691,6 +702,7 @@ class SHGlyph3D(Visualization):
                 )
             )
         render_data = render_group("Slice", slicers)
+        visibility = self._slice_visibility.copy()
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
                 slider_state[idx] = round(new)
@@ -700,9 +712,9 @@ class SHGlyph3D(Visualization):
                 self.apply_scene_op(self.set_slices)
                 if self._synchronize and self._sync_callback is not None:
                     self._sync_callback(self, self.state)
-            self._slice_visibility[idx] = toggle
-            self.apply_scene_op(self.set_slice_visibility)
-            self._last_state[idx] = -1
+            visibility[idx] = toggle
+        if visibility != self._slice_visibility:
+            self.set_slice_visibility(visibility)
 
         imgui.spacing()
 

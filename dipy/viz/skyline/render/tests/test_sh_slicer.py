@@ -431,30 +431,70 @@ def test_sh_glyph_update_state_is_ignored_when_sync_is_off():
     npt.assert_allclose(glyph.state, before)
 
 
-def test_sh_glyph_hiding_an_axis_clears_its_visibility_uniform():
+@pytest.mark.parametrize("synchronize", [False, True])
+@pytest.mark.parametrize("group_visible", [False, True])
+def test_sh_glyph_hiding_an_axis_preserves_state(synchronize, group_visible):
     glyph = _glyph()
-
-    glyph._slice_visibility = [True, False, True]
-    glyph.set_slice_visibility()
-
+    glyph._synchronize = synchronize
+    glyph._visible = False
+    glyph.actor.visible = group_visible
+    before = np.asarray(glyph.state).copy()
     material = _material(glyph)
+    positions = (
+        material.active_slice_x,
+        material.active_slice_y,
+        material.active_slice_z,
+    )
+    visibility = [True, False, True]
+
+    glyph.set_slice_visibility(visibility)
+    visibility[0] = False
+
     assert material.vis_x == 1
     assert material.vis_y == 0
     assert material.vis_z == 1
     assert glyph._last_state[1] == -1
+    assert glyph._slice_visibility == [True, False, True]
+    npt.assert_array_equal(glyph.state, before)
+    assert (
+        material.active_slice_x,
+        material.active_slice_y,
+        material.active_slice_z,
+    ) == positions
+    assert glyph._visible is False
+    assert glyph.actor.visible is group_visible
 
 
 def test_sh_glyph_showing_an_axis_restores_its_visibility_uniform():
     glyph = _glyph()
-    glyph._slice_visibility = [False, False, False]
-    glyph.set_slice_visibility()
+    glyph.set_slice_visibility([False, False, False])
 
-    glyph._slice_visibility = [True, True, True]
-    glyph.set_slice_visibility()
+    glyph.set_slice_visibility([True, True, True])
 
     material = _material(glyph)
     assert (material.vis_x, material.vis_y, material.vis_z) == (1, 1, 1)
     npt.assert_allclose(glyph._last_state, glyph.state)
+
+
+def test_sh_glyph_queued_slice_visibility_owns_its_mask():
+    glyph = _glyph()
+    deferred = []
+    glyph._scene_op_callback = lambda func, *args, **kwargs: deferred.append(
+        (func, args, kwargs)
+    )
+    visibility = [False, True, False]
+
+    glyph.set_slice_visibility(visibility)
+    visibility[:] = [True, True, True]
+
+    assert glyph._slice_visibility == [False, True, False]
+    material = _material(glyph)
+    assert (material.vis_x, material.vis_y, material.vis_z) == (1, 1, 1)
+    for func, args, kwargs in deferred:
+        func(*args, **kwargs)
+
+    assert (material.vis_x, material.vis_y, material.vis_z) == (0, 1, 0)
+    npt.assert_allclose(glyph._last_state, [-1, glyph.state[1], -1])
 
 
 def test_sh_slicer_set_slice_is_a_noop_for_an_unchanged_index():

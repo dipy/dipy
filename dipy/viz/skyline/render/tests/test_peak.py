@@ -222,13 +222,50 @@ def test_peak3d_update_state_is_ignored_when_sync_is_off():
     npt.assert_allclose(peak.state, before)
 
 
-def test_peak3d_set_slice_visibility_reaches_every_chunk():
+@pytest.mark.parametrize("synchronize", [False, True])
+@pytest.mark.parametrize("group_visible", [False, True])
+def test_peak3d_set_slice_visibility_reaches_every_chunk(synchronize, group_visible):
     peak = _peak()
+    peak._synchronize = synchronize
+    peak._visible = False
+    peak.actor.visible = group_visible
+    before = np.asarray(peak.state).copy()
+    cross_sections = [
+        np.asarray(chunk.cross_section).copy() for chunk in peak.actor.children
+    ]
+    visibility = [True, False, True]
 
-    peak._set_slice_visibility((True, False, True))
+    peak.set_slice_visibility(visibility)
+    visibility[0] = False
+
+    assert peak._slice_visibility == [True, False, True]
+    npt.assert_array_equal(peak.state, before)
+    assert peak._visible is False
+    assert peak.actor.visible is group_visible
+    for chunk, cross_section in zip(peak.actor.children, cross_sections):
+        assert tuple(chunk.material.visibility) == (True, False, True)
+        npt.assert_array_equal(chunk.cross_section, cross_section)
+
+
+def test_peak3d_queued_slice_visibility_owns_its_mask():
+    peak = _peak()
+    deferred = []
+    peak._scene_op_callback = lambda func, *args, **kwargs: deferred.append(
+        (func, args, kwargs)
+    )
+    visibility = [False, True, False]
+
+    peak.set_slice_visibility(visibility)
+    visibility[:] = [True, True, True]
+
+    assert peak._slice_visibility == [False, True, False]
+    for chunk in peak.actor.children:
+        assert tuple(chunk.material.visibility) == (True, True, True)
+    for func, args, kwargs in deferred:
+        func(*args, **kwargs)
 
     for chunk in peak.actor.children:
-        assert tuple(chunk.material.visibility) == (True, False, True)
+        assert tuple(chunk.material.visibility) == (False, True, False)
 
 
 def test_peak3d_set_opacity_reaches_every_chunk():
@@ -242,9 +279,13 @@ def test_peak3d_set_opacity_reaches_every_chunk():
 
 def test_peak3d_scale_is_applied_when_the_actor_is_rebuilt():
     peak = _peak()
+    peak.set_slice_visibility([False, True, False])
 
     peak._scale = 2.0
     peak._create_peak_actor()
 
     assert peak._scale == 2.0
     assert peak.actor is peak._slicer
+    assert peak._slice_visibility == [False, True, False]
+    for chunk in peak.actor.children:
+        assert tuple(chunk.material.visibility) == (False, True, False)

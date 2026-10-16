@@ -29,8 +29,9 @@ if not (has_fury and has_imgui):
         allow_module_level=True,
     )
 else:
+    from fury.actor import show_slices
     from fury.utils import create_sh_basis_matrix
-    from imgui_bundle import imgui
+    from imgui_bundle import icons_fontawesome_6, imgui
 
     from dipy.viz.skyline.UI.manager import (
         _GROUP_LABELS,
@@ -92,6 +93,20 @@ def import_viewer(tmp_path):
         sh_coeffs=[(coeffs, AFFINE, "existing_odf")],
         out_dir=str(tmp_path),
         out_stealth_png="import.png",
+    )
+
+
+@pytest.fixture
+def overlapping_images_viewer(tmp_path):
+    data = np.arange(np.prod(SHAPE), dtype=np.float32).reshape(SHAPE)
+    return skyline(
+        visualizer_type="stealth",
+        images=[
+            (data, AFFINE, "first.nii.gz"),
+            (data + 1, AFFINE, "second.nii.gz"),
+        ],
+        out_dir=str(tmp_path),
+        out_stealth_png="overlapping.png",
     )
 
 
@@ -463,6 +478,85 @@ def test_render_draws_open_sections_of_every_visualization_type(ui, viewer):
     }
 
 
+@pytest.mark.parametrize("first_is_open", [False, True])
+def test_image_titles_select_front_layer_without_expanding(
+    ui, overlapping_images_viewer, first_is_open
+):
+    viewer = overlapping_images_viewer
+    first, second = viewer._image_visualizations
+    window = _window()
+    header_geometry = {}
+    section_names = {}
+    base_poses = {}
+
+    def slice_planes(image):
+        return np.asarray(
+            [
+                child.plane if hasattr(child, "plane") else child.material.plane
+                for child in image.actor.children
+            ]
+        )
+
+    def register_image(image):
+        section_name = f"{image.path}:{image.name}"
+        section_names[image] = section_name
+
+        def render_image(is_open, *, group_visible=True):
+            start = imgui.get_cursor_screen_pos()
+            width = imgui.get_content_region_avail().x
+            header_geometry[image] = (start.x, start.y, width)
+            return image.renderer(is_open, group_visible=group_visible)
+
+        window.add(section_name, render_image, viz_type="image")
+        show_slices(image.actor, image.state)
+        base_poses[image] = slice_planes(image).copy()
+
+    register_image(first)
+    register_image(second)
+    window.section_open_states[section_names[first]] = first_is_open
+    initial_expansion = window.section_open_states.copy()
+    viewer._arrange_image_actors()
+
+    def render():
+        window.render()
+        viewer._arrange_image_actors()
+
+    def click_header(image, *, arrow=False):
+        for _ in range(3):
+            ui.frame(render)
+        x, y, width = header_geometry[image]
+        position = (x + width - 26 if arrow else x + 70, y + 20)
+        for _ in range(3):
+            ui.frame(render, mouse=position)
+        ui.frame(render, mouse=position, press=True)
+        ui.frame(render, mouse=position)
+
+    def assert_front_and_base(front, back):
+        assert viewer.active_image is front
+        np.testing.assert_allclose(slice_planes(back), base_poses[back])
+        np.testing.assert_allclose(slice_planes(front)[:, :3], base_poses[front][:, :3])
+        np.testing.assert_allclose(
+            slice_planes(front)[:, 3], base_poses[front][:, 3] + 0.01
+        )
+
+    click_header(first)
+    assert_front_and_base(first, second)
+    assert window.section_open_states == initial_expansion
+
+    click_header(second)
+    assert_front_and_base(second, first)
+    assert window.section_open_states == initial_expansion
+
+    click_header(first, arrow=True)
+    assert window.section_open_states[section_names[first]] is not first_is_open
+    assert window.section_open_states[section_names[second]] is False
+    assert_front_and_base(second, first)
+
+    click_header(first, arrow=True)
+    assert window.section_open_states == initial_expansion
+    assert_front_and_base(second, first)
+
+
 def test_render_groups_sections_under_the_documented_labels(ui, viewer):
     window = _populate(_window(), viewer)
 
@@ -549,3 +643,134 @@ def test_render_tracks_the_background_color_picker_state(ui):
 
     assert window._color_picker_open is False
     assert window._draft_color == window._bg_color
+
+
+@pytest.fixture
+def slice_viewer(tmp_path):
+    data = np.arange(np.prod(SHAPE), dtype=np.float32).reshape(SHAPE)
+    peaks = np.zeros((*SHAPE, 1, 3), dtype=np.float32)
+    peaks[..., 0, 0] = 1
+    coeffs = np.zeros((*SHAPE, 45), dtype=np.float32)
+    coeffs[..., 0] = 1
+    return skyline(
+        visualizer_type="stealth",
+        images=[(data, AFFINE, "first"), (data + 1, AFFINE, "second")],
+        peaks=[(peaks, AFFINE, "peaks", np.ones((*SHAPE, 1), dtype=np.float32))],
+        sh_coeffs=[(coeffs, AFFINE, "odf")],
+        out_dir=str(tmp_path),
+    )
+
+
+@pytest.mark.parametrize("synchronized", [True, False])
+def test_global_slices_remain_interactive_with_collapsed_groups(
+    ui, slice_viewer, synchronized
+):
+    viewer = slice_viewer
+    first, second = viewer._image_visualizations
+    peak = viewer._peak_visualizations[0]
+    glyph = viewer._sh_glyph_visualizations[0]
+    for viz in viewer.visualizations:
+        viz._synchronize = synchronized
+    peak._synchronize = False
+    before = [np.array(viz.state).copy() for viz in viewer.visualizations]
+    geometry = {}
+
+    def controls():
+        result = viewer._get_global_slice_controls()
+        start = imgui.get_cursor_screen_pos()
+        spacing = imgui.get_style().item_spacing.y
+        message = (
+            f"{icons_fontawesome_6.ICON_FA_CROSSHAIRS} Reference: {result[0]}"
+            if result[0] is not None
+            else "Enable Synchronize Slices to adjust positions."
+        )
+        message_height = imgui.calc_text_size(
+            message, wrap_width=imgui.get_content_region_avail().x
+        ).y
+        geometry["row_y"] = (
+            start.y
+            + imgui.get_text_line_height_with_spacing()
+            + message_height
+            + 5 * spacing
+        )
+        icon_width = imgui.calc_text_size(icons_fontawesome_6.ICON_FA_TOGGLE_ON).x
+        geometry["toggle_x"] = start.x + icon_width / 2
+        geometry["slider_x"] = (
+            start.x + icon_width + 8 + imgui.calc_text_size("Y").x + 16 + 7
+        )
+        geometry["slider_end"] = start.x + imgui.get_content_region_avail().x - 57
+        geometry["row_step"] = 20 + spacing
+        return result
+
+    window = _populate(
+        _window(
+            slice_controls_callback=controls,
+            slice_position_callback=viewer._set_global_slice_position,
+            slice_visibility_callback=viewer._set_global_slice_visibility,
+        ),
+        viewer,
+    )
+    window._group_open.update(image=False, peak=False, sh_glyph=False)
+    expansion = window.section_open_states.copy()
+    groups = window._group_open.copy()
+
+    def render():
+        viewer._is_drawing_ui = True
+        try:
+            window.render()
+        finally:
+            viewer._is_drawing_ui = False
+        viewer._flush_pending_sync_requests()
+        viewer._flush_pending_scene_ops()
+        viewer._arrange_image_actors()
+
+    def click(position):
+        for _ in range(3):
+            ui.frame(render, mouse=position)
+        ui.frame(render, mouse=position, press=True)
+        ui.frame(render, mouse=position)
+
+    def assert_visibility(expected):
+        for image in (first, second):
+            assert [child.visible for child in image.actor.children] == expected
+        for chunk in peak.actor.children:
+            assert list(chunk.material.visibility) == expected
+        material = glyph._slicer._glyph_actor.material
+        assert [material.vis_x, material.vis_y, material.vis_z] == expected
+
+    for _ in range(3):
+        ui.frame(render)
+    assert_visibility([True, True, True])
+    toggle_position = (geometry["toggle_x"], geometry["row_y"] + 8)
+    click(toggle_position)
+    assert_visibility([False, True, True])
+    first.set_slice_visibility([True, True, True])
+    ui.frame(render)
+    assert viewer._get_global_slice_controls()[3] == [True, True, True]
+    assert [child.visible for child in second.actor.children] == [False, True, True]
+    assert glyph._slicer._glyph_actor.material.vis_x == 0
+    click(toggle_position)
+    assert_visibility([False, True, True])
+    click(toggle_position)
+    assert_visibility([True, True, True])
+
+    slider_position = (
+        geometry["slider_x"]
+        + (geometry["slider_end"] - geometry["slider_x"]) / SHAPE[1],
+        geometry["row_y"] + geometry["row_step"] + 10,
+    )
+    click(slider_position)
+    if synchronized:
+        for viz in (first, second, glyph):
+            assert viz.state[1] == 1
+        np.testing.assert_allclose(first.actor.children[1].material.plane[3], 1.001)
+        np.testing.assert_allclose(second.actor.children[1].material.plane[3], 1.011)
+        assert glyph._slicer._glyph_actor.material.active_slice_y == 1
+    else:
+        for viz, state in zip(viewer.visualizations, before):
+            np.testing.assert_array_equal(viz.state, state)
+    np.testing.assert_array_equal(peak.state, before[2])
+    for chunk in peak.actor.children:
+        np.testing.assert_array_equal(chunk.cross_section, np.round(before[2]))
+    assert window.section_open_states == expansion
+    assert window._group_open == groups

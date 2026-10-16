@@ -334,6 +334,17 @@ class Peak3D(Visualization):
         """
         set_group_opacity(self._slicer, opacity)
 
+    def set_slice_visibility(self, visibility):
+        """Set X/Y/Z slice visibility independently of slice synchronization.
+
+        Parameters
+        ----------
+        visibility : sequence of bool
+            Three per-axis visibility flags.
+        """
+        self._slice_visibility = list(visibility)
+        self.apply_scene_op(self._set_slice_visibility, tuple(self._slice_visibility))
+
     def _set_slice_visibility(self, visibility):
         """Apply per-axis slice visibility to every chunk's material.
 
@@ -402,6 +413,7 @@ class Peak3D(Visualization):
                 )
             )
         render_data = render_group("Slice", slicers)
+        visibility = self._slice_visibility.copy()
         for idx, (changed, new, toggle) in enumerate(render_data):
             if changed:
                 slider_state[idx] = float(new)
@@ -411,8 +423,9 @@ class Peak3D(Visualization):
                 self.apply_scene_op(self._apply_cross_section_from_state)
                 if self._synchronize and self._sync_callabck is not None:
                     self._sync_callabck(self, self.state)
-            self._slice_visibility[idx] = toggle
-        self.apply_scene_op(self._set_slice_visibility, tuple(self._slice_visibility))
+            visibility[idx] = toggle
+        if visibility != self._slice_visibility:
+            self.set_slice_visibility(visibility)
 
         imgui.spacing()
 
