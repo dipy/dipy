@@ -286,7 +286,38 @@ cdef void _trilinear_interpolation_iso(double *X,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef int trilinear_interpolate4d_c(floating[:, :, :, :] data,
+cdef int trilinear_interpolate3d_c(double[:, :, :] data,
+                                   double* point,
+                                   double* result) noexcept nogil:
+    """Tri-linear interpolation of a 3d array. See trilinear_interpolate4d_c."""
+    cdef:
+        cnp.npy_intp flr, i, j, k
+        double rem
+        cnp.npy_intp index[3][2]
+        double weight[3][2]
+
+    for i in range(3):
+        if point[i] < -.5 or point[i] >= (data.shape[i] - .5):
+            return -1
+        flr = <cnp.npy_intp> floor(point[i])
+        rem = point[i] - flr
+        index[i][0] = flr + (flr == -1)
+        index[i][1] = flr + (flr != (data.shape[i] - 1))
+        weight[i][0] = 1 - rem
+        weight[i][1] = rem
+
+    result[0] = 0
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                result[0] += (weight[0][i] * weight[1][j] * weight[2][k]
+                              * data[index[0][i], index[1][j], index[2][k]])
+    return 0
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef int trilinear_interpolate4d_c(floating[:, :, :, ::1] data,
                                    floating* point,
                                    floating* result) noexcept nogil:
     """Tri-linear interpolation along the last dimension of a 4d array
@@ -312,10 +343,12 @@ cdef int trilinear_interpolate4d_c(floating[:, :, :, :] data,
 
     """
     cdef:
-        cnp.npy_intp flr, N
-        double w, rem
+        cnp.npy_intp flr, N, L, i, j, k
+        double rem
         cnp.npy_intp index[3][2]
         double weight[3][2]
+        double w[8]
+        const floating* c[8]
 
     for i in range(3):
         if point[i] < -.5 or point[i] >= (data.shape[i] - .5):
@@ -329,17 +362,18 @@ cdef int trilinear_interpolate4d_c(floating[:, :, :, :] data,
         weight[i][0] = 1 - rem
         weight[i][1] = rem
 
-    N = data.shape[3]
-    for i in range(N):
-        result[i] = 0
-
     for i in range(2):
         for j in range(2):
             for k in range(2):
-                w = weight[0][i] * weight[1][j] * weight[2][k]
-                for L in range(N):
-                    result[L] += w * data[index[0][i], index[1][j],
-                                          index[2][k], L]
+                w[4 * i + 2 * j + k] = weight[0][i] * weight[1][j] * weight[2][k]
+                c[4 * i + 2 * j + k] = &data[index[0][i], index[1][j],
+                                             index[2][k], 0]
+
+    N = data.shape[3]
+    for L in range(N):
+        result[L] = (w[0] * c[0][L] + w[1] * c[1][L] + w[2] * c[2][L]
+                     + w[3] * c[3][L] + w[4] * c[4][L] + w[5] * c[5][L]
+                     + w[6] * c[6][L] + w[7] * c[7][L])
     return 0
 
 
@@ -371,7 +405,8 @@ def trilinear_interpolate4d(floating[:, :, :, :] data,
         msg = "out array must have same size as the last dimension of data."
         raise ValueError(msg)
 
-    err = trilinear_interpolate4d_c(data, &point[0], &out[0])
+    cdef floating[:, :, :, ::1] cdata = np.asarray(data, order="C")
+    err = trilinear_interpolate4d_c(cdata, &point[0], &out[0])
 
     if err == 0:
         return out
