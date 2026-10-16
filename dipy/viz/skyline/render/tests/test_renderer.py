@@ -12,10 +12,12 @@ if not has_fury:
     pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
 else:
     from fury import window
+    from fury.lib import OrthographicCamera, PointerEvent
 
     from dipy.viz.skyline.render.image import Image3D
     from dipy.viz.skyline.render.renderer import (
         Visualization,
+        _show_anatomical_gizmo,
         affine_voxel_sizes,
         create_window,
         format_affine_info,
@@ -38,6 +40,278 @@ def restore_fury_offscreen():
             os.environ.pop("FURY_OFFSCREEN", None)
         else:
             os.environ["FURY_OFFSCREEN"] = previous_fury_offscreen
+
+
+ANATOMICAL_VIEWS = {
+    "L": ((-1, 0, 0), (0, 0, 1), (0, 1, 0)),
+    "R": ((1, 0, 0), (0, 0, 1), (0, -1, 0)),
+    "P": ((0, -1, 0), (0, 0, 1), (-1, 0, 0)),
+    "A": ((0, 1, 0), (0, 0, 1), (1, 0, 0)),
+    "S": ((0, 0, 1), (0, 1, 0), (-1, 0, 0)),
+    "I": ((0, 0, -1), (0, 1, 0), (1, 0, 0)),
+}
+PERMUTED_AFFINE = np.array(
+    [[0, -2, 0, 20], [-3, 0, 0, -15], [0, 0, 4, 7], [0, 0, 0, 1]],
+    dtype=float,
+)
+
+
+@pytest.fixture
+def gizmo_manager():
+    manager = window.ShowManager(size=(160, 120), window_type="offscreen", imgui=False)
+    try:
+        yield manager
+    finally:
+        manager.close()
+
+
+def _add_gizmo_volume(manager, affine):
+    """Add asymmetric slices and the anatomical gizmo.
+
+    Parameters
+    ----------
+    manager : ShowManager
+        Offscreen manager hosting the scene.
+    affine : ndarray
+        Voxel-to-world transform for the synthetic volume.
+    """
+    volume = np.arange(9 * 11 * 13, dtype=np.float32).reshape(9, 11, 13)
+    image = Image3D("asymmetric.nii.gz", volume, affine=affine)
+    manager.screens[0].scene.add(image.actor)
+    manager.render()
+    _show_anatomical_gizmo(manager)
+    return image
+
+
+def _click_gizmo(manager, label, target_kind="disk"):
+    """Dispatch a pointer event to a real gizmo disk or label.
+
+    Parameters
+    ----------
+    manager : ShowManager
+        Manager hosting the gizmo.
+    label : str
+        Anatomical endpoint label.
+    target_kind : str, optional
+        Disk or label event target.
+    """
+    endpoint = ("L", "R", "P", "A", "I", "S").index(label)
+    child_index = 1 + 3 * endpoint + (target_kind == "label")
+    group = _gizmo_group(manager)
+    manager.renderer.dispatch_event(
+        PointerEvent(
+            type="pointer_down",
+            x=-1,
+            y=-1,
+            target=group.children[child_index],
+        )
+    )
+
+
+def _assert_anatomical_basis(camera, label):
+    """Assert the camera's actual viewing direction and upright basis.
+
+    Parameters
+    ----------
+    camera : Camera
+        Camera after the pointer event.
+    label : str
+        Clicked anatomical endpoint.
+    """
+    side, up, _ = ANATOMICAL_VIEWS[label]
+    np.testing.assert_allclose(camera.world.forward, -np.asarray(side), atol=1e-6)
+    np.testing.assert_allclose(camera.world.matrix[:3, 1], up, atol=1e-6)
+
+
+def _gizmo_group(manager):
+    """Find the anatomical overlay in the real UI scene.
+
+    Parameters
+    ----------
+    manager : ShowManager
+        Manager hosting the main-screen gizmo.
+    """
+    return next(
+        actor.children[0]
+        for actor in manager.screens[0].scene.ui_scene.children
+        if actor.name == "Skyline anatomical axes"
+    )
+
+
+def _assert_gizmo_alignment(manager):
+    """Compare displayed endpoint directions with camera-space world landmarks.
+
+    Parameters
+    ----------
+    manager : ShowManager
+        Manager hosting the camera and overlay.
+    """
+    camera = manager.screens[0].camera
+    group = _gizmo_group(manager)
+    for endpoint, label in enumerate(("L", "R", "P", "A", "I", "S")):
+        direction, _, _ = ANATOMICAL_VIEWS[label]
+        expected = (camera.world.inverse_matrix @ np.r_[direction, 0])[:3]
+        expected[2] *= -1
+        for child in group.children[1 + 3 * endpoint : 3 + 3 * endpoint]:
+            displayed = (child.world.position - group.world.position) / (30, 30, 0.45)
+            np.testing.assert_allclose(displayed, expected, atol=1e-6)
+            np.testing.assert_allclose(
+                child.world.matrix[:2, :2] / 30, np.eye(2), atol=1e-6
+            )
+
+
+def _process_gizmo_callbacks(manager):
+    """Process the manager's registered repeating callbacks.
+
+    Parameters
+    ----------
+    manager : ShowManager
+        Manager whose real timer callbacks should run.
+    """
+    for callback, _, _, args in manager.callbacks.values():
+        callback(*args)
+
+
+@pytest.mark.parametrize("affine", [np.eye(4), PERMUTED_AFFINE], ids=["RAS", "PLS"])
+@pytest.mark.parametrize("target_kind", ["disk", "label"])
+@pytest.mark.parametrize("label", ANATOMICAL_VIEWS)
+def test_axes_gizmo_anatomical_views(gizmo_manager, affine, target_kind, label):
+    _add_gizmo_volume(gizmo_manager, affine)
+    screen = gizmo_manager.screens[0]
+    target = screen.scene.main_scene.get_world_bounding_box().mean(axis=0)
+    screen.camera.world.position = target + (30, 40, 50)
+    screen.camera.look_at(target)
+
+    _click_gizmo(gizmo_manager, label, target_kind)
+
+    camera = screen.camera
+    _assert_anatomical_basis(camera, label)
+    _, up, screen_left = ANATOMICAL_VIEWS[label]
+    landmarks = np.array([target, target + up, target + screen_left])
+    camera_landmarks = (camera.world.inverse_matrix @ np.c_[landmarks, np.ones(3)].T).T
+    np.testing.assert_allclose(camera_landmarks[0, :2], 0, atol=1e-6)
+    assert camera_landmarks[0, 2] < 0
+    assert camera_landmarks[1, 1] > camera_landmarks[0, 1]
+    assert camera_landmarks[2, 0] < camera_landmarks[0, 0]
+    _assert_gizmo_alignment(gizmo_manager)
+    _process_gizmo_callbacks(gizmo_manager)
+    _assert_gizmo_alignment(gizmo_manager)
+
+    opposite_label = {"L": "R", "R": "L", "P": "A", "A": "P", "S": "I", "I": "S"}[label]
+    for expected_label in (opposite_label, label):
+        _click_gizmo(gizmo_manager, label, target_kind)
+        _assert_anatomical_basis(camera, expected_label)
+        _process_gizmo_callbacks(gizmo_manager)
+        _assert_gizmo_alignment(gizmo_manager)
+
+
+def test_axes_gizmo_view_transitions(gizmo_manager):
+    image = _add_gizmo_volume(gizmo_manager, PERMUTED_AFFINE)
+    state = image.state.copy()
+    slice_states = [
+        (child.visible, child.world.matrix.copy()) for child in image.actor.children
+    ]
+    camera = gizmo_manager.screens[0].camera
+    target = image.actor.get_world_bounding_box().mean(axis=0)
+    camera.world.position = target + (30, 40, 50)
+    camera.look_at(target)
+
+    for clicked_label, expected_label in (
+        ("S", "S"),
+        ("S", "I"),
+        ("S", "S"),
+        ("L", "L"),
+        ("L", "R"),
+        ("L", "L"),
+        ("R", "R"),
+        ("A", "A"),
+        ("A", "P"),
+        ("P", "A"),
+        ("I", "I"),
+        ("R", "R"),
+    ):
+        _click_gizmo(gizmo_manager, clicked_label)
+        _assert_anatomical_basis(camera, expected_label)
+        _process_gizmo_callbacks(gizmo_manager)
+        _assert_gizmo_alignment(gizmo_manager)
+
+    np.testing.assert_array_equal(image.state, state)
+    for child, (visible, transform) in zip(image.actor.children, slice_states):
+        assert child.visible == visible
+        np.testing.assert_array_equal(child.world.matrix, transform)
+
+
+def test_axes_gizmo_empty_scene(gizmo_manager):
+    gizmo_manager.render()
+    _show_anatomical_gizmo(gizmo_manager)
+    camera = gizmo_manager.screens[0].camera
+
+    for label in ("L", "A"):
+        _click_gizmo(gizmo_manager, label)
+        assert np.isfinite(camera.world.position).all()
+        assert np.isfinite(camera.world.matrix).all()
+        _assert_anatomical_basis(camera, label)
+        _assert_gizmo_alignment(gizmo_manager)
+
+
+def test_axes_gizmo_only_changes_main_view():
+    manager = window.ShowManager(
+        size=(160, 120), screen_config=[2], window_type="offscreen", imgui=False
+    )
+    try:
+        _add_gizmo_volume(manager, PERMUTED_AFFINE)
+        other_camera = manager.screens[1].camera
+        other_state = other_camera.get_state()
+
+        _click_gizmo(manager, "A")
+
+        _assert_anatomical_basis(manager.screens[0].camera, "A")
+        for key, value in other_state.items():
+            np.testing.assert_array_equal(other_camera.get_state()[key], value)
+    finally:
+        manager.close()
+
+
+def test_axes_gizmo_orthographic_view():
+    camera = OrthographicCamera(30, 30)
+    manager = window.ShowManager(
+        size=(160, 120), camera=camera, window_type="offscreen", imgui=False
+    )
+    try:
+        _add_gizmo_volume(manager, PERMUTED_AFFINE)
+
+        for expected_label in ("R", "L", "R"):
+            _click_gizmo(manager, "R")
+
+            assert isinstance(manager.screens[0].camera, OrthographicCamera)
+            assert np.isfinite(camera.world.position).all()
+            assert np.isfinite(camera.world.matrix).all()
+            _assert_anatomical_basis(camera, expected_label)
+            _process_gizmo_callbacks(manager)
+            _assert_gizmo_alignment(manager)
+            target = (
+                manager.screens[0]
+                .scene.main_scene.get_world_bounding_box()
+                .mean(axis=0)
+            )
+            assert np.linalg.norm(camera.world.position - target) >= 1.0
+    finally:
+        manager.close()
+
+
+def test_axes_gizmo_follows_controller_rotation(gizmo_manager):
+    _add_gizmo_volume(gizmo_manager, PERMUTED_AFFINE)
+    screen = gizmo_manager.screens[0]
+    _click_gizmo(gizmo_manager, "L")
+    screen.controller.rotate((0.15, 0.1), screen.viewport.rect, animate=False)
+    _process_gizmo_callbacks(gizmo_manager)
+
+    _assert_gizmo_alignment(gizmo_manager)
+
+    _click_gizmo(gizmo_manager, "A", "label")
+    _process_gizmo_callbacks(gizmo_manager)
+    _assert_anatomical_basis(screen.camera, "A")
+    _assert_gizmo_alignment(gizmo_manager)
 
 
 def test_affine_voxel_sizes_use_affine_columns():
