@@ -242,6 +242,9 @@ should provide the available options ::
 
 Otherwise please see :ref:`workflows_reference`.
 
+To chain these commands into a pipeline, on one subject or on a whole BIDS
+dataset, see :ref:`auto_flow`.
+
 The commands shown in this tutorial are not by any stretch of the imagination what we
 propose as a complete solution to tracking but a mere introduction to DIPY's command interfaces.
 Medical imaging requires a number of steps that depend on the goal of the analysis strategy.

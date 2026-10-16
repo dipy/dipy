@@ -1,10 +1,11 @@
 """Interactive prompts for user-guided pipeline configuration."""
 
 from dataclasses import dataclass
+import importlib.util
 import os
 
 from dipy.utils.logging import logger
-from dipy.utils.optpkg import optional_package
+from dipy.workflows.templates import PREDEFINED_PIPELINES, list_predefined_pipelines
 
 # =============================================================================
 # Data Analysis Functions
@@ -50,7 +51,7 @@ def analyze_bvals(*, bvals_file, b0_threshold=50):
     bvals_file : str
         Path to b-values file.
     b0_threshold : float, optional
-        Threshold for considering a b-value as b0 (default: 50).
+        Threshold for considering a b-value as b0.
 
     Returns
     -------
@@ -68,7 +69,7 @@ def analyze_bvals(*, bvals_file, b0_threshold=50):
         raise FileNotFoundError(f"B-values file not found: {bvals_file}")
 
     try:
-        with open(bvals_file) as f:
+        with open(bvals_file, encoding="utf-8") as f:
             content = f.read()
             bvals = [float(x) for x in content.split()]
     except (OSError, ValueError) as e:
@@ -86,7 +87,7 @@ def analyze_bvals(*, bvals_file, b0_threshold=50):
     supports_dki = num_bvals >= 3
 
     if is_multi_shell and supports_dki:
-        recommended_pipeline = "multi_shell"
+        recommended_pipeline = "full"
         recommended_methods = ["dti", "dki", "csd", "csa", "gqi"]
     elif is_single_shell and non_zero_bvals and non_zero_bvals[0] >= 1000:
         recommended_pipeline = "tractography"
@@ -95,7 +96,7 @@ def analyze_bvals(*, bvals_file, b0_threshold=50):
         recommended_pipeline = "dti_only"
         recommended_methods = ["dti"]
     else:
-        recommended_pipeline = "basic"
+        recommended_pipeline = "preprocessing"
         recommended_methods = ["dti"]
 
     return DataCharacteristics(
@@ -372,7 +373,7 @@ def interactive_preprocessing_selection():
                         selected[step_name] = step_name in default_steps
                     break
 
-        selected["mask"] = "mask"
+    selected["mask"] = True
     return selected
 
 
@@ -548,13 +549,15 @@ def interactive_segmentation_selection(*, available_registered):
 def check_synthseg_available():
     """Check if SynthSeg is available on the system.
 
+    PyTorch is looked up without being imported: loading its ``libomp`` in
+    this process is what running SynthSeg in an isolated subprocess avoids.
+
     Returns
     -------
     bool
-        True if mri_synthstrip command is available.
+        True if PyTorch is installed.
     """
-    _, has_torch, _ = optional_package("torch")
-    return has_torch
+    return importlib.util.find_spec("torch") is not None
 
 
 def interactive_brain_extraction_method():
@@ -586,41 +589,107 @@ def interactive_brain_extraction_method():
         return "median_otsu"
 
 
-def build_interactive_pipeline_config(*, data_chars):
-    """Build pipeline configuration interactively.
+def interactive_mapmri_timing():
+    """Interactive prompt for the diffusion timing MAPMRI needs.
+
+    Returns
+    -------
+    tuple of float
+        ``(small_delta, big_delta)``, the gradient pulse duration and the
+        time between the two pulses, in seconds.
+    """
+    print("\nMAPMRI needs the diffusion timing of the acquisition, in seconds")
+    print("(e.g., small delta 0.0157 and big delta 0.0365).")
+    timing = []
+    for label in ("Small delta (gradient duration)", "Big delta (pulse separation)"):
+        while True:
+            answer = input(f"{label} [s]: ").strip()
+            try:
+                value = float(answer)
+            except ValueError:
+                print("Invalid input. Please enter a positive number of seconds.")
+                continue
+            if value > 0:
+                timing.append(value)
+                break
+            print("Invalid input. Please enter a positive number of seconds.")
+    return tuple(timing)
+
+
+def _require_mask(*, method, mask_output):
+    """Check that a reconstruction needing a brain mask gets one.
 
     Parameters
     ----------
-    data_chars : DataCharacteristics
-        Data characteristics for compatibility checking.
+    method : str
+        Display name of the reconstruction method.
+    mask_output : str or None
+        Reference to the brain mask, None when no mask stage is built.
+
+    Raises
+    ------
+    ValueError
+        If ``mask_output`` is empty.
+    """
+    if not mask_output:
+        raise ValueError(
+            f"{method} fitting requires a brain mask. Please include the "
+            "'Brain Mask Extraction' preprocessing step to extract a brain mask."
+        )
+
+
+_MASKED_FITS = {
+    "dti": ("DTI", "dipy_fit_dti"),
+    "dki": ("DKI", "dipy_fit_dki"),
+    "csd": ("CSD", "dipy_fit_csd"),
+    "csa": ("CSA", "dipy_fit_csa"),
+    "gqi": ("GQI", "dipy_fit_gqi"),
+    "force": ("FORCE", "dipy_fit_force"),
+}
+
+
+def pipeline_config_from_choices(
+    *,
+    preprocessing,
+    recon_methods,
+    brain_extraction_method,
+    tracking_methods,
+    mapmri_timing=None,
+):
+    """Build a pipeline configuration from the answers of the user.
+
+    Preprocessing stages follow the order of the predefined pipelines:
+    denoising, Gibbs unringing, motion correction, bias field correction,
+    reslicing, then brain masking. Once motion correction ran, every later
+    stage reads its rotated b-vectors.
+
+    Parameters
+    ----------
+    preprocessing : dict
+        Step name to whether it was selected, from
+        :func:`interactive_preprocessing_selection`.
+    recon_methods : list of str
+        Reconstruction method codes, from :func:`interactive_method_selection`.
+    brain_extraction_method : str
+        Method of the ``dipy_brain_mask`` stage.
+    tracking_methods : list of str
+        Reconstruction method codes whose peaks are tracked.
+    mapmri_timing : tuple of float, optional
+        ``(small_delta, big_delta)`` in seconds, required when
+        ``recon_methods`` holds ``mapmri``.
 
     Returns
     -------
     dict
         Pipeline configuration dictionary with [[pipeline]] sections.
+
+    Raises
+    ------
+    ValueError
+        If a reconstruction needs a brain mask and none is computed, if
+        MAPMRI is selected without its timing, or if tracking is requested
+        without DTI, whose FA map stops the tracking.
     """
-    print("\n" + "=" * 60)
-    print("Interactive Pipeline Builder")
-    print("=" * 60)
-    print(suggest_pipeline(data_chars=data_chars))
-
-    # 1. Select preprocessing steps
-    preprocessing = interactive_preprocessing_selection()
-
-    # 2. Select reconstruction methods
-    print("\n" + "=" * 60)
-    print("Reconstruction Methods Selection")
-    print("=" * 60)
-    recon_methods = interactive_method_selection(data_chars=data_chars)
-
-    # 3. Ask about tracking
-    print("\n" + "=" * 60)
-    print("Fiber Tracking")
-    print("=" * 60)
-    do_tracking = input("Include fiber tracking? [Y/n]: ").strip().lower()
-    include_tracking = do_tracking != "n"
-
-    # 4. Build pipeline configuration
     config = {
         "General": {
             "name": "interactive_pipeline",
@@ -639,109 +708,71 @@ def build_interactive_pipeline_config(*, data_chars):
         },
         "pipeline": [],
     }
-
-    # Build pipeline stages based on selections
+    stages = config["pipeline"]
     current_input = "${io.dwi}"
+    current_bvecs = "${io.bvecs}"
 
-    # Denoising - NLMeans
-    if preprocessing.get("denoise_nlmeans", False):
-        config["pipeline"].append(
-            {
-                "name": "denoise_nlmeans",
-                "cli": "dipy_denoise_nlmeans",
-                "input_files": current_input,
-            }
-        )
-        current_input = "${denoise_nlmeans.out_denoised}"
+    denoisers = (
+        ("denoise_nlmeans", "dipy_denoise_nlmeans", {}),
+        ("denoise_mppca", "dipy_denoise_mppca", {}),
+        (
+            "denoise_lpca",
+            "dipy_denoise_lpca",
+            {"bvalues_files": "${io.bvals}", "bvectors_files": "${io.bvecs}"},
+        ),
+        (
+            "denoise_patch2self",
+            "dipy_denoise_patch2self",
+            {"bval_files": "${io.bvals}"},
+        ),
+    )
+    for name, cli, extra in denoisers:
+        if preprocessing.get(name, False):
+            stages.append(
+                {"name": name, "cli": cli, "input_files": current_input, **extra}
+            )
+            current_input = f"${{{name}.out_denoised}}"
 
-    # Denoising - MPPCA
-    if preprocessing.get("denoise_mppca", False):
-        config["pipeline"].append(
-            {
-                "name": "denoise_mppca",
-                "cli": "dipy_denoise_mppca",
-                "input_files": current_input,
-            }
-        )
-        current_input = "${denoise_mppca.out_denoised}"
-
-    # Denoising - LPCA
-    if preprocessing.get("denoise_lpca", False):
-        config["pipeline"].append(
-            {
-                "name": "denoise_lpca",
-                "cli": "dipy_denoise_lpca",
-                "input_files": current_input,
-                "bvalues_files": "${io.bvals}",
-                "bvectors_files": "${io.bvecs}",
-            }
-        )
-        current_input = "${denoise_lpca.out_denoised}"
-
-    # Denoising - Patch2Self
-    if preprocessing.get("denoise_patch2self", False):
-        config["pipeline"].append(
-            {
-                "name": "denoise_patch2self",
-                "cli": "dipy_denoise_patch2self",
-                "input_files": current_input,
-                "bval_files": "${io.bvals}",
-            }
-        )
-        current_input = "${denoise_patch2self.out_denoised}"
-
-    # Reslice
-    if preprocessing.get("reslice", False):
-        config["pipeline"].append(
-            {
-                "name": "reslice",
-                "cli": "dipy_reslice",
-                "input_files": current_input,
-            }
-        )
-        current_input = "${reslice.out_resliced}"
-
-    # Gibbs ringing removal
     if preprocessing.get("gibbs", False):
-        config["pipeline"].append(
-            {
-                "name": "gibbs",
-                "cli": "dipy_gibbs_ringing",
-                "input_files": current_input,
-            }
+        stages.append(
+            {"name": "gibbs", "cli": "dipy_gibbs_ringing", "input_files": current_input}
         )
         current_input = "${gibbs.out_unring}"
 
-    # Motion correction
     if preprocessing.get("motion_correction", False):
-        config["pipeline"].append(
+        stages.append(
             {
                 "name": "motion",
                 "cli": "dipy_correct_motion",
                 "input_files": current_input,
                 "bvalues_files": "${io.bvals}",
-                "bvectors_files": "${io.bvecs}",
+                "bvectors_files": current_bvecs,
             }
         )
         current_input = "${motion.out_moved}"
+        current_bvecs = "${motion.out_bvecs}"
 
-    # Bias correction
     if preprocessing.get("bias_correction", False):
-        config["pipeline"].append(
+        stages.append(
             {
                 "name": "bias",
                 "cli": "dipy_correct_biasfield",
                 "input_files": current_input,
                 "bval": "${io.bvals}",
-                "bvec": "${io.bvecs}",
+                "bvec": current_bvecs,
             }
         )
         current_input = "${bias.out_corrected}"
 
+    if preprocessing.get("reslice", False):
+        stages.append(
+            {"name": "reslice", "cli": "dipy_reslice", "input_files": current_input}
+        )
+        current_input = "${reslice.out_resliced}"
+
     mask_output = None
     if preprocessing.get("mask", False):
-        brain_extraction_method = interactive_brain_extraction_method()
-        config["pipeline"].append(
+        stages.append(
             {
                 "name": "mask",
                 "cli": "dipy_brain_mask",
@@ -752,153 +783,138 @@ def build_interactive_pipeline_config(*, data_chars):
         )
         mask_output = "${mask.out_mask}"
 
-    preprocessed_dwi = current_input
     out_fa = None
     for method in recon_methods:
-        if method == "dti":
-            stage_config = {
-                "name": "dti_fit",
-                "cli": "dipy_fit_dti",
-                "input_files": preprocessed_dwi,
-                "bvalues_files": "${io.bvals}",
-                "bvectors_files": "${io.bvecs}",
-            }
-            out_fa = "${dti_fit.out_fa}"
-            if mask_output:
-                stage_config["mask_files"] = mask_output
-            else:
-                raise ValueError(
-                    "DTI fitting requires a brain mask. Please include the "
-                    "'Brain Mask Extraction' "
-                    "preprocessing step to extract a brain mask."
-                )
-
-            config["pipeline"].append(stage_config)
-
-        elif method == "dki":
-            stage_config = {
-                "name": "dki_fit",
-                "cli": "dipy_fit_dki",
-                "input_files": preprocessed_dwi,
-                "bvalues_files": "${io.bvals}",
-                "bvectors_files": "${io.bvecs}",
-            }
-            if mask_output:
-                stage_config["mask_files"] = mask_output
-            else:
-                raise ValueError(
-                    "DKI fitting requires a brain mask. Please include the "
-                    "'Brain Mask Extraction' "
-                    "preprocessing step to extract a brain mask."
-                )
-            config["pipeline"].append(stage_config)
-
-        elif method == "csd":
-            stage_config = {
-                "name": "csd_fit",
-                "cli": "dipy_fit_csd",
-                "input_files": preprocessed_dwi,
-                "bvalues_files": "${io.bvals}",
-                "bvectors_files": "${io.bvecs}",
-            }
-            if mask_output:
-                stage_config["mask_files"] = mask_output
-            else:
-                raise ValueError(
-                    "CSD fitting requires a brain mask. Please include the "
-                    "'Brain Mask Extraction' "
-                    "preprocessing step to extract a brain mask."
-                )
-            config["pipeline"].append(stage_config)
-
-        elif method == "csa":
-            stage_config = {
-                "name": "csa_fit",
-                "cli": "dipy_fit_csa",
-                "input_files": preprocessed_dwi,
-                "bvalues_files": "${io.bvals}",
-                "bvectors_files": "${io.bvecs}",
-            }
-            if mask_output:
-                stage_config["mask_files"] = mask_output
-            else:
-                raise ValueError(
-                    "CSA fitting requires a brain mask. Please include the "
-                    "'Brain Mask Extraction' "
-                    "preprocessing step to extract a brain mask."
-                )
-            config["pipeline"].append(stage_config)
-
-        elif method == "gqi":
-            stage_config = {
-                "name": "gqi_fit",
-                "cli": "dipy_fit_gqi",
-                "input_files": preprocessed_dwi,
-                "bvalues_files": "${io.bvals}",
-                "bvectors_files": "${io.bvecs}",
-            }
-            if mask_output:
-                stage_config["mask_files"] = mask_output
-            else:
-                raise ValueError(
-                    "GQI fitting requires a brain mask. Please include the "
-                    "'Brain Mask Extraction' "
-                    "preprocessing step to extract a brain mask."
-                )
-            config["pipeline"].append(stage_config)
+        if method in _MASKED_FITS:
+            label, cli = _MASKED_FITS[method]
+            _require_mask(method=label, mask_output=mask_output)
+            stages.append(
+                {
+                    "name": f"{method}_fit",
+                    "cli": cli,
+                    "input_files": current_input,
+                    "bvalues_files": "${io.bvals}",
+                    "bvectors_files": current_bvecs,
+                    "mask_files": mask_output,
+                }
+            )
+            if method == "dti":
+                out_fa = "${dti_fit.out_fa}"
 
         elif method == "mapmri":
-            stage_config = {
-                "name": "mapmri_fit",
-                "cli": "dipy_fit_mapmri",
-                "data_files": preprocessed_dwi,
-                "bvals_files": "${io.bvals}",
-                "bvecs_files": "${io.bvecs}",
-            }
-            config["pipeline"].append(stage_config)
-
-        elif method == "force":
-            stage_config = {
-                "name": "force_fit",
-                "cli": "dipy_fit_force",
-                "input_files": preprocessed_dwi,
-                "bvalues_files": "${io.bvals}",
-                "bvectors_files": "${io.bvecs}",
-            }
-            if mask_output:
-                stage_config["mask_files"] = mask_output
-            else:
+            if mapmri_timing is None:
                 raise ValueError(
-                    "FORCE fitting requires a brain mask. Please include the "
-                    "'Brain Mask Extraction' "
-                    "preprocessing step to extract a brain mask."
+                    "MAPMRI fitting requires the small and big delta of the "
+                    "acquisition."
                 )
-            config["pipeline"].append(stage_config)
-
-    if include_tracking and recon_methods:
-        if "dti" in recon_methods:
-            tracking_methods = interactive_tracking_selection(
-                available_methods=["dti"] + [m for m in recon_methods if m != "dti"]
-            )
-        else:
-            tracking_methods = interactive_tracking_selection(
-                available_methods=recon_methods
-            )
-
-        for method in tracking_methods:
-            track_method = "eudx"
-            config["pipeline"].append(
+            small_delta, big_delta = mapmri_timing
+            stages.append(
                 {
-                    "name": f"track_{method}",
-                    "cli": "dipy_track",
-                    "pam_files": f"${{{method}_fit.out_pam}}",
-                    "stopping_files": out_fa,
-                    "seeding_files": mask_output,
-                    "tracking_method": track_method,
+                    "name": "mapmri_fit",
+                    "cli": "dipy_fit_mapmri",
+                    "data_files": current_input,
+                    "bvals_files": "${io.bvals}",
+                    "bvecs_files": current_bvecs,
+                    "small_delta": small_delta,
+                    "big_delta": big_delta,
                 }
             )
 
+    if tracking_methods and out_fa is None:
+        raise ValueError(
+            "Fiber tracking stops on the DTI FA map. Please include DTI in the "
+            "reconstruction methods."
+        )
+
+    for method in tracking_methods:
+        stages.append(
+            {
+                "name": f"track_{method}",
+                "cli": "dipy_track",
+                "pam_files": f"${{{method}_fit.out_pam}}",
+                "stopping_files": out_fa,
+                "seeding_files": mask_output,
+                "tracking_method": "eudx",
+            }
+        )
+
     return config
+
+
+def build_interactive_pipeline_config(*, data_chars):
+    """Build pipeline configuration interactively.
+
+    Parameters
+    ----------
+    data_chars : DataCharacteristics
+        Data characteristics for compatibility checking.
+
+    Returns
+    -------
+    dict
+        Pipeline configuration dictionary with [[pipeline]] sections.
+    """
+    print("\n" + "=" * 60)
+    print("Interactive Pipeline Builder")
+    print("=" * 60)
+    print(suggest_pipeline(data_chars=data_chars))
+
+    preprocessing = interactive_preprocessing_selection()
+
+    print("\n" + "=" * 60)
+    print("Reconstruction Methods Selection")
+    print("=" * 60)
+    recon_methods = interactive_method_selection(data_chars=data_chars)
+    mapmri_timing = interactive_mapmri_timing() if "mapmri" in recon_methods else None
+
+    print("\n" + "=" * 60)
+    print("Fiber Tracking")
+    print("=" * 60)
+    do_tracking = input("Include fiber tracking? [Y/n]: ").strip().lower()
+    include_tracking = do_tracking != "n"
+
+    brain_extraction_method = (
+        interactive_brain_extraction_method()
+        if preprocessing.get("mask", False)
+        else None
+    )
+
+    tracking_methods = []
+    if include_tracking and recon_methods:
+        tracking_methods = interactive_tracking_selection(
+            available_methods=recon_methods
+        )
+
+    return pipeline_config_from_choices(
+        preprocessing=preprocessing,
+        recon_methods=recon_methods,
+        brain_extraction_method=brain_extraction_method,
+        tracking_methods=tracking_methods,
+        mapmri_timing=mapmri_timing,
+    )
+
+
+def pipeline_menu(*, data_chars, log_level):
+    """List the predefined pipelines offered to the user.
+
+    Parameters
+    ----------
+    data_chars : DataCharacteristics
+        Data characteristics holding the recommended pipeline.
+    log_level : int
+        Logging level, which limits the menu outside of DEBUG, see
+        :func:`dipy.workflows.templates.list_predefined_pipelines`.
+
+    Returns
+    -------
+    list of str
+        Pipeline names, always including the recommended one.
+    """
+    pipelines = list_predefined_pipelines(log_level=log_level)
+    recommended = data_chars.recommended_pipeline
+    if recommended in PREDEFINED_PIPELINES and recommended not in pipelines:
+        pipelines = [recommended, *pipelines]
+    return pipelines
 
 
 def interactive_pipeline_selection(*, data_chars):
@@ -914,19 +930,15 @@ def interactive_pipeline_selection(*, data_chars):
     str or None
         Selected pipeline name, or None for custom interactive mode.
     """
-    from dipy.workflows.templates import (
-        PREDEFINED_PIPELINES,
-        list_predefined_pipelines,
-    )
-
     print("\n" + "=" * 60)
     print("Pipeline Selection")
     print("=" * 60)
 
     print(suggest_pipeline(data_chars=data_chars))
 
-    current_log_level = logger.getEffectiveLevel()
-    pipelines = list_predefined_pipelines(log_level=current_log_level)
+    pipelines = pipeline_menu(
+        data_chars=data_chars, log_level=logger.getEffectiveLevel()
+    )
 
     while True:
         print("\nAvailable predefined pipelines:")
