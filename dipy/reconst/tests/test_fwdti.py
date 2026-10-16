@@ -26,7 +26,6 @@ from dipy.sims.voxel import (
     multi_tensor_dki,
     single_tensor,
 )
-from dipy.testing import assert_warns
 
 
 def setup_module():
@@ -295,13 +294,55 @@ def test_fwdti_jac_multi_voxel():
     assert_array_almost_equal(Ffwe, GTF[0, :])
 
 
-def test_fwdti_cholesky_jac_warning():
-    """Test that Cholesky disables the unavailable analytical Jacobian."""
-    fwdm = fwdti.FreeWaterTensorModel(
-        gtab_2s, fit_method="NLS", cholesky=True, jac=True
+def test_fwdti_cholesky_jacobian():
+    """Test the fwDTI Cholesky Jacobian against finite differences."""
+    design_matrix = dti.design_matrix(gtab_2s)
+
+    params = np.array([0.04, 0.03, 0.02, 0.005, -0.004, 0.003, -np.log(100.0), 0.2])
+    data = np.ones(design_matrix.shape[0])
+
+    analytical = fwdti._nls_jacobian_func(
+        params,
+        design_matrix,
+        data,
+        cholesky=True,
+        f_transform=False,
     )
 
-    assert_warns(UserWarning, fwdm.fit, DWI)
+    numerical = np.empty_like(analytical)
+    step = 1e-7
+
+    for column in range(params.size):
+        params_plus = params.copy()
+        params_minus = params.copy()
+
+        params_plus[column] += step
+        params_minus[column] -= step
+
+        residual_plus = fwdti._nls_err_func(
+            params_plus,
+            design_matrix,
+            data,
+            cholesky=True,
+            f_transform=False,
+        )
+
+        residual_minus = fwdti._nls_err_func(
+            params_minus,
+            design_matrix,
+            data,
+            cholesky=True,
+            f_transform=False,
+        )
+
+        numerical[:, column] = (residual_plus - residual_minus) / (2 * step)
+
+    np.testing.assert_allclose(
+        analytical,
+        numerical,
+        rtol=1e-6,
+        atol=1e-7,
+    )
 
 
 def test_standalone_functions():

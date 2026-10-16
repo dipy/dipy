@@ -1336,14 +1336,49 @@ def test_dti_nlls_cholesky_positivity():
     npt.assert_(np.all(cholesky_evals >= -1e-12))
 
 
-def test_cholesky_jac_warning():
-    """Test that a warning is raised when jac=True is combined with
-    cholesky=True, since the analytical Jacobian is not implemented
-    for the Cholesky parameterization."""
-    _, fbvals, fbvecs = get_fnames(name="small_25")
-    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = grad.gradient_table(bvals, bvecs=bvecs)
+def test_cholesky_jacobian():
+    """Test the analytical Cholesky Jacobian against finite differences."""
+    design_matrix = np.array(
+        [
+            [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 1.0],
+            [0.2, -0.1, 0.4, -0.3, 0.5, -0.2, 1.0],
+            [-0.2, 0.3, 0.1, 0.2, -0.4, 0.5, 1.0],
+            [0.3, 0.1, -0.2, 0.5, 0.2, -0.3, 1.0],
+        ]
+    )
 
-    dtim = dti.TensorModel(gtab, fit_method="NLS", cholesky=True, jac=True)
-    data = np.ones(bvals.shape[0]) * 100
-    assert_warns(UserWarning, dtim.fit, data)
+    params = np.array([0.04, 0.03, 0.02, 0.005, -0.004, 0.003, -0.2])
+    data = np.ones(design_matrix.shape[0])
+    weights = np.linspace(0.5, 1.5, design_matrix.shape[0])
+
+    nlls = dti._NllsHelper()
+
+    nlls.err_func(params, design_matrix, data, weights, cholesky=True)
+
+    analytical = nlls.jacobian_func(params, design_matrix, data, weights, cholesky=True)
+
+    numerical = np.empty_like(analytical)
+    step = 1e-7
+
+    for column in range(params.size):
+        params_plus = params.copy()
+        params_minus = params.copy()
+
+        params_plus[column] += step
+        params_minus[column] -= step
+
+        residual_plus = nlls.err_func(
+            params_plus, design_matrix, data, weights, cholesky=True
+        )
+        residual_minus = nlls.err_func(
+            params_minus, design_matrix, data, weights, cholesky=True
+        )
+
+        numerical[:, column] = (residual_plus - residual_minus) / (2 * step)
+
+    npt.assert_allclose(
+        analytical,
+        numerical,
+        rtol=1e-6,
+        atol=1e-9,
+    )

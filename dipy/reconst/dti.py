@@ -85,6 +85,30 @@ MIN_POSITIVE_SIGNAL = 0.0001
 ols_resort_msg = "Resorted to OLS solution in some voxels"
 
 
+def _cholesky_to_lower_triangular_jacobian(R):
+    """Jacobian of the Cholesky-to-tensor transformation."""
+    R0, R1, R2, R3, R4, R5 = R
+
+    jacobian = np.zeros((6, 6), dtype=np.result_type(R, float))
+
+    jacobian[0, 0] = 2 * R0
+    jacobian[1, 0] = R3
+    jacobian[1, 3] = R0
+    jacobian[2, 1] = 2 * R1
+    jacobian[2, 3] = 2 * R3
+    jacobian[3, 0] = R5
+    jacobian[3, 5] = R0
+    jacobian[4, 1] = R4
+    jacobian[4, 3] = R5
+    jacobian[4, 4] = R1
+    jacobian[4, 5] = R3
+    jacobian[5, 2] = 2 * R2
+    jacobian[5, 4] = 2 * R4
+    jacobian[5, 5] = 2 * R5
+
+    return jacobian
+
+
 @warning_for_keywords()
 def _roll_evals(evals, *, axis=-1):
     """Check evals shape.
@@ -1745,7 +1769,7 @@ class _NllsHelper:
 
     # scipy.optimize.leastsq calls this with args=(design_matrix, data, weights)
     def jacobian_func(
-        self, tensor, design_matrix, data, weights=None
+        self, tensor, design_matrix, data, weights=None, cholesky=False
     ):  # pep3102: ignore
         r"""The Jacobian is the first derivative of the error function.
 
@@ -1776,11 +1800,20 @@ class _NllsHelper:
         """
         # minus sign, because derivative of residuals = data - y
         # sqrt(w) because w corresponds to the squared residuals
+        if cholesky:
+            r_params = tensor[:6]
+            chol_jacobian = _cholesky_to_lower_triangular_jacobian(r_params)
+
+            effective_design_matrix = design_matrix.copy()
+            effective_design_matrix[:, :6] = design_matrix[:, :6] @ chol_jacobian
+
+        else:
+            effective_design_matrix = design_matrix
 
         if weights is None:
-            return -self.y[:, None] * design_matrix
+            return -self.y[:, None] * effective_design_matrix
         else:
-            return -self.y[:, None] * design_matrix * self.sqrt_w
+            return -self.y[:, None] * effective_design_matrix * self.sqrt_w
 
 
 @warning_for_keywords()
@@ -1940,15 +1973,6 @@ def nlls_fit_tensor(
     nlls = _NllsHelper()
     err_func = nlls.err_func
     jac_func = nlls.jacobian_func if jac else None
-
-    if cholesky and jac:
-        warnings.warn(
-            "The analytical Jacobian is not currently implemented"
-            " for Cholesky parameterization. Running with jac=False.",
-            UserWarning,
-            stacklevel=2,
-        )
-        jac_func = None
 
     if return_S0_hat:
         model_S0 = np.empty((flat_data.shape[0], 1))

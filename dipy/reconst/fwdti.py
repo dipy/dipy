@@ -13,6 +13,7 @@ from dipy.reconst.base import ReconstModel
 from dipy.reconst.dki import _positive_evals
 from dipy.reconst.dti import (
     TensorFit,
+    _cholesky_to_lower_triangular_jacobian,
     _decompose_tensor_nan,
     cholesky_to_lower_triangular,
     decompose_tensor,
@@ -572,6 +573,11 @@ def _nls_jacobian_func(
         See fwdti.nls_fit_tensor.
     """
     tensor = np.copy(tensor_elements)
+    if cholesky:
+        r_params = tensor_elements[:6]
+        chol_jacobian = _cholesky_to_lower_triangular_jacobian(r_params)
+        tensor[:6] = cholesky_to_lower_triangular(r_params)
+
     if f_transform:
         f = 0.5 * (1 + np.sin(tensor[7] - np.pi / 2))
     else:
@@ -582,13 +588,18 @@ def _nls_jacobian_func(
 
     T = (f - 1.0) * t[:, None] * design_matrix
     S = np.zeros(design_matrix.shape)
-    S[:, 6] = f * s
+    S[:, 6] = f * s * design_matrix[:, 6]
 
     if f_transform:
         df = (t - s) * (0.5 * np.cos(tensor[7] - np.pi / 2))
     else:
         df = t - s
-    return np.concatenate((T - S, df[:, None]), axis=1)
+    jacobian = np.concatenate((T - S, df[:, None]), axis=1)
+
+    if cholesky:
+        jacobian[:, :6] = jacobian[:, :6] @ chol_jacobian
+
+    return jacobian
 
 
 @warning_for_keywords()
@@ -665,6 +676,15 @@ def nls_iter(
         design_matrix, sig, S0, min_signal=min_signal, Diso=Diso, mdreg=mdreg
     )
 
+    partial_jac_func = partial(
+        _nls_jacobian_func,
+        Diso=Diso,
+        weighting=weighting,
+        sigma=sigma,
+        cholesky=cholesky,
+        f_transform=f_transform,
+    )
+
     partial_err_func = partial(
         _nls_err_func,
         Diso=Diso,
@@ -697,21 +717,13 @@ def nls_iter(
 
         # Use the Levenberg-Marquardt algorithm wrapped in opt.leastsq
         start_params = np.concatenate((dt, [-np.log(S0), f]), axis=0)
-        if cholesky and jac:
-            warnings.warn(
-                "The analytical Jacobian is not currently implemented"
-                " for Cholesky parameterization. Running with jac=False.",
-                UserWarning,
-                stacklevel=2,
-            )
-            jac = False
 
         if jac:
             this_tensor, status = opt.leastsq(
                 partial_err_func,
                 start_params[:8],
                 args=(design_matrix, sig),
-                Dfun=_nls_jacobian_func,
+                Dfun=partial_jac_func,
             )
         else:
             this_tensor, status = opt.leastsq(
