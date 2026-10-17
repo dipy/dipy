@@ -11,8 +11,8 @@ from dipy.core.gradients import unique_bvals_tolerance
 from dipy.direction.peaks import PeaksAndMetrics, _pam_from_attrs
 from dipy.reconst._force_search import search_inner_product as _cython_search
 from dipy.reconst.base import ReconstFit, ReconstModel
-from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.shm import sf_to_sh
+from dipy.reconst.multi_voxel import MultiVoxelFit, multi_voxel_fit
+from dipy.reconst.shm import sf_to_sh, sh_to_sf_matrix
 from dipy.sims._force_core import (
     DEFAULT_THREE_FIBER_MIN_ANGLE,
     DEFAULT_TWO_FIBER_MIN_ANGLE,
@@ -1656,65 +1656,69 @@ def force_peaks(fitted_object, *, mask=None, sh_order=8):
         Optional brain mask.
     sh_order : int, optional
         Spherical harmonics order for the coefficients.
+
+    Notes
+    -----
+    Multi-voxel conversion uses 10,000-voxel blocks to bound temporary memory.
     """
     from dipy.sims.force import default_sphere
 
-    labels = fitted_object.label
-    fracs = fitted_object.fracs
-    odf = fitted_object.odf
-
-    is_multi_voxel = labels.ndim > 1
-
-    if not is_multi_voxel:
+    if not isinstance(fitted_object, MultiVoxelFit):
         # Single Voxel Case
+        labels = fitted_object.label
+        fracs = fitted_object.fracs
+        odf = fitted_object.odf
         p_out, p_ind, p_val = postprocess_peaks(
             labels[None, :], default_sphere, fracs[None, :]
         )
         res_dirs, res_inds, res_vals = p_out[0], p_ind[0], p_val[0]
         res_sh = (
-            sf_to_sh(odf, default_sphere, sh_order=sh_order)
+            sf_to_sh(odf, default_sphere, sh_order_max=sh_order)
             if odf is not None
             else None
         )
     else:
-        # Multi-Voxel / CLI Case
-        original_shape = labels.shape[:-1]  # (X, Y, Z)
+        # Bound conversion temporaries; retain only the final peaks and SH.
+        original_shape = fitted_object.shape
+        fits = fitted_object.fit_array.reshape(-1)
+        fit_mask = fitted_object.mask.reshape(-1)
+        peak_mask = None if mask is None else mask.reshape(-1)
+        res_dirs = np.zeros((fits.size, 5, 3), dtype=np.float32)
+        res_inds = np.full((fits.size, 5), -1, dtype=np.int32)
+        res_vals = np.zeros((fits.size, 5), dtype=np.float32)
+        res_sh = invB = None
 
-        if mask is not None:
-            labels_to_proc = labels[mask]
-            fracs_to_proc = fracs[mask]
-        else:
-            labels_to_proc = labels.reshape(-1, labels.shape[-1])
-            fracs_to_proc = fracs.reshape(-1, fracs.shape[-1])
+        for start in range(0, fits.size, 10_000):
+            chunk = slice(start, start + 10_000)
+            if not fit_mask[chunk].any():
+                continue
+            block = MultiVoxelFit(fitted_object.model, fits[chunk], fit_mask[chunk])
+            labels, fracs = block.label, block.fracs
+            output = chunk
+            if peak_mask is not None:
+                labels, fracs = labels[peak_mask[chunk]], fracs[peak_mask[chunk]]
+                output = start + np.flatnonzero(peak_mask[chunk])
+            p_out, p_ind, p_val = postprocess_peaks(labels, default_sphere, fracs)
+            res_dirs[output], res_inds[output], res_vals[output] = p_out, p_ind, p_val
 
-        p_out, p_ind, p_val = postprocess_peaks(
-            labels_to_proc, default_sphere, fracs_to_proc
-        )
+            odf = block.odf
+            if np.issubdtype(odf.dtype, np.floating):
+                if invB is None:
+                    _, invB = sh_to_sf_matrix(default_sphere, sh_order_max=sh_order)
+                    res_sh = np.zeros((fits.size, invB.shape[1]), dtype=invB.dtype)
+                v_max = np.max(odf, axis=-1, keepdims=True)
+                v_min = np.min(odf, axis=-1, keepdims=True)
+                odf = np.where(
+                    v_max > 1.0, (odf - v_min) / (v_max - v_min + 1e-12), odf
+                )
+                res_sh[chunk] = np.dot(odf, invB)
+            del block, labels, fracs, odf, p_out, p_ind, p_val
 
-        res_dirs = np.zeros((*original_shape, 5, 3), dtype=np.float32)
-        res_inds = np.full((*original_shape, 5), -1, dtype=np.int32)
-        res_vals = np.zeros((*original_shape, 5), dtype=np.float32)
-
-        if mask is not None:
-            res_dirs[mask] = p_out
-            res_inds[mask] = p_ind
-            res_vals[mask] = p_val
-        else:
-            res_dirs = p_out.reshape((*original_shape, 5, 3))
-            res_inds = p_ind.reshape((*original_shape, 5))
-            res_vals = p_val.reshape((*original_shape, 5))
-
-        res_sh = None
-        if odf is not None and np.issubdtype(
-            getattr(odf, "dtype", type(None)), np.floating
-        ):
-            v_max = np.max(odf, axis=-1, keepdims=True)
-            v_min = np.min(odf, axis=-1, keepdims=True)
-            norm_mask = v_max > 1.0
-            denom = (v_max - v_min) + 1e-12
-            normalized_odf = (odf - v_min) / denom
-            odf = np.where(norm_mask, normalized_odf, odf)
-            res_sh = sf_to_sh(odf, default_sphere, sh_order=sh_order)
+        res_dirs = res_dirs.reshape((*original_shape, 5, 3))
+        res_inds = res_inds.reshape((*original_shape, 5))
+        res_vals = res_vals.reshape((*original_shape, 5))
+        if res_sh is not None:
+            res_sh = res_sh.reshape((*original_shape, res_sh.shape[-1]))
     return _pam_from_attrs(
         PeaksAndMetrics,
         default_sphere,
