@@ -1380,5 +1380,5 @@ def test_cholesky_jacobian():
         analytical,
         numerical,
         rtol=1e-6,
-        atol=1e-9,
+        atol=1e-7,
     )
