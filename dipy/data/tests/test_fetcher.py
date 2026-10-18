@@ -31,6 +31,21 @@ from dipy.data.fetcher import (
 _BAD_MD5 = "0" * 32
 
 
+def test_get_file_md5_restricted_runtime(monkeypatch, tmp_path):
+    """Dataset checksums must work when security-use MD5 is disabled."""
+    original_md5 = fetcher.md5
+
+    def restricted_md5(*, usedforsecurity=True):
+        if usedforsecurity:
+            raise ValueError("MD5 is disabled for security use")
+        return original_md5(usedforsecurity=False)
+
+    monkeypatch.setattr(fetcher, "md5", restricted_md5)
+    path = tmp_path / "synthetic.txt"
+    path.write_bytes(b"abc")
+    assert _get_file_md5(path) == "900150983cd24fb0d6963f7d28e17f72"
+
+
 def _free_port_server(directory):
     """Start an HTTP server on an OS-assigned free port serving *directory*.
 

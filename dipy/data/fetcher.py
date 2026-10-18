@@ -145,7 +145,7 @@ def _already_there_msg(folder):
 
 def _get_file_md5(filename):
     """Compute the md5 checksum of a file"""
-    md5_data = md5()
+    md5_data = md5(usedforsecurity=False)
     with open(filename, "rb") as f:
         for chunk in iter(lambda: f.read(128 * md5_data.block_size), b""):
             md5_data.update(chunk)
