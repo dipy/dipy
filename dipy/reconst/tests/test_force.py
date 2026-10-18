@@ -3,10 +3,12 @@
 from concurrent.futures import ThreadPoolExecutor
 import json
 import types
+import warnings
 
 import numpy as np
 import numpy.testing as npt
 from numpy.testing import assert_almost_equal, assert_array_less
+import pytest
 
 from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere
@@ -14,6 +16,7 @@ from dipy.reconst.force import (
     DEFAULT_FORCE_SEED,
     DEFAULT_NUM_ODI_VALUES,
     DEFAULT_ODI_RANGE,
+    FORCEFit,
     FORCEModel,
     SignalIndex,
     _fwhm_kde_batch,
@@ -23,9 +26,12 @@ from dipy.reconst.force import (
     compute_microstructure_uncertainty_ambiguity,
     compute_uncertainty_ambiguity,
     create_signal_index,
+    force_peaks,
     normalize_signals,
     softmax_stable,
 )
+from dipy.reconst.multi_voxel import MultiVoxelFit
+from dipy.reconst.shm import descoteaux07_legacy_msg, sf_to_sh
 
 
 def _make_gtab(shells):
@@ -42,6 +48,103 @@ def _make_gtab(shells):
         bvals.extend([b] * 6)
         bvecs.extend(dirs.tolist())
     return gradient_table(np.array(bvals, dtype=float), bvecs=np.array(bvecs))
+
+
+@pytest.mark.parametrize("with_odf", [False, True])
+@pytest.mark.parametrize("use_mask", [False, True])
+def test_force_peaks_volume(with_odf, use_mask):
+    """Preserve peak placement and SH across sparse, non-contiguous volumes."""
+    shape = (3, 67, 101)
+    fits = np.full((67, 101, 3), None, dtype=object).transpose(2, 0, 1)
+    fit_mask = np.zeros(shape, dtype=bool)
+    peak_mask = np.zeros(shape, dtype=bool)
+    expected_dirs = np.zeros((*shape, 5, 3), dtype=np.float32)
+    expected_inds = np.full((*shape, 5), -1, dtype=np.int32)
+    expected_vals = np.zeros((*shape, 5), dtype=np.float32)
+    expected_sh = np.zeros((*shape, 28)) if with_odf else None
+    normalized_odfs = []
+    original_odfs = []
+
+    # Leave the beginning empty and include separated voxels near the end.
+    for i, flat_index in enumerate((10_000, 10_001, 19_999, 20_000, 20_300)):
+        voxel = np.unravel_index(flat_index, shape)
+        indices = np.array([i + 2, i + 23])
+        labels = np.zeros(len(default_sphere.vertices), dtype=np.int8)
+        labels[indices] = 1
+        fracs = np.array([0.6, 0.3, 0.0], dtype=np.float32)
+        odf = None
+        if with_odf:
+            odf = np.linspace(i, i + 2, labels.size, dtype=np.float32)
+            if i == 0:
+                odf *= 0.4
+            elif i == 2:
+                odf.fill(2)
+            original_odfs.append((odf, odf.copy()))
+            normalized_odfs.append(
+                (odf - odf.min()) / (odf.max() - odf.min() + 1e-12)
+                if odf.max() > 1
+                else odf
+            )
+        fits[voxel] = FORCEFit(None, {"labels": labels, "fracs": fracs, "odf": odf})
+        fit_mask[voxel] = True
+        peak_mask[voxel] = i != 1
+        if not use_mask or peak_mask[voxel]:
+            expected_dirs[voxel][:2] = default_sphere.vertices[indices]
+            expected_inds[voxel][:2] = indices
+            expected_vals[voxel][:3] = fracs
+
+    fit = MultiVoxelFit(None, fits, fit_mask)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        if with_odf:
+            expected_sh[fit_mask] = sf_to_sh(
+                np.asarray(normalized_odfs), default_sphere, sh_order_max=6
+            )
+        pam = force_peaks(fit, mask=peak_mask if use_mask else None, sh_order=6)
+
+    npt.assert_array_equal(pam.peak_dirs, expected_dirs)
+    npt.assert_array_equal(pam.peak_indices, expected_inds)
+    npt.assert_array_equal(pam.peak_values, expected_vals)
+    if with_odf:
+        npt.assert_allclose(pam.shm_coeff, expected_sh, rtol=1e-12, atol=1e-12)
+        for odf, original in original_odfs:
+            npt.assert_array_equal(odf, original)
+    else:
+        assert pam.shm_coeff is None
+
+
+def test_force_peaks_single_voxel():
+    """Single-voxel conversion retains its original ODF scaling."""
+    indices = np.array([6, 42])
+    labels = np.zeros(len(default_sphere.vertices), dtype=np.int8)
+    labels[indices] = 1
+    fracs = np.array([0.6, 0.3, 0.0], dtype=np.float32)
+    odf = np.linspace(1, 3, labels.size, dtype=np.float32)
+    fit = FORCEFit(None, {"labels": labels, "fracs": fracs, "odf": odf})
+    expected_dirs = np.zeros((5, 3), dtype=np.float32)
+    expected_dirs[:2] = default_sphere.vertices[indices]
+    expected_inds = np.full(5, -1, dtype=np.int32)
+    expected_inds[:2] = indices
+    expected_vals = np.zeros(5, dtype=np.float32)
+    expected_vals[:3] = fracs
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning,
+        )
+        expected_sh = sf_to_sh(odf, default_sphere, sh_order_max=6)
+        pam = force_peaks(fit, sh_order=6)
+
+    npt.assert_array_equal(pam.peak_dirs, expected_dirs)
+    npt.assert_array_equal(pam.peak_indices, expected_inds)
+    npt.assert_array_equal(pam.peak_values, expected_vals)
+    npt.assert_allclose(pam.shm_coeff, expected_sh, rtol=1e-12, atol=1e-12)
 
 
 def test_normalize_signals():
