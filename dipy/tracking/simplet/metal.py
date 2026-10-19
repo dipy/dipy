@@ -84,7 +84,7 @@ def _params_bytes(tracker_data, n_seeds):
     # Must match ProbTrackingParams in kernel.metal: 4 floats, 8 ints.
     seed = tracker_data.random_seed
     return struct.pack(
-        "4f8i",
+        "4f2I6i",
         tracker_data.max_angle,
         tracker_data.stop_threshold,
         tracker_data.step_size,

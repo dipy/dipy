@@ -26,6 +26,28 @@ from dipy.workflows.workflow import Workflow
 
 
 def _save_tracking_result(tracking_result, reference, out_tract, save_seeds):
+    """
+    Save tracking results to a file. Shared by local and PFT tracking workflows.
+    This function should disappear when their tracking APIs are unified.
+
+    Parameters
+    ----------
+    tracking_result : generator or list
+        The tracking result, which should be one of:
+        (1) a generator if the output file is a TRX file;
+        (2) a list of tuples of (streamline, seed) if save_seeds is True;
+        (3) a list of streamlines otherwise.
+
+    reference : str or os.PathLike
+        The reference image path for the tractogram.
+
+    out_tract : str or os.PathLike
+        The output tractogram file path.
+
+    save_seeds : bool
+        Whether to save the seeds associated with their streamlines in the output file.
+    """
+
     if str(out_tract).endswith(".trx"):
         if isinstance(reference, os.PathLike):
             reference = str(reference)
