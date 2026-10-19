@@ -11,5 +11,6 @@ fury, has_fury, _ = optional_package(
 )
 if has_fury:
     from dipy.viz.skyline.app import Skyline, skyline, skyline_from_files
+    from dipy.viz.skyline.render.sh_slicer import create_shm_visualization
 
-__all__ = ["Skyline", "skyline", "skyline_from_files"]
+__all__ = ["Skyline", "create_shm_visualization", "skyline", "skyline_from_files"]

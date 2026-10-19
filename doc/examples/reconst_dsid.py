@@ -17,8 +17,10 @@ import numpy as np
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, get_sphere
 from dipy.reconst.dsi import DiffusionSpectrumDeconvModel, DiffusionSpectrumModel
+from dipy.reconst.shm import sf_to_sh
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
-from dipy.viz import actor, window
+from dipy.viz import window
+from dipy.viz.skyline import create_shm_visualization
 
 ###############################################################################
 # For the simulation we will use a standard DSI acquisition scheme with 514
@@ -63,22 +65,33 @@ dsid_odf = dsid_model.fit(signal).odf(sphere)
 # with deconvolution ODFs and observe that with the deconvolved method it is
 # easier to resolve the correct fiber directions because the ODF is sharper.
 
-# Enables/disables interactive visualization
-interactive = False
+# Colors encode orientation. SH coefficients approximate the sampled ODFs for
+# display; each ODF is normalized independently without changing the original.
+# Viewing from +Y exposes the X/Z crossing plane without rotating the data.
 
-
-scene = window.Scene()
-
-# concatenate data as 4D array
 odfs = np.vstack((odf_gt, dsi_odf, dsid_odf))[:, None, None]
-odf_actor = actor.odf_slicer(odfs, sphere=sphere, scale=0.5, colormap="plasma")
+odfs /= odfs.max(axis=-1, keepdims=True)
+coeffs = sf_to_sh(
+    odfs,
+    sphere,
+    sh_order_max=16,
+    basis_type="descoteaux07",
+    full_basis=False,
+    legacy=False,
+)
+odf_visualization = create_shm_visualization(
+    (coeffs, None, "DSI comparison", "descoteaux07"),
+    0,
+    l_max=16,
+    scale=0.5,
+)
 
-odf_actor.display(y=0)
-odf_actor.RotateX(90)
-scene.add(odf_actor)
-window.record(scene=scene, out_path="dsid.png", size=(300, 300))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(title="dsid", size=(200, 200))
+screen = show_manager.screens[0]
+screen.scene.add(odf_visualization.actor)
+window.set_camera_from_axis(screen, (0, 1, 0))
+screen.camera.zoom = 2 / 3
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
