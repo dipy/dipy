@@ -906,6 +906,71 @@ def skyline_command(*, path):
     return f"dipy_skyline {shlex.quote(argument)}"
 
 
+def served_root(*, page_dir):
+    """Directory a report server is rooted at to serve a page of ``page_dir``.
+
+    A stage page under ``reports/`` is served from the pipeline output
+    directory above it, so that it can still reach the outputs it links to.
+
+    Parameters
+    ----------
+    page_dir : str or Path
+        Directory of the page.
+
+    Returns
+    -------
+    Path
+        Absolute directory.
+    """
+    page_dir = Path(page_dir).absolute()
+    return page_dir.parent if page_dir.name == "reports" else page_dir
+
+
+def skyline_key(*, path, page_dir):
+    """Key under which the report server knows a file it can open in Skyline.
+
+    Parameters
+    ----------
+    path : str or Path
+        File to open.
+    page_dir : str or Path
+        Directory of the page holding the button.
+
+    Returns
+    -------
+    str
+        Path of the file relative to the served root, with forward slashes.
+        A file outside that root keeps its absolute path, which the server
+        never accepts.
+    """
+    path = Path(path).absolute()
+    try:
+        return path.relative_to(served_root(page_dir=page_dir)).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+def skyline_files(*, root):
+    """Files under ``root`` that the report server may open in Skyline.
+
+    Parameters
+    ----------
+    root : str or Path
+        Directory the report is served from.
+
+    Returns
+    -------
+    dict
+        Mapping of :func:`skyline_key` to file path.
+    """
+    root = Path(root)
+    return {
+        path.relative_to(root).as_posix(): path
+        for path in root.rglob("*")
+        if path.name.endswith(SKYLINE_FORMATS) and path.is_file()
+    }
+
+
 def _output_items(*, outputs, page_dir):
     """Output list of a stage, each file with a button that opens it.
 
@@ -928,12 +993,13 @@ def _output_items(*, outputs, page_dir):
     items = ""
     for key, path in outputs.items():
         path = str(path)
-        if key == "out_dir" or not os.path.exists(path):
+        if key == "out_dir" or not Path(path).exists():
             button = ""
         elif path.endswith(SKYLINE_FORMATS):
+            target = skyline_key(path=path, page_dir=page_dir)
+            command = skyline_command(path=Path(path).absolute())
             arguments = html.escape(
-                f"{json.dumps(path)}, {json.dumps(skyline_command(path=path))}",
-                quote=True,
+                f"{json.dumps(target)}, {json.dumps(command)}", quote=True
             )
             button = (
                 f'<button class="qc-open" onclick="qcOpen({arguments})">'
