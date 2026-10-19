@@ -38,6 +38,7 @@ _BAD_MD5 = "0" * 32
         (b"abc", "900150983cd24fb0d6963f7d28e17f72"),
         (b"a" * 1_000_000, "7707d6ae4e027c70eea2a935c2296f21"),
     ],
+    ids=["empty", "abc", "multi-chunk"],
 )
 def test_get_file_md5_known_digests(tmp_path, content, expected):
     """Check real hashing for empty, short, and multi-chunk files."""
