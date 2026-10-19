@@ -1,16 +1,21 @@
 """Skyline sidebar window: section grouping, file dialogs, and font setup."""
 
 from collections.abc import Callable
+from functools import partial
 
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.elements import (
     color_picker,
     colors_equal,
+    dropdown,
     loading,
     render_file_dialog,
     render_section_header,
+    thin_slider,
+    toggle_button,
 )
 from dipy.viz.skyline.UI.theme import FONT, FONT_AWESOME, THEME
+from dipy.viz.skyline.io import SH_BASES, _validate_sh_basis
 
 imgui_bundle, has_imgui, _ = optional_package(
     "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
@@ -29,6 +34,12 @@ _GROUP_LABELS = {
     "roi": "ROIs",
     "surface": "Surfaces",
 }
+_SH_BASIS_LABELS = (
+    "Descoteaux07",
+    "Descoteaux07 (legacy)",
+    "Tournier07 (MRtrix 0.2)",
+    "Tournier19 (MRtrix3)",
+)
 
 
 class UIManager:
@@ -76,6 +87,15 @@ class UIWindow:
         Callback invoked when background color changes.
     snapshot_callback : callable, optional
         Callback invoked when a snapshot path is selected.
+    sh_basis : str, optional
+        Initial input SH convention for ODF imports, selected from ``SH_BASES``.
+        Unsupported values are logged and use latest Descoteaux07.
+    slice_controls_callback : callable, optional
+        Getter for the global slice reference, coordinates, bounds, and visibility.
+    slice_position_callback : callable, optional
+        Command accepting a slice axis index and slider coordinate.
+    slice_visibility_callback : callable, optional
+        Command accepting a slice axis index and visibility flag.
     """
 
     def __init__(
@@ -91,6 +111,10 @@ class UIWindow:
         file_dialog_callback=None,
         bg_color_callback=None,
         snapshot_callback=None,
+        sh_basis="descoteaux07",
+        slice_controls_callback=None,
+        slice_position_callback=None,
+        slice_visibility_callback=None,
     ):
         """Initialize the sidebar window.
 
@@ -116,7 +140,17 @@ class UIWindow:
             Callback invoked when background color changes.
         snapshot_callback : callable, optional
             Callback invoked when a snapshot path is selected.
+        sh_basis : str, optional
+            Initial input SH convention for ODF imports, selected from ``SH_BASES``.
+            Unsupported values are logged and use latest Descoteaux07.
+        slice_controls_callback : callable, optional
+            Getter for global slice controls.
+        slice_position_callback : callable, optional
+            Command accepting a slice axis index and slider coordinate.
+        slice_visibility_callback : callable, optional
+            Command accepting a slice axis index and visibility flag.
         """
+        self._sh_basis = _validate_sh_basis(sh_basis)
         self.title = title
         self.is_open = default_open
         self.flags = flags
@@ -127,6 +161,9 @@ class UIWindow:
         self._group_open = {}
         self._group_visible = {}
         self._render_callback = render_callback
+        self._slice_controls_callback = slice_controls_callback
+        self._slice_position_callback = slice_position_callback
+        self._slice_visibility_callback = slice_visibility_callback
         self.logo_tex_ref = logo_tex_ref
         self.logo_size = (32, 32)
         self._title_text = "DIPY SKYLINE"
@@ -289,16 +326,28 @@ class UIWindow:
                     type="peak",
                 )
 
-            if imgui.menu_item("ODFs", "", False)[0]:
-                self.request_file_dialog = False
-                self._is_dialog_open = True
-                render_file_dialog(
-                    title="Select Spherical Harmonics ODFs File(s)",
-                    name="ODFs Files (*.pam5 *.nii *.nii.gz)",
-                    extensions="*.pam5 *.nii *.gz",
-                    callback=self._file_dialog_closed,
-                    type="shm_coeff",
+            if imgui.begin_menu("ODFs"):
+                current_label = _SH_BASIS_LABELS[SH_BASES.index(self._sh_basis)]
+                changed, selected_label = dropdown(
+                    "Input SH basis", _SH_BASIS_LABELS, current_label, width=220
                 )
+                if changed:
+                    self._sh_basis = SH_BASES[_SH_BASIS_LABELS.index(selected_label)]
+                imgui.text("Converted to Fury standard for display.")
+                if imgui.menu_item("Select files...", "", False)[0]:
+                    self.request_file_dialog = False
+                    self._is_dialog_open = True
+                    selected_basis = self._sh_basis
+                    render_file_dialog(
+                        title="Select Spherical Harmonics ODFs File(s)",
+                        name="ODFs Files (*.pam5 *.nii *.nii.gz)",
+                        extensions="*.pam5 *.nii *.gz",
+                        callback=partial(
+                            self._file_dialog_closed, sh_basis=selected_basis
+                        ),
+                        type="shm_coeff",
+                    )
+                imgui.end_menu()
 
             if imgui.menu_item("Surfaces", "", False)[0]:
                 self.request_file_dialog = False
@@ -373,6 +422,7 @@ class UIWindow:
         imgui.set_cursor_screen_pos(org_start)
         imgui.dummy((available_width, self.logo_size[1] + spacing * 5 + 1))
         imgui.pop_id()
+        self._render_global_slice_controls()
 
         imgui.begin_child(
             "sections",
@@ -460,6 +510,56 @@ class UIWindow:
             imgui.open_popup("LoadingOverlay")
         loading("LoadingOverlay", self._loading_message, self._show_loader)
 
+    def _render_global_slice_controls(self):
+        """Draw global axis controls outside the scrolling dataset list."""
+        if (
+            self._slice_controls_callback is None
+            or self._slice_position_callback is None
+            or self._slice_visibility_callback is None
+        ):
+            return
+        controls = self._slice_controls_callback()
+        if controls is None:
+            return
+        reference_name, values, bounds, visibility = controls
+        has_reference = reference_name is not None
+        imgui.push_id("global_slices")
+        imgui.spacing()
+        imgui.spacing()
+        slice_icon = icons_fontawesome_6.ICON_FA_SLIDERS
+        imgui.text_colored(THEME["primary"], f"{slice_icon} Global Slices")
+        imgui.spacing()
+        if has_reference:
+            reference_icon = icons_fontawesome_6.ICON_FA_CROSSHAIRS
+            imgui.push_style_color(imgui.Col_.text, THEME["secondary"])
+            imgui.text_wrapped(f"{reference_icon} Reference: {reference_name}")
+            imgui.pop_style_color()
+        else:
+            imgui.text_wrapped("Enable Synchronize Slices to adjust positions.")
+        imgui.spacing()
+        for axis, label in enumerate(("X", "Y", "Z")):
+            imgui.push_id(axis)
+            changed, visible = toggle_button(visibility[axis])
+            if changed:
+                self._slice_visibility_callback(axis, visible)
+            imgui.same_line(0, 8)
+            imgui.begin_disabled(not has_reference)
+            changed, value = thin_slider(
+                label,
+                float(values[axis]) if has_reference else 0.0,
+                bounds[axis][0] if has_reference else 0,
+                bounds[axis][1] if has_reference else 1,
+                step=1,
+                text_format=".0f",
+                value_type="float",
+            )
+            imgui.end_disabled()
+            if changed:
+                self._slice_position_callback(axis, value)
+            imgui.pop_id()
+        imgui.pop_id()
+        imgui.spacing()
+
     @property
     def sections(self):
         """Mapping of section id to ``(renderer_callable, viz_type)`` tuples.
@@ -483,7 +583,7 @@ class UIWindow:
         return self._section_open
 
     def _file_dialog_closed(
-        self, *, filenames=None, rois=None, peaks=None, shm_coeffs=None
+        self, *, filenames=None, rois=None, peaks=None, shm_coeffs=None, sh_basis=None
     ):
         """Forward dialog results to :attr:`file_dialog_callback` if present.
 
@@ -497,12 +597,22 @@ class UIWindow:
             Selected peak paths.
         shm_coeffs : list or None, optional
             Selected SH coefficient paths.
+        sh_basis : str or None, optional
+            Input convention captured when the ODF picker opened.
         """
         self._is_dialog_open = False
+        if not any((filenames, rois, peaks, shm_coeffs)):
+            return
         if self.file_dialog_callback is not None:
-            self.file_dialog_callback(
-                filenames=filenames, rois=rois, peaks=peaks, shm_coeffs=shm_coeffs
-            )
+            selection = {
+                "filenames": filenames,
+                "rois": rois,
+                "peaks": peaks,
+                "shm_coeffs": shm_coeffs,
+            }
+            if shm_coeffs:
+                selection["sh_basis"] = sh_basis
+            self.file_dialog_callback(**selection)
 
     def _update_bg_color(self, new_color):
         """Store the sidebar's background picker color and notify the host scene.

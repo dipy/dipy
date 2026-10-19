@@ -5,17 +5,26 @@ from real volumes, tractograms, peaks and surfaces. Nothing here fabricates a
 stand-in for the viewer or its visualizations.
 """
 
+import gc
 import logging
+import os
+import time
+import weakref
 
 import nibabel as nib
 import numpy as np
 import numpy.testing as npt
 import pytest
 
+from dipy.data import default_sphere
+from dipy.direction.peaks import PeaksAndMetrics
 from dipy.io.image import save_nifti
+from dipy.io.peaks import load_pam, save_pam
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
+from dipy.reconst.shm import real_sh_descoteaux, real_sh_tournier
 from dipy.utils.optpkg import optional_package
+from dipy.viz.skyline.compute import process_async_callbacks
 
 _, has_pygfx, _ = optional_package("pygfx")
 if has_pygfx:
@@ -25,7 +34,10 @@ _, has_fury, _ = optional_package("fury", min_version="2.0.0")
 if not has_fury:
     pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
 else:
-    from dipy.viz.skyline.app import Skyline, skyline, skyline_from_files
+    from PIL import Image
+
+    from dipy.viz import skyline, skyline_from_files
+    from dipy.viz.skyline.app import Skyline
     from dipy.viz.skyline.render.image import Image3D
     from dipy.viz.skyline.render.peak import Peak3D
     from dipy.viz.skyline.render.roi import ROI3D
@@ -35,6 +47,12 @@ else:
 
 AFFINE = np.eye(4)
 SHAPE = (8, 9, 10)
+
+
+class _FailingBeforeRenderSkyline(Skyline):
+    def before_render(self):
+        super().before_render()
+        raise RuntimeError("before-render failure")
 
 
 def _volume(seed=0, shape=SHAPE):
@@ -94,6 +112,25 @@ def _sh_input(name="odf"):
     return (_sh_coeffs(), AFFINE, name)
 
 
+def _pam5_with_sh_coeffs(path, coeffs):
+    n_vertices = default_sphere.vertices.shape[0]
+    pam = PeaksAndMetrics()
+    pam.affine = AFFINE
+    pam.peak_dirs = np.zeros((2, 2, 2, 5, 3), dtype=np.float32)
+    pam.peak_dirs[..., 0, 0] = 1.0
+    pam.peak_values = np.ones((2, 2, 2, 5), dtype=np.float32)
+    pam.peak_indices = np.zeros((2, 2, 2, 5), dtype=np.int32)
+    pam.shm_coeff = coeffs
+    pam.sphere = default_sphere
+    pam.B = np.zeros((coeffs.shape[-1], n_vertices), dtype=np.float32)
+    pam.total_weight = 0.5
+    pam.ang_thr = 45.0
+    pam.gfa = np.zeros((2, 2, 2), dtype=np.float32)
+    pam.qa = np.zeros((2, 2, 2, 5), dtype=np.float32)
+    pam.odf = np.zeros((2, 2, 2, n_vertices), dtype=np.float32)
+    save_pam(str(path), pam, affine=AFFINE)
+
+
 @pytest.fixture
 def make_skyline(tmp_path):
     """Build real offscreen ``Skyline`` viewers that render into ``tmp_path``."""
@@ -118,6 +155,26 @@ def test_stealth_viewer_writes_the_requested_png(tmp_path, make_skyline):
     assert (tmp_path / "shot.png").stat().st_size > 0
 
 
+def test_stealth_viewers_are_collected_after_capture(tmp_path, make_skyline):
+    for iteration in range(3):
+        filename = f"capture-{iteration}.png"
+        viewer = make_skyline(images=[_image_input()], out_stealth_png=filename)
+        with Image.open(tmp_path / filename) as image:
+            pixels = np.asarray(image.convert("RGB"))
+            assert np.any(pixels != pixels[0, 0])
+        del pixels
+        watched = [
+            weakref.ref(viewer),
+            weakref.ref(viewer.window),
+            weakref.ref(viewer.window.renderer),
+            weakref.ref(viewer.window.window),
+        ]
+        assert viewer.window.window.get_closed()
+        del viewer
+        gc.collect()
+        assert all(ref() is None for ref in watched)
+
+
 def test_stealth_viewer_defaults_to_the_dipy_skyline_filename(tmp_path, make_skyline):
     make_skyline(images=[_image_input()])
 
@@ -140,6 +197,91 @@ def test_stealth_viewer_creates_a_missing_output_directory(tmp_path):
 def test_stealth_viewer_has_no_sidebar(image_skyline):
     assert image_skyline.UI_window is None
     assert image_skyline._visualizer_type == "stealth"
+
+
+@pytest.mark.parametrize(
+    "dipy_value, fury_value, requested_type",
+    [
+        (None, None, "stealth"),
+        ("0", "0", "stealth"),
+        ("false", "1", "stealth"),
+        ("1", "0", "standalone"),
+        ("TrUe", "false", "gui"),
+        ("true", None, "jupyter"),
+    ],
+)
+def test_offscreen_environment_precedence(
+    tmp_path, dipy_value, fury_value, requested_type
+):
+    previous_dipy = os.environ.get("DIPY_OFFSCREEN")
+    previous_fury = os.environ.get("FURY_OFFSCREEN")
+    try:
+        for key, value in (
+            ("DIPY_OFFSCREEN", dipy_value),
+            ("FURY_OFFSCREEN", fury_value),
+        ):
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+        viewer = skyline(
+            visualizer_type=requested_type,
+            images=[(np.arange(64).reshape(4, 4, 4), AFFINE, "volume")],
+            out_dir=str(tmp_path),
+            out_stealth_png="offscreen.png",
+        )
+
+        assert viewer.UI_window is None
+        assert os.environ.get("DIPY_OFFSCREEN") == dipy_value
+        assert os.environ.get("FURY_OFFSCREEN") == fury_value
+        with Image.open(tmp_path / "offscreen.png") as image:
+            assert any(low != high for low, high in image.getextrema()[:3])
+    finally:
+        for key, value in (
+            ("DIPY_OFFSCREEN", previous_dipy),
+            ("FURY_OFFSCREEN", previous_fury),
+        ):
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+@pytest.mark.parametrize("fury_value", [None, "TrUe"])
+def test_offscreen_environment_restored_before_start_failure(tmp_path, fury_value):
+    previous_dipy = os.environ.get("DIPY_OFFSCREEN")
+    previous_fury = os.environ.get("FURY_OFFSCREEN")
+    viewer = _FailingBeforeRenderSkyline.__new__(_FailingBeforeRenderSkyline)
+    try:
+        os.environ.pop("DIPY_OFFSCREEN", None)
+        if fury_value is None:
+            os.environ.pop("FURY_OFFSCREEN", None)
+        else:
+            os.environ["FURY_OFFSCREEN"] = fury_value
+
+        with pytest.raises(RuntimeError, match="before-render failure"):
+            viewer.__init__(
+                visualizer_type="stealth",
+                images=[(np.arange(64).reshape(4, 4, 4), AFFINE, "volume")],
+                out_dir=str(tmp_path),
+                out_stealth_png="offscreen.png",
+            )
+
+        assert os.environ.get("FURY_OFFSCREEN") == fury_value
+    finally:
+        try:
+            if hasattr(viewer, "window"):
+                viewer.window.close()
+        finally:
+            for key, value in (
+                ("DIPY_OFFSCREEN", previous_dipy),
+                ("FURY_OFFSCREEN", previous_fury),
+            ):
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
 
 
 def test_default_background_is_dark(image_skyline):
@@ -277,14 +419,15 @@ def test_load_visualizations_builds_one_glyph_per_coefficient_volume(image_skyli
     assert glyph.viz_type == "sh_glyph"
 
 
-def test_load_visualizations_warns_on_non_4d_sh_coefficients(image_skyline, caplog):
-    flat = (np.zeros((2, 2, 45), dtype=np.float32), AFFINE, "flat_odf")
-
-    with caplog.at_level(logging.WARNING):
-        image_skyline._load_visualiations([], [], [], [], [], [flat])
-
+@pytest.mark.parametrize("shape", [(2, 2, 45), (2, 2, 2, 7)])
+def test_load_visualizations_skips_malformed_sh_coefficients(
+    image_skyline, caplog, shape
+):
+    invalid = (np.zeros(shape, dtype=np.float32), AFFINE, "invalid_odf")
+    with caplog.at_level(logging.ERROR):
+        image_skyline._load_visualiations([], [], [], [], [], [invalid])
     assert image_skyline._sh_glyph_visualizations == []
-    assert "does not contain any SH coefficients" in caplog.text
+    assert "invalid_odf" in caplog.text
 
 
 def test_load_visualizations_warns_on_empty_tractograms(image_skyline, caplog):
@@ -306,12 +449,14 @@ def test_remove_visualization_rejects_unknown_types(image_skyline):
 def test_remove_visualization_drops_it_from_the_right_list(make_skyline):
     viewer = make_skyline(images=[_image_input()], rois=[_roi_input()])
     roi = viewer._roi_visualizations[0]
+    active_image = viewer.active_image
 
     viewer._remove_visualization(roi)
 
     assert viewer._roi_visualizations == []
     assert roi not in viewer.visualizations
     assert len(viewer._image_visualizations) == 1
+    assert viewer.active_image is active_image
 
 
 def test_remove_visualization_clears_the_slice_focus(make_skyline):
@@ -326,9 +471,96 @@ def test_remove_visualization_clears_the_slice_focus(make_skyline):
 
 
 def test_remove_the_last_visualization_in_stealth_mode(image_skyline):
-    image_skyline._remove_visualization(image_skyline._image_visualizations[0])
+    image = image_skyline._image_visualizations[0]
+    removed = weakref.ref(image)
+    image_skyline._remove_visualization(image)
+    image_skyline._refresh_actors()
+    del image
+    gc.collect()
 
     assert image_skyline.visualizations == []
+    assert image_skyline.active_image is None
+    assert image_skyline._get_reference_slice_state() is None
+    assert removed() is None
+
+
+@pytest.mark.parametrize("removing_index", [0, 2])
+def test_image_removal_preserves_a_registered_reference(make_skyline, removing_index):
+    viewer = make_skyline(
+        images=[_image_input(name, shape=(*SHAPE, 5)) for name in ("a", "b", "c")]
+    )
+    states = np.asarray([[1, 2, 3, 1], [2, 3, 4, 2], [4, 5, 6, 4]], dtype=float)
+    for image, state in zip(viewer._image_visualizations, states):
+        image.update_state(state)
+    del image
+    expected = viewer._image_visualizations[2 if removing_index == 0 else 1]
+    reference = viewer._reference_state_of(expected).copy()
+    initial_flags = [image.active for image in viewer._image_visualizations]
+    removed_image = viewer._image_visualizations[removing_index]
+    removed = weakref.ref(removed_image)
+    viewer._remove_visualization(removed_image)
+    viewer._refresh_actors()
+    del removed_image
+    gc.collect()
+
+    assert removed() is None
+    assert viewer.active_image is expected
+    assert expected in viewer._image_visualizations
+    assert expected.active
+    if removing_index == 0:
+        assert [
+            image.active for image in viewer._image_visualizations
+        ] == initial_flags[1:]
+    npt.assert_array_equal(viewer._get_reference_slice_state(), reference)
+    surviving_states = [
+        viewer._reference_state_of(image).copy()
+        for image in viewer._image_visualizations
+    ]
+    viewer._queue_loaded_visualizations(
+        {
+            "images": [_image_input("d", shape=(*SHAPE, 5))],
+            "peaks": [],
+            "rois": [],
+            "surfaces": [],
+            "tractograms": [],
+            "shm_coeffs": [],
+        }
+    )
+    viewer._drain_pending_visualizations()
+
+    new_image = viewer._image_visualizations[-1]
+    npt.assert_array_equal(new_image.state, reference[:3])
+    assert new_image._volume_idx == reference[3]
+    for image, state in zip(viewer._image_visualizations[:-1], surviving_states):
+        npt.assert_array_equal(viewer._reference_state_of(image), state)
+
+
+def test_last_image_removal_uses_surviving_odf_reference(make_skyline):
+    viewer = make_skyline(images=[_image_input()], sh_coeffs=[_sh_input()])
+    image = viewer.active_image
+    image.update_state(np.asarray([4, 5, 6], dtype=float))
+    glyph = viewer._sh_glyph_visualizations[0]
+    reference = np.asarray([1, 0, 1], dtype=float)
+    glyph.update_state(reference)
+    viewer._remove_visualization(image)
+    viewer._refresh_actors()
+
+    assert viewer.active_image is None
+    npt.assert_array_equal(viewer._get_reference_slice_state(), reference)
+    viewer._queue_loaded_visualizations(
+        {
+            "images": [_image_input("replacement")],
+            "peaks": [],
+            "rois": [],
+            "surfaces": [],
+            "tractograms": [],
+            "shm_coeffs": [],
+        }
+    )
+    viewer._drain_pending_visualizations()
+
+    npt.assert_array_equal(viewer.active_image.state, reference)
+    npt.assert_array_equal(glyph.state, reference)
 
 
 def test_enqueue_scene_op_runs_immediately_outside_the_ui_draw(image_skyline):
@@ -947,7 +1179,7 @@ def test_skyline_from_files_loads_nifti_peaks_and_odfs(tmp_path):
         [],
         peaks=[str(peaks_path)],
         shm_coeffs=[str(odf_path)],
-        sh_basis="tournier07",
+        sh_basis="tournier19",
         stealth=True,
         out_dir=str(tmp_path),
         out_stealth_png="nifti.png",
@@ -961,6 +1193,471 @@ def test_skyline_from_files_loads_nifti_peaks_and_odfs(tmp_path):
     assert viewer._image_visualizations == []
 
 
-def test_skyline_rejects_unknown_sh_basis(make_skyline):
-    with pytest.raises(ValueError, match="sh_basis must be one of"):
-        make_skyline(sh_basis="mrtrix")
+@pytest.mark.parametrize(
+    "sh_basis, vector, evaluate_basis, legacy",
+    [
+        ("descoteaux07", [4, 0, 0.2, 0, -0.1, 0], real_sh_descoteaux, False),
+        (
+            "descoteaux07_legacy",
+            [4, 0, -0.2, 0, -0.1, 0],
+            real_sh_descoteaux,
+            True,
+        ),
+        (
+            "tournier07",
+            [4, 0, -0.1 * np.sqrt(2), 0, -0.2 * np.sqrt(2), 0],
+            real_sh_tournier,
+            True,
+        ),
+        ("tournier19", [4, 0, -0.1, 0, -0.2, 0], real_sh_tournier, False),
+    ],
+)
+def test_skyline_declared_odfs_preserve_sampled_function(
+    make_skyline, sh_basis, vector, evaluate_basis, legacy
+):
+    coeffs = np.tile(np.array(vector, dtype=np.float32), (2, 2, 2, 1))
+    original = coeffs.copy()
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    if legacy:
+        with pytest.warns(PendingDeprecationWarning, match="The legacy .* basis"):
+            source_basis, _, _ = evaluate_basis(2, theta, phi, legacy=True)
+    else:
+        source_basis, _, _ = evaluate_basis(2, theta, phi, legacy=False)
+    viewer = make_skyline(sh_coeffs=[(coeffs, AFFINE)], sh_basis=sh_basis)
+    destination_basis, _, _ = real_sh_tournier(
+        2, theta, phi, full_basis=True, legacy=False
+    )
+    latest_basis, _, _ = real_sh_descoteaux(2, theta, phi, legacy=False)
+    expected = np.array([4, 0, 0.2, 0, -0.1, 0]) @ latest_basis.T
+    npt.assert_allclose(
+        original @ source_basis.T,
+        np.broadcast_to(expected, (2, 2, 2, 3)),
+        atol=1e-6,
+        rtol=1e-5,
+    )
+    npt.assert_allclose(
+        viewer._sh_glyph_visualizations[0]._slicer.coeffs_4d @ destination_basis.T,
+        original @ source_basis.T,
+        atol=1e-6,
+        rtol=1e-5,
+    )
+    npt.assert_array_equal(coeffs, original)
+    glyph = viewer._sh_glyph_visualizations[0]
+    assert f"Input SH basis: {sh_basis}" in glyph._info.splitlines()
+
+
+@pytest.mark.parametrize("extension", [".nii", ".nii.gz", ".pam5"])
+@pytest.mark.parametrize(
+    "sh_basis, vector, evaluate_basis, legacy",
+    [
+        ("descoteaux07", [4, 0, 0.2, 0, -0.1, 0], real_sh_descoteaux, False),
+        (
+            "descoteaux07_legacy",
+            [4, 0, -0.2, 0, -0.1, 0],
+            real_sh_descoteaux,
+            True,
+        ),
+        (
+            "tournier07",
+            [4, 0, -0.1 * np.sqrt(2), 0, -0.2 * np.sqrt(2), 0],
+            real_sh_tournier,
+            True,
+        ),
+        ("tournier19", [4, 0, -0.1, 0, -0.2, 0], real_sh_tournier, False),
+    ],
+)
+def test_skyline_from_files_preserves_odf_source_basis(
+    tmp_path, sh_basis, vector, evaluate_basis, legacy, extension
+):
+    coeffs = np.tile(np.array(vector, dtype=np.float32), (2, 2, 2, 1))
+    path = tmp_path / (sh_basis + extension)
+    if extension == ".pam5":
+        _pam5_with_sh_coeffs(path, coeffs)
+        saved_coeffs = load_pam(str(path)).shm_coeff
+    else:
+        save_nifti(str(path), coeffs, AFFINE)
+        saved_coeffs = np.asanyarray(nib.load(str(path)).dataobj)
+    npt.assert_array_equal(saved_coeffs, coeffs)
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    if legacy:
+        with pytest.warns(PendingDeprecationWarning, match="The legacy .* basis"):
+            source_basis, _, _ = evaluate_basis(2, theta, phi, legacy=True)
+    else:
+        source_basis, _, _ = evaluate_basis(2, theta, phi, legacy=False)
+    destination_basis, _, _ = real_sh_tournier(
+        2, theta, phi, full_basis=True, legacy=False
+    )
+    viewer = skyline_from_files(
+        [],
+        shm_coeffs=[str(path)],
+        sh_basis=sh_basis,
+        stealth=True,
+        out_dir=str(tmp_path),
+    )
+    assert len(viewer._sh_glyph_visualizations) == 1
+    glyph = viewer._sh_glyph_visualizations[0]
+    npt.assert_allclose(
+        glyph._slicer.coeffs_4d @ destination_basis.T,
+        saved_coeffs @ source_basis.T,
+        atol=1e-6,
+        rtol=1e-5,
+    )
+    assert glyph.path == str(path)
+    assert f"Input SH basis: {sh_basis}" in glyph._info.splitlines()
+
+
+def test_skyline_logs_unknown_basis_and_uses_descoteaux(make_skyline, caplog):
+    coeffs = np.tile(np.array([4, 0, 0.2, 0, -0.1, 0], dtype=np.float32), (2, 2, 2, 1))
+    with caplog.at_level(logging.ERROR):
+        viewer = make_skyline(sh_basis="mrtrix", sh_coeffs=[(coeffs, AFFINE)])
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    source, _, _ = real_sh_descoteaux(2, theta, phi, legacy=False)
+    destination, _, _ = real_sh_tournier(2, theta, phi, full_basis=True, legacy=False)
+    npt.assert_allclose(
+        viewer._sh_glyph_visualizations[0]._slicer.coeffs_4d @ destination.T,
+        coeffs @ source.T,
+        atol=1e-6,
+    )
+    assert any(
+        record.levelno == logging.ERROR and "mrtrix" in record.getMessage()
+        for record in caplog.records
+    )
+
+
+def test_queued_odf_imports_preserve_each_batch_convention(
+    tmp_path, make_skyline, caplog
+):
+    latest = np.array([4, 0, 0.2, 0, -0.1, 0], dtype=np.float32)
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    basis, _, _ = real_sh_descoteaux(2, theta, phi, legacy=False)
+    standard_tournier, _, _ = real_sh_tournier(
+        2, theta, phi, full_basis=True, legacy=False
+    )
+    viewer = make_skyline(sh_coeffs=[(np.tile(latest, (2, 2, 2, 1)), AFFINE)])
+    initial_coeffs = viewer._sh_glyph_visualizations[0]._slicer.coeffs_4d.copy()
+    initial_info = viewer._sh_glyph_visualizations[0]._info
+    assert "Input SH basis: descoteaux07" in initial_info.splitlines()
+    source_by_path = {}
+    expected_by_path = {}
+    for batch_index, (label, vector) in enumerate(
+        (
+            ("descoteaux07_legacy", [4, 0, -0.2, 0, -0.1, 0]),
+            (
+                "tournier07",
+                [4, 0, -0.1 * np.sqrt(2), 0, -0.2 * np.sqrt(2), 0],
+            ),
+            ("tournier19", [4, 0, -0.1, 0, -0.2, 0]),
+            ("unknown", latest),
+        ),
+        start=1,
+    ):
+        path = str(tmp_path / (label + ".nii.gz"))
+        batch_scale = 1 + batch_index / 4
+        source = np.array(vector, dtype=np.float32) * batch_scale
+        save_nifti(path, np.tile(source, (2, 2, 2, 1)), AFFINE)
+        expected_by_path[path] = (latest * batch_scale) @ basis.T
+        source_by_path[path] = "descoteaux07" if label == "unknown" else label
+        viewer._append_visualization(shm_coeffs=[path], sh_basis=label)
+    deadline = time.monotonic() + 10
+    while (
+        len(viewer._sh_glyph_visualizations) <= len(expected_by_path)
+        and time.monotonic() < deadline
+    ):
+        process_async_callbacks()
+        viewer._drain_pending_visualizations()
+        time.sleep(0.01)
+    assert {glyph.path for glyph in viewer._sh_glyph_visualizations[1:]} == set(
+        expected_by_path
+    )
+    npt.assert_array_equal(
+        viewer._sh_glyph_visualizations[0]._slicer.coeffs_4d, initial_coeffs
+    )
+    assert viewer._sh_glyph_visualizations[0]._info == initial_info
+    for glyph in viewer._sh_glyph_visualizations[1:]:
+        full = glyph._slicer.coeffs_4d[0, 0, 0]
+        npt.assert_allclose(
+            full @ standard_tournier.T, expected_by_path[glyph.path], atol=1e-6
+        )
+        assert (
+            f"Input SH basis: {source_by_path[glyph.path]}" in glyph._info.splitlines()
+        )
+    assert any(
+        record.levelno == logging.ERROR and "unknown" in record.getMessage()
+        for record in caplog.records
+    )
+
+
+def test_explicit_standard_odfs_override_viewer_source_basis(make_skyline):
+    coeffs = np.zeros((2, 2, 2, 81), dtype=np.float32)
+    coeffs[..., 0] = 4
+    coeffs[..., 5] = 0.2
+    coeffs[..., 7] = -0.1
+    original = coeffs.copy()
+    viewer = make_skyline(
+        sh_coeffs=[(coeffs, AFFINE, "standard_odf", "standard")],
+        sh_basis="descoteaux07_legacy",
+    )
+    glyph = viewer._sh_glyph_visualizations[0]
+    theta = np.array([0.41, 0.9, 1.37])
+    phi = np.array([0.23, 1.11, 2.29])
+    basis, _, _ = real_sh_tournier(8, theta, phi, full_basis=True, legacy=False)
+    npt.assert_allclose(
+        glyph._slicer.coeffs_4d @ basis.T, original @ basis.T, atol=1e-6
+    )
+    npt.assert_array_equal(coeffs, original)
+    assert "Input SH basis: standard" in glyph._info.splitlines()
+
+
+def test_explicit_standard_odfs_reject_symmetric_only_count(image_skyline, caplog):
+    coeffs = np.zeros((2, 2, 2, 45), dtype=np.float32)
+    coeffs[..., 0] = 4
+    with caplog.at_level(logging.ERROR):
+        image_skyline._load_visualiations(
+            [], [], [], [], [], [(coeffs, AFFINE, "invalid_standard", "standard")]
+        )
+    assert image_skyline._sh_glyph_visualizations == []
+    assert "invalid_standard" in caplog.text
+
+
+def _assert_slice_visibility(viz, expected):
+    assert viz._slice_visibility == list(expected)
+    if isinstance(viz, Image3D):
+        assert [child.visible for child in viz.actor.children] == list(expected)
+    elif isinstance(viz, Peak3D):
+        for child in viz.actor.children:
+            assert tuple(child.material.visibility) == tuple(expected)
+    else:
+        material = viz._slicer._glyph_actor.material
+        assert (material.vis_x, material.vis_y, material.vis_z) == tuple(expected)
+
+
+def test_global_positions_move_queued_actors_without_changing_direction(make_skyline):
+    viewer = make_skyline(
+        images=[
+            _image_input("a.nii.gz"),
+            _image_input("b.nii.gz", shape=(*SHAPE, 3)),
+            _image_input("fixed.nii.gz"),
+        ],
+        peaks=[_peak_input()],
+        sh_coeffs=[_sh_input()],
+    )
+    first, direction_image, fixed = viewer._image_visualizations
+    fixed._synchronize = False
+    fixed_state = np.array(fixed.state).copy()
+    fixed_planes = [child.material.plane.copy() for child in fixed.actor.children]
+    direction_image.update_state(np.array([2, 2, 2, 2]))
+    viewer._is_drawing_ui = True
+    for axis in range(3):
+        viewer._set_global_slice_position(axis, 1)
+    viewer._is_drawing_ui = False
+    viewer._flush_pending_sync_requests()
+    viewer._flush_pending_scene_ops()
+
+    for viz in (
+        first,
+        direction_image,
+        *viewer._peak_visualizations,
+        *viewer._sh_glyph_visualizations,
+    ):
+        npt.assert_allclose(viz.state, [1, 1, 1])
+    for image in (first, direction_image):
+        npt.assert_allclose(
+            [child.material.plane[3] for child in image.actor.children],
+            np.ones(3) + 1e-3,
+        )
+    for chunk in viewer._peak_visualizations[0].actor.children:
+        npt.assert_allclose(chunk.cross_section, [1, 1, 1])
+    material = viewer._sh_glyph_visualizations[0]._slicer._glyph_actor.material
+    npt.assert_allclose(
+        [material.active_slice_x, material.active_slice_y, material.active_slice_z],
+        [1, 1, 1],
+    )
+    assert direction_image._volume_idx == 2
+    npt.assert_allclose(fixed.state, fixed_state)
+    npt.assert_allclose(
+        [child.material.plane for child in fixed.actor.children], fixed_planes
+    )
+
+
+def test_global_visibility_uses_latest_action_across_all_renderers(make_skyline):
+    viewer = make_skyline(
+        images=[_image_input(shape=(*SHAPE, 3))],
+        peaks=[_peak_input()],
+        sh_coeffs=[_sh_input()],
+    )
+    image, peak, glyph = viewer.visualizations
+    peak._synchronize = False
+    states = [np.array(viz.state).copy() for viz in viewer.visualizations]
+    image._visible = False
+    image.actor.visible = False
+
+    viewer._is_drawing_ui = True
+    viewer._set_global_slice_visibility(0, False)
+    assert viewer._get_global_slice_controls()[3] == [False, True, True]
+    viewer._is_drawing_ui = False
+    viewer._flush_pending_scene_ops()
+    for viz in viewer.visualizations:
+        _assert_slice_visibility(viz, [False, True, True])
+
+    glyph.set_slice_visibility([True, True, True])
+    _assert_slice_visibility(image, [False, True, True])
+    _assert_slice_visibility(peak, [False, True, True])
+    _assert_slice_visibility(glyph, [True, True, True])
+    assert viewer._get_global_slice_controls()[3] == [True, True, True]
+
+    viewer._set_global_slice_visibility(0, False)
+    image.update_state(np.array([*image.state, 1]))
+    _assert_slice_visibility(image, [False, True, True])
+    for viz in viewer.visualizations:
+        _assert_slice_visibility(viz, [False, True, True])
+    viewer._set_global_slice_visibility(0, True)
+    for viz, state in zip(viewer.visualizations, states):
+        _assert_slice_visibility(viz, [True, True, True])
+        npt.assert_allclose(viz.state, state)
+    assert image._visible is False
+    assert image.actor.visible is False
+    assert image._volume_idx == 1
+
+
+def test_global_positions_use_affine_coordinates_and_target_snapping(make_skyline):
+    affine = np.diag([2.0, 1.0, 3.0, 1.0])
+    affine[:3, 3] = [10, 20, 30]
+    viewer = make_skyline(
+        images=[(_volume(), affine, "reference")],
+        peaks=[_peak_input()],
+        sh_coeffs=[_sh_input()],
+    )
+    for axis, value in enumerate((8, 2, 9)):
+        viewer._set_global_slice_position(axis, value)
+    npt.assert_allclose(viewer.active_image.state, [18, 22, 39])
+    name, values, bounds, _ = viewer._get_global_slice_controls()
+    assert name == "reference"
+    npt.assert_allclose(values, [8, 2, 9])
+    assert bounds == ((0, 16), (0, 9), (0, 30))
+    for chunk in viewer._peak_visualizations[0].actor.children:
+        npt.assert_allclose(chunk.cross_section, [2, 2, 2])
+    material = viewer._sh_glyph_visualizations[0]._slicer._glyph_actor.material
+    npt.assert_allclose(
+        [material.active_slice_x, material.active_slice_y, material.active_slice_z],
+        [1, 1, 1],
+    )
+
+
+@pytest.mark.parametrize("dataset_type", ["peaks", "sh_coeffs"])
+def test_global_controls_work_without_images_or_synchronized_reference(
+    make_skyline, dataset_type
+):
+    data = _peak_input() if dataset_type == "peaks" else _sh_input()
+    viewer = make_skyline(**{dataset_type: [data]})
+    viz = viewer.visualizations[0]
+    assert viewer._get_global_slice_reference() is viz
+    viewer._set_global_slice_position(0, 1)
+    assert viz.state[0] == 1
+    viz._synchronize = False
+    before = np.array(viz.state).copy()
+    viewer._set_global_slice_position(0, 0)
+    viewer._set_global_slice_visibility(0, False)
+    assert viewer._get_global_slice_controls() == (
+        None,
+        None,
+        None,
+        [False, True, True],
+    )
+    _assert_slice_visibility(viz, [False, True, True])
+    npt.assert_allclose(viz.state, before)
+
+
+def test_global_reference_excludes_removed_and_unsynchronized_datasets(make_skyline):
+    viewer = make_skyline(
+        images=[_image_input("a"), _image_input("b")],
+        peaks=[_peak_input()],
+        sh_coeffs=[_sh_input()],
+    )
+    first, second = viewer._image_visualizations
+    peak = viewer._peak_visualizations[0]
+    glyph = viewer._sh_glyph_visualizations[0]
+    assert viewer._get_global_slice_reference() is second
+    second._synchronize = False
+    viewer._slice_focus_viz = peak
+    assert viewer._get_global_slice_reference() is peak
+    peak._synchronize = False
+    assert viewer._get_global_slice_reference() is glyph
+    viewer._remove_visualization(second)
+    assert viewer.active_image is first
+    assert first.active is True
+    assert viewer._get_global_slice_reference() is first
+    viewer._slice_focus_viz = second
+    viewer._remove_visualization(first)
+    assert viewer.active_image is None
+    assert viewer._get_global_slice_reference() is glyph
+    viewer._remove_visualization(peak)
+    viewer._remove_visualization(glyph)
+    assert viewer._get_global_slice_controls() is None
+
+
+def test_new_slice_datasets_inherit_aggregate_visibility(make_skyline):
+    viewer = make_skyline(images=[_image_input("original")])
+    viewer._set_global_slice_visibility(0, False)
+    original = viewer.active_image
+    viewer._queue_loaded_visualizations(
+        {
+            "images": [_image_input("new")],
+            "peaks": [_peak_input()],
+            "shm_coeffs": [_sh_input()],
+            "rois": [],
+            "surfaces": [],
+            "tractograms": [],
+        }
+    )
+    viewer._drain_pending_visualizations()
+    for viz in viewer.visualizations:
+        _assert_slice_visibility(viz, [False, True, True])
+    viewer._sh_glyph_visualizations[0].set_slice_visibility([True, True, True])
+    viewer._queue_loaded_visualizations(
+        {
+            "images": [_image_input("mixed")],
+            "peaks": [],
+            "shm_coeffs": [],
+            "rois": [],
+            "surfaces": [],
+            "tractograms": [],
+        }
+    )
+    viewer._drain_pending_visualizations()
+    _assert_slice_visibility(viewer._image_visualizations[-1], [True, True, True])
+    _assert_slice_visibility(original, [False, True, True])
+
+
+def test_global_position_preserves_unsynchronized_shared_state_without_affine(
+    make_skyline,
+):
+    viewer = make_skyline(
+        images=[(_volume(), None, name) for name in ("reference", "fixed", "source")]
+    )
+    reference, fixed, source = viewer._image_visualizations
+    source.update_state(np.array([2.0, 2.0, 2.0]))
+    viewer._synchronize_visualizations(source, source.state)
+    fixed._synchronize = False
+    source._synchronize = False
+    before = np.array(fixed.state).copy()
+    before_planes = np.array([child.material.plane for child in fixed.actor.children])
+
+    viewer._set_global_slice_position(0, 1)
+
+    npt.assert_allclose(reference.state, [1, 2, 2])
+    npt.assert_array_equal(fixed.state, before)
+    npt.assert_array_equal(
+        [child.material.plane for child in fixed.actor.children], before_planes
+    )
+    for image in viewer._image_visualizations:
+        image.active = image is fixed
+    viewer._arrange_image_actors()
+    assert viewer.active_image is fixed
+    npt.assert_allclose(
+        [child.material.plane[3] for child in fixed.actor.children],
+        before_planes[:, 3] + len(viewer._image_visualizations) * 0.005,
+    )

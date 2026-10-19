@@ -68,8 +68,10 @@ class SkylineFlow(Workflow):
             Tuple of path for each ODF file (.pam5, or 4D NIfTI of SH
             coefficients) to be added to the Skyline viewer.
         sh_basis : str, optional
-            SH basis of NIfTI ODFs: 'descoteaux07' (DIPY legacy) or 'tournier07'
-            (MRtrix3).
+            Input convention for PAM and NIfTI ODFs: 'descoteaux07' (latest),
+            'descoteaux07_legacy' (old DIPY), 'tournier07' (MRtrix 0.2),
+            or 'tournier19' (MRtrix3).
+            Unsupported values are logged and use latest Descoteaux07.
         cluster : bool, optional
             Whether to cluster the tractograms.
         performance_version : bool, optional
@@ -106,14 +108,15 @@ class SkylineFlow(Workflow):
             File path for BUAN p-values to be used for BUAN-based coloring of
             tractograms.
         stealth : bool, optional
-            Do not use interactive mode just save figure.
+            Capture a figure instead of opening an interactive window.
+            ``DIPY_OFFSCREEN=1`` or ``true`` (case-insensitive) also captures when False.
         rgb : bool or None, optional
             ``None``: auto-detect from structured NIfTI ``DT_RGB24`` dtype;
             ``--rgb`` forces RGB; ``--no-rgb`` disables it entirely.
         out_dir : str or Path, optional
-            Output directory to save the figure if stealth mode is enabled.
+            Output directory for offscreen figures.
         out_stealth_png : str, optional
-            Filename of saved picture if stealth mode is enabled.
+            Filename of the offscreen figure.
         """
         super().__init__(force=True)
         skyline_input_files = []

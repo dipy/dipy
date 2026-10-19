@@ -15,7 +15,7 @@ from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO_SMALL
 from dipy.viz.skyline.compute import process_async_callbacks, run_async
-from dipy.viz.skyline.io import SH_BASES, load_files
+from dipy.viz.skyline.io import _valid_shm_coeffs, _validate_sh_basis, load_files
 
 fury_trip_msg = (
     "Skyline requires Fury version 2.0.0 or higher."
@@ -34,7 +34,12 @@ if has_fury_v2:
 
     from dipy.viz.skyline.render.image import Image3D, create_image_visualization
     from dipy.viz.skyline.render.peak import Peak3D, create_peak_visualization
-    from dipy.viz.skyline.render.renderer import create_window
+    from dipy.viz.skyline.render.renderer import (
+        create_window,
+        slice_slider_bounds,
+        slice_slider_values_from_state,
+        slice_state_from_slider_values,
+    )
     from dipy.viz.skyline.render.roi import ROI3D, create_roi_visualization
     from dipy.viz.skyline.render.sh_slicer import SHGlyph3D, create_shm_visualization
     from dipy.viz.skyline.render.streamline import (
@@ -64,6 +69,8 @@ class Skyline:
           snapshots.
 
         An unrecognized value logs an error and terminates the process.
+        ``DIPY_OFFSCREEN=1`` or ``true`` (case-insensitive) forces stealth.
+        Otherwise, ``visualizer_type`` controls rendering.
     images : list of tuple, optional
         ``(data, affine)`` or ``(data, affine, filename)`` tuples where
         ``data`` is a nibabel image or ndarray and ``filename`` is a display label.
@@ -85,10 +92,15 @@ class Skyline:
         Already-loaded spherical harmonic coefficient data to show at
         startup, as ``(coeffs, affine)``, ``(coeffs, affine, filename)`` or
         ``(coeffs, affine, filename, basis_type)`` tuples. ``coeffs`` must
-        be a 4D ndarray, otherwise the entry is skipped with a warning.
+        be a 4D ndarray with a symmetric SH count, or a full SH count when the
+        fourth tuple element is ``"standard"``. Invalid entries are logged
+        and skipped.
     sh_basis : str, optional
-        SH basis of NIfTI ODFs: ``"descoteaux07"`` (DIPY legacy) or
-        ``"tournier07"`` (MRtrix3).
+        Input convention for ODF files and unlabelled arrays: ``"descoteaux07"``
+        (latest), ``"descoteaux07_legacy"`` (old DIPY), ``"tournier07"``
+        (MRtrix 0.2), or ``"tournier19"`` (MRtrix3). A fourth tuple element
+        overrides this selection.
+        Unsupported values are logged and use latest Descoteaux07.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
@@ -139,11 +151,16 @@ class Skyline:
         Spherical harmonic coefficient file paths loaded asynchronously
         into the viewer on startup.
     out_dir : str or Path, optional
-        Directory for the stealth-mode output image; created if missing.
-        Used only when ``visualizer_type`` is ``"stealth"``.
+        Directory for the offscreen output image; created if missing.
     out_stealth_png : str, optional
-        Output image name, without extension, used as the stealth window
-        title. Used only when ``visualizer_type`` is ``"stealth"``.
+        Output image name used as the offscreen window title. Applies when
+        stealth mode is requested or ``DIPY_OFFSCREEN`` is ``1``/``true``.
+
+    Notes
+    -----
+    Window creation sets ``FURY_OFFSCREEN`` to ``1`` for stealth or removes
+    the key otherwise. Skyline restores its previous value or absence after
+    setup/start returns or raises.
     """
 
     def __init__(
@@ -191,6 +208,8 @@ class Skyline:
               snapshots.
 
             An unrecognized value logs an error and terminates the process.
+            ``DIPY_OFFSCREEN=1`` or ``true`` (case-insensitive) forces stealth.
+            Otherwise, ``visualizer_type`` controls rendering.
         images : list of tuple, optional
             ``(data, affine)`` or ``(data, affine, filename)`` tuples where
             ``data`` is a nibabel image or ndarray and ``filename`` a display label.
@@ -212,10 +231,15 @@ class Skyline:
             Already-loaded spherical harmonic coefficient data to show at
             startup, as ``(coeffs, affine)``, ``(coeffs, affine, filename)`` or
             ``(coeffs, affine, filename, basis_type)`` tuples. ``coeffs`` must
-            be a 4D ndarray, otherwise the entry is skipped with a warning.
+            be a 4D ndarray with a symmetric SH count, or a full SH count when the
+            fourth tuple element is ``"standard"``. Invalid entries are logged
+            and skipped.
         sh_basis : str, optional
-            SH basis of NIfTI ODFs: ``"descoteaux07"`` (DIPY legacy) or
-            ``"tournier07"`` (MRtrix3).
+            Input convention for ODF files and unlabelled arrays: ``"descoteaux07"``
+            (latest), ``"descoteaux07_legacy"`` (old DIPY), ``"tournier07"``
+            (MRtrix 0.2), or ``"tournier19"`` (MRtrix3). A fourth tuple element
+            overrides this selection.
+            Unsupported values are logged and use latest Descoteaux07.
         is_cluster : bool, optional
             Whether to cluster the tractograms.
         is_light_version : bool, optional
@@ -266,17 +290,27 @@ class Skyline:
             Spherical harmonic coefficient file paths loaded asynchronously
             into the viewer on startup.
         out_dir : str or Path, optional
-            Directory for the stealth-mode output image; created if missing.
-            Used only when ``visualizer_type`` is ``"stealth"``.
+            Directory for the offscreen output image; created if missing.
         out_stealth_png : str, optional
-            Output image name, without extension, used as the stealth window
-            title. Used only when ``visualizer_type`` is ``"stealth"``.
+            Output image name used as the offscreen window title. Applies when
+            stealth mode is requested or ``DIPY_OFFSCREEN`` is ``1``/``true``.
+
+        Notes
+        -----
+        Window creation sets ``FURY_OFFSCREEN`` to ``1`` for stealth or removes
+        the key otherwise. Skyline restores its previous value or absence after
+        setup/start returns or raises.
         """
-        if sh_basis not in SH_BASES:
-            raise ValueError(f"sh_basis must be one of {SH_BASES}, got {sh_basis!r}.")
+        sh_basis = _validate_sh_basis(sh_basis)
         self.size = (1200, 1000)
         self.ui_size = (400, self.size[1])
-        self._visualizer_type = visualizer_type
+        dipy_offscreen_requested = os.environ.get("DIPY_OFFSCREEN", "").lower() in (
+            "1",
+            "true",
+        )
+        self._visualizer_type = (
+            "stealth" if dipy_offscreen_requested else visualizer_type
+        )
         self._direct_load = True
         self._rgb = rgb
         self._cluster_thr = cluster_thr
@@ -284,112 +318,126 @@ class Skyline:
         self._cluster_length_thr = cluster_length_thr
         self._buan_pvals = buan_pvals
         self._sh_basis = sh_basis
-        if self._visualizer_type != "stealth":
-            os.environ["FURY_OFFSCREEN"] = "0"
-            self.window = create_window(
-                visualizer_type=self._visualizer_type,
-                size=self.size,
-                screen_config=[
-                    (self.ui_size[0], 0, self.size[0] - self.ui_size[0], self.size[1]),
-                ],
+        previous_fury_offscreen = os.environ.get("FURY_OFFSCREEN")
+        try:
+            if self._visualizer_type != "stealth":
+                self.window = create_window(
+                    visualizer_type=self._visualizer_type,
+                    size=self.size,
+                    screen_config=[
+                        (
+                            self.ui_size[0],
+                            0,
+                            self.size[0] - self.ui_size[0],
+                            self.size[1],
+                        ),
+                    ],
+                )
+            else:
+                title = "DIPY SKYLINE"
+                if out_stealth_png is not None:
+                    title = split_filename_extension(out_stealth_png)[0]
+                if out_dir is not None and out_dir != "":
+                    os.makedirs(out_dir, exist_ok=True)
+                    title = os.path.join(out_dir, title)
+                self.window = create_window(
+                    visualizer_type=self._visualizer_type, size=self.size, title=title
+                )
+            if bg_color is None:
+                bg_color = (1, 1, 1) if glass_brain else (0.1, 0.1, 0.1)
+            self._bg_color = bg_color
+            self.window.screens[0].scene.background = self._bg_color
+
+            if tract_colors is None:
+                tract_colors = "direction"
+            elif isinstance(tract_colors, str) and len(tract_colors.split(" ")) == 3:
+                tract_colors = tuple(map(float, tract_colors.split(" ")))
+            self._tract_colors = tract_colors
+
+            self._image_visualizations = []
+            self._peak_visualizations = []
+            self._roi_visualizations = []
+            self._surface_visualizations = []
+            self._tractogram_visualizations = []
+            self._sh_glyph_visualizations = []
+            self._pending_loaded_files = []
+            self._pending_tractogram_switches = []
+            self._loading_total = 0
+            self._loading_done = 0
+            self._is_drawing_ui = False
+            self._refresh_requested = False
+            self._pending_bg_color = None
+            self._pending_sync_requests = []
+            self._pending_scene_ops = []
+            self._is_cluster = is_cluster
+            self._is_light_version = is_light_version
+            self._glass_brain = glass_brain
+            self._tractogram_help = False
+            self.window.renderer.add_event_handler(self.handle_key_events, "key_down")
+            self.window.resize_callback(self.handle_resize)
+            self._color_gen = distinguishable_colormap()
+            self.active_image = None
+            self._slice_focus_viz = None
+
+            if self._visualizer_type != "stealth":
+                gpu_texture = load_image_as_wgpu_texture_view(
+                    str(LOGO_SMALL), self.window.device
+                )
+                logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
+                self.UI_window = UIWindow(
+                    "Image Controls",
+                    size=self.ui_size,
+                    render_callback=self.request_refresh,
+                    logo_tex_ref=logo_tex_ref,
+                    file_dialog_callback=self._append_visualization,
+                    bg_color_callback=self._update_background_color,
+                    snapshot_callback=self._save_snapshot,
+                    sh_basis=sh_basis,
+                    slice_controls_callback=self._get_global_slice_controls,
+                    slice_position_callback=self._set_global_slice_position,
+                    slice_visibility_callback=self._set_global_slice_visibility,
+                )
+                self.window._imgui.set_gui(self.draw_ui)
+            else:
+                self.UI_window = None
+
+            initial_loaded_files = {
+                "images": images or [],
+                "peaks": peaks or [],
+                "rois": rois or [],
+                "surfaces": surfaces or [],
+                "tractograms": tractograms or [],
+                "shm_coeffs": sh_coeffs or [],
+            }
+            has_initial_visualizations = any(initial_loaded_files.values())
+            has_initial_files = any(
+                (initial_filenames, initial_rois, initial_peaks, initial_shm_coeffs)
             )
-        else:
-            os.environ["FURY_OFFSCREEN"] = "1"
-            title = "DIPY SKYLINE"
-            if out_stealth_png is not None:
-                title = split_filename_extension(out_stealth_png)[0]
-            if out_dir is not None and out_dir != "":
-                os.makedirs(out_dir, exist_ok=True)
-                title = os.path.join(out_dir, title)
-            self.window = create_window(
-                visualizer_type=self._visualizer_type, size=self.size, title=title
-            )
-        if bg_color is None:
-            bg_color = (1, 1, 1) if glass_brain else (0.1, 0.1, 0.1)
-        self._bg_color = bg_color
-        self.window.screens[0].scene.background = self._bg_color
 
-        if tract_colors is None:
-            tract_colors = "direction"
-        elif isinstance(tract_colors, str) and len(tract_colors.split(" ")) == 3:
-            tract_colors = tuple(map(float, tract_colors.split(" ")))
-        self._tract_colors = tract_colors
+            if has_initial_visualizations:
+                self._queue_loaded_visualizations(initial_loaded_files)
 
-        self._image_visualizations = []
-        self._peak_visualizations = []
-        self._roi_visualizations = []
-        self._surface_visualizations = []
-        self._tractogram_visualizations = []
-        self._sh_glyph_visualizations = []
-        self._pending_loaded_files = []
-        self._pending_tractogram_switches = []
-        self._loading_total = 0
-        self._loading_done = 0
-        self._is_drawing_ui = False
-        self._refresh_requested = False
-        self._pending_bg_color = None
-        self._pending_sync_requests = []
-        self._pending_scene_ops = []
-        self._is_cluster = is_cluster
-        self._is_light_version = is_light_version
-        self._glass_brain = glass_brain
-        self._tractogram_help = False
-        self.window.renderer.add_event_handler(self.handle_key_events, "key_down")
-        self.window.resize_callback(self.handle_resize)
-        self._color_gen = distinguishable_colormap()
-        self.active_image = None
-        self._slice_focus_viz = None
+            if has_initial_files:
+                self._append_visualization(
+                    filenames=initial_filenames,
+                    rois=initial_rois,
+                    peaks=initial_peaks,
+                    shm_coeffs=initial_shm_coeffs,
+                )
+            elif not has_initial_visualizations and self.UI_window is not None:
+                self.UI_window.request_file_dialog = True
 
-        if self._visualizer_type != "stealth":
-            gpu_texture = load_image_as_wgpu_texture_view(
-                str(LOGO_SMALL), self.window.device
-            )
-            logo_tex_ref = self.window._imgui.backend.register_texture(gpu_texture)
-            self.UI_window = UIWindow(
-                "Image Controls",
-                size=self.ui_size,
-                render_callback=self.request_refresh,
-                logo_tex_ref=logo_tex_ref,
-                file_dialog_callback=self._append_visualization,
-                bg_color_callback=self._update_background_color,
-                snapshot_callback=self._save_snapshot,
-            )
-            self.window._imgui.set_gui(self.draw_ui)
-        else:
-            self.UI_window = None
+            if self._visualizer_type == "stealth":
+                self._wait_for_loading_in_stealth_mode()
 
-        initial_loaded_files = {
-            "images": images or [],
-            "peaks": peaks or [],
-            "rois": rois or [],
-            "surfaces": surfaces or [],
-            "tractograms": tractograms or [],
-            "shm_coeffs": sh_coeffs or [],
-        }
-        has_initial_visualizations = any(initial_loaded_files.values())
-        has_initial_files = any(
-            (initial_filenames, initial_rois, initial_peaks, initial_shm_coeffs)
-        )
-
-        if has_initial_visualizations:
-            self._queue_loaded_visualizations(initial_loaded_files)
-
-        if has_initial_files:
-            self._append_visualization(
-                filenames=initial_filenames,
-                rois=initial_rois,
-                peaks=initial_peaks,
-                shm_coeffs=initial_shm_coeffs,
-            )
-        elif not has_initial_visualizations and self.UI_window is not None:
-            self.UI_window.request_file_dialog = True
-
-        if self._visualizer_type == "stealth":
-            self._wait_for_loading_in_stealth_mode()
-
-        self.before_render()
-        self._direct_load = False
-        self.window.start()
+            self.before_render()
+            self._direct_load = False
+            self.window.start()
+        finally:
+            if previous_fury_offscreen is None:
+                os.environ.pop("FURY_OFFSCREEN", None)
+            else:
+                os.environ["FURY_OFFSCREEN"] = previous_fury_offscreen
 
     def _wait_for_loading_in_stealth_mode(self):
         """Block until all queued and pending visualizations finish loading.
@@ -670,6 +718,89 @@ class Skyline:
                 )
         self._refresh_requested = True
 
+    def _get_global_slice_reference(self):
+        """Return the registered synchronized slice reference."""
+        eligible = [
+            viz
+            for viz in self.visualizations
+            if isinstance(viz, (Image3D, Peak3D, SHGlyph3D)) and viz._synchronize
+        ]
+        if self.active_image in eligible:
+            return self.active_image
+        if self._slice_focus_viz in eligible:
+            return self._slice_focus_viz
+        return eligible[-1] if eligible else None
+
+    def _get_global_slice_controls(self):
+        """Return the reference, slider values, bounds, and visibility."""
+        datasets = (
+            self._image_visualizations
+            + self._peak_visualizations
+            + self._sh_glyph_visualizations
+        )
+        if not datasets:
+            return None
+        visibility = [
+            any(viz._slice_visibility[axis] for viz in datasets) for axis in range(3)
+        ]
+        reference = self._get_global_slice_reference()
+        if reference is None:
+            return None, None, None, visibility
+        if isinstance(reference, Image3D):
+            shape = reference.dwi.shape[:3]
+        elif isinstance(reference, Peak3D):
+            shape = reference.peaks.shape[:3]
+        else:
+            shape = reference.shape
+        values = slice_slider_values_from_state(
+            reference.state, affine=reference.affine
+        )
+        bounds = slice_slider_bounds(shape, affine=reference.affine)
+        return reference.name, values, bounds, visibility
+
+    def _set_global_slice_position(self, axis, value):
+        """Move synchronized slices in the reference's slider coordinates.
+
+        Parameters
+        ----------
+        axis : int
+            X/Y/Z axis index.
+        value : float
+            Slice slider coordinate.
+        """
+        reference = self._get_global_slice_reference()
+        if reference is None:
+            return
+        values = slice_slider_values_from_state(
+            reference.state, affine=reference.affine
+        ).copy()
+        values[axis] = round(value)
+        new_state = slice_state_from_slider_values(values, affine=reference.affine)
+        reference.update_state(new_state)
+        self._synchronize_visualizations(reference, new_state)
+        self.request_refresh()
+
+    def _set_global_slice_visibility(self, axis, visible):
+        """Set one slice axis across all datasets, regardless of synchronization.
+
+        Parameters
+        ----------
+        axis : int
+            X/Y/Z axis index.
+        visible : bool
+            Whether to show this axis.
+        """
+        for viz in (
+            self._image_visualizations
+            + self._peak_visualizations
+            + self._sh_glyph_visualizations
+        ):
+            visibility = viz._slice_visibility.copy()
+            visibility[axis] = visible
+            if visibility != viz._slice_visibility:
+                viz.set_slice_visibility(visibility)
+        self.request_refresh()
+
     def _get_reference_slice_state(self):
         """Return a snapshot of the current slice pose for load-time alignment.
 
@@ -751,6 +882,7 @@ class Skyline:
             n_peak_before = len(self._peak_visualizations)
             n_sh_before = len(self._sh_glyph_visualizations)
             reference_slice_state = self._get_reference_slice_state()
+            global_slice_controls = self._get_global_slice_controls()
             self._load_visualiations(
                 loaded_files["images"],
                 loaded_files["peaks"],
@@ -767,6 +899,14 @@ class Skyline:
                 n_peak_before,
                 n_sh_before,
             )
+            if global_slice_controls is not None:
+                visibility = global_slice_controls[3]
+                for viz in (
+                    self._image_visualizations[n_img_before:]
+                    + self._peak_visualizations[n_peak_before:]
+                    + self._sh_glyph_visualizations[n_sh_before:]
+                ):
+                    viz.set_slice_visibility(visibility)
 
             if self._visualizer_type != "stealth":
                 self._update_tractogram_helper()
@@ -916,7 +1056,9 @@ class Skyline:
             Loaded spherical harmonic coefficient data, as
             ``(coeffs, affine)``, ``(coeffs, affine, filename)`` or
             ``(coeffs, affine, filename, basis_type)`` tuples. Entries whose
-            ``coeffs`` is not a 4D ndarray are skipped with a warning.
+            ``coeffs`` is not a 4D ndarray with a valid SH count are logged and
+            skipped. Explicit ``"standard"`` tuples use a full SH count;
+            other inputs use a symmetric count.
         is_cluster : bool, optional
             Overrides ``self._is_cluster`` for the tractograms in this batch.
         async_clustering : bool, optional
@@ -1000,11 +1142,8 @@ class Skyline:
                 filename = f"ODFs {idx}"
                 if len(input) >= 3:
                     filename = input[2]
-                if not isinstance(coeffs, np.ndarray) or len(coeffs.shape) != 4:
-                    logger.warning(
-                        f"The provide file: {filename} does not "
-                        "contain any SH coefficients or is not a 4D array."
-                    )
+                full_basis = len(input) == 4 and input[3] == "standard"
+                if not _valid_shm_coeffs(coeffs, filename, full_basis=full_basis):
                     continue
             sh3d = create_shm_visualization(
                 input,
@@ -1012,6 +1151,7 @@ class Skyline:
                 render_callback=self.request_refresh,
                 scale=1.0,
                 l_max=8,
+                basis_type=self._sh_basis,
                 sync_callback=self._synchronize_visualizations,
             )
             self._add_visualization(sh3d)
@@ -1025,7 +1165,7 @@ class Skyline:
             self.UI_window.request_file_dialog = True
 
     def _append_visualization(
-        self, *, filenames=None, rois=None, peaks=None, shm_coeffs=None
+        self, *, filenames=None, rois=None, peaks=None, shm_coeffs=None, sh_basis=None
     ):
         """Load files from disk asynchronously and queue them for display.
 
@@ -1044,7 +1184,12 @@ class Skyline:
             List of ``.pam5`` or NIfTI (.nii, .nii.gz) peak file paths.
         shm_coeffs : list of str, optional
             Paths to spherical harmonic coefficient files to load.
+        sh_basis : str or None, optional
+            Source convention for this batch, or the viewer's input default.
+            Unsupported values are logged and use latest Descoteaux07.
         """
+        batch_sh_basis = self._sh_basis if sh_basis is None else sh_basis
+        batch_sh_basis = _validate_sh_basis(batch_sh_basis)
         total_files = (
             len(filenames or [])
             + len(rois or [])
@@ -1063,7 +1208,7 @@ class Skyline:
                 rois=rois,
                 peaks=peaks,
                 shm_coeffs=shm_coeffs,
-                sh_basis=self._sh_basis,
+                sh_basis=batch_sh_basis,
             )
 
         def on_files_loaded(loaded_files, exception):
@@ -1127,6 +1272,14 @@ class Skyline:
         """
         if isinstance(viz, Image3D):
             self._image_visualizations.remove(viz)
+            if viz is self.active_image:
+                self.active_image = (
+                    self._image_visualizations[-1]
+                    if self._image_visualizations
+                    else None
+                )
+                if self.active_image is not None:
+                    self.active_image.active = True
         elif isinstance(viz, Peak3D):
             self._peak_visualizations.remove(viz)
         elif isinstance(viz, ROI3D):
@@ -1142,6 +1295,12 @@ class Skyline:
 
         if viz is self._slice_focus_viz:
             self._slice_focus_viz = None
+        if viz is self.active_image:
+            self.active_image = (
+                self._image_visualizations[-1] if self._image_visualizations else None
+            )
+            for image in self._image_visualizations:
+                image.active = image is self.active_image
 
         if len(self.visualizations) == 0 and self.UI_window is not None:
             self.UI_window.request_file_dialog = True
@@ -1396,12 +1555,13 @@ def skyline_from_files(
         Tuple of path for each peaks file (.pam5, or NIfTI with shape
         (X, Y, Z, 3*N) or (X, Y, Z, N, 3)) to be added to the Skyline viewer.
     shm_coeffs : list of str, optional
-        File paths for spherical harmonics coefficients to be loaded into
-        the Skyline viewer. Only ``.pam5`` files are supported; other
-        extensions are silently skipped.
+        File paths for spherical harmonics coefficients (``.pam5``, ``.nii``,
+        or ``.nii.gz``). Unsupported extensions are logged and skipped.
     sh_basis : str, optional
-        SH basis of NIfTI ODFs: 'descoteaux07' (DIPY legacy) or 'tournier07'
-        (MRtrix3).
+        Input convention for PAM and NIfTI ODFs: ``"descoteaux07"`` (latest),
+        ``"descoteaux07_legacy"`` (old DIPY), ``"tournier07"`` (MRtrix 0.2),
+        or ``"tournier19"`` (MRtrix3).
+        Unsupported values are logged and use latest Descoteaux07.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
@@ -1436,24 +1596,29 @@ def skyline_from_files(
         File path for BUAN p-values used for BUAN-based coloring of
         tractograms.
     stealth : bool, optional
-        Whether to render offscreen and save a snapshot instead of opening
-        an interactive window; sets ``visualizer_type`` to ``"stealth"``.
+        Request offscreen capture. ``DIPY_OFFSCREEN=1`` or ``true``
+        (case-insensitive) forces capture; otherwise, ``stealth`` controls rendering.
     rgb : bool or None, optional
         ``None``: auto-detect from structured NIfTI ``DT_RGB24``
         dtype; show toggle for other 4D volumes with 3 or 4 channels.
         ``True``: force RGB mode.  ``False``: never treat as RGB.
     out_dir : str or Path, optional
-        Directory for the stealth-mode output image; created if missing.
-        Used only when ``stealth`` is True.
+        Directory for the offscreen output image; created if missing.
     out_stealth_png : str, optional
-        Output image name, without extension, used as the stealth window
-        title. Used only when ``stealth`` is True.
+        Output image name used as the offscreen window title. Applies when
+        ``stealth`` is True or ``DIPY_OFFSCREEN`` is ``1``/``true``.
 
     Returns
     -------
     Skyline
         The constructed viewer, returned once construction returns from
         its blocking ``self.window.start()`` call.
+
+    Notes
+    -----
+    Window creation sets ``FURY_OFFSCREEN`` to ``1`` for stealth or removes
+    the key otherwise. Skyline restores its previous value or absence after
+    setup/start returns or raises.
     """
     visualizer_type = "stealth" if stealth else "standalone"
 
@@ -1523,6 +1688,8 @@ def skyline(
           snapshots.
 
         An unrecognized value logs an error and terminates the process.
+        ``DIPY_OFFSCREEN=1`` or ``true`` (case-insensitive) forces stealth.
+        Otherwise, ``visualizer_type`` controls rendering.
     images : list of tuple, optional
         ``(data, affine)`` or ``(data, affine, filename)`` tuples where
         ``data`` is a nibabel image or ndarray and ``filename`` is a display label.
@@ -1544,10 +1711,15 @@ def skyline(
         Already-loaded spherical harmonic coefficient data to show at
         startup, as ``(coeffs, affine)``, ``(coeffs, affine, filename)`` or
         ``(coeffs, affine, filename, basis_type)`` tuples. ``coeffs`` must
-        be a 4D ndarray, otherwise the entry is skipped with a warning.
+        be a 4D ndarray with a symmetric SH count, or a full SH count when the
+        fourth tuple element is ``"standard"``. Invalid entries are logged
+        and skipped.
     sh_basis : str, optional
-        SH basis of NIfTI ODFs: 'descoteaux07' (DIPY legacy) or 'tournier07'
-        (MRtrix3).
+        Input convention for ODF files and unlabelled arrays: ``"descoteaux07"``
+        (latest), ``"descoteaux07_legacy"`` (old DIPY), ``"tournier07"``
+        (MRtrix 0.2), or ``"tournier19"`` (MRtrix3). A fourth tuple element
+        overrides this selection.
+        Unsupported values are logged and use latest Descoteaux07.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
@@ -1598,17 +1770,26 @@ def skyline(
         Spherical harmonic coefficient file paths loaded asynchronously
         into the viewer on startup.
     out_dir : str or Path, optional
-        Directory for the stealth-mode output image; created if missing.
-        Used only when ``visualizer_type`` is ``"stealth"``.
+        Directory for the offscreen output image; created if missing.
     out_stealth_png : str, optional
-        Output image name, without extension, used as the stealth window
-        title. Used only when ``visualizer_type`` is ``"stealth"``.
+        Output image name used as the offscreen window title. Applies when
+        stealth mode is requested or ``DIPY_OFFSCREEN`` is ``1``/``true``.
 
     Returns
     -------
     Skyline
         The constructed viewer, returned once construction returns from
         its blocking ``self.window.start()`` call.
+
+    Notes
+    -----
+    Window creation sets ``FURY_OFFSCREEN`` to ``1`` for stealth or removes
+    the key otherwise. Skyline restores its previous value or absence after
+    setup/start returns or raises.
+
+    Global visibility affects all slice datasets; positions affect synchronized
+    datasets only. Individual visibility changes remain local.
+    Titles select layers; trailing arrows toggle expansion.
     """
     return Skyline(
         visualizer_type=visualizer_type,

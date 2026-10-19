@@ -564,7 +564,7 @@ def render_section_header(
     is_close : bool
         True if the user clicked remove this frame.
     is_changed : bool
-        True if the header body area triggered an open transition.
+        True if the header body selected the visualization this frame.
     """
     imgui.push_id(label)
 
@@ -720,7 +720,6 @@ def render_section_header(
         is_open = not is_open
     elif imgui.is_item_clicked():
         is_changed = True
-        is_open = True
 
     imgui.pop_id()
     return is_open, is_visible, is_close, is_changed

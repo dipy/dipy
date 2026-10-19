@@ -1,16 +1,28 @@
-"""HTML report generation for dipy_auto pipeline execution.
+"""HTML reports for dipy_auto pipeline execution.
 
-This module generates detailed HTML reports showing pipeline configuration,
-execution graph, timing information, and slice mosaic visualizations of
-neuroimaging outputs.
+Every stage gets its own self-contained QC page (``reports/NN_<stage>.html``)
+written as soon as the stage finishes, plus a JSON record next to it. An
+overview page (``reports/index.html``) is refreshed after each stage, and the
+final report combines all stage records. Figures are embedded as data URIs so
+every page opens with a double-click, without a web server.
 """
 
 from datetime import datetime
-import io  # noqa: F401
+import glob
+import html
+import importlib
+import json
+import math
 import os
+from pathlib import Path
 import re
+import shlex
+import subprocess
+import urllib.parse
 
 from dipy.utils.logging import logger
+from dipy.workflows.cli import cli_flows
+from dipy.workflows.qc import STATUS_LEVELS
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -199,18 +211,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             color: #6b7280;
         }}
 
-        .info-banner {{
-            margin: 0 36px 0;
-            padding: 10px 16px;
-            background: #fff7ed;
-            border: 1px solid #fed7aa;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #92400e;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }}
 
         .content {{
             padding: 28px 36px 60px;
@@ -420,12 +420,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             font-size: 13px;
         }}
 
-        canvas {{
-            display: block;
-            width: 100%;
-            height: 500px;
-            background: #000;
-        }}
 
         /* ── Output items ────────────────────────────────────── */
         .output-list {{
@@ -499,15 +493,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             font-size: 13.5px;
         }}
 
-        .success-box {{
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin: 12px 0;
-            color: #166534;
-            font-size: 13.5px;
-        }}
 
         /* ── Methods / boilerplate ───────────────────────────── */
         .boilerplate {{
@@ -559,65 +544,102 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             color: #166534;
             border: 1px solid #bbf7d0;
         }}
-
-        /* ── Profile charts ──────────────────────────────────── */
-        .profile-charts-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 20px;
-            margin: 16px 0;
+        .badge-optional {{
+            background: #f8fafc;
+            color: #475569;
+            border: 1px solid #cbd5e1;
         }}
-        .profile-chart-container {{
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }}
-        .profile-chart-container canvas {{
-            height: 240px !important;
-            background: #fff;
-        }}
-
-        /* ── Badges ──────────────────────────────────────────── */
-        .stage-badge {{
-            display: inline-block;
-            padding: 2px 9px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 0.2px;
-            vertical-align: middle;
-            margin-left: 8px;
-        }}
-        .badge-restart {{
-            background: #eff6ff;
-            color: #1d4ed8;
-            border: 1px solid #bfdbfe;
-        }}
-        .badge-user-mask {{
+        /* ── QC ──────────────────────────────────────────────── */
+        .badge-pass {{
             background: #f0fdf4;
             color: #166534;
             border: 1px solid #bbf7d0;
         }}
-
-        /* ── Profile charts ──────────────────────────────────── */
-        .profile-charts-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 20px;
-            margin: 16px 0;
-        }}
-        .profile-chart-container {{
-            background: #fff;
+        .badge-info, .badge-pending {{
+            background: #f3f4f6;
+            color: #4b5563;
             border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }}
-        .profile-chart-container canvas {{
-            height: 240px !important;
+        .badge-warn {{
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }}
+        .badge-fail, .badge-error {{
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }}
+        .metric-value {{
+            font-family: "SFMono-Regular", "Fira Code", monospace;
+            font-size: 12.5px;
+            white-space: pre;
+        }}
+        .error-box {{
+            white-space: pre-wrap;
+            font-family: "SFMono-Regular", "Fira Code", monospace;
+            font-size: 12px;
+        }}
+        .figure-img {{
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }}
+        .figure-note {{
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            padding: 6px 16px;
+            font-size: 12px;
+            font-style: italic;
+        }}
+        .sidebar-link.current {{
+            color: #E87722;
+            border-left-color: #E87722;
+            font-weight: 600;
+        }}
+
+        /* ── Open dialog ─────────────────────────────────────── */
+        .qc-open {{
+            display: inline-block;
+            margin: 10px 8px 0 0;
+            padding: 6px 14px;
+            background: #E87722;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12.5px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+        }}
+        .qc-open:hover {{
+            background: #c9621a;
+        }}
+        .qc-dialog {{
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(17,24,39,0.45);
+            z-index: 300;
+            align-items: center;
+            justify-content: center;
+        }}
+        .qc-dialog-box {{
             background: #fff;
+            border-radius: 12px;
+            padding: 22px 24px;
+            max-width: 560px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }}
+        .qc-dialog-box code {{
+            display: block;
+            background: #f3f4f6;
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin: 12px 0;
+            font-size: 12.5px;
+            word-break: break-all;
         }}
 
         @media print {{
@@ -634,11 +656,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             DIPY Auto
         </div>
         <nav class="topbar-nav">
-            <a href="#summary" class="active">Summary</a>
-            <a href="#configuration">Configuration</a>
-            <a href="#pipeline">Pipeline</a>
-            <a href="#timing">Timing</a>
-            <a href="#methods">Methods</a>
+            {nav}
         </nav>
         <div class="topbar-meta">Generated {timestamp}</div>
     </div>
@@ -646,22 +664,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <div class="app">
         <nav class="sidebar">
             <div class="sidebar-nav">
-                <div class="sidebar-section-label">Report</div>
-                <a href="#summary" class="sidebar-link">Summary</a>
-                <a href="#configuration" class="sidebar-link">Configuration</a>
-                <a href="#pipeline" class="sidebar-link">Pipeline</a>
-                <a href="#timing" class="sidebar-link">Timing</a>
-                <div class="sidebar-section-label">Stages</div>
-                {sidebar_links}
-                <div class="sidebar-section-label">Info</div>
-                <a href="#methods" class="sidebar-link">Methods</a>
+                {sidebar}
             </div>
         </nav>
 
         <div class="main-content">
             <div class="page-header">
                 <h1>{title}</h1>
-                <p>DIPY Auto Pipeline Report &mdash; {title_short}</p>
+                <p>{subtitle}</p>
             </div>
 
             <div class="content">
@@ -674,24 +684,606 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <div class="qc-dialog" id="qc-dialog">
+        <div class="qc-dialog-box">
+            <h2 id="qc-dialog-title">Skyline was not found</h2>
+            <p id="qc-dialog-msg"></p>
+            <code id="qc-dialog-cmd"></code>
+            <button class="qc-open" onclick="qcCopy()">Copy command</button>
+            <button class="qc-open" onclick="qcClose()">Close</button>
+        </div>
+    </div>
+
     <script>
-        {inline_scripts}
+        function qcDialog(message, command) {{
+            document.getElementById('qc-dialog-msg').textContent = message;
+            document.getElementById('qc-dialog-cmd').textContent = command;
+            document.getElementById('qc-dialog').style.display = 'flex';
+        }}
+        function qcClose() {{
+            document.getElementById('qc-dialog').style.display = 'none';
+        }}
+        function qcCopy() {{
+            var text = document.getElementById('qc-dialog-cmd').textContent;
+            try {{
+                navigator.clipboard.writeText(text);
+            }} catch (e) {{
+                window.prompt('Copy the command:', text);
+            }}
+        }}
+        function qcOpen(path, command) {{
+            var notServed =
+                'Skyline can only be launched when this report is served. ' +
+                'Run "dipy_auto <report.html>" and use the button from there, ' +
+                'or run the command below yourself.';
+            // The server adds this tag to the pages it serves, never to files.
+            var token = document.querySelector('meta[name="dipy-qc-token"]');
+            if (!token) {{
+                qcDialog(notServed, command);
+                return;
+            }}
+            fetch('/qc-open', {{
+                method: 'POST',
+                body: new URLSearchParams({{path: path, token: token.content}})
+            }})
+                .then(function (r) {{
+                    if (!r.ok) {{
+                        return r.text().then(function (t) {{ qcDialog(t, command); }});
+                    }}
+                }})
+                .catch(function () {{ qcDialog(notServed, command); }});
+        }}
     </script>
 </body>
 </html>
 """
 
+# Formats the Skyline viewer can load; anything else opens in the browser.
+SKYLINE_FORMATS = (
+    ".nii",
+    ".nii.gz",
+    ".trx",
+    ".trk",
+    ".tck",
+    ".pam5",
+    ".vtk",
+    ".vtp",
+    ".fib",
+    ".dpy",
+    ".nrrd",
+    ".mgh",
+    ".mgz",
+)
 
-def generate_summary_section(config, execution_info):
-    """Generate summary section with key information."""
+
+# =============================================================================
+# Shared building blocks
+# =============================================================================
+
+
+def stage_basename(*, index, stage_name):
+    """File name stem of a stage page, e.g. ``03_brain_mask``.
+
+    Parameters
+    ----------
+    index : int
+        1-based position of the stage in the pipeline.
+    stage_name : str
+        Stage name.
+
+    Returns
+    -------
+    str
+        Zero-padded stem so files sort in pipeline order.
+    """
+    return f"{index:02d}_{re.sub(r'[^A-Za-z0-9_-]', '_', stage_name)}"
+
+
+def _badge(*, status):
+    status = html.escape(status)
+    return f'<span class="stage-badge badge-{status.lower()}">{status}</span>'
+
+
+def _run_badge(*, record):
+    skipped = record.get("skipped")
+    if skipped == "restart":
+        return '<span class="stage-badge badge-restart">Previous Run</span>'
+    if skipped == "user_mask":
+        return '<span class="stage-badge badge-user-mask">User Mask</span>'
+    if skipped == "optional":
+        reason = html.escape(record.get("reason", ""), quote=True)
+        return (
+            f'<span class="stage-badge badge-optional" title="{reason}">Skipped</span>'
+        )
+    return ""
+
+
+def _duration(*, record):
+    duration = record.get("duration")
+    if isinstance(duration, (int, float)) and math.isfinite(duration):
+        return f"{duration:.2f}s"
+    return "N/A"
+
+
+def _links(*, links, css="sidebar-link", current=None):
+    return "\n".join(
+        f'<a href="{html.escape(href, quote=True)}" '
+        f'class="{css}{" current" if href == current else ""}">'
+        f"{html.escape(label)}</a>"
+        for href, label in links
+    )
+
+
+def _href(*, path, page_dir):
+    """URL of a local file, relative to the page linking to it.
+
+    Parameters
+    ----------
+    path : str
+        File to link to.
+    page_dir : str
+        Directory of the page holding the link.
+
+    Returns
+    -------
+    str
+        Percent-encoded relative URL with forward slashes, or an absolute
+        ``file://`` URI when no relative path exists (another drive on
+        Windows). Not HTML-escaped.
+    """
+    try:
+        rel = os.path.relpath(path, page_dir)
+    except ValueError:
+        return Path(os.path.abspath(path)).as_uri()
+    return urllib.parse.quote(rel.replace(os.sep, "/"))
+
+
+def _json_safe(*, value):
+    """Copy of ``value`` with non-finite floats replaced by ``None``."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, dict):
+        return {k: _json_safe(value=v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(value=v) for v in value]
+    return value
+
+
+def _page(*, title, subtitle, nav, sidebar, content):
+    return HTML_TEMPLATE.format(
+        title=html.escape(title),
+        subtitle=html.escape(subtitle),
+        nav=_links(links=nav, css=""),
+        sidebar=sidebar,
+        content=content,
+        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    )
+
+
+def _format_value(*, value, unit):
+    if value is None:
+        return "N/A"
+    text = f"{value:.4g}" if isinstance(value, float) else str(value)
+    return html.escape(f"{text} {unit}".strip())
+
+
+def skyline_argument(*, path):
+    """Command-line argument that makes Skyline load exactly ``path``.
+
+    Skyline expands its input files as glob patterns, so the characters
+    ``*``, ``?`` and ``[`` of a real file name are escaped.
+
+    Parameters
+    ----------
+    path : str
+        File to display.
+
+    Returns
+    -------
+    str
+        Glob-escaped path.
+    """
+    return glob.escape(str(path))
+
+
+def skyline_command(*, path):
+    """Shell command that opens ``path`` in Skyline.
+
+    Parameters
+    ----------
+    path : str
+        File to display.
+
+    Returns
+    -------
+    str
+        ``dipy_skyline`` followed by the escaped path, quoted for the shell
+        of the current platform so that it can be pasted as is.
+    """
+    argument = skyline_argument(path=path)
+    if os.name == "nt":
+        return f"dipy_skyline {subprocess.list2cmdline([argument])}"
+    return f"dipy_skyline {shlex.quote(argument)}"
+
+
+def _output_items(*, outputs, page_dir):
+    """Output list of a stage, each file with a button that opens it.
+
+    A file Skyline can display gets a button that launches it there, which
+    needs the report to be served; every other file is opened by the browser
+    through a plain link.
+
+    Parameters
+    ----------
+    outputs : dict
+        Mapping of output parameter name to file path.
+    page_dir : str
+        Directory of the page being written, for relative links.
+
+    Returns
+    -------
+    str
+        HTML fragment.
+    """
+    items = ""
+    for key, path in outputs.items():
+        path = str(path)
+        if key == "out_dir" or not os.path.exists(path):
+            button = ""
+        elif path.endswith(SKYLINE_FORMATS):
+            arguments = html.escape(
+                f"{json.dumps(path)}, {json.dumps(skyline_command(path=path))}",
+                quote=True,
+            )
+            button = (
+                f'<button class="qc-open" onclick="qcOpen({arguments})">'
+                f"Open in Skyline</button>"
+            )
+        else:
+            href = html.escape(_href(path=path, page_dir=page_dir), quote=True)
+            button = f'<a class="qc-open" href="{href}" target="_blank">Open</a>'
+        items += (
+            f'<div class="output-item"><strong>{html.escape(key)}</strong>'
+            f"<code>{html.escape(path)}</code>{button}</div>"
+        )
+    return items
+
+
+def render_stage_section(*, record, number, anchor, page_dir):
+    """HTML card of one stage: QC metrics, figures, errors and outputs.
+
+    Parameters
+    ----------
+    record : dict
+        Stage record: stage info (``name``, ``cli``, ``duration``,
+        ``outputs``, ``skipped``) plus the QC result under ``qc``.
+    number : int
+        1-based stage position shown in the title.
+    anchor : str
+        HTML id of the card.
+    page_dir : str
+        Directory of the page being written, for relative links.
+
+    Returns
+    -------
+    str
+        HTML fragment.
+    """
+    qc = record["qc"]
+    rows = "".join(
+        f"<tr><td>{html.escape(m['name'])}</td>"
+        f'<td class="metric-value">{_format_value(value=m["value"], unit=m["unit"])}</td>'
+        f"<td>{html.escape(m['rule'])}</td><td>{_badge(status=m['status'])}</td></tr>"
+        for m in qc["metrics"]
+    )
+    metrics = (
+        "<h3>QC Metrics</h3><table><thead><tr><th>Metric</th><th>Value</th>"
+        f"<th>Rule</th><th>Status</th></tr></thead><tbody>{rows}</tbody></table>"
+        if rows
+        else ""
+    )
+    figures = "".join(
+        f'<div class="viewer-container"><div class="viewer-header">'
+        f"{html.escape(f['title'])}</div>"
+        f'<img class="figure-img" src="{f["data_uri"]}" alt="">'
+        + (
+            f'<div class="figure-note">{html.escape(f["note"])}</div>'
+            if f.get("note")
+            else ""
+        )
+        + "</div>"
+        for f in qc["figures"]
+    )
+    error = (
+        f'<pre class="error-box">{html.escape(qc["error"])}</pre>'
+        if qc["error"]
+        else ""
+    )
+    outputs = _output_items(outputs=record.get("outputs", {}), page_dir=page_dir)
+    if outputs:
+        outputs = f'<h3>Output Files</h3><div class="output-list">{outputs}</div>'
+    return f"""
+    <div class="stage-section" id="{anchor}">
+        <div class="stage-header">
+            <div class="stage-title">Stage {number}: {html.escape(record["name"])}
+                {_badge(status=qc["status"])}{_run_badge(record=record)}</div>
+            <div class="stage-time">{_duration(record=record)}</div>
+        </div>
+        <p><strong>CLI Command:</strong>
+            <code>{html.escape(str(record.get("cli", "N/A")))}</code></p>
+        {error}{metrics}{figures}{outputs}
+    </div>
+    """
+
+
+def _overview_section(*, stage_names, records, reports_dir, page_dir):
+    rows = ""
+    for index, (name, record) in enumerate(zip(stage_names, records), start=1):
+        if record is None:
+            rows += (
+                f"<tr><td>{index}</td><td>{html.escape(name)}</td><td></td><td></td>"
+                f"<td>{_badge(status='PENDING')}</td><td></td></tr>"
+            )
+            continue
+        page = os.path.join(
+            reports_dir, f"{stage_basename(index=index, stage_name=name)}.html"
+        )
+        href = html.escape(_href(path=page, page_dir=page_dir), quote=True)
+        rows += (
+            f"<tr><td>{index}</td>"
+            f"<td>{html.escape(name)}{_run_badge(record=record)}</td>"
+            f"<td><code>{html.escape(str(record.get('cli', '')))}</code></td>"
+            f"<td>{_duration(record=record)}</td>"
+            f"<td>{_badge(status=record['qc']['status'])}</td>"
+            f'<td><a href="{href}">open</a></td></tr>'
+        )
+    return f"""
+    <section id="overview">
+        <h1>Stages Overview</h1>
+        <table>
+            <thead><tr><th>#</th><th>Stage</th><th>CLI Command</th>
+            <th>Duration</th><th>QC</th><th>Report</th></tr></thead>
+            <tbody>{rows}</tbody>
+        </table>
+    </section>
+    """
+
+
+def load_stage_record(*, reports_dir, index, stage_name, run_id=None):
+    """Load the JSON record of one stage.
+
+    Parameters
+    ----------
+    reports_dir : str
+        Directory holding the stage pages.
+    index : int
+        1-based position of the stage.
+    stage_name : str
+        Stage name.
+    run_id : str, optional
+        Identifier of the current pipeline run. When given, a record written
+        by another run (or by no run at all) is stale and treated as
+        missing. When ``None``, any record is returned.
+
+    Returns
+    -------
+    dict or None
+        Stage record, ``None`` if the stage has no record yet, or only a
+        stale or unreadable one.
+    """
+    path = os.path.join(
+        reports_dir, stage_basename(index=index, stage_name=stage_name) + ".json"
+    )
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            record = json.load(f)
+    except (OSError, ValueError):
+        logger.warning(f"Ignoring unreadable QC record '{path}'.")
+        return None
+    if run_id is not None and record.get("run_id") != run_id:
+        return None
+    return record
+
+
+def load_stage_records(*, reports_dir, stage_names, run_id=None):
+    """Load the JSON record of each stage.
+
+    Parameters
+    ----------
+    reports_dir : str
+        Directory holding the stage pages.
+    stage_names : list of str
+        Stage names in pipeline order.
+    run_id : str, optional
+        Identifier of the current pipeline run, see ``load_stage_record``.
+
+    Returns
+    -------
+    list
+        One record dict per stage, ``None`` for stages without a record of
+        the current run.
+    """
+    return [
+        load_stage_record(
+            reports_dir=reports_dir, index=index, stage_name=name, run_id=run_id
+        )
+        for index, name in enumerate(stage_names, start=1)
+    ]
+
+
+def _write(*, path, text):
+    """Write ``text`` to ``path`` atomically.
+
+    The text goes to a temporary file first, so that a run killed while
+    writing never leaves a truncated record or page behind.
+
+    Parameters
+    ----------
+    path : str
+        Destination file.
+    text : str
+        File content.
+
+    Returns
+    -------
+    str
+        ``path``.
+    """
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    tmp = f"{path}.tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(text)
+    os.replace(tmp, path)
+    return path
+
+
+# =============================================================================
+# Stage pages
+# =============================================================================
+
+
+def write_stage_report(
+    *, reports_dir, stage_names, index, record, pipeline_name, run_id=None
+):
+    """Write the JSON record and the standalone HTML page of one stage.
+
+    Non-finite floats are written as ``null`` so that the record stays
+    standard JSON.
+
+    Parameters
+    ----------
+    reports_dir : str
+        Output directory of the stage pages.
+    stage_names : list of str
+        All stage names in pipeline order, for navigation.
+    index : int
+        1-based position of this stage.
+    record : dict
+        Stage record, see ``render_stage_section``.
+    pipeline_name : str
+        Pipeline name shown in the page header.
+    run_id : str, optional
+        Identifier of the current pipeline run, stored in the record as
+        ``run_id`` so that reports of later runs can tell it from their own.
+
+    Returns
+    -------
+    str
+        Path of the HTML page.
+    """
+    if run_id is not None:
+        record = {**record, "run_id": run_id}
+    base = stage_basename(index=index, stage_name=record["name"])
+    _write(
+        path=os.path.join(reports_dir, base + ".json"),
+        text=json.dumps(_json_safe(value=record), default=str, allow_nan=False),
+    )
+
+    pages = [
+        (f"{stage_basename(index=i, stage_name=n)}.html", f"{i}. {n}")
+        for i, n in enumerate(stage_names, start=1)
+    ]
+    nav = [("index.html", "Overview")]
+    if index > 1:
+        nav.insert(0, (pages[index - 2][0], "← Previous"))
+    if index < len(pages):
+        nav.append((pages[index][0], "Next →"))
+    sidebar = (
+        '<div class="sidebar-section-label">Report</div>'
+        + _links(links=[("index.html", "Overview")])
+        + '<div class="sidebar-section-label">Stages</div>'
+        + _links(
+            links=pages, css="sidebar-link sidebar-sublink", current=base + ".html"
+        )
+    )
+    page = _page(
+        title=f"Stage {index}: {record['name']}",
+        subtitle=f"DIPY Auto QC — {pipeline_name}",
+        nav=nav,
+        sidebar=sidebar,
+        content=render_stage_section(
+            record=record, number=index, anchor="stage", page_dir=reports_dir
+        ),
+    )
+    return _write(path=os.path.join(reports_dir, base + ".html"), text=page)
+
+
+def write_index(*, reports_dir, stage_names, pipeline_name, run_id=None):
+    """Write ``index.html``, the live overview of all stage pages.
+
+    Parameters
+    ----------
+    reports_dir : str
+        Output directory of the stage pages.
+    stage_names : list of str
+        All stage names in pipeline order.
+    pipeline_name : str
+        Pipeline name shown in the page header.
+    run_id : str, optional
+        Identifier of the current pipeline run; records of other runs are
+        shown as pending. All records are shown when ``None``.
+
+    Returns
+    -------
+    str
+        Path of the index page.
+    """
+    records = load_stage_records(
+        reports_dir=reports_dir, stage_names=stage_names, run_id=run_id
+    )
+    pages = [
+        (f"{stage_basename(index=i, stage_name=n)}.html", f"{i}. {n}")
+        for i, (n, r) in enumerate(zip(stage_names, records), start=1)
+        if r is not None
+    ]
+    sidebar = '<div class="sidebar-section-label">Stages</div>' + _links(
+        links=pages, css="sidebar-link sidebar-sublink"
+    )
+    page = _page(
+        title=f"QC Overview - {pipeline_name}",
+        subtitle="DIPY Auto QC — updated after every stage",
+        nav=[("index.html", "Overview")],
+        sidebar=sidebar,
+        content=_overview_section(
+            stage_names=stage_names,
+            records=records,
+            reports_dir=reports_dir,
+            page_dir=reports_dir,
+        ),
+    )
+    return _write(path=os.path.join(reports_dir, "index.html"), text=page)
+
+
+# =============================================================================
+# Final report
+# =============================================================================
+
+
+def generate_summary_section(*, config, execution_info, records):
+    """Generate summary section with key information and overall QC status.
+
+    Parameters
+    ----------
+    config : dict
+        Pipeline configuration; reads the ``[General]`` metadata and
+        ``io.out_dir``.
+    execution_info : dict
+        Execution information; reads ``stages`` and ``total_time``.
+    records : list of dict or None
+        Stage records, ``None`` for stages without one.
+
+    Returns
+    -------
+    str
+        HTML fragment.
+    """
     general = config.get("General", {})
-    io_config = config.get("io", {})
+    statuses = [r["qc"]["status"] for r in records if r is not None]
+    worst = max(statuses, key=STATUS_LEVELS.index, default="INFO")
 
-    num_stages = len(execution_info.get("stages", []))
-    total_time = execution_info.get("total_time", 0)
-
-    summary_html = """
+    return """
     <section id="summary">
         <h1>Summary</h1>
         <div class="stat-row">
@@ -707,9 +1299,8 @@ def generate_summary_section(config, execution_info):
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Status</div>
-                <div class="stat-value"
-                     style="font-size:20px;color:#16a34a">&#10003; Done</div>
+                <div class="stat-label">Worst QC Status</div>
+                <div class="stat-value" style="font-size:20px">{worst}</div>
             </div>
         </div>
         <div class="info-grid">
@@ -736,730 +1327,161 @@ def generate_summary_section(config, execution_info):
         </div>
     </section>
     """.format(
-        name=general.get("name", "Unknown"),
-        description=general.get("description", "No description"),
-        version=general.get("version", "N/A"),
-        author=general.get("author", "N/A"),
-        num_stages=num_stages,
-        total_time=total_time,
-        out_dir=io_config.get("out_dir", "."),
+        name=html.escape(str(general.get("name", "Unknown"))),
+        description=html.escape(str(general.get("description", "No description"))),
+        version=html.escape(str(general.get("version", "N/A"))),
+        author=html.escape(str(general.get("author", "N/A"))),
+        num_stages=len(execution_info.get("stages", [])),
+        total_time=execution_info.get("total_time", 0),
+        worst=_badge(status=worst),
+        out_dir=html.escape(str(config.get("io", {}).get("out_dir", "."))),
     )
 
-    return summary_html
 
+def generate_config_section(*, config, config_file_path, page_dir):
+    """Generate configuration section with links.
 
-def generate_config_section(config, config_file_path):
-    """Generate configuration section with links."""
+    Parameters
+    ----------
+    config : dict
+        Pipeline configuration; reads the ``[io]`` input files.
+    config_file_path : str or None
+        Path to the configuration file. Without an existing file, no link is
+        shown.
+    page_dir : str
+        Directory of the page being written, for the relative link to the
+        configuration file.
+
+    Returns
+    -------
+    str
+        HTML fragment.
+    """
     io_config = config.get("io", {})
-
-    config_html = """
+    inputs = [
+        ("DWI Image", io_config.get("dwi", "Not specified")),
+        ("B-values", io_config.get("bvals", "Not specified")),
+        ("B-vectors", io_config.get("bvecs", "Not specified")),
+    ]
+    if io_config.get("t1w"):
+        inputs.append(("T1-weighted Image", io_config["t1w"]))
+    items = "".join(
+        f'<div class="output-item"><strong>{label}</strong>'
+        f"<code>{html.escape(str(value))}</code></div>"
+        for label, value in inputs
+    )
+    if config_file_path and os.path.isfile(config_file_path):
+        config_href = html.escape(
+            _href(path=str(config_file_path), page_dir=page_dir), quote=True
+        )
+        config_item = (
+            f"<code>{html.escape(str(config_file_path))}</code>"
+            f'<a href="{config_href}" class="download-link">View Config File</a>'
+        )
+    else:
+        config_item = "<code>Not saved</code>"
+    return f"""
     <section id="configuration">
         <h1>Configuration</h1>
         <h2>Input Files</h2>
-        <div class="output-list">
-            <div class="output-item">
-                <strong>DWI Image</strong>
-                <code>{dwi}</code>
-            </div>
-            <div class="output-item">
-                <strong>B-values</strong>
-                <code>{bvals}</code>
-            </div>
-            <div class="output-item">
-                <strong>B-vectors</strong>
-                <code>{bvecs}</code>
-            </div>
-    """.format(
-        dwi=io_config.get("dwi", "Not specified"),
-        bvals=io_config.get("bvals", "Not specified"),
-        bvecs=io_config.get("bvecs", "Not specified"),
-    )
-
-    if io_config.get("t1w"):
-        config_html += """
-            <div class="output-item">
-                <strong>T1-weighted Image</strong>
-                <code>{t1w}</code>
-            </div>
-        """.format(t1w=io_config["t1w"])
-
-    config_html += f"""
-        </div>
+        <div class="output-list">{items}</div>
         <h2>Configuration File</h2>
         <div class="output-item">
             <strong>Config Path</strong>
-            <code>{config_file_path}</code>
-            <a href="{config_file_path}" class="download-link">View Config File</a>
+            {config_item}
         </div>
     </section>
     """
 
-    return config_html
 
+def generate_pipeline_section(*, dag_visualization, execution_order):
+    """Generate pipeline DAG and execution order section.
 
-def generate_pipeline_section(dag_visualization, execution_order):
-    """Generate pipeline DAG and execution order section."""
-    pipeline_html = """
+    Parameters
+    ----------
+    dag_visualization : str
+        Text rendering of the pipeline dependency graph.
+    execution_order : list of str
+        Stage names in execution order.
+
+    Returns
+    -------
+    str
+        HTML fragment.
+    """
+    order = html.escape(" → ".join(execution_order))
+    return f"""
     <section id="pipeline">
         <h1>Pipeline Execution Graph</h1>
         <p>The following diagram shows the dependency graph and execution order
         of pipeline stages:</p>
         <div class="dag-visualization">
-            <pre>{dag}</pre>
+            <pre>{html.escape(dag_visualization)}</pre>
         </div>
         <h2>Execution Order</h2>
         <p><strong>{order}</strong></p>
     </section>
-    """.format(
-        dag=dag_visualization.replace("<", "&lt;").replace(">", "&gt;"),
-        order=" → ".join(execution_order),
-    )
-
-    return pipeline_html
-
-
-def generate_timing_section(*, stages_info):
-    """Generate timing table for all stages.
-
-    Parameters
-    ----------
-    stages_info : list of dict
-        Each dict must contain ``name``, and optionally ``cli``,
-        ``duration``, ``success``, and ``skipped``. When ``skipped``
-        is ``"restart"``, ``duration`` may be ``None``.
-
-    Returns
-    -------
-    str
-        HTML string for the timing section.
-    """
-    rows = ""
-    for stage in stages_info:
-        skipped = stage.get("skipped")
-        duration = stage.get("duration")
-
-        if skipped == "restart":
-            duration_str = f"{duration:.2f}s" if duration is not None else "N/A"
-            status_str = (
-                '<span class="stage-badge badge-restart">Previous Run</span> ✓ Success'
-            )
-        elif skipped == "user_mask":
-            duration_str = "0.00s (skipped)"
-            status_str = (
-                '<span class="stage-badge badge-user-mask">User Mask</span> ✓ Skipped'
-            )
-        else:
-            duration_val = duration if duration is not None else 0.0
-            duration_str = f"{duration_val:.2f}s"
-            status_str = "✓ Success" if stage.get("success", True) else "✗ Failed"
-
-        rows += """
-        <tr>
-            <td>{name}</td>
-            <td>{cli}</td>
-            <td>{duration}</td>
-            <td>{status}</td>
-        </tr>
-        """.format(
-            name=stage["name"],
-            cli=stage.get("cli", "N/A"),
-            duration=duration_str,
-            status=status_str,
-        )
-
-    timing_html = f"""
-    <section id="timing">
-        <h1>Processing Time</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>Stage Name</th>
-                    <th>CLI Command</th>
-                    <th>Duration</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {rows}
-            </tbody>
-        </table>
-    </section>
     """
 
-    return timing_html
 
-
-def nifti_to_mosaic_svg(*, nifti_path, assets_dir, filename, n_cols=7, n_rows=3):
-    """Render a 3-plane mosaic (axial / sagittal / coronal) of a NIfTI volume as SVG.
-
-    Slices are drawn on a ``n_rows`` × ``n_cols`` grid.  The three rows correspond
-    to axial, sagittal, and coronal planes respectively.  Slice positions are
-    chosen via a density-projection bounding-box approach (nireports-style) so
-    that the selected cuts are centred in brain tissue.  Each subplot carries
-    orientation labels (L/R or A/P) at the top corners and a world-space
-    coordinate label (e.g. ``z=-16``) at the bottom-left.
-
-    Parameters
-    ----------
-    nifti_path : str
-        Path to the NIfTI file.
-    assets_dir : str
-        Directory where the SVG file is saved.
-    filename : str
-        Output filename (e.g. ``stage_1_out_fa.svg``).
-    n_cols : int, optional
-        Number of columns (cuts per anatomical plane).
-    n_rows : int, optional
-        Number of rows.  Must be 3 (one per anatomical plane); provided for
-        API compatibility.
-
-    Returns
-    -------
-    svg_path : pathlib.Path or None
-        Path to the saved SVG, or ``None`` if generation failed.
-    """
-    from pathlib import Path
-
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    import nibabel as nib
-    import numpy as np
-
-    try:
-        img = nib.load(str(nifti_path))
-        img = nib.as_closest_canonical(img)
-        affine = img.affine
-        data = img.get_fdata(dtype=np.float32)
-    except Exception:
-        return None
-
-    if data.ndim == 4:
-        data = data[..., data.shape[3] // 2]
-    if data.ndim != 3:
-        return None
-
-    nonzero = data[data > 0]
-    if nonzero.size == 0:
-        return None
-    vmin, vmax = np.percentile(nonzero, [2, 98])
-    if vmax - vmin < 1e-6:  # binary or near-constant
-        vmin = 0.0
-        vmax = float(nonzero.max()) if nonzero.max() > 0 else 1.0
-
-    # --- density-projection bounding box (nireports cuts_from_bbox style) ---
-    low_th = float(np.percentile(nonzero, 5))
-    if low_th >= float(nonzero.max()):  # binary: percentile equals max
-        low_th = 0.0
-    mask = data > low_th
-    nx, ny, nz = mask.shape
-
-    density = [
-        mask.sum(axis=(1, 2)),  # axis 0 — sagittal, shape (nx,)
-        mask.sum(axis=(0, 2)),  # axis 1 — coronal,  shape (ny,)
-        mask.sum(axis=(0, 1)),  # axis 2 — axial,    shape (nz,)
-    ]
-    thresholds = [
-        int(np.ceil((ny * nz) * 0.2)),  # sagittal: 20 %
-        int(np.ceil((nx * nz) * 0.1)),  # coronal:  10 %
-        int(np.ceil((nx * ny) * 0.3)),  # axial:    30 %
-    ]
-
-    indices = {}
-    for ax_idx, (dens, th) in enumerate(zip(density, thresholds)):
-        cands = np.argwhere(dens > th).ravel()
-        if cands.size < 2:
-            cands = np.argwhere(dens > 0).ravel()
-        s_min = int(cands[0]) if cands.size else 0
-        s_max = int(cands[-1]) if cands.size else data.shape[ax_idx] - 1
-        indices[ax_idx] = np.linspace(s_min, s_max, num=n_cols + 2)[1:-1].astype(int)
-
-    # row order: axial (axis 2), sagittal (axis 0), coronal (axis 1)
-    ROW_AXES = [2, 0, 1]
-    LEFT_LABEL = {2: "R", 0: "A", 1: "R"}
-    RIGHT_LABEL = {2: "L", 0: "P", 1: "L"}
-    AXIS_LETTER = {0: "x", 1: "y", 2: "z"}
-
-    fig, axes = plt.subplots(
-        n_rows,
-        n_cols,
-        figsize=(n_cols * 2.2, n_rows * 2.6),
-    )
-    fig.patch.set_facecolor("black")
-
-    for row, ax_idx in enumerate(ROW_AXES):
-        letter = AXIS_LETTER[ax_idx]
-        for col, idx in enumerate(indices[ax_idx]):
-            ax_obj = axes[row, col]
-            slc = np.take(data, idx, axis=ax_idx)
-            ax_obj.imshow(
-                slc.T,
-                cmap="gray",
-                origin="lower",
-                vmin=vmin,
-                vmax=vmax,
-                aspect="equal",
-                interpolation="nearest",
-            )
-            ax_obj.set_axis_off()
-
-            # world-space coordinate label
-            v = np.zeros(4)
-            v[ax_idx] = idx
-            v[3] = 1
-            wcoord = round(float((affine @ v)[ax_idx]))
-            coord_label = f"{letter}={wcoord}"
-
-            # orientation labels (top corners)
-            ax_obj.text(
-                0.02,
-                0.98,
-                LEFT_LABEL[ax_idx],
-                color="white",
-                fontsize=7,
-                ha="left",
-                va="top",
-                transform=ax_obj.transAxes,
-            )
-            ax_obj.text(
-                0.98,
-                0.98,
-                RIGHT_LABEL[ax_idx],
-                color="white",
-                fontsize=7,
-                ha="right",
-                va="top",
-                transform=ax_obj.transAxes,
-            )
-            # coordinate label (bottom-left)
-            ax_obj.text(
-                0.02,
-                0.02,
-                coord_label,
-                color="white",
-                fontsize=7,
-                ha="left",
-                va="bottom",
-                transform=ax_obj.transAxes,
-            )
-
-    fig.tight_layout(pad=0.1)
-    svg_path = Path(assets_dir) / filename
-    fig.savefig(
-        str(svg_path),
-        format="svg",
-        bbox_inches="tight",
-        facecolor="black",
-        dpi=150,
-    )
-    plt.close(fig)
-    return svg_path
-
-
-def generate_mosaic_viewer(
-    *, canvas_id, nifti_path, viewer_title, assets_dir, html_dir
-):
-    """Generate an ``<img>`` tag pointing to a saved SVG mosaic.
-
-    Parameters
-    ----------
-    canvas_id : str
-        Unique ID used to build the SVG filename.
-    nifti_path : str
-        Path to the NIfTI file.
-    viewer_title : str
-        Caption shown above the mosaic.
-    assets_dir : str
-        Directory where the SVG is saved.
-    html_dir : str
-        Directory of the HTML report (for computing relative paths).
-
-    Returns
-    -------
-    html : str
-        HTML fragment with the mosaic image.
-    """
-    filename = re.sub(r"[^A-Za-z0-9_-]", "_", canvas_id) + ".svg"
-    svg_path = nifti_to_mosaic_svg(
-        nifti_path=nifti_path, assets_dir=assets_dir, filename=filename
-    )
-    if svg_path is None:
-        return ""
-
-    rel_path = os.path.relpath(str(svg_path), html_dir)
-    return (
-        '<div class="viewer-container">'
-        f'<div class="viewer-header">{viewer_title}</div>'
-        f'<img src="{rel_path}" '
-        'style="width:100%;background:#000;display:block;">'
-        "</div>"
-    )
-
-
-def is_viewable_format(file_path):
-    """Check if file is a NIfTI-family volume renderable as a slice mosaic."""
-    if not file_path or not os.path.exists(str(file_path)):
-        return False
-    p = str(file_path).lower()
-    if p.endswith(".nii.gz"):
-        return True
-    return os.path.splitext(p)[1] in {".nii", ".nrrd", ".mgh", ".mgz"}
-
-
-def generate_methods_section(stages_info, pipeline_name):
+def generate_methods_section(*, records, pipeline_name):
     """Generate methods section with workflow citations.
 
     Parameters
     ----------
-    stages_info : list
-        List of stage information dictionaries.
+    records : list of dict
+        Stage records.
     pipeline_name : str
         Name of the pipeline.
-    """
-    from dipy.workflows.cli import cli_flows
 
-    methods_html = f"""
+    Returns
+    -------
+    str
+        HTML fragment.
+    """
+    descriptions = []
+    for record in records:
+        cli_name = record.get("cli")
+        if cli_name not in cli_flows:
+            continue
+        module_name, class_name = cli_flows[cli_name]
+        try:
+            doc = getattr(importlib.import_module(module_name), class_name).__doc__
+            first_line = doc.strip().split("\n")[0] if doc else cli_name
+        except Exception:
+            first_line = cli_name
+        descriptions.append(
+            f"<li><strong>{html.escape(record['name'])}</strong>: "
+            f"{html.escape(first_line)} ({html.escape(cli_name)})</li>"
+        )
+
+    steps = "<ol>" + "\n".join(descriptions) + "</ol>" if descriptions else ""
+    return f"""
     <section id="methods">
         <h1>Methods</h1>
         <div class="boilerplate">
             <p>Results included in this report were generated using DIPY Auto
             (Diffusion Imaging in Python), a comprehensive pipeline for diffusion
             MRI data processing and analysis.</p>
-
-            <h2>Pipeline: {pipeline_name}</h2>
+            <h2>Pipeline: {html.escape(str(pipeline_name))}</h2>
             <p>The following processing steps were applied:</p>
-    """
-
-    unique_clis = set()
-    stage_descriptions = []
-
-    for stage in stages_info:
-        cli_name = stage.get("cli")
-        stage_name = stage["name"]
-
-        if cli_name and cli_name in cli_flows:
-            unique_clis.add(cli_name)
-            module_name, class_name = cli_flows[cli_name]
-
-            try:
-                import importlib
-
-                module = importlib.import_module(module_name)
-                workflow_class = getattr(module, class_name)
-                doc = workflow_class.__doc__ or ""
-                first_line = doc.strip().split("\n")[0] if doc else cli_name
-
-                stage_descriptions.append(
-                    f"<li><strong>{stage_name}</strong>: {first_line} ({cli_name})</li>"
-                )
-            except Exception:
-                stage_descriptions.append(
-                    f"<li><strong>{stage_name}</strong>: {cli_name}</li>"
-                )
-
-    if stage_descriptions:
-        methods_html += "<ol>" + "\n".join(stage_descriptions) + "</ol>"
-
-    methods_html += """
+            {steps}
             <h2>References</h2>
             <p>Please cite the following references when using DIPY Auto:</p>
-            <div class="citation">
-    """
-
-    dipy_citation = """Garyfallidis E, Brett M, Amirbekian B, Rokem A, van der Walt S,
-Descoteaux M, Nimmo-Smith I, and Dipy Contributors (2014).
+            <div class="citation">Garyfallidis E, Brett M, Amirbekian B, Rokem A,
+van der Walt S, Descoteaux M, Nimmo-Smith I, and Dipy Contributors (2014).
 DIPY, a library for the analysis of diffusion MRI data.
 Frontiers in Neuroinformatics, vol.8, no.8.
-https://doi.org/10.3389/fninf.2014.00008"""
-
-    methods_html += dipy_citation
-    methods_html += """
-            </div>
+https://doi.org/10.3389/fninf.2014.00008</div>
         </div>
     </section>
     """
 
-    return methods_html
 
-
-def generate_buan_profiles_charts(*, out_dir):
-    """Generate Chart.js line plots for BUAN along-tract profiles.
-
-    Parameters
-    ----------
-    out_dir : str
-        Directory produced by the ``buan_profiles`` stage.
-
-    Returns
-    -------
-    html : str
-        HTML fragment containing canvas elements.
-    js : str
-        JavaScript snippet initialising Chart.js charts.
-    """
-    from pathlib import Path
-
-    import numpy as np
-
-    npy_files = sorted(Path(out_dir).glob("*_profile.npy"))
-    if not npy_files:
-        return "", ""
-
-    bundle_profiles = {}
-    for f in npy_files:
-        core = f.stem[:-8]  # strip "_profile"
-        sep = core.rfind("_")
-        bundle = core[:sep]
-        metric = core[sep + 1 :]
-        raw = np.load(f).astype(float)
-        mean, std = np.nanmean(raw), np.nanstd(raw)
-        z = (raw - mean) / std if std > 0 else raw - mean
-        max_abs = np.nanmax(np.abs(z))
-        normalized = z / max_abs if max_abs > 0 else z
-        bundle_profiles.setdefault(bundle, {})[metric] = normalized
-
-    COLORS = [
-        "#E87722",
-        "#3498db",
-        "#2ecc71",
-        "#9b59b6",
-        "#e74c3c",
-        "#1abc9c",
-        "#f39c12",
-        "#e67e22",
-    ]
-
-    # Collect ordered unique metrics across all bundles
-    all_metrics = sorted({m for metrics in bundle_profiles.values() for m in metrics})
-    metric_color = {m: COLORS[i % len(COLORS)] for i, m in enumerate(all_metrics)}
-
-    charts_html_parts = []
-    js_parts = []
-
-    for bundle, metrics in sorted(bundle_profiles.items()):
-        canvas_id = "buan_" + re.sub(r"[^A-Za-z0-9_]", "_", bundle)
-        n_points = len(next(iter(metrics.values())))
-        labels = list(range(n_points))
-
-        datasets = []
-        for metric in all_metrics:
-            if metric not in metrics:
-                continue
-            profile = metrics[metric]
-            color = metric_color[metric]
-            data_vals = [
-                "null" if np.isnan(v) else str(round(float(v), 6)) for v in profile
-            ]
-            datasets.append(
-                f'{{"label":"{metric}",'
-                f'"data":[{",".join(data_vals)}],'
-                f'"borderColor":"{color}",'
-                f'"backgroundColor":"{color}22",'
-                f'"fill":false,"tension":0.3,"pointRadius":0,"borderWidth":2}}'
-            )
-
-        charts_html_parts.append(
-            f'<div class="profile-chart-container">'
-            f'<canvas id="{canvas_id}"></canvas>'
-            f"</div>"
-        )
-
-        js_parts.append(f"""
-(function(){{
-  var ctx=document.getElementById('{canvas_id}').getContext('2d');
-  var chart=new Chart(ctx,{{
-    type:'line',
-    data:{{
-      labels:{labels},
-      datasets:[{",".join(datasets)}]
-    }},
-    options:{{
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{{
-        title:{{display:true,text:'{bundle}',font:{{size:14,weight:'bold'}}}},
-        legend:{{display:true,position:'top'}}
-      }},
-      scales:{{
-        x:{{title:{{display:true,text:'% Distance Along Bundle'}}}},
-        y:{{title:{{display:true,text:'Normalized value (z-score)'}},min:-1,max:1}}
-      }}
-    }}
-  }});
-  if(typeof buanCharts==='undefined'){{window.buanCharts=[];}}
-  window.buanCharts.push(chart);
-}})();""")
-
-    # Build global-toggle checkboxes, one per metric
-    checkbox_items = []
-    for metric in all_metrics:
-        color = metric_color[metric]
-        cb_id = f"buan_toggle_{re.sub(r'[^A-Za-z0-9_]', '_', metric)}"
-        checkbox_items.append(
-            f'<label for="{cb_id}" style="display:inline-flex;align-items:center;'
-            f'gap:5px;margin-right:14px;cursor:pointer;font-size:0.88em;">'
-            f'<input type="checkbox" id="{cb_id}" checked '
-            f'class="buan-metric-toggle" data-metric="{metric}" '
-            f'style="accent-color:{color};width:15px;height:15px;">'
-            f'<span style="color:{color};font-weight:600;">{metric}</span>'
-            f"</label>"
-        )
-
-    toggle_bar = (
-        '<div style="margin:12px 0 4px;padding:10px 14px;background:#f8f9fa;'
-        'border-radius:6px;border:1px solid #e0e0e0;">'
-        '<span style="font-size:0.85em;color:#555;margin-right:12px;'
-        'font-weight:600;">Show/hide all charts:</span>'
-        + "".join(checkbox_items)
-        + "</div>"
-    )
-
-    toggle_js = """
-(function(){
-  window.buanCharts = window.buanCharts || [];
-  document.querySelectorAll('.buan-metric-toggle').forEach(function(cb){
-    cb.addEventListener('change', function(){
-      var metric = this.dataset.metric;
-      var visible = this.checked;
-      window.buanCharts.forEach(function(chart){
-        chart.data.datasets.forEach(function(ds, i){
-          if(ds.label === metric){ chart.setDatasetVisibility(i, visible); }
-        });
-        chart.update();
-      });
-    });
-  });
-})();"""
-
-    html = (
-        "<h3>Along-tract Profiles</h3>"
-        + toggle_bar
-        + '<div class="profile-charts-grid">'
-        + "".join(charts_html_parts)
-        + "</div>"
-    )
-    return html, "\n".join(js_parts) + toggle_js
-
-
-def generate_results_section(*, stages_info, html_dir, assets_dir):
-    """Generate results section with slice mosaics for each stage.
-
-    Parameters
-    ----------
-    stages_info : list of dict
-        List of stage information dictionaries. Each dict must contain
-        ``name`` and optionally ``cli``, ``duration``, ``outputs``,
-        and ``skipped``.
-    html_dir : str
-        Directory where the HTML file is saved (for computing relative
-        paths).
-    assets_dir : str
-        Directory where SVG mosaic files are saved.
-
-    Returns
-    -------
-    tuple of (str, str)
-        HTML string for the results section and a string of Chart.js
-        JavaScript snippets to embed (BUAN charts only).
-    """
-    results_html = '<section id="results"><h1>Stage Results</h1>'
-    buan_scripts = []
-
-    for idx, stage in enumerate(stages_info):
-        stage_name = stage["name"]
-        cli = stage.get("cli", "Unknown")
-        duration = stage.get("duration")
-        outputs = stage.get("outputs", {})
-        skipped = stage.get("skipped")
-
-        if skipped == "restart":
-            duration_str = f"{duration:.2f}s" if duration is not None else "N/A"
-            badge_html = '<span class="stage-badge badge-restart">Previous Run</span>'
-        elif skipped == "user_mask":
-            duration_str = "Skipped"
-            badge_html = '<span class="stage-badge badge-user-mask">User Mask</span>'
-        else:
-            duration_val = duration if duration is not None else 0.0
-            duration_str = f"{duration_val:.2f}s"
-            badge_html = ""
-
-        stage_anchor = "stage_" + re.sub(r"[^A-Za-z0-9_-]", "_", stage_name)
-        results_html += f"""
-        <div class="stage-section" id="{stage_anchor}">
-            <div class="stage-header">
-                <div class="stage-title">Stage {idx + 1}: {stage_name}{badge_html}</div>
-                <div class="stage-time">{duration_str}</div>
-            </div>
-            <p><strong>CLI Command:</strong> <code>{cli}</code></p>
-        """
-
-        if outputs:
-            results_html += '<h3>Output Files</h3><div class="output-list">'
-
-            for output_param, output_path in outputs.items():
-                results_html += f"""
-                <div class="output-item">
-                    <strong>{output_param}</strong>
-                    <code>{output_path}</code>
-                    <a href="{output_path}" class="download-link">Download</a>
-                </div>
-                """
-
-                if is_viewable_format(output_path):
-                    viewer_id = f"nv_stage_{idx}_{output_param}"
-                    viewer_html = generate_mosaic_viewer(
-                        canvas_id=viewer_id,
-                        nifti_path=output_path,
-                        viewer_title=f"{output_param}: {os.path.basename(output_path)}",
-                        assets_dir=assets_dir,
-                        html_dir=html_dir,
-                    )
-                    results_html += viewer_html
-
-            results_html += "</div>"
-        else:
-            results_html += "<p><em>No outputs recorded for this stage.</em></p>"
-
-        if stage_name == "buan_profiles":
-            buan_out = outputs.get("out_dir") or stage.get("params", {}).get("out_dir")
-            if buan_out and os.path.isdir(buan_out):
-                charts_html, charts_js = generate_buan_profiles_charts(out_dir=buan_out)
-                results_html += charts_html
-                buan_scripts.append(charts_js)
-
-        results_html += "</div>"
-
-    results_html += "</section>"
-
-    return results_html, "\n".join(buan_scripts)
-
-
-def generate_sidebar(*, stages_info):
-    """Generate sidebar navigation links for all pipeline stages.
-
-    Parameters
-    ----------
-    stages_info : list of dict
-        List of stage information dictionaries with at least a ``name`` key.
-
-    Returns
-    -------
-    str
-        HTML fragment with ``<a>`` links for the sidebar.
-    """
-    links = []
-    for stage in stages_info:
-        name = stage["name"]
-        anchor = "stage_" + re.sub(r"[^A-Za-z0-9_-]", "_", name)
-        links.append(
-            f'<a href="#{anchor}" class="sidebar-link sidebar-sublink">{name}</a>'
-        )
-    return "\n".join(links)
-
-
-def generate_html_report(config, config_file_path, execution_info, output_path):
-    """Generate complete HTML report.
+def generate_html_report(
+    *, config, config_file_path, execution_info, output_path, reports_dir, run_id=None
+):
+    """Generate the final report combining every stage QC page.
 
     Parameters
     ----------
@@ -1475,49 +1497,250 @@ def generate_html_report(config, config_file_path, execution_info, output_path):
         - execution_order: list of stage names in execution order
     output_path : str
         Path where HTML report should be saved.
+    reports_dir : str
+        Directory holding the stage pages and their JSON records.
+    run_id : str, optional
+        Identifier of the current pipeline run. Stage records written by
+        another run, such as those left behind by a previous run that went
+        further than a failed rerun, are shown as pending. All records are
+        used when ``None``.
+
+    Returns
+    -------
+    str
+        Path of the report.
     """
-    logger.info(
-        "Generating HTML report — rendering slice mosaics for each NIfTI "
-        "output, this may take a few minutes..."
-    )
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    logger.info("Generating final HTML report from the stage QC records...")
     pipeline_name = config.get("General", {}).get("name", "Pipeline")
-    title = f"DIPY Auto Pipeline Report - {pipeline_name}"
+    stage_names = execution_info.get("execution_order", [])
+    records = load_stage_records(
+        reports_dir=reports_dir, stage_names=stage_names, run_id=run_id
+    )
 
     html_dir = os.path.dirname(os.path.abspath(output_path))
-    stages = execution_info.get("stages", [])
+    stages = [
+        (index, record)
+        for index, record in enumerate(records, start=1)
+        if record is not None
+    ]
 
-    assets_dir = os.path.join(html_dir, "assets")
-    os.makedirs(assets_dir, exist_ok=True)
-
-    summary = generate_summary_section(config, execution_info)
-    configuration = generate_config_section(config, config_file_path)
-    pipeline = generate_pipeline_section(
-        execution_info.get("dag_visualization", ""),
-        execution_info.get("execution_order", []),
+    content = (
+        generate_summary_section(
+            config=config, execution_info=execution_info, records=records
+        )
+        + generate_config_section(
+            config=config, config_file_path=config_file_path, page_dir=html_dir
+        )
+        + generate_pipeline_section(
+            dag_visualization=execution_info.get("dag_visualization", ""),
+            execution_order=stage_names,
+        )
+        + _overview_section(
+            stage_names=stage_names,
+            records=records,
+            reports_dir=reports_dir,
+            page_dir=html_dir,
+        )
+        + '<section id="results"><h1>Stage Results</h1>'
+        + "".join(
+            render_stage_section(
+                record=record,
+                number=index,
+                anchor=stage_basename(index=index, stage_name=record["name"]),
+                page_dir=html_dir,
+            )
+            for index, record in stages
+        )
+        + "</section>"
+        + generate_methods_section(
+            records=[r for _, r in stages], pipeline_name=pipeline_name
+        )
     )
-    timing = generate_timing_section(stages_info=stages)
-    results, inline_scripts = generate_results_section(
-        stages_info=stages,
-        html_dir=html_dir,
-        assets_dir=assets_dir,
+
+    sections = [
+        ("#summary", "Summary"),
+        ("#configuration", "Configuration"),
+        ("#pipeline", "Pipeline"),
+        ("#overview", "Overview"),
+    ]
+    sidebar = (
+        '<div class="sidebar-section-label">Report</div>'
+        + _links(links=sections)
+        + '<div class="sidebar-section-label">Stages</div>'
+        + _links(
+            links=[
+                (f"#{stage_basename(index=i, stage_name=r['name'])}", r["name"])
+                for i, r in stages
+            ],
+            css="sidebar-link sidebar-sublink",
+        )
+        + '<div class="sidebar-section-label">Info</div>'
+        + _links(links=[("#methods", "Methods")])
     )
-    methods = generate_methods_section(stages, pipeline_name)
-    sidebar_links = generate_sidebar(stages_info=stages)
-
-    content = summary + configuration + pipeline + timing + results + methods
-
-    html = HTML_TEMPLATE.format(
-        title=title,
-        title_short=pipeline_name,
-        timestamp=timestamp,
+    page = _page(
+        title=f"DIPY Auto Pipeline Report - {pipeline_name}",
+        subtitle=f"DIPY Auto Pipeline Report — {pipeline_name}",
+        nav=sections + [("#methods", "Methods")],
+        sidebar=sidebar,
         content=content,
-        inline_scripts=inline_scripts,
-        sidebar_links=sidebar_links,
+    )
+    return _write(path=output_path, text=page)
+
+
+# =============================================================================
+# Batch report
+# =============================================================================
+
+
+def _batch_row(*, result, page_dir):
+    """Table row of one acquisition of a batch.
+
+    Parameters
+    ----------
+    result : dict
+        Record produced for one acquisition.
+    page_dir : str
+        Directory of the page being written, for relative links.
+
+    Returns
+    -------
+    str
+        HTML fragment.
+    """
+    status = "PASS" if result.get("status") == "completed" else "FAIL"
+    report_path = result.get("report")
+    link = ""
+
+    target = None
+    if report_path and os.path.exists(report_path):
+        target = report_path
+    else:
+        index = os.path.join(result.get("out_dir", ""), "reports", "index.html")
+        if os.path.exists(index):
+            target = index
+    if target is not None:
+        href = html.escape(_href(path=target, page_dir=page_dir), quote=True)
+        link = f'<a href="{href}">open</a>'
+
+    detail = result.get("error") or ""
+    if result.get("failed_stage"):
+        detail = f"{result['failed_stage']}: {detail}"
+
+    return (
+        f"<tr><td>{html.escape(result.get('label', ''))}</td>"
+        f"<td>{html.escape(result.get('subject', ''))}</td>"
+        f"<td>{html.escape(result.get('session') or '')}</td>"
+        f"<td>{_badge(status=status)}</td>"
+        f"<td>{result.get('duration', 0):.1f}s</td>"
+        f"<td>{html.escape(detail)}</td>"
+        f"<td>{link}</td></tr>"
     )
 
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(html)
 
-    return output_path
+def generate_batch_report(*, results, output_path, pipeline_name, bids_dir):
+    """Write the HTML summary of a pipeline run over a BIDS dataset.
+
+    Parameters
+    ----------
+    results : list of dict
+        One record per acquisition, as produced by the batch loop.
+    output_path : str
+        Path where the HTML summary should be saved.
+    pipeline_name : str
+        Name of the pipeline that was run.
+    bids_dir : str
+        Root of the source BIDS dataset.
+
+    Returns
+    -------
+    str
+        Path of the summary page.
+    """
+    page_dir = os.path.dirname(os.path.abspath(output_path))
+    succeeded = [r for r in results if r.get("status") == "completed"]
+    failed = [r for r in results if r.get("status") != "completed"]
+    total_time = sum(r.get("duration", 0) for r in results)
+
+    summary = f"""
+    <section id="summary">
+        <h1>Summary</h1>
+        <div class="stat-row">
+            <div class="stat-card">
+                <div class="stat-label">Acquisitions</div>
+                <div class="stat-value">{len(results)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Succeeded</div>
+                <div class="stat-value">{len(succeeded)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Failed</div>
+                <div class="stat-value">{len(failed)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Duration</div>
+                <div class="stat-value">{total_time:.0f}
+                  <span style="font-size:14px;font-weight:500;
+                    color:#6b7280;margin-left:4px">s</span>
+                </div>
+            </div>
+        </div>
+        <div class="info-grid">
+            <div class="info-card">
+                <strong>Pipeline</strong>
+                <p>{html.escape(pipeline_name)}</p>
+            </div>
+            <div class="info-card">
+                <strong>BIDS Dataset</strong>
+                <p><code>{html.escape(bids_dir)}</code></p>
+            </div>
+            <div class="info-card">
+                <strong>Derivatives</strong>
+                <p><code>{html.escape(page_dir)}</code></p>
+            </div>
+        </div>
+    </section>
+    """
+
+    rows = "".join(_batch_row(result=result, page_dir=page_dir) for result in results)
+    table = f"""
+    <section id="runs">
+        <h1>Acquisitions</h1>
+        <table>
+            <thead><tr><th>Run</th><th>Subject</th><th>Session</th>
+            <th>Status</th><th>Duration</th><th>Detail</th>
+            <th>Report</th></tr></thead>
+            <tbody>{rows}</tbody>
+        </table>
+    </section>
+    """
+
+    sections = [("#summary", "Summary"), ("#runs", "Acquisitions")]
+    sidebar = (
+        '<div class="sidebar-section-label">Batch</div>'
+        + _links(links=sections)
+        + '<div class="sidebar-section-label">Acquisitions</div>'
+        + _links(
+            links=[
+                (
+                    _href(
+                        path=os.path.join(
+                            r.get("out_dir", ""), "reports", "index.html"
+                        ),
+                        page_dir=page_dir,
+                    ),
+                    r.get("label", ""),
+                )
+                for r in results
+            ],
+            css="sidebar-link sidebar-sublink",
+        )
+    )
+    page = _page(
+        title=f"DIPY Auto Batch Report - {pipeline_name}",
+        subtitle=f"DIPY Auto BIDS batch — {pipeline_name}",
+        nav=sections,
+        sidebar=sidebar,
+        content=summary + table,
+    )
+    return _write(path=output_path, text=page)

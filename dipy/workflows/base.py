@@ -323,10 +323,11 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 _kwargs["type"] = str
 
             if isnarg:
-                if is_optional:
+                if is_optional or getattr(workflow, "inputs_are_optional", False):
                     _kwargs["nargs"] = "*"
                 else:
                     _kwargs["nargs"] = "+"
+                if not is_optional:
                     nb_positional_variable += 1
 
             if "out_" in arg:
