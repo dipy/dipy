@@ -53,6 +53,37 @@ else:
     actor = fury
 
 
+def _validate_window_size(size):
+    """Return validated integer window dimensions.
+
+    Parameters
+    ----------
+    size : sequence of int
+        Window width and height.
+
+    Returns
+    -------
+    tuple of int
+        Validated dimensions, or ``(1200, 1000)`` when the input is invalid.
+    """
+    try:
+        width, height = size
+    except (TypeError, ValueError):
+        logger.warning("Cannot process size %r; using default size (1200, 1000).", size)
+        return (1200, 1000)
+    for dimension in (width, height):
+        if (
+            isinstance(dimension, (bool, np.bool_))
+            or not isinstance(dimension, (int, np.integer))
+            or dimension <= 0
+        ):
+            logger.warning(
+                "Cannot process size %r; using default size (1200, 1000).", size
+            )
+            return (1200, 1000)
+    return int(width), int(height)
+
+
 class Skyline:
     """The Skyline viewer, hosting the FURY scene, UI, and visualizations.
 
@@ -71,6 +102,10 @@ class Skyline:
         An unrecognized value logs an error and terminates the process.
         ``DIPY_OFFSCREEN=1`` or ``true`` (case-insensitive) forces stealth.
         Otherwise, ``visualizer_type`` controls rendering.
+    size : tuple of int, optional
+        Logical window dimensions as ``(width, height)``. Both must be positive.
+        Narrow windows use a smaller sidebar; stealth uses the full window.
+        Invalid dimensions log a warning and use the default size.
     images : list of tuple, optional
         ``(data, affine)`` or ``(data, affine, filename)`` tuples where
         ``data`` is a nibabel image or ndarray and ``filename`` is a display label.
@@ -169,6 +204,7 @@ class Skyline:
         self,
         *,
         visualizer_type="standalone",
+        size=(1200, 1000),
         images=None,
         peaks=None,
         rois=None,
@@ -213,6 +249,10 @@ class Skyline:
             An unrecognized value logs an error and terminates the process.
             ``DIPY_OFFSCREEN=1`` or ``true`` (case-insensitive) forces stealth.
             Otherwise, ``visualizer_type`` controls rendering.
+        size : tuple of int, optional
+            Logical window dimensions as ``(width, height)``. Both must be positive.
+            Narrow windows use a smaller sidebar; stealth uses the full window.
+            Invalid dimensions log a warning and use the default size.
         images : list of tuple, optional
             ``(data, affine)`` or ``(data, affine, filename)`` tuples where
             ``data`` is a nibabel image or ndarray and ``filename`` a display label.
@@ -307,8 +347,8 @@ class Skyline:
         setup/start returns or raises.
         """
         sh_basis = _validate_sh_basis(sh_basis)
-        self.size = (1200, 1000)
-        self.ui_size = (400, self.size[1])
+        self.size = _validate_window_size(size)
+        self.ui_size = (min(400, self.size[0] // 3), self.size[1])
         dipy_offscreen_requested = os.environ.get("DIPY_OFFSCREEN", "").lower() in (
             "1",
             "true",
@@ -958,13 +998,13 @@ class Skyline:
         size : tuple of int
             New window size, in pixels, as ``(width, height)``.
         """
-        self.size = size
-        self.ui_size = (400, self.size[1])
-        self.UI_window.size = (self.ui_size[0], size[1])
-        self.window._screen_config = [
-            (self.ui_size[0], 0, self.size[0] - self.ui_size[0], self.size[1])
-        ]
-        self.UI_window.size = (self.ui_size[0], size[1])
+        self.size = tuple(size)
+        self.ui_size = (min(400, self.size[0] // 3), self.size[1])
+        if self.UI_window is not None:
+            self.UI_window.size = self.ui_size
+            self.window._screen_config = [
+                (self.ui_size[0], 0, self.size[0] - self.ui_size[0], self.size[1])
+            ]
         self._update_tractogram_helper(remove=True)
         self._render_window()
 
@@ -1516,6 +1556,7 @@ class Skyline:
 def skyline_from_files(
     fnames,
     *,
+    size=(1200, 1000),
     rois=None,
     peaks=None,
     shm_coeffs=None,
@@ -1555,6 +1596,10 @@ def skyline_from_files(
 
         Unsupported extensions are logged and skipped; ``.npy`` entries are
         ignored.
+    size : tuple of int, optional
+        Logical window dimensions as ``(width, height)``. Both must be positive.
+        Offscreen image dimensions also depend on the renderer's pixel ratio.
+        Invalid dimensions log a warning and use the default size.
     rois : list of str, optional
         File paths for ROIs to be loaded into the Skyline viewer. Only
         NIfTI images (.nii, .nii.gz) are supported; other extensions are
@@ -1634,6 +1679,7 @@ def skyline_from_files(
 
     return skyline(
         visualizer_type=visualizer_type,
+        size=size,
         initial_filenames=fnames,
         initial_rois=rois,
         initial_peaks=peaks,
@@ -1658,6 +1704,7 @@ def skyline_from_files(
 def skyline(
     *,
     visualizer_type="standalone",
+    size=(1200, 1000),
     images=None,
     peaks=None,
     rois=None,
@@ -1702,6 +1749,10 @@ def skyline(
         An unrecognized value logs an error and terminates the process.
         ``DIPY_OFFSCREEN=1`` or ``true`` (case-insensitive) forces stealth.
         Otherwise, ``visualizer_type`` controls rendering.
+    size : tuple of int, optional
+        Logical window dimensions as ``(width, height)``. Both must be positive.
+        Narrow windows use a smaller sidebar; stealth uses the full window.
+        Invalid dimensions log a warning and use the default size.
     images : list of tuple, optional
         ``(data, affine)`` or ``(data, affine, filename)`` tuples where
         ``data`` is a nibabel image or ndarray and ``filename`` is a display label.
@@ -1807,6 +1858,7 @@ def skyline(
     """
     return Skyline(
         visualizer_type=visualizer_type,
+        size=size,
         images=images,
         peaks=peaks,
         rois=rois,

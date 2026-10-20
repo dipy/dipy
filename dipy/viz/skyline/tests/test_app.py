@@ -175,6 +175,66 @@ def test_stealth_viewers_are_collected_after_capture(tmp_path, make_skyline):
         assert all(ref() is None for ref in watched)
 
 
+@pytest.mark.parametrize("size", [(100, 100), (320, 180)])
+@pytest.mark.parametrize("from_files", [False, True])
+def test_requested_window_size_controls_capture(tmp_path, size, from_files):
+    options = {
+        "size": size,
+        "out_dir": str(tmp_path),
+        "out_stealth_png": "sized.png",
+    }
+    if from_files:
+        volume_path = tmp_path / "volume.nii.gz"
+        save_nifti(str(volume_path), _volume(), AFFINE)
+        viewer = skyline_from_files([str(volume_path)], stealth=True, **options)
+    else:
+        viewer = skyline(visualizer_type="stealth", images=[_image_input()], **options)
+
+    canvas = viewer.window.window
+    assert canvas.get_logical_size() == size
+    assert canvas.get_closed()
+    with Image.open(tmp_path / "sized.png") as image:
+        expected_size = tuple(int(value * viewer.window.pixel_ratio) for value in size)
+        assert image.size == expected_size
+        assert any(low != high for low, high in image.getextrema()[:3])
+
+
+@pytest.mark.parametrize(
+    "size",
+    [
+        None,
+        (),
+        (200,),
+        (200, 100, 50),
+        (0, 100),
+        (200, -1),
+        (200.5, 100),
+        (True, 100),
+        (np.bool_(True), 100),
+    ],
+)
+def test_invalid_window_size_warns_and_uses_default(
+    make_skyline, tmp_path, caplog, size
+):
+    with caplog.at_level(logging.WARNING):
+        viewer = make_skyline(
+            images=[_image_input()], size=size, out_stealth_png="fallback.png"
+        )
+
+    assert viewer.window.window.get_logical_size() == (1200, 1000)
+    assert viewer.window.window.get_closed()
+    assert any(
+        record.levelno == logging.WARNING and repr(size) in record.getMessage()
+        for record in caplog.records
+    )
+    with Image.open(tmp_path / "fallback.png") as image:
+        expected_size = tuple(
+            int(value * viewer.window.pixel_ratio) for value in (1200, 1000)
+        )
+        assert image.size == expected_size
+        assert any(low != high for low, high in image.getextrema()[:3])
+
+
 def test_stealth_viewer_defaults_to_the_dipy_skyline_filename(tmp_path, make_skyline):
     make_skyline(images=[_image_input()])
 

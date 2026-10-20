@@ -7,6 +7,7 @@ import pytest
 
 from dipy.io.image import save_nifti
 from dipy.utils.optpkg import optional_package
+from dipy.workflows.base import IntrospectiveArgumentParser
 
 _, has_fury_v2, _ = optional_package("fury", min_version="2.0.0")
 if not has_fury_v2:
@@ -35,16 +36,27 @@ def test_skyline_flow_captures_offscreen(tmp_path, stealth, dipy_value):
             os.environ["DIPY_OFFSCREEN"] = dipy_value
         os.environ["FURY_OFFSCREEN"] = "0"
 
-        SkylineFlow().run(
-            [str(volume_path)],
-            stealth=stealth,
-            out_dir=str(tmp_path),
-            out_stealth_png="workflow.png",
-        )
+        flow = SkylineFlow()
+        parser = IntrospectiveArgumentParser()
+        parser.add_workflow(flow)
+        arguments = [
+            str(volume_path),
+            "--size",
+            "320",
+            "180",
+            "--out_dir",
+            str(tmp_path),
+            "--out_stealth_png",
+            "workflow.png",
+        ]
+        if stealth:
+            arguments.append("--stealth")
+        flow.run(**parser.get_flow_args(arguments))
 
         assert os.environ.get("DIPY_OFFSCREEN") == dipy_value
         assert os.environ.get("FURY_OFFSCREEN") == "0"
         with Image.open(tmp_path / "workflow.png") as image:
+            assert image.width / image.height == pytest.approx(320 / 180)
             assert any(low != high for low, high in image.getextrema()[:3])
     finally:
         for key, value in (

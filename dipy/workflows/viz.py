@@ -25,6 +25,7 @@ class SkylineFlow(Workflow):
         self,
         input_files,
         *,
+        size=(1200, 1000),
         rois=None,
         peaks=None,
         odfs=None,
@@ -59,6 +60,10 @@ class SkylineFlow(Workflow):
         input_files : variable string or Path
             Tuple of path for each image, peak, surface or tractogram to be added to
             the Skyline viewer.
+        size : variable int, optional
+            Logical window dimensions as width and height, for example
+            ``--size 800 600``. Both values must be positive.
+            Invalid dimensions log a warning and use the default size.
         rois : variable str, optional
             Tuple of path for each ROI to be added to the Skyline viewer.
         peaks : variable str, optional
@@ -143,6 +148,7 @@ class SkylineFlow(Workflow):
 
         skyline_from_files(
             skyline_input_files,
+            size=size,
             rois=rois,
             peaks=peaks,
             shm_coeffs=odfs,
