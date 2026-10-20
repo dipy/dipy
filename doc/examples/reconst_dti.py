@@ -55,19 +55,21 @@ import numpy as np
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
+from dipy.reconst.shm import sf_to_sh
+from dipy.viz import actor, skyline, window
 
 """
 ``dipy.reconst`` is for the reconstruction algorithms which we use to create
 voxel models from the raw data.
 """
 
-import dipy.reconst.dti as dti
+from dipy.reconst import dti
 
 """
 ``dipy.data`` is used for small datasets that we use in tests and examples.
 """
 
-from dipy.data import get_fnames
+from dipy.data import get_fnames, get_sphere
 
 """
 ``get_fnames`` will download the raw dMRI dataset of a single subject.
@@ -241,16 +243,7 @@ area in an axial slice of the splenium of the corpus callosum (CC).
 
 print("Computing tensor ellipsoids in a part of the splenium of the CC")
 
-from dipy.data import get_sphere
-
 sphere = get_sphere(name="repulsion724")
-
-from dipy.viz import actor, window
-
-# Enables/disables interactive visualization
-interactive = False
-
-scene = window.Scene()
 
 evals = tenfit.evals[13:43, 44:74, 28:29]
 evecs = tenfit.evecs[13:43, 44:74, 28:29]
@@ -258,22 +251,21 @@ evecs = tenfit.evecs[13:43, 44:74, 28:29]
 """
 We can color the ellipsoids using the ``color_fa`` values that we calculated
 above. In this example we additionally normalize the values to increase the
-contrast.
+contrast. The native tensor slicer requires FURY 2.1 or newer.
 """
 
 cfa = RGB[13:43, 44:74, 28:29]
 cfa /= cfa.max()
 
-scene.add(
-    actor.tensor_slicer(evals, evecs, scalar_colors=cfa, sphere=sphere, scale=0.3)
+tensor = actor.tensor_slicer(
+    evals,
+    evecs,
+    colors=cfa,
+    scale=0.3,
+    norm=True,
+    visibility=(False, False, True),
 )
-
-print("Saving illustration as tensor_ellipsoids.png")
-window.record(
-    scene=scene, n_frames=1, out_path="tensor_ellipsoids.png", size=(600, 600)
-)
-if interactive:
-    window.show(scene)
+window.show(tensor, title="tensor_ellipsoids")
 
 """
 .. rst-class:: centered small fst-italic fw-semibold
@@ -281,21 +273,29 @@ if interactive:
 Tensor Ellipsoids.
 """
 
-scene.clear()
-
 """
 Finally, we can visualize the tensor Orientation Distribution Functions
-for the same area as we did with the ellipsoids.
+for a second axial region. An order-8 spherical-harmonic projection is used
+only for display, with orientation colors and a maximum radius of 0.5 voxels.
 """
 
 tensor_odfs = tenmodel.fit(data[20:50, 55:85, 38:39]).odf(sphere)
 
-odf_actor = actor.odf_slicer(tensor_odfs, sphere=sphere, scale=0.5, colormap=None)
-scene.add(odf_actor)
-print("Saving illustration as tensor_odfs.png")
-window.record(scene=scene, n_frames=1, out_path="tensor_odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+display_sh = sf_to_sh(
+    tensor_odfs,
+    sphere,
+    sh_order_max=8,
+    basis_type="descoteaux07",
+    full_basis=False,
+    legacy=False,
+)
+odf_max = np.max(np.abs(tensor_odfs), axis=-1, keepdims=True)
+odf_scale = np.divide(0.5, odf_max, out=np.zeros_like(odf_max), where=odf_max > 0)
+display_sh *= odf_scale
+_skyline_obj = skyline(
+    sh_coeffs=[(display_sh, None, "Tensor ODFs", "descoteaux07")],
+    out_stealth_png="tensor_odfs.png",
+)
 
 """
 .. rst-class:: centered small fst-italic fw-semibold

@@ -44,11 +44,8 @@ import dipy.data as dpd
 import dipy.denoise.noise_estimate as ne
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
-import dipy.reconst.dti as dti
+from dipy.reconst import dti
 from dipy.viz import actor, window
-
-# Enables/disables interactive visualization
-interactive = False
 
 ###############################################################################
 # If needed, the ``fetch_stanford_hardi`` function will download the raw dMRI
@@ -93,25 +90,23 @@ fa1 = fit_wls.fa
 evals1 = fit_wls.evals
 evecs1 = fit_wls.evecs
 cfa1 = dti.color_fa(fa1, evecs1)
-sphere = dpd.default_sphere
 
 ###############################################################################
-# We visualize the ODFs in the ROI using ``dipy.viz`` module:
+# We visualize tensor ellipsoids with the native FURY 2.1+ tensor slicer:
 
-scene = window.Scene()
-scene.add(
-    actor.tensor_slicer(evals1, evecs1, scalar_colors=cfa1, sphere=sphere, scale=0.3)
+tensor_1 = actor.tensor_slicer(
+    evals1,
+    evecs1,
+    colors=cfa1,
+    scale=0.3,
+    norm=True,
+    visibility=(False, False, True),
 )
-window.record(scene=scene, out_path="tensor_ellipsoids_wls.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+window.show(tensor_1, title="tensor_ellipsoids_wls")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
-#
 # Tensor Ellipsoids.
-
-scene.clear()
 
 ###############################################################################
 # Next, we corrupt the data with some noise. To simulate a subject that moves
@@ -123,6 +118,8 @@ noisy_data[..., noisy_idx] = 1.0
 
 ###############################################################################
 # We use the same model to fit this noisy data
+# In places where the tensor model is particularly sensitive to noise, the
+# resulting tensor field will be distorted
 
 fit_wls_noisy = dti_wls.fit(noisy_data)
 fa2 = fit_wls_noisy.fa
@@ -130,18 +127,17 @@ evals2 = fit_wls_noisy.evals
 evecs2 = fit_wls_noisy.evecs
 cfa2 = dti.color_fa(fa2, evecs2)
 
-scene = window.Scene()
-scene.add(
-    actor.tensor_slicer(evals2, evecs2, scalar_colors=cfa2, sphere=sphere, scale=0.3)
+tensor2 = actor.tensor_slicer(
+    evals2,
+    evecs2,
+    colors=cfa2,
+    scale=0.3,
+    norm=True,
+    visibility=(False, False, True),
 )
-window.record(scene=scene, out_path="tensor_ellipsoids_wls_noisy.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+window.show(tensor2, title="tensor_ellipsoids_wls_noisy")
 
 ###############################################################################
-# In places where the tensor model is particularly sensitive to noise, the
-# resulting tensor field will be distorted
-#
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # Tensor Ellipsoids from noisy data.
@@ -165,23 +161,22 @@ evals3 = fit_restore_noisy.evals
 evecs3 = fit_restore_noisy.evecs
 cfa3 = dti.color_fa(fa3, evecs3)
 
-scene = window.Scene()
-scene.add(
-    actor.tensor_slicer(evals3, evecs3, scalar_colors=cfa3, sphere=sphere, scale=0.3)
+tensor3 = actor.tensor_slicer(
+    evals3,
+    evecs3,
+    colors=cfa3,
+    scale=0.3,
+    norm=True,
+    visibility=(False, False, True),
 )
-print("Saving illustration as tensor_ellipsoids_restore_noisy.png")
-window.record(
-    scene=scene, out_path="tensor_ellipsoids_restore_noisy.png", size=(600, 600)
-)
-if interactive:
-    window.show(scene)
+window.show(tensor3, title="tensor_ellipsoids_restore_noisy")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
-
+#
 # Tensor Ellipsoids from noisy data recovered with RESTORE.
-
-
+#
+#
 # The tensor field looks rather restored to its noiseless state in this
 # image, but to convince ourselves further that this did the right thing, we
 # will compare  the distribution of FA in this region relative to the
