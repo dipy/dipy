@@ -591,3 +591,42 @@ def test_csd_fit_parallel_matches_serial(engine, vox_per_chunk):
         rtol=1e-6,
         atol=1e-8,
     )
+
+
+# ---------------------------------------------------------------------------
+# Regression tests for dipy#4242
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("n_masked", [1, 5, 23])  # leading voxels, C order
+def test_multi_voxel_predict_S0_array_after_masked_voxels(n_masked):
+    """Each in-mask voxel is predicted with its own S0, even after masked ones."""
+    data = np.zeros((2, 3, 4, 10))
+    mask = np.ones(data.shape[:-1], dtype=bool)
+    mask.flat[:n_masked] = False
+    S0 = np.arange(1.0, mask.size + 1).reshape(mask.shape)
+    fit = _recording_model([]).fit(data, mask=mask)
+
+    expected = np.zeros(data.shape)
+    expected[mask] = S0[mask][:, None]
+    npt.assert_equal(fit.predict(S0=S0), expected)
+
+
+def test_multi_voxel_predict_empty_mask():
+    """An all-False mask raises an informative error, not a bare StopIteration."""
+    data = np.zeros((2, 3, 4, 10))
+    fit = _recording_model([]).fit(data, mask=np.zeros(data.shape[:-1], bool))
+    with pytest.raises(ValueError, match="no voxel inside the mask"):
+        fit.predict(S0=1.0)
+
+
+def test_dki_predict_S0_array_with_mask():
+    """DKI prediction scales with each voxel's own S0 when voxel 0 is masked."""
+    mask = np.array([False, True, True, False, True, True])
+    S0 = np.arange(1.0, 7.0)
+    fit = DiffusionKurtosisModel(_GTAB_2S).fit(_DKI_DATA, mask=mask)
+
+    ref = fit.predict(_GTAB_2S, S0=1.0)
+    pred = fit.predict(_GTAB_2S, S0=S0)
+    npt.assert_allclose(pred[mask], ref[mask] * S0[mask, None])
+    npt.assert_equal(pred[~mask], 0)
