@@ -18,7 +18,8 @@ import numpy as np
 from dipy.core.gradients import gradient_table
 from dipy.data import fetch_hbn, get_sphere
 from dipy.reconst.forecast import ForecastModel
-from dipy.viz import actor, window
+from dipy.reconst.shm import sf_to_sh
+from dipy.viz.skyline import skyline
 
 ###############################################################################
 # Download and read the data for this tutorial. Our implementation of FORECAST
@@ -136,12 +137,22 @@ print(f"fODF.shape {odf.shape}")
 ###############################################################################
 # Display a part of the fODFs
 
-odf_actor = actor.odf_slicer(
-    odf[30:60, 30:60, :], sphere=sphere, colormap="plasma", scale=0.6
+display_odf = odf[30:60, 30:60, :]
+display_sh = sf_to_sh(
+    display_odf,
+    sphere,
+    sh_order_max=6,
+    basis_type="descoteaux07",
+    full_basis=False,
+    legacy=False,
 )
-scene = window.Scene()
-scene.add(odf_actor)
-window.record(scene=scene, out_path="fODFs.png", size=(600, 600), magnification=4)
+odf_max = np.max(np.abs(display_odf), axis=-1, keepdims=True)
+odf_scale = np.divide(0.6, odf_max, out=np.zeros_like(odf_max), where=odf_max > 0)
+display_sh *= odf_scale
+_skyline_obj = skyline(
+    sh_coeffs=[(display_sh, None, "FORECAST ODFs", "descoteaux07")],
+    out_stealth_png="fODFs.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold

@@ -11,12 +11,14 @@ analytical Orientation Distribution Function (ODF).
 First import the necessary modules:
 """
 
+import numpy as np
+
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, get_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.reconst.shore import ShoreModel
-from dipy.viz import actor, window
+from dipy.viz.skyline import skyline
 
 ###############################################################################
 # Download and read the data for this tutorial.
@@ -82,24 +84,33 @@ odf = asmfit.odf(sphere)
 print(f"odf.shape {odf.shape}")
 
 ###############################################################################
-# Display the ODFs
+# Display the analytical ODF harmonics, not an approximate refit of the SHORE
+# signal. Normalize only the display coefficients to keep glyphs visible.
 
-# Enables/disables interactive visualization
-interactive = False
+sh_coeffs = asmfit.odf_sh()
+odf_max = np.max(np.abs(odf), axis=-1, keepdims=True)
+odf_scale = np.divide(0.5, odf_max, out=np.zeros_like(odf_max), where=odf_max > 0)
+sh_coeffs *= odf_scale
+sh_coeffs = sh_coeffs[:, None, :, :]
 
-scene = window.Scene()
-sfu = actor.odf_slicer(odf[:, None, :], sphere=sphere, colormap="plasma", scale=0.5)
-sfu.RotateX(-90)
-sfu.display(y=0)
-scene.add(sfu)
-window.record(scene=scene, out_path="odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+###############################################################################
+# This voxel-space display rotation turns the coronal slab face-on; it is not
+# the acquisition affine.
+
+display_affine = np.array(
+    [[1, 0, 0, 0], [0, 0, 1, 0], [0, -1, 0, 0], [0, 0, 0, 1]],
+    dtype=float,
+)
+_skyline_obj = skyline(
+    sh_coeffs=[(sh_coeffs, display_affine, "SHORE ODFs", "descoteaux07_legacy")],
+    out_stealth_png="odfs.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Orientation distribution functions.
+# Analytical orientation distribution functions, colored by orientation:
+# red for left-right, green for anterior-posterior, and blue for superior-inferior.
 #
 #
 # References

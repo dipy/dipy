@@ -36,6 +36,7 @@ from dipy.denoise.localpca import mppca
 import dipy.direction.peaks as dp
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
+from dipy.reconst import shm
 from dipy.reconst.mcsd import (
     MultiShellDeconvModel,
     auto_response_msmt,
@@ -43,10 +44,9 @@ from dipy.reconst.mcsd import (
     multi_shell_fiber_response,
     response_from_mask_msmt,
 )
-import dipy.reconst.shm as shm
 from dipy.segment.mask import median_otsu
 from dipy.segment.tissue import TissueClassifierHMRF
-from dipy.viz import actor, window
+from dipy.viz.skyline import skyline
 
 sphere = get_sphere(name="symmetric724")
 
@@ -309,25 +309,16 @@ print("ODF")
 print(mcsd_odf.shape)
 print(mcsd_odf[40, 40, 0])
 
-fodf_spheres = actor.odf_slicer(
-    mcsd_odf, sphere=sphere, scale=1, norm=False, colormap="plasma"
+display_sh = wm_sh_coeff.copy()
+_skyline_obj = skyline(
+    sh_coeffs=[(display_sh, None, "MSMT-CSD ODFs", "descoteaux07_legacy")],
+    out_stealth_png="msdodf.png",
 )
-
-interactive = False
-scene = window.Scene()
-scene.add(fodf_spheres)
-scene.reset_camera_tight()
-
-print("Saving illustration as msdodf.png")
-window.record(scene=scene, out_path="msdodf.png", size=(600, 600))
-
-if interactive:
-    window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# MSMT-CSD Peaks and ODFs.
+# MSMT-CSD ODFs with orientation colors and preserved relative amplitudes.
 #
 #
 # References
