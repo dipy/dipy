@@ -26,14 +26,17 @@ whole batches in parallel, ODF-FP scales gracefully to large volumes.
 Let us start by importing the relevant modules.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, get_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
+from dipy.io.peaks import save_pam
 from dipy.reconst.odffp import OdffpDictionary, OdffpModel, odffp_peaks
 from dipy.segment.mask import median_otsu
+from dipy.viz.skyline import skyline
 
 ###############################################################################
 # Download (or locate in cache) the Stanford HARDI dataset and load the data,
@@ -90,8 +93,6 @@ fit = model.fit(dataslice, mask=mask)
 # volume is scaled so that the largest peak is 1, so that the size of an ODF
 # reflects its anisotropy. It is written to a PAM5 file with ``save_pam``.
 
-from dipy.io.peaks import save_pam
-
 peaks = odffp_peaks(fit)
 save_pam("odffp_peaks.pam5", peaks, affine=affine)
 
@@ -100,13 +101,11 @@ print(f"SH coefficients shape: {peaks.shm_coeff.shape}")
 ###############################################################################
 # The matched ODFs can be rendered directly from these SH coefficients with the
 # Skyline viewer. The same ``odffp_peaks.pam5`` can also be opened
-# interactively with ``dipy_skyline odffp_peaks.pam5``.
+# interactively with ``dipy_skyline odffp_peaks.pam5``. The extracted axial slice
+# is displayed in local voxel coordinates, retaining globally QA-scaled amplitudes.
 
-from dipy.viz.skyline.app import skyline
-
-skyline(
-    visualizer_type="stealth",
-    sh_coeffs=[(peaks.shm_coeff, affine, "odf")],
+_skyline_obj = skyline(
+    sh_coeffs=[(peaks.shm_coeff * 2, None, "ODF-FP ODFs", "descoteaux07_legacy")],
     out_stealth_png="odffp_odfs.png",
 )
 
@@ -114,7 +113,7 @@ skyline(
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # ODF-FP matched ODFs of the axial slice, rendered from the SH coefficients of
-# the peaks object.
+# the peaks object, with orientation colors.
 
 ###############################################################################
 # Each voxel also inherits the microstructure of its matched fingerprint. For
@@ -125,7 +124,6 @@ skyline(
 free_water = np.zeros(mask.shape)
 free_water[mask] = fit.compartment_volume[mask][:, 0]
 
-import matplotlib.pyplot as plt
 
 fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 im0 = axes[0].imshow(np.rot90(free_water[:, :, 0]), cmap="gray", vmin=0, vmax=1)

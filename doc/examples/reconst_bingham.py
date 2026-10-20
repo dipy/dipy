@@ -19,7 +19,8 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.reconst.bingham import sf_to_bingham, sh_to_bingham
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
-from dipy.viz import actor, window
+from dipy.reconst.shm import sf_to_sh
+from dipy.viz import skyline
 from dipy.viz.plotting import image_mosaic
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
@@ -70,25 +71,18 @@ csd_fit = csd_model.fit(data_small)
 
 csd_odf = csd_fit.odf(sphere)
 
-interactive = False
-
-scene = window.Scene()
-
-fodf_spheres = actor.odf_slicer(
-    csd_odf, sphere=sphere, scale=0.9, norm=False, colormap="plasma"
+display_sh = 0.9 * csd_fit.shm_coeff
+_skyline_obj = skyline(
+    sh_coeffs=[(display_sh, None, "CSD ODFs", "descoteaux07_legacy")],
+    out_stealth_png="csd_odfs.png",
 )
-scene.add(fodf_spheres)
-
-print("Saving the illustration as csd_odfs.png")
-window.record(scene=scene, out_path="csd_odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # Fiber ODFs (fODFs) reconstructed using Constrained Spherical
-# Deconvolution (CSD). For simplicity, we will refer to them just as ODFs.
+# Deconvolution (CSD), with orientation colors and preserved relative amplitudes.
+# For simplicity, we will refer to them just as ODFs.
 #
 #
 # Step 2. Bingham fitting and Metrics
@@ -137,22 +131,25 @@ BinghamMetrics = sf_to_bingham(csd_odf, sphere, max_search_angle)
 
 bim_odf = BinghamMetrics.odf(sphere)
 
-scene.rm(fodf_spheres)
-
-fodf_spheres = actor.odf_slicer(
-    bim_odf, sphere=sphere, scale=0.9, norm=False, colormap="plasma"
+display_sh = sf_to_sh(
+    bim_odf,
+    sphere,
+    sh_order_max=8,
+    basis_type="descoteaux07",
+    full_basis=False,
+    legacy=False,
 )
-scene.add(fodf_spheres)
-
-print("Saving the illustration as Bingham_odfs.png")
-window.record(scene=scene, out_path="Bingham_odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+display_sh *= 0.9
+_skyline_obj = skyline(
+    sh_coeffs=[(display_sh, None, "Bingham ODFs", "descoteaux07")],
+    out_stealth_png="Bingham_odfs.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Bingham functions fitted to CSD fiber ODFs.
+# Bingham functions fitted to CSD fiber ODFs, shown as an order-8 SH display
+# approximation with orientation colors and the same amplitude scale.
 #
 # Alternatively to fitting Bingham functions to sampled ODFs, DIPY also
 # contains the function `sh_to_bingham` to perform Bingham fitting from the
@@ -187,8 +184,7 @@ FD_images = [FD_ODF_l1[:, -1:1:-1].T, FD_ODF_l2[:, -1:1:-1].T, FD_voxel[:, -1:1:
 FD_labels = ["FD ODF lobe 1", "FD ODF lobe 2", "FD ODF voxel"]
 kwargs = [{"vmin": 0, "vmax": 2}, {"vmin": 0, "vmax": 2}, {"vmin": 0, "vmax": 2}]
 
-print("Saving the illustration as Bingham_fd.png")
-image_mosaic(
+_fig, _ax = image_mosaic(
     FD_images,
     ax_labels=FD_labels,
     ax_kwargs=kwargs,
@@ -227,8 +223,7 @@ ODI2[FD_voxel < 0.5] = 0
 ODI_images = [ODI1[:, -1:1:-1].T, ODI2[:, -1:1:-1].T, ODIt[:, -1:1:-1].T]
 ODI_labels = ["ODI_1 (lobe 1)", "ODI_2 (lobe 1)", "ODI_total (lobe 1)"]
 kwargs = [{"vmin": 0, "vmax": 0.2}, {"vmin": 0, "vmax": 0.2}, {"vmin": 0, "vmax": 0.2}]
-print("Saving the illustration as Bingham_ODI_lobe1.png")
-image_mosaic(
+_fig, _ax = image_mosaic(
     ODI_images,
     ax_labels=ODI_labels,
     ax_kwargs=kwargs,
@@ -265,8 +260,7 @@ ODI2[FD_voxel < 0.5] = 0
 ODI_images = [ODI1[:, -1:1:-1].T, ODI2[:, -1:1:-1].T, ODIt[:, -1:1:-1].T]
 ODI_labels = ["ODI_1 (lobe 2)", "ODI_2 (lobe 2)", "ODI_voxel (lobe 2)"]
 kwargs = [{"vmin": 0, "vmax": 0.2}, {"vmin": 0, "vmax": 0.2}, {"vmin": 0, "vmax": 0.2}]
-print("Saving the illustration as Bingham_ODI_lobe2.png")
-image_mosaic(
+_fig, _ax = image_mosaic(
     ODI_images,
     ax_labels=ODI_labels,
     ax_kwargs=kwargs,
@@ -303,8 +297,7 @@ ODI2[FD_voxel < 0.5] = 0
 ODI_images = [ODI1[:, -1:1:-1].T, ODI2[:, -1:1:-1].T, ODIt[:, -1:1:-1].T]
 ODI_labels = ["ODI_1 (voxel)", "ODI_2 (voxel)", "ODI_total (voxel)"]
 kwargs = [{"vmin": 0, "vmax": 0.2}, {"vmin": 0, "vmax": 0.2}, {"vmin": 0, "vmax": 0.2}]
-print("Saving the illustration as Bingham_ODI.png")
-image_mosaic(
+_fig, _ax = image_mosaic(
     ODI_images,
     ax_labels=ODI_labels,
     ax_kwargs=kwargs,

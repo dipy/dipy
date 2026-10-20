@@ -16,9 +16,9 @@ from dipy.data import default_sphere, get_fnames
 from dipy.direction import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
-from dipy.reconst.shm import CsaOdfModel
+from dipy.reconst.shm import CsaOdfModel, sf_to_sh
 from dipy.segment.mask import bounding_box, crop, median_otsu
-from dipy.viz import actor, window
+from dipy.viz.skyline import skyline
 
 ###############################################################################
 # Download and read the data for this tutorial and load the raw diffusion data
@@ -96,11 +96,6 @@ print(f"GFA.shape {GFA.shape}")
 
 data_small = maskdata[13:43, 44:74, 28:29]
 
-# Enables/disables interactive visualization
-interactive = False
-
-scene = window.Scene()
-
 csaodfs = csamodel.fit(data_small).odf(default_sphere)
 
 ###############################################################################
@@ -108,16 +103,27 @@ csaodfs = csamodel.fit(data_small).odf(default_sphere)
 # using ``np.clip``
 
 csaodfs = np.clip(csaodfs, 0, np.max(csaodfs, -1)[..., None])
-csa_odfs_actor = actor.odf_slicer(
-    csaodfs, sphere=default_sphere, colormap="plasma", scale=0.4
+sh_coeffs = sf_to_sh(
+    csaodfs,
+    default_sphere,
+    sh_order_max=4,
+    basis_type="descoteaux07",
+    full_basis=False,
+    legacy=False,
 )
-csa_odfs_actor.display(z=0)
 
-scene.add(csa_odfs_actor)
-print("Saving illustration as csa_odfs.png")
-window.record(scene=scene, n_frames=1, out_path="csa_odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+################################################################################
+# Let's scale the ODFs to make them more visible. We will scale the ODFs to a
+# maximum of 0.4, but you can change this value to your liking.
+
+odf_max = np.max(np.abs(csaodfs), axis=-1, keepdims=True)
+odf_scale = np.divide(0.4, odf_max, out=np.zeros_like(odf_max), where=odf_max > 0)
+sh_coeffs *= odf_scale
+
+_skyline_obj = skyline(
+    sh_coeffs=[(sh_coeffs, None, "CSA ODFs", "descoteaux07")],
+    out_stealth_png="csa_odfs.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
