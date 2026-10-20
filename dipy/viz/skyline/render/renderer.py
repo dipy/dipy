@@ -1,5 +1,6 @@
 """Shared FURY window factory and base class for Skyline visualizations."""
 
+from functools import partial
 import os
 from pathlib import Path
 import sys
@@ -25,6 +26,8 @@ fury, has_fury_v2, _ = optional_package(
 if has_fury_v2:
     from PIL import Image
     from fury import window
+    from fury.actor import Group
+    from fury.actor.core import create_axes_helper
     import glfw
 else:
     window = fury
@@ -383,6 +386,123 @@ class Visualization:
         return self.name
 
 
+def _set_anatomical_view(screen, axis_direction):
+    """Orient the main camera from the selected RAS anatomical side.
+
+    Parameters
+    ----------
+    screen : Screen
+        Screen whose camera and scene define the anatomical view.
+    axis_direction : ndarray
+        Signed unit vector locating the selected side in RAS world coordinates.
+    """
+    camera = screen.camera
+    bounds = screen.scene.main_scene.get_world_bounding_box()
+    if bounds is not None and np.isfinite(bounds).all():
+        target = (bounds[0] + bounds[1]) * 0.5
+    else:
+        target = camera.world.position + camera.world.forward
+
+    distance = np.linalg.norm(camera.world.position - target)
+    if not np.isfinite(distance) or distance < 1e-6:
+        distance = max(float(camera.depth), 1.0)
+
+    camera.world.reference_up = (0, 1, 0) if axis_direction[2] else (0, 0, 1)
+    camera.world.position = target + axis_direction * distance
+    camera.look_at(target)
+
+
+def _update_anatomical_gizmo(camera, gizmo, axis_directions):
+    """Derive the overlay pose directly from the camera.
+
+    Parameters
+    ----------
+    camera : Camera
+        Main scene camera.
+    gizmo : dict
+        Actors returned by FURY's axes-helper factory.
+    axis_directions : ndarray
+        World-space directions of the six displayed endpoints.
+    """
+    rotation = camera.world.rotation
+    inverse_rotation = rotation.copy()
+    inverse_rotation[:3] *= -1
+    gizmo["group"].local.rotation = inverse_rotation
+    gizmo["center_disk"].local.rotation = rotation
+    depths = axis_directions @ camera.world.forward
+    opacities = 1.0 - 0.9 * (depths - depths.min()) / max(np.ptp(depths), 1e-6)
+    for disk, label, line, opacity in zip(
+        gizmo["disks"], gizmo["labels"], gizmo["lines"], opacities
+    ):
+        disk.local.rotation = rotation
+        label.local.rotation = rotation
+        disk.opacity = label.opacity = line.opacity = float(opacity)
+
+
+def _on_anatomical_axis_click(
+    screen, axis_direction, update_gizmo, render_callback, event
+):
+    """Fit the scene and preserve native side toggling with anatomical up.
+
+    Parameters
+    ----------
+    screen : Screen
+        Screen hosting the anatomical gizmo.
+    axis_direction : ndarray
+        World-space direction of the clicked endpoint.
+    update_gizmo : callable
+        Synchronize the overlay with the resulting camera pose.
+    render_callback : callable
+        Request a redraw after updating the camera and overlay.
+    event : PointerEvent
+        Disk or text pointer event.
+    """
+    event.stop_propagation()
+    window.set_camera_from_axis(screen, axis_direction)
+    if np.dot(screen.camera.world.forward, axis_direction) > 0:
+        axis_direction = -axis_direction
+    _set_anatomical_view(screen, axis_direction)
+    update_gizmo()
+    render_callback()
+
+
+def _show_anatomical_gizmo(show_manager):
+    """Attach an anatomical gizmo using stateless camera synchronization.
+
+    Parameters
+    ----------
+    show_manager : ShowManager
+        Manager whose first screen hosts the gizmo.
+    """
+    screen = show_manager.screens[0]
+    gizmo = create_axes_helper(labels=["L", "R", "P", "A", "I", "S"])
+    axis_directions = np.array([disk.local.position for disk in gizmo["disks"]])
+    update_gizmo = partial(
+        _update_anatomical_gizmo, screen.camera, gizmo, axis_directions
+    )
+    for disk, label, direction in zip(gizmo["disks"], gizmo["labels"], axis_directions):
+        on_click = partial(
+            _on_anatomical_axis_click,
+            screen,
+            direction,
+            update_gizmo,
+            show_manager.render,
+        )
+        disk.add_event_handler(on_click, "pointer_down")
+        label.add_event_handler(on_click, "pointer_down")
+
+    anchor = Group(name="Skyline anatomical axes")
+    anchor.local.position = (60, 60, 0.5)
+    # Screen-coordinate depth increases away from the viewer.
+    anchor.local.scale = (30, 30, -0.45)
+    anchor.add(gizmo["group"])
+    screen.scene.ui_scene.add(anchor)
+    update_gizmo()
+    show_manager.register_callback(
+        update_gizmo, time=0.016, repeat=True, name="skyline_anatomical_gizmo"
+    )
+
+
 def create_window(
     *,
     visualizer_type="standalone",
@@ -427,6 +547,10 @@ def create_window(
     Successful window creation sets ``FURY_OFFSCREEN`` to ``1`` for stealth
     or removes the key otherwise. Direct callers must restore their own
     previous environment value or absence.
+
+    Gizmo labels select views from their RAS anatomical sides. Sagittal and
+    coronal views keep superior up; axial views keep anterior up. Clicking an
+    already aligned label switches to the opposite side without changing slices.
     """
     if visualizer_type == "standalone":
         window_type = "default"
@@ -459,11 +583,8 @@ def create_window(
                 glfw.set_window_icon(show_m.window._window, 1, [(img)])
                 glfw.poll_events()
                 img.close()
-        if hasattr(show_m, "show_axes_gizmo"):
-            show_m.show_axes_gizmo(labels=["L", "R", "P", "A", "S", "I"])
-        logger.info(
-            "Created visualizer currently assumes Neurological convention for axes."
-        )
+        _show_anatomical_gizmo(show_m)
+        logger.info("Created visualizer with RAS anatomical axis views.")
 
     else:
         show_m = window.ShowManager(
