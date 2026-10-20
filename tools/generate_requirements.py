@@ -17,7 +17,7 @@ header = [
 
 
 def generate_requirement_file(name, req_list):
-    """Write a single requirements file with the shared header.
+    """Write a requirements file with the shared header and LF line endings.
 
     Parameters
     ----------
@@ -27,7 +27,7 @@ def generate_requirement_file(name, req_list):
         Requirements to place after the generated header.
     """
     req_fname = repo_dir / "requirements" / f"{name}.txt"
-    req_fname.write_text("\n".join(header + req_list) + "\n")
+    req_fname.write_text("\n".join(header + req_list) + "\n", newline="\n")
 
 
 def deduplicate(items):
