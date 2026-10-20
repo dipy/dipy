@@ -101,6 +101,8 @@ class Skyline:
         (MRtrix 0.2), or ``"tournier19"`` (MRtrix3). A fourth tuple element
         overrides this selection.
         Unsupported values are logged and use latest Descoteaux07.
+    sh_opacity : int, optional
+        Initial ODF opacity in percent: 0 transparent, 100 opaque.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
@@ -174,6 +176,7 @@ class Skyline:
         tractograms=None,
         sh_coeffs=None,
         sh_basis="descoteaux07",
+        sh_opacity=100,
         is_cluster=False,
         is_light_version=False,
         glass_brain=False,
@@ -240,6 +243,8 @@ class Skyline:
             (MRtrix 0.2), or ``"tournier19"`` (MRtrix3). A fourth tuple element
             overrides this selection.
             Unsupported values are logged and use latest Descoteaux07.
+        sh_opacity : int, optional
+            Initial ODF opacity in percent: 0 transparent, 100 opaque.
         is_cluster : bool, optional
             Whether to cluster the tractograms.
         is_light_version : bool, optional
@@ -318,6 +323,7 @@ class Skyline:
         self._cluster_length_thr = cluster_length_thr
         self._buan_pvals = buan_pvals
         self._sh_basis = sh_basis
+        self._sh_opacity = sh_opacity
         previous_fury_offscreen = os.environ.get("FURY_OFFSCREEN")
         try:
             if self._visualizer_type != "stealth":
@@ -1152,6 +1158,7 @@ class Skyline:
                 scale=1.0,
                 l_max=8,
                 basis_type=self._sh_basis,
+                opacity=self._sh_opacity,
                 sync_callback=self._synchronize_visualizations,
             )
             self._add_visualization(sh3d)
@@ -1513,6 +1520,7 @@ def skyline_from_files(
     peaks=None,
     shm_coeffs=None,
     sh_basis="descoteaux07",
+    sh_opacity=100,
     is_cluster=False,
     is_light_version=False,
     glass_brain=False,
@@ -1562,6 +1570,8 @@ def skyline_from_files(
         ``"descoteaux07_legacy"`` (old DIPY), ``"tournier07"`` (MRtrix 0.2),
         or ``"tournier19"`` (MRtrix3).
         Unsupported values are logged and use latest Descoteaux07.
+    sh_opacity : int, optional
+        Initial ODF opacity in percent: 0 transparent, 100 opaque.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
@@ -1629,6 +1639,7 @@ def skyline_from_files(
         initial_peaks=peaks,
         initial_shm_coeffs=shm_coeffs,
         sh_basis=sh_basis,
+        sh_opacity=sh_opacity,
         is_cluster=is_cluster,
         is_light_version=is_light_version,
         glass_brain=glass_brain,
@@ -1654,6 +1665,7 @@ def skyline(
     tractograms=None,
     sh_coeffs=None,
     sh_basis="descoteaux07",
+    sh_opacity=100,
     is_cluster=False,
     is_light_version=False,
     glass_brain=False,
@@ -1720,6 +1732,8 @@ def skyline(
         (MRtrix 0.2), or ``"tournier19"`` (MRtrix3). A fourth tuple element
         overrides this selection.
         Unsupported values are logged and use latest Descoteaux07.
+    sh_opacity : int, optional
+        Initial ODF opacity in percent: 0 transparent, 100 opaque.
     is_cluster : bool, optional
         Whether to cluster the tractograms.
     is_light_version : bool, optional
@@ -1814,6 +1828,7 @@ def skyline(
         initial_peaks=initial_peaks,
         initial_shm_coeffs=initial_shm_coeffs,
         sh_basis=sh_basis,
+        sh_opacity=sh_opacity,
         out_dir=out_dir,
         out_stealth_png=out_stealth_png,
     )

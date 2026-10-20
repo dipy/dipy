@@ -248,6 +248,47 @@ def test_offscreen_environment_precedence(
                 os.environ[key] = value
 
 
+@pytest.mark.parametrize("from_files", [False, True])
+def test_initial_sh_opacity_controls_offscreen_capture(tmp_path, from_files):
+    coeffs = _sh_coeffs(shape=(2, 2, 1))
+    if from_files:
+        coeffs_path = tmp_path / "odfs.nii.gz"
+        save_nifti(str(coeffs_path), coeffs, AFFINE)
+    previous_dipy = os.environ.get("DIPY_OFFSCREEN")
+    previous_fury = os.environ.get("FURY_OFFSCREEN")
+    try:
+        os.environ["DIPY_OFFSCREEN"] = "1"
+        intensities = []
+        for opacity in (0, 40, 100):
+            filename = f"opacity_{opacity}.png"
+            options = {
+                "sh_opacity": opacity,
+                "bg_color": (0, 0, 0),
+                "out_dir": str(tmp_path),
+                "out_stealth_png": filename,
+            }
+            if from_files:
+                viewer = skyline_from_files(
+                    [], shm_coeffs=[str(coeffs_path)], **options
+                )
+            else:
+                viewer = skyline(sh_coeffs=[(coeffs, AFFINE)], **options)
+            assert viewer.window.window.is_closed()
+            with Image.open(tmp_path / filename) as image:
+                intensities.append(np.asarray(image.convert("RGB")).sum(dtype=float))
+        assert intensities[0] == 0
+        assert 0 < intensities[1] < intensities[2]
+    finally:
+        for key, value in (
+            ("DIPY_OFFSCREEN", previous_dipy),
+            ("FURY_OFFSCREEN", previous_fury),
+        ):
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
 @pytest.mark.parametrize("fury_value", [None, "TrUe"])
 def test_offscreen_environment_restored_before_start_failure(tmp_path, fury_value):
     previous_dipy = os.environ.get("DIPY_OFFSCREEN")

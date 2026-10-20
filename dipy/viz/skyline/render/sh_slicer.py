@@ -63,6 +63,7 @@ def create_shm_visualization(
     *,
     render_callback=None,
     scale=1.3,
+    opacity=100,
     l_max=8,
     lut_res=8,
     basis_type="descoteaux07",
@@ -89,6 +90,8 @@ def create_shm_visualization(
         Callback function to be called after rendering.
     scale : float, optional
         Initial per-glyph scale.
+    opacity : int, optional
+        Initial ODF opacity in percent: 0 transparent, 100 opaque.
     l_max : int, optional
         Maximum SH order.
     lut_res : int, optional
@@ -134,6 +137,7 @@ def create_shm_visualization(
         affine=affine,
         render_callback=render_callback,
         scale=scale,
+        opacity=opacity,
         l_max=l_max,
         lut_res=lut_res,
         basis_type=input_basis_type,
@@ -431,6 +435,8 @@ class SHGlyph3D(Visualization):
     scale : float, optional
         Per-glyph scale used only when ``affine`` is ``None``; otherwise
         the scale is derived from the affine's voxel sizes.
+    opacity : int, optional
+        Initial ODF opacity in percent: 0 transparent, 100 opaque.
     l_max : int, optional
         Maximum SH order to shade.
     lut_res : int, optional
@@ -456,6 +462,7 @@ class SHGlyph3D(Visualization):
         affine=None,
         render_callback=None,
         scale=2.0,
+        opacity=100,
         l_max=8,
         lut_res=8,
         basis_type="standard",
@@ -480,6 +487,8 @@ class SHGlyph3D(Visualization):
         scale : float, optional
             Per-glyph scale used only when ``affine`` is ``None``;
             otherwise the scale is derived from the affine's voxel sizes.
+        opacity : int, optional
+            Initial ODF opacity in percent: 0 transparent, 100 opaque.
         l_max : int, optional
             Maximum SH order to shade.
         lut_res : int, optional
@@ -519,7 +528,8 @@ class SHGlyph3D(Visualization):
 
         super().__init__(name, render_callback)
         self._scale = float(default_scale)
-        self._opacity = 100
+        self._opacity = opacity
+        self._slicer.set_opacity(self._opacity / 100.0)
         self._slice_visibility = [True, True, True]
         self._synchronize = True
         self._sync_callback = sync_callback
