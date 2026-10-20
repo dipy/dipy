@@ -28,8 +28,9 @@ with b-value 2000.
 
 import numpy as np
 
+from dipy.core.geometry import euler_matrix
 from dipy.core.gradients import gradient_table
-from dipy.data import default_sphere, get_fnames
+from dipy.data import default_sphere, get_fnames, get_sphere
 from dipy.direction import peaks_from_model
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
@@ -42,7 +43,8 @@ from dipy.reconst.csdeconv import (
 )
 from dipy.reconst.dti import TensorModel, fractional_anisotropy, mean_diffusivity
 from dipy.sims.voxel import single_tensor_odf
-from dipy.viz import actor, window
+from dipy.viz import skyline
+from dipy.viz.plotting import image_mosaic
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames(name="stanford_hardi")
 
@@ -112,32 +114,26 @@ print(ratio)
 # We can double-check that we have a good response function by visualizing the
 # response function's ODF. Here is how you would do that:
 
-# Enables/disables interactive visualization
-interactive = False
-
-scene = window.Scene()
 evals = response[0]
 evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 
 
-response_odf = single_tensor_odf(default_sphere.vertices, evals=evals, evecs=evecs)
-# transform our data from 1D to 4D
-response_odf = response_odf[None, None, None, :]
-response_actor = actor.odf_slicer(
-    response_odf, sphere=default_sphere, colormap="plasma"
+response_sphere = get_sphere(name="symmetric724")
+response_odf = single_tensor_odf(response_sphere.vertices, evals=evals, evecs=evecs)
+
+# Normalize the surface and use an oblique view for display.
+view_rotation = euler_matrix(0, np.pi / 3, np.pi / 4)[:3, :3]
+display_vertices = response_sphere.vertices @ view_rotation.T
+radii = response_odf / response_odf.max()
+_skyline_obj = skyline(
+    surfaces=[(display_vertices * radii[:, None], response_sphere.faces)],
+    out_stealth_png="csd_response.png",
 )
-scene.add(response_actor)
-print("Saving illustration as csd_response.png")
-window.record(scene=scene, out_path="csd_response.png", size=(200, 200))
-if interactive:
-    window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Estimated response function.
-
-scene.rm(response_actor)
+# Single-fiber response ODF, normalized and viewed obliquely.
 
 ###############################################################################
 # **Strategy 2 - data-driven calibration of response function** Depending
@@ -160,7 +156,8 @@ scene.rm(response_actor)
 # created based on the DTI fit.
 
 tenmodel = TensorModel(gtab)
-tenfit = tenmodel.fit(data, mask=data[..., 0] > 200)
+brain_mask = data[..., 0] > 200
+tenfit = tenmodel.fit(data, mask=brain_mask)
 
 FA = fractional_anisotropy(tenfit.evals)
 MD = mean_diffusivity(tenfit.evals)
@@ -185,27 +182,18 @@ response = recursive_response(
 # We can check the shape of the signal of the response function, which should
 # be like  a pancake:
 
-response_signal = response.on_sphere(default_sphere)
-# transform our data from 1D to 4D
-response_signal = response_signal[None, None, None, :]
-response_actor = actor.odf_slicer(
-    response_signal, sphere=default_sphere, colormap="plasma"
+response_signal = response.on_sphere(response_sphere)
+radii = response_signal / response_signal.max()
+_skyline_obj = skyline(
+    surfaces=[(display_vertices * radii[:, None], response_sphere.faces)],
+    out_stealth_png="csd_recursive_response.png",
 )
-
-scene = window.Scene()
-
-scene.add(response_actor)
-print("Saving illustration as csd_recursive_response.png")
-window.record(scene=scene, out_path="csd_recursive_response.png", size=(200, 200))
-if interactive:
-    window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Estimated response function using recursive calibration.
-
-scene.rm(response_actor)
+# Recursively calibrated response signal, with the same display normalization
+# and oblique view.
 
 ###############################################################################
 # Step 2. fODF reconstruction
@@ -218,34 +206,25 @@ scene.rm(response_actor)
 csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 
 ###############################################################################
-# For illustration purposes we will fit only a small portion of the data.
+# Fit a full axial brain slice for AFD; crop only the ODF and peak displays.
 
-data_small = data[20:50, 55:85, 38:39]
-csd_fit = csd_model.fit(data_small)
-
-###############################################################################
-# Show the CSD-based ODFs also known as FODFs (fiber ODFs).
-
-csd_odf = csd_fit.odf(default_sphere)
+data_slice = data[:, :, 38:39]
+csd_fit = csd_model.fit(data_slice, mask=brain_mask[:, :, 38:39])
 
 ###############################################################################
-# Here we visualize only a 30x30 region.
+# Visualize the CSD fiber ODFs once, directly from the fitted SH coefficients,
+# in this 30 x 30 region.
 
-fodf_spheres = actor.odf_slicer(
-    csd_odf, sphere=default_sphere, scale=0.9, norm=False, colormap="plasma"
+display_sh = 0.9 * csd_fit.shm_coeff[20:50, 55:85]
+_skyline_obj = skyline(
+    sh_coeffs=[(display_sh, None, "CSD ODFs", "descoteaux07_legacy")],
+    out_stealth_png="csd_odfs.png",
 )
-
-scene.add(fodf_spheres)
-
-print("Saving illustration as csd_odfs.png")
-window.record(scene=scene, out_path="csd_odfs.png", size=(600, 600))
-if interactive:
-    window.show(scene)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# CSD ODFs.
+# CSD ODFs with orientation colors and preserved relative amplitudes.
 #
 #
 # In DIPY we also provide tools for finding the peak directions (maxima) of the
@@ -253,7 +232,7 @@ if interactive:
 
 csd_peaks = peaks_from_model(
     model=csd_model,
-    data=data_small,
+    data=data_slice[20:50, 55:85],
     sphere=default_sphere,
     relative_peak_threshold=0.5,
     min_separation_angle=25,
@@ -261,46 +240,49 @@ csd_peaks = peaks_from_model(
     num_processes=2,
 )
 
-scene.clear()
-fodf_peaks = actor.peak_slicer(csd_peaks.peak_dirs, peaks_values=csd_peaks.peak_values)
-scene.add(fodf_peaks)
-
-print("Saving illustration as csd_peaks.png")
-window.record(scene=scene, out_path="csd_peaks.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+display_peaks = (
+    csd_peaks.peak_dirs,
+    None,
+    "CSD peaks",
+    csd_peaks.peak_values,
+)
+_skyline_obj = skyline(peaks=[display_peaks], out_stealth_png="csd_peaks.png")
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
 # CSD Peaks.
 #
+# Apparent fiber density
+# ======================
 #
-# We can finally visualize both the ODFs and peaks in the same space.
+# Apparent fiber density (AFD) :footcite:p:`Raffelt2012` is the integral over
+# each segmented FOD lobe :footcite:p:`Smith2013`. ``afd`` returns up to five
+# lobes, ordered by peak amplitude, not AFD. Missing lobes are zero; exclude
+# them from the minimum.
+#
+# The maps summarize the retained lobes, not peak heights or tissue fractions.
+# AFD and its absolute thresholds depend on the response/FOD scaling.
 
-fodf_spheres.GetProperty().SetOpacity(0.4)
+csd_afd = csd_fit.afd(npeaks=5)
+afd_max = csd_afd.max(axis=-1)
+afd_min = np.min(csd_afd, axis=-1, where=csd_afd > 0, initial=np.inf)
+afd_min[afd_max == 0] = 0
+afd_sum = csd_afd.sum(axis=-1)
 
-scene.add(fodf_spheres)
-
-print("Saving illustration as csd_both.png")
-window.record(scene=scene, out_path="csd_both.png", size=(600, 600))
-if interactive:
-    window.show(scene)
+_fig, _axes = image_mosaic(
+    [np.rot90(metric[:, :, 0]) for metric in (afd_min, afd_max, afd_sum)],
+    ax_labels=["Minimum lobe AFD", "Maximum lobe AFD", "Summed AFD"],
+    ax_kwargs=[{"cmap": "viridis", "vmin": 0, "vmax": afd_sum.max()}] * 3,
+    figsize=(13, 4),
+    filename="csd_afd.png",
+)
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# CSD Peaks and ODFs.
-#
-#
-# The apparent fiber density (AFD) :footcite:p:`Raffelt2012` can be extracted
-# directly from the fit. As in MRtrix3's ``fod2fixel -afd``, each FOD is
-# segmented into lobes :footcite:p:`Smith2013` and the AFD of a lobe is the
-# integral of the FOD over that lobe. The lobes are sorted by descending peak
-# amplitude and missing lobes are set to zero.
-
-csd_afd = csd_fit.afd(npeaks=5)
-print("AFD of the lobes in the central voxel:", csd_afd[15, 15, 0])
+# Minimum nonzero, maximum, and summed lobe AFD across the full axial brain slice.
+# Voxels with no retained lobes are zero.
 
 ###############################################################################
 #
