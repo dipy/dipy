@@ -593,10 +593,6 @@ def test_csd_fit_parallel_matches_serial(engine, vox_per_chunk):
     )
 
 
-# ---------------------------------------------------------------------------
-# Regression tests for dipy#4242
-# ---------------------------------------------------------------------------
-
 
 @pytest.mark.parametrize("n_masked", [1, 5, 23])  # leading voxels, C order
 def test_multi_voxel_predict_S0_array_after_masked_voxels(n_masked):
