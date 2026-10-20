@@ -36,6 +36,7 @@ from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.peaks import save_pam
+from dipy.viz import skyline
 from dipy.viz.plotting import image_mosaic
 
 ###############################################################################
@@ -88,6 +89,8 @@ model = FORCEModel(
     gtab,
     n_neighbors=50,
     use_posterior=True,
+    posterior_beta=2000,
+    compute_odf=True,
     verbose=True,
 )
 
@@ -106,21 +109,41 @@ model.generate(
 )
 
 ###############################################################################
-# Fit the model to the data.
 #
-# ``model.fit()`` runs serially by default. The ``ray`` engine is considerably
-# faster, as it parallelises the matching and post-processing across worker
-# processes instead of a single one. To use it, pass ``engine="ray"`` (and
-# optionally ``n_jobs=<N>``)::
+# Using a different signal model
+# ------------------------------
 #
-#     fit = model.fit(data, mask=mask, engine="ray", n_jobs=-1)
+# FORCE can also be used with different tissue models. Matching only sees the
+# simulations, so it does not depend on how they were generated. Its speed is
+# set by the number of simulations and gradient directions, and stays the same
+# when the model changes.
 #
-# The ``ray`` engine requires Ray to be installed (``pip install ray``); if it
-# is not available the fit falls back to serial execution.
+# There are two ways to substitute your own model. The direct one is to edit
+# the signal generators in ``dipy/sims/_force_core.pyx`` and rebuild; the
+# simulations then carry your signals and everything downstream works unchanged.
+# The other avoids a rebuild: generate your own simulations and hand them to the
+# model::
+#
+#     model = FORCEModel(gtab, simulations=my_simulations)
+#
+# In both cases the per-voxel parameters are read straight off the matched
+# entry, so the simulations have to carry a value per simulation for each
+# parameter you want back: ``signals`` and ``labels`` at minimum, plus
+# ``num_fibers``, ``dispersion``, ``nd``, ``wm_fraction``, ``gm_fraction``,
+# ``csf_fraction``, ``fa``, ``md``, ``rd`` and ``fraction_array``.
+# Whatever you supply is what the fit reports back.
+#
+# Model fitting
+# -------------
+#
+# We use the serial engine here; the Ray engine can provide faster performance.
 
-fit = model.fit(data, mask=mask, n_jobs=-1, verbose=True)
+fit = model.fit(data, mask=mask, engine="serial", verbose=True)
 
 ###############################################################################
+# Microstructure maps
+# -------------------
+#
 # The ``fit`` object is a ``MultiVoxelFit`` container.  Its attributes are
 # 3-D arrays with the same spatial shape as ``data[..., 0]``.  Masked voxels
 # contain zeros.
@@ -139,21 +162,6 @@ ambiguity = fit.ambiguity
 
 print(f"FA  — min: {fa_map[mask].min():.3f}  max: {fa_map[mask].max():.3f}")
 print(f"MD  — min: {md_map[mask].min():.6f}  max: {md_map[mask].max():.6f}")
-
-###############################################################################
-# To save the peaks generated from the FORCE directly, we need to call the force_peaks
-# function on the fitted object.  This will return a
-# PeaksAndMetrics object containing the peak directions, values, and indices, which can
-# be saved to disk using save_pam.
-peaks = force_peaks(fit)
-
-###############################################################################
-# Now lets import the save_pam function and save the peaks to disk as a .pam5 file.
-# The affine is needed to ensure that the peaks are correctly aligned with the original
-# data.
-
-save_pam("force_peaks.pam5", peaks, affine=affine)
-
 
 ###############################################################################
 # Save selected maps to disk as NIfTI files.
@@ -215,16 +223,14 @@ image_mosaic(
         _slice(wm_fraction),
         _slice(gm_fraction),
         _slice(csf_fraction),
-        _slice(num_fibers),
     ],
-    ax_labels=["WM fraction", "GM fraction", "CSF fraction", "Number of fibers"],
+    ax_labels=["WM fraction", "GM fraction", "CSF fraction"],
     ax_kwargs=[
         {"cmap": "gray", "vmin": 0, "vmax": 1},
         {"cmap": "gray", "vmin": 0, "vmax": 1},
         {"cmap": "gray", "vmin": 0, "vmax": 1},
-        {"cmap": "viridis", "vmin": 0, "vmax": 3},
     ],
-    figsize=(20, 5),
+    figsize=(15, 5),
     filename="force_maps_tissue.png",
 )
 
@@ -232,8 +238,7 @@ image_mosaic(
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Tissue partial volume estimates (WM/GM/CSF fractions, *gray*) and the number
-# of fiber populations per voxel.
+# Tissue partial volume estimates (WM/GM/CSF fractions, *gray*).
 #
 # FORCE also reports, for each microstructure parameter, an **uncertainty** map
 # (spread of the posterior) and an **ambiguity** map (multi-modality of the
@@ -263,30 +268,56 @@ image_mosaic(
 #
 # Per-microstructure uncertainty (left) and ambiguity (right) maps for NDI and
 # ODI.
+
+###############################################################################
+# Peaks and posterior ODFs
+# ------------------------
 #
-# Using a different signal model
-# ------------------------------
+# To save the peaks generated from the FORCE directly, we need to call the force_peaks
+# function on the fitted object.  This will return a
+# PeaksAndMetrics object containing the peak directions, values, and indices, which can
+# be saved to disk using save_pam.
+peaks = force_peaks(fit)
+
+###############################################################################
+# Now lets import the save_pam function and save the peaks to disk as a .pam5 file.
+# The affine is needed to ensure that the peaks are correctly aligned with the original
+# data.
+
+save_pam("force_peaks.pam5", peaks, affine=affine)
+
+roi = np.s_[20:50, 55:85, 38:39]
+display_peaks = (
+    peaks.peak_dirs[roi],
+    None,
+    "FORCE peaks",
+    peaks.peak_values[roi],
+)
+_skyline_obj = skyline(peaks=[display_peaks], out_stealth_png="force_peaks.png")
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
 #
-# FORCE can also be used with different tissue models. Matching only sees the
-# library's signal matrix, so it does not depend on how those signals were
-# made. Its speed is set by the library size and the number of gradient
-# directions, and stays the same when the model changes.
+# FORCE best-match peaks in the CSD crop.
+
+###############################################################################
+# The existing fit uses beta = 2000. Display its posterior ODFs directly from
+# the SH coefficients, with orientation colors and a fixed display scale.
+# ODFs are normalized per voxel.
+
+_skyline_obj = skyline(
+    sh_coeffs=[
+        (0.45 * peaks.shm_coeff[roi], None, "FORCE beta=2000", "descoteaux07_legacy")
+    ],
+    out_stealth_png="force_odfs_beta_2000.png",
+)
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
 #
-# There are two ways to substitute your own model. The direct one is to edit
-# the signal generators in ``dipy/sims/_force_core.pyx`` and rebuild; the
-# library then carries your signals and everything downstream works unchanged.
-# The other avoids a rebuild: generate the library yourself and hand it to the
-# model::
-#
-#     model = FORCEModel(gtab, simulations=my_simulations)
-#
-# In both cases the per-voxel parameters are read straight off the matched
-# entry, so the dictionary has to carry a value per simulation for each
-# parameter you want back: ``signals`` and ``labels`` at minimum, plus
-# ``num_fibers``, ``dispersion``, ``nd``, ``wm_fraction``, ``gm_fraction``,
-# ``csf_fraction``, ``fa``, ``md``, ``rd`` and ``fraction_array``. Optional
-# extras (micro-FA, the DKI metrics, ``odfs``) are picked up when present.
-# Whatever you supply is what the fit reports back.
+# FORCE posterior ODFs, beta = 2000.
+
+###############################################################################
 #
 # References
 # ----------
