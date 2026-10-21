@@ -1486,7 +1486,7 @@ def extract_b0(dwi, b0_mask, *, group_contiguous_b0=False, strategy="mean"):
         groups = np.split(b0_indices, np.where(np.diff(b0_indices) > 1)[0] + 1)
         grouped_b0 = []
         for group in groups:
-            group_data = dwi[..., group - b0_indices[0]]
+            group_data = dwi[..., group]
             if strategy == "first":
                 grouped_b0.append(group_data[..., 0])
             elif strategy == "mean":
