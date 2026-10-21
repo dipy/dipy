@@ -9,12 +9,12 @@ from dipy.utils.optpkg import optional_package
 
 fury_pckg_msg = (
     "You do not have FURY installed. Some visualization functions might not "
-    "work for you. Please install or upgrade FURY using pip install -U fury --pre. "
+    "work for you. Please install or upgrade FURY using pip install -U fury. "
     "For detailed installation instructions visit: https://fury.gl/"
 )
 # Allow import, but disable doctests if we don't have fury
 fury, has_fury, _ = optional_package(
-    "fury", trip_msg=fury_pckg_msg, min_version="2.0.0"
+    "fury", trip_msg=fury_pckg_msg, min_version="2.1.0"
 )
 if has_fury:
     from fury import actor, ui, window
