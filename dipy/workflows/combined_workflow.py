@@ -2968,8 +2968,9 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
     HTML pages are served with a ``<meta name="dipy-qc-token">`` tag holding
     the server token, which their buttons send back with the file to open in
     a ``POST /qc-open`` request. A launch requires that token, so that no
-    other web page can trigger one, and only opens files under the served
-    directory. The response body is the message the page shows when the
+    other web page can trigger one. The request names the file by its
+    :func:`~dipy.workflows.report.skyline_key`, and only files Skyline can
+    display under the served directory are known. The response body is the message the page shows when the
     launch fails. Anything else is served statically.
 
     Parameters
@@ -3016,8 +3017,6 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
         token = fields.get("token", [""])[0].encode()
         target = fields.get("path", [""])[0]
         host = (self.headers.get("Host") or "").rsplit(":", 1)[0]
-        root = Path(self.directory).resolve()
-        path = Path(target).resolve()
 
         if (
             not self.token
@@ -3025,7 +3024,8 @@ class _ReportHandler(http.server.SimpleHTTPRequestHandler):
             or host not in ("127.0.0.1", "localhost")
         ):
             self._reply(403, "This request does not come from a page of this report.")
-        elif not path.is_file() or root not in path.parents:
+        # A lookup, so that no file path is ever built from the request.
+        elif (path := report.skyline_files(root=self.directory).get(target)) is None:
             self._reply(403, f"'{target}' is not a file served by this report.")
         elif (skyline := shutil.which("dipy_skyline")) is None:
             self._reply(
@@ -3081,9 +3081,7 @@ def _serve_html_report(*, report_path):
         Path to the HTML report file (e.g., ``pipeline_report.html``).
     """
     report_path = Path(report_path).resolve()
-    root = report_path.parent
-    if root.name == "reports":
-        root = root.parent
+    root = report.served_root(page_dir=report_path.parent)
     report_dir = str(root)
     report_name = str(report_path.relative_to(root))
 
