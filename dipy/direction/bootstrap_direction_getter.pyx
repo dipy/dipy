@@ -22,7 +22,7 @@ cdef class BootDirectionGetter(DirectionGetter):
         double relative_peak_threshold
         double[:] pmf
         double[:, :] R
-        double[:, :, :, :] data
+        double[:, :, :, ::1] data
         int max_attempts
         int sh_order
         object H
@@ -43,7 +43,7 @@ cdef class BootDirectionGetter(DirectionGetter):
             raise ValueError("b_tol must be greater than 0.")
 
         self._pf_kwargs = kwargs
-        self.data = np.asarray(data, dtype=float)
+        self.data = np.asarray(data, dtype=float, order="C")
         self.model = model
         self.cos_similarity = np.cos(np.deg2rad(max_angle))
         self.sphere = sphere

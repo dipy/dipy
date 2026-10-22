@@ -1,4 +1,5 @@
 cython_sources = [
+  'test_interpolation_c',
   'test_math',
   ]
 
