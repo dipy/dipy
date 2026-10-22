@@ -1096,6 +1096,13 @@ def test_ensure_orientation():
     ras_affine = get_affine_with_new_orientation(affine)
     npt.assert_equal(get_orientation_from_affine(ras_affine), "RAS")
 
+    # Already in the new orientation
+    npt.assert_array_equal(get_affine_with_new_orientation(ras_affine), ras_affine)
+    lps_affine = get_affine_with_new_orientation(affine, new_orientation="LPS")
+    npt.assert_array_equal(
+        get_affine_with_new_orientation(lps_affine, new_orientation="lps"), lps_affine
+    )
+
     with pytest.raises(ValueError, match="affine must be a \\(4, 4\\) numpy array"):
         get_affine_with_new_orientation(np.eye(3))
     with pytest.raises(ValueError, match="affine must be a \\(4, 4\\) numpy array"):
