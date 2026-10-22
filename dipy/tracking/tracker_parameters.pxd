@@ -49,6 +49,7 @@ cdef class TrackerParameters:
     cdef public double[3] inv_voxel_size
     cdef public bint return_all
     cdef public bint is_symmetric
+    cdef public int rng_kind
 
     cdef public ShTrackerParameters sh
     cdef public ParallelTransportTrackerParameters ptt

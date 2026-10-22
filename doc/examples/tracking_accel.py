@@ -1,11 +1,11 @@
 """
-=====================================================
-Metal and GPU probabilistic tracking (simple tracker)
-=====================================================
+=============================================
+Accelerated probabilistic tracking
+=============================================
 
-DIPY's "simple" tracker :footcite:p:`Kruper2025` is a stripped-down
-probabilistic tracker that runs on the GPU through one of three backends:
-CUDA (NVIDIA), Metal (Apple Silicon) or WebGPU (any GPU with subgroup
+DIPY's accelerated tracker :footcite:p:`Kruper2025` is a stripped-down
+probabilistic tracker that runs on various hardware through one of three backends:
+CUDA (NVIDIA), Metal (Apple Silicon) or WebGPU (any accelerator with subgroup
 support). It generates tens of millions of streamlines in minutes, at the
 price of a few restrictions compared with
 :func:`dipy.tracking.tracker.probabilistic_tracking` on the CPU:
@@ -17,7 +17,7 @@ price of a few restrictions compared with
   :class:`dipy.tracking.stopping_criterion.ThresholdStoppingCriterion`;
 - the streamline length is capped at a fixed number of steps.
 
-The GPU dependencies are optional. Install the one matching your hardware::
+The accelerated dependencies are optional. Install the one matching your hardware::
 
     pip install "dipy[cu12]"     # or dipy[cu13], for CUDA 12 / 13
     pip install "dipy[metal]"    # Apple Silicon
@@ -37,7 +37,7 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram, save_trx_from_generator
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response_ssst
 from dipy.reconst.dti import TensorModel
-from dipy.tracking.simplet import SIMPLE_BACKENDS, simple_backend_available
+from dipy.tracking.accel import ACCEL_BACKENDS, accel_backend_available
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tracker import probabilistic_tracking
@@ -69,22 +69,22 @@ csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order_max=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
 ###############################################################################
-# The simple tracker stops on a scalar map. Here we use the FA from a tensor
-# fit, thresholded at 0.2.
+# The accelerated tracker stops on a scalar map. Here we use the FA from a
+# tensor fit, thresholded at 0.2.
 
 tensor_model = TensorModel(gtab)
 tensor_fit = tensor_model.fit(data, mask=white_matter)
 stopping_criterion = ThresholdStoppingCriterion(tensor_fit.fa, 0.2)
 
 ###############################################################################
-# Pick the first GPU backend available on this machine, falling back to the
-# CPU when there is none (e.g. when this example is built on a server without
-# a GPU). ``backend="auto"`` does the same, but raises if no GPU backend is
+# Pick the first backend available on this machine, falling back to the
+# CPU when there is none.
+# ``backend="auto"`` does the same, but raises if no backend is
 # available.
 
 backend = "cpu"
-for name in SIMPLE_BACKENDS:
-    if simple_backend_available(name):
+for name in ACCEL_BACKENDS:
+    if accel_backend_available(name):
         backend = name
         break
 print(f"Tracking with the {backend} backend")
@@ -92,7 +92,7 @@ print(f"Tracking with the {backend} backend")
 ###############################################################################
 # The tracking call is the same as on the CPU, plus the ``backend`` argument.
 # Passing ``sh`` is fine: the coefficients are sampled on ``sphere`` before
-# being uploaded to the GPU.
+# being uploaded to the device.
 
 streamline_generator = probabilistic_tracking(
     seeds,
@@ -108,30 +108,30 @@ streamline_generator = probabilistic_tracking(
 
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_tractogram(sft, "tractogram_simplet.trx")
+save_tractogram(sft, "tractogram_accel.trx")
 
 if has_fury:
     colors = np.repeat(
         colormap.line_colors(streamlines), [len(sl) for sl in streamlines], axis=0
     )
     lines_actor = actor.streamlines(lines=streamlines, colors=colors)
-    window.snapshot(actors=[lines_actor], fname="tractogram_simplet.png")
+    window.snapshot(actors=[lines_actor], fname="tractogram_accel.png")
     if interactive:
         window.show([lines_actor])
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# Using TRX with the simple probabilistic tracker
+# Using TRX with the accelerated probabilistic tracker
 #
 #
 #
-# The GPU produces streamlines much faster than they can be collected one at
-# a time in Python. With ``chunked=True`` the generator yields one
-# ``(points, lengths)`` tuple per chunk of ``chunk_size`` seeds instead, and
-# :func:`dipy.io.streamline.save_trx_from_generator` writes those chunks
-# straight to a TRX file, so whole-brain tractograms of hundreds of
-# gigabytes never have to fit in memory.
+# The accelerated tracker produces streamlines much faster than they
+# can be collected one at a time in Python. With ``chunked=True`` the
+# generator yields one ``(points, lengths)`` tuple per chunk of ``chunk_size``
+# seeds instead, and :func:`dipy.io.streamline.save_trx_from_generator`
+# writes those chunks straight to a TRX file, so whole-brain tractograms
+# of hundreds of gigabytes never have to fit in memory.
 
 streamline_generator = probabilistic_tracking(
     seeds,
@@ -150,7 +150,7 @@ streamline_generator = probabilistic_tracking(
 trx = save_trx_from_generator(
     streamline_generator,
     hardi_img,
-    filename="tractogram_simplet_chunked.trx",
+    filename="tractogram_accel_chunked.trx",
     nb_streamlines_estimate=len(seeds),
 )
 print(f"Saved {trx.header['NB_STREAMLINES']} streamlines")

@@ -21,6 +21,7 @@ from dipy.tracking.tracker import (
     probabilistic_tracking,
     ptt_tracking,
 )
+from dipy.utils.deprecator import deprecated_params
 from dipy.utils.logging import logger
 from dipy.workflows.workflow import Workflow
 
@@ -71,6 +72,12 @@ class LocalFiberTrackingPAMFlow(Workflow):
     def get_short_name(cls):
         return "track_local"
 
+    @deprecated_params(
+        "seed_buffer_fraction",
+        since="1.13.0",
+        until="2.0.0",
+        alternative="chunk_size",
+    )
     def run(
         self,
         pam_files,
@@ -90,6 +97,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         nbr_threads=0,
         random_seed=1,
         chunk_size=25000,
+        seed_buffer_fraction=None,
         out_dir="",
         out_tractogram="out_tractogram.trx",
     ):
@@ -159,6 +167,9 @@ class LocalFiberTrackingPAMFlow(Workflow):
             for a given seed coordinate.
         chunk_size : int, optional
             Number of seeds tracked at once. Lower it to reduce memory usage.
+        seed_buffer_fraction : float, optional
+            Deprecated and ignored. Use ``chunk_size`` to control the memory
+            usage.
         out_dir : string or Path, optional
            Output directory.
         out_tractogram : string, optional
@@ -309,6 +320,12 @@ class PFTrackingPAMFlow(Workflow):
     def get_short_name(cls):
         return "track_pft"
 
+    @deprecated_params(
+        "seed_buffer_fraction",
+        since="1.13.0",
+        until="2.0.0",
+        alternative="chunk_size",
+    )
     def run(
         self,
         pam_files,
@@ -330,6 +347,7 @@ class PFTrackingPAMFlow(Workflow):
         nbr_threads=0,
         random_seed=1,
         chunk_size=25000,
+        seed_buffer_fraction=None,
         out_dir="",
         out_tractogram="tractogram.trx",
     ):
@@ -400,6 +418,9 @@ class PFTrackingPAMFlow(Workflow):
             for a given seed coordinate.
         chunk_size : int, optional
             Number of seeds tracked at once. Lower it to reduce memory usage.
+        seed_buffer_fraction : float, optional
+            Deprecated and ignored. Use ``chunk_size`` to control the memory
+            usage.
         out_dir : string or Path, optional
            Output directory.
         out_tractogram : string, optional

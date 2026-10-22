@@ -1,6 +1,6 @@
-/* Metal backend for dipy.tracking.simpletracker
+/* Metal backend for dipy.tracking.accel
  *
- * Compile-time defines prepended by dipy/tracking/metalsimplet.py:
+ * Compile-time defines prepended by dipy/tracking/accel/metal.py:
  *   SPHERE_SYMM   1 if sphere vertices are antipodally symmetric
  *   N32DIMT       dimt rounded up to a multiple of 32 (threadgroup memory size)
  *
@@ -9,6 +9,8 @@
  *   - one SIMD group (32 threads) tracks one streamline, BLOCK_Y streamlines
  *     per threadgroup
  *   - Metal only supports float32
+ *   - the tracking loop, random number generator and output layout match
+ *     kernel.cu (see the comments there)
  */
 
 #include <metal_stdlib>
@@ -35,8 +37,10 @@ struct ProbTrackingParams {
     float tc_threshold;
     float step_size;
     float pmf_threshold;
-    int   rng_seed_lo;
-    int   rng_seed_hi;
+    uint  rng_seed_lo;
+    uint  rng_seed_hi;
+    uint  sl_base_lo;     // index in the tractogram of the first streamline
+    uint  sl_base_hi;     // of this dispatch
     int   nseed;
     int   dimx;
     int   dimy;
@@ -55,7 +59,7 @@ inline void store_f3(device packed_float3* p, uint idx, float3 v) {
     p[idx] = packed_float3(v);
 }
 
-// ── Philox4x32-10 RNG (matches curandStatePhilox4_32_10_t) ───────────
+// ── Philox4x32-10 RNG (same generator as kernel.cu) ─────────────────
 // Reference: Salmon et al., "Parallel Random Numbers: As Easy as 1, 2, 3"
 //            (SC '11).  DOI 10.1145/2063384.2063405
 
@@ -92,34 +96,22 @@ inline uint4 philox4x32_10(uint4 ctr, uint2 key) {
     return philox4x32_single_round(ctr, key);
 }
 
-inline PhiloxState philox_init(uint seed_lo, uint seed_hi, uint subsequence) {
+// random stream of the streamline with index sl_index in the tractogram
+inline PhiloxState philox_init(uint2 seed, ulong sl_index) {
     PhiloxState s;
-    s.key = uint2(seed_lo, seed_hi);
-    s.counter = uint4(0, subsequence, 0, 0);
-    s.output = philox4x32_10(s.counter, s.key);
-    s.idx = 0;
+    s.key = seed;
+    s.counter = uint4(0u, uint(sl_index), uint(sl_index >> 32), 0u);
+    s.output = uint4(0u);
+    s.idx = 4;
     return s;
 }
 
-inline void philox_next(thread PhiloxState& s) {
-    s.counter.x += 1;
-    if (s.counter.x == 0) {
-        s.counter.y += 1;
-        if (s.counter.y == 0) {
-            s.counter.z += 1;
-            if (s.counter.z == 0) {
-                s.counter.w += 1;
-            }
-        }
-    }
-    s.output = philox4x32_10(s.counter, s.key);
-    s.idx = 0;
-}
-
-// uniform float in (0, 1], matches curand_uniform
+// uniform float in [0, 1) from the 24 high bits: exact in float32 and float64
 inline float philox_uniform(thread PhiloxState& s) {
-    if (s.idx >= 4) {
-        philox_next(s);
+    if (s.idx == 4) {
+        s.output = philox4x32_10(s.counter, s.key);
+        s.counter.x += 1;
+        s.idx = 0;
     }
     uint bits;
     switch (s.idx) {
@@ -129,7 +121,7 @@ inline float philox_uniform(thread PhiloxState& s) {
         default: bits = s.output.w; break;
     }
     s.idx++;
-    return float(bits) * 2.3283064365386963e-10f + 2.3283064365386963e-10f;
+    return float(bits >> 8) * (1.0f / 16777216.0f);
 }
 
 // ── SIMD reductions ──────────────────────────────────────────────────
@@ -190,22 +182,25 @@ inline TrilinearSetup trilinear_setup(const int dimx, const int dimy, const int 
         return r;
     }
 
+    // as in dipy.core.interpolation: within half a voxel of the border,
+    // only the border voxel is used
     const float3 fl = floor(point);
+    const int3 fli = int3(fl);
 
     r.wgh[0][1] = point.x - fl.x;
     r.wgh[0][0] = 1.0f - r.wgh[0][1];
-    r.coo[0][0] = max(0, int(fl.x));
-    r.coo[0][1] = min(long(dimx - 1), r.coo[0][0] + 1);
+    r.coo[0][0] = max(0, fli.x);
+    r.coo[0][1] = min(dimx - 1, fli.x + 1);
 
     r.wgh[1][1] = point.y - fl.y;
     r.wgh[1][0] = 1.0f - r.wgh[1][1];
-    r.coo[1][0] = max(0, int(fl.y));
-    r.coo[1][1] = min(long(dimy - 1), r.coo[1][0] + 1);
+    r.coo[1][0] = max(0, fli.y);
+    r.coo[1][1] = min(dimy - 1, fli.y + 1);
 
     r.wgh[2][1] = point.z - fl.z;
     r.wgh[2][0] = 1.0f - r.wgh[2][1];
-    r.coo[2][0] = max(0, int(fl.z));
-    r.coo[2][1] = min(long(dimz - 1), r.coo[2][0] + 1);
+    r.coo[2][0] = max(0, fli.z);
+    r.coo[2][1] = min(dimz - 1, fli.z + 1);
 
     r.status = 0;
     return r;
@@ -307,11 +302,12 @@ inline int get_direction_prob(thread PhiloxState& st,
     }
     const float selected_cdf = simd_broadcast_first(tmp);
 
+    // first index with cdf > selected_cdf (see kernel.cu)
     int low = 0;
     int high = dimt - 1;
     while ((high - low) >= THR_X_SL) {
         const int mid = (low + high) / 2;
-        if (pmf_data_sh[mid] < selected_cdf) {
+        if (pmf_data_sh[mid] <= selected_cdf) {
             low = mid;
         } else {
             high = mid;
@@ -320,7 +316,7 @@ inline int get_direction_prob(thread PhiloxState& st,
     const bool ballot_pred =
         (low + int(tidx) <= high) ? (selected_cdf < pmf_data_sh[low + tidx]) : false;
     const uint msk = SIMD_BALLOT_MASK(ballot_pred);
-    const int indProb = (msk != 0) ? (low + int(ctz(msk))) : (dimt - 1);
+    const int indProb = (msk != 0) ? (low + int(ctz(msk))) : high;
 
     if (tidx == 0) {
         const float3 sv = load_f3(sphere_vertices, uint(indProb));
@@ -334,6 +330,8 @@ inline int get_direction_prob(thread PhiloxState& st,
 }
 
 // ── tracker: follow one direction from a seed ────────────────────────
+// Point i is written to streamline[i * stride]; returns the number of points
+// kept, counting the seed (see tracker_d in kernel.cu).
 
 inline int tracker_prob(thread PhiloxState& st,
                         constant ProbTrackingParams& params,
@@ -343,17 +341,13 @@ inline int tracker_prob(thread PhiloxState& st,
                         const device float* metric_map,
                         const device packed_float3* sphere_vertices,
                         device packed_float3* streamline,
+                        int stride,
+                        thread float3& first_dir,
                         threadgroup float3* sh_new_dir,
                         threadgroup float* pmf_data_sh,
                         uint tidx, uint tidy) {
-    int tissue_class = TRACKPOINT;
     float3 point = seed;
     float3 direction = first_step;
-
-    if (tidx == 0) {
-        store_f3(streamline, 0, point);
-    }
-    simdgroup_barrier(mem_flags::mem_threadgroup);
 
     int i;
     for (i = 1; i < params.max_sline_len; i++) {
@@ -367,29 +361,27 @@ inline int tracker_prob(thread PhiloxState& st,
         if (ndir == 0) {
             break;
         }
+        if (i == 1) {
+            first_dir = direction;
+        }
 
         point += direction * params.step_size;
 
         if (tidx == 0) {
-            store_f3(streamline, uint(i), point);
+            streamline[i * stride] = packed_float3(point);
         }
-        simdgroup_barrier(mem_flags::mem_threadgroup);
+        simdgroup_barrier(mem_flags::mem_device);
 
-        tissue_class = check_point(params.tc_threshold, point,
-                                   params.dimx, params.dimy, params.dimz, metric_map);
-        if (tissue_class != TRACKPOINT) {
+        if (check_point(params.tc_threshold, point, params.dimx, params.dimy,
+                        params.dimz, metric_map) != TRACKPOINT) {
             break;
         }
     }
-    return i;
+    return min(i, params.max_sline_len - 1);
 }
 
 // ── kernel: generate streamlines from precomputed seed directions ────
-//
-// slineOutOff : (nseed+1,) exclusive prefix sum of the number of
-//               directions per seed (from get_num_streamlines_prob)
-// shDir0      : (sum(ndir),) initial direction of each streamline
-// sline       : (sum(ndir) * max_sline_len * 2,) output points
+// Same buffers and layout as genStreamlinesProb_k in kernel.cu.
 
 kernel void genStreamlinesProb_k(
     constant ProbTrackingParams& params          [[buffer(0)]],
@@ -399,7 +391,7 @@ kernel void genStreamlinesProb_k(
     const device packed_float3* sphere_vertices  [[buffer(4)]],
     const device int* slineOutOff                [[buffer(5)]],
     const device packed_float3* shDir0           [[buffer(6)]],
-    device int* slineSeed                        [[buffer(7)]],
+    device int* slineStart                       [[buffer(7)]],
     device int* slineLen                         [[buffer(8)]],
     device packed_float3* sline                  [[buffer(9)]],
     uint2 tid [[thread_position_in_threadgroup]],
@@ -411,48 +403,44 @@ kernel void genStreamlinesProb_k(
 
     if (int(slid) >= params.nseed) return;
 
-    const uint global_id = gid.x * BLOCK_Y * THR_X_SL + THR_X_SL * tidy + tidx;
-    PhiloxState st = philox_init(uint(params.rng_seed_lo), uint(params.rng_seed_hi),
-                                 global_id + 1);
-
     threadgroup float sh_mem[BLOCK_Y * N32DIMT];
     threadgroup float3 sh_new_dir[BLOCK_Y];
     threadgroup float* pmf_data_sh = sh_mem + tidy * N32DIMT;
 
+    const uint2 rng_seed = uint2(params.rng_seed_lo, params.rng_seed_hi);
+    const ulong sl_base = (ulong(params.sl_base_hi) << 32) | ulong(params.sl_base_lo);
     const float3 seed = load_f3(seeds, slid);
-    const int ndir = slineOutOff[slid + 1] - slineOutOff[slid];
-    int slineOff = slineOutOff[slid];
+    const int first_sl = slineOutOff[slid];
+    const int ndir = slineOutOff[slid + 1] - first_sl;
 
     for (int i = 0; i < ndir; i++) {
-        const float3 first_step = load_f3(shDir0, uint(slineOff));
-        device packed_float3* currSline = sline + slineOff * params.max_sline_len * 2;
+        const int sl = first_sl + i;
+        PhiloxState st = philox_init(rng_seed, sl_base + ulong(sl));
 
+        const float3 first_step = load_f3(shDir0, uint(sl));
+        device packed_float3* center =
+            sline + (ulong(sl) * ulong(params.max_sline_len) * 2 + ulong(params.max_sline_len));
         if (tidx == 0) {
-            slineSeed[slineOff] = int(slid);
-        }
-
-        // backward
-        const int stepsB = tracker_prob(st, params, seed, -first_step,
-                                        dataf, metric_map, sphere_vertices,
-                                        currSline, sh_new_dir, pmf_data_sh, tidx, tidy);
-
-        // reverse backward streamline
-        for (int j = int(tidx); j < stepsB / 2; j += THR_X_SL) {
-            const float3 p = load_f3(currSline, uint(j));
-            store_f3(currSline, uint(j), load_f3(currSline, uint(stepsB - 1 - j)));
-            store_f3(currSline, uint(stepsB - 1 - j), p);
+            center[0] = packed_float3(seed);
         }
         simdgroup_barrier(mem_flags::mem_device);
 
-        // forward
+        // forward, then backward from the direction of the first forward step
+        float3 first_dir = first_step;
         const int stepsF = tracker_prob(st, params, seed, first_step,
                                         dataf, metric_map, sphere_vertices,
-                                        currSline + (stepsB - 1), sh_new_dir,
-                                        pmf_data_sh, tidx, tidy);
+                                        center, 1, first_dir,
+                                        sh_new_dir, pmf_data_sh, tidx, tidy);
+        const float3 back = (stepsF > 1) ? first_dir : first_step;
+        float3 unused = back;
+        const int stepsB = tracker_prob(st, params, seed, -back,
+                                        dataf, metric_map, sphere_vertices,
+                                        center, -1, unused,
+                                        sh_new_dir, pmf_data_sh, tidx, tidy);
 
         if (tidx == 0) {
-            slineLen[slineOff] = stepsB - 1 + stepsF;
+            slineStart[sl] = params.max_sline_len - (stepsB - 1);
+            slineLen[sl] = stepsF + stepsB - 1;
         }
-        slineOff += 1;
     }
 }

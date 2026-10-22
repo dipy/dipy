@@ -14,7 +14,7 @@
      - Local
      - Probabilistic
      - :cite:t:`Behrens2003`, :cite:t:`Behrens2007`
-   * - :ref:`Local probabilistic on GPU (simple tracker) <sphx_glr_examples_built_fiber_tracking_tracking_simplet.py>`
+   * - :ref:`Local probabilistic on GPU <sphx_glr_examples_built_fiber_tracking_tracking_accel.py>`
      - Local
      - Probabilistic
      - :cite:t:`Kruper2025`, :cite:t:`Behrens2003`, :cite:t:`Behrens2007`

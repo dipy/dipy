@@ -14,17 +14,21 @@ from dipy.direction.pmf import (
     _sh_order_from_ncoef,
 )
 from dipy.reconst.shm import sh_to_sf
-from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
-from dipy.tracking.simplet import (
-    prepare_simple_tracker_data,
-    simple_sl_generator,
+from dipy.tracking.accel import (
+    gpu_streamline_generator,
+    prepare_gpu_tracker_data,
 )
+from dipy.tracking.local_tracking import LocalTracking, ParticleFilteringTracking
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.tracker_parameters import generate_tracking_parameters
 from dipy.tracking.tractogen import generate_tractogram
 from dipy.tracking.utils import seeds_directions_pairs
+from dipy.utils.deprecator import deprecated_params
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def generic_tracking(
     seed_positions,
     seed_directions,
@@ -42,6 +46,7 @@ def generic_tracking(
     max_cross=None,
     nbr_threads=0,
     chunk_size=25000,
+    seed_buffer_fraction=None,
     chunked=False,
     save_seeds=False,
 ):
@@ -172,6 +177,9 @@ def generic_tracking(
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def probabilistic_tracking(
     seed_positions,
     sc,
@@ -194,12 +202,14 @@ def probabilistic_tracking(
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
+    seed_buffer_fraction=None,
     chunked=False,
     return_all=True,
     save_seeds=False,
     max_cross=None,
     backend="cpu",
     is_symmetric=True,
+    rng=None,
 ):
     """Probabilistic tracking algorithm.
 
@@ -253,6 +263,9 @@ def probabilistic_tracking(
         coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
+    seed_buffer_fraction: float, optional
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
     chunked: bool, optional
         Yield ``(points, lengths)`` per chunk (``(points, lengths, seeds)``
         with ``save_seeds``) instead of single streamlines; see
@@ -270,14 +283,20 @@ def probabilistic_tracking(
         "cpu", "cuda" (requires ``dipy[cu12]`` or ``dipy[cu13]``), "metal"
         (Apple Silicon, requires ``dipy[metal]``), "webgpu" (requires
         ``dipy[webgpu]``), or "auto" to pick the first available GPU
-        backend. GPU backends use a "simple" tracker
-        (see :mod:`dipy.tracking.simplet.tracker`) which assumes:
+        backend. GPU backends (see :mod:`dipy.tracking.accel`) assume:
         (1) the entire SF fits in memory (sf, sh or a pam with odf);
         (2) isotropic voxels;
         (3) a ThresholdStoppingCriterion.
     is_symmetric : bool, optional
         If False, the pmf is treated as an asymmetric spherical function
         (no antipodal folding when selecting directions).
+    rng : {None, "pcg", "philox"}, optional
+        Random number generator. "philox" is the generator of the GPU
+        backends: every backend, and the CPU with ``rng="philox"``, draws the
+        same random numbers for a given ``random_seed`` (one stream per
+        streamline, independent of ``chunk_size`` and ``nbr_threads``), so
+        their tractograms can be compared streamline by streamline.
+        None selects "pcg" on the CPU and "philox" on the GPU.
 
     Returns
     -------
@@ -285,6 +304,11 @@ def probabilistic_tracking(
 
     """
     voxel_size = voxel_size if voxel_size is not None else voxel_sizes(affine)
+
+    if rng is None:
+        rng = "pcg" if backend == "cpu" else "philox"
+    elif backend != "cpu" and rng != "philox":
+        raise ValueError(f"GPU backends only support rng='philox', not {rng!r}.")
 
     params = generate_tracking_parameters(
         "prob",
@@ -297,6 +321,7 @@ def probabilistic_tracking(
         random_seed=random_seed,
         return_all=return_all,
         is_symmetric=is_symmetric,
+        rng=rng,
     )
 
     if backend != "cpu":
@@ -316,13 +341,15 @@ def probabilistic_tracking(
         elif pam is not None and pam.odf is not None:
             pmf_field = pam.odf
         else:
-            raise ValueError("Simple backends need sf, sh or a pam with odf.")
+            raise ValueError("GPU backends need sf, sh or a pam with odf.")
         if not isinstance(sc, ThresholdStoppingCriterion):
-            raise ValueError("Simple backends need a ThresholdStoppingCriterion.")
+            raise ValueError("GPU backends need a ThresholdStoppingCriterion.")
 
         if not np.allclose(voxel_size, voxel_size[0]):
-            raise ValueError("Simple backends need isotropic voxels.")
-        tracker_data = prepare_simple_tracker_data(
+            raise ValueError("GPU backends need isotropic voxels.")
+        if random_seed <= 0:
+            random_seed = int(np.random.default_rng().integers(1, 2**63))
+        tracker_data = prepare_gpu_tracker_data(
             pmf=pmf_field,
             stop_map=np.asarray(sc.metric_map),
             stop_threshold=sc.threshold,
@@ -339,10 +366,10 @@ def probabilistic_tracking(
             max_cross=1 if max_cross is None else max_cross,
             is_symmetric=params.is_symmetric,
         )
-        return simple_sl_generator(
+        return gpu_streamline_generator(
             tracker_data,
             seed_positions,
-            simple_backend=backend,
+            backend=backend,
             seed_directions=seed_directions,
             nbr_threads=nbr_threads,
             save_seeds=save_seeds,
@@ -371,6 +398,9 @@ def probabilistic_tracking(
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def deterministic_tracking(
     seed_positions,
     sc,
@@ -393,6 +423,7 @@ def deterministic_tracking(
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
+    seed_buffer_fraction=None,
     chunked=False,
     return_all=True,
     save_seeds=False,
@@ -449,6 +480,9 @@ def deterministic_tracking(
         coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
+    seed_buffer_fraction: float, optional
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
     chunked: bool, optional
         Yield ``(points, lengths)`` per chunk (``(points, lengths, seeds)``
         with ``save_seeds``) instead of single streamlines; see
@@ -497,6 +531,9 @@ def deterministic_tracking(
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def ptt_tracking(
     seed_positions,
     sc,
@@ -524,6 +561,7 @@ def ptt_tracking(
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
+    seed_buffer_fraction=None,
     chunked=False,
     return_all=True,
     save_seeds=False,
@@ -590,6 +628,9 @@ def ptt_tracking(
         coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
+    seed_buffer_fraction: float, optional
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
     chunked: bool, optional
         Yield ``(points, lengths)`` per chunk (``(points, lengths, seeds)``
         with ``save_seeds``) instead of single streamlines; see
@@ -642,6 +683,9 @@ def ptt_tracking(
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def closestpeak_tracking(
     seed_positions,
     sc,
@@ -662,6 +706,7 @@ def closestpeak_tracking(
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
+    seed_buffer_fraction=None,
     return_all=True,
     save_seeds=False,
 ):
@@ -711,6 +756,9 @@ def closestpeak_tracking(
         coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
+    seed_buffer_fraction: float, optional
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -759,6 +807,9 @@ def closestpeak_tracking(
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def bootstrap_tracking(
     seed_positions,
     sc,
@@ -781,6 +832,7 @@ def bootstrap_tracking(
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
+    seed_buffer_fraction=None,
     return_all=True,
     save_seeds=False,
 ):
@@ -832,6 +884,9 @@ def bootstrap_tracking(
         coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
+    seed_buffer_fraction: float, optional
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.
@@ -872,6 +927,9 @@ def bootstrap_tracking(
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def eudx_tracking(
     seed_positions,
     sc,
@@ -895,6 +953,7 @@ def eudx_tracking(
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
+    seed_buffer_fraction=None,
     chunked=False,
     return_all=True,
     save_seeds=False,
@@ -952,6 +1011,9 @@ def eudx_tracking(
         coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
+    seed_buffer_fraction: float, optional
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
     chunked: bool, optional
         Yield ``(points, lengths)`` per chunk (``(points, lengths, seeds)``
         with ``save_seeds``) instead of single streamlines; see
@@ -1007,6 +1069,9 @@ def eudx_tracking(
     )
 
 
+@deprecated_params(
+    "seed_buffer_fraction", since="1.13.0", until="2.0.0", alternative="chunk_size"
+)
 def pft_tracking(
     seed_positions,
     sc,
@@ -1029,6 +1094,7 @@ def pft_tracking(
     nbr_threads=0,
     random_seed=0,
     chunk_size=25000,
+    seed_buffer_fraction=None,
     return_all=True,
     pft_back_tracking_dist=2,
     pft_front_tracking_dist=1,
@@ -1087,6 +1153,9 @@ def pft_tracking(
         coordinate.
     chunk_size: int, optional
         Number of seeds tracked at once. Lower it to reduce memory usage.
+    seed_buffer_fraction: float, optional
+        Deprecated and ignored. Use ``chunk_size`` to control the memory
+        usage.
     return_all: bool, optional
         True to return all the streamlines, False to return only the streamlines that
         reached the stopping criterion.

@@ -54,5 +54,5 @@ py3.install_sources(
   subdir: 'dipy/tracking'
 )
 
-subdir('simplet')
+subdir('accel')
 subdir('tests')

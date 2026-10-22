@@ -5,12 +5,14 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
+from dipy.core.geometry import cart2sphere
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import get_fnames, get_sphere
 from dipy.direction.peaks import PeaksAndMetrics
 from dipy.reconst.shm import descoteaux07_legacy_msg, sh_to_sf
+from dipy.sims.voxel import multi_tensor_odf
 from dipy.tracking import tracker
-from dipy.tracking.simplet import SIMPLE_BACKENDS, simple_backend_available
+from dipy.tracking.accel import ACCEL_BACKENDS, accel_backend_available
 from dipy.tracking.stopping_criterion import (
     BinaryStoppingCriterion,
     ThresholdStoppingCriterion,
@@ -117,19 +119,69 @@ def test_probabilistic_tracking():
         track(tracker.probabilistic_tracking, use_sf=True, use_dirs=True, backend="cpu")
 
 
-@pytest.mark.parametrize("simple_backend", list(SIMPLE_BACKENDS))
-def test_simple_probabilistic_tracking(simple_backend):
-    if not simple_backend_available(simple_backend):
-        pytest.skip(f"{simple_backend} simple tracker backend not available")
+@pytest.mark.parametrize("backend", list(ACCEL_BACKENDS))
+def test_accel_probabilistic_tracking(backend):
+    if not accel_backend_available(backend):
+        pytest.skip(f"{backend} GPU tracker backend not available")
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
             message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning,
         )
-        track(tracker.probabilistic_tracking, backend=simple_backend)
-        track(tracker.probabilistic_tracking, use_dirs=True, backend=simple_backend)
-        track(tracker.probabilistic_tracking, use_sf=True, backend=simple_backend)
+        track(tracker.probabilistic_tracking, backend=backend)
+        track(tracker.probabilistic_tracking, use_dirs=True, backend=backend)
+        track(tracker.probabilistic_tracking, use_sf=True, backend=backend)
+
+
+def _synthetic_pmf(shape=(16, 16, 8)):
+    sphere = HemiSphere.from_sphere(get_sphere(name="repulsion724"))
+    mevals = np.array([[0.0015, 0.0003, 0.0003]] * 2)
+    pmf = np.empty(shape + (len(sphere.vertices),))
+    for i, j, k in np.ndindex(shape):
+        x, y = i - (shape[0] - 1) / 2, j - (shape[1] - 1) / 2
+        _, theta, phi = cart2sphere(-y, x, 0.3)
+        angles = [(np.rad2deg(theta), np.rad2deg(phi)), (0, 0)]
+        pmf[i, j, k] = multi_tensor_odf(sphere.vertices, mevals, angles, [70, 30])
+    radius = np.hypot(
+        *np.meshgrid(*[np.arange(n) - (n - 1) / 2 for n in shape[:2]], indexing="ij")
+    )[..., None] * np.ones(shape[2])
+    stop_map = np.clip(1.2 - np.abs(radius - shape[0] / 4) / 3, 0, 1)
+    seeds = np.ascontiguousarray(np.argwhere(stop_map > 0.7)[::3] + 0.25)
+    return pmf, stop_map, sphere, seeds
+
+
+@pytest.mark.parametrize("backend", list(ACCEL_BACKENDS))
+def test_accel_matches_cpu_philox(backend):
+    if not accel_backend_available(backend):
+        pytest.skip(f"{backend} GPU tracker backend not available")
+    pmf, stop_map, sphere, seeds = _synthetic_pmf()
+
+    params = {
+        "sf": pmf,
+        "sphere": sphere,
+        "step_size": 0.5,
+        "max_angle": 30,
+        "max_len": 60,
+        "random_seed": 3,
+        "rng": "philox",
+    }
+    sc = ThresholdStoppingCriterion(stop_map, 0.5)
+
+    cpu = list(
+        tracker.probabilistic_tracking(seeds, sc, np.eye(4), backend="cpu", **params)
+    )
+    gpu = list(
+        tracker.probabilistic_tracking(seeds, sc, np.eye(4), backend=backend, **params)
+    )
+    npt.assert_equal(len(gpu), len(cpu))
+
+    # Same random numbers, but there are always difference:
+    # Summation order, fast math, fusions, and in particular,
+    # float64 on cpu and float32 on accel.
+    # So, we check with tolerance 1e-6
+    same = [len(a) == len(b) and np.allclose(a, b, atol=1e-6) for a, b in zip(cpu, gpu)]
+    npt.assert_(np.mean(same) >= 1.0, f"only {np.mean(same):.0%} of streamlines match")
 
 
 def test_ptt_tracking():

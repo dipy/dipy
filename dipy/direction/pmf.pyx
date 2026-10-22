@@ -111,7 +111,8 @@ cdef class SimplePmfGen(PmfGen):
             double pmf_value = 0
 
         idx = self.find_closest(xyz)
-        trilinear_interpolate3d_c(self.data[:, :, :, idx], point, &pmf_value)
+        trilinear_interpolate3d_c[double](self.data[:, :, :, idx], point,
+                                          &pmf_value)
         return pmf_value
 
 

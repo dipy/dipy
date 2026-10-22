@@ -16,5 +16,5 @@ kernel_sources = [
 py3.install_sources(
   python_sources + kernel_sources,
   pure: false,
-  subdir: 'dipy/tracking/simplet'
+  subdir: 'dipy/tracking/accel'
 )
