@@ -1366,6 +1366,8 @@ def get_affine_with_new_orientation(affine, *, new_orientation="RAS"):
             voxel_xform[int(in_axis), out_axis] = sign
 
         new_affine = np.dot(affine, voxel_xform)
+    else:
+        new_affine = affine.copy()
     return new_affine
 
 
