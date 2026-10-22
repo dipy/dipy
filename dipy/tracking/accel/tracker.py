@@ -1,4 +1,4 @@
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 import importlib
 import logging
 
@@ -15,7 +15,7 @@ logger = logging.getLogger("dipy")
 
 
 @dataclass(frozen=True)
-class _SimpleTrackerData:
+class _GpuTrackerData:
     pmf: np.ndarray
     stop_map: np.ndarray
     sphere: object
@@ -37,28 +37,28 @@ class _SimpleTrackerData:
 
 
 @dataclass(frozen=True)
-class _SimpleBackendSpec:
+class _GpuBackendSpec:
     module: str
     factory: str
     probe: str
     multi_device: bool
 
 
-SIMPLE_BACKENDS = {
-    "metal": _SimpleBackendSpec(
-        module="dipy.tracking.simplet.metal",
+ACCEL_BACKENDS = {
+    "metal": _GpuBackendSpec(
+        module="dipy.tracking.accel.metal",
         factory="metal_streamline_generator",
         probe="metal_available",
         multi_device=False,
     ),
-    "cuda": _SimpleBackendSpec(
-        module="dipy.tracking.simplet.cuda",
+    "cuda": _GpuBackendSpec(
+        module="dipy.tracking.accel.cuda",
         factory="cuda_streamline_generator",
         probe="cuda_available",
         multi_device=True,
     ),
-    "webgpu": _SimpleBackendSpec(
-        module="dipy.tracking.simplet.webgpu",
+    "webgpu": _GpuBackendSpec(
+        module="dipy.tracking.accel.webgpu",
         factory="webgpu_streamline_generator",
         probe="webgpu_available",
         multi_device=False,
@@ -66,7 +66,7 @@ SIMPLE_BACKENDS = {
 }
 
 
-def prepare_simple_tracker_data(
+def prepare_gpu_tracker_data(
     pmf,
     stop_map,
     stop_threshold,
@@ -86,7 +86,7 @@ def prepare_simple_tracker_data(
     is_symmetric=None,
 ):
     """
-    Prepare a simple tracker. Simple trackers assume:
+    Prepare a GPU tracker. GPU trackers assume:
 
     - the entire SF can be loaded into memory (not SH)
     - isotropic voxels
@@ -94,7 +94,7 @@ def prepare_simple_tracker_data(
     - fixed (large) max SL length
     - generic probabilistic direction getting
 
-    Simplified trackers are implemented in CUDA, WebGPU and Metal. On the
+    GPU trackers are implemented in CUDA, WebGPU and Metal. On the
     CPU, use :func:`dipy.tracking.tracker.probabilistic_tracking`.
 
     Parameters
@@ -125,9 +125,14 @@ def prepare_simple_tracker_data(
     pmf_threshold : float, optional
         Minimum PMF value (relative to max) to consider a valid direction.
     random_seed : int, optional
-        Seed for random number generator
+        Seed of the random number generator. All backends use the same
+        generator, Philox4x32-10 keyed by ``random_seed`` with one stream
+        per streamline (its index in the tractogram), which is also the
+        generator of :func:`dipy.tracking.tracker.probabilistic_tracking`
+        with ``rng="philox"``. Every backend therefore draws the same random
+        numbers, whatever the chunk size or number of devices.
     chunk_size : int, optional
-        Seeds per chunk in simple_sl_generator()
+        Seeds per chunk in gpu_streamline_generator()
     n_procs : int, optional
         Number of devices to use. Must be 1 for the Metal and WebGPU
         backends; for CUDA this is the number of GPUs each chunk is split
@@ -142,6 +147,8 @@ def prepare_simple_tracker_data(
     if is_symmetric is None:
         is_symmetric = isinstance(sphere, HemiSphere)
 
+    # Kept in float64 so that it is shared with the CPU seed peak finder; the
+    # backends convert to float32 while uploading.
     pmf = np.asarray(pmf, dtype=float, order="C")
     sphere_vertices = np.asarray(sphere.vertices, dtype=float, order="C")
 
@@ -151,7 +158,7 @@ def prepare_simple_tracker_data(
             f"must match 4th dimension of PMF ({pmf.shape[3]})"
         )
 
-    return _SimpleTrackerData(
+    return _GpuTrackerData(
         pmf=pmf,
         stop_map=np.asarray(stop_map, dtype=float, order="C"),
         sphere=sphere,
@@ -167,40 +174,39 @@ def prepare_simple_tracker_data(
         pmf_threshold=float(pmf_threshold),
         min_steps=int(min_steps),
         max_steps=int(max_steps),
-        random_seed=int(random_seed),
+        random_seed=int(random_seed) % 2**64,
         chunk_size=int(chunk_size),
         n_procs=int(n_procs),
     )
 
 
-def _get_simple_backend_spec(simple_backend):
+def _get_gpu_backend_spec(backend):
     try:
-        return SIMPLE_BACKENDS[simple_backend]
+        return ACCEL_BACKENDS[backend]
     except KeyError:
         raise ValueError(
-            f"Unknown simple_backend {simple_backend!r}, "
-            f"expected one of {list(SIMPLE_BACKENDS)}"
+            f"Unknown GPU backend {backend!r}, expected one of {list(ACCEL_BACKENDS)}"
         ) from None
 
 
-def simple_backend_available(simple_backend):
+def accel_backend_available(backend):
     """
-    Check whether a simple tracker backend can be used on this machine.
+    Check whether a GPU tracker backend can be used on this machine.
 
     Parameters
     ----------
-    simple_backend : str
+    backend : str
         One of "cuda", "metal", "webgpu".
     """
-    spec = _get_simple_backend_spec(simple_backend)
+    spec = _get_gpu_backend_spec(backend)
     return getattr(importlib.import_module(spec.module), spec.probe)()
 
 
-def simple_sl_generator(
-    simple_tracker_data,
+def gpu_streamline_generator(
+    tracker_data,
     seeds,
     *,
-    simple_backend="auto",
+    backend="auto",
     seed_directions=None,
     nbr_threads=0,
     save_seeds=False,
@@ -208,15 +214,15 @@ def simple_sl_generator(
     chunked=False,
 ):
     """
-    Generate streamlines in chunks from simple tracker data and seeds.
+    Generate streamlines in chunks from GPU tracker data and seeds.
 
     Parameters
     ----------
-    simple_tracker_data : _SimpleTrackerData
-        Output of :func:`prepare_simple_tracker_data`.
+    tracker_data : _GpuTrackerData
+        Output of :func:`prepare_gpu_tracker_data`.
     seeds : ndarray, shape (N, 3)
         Seed points, in the space of ``affine`` (voxel space by default).
-    simple_backend : str, optional
+    backend : str, optional
         One of "metal" (Apple Silicon, requires
         ``dipy[metal]``), "cuda" (requires
         ``dipy[cu12]`` or ``dipy[cu13]``),
@@ -239,34 +245,27 @@ def simple_sl_generator(
     ------
     streamline : ndarray, shape (npts, 3)
     """
-    tracker_data = simple_tracker_data
-    if simple_backend == "auto":
-        for name in SIMPLE_BACKENDS:
-            if simple_backend_available(name):
-                simple_backend = name
+    if backend == "auto":
+        for name in ACCEL_BACKENDS:
+            if accel_backend_available(name):
+                backend = name
                 break
         else:
             raise RuntimeError(
-                "No simple tracker backend available "
-                f"({', '.join(SIMPLE_BACKENDS)}); use probabilistic_tracking()."
+                "No GPU tracker backend available "
+                f"({', '.join(ACCEL_BACKENDS)}); use probabilistic_tracking()."
             )
 
-    spec = _get_simple_backend_spec(simple_backend)
+    spec = _get_gpu_backend_spec(backend)
     if not spec.multi_device and tracker_data.n_procs != 1:
         raise ValueError(
-            f"The {simple_backend} simple tracker only supports a single "
+            f"The {backend} GPU tracker only supports a single "
             "device. Set n_procs=1 when preparing the tracker data."
         )
 
     affine = np.eye(4) if affine is None else affine
+    # shares tracker_data.pmf (float64, C order): no copy
     pmf_gen = SimplePmfGen(tracker_data.pmf, tracker_data.sphere)
-    # GPU kernels are float32
-    tracker_data = replace(
-        tracker_data,
-        pmf=tracker_data.pmf.astype(np.float32),
-        stop_map=tracker_data.stop_map.astype(np.float32),
-        sphere_vertices=tracker_data.sphere_vertices.astype(np.float32),
-    )
     factory = getattr(importlib.import_module(spec.module), spec.factory)
     if spec.multi_device:
         generate_streamlines, close = factory(tracker_data, n_gpus=tracker_data.n_procs)
@@ -304,11 +303,16 @@ def _streamline_generator(
     Yield streamlines chunk by chunk from a GPU backend function. ``seeds``
     are in voxel space; output is mapped through ``affine``.
 
-    ``generate_streamlines(seeds, streamline_offsets, dirs)`` must return
-    ``(streamline_buffer, streamline_lengths, n_streamlines)``, where
-    ``dirs[streamline_offsets[i]:streamline_offsets[i + 1]]`` are the initial
-    directions of seed ``i``; ``close``, if given, is called when the
-    generator is exhausted or closed.
+    ``generate_streamlines(seeds, streamline_offsets, dirs, sl_base)`` must
+    return ``(streamline_buffer, streamline_starts, streamline_lengths)``,
+    where ``dirs[streamline_offsets[i]:streamline_offsets[i + 1]]`` are the
+    initial directions of seed ``i`` and ``sl_base`` is the index, in the
+    tractogram, of the chunk's first streamline (it selects the random
+    streams). Streamline ``j`` has ``streamline_lengths[j]`` points starting
+    at row ``j * 2 * max_steps + streamline_starts[j]`` of
+    ``streamline_buffer``, which only needs to stay valid until the next
+    call. ``close``, if given, is called when the generator is exhausted or
+    closed.
     """
     step = tracker_data.max_steps * 2
     chunk_size = tracker_data.chunk_size
@@ -318,6 +322,7 @@ def _streamline_generator(
     if nbr_threads <= 0:
         nbr_threads = determine_num_threads(None)
 
+    sl_base = 0
     try:
         for idx in range(n_chunks):
             start = idx * chunk_size
@@ -338,26 +343,33 @@ def _streamline_generator(
                     np.rad2deg(tracker_data.min_separation_angle),
                 )
                 streamline_offsets = streamline_offsets.astype(np.int32)
-            streamline_buffer, streamline_lengths, n_streamlines = generate_streamlines(
-                chunk,
-                streamline_offsets,
-                np.asarray(dirs, dtype=np.float32, order="C"),
+            n_streamlines = int(streamline_offsets[-1])
+            streamline_buffer, streamline_starts, streamline_lengths = (
+                generate_streamlines(
+                    chunk,
+                    streamline_offsets,
+                    np.asarray(dirs, dtype=np.float32, order="C"),
+                    sl_base,
+                )
             )
+            sl_base += n_streamlines
+
             seed_of_streamline = np.repeat(
                 np.arange(len(chunk)), np.diff(streamline_offsets)
             )
-            lengths = np.asarray(streamline_lengths[:n_streamlines])
+            lengths = np.asarray(streamline_lengths[:n_streamlines], dtype=np.intp)
             keep = np.flatnonzero(
                 (lengths >= tracker_data.min_steps)
                 & (lengths <= tracker_data.max_steps)
             )
             lengths = lengths[keep]
+            starts = keep * step + np.asarray(streamline_starts, dtype=np.intp)[keep]
             out_offsets = np.zeros(len(keep) + 1, dtype=np.intp)
             np.cumsum(lengths, out=out_offsets[1:])
             points = np.empty((out_offsets[-1], 3))
             compact_chunk(
                 streamline_buffer,
-                (keep * step).astype(np.intp),
+                starts,
                 out_offsets,
                 points,
                 lin_T,

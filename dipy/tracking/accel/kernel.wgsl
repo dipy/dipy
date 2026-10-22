@@ -1,6 +1,6 @@
-// WebGPU (WGSL) backend for dipy.tracking.simpletracker
+// WebGPU (WGSL) backend for dipy.tracking.accel
 //
-// Constants prepended by dipy/tracking/webgpusimplet.py:
+// Constants prepended by dipy/tracking/accel/webgpu.py:
 //   const SPHERE_SYMM: u32   1 if sphere vertices are antipodally symmetric
 //   const N32DIMT: u32       dimt rounded up to a multiple of 32
 //
@@ -11,6 +11,8 @@
 //   - WGSL only supports f32
 //   - PhiloxState is passed by value and returned in result structs (WGSL
 //     has no mutable references across function boundaries)
+//   - the tracking loop, random number generator and output layout match
+//     kernel.cu (see the comments there)
 
 const THR_X_SL: u32 = 32u;
 const BLOCK_Y: u32 = 2u;
@@ -27,8 +29,10 @@ struct ProbTrackingParams {
     tc_threshold: f32,
     step_size: f32,
     pmf_threshold: f32,
-    rng_seed_lo: i32,
-    rng_seed_hi: i32,
+    rng_seed_lo: u32,
+    rng_seed_hi: u32,
+    sl_base_lo: u32,     // index in the tractogram of the first streamline
+    sl_base_hi: u32,     // of this dispatch
     nseed: i32,
     dimx: i32,
     dimy: i32,
@@ -48,7 +52,7 @@ struct ProbTrackingParams {
 // Group 1: per-batch buffers
 @group(1) @binding(0) var<storage, read> slineOutOff: array<i32>;
 @group(1) @binding(1) var<storage, read> shDir0: array<f32>;
-@group(1) @binding(2) var<storage, read_write> slineSeed: array<i32>;
+@group(1) @binding(2) var<storage, read_write> slineStart: array<i32>;
 @group(1) @binding(3) var<storage, read_write> slineLen: array<i32>;
 @group(1) @binding(4) var<storage, read_write> sline: array<f32>;
 
@@ -67,11 +71,6 @@ fn load_shDir0_f3(idx: u32) -> vec3<f32> {
     return vec3<f32>(shDir0[base], shDir0[base + 1u], shDir0[base + 2u]);
 }
 
-fn load_sline_f3(idx: u32) -> vec3<f32> {
-    let base = idx * 3u;
-    return vec3<f32>(sline[base], sline[base + 1u], sline[base + 2u]);
-}
-
 fn store_sline_f3(idx: u32, v: vec3<f32>) {
     let base = idx * 3u;
     sline[base] = v.x;
@@ -83,7 +82,7 @@ fn store_sline_f3(idx: u32, v: vec3<f32>) {
 var<workgroup> wg_sh_mem: array<f32, BLOCK_Y * N32DIMT>;
 var<workgroup> wg_new_dir: array<vec3<f32>, BLOCK_Y>;
 
-// ── Philox4x32-10 RNG (matches curandStatePhilox4_32_10_t) ──────────
+// ── Philox4x32-10 RNG (same generator as kernel.cu) ─────────────────
 // Reference: Salmon et al., "Parallel Random Numbers: As Easy as 1, 2, 3"
 //            (SC '11).  DOI 10.1145/2063384.2063405
 
@@ -134,30 +133,14 @@ fn philox4x32_10(ctr_in: vec4<u32>, key_in: vec2<u32>) -> vec4<u32> {
     return philox4x32_single_round(ctr, key);
 }
 
-fn philox_init(seed_lo: u32, seed_hi: u32, subsequence: u32) -> PhiloxState {
+// random stream of the streamline with index (sl_hi << 32) | sl_lo
+fn philox_init(seed_lo: u32, seed_hi: u32, sl_lo: u32, sl_hi: u32) -> PhiloxState {
     var s: PhiloxState;
     s.key = vec2<u32>(seed_lo, seed_hi);
-    s.counter = vec4<u32>(0u, subsequence, 0u, 0u);
-    s.output = philox4x32_10(s.counter, s.key);
-    s.idx = 0u;
+    s.counter = vec4<u32>(0u, sl_lo, sl_hi, 0u);
+    s.output = vec4<u32>(0u);
+    s.idx = 4u;
     return s;
-}
-
-fn philox_next(s: PhiloxState) -> PhiloxState {
-    var r = s;
-    r.counter.x += 1u;
-    if (r.counter.x == 0u) {
-        r.counter.y += 1u;
-        if (r.counter.y == 0u) {
-            r.counter.z += 1u;
-            if (r.counter.z == 0u) {
-                r.counter.w += 1u;
-            }
-        }
-    }
-    r.output = philox4x32_10(r.counter, r.key);
-    r.idx = 0u;
-    return r;
 }
 
 struct PhiloxUniformResult {
@@ -165,11 +148,13 @@ struct PhiloxUniformResult {
     value: f32,
 }
 
-// uniform f32 in (0, 1], matches curand_uniform
+// uniform f32 in [0, 1) from the 24 high bits: exact in f32 and f64
 fn philox_uniform(s: PhiloxState) -> PhiloxUniformResult {
     var r = s;
-    if (r.idx >= 4u) {
-        r = philox_next(r);
+    if (r.idx == 4u) {
+        r.output = philox4x32_10(r.counter, r.key);
+        r.counter.x += 1u;
+        r.idx = 0u;
     }
     var bits: u32;
     switch (r.idx) {
@@ -179,7 +164,7 @@ fn philox_uniform(s: PhiloxState) -> PhiloxUniformResult {
         default: { bits = r.output.w; }
     }
     r.idx += 1u;
-    let value = f32(bits) * 2.3283064365386963e-10 + 2.3283064365386963e-10;
+    let value = f32(bits >> 8u) * (1.0 / 16777216.0);
     return PhiloxUniformResult(r, value);
 }
 
@@ -241,22 +226,25 @@ fn trilinear_setup(dimx: i32, dimy: i32, dimz: i32, point: vec3<f32>) -> Triline
         return r;
     }
 
+    // as in dipy.core.interpolation: within half a voxel of the border,
+    // only the border voxel is used
     let fl = floor(point);
+    let fli = vec3<i32>(fl);
 
     r.wgh[0][1] = point.x - fl.x;
     r.wgh[0][0] = 1.0 - r.wgh[0][1];
-    r.coo[0][0] = max(0, i32(fl.x));
-    r.coo[0][1] = min(dimx - 1, r.coo[0][0] + 1);
+    r.coo[0][0] = max(0, fli.x);
+    r.coo[0][1] = min(dimx - 1, fli.x + 1);
 
     r.wgh[1][1] = point.y - fl.y;
     r.wgh[1][0] = 1.0 - r.wgh[1][1];
-    r.coo[1][0] = max(0, i32(fl.y));
-    r.coo[1][1] = min(dimy - 1, r.coo[1][0] + 1);
+    r.coo[1][0] = max(0, fli.y);
+    r.coo[1][1] = min(dimy - 1, fli.y + 1);
 
     r.wgh[2][1] = point.z - fl.z;
     r.wgh[2][0] = 1.0 - r.wgh[2][1];
-    r.coo[2][0] = max(0, i32(fl.z));
-    r.coo[2][1] = min(dimz - 1, r.coo[2][0] + 1);
+    r.coo[2][0] = max(0, fli.z);
+    r.coo[2][1] = min(dimz - 1, fli.z + 1);
 
     r.status = 0;
     return r;
@@ -363,11 +351,12 @@ fn get_direction_prob(st: PhiloxState, dir: vec3<f32>, point: vec3<f32>,
     }
     selected_cdf = subgroupBroadcastFirst(selected_cdf);
 
+    // first index with cdf > selected_cdf (see kernel.cu)
     var low: i32 = 0;
     var high: i32 = dimt - 1;
     while ((high - low) >= i32(THR_X_SL)) {
         let mid = (low + high) / 2;
-        if (wg_sh_mem[sh_offset + u32(mid)] < selected_cdf) {
+        if (wg_sh_mem[sh_offset + u32(mid)] <= selected_cdf) {
             low = mid;
         } else {
             high = mid;
@@ -383,7 +372,7 @@ fn get_direction_prob(st: PhiloxState, dir: vec3<f32>, point: vec3<f32>,
     if (msk != 0u) {
         ind_prob = low + i32(countTrailingZeros(msk));
     } else {
-        ind_prob = dimt - 1;
+        ind_prob = high;
     }
 
     if (tidx == 0u) {
@@ -398,23 +387,22 @@ fn get_direction_prob(st: PhiloxState, dir: vec3<f32>, point: vec3<f32>,
 }
 
 // ── tracker: follow one direction from a seed ───────────────────────
+// Point i is stored at point index sline_center + i * stride; nsteps is the
+// number of points kept, counting the seed (see tracker_d in kernel.cu).
 
 struct TrackerResult {
     nsteps: i32,
+    first_dir: vec3<f32>,
     state: PhiloxState,
 }
 
 fn tracker_prob_fn(st: PhiloxState, seed: vec3<f32>, first_step: vec3<f32>,
-                   sline_base: u32, sh_offset: u32, tidx: u32, tidy: u32) -> TrackerResult {
+                   sline_center: u32, stride: i32, sh_offset: u32,
+                   tidx: u32, tidy: u32) -> TrackerResult {
     var rng = st;
-    var tissue_class: i32 = TRACKPOINT;
     var point = seed;
     var direction = first_step;
-
-    if (tidx == 0u) {
-        store_sline_f3(sline_base, point);
-    }
-    subgroupBarrier();
+    var first_dir = first_step;
 
     var i: i32 = 1;
     for (; i < params.max_sline_len; i++) {
@@ -425,29 +413,25 @@ fn tracker_prob_fn(st: PhiloxState, seed: vec3<f32>, first_step: vec3<f32>,
         subgroupBarrier();
 
         if (gdr.ndir == 0) { break; }
+        if (i == 1) { first_dir = direction; }
 
         point += direction * params.step_size;
 
         if (tidx == 0u) {
-            store_sline_f3(sline_base + u32(i), point);
+            store_sline_f3(u32(i32(sline_center) + i * stride), point);
         }
         subgroupBarrier();
 
-        tissue_class = check_point_fn(params.tc_threshold, point,
-                                      params.dimx, params.dimy, params.dimz);
-        if (tissue_class != TRACKPOINT) {
+        if (check_point_fn(params.tc_threshold, point,
+                           params.dimx, params.dimy, params.dimz) != TRACKPOINT) {
             break;
         }
     }
-    return TrackerResult(i, rng);
+    return TrackerResult(min(i, params.max_sline_len - 1), first_dir, rng);
 }
 
 // ── kernel: generate streamlines from precomputed seed directions ───
-//
-// slineOutOff : (nseed+1,) exclusive prefix sum of the number of
-//               directions per seed (from get_num_streamlines_prob)
-// shDir0      : (sum(ndir), 3) initial direction of each streamline
-// sline       : (sum(ndir) * max_sline_len * 2, 3) output points
+// Same buffers and layout as genStreamlinesProb_k in kernel.cu.
 
 @compute @workgroup_size(32, 2, 1)
 fn genStreamlinesProb_k(
@@ -460,45 +444,40 @@ fn genStreamlinesProb_k(
 
     if (i32(slid) >= params.nseed) { return; }
 
-    let global_id = gid.x * BLOCK_Y * THR_X_SL + THR_X_SL * tidy + tidx;
-    var st = philox_init(u32(params.rng_seed_lo), u32(params.rng_seed_hi), global_id + 1u);
-
     let sh_offset = tidy * N32DIMT;
     let seed = load_seeds_f3(slid);
+    let max_len = u32(params.max_sline_len);
 
-    let ndir = slineOutOff[slid + 1u] - slineOutOff[slid];
-    var sline_off = slineOutOff[slid];
+    let first_sl = slineOutOff[slid];
+    let ndir = slineOutOff[slid + 1u] - first_sl;
 
     for (var i = 0; i < ndir; i++) {
-        let first_step = load_shDir0_f3(u32(sline_off));
-        let sline_base = u32(sline_off) * u32(params.max_sline_len) * 2u;
+        let sl = u32(first_sl + i);
+        // 64-bit streamline index sl_base + sl
+        let sl_lo = params.sl_base_lo + sl;
+        let sl_hi = params.sl_base_hi + select(0u, 1u, sl_lo < sl);
+        let st = philox_init(params.rng_seed_lo, params.rng_seed_hi, sl_lo, sl_hi);
 
+        let first_step = load_shDir0_f3(sl);
+        let sline_center = sl * max_len * 2u + max_len;
         if (tidx == 0u) {
-            slineSeed[sline_off] = i32(slid);
+            store_sline_f3(sline_center, seed);
         }
+        subgroupBarrier();
 
-        // backward
-        let trB = tracker_prob_fn(st, seed, -first_step, sline_base, sh_offset, tidx, tidy);
-        st = trB.state;
-        let stepsB = trB.nsteps;
-
-        // reverse backward streamline
-        for (var j = i32(tidx); j < stepsB / 2; j += i32(THR_X_SL)) {
-            let a = sline_base + u32(j);
-            let b = sline_base + u32(stepsB - 1 - j);
-            let pa = load_sline_f3(a);
-            let pb = load_sline_f3(b);
-            store_sline_f3(a, pb);
-            store_sline_f3(b, pa);
-        }
-        // forward
-        let trF = tracker_prob_fn(st, seed, first_step, sline_base + u32(stepsB - 1),
+        // forward, then backward from the direction of the first forward step
+        let trF = tracker_prob_fn(st, seed, first_step, sline_center, 1,
                                   sh_offset, tidx, tidy);
-        st = trF.state;
+        var back = first_step;
+        if (trF.nsteps > 1) {
+            back = trF.first_dir;
+        }
+        let trB = tracker_prob_fn(trF.state, seed, -back, sline_center, -1,
+                                  sh_offset, tidx, tidy);
 
         if (tidx == 0u) {
-            slineLen[sline_off] = stepsB - 1 + trF.nsteps;
+            slineStart[sl] = params.max_sline_len - (trB.nsteps - 1);
+            slineLen[sl] = trF.nsteps + trB.nsteps - 1;
         }
-        sline_off += 1;
     }
 }

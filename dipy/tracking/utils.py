@@ -516,22 +516,22 @@ def random_seeds_from_mask(
     >>> mask[0,0,0] = 1
     >>> random_seeds_from_mask(mask, np.eye(4), seeds_count=1,
     ... seed_count_per_voxel=True, random_seed=1)
-    array([[-0.19680517, -0.04650211, -0.3659583 ]])
+    array([[-0.23838787, -0.20150886,  0.31422574]])
     >>> random_seeds_from_mask(mask, np.eye(4), seeds_count=6,
     ... seed_count_per_voxel=True, random_seed=1)
-    array([[-0.19680517, -0.04650211, -0.3659583 ],
-           [-0.09688701, -0.29654476, -0.23768666],
-           [ 0.25036467, -0.21959124, -0.01480903],
-           [ 0.4807372 ,  0.46165719,  0.22478994],
-           [ 0.04122686, -0.2231088 , -0.33934799],
-           [ 0.46992541,  0.01606859, -0.38413439]])
+    array([[-0.23838787, -0.20150886,  0.31422574],
+           [-0.41435083, -0.26318949,  0.30127447],
+           [ 0.44305611,  0.01132755,  0.47624371],
+           [ 0.30500292,  0.30794079,  0.01532556],
+           [ 0.03816435, -0.15672913, -0.13093276],
+           [ 0.12509547,  0.3972138 ,  0.27568569]])
     >>> mask[0,1,2] = 1
     >>> random_seeds_from_mask(mask, np.eye(4),
     ... seeds_count=2, seed_count_per_voxel=True, random_seed=1)
-    array([[-0.19680517,  0.95349789,  1.6340417 ],
-           [-0.09688701, -0.29654476, -0.23768666],
-           [ 0.25036467,  0.78040876,  1.98519097],
-           [ 0.4807372 ,  0.46165719,  0.22478994]])
+    array([[ 0.30500292,  1.30794079,  2.01532556],
+           [-0.23838787, -0.20150886,  0.31422574],
+           [ 0.3702492 ,  0.78681721,  2.10314815],
+           [-0.41435083, -0.26318949,  0.30127447]])
 
     """
     mask = np.asarray(mask, dtype=bool)
@@ -543,9 +543,8 @@ def random_seeds_from_mask(
     rng = np.random.default_rng(random_seed)
     shape = mask.shape
     mask = mask.ravel()
-
-    # Randomize the voxel order, then keep the voxels inside the mask
-    indices = rng.permutation(mask.size)
+    indices = np.arange(mask.size)
+    rng.shuffle(indices)
     indices = indices[mask[indices]]
     num_voxels = indices.shape[0]
 
@@ -557,11 +556,30 @@ def random_seeds_from_mask(
     if nb_seeds <= 0:
         return np.empty((0, 3), dtype=float)
 
-    # one pass over the shuffled voxels per seed, so the first seeds do not
-    # depend on seeds_count
-    voxel = indices[np.arange(nb_seeds) % num_voxels]
-    seeds = np.column_stack(np.unravel_index(voxel, shape)).astype(float)
-    seeds += rng.random((nb_seeds, 3))
+    # Seeds are placed one pass over the shuffled voxels at a time: seed t is
+    # in voxel t % num_voxels during pass t // num_voxels + 1. The first seeds
+    # therefore do not depend on seeds_count.
+    t = np.arange(nb_seeds)
+    voxel_coords = np.column_stack(np.unravel_index(indices, shape))
+    voxel = t % num_voxels
+    seeds = voxel_coords[voxel].astype(float)
+    if random_seed is None:
+        seeds += rng.random((nb_seeds, 3))
+    else:
+        voxel_sums = voxel_coords.sum(axis=1)[voxel]
+        passes = t // num_voxels + 1
+
+        pairs, inverse = np.unique(
+            np.column_stack((voxel_sums, passes)), axis=0, return_inverse=True
+        )
+        offsets = np.empty((len(pairs), 3))
+        for k, (voxel_sum, n_pass) in enumerate(pairs):
+            s_random_seed = hash((voxel_sum + 1) * int(n_pass) + random_seed) % (
+                2**32 - 1
+            )
+            offsets[k] = np.random.default_rng(s_random_seed).random(3)
+        seeds += offsets[inverse.ravel()]
+
     seeds -= 0.5
 
     # Use affine to move seeds into real world coordinates

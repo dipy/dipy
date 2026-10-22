@@ -286,10 +286,10 @@ cdef void _trilinear_interpolation_iso(double *X,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef int trilinear_interpolate3d_c(double[:, :, :] data,
+cdef int trilinear_interpolate3d_c(floating[:, :, :] data,
                                    double* point,
                                    double* result) noexcept nogil:
-    """Tri-linear interpolation of a 3d array. See trilinear_interpolate4d_c."""
+    """Tri-linear interpolation of a 3d array"""
     cdef:
         cnp.npy_intp flr, i, j, k
         double rem

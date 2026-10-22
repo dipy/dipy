@@ -3,7 +3,7 @@ cimport numpy as cnp
 from dipy.align.fused_types cimport floating, number
 
 
-cdef int trilinear_interpolate3d_c(double[:, :, :] data,
+cdef int trilinear_interpolate3d_c(floating[:, :, :] data,
                                    double* point,
                                    double* result) noexcept nogil
 

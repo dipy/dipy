@@ -29,6 +29,7 @@ cdef StreamlineStatus generate_local_streamline(
     int* stream_idx,
     double* stream_data,
     cnp.npy_uint64 rng_seed,
+    cnp.npy_uint64 sl_index,
     StoppingCriterion sc,
     TrackerParameters params,
     PmfGen pmf_gen,
