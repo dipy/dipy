@@ -12,18 +12,19 @@ import numpy as np
 from dipy.io.utils import split_filename_extension
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
+from dipy.viz import actor as viz_actor
 from dipy.viz.skyline.UI.manager import UIWindow
 from dipy.viz.skyline.UI.theme import LOGO_SMALL
 from dipy.viz.skyline.compute import process_async_callbacks, run_async
 from dipy.viz.skyline.io import _valid_shm_coeffs, _validate_sh_basis, load_files
 
 fury_trip_msg = (
-    "Skyline requires Fury version 2.0.0 or higher."
-    " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
+    "Skyline requires Fury version 2.1.0 or higher."
+    " Please upgrade Fury by `pip install -U fury` to use Skyline."
 )
 fury, has_fury_v2, _ = optional_package(
     "fury",
-    min_version="2.0.0",
+    min_version="2.1.0",
     trip_msg=fury_trip_msg,
 )
 if has_fury_v2:
@@ -49,8 +50,6 @@ if has_fury_v2:
         create_streamline_visualization,
     )
     from dipy.viz.skyline.render.surface import Surface, create_surface_visualization
-else:
-    actor = fury
 
 
 class Skyline:
@@ -333,6 +332,7 @@ class Skyline:
                         ),
                     ],
                 )
+                viz_actor.gizmo(self.window)
             else:
                 title = "DIPY SKYLINE"
                 if out_stealth_png is not None:

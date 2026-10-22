@@ -1,5 +1,6 @@
 python_sources = [
   '__init__.py',
+  'actor.py',
   'gmem.py',
   'panel.py',
   'plotting.py',
