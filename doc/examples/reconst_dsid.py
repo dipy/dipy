@@ -17,10 +17,8 @@ import numpy as np
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, get_sphere
 from dipy.reconst.dsi import DiffusionSpectrumDeconvModel, DiffusionSpectrumModel
-from dipy.reconst.shm import sf_to_sh
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
-from dipy.viz import window
-from dipy.viz.skyline import create_shm_visualization
+from dipy.viz import actor, window
 
 ###############################################################################
 # For the simulation we will use a standard DSI acquisition scheme with 514
@@ -70,25 +68,11 @@ dsid_odf = dsid_model.fit(signal).odf(sphere)
 # Viewing from +Y exposes the X/Z crossing plane without rotating the data.
 
 odfs = np.vstack((odf_gt, dsi_odf, dsid_odf))[:, None, None]
-odfs /= odfs.max(axis=-1, keepdims=True)
-coeffs = sf_to_sh(
-    odfs,
-    sphere,
-    sh_order_max=16,
-    basis_type="descoteaux07",
-    full_basis=False,
-    legacy=False,
-)
-odf_visualization = create_shm_visualization(
-    (coeffs, None, "DSI comparison", "descoteaux07"),
-    0,
-    l_max=16,
-    scale=0.5,
-)
+odf_actor = actor.odf_slicer(sh_func=odfs, sphere=sphere, l_max=16, scale=0.5)
 
 show_manager = window.ShowManager(title="dsid", size=(200, 200))
 screen = show_manager.screens[0]
-screen.scene.add(odf_visualization.actor)
+screen.scene.add(odf_actor)
 window.set_camera_from_axis(screen, (0, 1, 0))
 screen.camera.zoom = 2 / 3
 show_manager.start()

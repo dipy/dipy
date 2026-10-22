@@ -15,7 +15,7 @@ pytest.skip(
 
 from dipy.utils.optpkg import optional_package
 
-_, has_fury, _ = optional_package("fury", min_version="2.0.0")
+_, has_fury, _ = optional_package("fury", min_version="2.1.0")
 if has_fury:
     from dipy.viz.horizon.app import Horizon, horizon
 

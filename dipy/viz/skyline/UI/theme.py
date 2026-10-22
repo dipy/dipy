@@ -6,7 +6,7 @@ from urllib.request import urlretrieve
 from dipy.utils.logging import logger
 from dipy.utils.optpkg import optional_package
 
-fury, has_fury, _ = optional_package("fury", min_version="2.0.0")
+fury, has_fury, _ = optional_package("fury", min_version="2.1.0")
 if has_fury:
     from PIL import Image
 else:
