@@ -84,6 +84,7 @@ def odf_slicer(
     l_max=8,
     lut_res=8,
     color_type="orientation",
+    opacity=1.0,
 ):
     """Create a fast ODF slicer from SH coefficients or sphere samples.
 
@@ -122,6 +123,8 @@ def odf_slicer(
         Resolution of the sphere lookup table.
     color_type : str
         Glyph coloring mode.
+    opacity : float
+        Glyph opacity, expected in ``[0, 1]``.
 
     Returns
     -------
@@ -133,6 +136,8 @@ def odf_slicer(
     Slices are fixed at build time; build a new actor to change them.
     Asymmetric sphere functions are symmetrized by the SH fit.
     """
+    if not 0 <= opacity <= 1:
+        raise ValueError("opacity must be between 0 and 1")
     if (sh_coeffs is None) == (sh_func is None):
         raise ValueError("Provide exactly one of sh_coeffs or sh_func.")
     if sh_func is None:
@@ -190,6 +195,7 @@ def odf_slicer(
         mask=mask,
         basis_type=basis_type,
         color_type=color_type,
+        opacity=opacity * 100,
     )
     slicer.build()
 

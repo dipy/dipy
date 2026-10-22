@@ -531,15 +531,57 @@ def test_sh_slicer_set_opacity_switches_the_alpha_mode():
     glyph = _glyph()
     slicer = glyph._slicer
 
-    slicer.set_opacity(0.4)
+    slicer.set_opacity(40)
 
     material = _material(glyph)
     assert material.opacity == pytest.approx(0.4)
     assert material.alpha_mode == "blend"
 
-    slicer.set_opacity(1.0)
+    slicer.set_opacity(100)
 
     assert material.alpha_mode == "solid"
+    assert material.depth_write is True
+
+
+def test_sh_slicer_partial_opacity_disables_depth_writes():
+    glyph = _glyph()
+
+    glyph._slicer.set_opacity(40)
+
+    assert _material(glyph).depth_write is False
+
+
+@pytest.mark.parametrize("opacity", [-1, 101, np.nan])
+def test_sh_slicer_set_opacity_rejects_values_outside_percent_range(opacity):
+    glyph = _glyph()
+
+    with pytest.raises(ValueError, match="opacity must be between 0 and 100"):
+        glyph._slicer.set_opacity(opacity)
+
+    assert _material(glyph).opacity == pytest.approx(1.0)
+
+
+def test_create_shm_visualization_partial_opacity_blends_at_creation():
+    glyph = _glyph(opacity=40)
+
+    material = _material(glyph)
+    assert material.opacity == pytest.approx(0.4)
+    assert material.alpha_mode == "blend"
+    assert material.depth_write is False
+    assert glyph._opacity == 40
+
+
+def test_sh_slicer_opacity_is_in_percent():
+    slicer = SHSlicer(_coeffs(), basis_type="descoteaux07", opacity=40)
+    slicer.build()
+
+    assert slicer._glyph_actor.material.opacity == pytest.approx(0.4)
+
+
+@pytest.mark.parametrize("opacity", [-1, 101, np.nan])
+def test_sh_slicer_rejects_opacity_outside_percent_range(opacity):
+    with pytest.raises(ValueError, match="opacity must be between 0 and 100"):
+        SHSlicer(_coeffs(), basis_type="descoteaux07", opacity=opacity)
 
 
 def test_sh_slicer_skips_an_all_zero_volume():
