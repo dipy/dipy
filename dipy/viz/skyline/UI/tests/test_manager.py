@@ -19,13 +19,13 @@ from dipy.reconst.shm import real_sh_descoteaux, real_sh_tournier
 from dipy.utils.optpkg import optional_package
 from dipy.viz.skyline.compute import process_async_callbacks
 
-_, has_fury, _ = optional_package("fury", min_version="2.0.0")
+_, has_fury, _ = optional_package("fury", min_version="2.1.0")
 _, has_imgui, _ = optional_package(
     "imgui_bundle", min_version="1.92.600", max_version="1.92.801"
 )
 if not (has_fury and has_imgui):
     pytest.skip(
-        "Requires fury>=2.0.0 and imgui_bundle>=1.92.600,<=1.92.801",
+        "Requires fury>=2.1.0 and imgui_bundle>=1.92.600,<=1.92.801",
         allow_module_level=True,
     )
 else:

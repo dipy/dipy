@@ -16,7 +16,7 @@ from dipy.sims.voxel import multi_tensor
 from dipy.utils.optpkg import optional_package
 
 _, have_matplotlib, _ = optional_package("matplotlib")
-_, has_fury_v2, _ = optional_package("fury", min_version="2.0.0")
+_, has_fury_v2, _ = optional_package("fury", min_version="2.1.0")
 if has_fury_v2:
     from fury import window
 
@@ -196,7 +196,7 @@ def _gradient_plot_table():
     )
 
 
-@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2")
+@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2.1")
 @pytest.mark.parametrize("show", [False, True])
 def test_plot_gradient_sphere_draws_overlaid_spheres_and_saves(tmp_path, show):
     red_sphere = HemiSphere(xyz=np.array([[1.0, 0.0, 0.0]]))
@@ -237,7 +237,7 @@ def test_plot_gradient_sphere_draws_overlaid_spheres_and_saves(tmp_path, show):
     assert np.any(np.all(pixels < 0.6, axis=-1))
 
 
-@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2")
+@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2.1")
 def test_plot_gradient_sphere_preserves_framing_after_resize(tmp_path):
     sphere = HemiSphere(xyz=np.eye(3))
     scene = plotting.plot_gradient_sphere(
@@ -269,7 +269,7 @@ def test_plot_gradient_sphere_preserves_framing_after_resize(tmp_path):
     assert np.ptp(columns) > 100
 
 
-@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2")
+@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2.1")
 def test_plot_gradient_sphere_renders_gradient_shells_from_bvalues(tmp_path):
     output = tmp_path / "gradients.png"
 
@@ -287,7 +287,7 @@ def test_plot_gradient_sphere_renders_gradient_shells_from_bvalues(tmp_path):
     )
 
 
-@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2")
+@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2.1")
 def test_create_shells_composes_single_shell_actor(tmp_path):
     gtab = gradient_table(
         [0.0, 1000.0, 1000.0],
@@ -306,7 +306,7 @@ def test_create_shells_composes_single_shell_actor(tmp_path):
     )
 
 
-@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2")
+@pytest.mark.skipif(not has_fury_v2, reason="Requires FURY >= 2.1")
 def test_plot_gradient_sphere_rejects_invalid_inputs_before_drawing(tmp_path):
     all_b0 = gradient_table([0.0, 0.0], bvecs=np.zeros((2, 3)))
     invalid_gtab = _gradient_plot_table()

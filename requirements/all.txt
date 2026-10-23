@@ -26,7 +26,7 @@ grg-sphinx-theme>=0.4.0
 Jinja2
 pyperf
 virtualenv
-fury>=2.0.0
+fury>=2.1.0
 imgui_bundle<=1.92.801,>=1.92.600
 matplotlib
 scikit_learn

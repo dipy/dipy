@@ -30,9 +30,9 @@ _, has_pygfx, _ = optional_package("pygfx")
 if has_pygfx:
     from pygfx.objects import KeyboardEvent
 
-_, has_fury, _ = optional_package("fury", min_version="2.0.0")
+_, has_fury, _ = optional_package("fury", min_version="2.1.0")
 if not has_fury:
-    pytest.skip("Requires fury>=2.0.0", allow_module_level=True)
+    pytest.skip("Requires fury>=2.1.0", allow_module_level=True)
 else:
     from PIL import Image
 
