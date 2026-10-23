@@ -45,6 +45,35 @@ def test_nlmeans_flow(tmp_path):
     npt.assert_array_almost_equal(denoised_affine, affine)
 
 
+@set_random_number_generator()
+def test_nlmeans_flow_multiple_inputs(tmp_path, rng=None):
+    signal = np.zeros((16, 16, 16, 4))
+    signal[4:12, 4:12, 4:12] = 100
+    for subject, noise in (("sub-01", 5), ("sub-02", 40)):
+        sub_dir = tmp_path / subject
+        sub_dir.mkdir()
+        data = np.sqrt(
+            (signal + noise * rng.standard_normal(signal.shape)) ** 2
+            + (noise * rng.standard_normal(signal.shape)) ** 2
+        )
+        save_nifti(sub_dir / "dwi.nii.gz", data, np.eye(4))
+
+    flow = NLMeansFlow(output_strategy="append")
+    flow.run(str(tmp_path / "sub-*" / "dwi.nii.gz"), num_threads=1, out_dir="batch")
+
+    for subject in ("sub-01", "sub-02"):
+        flow = NLMeansFlow()
+        flow.run(
+            tmp_path / subject / "dwi.nii.gz",
+            num_threads=1,
+            out_dir=tmp_path / "single" / subject,
+        )
+        npt.assert_array_equal(
+            load_nifti_data(tmp_path / subject / "batch" / "dwi_nlmeans.nii.gz"),
+            load_nifti_data(flow.last_generated_outputs["out_denoised"]),
+        )
+
+
 @needs_sklearn
 def test_patch2self_flow(tmp_path):
     data_path, fbvals, _ = get_fnames()
@@ -67,6 +96,43 @@ def test_lpca_flow(tmp_path):
     lpca_flow = LPCAFlow()
     lpca_flow.run(data_path, fbvals, fbvecs, out_dir=tmp_path)
     assert_true(Path(lpca_flow.last_generated_outputs["out_denoised"]).is_file())
+
+
+@set_random_number_generator()
+def test_lpca_flow_multiple_inputs(tmp_path, rng=None):
+    bvals = np.r_[0, np.full(19, 1000)]
+    bvecs = rng.standard_normal((20, 3))
+    bvecs /= np.linalg.norm(bvecs, axis=1)[:, None]
+    bvecs[0] = 0
+    for subject, noise in (("sub-01", 2), ("sub-02", 10)):
+        sub_dir = tmp_path / subject
+        sub_dir.mkdir()
+        data = 100 + noise * rng.standard_normal((10, 10, 10, 20))
+        save_nifti(sub_dir / "dwi.nii.gz", data, np.eye(4))
+        np.savetxt(sub_dir / "dwi.bval", bvals)
+        np.savetxt(sub_dir / "dwi.bvec", bvecs.T)
+
+    flow = LPCAFlow(output_strategy="append")
+    flow.run(
+        str(tmp_path / "sub-*" / "dwi.nii.gz"),
+        str(tmp_path / "sub-*" / "dwi.bval"),
+        str(tmp_path / "sub-*" / "dwi.bvec"),
+        out_dir="batch",
+    )
+
+    for subject in ("sub-01", "sub-02"):
+        sub_dir = tmp_path / subject
+        flow = LPCAFlow()
+        flow.run(
+            sub_dir / "dwi.nii.gz",
+            sub_dir / "dwi.bval",
+            sub_dir / "dwi.bvec",
+            out_dir=tmp_path / "single" / subject,
+        )
+        npt.assert_array_equal(
+            load_nifti_data(sub_dir / "batch" / "dwi_lpca.nii.gz"),
+            load_nifti_data(flow.last_generated_outputs["out_denoised"]),
+        )
 
 
 @set_random_number_generator()

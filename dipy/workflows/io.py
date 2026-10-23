@@ -1318,15 +1318,16 @@ class ConcatenateTractogramFlow(Workflow):
         has_group = False
         for fpath, _, _ in io_it:
             _, extension = split_filename_extension(fpath)
+            ref = reference
             if extension.lower() in [".trx", ".trk"]:
-                reference = "same"
+                ref = "same"
 
-            if not reference:
+            if not ref:
                 raise ValueError(
                     "No reference provided. It is needed for tck,fib, dpy or vtk files"
                 )
 
-            tractogram_obj = load_tractogram(fpath, reference, bbox_valid_check=False)
+            tractogram_obj = load_tractogram(fpath, ref, bbox_valid_check=False)
 
             if not isinstance(tractogram_obj, tmm.TrxFile):
                 tractogram_obj = tmm.TrxFile.from_sft(tractogram_obj)
