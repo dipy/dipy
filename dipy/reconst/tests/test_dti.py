@@ -26,6 +26,7 @@ from dipy.reconst.dti import (
     lower_triangular,
     mean_diffusivity,
     mode,
+    norm_anisotropy,
     ols_fit_tensor,
     planarity,
     radial_diffusivity,
@@ -94,6 +95,33 @@ def test_mode_with_isotropic():
     npt.assert_array_almost_equal(mode(q_form), np.array([[0, 0], [1, -1]]))
 
 
+@set_random_number_generator()
+def test_norm_anisotropy(rng=None):
+    # Isotropic tensors have no anisotropic component
+    npt.assert_almost_equal(norm_anisotropy(np.eye(3) * 2.5), 0)
+
+    # NA is the Frobenius norm of the deviatoric tensor, which equals the
+    # root sum of squared deviations of the eigenvalues from MD
+    evals = rng.random((4, 5, 6, 3))
+    # Random rotations, so the tensors are not axis aligned
+    evecs = np.linalg.qr(rng.standard_normal(evals.shape[:-1] + (3, 3)))[0]
+    q_form = dti.vec_val_vect(evecs, evals)
+    md = evals.mean(axis=-1, keepdims=True)
+    expected = np.sqrt(np.sum((evals - md) ** 2, axis=-1))
+    npt.assert_array_almost_equal(norm_anisotropy(q_form), expected)
+
+    # FA is NA normalized by the tensor norm: FA = sqrt(3/2) * NA / ||D||
+    fa = fractional_anisotropy(evals)
+    npt.assert_array_almost_equal(
+        fa, np.sqrt(3 / 2) * norm_anisotropy(q_form) / dti.norm(q_form)
+    )
+
+    # Supported shapes: (3, 3), (n, 3, 3) and (x, y, z, 3, 3)
+    npt.assert_equal(norm_anisotropy(q_form[0, 0, 0]).shape, ())
+    npt.assert_equal(norm_anisotropy(q_form[0, 0]).shape, (6,))
+    npt.assert_equal(norm_anisotropy(q_form).shape, (4, 5, 6))
+
+
 def test_tensor_model():
     fdata, fbval, fbvec = get_fnames(name="small_25")
     data1 = load_nifti_data(fdata)
@@ -129,6 +157,7 @@ def test_tensor_model():
     npt.assert_equal(dtifit.rd.shape, data.shape[:3])
     npt.assert_equal(dtifit.trace.shape, data.shape[:3])
     npt.assert_equal(dtifit.mode.shape, data.shape[:3])
+    npt.assert_equal(dtifit.na.shape, data.shape[:3])
     npt.assert_equal(dtifit.linearity.shape, data.shape[:3])
     npt.assert_equal(dtifit.planarity.shape, data.shape[:3])
     npt.assert_equal(dtifit.sphericity.shape, data.shape[:3])

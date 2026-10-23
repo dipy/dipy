@@ -235,6 +235,11 @@ RGB = color_fa(FA, tenfit.evecs)
 save_nifti("tensor_rgb.nii.gz", RGB, affine, as_decfa=True)
 
 """
+Many other summary measures can be computed from the tensor, such as the axial
+and radial diffusivities, the Westin shape measures and the orthogonal moments
+of the tensor. These are presented in
+:ref:`sphx_glr_examples_built_reconstruction_reconst_dti_advanced.py`.
+
 Let's try to visualize the tensor ellipsoids of a small rectangular
 area in an axial slice of the splenium of the corpus callosum (CC).
 """

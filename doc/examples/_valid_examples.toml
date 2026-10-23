@@ -96,6 +96,7 @@ files = [
     "reconst_dsi_metrics.py",
     "reconst_dsid.py",
     "reconst_dti.py",
+    "reconst_dti_advanced.py",
     "reconst_forecast.py",
     "reconst_fwdti.py",
     "reconst_gqi.py",
