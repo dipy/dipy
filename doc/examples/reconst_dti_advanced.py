@@ -138,8 +138,8 @@ specialized metrics, such as the determinant and the norm. Note that the
 module functions differ in their input: ``determinant``, ``norm``,
 ``isotropic``, ``deviatoric``, ``norm_anisotropy`` and ``mode`` take the
 quadratic form $\\mathbf{D}$ of the tensor (``tenfit.quadratic_form``), while
-``trace``, ``fractional_anisotropy``, ``mean_diffusivity`` and the Westin
-measures take its eigenvalues (``tenfit.evals``). The ``TensorFit`` properties
+``trace``, ``fractional_anisotropy``, ``mean_diffusivity`` and the so-called Westin
+measures (see above) take its eigenvalues (``tenfit.evals``). The ``TensorFit`` properties
 pass the right input for you.
 
 The determinant is the product of the eigenvalues. It is proportional to the
