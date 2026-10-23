@@ -18,6 +18,10 @@ In summary, please follow the `numpy coding style`_ - and of course -
 PEP8_ .  Test everything!  We are using pytest_ ; see the existing code
 for example tests.  If you can please use our :ref:`commit-codes`.
 
+Before opening an issue or a pull request, please read our
+:ref:`contribution_policy`, in particular the
+:ref:`automated_contributions_policy` on the use of AI tools.
+
 But - just pitch in - send us some code - we'll give you feedback if you
 want it - that way we learn from each other.
 
