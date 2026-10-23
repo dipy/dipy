@@ -15,8 +15,8 @@ import dipy.data as dpd
 import dipy.direction.peaks as dpp
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
+from dipy.reconst import sfm
 from dipy.reconst.csdeconv import auto_response_ssst
-import dipy.reconst.sfm as sfm
 from dipy.viz import actor, window
 
 ###############################################################################
@@ -32,9 +32,6 @@ data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs=bvecs)
-
-# Enables/disables interactive visualization
-interactive = False
 
 ###############################################################################
 # Reconstruction of the fiber ODF in each voxel guides subsequent tracking
@@ -115,17 +112,16 @@ data_small = data[20:50, 55:85, 38:39]
 sf_fit = sf_model.fit(data_small)
 sf_odf = sf_fit.odf(sphere)
 
-fodf_spheres = actor.odf_slicer(sf_odf, sphere=sphere, scale=0.8, colormap="plasma")
+fodf_spheres = actor.odf_slicer(sh_func=sf_odf, sphere=sphere, scale=0.8)
 
 scene = window.Scene()
 scene.add(fodf_spheres)
-
-window.record(scene=scene, out_path="sf_odfs.png", size=(1000, 1000))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(title="sf_odfs", size=(1000, 1000), scene=scene)
+show_manager.start()
 
 ###############################################################################
-# We can extract the peaks from the ODF, and plot these as well
+# We can extract the peaks from the ODF, and plot these as well. The peak
+# values are scaled by the largest one so that the strongest peak spans a voxel.
 
 sf_peaks = dpp.peaks_from_model(
     sf_model,
@@ -136,24 +132,23 @@ sf_peaks = dpp.peaks_from_model(
     return_sh=False,
 )
 
-
+peak_values = sf_peaks.peak_values / sf_peaks.peak_values.max()
+fodf_peaks = actor.peaks_slicer(sf_peaks.peak_dirs, peak_values=peak_values)
 scene.clear()
-fodf_peaks = actor.peak_slicer(sf_peaks.peak_dirs, peaks_values=sf_peaks.peak_values)
 scene.add(fodf_peaks)
 
-window.record(scene=scene, out_path="sf_peaks.png", size=(1000, 1000))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(title="sf_peaks", size=(1000, 1000), scene=scene)
+show_manager.start()
 
 ###############################################################################
-# Finally, we plot both the peaks and the ODFs, overlaid:
+# Finally, we plot both the peaks and the ODFs, overlaid. The ODFs are drawn
+# with an opacity of 0.2 so that the peaks remain visible through them.
 
-fodf_spheres.GetProperty().SetOpacity(0.4)
-scene.add(fodf_spheres)
+odf_overlay = actor.odf_slicer(sh_func=sf_odf, sphere=sphere, scale=0.8, opacity=0.2)
+scene.add(odf_overlay)
 
-window.record(scene=scene, out_path="sf_both.png", size=(1000, 1000))
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(title="sf_both", size=(1000, 1000), scene=scene)
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
