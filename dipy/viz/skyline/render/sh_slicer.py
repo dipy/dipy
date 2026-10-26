@@ -38,12 +38,12 @@ from dipy.viz.skyline.render.renderer import (
 from dipy.viz.skyline.render.sh_billboard import sph_glyph_billboard_sliced
 
 fury_trip_msg = (
-    "Skyline requires Fury version 2.0.0 or higher."
-    " Please upgrade Fury by `pip install -U fury --pre` to use Skyline."
+    "Skyline requires Fury version 2.1.0 or higher."
+    " Please upgrade Fury by `pip install -U fury` to use Skyline."
 )
 fury, has_fury_v2, _ = optional_package(
     "fury",
-    min_version="2.0.0",
+    min_version="2.1.0",
     trip_msg=fury_trip_msg,
 )
 if has_fury_v2:
@@ -67,6 +67,7 @@ def create_shm_visualization(
     lut_res=8,
     basis_type="descoteaux07",
     color_type="orientation",
+    opacity=100,
     mask=None,
     sync_callback=None,
 ):
@@ -97,6 +98,8 @@ def create_shm_visualization(
         SH basis convention. Ignored if provided in ``input`` as 4th element.
     color_type : str, optional
         Color mapping type.
+    opacity : int, optional
+        Glyph opacity in percent, expected in ``[0, 100]``.
     mask : ndarray, optional
         Boolean mask of valid voxels.
     sync_callback : callable, optional
@@ -138,6 +141,7 @@ def create_shm_visualization(
         lut_res=lut_res,
         basis_type=input_basis_type,
         color_type=color_type,
+        opacity=opacity,
         mask=mask,
         sync_callback=sync_callback,
     )
@@ -202,6 +206,8 @@ class SHSlicer:
         Unsupported values are logged and use latest Descoteaux07.
     color_type : {"orientation", "sign"}, optional
         Glyph coloring: direction-mapped hue, or a two-color sign split.
+    opacity : float, optional
+        Initial glyph opacity in percent, expected in ``[0, 100]``.
     """
 
     def __init__(
@@ -214,6 +220,7 @@ class SHSlicer:
         mask=None,
         basis_type="standard",
         color_type="orientation",
+        opacity=100,
     ):
         """Initialize the billboard actor driver.
 
@@ -241,6 +248,8 @@ class SHSlicer:
             Unsupported values are logged and use latest Descoteaux07.
         color_type : {"orientation", "sign"}, optional
             Glyph coloring: direction-mapped hue, or a two-color sign split.
+        opacity : float, optional
+            Initial glyph opacity in percent, expected in ``[0, 100]``.
         """
         self.input_basis_type = (
             "standard" if basis_type == "standard" else _validate_sh_basis(basis_type)
@@ -264,9 +273,9 @@ class SHSlicer:
         self.color_type = color_type
 
         self._cur = {"x": -1, "y": -1, "z": -1}
-        self._opacity = 1.0
         self.actor = Group()
         self._glyph_actor = None
+        self.set_opacity(opacity)
 
     def build(self):
         """Build the billboard actor and add it to :attr:`actor`.
@@ -282,6 +291,8 @@ class SHSlicer:
         self._glyph_actor = self._build_volume_actor()
         if self._glyph_actor is not None:
             self.actor.add(self._glyph_actor)
+            if self._opacity < 100:
+                self.set_opacity(self._opacity)
         return self.actor
 
     def _build_volume_actor(self):
@@ -400,14 +411,18 @@ class SHSlicer:
         Parameters
         ----------
         opacity : float
-            Glyph opacity as a fraction, expected in ``[0, 1]``. Below
-            ``1.0`` the material's ``alpha_mode`` switches to ``"blend"``.
+            Glyph opacity in percent, expected in ``[0, 100]``. Below ``100``
+            the material's ``alpha_mode`` switches to ``"blend"`` and depth
+            writes are disabled.
         """
+        if not 0 <= opacity <= 100:
+            raise ValueError("opacity must be between 0 and 100")
         self._opacity = float(opacity)
         a = self._glyph_actor
         if a is not None:
-            a.material.opacity = float(opacity)
-            a.material.alpha_mode = "blend" if opacity < 1.0 else "solid"
+            a.material.opacity = self._opacity / 100.0
+            a.material.alpha_mode = "blend" if self._opacity < 100 else "solid"
+            a.material.depth_write = self._opacity >= 100
 
 
 class SHGlyph3D(Visualization):
@@ -442,6 +457,8 @@ class SHGlyph3D(Visualization):
         Unsupported values are logged and use latest Descoteaux07.
     color_type : {"orientation", "sign"}, optional
         Glyph coloring: direction-mapped hue, or a two-color sign split.
+    opacity : int, optional
+        Glyph opacity in percent, expected in ``[0, 100]``.
     mask : ndarray of bool, optional
         Boolean mask of valid voxels.
     sync_callback : callable, optional
@@ -460,6 +477,7 @@ class SHGlyph3D(Visualization):
         lut_res=8,
         basis_type="standard",
         color_type="orientation",
+        opacity=100,
         mask=None,
         sync_callback=None,
     ):
@@ -491,6 +509,8 @@ class SHGlyph3D(Visualization):
             Unsupported values are logged and use latest Descoteaux07.
         color_type : {"orientation", "sign"}, optional
             Glyph coloring: direction-mapped hue, or a two-color sign split.
+        opacity : int, optional
+            Glyph opacity in percent, expected in ``[0, 100]``.
         mask : ndarray of bool, optional
             Boolean mask of valid voxels.
         sync_callback : callable, optional
@@ -512,6 +532,7 @@ class SHGlyph3D(Visualization):
             mask=mask,
             basis_type=basis_type,
             color_type=color_type,
+            opacity=opacity,
         )
         self._slicer.build()
         if affine is not None:
@@ -519,7 +540,7 @@ class SHGlyph3D(Visualization):
 
         super().__init__(name, render_callback)
         self._scale = float(default_scale)
-        self._opacity = 100
+        self._opacity = int(opacity)
         self._slice_visibility = [True, True, True]
         self._synchronize = True
         self._sync_callback = sync_callback
@@ -678,7 +699,7 @@ class SHGlyph3D(Visualization):
         )
         if changed:
             self._opacity = int(new_op)
-            self.apply_scene_op(self._slicer.set_opacity, self._opacity / 100.0)
+            self.apply_scene_op(self._slicer.set_opacity, self._opacity)
 
         imgui.spacing()
 

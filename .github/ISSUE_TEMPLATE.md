@@ -1,3 +1,6 @@
+## Introduce yourself
+[Especially if you are new to the DIPY community, please introduce yourself. How do you use DIPY, what prompted you to open this issue? Getting to know you helps us build trust in your judgement and welcome you in the community.]
+
 ## Description
 [Please provide a general introduction to the issue/proposal.]
 

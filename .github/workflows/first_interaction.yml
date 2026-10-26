@@ -45,4 +45,8 @@ jobs:
 
             :mag: It is **your responsibility** to ensure that the above checks pass to have your pull request reviewed in a timely manner and merged.
 
+            :robot: Please fill every section of the [pull request template](https://github.com/dipy/dipy/blob/master/.github/PULL_REQUEST_TEMPLATE.md). The **AI Usage Disclosure** section is **mandatory**, even if you did not use any AI tool. See our [Automated Contributions Policy](https://github.com/dipy/dipy/blob/master/.github/CONTRIBUTING.md#automated-contributions-policy).
+
+            :no_entry: Do not open a pull request against an issue labeled `type:needs triage`: it will be closed automatically.
+
             :book: Please read our [CODE OF CONDUCT](https://github.com/dipy/dipy/blob/master/.github/CODE_OF_CONDUCT.md) and our [CONTRIBUTING guidelines](https://github.com/dipy/dipy/blob/master/.github/CONTRIBUTING.md) if you have not done that already.
