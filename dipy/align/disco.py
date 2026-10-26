@@ -11,7 +11,12 @@ References
 from pathlib import Path
 
 import numpy as np
-from scipy.ndimage import binary_dilation, gaussian_filter
+from scipy.ndimage import (
+    binary_closing,
+    binary_dilation,
+    binary_fill_holes,
+    gaussian_filter,
+)
 
 from dipy.align import affine_registration
 from dipy.align.imaffine import AffineMap
@@ -422,8 +427,12 @@ def synb0_syn(
     # whole-head T1 grid extends far past a cropped EPI field of view. Such
     # a cropped field of view also biases the centers of mass, while images
     # of one session share scanner coordinates, so the registration is
-    # started from both and the result with the best metric is kept.
+    # started from both and the result with the best metric is kept. With a
+    # T1 brain mask, poses leaving most of the brain outside the b0 are
+    # rejected, as MI computed on a small overlap can be spuriously good.
+    b0_fov = binary_fill_holes(binary_closing(dwi_for_field != 0, iterations=2))
     best = None
+    fallback = None
     for pipeline in (
         ["rigid"],
         ["translation", "rigid"],
@@ -444,8 +453,32 @@ def synb0_syn(
             moving_mask=T1_mask.astype(bool) if T1_mask is not None else None,
             static_mask=dwi_mask.astype(bool) if dwi_mask is not None else None,
         )
+        if fallback is None or fopt < fallback[1]:
+            fallback = (candidate, fopt)
+        if T1_mask is not None:
+            inside = (
+                AffineMap(
+                    candidate,
+                    domain_grid_shape=dwi_for_field.shape,
+                    domain_grid2world=dwi_affine,
+                    codomain_grid_shape=T1_for_reg.shape,
+                    codomain_grid2world=T1_affine,
+                ).transform(np.asarray(T1_mask, dtype=np.float32))
+                > 0.5
+            )
+            voxel_ratio = abs(np.linalg.det(T1_affine[:3, :3])) / abs(
+                np.linalg.det(dwi_affine[:3, :3])
+            )
+            if (inside & b0_fov).sum() < 0.5 * np.sum(T1_mask > 0) * voxel_ratio:
+                continue
         if best is None or fopt < best[1]:
             best = (candidate, fopt)
+    if best is None:
+        logger.warning(
+            "No b0-T1 alignment keeps the T1 brain mask inside the b0 field of "
+            "view; using the one with the best metric."
+        )
+        best = fallback
     t1_to_b0_affine = best[0]
     # t1_reg_affine maps MNI -> T1 world and b0_to_t1_affine maps T1 -> b0
     # world, so MNI -> b0 applies t1_reg_affine first.
