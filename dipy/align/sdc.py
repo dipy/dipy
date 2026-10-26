@@ -109,15 +109,19 @@ def _scale(img, mask):
     return np.clip(img / hi, 0, 1) * 100.0
 
 
-def _rigid_anat_to_epi(epi, epi_affine, anat, anat_affine, anat_mask, starting_affine):
+def _rigid_anat_to_epi(
+    epi, epi_affine, anat, anat_affine, anat_mask, fov, starting_affine
+):
     """Rigid MI alignment of the anatomy (moving) to the EPI (static).
 
     MI is sampled on the static grid, so using the EPI as the static image
     keeps anatomy outside a cropped EPI field of view out of the metric.
     Without a starting affine, the registration is started both from the
     world alignment (images of one session share scanner coordinates) and
-    from the centers of mass (which a cropped field of view biases), and the
-    result with the best metric is kept.
+    from the centers of mass (which a cropped field of view biases). The
+    result with the best metric is kept among those that keep at least half
+    of the brain inside the EPI field of view ``fov``: MI computed on a small
+    overlap is unreliable and can be spuriously good.
     """
     reg = AffineRegistration(
         metric=MutualInformationMetric(nbins=32, sampling_proportion=None),
@@ -136,7 +140,11 @@ def _rigid_anat_to_epi(epi, epi_affine, anat, anat_affine, anat_mask, starting_a
     else:
         com = transform_centers_of_mass(epi, epi_affine, anat, anat_affine).affine
         starts = [(np.eye(4), False), (np.eye(4), True), (com, True)]
-    best = None
+    voxel_ratio = abs(np.linalg.det(anat_affine[:3, :3])) / abs(
+        np.linalg.det(epi_affine[:3, :3])
+    )
+    brain = anat_mask.sum() * voxel_ratio
+    candidates = []
     for start, translate_first in starts:
         if translate_first:
             start = reg.optimize(
@@ -145,9 +153,12 @@ def _rigid_anat_to_epi(epi, epi_affine, anat, anat_affine, anat_mask, starting_a
         amap, _, fopt = reg.optimize(
             epi, anat, RigidTransform3D(), None, starting_affine=start, **kw
         )
-        if best is None or fopt < best[1]:
-            best = (amap, fopt)
-    return best[0]
+        inside = (amap.transform(anat_mask.astype(np.float64)) > 0.5) & fov
+        candidates.append((inside.sum() / brain >= 0.5, fopt, inside.sum(), amap))
+    valid = [c for c in candidates if c[0]]
+    if valid:
+        return min(valid, key=lambda c: c[1])[3]
+    return max(candidates, key=lambda c: c[2])[3]
 
 
 def _anat_reference(anat_in_epi, mask, contrast, epi):
@@ -338,6 +349,7 @@ def syn_sdc(
             anat,
             anat_affine,
             anat_mask,
+            fov,
             None if rigid is None else rigid.affine,
         )
         mask = (rigid.transform(anat_mask.astype(np.float64)) > 0.5) & fov
