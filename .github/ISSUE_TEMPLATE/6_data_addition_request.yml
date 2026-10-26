@@ -1,11 +1,21 @@
 name: "Data Addition Request \U0001F4AF"
 description: "File a data addition request to add testing data to DIPY"
-labels: ["type:data"]
+labels: ["type:data", "type:needs triage"]
 body:
   - type: markdown
     attributes:
       value: |
         **Please review [our guidelines to post an issue](https://github.com/dipy/dipy/discussions/3585) before opening a new issue.**
+
+  - type: textarea
+    attributes:
+      label: Introduce yourself
+      description: |
+        Especially if you are new to the DIPY community, please introduce yourself. How do you use DIPY, what prompted
+        you to open this issue? Getting to know you helps us build trust in your judgement and welcome you in the
+        community.
+    validations:
+      required: false
 
   - type: textarea
     attributes:
