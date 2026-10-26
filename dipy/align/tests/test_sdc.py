@@ -11,7 +11,7 @@ from dipy.align.sdc import PhaseEncodingSyN, syn_sdc
 SIGMA = 3.0
 
 
-def _phantom(shape=(44, 52, 40), seed=0):
+def _phantom(*, shape=(44, 52, 40), seed=0):
     """Ellipsoidal brain with T2-like contrast and asymmetric features."""
     rng = np.random.default_rng(seed)
     grid = np.mgrid[[slice(0, n) for n in shape]].astype(float)
@@ -40,7 +40,7 @@ def _distort(image, grid, pe_axis, displacement):
     return map_coordinates(image, coords, order=1)
 
 
-def _bump(grid, brain, amplitude=2.5):
+def _bump(grid, brain, *, amplitude=2.5):
     u = amplitude * np.exp(
         -(
             ((grid[0] - 22) / 9) ** 2

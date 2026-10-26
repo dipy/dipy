@@ -188,7 +188,7 @@ def _epi_fov(epi):
     return binary_fill_holes(binary_closing(epi != 0, iterations=2))
 
 
-def _intensity_map(anat, epi, mask, nbins=64):
+def _intensity_map(anat, epi, mask, *, nbins=64):
     """Map anatomical intensities to the expected EPI intensity.
 
     The conditional mean of ``epi`` given ``anat`` is estimated inside
