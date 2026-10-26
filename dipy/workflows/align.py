@@ -1106,6 +1106,105 @@ class MotionCorrectionFlow(Workflow):
             logger.info(f"Reoriented b-vectors saved as {obvecs}")
 
 
+class SynSDCFlow(Workflow):
+    """Fieldmap-less susceptibility distortion correction with SyN."""
+
+    @classmethod
+    def get_short_name(cls):
+        return "syn_sdc"
+
+    def run(
+        self,
+        dwi_files,
+        anat_files,
+        pe_axis=1,
+        anat_contrast="t1",
+        anat_mask_file="",
+        b0_index=0,
+        n_outer=2,
+        sigma_diff=5.0,
+        out_dir="",
+        out_corrected="corrected.nii.gz",
+        out_field="field.nii.gz",
+    ):
+        """Correct EPI susceptibility distortions with an anatomical image.
+
+        The distorted b0 is registered to an undistorted T1-weighted or
+        T2-weighted image of the same subject with SyN restricted to the
+        phase-encoding axis :footcite:p:`Avants2008`, :footcite:p:`Wang2017`,
+        and the estimated displacement is applied to every volume. No
+        fieldmap or reverse phase-encoded acquisition is needed.
+
+        Parameters
+        ----------
+        dwi_files : string or Path
+            Path to the distorted diffusion (or other EPI) volumes. This path
+            may contain wildcards to process multiple inputs at once.
+        anat_files : string or Path
+            Path to the undistorted anatomical images of the same subjects.
+            They should be skull-stripped, or a brain mask should be given in
+            ``anat_mask_file``. This path may contain wildcards.
+        pe_axis : int, optional
+            Voxel axis of the DWI along which phase encoding was performed
+            (0, 1 or 2).
+        anat_contrast : string, optional
+            Contrast of the anatomical image: 't1' or 't2'.
+        anat_mask_file : string or Path, optional
+            Path to a brain mask on the anatomical grid. If empty, the
+            nonzero voxels of the anatomical image are used.
+        b0_index : int, optional
+            Index of the b0 volume used to estimate the distortion when the
+            DWI is 4D.
+        n_outer : int, optional
+            Number of alternations between rigid alignment and SyN.
+        sigma_diff : float, optional
+            Standard deviation (in voxels) of the Gaussian smoothing of the
+            SyN updates. Larger values give a smoother displacement.
+        out_dir : string or Path, optional
+            Output directory.
+        out_corrected : string, optional
+            Name of the distortion-corrected DWI.
+        out_field : string, optional
+            Name of the estimated displacement along ``pe_axis``, in voxels.
+
+        References
+        ----------
+        .. footbibliography::
+        """
+        from dipy.align.sdc import syn_sdc
+
+        io_it = self.get_io_iterator()
+        for dwi_path, anat_path, ocorrected, ofield in io_it:
+            logger.info(f"Loading DWI {dwi_path}")
+            dwi, dwi_affine = load_nifti(dwi_path)
+            logger.info(f"Loading anatomical image {anat_path}")
+            anat, anat_affine = load_nifti(anat_path)
+            anat_mask = None
+            if anat_mask_file:
+                logger.info(f"Loading anatomical brain mask {anat_mask_file}")
+                anat_mask, _ = load_nifti(anat_mask_file)
+                anat = anat * (anat_mask > 0)
+
+            corrected, field = syn_sdc(
+                dwi,
+                dwi_affine,
+                anat,
+                anat_affine,
+                pe_axis=pe_axis,
+                anat_contrast=anat_contrast,
+                anat_mask=anat_mask,
+                b0_index=b0_index,
+                n_outer=n_outer,
+                sigma_diff=sigma_diff,
+                return_field=True,
+            )
+
+            logger.info(f"Saving corrected DWI to {ocorrected}")
+            save_nifti(ocorrected, corrected, dwi_affine)
+            logger.info(f"Saving displacement to {ofield}")
+            save_nifti(ofield, field, dwi_affine)
+
+
 class BundleWarpFlow(Workflow):
     @classmethod
     def get_short_name(cls):
