@@ -64,7 +64,7 @@ class UNet3D(Module):
         n_out : int
             Number of output channels.
         """
-        super(UNet3D, self).__init__()
+        super().__init__()
         # Encoder
         self.ec0 = self.encoder_block(
             in_channels=n_in, out_channels=32, kernel_size=3, stride=1, padding=1
