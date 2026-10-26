@@ -5,6 +5,7 @@ python_sources = [
   'test_evac.py',
   'test_histo_resdnn.py',
   'test_synb0.py',
+  'test_synb0_torch.py',
   'test_tf.py',
   'test_utils.py',
   'test_synthseg.py',
