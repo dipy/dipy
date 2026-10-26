@@ -244,9 +244,10 @@ def synb0_syn(
     T1_mask : ndarray (X, Y, Z), optional
         A binary mask for the T1 image. If None, no masking is applied.
     pe_axis : int or str, optional
-        The phase-encoding axis. Can be specified as an integer (0 for 'x',
-        1 for 'y', 2 for 'z') or a string ('x', 'y', 'z').
-        If provided, the returned field will be restricted to this direction.
+        Voxel axis of ``dwi`` along which phase encoding was performed:
+        0, 1, 2 or one of 'i', 'j', 'k' ('x', 'y', 'z' are accepted as
+        aliases of the voxel axes). If not None, the deformation is
+        restricted to the world direction of this voxel axis.
     return_field : bool, optional
         Whether to return the estimated distortion field along with the
         corrected DWI data.
@@ -270,7 +271,11 @@ def synb0_syn(
         applied to all volumes.
     field : ndarray
         Estimated deformation field. Only returned when `return_field=True`.
-        If `pe_axis` is not None, shape is (X, Y, Z); otherwise (X, Y, Z, 3).
+        If `pe_axis` is not None, shape is (X, Y, Z) and the values are the
+        displacement in mm along ``pe_axis`` (positive towards increasing
+        voxel index): the corrected image at ``x`` is the input sampled at
+        ``x + field[x]``. Otherwise the shape is (X, Y, Z, 3), in world
+        coordinates (mm).
     """
     dwi = np.asarray(dwi)
     T1 = np.asarray(T1)
@@ -290,6 +295,13 @@ def synb0_syn(
         _validate_b0_index(b0_index=b0_index, n_volumes=dwi.shape[-1], image_name="dwi")
     if T1.ndim == 4:
         _validate_b0_index(b0_index=b0_index, n_volumes=T1.shape[-1], image_name="T1")
+
+    if isinstance(pe_axis, str):
+        pe_axis = {"x": 0, "y": 1, "z": 2, "i": 0, "j": 1, "k": 2}.get(
+            pe_axis.lower().rstrip("-"), -1
+        )
+    if pe_axis is not None and pe_axis not in (0, 1, 2):
+        raise ValueError("pe_axis must be 0, 1, 2 or one of 'i', 'j', 'k'.")
 
     dwi_for_field = _select_3d_volume(dwi, image_name="dwi", b0_index=b0_index)
     T1_for_reg = _select_3d_volume(T1, image_name="T1", b0_index=b0_index)
@@ -542,17 +554,16 @@ def synb0_syn(
     field_smooth_vox = field_smooth_mm / voxel_sizes
 
     if pe_axis is not None:
-        field = mapping.get_forward_field()
-        if isinstance(pe_axis, str):
-            pe_axis = {"x": 0, "y": 1, "z": 2}.get(pe_axis.lower())
-        if pe_axis in [0, 1, 2]:
-            field[..., [i for i in range(3) if i != pe_axis]] = 0
-            pe_disp = gaussian_filter(field[..., pe_axis], sigma=field_smooth_vox)
-            field[..., pe_axis] = pe_disp
-            mapping.forward = field
-            field = pe_disp
-        else:
-            raise ValueError("pe_axis must be 'x', 'y', 'z' or 0, 1, 2.")
+        # The forward field holds world-space vectors; keep only their
+        # component along the world direction of the PE voxel axis, so the
+        # restriction is also correct for oblique or permuted acquisitions.
+        field = np.asarray(mapping.get_forward_field())
+        direction = dwi_affine[:3, pe_axis] / np.linalg.norm(dwi_affine[:3, pe_axis])
+        pe_disp = gaussian_filter(field @ direction, sigma=field_smooth_vox)
+        mapping.forward = np.ascontiguousarray(
+            pe_disp[..., None] * direction, dtype=field.dtype
+        )
+        field = pe_disp
     elif return_field:
         field = mapping.get_forward_field()
         for c in range(3):

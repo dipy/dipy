@@ -160,11 +160,26 @@ def test_synb0_syn_import_error_without_backend():
 
 
 @pytest.mark.skipif(not HAVE_SYNB0, reason="Requires Synb0 (torch or tf)")
+@pytest.mark.parametrize("pe_axis", [3, -1, "w"])
+def test_synb0_syn_invalid_pe_axis(pe_axis):
+    with pytest.raises(ValueError, match="pe_axis must be"):
+        synb0_syn(
+            dwi=np.zeros((5, 5, 5)),
+            T1=np.zeros((5, 5, 5)),
+            dwi_affine=np.eye(4),
+            T1_affine=np.eye(4),
+            pe_axis=pe_axis,
+        )
+
+
+@pytest.mark.skipif(not HAVE_SYNB0, reason="Requires Synb0 (torch or tf)")
 def test_synb0_syn_4d_input():
     """Run full pipeline on small 4D DWI dataset."""
-    dwi = np.random.rand(32, 32, 32, 2).astype(np.float32) * 1000
-    t1 = np.random.rand(32, 32, 32).astype(np.float32) * 150
-    mask = np.ones((32, 32, 32), dtype=np.float32)
+    # The coarsest SyN level (factor 4) must still exceed the 9-voxel
+    # cross-correlation window.
+    dwi = np.random.rand(40, 40, 40, 2).astype(np.float32) * 1000
+    t1 = np.random.rand(40, 40, 40).astype(np.float32) * 150
+    mask = np.ones((40, 40, 40), dtype=np.float32)
     affine = np.diag([2.0, 2.0, 2.0, 1.0])
 
     corrected, field = synb0_syn(
