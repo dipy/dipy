@@ -83,6 +83,20 @@ def test_odf_slicer_norm_controls_glyph_size(norm, same):
     assert np.array_equal(full, shrunk) == same
 
 
+def test_odf_slicer_opacity_blends_glyphs_with_background():
+    coeffs = _isotropic_coeffs()
+    hidden = _render(actor.odf_slicer(sh_coeffs=coeffs, opacity=0.0)).astype(int)
+    translucent = _render(actor.odf_slicer(sh_coeffs=coeffs, opacity=0.4)).astype(int)
+    opaque = _render(actor.odf_slicer(sh_coeffs=coeffs, opacity=1.0)).astype(int)
+    assert 0 < np.abs(translucent - hidden).sum() < np.abs(opaque - hidden).sum()
+
+
+@pytest.mark.parametrize("opacity", [-0.1, 1.5, np.nan])
+def test_odf_slicer_rejects_invalid_opacity(opacity):
+    with pytest.raises(ValueError, match="opacity must be between 0 and 1"):
+        actor.odf_slicer(sh_coeffs=_isotropic_coeffs(), opacity=opacity)
+
+
 def test_odf_slicer_rejects_sphere_size_mismatch():
     with pytest.raises(ValueError, match="vertices"):
         actor.odf_slicer(
