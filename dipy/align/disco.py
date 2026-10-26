@@ -419,21 +419,34 @@ def synb0_syn(
     t1_p99 = np.percentile(T1_for_reg, 99)
     t1_norm = normalize(T1_for_reg, min_v=0, max_v=t1_p99, new_min=0, new_max=100)
     # The b0 is the static image: MI is sampled on the static grid, and a
-    # whole-head T1 grid extends far past a cropped EPI field of view.
-    _, t1_to_b0_affine = affine_registration(
-        t1_norm,
-        dwi_norm,
-        moving_affine=T1_affine,
-        static_affine=dwi_affine,
-        nbins=32,
-        metric="MI",
-        pipeline=["center_of_mass", "translation", "rigid"],
-        level_iters=[100, 50, 25],
-        sigmas=[4.0, 2.0, 1.0],
-        factors=[8, 4, 2],
-        moving_mask=T1_mask.astype(bool) if T1_mask is not None else None,
-        static_mask=dwi_mask.astype(bool) if dwi_mask is not None else None,
-    )
+    # whole-head T1 grid extends far past a cropped EPI field of view. Such
+    # a cropped field of view also biases the centers of mass, while images
+    # of one session share scanner coordinates, so the registration is
+    # started from both and the result with the best metric is kept.
+    best = None
+    for pipeline in (
+        ["rigid"],
+        ["translation", "rigid"],
+        ["center_of_mass", "translation", "rigid"],
+    ):
+        _, candidate, _, fopt = affine_registration(
+            t1_norm,
+            dwi_norm,
+            moving_affine=T1_affine,
+            static_affine=dwi_affine,
+            nbins=32,
+            metric="MI",
+            pipeline=pipeline,
+            level_iters=[100, 50, 25],
+            sigmas=[4.0, 2.0, 1.0],
+            factors=[8, 4, 2],
+            ret_metric=True,
+            moving_mask=T1_mask.astype(bool) if T1_mask is not None else None,
+            static_mask=dwi_mask.astype(bool) if dwi_mask is not None else None,
+        )
+        if best is None or fopt < best[1]:
+            best = (candidate, fopt)
+    t1_to_b0_affine = best[0]
     # t1_reg_affine maps MNI -> T1 world and b0_to_t1_affine maps T1 -> b0
     # world, so MNI -> b0 applies t1_reg_affine first.
     b0_to_t1_affine = np.linalg.inv(t1_to_b0_affine)
