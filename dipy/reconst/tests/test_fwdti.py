@@ -310,7 +310,7 @@ def test_fwdti_cholesky_jacobian():
     )
 
     numerical = np.empty_like(analytical)
-    step = 1e-7
+    step = 1e-6
 
     for column in range(params.size):
         params_plus = params.copy()
