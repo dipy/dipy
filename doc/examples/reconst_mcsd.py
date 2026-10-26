@@ -47,6 +47,7 @@ import dipy.reconst.shm as shm
 from dipy.segment.mask import median_otsu
 from dipy.segment.tissue import TissueClassifierHMRF
 from dipy.viz import actor, window
+from dipy.viz.plotting import image_mosaic
 
 sphere = get_sphere(name="symmetric724")
 
@@ -310,24 +311,51 @@ print(mcsd_odf.shape)
 print(mcsd_odf[40, 40, 0])
 
 fodf_spheres = actor.odf_slicer(
-    mcsd_odf, sphere=sphere, scale=1, norm=False, colormap="plasma"
+    sh_coeffs=wm_sh_coeff,
+    basis_type="descoteaux07_legacy",
+    scale=1,
+    norm=False,
+    visibility=(False, False, True),
 )
-
-interactive = False
 scene = window.Scene()
 scene.add(fodf_spheres)
-scene.reset_camera_tight()
-
-print("Saving illustration as msdodf.png")
-window.record(scene=scene, out_path="msdodf.png", size=(600, 600))
-
-if interactive:
-    window.show(scene)
+show_manager = window.ShowManager(title="msdodf", size=(600, 600), scene=scene)
+window.set_camera_from_axis(show_manager.screens[0], (0, 0, 1))
+show_manager.start()
 
 ###############################################################################
 # .. rst-class:: centered small fst-italic fw-semibold
 #
-# MSMT-CSD Peaks and ODFs.
+# MSMT-CSD white-matter ODFs with orientation colors.
+#
+#
+# Apparent fiber density
+# ----------------------
+#
+# As in :ref:`reconst-csd`, AFD integrates each retained FOD lobe. For MSMT-CSD,
+# ``afd`` uses only the white-matter SH coefficients, excluding GM and CSF.
+# Missing lobes are zero and are excluded from the minimum. The sum is over
+# the retained lobes; its scale depends on the response, not a unit-sum constraint.
+
+mcsd_afd = mcsd_fit.afd(npeaks=5)
+afd_max = mcsd_afd.max(axis=-1)
+afd_min = np.min(mcsd_afd, axis=-1, where=mcsd_afd > 0, initial=np.inf)
+afd_min[afd_max == 0] = 0
+afd_sum = mcsd_afd.sum(axis=-1)
+
+_fig, _axes = image_mosaic(
+    [np.rot90(metric[:, :, 0]) for metric in (afd_min, afd_max, afd_sum)],
+    ax_labels=["Minimum lobe AFD", "Maximum lobe AFD", "Summed AFD"],
+    ax_kwargs=[{"cmap": "viridis", "vmin": 0, "vmax": afd_sum.max()}] * 3,
+    figsize=(13, 4),
+    filename="mcsd_afd.png",
+)
+
+###############################################################################
+# .. rst-class:: centered small fst-italic fw-semibold
+#
+# Minimum nonzero, maximum, and summed white-matter lobe AFD.
+# Voxels with no retained lobes are zero.
 #
 #
 # References
